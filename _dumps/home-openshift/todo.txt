@@ -1,0 +1,36 @@
+TODO:
+OKNO MODALNE NA FULL SCREEN
+
+
+
+na dzis - w waitingu (wszystkie na dziś i przeszłe)
+przyszłe - w waitingu (jutrejsze i późniejsze)
+przeszłe - wszystkie z wczoraj i wcześniej
+wyszukiwarka - status, dateFrom, dateTo
+
+- https://egghead.io/lessons/angularjs-angular-material-ui-components-with-dynamic-data
+- przerobić layout na AngularMaterial (lista zamista tabelki, menu i sheet akcji)
+
+
+- zrobić test integrcyjny endpointa w groovy (spock)
+
+
+
+MySQL 5.5 database added.  Please make note of these credentials:
+
+       Root User: adminwMC4hWR
+   Root Password: qFlY-3CRjYA2
+   Database Name: home
+
+Connection URL: mysql://$OPENSHIFT_MYSQL_DB_HOST:$OPENSHIFT_MYSQL_DB_PORT/
+
+You can manage your new MySQL database by also embedding phpmyadmin.
+The phpmyadmin username and password will be the same as the MySQL credentials above.
+
+
+=============
+
+Please make note of these MySQL credentials again:
+  Root User: adminwMC4hWR
+  Root Password: qFlY-3CRjYA2
+URL: https://home-itcg.rhcloud.com/phpmyadmin/

@@ -1,0 +1,9 @@
+npm install -g angular-cli
+ng new testProject --style=scss
+ng serve
+ng g component firstComponent
+
+Tomek:
+jeszcze trzeba było dodać --routing=true :)
+trochę się pozmieniało od czasów Grunta :) 
+a to raptem ze 3-4 lata
