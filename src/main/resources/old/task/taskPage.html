@@ -1,0 +1,90 @@
+<div>
+    <h2 ng-show="!taskSectionVisibility">Lista zadań <span ng-click="prepareFormForNew()" style="font-size: 10px">[dodaj]</span>
+    </h2>
+    <h2 ng-show="newTaskSectionVisibility">Nowe zadanie <span ng-click="closeFormForNew()" style="font-size: 10px">[zwiń]</span>
+    </h2>
+    <h2 ng-show="editTaskSectionVisibility">Edytuj zadanie <span ng-click="closeFormForEdit()" style="font-size: 10px">[zwiń]</span>
+    </h2>
+
+    {{ info }}
+
+    <md-content class="md-no-momentum" ng-show="taskSectionVisibility" style="width: 70%">
+        <md-input-container class="md-block">
+            <label>Dzień</label>
+            <md-datepicker ng-model="task.date" md-placeholder="{wybierz dzień}" md-open-on-focus></md-datepicker>
+        </md-input-container>
+        <md-input-container class="md-block">
+            <label>Tytuł</label>
+            <input ng-model="task.title" type="text">
+        </md-input-container>
+        <md-input-container class="md-block">
+            <label>Opis</label>
+            <input ng-model="task.description" type="text">
+        </md-input-container>
+        <md-input-container class="md-block">
+            <label>Status</label>
+            <md-select ng-model="task.status">
+                <md-option ng-repeat="status in dictionaryStatusList" value="{{status}}">
+                    {{status}}
+                </md-option>
+            </md-select>
+        </md-input-container>
+        <md-input-container class="md-block">
+            <label>Czas Asi</label>
+            <input big-decimal-type ng-model="task.asiaTime" type="text">
+        </md-input-container>
+        <md-input-container class="md-block">
+            <label>Czas Szymona</label>
+            <input big-decimal-type ng-model="task.szymonTime" type="text">
+        </md-input-container>
+
+        <button ng-show="newTaskSectionVisibility" ng-click="addTask()">Dodaj zadanie</button>
+        <button ng-show="editTaskSectionVisibility" ng-click="updateTask(task)">Zapisz zadanie</button>
+
+        <hr/>
+    </md-content>
+
+    <div ng-show="!taskSectionVisibility">
+        Asia: {{asiaTime}}; Szymon: {{szymonTime}}
+    </div>
+
+    <table ng-show="!taskSectionVisibility" border="1" align="center">
+
+        <tr>
+            <td>
+                <md-select ng-model="taskSearchDto.date" style="margin: 0" placeholder="{wszystkie}"
+                           ng-change="findByStatusAndDate()">
+                    <md-option value="">{wszystkie}</md-option>
+                    <md-option ng-repeat="date in dictionaryDateList" value="{{date}}">{{date | date:'yyyy-MM-dd'}}
+                    </md-option>
+                </md-select>
+            </td>
+            <td>
+                <md-select ng-model="taskSearchDto.status" style="margin: 0" placeholder="{wszystkie}"
+                           ng-change="findByStatusAndDate()">
+                    <md-option value="">{wszystkie}</md-option>
+                    <md-option ng-repeat="status in dictionaryStatusList" value="{{status}}">{{status}}</md-option>
+                </md-select>
+            </td>
+        </tr>
+
+        <tr style="background-color: black; color: white">
+            <th>Data</th>
+            <th>Status</th>
+            <th>Czas Asi</th>
+            <th>Czas Szymona</th>
+            <th>Tytuł</th>
+            <th>Opis</th>
+        </tr>
+
+        <tr ng-repeat="task in taskList" ng-click="prepareFormForEdit(task)">
+            <td>{{task.date | date:'yyyy-MM-dd'}}</td>
+            <td>{{task.status}}</td>
+            <td>{{task.asiaTime}}</td>
+            <td>{{task.szymonTime}}</td>
+            <td>{{task.title}}</td>
+            <td>{{task.description}}</td>
+        </tr>
+
+    </table>
+</div>

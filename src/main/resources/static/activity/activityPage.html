@@ -1,0 +1,105 @@
+<div ng-controller="activityController">
+    {{ info }}
+    <md-tabs md-dynamic-height md-border-bottom>
+
+        <md-tab label="Na dziś">
+            <md-content class="md-padding">
+                <div>
+                    <small>Szymon: {{ szymonTime }}h, Asia: {{ asiaTime }}h -+- <span ng-click="addActivity()">dodaj aktywaność</span> -+-</small>
+                </div>
+                <md-list>
+                    <md-list-item ng-repeat="activity in todayActivityList"
+                                  class="md-whiteframe-4dp" style="padding: 10px 10px; margin-bottom: 10px;">
+                        <div ng-click="editActivity(activity)">
+                            <b>{{ activity.title }}</b>
+                            <br/>
+                            <small>
+                                {{ activity.description }}
+                                <br/>
+                                <b>Dzień:</b> {{ activity.date | date:'yyyy-MM-dd' }};
+                                <b>S</b>: {{ activity.szymonTime }}h, <b>A</b>: {{ activity.asiaTime }}h
+                            </small>
+                        </div>
+                    </md-list-item>
+                </md-list>
+            </md-content>
+        </md-tab>
+
+        <md-tab label="Przyszłe">
+            <md-content class="md-padding">
+                <md-list>
+                    <md-list-item ng-repeat="activity in futureActivityList"
+                                  class="md-whiteframe-4dp" style="padding: 10px 10px; margin-bottom: 10px;">
+                        <div ng-click="editActivity(activity)">
+                            <b>{{ activity.title }}</b>
+                            <br/>
+                            <small>
+                                {{ activity.description }}
+                                <br/>
+                                <b>Dzień:</b> {{ activity.date | date:'yyyy-MM-dd' }}
+                            </small>
+                        </div>
+                    </md-list-item>
+                </md-list>
+            </md-content>
+        </md-tab>
+
+        <md-tab label="Przeszłe">
+            <md-content class="md-padding">
+                <md-list>
+                    <md-list-item ng-repeat="activity in pastActivityList"
+                                  class="md-whiteframe-4dp" style="padding: 10px 10px; margin-bottom: 10px;">
+                        <div ng-click="editActivity(activity)">
+                            <b>{{ activity.title }}</b>
+                            <br/>
+                            <small>
+                                {{ activity.description }}
+                                <br/>
+                                <b>Dzień:</b> {{ activity.date | date:'yyyy-MM-dd' }}; <b>Status</b>: {{ activity.status
+                                }}; <b>S</b>: {{ activity.szymonTime }}h, <b>A</b>: {{ activity.asiaTime }}h
+                            </small>
+                        </div>
+                    </md-list-item>
+                </md-list>
+            </md-content>
+        </md-tab>
+
+
+        <md-tab label="Wyszukiwanie">
+            <md-content class="md-padding">
+                <md-select ng-model="taskSearchDto.dateFrom" style="margin: 0" placeholder="{Data od}">
+                    <md-option value=""></md-option>
+                    <md-option ng-repeat="date in dictionaryDateList" value="{{date}}">{{date | date:'yyyy-MM-dd'}}
+                    </md-option>
+                </md-select>
+                <md-select ng-model="taskSearchDto.dateTo" style="margin: 0" placeholder="{Data do}">
+                    <md-option value=""></md-option>
+                    <md-option ng-repeat="date in dictionaryDateList" value="{{date}}">{{date | date:'yyyy-MM-dd'}}
+                    </md-option>
+                </md-select>
+                <md-select ng-model="taskSearchDto.status" style="margin: 0" placeholder="{Status}">
+                    <md-option value=""></md-option>
+                    <md-option ng-repeat="status in dictionaryStatusList" value="{{status}}">{{status}}</md-option>
+                </md-select>
+                <md-button ng-click="searchActivities()" flex>Szukaj</md-button>
+                <small>{{searchResultInfo}}</small>
+
+                <md-list>
+                    <md-list-item ng-repeat="activity in searchActivityList"
+                                  class="md-whiteframe-4dp" style="padding: 10px 10px; margin-bottom: 10px;">
+                        <div ng-click="editActivity(activity)">
+                            <b>{{ activity.title }}</b>
+                            <br/>
+                            <small>
+                                {{ activity.description }}
+                                <br/>
+                                <b>Dzień:</b> {{ activity.date | date:'yyyy-MM-dd' }}; <b>Status</b>: {{ activity.status
+                                }}; <b>S</b>: {{ activity.szymonTime }}h, <b>A</b>: {{ activity.asiaTime }}h
+                            </small>
+                        </div>
+                    </md-list-item>
+                </md-list>
+            </md-content>
+        </md-tab>
+    </md-tabs>
+</div>
