@@ -1,0 +1,34 @@
+<md-dialog flex>
+    <md-input-container class="md-block">
+        <label>Dzień</label>
+        <md-datepicker ng-model="aec.selectedActivity.date" md-placeholder="{wybierz dzień}"
+                       md-open-on-focus></md-datepicker>
+    </md-input-container>
+    <md-input-container class="md-block">
+        <label>Tytuł</label>
+        <input ng-model="aec.selectedActivity.title" type="text">
+    </md-input-container>
+    <md-input-container class="md-block">
+        <label>Opis</label>
+        <input ng-model="aec.selectedActivity.description" type="text">
+    </md-input-container>
+    <md-input-container class="md-block">
+        <label>Status</label>
+        <md-select ng-model="aec.selectedActivity.status">
+            <md-option ng-repeat="status in aec.dictionaryStatusList" value="{{status}}">
+                {{status}}
+            </md-option>
+        </md-select>
+    </md-input-container>
+    <md-input-container class="md-block">
+        <label>Czas Asi</label>
+        <input big-decimal-type ng-model="aec.selectedActivity.asiaTime" type="text">
+    </md-input-container>
+    <md-input-container class="md-block">
+        <label>Czas Szymona</label>
+        <input big-decimal-type ng-model="aec.selectedActivity.szymonTime" type="text">
+    </md-input-container>
+    <md-button ng-click="aec.save()" flex>Zapisz</md-button>
+    <md-button ng-click="aec.markAsDone()" flex>Status: DONE</md-button>
+    <md-button ng-click="aec.cancel()" flex>Anuluj</md-button>
+</md-dialog>

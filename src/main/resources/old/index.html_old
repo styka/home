@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+    <title>TrueLife</title>
+
+    <meta charset="UTF-8">
+
+    <!-- Angular Material style sheet -->
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.css">
+    <style>
+        .md-datepicker-button {
+            display: none;
+        }
+    </style>
+
+    <!-- Angular Material requires Angular.js Libraries -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-aria.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-messages.min.js"></script>
+    <!-- Angular Material Library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.js"></script>
+    <!-- Moment JS -->
+    <script src="https://momentjs.com/downloads/moment.min.js"></script>
+
+    <!-- Application -->
+    <script src="index.js"></script>
+
+    <!-- Controllers -->
+    <script src="indexController.js"></script>
+    <script src="person/personController.js"></script>
+    <script src="task/taskController.js"></script>
+</head>
+
+<body ng-app="app" ng-controller="indexController">
+
+<div>
+    <b>Menu: </b>
+    <span ng-click="menu='taskPage'">Zadania </span>
+    |
+    <span ng-click="menu='personPage'">Osoby </span>
+</div>
+
+<hr/>
+
+<div ng-include="'person/personPage.html'" ng-show="menu=='personPage'" ng-controller="personController"></div>
+<div ng-include="'task/taskPage.html'" ng-show="menu=='taskPage'" ng-controller="taskController"></div>
+
+</body>
+</html>

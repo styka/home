@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+    <title>TrueLife</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Angular Material style sheet -->
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.css">
+
+</head>
+
+<body ng-app="TrueLifeApp" layout="column" ng-controller="indexController">
+
+<md-toolbar layout="row">
+    <md-button class="menu" ng-click="toggleMenu()">
+        <md-icon md-svg-icon="menu"></md-icon>
+    </md-button>
+    <h3 style="text-align: center" flex>{{ pageTitle }}</h3>
+</md-toolbar>
+
+<div class="container" layout="row" flex>
+    <md-sidenav md-is-locked-open="$mdMedia('gt-sm')" class="md-whiteframe-4dp" md-component-id="menu">
+        <md-list ng-click="toggleMenu()">
+            <md-list-item>
+                <md-button ng-click="menu='activityPage'; pageTitle='Aktywaności'" flex>Aktywności</md-button>
+            </md-list-item>
+            <md-list-item>
+                <md-button ng-click="menu='staticActivityPage'; pageTitle='Stałe aktywaności'" flex>Stałe aktywności</md-button>
+            </md-list-item>
+            <md-list-item>
+                <md-button ng-click="menu='categoryPage'; pageTitle='Kategorie'" flex>Kategorie</md-button>
+            </md-list-item>
+            <md-list-item>
+                <md-button ng-click="menu='statisticPage'; pageTitle='Statystyki'" flex>Statystyki</md-button>
+            </md-list-item>
+        </md-list>
+    </md-sidenav>
+    <md-content id="content" flex>
+        <div ng-include="'activity/activityPage.html'" ng-show="menu=='activityPage'"></div>
+        <div ng-include="'category/categoryPage.html'" ng-show="menu=='categoryPage'"></div>
+        <div ng-include="'staticActivity/staticActivityPage.html'" ng-show="menu=='staticActivityPage'"></div>
+        <div ng-include="'statistic/statisticPage.html'" ng-show="menu=='statisticPage'"></div>
+    </md-content>
+</div>
+
+<!-- SCRIPTS ######################################################################################## -->
+
+<!-- Angular Material requires Angular.js Libraries -->
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-aria.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-messages.min.js"></script>
+
+<!-- Angular Material Library -->
+<script src="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.js"></script>
+
+<!-- Moment JS -->
+<script src="https://momentjs.com/downloads/moment.min.js"></script>
+
+<!-- Application -->
+<script src="index.js"></script>
+
+<!-- Controllers -->
+<script src="indexController.js"></script>
+<script src="activity/activityController.js"></script>
+
+
+</body>
+</html>
