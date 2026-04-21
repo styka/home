@@ -38,7 +38,13 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div
       className="flex flex-col md:flex-row h-screen overflow-hidden"
-      style={{ backgroundColor: "var(--bg-base)" }}
+      style={{
+        backgroundColor: "var(--bg-base)",
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
+      }}
     >
       {/* Mobile-only top bar */}
       <div
