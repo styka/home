@@ -1,0 +1,41 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model ShoppingList {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  items     Item[]
+}
+
+model Item {
+  id        String     @id @default(cuid())
+  name      String
+  quantity  Float?
+  unit      String?
+  category  String     @default("Other")
+  status    String   @default("NEEDED")
+  notes     String?
+  priority  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  list      ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  listId    String
+}
+
+model ItemHistory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  category  String
+  unit      String?
+  useCount  Int      @default(1)
+  updatedAt DateTime @updatedAt
+}

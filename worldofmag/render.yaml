@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: worldofmag
+    runtime: node
+    region: frankfurt
+    plan: free
+    rootDir: worldofmag
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && node_modules/.bin/next start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
