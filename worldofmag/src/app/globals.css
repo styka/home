@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base:        #0d0d0d;
+  --bg-surface:     #141414;
+  --bg-elevated:    #1c1c1c;
+  --bg-hover:       #242424;
+  --border:         #2a2a2a;
+  --border-focus:   #444444;
+  --text-primary:   #e8e8e8;
+  --text-secondary: #888888;
+  --text-muted:     #555555;
+  --accent-blue:    #3b82f6;
+  --accent-blue-dim: #1d4ed8;
+  --accent-green:   #22c55e;
+  --accent-green-dim: #15803d;
+  --accent-red:     #ef4444;
+  --accent-red-dim: #b91c1c;
+  --accent-amber:   #f59e0b;
+  --accent-amber-dim: #b45309;
+  --accent-purple:  #a855f7;
+  --sidebar-width:  220px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-focus);
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+/* Mono class for item names */
+.mono {
+  font-family: "JetBrains Mono", "Fira Code", Consolas, Monaco, monospace;
+  font-size: 13px;
+}
+
+/* Keyboard shortcut badge */
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  min-width: 18px;
+  padding: 0 4px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  letter-spacing: 0;
+}
+
+/* Smooth transitions for interactive elements */
+button, [role="button"], a, input, [tabindex] {
+  transition: background-color 100ms, color 100ms, border-color 100ms, opacity 100ms;
+}
+
+/* Hide number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
+/* cmdk command palette item hover/selected state */
+[cmdk-item][aria-selected="true"] {
+  background-color: var(--bg-hover) !important;
+}
+[cmdk-item]:hover {
+  background-color: var(--bg-hover);
+}
+[cmdk-group-heading] {
+  padding: 4px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+[cmdk-list] {
+  padding: 4px 0;
+}
+[cmdk-input] {
+  background: transparent !important;
+}
+[cmdk-separator] {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
