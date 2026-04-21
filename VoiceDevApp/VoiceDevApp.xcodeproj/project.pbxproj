@@ -1,0 +1,448 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AA000002000000000000001 /* VoiceDevApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000001 /* VoiceDevApp.swift */; };
+		AA000004000000000000001 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003000000000000001 /* AppConfig.swift */; };
+		AA000006000000000000001 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005000000000000001 /* Message.swift */; };
+		AA000008000000000000001 /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000007000000000000001 /* ChatViewModel.swift */; };
+		AA000010000000000000001 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000009000000000000001 /* ChatView.swift */; };
+		AA000012000000000000001 /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000011000000000000001 /* MessageBubble.swift */; };
+		AA000014000000000000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000013000000000000001 /* SettingsView.swift */; };
+		AA000016000000000000001 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000015000000000000001 /* SettingsViewModel.swift */; };
+		AA000018000000000000001 /* LLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000017000000000000001 /* LLMService.swift */; };
+		AA000020000000000000001 /* GroqService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000019000000000000001 /* GroqService.swift */; };
+		AA000022000000000000001 /* SpeechRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000021000000000000001 /* SpeechRecognizer.swift */; };
+		AA000024000000000000001 /* SpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000023000000000000001 /* SpeechSynthesizer.swift */; };
+		AA000092000000000000001 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = AA000091000000000000001 /* MarkdownUI */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AA000001000000000000001 /* VoiceDevApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceDevApp.swift; sourceTree = "<group>"; };
+		AA000003000000000000001 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		AA000005000000000000001 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
+		AA000007000000000000001 /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
+		AA000009000000000000001 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		AA000011000000000000001 /* MessageBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubble.swift; sourceTree = "<group>"; };
+		AA000013000000000000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		AA000015000000000000001 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		AA000017000000000000001 /* LLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMService.swift; sourceTree = "<group>"; };
+		AA000019000000000000001 /* GroqService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroqService.swift; sourceTree = "<group>"; };
+		AA000021000000000000001 /* SpeechRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognizer.swift; sourceTree = "<group>"; };
+		AA000023000000000000001 /* SpeechSynthesizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechSynthesizer.swift; sourceTree = "<group>"; };
+		AA000025000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AA000041000000000000001 /* VoiceDevApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceDevApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AA000052000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA000092000000000000001 /* MarkdownUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AA000030000000000000001 /* VoiceDevApp */ = {
+			isa = PBXGroup;
+			children = (
+				AA000031000000000000001 /* App */,
+				AA000032000000000000001 /* Features */,
+				AA000035000000000000001 /* Services */,
+				AA000036000000000000001 /* Resources */,
+			);
+			path = VoiceDevApp;
+			sourceTree = "<group>";
+		};
+		AA000031000000000000001 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AA000001000000000000001 /* VoiceDevApp.swift */,
+				AA000003000000000000001 /* AppConfig.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		AA000032000000000000001 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				AA000033000000000000001 /* Chat */,
+				AA000034000000000000001 /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		AA000033000000000000001 /* Chat */ = {
+			isa = PBXGroup;
+			children = (
+				AA000005000000000000001 /* Message.swift */,
+				AA000007000000000000001 /* ChatViewModel.swift */,
+				AA000009000000000000001 /* ChatView.swift */,
+				AA000011000000000000001 /* MessageBubble.swift */,
+			);
+			path = Chat;
+			sourceTree = "<group>";
+		};
+		AA000034000000000000001 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				AA000013000000000000001 /* SettingsView.swift */,
+				AA000015000000000000001 /* SettingsViewModel.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		AA000035000000000000001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AA000017000000000000001 /* LLMService.swift */,
+				AA000019000000000000001 /* GroqService.swift */,
+				AA000021000000000000001 /* SpeechRecognizer.swift */,
+				AA000023000000000000001 /* SpeechSynthesizer.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		AA000036000000000000001 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				AA000025000000000000001 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		AA000037000000000000001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AA000041000000000000001 /* VoiceDevApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AA000038000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				AA000030000000000000001 /* VoiceDevApp */,
+				AA000037000000000000001 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AA000040000000000000001 /* VoiceDevApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA000071000000000000001 /* Build configuration list for PBXNativeTarget "VoiceDevApp" */;
+			buildPhases = (
+				AA000050000000000000001 /* Sources */,
+				AA000052000000000000001 /* Frameworks */,
+				AA000051000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = VoiceDevApp;
+			packageProductDependencies = (
+				AA000091000000000000001 /* MarkdownUI */,
+			);
+			productName = VoiceDevApp;
+			productReference = AA000041000000000000001 /* VoiceDevApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA000080000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					AA000040000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = AA000070000000000000001 /* Build configuration list for PBXProject "VoiceDevApp" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = pl;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				pl,
+				Base,
+			);
+			mainGroup = AA000038000000000000001;
+			packageReferences = (
+				AA000090000000000000001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
+			);
+			productRefGroup = AA000037000000000000001 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AA000040000000000000001 /* VoiceDevApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA000051000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AA000050000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA000002000000000000001 /* VoiceDevApp.swift in Sources */,
+				AA000004000000000000001 /* AppConfig.swift in Sources */,
+				AA000006000000000000001 /* Message.swift in Sources */,
+				AA000008000000000000001 /* ChatViewModel.swift in Sources */,
+				AA000010000000000000001 /* ChatView.swift in Sources */,
+				AA000012000000000000001 /* MessageBubble.swift in Sources */,
+				AA000014000000000000001 /* SettingsView.swift in Sources */,
+				AA000016000000000000001 /* SettingsViewModel.swift in Sources */,
+				AA000018000000000000001 /* LLMService.swift in Sources */,
+				AA000020000000000000001 /* GroqService.swift in Sources */,
+				AA000022000000000000001 /* SpeechRecognizer.swift in Sources */,
+				AA000024000000000000001 /* SpeechSynthesizer.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AA000060000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		AA000061000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AA000062000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = VoiceDevApp/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yourname.VoiceDevApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AA000063000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = VoiceDevApp/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yourname.VoiceDevApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA000070000000000000001 /* Build configuration list for PBXProject "VoiceDevApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA000060000000000000001 /* Debug */,
+				AA000061000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA000071000000000000001 /* Build configuration list for PBXNativeTarget "VoiceDevApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA000062000000000000001 /* Debug */,
+				AA000063000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AA000090000000000000001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AA000091000000000000001 /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA000090000000000000001 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
+		};
+/* End XCSwiftPackageProductDependency section */
+
+	};
+	rootObject = AA000080000000000000001 /* Project object */;
+}
