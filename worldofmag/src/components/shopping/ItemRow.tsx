@@ -145,7 +145,7 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
       onClick={onFocus}
       onDoubleClick={onStartEdit}
       className={cn(
-        "flex items-center gap-3 px-4 py-2.5 border-b cursor-default select-none group",
+        "flex items-center gap-3 px-4 py-3 md:py-2.5 border-b cursor-default select-none group",
       )}
       style={{
         borderColor: "var(--border)",
@@ -161,7 +161,7 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
       {/* Status toggle button */}
       <button
         onClick={(e) => { e.stopPropagation(); cycleStatus(); }}
-        className="w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center focus:outline-none"
+        className="w-5 h-5 md:w-4 md:h-4 rounded border flex-shrink-0 flex items-center justify-center focus:outline-none"
         style={{
           borderColor: isDone
             ? "var(--accent-green)"

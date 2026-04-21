@@ -25,7 +25,7 @@ export function ModuleSidebar() {
 
   return (
     <aside
-      className="flex flex-col h-full border-r"
+      className="hidden md:flex flex-col h-full border-r"
       style={{
         width: "var(--sidebar-width)",
         backgroundColor: "var(--bg-surface)",

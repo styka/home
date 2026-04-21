@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useMemo, useRef, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { ChevronDown } from "lucide-react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { ListPicker } from "./ListPicker";
@@ -20,6 +22,7 @@ interface ShoppingPageProps {
 }
 
 export function ShoppingPage({ list, allLists }: ShoppingPageProps) {
+  const router = useRouter();
   const { toggle: togglePalette } = useCommandPalette();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,14 +32,11 @@ export function ShoppingPage({ list, allLists }: ShoppingPageProps) {
   const [, startTransition] = useTransition();
   const quickAddRef = useRef<QuickAddBarHandle>(null);
 
-  // Filtered items
   const filteredItems = useMemo(() => {
     let items = list.items as Item[];
-
     if (activeFilter !== "ALL") {
       items = items.filter((i) => i.status === activeFilter);
     }
-
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       items = items.filter(
@@ -46,11 +46,9 @@ export function ShoppingPage({ list, allLists }: ShoppingPageProps) {
           i.notes?.toLowerCase().includes(q)
       );
     }
-
     return items;
   }, [list.items, activeFilter, searchQuery]);
 
-  // Tab counts
   const counts = useMemo(() => {
     const result = {} as Record<FilterTab, number>;
     for (const tab of FILTER_TABS) {
@@ -67,7 +65,6 @@ export function ShoppingPage({ list, allLists }: ShoppingPageProps) {
     setFocusedItemId
   );
 
-  // Keyboard handlers
   const handlers = useMemo(
     () => ({
       onQuickAdd: () => quickAddRef.current?.focus(),
@@ -87,7 +84,6 @@ export function ShoppingPage({ list, allLists }: ShoppingPageProps) {
       onDelete: () => {
         if (!focusedItemId) return;
         const idx = filteredItems.findIndex((i) => i.id === focusedItemId);
-        // Move focus to next item before deleting
         const nextItem = filteredItems[idx + 1] ?? filteredItems[idx - 1];
         setFocusedItemId(nextItem?.id ?? null);
         startTransition(() => { deleteItem(focusedItemId); });
@@ -110,6 +106,13 @@ export function ShoppingPage({ list, allLists }: ShoppingPageProps) {
 
   useKeyboardShortcuts(handlers);
 
+  const statsText = [
+    counts.NEEDED > 0 && `${counts.NEEDED} needed`,
+    counts.IN_CART > 0 && `${counts.IN_CART} in cart`,
+    counts.DONE > 0 && `${counts.DONE} done`,
+    counts.MISSING > 0 && `${counts.MISSING} missing`,
+  ].filter(Boolean).join(" · ");
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
@@ -117,23 +120,53 @@ export function ShoppingPage({ list, allLists }: ShoppingPageProps) {
         className="flex items-center justify-between px-4 h-12 border-b flex-shrink-0"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
       >
-        <h1 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-          {list.name}
-        </h1>
+        {/* Mobile: dropdown to switch lists. Desktop: just the name (ListPicker handles switching) */}
+        {allLists.length > 1 ? (
+          <>
+            {/* Mobile list switcher */}
+            <div className="relative md:hidden flex items-center gap-1">
+              <select
+                value={list.id}
+                onChange={(e) => router.push(`/shopping/${e.target.value}`)}
+                className="appearance-none bg-transparent text-sm font-semibold pr-5 focus:outline-none cursor-pointer"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {allLists.map((l) => (
+                  <option
+                    key={l.id}
+                    value={l.id}
+                    style={{ backgroundColor: "#1c1c1c", color: "var(--text-primary)" }}
+                  >
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={12} className="pointer-events-none absolute right-0" style={{ color: "var(--text-muted)" }} />
+            </div>
+            {/* Desktop: static name */}
+            <h1 className="hidden md:block text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+              {list.name}
+            </h1>
+          </>
+        ) : (
+          <h1 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+            {list.name}
+          </h1>
+        )}
+
         <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-          {counts.NEEDED > 0 && `${counts.NEEDED} needed`}
-          {counts.IN_CART > 0 && ` · ${counts.IN_CART} in cart`}
-          {counts.DONE > 0 && ` · ${counts.DONE} done`}
-          {counts.MISSING > 0 && ` · ${counts.MISSING} missing`}
+          {statsText}
         </span>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* List picker sidebar */}
-        <ListPicker allLists={allLists} currentListId={list.id} />
+        {/* List picker sidebar — desktop only */}
+        <div className="hidden md:flex">
+          <ListPicker allLists={allLists} currentListId={list.id} />
+        </div>
 
-        {/* Main content */}
-        <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Main content — full width on mobile */}
+        <div className="flex flex-col flex-1 overflow-hidden min-w-0">
           <QuickAddBar ref={quickAddRef} listId={list.id} />
 
           {isSearchOpen && (
