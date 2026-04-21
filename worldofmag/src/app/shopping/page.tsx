@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createList } from "@/actions/lists";
 
+export const dynamic = "force-dynamic";
+
 export default async function ShoppingIndexPage() {
   let lists = await prisma.shoppingList.findMany({ orderBy: { createdAt: "asc" } });
 

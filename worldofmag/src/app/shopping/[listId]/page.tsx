@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { ShoppingPage } from "@/components/shopping/ShoppingPage";
 import type { ShoppingListWithItems } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: { listId: string };
 }
