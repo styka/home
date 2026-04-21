@@ -1,0 +1,39 @@
+name: Build iOS
+
+on:
+  push:
+    branches: [claude/general-session-rXlHT, main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+
+      - name: Resolve packages
+        run: |
+          cd VoiceDevApp
+          xcodebuild -resolvePackageDependencies \
+            -project VoiceDevApp.xcodeproj
+
+      - name: Build
+        run: |
+          cd VoiceDevApp
+          xcodebuild \
+            -project VoiceDevApp.xcodeproj \
+            -scheme VoiceDevApp \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Upload .app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VoiceDevApp
+          path: VoiceDevApp/build/**/*.app
+          if-no-files-found: warn
