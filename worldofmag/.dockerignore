@@ -1,0 +1,8 @@
+.next/
+node_modules/
+.git/
+.env.local
+dev.db
+dev.db-journal
+*.md
+.DS_Store
