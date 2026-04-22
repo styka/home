@@ -39,3 +39,23 @@ model ItemHistory {
   useCount  Int      @default(1)
   updatedAt DateTime @updatedAt
 }
+
+model Thought {
+  id          String              @id @default(cuid())
+  content     String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  attachments ThoughtAttachment[]
+}
+
+model ThoughtAttachment {
+  id        String   @id @default(cuid())
+  thoughtId String
+  thought   Thought  @relation(fields: [thoughtId], references: [id], onDelete: Cascade)
+  type      String
+  url       String
+  filename  String
+  mimeType  String
+  size      Int?
+  createdAt DateTime @default(now())
+}

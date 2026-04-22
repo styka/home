@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Brain } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 interface Module {
@@ -15,6 +15,7 @@ interface Module {
 
 const MODULES: Module[] = [
   { id: "shopping", label: "Shopping", icon: <ShoppingCart size={18} />, href: "/shopping", active: true },
+  { id: "thoughts", label: "Thoughts", icon: <Brain size={18} />, href: "/thoughts", active: true },
   { id: "calendar", label: "Calendar", icon: <Calendar size={18} />, href: "/calendar", active: false },
   { id: "notes", label: "Notes", icon: <FileText size={18} />, href: "/notes", active: false },
   { id: "work", label: "Work", icon: <Briefcase size={18} />, href: "/work", active: false },

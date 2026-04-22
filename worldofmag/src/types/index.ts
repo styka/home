@@ -1,6 +1,10 @@
-import type { Item as PrismaItem, ShoppingList, ItemHistory } from "@prisma/client";
+import type { Item as PrismaItem, ShoppingList, ItemHistory, Thought, ThoughtAttachment } from "@prisma/client";
 
-export type { ShoppingList, ItemHistory };
+export type { ShoppingList, ItemHistory, Thought, ThoughtAttachment };
+
+export type ThoughtWithAttachments = Thought & {
+  attachments: ThoughtAttachment[];
+};
 
 export type ItemStatus = "NEEDED" | "IN_CART" | "DONE" | "MISSING";
 
