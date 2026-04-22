@@ -4,6 +4,7 @@ services:
     runtime: node
     region: frankfurt
     plan: free
+    branch: master
     rootDir: worldofmag
     buildCommand: npm ci && npx prisma generate && npm run build
     startCommand: npx prisma migrate deploy && node_modules/.bin/next start

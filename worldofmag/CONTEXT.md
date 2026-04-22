@@ -198,7 +198,7 @@ model ItemHistory {
 
 ### Git
 - **Repo:** `github.com/styka/home`
-- **Branch roboczy:** `claude/shopping-list-app-rJieP`
+- **Branch roboczy:** `master`
 - **Main/master:** nienaruszony (stary Spring Boot)
 
 ### Neon (PostgreSQL)
@@ -219,7 +219,7 @@ model ItemHistory {
 - **URL:** `https://worldofmag.onrender.com` *(lub podobny — sprawdź w dashboardzie Render)*
 - **Plan:** Free
 - **Region:** Frankfurt
-- **Auto-deploy:** TAK — każdy push do brancha `claude/shopping-list-app-rJieP` triggeruje redeploy
+- **Auto-deploy:** TAK — każdy push do brancha `master` triggeruje redeploy
 - **Build command:** `npm ci && npx prisma generate && npm run build`
 - **Start command:** `npx prisma migrate deploy && node_modules/.bin/next start`
 

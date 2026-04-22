@@ -255,12 +255,11 @@ Defined in `src/hooks/useKeyboardShortcuts.ts`:
 ## Git Workflow
 
 - **Master branch:** untouched legacy Spring Boot code
-- **Working branch:** `claude/shopping-list-app-rJieP` — auto-deploys to Render on every push
-- **Documentation branch:** `claude/add-claude-documentation-IiHKi`
+- **Working branch:** `master` — auto-deploys to Render on every push
 
-Push to the working branch to trigger a production deployment:
+Push to master to trigger a production deployment:
 ```bash
-git push -u origin claude/shopping-list-app-rJieP
+git push origin master
 ```
 
 ---
