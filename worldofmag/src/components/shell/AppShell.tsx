@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 
 interface AppShellProps {
   children: React.ReactNode;
+  invitationCount?: number;
 }
 
 const MODULES = [
@@ -17,7 +18,7 @@ const MODULES = [
   { id: "work", label: "Work", icon: <Briefcase size={20} />, topBarIcon: <Briefcase size={16} />, href: "/work", active: false },
 ];
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, invitationCount = 0 }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const activeModule = MODULES.find((m) => pathname.startsWith(m.href));
@@ -54,21 +55,31 @@ export function AppShell({ children }: AppShellProps) {
         <button
           onClick={() => setMenuOpen(true)}
           className="flex items-center justify-center w-8 h-8 rounded flex-shrink-0"
-          style={{ color: "var(--text-secondary)" }}
+          style={{ color: "var(--text-secondary)", position: "relative" }}
           aria-label="Otwórz menu"
         >
           <Menu size={18} />
+          {invitationCount > 0 && (
+            <span
+              style={{
+                position: "absolute",
+                top: 2,
+                right: 2,
+                background: "#ef4444",
+                borderRadius: "50%",
+                width: 8,
+                height: 8,
+              }}
+            />
+          )}
         </button>
 
-        {/* App name — subtle, left of separator */}
         <span className="text-xs" style={{ color: "var(--text-muted)" }}>
           WorldOfMag
         </span>
 
-        {/* Separator */}
         <span style={{ color: "var(--border)" }}>/</span>
 
-        {/* Active module — prominent */}
         <div className="flex items-center gap-1.5">
           <span style={{ color: "var(--accent-purple)" }}>
             {activeModule?.topBarIcon ?? <Sparkles size={16} />}
@@ -86,7 +97,6 @@ export function AppShell({ children }: AppShellProps) {
           style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
           onClick={() => setMenuOpen(false)}
         >
-          {/* Drawer */}
           <div
             className="flex flex-col h-full w-64 border-r"
             style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}
@@ -147,23 +157,51 @@ export function AppShell({ children }: AppShellProps) {
               })}
             </nav>
 
-            {/* Bottom settings */}
+            {/* Bottom: Invitations + Settings */}
             <div className="py-2 border-t" style={{ borderColor: "var(--border)" }}>
-              <div
-                className="flex items-center gap-3 px-4 py-3 mx-2 rounded"
-                style={{ opacity: 0.35, color: "var(--text-secondary)", cursor: "not-allowed" }}
-                title="Settings (coming soon)"
+              <Link
+                href="/invitations"
+                className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
+                style={{
+                  backgroundColor: pathname.startsWith("/invitations") ? "var(--bg-elevated)" : undefined,
+                  color: pathname.startsWith("/invitations") ? "var(--text-primary)" : "var(--text-secondary)",
+                }}
+              >
+                <Mail size={20} />
+                <span>Zaproszenia</span>
+                {invitationCount > 0 && (
+                  <span
+                    style={{
+                      marginLeft: "auto",
+                      background: "#ef4444",
+                      color: "#fff",
+                      fontSize: 11,
+                      borderRadius: 999,
+                      padding: "1px 6px",
+                    }}
+                  >
+                    {invitationCount}
+                  </span>
+                )}
+              </Link>
+              <Link
+                href="/settings"
+                className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
+                style={{
+                  backgroundColor: pathname.startsWith("/settings") ? "var(--bg-elevated)" : undefined,
+                  color: pathname.startsWith("/settings") ? "var(--text-primary)" : "var(--text-secondary)",
+                }}
               >
                 <Settings size={20} />
-                <span className="text-sm">Settings</span>
-              </div>
+                <span>Ustawienia</span>
+              </Link>
             </div>
           </div>
         </div>
       )}
 
-      {/* Desktop sidebar — hidden on mobile */}
-      <ModuleSidebar />
+      {/* Desktop sidebar */}
+      <ModuleSidebar invitationCount={invitationCount} />
 
       <main className="flex-1 overflow-hidden flex flex-col min-w-0">
         {children}

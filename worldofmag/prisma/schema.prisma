@@ -8,27 +8,140 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ─── NextAuth required models ─────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  avatarUrl     String?
+  role          String    @default("USER")  // "USER" | "ADMIN"
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts          Account[]
+  sessions          Session[]
+  ownedTeams        Team[]           @relation("TeamOwner")
+  teamMemberships   TeamMember[]
+  sentInvitations   TeamInvitation[] @relation("InvitedBy")
+  receivedInvitations TeamInvitation[] @relation("InvitedUser")
+  ownedLists        ShoppingList[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Teams ────────────────────────────────────────────────────────────────
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  avatarUrl   String?
+  ownerId     String
+  parentTeamId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       User             @relation("TeamOwner", fields: [ownerId], references: [id])
+  parentTeam  Team?            @relation("SubTeams", fields: [parentTeamId], references: [id])
+  subTeams    Team[]           @relation("SubTeams")
+  members     TeamMember[]
+  invitations TeamInvitation[]
+  lists       ShoppingList[]   @relation("TeamLists")
+}
+
+model TeamMember {
+  teamId    String
+  userId    String
+  role      String   @default("MEMBER")  // "MEMBER" | "ADMIN" | "OWNER"
+  joinedAt  DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+}
+
+model TeamInvitation {
+  id            String   @id @default(cuid())
+  teamId        String
+  invitedById   String
+  invitedUserId String
+  status        String   @default("PENDING")  // "PENDING" | "ACCEPTED" | "REJECTED"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  team        Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  invitedBy   User @relation("InvitedBy", fields: [invitedById], references: [id])
+  invitedUser User @relation("InvitedUser", fields: [invitedUserId], references: [id])
+
+  @@unique([teamId, invitedUserId])
+}
+
+// ─── Shopping ─────────────────────────────────────────────────────────────
+
 model ShoppingList {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ownerId     String?
+  ownerTeamId String?
+
+  owner     User?  @relation(fields: [ownerId], references: [id])
+  ownerTeam Team?  @relation("TeamLists", fields: [ownerTeamId], references: [id])
   items     Item[]
 }
 
 model Item {
-  id        String     @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String
   quantity  Float?
   unit      String?
-  category  String     @default("Other")
+  category  String   @default("Other")
   status    String   @default("NEEDED")
   notes     String?
   priority  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  list      ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
   listId    String
+
+  list ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
 }
 
 model ItemHistory {

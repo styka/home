@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/shell/AppShell";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { auth } from "@/lib/auth";
+import { getPendingInvitationsCount } from "@/actions/invitations";
 
 export const viewport: Viewport = {
   themeColor: "#0d0d0d",
@@ -30,11 +32,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  const invitationCount = session?.user?.id
+    ? await getPendingInvitationsCount().catch(() => 0)
+    : 0;
+
   return (
     <html lang="en" className="dark">
       <head>
-        {/* iOS PWA - full screen, no browser chrome */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -42,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
       <body>
-        <AppShell>{children}</AppShell>
+        <AppShell invitationCount={invitationCount}>{children}</AppShell>
         <ServiceWorkerRegistration />
       </body>
     </html>

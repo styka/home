@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 interface Module {
@@ -20,7 +20,11 @@ const MODULES: Module[] = [
   { id: "work", label: "Work", icon: <Briefcase size={18} />, href: "/work", active: false },
 ];
 
-export function ModuleSidebar() {
+interface ModuleSidebarProps {
+  invitationCount?: number;
+}
+
+export function ModuleSidebar({ invitationCount = 0 }: ModuleSidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -70,9 +74,7 @@ export function ModuleSidebar() {
               href={mod.href}
               className={cn(
                 "flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm",
-                isCurrentPath
-                  ? "text-primary"
-                  : "hover:text-primary"
+                isCurrentPath ? "text-primary" : "hover:text-primary"
               )}
               style={{
                 backgroundColor: isCurrentPath ? "var(--bg-elevated)" : undefined,
@@ -98,16 +100,73 @@ export function ModuleSidebar() {
         })}
       </nav>
 
-      {/* Bottom settings */}
+      {/* Bottom: Invitations + Settings */}
       <div className="py-2 border-t" style={{ borderColor: "var(--border)" }}>
-        <div
-          className="flex items-center gap-3 px-4 py-2 mx-2 rounded cursor-not-allowed"
-          style={{ opacity: 0.35, color: "var(--text-secondary)" }}
-          title="Settings (coming soon)"
+        {/* Invitations */}
+        <Link
+          href="/invitations"
+          className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm"
+          style={{
+            backgroundColor: pathname.startsWith("/invitations") ? "var(--bg-elevated)" : undefined,
+            color: pathname.startsWith("/invitations") ? "var(--text-primary)" : "var(--text-secondary)",
+          }}
+          onMouseEnter={(e) => {
+            if (!pathname.startsWith("/invitations")) {
+              e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+              e.currentTarget.style.color = "var(--text-primary)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!pathname.startsWith("/invitations")) {
+              e.currentTarget.style.backgroundColor = "";
+              e.currentTarget.style.color = "var(--text-secondary)";
+            }
+          }}
+        >
+          <Mail size={18} />
+          <span>Zaproszenia</span>
+          {invitationCount > 0 && (
+            <span
+              style={{
+                marginLeft: "auto",
+                background: "#ef4444",
+                color: "#fff",
+                fontSize: 11,
+                borderRadius: 999,
+                padding: "1px 6px",
+                minWidth: 18,
+                textAlign: "center",
+              }}
+            >
+              {invitationCount}
+            </span>
+          )}
+        </Link>
+
+        {/* Settings */}
+        <Link
+          href="/settings"
+          className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm"
+          style={{
+            backgroundColor: pathname.startsWith("/settings") ? "var(--bg-elevated)" : undefined,
+            color: pathname.startsWith("/settings") ? "var(--text-primary)" : "var(--text-secondary)",
+          }}
+          onMouseEnter={(e) => {
+            if (!pathname.startsWith("/settings")) {
+              e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+              e.currentTarget.style.color = "var(--text-primary)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!pathname.startsWith("/settings")) {
+              e.currentTarget.style.backgroundColor = "";
+              e.currentTarget.style.color = "var(--text-secondary)";
+            }
+          }}
         >
           <Settings size={18} />
-          <span className="text-sm">Settings</span>
-        </div>
+          <span>Ustawienia</span>
+        </Link>
       </div>
     </aside>
   );
