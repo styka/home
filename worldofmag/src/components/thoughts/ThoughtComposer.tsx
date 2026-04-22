@@ -110,7 +110,7 @@ export function ThoughtComposer() {
             }),
           });
           const data = await res.json();
-          return { type: att.type, url: data.url, filename: att.filename, mimeType: att.mimeType, size: att.size };
+          return { type: att.type, url: data.url, driveFileId: data.driveFileId ?? null, filename: att.filename, mimeType: att.mimeType, size: att.size };
         })
       );
       const savedContent = content;

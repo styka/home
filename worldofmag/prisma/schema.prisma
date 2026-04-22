@@ -49,13 +49,14 @@ model Thought {
 }
 
 model ThoughtAttachment {
-  id        String   @id @default(cuid())
-  thoughtId String
-  thought   Thought  @relation(fields: [thoughtId], references: [id], onDelete: Cascade)
-  type      String
-  url       String
-  filename  String
-  mimeType  String
-  size      Int?
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  thoughtId   String
+  thought     Thought  @relation(fields: [thoughtId], references: [id], onDelete: Cascade)
+  type        String
+  url         String
+  driveFileId String?
+  filename    String
+  mimeType    String
+  size        Int?
+  createdAt   DateTime @default(now())
 }

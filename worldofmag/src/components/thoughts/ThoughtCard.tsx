@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Trash2, Paperclip, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, Paperclip, X, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { deleteThought } from "@/actions/thoughts";
 import type { ThoughtWithAttachments } from "@/types";
 
@@ -13,18 +13,20 @@ function formatDate(date: Date): string {
   const time = d.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
   if (days === 0) return `Dziś, ${time}`;
   if (days === 1) return `Wczoraj, ${time}`;
-  if (days < 7)
-    return d.toLocaleDateString("pl-PL", { weekday: "long" }) + `, ${time}`;
-  return d.toLocaleDateString("pl-PL", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }) + `, ${time}`;
+  if (days < 7) return d.toLocaleDateString("pl-PL", { weekday: "long" }) + `, ${time}`;
+  return (
+    d.toLocaleDateString("pl-PL", { day: "numeric", month: "short", year: "numeric" }) +
+    `, ${time}`
+  );
 }
 
 function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function driveViewUrl(fileId: string) {
+  return `https://drive.google.com/file/d/${fileId}/view`;
 }
 
 interface ThoughtCardProps {
@@ -43,14 +45,14 @@ export function ThoughtCard({ thought }: ThoughtCardProps) {
   const displayContent =
     isLong && !expanded ? thought.content.slice(0, TRUNCATE) + "…" : thought.content;
 
+  const imgGridCols =
+    images.length === 1 ? "grid-cols-1" : images.length === 2 ? "grid-cols-2" : "grid-cols-3";
+
   function handleDelete() {
     startTransition(async () => {
       await deleteThought(thought.id);
     });
   }
-
-  const imgGridCols =
-    images.length === 1 ? "grid-cols-1" : images.length === 2 ? "grid-cols-2" : "grid-cols-3";
 
   return (
     <>
@@ -60,7 +62,7 @@ export function ThoughtCard({ thought }: ThoughtCardProps) {
           {formatDate(thought.createdAt)}
         </p>
 
-        {/* Text content */}
+        {/* Text */}
         {thought.content && (
           <div className="mb-3">
             <p
@@ -76,13 +78,9 @@ export function ThoughtCard({ thought }: ThoughtCardProps) {
                 style={{ color: "var(--accent-purple)" }}
               >
                 {expanded ? (
-                  <>
-                    <ChevronUp size={12} /> Pokaż mniej
-                  </>
+                  <><ChevronUp size={12} /> Pokaż mniej</>
                 ) : (
-                  <>
-                    <ChevronDown size={12} /> Pokaż więcej
-                  </>
+                  <><ChevronDown size={12} /> Pokaż więcej</>
                 )}
               </button>
             )}
@@ -91,48 +89,79 @@ export function ThoughtCard({ thought }: ThoughtCardProps) {
 
         {/* Image grid */}
         {images.length > 0 && (
-          <div className={`grid gap-1.5 ${imgGridCols}`}>
-            {images.map((img) => (
-              <img
-                key={img.id}
-                src={img.url}
-                alt={img.filename}
-                loading="lazy"
-                className="w-full rounded cursor-pointer object-cover"
-                style={{
-                  maxHeight: images.length === 1 ? "480px" : "140px",
-                  border: "1px solid var(--border)",
-                }}
-                onClick={() => setLightboxUrl(img.url)}
-              />
-            ))}
+          <div>
+            <div className={`grid gap-1.5 ${imgGridCols}`}>
+              {images.map((img) => (
+                <img
+                  key={img.id}
+                  src={img.url}
+                  alt={img.filename}
+                  loading="lazy"
+                  className="w-full rounded cursor-pointer object-cover"
+                  style={{
+                    maxHeight: images.length === 1 ? "480px" : "140px",
+                    border: "1px solid var(--border)",
+                  }}
+                  onClick={() => setLightboxUrl(img.url)}
+                />
+              ))}
+            </div>
+            {/* Drive links for images */}
+            {images.some((img) => img.driveFileId) && (
+              <div className="flex flex-wrap gap-2 mt-1.5">
+                {images.map((img) =>
+                  img.driveFileId ? (
+                    <a
+                      key={img.id}
+                      href={driveViewUrl(img.driveFileId)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                      title="Otwórz w Google Drive"
+                    >
+                      <ExternalLink size={11} />
+                      {images.length > 1 ? img.filename : "Otwórz w Google Drive"}
+                    </a>
+                  ) : null
+                )}
+              </div>
+            )}
           </div>
         )}
 
         {/* File attachments */}
         {files.length > 0 && (
           <div className="flex flex-col gap-1 mt-2">
-            {files.map((file) => (
-              <a
-                key={file.id}
-                href={file.url}
-                download={file.filename}
-                className="flex items-center gap-2 px-3 py-2 rounded text-sm"
-                style={{
-                  backgroundColor: "var(--bg-elevated)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-secondary)",
-                }}
-              >
-                <Paperclip size={13} style={{ flexShrink: 0 }} />
-                <span className="truncate flex-1">{file.filename}</span>
-                {file.size != null && (
-                  <span className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>
-                    {formatSize(file.size)}
+            {files.map((file) => {
+              const href = file.driveFileId
+                ? driveViewUrl(file.driveFileId)
+                : file.url;
+              return (
+                <a
+                  key={file.id}
+                  href={href}
+                  target={file.driveFileId ? "_blank" : undefined}
+                  download={file.driveFileId ? undefined : file.filename}
+                  rel={file.driveFileId ? "noopener noreferrer" : undefined}
+                  className="flex items-center gap-2 px-3 py-2 rounded text-sm"
+                  style={{
+                    backgroundColor: "var(--bg-elevated)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  <Paperclip size={13} style={{ flexShrink: 0 }} />
+                  <span className="truncate flex-1">{file.filename}</span>
+                  <span className="flex items-center gap-1 flex-shrink-0" style={{ color: "var(--text-muted)" }}>
+                    {file.size != null && (
+                      <span className="text-xs">{formatSize(file.size)}</span>
+                    )}
+                    {file.driveFileId && <ExternalLink size={11} />}
                   </span>
-                )}
-              </a>
-            ))}
+                </a>
+              );
+            })}
           </div>
         )}
 

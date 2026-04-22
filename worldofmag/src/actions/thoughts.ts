@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 interface AttachmentInput {
   type: string;
   url: string;
+  driveFileId?: string | null;
   filename: string;
   mimeType: string;
   size?: number | null;
@@ -19,6 +20,7 @@ export async function createThought(content: string, attachments: AttachmentInpu
         create: attachments.map((a) => ({
           type: a.type,
           url: a.url,
+          driveFileId: a.driveFileId ?? null,
           filename: a.filename,
           mimeType: a.mimeType,
           size: a.size ?? null,
