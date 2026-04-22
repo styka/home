@@ -117,9 +117,16 @@ export function ListPicker({ allLists, currentListId }: ListPickerProps) {
               onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = ""; }}
             >
               <ShoppingCart size={12} className="flex-shrink-0" />
-              <Link href={`/shopping/${list.id}`} className="flex-1 text-xs truncate focus:outline-none">
-                {list.name}
-              </Link>
+              <div className="flex-1 min-w-0">
+                <Link href={`/shopping/${list.id}`} className="block text-xs truncate focus:outline-none">
+                  {list.name}
+                </Link>
+                {list.ownerTeam && (
+                  <span className="block text-xs truncate" style={{ color: "var(--text-muted)", fontSize: 10 }}>
+                    {list.ownerTeam.name}
+                  </span>
+                )}
+              </div>
               <div className="hidden group-hover:flex items-center gap-0.5">
                 <button
                   onClick={() => startRename(list)}

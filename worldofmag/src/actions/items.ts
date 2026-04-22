@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { categorize } from "@/lib/categorize";
 import { parseQuantity } from "@/lib/parseQuantity";
+import { assertListAccess } from "@/actions/lists";
 import type { Item, ItemStatus, ItemHistory } from "@/types";
 import type { Item as PrismaItem } from "@prisma/client";
 
@@ -11,7 +13,16 @@ function toItem(p: PrismaItem): Item {
   return p as unknown as Item;
 }
 
+async function requireAuth() {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  return session.user as { id: string };
+}
+
 export async function addItem(listId: string, rawText: string): Promise<Item> {
+  const user = await requireAuth();
+  await assertListAccess(listId, user.id);
+
   const { name, quantity, unit } = parseQuantity(rawText.trim());
   const category = categorize(name);
 
@@ -19,7 +30,6 @@ export async function addItem(listId: string, rawText: string): Promise<Item> {
     data: { listId, name, quantity, unit, category },
   });
 
-  // upsert history for autocomplete
   await prisma.itemHistory.upsert({
     where: { name: name.toLowerCase() },
     update: {
@@ -28,11 +38,7 @@ export async function addItem(listId: string, rawText: string): Promise<Item> {
       unit: unit ?? undefined,
       updatedAt: new Date(),
     },
-    create: {
-      name: name.toLowerCase(),
-      category,
-      unit: unit ?? null,
-    },
+    create: { name: name.toLowerCase(), category, unit: unit ?? null },
   });
 
   revalidatePath(`/shopping/${listId}`);
@@ -40,6 +46,11 @@ export async function addItem(listId: string, rawText: string): Promise<Item> {
 }
 
 export async function updateItemStatus(id: string, status: ItemStatus): Promise<Item> {
+  const user = await requireAuth();
+  const existing = await prisma.item.findUnique({ where: { id } });
+  if (!existing) throw new Error("Item not found");
+  await assertListAccess(existing.listId, user.id);
+
   const item = await prisma.item.update({ where: { id }, data: { status } });
   revalidatePath(`/shopping/${item.listId}`);
   return toItem(item);
@@ -49,26 +60,36 @@ export async function updateItem(
   id: string,
   patch: { name?: string; quantity?: number | null; unit?: string | null; notes?: string | null; priority?: number }
 ): Promise<Item> {
-  if (patch.name) {
-    patch = { ...patch, name: patch.name.trim() };
-  }
+  const user = await requireAuth();
+  const existing = await prisma.item.findUnique({ where: { id } });
+  if (!existing) throw new Error("Item not found");
+  await assertListAccess(existing.listId, user.id);
+
+  if (patch.name) patch = { ...patch, name: patch.name.trim() };
   const item = await prisma.item.update({ where: { id }, data: patch });
   revalidatePath(`/shopping/${item.listId}`);
   return toItem(item);
 }
 
 export async function deleteItem(id: string): Promise<void> {
+  const user = await requireAuth();
   const item = await prisma.item.findUnique({ where: { id } });
+  if (!item) return;
+  await assertListAccess(item.listId, user.id);
   await prisma.item.delete({ where: { id } });
-  if (item) revalidatePath(`/shopping/${item.listId}`);
+  revalidatePath(`/shopping/${item.listId}`);
 }
 
 export async function clearDoneItems(listId: string): Promise<void> {
+  const user = await requireAuth();
+  await assertListAccess(listId, user.id);
   await prisma.item.deleteMany({ where: { listId, status: "DONE" } });
   revalidatePath(`/shopping/${listId}`);
 }
 
 export async function markAllInCart(listId: string): Promise<void> {
+  const user = await requireAuth();
+  await assertListAccess(listId, user.id);
   await prisma.item.updateMany({
     where: { listId, status: "NEEDED" },
     data: { status: "IN_CART" },

@@ -137,7 +137,7 @@ export function ShoppingPage({ list, allLists }: ShoppingPageProps) {
                     value={l.id}
                     style={{ backgroundColor: "#1c1c1c", color: "var(--text-primary)" }}
                   >
-                    {l.name}
+                    {l.ownerTeam ? `${l.name} (${l.ownerTeam.name})` : l.name}
                   </option>
                 ))}
               </select>

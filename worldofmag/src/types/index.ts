@@ -1,6 +1,10 @@
-import type { Item as PrismaItem, ShoppingList, ItemHistory } from "@prisma/client";
+import type { Item as PrismaItem, ShoppingList as PrismaShoppingList, ItemHistory } from "@prisma/client";
 
-export type { ShoppingList, ItemHistory };
+export type { ItemHistory };
+
+export type ShoppingList = PrismaShoppingList & {
+  ownerTeam?: { id: string; name: string } | null;
+};
 
 export type ItemStatus = "NEEDED" | "IN_CART" | "DONE" | "MISSING";
 
