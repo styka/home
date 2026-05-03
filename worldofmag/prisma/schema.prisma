@@ -21,13 +21,16 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts          Account[]
-  sessions          Session[]
-  ownedTeams        Team[]           @relation("TeamOwner")
-  teamMemberships   TeamMember[]
-  sentInvitations   TeamInvitation[] @relation("InvitedBy")
+  accounts            Account[]
+  sessions            Session[]
+  ownedTeams          Team[]           @relation("TeamOwner")
+  teamMemberships     TeamMember[]
+  sentInvitations     TeamInvitation[] @relation("InvitedBy")
   receivedInvitations TeamInvitation[] @relation("InvitedUser")
-  ownedLists        ShoppingList[]
+  ownedLists          ShoppingList[]
+  ownedActions        Action[]         @relation("UserOwnedActions")
+  grantsCreated       Share[]          @relation("ShareGrantor")
+  sharesReceived      Share[]          @relation("ShareRecipientUser")
 }
 
 model Account {
@@ -77,12 +80,14 @@ model Team {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner       User             @relation("TeamOwner", fields: [ownerId], references: [id])
-  parentTeam  Team?            @relation("SubTeams", fields: [parentTeamId], references: [id])
-  subTeams    Team[]           @relation("SubTeams")
-  members     TeamMember[]
-  invitations TeamInvitation[]
-  lists       ShoppingList[]   @relation("TeamLists")
+  owner          User             @relation("TeamOwner", fields: [ownerId], references: [id])
+  parentTeam     Team?            @relation("SubTeams", fields: [parentTeamId], references: [id])
+  subTeams       Team[]           @relation("SubTeams")
+  members        TeamMember[]
+  invitations    TeamInvitation[]
+  lists          ShoppingList[]   @relation("TeamLists")
+  ownedActions   Action[]         @relation("TeamOwnedActions")
+  sharesReceived Share[]          @relation("ShareRecipientTeam")
 }
 
 model TeamMember {
@@ -151,4 +156,75 @@ model ItemHistory {
   unit      String?
   useCount  Int      @default(1)
   updatedAt DateTime @updatedAt
+}
+
+// ─── Sharing ──────────────────────────────────────────────────────────────
+
+model Share {
+  id              String   @id @default(cuid())
+  resourceType    String   // "ShoppingList" | "Action"
+  resourceId      String
+  permission      String   @default("VIEW")  // "VIEW" | "EDIT" | "MANAGE"
+  grantedById     String
+  recipientUserId String?
+  recipientTeamId String?
+  createdAt       DateTime @default(now())
+
+  grantedBy     User  @relation("ShareGrantor",       fields: [grantedById],     references: [id])
+  recipientUser User? @relation("ShareRecipientUser", fields: [recipientUserId], references: [id])
+  recipientTeam Team? @relation("ShareRecipientTeam", fields: [recipientTeamId], references: [id])
+
+  @@index([resourceType, resourceId])
+  @@index([recipientUserId])
+  @@index([recipientTeamId])
+}
+
+// ─── Quick Actions ────────────────────────────────────────────────────────
+
+model ActionComponent {
+  id            String  @id @default(cuid())
+  name          String  @unique
+  type          String  // "LINK_BUTTON" | "WEATHER_GENERATOR"
+  description   String?
+  isBuiltIn     Boolean @default(false)
+  defaultParams String? // JSON: {"url":"https://onet.pl","label":"Onet"}
+
+  actions Action[]
+}
+
+model Action {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("ACTIVE")  // "ACTIVE" | "IN_PROGRESS" | "DONE" | "ARCHIVED"
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  componentId String
+  params      String?   // JSON: component-specific parameters
+
+  isRecurring      Boolean   @default(false)
+  recurPattern     String?   // "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
+  recurInterval    Int?
+  recurDaysOfWeek  String?   // JSON array "[1,3,5]"
+  recurDayOfMonth  Int?
+  recurMonthOfYear Int?
+  nextDueDateBasis String?   // "PLANNED" | "COMPLETION"
+  nextDueDate      DateTime?
+  lastAdvancedAt   DateTime?
+
+  ownerUserId String?
+  ownerTeamId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  component ActionComponent @relation(fields: [componentId], references: [id])
+  ownerUser User?  @relation("UserOwnedActions", fields: [ownerUserId], references: [id])
+  ownerTeam Team?  @relation("TeamOwnedActions", fields: [ownerTeamId], references: [id])
+
+  @@index([ownerUserId])
+  @@index([ownerTeamId])
+  @@index([status])
+  @@index([dueDate])
 }

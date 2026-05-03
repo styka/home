@@ -46,3 +46,22 @@ export interface ShortcutHandlers {
   onCommandPalette: () => void;
   onEscape: () => void;
 }
+
+// ─── User management ──────────────────────────────────────────────────────
+
+export type UserRole = "ADMIN" | "USER"
+export type TeamMemberRole = "OWNER" | "ADMIN" | "MEMBER"
+export type InvitationStatus = "PENDING" | "ACCEPTED" | "REJECTED"
+export type SharePermission = "VIEW" | "EDIT" | "MANAGE"
+export type ResourceType = "ShoppingList" | "Action"
+
+// "user:me" = własna przestrzeń, "team:<id>" = przestrzeń teamu, "all" = wszystko
+export type WorkspaceId = "user:me" | `team:${string}` | "all"
+
+// ─── Quick Actions ────────────────────────────────────────────────────────
+
+export type ActionStatus = "ACTIVE" | "IN_PROGRESS" | "DONE" | "ARCHIVED"
+export type ActionComponentType = "LINK_BUTTON" | "WEATHER_GENERATOR"
+export type RecurPattern = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
+export type NextDueDateBasis = "PLANNED" | "COMPLETION"
+

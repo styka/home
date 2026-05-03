@@ -29,17 +29,32 @@ const COMMON_ITEMS = [
   "pasta do zębów", "szampon", "płyn do naczyń", "papier toaletowy", "mydło",
 ];
 
+const ACTION_COMPONENTS = [
+  {
+    name: "Onet.pl",
+    type: "LINK_BUTTON",
+    isBuiltIn: true,
+    defaultParams: JSON.stringify({ url: "https://onet.pl", label: "Onet" }),
+    description: "Otwiera Onet.pl w nowej karcie",
+  },
+  {
+    name: "WP.pl",
+    type: "LINK_BUTTON",
+    isBuiltIn: true,
+    defaultParams: JSON.stringify({ url: "https://wp.pl", label: "WP" }),
+    description: "Otwiera WP.pl w nowej karcie",
+  },
+  {
+    name: "Losowa Pogoda",
+    type: "WEATHER_GENERATOR",
+    isBuiltIn: true,
+    defaultParams: null,
+    description: "Losuje zabawną prognozę pogody",
+  },
+];
+
 async function main() {
   console.log("Seeding database…");
-
-  // Create default list
-  const list = await prisma.shoppingList.upsert({
-    where: { id: "default" },
-    update: {},
-    create: { id: "default", name: "Zakupy" },
-  });
-
-  console.log(`Created list: ${list.name}`);
 
   // Seed ItemHistory for autocomplete
   for (const name of COMMON_ITEMS) {
@@ -55,6 +70,17 @@ async function main() {
   }
 
   console.log(`Seeded ${COMMON_ITEMS.length} history items`);
+
+  // Seed built-in ActionComponents
+  for (const component of ACTION_COMPONENTS) {
+    await prisma.actionComponent.upsert({
+      where: { name: component.name },
+      update: {},
+      create: component,
+    });
+  }
+
+  console.log(`Seeded ${ACTION_COMPONENTS.length} action components`);
   console.log("Done.");
 }
 
