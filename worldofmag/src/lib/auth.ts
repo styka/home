@@ -1,33 +1,38 @@
 import NextAuth from "next-auth"
-import Google from "next-auth/providers/google"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
+import { authConfig } from "@/auth.config"
 
 const ADMIN_EMAIL = "tyka.szymon@gmail.com"
 
-// NextAuth v5 throws MissingSecret during build if AUTH_SECRET is not set.
-// Provide a placeholder so the build succeeds; real value must be set on Render.
 if (!process.env.AUTH_SECRET) {
   process.env.AUTH_SECRET = "build-time-placeholder-set-real-value-on-render"
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
-  providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-    }),
-  ],
-  session: { strategy: "database" },
-  pages: {
-    signIn: "/auth/signin",
-  },
+  // JWT strategy: session lives in a signed cookie — no DB lookup needed in middleware.
+  // The Prisma adapter is still used to create/link User & Account records.
+  session: { strategy: "jwt" },
   callbacks: {
-    async session({ session, user }) {
-      session.user.id = user.id
-      // @ts-ignore — role is our custom field
-      session.user.role = (user as any).role ?? "USER"
+    async jwt({ token, user }) {
+      if (user) {
+        // First sign-in: user object is populated, fetch role from DB
+        token.id = user.id
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { role: true },
+        })
+        token.role = dbUser?.role ?? "USER"
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id as string
+        session.user.role = (token.role as string) ?? "USER"
+      }
       return session
     },
   },

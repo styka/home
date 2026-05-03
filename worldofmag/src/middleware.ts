@@ -1,15 +1,10 @@
-import { auth } from "@/lib/auth"
-import { NextResponse } from "next/server"
+import NextAuth from "next-auth"
+import { authConfig } from "@/auth.config"
 
-export default auth((req) => {
-  const isLoggedIn = !!req.auth
-  const isAuthPage = req.nextUrl.pathname.startsWith("/auth")
-
-  if (!isLoggedIn && !isAuthPage) {
-    return NextResponse.redirect(new URL("/auth/signin", req.url))
-  }
-  return NextResponse.next()
-})
+// Middleware runs in Edge Runtime — only use the edge-compatible authConfig
+// (no PrismaClient, no Node.js-only imports).
+export const { auth: middleware } = NextAuth(authConfig)
+export default middleware
 
 export const config = {
   matcher: ["/((?!api/auth|_next/static|_next/image|icons|manifest\\.json|sw\\.js).*)"],
