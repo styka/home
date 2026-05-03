@@ -90,27 +90,27 @@ export default function SignInPage() {
           background: #1a1a1a;
           border: 1px solid #2a2a2a;
           border-radius: 10px;
-          padding: 16px;
+          padding: 20px;
           transition: border-color 0.2s;
         }
         .signin-feature-card:hover {
           border-color: #3a3a3a;
         }
         .signin-feature-icon {
-          font-size: 22px;
-          margin-bottom: 8px;
+          font-size: 28px;
+          margin-bottom: 10px;
           display: block;
         }
         .signin-feature-label {
-          font-size: 13px;
+          font-size: 15px;
           font-weight: 600;
           color: #e0e0e0;
-          margin-bottom: 3px;
+          margin-bottom: 5px;
         }
         .signin-feature-desc {
-          font-size: 12px;
-          color: #606060;
-          line-height: 1.4;
+          font-size: 13px;
+          color: #707070;
+          line-height: 1.5;
         }
 
         /* ── Right / card panel ──────────────────────────────── */
