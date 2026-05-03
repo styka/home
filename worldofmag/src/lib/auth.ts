@@ -5,12 +5,18 @@ import { prisma } from "@/lib/prisma"
 
 const ADMIN_EMAIL = "tyka.szymon@gmail.com"
 
+// NextAuth v5 throws MissingSecret during build if AUTH_SECRET is not set.
+// Provide a placeholder so the build succeeds; real value must be set on Render.
+if (!process.env.AUTH_SECRET) {
+  process.env.AUTH_SECRET = "build-time-placeholder-set-real-value-on-render"
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
     }),
   ],
   session: { strategy: "database" },
