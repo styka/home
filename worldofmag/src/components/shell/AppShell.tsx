@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
+import { BuildInfo } from "./BuildInfo";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -196,6 +197,8 @@ export function AppShell({ children, invitationCount = 0 }: AppShellProps) {
                 <span>Ustawienia</span>
               </Link>
             </div>
+
+            <BuildInfo />
           </div>
         </div>
       )}

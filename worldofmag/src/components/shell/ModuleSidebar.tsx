@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { BuildInfo } from "./BuildInfo";
 
 interface Module {
   id: string;
@@ -168,6 +169,8 @@ export function ModuleSidebar({ invitationCount = 0 }: ModuleSidebarProps) {
           <span>Ustawienia</span>
         </Link>
       </div>
+
+      <BuildInfo />
     </aside>
   );
 }
