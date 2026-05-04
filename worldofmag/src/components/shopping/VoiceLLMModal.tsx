@@ -89,17 +89,20 @@ export function VoiceLLMModal({ open, onClose, listId }: VoiceLLMModalProps) {
     rec.interimResults = true;
 
     rec.onresult = (e: ISpeechResult) => {
-      let interim = "";
-      let final = "";
+      let newFinal = "";
+      let currentInterim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         if (e.results[i].isFinal) {
-          final += e.results[i][0].transcript + " ";
+          newFinal += e.results[i][0].transcript + " ";
         } else {
-          interim += e.results[i][0].transcript;
+          currentInterim += e.results[i][0].transcript;
         }
       }
-      setTranscript((prev) => prev + final);
-      setText((prev) => prev + final + interim);
+      setTranscript((prev) => {
+        const updated = prev + newFinal;
+        setText(updated + currentInterim);
+        return updated;
+      });
     };
 
     rec.onerror = (e: ISpeechError) => {
