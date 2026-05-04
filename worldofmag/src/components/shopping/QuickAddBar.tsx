@@ -6,10 +6,12 @@ import type { Product } from "@/types";
 import { UNITS } from "@/types";
 import { addItemStructured } from "@/actions/items";
 import { getProductSuggestions } from "@/actions/products";
+import { categorize } from "@/lib/categorize";
 import { VoiceLLMModal } from "./VoiceLLMModal";
 
 interface QuickAddBarProps {
   listId: string;
+  categoryNames: string[];
 }
 
 export interface QuickAddBarHandle {
@@ -17,10 +19,12 @@ export interface QuickAddBarHandle {
 }
 
 export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
-  function QuickAddBar({ listId }, ref) {
+  function QuickAddBar({ listId, categoryNames }, ref) {
     const [name, setName] = useState("");
     const [qty, setQty] = useState("");
     const [unit, setUnit] = useState("");
+    const [category, setCategory] = useState("");
+    const [categoryUserSet, setCategoryUserSet] = useState(false);
     const [suggestions, setSuggestions] = useState<Product[]>([]);
     const [suggestionIndex, setSuggestionIndex] = useState(-1);
     const [isPending, startTransition] = useTransition();
@@ -32,6 +36,14 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
     useImperativeHandle(ref, () => ({
       focus: () => nameRef.current?.focus(),
     }));
+
+    // Auto-suggest category from product name when user hasn't manually chosen one
+    useEffect(() => {
+      if (categoryUserSet) return;
+      if (!name.trim()) { setCategory(""); return; }
+      const suggested = categorize(name.trim());
+      setCategory(suggested === "Other" ? "" : suggested);
+    }, [name, categoryUserSet]);
 
     useEffect(() => {
       clearTimeout(debounceRef.current);
@@ -47,6 +59,8 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
     function selectSuggestion(product: Product) {
       setName(product.name);
       if (product.defaultUnit) setUnit(product.defaultUnit);
+      setCategory(product.category);
+      setCategoryUserSet(true);
       setSuggestions([]);
       setSuggestionIndex(-1);
       qtyRef.current?.focus();
@@ -56,12 +70,15 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
       if (!name.trim()) return;
       const parsedQty = qty.trim() ? parseFloat(qty.trim()) : null;
       const parsedUnit = unit.trim() || null;
+      const parsedCategory = category.trim() || undefined;
       startTransition(() => {
-        addItemStructured(listId, name.trim(), parsedQty, parsedUnit);
+        addItemStructured(listId, name.trim(), parsedQty, parsedUnit, parsedCategory);
       });
       setName("");
       setQty("");
       setUnit("");
+      setCategory("");
+      setCategoryUserSet(false);
       setSuggestions([]);
       setSuggestionIndex(-1);
       setTimeout(() => nameRef.current?.focus(), 50);
@@ -80,7 +97,7 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
           selectSuggestion(suggestions[suggestionIndex]);
         } else {
           setSuggestions([]);
-          qtyRef.current?.focus();
+          submit();
         }
       } else if (e.key === "Tab" && suggestions.length > 0) {
         e.preventDefault();
@@ -90,36 +107,73 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
         if (suggestions.length > 0) {
           setSuggestions([]);
         } else {
-          setName(""); setQty(""); setUnit("");
+          setName(""); setQty(""); setUnit(""); setCategory(""); setCategoryUserSet(false);
           nameRef.current?.blur();
         }
       }
     }
 
-    function handleQtyKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    function handleFieldKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
       if (e.key === "Enter") { e.preventDefault(); submit(); }
       if (e.key === "Escape") { nameRef.current?.focus(); }
     }
 
-    function handleUnitKeyDown(e: React.KeyboardEvent<HTMLSelectElement | HTMLInputElement>) {
-      if (e.key === "Enter") { e.preventDefault(); submit(); }
-      if (e.key === "Escape") { nameRef.current?.focus(); }
-    }
+    const borderColor = "var(--border)";
 
     return (
       <>
         <div
           className="relative border-b"
-          style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
+          style={{ borderColor, backgroundColor: "var(--bg-surface)" }}
         >
-          <div className="flex flex-col md:flex-row md:items-center gap-0">
-            {/* Name input */}
-            <div className="flex items-center gap-2 px-4 py-2 flex-1">
-              {isPending ? (
-                <Loader2 size={15} className="animate-spin flex-shrink-0" style={{ color: "var(--accent-blue)" }} />
-              ) : (
-                <Plus size={15} className="flex-shrink-0" style={{ color: "var(--text-muted)" }} />
-              )}
+          <div className="flex flex-col md:flex-row md:items-center">
+
+            {/* Row 1 (mobile) / Left section (desktop): qty + unit + category */}
+            <div
+              className="flex items-center gap-2 px-4 py-2 md:border-r flex-shrink-0"
+              style={{ borderColor }}
+            >
+              {/* Desktop: icon before qty */}
+              <span className="hidden md:inline-flex items-center flex-shrink-0" style={{ color: "var(--text-muted)" }}>
+                {isPending
+                  ? <Loader2 size={15} className="animate-spin" style={{ color: "var(--accent-blue)" }} />
+                  : <Plus size={15} />
+                }
+              </span>
+
+              <input
+                ref={qtyRef}
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
+                onKeyDown={handleFieldKeyDown}
+                placeholder="Ilość"
+                type="number"
+                min="0"
+                step="any"
+                className="bg-transparent mono text-sm text-right focus:outline-none"
+                style={{ width: 52, color: "var(--text-secondary)", caretColor: "var(--accent-blue)" }}
+              />
+
+              <UnitInput value={unit} onChange={setUnit} onKeyDown={handleFieldKeyDown} />
+
+              <CategoryInput
+                value={category}
+                onChange={(v) => { setCategory(v); setCategoryUserSet(!!v); }}
+                onKeyDown={handleFieldKeyDown}
+                options={categoryNames}
+              />
+            </div>
+
+            {/* Row 2 (mobile) / Right section (desktop): icon + name + buttons */}
+            <div className="flex items-center gap-2 px-4 pb-2 md:py-2 md:px-3 md:flex-1">
+              {/* Mobile: icon */}
+              <span className="md:hidden flex-shrink-0" style={{ color: "var(--text-muted)" }}>
+                {isPending
+                  ? <Loader2 size={15} className="animate-spin" style={{ color: "var(--accent-blue)" }} />
+                  : <Plus size={15} />
+                }
+              </span>
+
               <input
                 ref={nameRef}
                 value={name}
@@ -131,32 +185,11 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
                 autoComplete="off"
                 spellCheck={false}
               />
-            </div>
-
-            {/* Qty + unit + buttons */}
-            <div
-              className="flex items-center gap-2 px-4 pb-2 md:py-2 md:px-3 md:border-l"
-              style={{ borderColor: "var(--border)" }}
-            >
-              <input
-                ref={qtyRef}
-                value={qty}
-                onChange={(e) => setQty(e.target.value)}
-                onKeyDown={handleQtyKeyDown}
-                placeholder="Ilość"
-                type="number"
-                min="0"
-                step="any"
-                className="bg-transparent mono text-sm text-right focus:outline-none"
-                style={{ width: 52, color: "var(--text-secondary)", caretColor: "var(--accent-blue)" }}
-              />
-
-              <UnitInput value={unit} onChange={setUnit} onKeyDown={handleUnitKeyDown} />
 
               <button
                 onClick={submit}
                 disabled={!name.trim() || isPending}
-                className="flex items-center justify-center rounded px-2 py-1 text-xs font-medium focus:outline-none disabled:opacity-40"
+                className="flex items-center justify-center rounded px-2 py-1 text-xs font-medium focus:outline-none disabled:opacity-40 flex-shrink-0"
                 style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
                 title="Dodaj (Enter)"
               >
@@ -165,7 +198,7 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
 
               <button
                 onClick={() => setShowVoice(true)}
-                className="flex items-center justify-center rounded p-1.5 focus:outline-none"
+                className="flex items-center justify-center rounded p-1.5 focus:outline-none flex-shrink-0"
                 style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-elevated)" }}
                 title="Dodaj głosem / przez LLM"
                 type="button"
@@ -214,7 +247,12 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
           )}
         </div>
 
-        <VoiceLLMModal open={showVoice} onClose={() => setShowVoice(false)} listId={listId} />
+        <VoiceLLMModal
+          open={showVoice}
+          onClose={() => setShowVoice(false)}
+          listId={listId}
+          categoryNames={categoryNames}
+        />
       </>
     );
   }
@@ -243,6 +281,41 @@ function UnitInput({ value, onChange, onKeyDown }: UnitInputProps) {
       <datalist id={listId}>
         {UNITS.map((u) => (
           <option key={u.value} value={u.value} />
+        ))}
+      </datalist>
+    </>
+  );
+}
+
+interface CategoryInputProps {
+  value: string;
+  onChange: (v: string) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  options: string[];
+}
+
+function CategoryInput({ value, onChange, onKeyDown, options }: CategoryInputProps) {
+  const listId = useId();
+  return (
+    <>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        list={listId}
+        placeholder="Kategoria"
+        autoComplete="off"
+        className="bg-transparent mono text-xs focus:outline-none flex-1 md:flex-none"
+        style={{
+          minWidth: 80,
+          maxWidth: 140,
+          color: value ? "var(--text-secondary)" : "var(--text-muted)",
+          caretColor: "var(--accent-blue)",
+        }}
+      />
+      <datalist id={listId}>
+        {options.map((c) => (
+          <option key={c} value={c} />
         ))}
       </datalist>
     </>

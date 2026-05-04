@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useRef, useEffect, useTransition } from "react";
+import { useState, useRef, useEffect, useTransition, useId } from "react";
 import { Mic, MicOff, Loader2, X, Plus, CheckSquare, Square } from "lucide-react";
 import { UNITS } from "@/types";
 import { addItemStructured } from "@/actions/items";
 import { upsertUserProduct, getProductSuggestions } from "@/actions/products";
+import { categorize } from "@/lib/categorize";
 import { cn } from "@/lib/cn";
 
 interface ParsedRow {
   name: string;
   quantity: number | null;
   unit: string;
+  category: string;
   selected: boolean;
   addToCatalog: boolean;
   isNew: boolean;
@@ -20,6 +22,7 @@ interface VoiceLLMModalProps {
   open: boolean;
   onClose: () => void;
   listId: string;
+  categoryNames: string[];
 }
 
 // Web Speech API types (not in TS lib.dom.d.ts for all browsers)
@@ -46,7 +49,7 @@ declare global {
   }
 }
 
-export function VoiceLLMModal({ open, onClose, listId }: VoiceLLMModalProps) {
+export function VoiceLLMModal({ open, onClose, listId, categoryNames }: VoiceLLMModalProps) {
   const [text, setText] = useState("");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,6 +59,8 @@ export function VoiceLLMModal({ open, onClose, listId }: VoiceLLMModalProps) {
   const [isPending, startTransition] = useTransition();
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const unitDatalistId = useId();
+  const categoryDatalistId = useId();
 
   useEffect(() => {
     if (open) {
@@ -156,10 +161,12 @@ export function VoiceLLMModal({ open, onClose, listId }: VoiceLLMModalProps) {
           const isNew = suggestions.length === 0 || !suggestions.some(
             (s) => s.name.toLowerCase() === p.name.toLowerCase()
           );
+          const suggestedCategory = categorize(p.name);
           return {
             name: p.name,
             quantity: p.quantity,
             unit: p.unit ?? "",
+            category: suggestedCategory === "Other" ? "" : suggestedCategory,
             selected: true,
             addToCatalog: isNew,
             isNew,
@@ -185,9 +192,9 @@ export function VoiceLLMModal({ open, onClose, listId }: VoiceLLMModalProps) {
 
     startTransition(async () => {
       for (const row of toAdd) {
-        await addItemStructured(listId, row.name, row.quantity, row.unit || null);
+        await addItemStructured(listId, row.name, row.quantity, row.unit || null, row.category || undefined);
         if (row.addToCatalog) {
-          await upsertUserProduct(row.name, row.unit || null);
+          await upsertUserProduct(row.name, row.unit || null, row.category || undefined);
         }
       }
     });
@@ -196,12 +203,6 @@ export function VoiceLLMModal({ open, onClose, listId }: VoiceLLMModalProps) {
   }
 
   if (!open) return null;
-
-  const unitDatalist = (
-    <datalist id="vlm-unit-datalist">
-      {UNITS.map((u) => <option key={u.value} value={u.value} />)}
-    </datalist>
-  );
 
   return (
     <div
@@ -340,7 +341,7 @@ export function VoiceLLMModal({ open, onClose, listId }: VoiceLLMModalProps) {
                   value={row.quantity ?? ""}
                   onChange={(e) => updateRow(i, { quantity: e.target.value ? parseFloat(e.target.value) : null })}
                   className="bg-transparent mono text-xs text-right focus:outline-none"
-                  style={{ width: 48, color: "var(--text-secondary)", border: `1px solid var(--border)`, borderRadius: 4, padding: "1px 4px" }}
+                  style={{ width: 40, color: "var(--text-secondary)", border: `1px solid var(--border)`, borderRadius: 4, padding: "1px 4px" }}
                   placeholder="qty"
                 />
 
@@ -349,13 +350,32 @@ export function VoiceLLMModal({ open, onClose, listId }: VoiceLLMModalProps) {
                   type="text"
                   value={row.unit}
                   onChange={(e) => updateRow(i, { unit: e.target.value })}
-                  list="vlm-unit-datalist"
+                  list={unitDatalistId}
                   placeholder="jedn."
                   autoComplete="off"
                   className="bg-transparent mono text-xs focus:outline-none"
                   style={{
                     color: "var(--text-secondary)",
-                    width: 64,
+                    width: 56,
+                    border: `1px solid var(--border)`,
+                    borderRadius: 4,
+                    padding: "1px 4px",
+                    backgroundColor: "var(--bg-elevated)",
+                  }}
+                />
+
+                {/* Category */}
+                <input
+                  type="text"
+                  value={row.category}
+                  onChange={(e) => updateRow(i, { category: e.target.value })}
+                  list={categoryDatalistId}
+                  placeholder="kat."
+                  autoComplete="off"
+                  className="bg-transparent mono text-xs focus:outline-none"
+                  style={{
+                    color: row.category ? "var(--text-secondary)" : "var(--text-muted)",
+                    width: 72,
                     border: `1px solid var(--border)`,
                     borderRadius: 4,
                     padding: "1px 4px",
@@ -384,7 +404,13 @@ export function VoiceLLMModal({ open, onClose, listId }: VoiceLLMModalProps) {
           </div>
         )}
 
-        {unitDatalist}
+        {/* Shared datalists */}
+        <datalist id={unitDatalistId}>
+          {UNITS.map((u) => <option key={u.value} value={u.value} />)}
+        </datalist>
+        <datalist id={categoryDatalistId}>
+          {categoryNames.map((c) => <option key={c} value={c} />)}
+        </datalist>
 
         {/* Footer */}
         {rows.length > 0 && (

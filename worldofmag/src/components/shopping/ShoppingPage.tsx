@@ -20,9 +20,10 @@ interface ShoppingPageProps {
   list: ShoppingListWithItems;
   allLists: ShoppingList[];
   categoryEmojiMap?: Record<string, string>;
+  categoryNames?: string[];
 }
 
-export function ShoppingPage({ list, allLists, categoryEmojiMap }: ShoppingPageProps) {
+export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }: ShoppingPageProps) {
   const router = useRouter();
   const { toggle: togglePalette } = useCommandPalette();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
@@ -168,7 +169,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap }: ShoppingPageP
 
         {/* Main content — full width on mobile */}
         <div className="flex flex-col flex-1 overflow-hidden min-w-0">
-          <QuickAddBar ref={quickAddRef} listId={list.id} />
+          <QuickAddBar ref={quickAddRef} listId={list.id} categoryNames={categoryNames ?? []} />
 
           {isSearchOpen && (
             <SearchBar

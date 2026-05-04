@@ -104,27 +104,28 @@ export async function addItemStructured(
   listId: string,
   name: string,
   quantity: number | null,
-  unit: string | null
+  unit: string | null,
+  category?: string
 ): Promise<Item> {
   const user = await requireAuth();
   await assertListAccess(listId, user.id);
 
   const trimmedName = name.trim().toLowerCase();
-  const category = categorize(trimmedName);
+  const resolvedCategory = category?.trim() || categorize(trimmedName);
 
   const item = await prisma.item.create({
-    data: { listId, name: trimmedName, quantity, unit, category },
+    data: { listId, name: trimmedName, quantity, unit, category: resolvedCategory },
   });
 
   // Update legacy ItemHistory
   await prisma.itemHistory.upsert({
     where: { name: trimmedName },
-    update: { useCount: { increment: 1 }, category, unit: unit ?? undefined, updatedAt: new Date() },
-    create: { name: trimmedName, category, unit },
+    update: { useCount: { increment: 1 }, category: resolvedCategory, unit: unit ?? undefined, updatedAt: new Date() },
+    create: { name: trimmedName, category: resolvedCategory, unit },
   });
 
   // Update product catalog
-  await upsertUserProduct(trimmedName, unit, category);
+  await upsertUserProduct(trimmedName, unit, resolvedCategory);
 
   revalidatePath(`/shopping/${listId}`);
   return toItem(item);
