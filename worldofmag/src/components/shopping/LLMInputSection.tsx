@@ -214,70 +214,68 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
       {/* Input area — hidden when results are shown */}
       {!showResults && (
         <div className="px-4 pb-3">
-          <div className="flex flex-col md:flex-row md:items-start gap-2">
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={"Wpisz listę zakupów lub powiedz co kupić…\nNp. \"2 kg jabłek, mleko, chleb pszenny\""}
-              rows={2}
-              className="flex-1 bg-transparent mono text-sm focus:outline-none resize-none"
-              style={{
-                color: "var(--text-primary)",
-                caretColor: "var(--accent-blue)",
-                lineHeight: 1.5,
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) processText();
-              }}
-            />
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={"Wpisz listę zakupów lub powiedz co kupić…\nNp. \"2 kg jabłek, mleko, chleb pszenny\""}
+            rows={2}
+            className="w-full bg-transparent mono text-sm focus:outline-none resize-none"
+            style={{
+              color: "var(--text-primary)",
+              caretColor: "var(--accent-blue)",
+              lineHeight: 1.5,
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) processText();
+            }}
+          />
 
-            <div className="flex items-center gap-2 md:flex-shrink-0">
-              {/* Recording indicator */}
-              {recording && (
+          <div className="flex items-center gap-2 mt-2">
+            {/* Recording indicator */}
+            {recording && (
+              <span
+                className="inline-flex items-center gap-1.5 text-xs flex-shrink-0"
+                style={{ color: "var(--accent-red)" }}
+              >
                 <span
-                  className="inline-flex items-center gap-1.5 text-xs"
-                  style={{ color: "var(--accent-red)" }}
-                >
-                  <span
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: "var(--accent-red)", animation: "pulse 1s infinite" }}
-                  />
-                  Słucham…
-                </span>
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: "var(--accent-red)", animation: "pulse 1s infinite" }}
+                />
+                Słucham…
+              </span>
+            )}
+
+            <button
+              onClick={toggleRecording}
+              type="button"
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none",
+                recording && "animate-pulse"
               )}
+              style={{
+                backgroundColor: recording ? "rgba(239,68,68,0.15)" : "var(--bg-surface)",
+                color: recording ? "var(--accent-red)" : "var(--text-secondary)",
+                border: `1px solid ${recording ? "var(--accent-red)" : "var(--border)"}`,
+              }}
+              title={recording ? "Zatrzymaj nagrywanie" : "Nagraj głosowo"}
+            >
+              {recording ? <MicOff size={13} /> : <Mic size={13} />}
+              <span>{recording ? "Stop" : "Mów"}</span>
+            </button>
 
-              <button
-                onClick={toggleRecording}
-                type="button"
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none",
-                  recording && "animate-pulse"
-                )}
-                style={{
-                  backgroundColor: recording ? "rgba(239,68,68,0.15)" : "var(--bg-surface)",
-                  color: recording ? "var(--accent-red)" : "var(--text-secondary)",
-                  border: `1px solid ${recording ? "var(--accent-red)" : "var(--border)"}`,
-                }}
-                title={recording ? "Zatrzymaj nagrywanie" : "Nagraj głosowo"}
-              >
-                {recording ? <MicOff size={13} /> : <Mic size={13} />}
-                <span className="hidden sm:inline">{recording ? "Stop" : "Mów"}</span>
-              </button>
-
-              <button
-                onClick={processText}
-                disabled={!text.trim() || loading}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
-                style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
-                title="Przetwórz przez AI (Ctrl+Enter)"
-              >
-                {loading
-                  ? <Loader2 size={13} className="animate-spin" />
-                  : <Sparkles size={13} />
-                }
-                Przetwórz
-              </button>
-            </div>
+            <button
+              onClick={processText}
+              disabled={!text.trim() || loading}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40 ml-auto"
+              style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+              title="Przetwórz przez AI (Ctrl+Enter)"
+            >
+              {loading
+                ? <Loader2 size={13} className="animate-spin" />
+                : <Sparkles size={13} />
+              }
+              Przetwórz
+            </button>
           </div>
 
           {error && (

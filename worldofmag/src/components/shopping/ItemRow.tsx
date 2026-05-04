@@ -20,11 +20,16 @@ interface ItemRowProps {
 
 export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, rowRef }: ItemRowProps) {
   const [isPending, startTransition] = useTransition();
+  const [localStatus, setLocalStatus] = useState<ItemStatus>(item.status as ItemStatus);
   const [editName, setEditName] = useState(item.name);
   const [editQty, setEditQty] = useState(item.quantity?.toString() ?? "");
   const [editUnit, setEditUnit] = useState(item.unit ?? "");
   const [editNotes, setEditNotes] = useState(item.notes ?? "");
   const editNameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isPending) setLocalStatus(item.status as ItemStatus);
+  }, [item.status, isPending]);
 
   useEffect(() => {
     if (isEditing) {
@@ -37,14 +42,16 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
   }, [isEditing, item]);
 
   function cycleStatus() {
-    const idx = STATUS_CYCLE.indexOf(item.status as "NEEDED" | "IN_CART" | "DONE");
+    const idx = STATUS_CYCLE.indexOf(localStatus);
     const next: ItemStatus = idx === -1 || idx === STATUS_CYCLE.length - 1
       ? STATUS_CYCLE[0]
       : STATUS_CYCLE[idx + 1];
+    setLocalStatus(next);
     startTransition(() => { updateItemStatus(item.id, next); });
   }
 
   function markMissing() {
+    setLocalStatus("MISSING");
     startTransition(() => { updateItemStatus(item.id, "MISSING"); });
   }
 
@@ -70,8 +77,8 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
     if (e.key === "Escape") { onStopEdit(); }
   }
 
-  const isDone = item.status === "DONE";
-  const isMissing = item.status === "MISSING";
+  const isDone = localStatus === "DONE";
+  const isMissing = localStatus === "MISSING";
 
   if (isEditing) {
     return (
@@ -225,7 +232,7 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
       )}
 
       {/* Status badge */}
-      <StatusBadge status={item.status} />
+      <StatusBadge status={localStatus} />
 
       {/* Action buttons — visible on focus/hover */}
       {isFocused && (
