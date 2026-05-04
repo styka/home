@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useTransition, forwardRef, useImperativeHandle, useId } from "react";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, PenLine } from "lucide-react";
 import type { Product } from "@/types";
 import { UNITS } from "@/types";
 import { addItemStructured } from "@/actions/items";
@@ -119,14 +119,28 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
 
     return (
       <div
-        className="relative border-b"
-        style={{ borderColor, backgroundColor: "var(--bg-surface)" }}
+        className="relative border-b flex-shrink-0"
+        style={{
+          borderColor,
+          backgroundColor: "var(--bg-elevated)",
+          borderLeft: "3px solid var(--accent-green)",
+        }}
       >
-        <div className="flex flex-col md:flex-row md:items-center">
+        {/* Section label */}
+        <div
+          className="flex items-center gap-1.5 px-4 pt-2 pb-1"
+          style={{ color: "var(--accent-green)" }}
+        >
+          <PenLine size={11} />
+          <span className="text-xs font-semibold tracking-wide" style={{ letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            Dodaj ręcznie
+          </span>
+        </div>
 
+        <div className="flex flex-col md:flex-row md:items-center">
           {/* Row 1 (mobile) / Left section (desktop): qty + unit + category */}
           <div
-            className="flex items-center gap-2 px-4 py-2 md:border-r flex-shrink-0"
+            className="flex items-center gap-2 px-4 py-2 md:pb-3 md:border-r flex-shrink-0"
             style={{ borderColor }}
           >
             <input
@@ -142,9 +156,7 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
               className="bg-transparent mono text-sm text-right focus:outline-none disabled:opacity-40"
               style={{ width: 52, color: "var(--text-secondary)", caretColor: "var(--accent-blue)" }}
             />
-
             <UnitInput value={unit} onChange={setUnit} onKeyDown={handleFieldKeyDown} disabled={isPending} />
-
             <CategoryInput
               value={category}
               onChange={(v) => { setCategory(v); setCategoryUserSet(!!v); }}
@@ -154,8 +166,8 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
             />
           </div>
 
-          {/* Row 2 (mobile) / Right section (desktop): name + submit */}
-          <div className="flex items-center gap-2 px-4 pb-2 md:py-2 md:px-3 md:flex-1">
+          {/* Row 2 (mobile) / Right section (desktop): name + submit — max-width capped so + is never far */}
+          <div className="flex items-center gap-2 px-4 pb-3 md:py-3 md:px-3 md:w-[340px] md:flex-shrink-0">
             <input
               ref={nameRef}
               value={name}
@@ -168,15 +180,17 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
               autoComplete="off"
               spellCheck={false}
             />
-
             <button
               onClick={submit}
               disabled={!name.trim() || isPending}
-              className="flex items-center justify-center rounded px-2 py-1 text-xs font-medium focus:outline-none disabled:opacity-40 flex-shrink-0"
-              style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+              className="flex items-center gap-1.5 justify-center rounded px-2.5 py-1.5 text-xs font-medium focus:outline-none disabled:opacity-40 flex-shrink-0"
+              style={{ backgroundColor: "var(--accent-green)", color: "#fff" }}
               title="Dodaj (Enter)"
             >
-              {isPending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              {isPending
+                ? <Loader2 size={13} className="animate-spin" />
+                : <><Plus size={13} /><span className="hidden sm:inline">Dodaj</span></>
+              }
             </button>
           </div>
         </div>
@@ -210,9 +224,7 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
                 <span className="text-xs ml-auto" style={{ color: "var(--text-muted)" }}>
                   {s.category}
                   {s.defaultUnit ? ` · ${s.defaultUnit}` : ""}
-                  {!s.userId && !s.teamId && (
-                    <span className="ml-1 opacity-40">global</span>
-                  )}
+                  {!s.userId && !s.teamId && <span className="ml-1 opacity-40">global</span>}
                 </span>
               </button>
             ))}
@@ -246,9 +258,7 @@ function UnitInput({ value, onChange, onKeyDown, disabled }: UnitInputProps) {
         style={{ width: 72, color: value ? "var(--text-secondary)" : "var(--text-muted)", caretColor: "var(--accent-blue)" }}
       />
       <datalist id={listId}>
-        {UNITS.map((u) => (
-          <option key={u.value} value={u.value} />
-        ))}
+        {UNITS.map((u) => <option key={u.value} value={u.value} />)}
       </datalist>
     </>
   );
@@ -283,9 +293,7 @@ function CategoryInput({ value, onChange, onKeyDown, options, disabled }: Catego
         }}
       />
       <datalist id={listId}>
-        {options.map((c) => (
-          <option key={c} value={c} />
-        ))}
+        {options.map((c) => <option key={c} value={c} />)}
       </datalist>
     </>
   );
