@@ -173,7 +173,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
             className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm"
             style={{
               backgroundColor: pathname.startsWith("/admin") ? "var(--bg-elevated)" : undefined,
-              color: pathname.startsWith("/admin") ? "var(--accent-purple)" : "var(--text-muted)",
+              color: pathname.startsWith("/admin") ? "var(--accent-purple)" : "var(--text-secondary)",
             }}
             onMouseEnter={(e) => {
               if (!pathname.startsWith("/admin")) {
@@ -184,7 +184,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
             onMouseLeave={(e) => {
               if (!pathname.startsWith("/admin")) {
                 e.currentTarget.style.backgroundColor = "";
-                e.currentTarget.style.color = "var(--text-muted)";
+                e.currentTarget.style.color = "var(--text-secondary)";
               }
             }}
           >

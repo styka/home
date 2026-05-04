@@ -202,7 +202,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                   className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
                   style={{
                     backgroundColor: pathname.startsWith("/admin") ? "var(--bg-elevated)" : undefined,
-                    color: pathname.startsWith("/admin") ? "var(--accent-purple)" : "var(--text-muted)",
+                    color: pathname.startsWith("/admin") ? "var(--accent-purple)" : "var(--text-secondary)",
                   }}
                 >
                   <Shield size={20} />
