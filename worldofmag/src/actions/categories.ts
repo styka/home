@@ -3,23 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-
-// Hardcoded base categories — always visible, not stored in DB
-export const BASE_CATEGORIES: Array<{ name: string; emoji: string }> = [
-  { name: "Produce",           emoji: "🥕" },
-  { name: "Dairy & Eggs",      emoji: "🧀" },
-  { name: "Meat & Fish",       emoji: "🥩" },
-  { name: "Bakery",            emoji: "🍞" },
-  { name: "Dry Goods & Pasta", emoji: "🌾" },
-  { name: "Drinks",            emoji: "🍺" },
-  { name: "Frozen",            emoji: "🧊" },
-  { name: "Snacks & Sweets",   emoji: "🍫" },
-  { name: "Condiments & Oils", emoji: "🫙" },
-  { name: "Spices & Herbs",    emoji: "🌿" },
-  { name: "Cleaning & Hygiene","emoji": "🧴" },
-  { name: "Canned & Preserved","emoji": "🥫" },
-  { name: "Other",             emoji: "📦" },
-];
+import { BASE_CATEGORIES } from "@/lib/categories";
 
 async function requireAuth() {
   const session = await auth();
