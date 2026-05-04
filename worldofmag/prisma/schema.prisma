@@ -29,6 +29,7 @@ model User {
   receivedInvitations TeamInvitation[] @relation("InvitedUser")
   ownedLists        ShoppingList[]
   products          Product[]
+  units             Unit[]
 }
 
 model Account {
@@ -85,6 +86,7 @@ model Team {
   invitations TeamInvitation[]
   lists       ShoppingList[]   @relation("TeamLists")
   products    Product[]
+  units       Unit[]
 }
 
 model TeamMember {
@@ -180,4 +182,20 @@ model Config {
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+// ─── Custom Units ─────────────────────────────────────────────────────────
+
+model Unit {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  // userId=null AND teamId=null → global base unit
+  userId    String?
+  teamId    String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([name, userId, teamId])
 }
