@@ -126,17 +126,15 @@ export default async function AdminPage() {
             borderRadius: 10,
             overflow: "hidden",
           }}>
-            <Link href="/admin/config" style={{
+            <style>{`.admin-config-link:hover { background-color: var(--bg-hover); }`}</style>
+            <Link href="/admin/config" className="admin-config-link" style={{
               display: "flex",
               alignItems: "center",
               gap: 12,
               padding: "12px 16px",
               color: "var(--text-primary)",
               textDecoration: "none",
-            }}
-              onMouseOver={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-hover)"; }}
-              onMouseOut={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
-            >
+            }}>
               <Settings size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Konfiguracja LLM (klucz Groq)</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
