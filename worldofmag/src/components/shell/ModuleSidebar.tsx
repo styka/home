@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, Package } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 interface Module {
@@ -141,6 +141,30 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
               {invitationCount}
             </span>
           )}
+        </Link>
+
+        <Link
+          href="/shopping/products"
+          className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm"
+          style={{
+            backgroundColor: pathname.startsWith("/shopping/products") ? "var(--bg-elevated)" : undefined,
+            color: pathname.startsWith("/shopping/products") ? "var(--text-primary)" : "var(--text-secondary)",
+          }}
+          onMouseEnter={(e) => {
+            if (!pathname.startsWith("/shopping/products")) {
+              e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+              e.currentTarget.style.color = "var(--text-primary)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!pathname.startsWith("/shopping/products")) {
+              e.currentTarget.style.backgroundColor = "";
+              e.currentTarget.style.color = "var(--text-secondary)";
+            }
+          }}
+        >
+          <Package size={18} />
+          <span>Katalog produktów</span>
         </Link>
 
         <Link
