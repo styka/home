@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 interface Module {
@@ -22,9 +22,10 @@ const MODULES: Module[] = [
 
 interface ModuleSidebarProps {
   invitationCount?: number;
+  isAdmin?: boolean;
 }
 
-export function ModuleSidebar({ invitationCount = 0 }: ModuleSidebarProps) {
+export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -100,9 +101,8 @@ export function ModuleSidebar({ invitationCount = 0 }: ModuleSidebarProps) {
         })}
       </nav>
 
-      {/* Bottom: Invitations + Settings */}
+      {/* Bottom: Invitations + Settings + Admin */}
       <div className="py-2 border-t" style={{ borderColor: "var(--border)" }}>
-        {/* Invitations */}
         <Link
           href="/invitations"
           className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm"
@@ -143,7 +143,6 @@ export function ModuleSidebar({ invitationCount = 0 }: ModuleSidebarProps) {
           )}
         </Link>
 
-        {/* Settings */}
         <Link
           href="/settings"
           className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm"
@@ -167,6 +166,32 @@ export function ModuleSidebar({ invitationCount = 0 }: ModuleSidebarProps) {
           <Settings size={18} />
           <span>Ustawienia</span>
         </Link>
+
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm"
+            style={{
+              backgroundColor: pathname.startsWith("/admin") ? "var(--bg-elevated)" : undefined,
+              color: pathname.startsWith("/admin") ? "var(--accent-purple)" : "var(--text-secondary)",
+            }}
+            onMouseEnter={(e) => {
+              if (!pathname.startsWith("/admin")) {
+                e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+                e.currentTarget.style.color = "var(--accent-purple)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!pathname.startsWith("/admin")) {
+                e.currentTarget.style.backgroundColor = "";
+                e.currentTarget.style.color = "var(--text-secondary)";
+              }
+            }}
+          >
+            <Shield size={18} />
+            <span>Admin</span>
+          </Link>
+        )}
       </div>
     </aside>
   );

@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 
 interface AppShellProps {
   children: React.ReactNode;
   invitationCount?: number;
+  isAdmin?: boolean;
 }
 
 const MODULES = [
@@ -18,7 +19,7 @@ const MODULES = [
   { id: "work", label: "Work", icon: <Briefcase size={20} />, topBarIcon: <Briefcase size={16} />, href: "/work", active: false },
 ];
 
-export function AppShell({ children, invitationCount = 0 }: AppShellProps) {
+export function AppShell({ children, invitationCount = 0, isAdmin = false }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const activeModule = MODULES.find((m) => pathname.startsWith(m.href));
@@ -157,7 +158,7 @@ export function AppShell({ children, invitationCount = 0 }: AppShellProps) {
               })}
             </nav>
 
-            {/* Bottom: Invitations + Settings */}
+            {/* Bottom: Invitations + Settings + Admin */}
             <div className="py-2 border-t" style={{ borderColor: "var(--border)" }}>
               <Link
                 href="/invitations"
@@ -195,13 +196,26 @@ export function AppShell({ children, invitationCount = 0 }: AppShellProps) {
                 <Settings size={20} />
                 <span>Ustawienia</span>
               </Link>
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
+                  style={{
+                    backgroundColor: pathname.startsWith("/admin") ? "var(--bg-elevated)" : undefined,
+                    color: pathname.startsWith("/admin") ? "var(--accent-purple)" : "var(--text-secondary)",
+                  }}
+                >
+                  <Shield size={20} />
+                  <span>Admin</span>
+                </Link>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {/* Desktop sidebar */}
-      <ModuleSidebar invitationCount={invitationCount} />
+      <ModuleSidebar invitationCount={invitationCount} isAdmin={isAdmin} />
 
       <main className="flex-1 overflow-hidden flex flex-col min-w-0">
         {children}

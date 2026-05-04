@@ -38,6 +38,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? await getPendingInvitationsCount().catch(() => 0)
     : 0;
 
+  const isAdmin = session?.user?.role === "ADMIN";
+
   return (
     <html lang="en" className="dark">
       <head>
@@ -48,7 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
       <body>
-        <AppShell invitationCount={invitationCount}>{children}</AppShell>
+        <AppShell invitationCount={invitationCount} isAdmin={isAdmin}>{children}</AppShell>
         <ServiceWorkerRegistration />
       </body>
     </html>
