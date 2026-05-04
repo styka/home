@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useId } from "react";
-import { Pencil, Trash2, Plus, Check, X, Copy } from "lucide-react";
+import { Pencil, Trash2, Plus, Check, X, Copy, Loader2 } from "lucide-react";
 import type { Product } from "@/types";
 import { UNITS } from "@/types";
 import { createProduct, updateProduct, deleteProduct, copyGlobalProduct } from "@/actions/products";
@@ -132,8 +132,8 @@ export function ProductManager({ products, userId, categoryNames }: ProductManag
           >
             {categoryNames.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
-          <button onClick={handleCreate} disabled={!newName.trim()} className="p-1.5 rounded focus:outline-none disabled:opacity-40" style={{ color: "var(--accent-blue)" }}>
-            <Check size={16} />
+          <button onClick={handleCreate} disabled={!newName.trim() || isPending} className="p-1.5 rounded focus:outline-none disabled:opacity-40" style={{ color: "var(--accent-blue)" }}>
+            {isPending ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
           </button>
           <button onClick={() => setAdding(false)} className="p-1.5 rounded focus:outline-none" style={{ color: "var(--text-muted)" }}>
             <X size={16} />

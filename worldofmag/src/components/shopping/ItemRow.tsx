@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useTransition } from "react";
-import { Trash2, AlertCircle, ChevronRight } from "lucide-react";
+import { Trash2, AlertCircle, ChevronRight, Loader2 } from "lucide-react";
 import type { Item, ItemStatus } from "@/types";
 import { STATUS_CYCLE } from "@/types";
 import { StatusBadge } from "./StatusBadge";
@@ -19,7 +19,7 @@ interface ItemRowProps {
 }
 
 export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, rowRef }: ItemRowProps) {
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
   const [editName, setEditName] = useState(item.name);
   const [editQty, setEditQty] = useState(item.quantity?.toString() ?? "");
   const [editUnit, setEditUnit] = useState(item.unit ?? "");
@@ -150,6 +150,8 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
       style={{
         borderColor: "var(--border)",
         backgroundColor: isFocused ? "var(--bg-elevated)" : undefined,
+        opacity: isPending ? 0.55 : 1,
+        transition: "opacity 0.15s",
       }}
       onMouseEnter={(e) => {
         if (!isFocused) e.currentTarget.style.backgroundColor = "var(--bg-hover)";
@@ -161,6 +163,7 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
       {/* Status toggle button */}
       <button
         onClick={(e) => { e.stopPropagation(); cycleStatus(); }}
+        disabled={isPending}
         className="w-5 h-5 md:w-4 md:h-4 rounded border flex-shrink-0 flex items-center justify-center focus:outline-none"
         style={{
           borderColor: isDone
@@ -178,14 +181,15 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
         }}
         title="Toggle status (Space)"
       >
-        {isDone && (
+        {isPending ? (
+          <Loader2 size={9} className="animate-spin" style={{ color: "var(--text-muted)" }} />
+        ) : isDone ? (
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
             <path d="M1.5 5L4 7.5L8.5 2.5" stroke="var(--accent-green)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        )}
-        {isMissing && (
+        ) : isMissing ? (
           <span style={{ color: "var(--accent-amber)", fontSize: 10, lineHeight: 1 }}>!</span>
-        )}
+        ) : null}
       </button>
 
       {/* Qty + unit column */}

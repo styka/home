@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useTransition, useId } from "react";
-import { Mic, MicOff, Loader2, X, Plus, CheckSquare, Square } from "lucide-react";
+import { Mic, MicOff, Loader2, Plus, CheckSquare, Square, Sparkles } from "lucide-react";
 import { UNITS } from "@/types";
 import { addItemStructured } from "@/actions/items";
 import { upsertUserProduct, getProductSuggestions } from "@/actions/products";
@@ -18,14 +18,11 @@ interface ParsedRow {
   isNew: boolean;
 }
 
-interface VoiceLLMModalProps {
-  open: boolean;
-  onClose: () => void;
+interface LLMInputSectionProps {
   listId: string;
   categoryNames: string[];
 }
 
-// Web Speech API types (not in TS lib.dom.d.ts for all browsers)
 interface ISpeechResult {
   resultIndex: number;
   results: { isFinal: boolean; 0: { transcript: string } }[];
@@ -49,7 +46,7 @@ declare global {
   }
 }
 
-export function VoiceLLMModal({ open, onClose, listId, categoryNames }: VoiceLLMModalProps) {
+export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps) {
   const [text, setText] = useState("");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,21 +55,9 @@ export function VoiceLLMModal({ open, onClose, listId, categoryNames }: VoiceLLM
   const [transcript, setTranscript] = useState("");
   const [isPending, startTransition] = useTransition();
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const unitDatalistId = useId();
   const categoryDatalistId = useId();
-
-  useEffect(() => {
-    if (open) {
-      setText("");
-      setRows([]);
-      setError(null);
-      setTranscript("");
-      setTimeout(() => textareaRef.current?.focus(), 100);
-    } else {
-      stopRecording();
-    }
-  }, [open]);
+  const showResults = rows.length > 0;
 
   function stopRecording() {
     if (recognitionRef.current) {
@@ -85,7 +70,7 @@ export function VoiceLLMModal({ open, onClose, listId, categoryNames }: VoiceLLM
   function startRecording() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-      setError("Twoja przeglądarka nie obsługuje rozpoznawania mowy. Wpisz tekst ręcznie.");
+      setError("Twoja przeglądarka nie obsługuje rozpoznawania mowy.");
       return;
     }
     const rec = new SR();
@@ -115,9 +100,7 @@ export function VoiceLLMModal({ open, onClose, listId, categoryNames }: VoiceLLM
       stopRecording();
     };
 
-    rec.onend = () => {
-      setRecording(false);
-    };
+    rec.onend = () => setRecording(false);
 
     recognitionRef.current = rec;
     rec.start();
@@ -126,11 +109,7 @@ export function VoiceLLMModal({ open, onClose, listId, categoryNames }: VoiceLLM
   }
 
   function toggleRecording() {
-    if (recording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
+    recording ? stopRecording() : startRecording();
   }
 
   async function processText() {
@@ -199,132 +178,141 @@ export function VoiceLLMModal({ open, onClose, listId, categoryNames }: VoiceLLM
       }
     });
 
-    onClose();
+    reset();
   }
 
-  if (!open) return null;
+  function reset() {
+    setRows([]);
+    setText("");
+    setTranscript("");
+    setError(null);
+    stopRecording();
+  }
+
+  const selectedCount = rows.filter((r) => r.selected).length;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="border-b flex-shrink-0"
+      style={{
+        borderColor: "var(--border)",
+        backgroundColor: "var(--bg-elevated)",
+        borderLeft: "3px solid var(--accent-blue)",
+      }}
     >
+      {/* Header label */}
       <div
-        className="w-full md:max-w-lg rounded-t-xl md:rounded-xl overflow-hidden"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          border: "1px solid var(--border)",
-          maxHeight: "90vh",
-          display: "flex",
-          flexDirection: "column",
-        }}
+        className="flex items-center gap-1.5 px-4 pt-2 pb-1"
+        style={{ color: "var(--accent-blue)" }}
       >
-        {/* Header */}
-        <div
-          className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0"
-          style={{ borderColor: "var(--border)" }}
-        >
-          <div className="flex items-center gap-2">
-            <Mic size={16} style={{ color: "var(--accent-blue)" }} />
-            <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-              Dodaj głosem / przez LLM
-            </span>
-          </div>
-          <button onClick={onClose} className="p-1 rounded focus:outline-none" style={{ color: "var(--text-muted)" }}>
-            <X size={16} />
-          </button>
-        </div>
+        <Sparkles size={11} />
+        <span className="text-xs font-semibold tracking-wide uppercase" style={{ letterSpacing: "0.06em" }}>
+          Dodaj przez AI
+        </span>
+      </div>
 
-        {/* Input area */}
-        {rows.length === 0 && (
-          <div className="p-4 flex-shrink-0">
+      {/* Input area — hidden when results are shown */}
+      {!showResults && (
+        <div className="px-4 pb-3">
+          <div className="flex flex-col md:flex-row md:items-start gap-2">
             <textarea
-              ref={textareaRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Wpisz lub powiedz co chcesz kupić…&#10;Np. 'pół kilo jabłek, 2 litry mleka i chleb'"
-              className="w-full bg-transparent mono text-sm focus:outline-none resize-none"
+              placeholder={"Wpisz listę zakupów lub powiedz co kupić…\nNp. \"2 kg jabłek, mleko, chleb pszenny\""}
+              rows={2}
+              className="flex-1 bg-transparent mono text-sm focus:outline-none resize-none"
               style={{
                 color: "var(--text-primary)",
                 caretColor: "var(--accent-blue)",
-                minHeight: 80,
+                lineHeight: 1.5,
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) processText();
               }}
             />
-            {recording && (
-              <div className="flex items-center gap-2 mt-1">
-                <span
-                  className="inline-block w-2 h-2 rounded-full"
-                  style={{ backgroundColor: "var(--accent-red)", animation: "pulse 1s infinite" }}
-                />
-                <span className="text-xs" style={{ color: "var(--accent-red)" }}>Nasłuchuję…</span>
-              </div>
-            )}
-            {error && (
-              <p className="text-xs mt-2" style={{ color: "var(--accent-red)" }}>{error}</p>
-            )}
 
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex items-center gap-2 md:flex-shrink-0">
+              {/* Recording indicator */}
+              {recording && (
+                <span
+                  className="inline-flex items-center gap-1.5 text-xs"
+                  style={{ color: "var(--accent-red)" }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: "var(--accent-red)", animation: "pulse 1s infinite" }}
+                  />
+                  Słucham…
+                </span>
+              )}
+
               <button
                 onClick={toggleRecording}
+                type="button"
                 className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium focus:outline-none",
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none",
                   recording && "animate-pulse"
                 )}
                 style={{
-                  backgroundColor: recording ? "rgba(239,68,68,0.2)" : "var(--bg-elevated)",
+                  backgroundColor: recording ? "rgba(239,68,68,0.15)" : "var(--bg-surface)",
                   color: recording ? "var(--accent-red)" : "var(--text-secondary)",
                   border: `1px solid ${recording ? "var(--accent-red)" : "var(--border)"}`,
                 }}
+                title={recording ? "Zatrzymaj nagrywanie" : "Nagraj głosowo"}
               >
-                {recording ? <MicOff size={14} /> : <Mic size={14} />}
-                {recording ? "Zatrzymaj" : "Nagraj"}
+                {recording ? <MicOff size={13} /> : <Mic size={13} />}
+                <span className="hidden sm:inline">{recording ? "Stop" : "Mów"}</span>
               </button>
 
               <button
                 onClick={processText}
                 disabled={!text.trim() || loading}
-                className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40 ml-auto"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
                 style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+                title="Przetwórz przez AI (Ctrl+Enter)"
               >
-                {loading && <Loader2 size={13} className="animate-spin" />}
+                {loading
+                  ? <Loader2 size={13} className="animate-spin" />
+                  : <Sparkles size={13} />
+                }
                 Przetwórz
               </button>
             </div>
-            <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
-              Ctrl+Enter aby przetworzyć
+          </div>
+
+          {error && (
+            <p className="text-xs mt-1.5" style={{ color: "var(--accent-red)" }}>{error}</p>
+          )}
+          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+            Ctrl+Enter aby przetworzyć
+          </p>
+        </div>
+      )}
+
+      {/* Results preview */}
+      {showResults && (
+        <>
+          <div className="px-4 pb-1">
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Rozpoznane produkty — zaznacz które dodać
             </p>
           </div>
-        )}
 
-        {/* Results preview */}
-        {rows.length > 0 && (
-          <div className="flex-1 overflow-y-auto">
-            <div className="px-4 pt-3 pb-1">
-              <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                Rozpoznane produkty — zaznacz które dodać do listy
-              </p>
-            </div>
-
+          <div style={{ maxHeight: 280, overflowY: "auto" }}>
             {rows.map((row, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 px-4 py-2 border-b"
+                className="flex items-center gap-2 px-4 py-1.5 border-t"
                 style={{ borderColor: "var(--border)" }}
               >
-                {/* Selected checkbox */}
                 <button
                   onClick={() => updateRow(i, { selected: !row.selected })}
                   className="flex-shrink-0 focus:outline-none"
                   style={{ color: row.selected ? "var(--accent-blue)" : "var(--text-muted)" }}
                 >
-                  {row.selected ? <CheckSquare size={16} /> : <Square size={16} />}
+                  {row.selected ? <CheckSquare size={15} /> : <Square size={15} />}
                 </button>
 
-                {/* Product name */}
                 <span
                   className="mono text-sm flex-1 min-w-0 truncate"
                   style={{ color: row.selected ? "var(--text-primary)" : "var(--text-muted)" }}
@@ -335,17 +323,15 @@ export function VoiceLLMModal({ open, onClose, listId, categoryNames }: VoiceLLM
                   {row.name}
                 </span>
 
-                {/* Qty */}
                 <input
                   type="number"
                   value={row.quantity ?? ""}
                   onChange={(e) => updateRow(i, { quantity: e.target.value ? parseFloat(e.target.value) : null })}
                   className="bg-transparent mono text-xs text-right focus:outline-none"
-                  style={{ width: 40, color: "var(--text-secondary)", border: `1px solid var(--border)`, borderRadius: 4, padding: "1px 4px" }}
+                  style={{ width: 38, color: "var(--text-secondary)", border: `1px solid var(--border)`, borderRadius: 4, padding: "1px 4px" }}
                   placeholder="qty"
                 />
 
-                {/* Unit */}
                 <input
                   type="text"
                   value={row.unit}
@@ -354,17 +340,9 @@ export function VoiceLLMModal({ open, onClose, listId, categoryNames }: VoiceLLM
                   placeholder="jedn."
                   autoComplete="off"
                   className="bg-transparent mono text-xs focus:outline-none"
-                  style={{
-                    color: "var(--text-secondary)",
-                    width: 56,
-                    border: `1px solid var(--border)`,
-                    borderRadius: 4,
-                    padding: "1px 4px",
-                    backgroundColor: "var(--bg-elevated)",
-                  }}
+                  style={{ width: 52, color: "var(--text-secondary)", border: `1px solid var(--border)`, borderRadius: 4, padding: "1px 4px", backgroundColor: "var(--bg-surface)" }}
                 />
 
-                {/* Category */}
                 <input
                   type="text"
                   value={row.category}
@@ -373,28 +351,20 @@ export function VoiceLLMModal({ open, onClose, listId, categoryNames }: VoiceLLM
                   placeholder="kat."
                   autoComplete="off"
                   className="bg-transparent mono text-xs focus:outline-none"
-                  style={{
-                    color: row.category ? "var(--text-secondary)" : "var(--text-muted)",
-                    width: 72,
-                    border: `1px solid var(--border)`,
-                    borderRadius: 4,
-                    padding: "1px 4px",
-                    backgroundColor: "var(--bg-elevated)",
-                  }}
+                  style={{ width: 68, color: row.category ? "var(--text-secondary)" : "var(--text-muted)", border: `1px solid var(--border)`, borderRadius: 4, padding: "1px 4px", backgroundColor: "var(--bg-surface)" }}
                 />
 
-                {/* Add to catalog toggle (new products only) */}
                 {row.isNew && (
                   <button
                     onClick={() => updateRow(i, { addToCatalog: !row.addToCatalog })}
-                    className="flex-shrink-0 text-xs px-1.5 py-0.5 rounded focus:outline-none"
+                    className="flex-shrink-0 px-1.5 py-0.5 rounded focus:outline-none"
+                    title="Dodaj do katalogu produktów"
                     style={{
-                      backgroundColor: row.addToCatalog ? "rgba(59,130,246,0.15)" : "var(--bg-elevated)",
+                      backgroundColor: row.addToCatalog ? "rgba(59,130,246,0.15)" : "var(--bg-surface)",
                       color: row.addToCatalog ? "var(--accent-blue)" : "var(--text-muted)",
                       border: `1px solid ${row.addToCatalog ? "var(--accent-blue)" : "var(--border)"}`,
                       fontSize: 10,
                     }}
-                    title="Dodaj do katalogu produktów"
                   >
                     📚
                   </button>
@@ -402,24 +372,21 @@ export function VoiceLLMModal({ open, onClose, listId, categoryNames }: VoiceLLM
               </div>
             ))}
           </div>
-        )}
 
-        {/* Shared datalists */}
-        <datalist id={unitDatalistId}>
-          {UNITS.map((u) => <option key={u.value} value={u.value} />)}
-        </datalist>
-        <datalist id={categoryDatalistId}>
-          {categoryNames.map((c) => <option key={c} value={c} />)}
-        </datalist>
+          <datalist id={unitDatalistId}>
+            {UNITS.map((u) => <option key={u.value} value={u.value} />)}
+          </datalist>
+          <datalist id={categoryDatalistId}>
+            {categoryNames.map((c) => <option key={c} value={c} />)}
+          </datalist>
 
-        {/* Footer */}
-        {rows.length > 0 && (
+          {/* Footer */}
           <div
-            className="flex items-center justify-between gap-3 px-4 py-3 border-t flex-shrink-0"
+            className="flex items-center justify-between gap-3 px-4 py-2 border-t"
             style={{ borderColor: "var(--border)" }}
           >
             <button
-              onClick={() => { setRows([]); setText(""); }}
+              onClick={reset}
               className="text-xs focus:outline-none"
               style={{ color: "var(--text-muted)" }}
             >
@@ -427,12 +394,12 @@ export function VoiceLLMModal({ open, onClose, listId, categoryNames }: VoiceLLM
             </button>
             <div className="flex items-center gap-2">
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                {rows.filter((r) => r.selected).length} z {rows.length} zaznaczonych
+                {selectedCount} z {rows.length} zaznaczonych
               </span>
               <button
                 onClick={addToList}
-                disabled={rows.filter((r) => r.selected).length === 0 || isPending}
-                className="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
+                disabled={selectedCount === 0 || isPending}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
                 style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
               >
                 {isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
@@ -440,8 +407,8 @@ export function VoiceLLMModal({ open, onClose, listId, categoryNames }: VoiceLLM
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { ChevronDown } from "lucide-react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { ListPicker } from "./ListPicker";
+import { LLMInputSection } from "./LLMInputSection";
 import { QuickAddBar, type QuickAddBarHandle } from "./QuickAddBar";
 import { FilterTabs } from "./FilterTabs";
 import { ItemList } from "./ItemList";
@@ -169,6 +170,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
 
         {/* Main content — full width on mobile */}
         <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+          <LLMInputSection listId={list.id} categoryNames={categoryNames ?? []} />
           <QuickAddBar ref={quickAddRef} listId={list.id} categoryNames={categoryNames ?? []} />
 
           {isSearchOpen && (

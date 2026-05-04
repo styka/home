@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, Loader2 } from "lucide-react";
 import type { UnitWithUsage } from "@/actions/units";
 import { createUnit, renameUnit, deleteUnit } from "@/actions/units";
 
@@ -14,7 +14,7 @@ export function UnitManager({ units }: UnitManagerProps) {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   function handleCreate() {
     if (!newName.trim()) return;
@@ -55,10 +55,11 @@ export function UnitManager({ units }: UnitManagerProps) {
         </h2>
         <button
           onClick={() => setAdding(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium focus:outline-none"
+          disabled={isPending}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
           style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
         >
-          <Plus size={12} />
+          {isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
           Nowa jednostka
         </button>
       </div>
@@ -90,7 +91,7 @@ export function UnitManager({ units }: UnitManagerProps) {
           </p>
         ) : (
           custom.map((u, i) => (
-            <div key={u.id ?? u.name} className="flex items-center gap-3 px-4 py-2" style={rowStyle(i, custom.length)}>
+            <div key={u.id ?? u.name} className="flex items-center gap-3 px-4 py-2" style={{ ...rowStyle(i, custom.length), opacity: isPending ? 0.6 : 1, transition: "opacity 0.15s" }}>
               {editingId === u.id && u.id ? (
                 <>
                   <input
@@ -101,7 +102,9 @@ export function UnitManager({ units }: UnitManagerProps) {
                     style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", borderRadius: 4, padding: "2px 6px", color: "var(--text-primary)" }}
                     autoFocus
                   />
-                  <button onClick={handleRename} className="p-1 focus:outline-none" style={{ color: "var(--accent-blue)" }}><Check size={13} /></button>
+                  <button onClick={handleRename} disabled={isPending} className="p-1 focus:outline-none disabled:opacity-40" style={{ color: "var(--accent-blue)" }}>
+                    {isPending ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                  </button>
                   <button onClick={() => setEditingId(null)} className="p-1 focus:outline-none" style={{ color: "var(--text-muted)" }}><X size={13} /></button>
                 </>
               ) : (
@@ -112,12 +115,12 @@ export function UnitManager({ units }: UnitManagerProps) {
                   </span>
                   {u.isOwn && u.id && (
                     <div className="flex items-center gap-0.5">
-                      <button onClick={() => startEdit(u)} className="p-1 focus:outline-none" style={{ color: "var(--text-muted)" }}
+                      <button onClick={() => startEdit(u)} disabled={isPending} className="p-1 focus:outline-none disabled:opacity-40" style={{ color: "var(--text-muted)" }}
                         onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-secondary)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}>
                         <Pencil size={12} />
                       </button>
-                      <button onClick={() => handleDelete(u.id!)} className="p-1 focus:outline-none" style={{ color: "var(--text-muted)" }}
+                      <button onClick={() => handleDelete(u.id!)} disabled={isPending} className="p-1 focus:outline-none disabled:opacity-40" style={{ color: "var(--text-muted)" }}
                         onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}>
                         <Trash2 size={12} />

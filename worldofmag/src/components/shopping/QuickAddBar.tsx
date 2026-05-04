@@ -1,13 +1,12 @@
 "use client";
 
 import { useRef, useState, useEffect, useTransition, forwardRef, useImperativeHandle, useId } from "react";
-import { Plus, Loader2, Mic } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import type { Product } from "@/types";
 import { UNITS } from "@/types";
 import { addItemStructured } from "@/actions/items";
 import { getProductSuggestions } from "@/actions/products";
 import { categorize } from "@/lib/categorize";
-import { VoiceLLMModal } from "./VoiceLLMModal";
 
 interface QuickAddBarProps {
   listId: string;
@@ -28,7 +27,6 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
     const [suggestions, setSuggestions] = useState<Product[]>([]);
     const [suggestionIndex, setSuggestionIndex] = useState(-1);
     const [isPending, startTransition] = useTransition();
-    const [showVoice, setShowVoice] = useState(false);
     const nameRef = useRef<HTMLInputElement>(null);
     const qtyRef = useRef<HTMLInputElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -37,7 +35,6 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
       focus: () => nameRef.current?.focus(),
     }));
 
-    // Auto-suggest category from product name when user hasn't manually chosen one
     useEffect(() => {
       if (categoryUserSet) return;
       if (!name.trim()) { setCategory(""); return; }
@@ -67,7 +64,7 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
     }
 
     function submit() {
-      if (!name.trim()) return;
+      if (!name.trim() || isPending) return;
       const parsedQty = qty.trim() ? parseFloat(qty.trim()) : null;
       const parsedUnit = unit.trim() || null;
       const parsedCategory = category.trim() || undefined;
@@ -121,139 +118,107 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
     const borderColor = "var(--border)";
 
     return (
-      <>
-        <div
-          className="relative border-b"
-          style={{ borderColor, backgroundColor: "var(--bg-surface)" }}
-        >
-          <div className="flex flex-col md:flex-row md:items-center">
+      <div
+        className="relative border-b"
+        style={{ borderColor, backgroundColor: "var(--bg-surface)" }}
+      >
+        <div className="flex flex-col md:flex-row md:items-center">
 
-            {/* Row 1 (mobile) / Left section (desktop): qty + unit + category */}
-            <div
-              className="flex items-center gap-2 px-4 py-2 md:border-r flex-shrink-0"
-              style={{ borderColor }}
-            >
-              {/* Desktop: icon before qty */}
-              <span className="hidden md:inline-flex items-center flex-shrink-0" style={{ color: "var(--text-muted)" }}>
-                {isPending
-                  ? <Loader2 size={15} className="animate-spin" style={{ color: "var(--accent-blue)" }} />
-                  : <Plus size={15} />
-                }
-              </span>
+          {/* Row 1 (mobile) / Left section (desktop): qty + unit + category */}
+          <div
+            className="flex items-center gap-2 px-4 py-2 md:border-r flex-shrink-0"
+            style={{ borderColor }}
+          >
+            <input
+              ref={qtyRef}
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              onKeyDown={handleFieldKeyDown}
+              disabled={isPending}
+              placeholder="Ilość"
+              type="number"
+              min="0"
+              step="any"
+              className="bg-transparent mono text-sm text-right focus:outline-none disabled:opacity-40"
+              style={{ width: 52, color: "var(--text-secondary)", caretColor: "var(--accent-blue)" }}
+            />
 
-              <input
-                ref={qtyRef}
-                value={qty}
-                onChange={(e) => setQty(e.target.value)}
-                onKeyDown={handleFieldKeyDown}
-                placeholder="Ilość"
-                type="number"
-                min="0"
-                step="any"
-                className="bg-transparent mono text-sm text-right focus:outline-none"
-                style={{ width: 52, color: "var(--text-secondary)", caretColor: "var(--accent-blue)" }}
-              />
+            <UnitInput value={unit} onChange={setUnit} onKeyDown={handleFieldKeyDown} disabled={isPending} />
 
-              <UnitInput value={unit} onChange={setUnit} onKeyDown={handleFieldKeyDown} />
-
-              <CategoryInput
-                value={category}
-                onChange={(v) => { setCategory(v); setCategoryUserSet(!!v); }}
-                onKeyDown={handleFieldKeyDown}
-                options={categoryNames}
-              />
-            </div>
-
-            {/* Row 2 (mobile) / Right section (desktop): icon + name + buttons */}
-            <div className="flex items-center gap-2 px-4 pb-2 md:py-2 md:px-3 md:flex-1">
-              {/* Mobile: icon */}
-              <span className="md:hidden flex-shrink-0" style={{ color: "var(--text-muted)" }}>
-                {isPending
-                  ? <Loader2 size={15} className="animate-spin" style={{ color: "var(--accent-blue)" }} />
-                  : <Plus size={15} />
-                }
-              </span>
-
-              <input
-                ref={nameRef}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={handleNameKeyDown}
-                placeholder="Nazwa produktu…"
-                className="flex-1 bg-transparent mono text-sm focus:outline-none"
-                style={{ color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
-                autoComplete="off"
-                spellCheck={false}
-              />
-
-              <button
-                onClick={submit}
-                disabled={!name.trim() || isPending}
-                className="flex items-center justify-center rounded px-2 py-1 text-xs font-medium focus:outline-none disabled:opacity-40 flex-shrink-0"
-                style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
-                title="Dodaj (Enter)"
-              >
-                <Plus size={14} />
-              </button>
-
-              <button
-                onClick={() => setShowVoice(true)}
-                className="flex items-center justify-center rounded p-1.5 focus:outline-none flex-shrink-0"
-                style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-elevated)" }}
-                title="Dodaj głosem / przez LLM"
-                type="button"
-              >
-                <Mic size={15} />
-              </button>
-            </div>
+            <CategoryInput
+              value={category}
+              onChange={(v) => { setCategory(v); setCategoryUserSet(!!v); }}
+              onKeyDown={handleFieldKeyDown}
+              options={categoryNames}
+              disabled={isPending}
+            />
           </div>
 
-          {/* Autocomplete dropdown */}
-          {suggestions.length > 0 && (
-            <div
-              className="absolute left-0 right-0 z-50 shadow-lg"
-              style={{
-                top: "100%",
-                backgroundColor: "var(--bg-elevated)",
-                border: `1px solid var(--border)`,
-                borderTop: "none",
-              }}
+          {/* Row 2 (mobile) / Right section (desktop): name + submit */}
+          <div className="flex items-center gap-2 px-4 pb-2 md:py-2 md:px-3 md:flex-1">
+            <input
+              ref={nameRef}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={handleNameKeyDown}
+              disabled={isPending}
+              placeholder="Nazwa produktu…"
+              className="flex-1 bg-transparent mono text-sm focus:outline-none disabled:opacity-40"
+              style={{ color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
+              autoComplete="off"
+              spellCheck={false}
+            />
+
+            <button
+              onClick={submit}
+              disabled={!name.trim() || isPending}
+              className="flex items-center justify-center rounded px-2 py-1 text-xs font-medium focus:outline-none disabled:opacity-40 flex-shrink-0"
+              style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+              title="Dodaj (Enter)"
             >
-              {suggestions.map((s, i) => (
-                <button
-                  key={s.id}
-                  onClick={() => selectSuggestion(s)}
-                  className="flex items-center gap-3 w-full px-4 py-2 text-left focus:outline-none"
-                  style={{
-                    backgroundColor: i === suggestionIndex ? "var(--bg-hover)" : undefined,
-                    color: "var(--text-primary)",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = i === suggestionIndex ? "var(--bg-hover)" : "";
-                  }}
-                >
-                  <span className="mono text-sm">{s.name}</span>
-                  <span className="text-xs ml-auto" style={{ color: "var(--text-muted)" }}>
-                    {s.category}
-                    {s.defaultUnit ? ` · ${s.defaultUnit}` : ""}
-                    {!s.userId && !s.teamId && (
-                      <span className="ml-1 opacity-40">global</span>
-                    )}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
+              {isPending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+            </button>
+          </div>
         </div>
 
-        <VoiceLLMModal
-          open={showVoice}
-          onClose={() => setShowVoice(false)}
-          listId={listId}
-          categoryNames={categoryNames}
-        />
-      </>
+        {/* Autocomplete dropdown */}
+        {suggestions.length > 0 && (
+          <div
+            className="absolute left-0 right-0 z-50 shadow-lg"
+            style={{
+              top: "100%",
+              backgroundColor: "var(--bg-elevated)",
+              border: `1px solid var(--border)`,
+              borderTop: "none",
+            }}
+          >
+            {suggestions.map((s, i) => (
+              <button
+                key={s.id}
+                onClick={() => selectSuggestion(s)}
+                className="flex items-center gap-3 w-full px-4 py-2 text-left focus:outline-none"
+                style={{
+                  backgroundColor: i === suggestionIndex ? "var(--bg-hover)" : undefined,
+                  color: "var(--text-primary)",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = i === suggestionIndex ? "var(--bg-hover)" : "";
+                }}
+              >
+                <span className="mono text-sm">{s.name}</span>
+                <span className="text-xs ml-auto" style={{ color: "var(--text-muted)" }}>
+                  {s.category}
+                  {s.defaultUnit ? ` · ${s.defaultUnit}` : ""}
+                  {!s.userId && !s.teamId && (
+                    <span className="ml-1 opacity-40">global</span>
+                  )}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     );
   }
 );
@@ -262,9 +227,10 @@ interface UnitInputProps {
   value: string;
   onChange: (v: string) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
 }
 
-function UnitInput({ value, onChange, onKeyDown }: UnitInputProps) {
+function UnitInput({ value, onChange, onKeyDown, disabled }: UnitInputProps) {
   const listId = useId();
   return (
     <>
@@ -272,10 +238,11 @@ function UnitInput({ value, onChange, onKeyDown }: UnitInputProps) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
+        disabled={disabled}
         list={listId}
         placeholder="jedn."
         autoComplete="off"
-        className="bg-transparent mono text-sm focus:outline-none"
+        className="bg-transparent mono text-sm focus:outline-none disabled:opacity-40"
         style={{ width: 72, color: value ? "var(--text-secondary)" : "var(--text-muted)", caretColor: "var(--accent-blue)" }}
       />
       <datalist id={listId}>
@@ -292,9 +259,10 @@ interface CategoryInputProps {
   onChange: (v: string) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   options: string[];
+  disabled?: boolean;
 }
 
-function CategoryInput({ value, onChange, onKeyDown, options }: CategoryInputProps) {
+function CategoryInput({ value, onChange, onKeyDown, options, disabled }: CategoryInputProps) {
   const listId = useId();
   return (
     <>
@@ -302,10 +270,11 @@ function CategoryInput({ value, onChange, onKeyDown, options }: CategoryInputPro
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
+        disabled={disabled}
         list={listId}
         placeholder="Kategoria"
         autoComplete="off"
-        className="bg-transparent mono text-xs focus:outline-none flex-1 md:flex-none"
+        className="bg-transparent mono text-xs focus:outline-none flex-1 md:flex-none disabled:opacity-40"
         style={{
           minWidth: 80,
           maxWidth: 140,
