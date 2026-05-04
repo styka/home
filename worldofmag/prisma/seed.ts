@@ -3,30 +3,86 @@ import { categorize } from "../src/lib/categorize";
 
 const prisma = new PrismaClient();
 
-const COMMON_ITEMS = [
+// name → defaultUnit (null = no default unit, like "szt" implied)
+const COMMON_ITEMS: Array<{ name: string; unit?: string }> = [
   // Produce
-  "jabłka", "banany", "pomidory", "ogórki", "marchew", "ziemniaki", "cebula",
-  "czosnek", "papryka", "szpinak", "sałata", "brokuł", "kapusta", "por",
-  "cytryna", "awokado", "gruszki", "śliwki", "winogrona",
+  { name: "jabłka", unit: "kg" },
+  { name: "banany", unit: "kg" },
+  { name: "pomidory", unit: "kg" },
+  { name: "ogórki", unit: "szt" },
+  { name: "marchew", unit: "kg" },
+  { name: "ziemniaki", unit: "kg" },
+  { name: "cebula", unit: "kg" },
+  { name: "czosnek", unit: "szt" },
+  { name: "papryka", unit: "szt" },
+  { name: "szpinak", unit: "op" },
+  { name: "sałata", unit: "szt" },
+  { name: "brokuł", unit: "szt" },
+  { name: "kapusta", unit: "szt" },
+  { name: "por", unit: "szt" },
+  { name: "cytryna", unit: "szt" },
+  { name: "awokado", unit: "szt" },
+  { name: "gruszki", unit: "kg" },
+  { name: "śliwki", unit: "kg" },
+  { name: "winogrona", unit: "kg" },
   // Dairy
-  "mleko", "masło", "ser żółty", "jogurt naturalny", "jajka", "śmietana",
-  "twaróg", "kefir", "mozzarella", "serek wiejski",
+  { name: "mleko", unit: "l" },
+  { name: "masło", unit: "szt" },
+  { name: "ser żółty", unit: "dkg" },
+  { name: "jogurt naturalny", unit: "szt" },
+  { name: "jajka", unit: "szt" },
+  { name: "śmietana", unit: "szt" },
+  { name: "twaróg", unit: "szt" },
+  { name: "kefir", unit: "szt" },
+  { name: "mozzarella", unit: "szt" },
+  { name: "serek wiejski", unit: "szt" },
   // Meat
-  "kurczak", "mielone wołowe", "boczek", "szynka", "parówki", "schab",
-  "łosoś", "tuńczyk w puszce", "krewetki",
+  { name: "kurczak", unit: "kg" },
+  { name: "mielone wołowe", unit: "kg" },
+  { name: "boczek", unit: "dkg" },
+  { name: "szynka", unit: "dkg" },
+  { name: "parówki", unit: "op" },
+  { name: "schab", unit: "kg" },
+  { name: "łosoś", unit: "dkg" },
+  { name: "tuńczyk w puszce", unit: "szt" },
+  { name: "krewetki", unit: "g" },
   // Bakery
-  "chleb", "bułki", "bagietka", "chleb żytni",
+  { name: "chleb", unit: "szt" },
+  { name: "bułki", unit: "szt" },
+  { name: "bagietka", unit: "szt" },
+  { name: "chleb żytni", unit: "szt" },
   // Dry
-  "makaron spaghetti", "ryż", "mąka pszenna", "cukier", "sól", "płatki owsiane",
-  "kasza gryczana", "soczewica czerwona", "fasola biała",
+  { name: "makaron spaghetti", unit: "op" },
+  { name: "ryż", unit: "kg" },
+  { name: "mąka pszenna", unit: "kg" },
+  { name: "cukier", unit: "kg" },
+  { name: "sól", unit: "szt" },
+  { name: "płatki owsiane", unit: "op" },
+  { name: "kasza gryczana", unit: "op" },
+  { name: "soczewica czerwona", unit: "op" },
+  { name: "fasola biała", unit: "op" },
   // Drinks
-  "woda mineralna", "sok pomarańczowy", "kawa", "herbata", "piwo",
+  { name: "woda mineralna", unit: "l" },
+  { name: "sok pomarańczowy", unit: "l" },
+  { name: "kawa", unit: "op" },
+  { name: "herbata", unit: "op" },
+  { name: "piwo", unit: "szt" },
   // Snacks
-  "czekolada gorzka", "chipsy", "orzechy", "miód",
+  { name: "czekolada gorzka", unit: "szt" },
+  { name: "chipsy", unit: "op" },
+  { name: "orzechy", unit: "g" },
+  { name: "miód", unit: "słoik" },
   // Condiments
-  "oliwa z oliwek", "ketchup", "musztarda", "sos sojowy",
+  { name: "oliwa z oliwek", unit: "butelka" },
+  { name: "ketchup", unit: "szt" },
+  { name: "musztarda", unit: "szt" },
+  { name: "sos sojowy", unit: "butelka" },
   // Cleaning
-  "pasta do zębów", "szampon", "płyn do naczyń", "papier toaletowy", "mydło",
+  { name: "pasta do zębów", unit: "szt" },
+  { name: "szampon", unit: "szt" },
+  { name: "płyn do naczyń", unit: "szt" },
+  { name: "papier toaletowy", unit: "op" },
+  { name: "mydło", unit: "szt" },
 ];
 
 async function main() {
@@ -41,8 +97,8 @@ async function main() {
 
   console.log(`Created list: ${list.name}`);
 
-  // Seed ItemHistory for autocomplete
-  for (const name of COMMON_ITEMS) {
+  // Seed ItemHistory for backward compat
+  for (const { name } of COMMON_ITEMS) {
     await prisma.itemHistory.upsert({
       where: { name: name.toLowerCase() },
       update: {},
@@ -54,7 +110,28 @@ async function main() {
     });
   }
 
-  console.log(`Seeded ${COMMON_ITEMS.length} history items`);
+  console.log(`Seeded ${COMMON_ITEMS.length} ItemHistory entries`);
+
+  // Seed global Products (userId=null, teamId=null)
+  for (const { name, unit } of COMMON_ITEMS) {
+    const existing = await prisma.product.findFirst({
+      where: { name: name.toLowerCase(), userId: null, teamId: null },
+    });
+    if (!existing) {
+      await prisma.product.create({
+        data: {
+          name: name.toLowerCase(),
+          category: categorize(name),
+          defaultUnit: unit ?? null,
+          useCount: 1,
+          userId: null,
+          teamId: null,
+        },
+      });
+    }
+  }
+
+  console.log(`Seeded ${COMMON_ITEMS.length} global Product entries`);
   console.log("Done.");
 }
 

@@ -1,6 +1,23 @@
-import type { Item as PrismaItem, ShoppingList as PrismaShoppingList, ItemHistory } from "@prisma/client";
+import type { Item as PrismaItem, ShoppingList as PrismaShoppingList, ItemHistory, Product as PrismaProduct } from "@prisma/client";
 
 export type { ItemHistory };
+
+export type Product = PrismaProduct;
+
+export const UNITS: Array<{ value: string; label: string }> = [
+  { value: "szt",     label: "szt" },
+  { value: "kg",      label: "kg" },
+  { value: "dkg",     label: "dkg" },
+  { value: "g",       label: "g" },
+  { value: "l",       label: "l" },
+  { value: "ml",      label: "ml" },
+  { value: "op",      label: "op" },
+  { value: "paczka",  label: "paczka" },
+  { value: "butelka", label: "butelka" },
+  { value: "puszka",  label: "puszka" },
+  { value: "torebka", label: "torebka" },
+  { value: "słoik",   label: "słoik" },
+];
 
 export type ShoppingList = PrismaShoppingList & {
   ownerTeam?: { id: string; name: string } | null;

@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { categorize } from "@/lib/categorize";
 import { parseQuantity } from "@/lib/parseQuantity";
 import { assertListAccess } from "@/actions/lists";
+import { upsertUserProduct } from "@/actions/products";
 import type { Item, ItemStatus, ItemHistory } from "@/types";
 import type { Item as PrismaItem } from "@prisma/client";
 
@@ -40,6 +41,8 @@ export async function addItem(listId: string, rawText: string): Promise<Item> {
     },
     create: { name: name.toLowerCase(), category, unit: unit ?? null },
   });
+
+  await upsertUserProduct(name.toLowerCase(), unit ?? null, category);
 
   revalidatePath(`/shopping/${listId}`);
   return toItem(item);
@@ -95,6 +98,36 @@ export async function markAllInCart(listId: string): Promise<void> {
     data: { status: "IN_CART" },
   });
   revalidatePath(`/shopping/${listId}`);
+}
+
+export async function addItemStructured(
+  listId: string,
+  name: string,
+  quantity: number | null,
+  unit: string | null
+): Promise<Item> {
+  const user = await requireAuth();
+  await assertListAccess(listId, user.id);
+
+  const trimmedName = name.trim().toLowerCase();
+  const category = categorize(trimmedName);
+
+  const item = await prisma.item.create({
+    data: { listId, name: trimmedName, quantity, unit, category },
+  });
+
+  // Update legacy ItemHistory
+  await prisma.itemHistory.upsert({
+    where: { name: trimmedName },
+    update: { useCount: { increment: 1 }, category, unit: unit ?? undefined, updatedAt: new Date() },
+    create: { name: trimmedName, category, unit },
+  });
+
+  // Update product catalog
+  await upsertUserProduct(trimmedName, unit, category);
+
+  revalidatePath(`/shopping/${listId}`);
+  return toItem(item);
 }
 
 export async function getSuggestionsForPrefix(prefix: string): Promise<ItemHistory[]> {

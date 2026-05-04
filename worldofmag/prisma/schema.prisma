@@ -28,6 +28,7 @@ model User {
   sentInvitations   TeamInvitation[] @relation("InvitedBy")
   receivedInvitations TeamInvitation[] @relation("InvitedUser")
   ownedLists        ShoppingList[]
+  products          Product[]
 }
 
 model Account {
@@ -83,6 +84,7 @@ model Team {
   members     TeamMember[]
   invitations TeamInvitation[]
   lists       ShoppingList[]   @relation("TeamLists")
+  products    Product[]
 }
 
 model TeamMember {
@@ -150,5 +152,32 @@ model ItemHistory {
   category  String
   unit      String?
   useCount  Int      @default(1)
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Product Catalog ──────────────────────────────────────────────────────
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  category    String   @default("Other")
+  defaultUnit String?
+  useCount    Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // userId=null AND teamId=null → global/seed product visible to everyone
+  userId      String?
+  teamId      String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+// ─── System Config ────────────────────────────────────────────────────────
+
+model Config {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
   updatedAt DateTime @updatedAt
 }

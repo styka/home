@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, ShoppingCart, Pencil, Check, X } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Pencil, Check, X, Package } from "lucide-react";
 import type { ShoppingList } from "@/types";
 import { createList, deleteList, renameList } from "@/actions/lists";
 import { cn } from "@/lib/cn";
@@ -152,6 +152,26 @@ export function ListPicker({ allLists, currentListId }: ListPickerProps) {
             </div>
           );
         })}
+      </div>
+
+      {/* Catalog link */}
+      <div className="border-t py-1" style={{ borderColor: "var(--border)" }}>
+        <Link
+          href="/shopping/products"
+          className="flex items-center gap-2 px-3 py-1.5 rounded mx-1 text-xs focus:outline-none"
+          style={{ color: "var(--text-muted)" }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-hover)";
+            (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = "";
+            (e.currentTarget as HTMLElement).style.color = "var(--text-muted)";
+          }}
+        >
+          <Package size={12} className="flex-shrink-0" />
+          <span>Katalog produktów</span>
+        </Link>
       </div>
     </div>
   );

@@ -188,7 +188,16 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
         )}
       </button>
 
-      {/* Item name + details */}
+      {/* Qty + unit column */}
+      <div className="flex-shrink-0 text-right" style={{ width: 72 }}>
+        {(item.quantity != null || item.unit) ? (
+          <span className="mono text-xs" style={{ color: "var(--text-muted)" }}>
+            {item.quantity != null ? item.quantity : ""}{item.unit ? ` ${item.unit}` : ""}
+          </span>
+        ) : null}
+      </div>
+
+      {/* Name column */}
       <div className="flex-1 min-w-0">
         <span
           className={cn("mono text-sm", isDone && "line-through")}
@@ -196,15 +205,10 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
         >
           {item.name}
         </span>
-        {(item.quantity || item.unit) && (
-          <span className="text-xs ml-2" style={{ color: "var(--text-muted)" }}>
-            {item.quantity}{item.unit ? ` ${item.unit}` : ""}
-          </span>
-        )}
         {item.notes && (
-          <span className="text-xs ml-2" style={{ color: "var(--text-muted)" }}>
-            — {item.notes}
-          </span>
+          <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+            {item.notes}
+          </div>
         )}
       </div>
 

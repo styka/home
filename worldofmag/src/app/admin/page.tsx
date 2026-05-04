@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
-import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare } from "lucide-react"
+import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings } from "lucide-react"
+import Link from "next/link"
 
 function fmtDate(iso: string | undefined) {
   if (!iso || iso === "unknown") return "—"
@@ -104,6 +105,42 @@ export default async function AdminPage() {
                 </span>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Quick links */}
+        <section style={{ marginBottom: 24 }}>
+          <h2 style={{
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "var(--text-muted)",
+            marginBottom: 12,
+          }}>
+            Konfiguracja
+          </h2>
+          <div style={{
+            background: "var(--bg-surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 10,
+            overflow: "hidden",
+          }}>
+            <Link href="/admin/config" style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "12px 16px",
+              color: "var(--text-primary)",
+              textDecoration: "none",
+            }}
+              onMouseOver={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-hover)"; }}
+              onMouseOut={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
+            >
+              <Settings size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Konfiguracja LLM (klucz Groq)</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
           </div>
         </section>
 
