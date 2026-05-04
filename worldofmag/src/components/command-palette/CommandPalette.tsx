@@ -3,7 +3,7 @@
 import { useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
-import { ShoppingCart, Plus, Trash2, CheckCheck, X } from "lucide-react";
+import { ShoppingCart, Plus, Trash2, CheckCheck, X, Package } from "lucide-react";
 import { useCommandPalette } from "./CommandPaletteProvider";
 import type { ShoppingList } from "@/types";
 import { clearDoneItems, markAllInCart } from "@/actions/items";
@@ -84,6 +84,11 @@ export function CommandPalette({ listId, allLists, onFocusQuickAdd }: CommandPal
                 icon={<Trash2 size={14} />}
                 label="Clear done items"
                 onSelect={() => run(() => startTransition(() => clearDoneItems(listId)))}
+              />
+              <PaletteItem
+                icon={<Package size={14} />}
+                label="Katalog produktów"
+                onSelect={() => run(() => router.push("/shopping/products"))}
               />
               <PaletteItem
                 icon={<Plus size={14} />}

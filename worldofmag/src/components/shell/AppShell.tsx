@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, Package } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 
 interface AppShellProps {
@@ -184,6 +184,17 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                     {invitationCount}
                   </span>
                 )}
+              </Link>
+              <Link
+                href="/shopping/products"
+                className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
+                style={{
+                  backgroundColor: pathname.startsWith("/shopping/products") ? "var(--bg-elevated)" : undefined,
+                  color: pathname.startsWith("/shopping/products") ? "var(--text-primary)" : "var(--text-secondary)",
+                }}
+              >
+                <Package size={20} />
+                <span>Katalog produktów</span>
               </Link>
               <Link
                 href="/settings"

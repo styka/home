@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useTransition, forwardRef, useImperativeHandle } from "react";
+import { useRef, useState, useEffect, useTransition, forwardRef, useImperativeHandle, useId } from "react";
 import { Plus, Loader2, Mic } from "lucide-react";
 import type { Product } from "@/types";
 import { UNITS } from "@/types";
@@ -151,7 +151,7 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
                 style={{ width: 52, color: "var(--text-secondary)", caretColor: "var(--accent-blue)" }}
               />
 
-              <UnitSelect value={unit} onChange={setUnit} onKeyDown={handleUnitKeyDown} />
+              <UnitInput value={unit} onChange={setUnit} onKeyDown={handleUnitKeyDown} />
 
               <button
                 onClick={submit}
@@ -220,57 +220,31 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
   }
 );
 
-interface UnitSelectProps {
+interface UnitInputProps {
   value: string;
   onChange: (v: string) => void;
-  onKeyDown?: (e: React.KeyboardEvent<HTMLSelectElement | HTMLInputElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
-function UnitSelect({ value, onChange, onKeyDown }: UnitSelectProps) {
-  const isCustom = value !== "" && !UNITS.find((u) => u.value === value);
-
-  if (isCustom) {
-    return (
+function UnitInput({ value, onChange, onKeyDown }: UnitInputProps) {
+  const listId = useId();
+  return (
+    <>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
-        placeholder="jednostka"
+        list={listId}
+        placeholder="jedn."
+        autoComplete="off"
         className="bg-transparent mono text-sm focus:outline-none"
-        style={{ width: 72, color: "var(--text-secondary)", caretColor: "var(--accent-blue)" }}
-        autoFocus
+        style={{ width: 72, color: value ? "var(--text-secondary)" : "var(--text-muted)", caretColor: "var(--accent-blue)" }}
       />
-    );
-  }
-
-  return (
-    <select
-      value={value}
-      onChange={(e) => {
-        if (e.target.value === "__custom__") {
-          onChange("_");
-        } else {
-          onChange(e.target.value);
-        }
-      }}
-      onKeyDown={onKeyDown}
-      className="bg-transparent mono text-sm focus:outline-none cursor-pointer"
-      style={{
-        color: value ? "var(--text-secondary)" : "var(--text-muted)",
-        width: 72,
-        border: "none",
-        outline: "none",
-        appearance: "none",
-        WebkitAppearance: "none",
-      }}
-    >
-      <option value="">Jedn.</option>
-      {UNITS.map((u) => (
-        <option key={u.value} value={u.value} style={{ backgroundColor: "var(--bg-elevated)" }}>
-          {u.label}
-        </option>
-      ))}
-      <option value="__custom__" style={{ backgroundColor: "var(--bg-elevated)" }}>Inna…</option>
-    </select>
+      <datalist id={listId}>
+        {UNITS.map((u) => (
+          <option key={u.value} value={u.value} />
+        ))}
+      </datalist>
+    </>
   );
 }

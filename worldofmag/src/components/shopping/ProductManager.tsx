@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useId } from "react";
 import { Pencil, Trash2, Plus, Check, X, Copy } from "lucide-react";
 import type { Product } from "@/types";
 import { UNITS } from "@/types";
@@ -33,9 +33,16 @@ export function ProductManager({ products, userId }: ProductManagerProps) {
   const [newUnit, setNewUnit] = useState("");
   const [newCategory, setNewCategory] = useState("Other");
   const [isPending, startTransition] = useTransition();
+  const unitDatalistId = useId();
 
   const personal = products.filter((p) => p.userId === userId);
   const global = products.filter((p) => !p.userId && !p.teamId);
+
+  const baseUnitValues = UNITS.map((u) => u.value);
+  const customUnits = Array.from(new Set(
+    products.map((p) => p.defaultUnit).filter((u): u is string => !!u && !baseUnitValues.includes(u))
+  ));
+  const allUnitSuggestions = [...baseUnitValues, ...customUnits];
 
   const filtered = (list: Product[]) =>
     list.filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()));
@@ -121,7 +128,7 @@ export function ProductManager({ products, userId }: ProductManagerProps) {
             style={inputStyle}
             autoFocus
           />
-          <UnitDropdown value={newUnit} onChange={setNewUnit} />
+          <UnitInput value={newUnit} onChange={setNewUnit} datalistId={unitDatalistId} />
           <select
             value={newCategory}
             onChange={(e) => setNewCategory(e.target.value)}
@@ -139,6 +146,10 @@ export function ProductManager({ products, userId }: ProductManagerProps) {
         </div>
       )}
 
+      <datalist id={unitDatalistId}>
+        {allUnitSuggestions.map((u) => <option key={u} value={u} />)}
+      </datalist>
+
       {/* Personal products */}
       <Section
         title="Moje produkty"
@@ -150,6 +161,7 @@ export function ProductManager({ products, userId }: ProductManagerProps) {
         onDelete={handleDelete}
         onChange={(patch) => setEditing((e) => e ? { ...e, ...patch } : e)}
         editable
+        unitDatalistId={unitDatalistId}
       />
 
       {/* Global products */}
@@ -164,6 +176,7 @@ export function ProductManager({ products, userId }: ProductManagerProps) {
         onDelete={() => {}}
         onChange={() => {}}
         editable={false}
+        unitDatalistId={unitDatalistId}
         onCopy={handleCopy}
         alreadyCopied={(id) => personal.some((p) => {
           const g = global.find((g) => g.id === id);
@@ -180,6 +193,7 @@ interface SectionProps {
   products: Product[];
   editing: EditState | null;
   editable: boolean;
+  unitDatalistId: string;
   onEdit: (p: Product) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -189,7 +203,7 @@ interface SectionProps {
   alreadyCopied?: (id: string) => boolean;
 }
 
-function Section({ title, subtitle, products, editing, editable, onEdit, onSave, onCancel, onDelete, onChange, onCopy, alreadyCopied }: SectionProps) {
+function Section({ title, subtitle, products, editing, editable, unitDatalistId, onEdit, onSave, onCancel, onDelete, onChange, onCopy, alreadyCopied }: SectionProps) {
   return (
     <div className="mb-8">
       <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>
@@ -224,7 +238,7 @@ function Section({ title, subtitle, products, editing, editable, onEdit, onSave,
                       style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", borderRadius: 4, padding: "2px 6px", color: "var(--text-primary)" }}
                       autoFocus
                     />
-                    <UnitDropdown value={editing.defaultUnit} onChange={(v) => onChange({ defaultUnit: v })} />
+                    <UnitInput value={editing.defaultUnit} onChange={(v) => onChange({ defaultUnit: v })} datalistId={unitDatalistId} />
                     <select
                       value={editing.category}
                       onChange={(e) => onChange({ category: e.target.value })}
@@ -278,12 +292,16 @@ function Section({ title, subtitle, products, editing, editable, onEdit, onSave,
   );
 }
 
-function UnitDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function UnitInput({ value, onChange, datalistId }: { value: string; onChange: (v: string) => void; datalistId: string }) {
   return (
-    <select
+    <input
+      type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="text-xs focus:outline-none"
+      list={datalistId}
+      placeholder="jedn."
+      autoComplete="off"
+      className="mono text-xs focus:outline-none"
       style={{
         backgroundColor: "var(--bg-base)",
         border: "1px solid var(--border)",
@@ -292,9 +310,6 @@ function UnitDropdown({ value, onChange }: { value: string; onChange: (v: string
         color: value ? "var(--text-secondary)" : "var(--text-muted)",
         width: 80,
       }}
-    >
-      <option value="">Brak</option>
-      {UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
-    </select>
+    />
   );
 }

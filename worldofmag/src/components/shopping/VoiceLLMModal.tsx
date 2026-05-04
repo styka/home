@@ -197,6 +197,12 @@ export function VoiceLLMModal({ open, onClose, listId }: VoiceLLMModalProps) {
 
   if (!open) return null;
 
+  const unitDatalist = (
+    <datalist id="vlm-unit-datalist">
+      {UNITS.map((u) => <option key={u.value} value={u.value} />)}
+    </datalist>
+  );
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
@@ -339,9 +345,13 @@ export function VoiceLLMModal({ open, onClose, listId }: VoiceLLMModalProps) {
                 />
 
                 {/* Unit */}
-                <select
-                  value={UNITS.find((u) => u.value === row.unit) ? row.unit : (row.unit ? "__other__" : "")}
-                  onChange={(e) => updateRow(i, { unit: e.target.value === "__other__" ? row.unit : e.target.value })}
+                <input
+                  type="text"
+                  value={row.unit}
+                  onChange={(e) => updateRow(i, { unit: e.target.value })}
+                  list="vlm-unit-datalist"
+                  placeholder="jedn."
+                  autoComplete="off"
                   className="bg-transparent mono text-xs focus:outline-none"
                   style={{
                     color: "var(--text-secondary)",
@@ -351,12 +361,7 @@ export function VoiceLLMModal({ open, onClose, listId }: VoiceLLMModalProps) {
                     padding: "1px 4px",
                     backgroundColor: "var(--bg-elevated)",
                   }}
-                >
-                  <option value="">—</option>
-                  {UNITS.map((u) => (
-                    <option key={u.value} value={u.value}>{u.value}</option>
-                  ))}
-                </select>
+                />
 
                 {/* Add to catalog toggle (new products only) */}
                 {row.isNew && (
@@ -378,6 +383,8 @@ export function VoiceLLMModal({ open, onClose, listId }: VoiceLLMModalProps) {
             ))}
           </div>
         )}
+
+        {unitDatalist}
 
         {/* Footer */}
         {rows.length > 0 && (
