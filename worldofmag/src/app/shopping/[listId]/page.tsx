@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getLists, assertListAccess } from "@/actions/lists";
+import { getCategoryEmojiMap } from "@/actions/categories";
 import { ShoppingPage } from "@/components/shopping/ShoppingPage";
 import type { ShoppingListWithItems } from "@/types";
 
@@ -22,15 +23,16 @@ export default async function ListPage({ params }: Props) {
     notFound();
   }
 
-  const [list, allLists] = await Promise.all([
+  const [list, allLists, categoryEmojiMap] = await Promise.all([
     prisma.shoppingList.findUnique({
       where: { id: params.listId },
       include: { items: { orderBy: [{ priority: "desc" }, { createdAt: "asc" }] } },
     }),
     getLists(),
+    getCategoryEmojiMap(),
   ]);
 
   if (!list) notFound();
 
-  return <ShoppingPage list={list as unknown as ShoppingListWithItems} allLists={allLists} />;
+  return <ShoppingPage list={list as unknown as ShoppingListWithItems} allLists={allLists} categoryEmojiMap={categoryEmojiMap} />;
 }

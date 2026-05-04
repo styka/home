@@ -5,8 +5,10 @@ import { auth } from "@/lib/auth";
 import { Package } from "lucide-react";
 import { getProducts } from "@/actions/products";
 import { getUnits } from "@/actions/units";
+import { getCategories, getCategoryNames } from "@/actions/categories";
 import { ProductManager } from "@/components/shopping/ProductManager";
 import { UnitManager } from "@/components/shopping/UnitManager";
+import { CategoryManager } from "@/components/shopping/CategoryManager";
 import { ProductsPageTabs } from "@/components/shopping/ProductsPageTabs";
 
 export default async function ProductsPage({
@@ -18,11 +20,13 @@ export default async function ProductsPage({
   if (!session?.user?.id) redirect("/auth/signin");
 
   const { tab } = await searchParams;
-  const activeTab = tab === "units" ? "units" : "products";
+  const activeTab = tab === "units" ? "units" : tab === "categories" ? "categories" : "products";
 
-  const [products, units] = await Promise.all([
+  const [products, units, categories, categoryNames] = await Promise.all([
     getProducts(),
     getUnits(),
+    getCategories(),
+    getCategoryNames(),
   ]);
 
   return (
@@ -42,9 +46,11 @@ export default async function ProductsPage({
 
         <div className="mt-6">
           {activeTab === "products" ? (
-            <ProductManager products={products} userId={session.user.id} />
-          ) : (
+            <ProductManager products={products} userId={session.user.id} categoryNames={categoryNames} />
+          ) : activeTab === "units" ? (
             <UnitManager units={units} />
+          ) : (
+            <CategoryManager categories={categories} />
           )}
         </div>
       </div>

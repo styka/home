@@ -3,13 +3,18 @@
 import Link from "next/link";
 
 interface ProductsPageTabsProps {
-  activeTab: "products" | "units";
+  activeTab: "products" | "units" | "categories";
 }
 
 export function ProductsPageTabs({ activeTab }: ProductsPageTabsProps) {
-  const tab = (id: "products" | "units", label: string) => {
+  const hrefs: Record<string, string> = {
+    products: "/shopping/products",
+    units: "/shopping/products?tab=units",
+    categories: "/shopping/products?tab=categories",
+  };
+  const tab = (id: "products" | "units" | "categories", label: string) => {
     const isActive = activeTab === id;
-    const href = id === "products" ? "/shopping/products" : "/shopping/products?tab=units";
+    const href = hrefs[id];
     return (
       <Link
         href={href}
@@ -32,6 +37,7 @@ export function ProductsPageTabs({ activeTab }: ProductsPageTabsProps) {
     >
       {tab("products", "Produkty")}
       {tab("units", "Jednostki")}
+      {tab("categories", "Kategorie")}
     </div>
   );
 }

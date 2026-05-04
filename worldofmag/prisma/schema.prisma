@@ -30,6 +30,7 @@ model User {
   ownedLists        ShoppingList[]
   products          Product[]
   units             Unit[]
+  categories        Category[]
 }
 
 model Account {
@@ -87,6 +88,7 @@ model Team {
   lists       ShoppingList[]   @relation("TeamLists")
   products    Product[]
   units       Unit[]
+  categories  Category[]
 }
 
 model TeamMember {
@@ -191,6 +193,23 @@ model Unit {
   name      String
   createdAt DateTime @default(now())
   // userId=null AND teamId=null → global base unit
+  userId    String?
+  teamId    String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([name, userId, teamId])
+}
+
+// ─── Custom Categories ────────────────────────────────────────────────────
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  emoji     String   @default("📦")
+  createdAt DateTime @default(now())
+  // userId=null AND teamId=null → global base category
   userId    String?
   teamId    String?
 

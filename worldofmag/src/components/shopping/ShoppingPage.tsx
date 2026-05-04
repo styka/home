@@ -19,9 +19,10 @@ import { FILTER_TABS, STATUS_CYCLE } from "@/types";
 interface ShoppingPageProps {
   list: ShoppingListWithItems;
   allLists: ShoppingList[];
+  categoryEmojiMap?: Record<string, string>;
 }
 
-export function ShoppingPage({ list, allLists }: ShoppingPageProps) {
+export function ShoppingPage({ list, allLists, categoryEmojiMap }: ShoppingPageProps) {
   const router = useRouter();
   const { toggle: togglePalette } = useCommandPalette();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
@@ -191,6 +192,7 @@ export function ShoppingPage({ list, allLists }: ShoppingPageProps) {
             onItemStartEdit={setEditingItemId}
             onItemStopEdit={() => setEditingItemId(null)}
             rowRefs={rowRefs}
+            categoryEmojiMap={categoryEmojiMap}
           />
         </div>
       </div>

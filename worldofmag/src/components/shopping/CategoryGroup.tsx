@@ -30,6 +30,7 @@ interface CategoryGroupProps {
   onItemStartEdit: (id: string) => void;
   onItemStopEdit: () => void;
   rowRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
+  emojiOverride?: string;
 }
 
 export function CategoryGroup({
@@ -41,9 +42,10 @@ export function CategoryGroup({
   onItemStartEdit,
   onItemStopEdit,
   rowRefs,
+  emojiOverride,
 }: CategoryGroupProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const icon = CATEGORY_ICONS[category] ?? "📦";
+  const icon = emojiOverride ?? CATEGORY_ICONS[category] ?? "📦";
   const doneCount = items.filter((i) => i.status === "DONE").length;
 
   return (

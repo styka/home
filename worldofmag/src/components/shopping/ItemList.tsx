@@ -9,6 +9,7 @@ interface ItemListProps {
   onItemStartEdit: (id: string) => void;
   onItemStopEdit: () => void;
   rowRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
+  categoryEmojiMap?: Record<string, string>;
 }
 
 export function ItemList({
@@ -19,6 +20,7 @@ export function ItemList({
   onItemStartEdit,
   onItemStopEdit,
   rowRefs,
+  categoryEmojiMap,
 }: ItemListProps) {
   if (items.length === 0) {
     return (
@@ -52,6 +54,7 @@ export function ItemList({
           onItemStartEdit={onItemStartEdit}
           onItemStopEdit={onItemStopEdit}
           rowRefs={rowRefs}
+          emojiOverride={categoryEmojiMap?.[category]}
         />
       ))}
     </div>

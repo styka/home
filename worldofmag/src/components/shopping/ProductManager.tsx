@@ -7,15 +7,10 @@ import { UNITS } from "@/types";
 import { createProduct, updateProduct, deleteProduct, copyGlobalProduct } from "@/actions/products";
 import { cn } from "@/lib/cn";
 
-const CATEGORIES = [
-  "Produce", "Dairy & Eggs", "Meat & Fish", "Bakery", "Dry Goods & Pasta",
-  "Drinks", "Frozen", "Snacks & Sweets", "Condiments & Oils", "Spices & Herbs",
-  "Cleaning & Hygiene", "Canned & Preserved", "Other",
-];
-
 interface ProductManagerProps {
   products: Product[];
   userId: string;
+  categoryNames: string[];
 }
 
 interface EditState {
@@ -25,7 +20,7 @@ interface EditState {
   category: string;
 }
 
-export function ProductManager({ products, userId }: ProductManagerProps) {
+export function ProductManager({ products, userId, categoryNames }: ProductManagerProps) {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<EditState | null>(null);
   const [adding, setAdding] = useState(false);
@@ -135,7 +130,7 @@ export function ProductManager({ products, userId }: ProductManagerProps) {
             className="text-sm focus:outline-none"
             style={{ ...inputStyle, width: 160 }}
           >
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            {categoryNames.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           <button onClick={handleCreate} disabled={!newName.trim()} className="p-1.5 rounded focus:outline-none disabled:opacity-40" style={{ color: "var(--accent-blue)" }}>
             <Check size={16} />
@@ -162,6 +157,7 @@ export function ProductManager({ products, userId }: ProductManagerProps) {
         onChange={(patch) => setEditing((e) => e ? { ...e, ...patch } : e)}
         editable
         unitDatalistId={unitDatalistId}
+        categoryNames={categoryNames}
       />
 
       {/* Global products */}
@@ -177,6 +173,7 @@ export function ProductManager({ products, userId }: ProductManagerProps) {
         onChange={() => {}}
         editable={false}
         unitDatalistId={unitDatalistId}
+        categoryNames={categoryNames}
         onCopy={handleCopy}
         alreadyCopied={(id) => personal.some((p) => {
           const g = global.find((g) => g.id === id);
@@ -194,6 +191,7 @@ interface SectionProps {
   editing: EditState | null;
   editable: boolean;
   unitDatalistId: string;
+  categoryNames: string[];
   onEdit: (p: Product) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -203,7 +201,7 @@ interface SectionProps {
   alreadyCopied?: (id: string) => boolean;
 }
 
-function Section({ title, subtitle, products, editing, editable, unitDatalistId, onEdit, onSave, onCancel, onDelete, onChange, onCopy, alreadyCopied }: SectionProps) {
+function Section({ title, subtitle, products, editing, editable, unitDatalistId, categoryNames, onEdit, onSave, onCancel, onDelete, onChange, onCopy, alreadyCopied }: SectionProps) {
   return (
     <div className="mb-8">
       <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>
@@ -245,7 +243,7 @@ function Section({ title, subtitle, products, editing, editable, unitDatalistId,
                       className="text-xs focus:outline-none"
                       style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", borderRadius: 4, padding: "2px 6px", color: "var(--text-secondary)", width: 140 }}
                     >
-                      {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      {categoryNames.map((c) => <option key={c} value={c}>{c}</option>)}
                     </select>
                     <button onClick={onSave} className="p-1 focus:outline-none" style={{ color: "var(--accent-blue)" }}><Check size={14} /></button>
                     <button onClick={onCancel} className="p-1 focus:outline-none" style={{ color: "var(--text-muted)" }}><X size={14} /></button>
