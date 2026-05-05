@@ -65,7 +65,7 @@ export function CommandPalette({ listId, allLists, onFocusQuickAdd }: CommandPal
             </Command.Empty>
 
             <Command.Group
-              heading="Shopping"
+              heading="Zakupy"
               className="py-1"
               style={{ color: "var(--text-muted)" } as React.CSSProperties}
             >
