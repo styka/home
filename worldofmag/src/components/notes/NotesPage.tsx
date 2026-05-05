@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, useRef, useTransition } from "react";
-import { MessageCircle, X } from "lucide-react";
+import { MessageCircle, X, Search } from "lucide-react";
 import { NoteList } from "./NoteList";
 import { QuickNoteBar, type QuickNoteBarHandle } from "./QuickNoteBar";
 import { NotesQA } from "./NotesQA";
@@ -11,7 +11,7 @@ import { useItemNavigation } from "@/hooks/useItemNavigation";
 import type { Note, Tag, NoteGroup, NoteFilter } from "@/types";
 import { NOTE_FILTER_LABELS } from "@/types";
 
-const NOTE_FILTERS: NoteFilter[] = ["ALL", "PINNED", "NO_GROUP"];
+const NOTE_FILTERS: NoteFilter[] = ["ALL", "PINNED", "NO_GROUP", "SEARCH"];
 
 interface NotesPageProps {
   notes: Note[];
@@ -24,13 +24,14 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [isQAOpen, setIsQAOpen] = useState(false);
-  const [tagsVersion, setTagsVersion] = useState(0);
   const [, startTransition] = useTransition();
   const quickNoteRef = useRef<QuickNoteBarHandle>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const isSearchOpen = activeFilter === "SEARCH";
 
   const filteredNotes = useMemo(() => {
     let result = notes;
@@ -65,6 +66,12 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
     setFocusedNoteId
   );
 
+  function scrollToNote(noteId: string) {
+    const el = rowRefs.current.get(noteId);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setFocusedNoteId(noteId);
+  }
+
   const handlers = useMemo(
     () => ({
       onQuickAdd: () => quickNoteRef.current?.focus(),
@@ -84,11 +91,14 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
         if (!focusedNoteId) return;
         setEditingNoteId(focusedNoteId);
       },
-      onSearch: () => setIsSearchOpen(true),
+      onSearch: () => {
+        setActiveFilter("SEARCH");
+        setTimeout(() => searchInputRef.current?.focus(), 10);
+      },
       onFilterTab: (index: number) => setActiveFilter(NOTE_FILTERS[index] ?? "ALL"),
       onCommandPalette: () => {},
       onEscape: () => {
-        if (isSearchOpen) { setSearchQuery(""); setIsSearchOpen(false); return; }
+        if (isSearchOpen) { setSearchQuery(""); setActiveFilter("ALL"); return; }
         if (editingNoteId) { setEditingNoteId(null); return; }
         setFocusedNoteId(null);
       },
@@ -133,22 +143,25 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filter tabs */}
       <div
         className="flex items-center gap-1 px-4 border-b overflow-x-auto flex-shrink-0"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)", minHeight: 40 }}
       >
-        {/* Main filter tabs */}
-        {NOTE_FILTERS.map((f, i) => (
+        {NOTE_FILTERS.map((f) => (
           <button
             key={f}
-            onClick={() => setActiveFilter(f)}
-            className="flex-shrink-0 px-3 py-1.5 text-xs rounded-t-sm font-medium transition-colors"
+            onClick={() => {
+              setActiveFilter(f);
+              if (f === "SEARCH") setTimeout(() => searchInputRef.current?.focus(), 10);
+            }}
+            className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 text-xs rounded-t-sm font-medium"
             style={{
               color: activeFilter === f ? "var(--accent-blue)" : "var(--text-muted)",
               borderBottom: activeFilter === f ? "2px solid var(--accent-blue)" : "2px solid transparent",
             }}
           >
+            {f === "SEARCH" && <Search size={10} />}
             {NOTE_FILTER_LABELS[f]}
           </button>
         ))}
@@ -191,19 +204,20 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
         )}
       </div>
 
-      {/* Search bar */}
+      {/* Search bar (shown when SEARCH filter active) */}
       {isSearchOpen && (
         <div
           className="flex items-center gap-2 px-4 py-2 border-b flex-shrink-0"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
         >
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>/</span>
+          <Search size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
           <input
+            ref={searchInputRef}
             autoFocus
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Escape") { setSearchQuery(""); setIsSearchOpen(false); }
+              if (e.key === "Escape") { setSearchQuery(""); setActiveFilter("ALL"); }
             }}
             placeholder="Szukaj w notatkach..."
             className="flex-1 bg-transparent text-sm focus:outline-none"
@@ -248,13 +262,18 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
           onNoteFocus={setFocusedNoteId}
           onNoteStartEdit={setEditingNoteId}
           onNoteStopEdit={() => setEditingNoteId(null)}
-          onTagsChanged={() => setTagsVersion((v) => v + 1)}
+          onTagsChanged={() => {}}
           rowRefs={rowRefs}
+          searchQuery={searchQuery}
         />
 
         {/* Q&A panel */}
         {isQAOpen && (
-          <NotesQA allNotes={notes} filteredNotes={filteredNotes} />
+          <NotesQA
+            allNotes={notes}
+            filteredNotes={filteredNotes}
+            onScrollToNote={scrollToNote}
+          />
         )}
       </div>
     </div>

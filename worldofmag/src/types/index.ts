@@ -60,12 +60,13 @@ export type Note = PrismaNote & {
   tags: Array<{ tag: Tag }>;
 };
 
-export type NoteFilter = "ALL" | "PINNED" | "NO_GROUP";
+export type NoteFilter = "ALL" | "PINNED" | "NO_GROUP" | "SEARCH";
 
 export const NOTE_FILTER_LABELS: Record<NoteFilter, string> = {
   ALL: "Wszystkie",
   PINNED: "Przypięte",
   NO_GROUP: "Bez grupy",
+  SEARCH: "Szukaj",
 };
 
 // ─── Shared ───────────────────────────────────────────────────────────────

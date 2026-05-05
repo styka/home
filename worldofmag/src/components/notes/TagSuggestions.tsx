@@ -35,8 +35,8 @@ export function TagSuggestions({ noteId, noteContent, allTags, currentTagIds, on
           existingTags: allTags.map((t) => t.name),
         }),
       });
-      const data = await res.json() as { suggested: string[]; new: string[] };
-      setSuggested(allTags.filter((t) => data.suggested.includes(t.name)));
+      const data = await res.json() as { suggested?: string[]; new?: string[] };
+      setSuggested(allTags.filter((t) => (data.suggested ?? []).includes(t.name)));
       setNewSuggested(data.new ?? []);
       setDone(true);
     } finally {

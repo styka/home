@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
   const systemPrompt = `Jesteś asystentem odpowiadającym na pytania na podstawie notatek użytkownika.
 Odpowiadaj po polsku, zwięźle i konkretnie.
 Jeśli odpowiedź jest w notatkach — odpowiedz i wskaż skąd pochodzi informacja.
-Jeśli nie wiesz — powiedz to wprost, nie wymyślaj.`;
+Jeśli nie wiesz — powiedz to wprost, nie wymyślaj.
+Na końcu odpowiedzi ZAWSZE dodaj blok: <!-- sources: [1,3] --> z numerami notatek (indeksy od 1) które stanowiły podstawę odpowiedzi. Jeśli żadna nie była podstawą, wpisz: <!-- sources: [] -->.`;
 
   const userMessage = `Moje notatki:\n\n${notesContext}\n\n---\n\nPytanie: ${question}`;
 

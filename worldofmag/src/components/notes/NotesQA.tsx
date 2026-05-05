@@ -1,20 +1,31 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Send, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import type { Note } from "@/types";
 
 interface QAMessage {
   question: string;
   answer: string;
+  sourceIndices: number[];
 }
 
 interface NotesQAProps {
   allNotes: Note[];
   filteredNotes: Note[];
+  onScrollToNote?: (noteId: string) => void;
 }
 
-export function NotesQA({ allNotes, filteredNotes }: NotesQAProps) {
+function parseAnswer(raw: string): { clean: string; indices: number[] } {
+  const match = raw.match(/<!--\s*sources:\s*\[([^\]]*)\]\s*-->/);
+  const indices = match
+    ? match[1].split(",").map((s) => parseInt(s.trim()) - 1).filter((n) => !isNaN(n) && n >= 0)
+    : [];
+  const clean = raw.replace(/<!--\s*sources:\s*\[[^\]]*\]\s*-->/, "").trim();
+  return { clean, indices };
+}
+
+export function NotesQA({ allNotes, filteredNotes, onScrollToNote }: NotesQAProps) {
   const [useFiltered, setUseFiltered] = useState(false);
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<QAMessage[]>([]);
@@ -41,7 +52,7 @@ export function NotesQA({ allNotes, filteredNotes }: NotesQAProps) {
       });
 
       if (!res.ok || !res.body) {
-        setMessages((m) => [...m, { question: q, answer: "Błąd: nie można połączyć z AI." }]);
+        setMessages((m) => [...m, { question: q, answer: "Błąd: nie można połączyć z AI.", sourceIndices: [] }]);
         return;
       }
 
@@ -73,7 +84,8 @@ export function NotesQA({ allNotes, filteredNotes }: NotesQAProps) {
         }
       }
 
-      setMessages((m) => [...m, { question: q, answer: fullAnswer }]);
+      const { clean, indices } = parseAnswer(fullAnswer);
+      setMessages((m) => [...m, { question: q, answer: clean, sourceIndices: indices }]);
     } finally {
       setStreaming(false);
       setCurrentAnswer("");
@@ -83,7 +95,7 @@ export function NotesQA({ allNotes, filteredNotes }: NotesQAProps) {
   return (
     <div
       className="flex flex-col border-t"
-      style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)", maxHeight: 360 }}
+      style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)", maxHeight: 400 }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "var(--border)" }}>
@@ -107,7 +119,7 @@ export function NotesQA({ allNotes, filteredNotes }: NotesQAProps) {
       </div>
 
       {/* History */}
-      <div ref={answerRef} className="flex-1 overflow-y-auto px-4 py-2 space-y-3" style={{ minHeight: 80, maxHeight: 200 }}>
+      <div ref={answerRef} className="flex-1 overflow-y-auto px-4 py-2 space-y-4" style={{ minHeight: 80, maxHeight: 240 }}>
         {messages.length === 0 && !streaming && (
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
             Zadaj pytanie, a AI odpowie na podstawie Twoich notatek.
@@ -121,6 +133,26 @@ export function NotesQA({ allNotes, filteredNotes }: NotesQAProps) {
             <p className="text-xs whitespace-pre-wrap" style={{ color: "var(--text-primary)", lineHeight: 1.6 }}>
               {msg.answer}
             </p>
+            {msg.sourceIndices.length > 0 && (
+              <div className="mt-1.5 pt-1.5 border-t" style={{ borderColor: "var(--border)" }}>
+                <span className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>Źródła: </span>
+                {msg.sourceIndices.map((idx) => {
+                  const note = contextNotes[idx];
+                  if (!note) return null;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => onScrollToNote?.(note.id)}
+                      className="text-[10px] px-1.5 py-0.5 rounded mr-1 mt-0.5 inline-block text-left"
+                      style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}
+                      title={note.content.slice(0, 80)}
+                    >
+                      {note.title}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ))}
         {streaming && (
@@ -129,7 +161,7 @@ export function NotesQA({ allNotes, filteredNotes }: NotesQAProps) {
               → {question || "..."}
             </p>
             <p className="text-xs whitespace-pre-wrap" style={{ color: "var(--text-primary)", lineHeight: 1.6 }}>
-              {currentAnswer}
+              {parseAnswer(currentAnswer).clean}
               <span className="inline-block w-1.5 h-3 ml-0.5 animate-pulse" style={{ backgroundColor: "var(--text-primary)" }} />
             </p>
           </div>

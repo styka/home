@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, forwardRef, useImperativeHandle, useTransition } from "react";
-import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { useRef, useState, useEffect, forwardRef, useImperativeHandle, useTransition } from "react";
+import { ChevronDown, ChevronUp, Sparkles, Mic, MicOff, Loader2 } from "lucide-react";
 import { createNote } from "@/actions/notes";
 import { createTag } from "@/actions/tags";
 import { TagChip } from "./TagChip";
@@ -25,11 +25,39 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
     const [groupId, setGroupId] = useState<string>("");
     const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState("");
-    const [suggestedTags, setSuggestedTags] = useState<{ existing: Tag[]; newNames: string[] } | null>(null);
+    const [suggestedTags, setSuggestedTags] = useState<{ existing: Tag[]; newNames: string[]; suggestedGroup?: string | null } | null>(null);
     const [suggestLoading, setSuggestLoading] = useState(false);
+    const [titleAiSuggested, setTitleAiSuggested] = useState(false);
+    const [titleLoading, setTitleLoading] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
     const [, startTransition] = useTransition();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recognitionRef = useRef<any>(null);
+    const tagDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+    const titleDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+
     useImperativeHandle(ref, () => ({ focus: () => titleRef.current?.focus() }));
+
+    // Auto-suggest tags when title or content changes (debounce 1500ms)
+    useEffect(() => {
+      if (!expanded) return;
+      clearTimeout(tagDebounceRef.current);
+      tagDebounceRef.current = setTimeout(() => {
+        if (title.trim() || content.trim()) suggestTagsAuto();
+      }, 1500);
+      return () => clearTimeout(tagDebounceRef.current);
+    }, [title, content, expanded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Auto-generate title from content (debounce 1500ms, only when title empty)
+    useEffect(() => {
+      if (!expanded || title) return;
+      clearTimeout(titleDebounceRef.current);
+      titleDebounceRef.current = setTimeout(() => {
+        if (content.trim().length > 20) suggestTitle();
+      }, 1500);
+      return () => clearTimeout(titleDebounceRef.current);
+    }, [content, expanded, title]); // eslint-disable-line react-hooks/exhaustive-deps
 
     function reset() {
       setTitle("");
@@ -39,6 +67,7 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
       setTagInput("");
       setSuggestedTags(null);
       setExpanded(false);
+      setTitleAiSuggested(false);
     }
 
     async function handleSubmit() {
@@ -55,8 +84,7 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
       });
     }
 
-    async function suggestTags() {
-      if (!title && !content) return;
+    async function suggestTagsAuto() {
       setSuggestLoading(true);
       try {
         const res = await fetch("/api/llm/notes/tags", {
@@ -65,15 +93,37 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
           body: JSON.stringify({
             content: `${title}\n${content}`,
             existingTags: allTags.map((t) => t.name),
+            existingGroups: groups.map((g) => g.name),
           }),
         });
-        const data = await res.json() as { suggested: string[]; new: string[] };
+        if (!res.ok) return;
+        const data = await res.json() as { suggested?: string[]; new?: string[]; suggestedGroup?: string | null };
         setSuggestedTags({
-          existing: allTags.filter((t) => data.suggested.includes(t.name)),
+          existing: allTags.filter((t) => (data.suggested ?? []).includes(t.name)),
           newNames: data.new ?? [],
+          suggestedGroup: data.suggestedGroup ?? null,
         });
       } finally {
         setSuggestLoading(false);
+      }
+    }
+
+    async function suggestTitle() {
+      setTitleLoading(true);
+      try {
+        const res = await fetch("/api/llm/notes/title", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        });
+        if (!res.ok) return;
+        const data = await res.json() as { title?: string };
+        if (data.title && !title) {
+          setTitle(data.title);
+          setTitleAiSuggested(true);
+        }
+      } finally {
+        setTitleLoading(false);
       }
     }
 
@@ -89,12 +139,41 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
       }
     }
 
-    const selectedTags = allTags.filter((t) => selectedTagIds.includes(t.id));
+    function applySuggestedGroup() {
+      if (!suggestedTags?.suggestedGroup) return;
+      const g = groups.find((g) => g.name === suggestedTags.suggestedGroup);
+      if (g) { setGroupId(g.id); setSuggestedTags((s) => s ? { ...s, suggestedGroup: null } : s); }
+    }
 
+    function startVoiceInput() {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+      if (!SR) return;
+      const rec = new SR();
+      rec.lang = "pl-PL";
+      rec.continuous = false;
+      rec.interimResults = false;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      rec.onresult = (e: any) => {
+        const transcript = e.results[0][0].transcript;
+        setContent((prev) => prev ? prev + " " + transcript : transcript);
+      };
+      rec.onend = () => setIsRecording(false);
+      rec.start();
+      recognitionRef.current = rec;
+      setIsRecording(true);
+    }
+
+    function stopVoiceInput() {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+    }
+
+    const selectedTags = allTags.filter((t) => selectedTagIds.includes(t.id));
     const filteredTagOptions = allTags.filter(
-      (t) => !selectedTagIds.includes(t.id) &&
-        t.name.toLowerCase().includes(tagInput.toLowerCase())
+      (t) => !selectedTagIds.includes(t.id) && t.name.toLowerCase().includes(tagInput.toLowerCase())
     );
+    const availableTagChips = allTags.filter((t) => !selectedTagIds.includes(t.id)).slice(0, 12);
 
     return (
       <div
@@ -103,22 +182,31 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
       >
         {/* Title row */}
         <div className="flex items-center gap-2 px-4 py-2">
-          <input
-            ref={titleRef}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") { e.preventDefault(); if (!expanded) setExpanded(true); else handleSubmit(); }
-              if (e.key === "Escape") { reset(); titleRef.current?.blur(); }
-            }}
-            onFocus={() => setExpanded(true)}
-            placeholder="Nowa notatka... (Enter aby rozwinąć)"
-            className="flex-1 bg-transparent text-sm focus:outline-none"
-            style={{ color: "var(--text-primary)" }}
-          />
+          <div className="flex-1 flex items-center gap-1.5 min-w-0">
+            <input
+              ref={titleRef}
+              value={title}
+              onChange={(e) => { setTitle(e.target.value); setTitleAiSuggested(false); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); if (!expanded) setExpanded(true); else handleSubmit(); }
+                if (e.key === "Escape") { reset(); titleRef.current?.blur(); }
+              }}
+              onFocus={() => setExpanded(true)}
+              placeholder="Nowa notatka... (Enter aby rozwinąć)"
+              className="flex-1 bg-transparent text-sm focus:outline-none min-w-0"
+              style={{ color: "var(--text-primary)" }}
+            />
+            {titleLoading && <Loader2 size={11} className="animate-spin flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
+            {titleAiSuggested && !titleLoading && (
+              <span className="text-[10px] px-1 rounded flex-shrink-0"
+                style={{ backgroundColor: "rgba(139,92,246,0.2)", color: "#8b5cf6" }}>
+                ✨ AI
+              </span>
+            )}
+          </div>
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="p-1 rounded"
+            className="p-1 rounded flex-shrink-0"
             style={{ color: "var(--text-muted)" }}
           >
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -128,27 +216,33 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
         {/* Expanded form */}
         {expanded && (
           <div className="px-4 pb-3 space-y-2">
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Treść notatki..."
-              rows={3}
-              className="w-full bg-transparent text-sm focus:outline-none resize-none"
-              style={{ color: "var(--text-primary)" }}
-            />
+            {/* Content + voice */}
+            <div className="relative">
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Treść notatki..."
+                rows={3}
+                className="w-full bg-transparent text-sm focus:outline-none resize-none pr-8"
+                style={{ color: "var(--text-primary)" }}
+              />
+              <button
+                onClick={isRecording ? stopVoiceInput : startVoiceInput}
+                className="absolute top-1 right-1 p-1 rounded"
+                style={{ color: isRecording ? "#ef4444" : "var(--text-muted)" }}
+                title={isRecording ? "Zatrzymaj" : "Dyktuj (pl)"}
+              >
+                {isRecording ? <MicOff size={12} className="animate-pulse" /> : <Mic size={12} />}
+              </button>
+            </div>
 
-            {/* Group + tags row */}
+            {/* Group picker + suggested group */}
             <div className="flex flex-wrap items-center gap-2">
-              {/* Group picker */}
               <select
                 value={groupId}
                 onChange={(e) => setGroupId(e.target.value)}
                 className="bg-transparent text-xs focus:outline-none rounded px-2 py-1 border"
-                style={{
-                  borderColor: "var(--border)",
-                  color: "var(--text-secondary)",
-                  backgroundColor: "var(--bg-elevated)",
-                }}
+                style={{ borderColor: "var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-elevated)" }}
               >
                 <option value="">Bez grupy</option>
                 {groups.map((g) => (
@@ -158,8 +252,19 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
                   </option>
                 ))}
               </select>
+              {suggestedTags?.suggestedGroup && !groupId && (
+                <button
+                  onClick={applySuggestedGroup}
+                  className="text-xs px-1.5 py-0.5 rounded border border-dashed"
+                  style={{ color: "var(--accent-blue)", borderColor: "var(--accent-blue)", backgroundColor: "rgba(59,130,246,0.1)" }}
+                >
+                  ✨ {suggestedTags.suggestedGroup}
+                </button>
+              )}
+            </div>
 
-              {/* Selected tags */}
+            {/* Tag picker row */}
+            <div className="flex flex-wrap items-center gap-1.5">
               {selectedTags.map((tag) => (
                 <TagChip
                   key={tag.id}
@@ -168,7 +273,6 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
                 />
               ))}
 
-              {/* Tag input */}
               <div className="relative">
                 <input
                   value={tagInput}
@@ -196,17 +300,33 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
                 )}
               </div>
 
-              {/* AI suggest */}
+              {suggestLoading && <Loader2 size={10} className="animate-spin" style={{ color: "var(--text-muted)" }} />}
               <button
-                onClick={suggestTags}
+                onClick={suggestTagsAuto}
                 disabled={suggestLoading}
                 className="flex items-center gap-1 text-xs px-2 py-0.5 rounded"
                 style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-hover)" }}
               >
                 <Sparkles size={10} />
-                {suggestLoading ? "..." : "AI tagi"}
+                AI tagi
               </button>
             </div>
+
+            {/* Inline available tags */}
+            {!tagInput && availableTagChips.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {availableTagChips.map((tag) => (
+                  <button
+                    key={tag.id}
+                    onClick={() => addExistingTag(tag)}
+                    className="text-[10px] px-1.5 py-0 rounded-full opacity-40 hover:opacity-80 transition-opacity"
+                    style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-secondary)" }}
+                  >
+                    #{tag.name}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* AI tag suggestions */}
             {suggestedTags && (
