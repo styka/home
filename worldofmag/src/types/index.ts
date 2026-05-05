@@ -198,6 +198,19 @@ export const TASK_PRIORITY_COLORS: Record<TaskPriority, string> = {
 
 export const TASK_STATUS_CYCLE: TaskStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
 
+export type TaskStatusFilter = "ALL" | TaskStatus;
+export const TASK_STATUS_FILTERS: TaskStatusFilter[] = ["ALL", "TODO", "IN_PROGRESS", "DONE", "DEFERRED", "CANCELLED"];
+export const TASK_STATUS_FILTER_LABELS: Record<TaskStatusFilter, string> = {
+  ALL: "Wszystkie",
+  TODO: "Do zrobienia",
+  IN_PROGRESS: "W trakcie",
+  DONE: "Zrobione",
+  DEFERRED: "Odłożone",
+  CANCELLED: "Anulowane",
+};
+
+export type ViewMode = "today" | "upcoming" | "overdue" | "all" | "project";
+
 // ─── Shared ───────────────────────────────────────────────────────────────
 
 export interface ShortcutHandlers {

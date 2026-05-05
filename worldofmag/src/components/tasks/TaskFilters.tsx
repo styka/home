@@ -1,13 +1,13 @@
 "use client";
 
-import type { TaskFilter, TaskTagDef } from "@/types";
-import { TASK_FILTERS, TASK_FILTER_LABELS } from "@/types";
+import type { TaskStatusFilter, TaskTagDef } from "@/types";
+import { TASK_STATUS_FILTERS, TASK_STATUS_FILTER_LABELS } from "@/types";
 import { TaskTagBadge } from "./TaskTagBadge";
 
 interface TaskFiltersProps {
-  active: TaskFilter;
-  counts: Record<TaskFilter, number>;
-  onChange: (f: TaskFilter) => void;
+  active: TaskStatusFilter;
+  counts: Record<TaskStatusFilter, number>;
+  onChange: (f: TaskStatusFilter) => void;
   allTags: TaskTagDef[];
   selectedTagIds: string[];
   onTagToggle: (id: string) => void;
@@ -19,9 +19,8 @@ export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds,
       className="flex-shrink-0 border-b"
       style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
     >
-      {/* Status filter tabs */}
       <div className="flex items-center gap-0 overflow-x-auto px-2" style={{ minHeight: 38 }}>
-        {TASK_FILTERS.map((f) => {
+        {TASK_STATUS_FILTERS.map((f) => {
           const isActive = active === f;
           const count = counts[f];
           return (
@@ -35,7 +34,7 @@ export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds,
                 marginBottom: -1,
               }}
             >
-              {TASK_FILTER_LABELS[f]}
+              {TASK_STATUS_FILTER_LABELS[f]}
               {count > 0 && (
                 <span
                   className="rounded-full px-1.5"
@@ -55,7 +54,6 @@ export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds,
         })}
       </div>
 
-      {/* Tag filters */}
       {allTags.length > 0 && (
         <div className="flex items-center gap-1.5 px-3 py-1.5 overflow-x-auto">
           {allTags.map((tag) => (

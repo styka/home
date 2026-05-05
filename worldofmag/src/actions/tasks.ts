@@ -332,6 +332,31 @@ export async function removeTaskShare(shareId: string): Promise<void> {
   if (share.task.projectId) revalidatePath(`/tasks/${share.task.projectId}`);
 }
 
+export async function shareTaskByEmail(taskId: string, email: string, role: "VIEWER" | "EDITOR" = "VIEWER"): Promise<{ error?: string }> {
+  try {
+    const user = await requireAuth();
+    const task = await prisma.task.findUnique({ where: { id: taskId } });
+    if (!task) return { error: "Zadanie nie znalezione" };
+    if (task.projectId) await assertProjectAccess(task.projectId, user.id);
+
+    const targetUser = await prisma.user.findFirst({ where: { email } });
+    if (!targetUser) return { error: "Użytkownik nie znaleziony" };
+
+    const existing = await prisma.taskShare.findFirst({ where: { taskId, userId: targetUser.id } });
+    if (existing) {
+      await prisma.taskShare.update({ where: { id: existing.id }, data: { role } });
+    } else {
+      await prisma.taskShare.create({ data: { taskId, userId: targetUser.id, role } });
+    }
+
+    revalidatePath("/tasks");
+    if (task.projectId) revalidatePath(`/tasks/${task.projectId}`);
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Błąd" };
+  }
+}
+
 export async function reorderTask(taskId: string, newOrder: number): Promise<void> {
   await requireAuth();
   await prisma.task.update({ where: { id: taskId }, data: { order: newOrder } });

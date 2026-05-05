@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, FolderOpen, Tag, CheckSquare } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 
 interface ModuleSidebarProps {
   invitationCount?: number;
@@ -137,8 +138,13 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
           </div>
         )}
 
-        {/* Tasks */}
+        {/* Tasks with sub-items */}
         <NavItem href="/tasks" label="Zadania" icon={<CheckSquare size={18} />} pathname={pathname} />
+        {isTasksActive && (
+          <div className="mb-1">
+            <TasksSideNav />
+          </div>
+        )}
 
         {/* Inactive modules */}
         {[

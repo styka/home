@@ -4,9 +4,9 @@ import { useState, useTransition, useEffect, useRef } from "react";
 import {
   X, Trash2, CheckCircle2, Circle, Clock, AlertCircle, MinusCircle, Loader2,
   RefreshCw, Tag, Calendar, Timer, ChevronDown, Plus, Send, Sparkles,
-  MessageSquare,
+  MessageSquare, Share2, UserMinus,
 } from "lucide-react";
-import { updateTask, deleteTask, updateTaskTags, addTaskComment, createTask, completeRecurringTask } from "@/actions/tasks";
+import { updateTask, deleteTask, updateTaskTags, addTaskComment, createTask, completeRecurringTask, shareTaskByEmail, removeTaskShare } from "@/actions/tasks";
 import { createTaskTag } from "@/actions/taskTags";
 import { TaskTagBadge } from "./TaskTagBadge";
 import type { Task, TaskStatus, TaskPriority, TaskTagDef, RecurringRule } from "@/types";
@@ -61,6 +61,9 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
   const [recurringDays, setRecurringDays] = useState<number[]>([]);
   const [recurringEndDate, setRecurringEndDate] = useState("");
   const [newSubtask, setNewSubtask] = useState("");
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareError, setShareError] = useState("");
+  const [shareRole, setShareRole] = useState<"VIEWER" | "EDITOR">("VIEWER");
   const [aiLoading, setAiLoading] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -204,6 +207,17 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
       await deleteTask(task.id);
       onDelete();
     });
+  }
+
+  async function handleShare() {
+    if (!shareEmail.trim()) return;
+    setShareError("");
+    const res = await shareTaskByEmail(task.id, shareEmail.trim(), shareRole);
+    if (res.error) {
+      setShareError(res.error);
+    } else {
+      setShareEmail("");
+    }
   }
 
   async function handleAISuggestSubtasks() {
@@ -558,6 +572,70 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
               <Plus size={13} />
             </button>
           </div>
+        </div>
+
+        {/* Sharing */}
+        <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+          <div className="flex items-center gap-1.5 mb-2">
+            <Share2 size={13} style={{ color: "var(--text-muted)" }} />
+            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Udostępnianie</span>
+          </div>
+
+          {/* Existing shares */}
+          {(task.shares ?? []).length > 0 && (
+            <div className="space-y-1 mb-2">
+              {(task.shares ?? []).map((s) => (
+                <div key={s.id} className="flex items-center gap-2">
+                  <span className="text-xs flex-1" style={{ color: "var(--text-secondary)" }}>
+                    {s.user?.name ?? s.user?.email ?? s.team?.name ?? "Nieznany"}
+                    <span className="ml-1" style={{ color: "var(--text-muted)" }}>
+                      ({s.role === "EDITOR" ? "Edytor" : "Widz"})
+                    </span>
+                  </span>
+                  <button
+                    onClick={() => run(() => removeTaskShare(s.id))}
+                    className="focus:outline-none hover:opacity-70"
+                    style={{ color: "var(--text-muted)" }}
+                    title="Usuń dostęp"
+                  >
+                    <UserMinus size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add share by email */}
+          <div className="flex items-center gap-1.5">
+            <input
+              value={shareEmail}
+              onChange={(e) => { setShareEmail(e.target.value); setShareError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleShare(); }}
+              placeholder="Email użytkownika…"
+              className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
+              style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
+            />
+            <select
+              value={shareRole}
+              onChange={(e) => setShareRole(e.target.value as "VIEWER" | "EDITOR")}
+              className="bg-transparent text-xs focus:outline-none border rounded px-1 py-1"
+              style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+            >
+              <option value="VIEWER">Widz</option>
+              <option value="EDITOR">Edytor</option>
+            </select>
+            <button
+              onClick={handleShare}
+              disabled={!shareEmail.trim()}
+              className="text-xs px-2 py-1 rounded focus:outline-none disabled:opacity-30"
+              style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+            >
+              +
+            </button>
+          </div>
+          {shareError && (
+            <p className="text-xs mt-1" style={{ color: "var(--accent-red)" }}>{shareError}</p>
+          )}
         </div>
 
         {/* Comments */}
