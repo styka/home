@@ -231,22 +231,6 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
           />
 
           <div className="flex items-center gap-2 mt-2">
-            {/* Recording indicator pushes buttons to the right */}
-            <div className="flex-1">
-              {recording && (
-                <span
-                  className="inline-flex items-center gap-1.5 text-xs"
-                  style={{ color: "var(--accent-red)" }}
-                >
-                  <span
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: "var(--accent-red)", animation: "pulse 1s infinite" }}
-                  />
-                  Słucham…
-                </span>
-              )}
-            </div>
-
             <button
               onClick={toggleRecording}
               type="button"
@@ -278,6 +262,19 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
               }
               Przetwórz
             </button>
+
+            {recording && (
+              <span
+                className="inline-flex items-center gap-1.5 text-xs ml-2"
+                style={{ color: "var(--accent-red)" }}
+              >
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: "var(--accent-red)", animation: "pulse 1s infinite" }}
+                />
+                Słucham…
+              </span>
+            )}
           </div>
 
           {error && (
