@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 const PROMPTS: Record<string, string | ((instruction: string) => string)> = {
   correct: `Popraw błędy ortograficzne, gramatyczne i interpunkcyjne w tym tekście. Zachowaj oryginalny styl i strukturę. Odpowiedz TYLKO poprawionym tekstem bez żadnych wyjaśnień.`,
@@ -22,8 +23,8 @@ export async function POST(req: NextRequest) {
 
   const prompt = typeof promptDef === "function" ? promptDef(instruction ?? "") : promptDef;
 
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
+  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
+  if (!config?.value) {
     return NextResponse.json({ error: "Groq API key not configured" }, { status: 503 });
   }
 
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${config.value}`,
     },
     body: JSON.stringify({
       model: "llama-3.1-8b-instant",

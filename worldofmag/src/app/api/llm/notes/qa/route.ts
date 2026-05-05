@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   const { question, notes } = await req.json() as {
@@ -6,8 +7,8 @@ export async function POST(req: NextRequest) {
     notes: Array<{ title: string; content: string }>;
   };
 
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
+  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
+  if (!config?.value) {
     return new Response("Groq API key not configured", { status: 503 });
   }
 
@@ -28,7 +29,7 @@ Na końcu odpowiedzi ZAWSZE dodaj blok: <!-- sources: [1,3] --> z numerami notat
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${config.value}`,
     },
     body: JSON.stringify({
       model: "llama-3.1-8b-instant",

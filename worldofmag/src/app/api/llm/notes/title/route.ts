@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   const { content } = await req.json() as { content: string };
 
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "Groq API key not configured" }, { status: 503 });
-  }
-
   if (!content?.trim()) {
     return NextResponse.json({ error: "No content" }, { status: 400 });
+  }
+
+  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
+  if (!config?.value) {
+    return NextResponse.json({ error: "Groq API key not configured" }, { status: 503 });
   }
 
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${config.value}`,
     },
     body: JSON.stringify({
       model: "llama-3.1-8b-instant",
