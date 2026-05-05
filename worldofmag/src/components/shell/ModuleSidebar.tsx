@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, FolderOpen, Tag } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 interface ModuleSidebarProps {
@@ -52,17 +52,19 @@ function NavItem({
 function NavSubItem({
   href,
   label,
+  icon,
   pathname,
 }: {
   href: string;
   label: string;
+  icon?: React.ReactNode;
   pathname: string;
 }) {
   const isActive = pathname === href;
   return (
     <Link
       href={href}
-      className="flex items-center px-4 py-1.5 mx-2 rounded text-xs"
+      className="flex items-center gap-2 px-4 py-1.5 mx-2 rounded text-xs"
       style={{
         paddingLeft: 40,
         backgroundColor: isActive ? "var(--bg-elevated)" : undefined,
@@ -81,6 +83,7 @@ function NavSubItem({
         }
       }}
     >
+      {icon}
       {label}
     </Link>
   );
@@ -89,6 +92,7 @@ function NavSubItem({
 export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSidebarProps) {
   const pathname = usePathname();
   const isShoppingActive = pathname.startsWith("/shopping");
+  const isNotesActive = pathname.startsWith("/notes");
 
   return (
     <aside
@@ -114,40 +118,27 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
       {/* Modules */}
       <nav className="flex-1 py-2 overflow-y-auto">
         {/* Shopping with sub-items */}
-        <Link
-          href="/shopping"
-          className={cn("flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm")}
-          style={{
-            backgroundColor: isShoppingActive ? "var(--bg-elevated)" : undefined,
-            color: isShoppingActive ? "var(--text-primary)" : "var(--text-secondary)",
-          }}
-          onMouseEnter={(e) => {
-            if (!isShoppingActive) {
-              e.currentTarget.style.backgroundColor = "var(--bg-hover)";
-              e.currentTarget.style.color = "var(--text-primary)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isShoppingActive) {
-              e.currentTarget.style.backgroundColor = "";
-              e.currentTarget.style.color = "var(--text-secondary)";
-            }
-          }}
-        >
-          <ShoppingCart size={18} />
-          <span>Zakupy</span>
-        </Link>
+        <NavItem href="/shopping" label="Zakupy" icon={<ShoppingCart size={18} />} pathname={pathname} />
+        {isShoppingActive && (
+          <div className="mb-1">
+            <NavSubItem href="/shopping/products" label="Produkty" pathname={pathname} />
+            <NavSubItem href="/shopping/units" label="Jednostki" pathname={pathname} />
+            <NavSubItem href="/shopping/categories" label="Kategorie" pathname={pathname} />
+          </div>
+        )}
 
-        <div className="mb-1">
-          <NavSubItem href="/shopping/products" label="Produkty" pathname={pathname} />
-          <NavSubItem href="/shopping/units" label="Jednostki" pathname={pathname} />
-          <NavSubItem href="/shopping/categories" label="Kategorie" pathname={pathname} />
-        </div>
+        {/* Notes with sub-items */}
+        <NavItem href="/notes" label="Notes" icon={<FileText size={18} />} pathname={pathname} />
+        {isNotesActive && (
+          <div className="mb-1">
+            <NavSubItem href="/notes/groups" label="Grupy" icon={<FolderOpen size={12} />} pathname={pathname} />
+            <NavSubItem href="/notes/tags" label="Tagi" icon={<Tag size={12} />} pathname={pathname} />
+          </div>
+        )}
 
         {/* Inactive modules */}
         {[
           { label: "Calendar", icon: <Calendar size={18} />, href: "/calendar" },
-          { label: "Notes", icon: <FileText size={18} />, href: "/notes" },
           { label: "Work", icon: <Briefcase size={18} />, href: "/work" },
         ].map((mod) => (
           <div

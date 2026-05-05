@@ -1,8 +1,7 @@
 import { useCallback, useRef } from "react";
-import type { Item } from "@/types";
 
-export function useItemNavigation(
-  flatItems: Item[],
+export function useItemNavigation<T extends { id: string }>(
+  flatItems: T[],
   focusedItemId: string | null,
   setFocusedItemId: (id: string | null) => void
 ) {

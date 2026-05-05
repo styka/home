@@ -1,4 +1,4 @@
-import type { Item as PrismaItem, ShoppingList as PrismaShoppingList, ItemHistory, Product as PrismaProduct } from "@prisma/client";
+import type { Item as PrismaItem, ShoppingList as PrismaShoppingList, ItemHistory, Product as PrismaProduct, Note as PrismaNote, NoteGroup, Tag } from "@prisma/client";
 
 export type { ItemHistory };
 
@@ -50,6 +50,25 @@ export interface ParsedItem {
   quantity: number | null;
   unit: string | null;
 }
+
+// ─── Notes ────────────────────────────────────────────────────────────────
+
+export type { NoteGroup, Tag };
+
+export type Note = PrismaNote & {
+  group: NoteGroup | null;
+  tags: Array<{ tag: Tag }>;
+};
+
+export type NoteFilter = "ALL" | "PINNED" | "NO_GROUP";
+
+export const NOTE_FILTER_LABELS: Record<NoteFilter, string> = {
+  ALL: "Wszystkie",
+  PINNED: "Przypięte",
+  NO_GROUP: "Bez grupy",
+};
+
+// ─── Shared ───────────────────────────────────────────────────────────────
 
 export interface ShortcutHandlers {
   onQuickAdd: () => void;

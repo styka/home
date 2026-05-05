@@ -218,3 +218,45 @@ model Category {
 
   @@unique([name, userId, teamId])
 }
+
+// ─── Notes ────────────────────────────────────────────────────────────────
+
+model NoteGroup {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  notes       Note[]
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  color     String?
+  createdAt DateTime  @default(now())
+  notes     NoteTag[]
+}
+
+model Note {
+  id         String     @id @default(cuid())
+  title      String
+  content    String     @default("")
+  isMarkdown Boolean    @default(false)
+  pinned     Boolean    @default(false)
+  groupId    String?
+  group      NoteGroup? @relation(fields: [groupId], references: [id])
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  tags       NoteTag[]
+}
+
+model NoteTag {
+  noteId String
+  tagId  String
+  note   Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([noteId, tagId])
+}
