@@ -23,14 +23,20 @@ model User {
 
   accounts          Account[]
   sessions          Session[]
-  ownedTeams        Team[]           @relation("TeamOwner")
+  ownedTeams        Team[]                @relation("TeamOwner")
   teamMemberships   TeamMember[]
-  sentInvitations   TeamInvitation[] @relation("InvitedBy")
-  receivedInvitations TeamInvitation[] @relation("InvitedUser")
+  sentInvitations   TeamInvitation[]      @relation("InvitedBy")
+  receivedInvitations TeamInvitation[]    @relation("InvitedUser")
   ownedLists        ShoppingList[]
   products          Product[]
   units             Unit[]
   categories        Category[]
+  ownedTaskProjects TaskProject[]         @relation("OwnedTaskProjects")
+  taskProjectMemberships TaskProjectMember[] @relation("TaskProjectMemberships")
+  tasksCreated      Task[]               @relation("TasksCreatedBy")
+  tasksAssigned     Task[]               @relation("TasksAssignedTo")
+  taskComments      TaskComment[]        @relation("TaskComments")
+  taskShares        TaskShare[]          @relation("TaskShares")
 }
 
 model Account {
@@ -89,6 +95,8 @@ model Team {
   products    Product[]
   units       Unit[]
   categories  Category[]
+  taskProjects TaskProject[]   @relation("TeamTaskProjects")
+  taskShares  TaskShare[]      @relation("TeamTaskShares")
 }
 
 model TeamMember {
@@ -259,4 +267,109 @@ model NoteTag {
   tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([noteId, tagId])
+}
+
+// ─── Tasks ────────────────────────────────────────────────────────────────
+
+model TaskProject {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String   @default("#6b7280")
+  emoji       String   @default("📋")
+  isInbox     Boolean  @default(false)
+  ownerId     String?
+  ownerTeamId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner    User?              @relation("OwnedTaskProjects", fields: [ownerId], references: [id])
+  ownerTeam Team?             @relation("TeamTaskProjects", fields: [ownerTeamId], references: [id])
+  tasks    Task[]
+  members  TaskProjectMember[]
+}
+
+model TaskProjectMember {
+  projectId String
+  userId    String
+  role      String   @default("MEMBER")   // MEMBER | ADMIN | OWNER
+  createdAt DateTime @default(now())
+
+  project TaskProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User        @relation("TaskProjectMemberships", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+}
+
+model TaskTagDef {
+  id    String @id @default(cuid())
+  name  String @unique
+  color String @default("#6b7280")
+
+  tasks TaskTaskTag[]
+}
+
+model Task {
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  status        String    @default("TODO")    // TODO | IN_PROGRESS | DONE | CANCELLED | DEFERRED
+  priority      String    @default("NONE")    // NONE | LOW | MEDIUM | HIGH | URGENT
+  dueDate       DateTime?
+  startDate     DateTime?
+  completedAt   DateTime?
+  estimatedMins Int?
+  recurring     String?                        // JSON: RecurringRule
+  category      String    @default("Other")
+  order         Float     @default(0)
+  projectId     String?
+  parentTaskId  String?
+  createdById   String?
+  assigneeId    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project      TaskProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  parent       Task?        @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subtasks     Task[]       @relation("TaskSubtasks")
+  createdBy    User?        @relation("TasksCreatedBy", fields: [createdById], references: [id])
+  assignee     User?        @relation("TasksAssignedTo", fields: [assigneeId], references: [id])
+  tags         TaskTaskTag[]
+  comments     TaskComment[]
+  shares       TaskShare[]
+}
+
+model TaskTaskTag {
+  taskId String
+  tagId  String
+
+  task Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag  TaskTagDef @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String?
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User? @relation("TaskComments", fields: [userId], references: [id])
+}
+
+model TaskShare {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String?
+  teamId    String?
+  role      String   @default("VIEWER")    // VIEWER | EDITOR
+  createdAt DateTime @default(now())
+
+  task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User? @relation("TaskShares", fields: [userId], references: [id])
+  team Team? @relation("TeamTaskShares", fields: [teamId], references: [id])
 }

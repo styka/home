@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, FolderOpen, Tag } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, FolderOpen, Tag, CheckSquare } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 interface ModuleSidebarProps {
@@ -93,6 +93,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
   const pathname = usePathname();
   const isShoppingActive = pathname.startsWith("/shopping");
   const isNotesActive = pathname.startsWith("/notes");
+  const isTasksActive = pathname.startsWith("/tasks");
 
   return (
     <aside
@@ -135,6 +136,9 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
             <NavSubItem href="/notes/tags" label="Tagi" icon={<Tag size={12} />} pathname={pathname} />
           </div>
         )}
+
+        {/* Tasks */}
+        <NavItem href="/tasks" label="Zadania" icon={<CheckSquare size={18} />} pathname={pathname} />
 
         {/* Inactive modules */}
         {[
