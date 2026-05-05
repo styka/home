@@ -5,7 +5,6 @@ import { auth } from "@/lib/auth";
 import { getProducts } from "@/actions/products";
 import { getCategoryNames } from "@/actions/categories";
 import { ProductManager } from "@/components/shopping/ProductManager";
-import { ShoppingCatalogNav } from "@/components/shopping/ShoppingCatalogNav";
 
 export default async function ProductsPage() {
   const session = await auth();
@@ -17,8 +16,7 @@ export default async function ProductsPage() {
   ]);
 
   return (
-    <div className="flex flex-col flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)" }}>
-      <ShoppingCatalogNav />
+    <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)" }}>
       <div style={{ maxWidth: 720, margin: "0 auto", width: "100%", padding: "24px 20px" }}>
         <ProductManager products={products} userId={session.user.id} categoryNames={categoryNames} />
       </div>
