@@ -237,32 +237,27 @@ export function NoteRow({
           placeholder="Tytuł..."
         />
 
-        {/* Content + voice input */}
-        <div className="relative">
-          <textarea
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            rows={5}
-            className="w-full bg-transparent text-xs focus:outline-none resize-none font-mono pr-8"
-            style={{ color: "var(--text-primary)", lineHeight: 1.7 }}
-            placeholder="Treść notatki..."
-          />
+        {/* Content */}
+        <textarea
+          value={editContent}
+          onChange={(e) => setEditContent(e.target.value)}
+          rows={5}
+          className="w-full bg-transparent text-xs focus:outline-none resize-none font-mono"
+          style={{ color: "var(--text-primary)", lineHeight: 1.7 }}
+          placeholder="Treść notatki..."
+        />
+
+        {/* AI rewrite + mic + voice edit */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={isRecording ? stopVoiceInput : startVoiceInput}
-            className="absolute top-1 right-1 p-1 rounded"
-            style={{ color: isRecording ? "#ef4444" : "var(--text-muted)" }}
+            className="flex items-center gap-1 text-xs px-2 py-0.5 rounded"
+            style={{ backgroundColor: isRecording ? "rgba(239,68,68,0.15)" : "var(--bg-hover)", color: isRecording ? "#ef4444" : "var(--text-muted)" }}
             title={isRecording ? "Zatrzymaj nagrywanie" : "Dyktuj treść (pl)"}
           >
-            {isRecording ? (
-              <MicOff size={12} className="animate-pulse" />
-            ) : (
-              <Mic size={12} />
-            )}
+            {isRecording ? <MicOff size={11} className="animate-pulse" /> : <Mic size={11} />}
+            {isRecording ? "Stop" : "Dyktuj"}
           </button>
-        </div>
-
-        {/* AI rewrite + voice edit */}
-        <div className="flex items-center gap-2 flex-wrap">
           <select
             value={rewriteMode}
             onChange={(e) => setRewriteMode(e.target.value as typeof rewriteMode)}

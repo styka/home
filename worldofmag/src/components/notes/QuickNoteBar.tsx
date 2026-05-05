@@ -216,23 +216,26 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
         {/* Expanded form */}
         {expanded && (
           <div className="px-4 pb-3 space-y-2">
-            {/* Content + voice */}
-            <div className="relative">
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Treść notatki..."
-                rows={3}
-                className="w-full bg-transparent text-sm focus:outline-none resize-none pr-8"
-                style={{ color: "var(--text-primary)" }}
-              />
+            {/* Content */}
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Treść notatki..."
+              rows={3}
+              className="w-full bg-transparent text-sm focus:outline-none resize-none"
+              style={{ color: "var(--text-primary)" }}
+            />
+
+            {/* Voice input button — inline, not absolute */}
+            <div className="flex items-center gap-2">
               <button
                 onClick={isRecording ? stopVoiceInput : startVoiceInput}
-                className="absolute top-1 right-1 p-1 rounded"
-                style={{ color: isRecording ? "#ef4444" : "var(--text-muted)" }}
-                title={isRecording ? "Zatrzymaj" : "Dyktuj (pl)"}
+                className="flex items-center gap-1 text-xs px-2 py-0.5 rounded"
+                style={{ backgroundColor: isRecording ? "rgba(239,68,68,0.15)" : "var(--bg-hover)", color: isRecording ? "#ef4444" : "var(--text-muted)" }}
+                title={isRecording ? "Zatrzymaj" : "Dyktuj treść (pl)"}
               >
-                {isRecording ? <MicOff size={12} className="animate-pulse" /> : <Mic size={12} />}
+                {isRecording ? <MicOff size={11} className="animate-pulse" /> : <Mic size={11} />}
+                {isRecording ? "Stop" : "Dyktuj"}
               </button>
             </div>
 
