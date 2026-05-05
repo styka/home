@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useCallback, useMemo, useRef, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { ChevronDown } from "lucide-react";
+import { Sparkles, PenLine } from "lucide-react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
-import { ListPicker } from "./ListPicker";
+import { ListDropdown } from "./ListDropdown";
 import { LLMInputSection } from "./LLMInputSection";
 import { QuickAddBar, type QuickAddBarHandle } from "./QuickAddBar";
 import { FilterTabs } from "./FilterTabs";
@@ -17,6 +16,8 @@ import { updateItemStatus, deleteItem } from "@/actions/items";
 import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus } from "@/types";
 import { FILTER_TABS, STATUS_CYCLE } from "@/types";
 
+type AddMode = "ai" | "manual";
+
 interface ShoppingPageProps {
   list: ShoppingListWithItems;
   allLists: ShoppingList[];
@@ -25,13 +26,13 @@ interface ShoppingPageProps {
 }
 
 export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }: ShoppingPageProps) {
-  const router = useRouter();
   const { toggle: togglePalette } = useCommandPalette();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [addMode, setAddMode] = useState<AddMode>("ai");
   const [, startTransition] = useTransition();
   const quickAddRef = useRef<QuickAddBarHandle>(null);
 
@@ -70,7 +71,10 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
 
   const handlers = useMemo(
     () => ({
-      onQuickAdd: () => quickAddRef.current?.focus(),
+      onQuickAdd: () => {
+        setAddMode("manual");
+        setTimeout(() => quickAddRef.current?.focus(), 10);
+      },
       onNavigateDown: navigateDown,
       onNavigateUp: navigateUp,
       onToggleStatus: () => {
@@ -123,87 +127,82 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
         className="flex items-center justify-between px-4 h-12 border-b flex-shrink-0"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
       >
-        {/* Mobile: dropdown to switch lists. Desktop: just the name (ListPicker handles switching) */}
-        {allLists.length > 1 ? (
-          <>
-            {/* Mobile list switcher */}
-            <div className="relative md:hidden flex items-center gap-1">
-              <select
-                value={list.id}
-                onChange={(e) => router.push(`/shopping/${e.target.value}`)}
-                className="appearance-none bg-transparent text-sm font-semibold pr-5 focus:outline-none cursor-pointer"
-                style={{ color: "var(--text-primary)" }}
-              >
-                {allLists.map((l) => (
-                  <option
-                    key={l.id}
-                    value={l.id}
-                    style={{ backgroundColor: "#1c1c1c", color: "var(--text-primary)" }}
-                  >
-                    {l.ownerTeam ? `${l.name} (${l.ownerTeam.name})` : l.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={12} className="pointer-events-none absolute right-0" style={{ color: "var(--text-muted)" }} />
-            </div>
-            {/* Desktop: static name */}
-            <h1 className="hidden md:block text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              {list.name}
-            </h1>
-          </>
-        ) : (
-          <h1 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-            {list.name}
-          </h1>
-        )}
-
+        <ListDropdown allLists={allLists} currentListId={list.id} />
         <span className="text-xs" style={{ color: "var(--text-muted)" }}>
           {statsText}
         </span>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* List picker sidebar — desktop only */}
-        <div className="hidden md:flex">
-          <ListPicker allLists={allLists} currentListId={list.id} />
-        </div>
-
-        {/* Main content — full width on mobile */}
-        <div className="flex flex-col flex-1 overflow-hidden min-w-0">
-          <LLMInputSection listId={list.id} categoryNames={categoryNames ?? []} />
-          <QuickAddBar ref={quickAddRef} listId={list.id} categoryNames={categoryNames ?? []} />
-
-          {isSearchOpen && (
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              onClose={() => { setSearchQuery(""); setIsSearchOpen(false); }}
-            />
-          )}
-
-          <FilterTabs
-            active={activeFilter}
-            counts={counts}
-            onChange={setActiveFilter}
-          />
-
-          <ItemList
-            items={filteredItems}
-            focusedItemId={focusedItemId}
-            editingItemId={editingItemId}
-            onItemFocus={setFocusedItemId}
-            onItemStartEdit={setEditingItemId}
-            onItemStopEdit={() => setEditingItemId(null)}
-            rowRefs={rowRefs}
-            categoryEmojiMap={categoryEmojiMap}
-          />
-        </div>
+      {/* Add mode toggle */}
+      <div
+        className="flex border-b flex-shrink-0"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
+      >
+        <button
+          onClick={() => setAddMode("ai")}
+          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium focus:outline-none"
+          style={{
+            color: addMode === "ai" ? "var(--accent-blue)" : "var(--text-muted)",
+            borderBottom: addMode === "ai" ? "2px solid var(--accent-blue)" : "2px solid transparent",
+            marginBottom: -1,
+          }}
+        >
+          <Sparkles size={11} />
+          AI
+        </button>
+        <button
+          onClick={() => setAddMode("manual")}
+          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium focus:outline-none"
+          style={{
+            color: addMode === "manual" ? "var(--accent-green)" : "var(--text-muted)",
+            borderBottom: addMode === "manual" ? "2px solid var(--accent-green)" : "2px solid transparent",
+            marginBottom: -1,
+          }}
+        >
+          <PenLine size={11} />
+          Ręcznie
+        </button>
       </div>
+
+      {/* Active add section */}
+      {addMode === "ai" ? (
+        <LLMInputSection listId={list.id} categoryNames={categoryNames ?? []} />
+      ) : (
+        <QuickAddBar ref={quickAddRef} listId={list.id} categoryNames={categoryNames ?? []} />
+      )}
+
+      {isSearchOpen && (
+        <SearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          onClose={() => { setSearchQuery(""); setIsSearchOpen(false); }}
+        />
+      )}
+
+      <FilterTabs
+        active={activeFilter}
+        counts={counts}
+        onChange={setActiveFilter}
+      />
+
+      <ItemList
+        items={filteredItems}
+        focusedItemId={focusedItemId}
+        editingItemId={editingItemId}
+        onItemFocus={setFocusedItemId}
+        onItemStartEdit={setEditingItemId}
+        onItemStopEdit={() => setEditingItemId(null)}
+        rowRefs={rowRefs}
+        categoryEmojiMap={categoryEmojiMap}
+      />
 
       <CommandPalette
         listId={list.id}
         allLists={allLists}
-        onFocusQuickAdd={() => quickAddRef.current?.focus()}
+        onFocusQuickAdd={() => {
+          setAddMode("manual");
+          setTimeout(() => quickAddRef.current?.focus(), 10);
+        }}
       />
     </div>
   );

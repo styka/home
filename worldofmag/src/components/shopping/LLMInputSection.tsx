@@ -231,19 +231,21 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
           />
 
           <div className="flex items-center gap-2 mt-2">
-            {/* Recording indicator */}
-            {recording && (
-              <span
-                className="inline-flex items-center gap-1.5 text-xs flex-shrink-0"
-                style={{ color: "var(--accent-red)" }}
-              >
+            {/* Recording indicator pushes buttons to the right */}
+            <div className="flex-1">
+              {recording && (
                 <span
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: "var(--accent-red)", animation: "pulse 1s infinite" }}
-                />
-                Słucham…
-              </span>
-            )}
+                  className="inline-flex items-center gap-1.5 text-xs"
+                  style={{ color: "var(--accent-red)" }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: "var(--accent-red)", animation: "pulse 1s infinite" }}
+                  />
+                  Słucham…
+                </span>
+              )}
+            </div>
 
             <button
               onClick={toggleRecording}
@@ -266,7 +268,7 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
             <button
               onClick={processText}
               disabled={!text.trim() || loading}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40 ml-auto"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
               style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
               title="Przetwórz przez AI (Ctrl+Enter)"
             >
