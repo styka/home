@@ -140,7 +140,7 @@ export function TasksPage({ tasks, currentProject, allProjects, allTags, project
       onNavigateUp: navigateUp,
       onToggleStatus: () => {
         if (!focusedTaskId) return;
-        startTransition(() => toggleTaskStatus(focusedTaskId));
+        startTransition(async () => { await toggleTaskStatus(focusedTaskId); });
       },
       onDelete: () => {
         if (!focusedTaskId) return;
@@ -148,7 +148,7 @@ export function TasksPage({ tasks, currentProject, allProjects, allTags, project
         const next = filteredForNav[idx + 1] ?? filteredForNav[idx - 1];
         if (openTaskId === focusedTaskId) setOpenTaskId(null);
         setFocusedTaskId(next?.id ?? null);
-        startTransition(() => deleteTask(focusedTaskId));
+        startTransition(async () => { await deleteTask(focusedTaskId); });
       },
       onEdit: () => {
         if (!focusedTaskId) return;

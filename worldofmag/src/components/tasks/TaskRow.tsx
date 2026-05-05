@@ -59,7 +59,7 @@ export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, 
 
   function handleToggle(e: React.MouseEvent) {
     e.stopPropagation();
-    startTransition(() => toggleTaskStatus(task.id));
+    startTransition(async () => { await toggleTaskStatus(task.id); });
   }
 
   return (

@@ -41,7 +41,7 @@ export function TaskProjectSidebar({ projects, currentProjectId }: TaskProjectSi
     e.preventDefault();
     e.stopPropagation();
     if (!confirm("Usunąć projekt i wszystkie zadania?")) return;
-    startTransition(() => deleteTaskProject(id));
+    startTransition(async () => { await deleteTaskProject(id); });
   }
 
   function NavItem({ id, label, icon, count }: { id: string; label: string; icon?: React.ReactNode; count?: number }) {

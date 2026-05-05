@@ -3,14 +3,14 @@
 import { useState, useTransition, useEffect, useRef } from "react";
 import {
   X, Trash2, CheckCircle2, Circle, Clock, AlertCircle, MinusCircle, Loader2,
-  RefreshCw, Tag, User, Calendar, Timer, ChevronDown, Plus, Send, Sparkles,
-  Copy, RotateCcw, Share2, MessageSquare,
+  RefreshCw, Tag, Calendar, Timer, ChevronDown, Plus, Send, Sparkles,
+  MessageSquare,
 } from "lucide-react";
-import { updateTask, deleteTask, updateTaskTags, addTaskComment, deleteTaskComment, createTask, completeRecurringTask } from "@/actions/tasks";
+import { updateTask, deleteTask, updateTaskTags, addTaskComment, createTask, completeRecurringTask } from "@/actions/tasks";
 import { createTaskTag } from "@/actions/taskTags";
 import { TaskTagBadge } from "./TaskTagBadge";
 import type { Task, TaskStatus, TaskPriority, TaskTagDef, RecurringRule } from "@/types";
-import { TASK_STATUS_LABELS, TASK_PRIORITY_LABELS, TASK_PRIORITY_COLORS } from "@/types";
+import { TASK_PRIORITY_COLORS } from "@/types";
 
 interface TaskDetailProps {
   task: Task;
@@ -19,12 +19,12 @@ interface TaskDetailProps {
   onDelete: () => void;
 }
 
-const STATUS_OPTIONS: { value: TaskStatus; label: string; icon: React.ReactNode; color: string }[] = [
-  { value: "TODO", label: "Do zrobienia", icon: <Circle size={14} />, color: "var(--text-muted)" },
-  { value: "IN_PROGRESS", label: "W trakcie", icon: <Clock size={14} />, color: "var(--accent-blue)" },
-  { value: "DONE", label: "Zrobione", icon: <CheckCircle2 size={14} />, color: "var(--accent-green)" },
-  { value: "DEFERRED", label: "Odłożone", icon: <AlertCircle size={14} />, color: "var(--accent-amber)" },
-  { value: "CANCELLED", label: "Anulowane", icon: <MinusCircle size={14} />, color: "var(--text-muted)" },
+const STATUS_OPTIONS: { value: TaskStatus; label: string; color: string }[] = [
+  { value: "TODO", label: "Do zrobienia", color: "var(--text-muted)" },
+  { value: "IN_PROGRESS", label: "W trakcie", color: "var(--accent-blue)" },
+  { value: "DONE", label: "Zrobione", color: "var(--accent-green)" },
+  { value: "DEFERRED", label: "Odłożone", color: "var(--accent-amber)" },
+  { value: "CANCELLED", label: "Anulowane", color: "var(--text-muted)" },
 ];
 
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] = [
@@ -65,7 +65,12 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const titleRef = useRef<HTMLInputElement>(null);
-  const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Helper: wrap async server actions for startTransition
+  function run(fn: () => Promise<unknown>) {
+    startTransition(async () => { await fn(); });
+  }
 
   useEffect(() => {
     setTitle(task.title);
@@ -91,39 +96,44 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
   function autosave(patch: Parameters<typeof updateTask>[1]) {
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
-      startTransition(() => updateTask(task.id, patch));
+      run(() => updateTask(task.id, patch));
     }, 600);
   }
 
   function handleStatusChange(s: TaskStatus) {
     setStatus(s);
     if (s === "DONE" && task.recurring) {
-      startTransition(() => completeRecurringTask(task.id));
+      run(() => completeRecurringTask(task.id));
     } else {
-      startTransition(() => updateTask(task.id, { status: s }));
+      run(() => updateTask(task.id, { status: s }));
     }
   }
 
   function handlePriorityChange(p: TaskPriority) {
     setPriority(p);
-    startTransition(() => updateTask(task.id, { priority: p }));
+    run(() => updateTask(task.id, { priority: p }));
   }
 
   function handleTitleBlur() {
     if (title.trim() && title !== task.title) {
-      startTransition(() => updateTask(task.id, { title }));
+      run(() => updateTask(task.id, { title }));
     }
   }
 
   function handleDescriptionBlur() {
     if (description !== (task.description ?? "")) {
-      startTransition(() => updateTask(task.id, { description: description || null }));
+      run(() => updateTask(task.id, { description: description || null }));
     }
   }
 
   function handleDueDateChange(v: string) {
     setDueDate(v);
-    startTransition(() => updateTask(task.id, { dueDate: v ? new Date(v) : null }));
+    run(() => updateTask(task.id, { dueDate: v ? new Date(v) : null }));
+  }
+
+  function handleStartDateChange(v: string) {
+    setStartDate(v);
+    run(() => updateTask(task.id, { startDate: v ? new Date(v) : null }));
   }
 
   function handleEstimatedChange(v: string) {
@@ -139,7 +149,7 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
       ? selectedTagIds.filter((id) => id !== tagId)
       : [...selectedTagIds, tagId];
     setSelectedTagIds(next);
-    startTransition(() => updateTaskTags(task.id, next));
+    run(() => updateTaskTags(task.id, next));
   }
 
   async function handleAddTag() {
@@ -152,7 +162,7 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
     }
     const next = [...selectedTagIds, tagId];
     setSelectedTagIds(next);
-    startTransition(() => updateTaskTags(task.id, next));
+    run(() => updateTaskTags(task.id, next));
     setNewTagName("");
     setShowTagInput(false);
   }
@@ -164,12 +174,12 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
       daysOfWeek: recurringType === "WEEKLY" ? recurringDays : undefined,
       endDate: recurringEndDate || null,
     };
-    startTransition(() => updateTask(task.id, { recurring: rule }));
+    run(() => updateTask(task.id, { recurring: rule }));
   }
 
   function handleRecurringClear() {
     setShowRecurring(false);
-    startTransition(() => updateTask(task.id, { recurring: null }));
+    run(() => updateTask(task.id, { recurring: null }));
   }
 
   function handleAddComment() {
@@ -185,6 +195,14 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
     startTransition(async () => {
       await createTask({ title: newSubtask.trim(), parentTaskId: task.id, projectId: task.projectId });
       setNewSubtask("");
+    });
+  }
+
+  function handleDelete() {
+    if (!confirm("Usunąć zadanie?")) return;
+    startTransition(async () => {
+      await deleteTask(task.id);
+      onDelete();
     });
   }
 
@@ -215,7 +233,7 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
       const data = await res.json();
       if (data.estimatedMins) {
         setEstimatedMins(String(data.estimatedMins));
-        startTransition(() => updateTask(task.id, { estimatedMins: data.estimatedMins }));
+        run(() => updateTask(task.id, { estimatedMins: data.estimatedMins }));
       }
     } catch { /* ignore */ } finally {
       setAiLoading(null);
@@ -238,7 +256,7 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => { if (confirm("Usunąć zadanie?")) { startTransition(() => deleteTask(task.id)); onDelete(); } }}
+            onClick={handleDelete}
             className="p-1.5 rounded hover:opacity-70 focus:outline-none"
             style={{ color: "var(--accent-red)" }}
             title="Usuń zadanie"
@@ -322,7 +340,7 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
             <input
               type="date"
               value={startDate}
-              onChange={(e) => { setStartDate(e.target.value); startTransition(() => updateTask(task.id, { startDate: e.target.value ? new Date(e.target.value) : null })); }}
+              onChange={(e) => handleStartDateChange(e.target.value)}
               className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
               style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
             />
@@ -373,7 +391,10 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
                   autoFocus
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleAddTag(); if (e.key === "Escape") { setShowTagInput(false); setNewTagName(""); } }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleAddTag();
+                    if (e.key === "Escape") { setShowTagInput(false); setNewTagName(""); }
+                  }}
                   placeholder="Nowy tag…"
                   className="bg-transparent text-xs focus:outline-none border-b"
                   style={{ borderColor: "var(--accent-blue)", color: "var(--text-primary)", width: 80 }}
@@ -513,7 +534,7 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
               <input
                 type="checkbox"
                 checked={sub.status === "DONE"}
-                onChange={() => startTransition(() => updateTask(sub.id, { status: sub.status === "DONE" ? "TODO" : "DONE" }))}
+                onChange={() => run(() => updateTask(sub.id, { status: sub.status === "DONE" ? "TODO" : "DONE" }))}
                 className="flex-shrink-0"
                 style={{ accentColor: "var(--accent-green)" }}
               />
