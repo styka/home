@@ -7,6 +7,7 @@ import { categorize } from "@/lib/categorize";
 import { parseQuantity } from "@/lib/parseQuantity";
 import { assertListAccess } from "@/actions/lists";
 import { upsertUserProduct } from "@/actions/products";
+import { trackActivity } from "@/actions/activity";
 import type { Item, ItemStatus, ItemHistory } from "@/types";
 import type { Item as PrismaItem } from "@prisma/client";
 
@@ -43,6 +44,7 @@ export async function addItem(listId: string, rawText: string): Promise<Item> {
   });
 
   await upsertUserProduct(name.toLowerCase(), unit ?? null, category);
+  void trackActivity("shopping", "add_item", { name, listId });
 
   revalidatePath(`/shopping/${listId}`);
   return toItem(item);
@@ -55,6 +57,7 @@ export async function updateItemStatus(id: string, status: ItemStatus): Promise<
   await assertListAccess(existing.listId, user.id);
 
   const item = await prisma.item.update({ where: { id }, data: { status } });
+  void trackActivity("shopping", "update_item_status", { id, status });
   revalidatePath(`/shopping/${item.listId}`);
   return toItem(item);
 }

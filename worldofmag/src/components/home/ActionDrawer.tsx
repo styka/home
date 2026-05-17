@@ -1,0 +1,346 @@
+"use client";
+
+import { useState } from "react";
+import { X, ShoppingCart, CheckSquare, FileText, CheckCircle, XCircle, Loader2, Square, CheckSquare2 } from "lucide-react";
+import { SmartTextarea } from "@/components/ui/SmartTextarea";
+import type { AIAction } from "@/app/api/llm/home/interpret/route";
+import type { ActionResult } from "@/app/api/llm/home/execute/route";
+
+interface ActionDrawerProps {
+  actions: AIAction[];
+  onConfirm: (confirmedActions: AIAction[]) => Promise<void>;
+  onClose: () => void;
+  isExecuting: boolean;
+  results?: ActionResult[];
+}
+
+function moduleIcon(module: string) {
+  if (module === "shopping") return <ShoppingCart size={15} />;
+  if (module === "tasks") return <CheckSquare size={15} />;
+  return <FileText size={15} />;
+}
+
+function moduleColor(module: string) {
+  if (module === "shopping") return "var(--accent-blue)";
+  if (module === "tasks") return "var(--accent-green)";
+  return "var(--accent-amber)";
+}
+
+export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results }: ActionDrawerProps) {
+  const [included, setIncluded] = useState<Set<string>>(new Set(actions.map((a) => a.id)));
+  const [descriptions, setDescriptions] = useState<Record<string, string>>(
+    Object.fromEntries(actions.map((a) => [a.id, a.description]))
+  );
+  const [voiceModifyText, setVoiceModifyText] = useState("");
+
+  function toggleAction(id: string) {
+    setIncluded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (included.size === actions.length) {
+      setIncluded(new Set());
+    } else {
+      setIncluded(new Set(actions.map((a) => a.id)));
+    }
+  }
+
+  function handleConfirm() {
+    const confirmed = actions
+      .filter((a) => included.has(a.id))
+      .map((a) => ({ ...a, description: descriptions[a.id] ?? a.description }));
+    void onConfirm(confirmed);
+  }
+
+  const showResults = !!results;
+  const selectedCount = included.size;
+  const successCount = results?.filter((r) => r.success).length ?? 0;
+  const failCount = results?.filter((r) => !r.success).length ?? 0;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center"
+      style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="w-full md:max-w-lg md:mx-4"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          border: "1px solid var(--border)",
+          borderRadius: "16px 16px 0 0",
+          maxHeight: "85vh",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        {/* Handle bar (mobile) */}
+        <div className="md:hidden" style={{ display: "flex", justifyContent: "center", padding: "8px 0 4px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)" }} />
+        </div>
+
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px 16px",
+            borderBottom: "1px solid var(--border)",
+            flexShrink: 0,
+          }}
+        >
+          <div>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
+              {showResults ? "Wyniki" : "Wykryte akcje"}
+            </h2>
+            {!showResults && (
+              <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0, marginTop: 2 }}>
+                {selectedCount} z {actions.length} zaznaczonych
+              </p>
+            )}
+            {showResults && (
+              <p style={{ fontSize: 11, margin: 0, marginTop: 2 }}>
+                <span style={{ color: "var(--accent-green)" }}>{successCount} wykonanych</span>
+                {failCount > 0 && <span style={{ color: "var(--accent-red)" }}> · {failCount} błędów</span>}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 28,
+              height: 28,
+              borderRadius: 6,
+              border: "1px solid var(--border)",
+              background: "transparent",
+              color: "var(--text-muted)",
+              cursor: "pointer",
+            }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {!showResults && actions.map((action) => {
+            const isIncluded = included.has(action.id);
+            return (
+              <div
+                key={action.id}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 10,
+                  padding: "12px 16px",
+                  borderBottom: "1px solid var(--border)",
+                  opacity: isIncluded ? 1 : 0.45,
+                  transition: "opacity 0.1s",
+                }}
+              >
+                <button
+                  onClick={() => toggleAction(action.id)}
+                  style={{
+                    flexShrink: 0,
+                    marginTop: 1,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: isIncluded ? "var(--accent-blue)" : "var(--text-muted)",
+                    padding: 0,
+                  }}
+                >
+                  {isIncluded ? <CheckSquare2 size={16} /> : <Square size={16} />}
+                </button>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                    <span style={{ color: moduleColor(action.module) }}>
+                      {moduleIcon(action.module)}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        color: moduleColor(action.module),
+                      }}
+                    >
+                      {action.module === "shopping" ? "Zakupy" : action.module === "tasks" ? "Zadania" : "Notatki"}
+                    </span>
+                    {action.searchQuery && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          padding: "1px 6px",
+                          borderRadius: 10,
+                          background: "rgba(245,158,11,0.12)",
+                          border: "1px solid rgba(245,158,11,0.3)",
+                          color: "var(--accent-amber)",
+                        }}
+                      >
+                        szuka: {action.searchQuery}
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    value={descriptions[action.id] ?? action.description}
+                    onChange={(e) =>
+                      setDescriptions((prev) => ({ ...prev, [action.id]: e.target.value }))
+                    }
+                    style={{
+                      width: "100%",
+                      background: "transparent",
+                      border: "none",
+                      outline: "none",
+                      fontSize: 13,
+                      color: "var(--text-primary)",
+                      padding: 0,
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+
+          {showResults && results?.map((result) => (
+            <div
+              key={result.id}
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 10,
+                padding: "12px 16px",
+                borderBottom: "1px solid var(--border)",
+              }}
+            >
+              <span style={{ flexShrink: 0, marginTop: 1, color: result.success ? "var(--accent-green)" : "var(--accent-red)" }}>
+                {result.success ? <CheckCircle size={15} /> : <XCircle size={15} />}
+              </span>
+              <div>
+                <p style={{ fontSize: 13, color: "var(--text-primary)", margin: 0 }}>
+                  {result.description}
+                </p>
+                {result.error && (
+                  <p style={{ fontSize: 11, color: "var(--accent-red)", margin: 0, marginTop: 2 }}>
+                    {result.error}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Voice modify area (only in pending state) */}
+        {!showResults && (
+          <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>
+              Możesz zmodyfikować listę akcji:
+            </p>
+            <SmartTextarea
+              value={voiceModifyText}
+              onChange={setVoiceModifyText}
+              placeholder='Np. "Usuń pierwsze działanie" lub "Zmień priorytet zadania na wysoki"'
+              rows={2}
+            />
+          </div>
+        )}
+
+        {/* Footer */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+            padding: "12px 16px",
+            borderTop: "1px solid var(--border)",
+            flexShrink: 0,
+          }}
+        >
+          {!showResults ? (
+            <>
+              <button
+                onClick={toggleAll}
+                style={{
+                  fontSize: 12,
+                  color: "var(--text-muted)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                {included.size === actions.length ? "Odznacz wszystko" : "Zaznacz wszystko"}
+              </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={onClose}
+                  style={{
+                    fontSize: 13,
+                    padding: "7px 14px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border)",
+                    background: "transparent",
+                    color: "var(--text-secondary)",
+                    cursor: "pointer",
+                  }}
+                >
+                  Anuluj
+                </button>
+                <button
+                  onClick={handleConfirm}
+                  disabled={selectedCount === 0 || isExecuting}
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    padding: "7px 16px",
+                    borderRadius: 8,
+                    border: "none",
+                    background: selectedCount === 0 ? "var(--bg-elevated)" : "var(--accent-blue)",
+                    color: selectedCount === 0 ? "var(--text-muted)" : "#fff",
+                    cursor: selectedCount === 0 ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  {isExecuting && <Loader2 size={13} className="animate-spin" />}
+                  Wykonaj {selectedCount > 0 ? `(${selectedCount})` : ""}
+                </button>
+              </div>
+            </>
+          ) : (
+            <button
+              onClick={onClose}
+              style={{
+                width: "100%",
+                fontSize: 13,
+                fontWeight: 600,
+                padding: "9px 0",
+                borderRadius: 8,
+                border: "none",
+                background: "var(--bg-elevated)",
+                color: "var(--text-primary)",
+                cursor: "pointer",
+              }}
+            >
+              Zamknij
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

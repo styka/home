@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FlaskConical } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 
 interface AppShellProps {
@@ -13,11 +13,12 @@ interface AppShellProps {
 }
 
 const MODULES = [
-  { id: "shopping", label: "Zakupy", icon: <ShoppingCart size={20} />, topBarIcon: <ShoppingCart size={16} />, href: "/shopping", active: true },
-  { id: "tasks", label: "Zadania", icon: <CheckSquare size={20} />, topBarIcon: <CheckSquare size={16} />, href: "/tasks", active: true },
-  { id: "notes", label: "Notes", icon: <FileText size={20} />, topBarIcon: <FileText size={16} />, href: "/notes", active: true },
-  { id: "calendar", label: "Calendar", icon: <Calendar size={20} />, topBarIcon: <Calendar size={16} />, href: "/calendar", active: false },
-  { id: "work", label: "Work", icon: <Briefcase size={20} />, topBarIcon: <Briefcase size={16} />, href: "/work", active: false },
+  { id: "home", label: "Strona główna", icon: <Home size={20} />, topBarIcon: <Home size={16} />, href: "/", active: true, exact: true },
+  { id: "shopping", label: "Zakupy", icon: <ShoppingCart size={20} />, topBarIcon: <ShoppingCart size={16} />, href: "/shopping", active: true, exact: false },
+  { id: "tasks", label: "Zadania", icon: <CheckSquare size={20} />, topBarIcon: <CheckSquare size={16} />, href: "/tasks", active: true, exact: false },
+  { id: "notes", label: "Notes", icon: <FileText size={20} />, topBarIcon: <FileText size={16} />, href: "/notes", active: true, exact: false },
+  { id: "calendar", label: "Calendar", icon: <Calendar size={20} />, topBarIcon: <Calendar size={16} />, href: "/calendar", active: false, exact: false },
+  { id: "work", label: "Work", icon: <Briefcase size={20} />, topBarIcon: <Briefcase size={16} />, href: "/work", active: false, exact: false },
 ];
 
 const SHOPPING_SUBITEMS = [
@@ -29,7 +30,7 @@ const SHOPPING_SUBITEMS = [
 export function AppShell({ children, invitationCount = 0, isAdmin = false }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
-  const activeModule = MODULES.find((m) => pathname.startsWith(m.href));
+  const activeModule = MODULES.find((m) => m.exact ? pathname === m.href : pathname.startsWith(m.href));
 
   useEffect(() => {
     setMenuOpen(false);
@@ -135,6 +136,19 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
 
             {/* Module nav */}
             <nav className="flex-1 py-2 overflow-y-auto">
+              {/* Home */}
+              <Link
+                href="/"
+                className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
+                style={{
+                  backgroundColor: pathname === "/" ? "var(--bg-elevated)" : undefined,
+                  color: pathname === "/" ? "var(--text-primary)" : "var(--text-secondary)",
+                }}
+              >
+                <Home size={20} />
+                <span>Strona główna</span>
+              </Link>
+
               {/* Shopping with sub-items */}
               <Link
                 href="/shopping"
@@ -252,12 +266,25 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                   href="/admin"
                   className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
                   style={{
-                    backgroundColor: pathname.startsWith("/admin") ? "var(--bg-elevated)" : undefined,
-                    color: pathname.startsWith("/admin") ? "var(--accent-purple)" : "var(--text-secondary)",
+                    backgroundColor: pathname === "/admin" || pathname.startsWith("/admin/config") ? "var(--bg-elevated)" : undefined,
+                    color: pathname === "/admin" || pathname.startsWith("/admin/config") ? "var(--accent-purple)" : "var(--text-secondary)",
                   }}
                 >
                   <Shield size={20} />
                   <span>Admin</span>
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  href="/admin/playground"
+                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
+                  style={{
+                    backgroundColor: pathname.startsWith("/admin/playground") ? "var(--bg-elevated)" : undefined,
+                    color: pathname.startsWith("/admin/playground") ? "var(--accent-purple)" : "var(--text-secondary)",
+                  }}
+                >
+                  <FlaskConical size={20} />
+                  <span>Playground</span>
                 </Link>
               )}
             </div>
