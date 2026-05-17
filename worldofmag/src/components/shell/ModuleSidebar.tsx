@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, FolderOpen, Tag, CheckSquare } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, FolderOpen, Tag, CheckSquare, Home, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 
@@ -16,13 +16,15 @@ function NavItem({
   label,
   icon,
   pathname,
+  exact = false,
 }: {
   href: string;
   label: string;
   icon: React.ReactNode;
   pathname: string;
+  exact?: boolean;
 }) {
-  const isActive = pathname.startsWith(href);
+  const isActive = exact ? pathname === href : pathname.startsWith(href);
   return (
     <Link
       href={href}
@@ -119,6 +121,9 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
 
       {/* Modules */}
       <nav className="flex-1 py-2 overflow-y-auto">
+        {/* Home */}
+        <NavItem href="/" label="Strona główna" icon={<Home size={18} />} pathname={pathname} exact />
+
         {/* Shopping with sub-items */}
         <NavItem href="/shopping" label="Zakupy" icon={<ShoppingCart size={18} />} pathname={pathname} />
         {isShoppingActive && (
@@ -234,17 +239,17 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
             href="/admin"
             className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm"
             style={{
-              backgroundColor: pathname.startsWith("/admin") ? "var(--bg-elevated)" : undefined,
-              color: pathname.startsWith("/admin") ? "var(--accent-purple)" : "var(--text-secondary)",
+              backgroundColor: pathname === "/admin" || pathname.startsWith("/admin/config") ? "var(--bg-elevated)" : undefined,
+              color: pathname === "/admin" || pathname.startsWith("/admin/config") ? "var(--accent-purple)" : "var(--text-secondary)",
             }}
             onMouseEnter={(e) => {
-              if (!pathname.startsWith("/admin")) {
+              if (!(pathname === "/admin" || pathname.startsWith("/admin/config"))) {
                 e.currentTarget.style.backgroundColor = "var(--bg-hover)";
                 e.currentTarget.style.color = "var(--accent-purple)";
               }
             }}
             onMouseLeave={(e) => {
-              if (!pathname.startsWith("/admin")) {
+              if (!(pathname === "/admin" || pathname.startsWith("/admin/config"))) {
                 e.currentTarget.style.backgroundColor = "";
                 e.currentTarget.style.color = "var(--text-secondary)";
               }
@@ -252,6 +257,31 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
           >
             <Shield size={18} />
             <span>Admin</span>
+          </Link>
+        )}
+        {isAdmin && (
+          <Link
+            href="/admin/playground"
+            className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm"
+            style={{
+              backgroundColor: pathname.startsWith("/admin/playground") ? "var(--bg-elevated)" : undefined,
+              color: pathname.startsWith("/admin/playground") ? "var(--accent-purple)" : "var(--text-secondary)",
+            }}
+            onMouseEnter={(e) => {
+              if (!pathname.startsWith("/admin/playground")) {
+                e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+                e.currentTarget.style.color = "var(--accent-purple)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!pathname.startsWith("/admin/playground")) {
+                e.currentTarget.style.backgroundColor = "";
+                e.currentTarget.style.color = "var(--text-secondary)";
+              }
+            }}
+          >
+            <FlaskConical size={18} />
+            <span>Playground</span>
           </Link>
         )}
       </div>
