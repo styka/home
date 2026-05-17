@@ -792,10 +792,10 @@ export function TasksGuide() {
             <StatusFlowSVG />
             <Ul items={[
               "<strong>TODO</strong> — zadanie do zrobienia. Stan domyślny.",
-              "<strong>IN_PROGRESS</strong> — w toku. Widoczne w filtrze „W trakcie".",
+              '<strong>IN_PROGRESS</strong> — w toku. Widoczne w filtrze "W trakcie".',
               "<strong>DONE</strong> — zakończone. Dla zadań cyklicznych tworzy automatycznie następne wystąpienie.",
               "<strong>DEFERRED</strong> — odłożone na później. Nie pojawia się w widoku Dziś.",
-              "<strong>CANCELLED</strong> — anulowane. Widoczne tylko w filtrze „Anulowane".",
+              '<strong>CANCELLED</strong> — anulowane. Widoczne tylko w filtrze "Anulowane".',
             ]}/>
             <H3>Skala priorytetów</H3>
             <P>
