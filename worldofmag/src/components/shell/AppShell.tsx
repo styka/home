@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FlaskConical } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FlaskConical, BookOpen } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 
@@ -303,6 +303,19 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                 >
                   <Shield size={20} />
                   <span>Architektura</span>
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  href="/admin/reports"
+                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
+                  style={{
+                    backgroundColor: pathname.startsWith("/admin/reports") ? "var(--bg-elevated)" : undefined,
+                    color: pathname.startsWith("/admin/reports") ? "var(--accent-purple)" : "var(--text-secondary)",
+                  }}
+                >
+                  <BookOpen size={20} />
+                  <span>Raporty</span>
                 </Link>
               )}
             </div>

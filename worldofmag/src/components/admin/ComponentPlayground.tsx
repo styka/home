@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/shopping/StatusBadge";
 import { TagChip, TAG_COLOR_OPTIONS } from "@/components/notes/TagChip";
 import { TaskTagBadge } from "@/components/tasks/TaskTagBadge";
 import { RecurringBadge } from "@/components/tasks/RecurringBadge";
+import type { TaskTagDef } from "@/types";
 import { FilterTabs } from "@/components/shopping/FilterTabs";
 import type { FilterTab } from "@/types";
 
@@ -248,9 +249,10 @@ function TagChipDoc() {
   const [removedIds, setRemovedIds] = useState<string[]>([]);
   const mockTags = TAG_COLOR_OPTIONS.slice(0, 5).map((color, i) => ({
     id: `t${i}`,
-    name: ["react", "typescript", "zakupy", "praca", "dom"][i],
+    name: ["react", "typescript", "zakupy", "praca", "dom"][i] ?? "tag",
     color,
     createdAt: new Date(),
+    updatedAt: new Date(),
   }));
   const visible = mockTags.filter((t) => !removedIds.includes(t.id));
 
@@ -324,11 +326,11 @@ function TaskTagBadgeDoc() {
       <DemoBox>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
           <span style={{ fontSize: 11, color: "var(--text-muted)", width: "100%", marginBottom: 2 }}>Rozmiar sm:</span>
-          {mockTags.map((t) => <TaskTagBadge key={t.id} tag={t as never} size="sm" />)}
+          {mockTags.map((t) => <TaskTagBadge key={t.id} tag={t as TaskTagDef} size="sm" />)}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           <span style={{ fontSize: 11, color: "var(--text-muted)", width: "100%", marginBottom: 2 }}>Rozmiar xs:</span>
-          {mockTags.map((t) => <TaskTagBadge key={t.id} tag={t as never} size="xs" />)}
+          {mockTags.map((t) => <TaskTagBadge key={t.id} tag={t as TaskTagDef} size="xs" />)}
         </div>
       </DemoBox>
 

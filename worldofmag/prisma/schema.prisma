@@ -388,3 +388,17 @@ model UserActivity {
 
   @@index([userId, createdAt])
 }
+
+// ─── Reports ──────────────────────────────────────────────────────────────
+
+model Report {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  content   String   // markdown content
+  category  String   @default("general")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, createdAt])
+}

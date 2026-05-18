@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FlaskConical, FolderOpen, Tag } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FlaskConical, FolderOpen, Tag, BookOpen } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 
@@ -198,6 +198,9 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
         )}
         {isAdmin && (
           <NavItem href="/admin/architecture" label="Architektura" icon={<Shield size={18} />} pathname={pathname} accentColor="var(--accent-purple)" />
+        )}
+        {isAdmin && (
+          <NavItem href="/admin/reports" label="Raporty" icon={<BookOpen size={18} />} pathname={pathname} accentColor="var(--accent-purple)" />
         )}
       </div>
     </aside>
