@@ -211,6 +211,43 @@ export const TASK_STATUS_FILTER_LABELS: Record<TaskStatusFilter, string> = {
 
 export type ViewMode = "today" | "upcoming" | "overdue" | "all" | "project";
 
+// ─── Store Maps ───────────────────────────────────────────────────────────────
+
+export type StoreNodeType = "START" | "STOP" | "CATEGORY";
+
+export interface StoreNodeData {
+  id: string;
+  storeId: string;
+  label: string;
+  type: string;
+  category: string | null;
+  x: number;
+  y: number;
+}
+
+export interface StoreEdgeData {
+  id: string;
+  storeId: string;
+  fromId: string;
+  toId: string;
+  weight: number;
+}
+
+export interface StoreWithGraph {
+  id: string;
+  name: string;
+  ownerId: string | null;
+  nodes: StoreNodeData[];
+  edges: StoreEdgeData[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type SortMode =
+  | { type: "category" }
+  | { type: "product" }
+  | { type: "store"; storeId: string; storeName: string };
+
 // ─── Shared ───────────────────────────────────────────────────────────────
 
 export interface ShortcutHandlers {

@@ -38,6 +38,7 @@ model User {
   taskComments      TaskComment[]        @relation("TaskComments")
   taskShares        TaskShare[]          @relation("TaskShares")
   activities        UserActivity[]
+  stores            Store[]
 }
 
 model Account {
@@ -387,6 +388,44 @@ model UserActivity {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+// ─── Store Maps ───────────────────────────────────────────────────────────────
+
+model Store {
+  id        String      @id @default(cuid())
+  name      String
+  ownerId   String?
+  nodes     StoreNode[]
+  edges     StoreEdge[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  owner User? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+model StoreNode {
+  id        String      @id @default(cuid())
+  storeId   String
+  label     String
+  type      String      @default("CATEGORY")
+  category  String?
+  x         Float
+  y         Float
+  store     Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  edgesFrom StoreEdge[] @relation("EdgeFrom")
+  edgesTo   StoreEdge[] @relation("EdgeTo")
+}
+
+model StoreEdge {
+  id      String    @id @default(cuid())
+  storeId String
+  fromId  String
+  toId    String
+  weight  Float     @default(1)
+  store   Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  from    StoreNode @relation("EdgeFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to      StoreNode @relation("EdgeTo", fields: [toId], references: [id], onDelete: Cascade)
 }
 
 // ─── Reports ──────────────────────────────────────────────────────────────
