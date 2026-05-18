@@ -1,9 +1,15 @@
 import { createTeam } from "@/actions/teams"
 import { redirect } from "next/navigation"
+import { ChevronLeft } from "lucide-react"
+import Link from "next/link"
 
 export default function NewTeamPage() {
   return (
     <div style={{ padding: "32px", maxWidth: 480 }}>
+      <Link href="/settings" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none", marginBottom: 20 }}>
+        <ChevronLeft size={14} />
+        Ustawienia
+      </Link>
       <h1 style={{ color: "var(--text-primary)", fontSize: 20, fontWeight: 600, marginBottom: 24 }}>
         Nowy team
       </h1>

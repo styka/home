@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
+import { AICommandSheet } from "@/components/home/AICommandSheet";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -13,23 +14,23 @@ interface AppShellProps {
 }
 
 const MODULES = [
-  { id: "shopping", label: "Zakupy", icon: <ShoppingCart size={20} />, topBarIcon: <ShoppingCart size={16} />, href: "/shopping", active: true },
-  { id: "tasks", label: "Zadania", icon: <CheckSquare size={20} />, topBarIcon: <CheckSquare size={16} />, href: "/tasks", active: true },
-  { id: "notes", label: "Notes", icon: <FileText size={20} />, topBarIcon: <FileText size={16} />, href: "/notes", active: true },
-  { id: "calendar", label: "Calendar", icon: <Calendar size={20} />, topBarIcon: <Calendar size={16} />, href: "/calendar", active: false },
-  { id: "work", label: "Work", icon: <Briefcase size={20} />, topBarIcon: <Briefcase size={16} />, href: "/work", active: false },
+  { id: "home",        label: "Strona główna", icon: <Home size={20} />,        topBarIcon: <Home size={16} />,        color: "var(--text-secondary)",  href: "/",            active: true,  exact: true  },
+  { id: "shopping",    label: "Zakupy",        icon: <ShoppingCart size={20} />, topBarIcon: <ShoppingCart size={16} />, color: "var(--accent-blue)",     href: "/shopping",    active: true,  exact: false },
+  { id: "tasks",       label: "Zadania",       icon: <CheckSquare size={20} />,  topBarIcon: <CheckSquare size={16} />,  color: "var(--accent-green)",    href: "/tasks",       active: true,  exact: false },
+  { id: "notes",       label: "Notatki",       icon: <FileText size={20} />,     topBarIcon: <FileText size={16} />,     color: "var(--accent-amber)",    href: "/notes",       active: true,  exact: false },
+  { id: "calendar",    label: "Calendar",      icon: <Calendar size={20} />,     topBarIcon: <Calendar size={16} />,     color: "var(--text-muted)",      href: "/calendar",    active: false, exact: false },
+  { id: "work",        label: "Work",          icon: <Briefcase size={20} />,    topBarIcon: <Briefcase size={16} />,    color: "var(--text-muted)",      href: "/work",        active: false, exact: false },
+  // Non-nav routes — used only for top bar label, not rendered in sidebar
+  { id: "settings",    label: "Ustawienia",    icon: null,                        topBarIcon: <Settings size={16} />,    color: "var(--text-secondary)",  href: "/settings",    active: false, exact: false },
+  { id: "invitations", label: "Zaproszenia",   icon: null,                        topBarIcon: <Mail size={16} />,        color: "var(--text-secondary)",  href: "/invitations", active: false, exact: false },
+  { id: "admin",       label: "Admin",         icon: null,                        topBarIcon: <Shield size={16} />,      color: "var(--accent-purple)",   href: "/admin",       active: false, exact: false },
 ];
 
-const SHOPPING_SUBITEMS = [
-  { href: "/shopping/products", label: "Produkty" },
-  { href: "/shopping/units", label: "Jednostki" },
-  { href: "/shopping/categories", label: "Kategorie" },
-];
 
 export function AppShell({ children, invitationCount = 0, isAdmin = false }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
-  const activeModule = MODULES.find((m) => pathname.startsWith(m.href));
+  const activeModule = MODULES.find((m) => m.exact ? pathname === m.href : pathname.startsWith(m.href));
 
   useEffect(() => {
     setMenuOpen(false);
@@ -51,17 +52,21 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
       className="flex flex-col md:flex-row h-screen overflow-hidden"
       style={{
         backgroundColor: "var(--bg-base)",
-        paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
         paddingLeft: "env(safe-area-inset-left)",
         paddingRight: "env(safe-area-inset-right)",
       }}
     >
-      {/* Mobile-only top bar */}
+      {/* Mobile-only top bar — paddingTop absorbs iOS status bar in PWA */}
       <div
-        className="md:hidden flex items-center gap-2 px-3 h-11 border-b flex-shrink-0"
-        style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}
+        className="md:hidden flex-shrink-0 border-b"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          borderColor: "var(--border)",
+          paddingTop: "env(safe-area-inset-top)",
+        }}
       >
+        <div className="flex items-center gap-2 px-3" style={{ height: 44 }}>
         <button
           onClick={() => setMenuOpen(true)}
           className="flex items-center justify-center w-8 h-8 rounded flex-shrink-0"
@@ -84,19 +89,14 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
           )}
         </button>
 
-        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-          WorldOfMag
-        </span>
-
-        <span style={{ color: "var(--border)" }}>/</span>
-
         <div className="flex items-center gap-1.5">
-          <span style={{ color: "var(--accent-purple)" }}>
+          <span style={{ color: activeModule?.color ?? "var(--accent-purple)" }}>
             {activeModule?.topBarIcon ?? <Sparkles size={16} />}
           </span>
           <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
             {activeModule?.label ?? "WorldOfMag"}
           </span>
+        </div>
         </div>
       </div>
 
@@ -112,30 +112,45 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
             style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Drawer header */}
+            {/* Drawer header — paddingTop absorbs iOS status bar in PWA standalone mode */}
             <div
-              className="flex items-center justify-between px-4 h-11 border-b flex-shrink-0"
-              style={{ borderColor: "var(--border)" }}
+              className="flex-shrink-0 border-b"
+              style={{ borderColor: "var(--border)", paddingTop: "env(safe-area-inset-top)" }}
             >
-              <div className="flex items-center gap-2">
-                <Sparkles size={14} style={{ color: "var(--accent-purple)" }} />
-                <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                  WorldOfMag
-                </span>
+              <div className="flex items-center justify-between px-4" style={{ height: 44 }}>
+                <div className="flex items-center gap-2">
+                  <Sparkles size={18} style={{ color: "var(--accent-purple)" }} />
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
+                    WorldOfMag
+                  </span>
+                </div>
+                <button
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-center w-8 h-8 rounded"
+                  style={{ color: "var(--text-secondary)" }}
+                  aria-label="Zamknij menu"
+                >
+                  <X size={16} />
+                </button>
               </div>
-              <button
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center justify-center w-8 h-8 rounded"
-                style={{ color: "var(--text-secondary)" }}
-                aria-label="Zamknij menu"
-              >
-                <X size={16} />
-              </button>
             </div>
 
             {/* Module nav */}
             <nav className="flex-1 py-2 overflow-y-auto">
-              {/* Shopping with sub-items */}
+              {/* Home */}
+              <Link
+                href="/"
+                className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
+                style={{
+                  backgroundColor: pathname === "/" ? "var(--bg-elevated)" : undefined,
+                  color: pathname === "/" ? "var(--text-primary)" : "var(--text-secondary)",
+                }}
+              >
+                <Home size={20} style={{ color: "var(--text-secondary)", flexShrink: 0 }} />
+                <span>Strona główna</span>
+              </Link>
+
+              {/* Shopping */}
               <Link
                 href="/shopping"
                 className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
@@ -144,30 +159,9 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                   color: isShoppingActive ? "var(--text-primary)" : "var(--text-secondary)",
                 }}
               >
-                <ShoppingCart size={20} />
+                <ShoppingCart size={20} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
                 <span>Zakupy</span>
               </Link>
-
-              {/* Shopping sub-items — always visible */}
-              <div className="mb-1">
-                {SHOPPING_SUBITEMS.map(({ href, label }) => {
-                  const isActive = pathname === href;
-                  return (
-                    <Link
-                      key={href}
-                      href={href}
-                      className="flex items-center py-2 mx-2 rounded text-sm"
-                      style={{
-                        paddingLeft: 52,
-                        backgroundColor: isActive ? "var(--bg-elevated)" : undefined,
-                        color: isActive ? "var(--text-primary)" : "var(--text-muted)",
-                      }}
-                    >
-                      {label}
-                    </Link>
-                  );
-                })}
-              </div>
 
               {/* Tasks */}
               <Link
@@ -178,7 +172,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                   color: pathname.startsWith("/tasks") ? "var(--text-primary)" : "var(--text-secondary)",
                 }}
               >
-                <CheckSquare size={20} />
+                <CheckSquare size={20} style={{ color: "var(--accent-green)", flexShrink: 0 }} />
                 <span>Zadania</span>
               </Link>
 
@@ -191,9 +185,33 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                   color: pathname.startsWith("/notes") ? "var(--text-primary)" : "var(--text-secondary)",
                 }}
               >
-                <FileText size={20} />
-                <span>Notes</span>
+                <FileText size={20} style={{ color: "var(--accent-amber)", flexShrink: 0 }} />
+                <span>Notatki</span>
               </Link>
+
+              {/* Notes sub-items */}
+              {pathname.startsWith("/notes") && (
+                <div className="mb-1">
+                  {[
+                    { href: "/notes/all", label: "Wszystkie" },
+                    { href: "/notes/groups", label: "Grupy" },
+                    { href: "/notes/tags", label: "Tagi" },
+                  ].map(({ href, label }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className="flex items-center py-2 mx-2 rounded text-sm"
+                      style={{
+                        paddingLeft: 52,
+                        backgroundColor: pathname === href ? "var(--bg-elevated)" : undefined,
+                        color: pathname === href ? "var(--text-primary)" : "var(--text-muted)",
+                      }}
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              )}
 
               {/* Inactive modules */}
               {MODULES.filter((m) => !m.active).map((mod) => (
@@ -210,7 +228,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
             </nav>
 
             {/* Bottom: Invitations + Settings + Admin */}
-            <div className="py-2 border-t" style={{ borderColor: "var(--border)" }}>
+            <div className="py-2 border-t" style={{ borderColor: "var(--border)", paddingBottom: "calc(8px + env(safe-area-inset-bottom))" }}>
               <Link
                 href="/invitations"
                 className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
@@ -271,6 +289,8 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
       <main className="flex-1 overflow-hidden flex flex-col min-w-0">
         {children}
       </main>
+
+      <AICommandSheet />
     </div>
   );
 }
