@@ -93,7 +93,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, stores }: Shopp
     if (sortMode.type !== "store") return undefined;
     const store = stores.find(s => s.id === sortMode.storeId);
     if (!store) return undefined;
-    const presentCategories = [...new Set(filteredItems.map(i => i.category))];
+    const presentCategories = Array.from(new Set(filteredItems.map(i => i.category)));
     return computeOptimalCategoryOrder(store.nodes, store.edges, presentCategories);
   }, [sortMode, stores, filteredItems]);
 

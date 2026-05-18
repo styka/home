@@ -113,9 +113,9 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
   }
 
   function flash(id: string) {
-    setFlashIds((prev: Set<string>) => new Set([...prev, id]));
+    setFlashIds((prev: Set<string>) => new Set(Array.from(prev).concat(id)));
     setTimeout(() => setFlashIds((prev: Set<string>) => {
-      const next = new Set(prev);
+      const next = new Set(Array.from(prev));
       next.delete(id);
       return next;
     }), 300);
