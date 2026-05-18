@@ -10,6 +10,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { deleteTask, toggleTaskStatus } from "@/actions/tasks";
 import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode } from "@/types";
 import { TASK_STATUS_FILTERS } from "@/types";
+import { AICommandSheet } from "@/components/home/AICommandSheet";
 
 interface TasksPageProps {
   tasks: Task[];
@@ -351,6 +352,8 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           </div>
         )}
       </div>
+
+      <AICommandSheet context={["tasks"]} placeholder={"Wpisz polecenie do zadań…\nNp. \"Dodaj zadanie: zadzwoń do klienta w piątek\" lub \"Oznacz X jako zrobione\""} />
     </div>
   );
 }

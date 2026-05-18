@@ -13,6 +13,7 @@ import { useItemNavigation } from "@/hooks/useItemNavigation";
 import { updateItemStatus, deleteItem } from "@/actions/items";
 import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus } from "@/types";
 import { FILTER_TABS, STATUS_CYCLE } from "@/types";
+import { AICommandSheet } from "@/components/home/AICommandSheet";
 
 interface ShoppingPageProps {
   list: ShoppingListWithItems;
@@ -156,6 +157,8 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
         allLists={allLists}
         onFocusQuickAdd={() => {}}
       />
+
+      <AICommandSheet context={["shopping"]} placeholder={"Wpisz polecenie do zakupów…\nNp. \"Dodaj mleko i jajka\" lub \"Oznacz chleb jako w koszyku\""} />
     </div>
   );
 }
