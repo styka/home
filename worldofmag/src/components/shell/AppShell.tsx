@@ -224,7 +224,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
             </nav>
 
             {/* Bottom: Invitations + Settings + Admin */}
-            <div className="py-2 border-t" style={{ borderColor: "var(--border)" }}>
+            <div className="py-2 border-t" style={{ borderColor: "var(--border)", paddingBottom: "calc(8px + env(safe-area-inset-bottom))" }}>
               <Link
                 href="/invitations"
                 className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
