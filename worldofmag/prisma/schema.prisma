@@ -37,6 +37,7 @@ model User {
   tasksAssigned     Task[]               @relation("TasksAssignedTo")
   taskComments      TaskComment[]        @relation("TaskComments")
   taskShares        TaskShare[]          @relation("TaskShares")
+  activities        UserActivity[]
 }
 
 model Account {
@@ -372,4 +373,32 @@ model TaskShare {
   task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User? @relation("TaskShares", fields: [userId], references: [id])
   team Team? @relation("TeamTaskShares", fields: [teamId], references: [id])
+}
+
+// ─── Activity Tracking ────────────────────────────────────────────────────
+
+model UserActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module    String   // "shopping" | "tasks" | "notes"
+  action    String   // "add_item" | "create_task" | "create_note" | etc.
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// ─── Reports ──────────────────────────────────────────────────────────────
+
+model Report {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  content   String   // markdown content
+  category  String   @default("general")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, createdAt])
 }

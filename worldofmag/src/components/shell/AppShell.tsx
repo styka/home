@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FlaskConical, BookOpen } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
+import { AICommandSheet } from "@/components/home/AICommandSheet";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -13,23 +14,19 @@ interface AppShellProps {
 }
 
 const MODULES = [
-  { id: "shopping", label: "Zakupy", icon: <ShoppingCart size={20} />, topBarIcon: <ShoppingCart size={16} />, href: "/shopping", active: true },
-  { id: "tasks", label: "Zadania", icon: <CheckSquare size={20} />, topBarIcon: <CheckSquare size={16} />, href: "/tasks", active: true },
-  { id: "notes", label: "Notes", icon: <FileText size={20} />, topBarIcon: <FileText size={16} />, href: "/notes", active: true },
-  { id: "calendar", label: "Calendar", icon: <Calendar size={20} />, topBarIcon: <Calendar size={16} />, href: "/calendar", active: false },
-  { id: "work", label: "Work", icon: <Briefcase size={20} />, topBarIcon: <Briefcase size={16} />, href: "/work", active: false },
+  { id: "home", label: "Strona główna", icon: <Home size={20} />, topBarIcon: <Home size={16} />, href: "/", active: true, exact: true },
+  { id: "shopping", label: "Zakupy", icon: <ShoppingCart size={20} />, topBarIcon: <ShoppingCart size={16} />, href: "/shopping", active: true, exact: false },
+  { id: "tasks", label: "Zadania", icon: <CheckSquare size={20} />, topBarIcon: <CheckSquare size={16} />, href: "/tasks", active: true, exact: false },
+  { id: "notes", label: "Notes", icon: <FileText size={20} />, topBarIcon: <FileText size={16} />, href: "/notes", active: true, exact: false },
+  { id: "calendar", label: "Calendar", icon: <Calendar size={20} />, topBarIcon: <Calendar size={16} />, href: "/calendar", active: false, exact: false },
+  { id: "work", label: "Work", icon: <Briefcase size={20} />, topBarIcon: <Briefcase size={16} />, href: "/work", active: false, exact: false },
 ];
 
-const SHOPPING_SUBITEMS = [
-  { href: "/shopping/products", label: "Produkty" },
-  { href: "/shopping/units", label: "Jednostki" },
-  { href: "/shopping/categories", label: "Kategorie" },
-];
 
 export function AppShell({ children, invitationCount = 0, isAdmin = false }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
-  const activeModule = MODULES.find((m) => pathname.startsWith(m.href));
+  const activeModule = MODULES.find((m) => m.exact ? pathname === m.href : pathname.startsWith(m.href));
 
   useEffect(() => {
     setMenuOpen(false);
@@ -51,16 +48,22 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
       className="flex flex-col md:flex-row h-screen overflow-hidden"
       style={{
         backgroundColor: "var(--bg-base)",
-        paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
         paddingLeft: "env(safe-area-inset-left)",
         paddingRight: "env(safe-area-inset-right)",
       }}
     >
-      {/* Mobile-only top bar */}
+      {/* Mobile-only top bar — paddingTop absorbs iOS status bar in PWA */}
       <div
-        className="md:hidden flex items-center gap-2 px-3 h-11 border-b flex-shrink-0"
-        style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}
+        className="md:hidden flex items-center gap-2 px-3 border-b flex-shrink-0"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          borderColor: "var(--border)",
+          paddingTop: "env(safe-area-inset-top)",
+          minHeight: "calc(44px + env(safe-area-inset-top))",
+          alignItems: "flex-end",
+          paddingBottom: 8,
+        }}
       >
         <button
           onClick={() => setMenuOpen(true)}
@@ -135,7 +138,20 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
 
             {/* Module nav */}
             <nav className="flex-1 py-2 overflow-y-auto">
-              {/* Shopping with sub-items */}
+              {/* Home */}
+              <Link
+                href="/"
+                className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
+                style={{
+                  backgroundColor: pathname === "/" ? "var(--bg-elevated)" : undefined,
+                  color: pathname === "/" ? "var(--text-primary)" : "var(--text-secondary)",
+                }}
+              >
+                <Home size={20} />
+                <span>Strona główna</span>
+              </Link>
+
+              {/* Shopping */}
               <Link
                 href="/shopping"
                 className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
@@ -147,27 +163,6 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                 <ShoppingCart size={20} />
                 <span>Zakupy</span>
               </Link>
-
-              {/* Shopping sub-items — always visible */}
-              <div className="mb-1">
-                {SHOPPING_SUBITEMS.map(({ href, label }) => {
-                  const isActive = pathname === href;
-                  return (
-                    <Link
-                      key={href}
-                      href={href}
-                      className="flex items-center py-2 mx-2 rounded text-sm"
-                      style={{
-                        paddingLeft: 52,
-                        backgroundColor: isActive ? "var(--bg-elevated)" : undefined,
-                        color: isActive ? "var(--text-primary)" : "var(--text-muted)",
-                      }}
-                    >
-                      {label}
-                    </Link>
-                  );
-                })}
-              </div>
 
               {/* Tasks */}
               <Link
@@ -187,13 +182,37 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                 href="/notes"
                 className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
                 style={{
-                  backgroundColor: pathname.startsWith("/notes") ? "var(--bg-elevated)" : undefined,
-                  color: pathname.startsWith("/notes") ? "var(--text-primary)" : "var(--text-secondary)",
+                  backgroundColor: pathname === "/notes" ? "var(--bg-elevated)" : undefined,
+                  color: pathname === "/notes" ? "var(--text-primary)" : "var(--text-secondary)",
                 }}
               >
                 <FileText size={20} />
-                <span>Notes</span>
+                <span>Notatki</span>
               </Link>
+
+              {/* Notes sub-items */}
+              {pathname.startsWith("/notes") && (
+                <div className="mb-1">
+                  {[
+                    { href: "/notes/all", label: "Wszystkie" },
+                    { href: "/notes/groups", label: "Grupy" },
+                    { href: "/notes/tags", label: "Tagi" },
+                  ].map(({ href, label }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className="flex items-center py-2 mx-2 rounded text-sm"
+                      style={{
+                        paddingLeft: 52,
+                        backgroundColor: pathname === href ? "var(--bg-elevated)" : undefined,
+                        color: pathname === href ? "var(--text-primary)" : "var(--text-muted)",
+                      }}
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              )}
 
               {/* Inactive modules */}
               {MODULES.filter((m) => !m.active).map((mod) => (
@@ -252,12 +271,51 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                   href="/admin"
                   className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
                   style={{
-                    backgroundColor: pathname.startsWith("/admin") ? "var(--bg-elevated)" : undefined,
-                    color: pathname.startsWith("/admin") ? "var(--accent-purple)" : "var(--text-secondary)",
+                    backgroundColor: pathname === "/admin" || pathname.startsWith("/admin/config") ? "var(--bg-elevated)" : undefined,
+                    color: pathname === "/admin" || pathname.startsWith("/admin/config") ? "var(--accent-purple)" : "var(--text-secondary)",
                   }}
                 >
                   <Shield size={20} />
                   <span>Admin</span>
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  href="/admin/playground"
+                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
+                  style={{
+                    backgroundColor: pathname.startsWith("/admin/playground") ? "var(--bg-elevated)" : undefined,
+                    color: pathname.startsWith("/admin/playground") ? "var(--accent-purple)" : "var(--text-secondary)",
+                  }}
+                >
+                  <FlaskConical size={20} />
+                  <span>Playground</span>
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  href="/admin/architecture"
+                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
+                  style={{
+                    backgroundColor: pathname.startsWith("/admin/architecture") ? "var(--bg-elevated)" : undefined,
+                    color: pathname.startsWith("/admin/architecture") ? "var(--accent-purple)" : "var(--text-secondary)",
+                  }}
+                >
+                  <Shield size={20} />
+                  <span>Architektura</span>
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  href="/admin/reports"
+                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
+                  style={{
+                    backgroundColor: pathname.startsWith("/admin/reports") ? "var(--bg-elevated)" : undefined,
+                    color: pathname.startsWith("/admin/reports") ? "var(--accent-purple)" : "var(--text-secondary)",
+                  }}
+                >
+                  <BookOpen size={20} />
+                  <span>Raporty</span>
                 </Link>
               )}
             </div>
@@ -271,6 +329,8 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
       <main className="flex-1 overflow-hidden flex flex-col min-w-0">
         {children}
       </main>
+
+      <AICommandSheet />
     </div>
   );
 }

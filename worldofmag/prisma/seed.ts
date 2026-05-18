@@ -1,5 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import { categorize } from "../src/lib/categorize";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const fs = require("fs") as typeof import("fs");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const path = require("path") as typeof import("path");
 
 const prisma = new PrismaClient();
 
@@ -132,6 +136,25 @@ async function main() {
   }
 
   console.log(`Seeded ${COMMON_ITEMS.length} global Product entries`);
+
+  // Seed Reports
+  const finalReportPath = path.join(__dirname, "../refactoring.final.md");
+  if (fs.existsSync(finalReportPath)) {
+    const finalContent = fs.readFileSync(finalReportPath, "utf-8");
+    await prisma.report.upsert({
+      where: { slug: "refactoring-final-2026-05" },
+      update: {},
+      create: {
+        title: "Raport końcowy refaktoryzacji — WorldOfMag, Maj 2026",
+        slug: "refactoring-final-2026-05",
+        content: finalContent,
+        category: "refactoring",
+        createdAt: new Date("2026-05-18T12:00:00.000Z"),
+      },
+    });
+    console.log("Seeded final refactoring report");
+  }
+
   console.log("Done.");
 }
 

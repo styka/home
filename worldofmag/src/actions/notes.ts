@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type { Note } from "@/types";
+import { trackActivity } from "@/actions/activity";
 
 type NoteWithRelations = Awaited<ReturnType<typeof fetchNote>>;
 
@@ -72,6 +73,7 @@ export async function createNote(data: {
     include: { group: true, tags: { include: { tag: true } } },
   });
 
+  void trackActivity("notes", "create_note", { title: data.title });
   revalidatePath("/notes");
   return note as Note;
 }
@@ -95,6 +97,7 @@ export async function updateNote(
     include: { group: true, tags: { include: { tag: true } } },
   });
 
+  void trackActivity("notes", "update_note", { id });
   revalidatePath("/notes");
   return note as Note;
 }

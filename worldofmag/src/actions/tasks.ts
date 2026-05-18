@@ -2,15 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/server-utils";
 import { assertProjectAccess } from "@/actions/taskProjects";
+import { trackActivity } from "@/actions/activity";
 import type { Task, TaskStatus, TaskPriority, TaskWithRelations, RecurringRule } from "@/types";
-
-async function requireAuth() {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  return session.user as { id: string };
-}
 
 const TASK_INCLUDE = {
   tags: { include: { tag: true } },
@@ -135,6 +130,7 @@ export async function createTask(data: {
     include: TASK_INCLUDE,
   });
 
+  void trackActivity("tasks", "create_task", { title: data.title, priority: data.priority ?? "NONE", dueDate: data.dueDate?.toISOString() ?? null });
   revalidatePath("/tasks");
   if (data.projectId) revalidatePath(`/tasks/${data.projectId}`);
   return toTask(task);
@@ -177,6 +173,7 @@ export async function updateTask(
 
   const task = await prisma.task.update({ where: { id }, data, include: TASK_INCLUDE });
 
+  void trackActivity("tasks", "update_task", { id, patchKeys: Object.keys(patch) });
   revalidatePath("/tasks");
   if (task.projectId) revalidatePath(`/tasks/${task.projectId}`);
   return toTask(task);

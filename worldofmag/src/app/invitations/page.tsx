@@ -1,15 +1,19 @@
 import { getPendingInvitations } from "@/actions/invitations"
 import InvitationsList from "@/components/teams/InvitationsList"
+import { Mail } from "lucide-react"
 
 export default async function InvitationsPage() {
   const invitations = await getPendingInvitations()
 
   return (
-    <div style={{ padding: "32px", maxWidth: 640 }}>
-      <h1 style={{ color: "var(--text-primary)", fontSize: 20, fontWeight: 600, marginBottom: 24 }}>
-        Zaproszenia do teamów
-      </h1>
-      <InvitationsList invitations={invitations} />
+    <div style={{ flex: 1, overflowY: "auto", backgroundColor: "var(--bg-base)", padding: "24px 16px" }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: 10 }}>
+          <Mail size={22} style={{ color: "var(--text-secondary)" }} />
+          Zaproszenia
+        </h1>
+        <InvitationsList invitations={invitations} />
+      </div>
     </div>
   )
 }

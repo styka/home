@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef, useTransition } from "react";
+import { useState, useMemo, useRef, useTransition } from "react";
 import { MessageCircle, X, Search } from "lucide-react";
 import { NoteList } from "./NoteList";
 import { QuickNoteBar, type QuickNoteBarHandle } from "./QuickNoteBar";
@@ -8,7 +8,7 @@ import { NotesQA } from "./NotesQA";
 import { TagChip } from "./TagChip";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
-import type { Note, Tag, NoteGroup, NoteFilter } from "@/types";
+import type { Note, Tag as TagType, NoteGroup, NoteFilter } from "@/types";
 import { NOTE_FILTER_LABELS } from "@/types";
 
 const NOTE_FILTERS: NoteFilter[] = ["ALL", "PINNED", "NO_GROUP", "SEARCH"];
@@ -16,7 +16,7 @@ const NOTE_FILTERS: NoteFilter[] = ["ALL", "PINNED", "NO_GROUP", "SEARCH"];
 interface NotesPageProps {
   notes: Note[];
   groups: NoteGroup[];
-  tags: Tag[];
+  tags: TagType[];
 }
 
 export function NotesPage({ notes, groups, tags }: NotesPageProps) {
@@ -124,7 +124,7 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
         <h1 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           Notatki
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {filteredNotes.length} / {notes.length}
           </span>

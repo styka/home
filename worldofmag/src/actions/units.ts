@@ -2,22 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { UNITS } from "@/types";
-
-async function requireAuth() {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  return session.user as { id: string };
-}
-
-async function getUserTeamIds(userId: string): Promise<string[]> {
-  const memberships = await prisma.teamMember.findMany({
-    where: { userId },
-    select: { teamId: true },
-  });
-  return memberships.map((m) => m.teamId);
-}
 
 export type UnitWithUsage = {
   id: string | null;

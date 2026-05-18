@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getLists, createList } from "@/actions/lists";
+import { getLists } from "@/actions/lists";
+import { prisma } from "@/lib/prisma";
+import { ShoppingHomePage } from "@/components/shopping/ShoppingHomePage";
 
 export const dynamic = "force-dynamic";
 
@@ -10,10 +12,15 @@ export default async function ShoppingIndexPage() {
 
   const lists = await getLists();
 
-  if (lists.length === 0) {
-    const newList = await createList("Zakupy");
-    redirect(`/shopping/${newList.id}`);
-  }
+  const listsWithCounts = await Promise.all(
+    lists.map(async (list) => {
+      const [pendingCount, totalCount] = await Promise.all([
+        prisma.item.count({ where: { listId: list.id, status: "NEEDED" } }),
+        prisma.item.count({ where: { listId: list.id } }),
+      ]);
+      return { id: list.id, name: list.name, pendingCount, totalCount };
+    })
+  );
 
-  redirect(`/shopping/${lists[0].id}`);
+  return <ShoppingHomePage lists={listsWithCounts} />;
 }
