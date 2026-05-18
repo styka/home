@@ -2,16 +2,25 @@ import { auth } from "@/lib/auth"
 import { getMyTeams } from "@/actions/teams"
 import { signOut } from "@/lib/auth"
 import Link from "next/link"
+import { Settings } from "lucide-react"
+import { AICommandSection } from "@/components/home/AICommandSection"
 
 export default async function SettingsPage() {
   const session = await auth()
   const teams = await getMyTeams()
 
   return (
-    <div style={{ padding: "32px", maxWidth: 720 }}>
+    <div style={{ flex: 1, overflowY: "auto", backgroundColor: "var(--bg-base)", padding: "24px 16px" }}>
+    <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* Header */}
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: 10 }}>
+        <Settings size={22} style={{ color: "var(--text-secondary)" }} />
+        Ustawienia
+      </h1>
+
       {/* Profile */}
-      <section style={{ marginBottom: 40 }}>
-        <h2 style={{ color: "var(--text-primary)", fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+      <section>
+        <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
           Profil
         </h2>
         <div style={{
@@ -66,8 +75,8 @@ export default async function SettingsPage() {
 
       {/* Teams */}
       <section>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h2 style={{ color: "var(--text-primary)", fontSize: 18, fontWeight: 600 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Teamy
           </h2>
           <Link
@@ -124,6 +133,15 @@ export default async function SettingsPage() {
           </div>
         )}
       </section>
+
+      <div style={{ borderTop: "1px solid var(--border)" }} />
+
+      <AICommandSection
+        context={["shopping", "tasks", "notes"]}
+        label="Polecenie AI"
+        placeholder='Np. "Dodaj mleko do zakupów" lub "Stwórz zadanie na jutro"'
+      />
+    </div>
     </div>
   )
 }

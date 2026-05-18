@@ -181,13 +181,37 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                 href="/notes"
                 className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
                 style={{
-                  backgroundColor: pathname.startsWith("/notes") ? "var(--bg-elevated)" : undefined,
-                  color: pathname.startsWith("/notes") ? "var(--text-primary)" : "var(--text-secondary)",
+                  backgroundColor: pathname === "/notes" ? "var(--bg-elevated)" : undefined,
+                  color: pathname === "/notes" ? "var(--text-primary)" : "var(--text-secondary)",
                 }}
               >
                 <FileText size={20} />
                 <span>Notatki</span>
               </Link>
+
+              {/* Notes sub-items */}
+              {pathname.startsWith("/notes") && (
+                <div className="mb-1">
+                  {[
+                    { href: "/notes/all", label: "Wszystkie" },
+                    { href: "/notes/groups", label: "Grupy" },
+                    { href: "/notes/tags", label: "Tagi" },
+                  ].map(({ href, label }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className="flex items-center py-2 mx-2 rounded text-sm"
+                      style={{
+                        paddingLeft: 52,
+                        backgroundColor: pathname === href ? "var(--bg-elevated)" : undefined,
+                        color: pathname === href ? "var(--text-primary)" : "var(--text-muted)",
+                      }}
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              )}
 
               {/* Inactive modules */}
               {MODULES.filter((m) => !m.active).map((mod) => (

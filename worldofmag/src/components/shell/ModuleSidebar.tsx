@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FlaskConical } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FlaskConical, FolderOpen, Tag } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 
@@ -94,6 +94,7 @@ function NavSubItem({
 
 export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSidebarProps) {
   const pathname = usePathname();
+  const isNotesActive = pathname.startsWith("/notes");
   const isTasksActive = pathname.startsWith("/tasks");
 
   return (
@@ -125,8 +126,15 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
         {/* Shopping */}
         <NavItem href="/shopping" label="Zakupy" icon={<ShoppingCart size={18} />} pathname={pathname} />
 
-        {/* Notes */}
-        <NavItem href="/notes" label="Notatki" icon={<FileText size={18} />} pathname={pathname} />
+        {/* Notes with sub-items */}
+        <NavItem href="/notes" label="Notatki" icon={<FileText size={18} />} pathname={pathname} exact />
+        {isNotesActive && (
+          <div className="mb-1">
+            <NavSubItem href="/notes/all" label="Wszystkie" pathname={pathname} />
+            <NavSubItem href="/notes/groups" label="Grupy" icon={<FolderOpen size={12} />} pathname={pathname} />
+            <NavSubItem href="/notes/tags" label="Tagi" icon={<Tag size={12} />} pathname={pathname} />
+          </div>
+        )}
 
         {/* Tasks with sub-items */}
         <NavItem href="/tasks" label="Zadania" icon={<CheckSquare size={18} />} pathname={pathname} />

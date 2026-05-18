@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef, useTransition } from "react";
-import { MessageCircle, X, Search, Sparkles, FolderOpen, Tag as TagIcon } from "lucide-react";
-import Link from "next/link";
+import { useState, useMemo, useRef, useTransition } from "react";
+import { MessageCircle, X, Search } from "lucide-react";
 import { NoteList } from "./NoteList";
 import { QuickNoteBar, type QuickNoteBarHandle } from "./QuickNoteBar";
 import { NotesQA } from "./NotesQA";
 import { TagChip } from "./TagChip";
-import { AICommandSection } from "@/components/home/AICommandSection";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
-import type { Note, Tag, NoteGroup, NoteFilter } from "@/types";
+import type { Note, Tag as TagType, NoteGroup, NoteFilter } from "@/types";
 import { NOTE_FILTER_LABELS } from "@/types";
 
 const NOTE_FILTERS: NoteFilter[] = ["ALL", "PINNED", "NO_GROUP", "SEARCH"];
@@ -18,7 +16,7 @@ const NOTE_FILTERS: NoteFilter[] = ["ALL", "PINNED", "NO_GROUP", "SEARCH"];
 interface NotesPageProps {
   notes: Note[];
   groups: NoteGroup[];
-  tags: Tag[];
+  tags: TagType[];
 }
 
 export function NotesPage({ notes, groups, tags }: NotesPageProps) {
@@ -29,7 +27,6 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
   const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [isQAOpen, setIsQAOpen] = useState(false);
-  const [isAIOpen, setIsAIOpen] = useState(false);
   const [, startTransition] = useTransition();
   const quickNoteRef = useRef<QuickNoteBarHandle>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -128,36 +125,9 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
           Notatki
         </h1>
         <div className="flex items-center gap-2">
-          <Link
-            href="/notes/groups"
-            className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
-            style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-hover)" }}
-            title="Zarządzaj grupami"
-          >
-            <FolderOpen size={13} />
-            <span className="hidden sm:inline">Grupy</span>
-          </Link>
-          <Link
-            href="/notes/tags"
-            className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
-            style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-hover)" }}
-            title="Zarządzaj tagami"
-          >
-            <TagIcon size={13} />
-            <span className="hidden sm:inline">Tagi</span>
-          </Link>
-          <button
-            onClick={() => setIsAIOpen((v) => !v)}
-            className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
-            style={{
-              backgroundColor: isAIOpen ? "var(--accent-purple)" : "var(--bg-hover)",
-              color: isAIOpen ? "#fff" : "var(--text-muted)",
-            }}
-            title="Akcje AI"
-          >
-            <Sparkles size={13} />
-            <span className="hidden sm:inline">Akcje AI</span>
-          </button>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            {filteredNotes.length} / {notes.length}
+          </span>
           <button
             onClick={() => setIsQAOpen((v) => !v)}
             className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
@@ -276,22 +246,6 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
               onClick={() => toggleTagFilter(tag.id)}
             />
           ))}
-        </div>
-      )}
-
-      {/* AI command panel */}
-      {isAIOpen && (
-        <div
-          style={{
-            padding: "16px",
-            borderBottom: "1px solid var(--border)",
-            backgroundColor: "var(--bg-surface)",
-          }}
-        >
-          <AICommandSection
-            context={["notes"]}
-            placeholder={'Np. "Dodaj notatkę o dzisiejszym spotkaniu" lub "Dopisz do notatki projekt X"'}
-          />
         </div>
       )}
 
