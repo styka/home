@@ -52,16 +52,22 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
       className="flex flex-col md:flex-row h-screen overflow-hidden"
       style={{
         backgroundColor: "var(--bg-base)",
-        paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
         paddingLeft: "env(safe-area-inset-left)",
         paddingRight: "env(safe-area-inset-right)",
       }}
     >
-      {/* Mobile-only top bar */}
+      {/* Mobile-only top bar — paddingTop absorbs iOS status bar in PWA */}
       <div
-        className="md:hidden flex items-center gap-2 px-3 h-11 border-b flex-shrink-0"
-        style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}
+        className="md:hidden flex items-center gap-2 px-3 border-b flex-shrink-0"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          borderColor: "var(--border)",
+          paddingTop: "env(safe-area-inset-top)",
+          minHeight: "calc(44px + env(safe-area-inset-top))",
+          alignItems: "flex-end",
+          paddingBottom: 8,
+        }}
       >
         <button
           onClick={() => setMenuOpen(true)}
