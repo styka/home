@@ -35,5 +35,5 @@ export default async function ListPage({ params }: Props) {
 
   if (!list) notFound();
 
-  return <ShoppingPage list={list as unknown as ShoppingListWithItems} allLists={allLists} categoryEmojiMap={categoryEmojiMap} categoryNames={categoryNames} />;
+  return <ShoppingPage list={list as unknown as ShoppingListWithItems} allLists={allLists} categoryEmojiMap={categoryEmojiMap} />;
 }

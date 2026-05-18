@@ -4,7 +4,6 @@ import { useState, useCallback, useMemo, useTransition } from "react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { ListDropdown } from "./ListDropdown";
-import { LLMInputSection } from "./LLMInputSection";
 import { FilterTabs } from "./FilterTabs";
 import { ItemList } from "./ItemList";
 import { SearchBar } from "./SearchBar";
@@ -19,10 +18,9 @@ interface ShoppingPageProps {
   list: ShoppingListWithItems;
   allLists: ShoppingList[];
   categoryEmojiMap?: Record<string, string>;
-  categoryNames?: string[];
 }
 
-export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }: ShoppingPageProps) {
+export function ShoppingPage({ list, allLists, categoryEmojiMap }: ShoppingPageProps) {
   const { toggle: togglePalette } = useCommandPalette();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -124,8 +122,6 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
           {statsText}
         </span>
       </div>
-
-      <LLMInputSection listId={list.id} categoryNames={categoryNames ?? []} />
 
       {isSearchOpen && (
         <SearchBar
