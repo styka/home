@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo, useRef, useTransition } from "react";
-import { MessageCircle, X, Search } from "lucide-react";
+import { MessageCircle, X, Search, ChevronLeft } from "lucide-react";
+import Link from "next/link";
 import { NoteList } from "./NoteList";
 import { QuickNoteBar, type QuickNoteBarHandle } from "./QuickNoteBar";
 import { NotesQA } from "./NotesQA";
@@ -17,9 +18,10 @@ interface NotesPageProps {
   notes: Note[];
   groups: NoteGroup[];
   tags: TagType[];
+  backHref?: string;
 }
 
-export function NotesPage({ notes, groups, tags }: NotesPageProps) {
+export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
   const [activeFilter, setActiveFilter] = useState<NoteFilter>("ALL");
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -121,9 +123,16 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
         className="flex items-center justify-between px-4 h-12 border-b flex-shrink-0"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
       >
-        <h1 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-          Notatki
-        </h1>
+        {backHref ? (
+          <Link href={backHref} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none" }}>
+            <ChevronLeft size={14} />
+            Notatki
+          </Link>
+        ) : (
+          <h1 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+            Notatki
+          </h1>
+        )}
         <div className="flex items-center gap-2">
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {filteredNotes.length} / {notes.length}

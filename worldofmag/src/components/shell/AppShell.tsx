@@ -14,12 +14,16 @@ interface AppShellProps {
 }
 
 const MODULES = [
-  { id: "home",     label: "Strona główna", icon: <Home size={20} />,        topBarIcon: <Home size={16} />,        color: "var(--text-secondary)",  href: "/",         active: true,  exact: true  },
-  { id: "shopping", label: "Zakupy",        icon: <ShoppingCart size={20} />, topBarIcon: <ShoppingCart size={16} />, color: "var(--accent-blue)",     href: "/shopping", active: true,  exact: false },
-  { id: "tasks",    label: "Zadania",       icon: <CheckSquare size={20} />,  topBarIcon: <CheckSquare size={16} />,  color: "var(--accent-green)",    href: "/tasks",    active: true,  exact: false },
-  { id: "notes",    label: "Notatki",       icon: <FileText size={20} />,     topBarIcon: <FileText size={16} />,     color: "var(--accent-amber)",    href: "/notes",    active: true,  exact: false },
-  { id: "calendar", label: "Calendar",      icon: <Calendar size={20} />,     topBarIcon: <Calendar size={16} />,     color: "var(--text-muted)",      href: "/calendar", active: false, exact: false },
-  { id: "work",     label: "Work",          icon: <Briefcase size={20} />,    topBarIcon: <Briefcase size={16} />,    color: "var(--text-muted)",      href: "/work",     active: false, exact: false },
+  { id: "home",        label: "Strona główna", icon: <Home size={20} />,        topBarIcon: <Home size={16} />,        color: "var(--text-secondary)",  href: "/",            active: true,  exact: true  },
+  { id: "shopping",    label: "Zakupy",        icon: <ShoppingCart size={20} />, topBarIcon: <ShoppingCart size={16} />, color: "var(--accent-blue)",     href: "/shopping",    active: true,  exact: false },
+  { id: "tasks",       label: "Zadania",       icon: <CheckSquare size={20} />,  topBarIcon: <CheckSquare size={16} />,  color: "var(--accent-green)",    href: "/tasks",       active: true,  exact: false },
+  { id: "notes",       label: "Notatki",       icon: <FileText size={20} />,     topBarIcon: <FileText size={16} />,     color: "var(--accent-amber)",    href: "/notes",       active: true,  exact: false },
+  { id: "calendar",    label: "Calendar",      icon: <Calendar size={20} />,     topBarIcon: <Calendar size={16} />,     color: "var(--text-muted)",      href: "/calendar",    active: false, exact: false },
+  { id: "work",        label: "Work",          icon: <Briefcase size={20} />,    topBarIcon: <Briefcase size={16} />,    color: "var(--text-muted)",      href: "/work",        active: false, exact: false },
+  // Non-nav routes — used only for top bar label, not rendered in sidebar
+  { id: "settings",    label: "Ustawienia",    icon: null,                        topBarIcon: <Settings size={16} />,    color: "var(--text-secondary)",  href: "/settings",    active: false, exact: false },
+  { id: "invitations", label: "Zaproszenia",   icon: null,                        topBarIcon: <Mail size={16} />,        color: "var(--text-secondary)",  href: "/invitations", active: false, exact: false },
+  { id: "admin",       label: "Admin",         icon: null,                        topBarIcon: <Shield size={16} />,      color: "var(--accent-purple)",   href: "/admin",       active: false, exact: false },
 ];
 
 

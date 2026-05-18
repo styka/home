@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { BookOpen, ChevronRight, Tag, Calendar } from "lucide-react";
+import { BookOpen, ChevronRight, ChevronLeft, Tag, Calendar } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
   refactoring: { label: "Refaktoryzacja", color: "var(--accent-purple)" },
@@ -36,6 +36,11 @@ export default async function ReportsPage() {
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)", padding: "32px 24px" }}>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
+
+        <Link href="/admin" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none", marginBottom: 20 }}>
+          <ChevronLeft size={14} />
+          Admin
+        </Link>
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
