@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FlaskConical, BookOpen } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 
@@ -271,51 +271,12 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                   href="/admin"
                   className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
                   style={{
-                    backgroundColor: pathname === "/admin" || pathname.startsWith("/admin/config") ? "var(--bg-elevated)" : undefined,
-                    color: pathname === "/admin" || pathname.startsWith("/admin/config") ? "var(--accent-purple)" : "var(--text-secondary)",
+                    backgroundColor: pathname.startsWith("/admin") ? "var(--bg-elevated)" : undefined,
+                    color: pathname.startsWith("/admin") ? "var(--accent-purple)" : "var(--text-secondary)",
                   }}
                 >
                   <Shield size={20} />
                   <span>Admin</span>
-                </Link>
-              )}
-              {isAdmin && (
-                <Link
-                  href="/admin/playground"
-                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
-                  style={{
-                    backgroundColor: pathname.startsWith("/admin/playground") ? "var(--bg-elevated)" : undefined,
-                    color: pathname.startsWith("/admin/playground") ? "var(--accent-purple)" : "var(--text-secondary)",
-                  }}
-                >
-                  <FlaskConical size={20} />
-                  <span>Playground</span>
-                </Link>
-              )}
-              {isAdmin && (
-                <Link
-                  href="/admin/architecture"
-                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
-                  style={{
-                    backgroundColor: pathname.startsWith("/admin/architecture") ? "var(--bg-elevated)" : undefined,
-                    color: pathname.startsWith("/admin/architecture") ? "var(--accent-purple)" : "var(--text-secondary)",
-                  }}
-                >
-                  <Shield size={20} />
-                  <span>Architektura</span>
-                </Link>
-              )}
-              {isAdmin && (
-                <Link
-                  href="/admin/reports"
-                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
-                  style={{
-                    backgroundColor: pathname.startsWith("/admin/reports") ? "var(--bg-elevated)" : undefined,
-                    color: pathname.startsWith("/admin/reports") ? "var(--accent-purple)" : "var(--text-secondary)",
-                  }}
-                >
-                  <BookOpen size={20} />
-                  <span>Raporty</span>
                 </Link>
               )}
             </div>
