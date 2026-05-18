@@ -1,18 +1,16 @@
 "use client";
 
 import { useState, useRef, useMemo, useTransition, useEffect } from "react";
-import { Search, X, Sparkles, PenLine, Bell, BellOff } from "lucide-react";
+import { Search, X, Sparkles, Bell, BellOff } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { TaskDetail } from "./TaskDetail";
-import { AITaskInput } from "./AITaskInput";
 import { QuickAddTask, type QuickAddTaskHandle } from "./QuickAddTask";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { deleteTask, toggleTaskStatus } from "@/actions/tasks";
 import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode } from "@/types";
 import { TASK_STATUS_FILTERS } from "@/types";
-
-type AddMode = "ai" | "manual";
+import { AICommandSheet } from "@/components/home/AICommandSheet";
 
 interface TasksPageProps {
   tasks: Task[];
@@ -34,7 +32,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const [aiSearchResults, setAiSearchResults] = useState<string[] | null>(null);
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
-  const [addMode, setAddMode] = useState<AddMode>("manual");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [, startTransition] = useTransition();
   const quickAddRef = useRef<QuickAddTaskHandle>(null);
@@ -124,7 +121,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const handlers = useMemo(
     () => ({
       onQuickAdd: () => {
-        setAddMode("manual");
         setTimeout(() => quickAddRef.current?.focus(), 10);
       },
       onNavigateDown: navigateDown,
@@ -291,40 +287,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         </div>
       )}
 
-      {/* Add mode toggle */}
-      <div
-        className="flex border-b flex-shrink-0"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
-      >
-        <button
-          onClick={() => setAddMode("ai")}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium focus:outline-none"
-          style={{
-            color: addMode === "ai" ? "var(--accent-blue)" : "var(--text-muted)",
-            borderBottom: addMode === "ai" ? "2px solid var(--accent-blue)" : "2px solid transparent",
-            marginBottom: -1,
-          }}
-        >
-          <Sparkles size={11} /> AI
-        </button>
-        <button
-          onClick={() => { setAddMode("manual"); setTimeout(() => quickAddRef.current?.focus(), 10); }}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium focus:outline-none"
-          style={{
-            color: addMode === "manual" ? "var(--accent-green)" : "var(--text-muted)",
-            borderBottom: addMode === "manual" ? "2px solid var(--accent-green)" : "2px solid transparent",
-            marginBottom: -1,
-          }}
-        >
-          <PenLine size={11} /> Ręcznie
-        </button>
-      </div>
-
-      {addMode === "ai" ? (
-        <AITaskInput projectId={addProjectId} allTags={allTags} />
-      ) : (
-        <QuickAddTask ref={quickAddRef} projectId={addProjectId} />
-      )}
+      <QuickAddTask ref={quickAddRef} projectId={addProjectId} />
 
       <TaskFilters
         active={activeFilter}
@@ -389,6 +352,8 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           </div>
         )}
       </div>
+
+      <AICommandSheet context={["tasks"]} placeholder={"Wpisz polecenie do zadań…\nNp. \"Dodaj zadanie: zadzwoń do klienta w piątek\" lub \"Oznacz X jako zrobione\""} />
     </div>
   );
 }

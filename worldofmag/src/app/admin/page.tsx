@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings } from "lucide-react"
 import Link from "next/link"
-import { AICommandSection } from "@/components/home/AICommandSection"
+import { AICommandSheet } from "@/components/home/AICommandSheet"
 
 function fmtDate(iso: string | undefined) {
   if (!iso || iso === "unknown") return "—"
@@ -38,6 +38,7 @@ export default async function AdminPage() {
   ]
 
   return (
+    <>
     <div
       className="flex-1 overflow-y-auto"
       style={{ backgroundColor: "var(--bg-base)", padding: "32px 24px" }}
@@ -208,14 +209,9 @@ export default async function AdminPage() {
           </div>
         </section>
 
-        <div style={{ borderTop: "1px solid var(--border)", margin: "8px 0" }} />
-
-        <AICommandSection
-          context={["shopping", "tasks", "notes"]}
-          label="Polecenie AI"
-          placeholder='Np. "Dodaj mleko do zakupów" lub "Stwórz zadanie na jutro"'
-        />
       </div>
     </div>
+    <AICommandSheet context={["shopping", "tasks", "notes"]} />
+    </>
   )
 }

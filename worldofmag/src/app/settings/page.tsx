@@ -3,13 +3,14 @@ import { getMyTeams } from "@/actions/teams"
 import { signOut } from "@/lib/auth"
 import Link from "next/link"
 import { Settings } from "lucide-react"
-import { AICommandSection } from "@/components/home/AICommandSection"
+import { AICommandSheet } from "@/components/home/AICommandSheet"
 
 export default async function SettingsPage() {
   const session = await auth()
   const teams = await getMyTeams()
 
   return (
+    <>
     <div style={{ flex: 1, overflowY: "auto", backgroundColor: "var(--bg-base)", padding: "24px 16px" }}>
     <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Header */}
@@ -134,14 +135,9 @@ export default async function SettingsPage() {
         )}
       </section>
 
-      <div style={{ borderTop: "1px solid var(--border)" }} />
-
-      <AICommandSection
-        context={["shopping", "tasks", "notes"]}
-        label="Polecenie AI"
-        placeholder='Np. "Dodaj mleko do zakupów" lub "Stwórz zadanie na jutro"'
-      />
     </div>
     </div>
+    <AICommandSheet context={["shopping", "tasks", "notes"]} />
+    </>
   )
 }

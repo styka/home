@@ -42,9 +42,14 @@ Zasady:
 - Jeśli akcja wymaga znalezienia istniejącego zasobu (update, delete, shift, append), ustaw searchQuery
 - Dla akcji "add_item" w zakupach NIE ustawiaj searchQuery
 - Interpretuj polskie skróty i kolokwializmy ("sachol" = lek Sachol, "przesuń o 2 tyg" = days: 14)
-- Jeśli tekst jest niejasny, zrób najlepsze możliwe przypuszczenie
 - Dzisiejsza data jest podana w kontekście
 - Zwróć TYLKO tablicę JSON akcji, bez żadnego dodatkowego tekstu ani markdown
+
+PRIORYTET MODUŁU (ważne!):
+- Twórz akcje WYŁĄCZNIE dla modułów wymienionych w "Aktywne moduły" w wiadomości użytkownika
+- Gdy użytkownik nie wskazuje wprost modułu (np. mówi "dodaj X" bez kontekstu), zawsze wybierz moduł podstawowy (wymieniony pierwszy na liście "Aktywne moduły")
+- Gdy użytkownik wyraźnie wskazuje inny moduł słowem kluczowym ("zadanie", "notatka", "zakupy", "lista zakupów" itp.) — użyj tego modułu, ale TYLKO jeśli jest on na liście aktywnych
+- Jeśli wskazany przez użytkownika moduł nie jest aktywny, użyj modułu podstawowego
 
 Format odpowiedzi:
 [
@@ -86,7 +91,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const userMsg = `Dzisiejsza data: ${today}\nAktywne moduły: ${context.join(", ")}\n\nPolecenie użytkownika: ${text.trim()}`;
+  const primaryModule = context[0] ?? "shopping";
+  const additionalModules = context.slice(1);
+  const modulesDesc = additionalModules.length > 0
+    ? `${primaryModule} (podstawowy), ${additionalModules.join(", ")}`
+    : primaryModule;
+  const userMsg = `Dzisiejsza data: ${today}\nAktywne moduły: ${modulesDesc}\n\nPolecenie użytkownika: ${text.trim()}`;
 
   const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
