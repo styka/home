@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FileText, ChevronRight, Pin, FolderOpen, Tag } from "lucide-react";
-import { AICommandSection } from "@/components/home/AICommandSection";
+import { AICommandSheet } from "@/components/home/AICommandSheet";
 
 interface RecentNote {
   id: string;
@@ -29,6 +29,7 @@ export function NotesHomePage({
   tagCount,
 }: NotesHomePageProps) {
   return (
+    <>
     <div
       style={{
         flex: 1,
@@ -215,17 +216,10 @@ export function NotesHomePage({
           </div>
         </div>
 
-        {/* Divider */}
-        <div style={{ borderTop: "1px solid var(--border)" }} />
-
-        {/* AI section */}
-        <AICommandSection
-          context={["notes"]}
-          label="Polecenie AI"
-          placeholder={'Np. "Dodaj notatkę o..." lub "Dopisz do notatki X..."'}
-        />
       </div>
     </div>
+    <AICommandSheet context={["notes"]} placeholder={'Np. "Dodaj notatkę o..." lub "Dopisz do notatki X..."'} />
+    </>
   );
 }
 

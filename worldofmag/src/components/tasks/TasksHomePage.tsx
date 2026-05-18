@@ -15,7 +15,7 @@ import {
   Tag,
 } from "lucide-react";
 import { createTaskProject } from "@/actions/taskProjects";
-import { AICommandSection } from "@/components/home/AICommandSection";
+import { AICommandSheet } from "@/components/home/AICommandSheet";
 import type { TaskProject } from "@/types";
 
 interface TasksHomePageProps {
@@ -49,6 +49,7 @@ export function TasksHomePage({
   }
 
   return (
+    <>
     <div
       style={{
         flex: 1,
@@ -292,19 +293,10 @@ export function TasksHomePage({
           </Link>
         </div>
 
-        {/* Divider */}
-        <div style={{ borderTop: "1px solid var(--border)" }} />
-
-        {/* AI section */}
-        <AICommandSection
-          context={["tasks"]}
-          label="Polecenie AI"
-          placeholder={
-            'Np. "Dodaj zadanie kupić leki na jutro" lub "Przesuń mycie auta o tydzień"'
-          }
-        />
       </div>
     </div>
+    <AICommandSheet context={["tasks"]} placeholder={'Np. "Dodaj zadanie kupić leki na jutro" lub "Przesuń mycie auta o tydzień"'} />
+    </>
   );
 }
 
