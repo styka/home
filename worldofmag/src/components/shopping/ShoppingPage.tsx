@@ -1,32 +1,66 @@
 "use client";
 
-import { useState, useCallback, useMemo, useTransition } from "react";
+import { useState, useCallback, useMemo, useTransition, useEffect } from "react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { ListDropdown } from "./ListDropdown";
 import { FilterTabs } from "./FilterTabs";
 import { ItemList } from "./ItemList";
 import { SearchBar } from "./SearchBar";
+import { SortControl } from "./SortControl";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
 import { updateItemStatus, deleteItem } from "@/actions/items";
-import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus } from "@/types";
+import { computeOptimalCategoryOrder } from "@/lib/storeRoute";
+import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus, SortMode, StoreWithGraph } from "@/types";
 import { FILTER_TABS, STATUS_CYCLE } from "@/types";
+
+const SORT_STORAGE_KEY = "wom_shopping_sort";
 
 interface ShoppingPageProps {
   list: ShoppingListWithItems;
   allLists: ShoppingList[];
   categoryEmojiMap?: Record<string, string>;
+  stores: StoreWithGraph[];
 }
 
-export function ShoppingPage({ list, allLists, categoryEmojiMap }: ShoppingPageProps) {
+function loadSortMode(): SortMode {
+  if (typeof window === "undefined") return { type: "category" };
+  try {
+    const raw = localStorage.getItem(SORT_STORAGE_KEY);
+    if (!raw) return { type: "category" };
+    const parsed = JSON.parse(raw) as SortMode;
+    if (parsed.type === "category" || parsed.type === "product" || parsed.type === "store") {
+      return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return { type: "category" };
+}
+
+export function ShoppingPage({ list, allLists, categoryEmojiMap, stores }: ShoppingPageProps) {
   const { toggle: togglePalette } = useCommandPalette();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>({ type: "category" });
   const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    setSortMode(loadSortMode());
+  }, []);
+
+  function handleSortChange(mode: SortMode) {
+    setSortMode(mode);
+    try {
+      localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify(mode));
+    } catch {
+      // ignore
+    }
+  }
 
   const filteredItems = useMemo(() => {
     let items = list.items as Item[];
@@ -54,6 +88,14 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap }: ShoppingPageP
     }
     return result;
   }, [list.items]);
+
+  const categoryOrder = useMemo(() => {
+    if (sortMode.type !== "store") return undefined;
+    const store = stores.find(s => s.id === sortMode.storeId);
+    if (!store) return undefined;
+    const presentCategories = [...new Set(filteredItems.map(i => i.category))];
+    return computeOptimalCategoryOrder(store.nodes, store.edges, presentCategories);
+  }, [sortMode, stores, filteredItems]);
 
   const { rowRefs, navigateDown, navigateUp } = useItemNavigation(
     filteredItems,
@@ -109,15 +151,27 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap }: ShoppingPageP
     counts.MISSING > 0 && `${counts.MISSING} missing`,
   ].filter(Boolean).join(" · ");
 
+  const sortBy = sortMode.type === "product" ? "product" : "category";
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 h-12 border-b flex-shrink-0"
+        className="flex items-center gap-2 px-4 h-12 border-b flex-shrink-0"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
       >
         <ListDropdown allLists={allLists} currentListId={list.id} />
-        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+        <div className="flex-1" />
+        <SortControl sortMode={sortMode} stores={stores} onChange={handleSortChange} />
+        <a
+          href="/shopping/stores"
+          className="text-xs px-2 py-1 rounded"
+          style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}
+          title="Mapy sklepów"
+        >
+          🏪
+        </a>
+        <span className="text-xs hidden sm:block" style={{ color: "var(--text-muted)" }}>
           {statsText}
         </span>
       </div>
@@ -145,6 +199,8 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap }: ShoppingPageP
         onItemStopEdit={() => setEditingItemId(null)}
         rowRefs={rowRefs}
         categoryEmojiMap={categoryEmojiMap}
+        categoryOrder={categoryOrder}
+        sortBy={sortBy}
       />
 
       <CommandPalette
