@@ -69,21 +69,36 @@ export function SortControl({ sortMode, stores, onChange }: SortControlProps) {
             active={sortMode.type === "product"}
             onClick={() => select({ type: "product" })}
           />
-          {stores.length > 0 && (
-            <>
-              <div
-                className="mx-2 my-1"
-                style={{ borderTop: "1px solid var(--border)" }}
+          <div className="mx-2 my-1" style={{ borderTop: "1px solid var(--border)" }} />
+          {stores.length > 0 ? (
+            stores.map(s => (
+              <DropItem
+                key={s.id}
+                label={`🏪 ${s.name}`}
+                active={sortMode.type === "store" && sortMode.storeId === s.id}
+                onClick={() => select({ type: "store", storeId: s.id, storeName: s.name })}
               />
-              {stores.map(s => (
-                <DropItem
-                  key={s.id}
-                  label={`🏪 ${s.name}`}
-                  active={sortMode.type === "store" && sortMode.storeId === s.id}
-                  onClick={() => select({ type: "store", storeId: s.id, storeName: s.name })}
-                />
-              ))}
-            </>
+            ))
+          ) : (
+            <div className="px-3 py-2">
+              <p className="text-xs mb-1.5" style={{ color: "var(--text-muted)" }}>
+                Brak map sklepów
+              </p>
+              <a
+                href="/shopping/stores"
+                className="block text-xs px-2 py-1 rounded text-center"
+                style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
+              >
+                + Dodaj mapę sklepu
+              </a>
+              <a
+                href="/shopping/stores/guide"
+                className="block text-xs mt-1 text-center"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Jak to działa? →
+              </a>
+            </div>
           )}
         </div>
       )}

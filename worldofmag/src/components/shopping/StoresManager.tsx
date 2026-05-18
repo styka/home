@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Trash2, Pencil, Map } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Pencil, Map, HelpCircle } from "lucide-react";
 import type { StoreWithGraph } from "@/types";
 import { createStore, renameStore, deleteStore } from "@/actions/stores";
 
@@ -57,6 +57,14 @@ export function StoresManager({ stores: initialStores }: StoresManagerProps) {
         <h1 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
           Mapy sklepów
         </h1>
+        <Link
+          href="/shopping/stores/guide"
+          className="ml-auto flex items-center gap-1 text-xs px-2 py-1 rounded"
+          style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}
+        >
+          <HelpCircle size={12} />
+          Jak używać?
+        </Link>
       </div>
 
       {/* New store form */}
