@@ -12,6 +12,7 @@ import {
   AlertCircle,
   LayoutList,
   Loader2,
+  Tag,
 } from "lucide-react";
 import { createTaskProject } from "@/actions/taskProjects";
 import { AICommandSection } from "@/components/home/AICommandSection";
@@ -254,6 +255,42 @@ export function TasksHomePage({
             </div>
           </div>
         )}
+
+        {/* Management */}
+        <div>
+          <p
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "var(--text-muted)",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              marginBottom: 8,
+            }}
+          >
+            Zarządzanie
+          </p>
+          <Link
+            href="/tasks/tags"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "12px 14px",
+              borderRadius: 10,
+              border: "1px solid var(--border)",
+              background: "var(--bg-surface)",
+              textDecoration: "none",
+              transition: "background 0.1s",
+            }}
+          >
+            <Tag size={15} style={{ color: "var(--accent-purple)" }} />
+            <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
+              Tagi
+            </span>
+            <ChevronRight size={13} style={{ color: "var(--text-muted)" }} />
+          </Link>
+        </div>
 
         {/* Divider */}
         <div style={{ borderTop: "1px solid var(--border)" }} />

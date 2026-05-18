@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ShoppingCart, Plus, ChevronRight, Loader2 } from "lucide-react";
+import { ShoppingCart, Plus, ChevronRight, Loader2, Package, Ruler, Tag } from "lucide-react";
 import { createList } from "@/actions/lists";
 import { AICommandSection } from "@/components/home/AICommandSection";
 
@@ -213,6 +213,51 @@ export function ShoppingHomePage({ lists }: ShoppingHomePageProps) {
               <ChevronRight size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
             </Link>
           ))}
+        </div>
+
+        {/* Management */}
+        <div>
+          <p
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "var(--text-muted)",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              marginBottom: 8,
+            }}
+          >
+            Zarządzanie
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+            {[
+              { href: "/shopping/products", icon: <Package size={15} />, label: "Produkty" },
+              { href: "/shopping/units", icon: <Ruler size={15} />, label: "Jednostki" },
+              { href: "/shopping/categories", icon: <Tag size={15} />, label: "Kategorie" },
+            ].map(({ href, icon, label }) => (
+              <Link
+                key={href}
+                href={href}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "12px 8px",
+                  borderRadius: 10,
+                  border: "1px solid var(--border)",
+                  background: "var(--bg-surface)",
+                  textDecoration: "none",
+                  color: "var(--text-secondary)",
+                  fontSize: 12,
+                  transition: "background 0.1s",
+                }}
+              >
+                <span style={{ color: "var(--accent-blue)" }}>{icon}</span>
+                {label}
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* Divider */}

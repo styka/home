@@ -21,11 +21,6 @@ const MODULES = [
   { id: "work", label: "Work", icon: <Briefcase size={20} />, topBarIcon: <Briefcase size={16} />, href: "/work", active: false, exact: false },
 ];
 
-const SHOPPING_SUBITEMS = [
-  { href: "/shopping/products", label: "Produkty" },
-  { href: "/shopping/units", label: "Jednostki" },
-  { href: "/shopping/categories", label: "Kategorie" },
-];
 
 export function AppShell({ children, invitationCount = 0, isAdmin = false }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -155,7 +150,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                 <span>Strona główna</span>
               </Link>
 
-              {/* Shopping with sub-items */}
+              {/* Shopping */}
               <Link
                 href="/shopping"
                 className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
@@ -167,27 +162,6 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                 <ShoppingCart size={20} />
                 <span>Zakupy</span>
               </Link>
-
-              {/* Shopping sub-items — always visible */}
-              <div className="mb-1">
-                {SHOPPING_SUBITEMS.map(({ href, label }) => {
-                  const isActive = pathname === href;
-                  return (
-                    <Link
-                      key={href}
-                      href={href}
-                      className="flex items-center py-2 mx-2 rounded text-sm"
-                      style={{
-                        paddingLeft: 52,
-                        backgroundColor: isActive ? "var(--bg-elevated)" : undefined,
-                        color: isActive ? "var(--text-primary)" : "var(--text-muted)",
-                      }}
-                    >
-                      {label}
-                    </Link>
-                  );
-                })}
-              </div>
 
               {/* Tasks */}
               <Link
@@ -212,7 +186,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                 }}
               >
                 <FileText size={20} />
-                <span>Notes</span>
+                <span>Notatki</span>
               </Link>
 
               {/* Inactive modules */}

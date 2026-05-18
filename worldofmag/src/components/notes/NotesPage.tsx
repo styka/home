@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback, useMemo, useRef, useTransition } from "react";
-import { MessageCircle, X, Search, Sparkles } from "lucide-react";
+import { MessageCircle, X, Search, Sparkles, FolderOpen, Tag as TagIcon } from "lucide-react";
+import Link from "next/link";
 import { NoteList } from "./NoteList";
 import { QuickNoteBar, type QuickNoteBarHandle } from "./QuickNoteBar";
 import { NotesQA } from "./NotesQA";
@@ -126,10 +127,25 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
         <h1 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           Notatki
         </h1>
-        <div className="flex items-center gap-3">
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {filteredNotes.length} / {notes.length}
-          </span>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/notes/groups"
+            className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
+            style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-hover)" }}
+            title="Zarządzaj grupami"
+          >
+            <FolderOpen size={13} />
+            <span className="hidden sm:inline">Grupy</span>
+          </Link>
+          <Link
+            href="/notes/tags"
+            className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
+            style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-hover)" }}
+            title="Zarządzaj tagami"
+          >
+            <TagIcon size={13} />
+            <span className="hidden sm:inline">Tagi</span>
+          </Link>
           <button
             onClick={() => setIsAIOpen((v) => !v)}
             className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
