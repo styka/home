@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 
@@ -162,6 +162,20 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                 <ShoppingCart size={20} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
                 <span>Zakupy</span>
               </Link>
+              {isShoppingActive && (
+                <Link
+                  href="/shopping/stores"
+                  className="flex items-center gap-2 py-2 mx-2 rounded text-sm"
+                  style={{
+                    paddingLeft: 52,
+                    backgroundColor: pathname.startsWith("/shopping/stores") ? "var(--bg-elevated)" : undefined,
+                    color: pathname.startsWith("/shopping/stores") ? "var(--text-primary)" : "var(--text-muted)",
+                  }}
+                >
+                  <Map size={13} />
+                  Mapy sklepów
+                </Link>
+              )}
 
               {/* Tasks */}
               <Link

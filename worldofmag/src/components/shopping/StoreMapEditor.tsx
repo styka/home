@@ -12,10 +12,6 @@ import {
 
 type EditorMode = "select" | "addNode" | "addEdge" | "delete";
 
-interface StoreMapEditorProps {
-  store: StoreWithGraph;
-}
-
 const CATEGORY_META: Record<string, { emoji: string; color: string }> = {
   "Produce":             { emoji: "🥕", color: "#16a34a" },
   "Dairy & Eggs":        { emoji: "🧀", color: "#ca8a04" },
@@ -57,9 +53,11 @@ function nodeLabel(node: StoreNodeData): string {
   return node.label;
 }
 
-interface PendingNode {
-  x: number;
-  y: number;
+interface NodeDialog {
+  svgX: number;
+  svgY: number;
+  type: "START" | "STOP" | "CATEGORY";
+  category: string;
 }
 
 interface PendingEdge {
@@ -71,15 +69,10 @@ interface PendingEdge {
 interface WeightDialog {
   fromId: string;
   toId: string;
-  x: number;
-  y: number;
 }
 
-interface NodeDialog {
-  x: number;
-  y: number;
-  type: "START" | "STOP" | "CATEGORY";
-  category: string;
+interface StoreMapEditorProps {
+  store: StoreWithGraph;
 }
 
 export function StoreMapEditor({ store }: StoreMapEditorProps) {
@@ -88,60 +81,67 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
   const [mode, setMode] = useState<EditorMode>("select");
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [pendingNode, setPendingNode] = useState<PendingNode | null>(null);
   const [nodeDialog, setNodeDialog] = useState<NodeDialog | null>(null);
   const [pendingEdge, setPendingEdge] = useState<PendingEdge | null>(null);
   const [weightDialog, setWeightDialog] = useState<WeightDialog | null>(null);
   const [weightValue, setWeightValue] = useState("1");
   const [flashIds, setFlashIds] = useState<Set<string>>(new Set());
-  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [, startTransition] = useTransition();
 
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // SVG viewBox coords → screen coords relative to the container (for dialog positioning)
+  function svgToContainer(svgX: number, svgY: number): { top: number; left: number } {
+    const svg = svgRef.current;
+    const container = containerRef.current;
+    if (!svg || !container) return { top: 80, left: 80 };
+    const svgRect = svg.getBoundingClientRect();
+    const cRect = container.getBoundingClientRect();
+    const scaleX = svgRect.width / CANVAS_W;
+    const scaleY = svgRect.height / CANVAS_H;
+    const x = (svgRect.left - cRect.left) + container.scrollLeft + svgX * scaleX;
+    const y = (svgRect.top - cRect.top) + container.scrollTop + svgY * scaleY;
+    return {
+      top:  Math.min(y + 10, container.clientHeight - 260),
+      left: Math.max(8, Math.min(x, container.clientWidth - 228)),
+    };
+  }
+
   function getSVGPoint(clientX: number, clientY: number) {
     const svg = svgRef.current;
     if (!svg) return { x: 0, y: 0 };
     const rect = svg.getBoundingClientRect();
-    const scaleX = CANVAS_W / rect.width;
-    const scaleY = CANVAS_H / rect.height;
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY,
+      x: (clientX - rect.left) * (CANVAS_W / rect.width),
+      y: (clientY - rect.top)  * (CANVAS_H / rect.height),
     };
   }
 
   function flash(id: string) {
-    setFlashIds((prev: Set<string>) => new Set(Array.from(prev).concat(id)));
-    setTimeout(() => setFlashIds((prev: Set<string>) => {
+    setFlashIds(prev => new Set(Array.from(prev).concat(id)));
+    setTimeout(() => setFlashIds(prev => {
       const next = new Set(Array.from(prev));
       next.delete(id);
       return next;
     }), 300);
   }
 
+  // Canvas background click — nodes and edges stop propagation, so this only fires for true background clicks
   const handleSVGPointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    if (e.target === svgRef.current || (e.target as SVGElement).tagName === "svg") {
-      if (mode === "addNode") {
-        const pt = getSVGPoint(e.clientX, e.clientY);
-        setPendingNode({ x: pt.x, y: pt.y });
-        setNodeDialog({ x: pt.x, y: pt.y, type: "CATEGORY", category: ALL_CATEGORIES[0] });
-      } else if (mode === "addEdge" && pendingEdge) {
-        setPendingEdge(null);
-      }
+    if (mode === "addNode") {
+      const pt = getSVGPoint(e.clientX, e.clientY);
+      setNodeDialog({ svgX: pt.x, svgY: pt.y, type: "CATEGORY", category: ALL_CATEGORIES[0] });
+    } else if (mode === "addEdge" && pendingEdge) {
+      setPendingEdge(null);
     }
   }, [mode, pendingEdge]);
 
   const handleSVGPointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     const pt = getSVGPoint(e.clientX, e.clientY);
-    setCursorPos(pt);
-
     if (draggingId) {
       setNodes(prev => prev.map(n =>
-        n.id === draggingId
-          ? { ...n, x: pt.x - dragOffset.x, y: pt.y - dragOffset.y }
-          : n
+        n.id === draggingId ? { ...n, x: pt.x - dragOffset.x, y: pt.y - dragOffset.y } : n
       ));
     }
     if (pendingEdge) {
@@ -149,18 +149,14 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
     }
   }, [draggingId, dragOffset, pendingEdge]);
 
-  const handleSVGPointerUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+  const handleSVGPointerUp = useCallback(() => {
     if (draggingId) {
       const node = nodes.find(n => n.id === draggingId);
       if (node) {
         startTransition(() => {
           upsertStoreNode(store.id, {
-            id: node.id,
-            label: node.label,
-            type: node.type,
-            category: node.category,
-            x: node.x,
-            y: node.y,
+            id: node.id, label: node.label, type: node.type,
+            category: node.category, x: node.x, y: node.y,
           });
         });
       }
@@ -170,62 +166,53 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
 
   function handleNodePointerDown(e: React.PointerEvent, node: StoreNodeData) {
     e.stopPropagation();
-
     if (mode === "select") {
       const pt = getSVGPoint(e.clientX, e.clientY);
       setDraggingId(node.id);
       setDragOffset({ x: pt.x - node.x, y: pt.y - node.y });
-      (e.currentTarget as Element).setPointerCapture(e.pointerId);
+      // Capture on the SVG element so drag works even when pointer leaves SVG bounds
+      svgRef.current?.setPointerCapture(e.pointerId);
     } else if (mode === "addEdge") {
       if (!pendingEdge) {
         const pt = getSVGPoint(e.clientX, e.clientY);
         setPendingEdge({ fromId: node.id, toX: pt.x, toY: pt.y });
-      } else {
-        if (pendingEdge.fromId !== node.id) {
-          setWeightDialog({ fromId: pendingEdge.fromId, toId: node.id, x: node.x, y: node.y });
-          setWeightValue("1");
-          setPendingEdge(null);
-        }
+      } else if (pendingEdge.fromId !== node.id) {
+        setWeightDialog({ fromId: pendingEdge.fromId, toId: node.id });
+        setWeightValue("1");
+        setPendingEdge(null);
       }
     } else if (mode === "delete") {
       flash(node.id);
-      startTransition(() => { deleteStoreNode(node.id); });
       setNodes(prev => prev.filter(n => n.id !== node.id));
       setEdges(prev => prev.filter(ed => ed.fromId !== node.id && ed.toId !== node.id));
+      startTransition(() => { deleteStoreNode(node.id); });
     }
   }
 
-  function handleEdgeClick(edge: StoreEdgeData) {
+  function handleEdgePointerDown(e: React.PointerEvent, edge: StoreEdgeData) {
+    e.stopPropagation(); // prevent canvas from triggering addNode in addNode mode
     if (mode === "delete") {
       flash(edge.id);
-      startTransition(() => { deleteStoreEdge(edge.id); });
       setEdges(prev => prev.filter(ed => ed.id !== edge.id));
+      startTransition(() => { deleteStoreEdge(edge.id); });
     }
   }
 
   async function commitNode() {
     if (!nodeDialog) return;
-    const { x, y, type, category } = nodeDialog;
+    const { svgX, svgY, type, category } = nodeDialog;
     const label = type === "START" ? "Wejście" : type === "STOP" ? "Kasy" : category;
     const result = await upsertStoreNode(store.id, {
-      label,
-      type,
+      label, type,
       category: type === "CATEGORY" ? category : null,
-      x,
-      y,
+      x: svgX, y: svgY,
     });
-    const newNode: StoreNodeData = {
-      id: result.id,
-      storeId: store.id,
-      label,
-      type,
+    setNodes(prev => [...prev, {
+      id: result.id, storeId: store.id, label, type,
       category: type === "CATEGORY" ? category : null,
-      x,
-      y,
-    };
-    setNodes(prev => [...prev, newNode]);
+      x: svgX, y: svgY,
+    }]);
     setNodeDialog(null);
-    setPendingNode(null);
   }
 
   async function commitEdge() {
@@ -236,14 +223,12 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
       toId: weightDialog.toId,
       weight,
     });
-    const newEdge: StoreEdgeData = {
-      id: result.id,
-      storeId: store.id,
+    setEdges(prev => [...prev, {
+      id: result.id, storeId: store.id,
       fromId: weightDialog.fromId,
       toId: weightDialog.toId,
       weight,
-    };
-    setEdges(prev => [...prev, newEdge]);
+    }]);
     setWeightDialog(null);
   }
 
@@ -252,7 +237,6 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
       if (e.key === "Escape") {
         setPendingEdge(null);
         setNodeDialog(null);
-        setPendingNode(null);
         setWeightDialog(null);
       }
     }
@@ -260,14 +244,32 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const toolbarButtons: Array<{ mode: EditorMode; label: string; icon: ReturnType<typeof MousePointer> }> = [
-    { mode: "select",  label: "Zaznacz",     icon: <MousePointer size={16} /> },
-    { mode: "addNode", label: "Dodaj węzeł", icon: <Plus size={16} /> },
-    { mode: "addEdge", label: "Połącz",      icon: <GitBranch size={16} /> },
-    { mode: "delete",  label: "Usuń",        icon: <Trash2 size={16} /> },
-  ];
+  function switchMode(m: EditorMode) {
+    setMode(m);
+    setPendingEdge(null);
+    setNodeDialog(null);
+    setWeightDialog(null);
+  }
 
   const pendingFromNode = pendingEdge ? nodes.find(n => n.id === pendingEdge.fromId) : null;
+
+  const toolbarHint =
+    mode === "select"  ? "Przeciągnij węzeł, aby go przenieść" :
+    mode === "addNode" ? "Kliknij na kanwę, aby dodać węzeł" :
+    mode === "addEdge" && !pendingEdge ? "Kliknij pierwszy węzeł" :
+    mode === "addEdge" ? "Kliknij drugi węzeł" :
+    "Kliknij węzeł lub krawędź, aby usunąć";
+
+  const canvasCursor =
+    mode === "addNode"  ? "crosshair" :
+    mode === "delete"   ? "pointer" :
+    draggingId          ? "grabbing" :
+    "default";
+
+  // Compute dialog positions at render time (refs are stable)
+  const nodeDialogPos  = nodeDialog   ? svgToContainer(nodeDialog.svgX, nodeDialog.svgY) : null;
+  const weightToNode   = weightDialog ? nodes.find(n => n.id === weightDialog.toId) : null;
+  const weightDialogPos = weightToNode ? svgToContainer(weightToNode.x, weightToNode.y) : null;
 
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: "var(--bg-base)" }}>
@@ -276,15 +278,20 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
         className="flex items-center gap-1 px-3 py-2 flex-shrink-0 border-b"
         style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}
       >
-        {toolbarButtons.map(btn => (
+        {([
+          { m: "select"  as EditorMode, label: "Zaznacz",     icon: <MousePointer size={16} /> },
+          { m: "addNode" as EditorMode, label: "Dodaj węzeł", icon: <Plus size={16} /> },
+          { m: "addEdge" as EditorMode, label: "Połącz",      icon: <GitBranch size={16} /> },
+          { m: "delete"  as EditorMode, label: "Usuń",        icon: <Trash2 size={16} /> },
+        ]).map(btn => (
           <button
-            key={btn.mode}
-            onClick={() => { setMode(btn.mode); setPendingEdge(null); setNodeDialog(null); setWeightDialog(null); }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded text-sm min-w-[44px] min-h-[44px]"
+            key={btn.m}
+            onClick={() => switchMode(btn.m)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded text-sm min-h-[44px]"
             style={{
-              backgroundColor: mode === btn.mode ? "var(--bg-hover)" : "transparent",
-              color: mode === btn.mode ? "var(--text-primary)" : "var(--text-secondary)",
-              border: mode === btn.mode ? "1px solid var(--border)" : "1px solid transparent",
+              backgroundColor: mode === btn.m ? "var(--bg-hover)" : "transparent",
+              color:           mode === btn.m ? "var(--text-primary)" : "var(--text-secondary)",
+              border:          mode === btn.m ? "1px solid var(--border)" : "1px solid transparent",
             }}
             title={btn.label}
           >
@@ -292,13 +299,9 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
             <span className="hidden sm:inline text-xs">{btn.label}</span>
           </button>
         ))}
-        <div className="ml-auto text-xs" style={{ color: "var(--text-muted)" }}>
-          {mode === "select" && "Przeciągnij węzeł, aby go przenieść"}
-          {mode === "addNode" && "Kliknij na mapę, aby dodać węzeł"}
-          {mode === "addEdge" && !pendingEdge && "Kliknij pierwszy węzeł"}
-          {mode === "addEdge" && pendingEdge && "Kliknij drugi węzeł"}
-          {mode === "delete" && "Kliknij węzeł lub krawędź, aby usunąć"}
-        </div>
+        <span className="ml-auto text-xs hidden sm:block" style={{ color: "var(--text-muted)" }}>
+          {toolbarHint}
+        </span>
       </div>
 
       {/* Canvas */}
@@ -311,7 +314,7 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
           style={{
             touchAction: "none",
             backgroundColor: "var(--bg-base)",
-            cursor: mode === "addNode" ? "crosshair" : mode === "delete" ? "pointer" : "default",
+            cursor: canvasCursor,
             display: "block",
             maxWidth: "100%",
           }}
@@ -319,106 +322,94 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
           onPointerMove={handleSVGPointerMove}
           onPointerUp={handleSVGPointerUp}
         >
-          {/* Grid dots */}
+          {/* Grid */}
           <defs>
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <pattern id="editor-grid" width="40" height="40" patternUnits="userSpaceOnUse">
               <circle cx="20" cy="20" r="1" fill="var(--border)" opacity="0.4" />
             </pattern>
           </defs>
-          <rect width={CANVAS_W} height={CANVAS_H} fill="url(#grid)" />
+          <rect width={CANVAS_W} height={CANVAS_H} fill="url(#editor-grid)" />
 
           {/* Edges */}
           {edges.map(edge => {
             const from = nodes.find(n => n.id === edge.fromId);
-            const to = nodes.find(n => n.id === edge.toId);
+            const to   = nodes.find(n => n.id === edge.toId);
             if (!from || !to) return null;
             const mx = (from.x + to.x) / 2;
             const my = (from.y + to.y) / 2;
             const isFlashing = flashIds.has(edge.id);
             return (
-              <g key={edge.id} onClick={() => handleEdgeClick(edge)} style={{ cursor: mode === "delete" ? "pointer" : "default" }}>
+              <g
+                key={edge.id}
+                onPointerDown={e => handleEdgePointerDown(e, edge)}
+                style={{ cursor: mode === "delete" ? "pointer" : "default" }}
+              >
+                {/* Wide invisible stroke for easy touch/click */}
+                <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="transparent" strokeWidth={20} />
                 <line
                   x1={from.x} y1={from.y} x2={to.x} y2={to.y}
                   stroke={isFlashing ? "#ef4444" : "#555"}
-                  strokeWidth={mode === "delete" ? 6 : 2}
-                  strokeOpacity={isFlashing ? 1 : 0.8}
+                  strokeWidth={mode === "delete" ? 3 : 2}
                 />
-                <rect
-                  x={mx - 14} y={my - 9} width={28} height={18}
-                  rx={4} fill="var(--bg-elevated)"
-                  stroke="var(--border)" strokeWidth={1}
-                />
-                <text
-                  x={mx} y={my + 4}
-                  textAnchor="middle"
-                  fontSize={10}
-                  fill="var(--text-secondary)"
-                  style={{ pointerEvents: "none", userSelect: "none" }}
-                >
+                <rect x={mx - 14} y={my - 9} width={28} height={18} rx={4}
+                  fill="var(--bg-elevated)" stroke="var(--border)" strokeWidth={1} />
+                <text x={mx} y={my + 4} textAnchor="middle" fontSize={10}
+                  fill="var(--text-secondary)" style={{ pointerEvents: "none", userSelect: "none" }}>
                   {edge.weight}
                 </text>
               </g>
             );
           })}
 
-          {/* Pending edge dashed line */}
+          {/* Pending edge preview */}
           {pendingEdge && pendingFromNode && (
             <line
               x1={pendingFromNode.x} y1={pendingFromNode.y}
-              x2={pendingEdge.toX} y2={pendingEdge.toY}
-              stroke="#60a5fa"
-              strokeWidth={2}
-              strokeDasharray="6 4"
-              style={{ animation: "dash 0.5s linear infinite", pointerEvents: "none" }}
+              x2={pendingEdge.toX}   y2={pendingEdge.toY}
+              stroke="#60a5fa" strokeWidth={2} strokeDasharray="6 4"
+              style={{ pointerEvents: "none", animation: "dash 0.5s linear infinite" }}
             />
           )}
 
           {/* Nodes */}
           {nodes.map(node => {
-            const color = nodeColor(node);
-            const emoji = nodeEmoji(node);
-            const label = nodeLabel(node);
-            const isFlashing = flashIds.has(node.id);
+            const color       = nodeColor(node);
+            const emoji       = nodeEmoji(node);
+            const label       = nodeLabel(node);
+            const isFlashing  = flashIds.has(node.id);
             const isPendingFrom = pendingEdge?.fromId === node.id;
-
             return (
               <g
                 key={node.id}
                 onPointerDown={e => handleNodePointerDown(e, node)}
-                style={{ cursor: mode === "select" ? "grab" : mode === "delete" ? "pointer" : "crosshair", userSelect: "none" }}
+                style={{
+                  cursor: mode === "select" ? (draggingId === node.id ? "grabbing" : "grab") : mode === "delete" ? "pointer" : "crosshair",
+                  userSelect: "none",
+                }}
               >
                 {isPendingFrom && (
-                  <circle
-                    cx={node.x} cy={node.y} r={NODE_RADIUS + 6}
-                    fill="none"
-                    stroke="#60a5fa"
-                    strokeWidth={2}
-                    strokeDasharray="5 3"
-                  />
+                  <circle cx={node.x} cy={node.y} r={NODE_RADIUS + 7}
+                    fill="none" stroke="#60a5fa" strokeWidth={2} strokeDasharray="5 3" />
                 )}
                 <circle
                   cx={node.x} cy={node.y} r={NODE_RADIUS}
                   fill={isFlashing ? "#ef4444" : color}
-                  fillOpacity={isFlashing ? 1 : 0.9}
-                  stroke={isFlashing ? "#ffffff" : color}
+                  stroke={isFlashing ? "#fff" : color}
                   strokeWidth={2}
                 />
                 {node.type === "START" && (
-                  <text x={node.x} y={node.y + 6} textAnchor="middle" fontSize={18} fill="#fff" style={{ pointerEvents: "none", userSelect: "none" }}>🚪</text>
+                  <text x={node.x} y={node.y + 6} textAnchor="middle" fontSize={18} fill="#fff" style={{ pointerEvents: "none" }}>🚪</text>
                 )}
                 {node.type === "STOP" && (
-                  <text x={node.x} y={node.y + 6} textAnchor="middle" fontSize={18} fill="#fff" style={{ pointerEvents: "none", userSelect: "none" }}>🛒</text>
+                  <text x={node.x} y={node.y + 6} textAnchor="middle" fontSize={18} fill="#fff" style={{ pointerEvents: "none" }}>🛒</text>
                 )}
                 {node.type === "CATEGORY" && emoji && (
-                  <text x={node.x} y={node.y + 6} textAnchor="middle" fontSize={16} style={{ pointerEvents: "none", userSelect: "none" }}>{emoji}</text>
+                  <text x={node.x} y={node.y + 6} textAnchor="middle" fontSize={16} style={{ pointerEvents: "none" }}>{emoji}</text>
                 )}
                 <text
                   x={node.x} y={node.y + NODE_RADIUS + 14}
-                  textAnchor="middle"
-                  fontSize={11}
-                  fill="var(--text-secondary)"
-                  style={{ pointerEvents: "none", userSelect: "none" }}
-                >
+                  textAnchor="middle" fontSize={11} fill="var(--text-secondary)"
+                  style={{ pointerEvents: "none", userSelect: "none" }}>
                   {label}
                 </text>
               </g>
@@ -427,7 +418,8 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
 
           {/* Legend */}
           <g transform="translate(10, 10)">
-            <rect x={0} y={0} width={110} height={64} rx={6} fill="var(--bg-elevated)" fillOpacity={0.9} stroke="var(--border)" strokeWidth={1} />
+            <rect x={0} y={0} width={120} height={64} rx={6}
+              fill="var(--bg-elevated)" fillOpacity={0.92} stroke="var(--border)" strokeWidth={1} />
             <circle cx={16} cy={18} r={7} fill="#16a34a" />
             <text x={28} y={22} fontSize={10} fill="var(--text-secondary)">Wejście (START)</text>
             <circle cx={16} cy={36} r={7} fill="#dc2626" />
@@ -438,21 +430,23 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
         </svg>
 
         {/* Node type dialog */}
-        {nodeDialog && (
+        {nodeDialog && nodeDialogPos && (
           <NodeTypeDialog
             dialog={nodeDialog}
             existingNodes={nodes}
+            pos={nodeDialogPos}
             onChange={setNodeDialog}
             onConfirm={commitNode}
-            onCancel={() => { setNodeDialog(null); setPendingNode(null); }}
+            onCancel={() => setNodeDialog(null)}
           />
         )}
 
-        {/* Weight dialog */}
-        {weightDialog && (
+        {/* Edge weight dialog */}
+        {weightDialog && weightDialogPos && (
           <WeightInputDialog
-            dialog={weightDialog}
-            nodes={nodes}
+            fromLabel={nodeLabel(nodes.find(n => n.id === weightDialog.fromId) ?? { type: "CATEGORY", label: "?", id: "", storeId: "", category: null, x: 0, y: 0 })}
+            toLabel={nodeLabel(nodes.find(n => n.id === weightDialog.toId) ?? { type: "CATEGORY", label: "?", id: "", storeId: "", category: null, x: 0, y: 0 })}
+            pos={weightDialogPos}
             value={weightValue}
             onChange={setWeightValue}
             onConfirm={commitEdge}
@@ -461,49 +455,49 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
         )}
       </div>
 
-      <style>{`
-        @keyframes dash {
-          to { stroke-dashoffset: -20; }
-        }
-      `}</style>
+      <style>{`@keyframes dash { to { stroke-dashoffset: -20; } }`}</style>
     </div>
   );
 }
 
+// ──── Dialogs ─────────────────────────────────────────────────────────────────
+
 interface NodeTypeDialogProps {
   dialog: NodeDialog;
   existingNodes: StoreNodeData[];
+  pos: { top: number; left: number };
   onChange: (d: NodeDialog) => void;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-function NodeTypeDialog({ dialog, existingNodes, onChange, onConfirm, onCancel }: NodeTypeDialogProps) {
+function NodeTypeDialog({ dialog, existingNodes, pos, onChange, onConfirm, onCancel }: NodeTypeDialogProps) {
   const hasStart = existingNodes.some(n => n.type === "START");
-  const hasStop = existingNodes.some(n => n.type === "STOP");
+  const hasStop  = existingNodes.some(n => n.type === "STOP");
 
   return (
     <div
-      className="absolute z-50 rounded-lg p-3 min-w-[200px]"
+      className="absolute z-50 rounded-lg p-3 min-w-[210px]"
       style={{
-        top: Math.min(dialog.y * 0.8 + 60, window.innerHeight - 250),
-        left: Math.min(dialog.x * 0.8 + 10, window.innerWidth - 220),
+        top:  pos.top,
+        left: pos.left,
         backgroundColor: "var(--bg-elevated)",
         border: "1px solid var(--border)",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.55)",
       }}
+      onPointerDown={e => e.stopPropagation()}
     >
-      <p className="text-xs font-medium mb-2" style={{ color: "var(--text-primary)" }}>Typ węzła</p>
+      <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-primary)" }}>Typ węzła</p>
       <div className="flex gap-1 mb-2">
         {(["CATEGORY", "START", "STOP"] as const).map(t => {
           const disabled = (t === "START" && hasStart) || (t === "STOP" && hasStop);
-          const label = t === "START" ? "Wejście" : t === "STOP" ? "Kasy" : "Kategoria";
+          const label    = t === "START" ? "Wejście" : t === "STOP" ? "Kasy" : "Kategoria";
           return (
             <button
               key={t}
               disabled={disabled}
               onClick={() => onChange({ ...dialog, type: t })}
-              className="flex-1 py-1 text-xs rounded"
+              className="flex-1 py-1.5 text-xs rounded"
               style={{
                 backgroundColor: dialog.type === t ? "var(--bg-hover)" : "transparent",
                 color: disabled ? "var(--text-muted)" : dialog.type === t ? "var(--text-primary)" : "var(--text-secondary)",
@@ -521,7 +515,7 @@ function NodeTypeDialog({ dialog, existingNodes, onChange, onConfirm, onCancel }
         <select
           value={dialog.category}
           onChange={e => onChange({ ...dialog, category: e.target.value })}
-          className="w-full text-xs rounded px-2 py-1 mb-2"
+          className="w-full text-xs rounded px-2 py-1.5 mb-2"
           style={{
             backgroundColor: "var(--bg-surface)",
             color: "var(--text-primary)",
@@ -533,17 +527,17 @@ function NodeTypeDialog({ dialog, existingNodes, onChange, onConfirm, onCancel }
           ))}
         </select>
       )}
-      <div className="flex gap-1">
+      <div className="flex gap-1.5">
         <button
           onClick={onConfirm}
-          className="flex-1 text-xs py-1 rounded"
+          className="flex-1 text-xs py-1.5 rounded font-medium"
           style={{ backgroundColor: "#16a34a", color: "#fff" }}
         >
           Dodaj
         </button>
         <button
           onClick={onCancel}
-          className="flex-1 text-xs py-1 rounded"
+          className="flex-1 text-xs py-1.5 rounded"
           style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-secondary)" }}
         >
           Anuluj
@@ -554,32 +548,31 @@ function NodeTypeDialog({ dialog, existingNodes, onChange, onConfirm, onCancel }
 }
 
 interface WeightInputDialogProps {
-  dialog: WeightDialog;
-  nodes: StoreNodeData[];
+  fromLabel: string;
+  toLabel: string;
+  pos: { top: number; left: number };
   value: string;
   onChange: (v: string) => void;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-function WeightInputDialog({ dialog, nodes, value, onChange, onConfirm, onCancel }: WeightInputDialogProps) {
-  const toNode = nodes.find(n => n.id === dialog.toId);
-  const fromNode = nodes.find(n => n.id === dialog.fromId);
-
+function WeightInputDialog({ fromLabel, toLabel, pos, value, onChange, onConfirm, onCancel }: WeightInputDialogProps) {
   return (
     <div
-      className="absolute z-50 rounded-lg p-3 min-w-[180px]"
+      className="absolute z-50 rounded-lg p-3 min-w-[190px]"
       style={{
-        top: Math.min((toNode?.y ?? dialog.y) * 0.8 + 60, window.innerHeight - 180),
-        left: Math.min((toNode?.x ?? dialog.x) * 0.8 + 10, window.innerWidth - 200),
+        top:  pos.top,
+        left: pos.left,
         backgroundColor: "var(--bg-elevated)",
         border: "1px solid var(--border)",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.55)",
       }}
+      onPointerDown={e => e.stopPropagation()}
     >
-      <p className="text-xs font-medium mb-1" style={{ color: "var(--text-primary)" }}>Waga krawędzi</p>
+      <p className="text-xs font-semibold mb-0.5" style={{ color: "var(--text-primary)" }}>Waga krawędzi</p>
       <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>
-        {nodeLabel(fromNode!) || "?"} → {nodeLabel(toNode!) || "?"}
+        {fromLabel} → {toLabel}
       </p>
       <input
         type="number"
@@ -589,24 +582,24 @@ function WeightInputDialog({ dialog, nodes, value, onChange, onConfirm, onCancel
         autoFocus
         onChange={e => onChange(e.target.value)}
         onKeyDown={e => { if (e.key === "Enter") onConfirm(); if (e.key === "Escape") onCancel(); }}
-        className="w-full text-xs rounded px-2 py-1 mb-2"
+        className="w-full text-xs rounded px-2 py-1.5 mb-2"
         style={{
           backgroundColor: "var(--bg-surface)",
           color: "var(--text-primary)",
           border: "1px solid var(--border)",
         }}
       />
-      <div className="flex gap-1">
+      <div className="flex gap-1.5">
         <button
           onClick={onConfirm}
-          className="flex-1 text-xs py-1 rounded"
+          className="flex-1 text-xs py-1.5 rounded font-medium"
           style={{ backgroundColor: "#2563eb", color: "#fff" }}
         >
           Połącz
         </button>
         <button
           onClick={onCancel}
-          className="flex-1 text-xs py-1 rounded"
+          className="flex-1 text-xs py-1.5 rounded"
           style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-secondary)" }}
         >
           Anuluj

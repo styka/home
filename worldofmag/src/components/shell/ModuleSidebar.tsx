@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Map } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 
@@ -102,6 +102,7 @@ function NavSubItem({
 
 export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSidebarProps) {
   const pathname = usePathname();
+  const isShoppingActive = pathname.startsWith("/shopping");
   const isNotesActive = pathname.startsWith("/notes");
   const isTasksActive = pathname.startsWith("/tasks");
 
@@ -133,6 +134,11 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
 
         {/* Shopping */}
         <NavItem href="/shopping" label="Zakupy" icon={<ShoppingCart size={18} />} pathname={pathname} iconColor="var(--accent-blue)" />
+        {isShoppingActive && (
+          <div className="mb-1">
+            <NavSubItem href="/shopping/stores" label="Mapy sklepów" icon={<Map size={12} />} pathname={pathname} />
+          </div>
+        )}
 
         {/* Notes with sub-items */}
         <NavItem href="/notes" label="Notatki" icon={<FileText size={18} />} pathname={pathname} iconColor="var(--accent-amber)" exact />
