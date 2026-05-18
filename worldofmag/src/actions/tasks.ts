@@ -2,16 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/server-utils";
 import { assertProjectAccess } from "@/actions/taskProjects";
 import { trackActivity } from "@/actions/activity";
 import type { Task, TaskStatus, TaskPriority, TaskWithRelations, RecurringRule } from "@/types";
-
-async function requireAuth() {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  return session.user as { id: string };
-}
 
 const TASK_INCLUDE = {
   tags: { include: { tag: true } },

@@ -17,26 +17,31 @@ function NavItem({
   icon,
   pathname,
   exact = false,
+  accentColor,
+  children,
 }: {
   href: string;
   label: string;
   icon: React.ReactNode;
   pathname: string;
   exact?: boolean;
+  accentColor?: string;
+  children?: React.ReactNode;
 }) {
   const isActive = exact ? pathname === href : pathname.startsWith(href);
+  const activeColor = accentColor ?? "var(--text-primary)";
   return (
     <Link
       href={href}
       className={cn("flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm")}
       style={{
         backgroundColor: isActive ? "var(--bg-elevated)" : undefined,
-        color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
+        color: isActive ? activeColor : "var(--text-secondary)",
       }}
       onMouseEnter={(e) => {
         if (!isActive) {
           e.currentTarget.style.backgroundColor = "var(--bg-hover)";
-          e.currentTarget.style.color = "var(--text-primary)";
+          e.currentTarget.style.color = accentColor ?? "var(--text-primary)";
         }
       }}
       onMouseLeave={(e) => {
@@ -48,6 +53,7 @@ function NavItem({
     >
       {icon}
       <span>{label}</span>
+      {children}
     </Link>
   );
 }
@@ -163,28 +169,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
 
       {/* Bottom: Invitations + Settings + Admin */}
       <div className="py-2 border-t" style={{ borderColor: "var(--border)" }}>
-        <Link
-          href="/invitations"
-          className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm"
-          style={{
-            backgroundColor: pathname.startsWith("/invitations") ? "var(--bg-elevated)" : undefined,
-            color: pathname.startsWith("/invitations") ? "var(--text-primary)" : "var(--text-secondary)",
-          }}
-          onMouseEnter={(e) => {
-            if (!pathname.startsWith("/invitations")) {
-              e.currentTarget.style.backgroundColor = "var(--bg-hover)";
-              e.currentTarget.style.color = "var(--text-primary)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!pathname.startsWith("/invitations")) {
-              e.currentTarget.style.backgroundColor = "";
-              e.currentTarget.style.color = "var(--text-secondary)";
-            }
-          }}
-        >
-          <Mail size={18} />
-          <span>Zaproszenia</span>
+        <NavItem href="/invitations" label="Zaproszenia" icon={<Mail size={18} />} pathname={pathname}>
           {invitationCount > 0 && (
             <span
               style={{
@@ -201,81 +186,18 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
               {invitationCount}
             </span>
           )}
-        </Link>
+        </NavItem>
 
-        <Link
-          href="/settings"
-          className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm"
-          style={{
-            backgroundColor: pathname.startsWith("/settings") ? "var(--bg-elevated)" : undefined,
-            color: pathname.startsWith("/settings") ? "var(--text-primary)" : "var(--text-secondary)",
-          }}
-          onMouseEnter={(e) => {
-            if (!pathname.startsWith("/settings")) {
-              e.currentTarget.style.backgroundColor = "var(--bg-hover)";
-              e.currentTarget.style.color = "var(--text-primary)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!pathname.startsWith("/settings")) {
-              e.currentTarget.style.backgroundColor = "";
-              e.currentTarget.style.color = "var(--text-secondary)";
-            }
-          }}
-        >
-          <Settings size={18} />
-          <span>Ustawienia</span>
-        </Link>
+        <NavItem href="/settings" label="Ustawienia" icon={<Settings size={18} />} pathname={pathname} />
 
         {isAdmin && (
-          <Link
-            href="/admin"
-            className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm"
-            style={{
-              backgroundColor: pathname === "/admin" || pathname.startsWith("/admin/config") ? "var(--bg-elevated)" : undefined,
-              color: pathname === "/admin" || pathname.startsWith("/admin/config") ? "var(--accent-purple)" : "var(--text-secondary)",
-            }}
-            onMouseEnter={(e) => {
-              if (!(pathname === "/admin" || pathname.startsWith("/admin/config"))) {
-                e.currentTarget.style.backgroundColor = "var(--bg-hover)";
-                e.currentTarget.style.color = "var(--accent-purple)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!(pathname === "/admin" || pathname.startsWith("/admin/config"))) {
-                e.currentTarget.style.backgroundColor = "";
-                e.currentTarget.style.color = "var(--text-secondary)";
-              }
-            }}
-          >
-            <Shield size={18} />
-            <span>Admin</span>
-          </Link>
+          <NavItem href="/admin" label="Admin" icon={<Shield size={18} />} pathname={pathname} accentColor="var(--accent-purple)" />
         )}
         {isAdmin && (
-          <Link
-            href="/admin/playground"
-            className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm"
-            style={{
-              backgroundColor: pathname.startsWith("/admin/playground") ? "var(--bg-elevated)" : undefined,
-              color: pathname.startsWith("/admin/playground") ? "var(--accent-purple)" : "var(--text-secondary)",
-            }}
-            onMouseEnter={(e) => {
-              if (!pathname.startsWith("/admin/playground")) {
-                e.currentTarget.style.backgroundColor = "var(--bg-hover)";
-                e.currentTarget.style.color = "var(--accent-purple)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!pathname.startsWith("/admin/playground")) {
-                e.currentTarget.style.backgroundColor = "";
-                e.currentTarget.style.color = "var(--text-secondary)";
-              }
-            }}
-          >
-            <FlaskConical size={18} />
-            <span>Playground</span>
-          </Link>
+          <NavItem href="/admin/playground" label="Playground" icon={<FlaskConical size={18} />} pathname={pathname} accentColor="var(--accent-purple)" />
+        )}
+        {isAdmin && (
+          <NavItem href="/admin/architecture" label="Architektura" icon={<Shield size={18} />} pathname={pathname} accentColor="var(--accent-purple)" />
         )}
       </div>
     </aside>

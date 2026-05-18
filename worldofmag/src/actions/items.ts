@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/server-utils";
 import { categorize } from "@/lib/categorize";
 import { parseQuantity } from "@/lib/parseQuantity";
 import { assertListAccess } from "@/actions/lists";
@@ -13,12 +13,6 @@ import type { Item as PrismaItem } from "@prisma/client";
 
 function toItem(p: PrismaItem): Item {
   return p as unknown as Item;
-}
-
-async function requireAuth() {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  return session.user as { id: string };
 }
 
 export async function addItem(listId: string, rawText: string): Promise<Item> {

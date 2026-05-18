@@ -292,6 +292,19 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                   <span>Playground</span>
                 </Link>
               )}
+              {isAdmin && (
+                <Link
+                  href="/admin/architecture"
+                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
+                  style={{
+                    backgroundColor: pathname.startsWith("/admin/architecture") ? "var(--bg-elevated)" : undefined,
+                    color: pathname.startsWith("/admin/architecture") ? "var(--accent-purple)" : "var(--text-secondary)",
+                  }}
+                >
+                  <Shield size={20} />
+                  <span>Architektura</span>
+                </Link>
+              )}
             </div>
           </div>
         </div>
