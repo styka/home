@@ -10,20 +10,12 @@ async function requireAdmin() {
   return user;
 }
 
-export async function getReports(): Promise<Report[]> {
-  await requireAdmin();
-  return prisma.report.findMany({
-    orderBy: { createdAt: "desc" },
-    select: { id: true, title: true, slug: true, category: true, createdAt: true, updatedAt: true, content: false } as never,
-  }) as unknown as Report[];
-}
-
 export async function getReportsMeta(): Promise<Omit<Report, "content">[]> {
   await requireAdmin();
   return prisma.report.findMany({
     orderBy: { createdAt: "desc" },
     select: { id: true, title: true, slug: true, category: true, createdAt: true, updatedAt: true },
-  }) as Omit<Report, "content">[];
+  });
 }
 
 export async function getReport(slug: string): Promise<Report | null> {
