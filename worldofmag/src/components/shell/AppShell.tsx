@@ -55,16 +55,14 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
     >
       {/* Mobile-only top bar — paddingTop absorbs iOS status bar in PWA */}
       <div
-        className="md:hidden flex items-center gap-2 px-3 border-b flex-shrink-0"
+        className="md:hidden flex-shrink-0 border-b"
         style={{
           backgroundColor: "var(--bg-surface)",
           borderColor: "var(--border)",
           paddingTop: "env(safe-area-inset-top)",
-          minHeight: "calc(44px + env(safe-area-inset-top))",
-          alignItems: "flex-end",
-          paddingBottom: 8,
         }}
       >
+        <div className="flex items-center gap-2 px-3" style={{ height: 44 }}>
         <button
           onClick={() => setMenuOpen(true)}
           className="flex items-center justify-center w-8 h-8 rounded flex-shrink-0"
@@ -95,6 +93,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
             {activeModule?.label ?? "WorldOfMag"}
           </span>
         </div>
+        </div>
       </div>
 
       {/* Mobile menu overlay */}
@@ -111,29 +110,25 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
           >
             {/* Drawer header — paddingTop absorbs iOS status bar in PWA standalone mode */}
             <div
-              className="flex items-center justify-between px-4 border-b flex-shrink-0"
-              style={{
-                borderColor: "var(--border)",
-                paddingTop: "env(safe-area-inset-top)",
-                minHeight: "calc(44px + env(safe-area-inset-top))",
-                alignItems: "flex-end",
-                paddingBottom: 8,
-              }}
+              className="flex-shrink-0 border-b"
+              style={{ borderColor: "var(--border)", paddingTop: "env(safe-area-inset-top)" }}
             >
-              <div className="flex items-center gap-2">
-                <Sparkles size={14} style={{ color: "var(--accent-purple)" }} />
-                <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                  WorldOfMag
-                </span>
+              <div className="flex items-center justify-between px-4" style={{ height: 44 }}>
+                <div className="flex items-center gap-2">
+                  <Sparkles size={14} style={{ color: "var(--accent-purple)" }} />
+                  <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                    WorldOfMag
+                  </span>
+                </div>
+                <button
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-center w-8 h-8 rounded"
+                  style={{ color: "var(--text-secondary)" }}
+                  aria-label="Zamknij menu"
+                >
+                  <X size={16} />
+                </button>
               </div>
-              <button
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center justify-center w-8 h-8 rounded"
-                style={{ color: "var(--text-secondary)" }}
-                aria-label="Zamknij menu"
-              >
-                <X size={16} />
-              </button>
             </div>
 
             {/* Module nav */}
