@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { Map, Package, Database, Layers, Server, Cpu, Code, Shield, Globe, GitBranch } from "lucide-react";
+import { Map, Package, Database, Layers, Server, Cpu, Code, Shield, Globe, GitBranch, ChevronLeft } from "lucide-react";
+import Link from "next/link";
 
 export default async function ArchitecturePage() {
   const session = await auth();
@@ -9,6 +10,11 @@ export default async function ArchitecturePage() {
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)", padding: "32px 24px" }}>
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
+
+        <Link href="/admin" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none", marginBottom: 20 }}>
+          <ChevronLeft size={14} />
+          Admin
+        </Link>
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>

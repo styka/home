@@ -87,12 +87,6 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
           )}
         </button>
 
-        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-          WorldOfMag
-        </span>
-
-        <span style={{ color: "var(--border)" }}>/</span>
-
         <div className="flex items-center gap-1.5">
           <span style={{ color: "var(--accent-purple)" }}>
             {activeModule?.topBarIcon ?? <Sparkles size={16} />}
@@ -115,10 +109,16 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
             style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Drawer header */}
+            {/* Drawer header — paddingTop absorbs iOS status bar in PWA standalone mode */}
             <div
-              className="flex items-center justify-between px-4 h-11 border-b flex-shrink-0"
-              style={{ borderColor: "var(--border)" }}
+              className="flex items-center justify-between px-4 border-b flex-shrink-0"
+              style={{
+                borderColor: "var(--border)",
+                paddingTop: "env(safe-area-inset-top)",
+                minHeight: "calc(44px + env(safe-area-inset-top))",
+                alignItems: "flex-end",
+                paddingBottom: 8,
+              }}
             >
               <div className="flex items-center gap-2">
                 <Sparkles size={14} style={{ color: "var(--accent-purple)" }} />
