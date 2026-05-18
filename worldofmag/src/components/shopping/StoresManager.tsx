@@ -129,8 +129,8 @@ export function StoresManager({ stores: initialStores }: StoresManagerProps) {
                       {store.name}
                     </p>
                   )}
-                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                    {store.nodes.length} węzłów · {store.edges.length} krawędzi
+                  <p className="text-xs mt-0.5" style={{ color: store.nodes.length === 0 ? "#f59e0b" : "var(--text-muted)" }}>
+                    {store.nodes.length === 0 ? "⚠️ Brak mapy" : `${store.nodes.length} węzłów · ${store.edges.length} krawędzi`}
                   </p>
                 </div>
 
@@ -182,7 +182,7 @@ export function StoresManager({ stores: initialStores }: StoresManagerProps) {
                     }}
                   >
                     <Map size={13} />
-                    <span>Edytuj mapę</span>
+                    <span>Skonfiguruj mapę</span>
                   </Link>
                 </div>
               </div>
