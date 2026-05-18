@@ -6,7 +6,6 @@ import { NoteList } from "./NoteList";
 import { QuickNoteBar, type QuickNoteBarHandle } from "./QuickNoteBar";
 import { NotesQA } from "./NotesQA";
 import { TagChip } from "./TagChip";
-import { AICommandSheet } from "@/components/home/AICommandSheet";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
 import type { Note, Tag as TagType, NoteGroup, NoteFilter } from "@/types";
@@ -116,7 +115,6 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
   }
 
   return (
-    <>
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div
@@ -279,7 +277,5 @@ export function NotesPage({ notes, groups, tags }: NotesPageProps) {
         )}
       </div>
     </div>
-    <AICommandSheet context={["notes"]} />
-    </>
   );
 }

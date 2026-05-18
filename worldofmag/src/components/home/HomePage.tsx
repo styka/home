@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Sparkles, BookOpen } from "lucide-react";
 import { QuickStats } from "@/components/home/QuickStats";
 import { AISuggestions } from "@/components/home/AISuggestions";
-import { AICommandSheet } from "@/components/home/AICommandSheet";
 
 interface ActivityItem {
   module: string;
@@ -118,7 +117,6 @@ export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, rec
         </div>
       </div>
 
-      <AICommandSheet context={["shopping", "tasks", "notes"]} />
     </div>
   );
 }

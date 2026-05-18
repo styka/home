@@ -1,18 +1,77 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sparkles, Loader2, CheckCircle, XCircle, X } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
 import type { ActionResult } from "@/app/api/llm/home/execute/route";
 
-interface AICommandSheetProps {
+interface RouteContext {
   context: string[];
-  placeholder?: string;
+  placeholder: string;
+  routeHint: string;
 }
 
-export function AICommandSheet({ context, placeholder }: AICommandSheetProps) {
+function deriveContextFromPath(pathname: string): RouteContext {
+  if (pathname.startsWith("/shopping/")) {
+    const seg = pathname.split("/")[2] ?? "";
+    const isListView = seg && !["products", "units", "categories"].includes(seg);
+    return {
+      context: ["shopping"],
+      placeholder: 'Np. "Dodaj mleko i chleb" lub "Odznacz jabłka jako kupione"',
+      routeHint: isListView
+        ? "Użytkownik ogląda konkretną listę zakupów"
+        : "Użytkownik jest na stronie głównej zakupów",
+    };
+  }
+  if (pathname === "/shopping") {
+    return {
+      context: ["shopping"],
+      placeholder: 'Np. "Dodaj mleko do zakupów" lub "Stwórz nową listę"',
+      routeHint: "Użytkownik jest na stronie głównej modułu Zakupy",
+    };
+  }
+  if (pathname.startsWith("/tasks/")) {
+    const seg = pathname.split("/")[2] ?? "";
+    const viewNames: Record<string, string> = {
+      today: "widok zadań na dziś",
+      upcoming: "widok nadchodzących zadań",
+      overdue: "widok zaległych zadań",
+      all: "widok wszystkich zadań",
+    };
+    return {
+      context: ["tasks"],
+      placeholder: 'Np. "Dodaj zadanie na jutro" lub "Przesuń mycie auta o tydzień"',
+      routeHint: `Użytkownik jest na ${viewNames[seg] ?? "widoku projektu zadań"}`,
+    };
+  }
+  if (pathname === "/tasks") {
+    return {
+      context: ["tasks"],
+      placeholder: 'Np. "Dodaj zadanie kupić leki na jutro"',
+      routeHint: "Użytkownik jest na stronie głównej modułu Zadania",
+    };
+  }
+  if (pathname.startsWith("/notes")) {
+    return {
+      context: ["notes"],
+      placeholder: 'Np. "Dodaj notatkę o..." lub "Dopisz do notatki X..."',
+      routeHint: "Użytkownik jest w module Notatki",
+    };
+  }
+  return {
+    context: ["shopping", "tasks", "notes"],
+    placeholder: 'Np. "Dodaj mleko do zakupów" lub "Stwórz zadanie na jutro"',
+    routeHint: "Użytkownik jest na stronie głównej aplikacji",
+  };
+}
+
+export function AICommandSheet() {
+  const pathname = usePathname();
+  const { context, placeholder, routeHint } = deriveContextFromPath(pathname);
+
   const [isOpen, setIsOpen] = useState(false);
   const [inputText, setInputText] = useState("");
   const [isInterpreting, setIsInterpreting] = useState(false);
@@ -39,7 +98,7 @@ export function AICommandSheet({ context, placeholder }: AICommandSheetProps) {
       const res = await fetch("/api/llm/home/interpret", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, context, today: new Date().toISOString() }),
+        body: JSON.stringify({ text, context, routeHint, today: new Date().toISOString() }),
       });
       const data = (await res.json()) as { actions?: AIAction[]; error?: string };
       if (!res.ok) {
@@ -124,17 +183,8 @@ export function AICommandSheet({ context, placeholder }: AICommandSheetProps) {
             }}
           >
             {/* Handle bar (mobile) */}
-            <div
-              className="md:hidden flex justify-center pt-3 pb-1 flex-shrink-0"
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 4,
-                  borderRadius: 2,
-                  background: "var(--border)",
-                }}
-              />
+            <div className="md:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)" }} />
             </div>
 
             {/* Header */}
@@ -169,7 +219,7 @@ export function AICommandSheet({ context, placeholder }: AICommandSheetProps) {
               <SmartTextarea
                 value={inputText}
                 onChange={setInputText}
-                placeholder={placeholder ?? "Wpisz lub powiedz co chcesz zrobić…\nNp. \"Dodaj mleko do zakupów\" lub \"Stwórz zadanie na jutro\""}
+                placeholder={placeholder}
                 rows={4}
                 onSubmit={handleInterpret}
               />

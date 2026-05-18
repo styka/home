@@ -76,8 +76,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json().catch(() => ({})) as { text?: string; context?: string[]; today?: string };
-  const { text, context = ["shopping", "tasks", "notes"], today = new Date().toISOString() } = body;
+  const body = await req.json().catch(() => ({})) as { text?: string; context?: string[]; today?: string; routeHint?: string };
+  const { text, context = ["shopping", "tasks", "notes"], today = new Date().toISOString(), routeHint } = body;
 
   if (!text?.trim()) {
     return NextResponse.json({ error: "Empty text" }, { status: 400 });
@@ -96,7 +96,13 @@ export async function POST(req: NextRequest) {
   const modulesDesc = additionalModules.length > 0
     ? `${primaryModule} (podstawowy), ${additionalModules.join(", ")}`
     : primaryModule;
-  const userMsg = `Dzisiejsza data: ${today}\nAktywne moduły: ${modulesDesc}\n\nPolecenie użytkownika: ${text.trim()}`;
+  const userMsg = [
+    `Dzisiejsza data: ${today}`,
+    `Aktywne moduły: ${modulesDesc}`,
+    routeHint ? `Aktualny widok: ${routeHint}` : null,
+    ``,
+    `Polecenie użytkownika: ${text.trim()}`,
+  ].filter(Boolean).join("\n");
 
   const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",

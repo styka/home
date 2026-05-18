@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FlaskConical } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
+import { AICommandSheet } from "@/components/home/AICommandSheet";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -302,6 +303,8 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
       <main className="flex-1 overflow-hidden flex flex-col min-w-0">
         {children}
       </main>
+
+      <AICommandSheet />
     </div>
   );
 }

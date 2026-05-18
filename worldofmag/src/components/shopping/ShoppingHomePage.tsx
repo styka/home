@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ShoppingCart, Plus, ChevronRight, Loader2, Package, Ruler, Tag } from "lucide-react";
 import { createList } from "@/actions/lists";
-import { AICommandSheet } from "@/components/home/AICommandSheet";
 
 interface ListSummary {
   id: string;
@@ -32,7 +31,6 @@ export function ShoppingHomePage({ lists }: ShoppingHomePageProps) {
   }
 
   return (
-    <>
     <div
       style={{
         flex: 1,
@@ -263,7 +261,5 @@ export function ShoppingHomePage({ lists }: ShoppingHomePageProps) {
 
       </div>
     </div>
-    <AICommandSheet context={["shopping"]} placeholder={'Np. "Dodaj mleko, chleb i masło" lub "Odznacz jabłka jako kupione"'} />
-    </>
   );
 }

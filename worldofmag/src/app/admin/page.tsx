@@ -2,7 +2,6 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings } from "lucide-react"
 import Link from "next/link"
-import { AICommandSheet } from "@/components/home/AICommandSheet"
 
 function fmtDate(iso: string | undefined) {
   if (!iso || iso === "unknown") return "—"
@@ -38,7 +37,6 @@ export default async function AdminPage() {
   ]
 
   return (
-    <>
     <div
       className="flex-1 overflow-y-auto"
       style={{ backgroundColor: "var(--bg-base)", padding: "32px 24px" }}
@@ -211,7 +209,5 @@ export default async function AdminPage() {
 
       </div>
     </div>
-    <AICommandSheet context={["shopping", "tasks", "notes"]} />
-    </>
   )
 }
