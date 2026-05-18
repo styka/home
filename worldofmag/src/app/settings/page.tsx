@@ -2,12 +2,14 @@ import { auth } from "@/lib/auth"
 import { getMyTeams } from "@/actions/teams"
 import { signOut } from "@/lib/auth"
 import Link from "next/link"
+import { AICommandSheet } from "@/components/home/AICommandSheet"
 
 export default async function SettingsPage() {
   const session = await auth()
   const teams = await getMyTeams()
 
   return (
+    <>
     <div style={{ padding: "32px", maxWidth: 720 }}>
       {/* Profile */}
       <section style={{ marginBottom: 40 }}>
@@ -125,5 +127,7 @@ export default async function SettingsPage() {
         )}
       </section>
     </div>
+    <AICommandSheet context={["shopping", "tasks", "notes"]} />
+    </>
   )
 }

@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef, useTransition } from "react";
-import { Sparkles, PenLine } from "lucide-react";
+import { useState, useCallback, useMemo, useTransition } from "react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { ListDropdown } from "./ListDropdown";
 import { LLMInputSection } from "./LLMInputSection";
-import { QuickAddBar, type QuickAddBarHandle } from "./QuickAddBar";
 import { FilterTabs } from "./FilterTabs";
 import { ItemList } from "./ItemList";
 import { SearchBar } from "./SearchBar";
@@ -15,8 +13,6 @@ import { useItemNavigation } from "@/hooks/useItemNavigation";
 import { updateItemStatus, deleteItem } from "@/actions/items";
 import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus } from "@/types";
 import { FILTER_TABS, STATUS_CYCLE } from "@/types";
-
-type AddMode = "ai" | "manual";
 
 interface ShoppingPageProps {
   list: ShoppingListWithItems;
@@ -32,9 +28,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [addMode, setAddMode] = useState<AddMode>("ai");
   const [, startTransition] = useTransition();
-  const quickAddRef = useRef<QuickAddBarHandle>(null);
 
   const filteredItems = useMemo(() => {
     let items = list.items as Item[];
@@ -71,10 +65,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
 
   const handlers = useMemo(
     () => ({
-      onQuickAdd: () => {
-        setAddMode("manual");
-        setTimeout(() => quickAddRef.current?.focus(), 10);
-      },
+      onQuickAdd: () => {},
       onNavigateDown: navigateDown,
       onNavigateUp: navigateUp,
       onToggleStatus: () => {
@@ -108,7 +99,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
         setFocusedItemId(null);
       },
     }),
-    [focusedItemId, filteredItems, navigateDown, navigateUp, togglePalette, isSearchOpen, editingItemId, startTransition]
+    [focusedItemId, filteredItems, navigateDown, navigateUp, togglePalette, isSearchOpen, editingItemId]
   );
 
   useKeyboardShortcuts(handlers);
@@ -133,43 +124,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
         </span>
       </div>
 
-      {/* Add mode toggle */}
-      <div
-        className="flex border-b flex-shrink-0"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
-      >
-        <button
-          onClick={() => setAddMode("ai")}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium focus:outline-none"
-          style={{
-            color: addMode === "ai" ? "var(--accent-blue)" : "var(--text-muted)",
-            borderBottom: addMode === "ai" ? "2px solid var(--accent-blue)" : "2px solid transparent",
-            marginBottom: -1,
-          }}
-        >
-          <Sparkles size={11} />
-          AI
-        </button>
-        <button
-          onClick={() => setAddMode("manual")}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium focus:outline-none"
-          style={{
-            color: addMode === "manual" ? "var(--accent-green)" : "var(--text-muted)",
-            borderBottom: addMode === "manual" ? "2px solid var(--accent-green)" : "2px solid transparent",
-            marginBottom: -1,
-          }}
-        >
-          <PenLine size={11} />
-          Ręcznie
-        </button>
-      </div>
-
-      {/* Active add section */}
-      {addMode === "ai" ? (
-        <LLMInputSection listId={list.id} categoryNames={categoryNames ?? []} />
-      ) : (
-        <QuickAddBar ref={quickAddRef} listId={list.id} categoryNames={categoryNames ?? []} />
-      )}
+      <LLMInputSection listId={list.id} categoryNames={categoryNames ?? []} />
 
       {isSearchOpen && (
         <SearchBar
@@ -199,10 +154,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
       <CommandPalette
         listId={list.id}
         allLists={allLists}
-        onFocusQuickAdd={() => {
-          setAddMode("manual");
-          setTimeout(() => quickAddRef.current?.focus(), 10);
-        }}
+        onFocusQuickAdd={() => {}}
       />
     </div>
   );
