@@ -66,7 +66,10 @@ export function computeOptimalCategoryOrder(
   const full = (1 << k) - 1;
   let bestCost = INF, bestLast = -1;
   for (let i = 0; i < k; i++) {
-    const c = dp[full][i] + dist[reqIdxs[i]][ti];
+    if (!isFinite(dp[full][i])) continue;
+    // Include distance to STOP if reachable, otherwise just optimize path from START
+    const toStop = isFinite(dist[reqIdxs[i]][ti]) ? dist[reqIdxs[i]][ti] : 0;
+    const c = dp[full][i] + toStop;
     if (c < bestCost) { bestCost = c; bestLast = i; }
   }
 

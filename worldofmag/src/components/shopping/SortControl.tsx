@@ -71,7 +71,7 @@ export function SortControl({ sortMode, stores, onChange }: SortControlProps) {
           />
           <div className="mx-2 my-1" style={{ borderTop: "1px solid var(--border)" }} />
           {stores.length > 0 ? (
-            stores.map(s => (
+            stores.filter(s => s.nodes.length > 0).map(s => (
               <DropItem
                 key={s.id}
                 label={`🏪 ${s.name}`}
