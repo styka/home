@@ -18,6 +18,7 @@ function NavItem({
   pathname,
   exact = false,
   accentColor,
+  iconColor,
   children,
 }: {
   href: string;
@@ -26,6 +27,7 @@ function NavItem({
   pathname: string;
   exact?: boolean;
   accentColor?: string;
+  iconColor?: string;
   children?: React.ReactNode;
 }) {
   const isActive = exact ? pathname === href : pathname.startsWith(href);
@@ -51,7 +53,7 @@ function NavItem({
         }
       }}
     >
-      {icon}
+      {iconColor ? <span style={{ color: iconColor, flexShrink: 0, display: "flex" }}>{icon}</span> : icon}
       <span>{label}</span>
       {children}
     </Link>
@@ -118,8 +120,8 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
         className="flex items-center gap-2 px-4 h-12 border-b"
         style={{ borderColor: "var(--border)" }}
       >
-        <Sparkles size={16} style={{ color: "var(--accent-purple)" }} />
-        <span className="font-semibold text-sm tracking-wide" style={{ color: "var(--text-primary)" }}>
+        <Sparkles size={18} style={{ color: "var(--accent-purple)" }} />
+        <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
           WorldOfMag
         </span>
       </div>
@@ -130,10 +132,10 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
         <NavItem href="/" label="Strona główna" icon={<Home size={18} />} pathname={pathname} exact />
 
         {/* Shopping */}
-        <NavItem href="/shopping" label="Zakupy" icon={<ShoppingCart size={18} />} pathname={pathname} />
+        <NavItem href="/shopping" label="Zakupy" icon={<ShoppingCart size={18} />} pathname={pathname} iconColor="var(--accent-blue)" />
 
         {/* Notes with sub-items */}
-        <NavItem href="/notes" label="Notatki" icon={<FileText size={18} />} pathname={pathname} exact />
+        <NavItem href="/notes" label="Notatki" icon={<FileText size={18} />} pathname={pathname} iconColor="var(--accent-amber)" exact />
         {isNotesActive && (
           <div className="mb-1">
             <NavSubItem href="/notes/all" label="Wszystkie" pathname={pathname} />
@@ -143,7 +145,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
         )}
 
         {/* Tasks with sub-items */}
-        <NavItem href="/tasks" label="Zadania" icon={<CheckSquare size={18} />} pathname={pathname} />
+        <NavItem href="/tasks" label="Zadania" icon={<CheckSquare size={18} />} pathname={pathname} iconColor="var(--accent-green)" />
         {isTasksActive && (
           <div className="mb-1">
             <TasksSideNav />

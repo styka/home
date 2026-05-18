@@ -14,12 +14,12 @@ interface AppShellProps {
 }
 
 const MODULES = [
-  { id: "home", label: "Strona główna", icon: <Home size={20} />, topBarIcon: <Home size={16} />, href: "/", active: true, exact: true },
-  { id: "shopping", label: "Zakupy", icon: <ShoppingCart size={20} />, topBarIcon: <ShoppingCart size={16} />, href: "/shopping", active: true, exact: false },
-  { id: "tasks", label: "Zadania", icon: <CheckSquare size={20} />, topBarIcon: <CheckSquare size={16} />, href: "/tasks", active: true, exact: false },
-  { id: "notes", label: "Notes", icon: <FileText size={20} />, topBarIcon: <FileText size={16} />, href: "/notes", active: true, exact: false },
-  { id: "calendar", label: "Calendar", icon: <Calendar size={20} />, topBarIcon: <Calendar size={16} />, href: "/calendar", active: false, exact: false },
-  { id: "work", label: "Work", icon: <Briefcase size={20} />, topBarIcon: <Briefcase size={16} />, href: "/work", active: false, exact: false },
+  { id: "home",     label: "Strona główna", icon: <Home size={20} />,        topBarIcon: <Home size={16} />,        color: "var(--text-secondary)",  href: "/",         active: true,  exact: true  },
+  { id: "shopping", label: "Zakupy",        icon: <ShoppingCart size={20} />, topBarIcon: <ShoppingCart size={16} />, color: "var(--accent-blue)",     href: "/shopping", active: true,  exact: false },
+  { id: "tasks",    label: "Zadania",       icon: <CheckSquare size={20} />,  topBarIcon: <CheckSquare size={16} />,  color: "var(--accent-green)",    href: "/tasks",    active: true,  exact: false },
+  { id: "notes",    label: "Notatki",       icon: <FileText size={20} />,     topBarIcon: <FileText size={16} />,     color: "var(--accent-amber)",    href: "/notes",    active: true,  exact: false },
+  { id: "calendar", label: "Calendar",      icon: <Calendar size={20} />,     topBarIcon: <Calendar size={16} />,     color: "var(--text-muted)",      href: "/calendar", active: false, exact: false },
+  { id: "work",     label: "Work",          icon: <Briefcase size={20} />,    topBarIcon: <Briefcase size={16} />,    color: "var(--text-muted)",      href: "/work",     active: false, exact: false },
 ];
 
 
@@ -86,7 +86,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
         </button>
 
         <div className="flex items-center gap-1.5">
-          <span style={{ color: "var(--accent-purple)" }}>
+          <span style={{ color: activeModule?.color ?? "var(--accent-purple)" }}>
             {activeModule?.topBarIcon ?? <Sparkles size={16} />}
           </span>
           <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -115,8 +115,8 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
             >
               <div className="flex items-center justify-between px-4" style={{ height: 44 }}>
                 <div className="flex items-center gap-2">
-                  <Sparkles size={14} style={{ color: "var(--accent-purple)" }} />
-                  <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                  <Sparkles size={18} style={{ color: "var(--accent-purple)" }} />
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
                     WorldOfMag
                   </span>
                 </div>
@@ -142,7 +142,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                   color: pathname === "/" ? "var(--text-primary)" : "var(--text-secondary)",
                 }}
               >
-                <Home size={20} />
+                <Home size={20} style={{ color: "var(--text-secondary)", flexShrink: 0 }} />
                 <span>Strona główna</span>
               </Link>
 
@@ -155,7 +155,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                   color: isShoppingActive ? "var(--text-primary)" : "var(--text-secondary)",
                 }}
               >
-                <ShoppingCart size={20} />
+                <ShoppingCart size={20} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
                 <span>Zakupy</span>
               </Link>
 
@@ -168,7 +168,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                   color: pathname.startsWith("/tasks") ? "var(--text-primary)" : "var(--text-secondary)",
                 }}
               >
-                <CheckSquare size={20} />
+                <CheckSquare size={20} style={{ color: "var(--accent-green)", flexShrink: 0 }} />
                 <span>Zadania</span>
               </Link>
 
@@ -177,11 +177,11 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                 href="/notes"
                 className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm"
                 style={{
-                  backgroundColor: pathname === "/notes" ? "var(--bg-elevated)" : undefined,
-                  color: pathname === "/notes" ? "var(--text-primary)" : "var(--text-secondary)",
+                  backgroundColor: pathname.startsWith("/notes") ? "var(--bg-elevated)" : undefined,
+                  color: pathname.startsWith("/notes") ? "var(--text-primary)" : "var(--text-secondary)",
                 }}
               >
-                <FileText size={20} />
+                <FileText size={20} style={{ color: "var(--accent-amber)", flexShrink: 0 }} />
                 <span>Notatki</span>
               </Link>
 
