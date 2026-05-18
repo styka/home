@@ -48,6 +48,16 @@ export const llm = {
       ),
   },
 
+  stores: {
+    generate: (storeName: string) =>
+      post<{
+        nodes: Array<{ id: string; type: string; category: string | null; label: string }>;
+        edges: Array<{ fromId: string; toId: string; weight: number }>;
+        confidence: "high" | "medium" | "low";
+        note: string;
+      }>("/api/llm/stores/generate", { storeName }),
+  },
+
   home: {
     interpret: (command: string, context: unknown) =>
       post<{ intent?: string; params?: unknown }>("/api/llm/home/interpret", { command, context }),

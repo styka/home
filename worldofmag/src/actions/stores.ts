@@ -112,6 +112,37 @@ export async function deleteStoreEdge(edgeId: string): Promise<void> {
   revalidatePath(`/shopping/stores/${edge.storeId}`);
 }
 
+export async function saveStoreGraph(
+  storeId: string,
+  nodes: Array<{ tempId: string; label: string; type: string; category: string | null; x: number; y: number }>,
+  edges: Array<{ fromTempId: string; toTempId: string; weight: number }>
+): Promise<void> {
+  const user = await requireAuth();
+  await assertStoreAccess(storeId, user.id);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.storeNode.deleteMany({ where: { storeId } });
+
+    const idMap = new Map<string, string>();
+    for (const node of nodes) {
+      const created = await tx.storeNode.create({
+        data: { storeId, label: node.label, type: node.type, category: node.category, x: node.x, y: node.y },
+      });
+      idMap.set(node.tempId, created.id);
+    }
+
+    for (const edge of edges) {
+      const fromId = idMap.get(edge.fromTempId);
+      const toId = idMap.get(edge.toTempId);
+      if (!fromId || !toId) continue;
+      await tx.storeEdge.create({ data: { storeId, fromId, toId, weight: edge.weight } });
+    }
+  });
+
+  revalidatePath(`/shopping/stores/${storeId}`);
+  revalidatePath("/shopping");
+}
+
 async function assertStoreAccess(storeId: string, userId: string): Promise<void> {
   const store = await prisma.store.findUnique({ where: { id: storeId }, select: { ownerId: true } });
   if (!store || store.ownerId !== userId) throw new Error("Access denied");

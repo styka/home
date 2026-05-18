@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ShoppingCart, Plus, ChevronRight, Loader2, Package, Ruler, Tag } from "lucide-react";
+import { ShoppingCart, Plus, ChevronRight, Loader2, Package, Ruler, Tag, Map } from "lucide-react";
 import { createList } from "@/actions/lists";
 
 interface ListSummary {
@@ -228,11 +228,12 @@ export function ShoppingHomePage({ lists }: ShoppingHomePageProps) {
           >
             Zarządzanie
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {[
               { href: "/shopping/products", icon: <Package size={15} />, label: "Produkty" },
               { href: "/shopping/units", icon: <Ruler size={15} />, label: "Jednostki" },
               { href: "/shopping/categories", icon: <Tag size={15} />, label: "Kategorie" },
+              { href: "/shopping/stores", icon: <Map size={15} />, label: "Mapy sklepów" },
             ].map(({ href, icon, label }) => (
               <Link
                 key={href}
