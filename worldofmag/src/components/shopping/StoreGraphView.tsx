@@ -4,19 +4,19 @@ import { useState } from "react";
 import type { StoreWithGraph, StoreNodeData, StoreEdgeData } from "@/types";
 
 const CATEGORY_META: Record<string, { emoji: string }> = {
-  "Produce":             { emoji: "🥕" },
-  "Dairy & Eggs":        { emoji: "🧀" },
-  "Meat & Fish":         { emoji: "🥩" },
-  "Bakery":              { emoji: "🍞" },
-  "Dry Goods & Pasta":   { emoji: "🌾" },
-  "Drinks":              { emoji: "🍺" },
-  "Frozen":              { emoji: "🧊" },
-  "Snacks & Sweets":     { emoji: "🍫" },
-  "Condiments & Oils":   { emoji: "🫙" },
-  "Spices & Herbs":      { emoji: "🌿" },
-  "Cleaning & Hygiene":  { emoji: "🧴" },
-  "Canned & Preserved":  { emoji: "🥫" },
-  "Other":               { emoji: "📦" },
+  "Warzywa i owoce":     { emoji: "🥕" },
+  "Nabiał i jaja":       { emoji: "🧀" },
+  "Mięso i ryby":        { emoji: "🥩" },
+  "Piekarnia":           { emoji: "🍞" },
+  "Suche produkty":      { emoji: "🌾" },
+  "Napoje":              { emoji: "🍺" },
+  "Mrożone":             { emoji: "🧊" },
+  "Przekąski i słodycze": { emoji: "🍫" },
+  "Przyprawy i oleje":   { emoji: "🫙" },
+  "Zioła i przyprawy":   { emoji: "🌿" },
+  "Chemia i higiena":    { emoji: "🧴" },
+  "Konserwy i przetwory": { emoji: "🥫" },
+  "Inne":                { emoji: "📦" },
 };
 
 function nodeEmoji(node: StoreNodeData): string {

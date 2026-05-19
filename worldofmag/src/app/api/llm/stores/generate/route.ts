@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 const CATEGORIES = [
-  "Produce", "Dairy & Eggs", "Meat & Fish", "Bakery",
-  "Dry Goods & Pasta", "Drinks", "Frozen", "Snacks & Sweets",
-  "Condiments & Oils", "Spices & Herbs", "Cleaning & Hygiene",
-  "Canned & Preserved", "Other",
+  "Warzywa i owoce", "Nabiał i jaja", "Mięso i ryby", "Piekarnia",
+  "Suche produkty", "Napoje", "Mrożone", "Przekąski i słodycze",
+  "Przyprawy i oleje", "Zioła i przyprawy", "Chemia i higiena",
+  "Konserwy i przetwory", "Inne",
 ];
 
 const SYSTEM_PROMPT = `Jesteś ekspertem od layoutów polskich supermarketów.
@@ -60,7 +60,7 @@ Zwróć JSON w dokładnie tym formacie:
 {
   "nodes": [
     { "id": "start", "type": "START", "category": null, "label": "Wejście" },
-    { "id": "cat_produce", "type": "CATEGORY", "category": "Produce", "label": "Warzywa i owoce" },
+    { "id": "cat_produce", "type": "CATEGORY", "category": "Warzywa i owoce", "label": "Warzywa i owoce" },
     ...
     { "id": "stop", "type": "STOP", "category": null, "label": "Kasy" }
   ],

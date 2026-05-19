@@ -5,7 +5,7 @@ interface CategoryRule {
 
 const CATEGORY_RULES: CategoryRule[] = [
   {
-    category: "Produce",
+    category: "Warzywa i owoce",
     keywords: [
       "jabłko", "jabłka", "banan", "banany", "pomidor", "pomidory", "ogórek", "ogórki",
       "marchew", "marchewka", "ziemniak", "ziemniaki", "cebula", "czosnek", "sałata",
@@ -22,17 +22,17 @@ const CATEGORY_RULES: CategoryRule[] = [
     ],
   },
   {
-    category: "Dairy & Eggs",
+    category: "Nabiał i jaja",
     keywords: [
       "mleko", "śmietana", "śmietanka", "jogurt", "kefir", "maślanka", "twaróg",
       "serek", "masło", "ser", "żółty", "biały", "ricotta", "mozzarella", "parmezan",
       "feta", "brie", "camembert", "jajko", "jajka", "jaj",
       "milk", "butter", "cheese", "yogurt", "cream", "egg", "eggs", "sour cream",
-      "kefir", "whey", "quark",
+      "whey", "quark",
     ],
   },
   {
-    category: "Meat & Fish",
+    category: "Mięso i ryby",
     keywords: [
       "kurczak", "indyk", "wieprzowina", "wołowina", "łosoś", "tuńczyk",
       "dorsz", "krewetki", "kiełbasa", "parówki", "szynka", "boczek", "mięso",
@@ -40,20 +40,20 @@ const CATEGORY_RULES: CategoryRule[] = [
       "pstrąg", "makrela", "sardynka", "halibut", "mintaj", "krab", "małże",
       "chicken", "turkey", "pork", "beef", "salmon", "tuna", "cod", "shrimp",
       "sausage", "ham", "bacon", "meat", "mince", "steak", "ribs", "liver",
-      "trout", "mackerel", "sardine", "halibut", "crab", "mussels", "fish",
+      "trout", "mackerel", "sardine", "crab", "mussels", "fish",
     ],
   },
   {
-    category: "Bakery",
+    category: "Piekarnia",
     keywords: [
       "chleb", "bułka", "bułki", "bagietka", "croissant", "rogalik", "toast",
       "tortilla", "pita", "ciabatta", "żytni", "pszenny", "razowy", "tostowy",
-      "bread", "roll", "baguette", "bun", "bagel", "muffin", "croissant",
+      "bread", "roll", "baguette", "bun", "bagel", "muffin",
       "sourdough", "rye", "whole grain", "flatbread",
     ],
   },
   {
-    category: "Dry Goods & Pasta",
+    category: "Suche produkty",
     keywords: [
       "makaron", "ryż", "kasza", "płatki", "mąka", "cukier", "sól", "pieprz",
       "gryczana", "jaglana", "owsianka", "musli", "granola", "soczewica", "fasola",
@@ -63,7 +63,7 @@ const CATEGORY_RULES: CategoryRule[] = [
     ],
   },
   {
-    category: "Drinks",
+    category: "Napoje",
     keywords: [
       "woda", "sok", "napój", "cola", "pepsi", "sprite", "piwo", "wino",
       "herbata", "kawa", "kakao", "kombucha", "energia", "energetyk", "lemoniada",
@@ -72,60 +72,60 @@ const CATEGORY_RULES: CategoryRule[] = [
     ],
   },
   {
-    category: "Frozen",
+    category: "Mrożone",
     keywords: [
       "mrożon", "lody", "zamrożon",
       "frozen", "ice cream", "gelato",
     ],
   },
   {
-    category: "Snacks & Sweets",
+    category: "Przekąski i słodycze",
     keywords: [
       "chipsy", "paluszki", "orzeszki", "orzech", "migdał", "nerkowiec",
       "czekolada", "cukierek", "ciastko", "wafel", "batonik", "dżem", "miód",
       "nutella", "popcorn", "precle", "krakersy",
       "chips", "nut", "almond", "cashew", "chocolate", "candy", "cookie",
-      "wafer", "bar", "jam", "honey", "popcorn", "pretzel", "cracker",
+      "wafer", "bar", "jam", "honey", "pretzel", "cracker",
     ],
   },
   {
-    category: "Condiments & Oils",
+    category: "Przyprawy i oleje",
     keywords: [
       "ketchup", "musztarda", "majonez", "sos", "ocet", "oliwa", "olej",
       "sojowy", "tabasco", "sriracha", "hummus", "pesto", "sos rybny",
-      "ketchup", "mustard", "mayonnaise", "sauce", "vinegar", "oil", "olive oil",
-      "soy sauce", "hot sauce", "pesto", "hummus", "dressing",
+      "mustard", "mayonnaise", "sauce", "vinegar", "oil", "olive oil",
+      "soy sauce", "hot sauce", "dressing",
     ],
   },
   {
-    category: "Spices & Herbs",
+    category: "Zioła i przyprawy",
     keywords: [
-      "przyprawa", "ziele", "liść", "oregano", "bazylia", "tymianek", "rozmaryn",
+      "przyprawa", "ziele", "liść", "oregano", "tymianek", "rozmaryn",
       "kurkuma", "cynamon", "imbir", "papryka słodka", "ostra", "curry", "kminek",
-      "spice", "herb", "oregano", "basil", "thyme", "rosemary", "turmeric",
-      "cinnamon", "ginger", "paprika", "cumin", "coriander", "pepper",
+      "spice", "herb", "thyme", "rosemary", "turmeric",
+      "cinnamon", "ginger", "paprika", "cumin", "coriander",
     ],
   },
   {
-    category: "Cleaning & Hygiene",
+    category: "Chemia i higiena",
     keywords: [
       "proszek", "płyn", "tabletki", "zmywarka", "pralka", "detergent",
       "szampon", "żel", "mydło", "pasta do zębów", "dezodorant", "papier toaletowy",
       "ręcznik papierowy", "worki", "folia", "gąbka", "ścierka", "wybielacz",
-      "soap", "shampoo", "toothpaste", "deodorant", "toilet paper", "detergent",
+      "soap", "shampoo", "toothpaste", "deodorant", "toilet paper",
       "cleaner", "bleach", "sponge", "cloth", "bag", "foil", "laundry",
     ],
   },
   {
-    category: "Canned & Preserved",
+    category: "Konserwy i przetwory",
     keywords: [
       "konserwa", "puszka", "słoik", "marynata", "ogórki kiszone", "kapusta kiszona",
-      "pasta pomidorowa", "przecier", "kompot", "dżem",
+      "pasta pomidorowa", "przecier", "kompot",
       "canned", "tin", "jar", "preserve", "pickle", "tomato paste", "compote",
     ],
   },
   {
-    category: "Other",
+    category: "Inne",
     keywords: [],
   },
 ];
@@ -137,5 +137,5 @@ export function categorize(itemName: string): string {
       return rule.category;
     }
   }
-  return "Other";
+  return "Inne";
 }

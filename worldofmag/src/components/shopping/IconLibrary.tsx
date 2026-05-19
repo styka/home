@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Trash2, Plus, RefreshCw, X, FolderOpen, FolderSymlink } from "lucide-react";
+import { Trash2, Plus, RefreshCw, X, FolderOpen, FolderSymlink, Sparkles } from "lucide-react";
 import Link from "next/link";
 import type { CategoryIconVariantData } from "@/actions/categoryIcons";
 import { deleteCategoryIconVariant, saveToLibrary, assignIconToCategory } from "@/actions/categoryIcons";
-import { getCategoryHints } from "@/lib/categoryIconHints";
 
 interface IconLibraryProps {
   initialIcons: CategoryIconVariantData[];
@@ -26,6 +25,9 @@ function SvgTile({
   const [hovered, setHovered] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [assigning, setAssigning] = useState(false);
+
+  // Buttons visible on hover (desktop) OR always (touch/mobile)
+  const showActions = hovered || assignOpen;
 
   async function handleAssign(cat: string) {
     setAssigning(true);
@@ -73,13 +75,21 @@ function SvgTile({
         {variant.categoryName === "__library__" ? "—" : variant.categoryName}
       </span>
 
-      {/* Hover actions */}
-      {hovered && !assigning && (
+      {/* Action buttons: visible on hover (desktop) or always on touch */}
+      {!assigning && (
         <>
           <button
             onClick={onDelete}
-            className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center z-10"
-            style={{ width: 18, height: 18, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+            className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center z-10 transition-opacity"
+            style={{
+              width: 20,
+              height: 20,
+              backgroundColor: "var(--bg-elevated)",
+              border: "1px solid var(--border)",
+              color: "var(--text-muted)",
+              opacity: showActions ? 1 : 0,
+              pointerEvents: showActions ? "auto" : "none",
+            }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
             aria-label="Usuń"
@@ -88,8 +98,16 @@ function SvgTile({
           </button>
           <button
             onClick={() => setAssignOpen((v) => !v)}
-            className="absolute -top-1.5 -left-1.5 rounded-full flex items-center justify-center z-10"
-            style={{ width: 18, height: 18, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+            className="absolute -top-1.5 -left-1.5 rounded-full flex items-center justify-center z-10 transition-opacity"
+            style={{
+              width: 20,
+              height: 20,
+              backgroundColor: "var(--bg-elevated)",
+              border: "1px solid var(--border)",
+              color: "var(--text-muted)",
+              opacity: showActions ? 1 : 0,
+              pointerEvents: showActions ? "auto" : "none",
+            }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-blue)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
             aria-label="Przypisz do kategorii"
@@ -105,12 +123,11 @@ function SvgTile({
         <div
           className="absolute z-20 rounded-lg shadow-xl"
           style={{
-            top: "100%",
+            top: "calc(100% + 4px)",
             left: 0,
-            marginTop: 4,
             minWidth: 160,
-            maxWidth: 200,
-            maxHeight: 200,
+            maxWidth: 220,
+            maxHeight: 240,
             overflowY: "auto",
             backgroundColor: "var(--bg-elevated)",
             border: "1px solid var(--border)",
@@ -125,7 +142,7 @@ function SvgTile({
             <button
               key={cat}
               onClick={() => handleAssign(cat)}
-              className="w-full text-left px-2 py-1.5 text-xs"
+              className="w-full text-left px-3 py-2 text-xs"
               style={{ color: "var(--text-secondary)" }}
               onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ""; }}
@@ -155,14 +172,25 @@ function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData)
   const [detail, setDetail] = useState(50);
   const [generated, setGenerated] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingHints, setLoadingHints] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const newRef = useRef<HTMLDivElement>(null);
 
-  function handleThemeChange(val: string) {
-    setTheme(val);
-    const hints = getCategoryHints(val.trim());
-    if (hints) setAdditionalText(hints);
+  async function fetchHints() {
+    const cat = theme.trim();
+    if (!cat) return;
+    setLoadingHints(true);
+    try {
+      const res = await fetch("/api/llm/category-hints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: cat }),
+      });
+      const data = await res.json();
+      if (res.ok && data.hints) setAdditionalText(data.hints);
+    } catch { /* silent */ }
+    finally { setLoadingHints(false); }
   }
 
   async function generate() {
@@ -240,7 +268,7 @@ function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData)
               <div className="flex gap-2">
                 <input
                   value={theme}
-                  onChange={(e) => handleThemeChange(e.target.value)}
+                  onChange={(e) => setTheme(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && generate()}
                   placeholder="Temat / kategoria (opcjonalnie)"
                   className="flex-1 text-sm focus:outline-none rounded-xl px-3 py-2"
@@ -258,13 +286,27 @@ function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData)
                   Generuj
                 </button>
               </div>
-              <input
-                value={additionalText}
-                onChange={(e) => setAdditionalText(e.target.value)}
-                placeholder="Dodatkowe wskazówki (opcjonalnie)…"
-                className="w-full text-xs focus:outline-none rounded-lg px-2.5 py-1.5"
-                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
-              />
+              <div className="flex gap-1.5">
+                <input
+                  value={additionalText}
+                  onChange={(e) => setAdditionalText(e.target.value)}
+                  placeholder="Dodatkowe wskazówki (opcjonalnie)…"
+                  className="flex-1 text-xs focus:outline-none rounded-lg px-2.5 py-1.5"
+                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
+                />
+                <button
+                  onClick={fetchHints}
+                  disabled={loadingHints || !theme.trim()}
+                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs disabled:opacity-40 shrink-0"
+                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
+                  onMouseEnter={(e) => { if (!loadingHints) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
+                  title="Wygeneruj podpowiedzi na podstawie tematu"
+                >
+                  <Sparkles size={11} className={loadingHints ? "animate-pulse" : ""} />
+                  Sugeruj
+                </button>
+              </div>
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs" style={{ color: "var(--text-muted)" }}>Szczegółowość</span>
@@ -341,7 +383,7 @@ export function IconLibrary({ initialIcons, allCategories }: IconLibraryProps) {
             Biblioteka ikon
           </h1>
           <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-            {icons.length} {icons.length === 1 ? "ikona" : icons.length < 5 ? "ikony" : "ikon"} — hover by zarządzać
+            {icons.length} {icons.length === 1 ? "ikona" : icons.length < 5 ? "ikony" : "ikon"}
           </p>
         </div>
         <div className="flex items-center gap-2">

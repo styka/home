@@ -66,7 +66,7 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
             name: p.name,
             quantity: p.quantity,
             unit: p.unit ?? "",
-            category: suggestedCategory === "Other" ? "" : suggestedCategory,
+            category: suggestedCategory === "Inne" ? "" : suggestedCategory,
             selected: true,
             addToCatalog: isNew,
             isNew,

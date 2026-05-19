@@ -16,19 +16,33 @@ export type CategoryWithUsage = {
   usageCount: number;
 };
 
+async function getSystemCategories() {
+  try {
+    return await prisma.category.findMany({
+      where: { userId: null, teamId: null },
+      orderBy: { name: "asc" },
+    });
+  } catch {
+    return BASE_CATEGORIES.map((c) => ({ id: null, name: c.name, emoji: c.emoji, userId: null, teamId: null, createdAt: new Date() }));
+  }
+}
+
 export async function getCategories(): Promise<CategoryWithUsage[]> {
   const user = await requireAuth();
   const teamIds = await getUserTeamIds(user.id);
 
-  const custom = await prisma.category.findMany({
-    where: {
-      OR: [
-        { userId: user.id },
-        teamIds.length > 0 ? { teamId: { in: teamIds } } : {},
-      ],
-    },
-    orderBy: { name: "asc" },
-  });
+  const [systemCats, custom] = await Promise.all([
+    getSystemCategories(),
+    prisma.category.findMany({
+      where: {
+        OR: [
+          { userId: user.id },
+          teamIds.length > 0 ? { teamId: { in: teamIds } } : {},
+        ],
+      },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   const products = await prisma.product.findMany({
     where: {
@@ -46,12 +60,12 @@ export async function getCategories(): Promise<CategoryWithUsage[]> {
     usageMap.set(p.category, (usageMap.get(p.category) ?? 0) + 1);
   }
 
-  const baseNames = new Set(BASE_CATEGORIES.map((c) => c.name));
+  const systemNames = new Set(systemCats.map((c) => c.name));
   const customNames = new Set(custom.map((c) => c.name));
 
   return [
-    ...BASE_CATEGORIES.map((c) => ({
-      id: null,
+    ...systemCats.map((c) => ({
+      id: c.id ?? null,
       name: c.name,
       emoji: c.emoji,
       isBase: true,
@@ -59,7 +73,7 @@ export async function getCategories(): Promise<CategoryWithUsage[]> {
       usageCount: usageMap.get(c.name) ?? 0,
     })),
     ...custom
-      .filter((c) => !baseNames.has(c.name))
+      .filter((c) => !systemNames.has(c.name))
       .map((c) => ({
         id: c.id,
         name: c.name,
@@ -70,7 +84,7 @@ export async function getCategories(): Promise<CategoryWithUsage[]> {
       })),
     // Categories used in products but not defined anywhere
     ...Array.from(usageMap.entries())
-      .filter(([name]) => !baseNames.has(name) && !customNames.has(name))
+      .filter(([name]) => !systemNames.has(name) && !customNames.has(name))
       .map(([name, count]) => ({
         id: null,
         name,
@@ -82,11 +96,13 @@ export async function getCategories(): Promise<CategoryWithUsage[]> {
   ];
 }
 
-/** Returns a merged emoji map: base + user custom (for CategoryGroup). */
+/** Returns a merged emoji map: system + user custom (for CategoryGroup). */
 export async function getCategoryEmojiMap(): Promise<Record<string, string>> {
   const session = await auth();
   const map: Record<string, string> = {};
-  for (const c of BASE_CATEGORIES) map[c.name] = c.emoji;
+
+  const systemCats = await getSystemCategories();
+  for (const c of systemCats) map[c.name] = c.emoji;
 
   if (!session?.user?.id) return map;
   const teamIds = await getUserTeamIds(session.user.id);
@@ -110,11 +126,13 @@ export async function getCategoryEmojiMap(): Promise<Record<string, string>> {
   return map;
 }
 
-/** All category names visible to the user (base + custom). */
+/** All category names visible to the user (system + custom). */
 export async function getCategoryNames(): Promise<string[]> {
   const session = await auth();
-  const baseNames = BASE_CATEGORIES.map((c) => c.name);
-  if (!session?.user?.id) return baseNames;
+  const systemCats = await getSystemCategories();
+  const systemNames = systemCats.map((c) => c.name);
+
+  if (!session?.user?.id) return systemNames;
 
   const teamIds = await getUserTeamIds(session.user.id);
   const custom = await prisma.category.findMany({
@@ -128,8 +146,8 @@ export async function getCategoryNames(): Promise<string[]> {
     orderBy: { name: "asc" },
   });
 
-  const customNames = custom.map((c) => c.name).filter((n) => !baseNames.includes(n));
-  return [...baseNames, ...customNames];
+  const customNames = custom.map((c) => c.name).filter((n) => !systemNames.includes(n));
+  return [...systemNames, ...customNames];
 }
 
 export async function createCategory(name: string, emoji: string): Promise<void> {
@@ -162,7 +180,6 @@ export async function updateCategory(id: string, name: string, emoji: string): P
 
   await prisma.$transaction([
     prisma.category.update({ where: { id }, data: { name: trimmed, emoji: emoji || "📦" } }),
-    // Rename in products catalog (not in list items — too invasive for shared lists)
     prisma.product.updateMany({
       where: { category: oldName, userId: user.id },
       data: { category: trimmed },
@@ -178,7 +195,6 @@ export async function deleteCategory(id: string): Promise<void> {
   const cat = await prisma.category.findUnique({ where: { id } });
   if (!cat || cat.userId !== user.id) throw new Error("Forbidden");
 
-  // Move associated icon variants to __library__ before deleting the category
   await orphanCategoryIcons(cat.name, user.id);
 
   await prisma.category.delete({ where: { id } });

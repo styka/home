@@ -63,7 +63,7 @@ export function ItemList({
 
   const groups = new Map<string, Item[]>();
   for (const item of items) {
-    const cat = item.category ?? "Other";
+    const cat = item.category ?? "Inne";
     if (!groups.has(cat)) groups.set(cat, []);
     groups.get(cat)!.push(item);
   }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { RefreshCw, X, RotateCcw, Trash2, ChevronDown } from "lucide-react";
+import { RefreshCw, X, RotateCcw, Trash2, ChevronDown, Sparkles } from "lucide-react";
 import type { CategoryIconVariantData } from "@/actions/categoryIcons";
 import {
   getAllUserIconVariantsFlat,
@@ -13,7 +13,6 @@ import {
   upsertCategoryEmojiOverride,
 } from "@/actions/categoryIcons";
 import { EMOJI_DATA, getCategoryEmojis } from "@/lib/emojiData";
-import { getCategoryHints } from "@/lib/categoryIconHints";
 
 interface CategoryIconPickerProps {
   category: string;
@@ -168,6 +167,7 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState(50);
   const [additionalText, setAdditionalText] = useState("");
+  const [loadingHints, setLoadingHints] = useState(false);
   const didInit = useRef(false);
   const newIconsRef = useRef<HTMLDivElement>(null);
 
@@ -204,10 +204,24 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
     }
   }
 
+  async function fetchHints() {
+    if (!category) return;
+    setLoadingHints(true);
+    try {
+      const res = await fetch("/api/llm/category-hints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category }),
+      });
+      const data = await res.json();
+      if (res.ok && data.hints) setAdditionalText(data.hints);
+    } catch { /* silent */ }
+    finally { setLoadingHints(false); }
+  }
+
   useEffect(() => {
     if (open && !didInit.current) {
       didInit.current = true;
-      setAdditionalText(getCategoryHints(category));
       loadSaved();
       generateNew();
     }
@@ -387,13 +401,29 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
               <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>
                 Dodatkowe wskazówki dla generatora (opcjonalnie)
               </label>
-              <input
-                value={additionalText}
-                onChange={(e) => setAdditionalText(e.target.value)}
-                placeholder="np. owoce tropikalne, intensywne kolory…"
-                className="w-full text-xs rounded-lg px-2.5 py-1.5 focus:outline-none"
-                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
-              />
+              <div className="flex gap-1.5">
+                <input
+                  value={additionalText}
+                  onChange={(e) => setAdditionalText(e.target.value)}
+                  placeholder="np. owoce tropikalne, intensywne kolory…"
+                  className="flex-1 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none"
+                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
+                />
+                {category && (
+                  <button
+                    onClick={fetchHints}
+                    disabled={loadingHints}
+                    className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs disabled:opacity-40 shrink-0"
+                    style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
+                    onMouseEnter={(e) => { if (!loadingHints) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
+                    title="Wygeneruj podpowiedzi"
+                  >
+                    <Sparkles size={11} className={loadingHints ? "animate-pulse" : ""} />
+                    Sugeruj
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Detail slider */}

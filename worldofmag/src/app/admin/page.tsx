@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
-import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map } from "lucide-react"
+import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag } from "lucide-react"
 import Link from "next/link"
 
 function fmtDate(iso: string | undefined) {
@@ -157,6 +157,11 @@ export default async function AdminPage() {
             <Link href="/admin/architecture" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Map size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Architektura aplikacji</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
+            <Link href="/admin/categories" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <Tag size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Kategorie systemowe</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/admin/reports" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none" }}>

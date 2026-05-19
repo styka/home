@@ -39,7 +39,7 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
       if (categoryUserSet) return;
       if (!name.trim()) { setCategory(""); return; }
       const suggested = categorize(name.trim());
-      setCategory(suggested === "Other" ? "" : suggested);
+      setCategory(suggested === "Inne" ? "" : suggested);
     }, [name, categoryUserSet]);
 
     useEffect(() => {

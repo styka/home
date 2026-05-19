@@ -6,21 +6,6 @@ import type { Item } from "@/types";
 import { ItemRow } from "./ItemRow";
 import { CategoryIconPicker } from "./CategoryIconPicker";
 
-const CATEGORY_ICONS: Record<string, string> = {
-  "Produce": "🥕",
-  "Dairy & Eggs": "🧀",
-  "Meat & Fish": "🥩",
-  "Bakery": "🍞",
-  "Dry Goods & Pasta": "🌾",
-  "Drinks": "🍺",
-  "Frozen": "🧊",
-  "Snacks & Sweets": "🍫",
-  "Condiments & Oils": "🫙",
-  "Spices & Herbs": "🌿",
-  "Cleaning & Hygiene": "🧴",
-  "Canned & Preserved": "🥫",
-  "Other": "📦",
-};
 
 interface CategoryGroupProps {
   category: string;
@@ -70,7 +55,7 @@ export function CategoryGroup({
   const [localIcon, setLocalIcon] = useState<string | null>(null);
 
   const serverIcon = emojiOverride ?? null;
-  const effectiveIcon = localIcon ?? serverIcon ?? CATEGORY_ICONS[category] ?? "📦";
+  const effectiveIcon = localIcon ?? serverIcon ?? "📦";
   const doneCount = items.filter((i) => i.status === "DONE").length;
 
   return (

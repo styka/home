@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { CATEGORY_ITEMS } from "@/lib/categoryIconHints";
 
 function detailToStyle(detail: number): string {
   if (detail <= 30) return "ultra-simplified, maximum 3-4 geometric primitives per icon, like a simple logo or monochrome pictogram";
@@ -41,16 +40,12 @@ export async function POST(req: NextRequest) {
   }
 
   const styleDesc = detailToStyle(detail);
-  const items = category ? (CATEGORY_ITEMS[category] ?? []) : [];
-  const itemsHint = items.length > 0
-    ? `Draw these specific items (one per icon): ${items.slice(0, 6).join(", ")}.`
-    : `Draw 6 different items relevant to the theme.`;
 
   const userMessage = [
-    category ? `Generate 6 colorful SVG icons for: "${category}".` : "Generate 6 colorful SVG icons.",
-    itemsHint,
+    category ? `Generate 6 colorful SVG icons for the grocery category: "${category}".` : "Generate 6 colorful SVG icons.",
+    `Draw 6 different specific items relevant to the theme, one per icon.`,
     `Style: ${styleDesc}.`,
-    additionalText ? `Additional context: ${additionalText}.` : "",
+    additionalText ? `Draw these specific items (one per icon): ${additionalText}.` : "",
     "Return only the JSON array.",
   ].filter(Boolean).join(" ");
 

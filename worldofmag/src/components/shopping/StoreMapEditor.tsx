@@ -13,19 +13,19 @@ import {
 type EditorMode = "select" | "addNode" | "addEdge" | "delete";
 
 const CATEGORY_META: Record<string, { emoji: string; color: string }> = {
-  "Produce":             { emoji: "🥕", color: "#16a34a" },
-  "Dairy & Eggs":        { emoji: "🧀", color: "#ca8a04" },
-  "Meat & Fish":         { emoji: "🥩", color: "#dc2626" },
-  "Bakery":              { emoji: "🍞", color: "#d97706" },
-  "Dry Goods & Pasta":   { emoji: "🌾", color: "#92400e" },
-  "Drinks":              { emoji: "🍺", color: "#2563eb" },
-  "Frozen":              { emoji: "🧊", color: "#0891b2" },
-  "Snacks & Sweets":     { emoji: "🍫", color: "#c026d3" },
-  "Condiments & Oils":   { emoji: "🫙", color: "#65a30d" },
-  "Spices & Herbs":      { emoji: "🌿", color: "#059669" },
-  "Cleaning & Hygiene":  { emoji: "🧴", color: "#7c3aed" },
-  "Canned & Preserved":  { emoji: "🥫", color: "#b45309" },
-  "Other":               { emoji: "📦", color: "#6b7280" },
+  "Warzywa i owoce":     { emoji: "🥕", color: "#16a34a" },
+  "Nabiał i jaja":       { emoji: "🧀", color: "#ca8a04" },
+  "Mięso i ryby":        { emoji: "🥩", color: "#dc2626" },
+  "Piekarnia":           { emoji: "🍞", color: "#d97706" },
+  "Suche produkty":      { emoji: "🌾", color: "#92400e" },
+  "Napoje":              { emoji: "🍺", color: "#2563eb" },
+  "Mrożone":             { emoji: "🧊", color: "#0891b2" },
+  "Przekąski i słodycze": { emoji: "🍫", color: "#c026d3" },
+  "Przyprawy i oleje":   { emoji: "🫙", color: "#65a30d" },
+  "Zioła i przyprawy":   { emoji: "🌿", color: "#059669" },
+  "Chemia i higiena":    { emoji: "🧴", color: "#7c3aed" },
+  "Konserwy i przetwory": { emoji: "🥫", color: "#b45309" },
+  "Inne":                { emoji: "📦", color: "#6b7280" },
 };
 
 const ALL_CATEGORIES = Object.keys(CATEGORY_META);

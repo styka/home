@@ -10,19 +10,19 @@ import { StoreGraphView } from "./StoreGraphView";
 import type { StoreWithGraph, StoreNodeData, StoreEdgeData } from "@/types";
 
 const ALL_CATEGORIES: Array<{ key: string; emoji: string; label: string }> = [
-  { key: "Produce",            emoji: "🥕", label: "Warzywa i owoce" },
-  { key: "Dairy & Eggs",       emoji: "🧀", label: "Nabiał i jaja" },
-  { key: "Meat & Fish",        emoji: "🥩", label: "Mięso i ryby" },
-  { key: "Bakery",             emoji: "🍞", label: "Piekarnia" },
-  { key: "Dry Goods & Pasta",  emoji: "🌾", label: "Suche i makarony" },
-  { key: "Drinks",             emoji: "🍺", label: "Napoje" },
-  { key: "Frozen",             emoji: "🧊", label: "Mrożonki" },
-  { key: "Snacks & Sweets",    emoji: "🍫", label: "Przekąski i słodycze" },
-  { key: "Condiments & Oils",  emoji: "🫙", label: "Sosy i oleje" },
-  { key: "Spices & Herbs",     emoji: "🌿", label: "Przyprawy i zioła" },
-  { key: "Cleaning & Hygiene", emoji: "🧴", label: "Chemia i higiena" },
-  { key: "Canned & Preserved", emoji: "🥫", label: "Przetwory" },
-  { key: "Other",              emoji: "📦", label: "Inne" },
+  { key: "Warzywa i owoce",     emoji: "🥕", label: "Warzywa i owoce" },
+  { key: "Nabiał i jaja",       emoji: "🧀", label: "Nabiał i jaja" },
+  { key: "Mięso i ryby",        emoji: "🥩", label: "Mięso i ryby" },
+  { key: "Piekarnia",           emoji: "🍞", label: "Piekarnia" },
+  { key: "Suche produkty",      emoji: "🌾", label: "Suche produkty" },
+  { key: "Napoje",              emoji: "🍺", label: "Napoje" },
+  { key: "Mrożone",             emoji: "🧊", label: "Mrożone" },
+  { key: "Przekąski i słodycze", emoji: "🍫", label: "Przekąski i słodycze" },
+  { key: "Przyprawy i oleje",   emoji: "🫙", label: "Przyprawy i oleje" },
+  { key: "Zioła i przyprawy",   emoji: "🌿", label: "Zioła i przyprawy" },
+  { key: "Chemia i higiena",    emoji: "🧴", label: "Chemia i higiena" },
+  { key: "Konserwy i przetwory", emoji: "🥫", label: "Konserwy i przetwory" },
+  { key: "Inne",                emoji: "📦", label: "Inne" },
 ];
 
 // ─── Wizard state ─────────────────────────────────────────────────────────────

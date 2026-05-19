@@ -26,7 +26,7 @@ export function ProductManager({ products, userId, categoryNames }: ProductManag
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUnit, setNewUnit] = useState("");
-  const [newCategory, setNewCategory] = useState("Other");
+  const [newCategory, setNewCategory] = useState("Inne");
   const [isPending, startTransition] = useTransition();
   const unitDatalistId = useId();
 
@@ -73,7 +73,7 @@ export function ProductManager({ products, userId, categoryNames }: ProductManag
     });
     setNewName("");
     setNewUnit("");
-    setNewCategory("Other");
+    setNewCategory("Inne");
     setAdding(false);
   }
 
