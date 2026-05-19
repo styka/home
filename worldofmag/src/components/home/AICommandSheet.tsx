@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Sparkles, Loader2, CheckCircle, XCircle, X } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
@@ -12,18 +12,22 @@ interface RouteContext {
   context: string[];
   placeholder: string;
   routeHint: string;
+  activeListId?: string;
 }
+
+const LIST_SUB_PAGES = ["products", "units", "categories", "icons", "stores"];
 
 function deriveContextFromPath(pathname: string): RouteContext {
   if (pathname.startsWith("/shopping/")) {
     const seg = pathname.split("/")[2] ?? "";
-    const isListView = seg && !["products", "units", "categories"].includes(seg);
+    const isListView = seg && !LIST_SUB_PAGES.includes(seg);
     return {
       context: ["shopping"],
       placeholder: 'Np. "Dodaj mleko i chleb" lub "Odznacz jabłka jako kupione"',
       routeHint: isListView
         ? "Użytkownik ogląda konkretną listę zakupów"
         : "Użytkownik jest na stronie głównej zakupów",
+      activeListId: isListView ? seg : undefined,
     };
   }
   if (pathname === "/shopping") {
@@ -70,7 +74,8 @@ function deriveContextFromPath(pathname: string): RouteContext {
 
 export function AICommandSheet() {
   const pathname = usePathname();
-  const { context, placeholder, routeHint } = deriveContextFromPath(pathname);
+  const router = useRouter();
+  const { context, placeholder, routeHint, activeListId } = deriveContextFromPath(pathname);
 
   const [isOpen, setIsOpen] = useState(false);
   const [inputText, setInputText] = useState("");
@@ -123,12 +128,13 @@ export function AICommandSheet() {
       const res = await fetch("/api/llm/home/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actions: confirmedActions }),
+        body: JSON.stringify({ actions: confirmedActions, activeListId }),
       });
       const data = (await res.json()) as { results?: ActionResult[] };
       setResults(data.results ?? []);
       setInputText("");
       setPendingActions(null);
+      router.refresh();
     } catch {
       setResults([]);
     } finally {

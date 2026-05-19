@@ -1,25 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-function detailToStyle(detail: number): string {
-  if (detail <= 30) return "ultra-simplified, maximum 3-4 geometric primitives per icon, like a simple logo or monochrome pictogram";
-  if (detail <= 70) return "flat design, emoji-like, bold simple shapes with 2-4 colors";
-  return "detailed flat illustration with multiple elements, subtle gradients, texture, and careful shading";
+function detailToComplexity(detail: number): string {
+  if (detail <= 30) return "Very simple: 3-5 shapes total, bold outlines, minimal detail — like a simple sticker emoji.";
+  if (detail <= 70) return "Standard emoji complexity: 6-12 shapes, clear recognizable silhouette, subtle details like highlights or shadows.";
+  return "Rich emoji: 12-20 shapes, multiple colors, subtle gradients, detailed textures — like a high-quality Apple emoji.";
 }
 
-const BASE_SYSTEM_PROMPT = `You are a colorful icon designer for a grocery shopping app.
-Generate exactly 6 different COLORFUL SVG icons.
+const BASE_SYSTEM_PROMPT = `You are an emoji-style SVG icon designer for a Polish grocery shopping app.
+Your task: generate exactly 6 SVG icons that look like modern phone emoji (Apple / Google / Samsung emoji style).
 
-Rules:
-- Fit within a 24x24 coordinate space
-- Use SVG elements: path, circle, rect, ellipse, polygon, line
-- COLORFUL: every visible shape must have an explicit fill="COLOR" attribute (e.g. fill="#4ade80")
-- Do NOT use "currentColor" or fill="none" on visible shapes
-- Use colors that match each item's real-world appearance
-- Optional thin stroke (e.g. stroke="#fff" stroke-width="0.5") for contrast
-- Return ONLY a valid JSON array of exactly 6 strings, no explanation
-- Each string is the INNER content of <svg viewBox="0 0 24 24"> (no outer wrapper)
-- Each icon must depict a DIFFERENT specific item`;
+CRITICAL RULES:
+- ViewBox: 0 0 24 24
+- Each icon shows ONE clearly recognizable real-world object, centered in the 24x24 space
+- Colors must match the real-world appearance of the depicted item (carrot = orange, apple = red, cheese = yellow, shoe = brown, etc.)
+- EVERY visible shape MUST have an explicit fill="#XXXXXX" attribute with a hex color
+- Do NOT use fill="none" on visible shapes — only on invisible clip/mask elements
+- Do NOT use fill="currentColor" anywhere
+- Optional: thin light stroke for definition (stroke="#ffffff" stroke-width="0.5" or stroke="#00000033")
+- SVG elements to use: path, circle, rect, ellipse, polygon, polyline
+- Return ONLY a valid JSON array of exactly 6 strings — no markdown, no explanation
+- Each string is the raw INNER content of <svg viewBox="0 0 24 24"> (NO outer svg tag)
+- Each of the 6 icons must depict a DIFFERENT specific item
+- The icon must be immediately recognizable — like a real emoji on a phone keyboard`;
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
@@ -39,17 +42,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const styleDesc = detailToStyle(detail);
+  const complexity = detailToComplexity(detail);
+
+  const itemsLine = additionalText
+    ? `IMPORTANT — draw EXACTLY these items (names are in Polish, translate to understand what to draw): ${additionalText}`
+    : `Choose 6 iconic, visually distinct items that best represent this category.`;
 
   const userMessage = [
-    category ? `Generate 6 colorful SVG icons for the grocery category: "${category}".` : "Generate 6 colorful SVG icons.",
-    `Draw 6 different specific items relevant to the theme, one per icon.`,
-    `Style: ${styleDesc}.`,
-    additionalText ? `Draw these specific items (one per icon): ${additionalText}.` : "",
-    "Return only the JSON array.",
-  ].filter(Boolean).join(" ");
+    category
+      ? `Polish grocery category name: "${category}" (this is a Polish name — understand what it means and draw matching items)`
+      : "Grocery items for a shopping app.",
+    itemsLine,
+    `Complexity level: ${complexity}`,
+    `Each icon must look like a real emoji you'd see on a phone — colorful, centered, instantly recognizable.`,
+    "Return only the JSON array of 6 SVG inner content strings.",
+  ].join("\n");
 
-  const systemPrompt = `${BASE_SYSTEM_PROMPT}\n- Style for this request: ${styleDesc}`;
+  const systemPrompt = `${BASE_SYSTEM_PROMPT}\n\nComplexity for this request: ${complexity}`;
 
   const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",

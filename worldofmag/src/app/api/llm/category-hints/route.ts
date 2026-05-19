@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
         },
         {
           role: "user",
-          content: `List 6-8 specific grocery items typically found in the "${category}" category of a Polish grocery store. Return only a comma-separated list of item names in Polish, no explanations, no numbering.`,
+          content: `The Polish grocery category name is: "${category}". List 6-8 specific, visually distinct grocery items typically found in this category. Return only a comma-separated list of item names in Polish, no explanations, no numbering.`,
         },
       ],
       temperature: 0.7,

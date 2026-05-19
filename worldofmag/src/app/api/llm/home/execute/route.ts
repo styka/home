@@ -12,7 +12,7 @@ export interface ActionResult {
   error?: string;
 }
 
-async function executeAction(action: AIAction, userId: string): Promise<string> {
+async function executeAction(action: AIAction, userId: string, activeListId?: string): Promise<string> {
   const { module, type, params, searchQuery } = action;
 
   if (module === "shopping") {
@@ -23,8 +23,10 @@ async function executeAction(action: AIAction, userId: string): Promise<string> 
       let list = await prisma.shoppingList.findFirst({
         where: listName
           ? { ownerId: userId, name: { contains: listName, mode: "insensitive" } }
-          : { ownerId: userId },
-        orderBy: { createdAt: "asc" },
+          : activeListId
+            ? { id: activeListId, ownerId: userId }
+            : { ownerId: userId },
+        orderBy: listName || activeListId ? undefined : { createdAt: "asc" },
       });
 
       if (!list) {
@@ -187,14 +189,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json().catch(() => ({})) as { actions?: AIAction[] };
-  const { actions = [] } = body;
+  const body = await req.json().catch(() => ({})) as { actions?: AIAction[]; activeListId?: string };
+  const { actions = [], activeListId } = body;
 
   const results: ActionResult[] = [];
 
   for (const action of actions) {
     try {
-      const message = await executeAction(action, session.user.id);
+      const message = await executeAction(action, session.user.id, activeListId);
       results.push({ id: action.id, success: true, description: message });
     } catch (e) {
       results.push({
