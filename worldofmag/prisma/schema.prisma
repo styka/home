@@ -37,6 +37,9 @@ model User {
   tasksAssigned     Task[]               @relation("TasksAssignedTo")
   taskComments      TaskComment[]        @relation("TaskComments")
   taskShares        TaskShare[]          @relation("TaskShares")
+  activities        UserActivity[]
+  stores            Store[]
+  categoryIconVariants CategoryIconVariant[]
 }
 
 model Account {
@@ -227,6 +230,21 @@ model Category {
   @@unique([name, userId, teamId])
 }
 
+// ─── Category Icon Variants ───────────────────────────────────────────────
+
+model CategoryIconVariant {
+  id           String   @id @default(cuid())
+  categoryName String
+  svgContent   String
+  isActive     Boolean  @default(false)
+  userId       String
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, categoryName])
+}
+
 // ─── Notes ────────────────────────────────────────────────────────────────
 
 model NoteGroup {
@@ -372,4 +390,70 @@ model TaskShare {
   task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User? @relation("TaskShares", fields: [userId], references: [id])
   team Team? @relation("TeamTaskShares", fields: [teamId], references: [id])
+}
+
+// ─── Activity Tracking ────────────────────────────────────────────────────
+
+model UserActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module    String   // "shopping" | "tasks" | "notes"
+  action    String   // "add_item" | "create_task" | "create_note" | etc.
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// ─── Store Maps ───────────────────────────────────────────────────────────────
+
+model Store {
+  id        String      @id @default(cuid())
+  name      String
+  ownerId   String?
+  nodes     StoreNode[]
+  edges     StoreEdge[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  owner User? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+model StoreNode {
+  id        String      @id @default(cuid())
+  storeId   String
+  label     String
+  type      String      @default("CATEGORY")
+  category  String?
+  x         Float
+  y         Float
+  store     Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  edgesFrom StoreEdge[] @relation("EdgeFrom")
+  edgesTo   StoreEdge[] @relation("EdgeTo")
+}
+
+model StoreEdge {
+  id      String    @id @default(cuid())
+  storeId String
+  fromId  String
+  toId    String
+  weight  Float     @default(1)
+  store   Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  from    StoreNode @relation("EdgeFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to      StoreNode @relation("EdgeTo", fields: [toId], references: [id], onDelete: Cascade)
+}
+
+// ─── Reports ──────────────────────────────────────────────────────────────
+
+model Report {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  content   String   // markdown content
+  category  String   @default("general")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, createdAt])
 }

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
-import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings } from "lucide-react"
+import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map } from "lucide-react"
 import Link from "next/link"
 
 function fmtDate(iso: string | undefined) {
@@ -137,6 +137,31 @@ export default async function AdminPage() {
             }}>
               <Settings size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Konfiguracja LLM (klucz Groq)</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
+          </div>
+        </section>
+
+        {/* Tools links */}
+        <section style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 12 }}>
+            Narzędzia
+          </h2>
+          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+            <style>{`.admin-tool-link:hover { background-color: var(--bg-hover); }`}</style>
+            <Link href="/admin/playground" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <Shield size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Component Playground</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
+            <Link href="/admin/architecture" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <Map size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Architektura aplikacji</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
+            <Link href="/admin/reports" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none" }}>
+              <BookOpen size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Raporty</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
           </div>

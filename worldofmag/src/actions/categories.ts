@@ -2,22 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { auth } from "@/lib/auth";
 import { BASE_CATEGORIES } from "@/lib/categories";
-
-async function requireAuth() {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  return session.user as { id: string };
-}
-
-async function getUserTeamIds(userId: string): Promise<string[]> {
-  const memberships = await prisma.teamMember.findMany({
-    where: { userId },
-    select: { teamId: true },
-  });
-  return memberships.map((m) => m.teamId);
-}
+import { getActiveCategoryIconMap } from "@/actions/categoryIcons";
 
 export type CategoryWithUsage = {
   id: string | null;
@@ -114,6 +102,11 @@ export async function getCategoryEmojiMap(): Promise<Record<string, string>> {
   });
 
   for (const c of custom) map[c.name] = c.emoji;
+
+  // Active SVG icons take priority over emoji
+  const svgMap = await getActiveCategoryIconMap();
+  for (const [cat, svg] of Object.entries(svgMap)) map[cat] = svg;
+
   return map;
 }
 

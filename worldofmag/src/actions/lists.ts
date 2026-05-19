@@ -2,14 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import type { ShoppingList } from "@/types";
-
-async function requireAuth() {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  return session.user as { id: string };
-}
 
 /**
  * Returns all lists visible to the current user:
@@ -19,9 +13,7 @@ async function requireAuth() {
 export async function getLists(): Promise<ShoppingList[]> {
   const user = await requireAuth();
 
-  const teamIds = await prisma.teamMember
-    .findMany({ where: { userId: user.id }, select: { teamId: true } })
-    .then((rows) => rows.map((r) => r.teamId));
+  const teamIds = await getUserTeamIds(user.id);
 
   return prisma.shoppingList.findMany({
     where: {

@@ -1,14 +1,8 @@
 "use server"
 
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-
-async function requireAuth() {
-  const session = await auth()
-  if (!session?.user?.id) throw new Error("Unauthorized")
-  return session.user as { id: string; role?: string }
-}
+import { requireAuth } from "@/lib/server-utils"
 
 async function requireTeamRole(
   teamId: string,

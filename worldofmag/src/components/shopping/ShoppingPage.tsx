@@ -1,40 +1,66 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef, useTransition } from "react";
-import { Sparkles, PenLine } from "lucide-react";
+import { useState, useCallback, useMemo, useTransition, useEffect } from "react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { ListDropdown } from "./ListDropdown";
-import { LLMInputSection } from "./LLMInputSection";
-import { QuickAddBar, type QuickAddBarHandle } from "./QuickAddBar";
 import { FilterTabs } from "./FilterTabs";
 import { ItemList } from "./ItemList";
 import { SearchBar } from "./SearchBar";
+import { SortControl } from "./SortControl";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
 import { updateItemStatus, deleteItem } from "@/actions/items";
-import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus } from "@/types";
+import { computeOptimalCategoryOrder } from "@/lib/storeRoute";
+import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus, SortMode, StoreWithGraph } from "@/types";
 import { FILTER_TABS, STATUS_CYCLE } from "@/types";
 
-type AddMode = "ai" | "manual";
+const SORT_STORAGE_KEY = "wom_shopping_sort";
 
 interface ShoppingPageProps {
   list: ShoppingListWithItems;
   allLists: ShoppingList[];
   categoryEmojiMap?: Record<string, string>;
-  categoryNames?: string[];
+  stores: StoreWithGraph[];
 }
 
-export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }: ShoppingPageProps) {
+function loadSortMode(): SortMode {
+  if (typeof window === "undefined") return { type: "category" };
+  try {
+    const raw = localStorage.getItem(SORT_STORAGE_KEY);
+    if (!raw) return { type: "category" };
+    const parsed = JSON.parse(raw) as SortMode;
+    if (parsed.type === "category" || parsed.type === "product" || parsed.type === "store") {
+      return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return { type: "category" };
+}
+
+export function ShoppingPage({ list, allLists, categoryEmojiMap, stores }: ShoppingPageProps) {
   const { toggle: togglePalette } = useCommandPalette();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [addMode, setAddMode] = useState<AddMode>("ai");
+  const [sortMode, setSortMode] = useState<SortMode>({ type: "category" });
   const [, startTransition] = useTransition();
-  const quickAddRef = useRef<QuickAddBarHandle>(null);
+
+  useEffect(() => {
+    setSortMode(loadSortMode());
+  }, []);
+
+  function handleSortChange(mode: SortMode) {
+    setSortMode(mode);
+    try {
+      localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify(mode));
+    } catch {
+      // ignore
+    }
+  }
 
   const filteredItems = useMemo(() => {
     let items = list.items as Item[];
@@ -63,6 +89,14 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
     return result;
   }, [list.items]);
 
+  const categoryOrder = useMemo(() => {
+    if (sortMode.type !== "store") return undefined;
+    const store = stores.find(s => s.id === sortMode.storeId);
+    if (!store) return undefined;
+    const presentCategories = Array.from(new Set(filteredItems.map(i => i.category)));
+    return computeOptimalCategoryOrder(store.nodes, store.edges, presentCategories);
+  }, [sortMode, stores, filteredItems]);
+
   const { rowRefs, navigateDown, navigateUp } = useItemNavigation(
     filteredItems,
     focusedItemId,
@@ -71,10 +105,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
 
   const handlers = useMemo(
     () => ({
-      onQuickAdd: () => {
-        setAddMode("manual");
-        setTimeout(() => quickAddRef.current?.focus(), 10);
-      },
+      onQuickAdd: () => {},
       onNavigateDown: navigateDown,
       onNavigateUp: navigateUp,
       onToggleStatus: () => {
@@ -108,7 +139,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
         setFocusedItemId(null);
       },
     }),
-    [focusedItemId, filteredItems, navigateDown, navigateUp, togglePalette, isSearchOpen, editingItemId, startTransition]
+    [focusedItemId, filteredItems, navigateDown, navigateUp, togglePalette, isSearchOpen, editingItemId]
   );
 
   useKeyboardShortcuts(handlers);
@@ -120,56 +151,30 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
     counts.MISSING > 0 && `${counts.MISSING} missing`,
   ].filter(Boolean).join(" · ");
 
+  const sortBy = sortMode.type === "product" ? "product" : "category";
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 h-12 border-b flex-shrink-0"
+        className="flex items-center gap-2 px-4 h-12 border-b flex-shrink-0"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
       >
         <ListDropdown allLists={allLists} currentListId={list.id} />
-        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+        <div className="flex-1" />
+        <SortControl sortMode={sortMode} stores={stores} onChange={handleSortChange} />
+        <a
+          href="/shopping/stores"
+          className="text-xs px-2 py-1 rounded"
+          style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}
+          title="Mapy sklepów"
+        >
+          🏪
+        </a>
+        <span className="text-xs hidden sm:block" style={{ color: "var(--text-muted)" }}>
           {statsText}
         </span>
       </div>
-
-      {/* Add mode toggle */}
-      <div
-        className="flex border-b flex-shrink-0"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
-      >
-        <button
-          onClick={() => setAddMode("ai")}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium focus:outline-none"
-          style={{
-            color: addMode === "ai" ? "var(--accent-blue)" : "var(--text-muted)",
-            borderBottom: addMode === "ai" ? "2px solid var(--accent-blue)" : "2px solid transparent",
-            marginBottom: -1,
-          }}
-        >
-          <Sparkles size={11} />
-          AI
-        </button>
-        <button
-          onClick={() => setAddMode("manual")}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium focus:outline-none"
-          style={{
-            color: addMode === "manual" ? "var(--accent-green)" : "var(--text-muted)",
-            borderBottom: addMode === "manual" ? "2px solid var(--accent-green)" : "2px solid transparent",
-            marginBottom: -1,
-          }}
-        >
-          <PenLine size={11} />
-          Ręcznie
-        </button>
-      </div>
-
-      {/* Active add section */}
-      {addMode === "ai" ? (
-        <LLMInputSection listId={list.id} categoryNames={categoryNames ?? []} />
-      ) : (
-        <QuickAddBar ref={quickAddRef} listId={list.id} categoryNames={categoryNames ?? []} />
-      )}
 
       {isSearchOpen && (
         <SearchBar
@@ -194,16 +199,16 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames }
         onItemStopEdit={() => setEditingItemId(null)}
         rowRefs={rowRefs}
         categoryEmojiMap={categoryEmojiMap}
+        categoryOrder={categoryOrder}
+        sortBy={sortBy}
       />
 
       <CommandPalette
         listId={list.id}
         allLists={allLists}
-        onFocusQuickAdd={() => {
-          setAddMode("manual");
-          setTimeout(() => quickAddRef.current?.focus(), 10);
-        }}
+        onFocusQuickAdd={() => {}}
       />
+
     </div>
   );
 }

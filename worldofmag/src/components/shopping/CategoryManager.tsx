@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { Plus, Pencil, Trash2, Check, X, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, Loader2, Image } from "lucide-react";
 import type { CategoryWithUsage } from "@/actions/categories";
 import { createCategory, updateCategory, deleteCategory } from "@/actions/categories";
+import { CategoryIconPicker } from "@/components/shopping/CategoryIconPicker";
 
 interface CategoryManagerProps {
   categories: CategoryWithUsage[];
+  activeIconMap?: Record<string, string>;
 }
 
 // ~300 emoji with Polish + English keywords for search
@@ -227,7 +229,27 @@ const EMOJI_DATA: { emoji: string; keywords: string[] }[] = [
   { emoji: "📺", keywords: ["telewizor","tv","elektronika","rozrywka","ogladanie"] },
 ];
 
-export function CategoryManager({ categories }: CategoryManagerProps) {
+const isSvg = (s: string) => s.trimStart().startsWith("<");
+
+function SvgIconSmall({ content }: { content: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={18}
+      height={18}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ color: "var(--text-secondary)" }}
+      dangerouslySetInnerHTML={{ __html: content }}
+      aria-hidden
+    />
+  );
+}
+
+export function CategoryManager({ categories, activeIconMap = {} }: CategoryManagerProps) {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmoji, setNewEmoji] = useState("📦");
@@ -235,6 +257,9 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
   const [editName, setEditName] = useState("");
   const [editEmoji, setEditEmoji] = useState("📦");
   const [isPending, startTransition] = useTransition();
+  const [iconPickerCategory, setIconPickerCategory] = useState<string | null>(null);
+  // Optimistic local icon overrides from within CategoryManager
+  const [localIconMap, setLocalIconMap] = useState<Record<string, string>>(activeIconMap);
 
   function handleCreate() {
     if (!newName.trim()) return;
@@ -340,25 +365,43 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
               </>
             ) : (
               <>
-                <span className="text-base w-6 text-center">{c.emoji}</span>
+                <div className="w-6 flex items-center justify-center">
+                  {localIconMap[c.name] && isSvg(localIconMap[c.name]) ? (
+                    <SvgIconSmall content={localIconMap[c.name]} />
+                  ) : (
+                    <span className="text-base">{c.emoji}</span>
+                  )}
+                </div>
                 <span className="mono text-sm flex-1" style={{ color: "var(--text-primary)" }}>{c.name}</span>
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                   {c.usageCount > 0 ? `${c.usageCount} ${c.usageCount === 1 ? "produkt" : "produkty"}` : "nieużywana"}
                 </span>
-                {c.isOwn && c.id && (
-                  <div className="flex items-center gap-0.5">
-                    <button onClick={() => startEdit(c)} disabled={isPending} className="p-1 focus:outline-none disabled:opacity-40" style={{ color: "var(--text-muted)" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-secondary)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}>
-                      <Pencil size={12} />
-                    </button>
-                    <button onClick={() => handleDelete(c.id!)} disabled={isPending} className="p-1 focus:outline-none disabled:opacity-40" style={{ color: "var(--text-muted)" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}>
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-center gap-0.5">
+                  <button
+                    onClick={() => setIconPickerCategory(c.name)}
+                    className="p-1 focus:outline-none"
+                    style={{ color: "var(--text-muted)" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-secondary)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
+                    title="Zarządzaj ikonami SVG"
+                  >
+                    <Image size={12} />
+                  </button>
+                  {c.isOwn && c.id && (
+                    <>
+                      <button onClick={() => startEdit(c)} disabled={isPending} className="p-1 focus:outline-none disabled:opacity-40" style={{ color: "var(--text-muted)" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-secondary)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}>
+                        <Pencil size={12} />
+                      </button>
+                      <button onClick={() => handleDelete(c.id!)} disabled={isPending} className="p-1 focus:outline-none disabled:opacity-40" style={{ color: "var(--text-muted)" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}>
+                        <Trash2 size={12} />
+                      </button>
+                    </>
+                  )}
+                </div>
               </>
             )}
           </div>
@@ -375,11 +418,27 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
       <div style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
         {base.map((c, i) => (
           <div key={c.name} className="flex items-center gap-3 px-4 py-2" style={rowStyle(i, base.length)}>
-            <span className="text-base w-6 text-center">{c.emoji}</span>
+            <div className="w-6 flex items-center justify-center">
+              {localIconMap[c.name] && isSvg(localIconMap[c.name]) ? (
+                <SvgIconSmall content={localIconMap[c.name]} />
+              ) : (
+                <span className="text-base">{c.emoji}</span>
+              )}
+            </div>
             <span className="mono text-sm flex-1" style={{ color: "var(--text-primary)" }}>{c.name}</span>
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>
               {c.usageCount > 0 ? `${c.usageCount} ${c.usageCount === 1 ? "produkt" : "produkty"}` : "—"}
             </span>
+            <button
+              onClick={() => setIconPickerCategory(c.name)}
+              className="p-1 focus:outline-none"
+              style={{ color: "var(--text-muted)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-secondary)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
+              title="Zarządzaj ikonami SVG"
+            >
+              <Image size={12} />
+            </button>
           </div>
         ))}
       </div>
@@ -387,6 +446,16 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
       <p className="text-xs mt-4" style={{ color: "var(--text-muted)" }}>
         Zmiana nazwy własnej kategorii aktualizuje produkty w Twoim katalogu, ale nie produkty już dodane do list zakupów.
       </p>
+
+      {iconPickerCategory && (
+        <CategoryIconPicker
+          category={iconPickerCategory}
+          open={true}
+          onClose={() => setIconPickerCategory(null)}
+          onSelect={(svg) => setLocalIconMap((prev) => ({ ...prev, [iconPickerCategory]: svg }))}
+          onReset={() => setLocalIconMap((prev) => { const n = { ...prev }; delete n[iconPickerCategory]; return n; })}
+        />
+      )}
     </div>
   );
 }

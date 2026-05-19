@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect, useTransition, useId } from "react";
-import { Mic, MicOff, Loader2, Plus, CheckSquare, Square, Sparkles } from "lucide-react";
+import { useState, useTransition, useId } from "react";
+import { Loader2, Plus, CheckSquare, Square, Sparkles } from "lucide-react";
 import { UNITS } from "@/types";
 import { addItemStructured } from "@/actions/items";
 import { upsertUserProduct, getProductSuggestions } from "@/actions/products";
 import { categorize } from "@/lib/categorize";
-import { cn } from "@/lib/cn";
+import { SmartTextarea } from "@/components/ui/SmartTextarea";
 
 interface ParsedRow {
   name: string;
@@ -23,99 +23,20 @@ interface LLMInputSectionProps {
   categoryNames: string[];
 }
 
-interface ISpeechResult {
-  resultIndex: number;
-  results: { isFinal: boolean; 0: { transcript: string } }[];
-}
-interface ISpeechError { error: string }
-interface ISpeechRecognition extends EventTarget {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  onresult: ((e: ISpeechResult) => void) | null;
-  onerror: ((e: ISpeechError) => void) | null;
-  onend: (() => void) | null;
-  start(): void;
-  stop(): void;
-}
-interface ISpeechRecognitionCtor { new(): ISpeechRecognition }
-declare global {
-  interface Window {
-    SpeechRecognition?: ISpeechRecognitionCtor;
-    webkitSpeechRecognition?: ISpeechRecognitionCtor;
-  }
-}
 
 export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps) {
   const [text, setText] = useState("");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [recording, setRecording] = useState(false);
-  const [transcript, setTranscript] = useState("");
   const [isPending, startTransition] = useTransition();
-  const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const unitDatalistId = useId();
   const categoryDatalistId = useId();
   const showResults = rows.length > 0;
 
-  function stopRecording() {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
-    setRecording(false);
-  }
-
-  function startRecording() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      setError("Twoja przeglądarka nie obsługuje rozpoznawania mowy.");
-      return;
-    }
-    const rec = new SR();
-    rec.lang = "pl-PL";
-    rec.continuous = true;
-    rec.interimResults = true;
-
-    rec.onresult = (e: ISpeechResult) => {
-      let newFinal = "";
-      let currentInterim = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) {
-          newFinal += e.results[i][0].transcript + " ";
-        } else {
-          currentInterim += e.results[i][0].transcript;
-        }
-      }
-      setTranscript((prev) => {
-        const updated = prev + newFinal;
-        setText(updated + currentInterim);
-        return updated;
-      });
-    };
-
-    rec.onerror = (e: ISpeechError) => {
-      setError(`Błąd mikrofonu: ${e.error}`);
-      stopRecording();
-    };
-
-    rec.onend = () => setRecording(false);
-
-    recognitionRef.current = rec;
-    rec.start();
-    setRecording(true);
-    setError(null);
-  }
-
-  function toggleRecording() {
-    recording ? stopRecording() : startRecording();
-  }
-
   async function processText() {
     const input = text.trim();
     if (!input) return;
-    stopRecording();
     setLoading(true);
     setError(null);
     setRows([]);
@@ -184,9 +105,7 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
   function reset() {
     setRows([]);
     setText("");
-    setTranscript("");
     setError(null);
-    stopRecording();
   }
 
   const selectedCount = rows.filter((r) => r.selected).length;
@@ -214,75 +133,31 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
       {/* Input area — hidden when results are shown */}
       {!showResults && (
         <div className="px-4 pb-3">
-          <textarea
+          <SmartTextarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={setText}
             placeholder={"Wpisz listę zakupów lub powiedz co kupić…\nNp. \"2 kg jabłek, mleko, chleb pszenny\""}
             rows={2}
-            className="w-full bg-transparent mono text-sm focus:outline-none resize-none"
-            style={{
-              color: "var(--text-primary)",
-              caretColor: "var(--accent-blue)",
-              lineHeight: 1.5,
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) processText();
-            }}
+            onSubmit={processText}
           />
 
-          <div className="flex items-center gap-2 mt-2">
-            <button
-              onClick={toggleRecording}
-              type="button"
-              className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none",
-                recording && "animate-pulse"
-              )}
-              style={{
-                backgroundColor: recording ? "rgba(239,68,68,0.15)" : "var(--bg-surface)",
-                color: recording ? "var(--accent-red)" : "var(--text-secondary)",
-                border: `1px solid ${recording ? "var(--accent-red)" : "var(--border)"}`,
-              }}
-              title={recording ? "Zatrzymaj nagrywanie" : "Nagraj głosowo"}
-            >
-              {recording ? <MicOff size={13} /> : <Mic size={13} />}
-              <span>{recording ? "Stop" : "Mów"}</span>
-            </button>
-
-            <button
-              onClick={processText}
-              disabled={!text.trim() || loading}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
-              style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
-              title="Przetwórz przez AI (Ctrl+Enter)"
-            >
-              {loading
-                ? <Loader2 size={13} className="animate-spin" />
-                : <Sparkles size={13} />
-              }
-              Przetwórz
-            </button>
-
-            {recording && (
-              <span
-                className="inline-flex items-center gap-1.5 text-xs ml-2"
-                style={{ color: "var(--accent-red)" }}
-              >
-                <span
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: "var(--accent-red)", animation: "pulse 1s infinite" }}
-                />
-                Słucham…
-              </span>
-            )}
-          </div>
+          <button
+            onClick={processText}
+            disabled={!text.trim() || loading}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40 mt-2"
+            style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+            title="Przetwórz przez AI (Ctrl+Enter)"
+          >
+            {loading
+              ? <Loader2 size={13} className="animate-spin" />
+              : <Sparkles size={13} />
+            }
+            Przetwórz
+          </button>
 
           {error && (
             <p className="text-xs mt-1.5" style={{ color: "var(--accent-red)" }}>{error}</p>
           )}
-          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-            Ctrl+Enter aby przetworzyć
-          </p>
         </div>
       )}
 
