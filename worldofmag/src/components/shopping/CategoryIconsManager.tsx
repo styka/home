@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, Plus, ImageOff } from "lucide-react";
+import { Trash2, Plus, Sparkles } from "lucide-react";
 import type { CategoryIconVariantData } from "@/actions/categoryIcons";
 import { setActiveCategoryIcon, deleteCategoryIconVariant } from "@/actions/categoryIcons";
 import { CategoryIconPicker } from "./CategoryIconPicker";
 
 interface CategoryIconsManagerProps {
   variants: Record<string, CategoryIconVariantData[]>;
+  allCategories: string[];
 }
 
 function SvgTile({
@@ -64,18 +65,23 @@ function SvgTile({
       )}
 
       {variant.isActive && (
-        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full"
-          style={{ width: 6, height: 6, backgroundColor: "var(--accent-blue)" }} />
+        <div
+          className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full"
+          style={{ width: 6, height: 6, backgroundColor: "var(--accent-blue)" }}
+        />
       )}
     </div>
   );
 }
 
-export function CategoryIconsManager({ variants: initialVariants }: CategoryIconsManagerProps) {
+export function CategoryIconsManager({ variants: initialVariants, allCategories }: CategoryIconsManagerProps) {
   const [localVariants, setLocalVariants] = useState(initialVariants);
   const [pickerCategory, setPickerCategory] = useState<string | null>(null);
 
-  const categories = Object.keys(localVariants).sort();
+  // Merge: categories with icons first (sorted), then the rest
+  const withIcons = Object.keys(localVariants).sort();
+  const withoutIcons = allCategories.filter((c) => !localVariants[c]).sort();
+  const allSorted = [...withIcons, ...withoutIcons];
 
   async function handleActivate(variantId: string, categoryName: string) {
     setLocalVariants((prev) => ({
@@ -84,14 +90,12 @@ export function CategoryIconsManager({ variants: initialVariants }: CategoryIcon
     }));
     try {
       await setActiveCategoryIcon(variantId);
-    } catch {
-      // revert on error — keep optimistic for now, page reload will correct
-    }
+    } catch { /* optimistic stays, reload corrects */ }
   }
 
   async function handleDelete(variant: CategoryIconVariantData) {
     setLocalVariants((prev) => {
-      const updated = prev[variant.categoryName].filter((v) => v.id !== variant.id);
+      const updated = (prev[variant.categoryName] ?? []).filter((v) => v.id !== variant.id);
       if (updated.length === 0) {
         const next = { ...prev };
         delete next[variant.categoryName];
@@ -102,7 +106,6 @@ export function CategoryIconsManager({ variants: initialVariants }: CategoryIcon
     try {
       await deleteCategoryIconVariant(variant.id);
     } catch {
-      // revert
       setLocalVariants((prev) => ({
         ...prev,
         [variant.categoryName]: [variant, ...(prev[variant.categoryName] ?? [])],
@@ -111,7 +114,6 @@ export function CategoryIconsManager({ variants: initialVariants }: CategoryIcon
   }
 
   function handlePickerSelect(svg: string, categoryName: string) {
-    // New icon was saved via picker — refresh that category's variants
     setLocalVariants((prev) => {
       const existing = prev[categoryName] ?? [];
       const newVariant: CategoryIconVariantData = {
@@ -130,52 +132,49 @@ export function CategoryIconsManager({ variants: initialVariants }: CategoryIcon
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-            Moje ikony kategorii
-          </h1>
-          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-            Ikony generowane przez AI — kliknij by aktywować
-          </p>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
+          Moje ikony kategorii
+        </h1>
+        <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+          Ikony generowane przez AI — kliknij by aktywować, hover by usunąć
+        </p>
       </div>
 
-      {categories.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <ImageOff size={32} style={{ color: "var(--text-muted)", opacity: 0.4 }} />
-          <p className="text-sm text-center" style={{ color: "var(--text-muted)" }}>
-            Brak własnych ikon
-          </p>
-          <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>
-            Kliknij ikonę kategorii na liście zakupów, żeby wygenerować i zapisać pierwszą ikonę.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {categories.map((categoryName) => {
-            const items = localVariants[categoryName];
-            return (
-              <div key={categoryName}>
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                    {categoryName}
-                  </h2>
-                  <button
-                    onClick={() => setPickerCategory(categoryName)}
-                    className="flex items-center gap-1 text-xs rounded-lg px-2 py-1 transition-colors"
-                    style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
-                  >
-                    <Plus size={11} />
-                    Generuj więcej
-                  </button>
-                </div>
-                <div
-                  className="p-3 rounded-xl"
-                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}
+      <div className="space-y-3">
+        {allSorted.map((categoryName) => {
+          const items = localVariants[categoryName] ?? [];
+          const hasIcons = items.length > 0;
+
+          return (
+            <div
+              key={categoryName}
+              className="rounded-xl overflow-hidden"
+              style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}
+            >
+              {/* Category header */}
+              <div
+                className="flex items-center justify-between px-4 py-2.5"
+                style={{ borderBottom: hasIcons ? "1px solid var(--border)" : undefined }}
+              >
+                <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+                  {categoryName}
+                </span>
+                <button
+                  onClick={() => setPickerCategory(categoryName)}
+                  className="flex items-center gap-1.5 text-xs rounded-lg px-2.5 py-1 transition-colors"
+                  style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
                 >
+                  {hasIcons ? <Plus size={11} /> : <Sparkles size={11} />}
+                  {hasIcons ? "Dodaj więcej" : "Generuj ikony"}
+                </button>
+              </div>
+
+              {/* Icons grid or empty hint */}
+              {hasIcons ? (
+                <div className="p-3">
                   <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
                     {items.map((variant) => (
                       <SvgTile
@@ -187,11 +186,15 @@ export function CategoryIconsManager({ variants: initialVariants }: CategoryIcon
                     ))}
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              ) : (
+                <p className="px-4 py-3 text-xs" style={{ color: "var(--text-muted)" }}>
+                  Brak ikon — kliknij „Generuj ikony" by dodać pierwszą.
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {pickerCategory && (
         <CategoryIconPicker
@@ -199,7 +202,7 @@ export function CategoryIconsManager({ variants: initialVariants }: CategoryIcon
           open={true}
           onClose={() => setPickerCategory(null)}
           onSelect={(svg) => handlePickerSelect(svg, pickerCategory)}
-          onReset={() => {/* reset in manager is a no-op — managed per-tile */}}
+          onReset={() => {}}
         />
       )}
     </div>

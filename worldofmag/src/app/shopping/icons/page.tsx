@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getAllUserIconVariants } from "@/actions/categoryIcons";
+import { getCategoryNames } from "@/actions/categories";
 import { CategoryIconsManager } from "@/components/shopping/CategoryIconsManager";
 import { ChevronLeft } from "lucide-react";
 
@@ -11,7 +12,10 @@ export default async function IconsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
 
-  const variants = await getAllUserIconVariants();
+  const [variants, allCategories] = await Promise.all([
+    getAllUserIconVariants(),
+    getCategoryNames(),
+  ]);
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)" }}>
@@ -31,7 +35,7 @@ export default async function IconsPage() {
           <ChevronLeft size={14} />
           Zakupy
         </Link>
-        <CategoryIconsManager variants={variants} />
+        <CategoryIconsManager variants={variants} allCategories={allCategories} />
       </div>
     </div>
   );
