@@ -27,10 +27,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token
     },
     async session({ session, token }) {
-      if (token) {
+      if (token?.id) {
         session.user.id = token.id as string
         session.user.role = (token.role as string) ?? "USER"
-        session.user.roles = (token.roles as string[]) ?? []
+        // Fetch fresh roles and permissions on every session access
+        const userRoles = await prisma.userRole.findMany({
+          where: { userId: token.id as string },
+          select: { role: true },
+        })
+        const roles = userRoles.map((r) => r.role)
+        session.user.roles = roles
+        const rolePerms = await prisma.rolePermission.findMany({
+          where: { role: { in: roles } },
+          select: { permission: { select: { slug: true } } },
+        })
+        session.user.permissions = Array.from(new Set(rolePerms.map((rp) => rp.permission.slug)))
       }
       return session
     },

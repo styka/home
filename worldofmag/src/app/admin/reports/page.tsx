@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { BookOpen, ChevronRight, ChevronLeft, Tag, Calendar } from "lucide-react";
+import { BookOpen, ChevronRight, ChevronLeft, Calendar } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
   refactoring: { label: "Refaktoryzacja", color: "var(--accent-purple)" },
@@ -24,7 +25,7 @@ function formatDateTime(date: Date): string {
 
 export default async function ReportsPage() {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") redirect("/");
+  if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
   const reports = await prisma.report.findMany({
     orderBy: { createdAt: "desc" },

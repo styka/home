@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
+import { hasPermission, PERMISSIONS } from "@/lib/permissions"
 import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag } from "lucide-react"
 import Link from "next/link"
 
@@ -26,7 +27,8 @@ interface Row {
 
 export default async function AdminPage() {
   const session = await auth()
-  if (session?.user?.role !== "ADMIN") redirect("/")
+  if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/")
+  const safeSession = session!
 
   const rows: Row[] = [
     { icon: <GitBranch size={15} />, label: "Branch",       value: BUILD.branch,              mono: true },
@@ -149,6 +151,11 @@ export default async function AdminPage() {
           </h2>
           <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
             <style>{`.admin-tool-link:hover { background-color: var(--bg-hover); }`}</style>
+            <Link href="/admin/access" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <Shield size={15} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Zarządzanie dostępem (role & uprawnienia)</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
             <Link href="/admin/playground" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Shield size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Component Playground</span>
@@ -192,9 +199,9 @@ export default async function AdminPage() {
             overflow: "hidden",
           }}>
             {[
-              { label: "Email",    value: session.user?.email ?? "—" },
-              { label: "Rola",     value: session.user?.role  ?? "—" },
-              { label: "User ID",  value: session.user?.id    ?? "—", mono: true },
+              { label: "Email",    value: safeSession.user?.email ?? "—" },
+              { label: "Rola",     value: safeSession.user?.role  ?? "—" },
+              { label: "User ID",  value: safeSession.user?.id    ?? "—", mono: true },
             ].map((row, i, arr) => (
               <div
                 key={row.label}

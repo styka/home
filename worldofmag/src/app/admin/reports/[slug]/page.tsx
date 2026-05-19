@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { BookOpen, ArrowLeft, Calendar, Tag } from "lucide-react";
@@ -26,7 +27,7 @@ function formatDateTimeFull(date: Date): string {
 
 export default async function ReportPage({ params }: { params: { slug: string } }) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") redirect("/");
+  if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
   const report = await prisma.report.findUnique({ where: { slug: params.slug } });
   if (!report) notFound();

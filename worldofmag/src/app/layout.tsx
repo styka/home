@@ -38,8 +38,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? await getPendingInvitationsCount().catch(() => 0)
     : 0;
 
-  const isAdmin = session?.user?.role === "ADMIN";
   const userRoles: string[] = session?.user?.roles ?? [];
+  const userPermissions: string[] = session?.user?.permissions ?? [];
+  const isAdmin = userPermissions.includes("module.admin");
 
   return (
     <html lang="en" className="dark">
@@ -51,7 +52,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
       <body>
-        <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles}>{children}</AppShell>
+        <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions}>{children}</AppShell>
         <ServiceWorkerRegistration />
       </body>
     </html>

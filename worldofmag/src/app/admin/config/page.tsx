@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { getConfigValue } from "@/actions/config";
 import { AdminConfigForm } from "./AdminConfigForm";
 import { ChevronLeft } from "lucide-react";
@@ -9,7 +10,7 @@ import Link from "next/link";
 
 export default async function AdminConfigPage() {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") redirect("/");
+  if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
   const groqKey = await getConfigValue("groq_api_key");
 

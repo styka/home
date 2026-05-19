@@ -6,12 +6,14 @@ import { usePathname } from "next/navigation";
 import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
+import { isPathLocked } from "@/lib/permissions";
 
 interface AppShellProps {
   children: React.ReactNode;
   invitationCount?: number;
   isAdmin?: boolean;
   userRoles?: string[];
+  userPermissions?: string[];
 }
 
 const MODULES = [
@@ -26,20 +28,13 @@ const MODULES = [
   { id: "admin",       label: "Admin",         icon: null,                        topBarIcon: <Shield size={16} />,      color: "var(--accent-purple)",   href: "/admin",       active: false, exact: false },
 ];
 
-// Hrefs accessible to beta-only users (no USER/ADMIN role)
-const BETA_ENABLED_PREFIXES = ["/", "/shopping", "/settings"];
-
-export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [] }: AppShellProps) {
+export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [] }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const activeModule = MODULES.find((m) => m.exact ? pathname === m.href : pathname.startsWith(m.href));
 
-  const isFullUser = userRoles.includes("USER") || userRoles.includes("ADMIN");
-  const isBetaOnly = userRoles.includes("BETA_TESTER") && !isFullUser;
-
   function isLocked(href: string): boolean {
-    if (!isBetaOnly) return false;
-    return !BETA_ENABLED_PREFIXES.some((p) => href === p || href.startsWith(p + "/"));
+    return isPathLocked(userPermissions, href);
   }
 
   useEffect(() => { setMenuOpen(false); }, [pathname]);
@@ -171,7 +166,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         </div>
       )}
 
-      <ModuleSidebar invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} />
+      <ModuleSidebar invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} />
 
       <main className="flex-1 overflow-hidden flex flex-col min-w-0">
         {children}

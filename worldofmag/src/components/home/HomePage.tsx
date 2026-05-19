@@ -18,6 +18,7 @@ interface HomePageProps {
   overdueTasks: number;
   recentActivity: ActivityItem[];
   userRoles: string[];
+  userPermissions?: string[];
 }
 
 function getGreeting(name: string | null): string {
@@ -52,9 +53,8 @@ function FooterLink({ href, label, locked }: FooterLinkProps) {
   );
 }
 
-export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, recentActivity, userRoles }: HomePageProps) {
-  const isFullUser = userRoles.includes("USER") || userRoles.includes("ADMIN");
-  const isBetaOnly = userRoles.includes("BETA_TESTER") && !isFullUser;
+export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, recentActivity, userRoles, userPermissions = [] }: HomePageProps) {
+  const isBetaOnly = !userPermissions.includes("module.tasks");
 
   return (
     <div

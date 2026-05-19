@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { getSystemCategories } from "@/actions/adminCategories";
 import { SystemCategoryManager } from "@/components/admin/SystemCategoryManager";
 import { ChevronLeft } from "lucide-react";
 
 export default async function AdminCategoriesPage() {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") redirect("/");
+  if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
   const categories = await getSystemCategories();
 

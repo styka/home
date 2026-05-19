@@ -45,6 +45,7 @@ export default async function HomePageRoute() {
     : 0;
 
   const userRoles: string[] = session.user.roles ?? [];
+  const userPermissions: string[] = session.user.permissions ?? [];
 
   return (
     <HomePage
@@ -54,6 +55,7 @@ export default async function HomePageRoute() {
       overdueTasks={overdueTasks}
       recentActivity={recentActivity}
       userRoles={userRoles}
+      userPermissions={userPermissions}
     />
   );
 }

@@ -1,12 +1,13 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { FlaskConical, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { ComponentPlayground } from "@/components/admin/ComponentPlayground";
 
 export default async function PlaygroundPage() {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") redirect("/");
+  if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
   return (
     <div

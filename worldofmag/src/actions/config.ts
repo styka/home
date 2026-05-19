@@ -2,10 +2,11 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 async function requireAdmin() {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") throw new Error("Forbidden");
+  if (!hasPermission(session, PERMISSIONS.ADMIN)) throw new Error("Forbidden");
 }
 
 export async function getConfigValue(key: string): Promise<string | null> {

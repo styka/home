@@ -5,14 +5,14 @@ import { usePathname } from "next/navigation";
 import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Map, Image, Lock } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
+import { isPathLocked } from "@/lib/permissions";
 
 interface ModuleSidebarProps {
   invitationCount?: number;
   isAdmin?: boolean;
   userRoles?: string[];
+  userPermissions?: string[];
 }
-
-const BETA_ENABLED_PREFIXES = ["/", "/shopping", "/settings"];
 
 function NavItem({
   href,
@@ -130,18 +130,14 @@ function NavSubItem({
   );
 }
 
-export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles = [] }: ModuleSidebarProps) {
+export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [] }: ModuleSidebarProps) {
   const pathname = usePathname();
   const isShoppingActive = pathname.startsWith("/shopping");
   const isNotesActive = pathname.startsWith("/notes");
   const isTasksActive = pathname.startsWith("/tasks");
 
-  const isFullUser = userRoles.includes("USER") || userRoles.includes("ADMIN");
-  const isBetaOnly = userRoles.includes("BETA_TESTER") && !isFullUser;
-
   function isLocked(href: string): boolean {
-    if (!isBetaOnly) return false;
-    return !BETA_ENABLED_PREFIXES.some((p) => href === p || href.startsWith(p + "/"));
+    return isPathLocked(userPermissions, href);
   }
 
   return (

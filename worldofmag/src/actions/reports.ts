@@ -1,13 +1,14 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { auth } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import type { Report } from "@prisma/client";
 
 async function requireAdmin() {
-  const user = await requireAuth();
-  if (user.role !== "ADMIN") throw new Error("Forbidden");
-  return user;
+  const session = await auth();
+  if (!hasPermission(session, PERMISSIONS.ADMIN)) throw new Error("Forbidden");
+  return session!.user;
 }
 
 export async function getReportsMeta(): Promise<Omit<Report, "content">[]> {
