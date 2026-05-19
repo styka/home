@@ -128,6 +128,38 @@ export async function getAllUserIconVariants(): Promise<Record<string, CategoryI
   return grouped;
 }
 
+/** Returns all icon variants for the current user as a flat list (newest first). */
+export async function getAllUserIconVariantsFlat(): Promise<CategoryIconVariantData[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  return prisma.categoryIconVariant.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+/** Saves an SVG icon to the library without making it active for any category. */
+export async function saveToLibrary(
+  svgContent: string,
+  theme?: string
+): Promise<CategoryIconVariantData> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const variant = await prisma.categoryIconVariant.create({
+    data: {
+      categoryName: theme?.trim() || "__library__",
+      svgContent,
+      isActive: false,
+      userId: session.user.id,
+    },
+  });
+
+  revalidatePath("/shopping/icons");
+  return variant;
+}
+
 /** Creates or updates a user-specific emoji override for a category (works for base categories too). */
 export async function upsertCategoryEmojiOverride(
   categoryName: string,

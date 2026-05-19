@@ -137,7 +137,10 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
         {isShoppingActive && (
           <div className="mb-1">
             <NavSubItem href="/shopping/stores" label="Mapy sklepów" icon={<Map size={12} />} pathname={pathname} />
-            <NavSubItem href="/shopping/icons" label="Ikony kategorii" icon={<Image size={12} />} pathname={pathname} />
+            <NavSubItem href="/shopping/icons" label="Biblioteka ikon" icon={<Image size={12} />} pathname={pathname} />
+            {pathname.startsWith("/shopping/icons") && (
+              <NavSubItem href="/shopping/icons/categories" label="Przypisania" pathname={pathname} />
+            )}
           </div>
         )}
 
