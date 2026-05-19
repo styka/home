@@ -5,6 +5,7 @@ import { Trash2, Plus, RefreshCw, X, FolderOpen, FolderSymlink, Sparkles } from 
 import Link from "next/link";
 import type { CategoryIconVariantData } from "@/actions/categoryIcons";
 import { deleteCategoryIconVariant, saveToLibrary, assignIconToCategory } from "@/actions/categoryIcons";
+import { IconDisplay } from "@/components/shopping/IconDisplay";
 
 interface IconLibraryProps {
   initialIcons: CategoryIconVariantData[];
@@ -54,18 +55,7 @@ function SvgTile({
           opacity: assigning ? 0.5 : 1,
         }}
       >
-        <svg
-          viewBox="0 0 24 24"
-          width={52}
-          height={52}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ color: "var(--text-secondary)" }}
-          dangerouslySetInnerHTML={{ __html: variant.svgContent }}
-        />
+        <IconDisplay content={variant.svgContent} size={52} />
       </div>
       <span
         className="text-[9px] truncate w-full text-center px-0.5"
@@ -328,7 +318,7 @@ function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData)
                           onMouseEnter={(e) => { if (!isSaving) { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.borderColor = "var(--text-secondary)"; } }}
                           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; e.currentTarget.style.borderColor = "var(--border)"; }}
                         >
-                          <svg viewBox="0 0 24 24" width={52} height={52} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--text-secondary)" }} dangerouslySetInnerHTML={{ __html: svg }} />
+                          <IconDisplay content={svg} size={52} />
                         </button>
                       );
                     })}

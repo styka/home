@@ -12,7 +12,10 @@ import {
   deleteCategoryIconVariant,
   upsertCategoryEmojiOverride,
 } from "@/actions/categoryIcons";
-import { EMOJI_DATA, getCategoryEmojis } from "@/lib/emojiData";
+import dynamic from "next/dynamic";
+import { Theme } from "emoji-picker-react";
+import { IconDisplay } from "@/components/shopping/IconDisplay";
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
 interface CategoryIconPickerProps {
   category: string;
@@ -55,18 +58,7 @@ function SvgTile({
         }}
         aria-label="Wybierz ikonę"
       >
-        <svg
-          viewBox="0 0 24 24"
-          width={52}
-          height={52}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ color: "var(--text-secondary)" }}
-          dangerouslySetInnerHTML={{ __html: svgContent }}
-        />
+        <IconDisplay content={svgContent} size={52} />
       </button>
       {label && (
         <span className="text-[9px] truncate w-full text-center" style={{ color: "var(--text-muted)" }}>
@@ -104,59 +96,6 @@ function SectionLabel({ label }: { label: string }) {
   );
 }
 
-function EmojiGrid({ category, onSelect }: { category: string; onSelect: (emoji: string) => void }) {
-  const [search, setSearch] = useState("");
-  const [showAll, setShowAll] = useState(false);
-  const categoryDefaults = getCategoryEmojis(category);
-  const filtered = search.trim()
-    ? EMOJI_DATA.filter((e) => e.keywords.some((k) => k.includes(search.toLowerCase()))).map((e) => e.emoji)
-    : showAll ? EMOJI_DATA.map((e) => e.emoji) : categoryDefaults;
-
-  return (
-    <div>
-      <div className="flex items-center gap-2 mb-2">
-        <input
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setShowAll(false); }}
-          placeholder="🔍 Szukaj emoji…"
-          className="flex-1 text-xs focus:outline-none rounded-lg px-2 py-1.5"
-          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
-        />
-        {!search && (
-          <button
-            onClick={() => setShowAll((v) => !v)}
-            className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg whitespace-nowrap"
-            style={{ backgroundColor: showAll ? "var(--bg-hover)" : "var(--bg-surface)", border: "1px solid var(--border)", color: showAll ? "var(--text-primary)" : "var(--text-muted)" }}
-          >
-            <ChevronDown size={10} style={{ transform: showAll ? "rotate(180deg)" : undefined, transition: "transform 0.15s" }} />
-            {showAll ? "Sugerowane" : `Wszystkie (${EMOJI_DATA.length})`}
-          </button>
-        )}
-      </div>
-      <div
-        className="grid gap-1"
-        style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))", maxHeight: showAll ? 200 : undefined, overflowY: showAll ? "auto" : undefined }}
-      >
-        {filtered.length === 0 ? (
-          <p className="col-span-8 text-xs text-center py-3" style={{ color: "var(--text-muted)" }}>Brak wyników</p>
-        ) : (
-          filtered.map((emoji) => (
-            <button
-              key={emoji}
-              onClick={() => onSelect(emoji)}
-              className="aspect-square rounded-lg flex items-center justify-center transition-colors active:scale-95"
-              style={{ fontSize: 22 }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ""; }}
-            >
-              {emoji}
-            </button>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
 
 export function CategoryIconPicker({ category, open, onClose, onSelect, onReset }: CategoryIconPickerProps) {
   const [allUserIcons, setAllUserIcons] = useState<CategoryIconVariantData[]>([]);
@@ -324,7 +263,18 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
             {/* Section 1: Emoji */}
             <div>
               <SectionLabel label="Systemowe" />
-              <EmojiGrid category={category} onSelect={handleSelectEmoji} />
+              <div style={{ borderRadius: 12, overflow: "hidden" }}>
+                <EmojiPicker
+                  onEmojiClick={(emojiData) => void handleSelectEmoji(emojiData.emoji)}
+                  theme={Theme.DARK}
+                  searchPlaceholder="Szukaj emoji…"
+                  width="100%"
+                  height={300}
+                  previewConfig={{ showPreview: false }}
+                  lazyLoadEmojis
+                  style={{ "--epr-bg-color": "var(--bg-surface)", "--epr-category-label-bg-color": "var(--bg-surface)", "--epr-search-border-color": "var(--border)" } as React.CSSProperties}
+                />
+              </div>
             </div>
 
             {/* Section 2: User icons */}

@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Item } from "@/types";
 import { ItemRow } from "./ItemRow";
 import { CategoryIconPicker } from "./CategoryIconPicker";
+import { IconDisplay } from "@/components/shopping/IconDisplay";
 
 
 interface CategoryGroupProps {
@@ -37,6 +38,7 @@ function SvgIcon({ content, size = 14 }: { content: string; size?: number }) {
 }
 
 const isSvg = (s: string) => s.trimStart().startsWith("<");
+const isDataImage = (s: string) => s.startsWith("data:image/");
 
 export function CategoryGroup({
   category,
@@ -98,9 +100,11 @@ export function CategoryGroup({
           aria-label="Zmień ikonę kategorii"
         >
           {isSvg(effectiveIcon) ? (
-            <SvgIcon content={effectiveIcon} size={15} />
+            <SvgIcon content={effectiveIcon} size={18} />
+          ) : isDataImage(effectiveIcon) ? (
+            <img src={effectiveIcon} alt="" width={18} height={18} style={{ objectFit: "contain", borderRadius: 2 }} />
           ) : (
-            <span className="text-sm leading-none select-none">{effectiveIcon}</span>
+            <span style={{ fontSize: 18, lineHeight: 1 }}>{effectiveIcon}</span>
           )}
         </button>
       </div>

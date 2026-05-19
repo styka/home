@@ -5,13 +5,12 @@ import { Trash2, Sparkles } from "lucide-react";
 import type { CategoryIconVariantData } from "@/actions/categoryIcons";
 import { deleteCategoryIconVariant } from "@/actions/categoryIcons";
 import { CategoryIconPicker } from "./CategoryIconPicker";
+import { IconDisplay } from "@/components/shopping/IconDisplay";
 
 interface CategoryIconsManagerProps {
   variants: Record<string, CategoryIconVariantData[]>;
   allCategories: string[];
 }
-
-const isSvg = (s: string) => s.trimStart().startsWith("<");
 
 function CategoryRow({
   categoryName,
@@ -53,22 +52,7 @@ function CategoryRow({
             }}
             title="Zmień ikonę"
           >
-            {isSvg(icon.svgContent) ? (
-              <svg
-                viewBox="0 0 24 24"
-                width={24}
-                height={24}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ color: "var(--text-secondary)" }}
-                dangerouslySetInnerHTML={{ __html: icon.svgContent }}
-              />
-            ) : (
-              <span className="text-lg">{icon.svgContent}</span>
-            )}
+            <IconDisplay content={icon.svgContent} size={24} />
           </button>
 
           {/* Delete button */}
