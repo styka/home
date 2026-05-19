@@ -169,7 +169,6 @@ function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData)
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState("");
   const [additionalText, setAdditionalText] = useState("");
-  const [detail, setDetail] = useState(50);
   const [generated, setGenerated] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingHints, setLoadingHints] = useState(false);
@@ -200,7 +199,7 @@ function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData)
       const res = await fetch("/api/llm/category-icons", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category: theme.trim(), detail, additionalText }),
+        body: JSON.stringify({ category: theme.trim(), additionalText }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Błąd generowania");
@@ -306,19 +305,6 @@ function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData)
                   <Sparkles size={11} className={loadingHints ? "animate-pulse" : ""} />
                   Sugeruj
                 </button>
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Szczegółowość</span>
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                    {detail <= 30 ? "Bardzo proste" : detail <= 70 ? "Standardowe" : "Szczegółowe"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>Proste</span>
-                  <input type="range" min={0} max={100} value={detail} onChange={(e) => setDetail(Number(e.target.value))} className="flex-1 accent-blue-500" style={{ height: 4 }} />
-                  <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>Szczegółowe</span>
-                </div>
               </div>
             </div>
 

@@ -165,7 +165,6 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
   const [loadingNew, setLoadingNew] = useState(false);
   const [showAllMine, setShowAllMine] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [detail, setDetail] = useState(50);
   const [additionalText, setAdditionalText] = useState("");
   const [loadingHints, setLoadingHints] = useState(false);
   const didInit = useRef(false);
@@ -191,7 +190,7 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
       const res = await fetch("/api/llm/category-icons", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, detail, additionalText }),
+        body: JSON.stringify({ category, additionalText }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Błąd generowania");
@@ -423,29 +422,6 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
                     Sugeruj
                   </button>
                 )}
-              </div>
-            </div>
-
-            {/* Detail slider */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs" style={{ color: "var(--text-muted)" }}>Szczegółowość</label>
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  {detail <= 30 ? "Bardzo proste" : detail <= 70 ? "Standardowe" : "Szczegółowe"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>Proste</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={detail}
-                  onChange={(e) => setDetail(Number(e.target.value))}
-                  className="flex-1 accent-blue-500"
-                  style={{ height: 4 }}
-                />
-                <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>Szczegółowe</span>
               </div>
             </div>
 
