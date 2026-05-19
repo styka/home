@@ -28,11 +28,11 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant for a Polish grocery shopping app. Respond only with the requested list, no explanations.",
+          content: "You are a helpful assistant for a Polish shopping app. The app supports any type of shopping category, not just food. Respond only with the requested comma-separated list, no explanations, no numbering.",
         },
         {
           role: "user",
-          content: `The Polish grocery category name is: "${category}". List 6-8 specific, visually distinct grocery items typically found in this category. Return only a comma-separated list of item names in Polish, no explanations, no numbering.`,
+          content: `The Polish word for the shopping category is: "${category}". List 6-8 specific, visually distinct products that a person would buy in this category. Return only a comma-separated list of product names in Polish, no explanations, no numbering.`,
         },
       ],
       temperature: 0.7,

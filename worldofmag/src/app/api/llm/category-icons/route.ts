@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const GROQ_ITEMS_SYSTEM = `You are a grocery assistant. Return ONLY a JSON array of exactly 6 English grocery item names (1-3 words each). No markdown, no explanation.`;
+const GROQ_ITEMS_SYSTEM = `You are a shopping assistant for a Polish app. The app supports any shopping category (food, pets, cleaning, tools, etc.). Return ONLY a JSON array of exactly 6 English item names (1-3 words each) that are visually distinct and typical for the given category. No markdown, no explanation.`;
 
 async function getEnglishItems(category: string, additionalText: string, groqKey: string): Promise<string[]> {
   const userMsg = additionalText
-    ? `Translate these Polish grocery items to English (keep each 1-3 words): ${additionalText}\nIf fewer than 6, add related items from the same theme. Return exactly 6.`
-    : `Polish grocery category: "${category}". List 6 specific typical items in English.`;
+    ? `Polish shopping category: "${category}". The user also described these items in Polish: "${additionalText}". Translate the described items to English (1-3 words each). If fewer than 6, add similar items from the same category. Return exactly 6 as a JSON array.`
+    : `Polish shopping category: "${category}" (interpret this as a Polish word). List 6 specific, visually distinct typical items from this category in English. Return exactly 6 as a JSON array.`;
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
