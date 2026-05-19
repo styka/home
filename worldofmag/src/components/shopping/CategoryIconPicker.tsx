@@ -12,23 +12,7 @@ import {
   deleteCategoryIconVariant,
   upsertCategoryEmojiOverride,
 } from "@/actions/categoryIcons";
-
-// Suggested emoji alternatives per category
-const CATEGORY_EMOJI_SUGGESTIONS: Record<string, string[]> = {
-  "Produce":            ["🥕","🍎","🥦","🧅","🥬","🍅","🫑","🥑"],
-  "Dairy & Eggs":       ["🧀","🥛","🧈","🥚","🫙","🍳","🥗"],
-  "Meat & Fish":        ["🥩","🍗","🥓","🐟","🦐","🍖","🌭"],
-  "Bakery":             ["🍞","🥖","🥐","🧁","🥨","🍩","🥞"],
-  "Dry Goods & Pasta":  ["🌾","🍚","🍝","🫘","🥜","🌰","🍜"],
-  "Drinks":             ["🍺","🧃","☕","🫖","💧","🍷","🥤"],
-  "Frozen":             ["🧊","🍦","❄️","🥶","🍧","🫙"],
-  "Snacks & Sweets":    ["🍫","🍬","🍭","🍿","🍪","🧆","🍡"],
-  "Condiments & Oils":  ["🫙","🧂","🌶️","🍯","🫚","🥫","🧄"],
-  "Spices & Herbs":     ["🌿","🌶️","🧄","🫛","🌱","🍃","🌺"],
-  "Cleaning & Hygiene": ["🧴","🧼","🪥","🧻","🫧","🧹","🪣"],
-  "Canned & Preserved": ["🥫","🫙","🥡","🧆","🫒"],
-  "Other":              ["📦","🛒","🏠","🎁","⚙️","🔑","🌍"],
-};
+import { EMOJI_DATA, getCategoryEmojis } from "@/lib/emojiData";
 
 interface CategoryIconPickerProps {
   category: string;
@@ -69,8 +53,8 @@ function SvgTile({
       >
         <svg
           viewBox="0 0 24 24"
-          width={36}
-          height={36}
+          width={52}
+          height={52}
           fill="none"
           stroke="currentColor"
           strokeWidth="1.5"
@@ -99,25 +83,6 @@ function SvgTile({
   );
 }
 
-function EmojiTile({ emoji, onClick }: { emoji: string; onClick: () => void }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="aspect-square rounded-xl flex items-center justify-center text-xl transition-all duration-150 active:scale-95"
-      style={{
-        backgroundColor: hovered ? "var(--bg-hover)" : "var(--bg-surface)",
-        border: `1.5px solid ${hovered ? "var(--text-secondary)" : "var(--border)"}`,
-      }}
-      aria-label={`Wybierz ${emoji}`}
-    >
-      {emoji}
-    </button>
-  );
-}
-
 function SkeletonTile() {
   return <div className="aspect-square rounded-xl animate-pulse" style={{ backgroundColor: "var(--bg-surface)" }} />;
 }
@@ -127,6 +92,71 @@ function SectionLabel({ label }: { label: string }) {
     <p className="text-xs mb-2 font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
       {label}
     </p>
+  );
+}
+
+function EmojiGrid({
+  category,
+  onSelect,
+}: {
+  category: string;
+  onSelect: (emoji: string) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [showAll, setShowAll] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const categoryDefaults = getCategoryEmojis(category);
+
+  const filtered = search.trim()
+    ? EMOJI_DATA.filter((e) =>
+        e.keywords.some((k) => k.includes(search.toLowerCase()))
+      ).map((e) => e.emoji)
+    : showAll
+    ? EMOJI_DATA.map((e) => e.emoji)
+    : categoryDefaults;
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2">
+        <input
+          ref={searchRef}
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setShowAll(false); }}
+          placeholder="🔍 Szukaj emoji…"
+          className="flex-1 text-xs focus:outline-none bg-transparent rounded-lg px-2 py-1.5"
+          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
+        />
+        {!search && (
+          <button
+            onClick={() => setShowAll((v) => !v)}
+            className="text-xs px-2 py-1.5 rounded-lg whitespace-nowrap"
+            style={{ backgroundColor: showAll ? "var(--bg-hover)" : "var(--bg-surface)", border: "1px solid var(--border)", color: showAll ? "var(--text-primary)" : "var(--text-muted)" }}
+          >
+            {showAll ? "Sugerowane" : "Wszystkie"}
+          </button>
+        )}
+      </div>
+      <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
+        {filtered.length === 0 ? (
+          <p className="col-span-8 text-xs text-center py-3" style={{ color: "var(--text-muted)" }}>Brak wyników</p>
+        ) : (
+          filtered.map((emoji) => (
+            <button
+              key={emoji}
+              onClick={() => onSelect(emoji)}
+              className="aspect-square rounded-lg flex items-center justify-center text-2xl transition-colors active:scale-95"
+              style={{ fontSize: 22 }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ""; }}
+              aria-label={`Wybierz ${emoji}`}
+            >
+              {emoji}
+            </button>
+          ))
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -143,8 +173,6 @@ export function CategoryIconPicker({
   const [loadingNew, setLoadingNew] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const didInit = useRef(false);
-
-  const systemEmojis = CATEGORY_EMOJI_SUGGESTIONS[category] ?? ["📦"];
 
   async function loadSaved() {
     setLoadingSaved(true);
@@ -194,7 +222,7 @@ export function CategoryIconPicker({
       await deactivateCategoryIcon(category);
     } catch { /* silent */ }
     setSavedVariants((prev) => prev.map((v) => ({ ...v, isActive: false })));
-    onReset(); // clear any SVG override in parent
+    onReset();
     onClose();
   }
 
@@ -246,11 +274,11 @@ export function CategoryIconPicker({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 backdrop-blur-sm" style={{ backgroundColor: "rgba(0,0,0,0.75)" }} />
         <Dialog.Content
-          className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-32px)] max-w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl outline-none"
+          className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-32px)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl outline-none"
           style={{
             backgroundColor: "var(--bg-elevated)",
             border: "1px solid var(--border)",
-            maxHeight: "min(90vh, 640px)",
+            maxHeight: "min(90vh, 680px)",
             display: "flex",
             flexDirection: "column",
           }}
@@ -282,11 +310,7 @@ export function CategoryIconPicker({
             {/* Section 1: System emoji */}
             <div>
               <SectionLabel label="Systemowe" />
-              <div className="grid grid-cols-4 gap-2">
-                {systemEmojis.map((emoji) => (
-                  <EmojiTile key={emoji} emoji={emoji} onClick={() => handleSelectEmoji(emoji)} />
-                ))}
-              </div>
+              <EmojiGrid category={category} onSelect={handleSelectEmoji} />
             </div>
 
             {/* Section 2: Saved SVG variants */}
