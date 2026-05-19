@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Map } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Map, Image } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 
@@ -137,6 +137,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false }: ModuleSi
         {isShoppingActive && (
           <div className="mb-1">
             <NavSubItem href="/shopping/stores" label="Mapy sklepów" icon={<Map size={12} />} pathname={pathname} />
+            <NavSubItem href="/shopping/icons" label="Ikony kategorii" icon={<Image size={12} />} pathname={pathname} />
           </div>
         )}
 

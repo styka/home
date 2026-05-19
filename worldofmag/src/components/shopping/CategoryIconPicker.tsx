@@ -10,12 +10,31 @@ import {
   setActiveCategoryIcon,
   deactivateCategoryIcon,
   deleteCategoryIconVariant,
+  upsertCategoryEmojiOverride,
 } from "@/actions/categoryIcons";
+
+// Suggested emoji alternatives per category
+const CATEGORY_EMOJI_SUGGESTIONS: Record<string, string[]> = {
+  "Produce":            ["🥕","🍎","🥦","🧅","🥬","🍅","🫑","🥑"],
+  "Dairy & Eggs":       ["🧀","🥛","🧈","🥚","🫙","🍳","🥗"],
+  "Meat & Fish":        ["🥩","🍗","🥓","🐟","🦐","🍖","🌭"],
+  "Bakery":             ["🍞","🥖","🥐","🧁","🥨","🍩","🥞"],
+  "Dry Goods & Pasta":  ["🌾","🍚","🍝","🫘","🥜","🌰","🍜"],
+  "Drinks":             ["🍺","🧃","☕","🫖","💧","🍷","🥤"],
+  "Frozen":             ["🧊","🍦","❄️","🥶","🍧","🫙"],
+  "Snacks & Sweets":    ["🍫","🍬","🍭","🍿","🍪","🧆","🍡"],
+  "Condiments & Oils":  ["🫙","🧂","🌶️","🍯","🫚","🥫","🧄"],
+  "Spices & Herbs":     ["🌿","🌶️","🧄","🫛","🌱","🍃","🌺"],
+  "Cleaning & Hygiene": ["🧴","🧼","🪥","🧻","🫧","🧹","🪣"],
+  "Canned & Preserved": ["🥫","🫙","🥡","🧆","🫒"],
+  "Other":              ["📦","🛒","🏠","🎁","⚙️","🔑","🌍"],
+};
 
 interface CategoryIconPickerProps {
   category: string;
   open: boolean;
   onClose: () => void;
+  /** Called with svg string on SVG selection, or empty string on emoji selection */
   onSelect: (svgContent: string) => void;
   onReset: () => void;
 }
@@ -25,13 +44,11 @@ function SvgTile({
   isActive,
   onClick,
   onDelete,
-  size = 40,
 }: {
   svgContent: string;
   isActive?: boolean;
   onClick: () => void;
   onDelete?: () => void;
-  size?: number;
 }) {
   const [hovered, setHovered] = useState(false);
 
@@ -52,29 +69,22 @@ function SvgTile({
       >
         <svg
           viewBox="0 0 24 24"
-          width={size}
-          height={size}
+          width={36}
+          height={36}
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.75"
+          strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          style={{ color: isActive ? "var(--accent-blue)" : hovered ? "var(--text-primary)" : "var(--text-secondary)" }}
+          style={{ color: "var(--text-secondary)" }}
           dangerouslySetInnerHTML={{ __html: svgContent }}
         />
       </button>
-
       {onDelete && hovered && (
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center z-10"
-          style={{
-            width: 18,
-            height: 18,
-            backgroundColor: "var(--bg-elevated)",
-            border: "1px solid var(--border)",
-            color: "var(--text-muted)",
-          }}
+          style={{ width: 18, height: 18, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
           onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
           aria-label="Usuń"
@@ -82,23 +92,41 @@ function SvgTile({
           <Trash2 size={10} />
         </button>
       )}
-
       {isActive && (
-        <div
-          className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full"
-          style={{ width: 6, height: 6, backgroundColor: "var(--accent-blue)" }}
-        />
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full" style={{ width: 6, height: 6, backgroundColor: "var(--accent-blue)" }} />
       )}
     </div>
   );
 }
 
-function SkeletonTile() {
+function EmojiTile({ emoji, onClick }: { emoji: string; onClick: () => void }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <div
-      className="aspect-square rounded-xl animate-pulse"
-      style={{ backgroundColor: "var(--bg-surface)" }}
-    />
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="aspect-square rounded-xl flex items-center justify-center text-xl transition-all duration-150 active:scale-95"
+      style={{
+        backgroundColor: hovered ? "var(--bg-hover)" : "var(--bg-surface)",
+        border: `1.5px solid ${hovered ? "var(--text-secondary)" : "var(--border)"}`,
+      }}
+      aria-label={`Wybierz ${emoji}`}
+    >
+      {emoji}
+    </button>
+  );
+}
+
+function SkeletonTile() {
+  return <div className="aspect-square rounded-xl animate-pulse" style={{ backgroundColor: "var(--bg-surface)" }} />;
+}
+
+function SectionLabel({ label }: { label: string }) {
+  return (
+    <p className="text-xs mb-2 font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+      {label}
+    </p>
   );
 }
 
@@ -116,16 +144,15 @@ export function CategoryIconPicker({
   const [error, setError] = useState<string | null>(null);
   const didInit = useRef(false);
 
+  const systemEmojis = CATEGORY_EMOJI_SUGGESTIONS[category] ?? ["📦"];
+
   async function loadSaved() {
     setLoadingSaved(true);
     try {
       const variants = await getCategoryIconVariants(category);
       setSavedVariants(variants);
-    } catch {
-      // silent — library just shows empty
-    } finally {
-      setLoadingSaved(false);
-    }
+    } catch { /* silent */ }
+    finally { setLoadingSaved(false); }
   }
 
   async function generateNew() {
@@ -161,21 +188,27 @@ export function CategoryIconPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  async function handleSelectEmoji(emoji: string) {
+    try {
+      await upsertCategoryEmojiOverride(category, emoji);
+      await deactivateCategoryIcon(category);
+    } catch { /* silent */ }
+    setSavedVariants((prev) => prev.map((v) => ({ ...v, isActive: false })));
+    onReset(); // clear any SVG override in parent
+    onClose();
+  }
+
   async function handleSelectSaved(variant: CategoryIconVariantData) {
-    onSelect(variant.svgContent); // optimistic
+    onSelect(variant.svgContent);
     try {
       await setActiveCategoryIcon(variant.id);
-      setSavedVariants((prev) =>
-        prev.map((v) => ({ ...v, isActive: v.id === variant.id }))
-      );
-    } catch {
-      // server action failed — page will correct on reload
-    }
+      setSavedVariants((prev) => prev.map((v) => ({ ...v, isActive: v.id === variant.id })));
+    } catch { /* server will correct on reload */ }
     onClose();
   }
 
   async function handleSelectNew(svgContent: string) {
-    onSelect(svgContent); // optimistic
+    onSelect(svgContent);
     try {
       const saved = await saveAndActivateCategoryIcon(category, svgContent);
       setNewlyGenerated((prev) => prev.filter((s) => s !== svgContent));
@@ -183,9 +216,7 @@ export function CategoryIconPicker({
         { ...saved, createdAt: new Date(saved.createdAt) },
         ...prev.map((v) => ({ ...v, isActive: false })),
       ]);
-    } catch {
-      // silent — optimistic update stays, DB will sync on reload
-    }
+    } catch { /* optimistic stays, DB syncs on reload */ }
     onClose();
   }
 
@@ -195,10 +226,9 @@ export function CategoryIconPicker({
     try {
       await deleteCategoryIconVariant(variant.id);
     } catch {
-      // revert optimistic delete
-      setSavedVariants((prev) => [...prev, variant].sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ));
+      setSavedVariants((prev) =>
+        [...prev, variant].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      );
     }
   }
 
@@ -207,48 +237,35 @@ export function CategoryIconPicker({
     try {
       await deactivateCategoryIcon(category);
       setSavedVariants((prev) => prev.map((v) => ({ ...v, isActive: false })));
-    } catch {
-      // silent
-    }
+    } catch { /* silent */ }
     onClose();
   }
-
-  const hasSaved = savedVariants.length > 0;
-  const hasNew = newlyGenerated.length > 0 || loadingNew;
 
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay
-          className="fixed inset-0 z-50 backdrop-blur-sm"
-          style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
-        />
+        <Dialog.Overlay className="fixed inset-0 z-50 backdrop-blur-sm" style={{ backgroundColor: "rgba(0,0,0,0.75)" }} />
         <Dialog.Content
-          className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-32px)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl outline-none"
+          className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-32px)] max-w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl outline-none"
           style={{
             backgroundColor: "var(--bg-elevated)",
             border: "1px solid var(--border)",
-            maxHeight: "min(90vh, 600px)",
+            maxHeight: "min(90vh, 640px)",
             display: "flex",
             flexDirection: "column",
           }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0">
+          <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
             <Dialog.Title className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
               Ikona kategorii
             </Dialog.Title>
             <div className="flex items-center gap-2">
-              <span
-                className="text-xs px-2 py-0.5 rounded-full"
-                style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-muted)" }}
-              >
+              <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-muted)" }}>
                 {category}
               </span>
               <Dialog.Close asChild>
-                <button
-                  className="rounded-lg p-1.5 transition-colors"
-                  style={{ color: "var(--text-muted)" }}
+                <button className="rounded-lg p-1.5 transition-colors" style={{ color: "var(--text-muted)" }}
                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                   aria-label="Zamknij"
@@ -260,14 +277,23 @@ export function CategoryIconPicker({
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto px-5 pb-2">
-            {/* Saved library */}
-            {(hasSaved || loadingSaved) && (
-              <div className="mb-5">
-                <p className="text-xs mb-2 font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                  Biblioteka
-                </p>
-                <div className="grid grid-cols-4 gap-2.5">
+          <div className="flex-1 overflow-y-auto px-5 pb-2 space-y-5">
+
+            {/* Section 1: System emoji */}
+            <div>
+              <SectionLabel label="Systemowe" />
+              <div className="grid grid-cols-4 gap-2">
+                {systemEmojis.map((emoji) => (
+                  <EmojiTile key={emoji} emoji={emoji} onClick={() => handleSelectEmoji(emoji)} />
+                ))}
+              </div>
+            </div>
+
+            {/* Section 2: Saved SVG variants */}
+            {(loadingSaved || savedVariants.length > 0) && (
+              <div>
+                <SectionLabel label="Moje ikony" />
+                <div className="grid grid-cols-4 gap-2">
                   {loadingSaved
                     ? Array.from({ length: 4 }).map((_, i) => <SkeletonTile key={i} />)
                     : savedVariants.map((variant) => (
@@ -283,47 +309,34 @@ export function CategoryIconPicker({
               </div>
             )}
 
-            {/* Newly generated */}
-            {hasNew && (
-              <div className="mb-2">
-                <p className="text-xs mb-2 font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                  Nowe propozycje
-                </p>
-                <div className="grid grid-cols-3 gap-2.5">
+            {/* Section 3: Newly generated */}
+            <div>
+              <SectionLabel label="Nowe propozycje" />
+              {error ? (
+                <div className="flex flex-col items-center py-4 gap-2">
+                  <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>{error}</p>
+                  <button onClick={generateNew} className="text-xs px-3 py-1.5 rounded-lg"
+                    style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
+                    Spróbuj ponownie
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
                   {loadingNew && newlyGenerated.length === 0
                     ? Array.from({ length: 6 }).map((_, i) => <SkeletonTile key={i} />)
                     : newlyGenerated.map((svg, i) => (
-                        <SvgTile
-                          key={i}
-                          svgContent={svg}
-                          onClick={() => handleSelectNew(svg)}
-                          size={44}
-                        />
+                        <SvgTile key={i} svgContent={svg} onClick={() => handleSelectNew(svg)} />
                       ))}
                   {loadingNew && newlyGenerated.length > 0 &&
-                    Array.from({ length: 3 }).map((_, i) => <SkeletonTile key={`new-${i}`} />)}
+                    Array.from({ length: 3 }).map((_, i) => <SkeletonTile key={`sk-${i}`} />)}
+                  {!loadingNew && newlyGenerated.length === 0 && !error && (
+                    <p className="col-span-3 text-xs py-3 text-center" style={{ color: "var(--text-muted)" }}>
+                      Kliknij „Losuj więcej" by wygenerować ikony
+                    </p>
+                  )}
                 </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="flex flex-col items-center py-4 gap-2">
-                <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>{error}</p>
-                <button
-                  onClick={generateNew}
-                  className="text-xs px-3 py-1.5 rounded-lg"
-                  style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
-                >
-                  Spróbuj ponownie
-                </button>
-              </div>
-            )}
-
-            {!hasSaved && !hasNew && !loadingSaved && !loadingNew && !error && (
-              <p className="text-xs text-center py-6" style={{ color: "var(--text-muted)" }}>
-                Brak zapisanych ikon. Wygeneruj nowe poniżej.
-              </p>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Footer */}
@@ -332,11 +345,7 @@ export function CategoryIconPicker({
               onClick={generateNew}
               disabled={loadingNew}
               className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all disabled:opacity-40 active:scale-[0.98]"
-              style={{
-                backgroundColor: "var(--bg-surface)",
-                color: "var(--text-secondary)",
-                border: "1px solid var(--border)",
-              }}
+              style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
               onMouseEnter={(e) => { if (!loadingNew) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
             >

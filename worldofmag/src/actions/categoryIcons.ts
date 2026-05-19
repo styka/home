@@ -20,7 +20,6 @@ export async function saveAndActivateCategoryIcon(
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  // Deactivate all existing, then create new active one
   await prisma.categoryIconVariant.updateMany({
     where: { userId: session.user.id, categoryName },
     data: { isActive: false },
@@ -54,6 +53,7 @@ export async function setActiveCategoryIcon(variantId: string): Promise<void> {
   ]);
 
   revalidatePath("/shopping");
+  revalidatePath("/shopping/icons");
 }
 
 /** Deactivates all icons for a category (reverts to default emoji). */
@@ -67,6 +67,7 @@ export async function deactivateCategoryIcon(categoryName: string): Promise<void
   });
 
   revalidatePath("/shopping");
+  revalidatePath("/shopping/icons");
 }
 
 /** Deletes a saved icon variant. */
@@ -80,6 +81,7 @@ export async function deleteCategoryIconVariant(variantId: string): Promise<void
   await prisma.categoryIconVariant.delete({ where: { id: variantId } });
 
   revalidatePath("/shopping");
+  revalidatePath("/shopping/icons");
 }
 
 /** Returns all saved icon variants for a category (newest first). */
@@ -106,4 +108,43 @@ export async function getActiveCategoryIconMap(): Promise<Record<string, string>
   });
 
   return Object.fromEntries(active.map((v) => [v.categoryName, v.svgContent]));
+}
+
+/** Returns all icon variants for all categories of the current user, grouped by category. */
+export async function getAllUserIconVariants(): Promise<Record<string, CategoryIconVariantData[]>> {
+  const session = await auth();
+  if (!session?.user?.id) return {};
+
+  const all = await prisma.categoryIconVariant.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const grouped: Record<string, CategoryIconVariantData[]> = {};
+  for (const v of all) {
+    if (!grouped[v.categoryName]) grouped[v.categoryName] = [];
+    grouped[v.categoryName].push(v);
+  }
+  return grouped;
+}
+
+/** Creates or updates a user-specific emoji override for a category (works for base categories too). */
+export async function upsertCategoryEmojiOverride(
+  categoryName: string,
+  emoji: string
+): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const existing = await prisma.category.findFirst({
+    where: { name: categoryName, userId: session.user.id, teamId: null },
+  });
+  if (existing) {
+    await prisma.category.update({ where: { id: existing.id }, data: { emoji } });
+  } else {
+    await prisma.category.create({ data: { name: categoryName, emoji, userId: session.user.id } });
+  }
+
+  revalidatePath("/shopping");
+  revalidatePath("/shopping/categories");
 }

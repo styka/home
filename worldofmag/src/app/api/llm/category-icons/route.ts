@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const SYSTEM_PROMPT = `You are an SVG icon designer for a grocery shopping app. Generate exactly 6 different minimalist SVG icons.
+const SYSTEM_PROMPT = `You are a colorful icon designer for a grocery shopping app.
+Generate exactly 6 different COLORFUL, flat-design SVG icons.
 
 Rules:
-- Each icon must fit within a 24x24 coordinate space
-- Use SVG elements: path, circle, rect, line, polyline, polygon, ellipse
-- All elements must use stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-- Designs must be simple, clean, recognizable (similar to Lucide icons style)
-- Return ONLY a valid JSON array with exactly 6 strings, no explanation text
-- Each string is the INNER content of <svg viewBox="0 0 24 24"> — do NOT include the outer <svg> wrapper
-- Make each of the 6 icons visually distinct from one another
-
-Example output format (for category "Bakery"):
-["<path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z'/>","<rect x='3' y='8' width='18' height='12' rx='3'/><path d='M8 8V6a4 4 0 0 1 8 0v2'/>"]`;
+- Fit within a 24x24 coordinate space
+- Use SVG elements: path, circle, rect, ellipse, polygon, line
+- COLORFUL: every visible shape must have an explicit fill="COLOR" attribute (e.g. fill="#4ade80")
+- Do NOT use "currentColor" or fill="none" on visible shapes
+- Use 2-4 colors per icon that naturally suit the category's visual theme
+- Simple, bold flat shapes — think simplified emoji style
+- Optional thin stroke (e.g. stroke="#fff" stroke-width="0.5") for contrast
+- Return ONLY a valid JSON array of exactly 6 strings, no explanation
+- Each string is the INNER content of <svg viewBox="0 0 24 24"> (no outer wrapper)
+- Make each of the 6 icons visually and color-palette distinct from the others`;
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
@@ -43,7 +44,9 @@ export async function POST(req: NextRequest) {
         { role: "system", content: SYSTEM_PROMPT },
         {
           role: "user",
-          content: `Generate 6 different SVG icons for the grocery shopping category: "${category}". Return only the JSON array.`,
+          content: `Generate 6 colorful SVG icons specifically for the grocery shopping category: "${category}".
+Each icon must clearly depict something from the "${category}" category using colors naturally associated with "${category}" products.
+Return only the JSON array.`,
         },
       ],
       temperature: 0.95,
