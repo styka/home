@@ -17,7 +17,12 @@ Dostępne typy akcji:
 
 ZAKUPY (module: "shopping"):
 - add_item: params { rawText: string, listName?: string }
-  Dodaje produkt do listy zakupów. rawText w formacie np. "2 kg jabłek" lub "Sachol z Apteki" lub "3x mleko".
+  Dodaje produkt do listy zakupów.
+  WAŻNE: rawText to WYŁĄCZNIE nazwa i ilość produktu (np. "2 kg jabłek", "3x mleko", "Sachol").
+  rawText NIE może zawierać nazwy listy ani frazy "do listy X".
+  Jeśli użytkownik wskazuje konkretną listę (np. "do listy Apteka", "na listę Tygodniowe", "do drugiej listy o nazwie X"),
+  wyodrębnij jej nazwę i umieść w listName. listName to fragment nazwy listy, np. "Apteka", "Tygodniowe zakupy".
+  Jeśli lista nie jest podana wprost, pomiń listName.
 - update_item_status: params { status: "NEEDED"|"IN_CART"|"DONE" }, searchQuery: string
   Zmienia status produktu. searchQuery to nazwa produktu do wyszukania.
 - delete_item: params {}, searchQuery: string
@@ -51,24 +56,18 @@ PRIORYTET MODUŁU (ważne!):
 - Gdy użytkownik wyraźnie wskazuje inny moduł słowem kluczowym ("zadanie", "notatka", "zakupy", "lista zakupów" itp.) — użyj tego modułu, ale TYLKO jeśli jest on na liście aktywnych
 - Jeśli wskazany przez użytkownika moduł nie jest aktywny, użyj modułu podstawowego
 
-Format odpowiedzi:
-[
-  {
-    "id": "a1",
-    "module": "shopping",
-    "type": "add_item",
-    "description": "Dodaj Sachol (2 szt) do listy zakupów",
-    "params": { "rawText": "2x Sachol" }
-  },
-  {
-    "id": "a2",
-    "module": "tasks",
-    "type": "shift_task_due_date",
-    "description": "Przesuń termin zadania 'mycie uszu psa' o 14 dni",
-    "params": { "days": 14 },
-    "searchQuery": "mycie uszu psa"
-  }
-]`;
+Przykłady:
+Polecenie: "dodaj mleko i chleb do listy Apteka"
+→ [{ "id":"a1", "module":"shopping", "type":"add_item", "description":"Dodaj mleko do listy Apteka", "params":{ "rawText":"mleko", "listName":"Apteka" } },
+   { "id":"a2", "module":"shopping", "type":"add_item", "description":"Dodaj chleb do listy Apteka", "params":{ "rawText":"chleb", "listName":"Apteka" } }]
+
+Polecenie: "dodaj 2x Sachol"
+→ [{ "id":"a1", "module":"shopping", "type":"add_item", "description":"Dodaj Sachol (2 szt) do listy zakupów", "params":{ "rawText":"2x Sachol" } }]
+
+Polecenie: "przesuń mycie uszu psa o 2 tygodnie"
+→ [{ "id":"a1", "module":"tasks", "type":"shift_task_due_date", "description":"Przesuń termin 'mycie uszu psa' o 14 dni", "params":{ "days":14 }, "searchQuery":"mycie uszu psa" }]
+
+Zwróć TYLKO tablicę JSON, bez żadnego dodatkowego tekstu ani markdown.`;
 
 export async function POST(req: NextRequest) {
   const session = await auth();
