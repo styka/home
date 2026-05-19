@@ -13,14 +13,18 @@ import {
   upsertCategoryEmojiOverride,
 } from "@/actions/categoryIcons";
 import { EMOJI_DATA, getCategoryEmojis } from "@/lib/emojiData";
+import { getCategoryHints } from "@/lib/categoryIconHints";
 
 interface CategoryIconPickerProps {
   category: string;
   open: boolean;
   onClose: () => void;
-  onSelect: (svgContent: string) => void;
+  /** Called with svg string (SVG) or emoji character; parent uses isSvg() to distinguish */
+  onSelect: (value: string) => void;
   onReset: () => void;
 }
+
+const isSvg = (s: string) => s.trimStart().startsWith("<");
 
 function SvgTile({
   svgContent,
@@ -101,27 +105,13 @@ function SectionLabel({ label }: { label: string }) {
   );
 }
 
-function EmojiGrid({
-  category,
-  onSelect,
-}: {
-  category: string;
-  onSelect: (emoji: string) => void;
-}) {
+function EmojiGrid({ category, onSelect }: { category: string; onSelect: (emoji: string) => void }) {
   const [search, setSearch] = useState("");
   const [showAll, setShowAll] = useState(false);
-
   const categoryDefaults = getCategoryEmojis(category);
-
-  const allEmoji = EMOJI_DATA.map((e) => e.emoji);
-
   const filtered = search.trim()
-    ? EMOJI_DATA.filter((e) =>
-        e.keywords.some((k) => k.includes(search.toLowerCase()))
-      ).map((e) => e.emoji)
-    : showAll
-    ? allEmoji
-    : categoryDefaults;
+    ? EMOJI_DATA.filter((e) => e.keywords.some((k) => k.includes(search.toLowerCase()))).map((e) => e.emoji)
+    : showAll ? EMOJI_DATA.map((e) => e.emoji) : categoryDefaults;
 
   return (
     <div>
@@ -137,18 +127,17 @@ function EmojiGrid({
           <button
             onClick={() => setShowAll((v) => !v)}
             className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg whitespace-nowrap"
-            style={{
-              backgroundColor: showAll ? "var(--bg-hover)" : "var(--bg-surface)",
-              border: "1px solid var(--border)",
-              color: showAll ? "var(--text-primary)" : "var(--text-muted)",
-            }}
+            style={{ backgroundColor: showAll ? "var(--bg-hover)" : "var(--bg-surface)", border: "1px solid var(--border)", color: showAll ? "var(--text-primary)" : "var(--text-muted)" }}
           >
             <ChevronDown size={10} style={{ transform: showAll ? "rotate(180deg)" : undefined, transition: "transform 0.15s" }} />
-            {showAll ? "Sugerowane" : `Wszystkie (${allEmoji.length})`}
+            {showAll ? "Sugerowane" : `Wszystkie (${EMOJI_DATA.length})`}
           </button>
         )}
       </div>
-      <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))", maxHeight: showAll ? 200 : undefined, overflowY: showAll ? "auto" : undefined }}>
+      <div
+        className="grid gap-1"
+        style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))", maxHeight: showAll ? 200 : undefined, overflowY: showAll ? "auto" : undefined }}
+      >
         {filtered.length === 0 ? (
           <p className="col-span-8 text-xs text-center py-3" style={{ color: "var(--text-muted)" }}>Brak wyników</p>
         ) : (
@@ -160,7 +149,6 @@ function EmojiGrid({
               style={{ fontSize: 22 }}
               onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ""; }}
-              aria-label={`Wybierz ${emoji}`}
             >
               {emoji}
             </button>
@@ -171,22 +159,17 @@ function EmojiGrid({
   );
 }
 
-export function CategoryIconPicker({
-  category,
-  open,
-  onClose,
-  onSelect,
-  onReset,
-}: CategoryIconPickerProps) {
+export function CategoryIconPicker({ category, open, onClose, onSelect, onReset }: CategoryIconPickerProps) {
   const [allUserIcons, setAllUserIcons] = useState<CategoryIconVariantData[]>([]);
   const [newlyGenerated, setNewlyGenerated] = useState<string[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [loadingNew, setLoadingNew] = useState(false);
   const [showAllMine, setShowAllMine] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detail, setDetail] = useState(50);
+  const [additionalText, setAdditionalText] = useState("");
   const didInit = useRef(false);
   const newIconsRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const categoryIcons = allUserIcons.filter((v) => v.categoryName === category);
   const otherIcons = allUserIcons.filter((v) => v.categoryName !== category);
@@ -208,14 +191,12 @@ export function CategoryIconPicker({
       const res = await fetch("/api/llm/category-icons", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category }),
+        body: JSON.stringify({ category, detail, additionalText }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Błąd generowania");
       setNewlyGenerated((prev) => [...prev, ...(data.svgs ?? [])]);
-      setTimeout(() => {
-        newIconsRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }, 80);
+      setTimeout(() => newIconsRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 80);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Błąd połączenia");
     } finally {
@@ -226,6 +207,7 @@ export function CategoryIconPicker({
   useEffect(() => {
     if (open && !didInit.current) {
       didInit.current = true;
+      setAdditionalText(getCategoryHints(category));
       loadSaved();
       generateNew();
     }
@@ -239,12 +221,15 @@ export function CategoryIconPicker({
   }, [open]);
 
   async function handleSelectEmoji(emoji: string) {
+    // Save to DB
     try {
       await upsertCategoryEmojiOverride(category, emoji);
       await deactivateCategoryIcon(category);
     } catch { /* silent */ }
+    // Update local icon state (deactivate SVG variants)
     setAllUserIcons((prev) => prev.map((v) => v.categoryName === category ? { ...v, isActive: false } : v));
-    onReset();
+    // Notify parent with emoji string — parent uses isSvg() to distinguish SVG from emoji
+    onSelect(emoji);
     onClose();
   }
 
@@ -300,13 +285,7 @@ export function CategoryIconPicker({
         <Dialog.Overlay className="fixed inset-0 z-50 backdrop-blur-sm" style={{ backgroundColor: "rgba(0,0,0,0.75)" }} />
         <Dialog.Content
           className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-32px)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl outline-none"
-          style={{
-            backgroundColor: "var(--bg-elevated)",
-            border: "1px solid var(--border)",
-            maxHeight: "min(90vh, 700px)",
-            display: "flex",
-            flexDirection: "column",
-          }}
+          style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", maxHeight: "min(92vh, 720px)", display: "flex", flexDirection: "column" }}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
@@ -320,9 +299,7 @@ export function CategoryIconPicker({
               <Dialog.Close asChild>
                 <button className="rounded-lg p-1.5 transition-colors" style={{ color: "var(--text-muted)" }}
                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
-                  aria-label="Zamknij"
-                >
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}>
                   <X size={14} />
                 </button>
               </Dialog.Close>
@@ -330,37 +307,30 @@ export function CategoryIconPicker({
           </div>
 
           {/* Scrollable content */}
-          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-5 pb-2 space-y-5">
-
-            {/* Section 1: System emoji */}
+          <div className="flex-1 overflow-y-auto px-5 pb-2 space-y-5">
+            {/* Section 1: Emoji */}
             <div>
               <SectionLabel label="Systemowe" />
               <EmojiGrid category={category} onSelect={handleSelectEmoji} />
             </div>
 
-            {/* Section 2: User's saved icons */}
+            {/* Section 2: User icons */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <SectionLabel label={`Moje ikony${categoryIcons.length > 0 ? ` (${categoryIcons.length} dla tej kategorii)` : ""}`} />
+                <SectionLabel label={`Moje ikony${categoryIcons.length > 0 ? ` (${categoryIcons.length})` : ""}`} />
                 {otherIcons.length > 0 && (
                   <button
                     onClick={() => setShowAllMine((v) => !v)}
                     className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-lg"
-                    style={{
-                      backgroundColor: showAllMine ? "var(--bg-hover)" : "transparent",
-                      border: "1px solid var(--border)",
-                      color: showAllMine ? "var(--text-primary)" : "var(--text-muted)",
-                    }}
+                    style={{ backgroundColor: showAllMine ? "var(--bg-hover)" : "transparent", border: "1px solid var(--border)", color: showAllMine ? "var(--text-primary)" : "var(--text-muted)" }}
                   >
-                    <ChevronDown size={10} style={{ transform: showAllMine ? "rotate(180deg)" : undefined, transition: "transform 0.15s" }} />
+                    <ChevronDown size={10} style={{ transform: showAllMine ? "rotate(180deg)" : undefined }} />
                     {showAllMine ? "Tylko ta kategoria" : `Wszystkie (${allUserIcons.length})`}
                   </button>
                 )}
               </div>
               {loadingSaved ? (
-                <div className="grid grid-cols-4 gap-2">
-                  {Array.from({ length: 4 }).map((_, i) => <SkeletonTile key={i} />)}
-                </div>
+                <div className="grid grid-cols-4 gap-2">{Array.from({ length: 4 }).map((_, i) => <SkeletonTile key={i} />)}</div>
               ) : displayedSaved.length === 0 ? (
                 <p className="text-xs py-2" style={{ color: "var(--text-muted)" }}>
                   {allUserIcons.length === 0 ? "Brak zapisanych ikon — wygeneruj pierwszą poniżej." : "Brak ikon dla tej kategorii."}
@@ -381,7 +351,7 @@ export function CategoryIconPicker({
               )}
             </div>
 
-            {/* Section 3: Newly generated */}
+            {/* Section 3: Generated */}
             <div ref={newIconsRef}>
               <SectionLabel label="Nowe propozycje" />
               {error ? (
@@ -399,8 +369,7 @@ export function CategoryIconPicker({
                     : newlyGenerated.map((svg, i) => (
                         <SvgTile key={i} svgContent={svg} onClick={() => handleSelectNew(svg)} />
                       ))}
-                  {loadingNew && newlyGenerated.length > 0 &&
-                    Array.from({ length: 3 }).map((_, i) => <SkeletonTile key={`sk-${i}`} />)}
+                  {loadingNew && newlyGenerated.length > 0 && Array.from({ length: 3 }).map((_, i) => <SkeletonTile key={`sk-${i}`} />)}
                   {!loadingNew && newlyGenerated.length === 0 && !error && (
                     <p className="col-span-3 text-xs py-3 text-center" style={{ color: "var(--text-muted)" }}>
                       Kliknij „Losuj więcej" by wygenerować ikony
@@ -411,30 +380,70 @@ export function CategoryIconPicker({
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="flex gap-2 px-5 py-4 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
-            <button
-              onClick={generateNew}
-              disabled={loadingNew}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all disabled:opacity-40 active:scale-[0.98]"
-              style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
-              onMouseEnter={(e) => { if (!loadingNew) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
-            >
-              <RefreshCw size={14} className={loadingNew ? "animate-spin" : ""} />
-              Losuj więcej
-            </button>
-            <button
-              onClick={handleReset}
-              className="flex items-center gap-1.5 rounded-xl py-2.5 px-3.5 text-sm transition-all active:scale-[0.98]"
-              style={{ color: "var(--text-muted)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
-              title="Przywróć domyślną ikonę"
-            >
-              <RotateCcw size={14} />
-              <span className="hidden sm:inline text-xs">Reset</span>
-            </button>
+          {/* Footer: controls + buttons */}
+          <div className="px-5 py-4 shrink-0 space-y-3" style={{ borderTop: "1px solid var(--border)" }}>
+            {/* Additional text hint */}
+            <div>
+              <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>
+                Dodatkowe wskazówki dla generatora (opcjonalnie)
+              </label>
+              <input
+                value={additionalText}
+                onChange={(e) => setAdditionalText(e.target.value)}
+                placeholder="np. owoce tropikalne, intensywne kolory…"
+                className="w-full text-xs rounded-lg px-2.5 py-1.5 focus:outline-none"
+                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
+              />
+            </div>
+
+            {/* Detail slider */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs" style={{ color: "var(--text-muted)" }}>Szczegółowość</label>
+                <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  {detail <= 30 ? "Bardzo proste" : detail <= 70 ? "Standardowe" : "Szczegółowe"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>Proste</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={detail}
+                  onChange={(e) => setDetail(Number(e.target.value))}
+                  className="flex-1 accent-blue-500"
+                  style={{ height: 4 }}
+                />
+                <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>Szczegółowe</span>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={generateNew}
+                disabled={loadingNew}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all disabled:opacity-40 active:scale-[0.98]"
+                style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
+                onMouseEnter={(e) => { if (!loadingNew) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
+              >
+                <RefreshCw size={14} className={loadingNew ? "animate-spin" : ""} />
+                Losuj więcej
+              </button>
+              <button
+                onClick={handleReset}
+                className="flex items-center gap-1.5 rounded-xl py-2.5 px-3.5 text-sm transition-all active:scale-[0.98]"
+                style={{ color: "var(--text-muted)" }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
+                title="Przywróć domyślną ikonę"
+              >
+                <RotateCcw size={14} />
+                <span className="hidden sm:inline text-xs">Reset</span>
+              </button>
+            </div>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

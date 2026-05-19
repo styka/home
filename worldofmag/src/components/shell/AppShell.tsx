@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 
@@ -163,18 +163,31 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false }: App
                 <span>Zakupy</span>
               </Link>
               {isShoppingActive && (
-                <Link
-                  href="/shopping/stores"
-                  className="flex items-center gap-2 py-2 mx-2 rounded text-sm"
-                  style={{
-                    paddingLeft: 52,
-                    backgroundColor: pathname.startsWith("/shopping/stores") ? "var(--bg-elevated)" : undefined,
-                    color: pathname.startsWith("/shopping/stores") ? "var(--text-primary)" : "var(--text-muted)",
-                  }}
-                >
-                  <Map size={13} />
-                  Mapy sklepów
-                </Link>
+                <>
+                  <Link
+                    href="/shopping/stores"
+                    className="flex items-center gap-2 py-2 mx-2 rounded text-sm"
+                    style={{ paddingLeft: 52, backgroundColor: pathname.startsWith("/shopping/stores") ? "var(--bg-elevated)" : undefined, color: pathname.startsWith("/shopping/stores") ? "var(--text-primary)" : "var(--text-muted)" }}
+                  >
+                    <Map size={13} />
+                    Mapy sklepów
+                  </Link>
+                  <Link
+                    href="/shopping/icons"
+                    className="flex items-center gap-2 py-2 mx-2 rounded text-sm"
+                    style={{ paddingLeft: 52, backgroundColor: pathname === "/shopping/icons" ? "var(--bg-elevated)" : undefined, color: pathname === "/shopping/icons" ? "var(--text-primary)" : "var(--text-muted)" }}
+                  >
+                    <Image size={13} />
+                    Biblioteka ikon
+                  </Link>
+                  <Link
+                    href="/shopping/icons/categories"
+                    className="flex items-center gap-2 py-2 mx-2 rounded text-sm"
+                    style={{ paddingLeft: 52, backgroundColor: pathname === "/shopping/icons/categories" ? "var(--bg-elevated)" : undefined, color: pathname === "/shopping/icons/categories" ? "var(--text-primary)" : "var(--text-muted)" }}
+                  >
+                    Przypisania ikon
+                  </Link>
+                </>
               )}
 
               {/* Tasks */}

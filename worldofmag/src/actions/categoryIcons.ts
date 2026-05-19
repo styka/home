@@ -160,7 +160,43 @@ export async function saveToLibrary(
   return variant;
 }
 
-/** Creates or updates a user-specific emoji override for a category (works for base categories too). */
+/** Assigns an icon from the library to a category (copies SVG, activates for that category). */
+export async function assignIconToCategory(
+  variantId: string,
+  targetCategory: string
+): Promise<CategoryIconVariantData> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const variant = await prisma.categoryIconVariant.findUnique({ where: { id: variantId } });
+  if (!variant || variant.userId !== session.user.id) throw new Error("Forbidden");
+
+  await prisma.categoryIconVariant.updateMany({
+    where: { userId: session.user.id, categoryName: targetCategory },
+    data: { isActive: false },
+  });
+
+  const created = await prisma.categoryIconVariant.create({
+    data: {
+      categoryName: targetCategory,
+      svgContent: variant.svgContent,
+      isActive: true,
+      userId: session.user.id,
+    },
+  });
+
+  revalidatePath("/shopping");
+  revalidatePath("/shopping/icons");
+  return created;
+}
+
+/** Moves all icon variants for a category to __library__ (called before category deletion). */
+export async function orphanCategoryIcons(categoryName: string, userId: string): Promise<void> {
+  await prisma.categoryIconVariant.updateMany({
+    where: { userId, categoryName },
+    data: { categoryName: "__library__", isActive: false },
+  });
+}
 export async function upsertCategoryEmojiOverride(
   categoryName: string,
   emoji: string

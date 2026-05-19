@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { auth } from "@/lib/auth";
 import { BASE_CATEGORIES } from "@/lib/categories";
-import { getActiveCategoryIconMap } from "@/actions/categoryIcons";
+import { getActiveCategoryIconMap, orphanCategoryIcons } from "@/actions/categoryIcons";
 
 export type CategoryWithUsage = {
   id: string | null;
@@ -178,6 +178,10 @@ export async function deleteCategory(id: string): Promise<void> {
   const cat = await prisma.category.findUnique({ where: { id } });
   if (!cat || cat.userId !== user.id) throw new Error("Forbidden");
 
+  // Move associated icon variants to __library__ before deleting the category
+  await orphanCategoryIcons(cat.name, user.id);
+
   await prisma.category.delete({ where: { id } });
   revalidatePath("/shopping/products");
+  revalidatePath("/shopping/icons");
 }

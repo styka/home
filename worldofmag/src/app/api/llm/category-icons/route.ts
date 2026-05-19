@@ -1,43 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { CATEGORY_ITEMS } from "@/lib/categoryIconHints";
 
-const CATEGORY_ITEMS: Record<string, string[]> = {
-  "Produce":            ["carrot", "apple", "broccoli", "tomato", "onion", "lettuce", "avocado", "lemon"],
-  "Dairy & Eggs":       ["milk bottle", "cheese wheel", "butter block", "egg", "yogurt jar", "cream"],
-  "Meat & Fish":        ["steak", "chicken leg", "fish", "bacon strips", "sausage", "shrimp"],
-  "Bakery":             ["loaf of bread", "croissant", "baguette", "donut", "muffin", "pretzel"],
-  "Dry Goods & Pasta":  ["pasta bowl", "rice bag", "flour sack", "beans", "cereal box", "lentils"],
-  "Drinks":             ["water bottle", "coffee cup", "juice box", "wine glass", "beer mug", "tea cup"],
-  "Frozen":             ["ice cube", "frozen bag", "ice cream", "snowflake", "frozen peas", "popsicle"],
-  "Snacks & Sweets":    ["chocolate bar", "candy", "chips bag", "cookie", "popcorn", "gummy bears"],
-  "Condiments & Oils":  ["olive oil bottle", "ketchup", "mustard jar", "honey jar", "salt shaker", "vinegar"],
-  "Spices & Herbs":     ["basil leaf", "pepper grinder", "cinnamon stick", "garlic", "chili pepper", "herb bundle"],
-  "Cleaning & Hygiene": ["soap bar", "shampoo bottle", "toothbrush", "toilet paper roll", "cleaning spray", "sponge"],
-  "Canned & Preserved": ["tin can", "glass jar", "preserved tomatoes", "canned beans", "pickle jar"],
-  "Other":              ["shopping bag", "box", "label", "price tag", "shopping cart"],
-};
+function detailToStyle(detail: number): string {
+  if (detail <= 30) return "ultra-simplified, maximum 3-4 geometric primitives per icon, like a simple logo or monochrome pictogram";
+  if (detail <= 70) return "flat design, emoji-like, bold simple shapes with 2-4 colors";
+  return "detailed flat illustration with multiple elements, subtle gradients, texture, and careful shading";
+}
 
-const SYSTEM_PROMPT = `You are a colorful icon designer for a grocery shopping app.
-Generate exactly 6 different COLORFUL, flat-design SVG icons.
+const BASE_SYSTEM_PROMPT = `You are a colorful icon designer for a grocery shopping app.
+Generate exactly 6 different COLORFUL SVG icons.
 
 Rules:
 - Fit within a 24x24 coordinate space
 - Use SVG elements: path, circle, rect, ellipse, polygon, line
 - COLORFUL: every visible shape must have an explicit fill="COLOR" attribute (e.g. fill="#4ade80")
 - Do NOT use "currentColor" or fill="none" on visible shapes
-- Use 2-4 colors per icon that naturally suit the item's real-world appearance
-- Simple, bold flat shapes — think simplified emoji style
+- Use colors that match each item's real-world appearance
 - Optional thin stroke (e.g. stroke="#fff" stroke-width="0.5") for contrast
 - Return ONLY a valid JSON array of exactly 6 strings, no explanation
 - Each string is the INNER content of <svg viewBox="0 0 24 24"> (no outer wrapper)
-- Each icon must depict a DIFFERENT specific item from the given list`;
+- Each icon must depict a DIFFERENT specific item`;
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const category: string = body.category ?? "";
+  const detail: number = typeof body.detail === "number" ? Math.max(0, Math.min(100, body.detail)) : 50;
+  const additionalText: string = typeof body.additionalText === "string" ? body.additionalText.trim() : "";
 
-  if (!category.trim()) {
-    return NextResponse.json({ error: "Brak kategorii" }, { status: 400 });
+  if (!category.trim() && !additionalText) {
+    return NextResponse.json({ error: "Podaj kategorię lub opis" }, { status: 400 });
   }
 
   const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
@@ -48,10 +40,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const items = CATEGORY_ITEMS[category] ?? [];
+  const styleDesc = detailToStyle(detail);
+  const items = category ? (CATEGORY_ITEMS[category] ?? []) : [];
   const itemsHint = items.length > 0
     ? `Draw these specific items (one per icon): ${items.slice(0, 6).join(", ")}.`
-    : `Draw 6 different items commonly found in the "${category}" category.`;
+    : `Draw 6 different items relevant to the theme.`;
+
+  const userMessage = [
+    category ? `Generate 6 colorful SVG icons for: "${category}".` : "Generate 6 colorful SVG icons.",
+    itemsHint,
+    `Style: ${styleDesc}.`,
+    additionalText ? `Additional context: ${additionalText}.` : "",
+    "Return only the JSON array.",
+  ].filter(Boolean).join(" ");
+
+  const systemPrompt = `${BASE_SYSTEM_PROMPT}\n- Style for this request: ${styleDesc}`;
 
   const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
@@ -62,11 +65,8 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       model: "llama-3.3-70b-versatile",
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: `Generate 6 colorful SVG icons for the grocery category: "${category}". ${itemsHint} Use colors that match each item's natural appearance (e.g. orange for carrot, red for apple, yellow for cheese). Return only the JSON array.`,
-        },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
       ],
       temperature: 0.9,
       max_tokens: 2000,

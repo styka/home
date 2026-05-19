@@ -152,7 +152,7 @@ export function CategoryManager({ categories, activeIconMap = {} }: CategoryMana
                   {localIconMap[c.name] && isSvg(localIconMap[c.name]) ? (
                     <SvgIconSmall content={localIconMap[c.name]} />
                   ) : (
-                    <span className="text-base">{c.emoji}</span>
+                    <span className="text-base">{localIconMap[c.name] ?? c.emoji}</span>
                   )}
                 </div>
                 <span className="mono text-sm flex-1" style={{ color: "var(--text-primary)" }}>{c.name}</span>
