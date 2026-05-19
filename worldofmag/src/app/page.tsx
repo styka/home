@@ -44,6 +44,8 @@ export default async function HomePageRoute() {
     ? await prisma.item.count({ where: { listId: { in: listIds }, status: "NEEDED" } })
     : 0;
 
+  const userRoles: string[] = session.user.roles ?? [];
+
   return (
     <HomePage
       userName={session.user.name ?? null}
@@ -51,6 +53,7 @@ export default async function HomePageRoute() {
       todayTasks={todayTasks}
       overdueTasks={overdueTasks}
       recentActivity={recentActivity}
+      userRoles={userRoles}
     />
   );
 }

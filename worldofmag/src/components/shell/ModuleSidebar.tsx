@@ -12,7 +12,7 @@ interface ModuleSidebarProps {
   userRoles?: string[];
 }
 
-const BETA_ENABLED_PREFIXES = ["/shopping", "/settings"];
+const BETA_ENABLED_PREFIXES = ["/", "/shopping", "/settings"];
 
 function NavItem({
   href,

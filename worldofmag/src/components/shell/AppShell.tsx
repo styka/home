@@ -27,7 +27,7 @@ const MODULES = [
 ];
 
 // Hrefs accessible to beta-only users (no USER/ADMIN role)
-const BETA_ENABLED_PREFIXES = ["/shopping", "/settings"];
+const BETA_ENABLED_PREFIXES = ["/", "/shopping", "/settings"];
 
 export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [] }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);

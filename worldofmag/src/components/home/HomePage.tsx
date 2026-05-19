@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Sparkles, BookOpen } from "lucide-react";
+import { Sparkles, BookOpen, Lock } from "lucide-react";
 import { QuickStats } from "@/components/home/QuickStats";
 import { AISuggestions } from "@/components/home/AISuggestions";
 
@@ -17,6 +17,7 @@ interface HomePageProps {
   todayTasks: number;
   overdueTasks: number;
   recentActivity: ActivityItem[];
+  userRoles: string[];
 }
 
 function getGreeting(name: string | null): string {
@@ -26,7 +27,35 @@ function getGreeting(name: string | null): string {
   return firstName ? `${prefix}, ${firstName}!` : `${prefix}!`;
 }
 
-export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, recentActivity }: HomePageProps) {
+interface FooterLinkProps {
+  href: string;
+  label: string;
+  locked?: boolean;
+}
+
+function FooterLink({ href, label, locked }: FooterLinkProps) {
+  if (locked) {
+    return (
+      <span
+        style={{ fontSize: 12, color: "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: 3, opacity: 0.4, cursor: "not-allowed" }}
+        title="Niedostępne dla Twojej roli"
+      >
+        {label}
+        <Lock size={9} />
+      </span>
+    );
+  }
+  return (
+    <Link href={href} style={{ fontSize: 12, color: "var(--text-muted)", textDecoration: "none" }}>
+      {label}
+    </Link>
+  );
+}
+
+export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, recentActivity, userRoles }: HomePageProps) {
+  const isFullUser = userRoles.includes("USER") || userRoles.includes("ADMIN");
+  const isBetaOnly = userRoles.includes("BETA_TESTER") && !isFullUser;
+
   return (
     <div
       style={{
@@ -49,14 +78,7 @@ export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, rec
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <Sparkles size={18} style={{ color: "var(--accent-purple)" }} />
-            <h1
-              style={{
-                fontSize: 22,
-                fontWeight: 700,
-                color: "var(--text-primary)",
-                margin: 0,
-              }}
-            >
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
               {getGreeting(userName)}
             </h1>
           </div>
@@ -70,10 +92,11 @@ export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, rec
           pendingItems={pendingItems}
           todayTasks={todayTasks}
           overdueTasks={overdueTasks}
+          locked={isBetaOnly}
         />
 
         {/* AI suggestions */}
-        <AISuggestions recentActivity={recentActivity} overdueTasks={overdueTasks} />
+        <AISuggestions recentActivity={recentActivity} overdueTasks={overdueTasks} locked={isBetaOnly} />
 
         {/* Footer links */}
         <div
@@ -86,26 +109,11 @@ export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, rec
             flexWrap: "wrap",
           }}
         >
-          <Link
-            href="/tasks"
-            style={{ fontSize: 12, color: "var(--text-muted)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}
-          >
-            Zadania
-          </Link>
+          <FooterLink href="/tasks" label="Zadania" locked={isBetaOnly} />
           <span style={{ color: "var(--border)" }}>·</span>
-          <Link
-            href="/shopping"
-            style={{ fontSize: 12, color: "var(--text-muted)", textDecoration: "none" }}
-          >
-            Zakupy
-          </Link>
+          <FooterLink href="/shopping" label="Zakupy" />
           <span style={{ color: "var(--border)" }}>·</span>
-          <Link
-            href="/notes"
-            style={{ fontSize: 12, color: "var(--text-muted)", textDecoration: "none" }}
-          >
-            Notatki
-          </Link>
+          <FooterLink href="/notes" label="Notatki" locked={isBetaOnly} />
           <span style={{ color: "var(--border)" }}>·</span>
           <Link
             href="/guide"
@@ -116,7 +124,6 @@ export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, rec
           </Link>
         </div>
       </div>
-
     </div>
   );
 }
