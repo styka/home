@@ -39,6 +39,7 @@ model User {
   taskShares        TaskShare[]          @relation("TaskShares")
   activities        UserActivity[]
   stores            Store[]
+  categoryIconVariants CategoryIconVariant[]
 }
 
 model Account {
@@ -227,6 +228,21 @@ model Category {
   team Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([name, userId, teamId])
+}
+
+// ─── Category Icon Variants ───────────────────────────────────────────────
+
+model CategoryIconVariant {
+  id           String   @id @default(cuid())
+  categoryName String
+  svgContent   String
+  isActive     Boolean  @default(false)
+  userId       String
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, categoryName])
 }
 
 // ─── Notes ────────────────────────────────────────────────────────────────

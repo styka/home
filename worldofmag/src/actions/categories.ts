@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { auth } from "@/lib/auth";
 import { BASE_CATEGORIES } from "@/lib/categories";
+import { getActiveCategoryIconMap } from "@/actions/categoryIcons";
 
 export type CategoryWithUsage = {
   id: string | null;
@@ -101,6 +102,11 @@ export async function getCategoryEmojiMap(): Promise<Record<string, string>> {
   });
 
   for (const c of custom) map[c.name] = c.emoji;
+
+  // Active SVG icons take priority over emoji
+  const svgMap = await getActiveCategoryIconMap();
+  for (const [cat, svg] of Object.entries(svgMap)) map[cat] = svg;
+
   return map;
 }
 
