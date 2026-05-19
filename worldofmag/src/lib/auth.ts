@@ -12,19 +12,17 @@ if (!process.env.AUTH_SECRET) {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(prisma),
-  // JWT strategy: session lives in a signed cookie — no DB lookup needed in middleware.
-  // The Prisma adapter is still used to create/link User & Account records.
   session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        // First sign-in: user object is populated, fetch role from DB
         token.id = user.id
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
-          select: { role: true },
+          select: { role: true, userRoles: { select: { role: true } } },
         })
         token.role = dbUser?.role ?? "USER"
+        token.roles = dbUser?.userRoles.map((r) => r.role) ?? []
       }
       return token
     },
@@ -32,6 +30,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token) {
         session.user.id = token.id as string
         session.user.role = (token.role as string) ?? "USER"
+        session.user.roles = (token.roles as string[]) ?? []
       }
       return session
     },
@@ -39,10 +38,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   events: {
     async createUser({ user }) {
       const updates: Record<string, string> = {}
-      if (user.email === ADMIN_EMAIL) updates.role = "ADMIN"
       if (user.image) updates.avatarUrl = user.image
       if (Object.keys(updates).length > 0) {
         await prisma.user.update({ where: { id: user.id }, data: updates })
+      }
+
+      // Assign roles: new users get only BETA_TESTER
+      const rolesToInsert: string[] = ["BETA_TESTER"]
+      if (user.email === ADMIN_EMAIL) {
+        rolesToInsert.push("USER", "ADMIN")
+        await prisma.user.update({ where: { id: user.id }, data: { role: "ADMIN" } })
+      }
+
+      for (const role of rolesToInsert) {
+        await prisma.userRole.upsert({
+          where: { userId_role: { userId: user.id!, role } },
+          create: { userId: user.id!, role },
+          update: {},
+        })
       }
     },
   },

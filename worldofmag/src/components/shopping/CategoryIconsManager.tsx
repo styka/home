@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, Plus, Sparkles } from "lucide-react";
+import { Trash2, Sparkles } from "lucide-react";
 import type { CategoryIconVariantData } from "@/actions/categoryIcons";
-import { setActiveCategoryIcon, deleteCategoryIconVariant } from "@/actions/categoryIcons";
+import { deleteCategoryIconVariant } from "@/actions/categoryIcons";
 import { CategoryIconPicker } from "./CategoryIconPicker";
 
 interface CategoryIconsManagerProps {
@@ -11,189 +11,166 @@ interface CategoryIconsManagerProps {
   allCategories: string[];
 }
 
-function SvgTile({
-  variant,
-  onActivate,
-  onDelete,
+const isSvg = (s: string) => s.trimStart().startsWith("<");
+
+function CategoryRow({
+  categoryName,
+  icon,
+  onChangeIcon,
+  onDeleteIcon,
 }: {
-  variant: CategoryIconVariantData;
-  onActivate: () => void;
-  onDelete: () => void;
+  categoryName: string;
+  icon: CategoryIconVariantData | null;
+  onChangeIcon: () => void;
+  onDeleteIcon: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
 
   return (
     <div
-      className="relative aspect-square"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className="flex items-center gap-4 px-4 py-3"
+      style={{ borderBottom: "1px solid var(--border)" }}
     >
-      <button
-        onClick={onActivate}
-        className="w-full h-full rounded-xl flex items-center justify-center transition-all active:scale-95"
-        style={{
-          backgroundColor: hovered || variant.isActive ? "var(--bg-hover)" : "var(--bg-surface)",
-          border: `1.5px solid ${variant.isActive ? "var(--accent-blue)" : hovered ? "var(--text-secondary)" : "var(--border)"}`,
-        }}
-        title={variant.isActive ? "Aktywna" : "Ustaw jako aktywną"}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width={40}
-          height={40}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ color: "var(--text-secondary)" }}
-          dangerouslySetInnerHTML={{ __html: variant.svgContent }}
-        />
-      </button>
+      {/* Category name */}
+      <span className="text-sm flex-1 min-w-0 truncate" style={{ color: "var(--text-primary)" }}>
+        {categoryName}
+      </span>
 
-      {hovered && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center z-10"
-          style={{ width: 18, height: 18, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
-          aria-label="Usuń"
-        >
-          <Trash2 size={10} />
-        </button>
-      )}
-
-      {variant.isActive && (
+      {/* Icon slot */}
+      {icon ? (
         <div
-          className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full"
-          style={{ width: 6, height: 6, backgroundColor: "var(--accent-blue)" }}
-        />
+          className="relative flex items-center gap-2"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          {/* Icon preview */}
+          <button
+            onClick={onChangeIcon}
+            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-95"
+            style={{
+              backgroundColor: hovered ? "var(--bg-hover)" : "var(--bg-surface)",
+              border: `1.5px solid ${hovered ? "var(--accent-blue)" : "var(--border)"}`,
+            }}
+            title="Zmień ikonę"
+          >
+            {isSvg(icon.svgContent) ? (
+              <svg
+                viewBox="0 0 24 24"
+                width={24}
+                height={24}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ color: "var(--text-secondary)" }}
+                dangerouslySetInnerHTML={{ __html: icon.svgContent }}
+              />
+            ) : (
+              <span className="text-lg">{icon.svgContent}</span>
+            )}
+          </button>
+
+          {/* Delete button */}
+          <button
+            onClick={onDeleteIcon}
+            className="flex items-center justify-center rounded-lg transition-colors"
+            style={{ width: 28, height: 28, color: "var(--text-muted)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)"; e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.backgroundColor = "transparent"; }}
+            aria-label="Usuń ikonę"
+            title="Usuń ikonę — kategoria wróci do domyślnego emoji"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={onChangeIcon}
+          className="flex items-center gap-1.5 text-xs rounded-lg px-3 py-1.5 transition-colors"
+          style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
+        >
+          <Sparkles size={11} />
+          Wybierz ikonę
+        </button>
       )}
     </div>
   );
 }
 
 export function CategoryIconsManager({ variants: initialVariants, allCategories }: CategoryIconsManagerProps) {
-  const [localVariants, setLocalVariants] = useState(initialVariants);
+  // Flatten to one icon per category (use the active one, or the first if none active)
+  const [iconMap, setIconMap] = useState<Record<string, CategoryIconVariantData | null>>(() => {
+    const map: Record<string, CategoryIconVariantData | null> = {};
+    for (const cat of allCategories) {
+      const catVariants = initialVariants[cat] ?? [];
+      map[cat] = catVariants.find((v) => v.isActive) ?? catVariants[0] ?? null;
+    }
+    return map;
+  });
+
   const [pickerCategory, setPickerCategory] = useState<string | null>(null);
 
-  // Merge: categories with icons first (sorted), then the rest
-  const withIcons = Object.keys(localVariants).sort();
-  const withoutIcons = allCategories.filter((c) => !localVariants[c]).sort();
-  const allSorted = [...withIcons, ...withoutIcons];
-
-  async function handleActivate(variantId: string, categoryName: string) {
-    setLocalVariants((prev) => ({
-      ...prev,
-      [categoryName]: prev[categoryName].map((v) => ({ ...v, isActive: v.id === variantId })),
-    }));
+  async function handleDelete(categoryName: string) {
+    const icon = iconMap[categoryName];
+    if (!icon) return;
+    setIconMap((prev) => ({ ...prev, [categoryName]: null }));
     try {
-      await setActiveCategoryIcon(variantId);
-    } catch { /* optimistic stays, reload corrects */ }
-  }
-
-  async function handleDelete(variant: CategoryIconVariantData) {
-    setLocalVariants((prev) => {
-      const updated = (prev[variant.categoryName] ?? []).filter((v) => v.id !== variant.id);
-      if (updated.length === 0) {
-        const next = { ...prev };
-        delete next[variant.categoryName];
-        return next;
-      }
-      return { ...prev, [variant.categoryName]: updated };
-    });
-    try {
-      await deleteCategoryIconVariant(variant.id);
+      await deleteCategoryIconVariant(icon.id);
     } catch {
-      setLocalVariants((prev) => ({
-        ...prev,
-        [variant.categoryName]: [variant, ...(prev[variant.categoryName] ?? [])],
-      }));
+      setIconMap((prev) => ({ ...prev, [categoryName]: icon }));
     }
   }
 
-  function handlePickerSelect(svg: string, categoryName: string) {
-    setLocalVariants((prev) => {
-      const existing = prev[categoryName] ?? [];
-      const newVariant: CategoryIconVariantData = {
-        id: `temp-${Date.now()}`,
-        categoryName,
-        svgContent: svg,
-        isActive: true,
-        createdAt: new Date(),
-      };
-      return {
-        ...prev,
-        [categoryName]: [newVariant, ...existing.map((v) => ({ ...v, isActive: false }))],
-      };
-    });
+  function handleSelected(categoryName: string, svg: string) {
+    const newVariant: CategoryIconVariantData = {
+      id: `temp-${Date.now()}`,
+      categoryName,
+      svgContent: svg,
+      isActive: true,
+      createdAt: new Date(),
+    };
+    setIconMap((prev) => ({ ...prev, [categoryName]: newVariant }));
   }
+
+  // Sort: categories with icons first
+  const sorted = [...allCategories].sort((a, b) => {
+    const aHas = !!iconMap[a];
+    const bHas = !!iconMap[b];
+    if (aHas === bHas) return a.localeCompare(b, "pl");
+    return aHas ? -1 : 1;
+  });
+
+  const withIconsCount = sorted.filter((c) => !!iconMap[c]).length;
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-5">
         <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-          Moje ikony kategorii
+          Ikony kategorii
         </h1>
         <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-          Ikony generowane przez AI — kliknij by aktywować, hover by usunąć
+          Jedna ikona SVG na kategorię — kliknij by zmienić, lub kosz by usunąć.
+          {" "}{withIconsCount} z {allCategories.length} kategorii ma ikonę.
         </p>
       </div>
 
-      <div className="space-y-3">
-        {allSorted.map((categoryName) => {
-          const items = localVariants[categoryName] ?? [];
-          const hasIcons = items.length > 0;
-
-          return (
-            <div
-              key={categoryName}
-              className="rounded-xl overflow-hidden"
-              style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}
-            >
-              {/* Category header */}
-              <div
-                className="flex items-center justify-between px-4 py-2.5"
-                style={{ borderBottom: hasIcons ? "1px solid var(--border)" : undefined }}
-              >
-                <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
-                  {categoryName}
-                </span>
-                <button
-                  onClick={() => setPickerCategory(categoryName)}
-                  className="flex items-center gap-1.5 text-xs rounded-lg px-2.5 py-1 transition-colors"
-                  style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
-                >
-                  {hasIcons ? <Plus size={11} /> : <Sparkles size={11} />}
-                  {hasIcons ? "Dodaj więcej" : "Generuj ikony"}
-                </button>
-              </div>
-
-              {/* Icons grid or empty hint */}
-              {hasIcons ? (
-                <div className="p-3">
-                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                    {items.map((variant) => (
-                      <SvgTile
-                        key={variant.id}
-                        variant={variant}
-                        onActivate={() => handleActivate(variant.id, categoryName)}
-                        onDelete={() => handleDelete(variant)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="px-4 py-3 text-xs" style={{ color: "var(--text-muted)" }}>
-                  Brak ikon — kliknij „Generuj ikony" by dodać pierwszą.
-                </p>
-              )}
-            </div>
-          );
-        })}
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}
+      >
+        {sorted.map((categoryName, i) => (
+          <div key={categoryName} style={{ borderBottom: i < sorted.length - 1 ? "1px solid var(--border)" : undefined }}>
+            <CategoryRow
+              categoryName={categoryName}
+              icon={iconMap[categoryName] ?? null}
+              onChangeIcon={() => setPickerCategory(categoryName)}
+              onDeleteIcon={() => handleDelete(categoryName)}
+            />
+          </div>
+        ))}
       </div>
 
       {pickerCategory && (
@@ -201,8 +178,8 @@ export function CategoryIconsManager({ variants: initialVariants, allCategories 
           category={pickerCategory}
           open={true}
           onClose={() => setPickerCategory(null)}
-          onSelect={(svg) => handlePickerSelect(svg, pickerCategory)}
-          onReset={() => {}}
+          onSelect={(svg) => handleSelected(pickerCategory, svg)}
+          onReset={() => setIconMap((prev) => ({ ...prev, [pickerCategory]: null }))}
         />
       )}
     </div>

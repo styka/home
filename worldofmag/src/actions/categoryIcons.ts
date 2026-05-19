@@ -12,7 +12,7 @@ export type CategoryIconVariantData = {
   createdAt: Date;
 };
 
-/** Saves a new SVG icon for the category and marks it active (deactivates others). */
+/** Saves a new SVG icon for the category, replacing any existing one (max 1 per category). */
 export async function saveAndActivateCategoryIcon(
   categoryName: string,
   svgContent: string
@@ -20,9 +20,9 @@ export async function saveAndActivateCategoryIcon(
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  await prisma.categoryIconVariant.updateMany({
+  // Delete any existing icon for this category (enforce max 1)
+  await prisma.categoryIconVariant.deleteMany({
     where: { userId: session.user.id, categoryName },
-    data: { isActive: false },
   });
 
   const variant = await prisma.categoryIconVariant.create({
@@ -160,7 +160,7 @@ export async function saveToLibrary(
   return variant;
 }
 
-/** Assigns an icon from the library to a category (copies SVG, activates for that category). */
+/** Assigns an icon from the library to a category, replacing any existing icon (max 1 per category). */
 export async function assignIconToCategory(
   variantId: string,
   targetCategory: string
@@ -171,23 +171,20 @@ export async function assignIconToCategory(
   const variant = await prisma.categoryIconVariant.findUnique({ where: { id: variantId } });
   if (!variant || variant.userId !== session.user.id) throw new Error("Forbidden");
 
-  await prisma.categoryIconVariant.updateMany({
-    where: { userId: session.user.id, categoryName: targetCategory },
-    data: { isActive: false },
+  // Delete any existing icon for the target category (enforce max 1)
+  await prisma.categoryIconVariant.deleteMany({
+    where: { userId: session.user.id, categoryName: targetCategory, id: { not: variantId } },
   });
 
-  const created = await prisma.categoryIconVariant.create({
-    data: {
-      categoryName: targetCategory,
-      svgContent: variant.svgContent,
-      isActive: true,
-      userId: session.user.id,
-    },
+  // Move the icon to the target category and activate
+  const updated = await prisma.categoryIconVariant.update({
+    where: { id: variantId },
+    data: { categoryName: targetCategory, isActive: true },
   });
 
   revalidatePath("/shopping");
   revalidatePath("/shopping/icons");
-  return created;
+  return updated;
 }
 
 /** Moves all icon variants for a category to __library__ (called before category deletion). */

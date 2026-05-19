@@ -40,6 +40,18 @@ model User {
   activities        UserActivity[]
   stores            Store[]
   categoryIconVariants CategoryIconVariant[]
+  userRoles         UserRole[]
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  role   String  // "USER" | "ADMIN" | "BETA_TESTER"
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@index([userId])
 }
 
 model Account {
