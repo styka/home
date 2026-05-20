@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/server-utils";
 import type { NoteGroup } from "@/types";
 
 export async function getNoteGroups(): Promise<NoteGroup[]> {
@@ -13,6 +14,7 @@ export async function createNoteGroup(data: {
   description?: string;
   color?: string;
 }): Promise<NoteGroup> {
+  await requireAuth();
   const group = await prisma.noteGroup.create({
     data: {
       name: data.name.trim(),
@@ -29,6 +31,7 @@ export async function updateNoteGroup(
   id: string,
   patch: { name?: string; description?: string | null; color?: string | null }
 ): Promise<NoteGroup> {
+  await requireAuth();
   const data: Record<string, unknown> = { ...patch };
   if (patch.name) data.name = patch.name.trim();
 
@@ -39,6 +42,7 @@ export async function updateNoteGroup(
 }
 
 export async function deleteNoteGroup(id: string): Promise<void> {
+  await requireAuth();
   await prisma.noteGroup.delete({ where: { id } });
   revalidatePath("/notes");
   revalidatePath("/notes/groups");

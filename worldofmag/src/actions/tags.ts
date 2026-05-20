@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/server-utils";
 import type { Tag } from "@/types";
 
 export async function getTags(): Promise<Tag[]> {
@@ -9,6 +10,7 @@ export async function getTags(): Promise<Tag[]> {
 }
 
 export async function createTag(data: { name: string; color?: string }): Promise<Tag> {
+  await requireAuth();
   const tag = await prisma.tag.create({
     data: {
       name: data.name.trim().toLowerCase(),
@@ -24,6 +26,7 @@ export async function updateTag(
   id: string,
   patch: { name?: string; color?: string | null }
 ): Promise<Tag> {
+  await requireAuth();
   const data: Record<string, unknown> = { ...patch };
   if (patch.name) data.name = patch.name.trim().toLowerCase();
 
@@ -34,6 +37,7 @@ export async function updateTag(
 }
 
 export async function deleteTag(id: string): Promise<void> {
+  await requireAuth();
   await prisma.tag.delete({ where: { id } });
   revalidatePath("/notes");
   revalidatePath("/notes/tags");

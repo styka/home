@@ -10,6 +10,7 @@ async function requireAdmin() {
 }
 
 export async function getConfigValue(key: string): Promise<string | null> {
+  await requireAdmin();
   const row = await prisma.config.findUnique({ where: { key } });
   return row?.value ?? null;
 }
