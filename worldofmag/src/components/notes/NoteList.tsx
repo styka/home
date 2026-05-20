@@ -19,7 +19,7 @@ interface NoteListProps {
 
 export function NoteList({
   notes, allTags, allGroups, focusedNoteId, editingNoteId,
-  onNoteFocus, onNoteStartEdit, onNoteStopEdit, onTagsChanged, rowRefs,
+  onNoteFocus, onNoteStartEdit, onNoteStopEdit, onTagsChanged, rowRefs, searchQuery,
 }: NoteListProps) {
   if (notes.length === 0) {
     return (
@@ -54,7 +54,7 @@ export function NoteList({
 
   const sharedProps = {
     allTags, allGroups, focusedNoteId, editingNoteId,
-    onNoteFocus, onNoteStartEdit, onNoteStopEdit, onTagsChanged, rowRefs,
+    onNoteFocus, onNoteStartEdit, onNoteStopEdit, onTagsChanged, rowRefs, searchQuery,
   };
 
   return (

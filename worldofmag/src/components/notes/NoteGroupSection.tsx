@@ -18,11 +18,12 @@ interface NoteGroupSectionProps {
   onNoteStopEdit: () => void;
   onTagsChanged: () => void;
   rowRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
+  searchQuery?: string;
 }
 
 export function NoteGroupSection({
   groupName, groupColor, notes, allTags, allGroups,
-  focusedNoteId, editingNoteId, onNoteFocus, onNoteStartEdit, onNoteStopEdit, onTagsChanged, rowRefs,
+  focusedNoteId, editingNoteId, onNoteFocus, onNoteStartEdit, onNoteStopEdit, onTagsChanged, rowRefs, searchQuery,
 }: NoteGroupSectionProps) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -78,6 +79,7 @@ export function NoteGroupSection({
           onStartEdit={() => onNoteStartEdit(note.id)}
           onStopEdit={onNoteStopEdit}
           onTagsChanged={onTagsChanged}
+          searchQuery={searchQuery}
           rowRef={(el) => {
             if (el) rowRefs.current.set(note.id, el);
             else rowRefs.current.delete(note.id);
