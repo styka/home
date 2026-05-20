@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useTransition } from "react";
-import { Trash2, Pin, PinOff, Loader2, Mic, MicOff } from "lucide-react";
+import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TagChip } from "./TagChip";
 import { TagSuggestions } from "./TagSuggestions";
@@ -133,7 +133,19 @@ export function NoteRow({
   }
 
   function handleDelete() {
+    if (!confirm("Usunąć notatkę? Tej operacji nie można cofnąć.")) return;
     startTransition(() => { deleteNote(note.id); });
+  }
+
+  function handleExport() {
+    const content = `# ${note.title}\n\n${note.content}`;
+    const blob = new Blob([content], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${note.title.replace(/[^a-z0-9ąęśźżćńółAEŚŹŻĆŃÓŁ\s]/gi, "").trim().replace(/\s+/g, "-").toLowerCase() || "notatka"}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function handlePin() {
@@ -476,6 +488,16 @@ export function NoteRow({
               title={note.pinned ? "Odepnij" : "Przypnij"}
             >
               {note.pinned ? <PinOff size={13} /> : <Pin size={13} />}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleExport(); }}
+              className="p-1 rounded focus:outline-none"
+              style={{ color: "var(--text-muted)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-secondary)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
+              title="Eksportuj do .md"
+            >
+              <Download size={13} />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onStartEdit(); }}

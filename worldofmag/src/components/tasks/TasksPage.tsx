@@ -130,6 +130,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
       },
       onDelete: () => {
         if (!focusedTaskId) return;
+        if (!confirm("Usunąć zadanie?")) return;
         const idx = filteredForNav.findIndex((t) => t.id === focusedTaskId);
         const next = filteredForNav[idx + 1] ?? filteredForNav[idx - 1];
         if (openTaskId === focusedTaskId) setOpenTaskId(null);

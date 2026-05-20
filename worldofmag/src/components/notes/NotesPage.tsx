@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useRef, useTransition } from "react";
-import { MessageCircle, X, Search, ChevronLeft } from "lucide-react";
+import { useState, useMemo, useRef, useTransition, useEffect } from "react";
+import { MessageCircle, X, Search, ChevronLeft, LayoutGrid, List } from "lucide-react";
 import Link from "next/link";
 import { NoteList } from "./NoteList";
 import { QuickNoteBar, type QuickNoteBarHandle } from "./QuickNoteBar";
@@ -29,7 +29,21 @@ export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
   const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [isQAOpen, setIsQAOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("wom_notes_view");
+      if (saved === "grid" || saved === "list") setViewMode(saved);
+    } catch { /* ignore */ }
+  }, []);
+
+  function toggleViewMode() {
+    const next = viewMode === "list" ? "grid" : "list";
+    setViewMode(next);
+    try { localStorage.setItem("wom_notes_view", next); } catch { /* ignore */ }
+  }
   const quickNoteRef = useRef<QuickNoteBarHandle>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -82,6 +96,7 @@ export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
       onToggleStatus: () => {},
       onDelete: () => {
         if (!focusedNoteId) return;
+        if (!confirm("Usunąć notatkę? Tej operacji nie można cofnąć.")) return;
         const idx = filteredNotes.findIndex((n) => n.id === focusedNoteId);
         const next = filteredNotes[idx + 1] ?? filteredNotes[idx - 1];
         setFocusedNoteId(next?.id ?? null);
@@ -137,6 +152,14 @@ export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {filteredNotes.length} / {notes.length}
           </span>
+          <button
+            onClick={toggleViewMode}
+            className="flex items-center justify-center p-1.5 rounded"
+            style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-muted)" }}
+            title={viewMode === "list" ? "Widok siatki" : "Widok listy"}
+          >
+            {viewMode === "list" ? <LayoutGrid size={13} /> : <List size={13} />}
+          </button>
           <button
             onClick={() => setIsQAOpen((v) => !v)}
             className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
@@ -274,6 +297,7 @@ export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
           onTagsChanged={() => {}}
           rowRefs={rowRefs}
           searchQuery={searchQuery}
+          viewMode={viewMode}
         />
 
         {/* Q&A panel */}
