@@ -212,7 +212,7 @@ export async function POST(req: NextRequest) {
           userId: session.user.id,
           module: "llm",
           action: `${action.module}/${action.type}`,
-          metadata: { params: action.params, searchQuery: action.searchQuery, result: message },
+          metadata: JSON.parse(JSON.stringify({ params: action.params, searchQuery: action.searchQuery, result: message })),
         },
       }).catch(() => {});
     } catch (e) {
