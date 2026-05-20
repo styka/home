@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { categorize } from "@/lib/categorize";
 import { parseQuantity } from "@/lib/parseQuantity";
+import { getUserTeamIds } from "@/lib/server-utils";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
 
 export interface ActionResult {
@@ -157,19 +158,26 @@ async function executeAction(action: AIAction, userId: string, activeListId?: st
       const title = (params.title as string) ?? "Nowa notatka";
       const content = (params.content as string) ?? "";
       const note = await prisma.note.create({
-        data: { title: title.trim(), content },
+        data: { title: title.trim(), content, ownerId: userId },
       });
       return `Utworzono notatkę "${note.title}"`;
     }
 
     if (type === "append_to_note") {
       const content = (params.content as string) ?? "";
+      const teamIds = await getUserTeamIds(userId);
       const note = await prisma.note.findFirst({
         where: {
           OR: [
-            { title: { contains: searchQuery ?? "", mode: "insensitive" } },
-            { content: { contains: searchQuery ?? "", mode: "insensitive" } },
+            { ownerId: userId },
+            teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" },
           ],
+          AND: {
+            OR: [
+              { title: { contains: searchQuery ?? "", mode: "insensitive" } },
+              { content: { contains: searchQuery ?? "", mode: "insensitive" } },
+            ],
+          },
         },
         orderBy: { updatedAt: "desc" },
       });
@@ -198,6 +206,15 @@ export async function POST(req: NextRequest) {
     try {
       const message = await executeAction(action, session.user.id, activeListId);
       results.push({ id: action.id, success: true, description: message });
+      // Audit log
+      await prisma.userActivity.create({
+        data: {
+          userId: session.user.id,
+          module: "llm",
+          action: `${action.module}/${action.type}`,
+          metadata: { params: action.params, searchQuery: action.searchQuery, result: message },
+        },
+      }).catch(() => {});
     } catch (e) {
       results.push({
         id: action.id,

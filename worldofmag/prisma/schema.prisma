@@ -41,6 +41,8 @@ model User {
   stores            Store[]
   categoryIconVariants CategoryIconVariant[]
   userRoles         UserRole[]
+  ownedNotes        Note[]               @relation("OwnedNotes")
+  reports           Report[]             @relation("AuthoredReports")
 }
 
 model UserRole {
@@ -133,6 +135,7 @@ model Team {
   categories  Category[]
   taskProjects TaskProject[]   @relation("TeamTaskProjects")
   taskShares  TaskShare[]      @relation("TeamTaskShares")
+  notes       Note[]           @relation("TeamNotes")
 }
 
 model TeamMember {
@@ -299,16 +302,20 @@ model Tag {
 }
 
 model Note {
-  id         String     @id @default(cuid())
-  title      String
-  content    String     @default("")
-  isMarkdown Boolean    @default(false)
-  pinned     Boolean    @default(false)
-  groupId    String?
-  group      NoteGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  tags       NoteTag[]
+  id          String     @id @default(cuid())
+  title       String
+  content     String     @default("")
+  isMarkdown  Boolean    @default(false)
+  pinned      Boolean    @default(false)
+  groupId     String?
+  ownerId     String?
+  ownerTeamId String?
+  group       NoteGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  owner       User?      @relation("OwnedNotes", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerTeam   Team?      @relation("TeamNotes", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  tags        NoteTag[]
 }
 
 model NoteTag {
@@ -485,8 +492,11 @@ model Report {
   slug      String   @unique
   content   String   // markdown content
   category  String   @default("general")
+  authorId  String?
+  author    User?    @relation("AuthoredReports", fields: [authorId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([category, createdAt])
+  @@index([authorId])
 }

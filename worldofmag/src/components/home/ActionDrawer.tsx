@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, ShoppingCart, CheckSquare, FileText, CheckCircle, XCircle, Loader2, Square, CheckSquare2 } from "lucide-react";
-import { SmartTextarea } from "@/components/ui/SmartTextarea";
+import { X, ShoppingCart, CheckSquare, FileText, CheckCircle, XCircle, Loader2, Square, CheckSquare2, ChevronDown, ChevronUp } from "lucide-react";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
 import type { ActionResult } from "@/app/api/llm/home/execute/route";
 
@@ -31,7 +30,13 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
   const [descriptions, setDescriptions] = useState<Record<string, string>>(
     Object.fromEntries(actions.map((a) => [a.id, a.description]))
   );
-  const [voiceModifyText, setVoiceModifyText] = useState("");
+  const [paramsExpanded, setParamsExpanded] = useState<Set<string>>(new Set());
+  const [editedParams, setEditedParams] = useState<Record<string, Record<string, string>>>(
+    Object.fromEntries(actions.map((a) => [a.id, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v ?? "")]))]))
+  );
+  const [editedSearchQuery, setEditedSearchQuery] = useState<Record<string, string>>(
+    Object.fromEntries(actions.map((a) => [a.id, a.searchQuery ?? ""]))
+  );
 
   function toggleAction(id: string) {
     setIncluded((prev) => {
@@ -50,10 +55,34 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
     }
   }
 
+  function toggleParams(id: string) {
+    setParamsExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function updateParam(actionId: string, key: string, value: string) {
+    setEditedParams((prev) => ({ ...prev, [actionId]: { ...prev[actionId], [key]: value } }));
+  }
+
   function handleConfirm() {
     const confirmed = actions
       .filter((a) => included.has(a.id))
-      .map((a) => ({ ...a, description: descriptions[a.id] ?? a.description }));
+      .map((a) => ({
+        ...a,
+        description: descriptions[a.id] ?? a.description,
+        params: Object.fromEntries(
+          Object.entries(editedParams[a.id] ?? a.params).map(([k, v]) => {
+            const orig = a.params[k];
+            if (typeof orig === "number") return [k, Number(v)];
+            if (typeof orig === "boolean") return [k, v === "true"];
+            return [k, v];
+          })
+        ),
+        searchQuery: editedSearchQuery[a.id] || a.searchQuery,
+      }));
     void onConfirm(confirmed);
   }
 
@@ -164,51 +193,64 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                 </button>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* Module badge + action type */}
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                    <span style={{ color: moduleColor(action.module) }}>
-                      {moduleIcon(action.module)}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 600,
-                        letterSpacing: "0.06em",
-                        textTransform: "uppercase",
-                        color: moduleColor(action.module),
-                      }}
-                    >
+                    <span style={{ color: moduleColor(action.module) }}>{moduleIcon(action.module)}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: moduleColor(action.module) }}>
                       {action.module === "shopping" ? "Zakupy" : action.module === "tasks" ? "Zadania" : "Notatki"}
                     </span>
-                    {action.searchQuery && (
-                      <span
-                        style={{
-                          fontSize: 10,
-                          padding: "1px 6px",
-                          borderRadius: 10,
-                          background: "rgba(245,158,11,0.12)",
-                          border: "1px solid rgba(245,158,11,0.3)",
-                          color: "var(--accent-amber)",
-                        }}
-                      >
-                        szuka: {action.searchQuery}
-                      </span>
-                    )}
+                    <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace" }}>{action.type}</span>
                   </div>
+
+                  {/* Editable description */}
                   <input
                     value={descriptions[action.id] ?? action.description}
-                    onChange={(e) =>
-                      setDescriptions((prev) => ({ ...prev, [action.id]: e.target.value }))
-                    }
-                    style={{
-                      width: "100%",
-                      background: "transparent",
-                      border: "none",
-                      outline: "none",
-                      fontSize: 13,
-                      color: "var(--text-primary)",
-                      padding: 0,
-                    }}
+                    onChange={(e) => setDescriptions((prev) => ({ ...prev, [action.id]: e.target.value }))}
+                    style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: 13, color: "var(--text-primary)", padding: 0, marginBottom: 6 }}
                   />
+
+                  {/* Params toggle */}
+                  <button
+                    onClick={() => toggleParams(action.id)}
+                    style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  >
+                    {paramsExpanded.has(action.id) ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                    Parametry
+                  </button>
+
+                  {/* Params editor */}
+                  {paramsExpanded.has(action.id) && (
+                    <div style={{ marginTop: 8, padding: "8px 10px", background: "var(--bg-elevated)", borderRadius: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+                      {Object.entries(editedParams[action.id] ?? {}).map(([key, value]) => (
+                        <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)", width: 90, flexShrink: 0, fontFamily: "monospace" }}>{key}</span>
+                          <input
+                            value={value}
+                            onChange={(e) => updateParam(action.id, key, e.target.value)}
+                            style={{
+                              flex: 1, fontSize: 12, color: "var(--text-primary)",
+                              background: "var(--bg-surface)", border: "1px solid var(--border)",
+                              borderRadius: 6, padding: "3px 8px", outline: "none",
+                            }}
+                          />
+                        </div>
+                      ))}
+                      {action.searchQuery !== undefined && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 11, color: "var(--accent-amber)", width: 90, flexShrink: 0, fontFamily: "monospace" }}>searchQuery</span>
+                          <input
+                            value={editedSearchQuery[action.id] ?? ""}
+                            onChange={(e) => setEditedSearchQuery((prev) => ({ ...prev, [action.id]: e.target.value }))}
+                            style={{
+                              flex: 1, fontSize: 12, color: "var(--text-primary)",
+                              background: "var(--bg-surface)", border: "1px solid rgba(245,158,11,0.4)",
+                              borderRadius: 6, padding: "3px 8px", outline: "none",
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -242,18 +284,12 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
           ))}
         </div>
 
-        {/* Voice modify area (only in pending state) */}
+        {/* Hint (only in pending state) */}
         {!showResults && (
-          <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
-            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>
-              Możesz zmodyfikować listę akcji:
+          <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
+              Kliknij &quot;Parametry&quot; przy akcji, aby edytować szczegóły przed wykonaniem.
             </p>
-            <SmartTextarea
-              value={voiceModifyText}
-              onChange={setVoiceModifyText}
-              placeholder='Np. "Usuń pierwsze działanie" lub "Zmień priorytet zadania na wysoki"'
-              rows={2}
-            />
           </div>
         )}
 

@@ -4,13 +4,15 @@ import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
-import { BookOpen, ArrowLeft, Calendar, Tag } from "lucide-react";
+import { BookOpen, ArrowLeft, Calendar, Tag, Pencil } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
   refactoring: { label: "Refaktoryzacja", color: "var(--accent-purple)" },
   architecture: { label: "Architektura", color: "var(--accent-blue)" },
   security: { label: "Bezpieczeństwo", color: "var(--accent-red)" },
   performance: { label: "Wydajność", color: "var(--accent-green)" },
+  ux: { label: "UX", color: "var(--accent-amber)" },
+  proposal: { label: "Propozycja", color: "var(--accent-blue)" },
   general: { label: "Ogólny", color: "var(--text-muted)" },
 };
 
@@ -51,24 +53,47 @@ export default async function ReportPage({ params }: { params: { slug: string } 
           flexShrink: 0,
         }}
       >
+        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, flex: 1 }}>
+          <Link
+            href="/admin/reports"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 12,
+              color: "var(--text-muted)",
+              textDecoration: "none",
+              flexShrink: 0,
+            }}
+          >
+            <ArrowLeft size={14} />
+            Raporty
+          </Link>
+          <span style={{ color: "var(--border)", flexShrink: 0 }}>/</span>
+          <span style={{ fontSize: 12, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {report.title}
+          </span>
+        </div>
         <Link
-          href="/admin/reports"
+          href={`/admin/reports/${report.slug}/edit`}
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 6,
+            gap: 5,
             fontSize: 12,
-            color: "var(--text-muted)",
+            fontWeight: 600,
+            padding: "5px 10px",
+            borderRadius: 6,
+            border: "1px solid var(--border)",
+            background: "transparent",
+            color: "var(--text-secondary)",
             textDecoration: "none",
+            flexShrink: 0,
           }}
         >
-          <ArrowLeft size={14} />
-          Raporty
+          <Pencil size={12} />
+          Edytuj
         </Link>
-        <span style={{ color: "var(--border)" }}>/</span>
-        <span style={{ fontSize: 12, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {report.title}
-        </span>
       </div>
 
       {/* Content */}

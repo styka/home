@@ -156,6 +156,35 @@ Config, UserActivity, Report                — System
 
 **Important**: `Item.status` is a `String` (not Prisma enum) because SQLite doesn't support enums. TypeScript union `ItemStatus = "NEEDED" | "IN_CART" | "DONE" | "MISSING"` enforces correctness at compile time. Never change this to a Prisma enum.
 
+### Team Sharing Pattern
+
+Resources can be owned by a user OR a team (mutually exclusive). Access check pattern:
+
+```typescript
+// Always use getUserTeamIds() to get user's team memberships
+const teamIds = await getUserTeamIds(userId);
+// Query: ownerId=user OR ownerTeamId in teamIds
+where: { OR: [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] }
+```
+
+| Module | User ownership | Team ownership | Notes |
+|--------|---------------|----------------|-------|
+| Shopping Lists | `ownerId` | `ownerTeamId` | ✅ Full support |
+| Task Projects | `ownerId` | `ownerTeamId` | ✅ Full support |
+| Notes | `ownerId` | `ownerTeamId` | ✅ Added in 0016 migration |
+| Stores | `ownerId` | — | User-only |
+
+`assertListAccess()`, `assertNoteAccess()` — pattern for checking access including team membership.
+
+### Dictionary Ownership Levels
+
+Three-tier system for categories, units, products:
+- **System** — `userId=null, teamId=null` — managed by admin, visible to everyone
+- **User** — `userId=userId, teamId=null` — owned by user
+- **Team** — `userId=null, teamId=teamId` — owned by team, visible to all team members
+
+`getCategories()`, `getUnits()` — return all three levels merged, with `isBase`, `isOwn`, `teamId` fields.
+
 ### LLM Integration
 
 `src/lib/llm-client.ts` handles AI features:

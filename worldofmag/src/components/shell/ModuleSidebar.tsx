@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Map, Image, Lock } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Map, Image, Lock, BookOpen } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { isPathLocked } from "@/lib/permissions";
@@ -195,6 +195,9 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
             <TasksSideNav />
           </div>
         )}
+
+        {/* Reports — dostępne dla wszystkich */}
+        <NavItem href="/reports" label="Raporty" icon={<BookOpen size={18} />} pathname={pathname} iconColor="var(--accent-purple)" locked={isLocked("/reports")} />
 
         {/* Inactive modules */}
         {[
