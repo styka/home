@@ -15,11 +15,13 @@ interface NoteListProps {
   onTagsChanged: () => void;
   rowRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   searchQuery?: string;
+  viewMode?: "list" | "grid";
 }
 
 export function NoteList({
   notes, allTags, allGroups, focusedNoteId, editingNoteId,
   onNoteFocus, onNoteStartEdit, onNoteStopEdit, onTagsChanged, rowRefs,
+  searchQuery = "", viewMode = "list",
 }: NoteListProps) {
   if (notes.length === 0) {
     return (
@@ -31,11 +33,9 @@ export function NoteList({
     );
   }
 
-  // Pinned notes in their own section, then group by NoteGroup
   const pinned = notes.filter((n) => n.pinned);
   const unpinned = notes.filter((n) => !n.pinned);
 
-  // Group unpinned by group name
   const groupMap = new Map<string, { color: string | null | undefined; notes: Note[] }>();
   for (const note of unpinned) {
     const key = note.group?.name ?? "Bez grupy";
@@ -45,7 +45,6 @@ export function NoteList({
     groupMap.get(key)!.notes.push(note);
   }
 
-  // Put "Bez grupy" last
   const groupEntries = Array.from(groupMap.entries()).sort(([a], [b]) => {
     if (a === "Bez grupy") return 1;
     if (b === "Bez grupy") return -1;
@@ -55,6 +54,7 @@ export function NoteList({
   const sharedProps = {
     allTags, allGroups, focusedNoteId, editingNoteId,
     onNoteFocus, onNoteStartEdit, onNoteStopEdit, onTagsChanged, rowRefs,
+    searchQuery, viewMode,
   };
 
   return (
