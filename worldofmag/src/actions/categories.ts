@@ -13,6 +13,8 @@ export type CategoryWithUsage = {
   emoji: string;
   isBase: boolean;
   isOwn: boolean;
+  teamId: string | null;
+  teamName?: string;
   usageCount: number;
 };
 
@@ -40,6 +42,7 @@ export async function getCategories(): Promise<CategoryWithUsage[]> {
           teamIds.length > 0 ? { teamId: { in: teamIds } } : {},
         ],
       },
+      include: { team: { select: { id: true, name: true } } },
       orderBy: { name: "asc" },
     }),
   ]);
@@ -70,6 +73,7 @@ export async function getCategories(): Promise<CategoryWithUsage[]> {
       emoji: c.emoji,
       isBase: true,
       isOwn: false,
+      teamId: null,
       usageCount: usageMap.get(c.name) ?? 0,
     })),
     ...custom
@@ -80,6 +84,8 @@ export async function getCategories(): Promise<CategoryWithUsage[]> {
         emoji: c.emoji,
         isBase: false,
         isOwn: c.userId === user.id,
+        teamId: c.teamId ?? null,
+        teamName: c.team?.name,
         usageCount: usageMap.get(c.name) ?? 0,
       })),
     // Categories used in products but not defined anywhere
@@ -91,6 +97,7 @@ export async function getCategories(): Promise<CategoryWithUsage[]> {
         emoji: "📦",
         isBase: false,
         isOwn: false,
+        teamId: null,
         usageCount: count,
       })),
   ];
@@ -150,22 +157,45 @@ export async function getCategoryNames(): Promise<string[]> {
   return [...systemNames, ...customNames];
 }
 
-export async function createCategory(name: string, emoji: string): Promise<void> {
+export async function createCategory(name: string, emoji: string, ownerTeamId?: string): Promise<void> {
   const user = await requireAuth();
   const trimmed = name.trim();
   if (!trimmed) return;
 
-  const existing = await prisma.category.findFirst({
-    where: { name: trimmed, userId: user.id, teamId: null },
-  });
-  if (!existing) {
-    await prisma.category.create({
-      data: { name: trimmed, emoji: emoji || "📦", userId: user.id },
+  if (ownerTeamId) {
+    const teamIds = await getUserTeamIds(user.id);
+    if (!teamIds.includes(ownerTeamId)) throw new Error("Nie jesteś członkiem tego teamu");
+
+    const existing = await prisma.category.findFirst({
+      where: { name: trimmed, teamId: ownerTeamId, userId: null },
     });
+    if (!existing) {
+      await prisma.category.create({
+        data: { name: trimmed, emoji: emoji || "📦", teamId: ownerTeamId, userId: null },
+      });
+    }
+  } else {
+    const existing = await prisma.category.findFirst({
+      where: { name: trimmed, userId: user.id, teamId: null },
+    });
+    if (!existing) {
+      await prisma.category.create({
+        data: { name: trimmed, emoji: emoji || "📦", userId: user.id },
+      });
+    }
   }
 
   revalidatePath("/shopping/products");
   revalidatePath("/shopping");
+}
+
+async function assertCategoryAccess(id: string, userId: string): Promise<{ name: string; teamId: string | null }> {
+  const teamIds = await getUserTeamIds(userId);
+  const cat = await prisma.category.findUnique({ where: { id } });
+  if (!cat) throw new Error("Kategoria nie istnieje");
+  if (cat.userId === userId) return cat;
+  if (cat.teamId && teamIds.includes(cat.teamId)) return cat;
+  throw new Error("Brak dostępu do kategorii");
 }
 
 export async function updateCategory(id: string, name: string, emoji: string): Promise<void> {
@@ -173,9 +203,7 @@ export async function updateCategory(id: string, name: string, emoji: string): P
   const trimmed = name.trim();
   if (!trimmed) return;
 
-  const cat = await prisma.category.findUnique({ where: { id } });
-  if (!cat || cat.userId !== user.id) throw new Error("Forbidden");
-
+  const cat = await assertCategoryAccess(id, user.id);
   const oldName = cat.name;
 
   await prisma.$transaction([
@@ -192,8 +220,7 @@ export async function updateCategory(id: string, name: string, emoji: string): P
 
 export async function deleteCategory(id: string): Promise<void> {
   const user = await requireAuth();
-  const cat = await prisma.category.findUnique({ where: { id } });
-  if (!cat || cat.userId !== user.id) throw new Error("Forbidden");
+  const cat = await assertCategoryAccess(id, user.id);
 
   await orphanCategoryIcons(cat.name, user.id);
 

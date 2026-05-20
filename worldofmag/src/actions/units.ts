@@ -10,6 +10,8 @@ export type UnitWithUsage = {
   name: string;
   isBase: boolean;
   isOwn: boolean;
+  teamId: string | null;
+  teamName?: string;
   usageCount: number;
 };
 
@@ -24,6 +26,7 @@ export async function getUnits(): Promise<UnitWithUsage[]> {
         teamIds.length > 0 ? { teamId: { in: teamIds } } : {},
       ],
     },
+    include: { team: { select: { id: true, name: true } } },
     orderBy: { name: "asc" },
   });
 
@@ -67,6 +70,8 @@ export async function getUnits(): Promise<UnitWithUsage[]> {
         name: u.name,
         isBase: false,
         isOwn: u.userId === user.id,
+        teamId: u.teamId ?? null,
+        teamName: u.team?.name,
         usageCount: usageMap.get(u.name) ?? 0,
       })),
     // Units used in products but not in base list or custom units table
@@ -77,6 +82,7 @@ export async function getUnits(): Promise<UnitWithUsage[]> {
         name,
         isBase: false,
         isOwn: false,
+        teamId: null,
         usageCount: count,
       })),
   ];
@@ -103,16 +109,28 @@ export async function getUnitSuggestions(): Promise<string[]> {
   return [...baseNames, ...customNames];
 }
 
-export async function createUnit(name: string): Promise<void> {
+export async function createUnit(name: string, ownerTeamId?: string): Promise<void> {
   const user = await requireAuth();
   const trimmed = name.trim().toLowerCase();
   if (!trimmed) return;
 
-  const existing = await prisma.unit.findFirst({
-    where: { name: trimmed, userId: user.id, teamId: null },
-  });
-  if (!existing) {
-    await prisma.unit.create({ data: { name: trimmed, userId: user.id } });
+  if (ownerTeamId) {
+    const teamIds = await getUserTeamIds(user.id);
+    if (!teamIds.includes(ownerTeamId)) throw new Error("Nie jesteś członkiem tego teamu");
+
+    const existing = await prisma.unit.findFirst({
+      where: { name: trimmed, teamId: ownerTeamId, userId: null },
+    });
+    if (!existing) {
+      await prisma.unit.create({ data: { name: trimmed, teamId: ownerTeamId, userId: null } });
+    }
+  } else {
+    const existing = await prisma.unit.findFirst({
+      where: { name: trimmed, userId: user.id, teamId: null },
+    });
+    if (!existing) {
+      await prisma.unit.create({ data: { name: trimmed, userId: user.id } });
+    }
   }
 
   revalidatePath("/shopping/products");
@@ -143,8 +161,10 @@ export async function renameUnit(id: string, newName: string): Promise<void> {
 
 export async function deleteUnit(id: string): Promise<void> {
   const user = await requireAuth();
+  const teamIds = await getUserTeamIds(user.id);
   const unit = await prisma.unit.findUnique({ where: { id } });
-  if (!unit || unit.userId !== user.id) throw new Error("Forbidden");
+  if (!unit) throw new Error("Jednostka nie istnieje");
+  if (unit.userId !== user.id && !(unit.teamId && teamIds.includes(unit.teamId))) throw new Error("Forbidden");
 
   await prisma.unit.delete({ where: { id } });
   revalidatePath("/shopping/products");

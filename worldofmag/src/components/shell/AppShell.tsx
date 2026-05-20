@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 import { isPathLocked } from "@/lib/permissions";
@@ -138,6 +138,10 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
                   ))}
                 </div>
               )}
+
+              <MobileItem href="/reports" pathname={pathname} locked={isLocked("/reports")}>
+                <BookOpen size={20} style={{ color: "var(--accent-purple)", flexShrink: 0 }} /><span>Raporty</span>
+              </MobileItem>
 
               {[{ label: "Calendar", icon: <Calendar size={20} />, href: "/calendar" }, { label: "Work", icon: <Briefcase size={20} />, href: "/work" }].map((mod) => (
                 <div key={mod.href} className="flex items-center gap-3 px-4 py-3 mx-2 rounded" style={{ opacity: 0.35, color: "var(--text-secondary)", cursor: "not-allowed" }} title={`${mod.label} (coming soon)`}>
