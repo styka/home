@@ -26,6 +26,7 @@ export async function getReportsMeta(): Promise<ReportMeta[]> {
       slug: true,
       category: true,
       authorId: true,
+      teamId: true,
       createdAt: true,
       updatedAt: true,
       author: { select: { name: true, email: true } },
@@ -35,7 +36,7 @@ export async function getReportsMeta(): Promise<ReportMeta[]> {
     ...r,
     authorName: r.author?.name ?? r.author?.email ?? null,
     author: undefined,
-  })) as ReportMeta[];
+  })) as unknown as ReportMeta[];
 }
 
 /** User: own reports + public/system reports + team reports */
@@ -57,6 +58,7 @@ export async function getUserReportsMeta(): Promise<ReportMeta[]> {
       slug: true,
       category: true,
       authorId: true,
+      teamId: true,
       createdAt: true,
       updatedAt: true,
       author: { select: { name: true, email: true } },
@@ -66,7 +68,7 @@ export async function getUserReportsMeta(): Promise<ReportMeta[]> {
     ...r,
     authorName: r.author?.name ?? r.author?.email ?? null,
     author: undefined,
-  })) as ReportMeta[];
+  })) as unknown as ReportMeta[];
 }
 
 /** Admin: full report content */
