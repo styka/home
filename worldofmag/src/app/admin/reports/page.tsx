@@ -2,14 +2,16 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { prisma } from "@/lib/prisma";
-import { BookOpen, ChevronRight, ChevronLeft, Calendar } from "lucide-react";
+import { getReportsMeta } from "@/actions/reports";
+import { BookOpen, ChevronRight, ChevronLeft, Calendar, Plus, User } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
   refactoring: { label: "Refaktoryzacja", color: "var(--accent-purple)" },
   architecture: { label: "Architektura", color: "var(--accent-blue)" },
   security: { label: "Bezpieczeństwo", color: "var(--accent-red)" },
   performance: { label: "Wydajność", color: "var(--accent-green)" },
+  ux: { label: "UX", color: "var(--accent-amber)" },
+  proposal: { label: "Propozycja", color: "var(--accent-blue)" },
   general: { label: "Ogólny", color: "var(--text-muted)" },
 };
 
@@ -27,10 +29,7 @@ export default async function ReportsPage() {
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
-  const reports = await prisma.report.findMany({
-    orderBy: { createdAt: "desc" },
-    select: { id: true, title: true, slug: true, category: true, createdAt: true },
-  });
+  const reports = await getReportsMeta();
 
   const catInfo = (cat: string) => CATEGORY_LABELS[cat] ?? CATEGORY_LABELS.general;
 
@@ -44,11 +43,31 @@ export default async function ReportsPage() {
         </Link>
 
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-          <BookOpen size={20} style={{ color: "var(--accent-purple)" }} />
-          <h1 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
-            Raporty
-          </h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <BookOpen size={20} style={{ color: "var(--accent-purple)" }} />
+            <h1 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
+              Raporty
+            </h1>
+          </div>
+          <Link
+            href="/admin/reports/new"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 12,
+              fontWeight: 600,
+              padding: "6px 12px",
+              borderRadius: 8,
+              backgroundColor: "var(--accent-purple)",
+              color: "#fff",
+              textDecoration: "none",
+            }}
+          >
+            <Plus size={13} />
+            Nowy raport
+          </Link>
         </div>
         <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 32, marginTop: 4 }}>
           Archiwum raportów technicznych, analiz i dokumentacji projektowej.
@@ -131,11 +150,19 @@ export default async function ReportsPage() {
                           {cat.label}
                         </span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <Calendar size={11} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                          {formatDateTime(report.createdAt)}
-                        </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          <Calendar size={11} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                            {formatDateTime(report.createdAt)}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          <User size={11} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                            {report.authorName ?? "system"}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
