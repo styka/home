@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat /home/user/home/doświadczenia.md",
+            "timeout": 10,
+            "statusMessage": "Wczytuję doświadczenia..."
+          }
+        ]
+      }
+    ]
+  }
+}
