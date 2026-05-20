@@ -7,6 +7,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## Zasada: Lessons Learned
+
+**Za każdym razem gdy naprawiamy błąd lub rozwiązujemy nieoczywisty problem, dopisz lekcję do pliku `doświadczenia.md` w katalogu głównym repozytorium.**
+
+Moment do dopisania lekcji: build failuje i naprawiamy → zepsuta logika i ją poprawiamy → merge conflict i go rozwiązujemy → błąd bezpieczeństwa i go łatamy.
+
+Format wpisu:
+```
+## YYYY-MM-DD — Krótki tytuł problemu
+**Problem:** co się stało / jaki był błąd
+**Rozwiązanie:** co naprawiliśmy i jak
+**Lekcja:** co robić inaczej następnym razem
+```
+
+Nie pytaj o pozwolenie — po prostu dopisz i commituj razem z poprawką.
+
+---
+
 ## Project Overview
 
 **WorldOfMag** is a modular personal life/work management system for **Szymon Tyka** (tyka.szymon@gmail.com). The name means "World of the Mage" — Szymon's personal digital world.
