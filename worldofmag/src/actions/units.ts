@@ -60,6 +60,7 @@ export async function getUnits(): Promise<UnitWithUsage[]> {
       name: u.value,
       isBase: true,
       isOwn: false,
+      teamId: null,
       usageCount: usageMap.get(u.value) ?? 0,
     })),
     // User custom units (not already in base list)
