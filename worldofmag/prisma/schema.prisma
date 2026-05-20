@@ -136,6 +136,8 @@ model Team {
   taskProjects TaskProject[]   @relation("TeamTaskProjects")
   taskShares  TaskShare[]      @relation("TeamTaskShares")
   notes       Note[]           @relation("TeamNotes")
+  categoryIconVariants CategoryIconVariant[] @relation("TeamIconVariants")
+  reports     Report[]         @relation("TeamReports")
 }
 
 model TeamMember {
@@ -169,12 +171,14 @@ model TeamInvitation {
 // ─── Shopping ─────────────────────────────────────────────────────────────
 
 model ShoppingList {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   ownerId     String?
   ownerTeamId String?
+  archived    Boolean   @default(false)
+  archivedAt  DateTime?
 
   owner     User?  @relation(fields: [ownerId], references: [id])
   ownerTeam Team?  @relation("TeamLists", fields: [ownerTeamId], references: [id])
@@ -273,12 +277,14 @@ model CategoryIconVariant {
   categoryName String
   svgContent   String
   isActive     Boolean  @default(false)
-  userId       String
+  userId       String?
+  teamId       String?
   createdAt    DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team? @relation("TeamIconVariants", fields: [teamId], references: [id], onDelete: Cascade)
 
-  @@index([userId, categoryName])
+  @@index([userId, teamId, categoryName])
 }
 
 // ─── Notes ────────────────────────────────────────────────────────────────
@@ -493,10 +499,13 @@ model Report {
   content   String   // markdown content
   category  String   @default("general")
   authorId  String?
+  teamId    String?
   author    User?    @relation("AuthoredReports", fields: [authorId], references: [id], onDelete: SetNull)
+  team      Team?    @relation("TeamReports", fields: [teamId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([category, createdAt])
   @@index([authorId])
+  @@index([teamId])
 }

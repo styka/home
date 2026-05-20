@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { requireAuth } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import type { Report } from "@prisma/client";
 
@@ -38,12 +38,17 @@ export async function getReportsMeta(): Promise<ReportMeta[]> {
   })) as ReportMeta[];
 }
 
-/** User: own reports + reports with null authorId (public/system) */
+/** User: own reports + public/system reports + team reports */
 export async function getUserReportsMeta(): Promise<ReportMeta[]> {
   const user = await requireAuth();
+  const teamIds = await getUserTeamIds(user.id);
   const rows = await prisma.report.findMany({
     where: {
-      OR: [{ authorId: user.id }, { authorId: null }],
+      OR: [
+        { authorId: user.id },
+        { authorId: null },
+        ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
+      ],
     },
     orderBy: { createdAt: "desc" },
     select: {
@@ -70,12 +75,16 @@ export async function getReport(slug: string): Promise<Report | null> {
   return prisma.report.findUnique({ where: { slug } });
 }
 
-/** User: get own report or public report by slug */
+/** User: get own report, public report, or team report by slug */
 export async function getUserReport(slug: string): Promise<Report | null> {
   const user = await requireAuth();
   const report = await prisma.report.findUnique({ where: { slug } });
   if (!report) return null;
   if (report.authorId === null || report.authorId === user.id) return report;
+  if (report.teamId) {
+    const teamIds = await getUserTeamIds(user.id);
+    if (teamIds.includes(report.teamId)) return report;
+  }
   throw new Error("Brak dostępu do raportu");
 }
 

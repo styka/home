@@ -13,6 +13,7 @@ import {
   LayoutList,
   Loader2,
   Tag,
+  Users,
 } from "lucide-react";
 import { createTaskProject } from "@/actions/taskProjects";
 import type { TaskProject } from "@/types";
@@ -317,16 +318,15 @@ function ProjectCard({ project }: { project: TaskProject }) {
       ) : (
         <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>{project.emoji}</span>
       )}
-      <span
-        style={{
-          flex: 1,
-          fontSize: 14,
-          fontWeight: 500,
-          color: "var(--text-primary)",
-        }}
-      >
+      <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--text-primary)", minWidth: 0 }}>
         {project.name}
       </span>
+      {project.ownerTeamId && (
+        <span style={{ fontSize: 11, padding: "1px 5px", borderRadius: 10, backgroundColor: "rgba(139,92,246,0.15)", color: "var(--accent-purple)", display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+          <Users size={10} />
+          Team
+        </span>
+      )}
       {project._count?.tasks != null && project._count.tasks > 0 && (
         <span
           style={{

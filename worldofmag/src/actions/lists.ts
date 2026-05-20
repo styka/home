@@ -17,6 +17,7 @@ export async function getLists(): Promise<ShoppingList[]> {
 
   return prisma.shoppingList.findMany({
     where: {
+      archived: false,
       OR: [
         { ownerId: user.id },
         ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
@@ -24,6 +25,23 @@ export async function getLists(): Promise<ShoppingList[]> {
     },
     include: { ownerTeam: { select: { id: true, name: true } } },
     orderBy: { createdAt: "asc" },
+  }) as unknown as Promise<ShoppingList[]>;
+}
+
+export async function getArchivedLists(): Promise<ShoppingList[]> {
+  const user = await requireAuth();
+  const teamIds = await getUserTeamIds(user.id);
+
+  return prisma.shoppingList.findMany({
+    where: {
+      archived: true,
+      OR: [
+        { ownerId: user.id },
+        ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+      ],
+    },
+    include: { ownerTeam: { select: { id: true, name: true } } },
+    orderBy: { archivedAt: "desc" },
   }) as unknown as Promise<ShoppingList[]>;
 }
 
@@ -65,6 +83,27 @@ export async function deleteList(id: string): Promise<void> {
   const user = await requireAuth();
   await assertListAccess(id, user.id);
   await prisma.shoppingList.delete({ where: { id } });
+  revalidatePath("/shopping");
+}
+
+export async function archiveList(id: string): Promise<void> {
+  const user = await requireAuth();
+  await assertListAccess(id, user.id);
+  await prisma.shoppingList.update({
+    where: { id },
+    data: { archived: true, archivedAt: new Date() },
+  });
+  revalidatePath("/shopping");
+  revalidatePath(`/shopping/${id}`);
+}
+
+export async function unarchiveList(id: string): Promise<void> {
+  const user = await requireAuth();
+  await assertListAccess(id, user.id);
+  await prisma.shoppingList.update({
+    where: { id },
+    data: { archived: false, archivedAt: null },
+  });
   revalidatePath("/shopping");
 }
 

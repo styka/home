@@ -24,6 +24,7 @@ const TASK_INCLUDE = {
     },
   },
   assignee: { select: { id: true, name: true, email: true, image: true } },
+  project: { select: { id: true, name: true, emoji: true, isInbox: true } },
   _count: { select: { subtasks: true, comments: true } },
 };
 

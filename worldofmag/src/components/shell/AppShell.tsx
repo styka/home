@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
+import { ToastProvider } from "@/components/ui/Toast";
 import { isPathLocked } from "@/lib/permissions";
 
 interface AppShellProps {
@@ -47,6 +48,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
   const isShoppingActive = pathname.startsWith("/shopping");
 
   return (
+    <ToastProvider>
     <div
       className="flex flex-col md:flex-row h-screen overflow-hidden"
       style={{
@@ -172,12 +174,44 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
 
       <ModuleSidebar invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} />
 
-      <main className="flex-1 overflow-hidden flex flex-col min-w-0">
+      <main className="flex-1 overflow-hidden flex flex-col min-w-0 pb-14 md:pb-0">
         {children}
       </main>
 
+      {/* Mobile bottom tab bar */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex border-t"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          borderColor: "var(--border)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+          height: "calc(56px + env(safe-area-inset-bottom))",
+        }}
+      >
+        {[
+          { href: "/", label: "Dom", icon: <Home size={20} />, exact: true, color: "var(--text-secondary)" },
+          { href: "/shopping", label: "Zakupy", icon: <ShoppingCart size={20} />, exact: false, color: "var(--accent-blue)" },
+          { href: "/tasks", label: "Zadania", icon: <CheckSquare size={20} />, exact: false, color: "var(--accent-green)" },
+          { href: "/notes", label: "Notatki", icon: <FileText size={20} />, exact: false, color: "var(--accent-amber)" },
+        ].map(({ href, label, icon, exact, color }) => {
+          const isActive = exact ? pathname === href : pathname.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs"
+              style={{ color: isActive ? color : "var(--text-muted)" }}
+            >
+              {icon}
+              <span style={{ fontSize: 10 }}>{label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
       <AICommandSheet />
     </div>
+    </ToastProvider>
   );
 }
 
