@@ -75,12 +75,16 @@ export async function getReport(slug: string): Promise<Report | null> {
   return prisma.report.findUnique({ where: { slug } });
 }
 
-/** User: get own report or public report by slug */
+/** User: get own report, public report, or team report by slug */
 export async function getUserReport(slug: string): Promise<Report | null> {
   const user = await requireAuth();
   const report = await prisma.report.findUnique({ where: { slug } });
   if (!report) return null;
   if (report.authorId === null || report.authorId === user.id) return report;
+  if (report.teamId) {
+    const teamIds = await getUserTeamIds(user.id);
+    if (teamIds.includes(report.teamId)) return report;
+  }
   throw new Error("Brak dostępu do raportu");
 }
 

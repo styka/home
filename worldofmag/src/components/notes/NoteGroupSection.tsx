@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Users } from "lucide-react";
 import { NoteRow } from "./NoteRow";
 import type { Note, Tag, NoteGroup } from "@/types";
 
@@ -55,6 +55,15 @@ export function NoteGroupSection({
         >
           {notes.length}
         </span>
+        {notes.length > 0 && notes[0].ownerTeamId && notes.every(n => n.ownerTeamId === notes[0].ownerTeamId) && (
+          <span
+            className="flex items-center gap-0.5 text-[10px] px-1 rounded flex-shrink-0"
+            style={{ backgroundColor: "rgba(139,92,246,0.15)", color: "var(--accent-purple)" }}
+          >
+            <Users size={9} />
+            {notes[0].ownerTeam?.name ?? "Team"}
+          </span>
+        )}
       </button>
 
       {!collapsed && notes.map((note) => (

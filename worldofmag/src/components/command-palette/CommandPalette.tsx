@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
 import { ShoppingCart, Plus, Trash2, CheckCheck, X, Package } from "lucide-react";
@@ -20,10 +20,31 @@ export function CommandPalette({ listId, allLists, onFocusQuickAdd }: CommandPal
   const router = useRouter();
   const [, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [creatingList, setCreatingList] = useState(false);
+  const [newListName, setNewListName] = useState("");
+  const newListInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 10);
+    if (open) {
+      setCreatingList(false);
+      setNewListName("");
+      setTimeout(() => inputRef.current?.focus(), 10);
+    }
   }, [open]);
+
+  useEffect(() => {
+    if (creatingList) setTimeout(() => newListInputRef.current?.focus(), 10);
+  }, [creatingList]);
+
+  async function submitNewList() {
+    const name = newListName.trim();
+    if (!name) return;
+    setOpen(false);
+    setCreatingList(false);
+    setNewListName("");
+    const list = await createList(name);
+    router.push(`/shopping/${list.id}`);
+  }
 
   function run(fn: () => void) {
     setOpen(false);
@@ -44,6 +65,29 @@ export function CommandPalette({ listId, allLists, onFocusQuickAdd }: CommandPal
         onClick={(e) => e.stopPropagation()}
       >
         <Command>
+          {creatingList ? (
+            <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+              <ShoppingCart size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+              <input
+                ref={newListInputRef}
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); submitNewList(); }
+                  if (e.key === "Escape") { setCreatingList(false); newListInputRef.current?.blur(); setTimeout(() => inputRef.current?.focus(), 10); }
+                }}
+                placeholder="Nazwa nowej listy…"
+                className="flex-1 bg-transparent text-sm focus:outline-none"
+                style={{ color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
+              />
+              <button onClick={submitNewList} disabled={!newListName.trim()} style={{ color: "var(--accent-blue)", opacity: newListName.trim() ? 1 : 0.4, fontSize: 11 }}>
+                Utwórz
+              </button>
+              <button onClick={() => setOpen(false)} style={{ color: "var(--text-muted)" }}>
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
           <div
             className="flex items-center gap-2 px-4 border-b"
             style={{ borderColor: "var(--border)" }}
@@ -59,7 +103,8 @@ export function CommandPalette({ listId, allLists, onFocusQuickAdd }: CommandPal
               <X size={14} />
             </button>
           </div>
-          <Command.List className="overflow-y-auto" style={{ maxHeight: "360px" }}>
+          )}
+          <Command.List className="overflow-y-auto" style={{ maxHeight: "360px", display: creatingList ? "none" : undefined }}>
             <Command.Empty className="py-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>
               No commands found.
             </Command.Empty>
@@ -93,13 +138,7 @@ export function CommandPalette({ listId, allLists, onFocusQuickAdd }: CommandPal
               <PaletteItem
                 icon={<Plus size={14} />}
                 label="New shopping list"
-                onSelect={() => run(async () => {
-                  const name = prompt("List name:");
-                  if (name?.trim()) {
-                    const list = await createList(name.trim());
-                    router.push(`/shopping/${list.id}`);
-                  }
-                })}
+                onSelect={() => setCreatingList(true)}
               />
             </Command.Group>
 
