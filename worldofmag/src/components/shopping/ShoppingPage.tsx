@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, useTransition, useEffect } from "react";
+import { Trash2, Archive } from "lucide-react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { ListDropdown } from "./ListDropdown";
@@ -10,7 +11,9 @@ import { SearchBar } from "./SearchBar";
 import { SortControl } from "./SortControl";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
-import { updateItemStatus, deleteItem } from "@/actions/items";
+import { updateItemStatus, deleteItem, clearDoneItems } from "@/actions/items";
+import { archiveList } from "@/actions/lists";
+import { useToast } from "@/components/ui/Toast";
 import { computeOptimalCategoryOrder } from "@/lib/storeRoute";
 import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus, SortMode, StoreWithGraph } from "@/types";
 import { FILTER_TABS, STATUS_CYCLE } from "@/types";
@@ -48,6 +51,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, stores }: Shopp
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>({ type: "category" });
   const [, startTransition] = useTransition();
+  const { showToast } = useToast();
 
   useEffect(() => {
     setSortMode(loadSortMode());
@@ -162,6 +166,31 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, stores }: Shopp
       >
         <ListDropdown allLists={allLists} currentListId={list.id} />
         <div className="flex-1" />
+        {counts.DONE > 0 && (
+          <button
+            onClick={() => startTransition(() => clearDoneItems(list.id))}
+            className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
+            style={{ color: "var(--accent-red)", backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}
+            title="Wyczyść zakończone elementy"
+          >
+            <Trash2 size={11} />
+            <span className="hidden sm:inline">Wyczyść ({counts.DONE})</span>
+            <span className="sm:hidden">{counts.DONE}</span>
+          </button>
+        )}
+        <button
+          onClick={() => {
+            if (!confirm("Zakończyć zakupy i zarchiwizować listę?")) return;
+            startTransition(() => archiveList(list.id));
+            showToast("Lista zarchiwizowana", "success");
+          }}
+          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
+          style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}
+          title="Zakończ zakupy (zarchiwizuj listę)"
+        >
+          <Archive size={11} />
+          <span className="hidden sm:inline">Zakończ</span>
+        </button>
         <SortControl sortMode={sortMode} stores={stores} onChange={handleSortChange} />
         <a
           href="/shopping/stores"

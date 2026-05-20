@@ -1,12 +1,13 @@
 "use client";
 
 import { useRef, useState, useEffect, useTransition } from "react";
-import { Trash2, Pin, PinOff, Loader2, Mic, MicOff } from "lucide-react";
+import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TagChip } from "./TagChip";
 import { TagSuggestions } from "./TagSuggestions";
 import { updateNote, deleteNote, toggleNotePin, setNoteTags } from "@/actions/notes";
 import { createTag } from "@/actions/tags";
+import { useToast } from "@/components/ui/Toast";
 import type { Note, Tag, NoteGroup } from "@/types";
 
 interface NoteRowProps {
@@ -29,6 +30,21 @@ const REWRITE_MODES = [
   { value: "to_markdown", label: "→ Markdown" },
 ] as const;
 
+function renderMarkdown(md: string): string {
+  return md
+    .replace(/^#{3} (.+)$/gm, "<h3 style=\"font-size:13px;font-weight:700;margin:8px 0 4px\">$1</h3>")
+    .replace(/^#{2} (.+)$/gm, "<h2 style=\"font-size:14px;font-weight:700;margin:10px 0 4px\">$1</h2>")
+    .replace(/^# (.+)$/gm, "<h1 style=\"font-size:16px;font-weight:700;margin:12px 0 4px\">$1</h1>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/`(.+?)`/g, "<code style=\"background:rgba(255,255,255,0.08);padding:1px 4px;border-radius:3px;font-family:monospace;font-size:11px\">$1</code>")
+    .replace(/^- (.+)$/gm, "<li style=\"margin-left:16px;list-style:disc\">$1</li>")
+    .replace(/^(\d+)\. (.+)$/gm, "<li style=\"margin-left:16px;list-style:decimal\">$2</li>")
+    .replace(/\[(.+?)\]\((.+?)\)/g, "<a href=\"$2\" style=\"color:var(--accent-blue)\" target=\"_blank\">$1</a>")
+    .replace(/\n\n/g, "<br/><br/>")
+    .replace(/\n/g, "<br/>");
+}
+
 function highlightMatch(text: string, query: string) {
   if (!query.trim()) return <>{text}</>;
   const idx = text.toLowerCase().indexOf(query.toLowerCase());
@@ -48,6 +64,7 @@ export function NoteRow({
   note, allTags, allGroups, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, onTagsChanged, rowRef, searchQuery = "",
 }: NoteRowProps) {
   const [, startTransition] = useTransition();
+  const { showToast } = useToast();
   const [editTitle, setEditTitle] = useState(note.title);
   const [editContent, setEditContent] = useState(note.content);
   const [editGroupId, setEditGroupId] = useState(note.groupId ?? "");
@@ -56,6 +73,7 @@ export function NoteRow({
   const [rewriteMode, setRewriteMode] = useState<"correct" | "rewrite" | "to_markdown">("correct");
   const [rewriting, setRewriting] = useState(false);
   const [previousContent, setPreviousContent] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -133,7 +151,20 @@ export function NoteRow({
   }
 
   function handleDelete() {
+    if (!confirm("Usunąć notatkę? Tej operacji nie można cofnąć.")) return;
     startTransition(() => { deleteNote(note.id); });
+  }
+
+  function handleExport() {
+    const content = `# ${note.title}\n\n${note.content}`;
+    const blob = new Blob([content], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${note.title.replace(/[^a-z0-9ąęśźżćńółAEŚŹŻĆŃÓŁ\s]/gi, "").trim().replace(/\s+/g, "-").toLowerCase() || "notatka"}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("Notatka wyeksportowana", "success");
   }
 
   function handlePin() {
@@ -218,7 +249,19 @@ export function NoteRow({
   );
   const availableTagChips = allTags.filter((t) => !editTagIds.includes(t.id)).slice(0, 12);
 
-  const contentPreview = note.content.replace(/#+\s/g, "").replace(/[*_`]/g, "").slice(0, 120);
+  const rawContent = note.content.replace(/#+\s/g, "").replace(/[*_`]/g, "");
+  const contentPreview = (() => {
+    if (searchQuery.trim()) {
+      const lower = rawContent.toLowerCase();
+      const idx = lower.indexOf(searchQuery.toLowerCase());
+      if (idx !== -1) {
+        const start = Math.max(0, idx - 60);
+        const end = Math.min(rawContent.length, idx + searchQuery.length + 60);
+        return (start > 0 ? "…" : "") + rawContent.slice(start, end) + (end < rawContent.length ? "…" : "");
+      }
+    }
+    return rawContent.slice(0, 120);
+  })();
 
   if (isEditing) {
     return (
@@ -237,15 +280,38 @@ export function NoteRow({
           placeholder="Tytuł..."
         />
 
-        {/* Content */}
-        <textarea
-          value={editContent}
-          onChange={(e) => setEditContent(e.target.value)}
-          rows={5}
-          className="w-full bg-transparent text-xs focus:outline-none resize-none font-mono"
-          style={{ color: "var(--text-primary)", lineHeight: 1.7 }}
-          placeholder="Treść notatki..."
-        />
+        {/* Content with preview toggle */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>Treść</span>
+          {(note.isMarkdown || editContent.includes("#") || editContent.includes("**")) && (
+            <button
+              onClick={() => setShowPreview((v) => !v)}
+              className="flex items-center gap-1 text-xs px-2 py-0.5 rounded"
+              style={{ backgroundColor: showPreview ? "rgba(59,130,246,0.15)" : "var(--bg-hover)", color: showPreview ? "var(--accent-blue)" : "var(--text-muted)" }}
+              title={showPreview ? "Edycja" : "Podgląd markdown"}
+            >
+              {showPreview ? <EyeOff size={10} /> : <Eye size={10} />}
+              {showPreview ? "Edycja" : "Podgląd"}
+            </button>
+          )}
+        </div>
+        {showPreview ? (
+          <div
+            className="text-xs p-2 rounded border min-h-[80px]"
+            style={{ borderColor: "var(--border)", color: "var(--text-primary)", lineHeight: 1.7 }}
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(editContent) }}
+          />
+        ) : (
+          <textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            rows={5}
+            className="w-full bg-transparent text-xs focus:outline-none resize-none font-mono"
+            style={{ color: "var(--text-primary)", lineHeight: 1.7 }}
+            placeholder="Treść notatki..."
+          />
+        )}
 
         {/* AI rewrite + mic + voice edit */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -450,6 +516,13 @@ export function NoteRow({
               MD
             </span>
           )}
+          {note.ownerTeamId && (
+            <span className="text-[10px] px-1 rounded flex-shrink-0 flex items-center gap-0.5"
+              style={{ backgroundColor: "rgba(139,92,246,0.15)", color: "var(--accent-purple)" }}>
+              <svg width="8" height="8" viewBox="0 0 16 16" fill="currentColor"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-1.5 1A4.5 4.5 0 0 0 1 13.5V14h12v-.5A4.5 4.5 0 0 0 8.5 9h-3Zm5.5-1a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/></svg>
+              Team
+            </span>
+          )}
         </div>
         {contentPreview && (
           <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-muted)" }}>
@@ -486,6 +559,14 @@ export function NoteRow({
               <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
                 <path d="M9.5 2L12 4.5L5 11.5H2.5V9L9.5 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
               </svg>
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleExport(); }}
+              className="p-1 rounded focus:outline-none"
+              style={{ color: "var(--text-muted)" }}
+              title="Eksportuj do .md"
+            >
+              <Download size={13} />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); handleDelete(); }}

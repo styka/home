@@ -1,8 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Circle, CheckCircle2, Clock, AlertCircle, MinusCircle, ChevronRight, RefreshCw, Paperclip } from "lucide-react";
-import { toggleTaskStatus } from "@/actions/tasks";
+import { toggleTaskStatus, updateTask } from "@/actions/tasks";
 import { TaskTagBadge } from "./TaskTagBadge";
 import { RecurringBadge } from "./RecurringBadge";
 import type { Task, TaskStatus, TaskPriority } from "@/types";
@@ -49,6 +49,7 @@ interface TaskRowProps {
 
 export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, indent = 0 }: TaskRowProps) {
   const [isPending, startTransition] = useTransition();
+  const [editingDate, setEditingDate] = useState(false);
   const isDone = task.status === "DONE";
   const isCancelled = task.status === "CANCELLED";
   const dateInfo = formatDate(task.dueDate);
@@ -60,6 +61,19 @@ export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, 
   function handleToggle(e: React.MouseEvent) {
     e.stopPropagation();
     startTransition(async () => { await toggleTaskStatus(task.id); });
+  }
+
+  function handleDateClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    setEditingDate(true);
+  }
+
+  function handleDateChange(value: string) {
+    setEditingDate(false);
+    const newDate = value ? new Date(value + "T12:00:00") : null;
+    startTransition(async () => {
+      await updateTask(task.id, { dueDate: newDate });
+    });
   }
 
   return (
@@ -135,9 +149,23 @@ export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, 
         {/* Meta row */}
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           {/* Due date */}
-          {dateInfo && (
+          {editingDate ? (
+            <input
+              type="date"
+              autoFocus
+              defaultValue={task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : ""}
+              onChange={(e) => handleDateChange(e.target.value)}
+              onBlur={(e) => handleDateChange(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setEditingDate(false); } }}
+              onClick={(e) => e.stopPropagation()}
+              className="text-xs bg-transparent focus:outline-none"
+              style={{ color: "var(--text-muted)", border: "none", width: 110 }}
+            />
+          ) : dateInfo ? (
             <span
-              className="text-xs"
+              className="text-xs cursor-pointer hover:underline"
+              onClick={handleDateClick}
+              title="Kliknij, aby zmienić datę"
               style={{
                 color: dateInfo.isOverdue ? "var(--accent-red)" : dateInfo.isToday ? "var(--accent-amber)" : "var(--text-muted)",
                 fontWeight: dateInfo.isOverdue || dateInfo.isToday ? 500 : undefined,
@@ -145,7 +173,7 @@ export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, 
             >
               {dateInfo.text}
             </span>
-          )}
+          ) : null}
 
           {/* Estimated time */}
           {task.estimatedMins && (

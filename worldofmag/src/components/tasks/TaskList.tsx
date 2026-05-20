@@ -135,7 +135,54 @@ export function TaskList({ tasks, filter, viewMode, selectedTagIds, focusedTaskI
     );
   }
 
-  // Today / all / project: group by priority
+  // "all" view: group by project
+  if (viewMode === "all") {
+    const done = filter === "ALL"
+      ? applyTagFilter(tasks.filter((t) => t.status === "DONE" || t.status === "CANCELLED"))
+      : [];
+
+    const projectMap = new Map<string, { label: string; tasks: Task[] }>();
+    for (const t of filtered) {
+      const key = t.projectId ?? "__none__";
+      if (!projectMap.has(key)) {
+        const p = t.project;
+        const label = p ? (p.isInbox ? `📥 ${p.name}` : `${p.emoji ?? "📋"} ${p.name}`) : "Bez projektu";
+        projectMap.set(key, { label, tasks: [] });
+      }
+      projectMap.get(key)!.tasks.push(t);
+    }
+
+    return (
+      <div className="flex-1 overflow-y-auto">
+        {Array.from(projectMap.entries()).map(([key, { label, tasks: groupTasks }]) => (
+          <div key={key}>
+            <div
+              className="flex items-center gap-2 px-4 py-1 text-xs font-medium sticky top-0"
+              style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg-base)", borderBottom: "1px solid var(--border)" }}
+            >
+              {label}
+              <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({groupTasks.length})</span>
+            </div>
+            {groupTasks.map(renderTask)}
+          </div>
+        ))}
+        {done.length > 0 && (
+          <div>
+            <div
+              className="flex items-center gap-2 px-4 py-1 text-xs font-medium sticky top-0"
+              style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-base)", borderBottom: "1px solid var(--border)" }}
+            >
+              ✓ Zrobione / Anulowane
+              <span style={{ fontWeight: 400 }}>({done.length})</span>
+            </div>
+            {done.map(renderTask)}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Today / project: group by priority
   const done = filter === "ALL"
     ? applyTagFilter(tasks.filter((t) => t.status === "DONE" || t.status === "CANCELLED"))
     : [];

@@ -2,24 +2,30 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ShoppingCart, Plus, ChevronRight, Loader2, Package, Ruler, Tag, Map, Image } from "lucide-react";
-import { createList } from "@/actions/lists";
+import { ShoppingCart, Plus, ChevronRight, Loader2, Package, Ruler, Tag, Map, Image, Archive, RotateCcw, Users } from "lucide-react";
+import { createList, unarchiveList } from "@/actions/lists";
+import { useToast } from "@/components/ui/Toast";
 
 interface ListSummary {
   id: string;
   name: string;
   pendingCount: number;
   totalCount: number;
+  teamName?: string | null;
+  archived?: boolean;
 }
 
 interface ShoppingHomePageProps {
   lists: ListSummary[];
+  archivedLists?: ListSummary[];
 }
 
-export function ShoppingHomePage({ lists }: ShoppingHomePageProps) {
+export function ShoppingHomePage({ lists, archivedLists = [] }: ShoppingHomePageProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const { showToast } = useToast();
 
   function handleCreate() {
     const name = newName.trim() || "Zakupy";
@@ -179,39 +185,59 @@ export function ShoppingHomePage({ lists }: ShoppingHomePageProps) {
               }}
             >
               <ShoppingCart size={16} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
-              <span
-                style={{
-                  flex: 1,
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: "var(--text-primary)",
-                }}
-              >
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--text-primary)", minWidth: 0 }}>
                 {list.name}
               </span>
+              {list.teamName && (
+                <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 10, backgroundColor: "rgba(139,92,246,0.15)", color: "var(--accent-purple)", display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+                  <Users size={10} />
+                  {list.teamName}
+                </span>
+              )}
               {list.pendingCount > 0 ? (
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: "var(--accent-blue)",
-                    background: "rgba(59,130,246,0.1)",
-                    padding: "2px 8px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(59,130,246,0.2)",
-                  }}
-                >
+                <span style={{ fontSize: 12, color: "var(--accent-blue)", background: "rgba(59,130,246,0.1)", padding: "2px 8px", borderRadius: 10, border: "1px solid rgba(59,130,246,0.2)", flexShrink: 0 }}>
                   {list.pendingCount} do kupienia
                 </span>
               ) : list.totalCount > 0 ? (
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                <span style={{ fontSize: 12, color: "var(--text-muted)", flexShrink: 0 }}>
                   {list.totalCount} pozycji
                 </span>
               ) : (
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Pusta</span>
+                <span style={{ fontSize: 12, color: "var(--text-muted)", flexShrink: 0 }}>Pusta</span>
               )}
               <ChevronRight size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
             </Link>
           ))}
+
+          {/* Archive section */}
+          {archivedLists.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <button
+                onClick={() => setShowArchived((v) => !v)}
+                style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}
+              >
+                <Archive size={12} />
+                {showArchived ? "Ukryj archiwum" : `Pokaż archiwum (${archivedLists.length})`}
+              </button>
+              {showArchived && archivedLists.map((list) => (
+                <div
+                  key={list.id}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)", opacity: 0.6, marginTop: 6 }}
+                >
+                  <Archive size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 13, color: "var(--text-secondary)" }}>{list.name}</span>
+                  <button
+                    onClick={() => { if (!confirm("Przywrócić listę z archiwum?")) return; startTransition(() => unarchiveList(list.id)); showToast("Lista przywrócona", "success"); }}
+                    style={{ fontSize: 11, color: "var(--accent-blue)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                    title="Przywróć listę"
+                  >
+                    <RotateCcw size={12} />
+                    Przywróć
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Management */}

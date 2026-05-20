@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getUserTeamIds } from "@/lib/server-utils";
 
 export type CategoryIconVariantData = {
   id: string;
@@ -39,7 +40,10 @@ export async function setActiveCategoryIcon(variantId: string): Promise<void> {
   if (!session?.user?.id) throw new Error("Unauthorized");
 
   const variant = await prisma.categoryIconVariant.findUnique({ where: { id: variantId } });
-  if (!variant || variant.userId !== session.user.id) throw new Error("Forbidden");
+  if (!variant) throw new Error("Not found");
+  const teamIds2 = await getUserTeamIds(session.user.id);
+  const isOwner2 = variant.userId === session.user.id || (variant.teamId !== null && teamIds2.includes(variant.teamId));
+  if (!isOwner2) throw new Error("Forbidden");
 
   await prisma.$transaction([
     prisma.categoryIconVariant.updateMany({
@@ -76,7 +80,11 @@ export async function deleteCategoryIconVariant(variantId: string): Promise<void
   if (!session?.user?.id) throw new Error("Unauthorized");
 
   const variant = await prisma.categoryIconVariant.findUnique({ where: { id: variantId } });
-  if (!variant || variant.userId !== session.user.id) throw new Error("Forbidden");
+  if (!variant) throw new Error("Not found");
+
+  const teamIds = await getUserTeamIds(session.user.id);
+  const isOwner = variant.userId === session.user.id || (variant.teamId !== null && teamIds.includes(variant.teamId));
+  if (!isOwner) throw new Error("Forbidden");
 
   await prisma.categoryIconVariant.delete({ where: { id: variantId } });
 
@@ -97,26 +105,49 @@ export async function getCategoryIconVariants(
   });
 }
 
-/** Returns map of categoryName → svgContent for all active icons of the current user. */
+/** Returns map of categoryName → svgContent for active icons (user icons take priority over team icons). */
 export async function getActiveCategoryIconMap(): Promise<Record<string, string>> {
   const session = await auth();
   if (!session?.user?.id) return {};
 
+  const teamIds = await getUserTeamIds(session.user.id);
+
   const active = await prisma.categoryIconVariant.findMany({
-    where: { userId: session.user.id, isActive: true },
-    select: { categoryName: true, svgContent: true },
+    where: {
+      isActive: true,
+      OR: [
+        { userId: session.user.id },
+        ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
+      ],
+    },
+    select: { categoryName: true, svgContent: true, userId: true },
+    orderBy: { createdAt: "desc" },
   });
 
-  return Object.fromEntries(active.map((v) => [v.categoryName, v.svgContent]));
+  // User icons take priority over team icons
+  const map: Record<string, string> = {};
+  for (const v of active) {
+    if (!map[v.categoryName] || v.userId === session.user.id) {
+      map[v.categoryName] = v.svgContent;
+    }
+  }
+  return map;
 }
 
-/** Returns all icon variants for all categories of the current user, grouped by category. */
+/** Returns all icon variants for all categories of the current user + teams, grouped by category. */
 export async function getAllUserIconVariants(): Promise<Record<string, CategoryIconVariantData[]>> {
   const session = await auth();
   if (!session?.user?.id) return {};
 
+  const teamIds = await getUserTeamIds(session.user.id);
+
   const all = await prisma.categoryIconVariant.findMany({
-    where: { userId: session.user.id },
+    where: {
+      OR: [
+        { userId: session.user.id },
+        ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
+      ],
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -128,13 +159,20 @@ export async function getAllUserIconVariants(): Promise<Record<string, CategoryI
   return grouped;
 }
 
-/** Returns all icon variants for the current user as a flat list (newest first). */
+/** Returns all icon variants for the current user + teams as a flat list (newest first). */
 export async function getAllUserIconVariantsFlat(): Promise<CategoryIconVariantData[]> {
   const session = await auth();
   if (!session?.user?.id) return [];
 
+  const teamIds = await getUserTeamIds(session.user.id);
+
   return prisma.categoryIconVariant.findMany({
-    where: { userId: session.user.id },
+    where: {
+      OR: [
+        { userId: session.user.id },
+        ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
+      ],
+    },
     orderBy: { createdAt: "desc" },
   });
 }
@@ -169,7 +207,10 @@ export async function assignIconToCategory(
   if (!session?.user?.id) throw new Error("Unauthorized");
 
   const variant = await prisma.categoryIconVariant.findUnique({ where: { id: variantId } });
-  if (!variant || variant.userId !== session.user.id) throw new Error("Forbidden");
+  if (!variant) throw new Error("Not found");
+  const teamIds = await getUserTeamIds(session.user.id);
+  const isOwner = variant.userId === session.user.id || (variant.teamId !== null && teamIds.includes(variant.teamId));
+  if (!isOwner) throw new Error("Forbidden");
 
   // Delete any existing icon for the target category (enforce max 1)
   await prisma.categoryIconVariant.deleteMany({
