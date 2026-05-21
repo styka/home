@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowLeft, Clock, Users, Pencil, ShoppingCart, CheckCircle2, ChefHat, Trash2 } from "lucide-react";
+import { ArrowLeft, Clock, Users, Pencil, ShoppingCart, CheckCircle2, Trash2, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
 import { ShopForRecipeDialog } from "./ShopForRecipeDialog";
@@ -142,6 +142,15 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
 
       <div className="flex flex-wrap items-center gap-2 mb-5">
         <ServingSelector value={servings} onChange={setServings} label="Porcje" />
+        {recipe.steps.length > 0 ? (
+          <Link
+            href={`/kitchen/recipes/${recipe.slug}/cook`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
+            style={{ backgroundColor: "#0d0d0d", color: "var(--accent-orange)", border: "1px solid var(--accent-orange)" }}
+          >
+            <Play size={14} /> Cook Mode
+          </Link>
+        ) : null}
         <button
           type="button"
           onClick={() => setShopOpen(true)}
