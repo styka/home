@@ -251,6 +251,136 @@ interface AggregatedItem {
   sources: Array<{ recipeId: string; ingredientId: string; servings: number }>;
 }
 
+export interface PreviewShoppingListInput {
+  from: Date;
+  to: Date;
+  skipPantry?: boolean;
+  consolidate?: boolean;
+  skipOptional?: boolean;
+}
+
+export interface ShoppingListPreviewItem {
+  name: string;
+  quantity: number | null;
+  unit: string | null;
+  category: string;
+  sourceCount: number;
+  fromPantry: boolean;
+}
+
+export interface ShoppingListPreviewResult {
+  items: ShoppingListPreviewItem[];
+  skippedFromPantry: Array<{ name: string; quantity: number | null }>;
+  totalIngredients: number;
+  mergedCount: number;
+}
+
+export async function previewShoppingListFromPlan(
+  input: PreviewShoppingListInput
+): Promise<ShoppingListPreviewResult> {
+  const user = await requireAuth();
+  const teamIds = await getUserTeamIds(user.id);
+
+  const ownership = [
+    { ownerId: user.id },
+    ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+  ];
+
+  const entries = await prisma.mealPlanEntry.findMany({
+    where: {
+      AND: [
+        { OR: ownership },
+        { date: { gte: input.from, lte: input.to } },
+        { recipeId: { not: null } },
+        { status: { not: "SKIPPED" } },
+      ],
+    },
+    include: {
+      recipe: {
+        include: { ingredients: { include: { product: true } } },
+      },
+    },
+  });
+
+  const pantry = input.skipPantry
+    ? await prisma.pantryItem.findMany({ where: { OR: ownership } })
+    : [];
+
+  function pantryHas(name: string, productId: string | null): boolean {
+    return pantry.some((p) => {
+      if (productId && p.productId === productId) return (p.quantity ?? 0) > 0;
+      return p.name.toLowerCase() === name.toLowerCase() && (p.quantity ?? 0) > 0;
+    });
+  }
+
+  const consolidated = new Map<string, AggregatedItem>();
+  const passthrough: AggregatedItem[] = [];
+
+  for (const entry of entries) {
+    if (!entry.recipe) continue;
+    const scale = entry.recipe.servings > 0 ? entry.servings / entry.recipe.servings : 1;
+    for (const ing of entry.recipe.ingredients) {
+      if (input.skipOptional && ing.isOptional) continue;
+      const baseName = ing.product?.name ?? ing.name;
+      const unit = ing.unit ?? ing.product?.defaultUnit ?? null;
+      const category = ing.product?.category ?? categorize(baseName);
+      const scaledQty = ing.quantity != null ? Math.round(ing.quantity * scale * 100) / 100 : null;
+      const key = input.consolidate ? `${(ing.productId ?? baseName.toLowerCase())}::${unit ?? ""}` : null;
+
+      const aggItem: AggregatedItem = {
+        name: baseName,
+        productId: ing.productId,
+        quantity: scaledQty,
+        unit,
+        category,
+        sources: [{ recipeId: entry.recipe.id, ingredientId: ing.id, servings: entry.servings }],
+      };
+
+      if (key && consolidated.has(key)) {
+        const existing = consolidated.get(key)!;
+        if (existing.quantity != null && scaledQty != null) {
+          existing.quantity = Math.round((existing.quantity + scaledQty) * 100) / 100;
+        } else if (scaledQty != null) {
+          existing.quantity = scaledQty;
+        }
+        existing.sources.push(...aggItem.sources);
+      } else if (key) {
+        consolidated.set(key, aggItem);
+      } else {
+        passthrough.push(aggItem);
+      }
+    }
+  }
+
+  const allItems = [...Array.from(consolidated.values()), ...passthrough];
+  const totalIngredients = entries.reduce((sum, e) => sum + (e.recipe?.ingredients.length ?? 0), 0);
+  const mergedCount = Math.max(0, totalIngredients - allItems.length);
+
+  const items: ShoppingListPreviewItem[] = [];
+  const skippedFromPantry: Array<{ name: string; quantity: number | null }> = [];
+  for (const item of allItems) {
+    const inPantry = Boolean(input.skipPantry) && pantryHas(item.name, item.productId);
+    if (inPantry) {
+      skippedFromPantry.push({ name: item.name, quantity: item.quantity });
+    }
+    items.push({
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      category: item.category,
+      sourceCount: item.sources.length,
+      fromPantry: inPantry,
+    });
+  }
+
+  items.sort((a, b) => {
+    if (a.fromPantry !== b.fromPantry) return a.fromPantry ? 1 : -1;
+    return a.category.localeCompare(b.category) || a.name.localeCompare(b.name);
+  });
+
+  return { items, skippedFromPantry, totalIngredients, mergedCount };
+}
+
 export async function generateShoppingListFromPlan(
   input: GenerateShoppingListInput
 ): Promise<GenerateShoppingListResult> {
