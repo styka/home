@@ -371,6 +371,7 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI }: Me
           open={planAIOpen}
           onClose={() => setPlanAIOpen(false)}
           weekStart={getWeekStart(anchorDate)}
+          recipeCount={recipes.length}
         />
       ) : null}
 

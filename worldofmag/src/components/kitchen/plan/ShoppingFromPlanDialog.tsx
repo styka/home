@@ -9,6 +9,7 @@ import {
   type ShoppingListPreviewItem,
 } from "@/actions/mealPlans";
 import { useToast } from "@/components/ui/Toast";
+import { polishPlural } from "@/lib/polishPlural";
 
 interface ShoppingFromPlanDialogProps {
   open: boolean;
@@ -267,7 +268,7 @@ export function ShoppingFromPlanDialog({
                 <Loader2 size={12} className="animate-spin" style={{ color: "var(--text-muted)" }} />
               ) : (
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  {toAdd.length} {toAdd.length === 1 ? "pozycja" : toAdd.length % 10 >= 2 && toAdd.length % 10 <= 4 && (toAdd.length % 100 < 10 || toAdd.length % 100 >= 20) ? "pozycje" : "pozycji"}
+                  {toAdd.length} {polishPlural(toAdd.length, ["pozycja", "pozycje", "pozycji"])}
                   {previewMerged > 0 ? ` · skonsolidowano ${previewMerged}` : ""}
                   {previewSkipped > 0 ? ` · ${previewSkipped} w spiżarni` : ""}
                 </span>

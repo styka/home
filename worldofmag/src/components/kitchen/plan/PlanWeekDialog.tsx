@@ -2,18 +2,21 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { X, Sparkles, Loader2, Wand2 } from "lucide-react";
+import Link from "next/link";
+import { X, Sparkles, Loader2, Wand2, ChefHat } from "lucide-react";
 import { llm } from "@/lib/llm-client";
 import { useToast } from "@/components/ui/Toast";
 import { bulkSetMealPlan } from "@/actions/mealPlans";
 import type { MealSlot } from "@/types/kitchen";
 import { MEAL_SLOTS, MEAL_SLOT_LABELS } from "@/types/kitchen";
 import { dateKey, formatDayShort, getWeekDays } from "@/lib/kitchenDate";
+import { polishPlural } from "@/lib/polishPlural";
 
 interface PlanWeekDialogProps {
   open: boolean;
   onClose: () => void;
   weekStart: Date;
+  recipeCount: number;
 }
 
 interface Suggestion {
@@ -35,7 +38,7 @@ const SLOT_EMOJI: Record<MealSlot, string> = {
 
 type Step = "prefs" | "loading" | "review";
 
-export function PlanWeekDialog({ open, onClose, weekStart }: PlanWeekDialogProps) {
+export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWeekDialogProps) {
   const router = useRouter();
   const { showToast } = useToast();
   const [step, setStep] = useState<Step>("prefs");
@@ -171,7 +174,27 @@ export function PlanWeekDialog({ open, onClose, weekStart }: PlanWeekDialogProps
           </button>
         </div>
 
-        {step === "prefs" ? (
+        {step === "prefs" && recipeCount === 0 ? (
+          <div className="flex flex-col items-center justify-center px-6 py-10 text-center gap-3">
+            <ChefHat size={36} style={{ color: "var(--text-muted)" }} />
+            <h4 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+              Brak przepisów w bibliotece
+            </h4>
+            <p className="text-xs max-w-xs" style={{ color: "var(--text-secondary)" }}>
+              AI losuje plan tylko z Twoich własnych przepisów. Dodaj kilka, a potem wróć tutaj.
+            </p>
+            <Link
+              href="/kitchen/recipes/new"
+              onClick={handleClose}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
+              style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+            >
+              Dodaj przepis
+            </Link>
+          </div>
+        ) : null}
+
+        {step === "prefs" && recipeCount > 0 ? (
           <div className="px-4 py-3 flex flex-col gap-3">
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               AI wybierze przepisy z Twojej biblioteki dla każdego slotu w tygodniu na podstawie preferencji.
@@ -290,7 +313,7 @@ export function PlanWeekDialog({ open, onClose, weekStart }: PlanWeekDialogProps
         {step === "review" ? (
           <div className="px-4 py-3 flex flex-col gap-3">
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              AI zaproponowało {suggestions.length} {suggestions.length === 1 ? "posiłek" : suggestions.length % 10 >= 2 && suggestions.length % 10 <= 4 && (suggestions.length % 100 < 10 || suggestions.length % 100 >= 20) ? "posiłki" : "posiłków"}. Odznacz te których nie chcesz.
+              AI zaproponowało {suggestions.length} {polishPlural(suggestions.length, ["posiłek", "posiłki", "posiłków"])}. Odznacz te których nie chcesz.
             </p>
             <div className="flex flex-col gap-2">
               {weekDays.map((d) => {
@@ -378,7 +401,8 @@ export function PlanWeekDialog({ open, onClose, weekStart }: PlanWeekDialogProps
             {step === "prefs" ? (
               <button
                 onClick={handleGenerate}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
+                disabled={selectedSlots.size === 0 || recipeCount === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm disabled:opacity-50"
                 style={{ backgroundColor: "var(--accent-purple)", color: "#fff" }}
               >
                 <Wand2 size={14} /> Generuj plan

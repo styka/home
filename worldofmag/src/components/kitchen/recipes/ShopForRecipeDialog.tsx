@@ -5,6 +5,7 @@ import { X, ShoppingCart } from "lucide-react";
 import { shopForRecipe } from "@/actions/recipes";
 import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
 import { useToast } from "@/components/ui/Toast";
+import { polishPlural } from "@/lib/polishPlural";
 import type { RecipeFull } from "@/types/kitchen";
 
 interface ShoppingListOption {
@@ -206,7 +207,7 @@ export function ShopForRecipeDialog({
             className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
             style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
           >
-            {submitting ? "Dodaję…" : `Dodaj ${includedCount} ${includedCount === 1 ? "pozycję" : "pozycji"}`}
+            {submitting ? "Dodaję…" : `Dodaj ${includedCount} ${polishPlural(includedCount, ["pozycję", "pozycje", "pozycji"])}`}
           </button>
         </div>
       </div>

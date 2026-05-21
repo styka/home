@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Plus, BookOpen } from "lucide-react";
 import { CookbookEditDialog } from "./CookbookEditDialog";
+import { polishPlural } from "@/lib/polishPlural";
 import type { CookbookWithCount } from "@/actions/cookbooks";
 
 interface CookbookListProps {
@@ -68,7 +69,7 @@ export function CookbookList({ cookbooks }: CookbookListProps) {
                 {cb.name}
               </div>
               <div className="text-xs mt-1" style={{ color: cb.color ? "rgba(13,13,13,0.7)" : "var(--text-muted)" }}>
-                {cb.recipeCount} {cb.recipeCount === 1 ? "przepis" : cb.recipeCount % 10 >= 2 && cb.recipeCount % 10 <= 4 && (cb.recipeCount % 100 < 10 || cb.recipeCount % 100 >= 20) ? "przepisy" : "przepisów"}
+                {cb.recipeCount} {polishPlural(cb.recipeCount, ["przepis", "przepisy", "przepisów"])}
               </div>
             </Link>
           ))}

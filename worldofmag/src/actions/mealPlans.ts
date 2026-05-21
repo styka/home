@@ -37,7 +37,10 @@ async function assertMealPlanAccess(entryId: string, userId: string): Promise<vo
 
 // ─── Date helpers ─────────────────────────────────────────────────────────
 
-function startOfDayUTC(date: Date): Date {
+// 12:00 UTC jako stabilny midpoint dnia — odporne na drift timezone
+// przy zapisie/odczycie z DB. setUTCHours(0,…) w PL skutkowałoby przesunięciem
+// daty o dzień; noon UTC nigdy nie zmieni dnia kalendarzowego dla żadnego TZ.
+function dayKeyUTC(date: Date): Date {
   const d = new Date(date);
   d.setUTCHours(12, 0, 0, 0);
   return d;
@@ -122,7 +125,7 @@ export async function setMealPlanEntry(data: MealPlanEntryInput): Promise<MealPl
     throw new Error("Wybierz przepis lub wpisz własny tytuł");
   }
 
-  const date = startOfDayUTC(data.date);
+  const date = dayKeyUTC(data.date);
 
   const entry = await prisma.mealPlanEntry.create({
     data: {
@@ -155,7 +158,7 @@ export async function updateMealPlanEntry(
   await assertMealPlanAccess(id, user.id);
 
   const data: Record<string, unknown> = {};
-  if (patch.date) data.date = startOfDayUTC(patch.date);
+  if (patch.date) data.date = dayKeyUTC(patch.date);
   if (patch.slot) data.slot = patch.slot;
   if (patch.recipeId !== undefined) data.recipeId = patch.recipeId;
   if (patch.customTitle !== undefined) data.customTitle = patch.customTitle?.trim() || null;
@@ -238,56 +241,63 @@ export async function bulkSetMealPlan(input: BulkSetInput): Promise<BulkSetResul
   const ownerId = input.teamId ? null : user.id;
   const ownerTeamId = input.teamId ?? null;
 
-  let added = 0;
-  let skipped = 0;
+  // Atomowo: każda iteracja (find + create/update) widzi spójny stan slotu.
+  // TODO: docelowo @@unique([date, slot, ownerId]) i @@unique([date, slot, ownerTeamId])
+  // w schema.prisma daje twardą gwarancję przed równoległymi zapisami.
+  const { added, skipped } = await prisma.$transaction(async (tx) => {
+    let added = 0;
+    let skipped = 0;
 
-  for (const e of input.entries) {
-    if (!e.recipeId && !e.customTitle?.trim()) {
-      skipped += 1;
-      continue;
-    }
-    const date = startOfDayUTC(e.date);
-    const existing = await prisma.mealPlanEntry.findFirst({
-      where: {
-        date,
-        slot: e.slot,
-        ...(ownerTeamId ? { ownerTeamId } : { ownerId }),
-      },
-      select: { id: true },
-    });
-
-    if (existing) {
-      if (!input.replace) {
+    for (const e of input.entries) {
+      if (!e.recipeId && !e.customTitle?.trim()) {
         skipped += 1;
         continue;
       }
-      await prisma.mealPlanEntry.update({
-        where: { id: existing.id },
+      const date = dayKeyUTC(e.date);
+      const existing = await tx.mealPlanEntry.findFirst({
+        where: {
+          date,
+          slot: e.slot,
+          ...(ownerTeamId ? { ownerTeamId } : { ownerId }),
+        },
+        select: { id: true },
+      });
+
+      if (existing) {
+        if (!input.replace) {
+          skipped += 1;
+          continue;
+        }
+        await tx.mealPlanEntry.update({
+          where: { id: existing.id },
+          data: {
+            recipeId: e.recipeId ?? null,
+            customTitle: e.recipeId ? null : e.customTitle?.trim() || null,
+            servings: e.servings ?? 2,
+            status: "PLANNED",
+            cookedAt: null,
+          },
+        });
+        added += 1;
+        continue;
+      }
+
+      await tx.mealPlanEntry.create({
         data: {
+          date,
+          slot: e.slot,
           recipeId: e.recipeId ?? null,
           customTitle: e.recipeId ? null : e.customTitle?.trim() || null,
           servings: e.servings ?? 2,
-          status: "PLANNED",
-          cookedAt: null,
+          ownerId,
+          ownerTeamId,
         },
       });
       added += 1;
-      continue;
     }
 
-    await prisma.mealPlanEntry.create({
-      data: {
-        date,
-        slot: e.slot,
-        recipeId: e.recipeId ?? null,
-        customTitle: e.recipeId ? null : e.customTitle?.trim() || null,
-        servings: e.servings ?? 2,
-        ownerId,
-        ownerTeamId,
-      },
-    });
-    added += 1;
-  }
+    return { added, skipped };
+  });
 
   void trackActivity("kitchen", "bulk_set_meal_plan", { added, skipped });
   revalidatePath("/kitchen/plan");
@@ -306,7 +316,7 @@ export async function moveMealPlanEntry(
   await assertMealPlanAccess(id, user.id);
   const entry = await prisma.mealPlanEntry.update({
     where: { id },
-    data: { date: startOfDayUTC(targetDate), slot: targetSlot },
+    data: { date: dayKeyUTC(targetDate), slot: targetSlot },
   });
   revalidatePath("/kitchen/plan");
   return entry;

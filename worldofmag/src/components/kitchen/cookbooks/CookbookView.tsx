@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Pencil, Plus } from "lucide-react";
 import { RecipeCard } from "@/components/kitchen/recipes/RecipeCard";
 import { CookbookEditDialog } from "./CookbookEditDialog";
+import { polishPlural } from "@/lib/polishPlural";
 import type { Cookbook, RecipeListItem } from "@/types/kitchen";
 
 interface CookbookViewProps {
@@ -65,7 +66,7 @@ export function CookbookView({ cookbook, recipes, canEdit }: CookbookViewProps) 
             className="text-xs mt-0.5"
             style={{ color: cookbook.color ? "rgba(13,13,13,0.6)" : "var(--text-muted)" }}
           >
-            {recipes.length} {recipes.length === 1 ? "przepis" : recipes.length % 10 >= 2 && recipes.length % 10 <= 4 && (recipes.length % 100 < 10 || recipes.length % 100 >= 20) ? "przepisy" : "przepisów"}
+            {recipes.length} {polishPlural(recipes.length, ["przepis", "przepisy", "przepisów"])}
           </div>
         </div>
       </header>

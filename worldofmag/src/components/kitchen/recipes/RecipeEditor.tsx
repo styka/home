@@ -6,6 +6,7 @@ import { Plus, Trash2, Save, ArrowLeft, Sparkles, Wand2 } from "lucide-react";
 import { parseQuantity } from "@/lib/parseQuantity";
 import { llm } from "@/lib/llm-client";
 import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
+import { DurationInput } from "@/components/kitchen/shared/DurationInput";
 import { useToast } from "@/components/ui/Toast";
 import { createRecipe, updateRecipe } from "@/actions/recipes";
 import type {
@@ -161,6 +162,9 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
         return;
       }
       const changed: string[] = [];
+      // TODO(kitchen-v2): res.tags pomijane — edytor nie ma inline TagPicker.
+      // Można dorobić: getTags() + dialog "Sugerowane tagi" z create-on-fly,
+      // a po wybraniu zapisać w `tagIds` w CreateRecipeInput.
       if (res.cuisine && !cuisine.trim()) {
         setCuisine(res.cuisine);
         changed.push("kuchnia");
@@ -316,24 +320,18 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
         </Field>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <Field label="Czas przyg. (min)">
-            <input
-              type="number"
-              min={0}
-              value={prepMinutes}
-              onChange={(e) => setPrepMinutes(e.target.value)}
-              className="w-full px-2 py-1.5 rounded border text-sm"
-              style={inputStyle}
+          <Field label="Czas przygotowania">
+            <DurationInput
+              value={prepMinutes ? Number(prepMinutes) : null}
+              onChange={(n) => setPrepMinutes(n == null ? "" : String(n))}
+              ariaLabel="Czas przygotowania"
             />
           </Field>
-          <Field label="Czas gotowania (min)">
-            <input
-              type="number"
-              min={0}
-              value={cookMinutes}
-              onChange={(e) => setCookMinutes(e.target.value)}
-              className="w-full px-2 py-1.5 rounded border text-sm"
-              style={inputStyle}
+          <Field label="Czas gotowania">
+            <DurationInput
+              value={cookMinutes ? Number(cookMinutes) : null}
+              onChange={(n) => setCookMinutes(n == null ? "" : String(n))}
+              ariaLabel="Czas gotowania"
             />
           </Field>
           <Field label="Porcje">
