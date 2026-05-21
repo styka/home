@@ -25,6 +25,7 @@ export default async function KitchenPlanPage({ searchParams }: PageProps) {
     getRecipes(),
     getLists(),
   ]);
+  const hasAI = session.user.permissions?.includes("kitchen.ai") ?? false;
 
   return (
     <MealPlanWeek
@@ -43,6 +44,7 @@ export default async function KitchenPlanPage({ searchParams }: PageProps) {
         servings: r.servings,
       }))}
       lists={lists.map((l) => ({ id: l.id, name: l.name }))}
+      hasAI={hasAI}
     />
   );
 }

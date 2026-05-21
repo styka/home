@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowLeft, Clock, Users, Pencil, ShoppingCart, CheckCircle2, Trash2, Play } from "lucide-react";
+import { ArrowLeft, Clock, Pencil, ShoppingCart, CheckCircle2, Trash2, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
 import { ShopForRecipeDialog } from "./ShopForRecipeDialog";
@@ -106,6 +106,16 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
       </div>
 
       <header className="mb-4">
+        {recipe.cookbook ? (
+          <Link
+            href={`/kitchen/cookbooks/${recipe.cookbook.id}`}
+            className="inline-flex items-center gap-1 text-xs mb-1"
+            style={{ color: "var(--text-muted)" }}
+          >
+            <span>{recipe.cookbook.emoji}</span>
+            <span>{recipe.cookbook.name}</span>
+          </Link>
+        ) : null}
         <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
           {recipe.title}
         </h1>

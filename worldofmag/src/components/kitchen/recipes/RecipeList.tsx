@@ -1,11 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, ChefHat, Globe, ChevronDown } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Search, ChefHat, Globe, ChevronDown, Camera, Sparkles } from "lucide-react";
 import { RecipeCard } from "./RecipeCard";
 import { RecipeFilters, type RecipeFilterState } from "./RecipeFilters";
 import { ImportFromUrlDialog } from "./ImportFromUrlDialog";
+import { ImportFromImageDialog } from "./ImportFromImageDialog";
+import { ImportFromAIDialog } from "./ImportFromAIDialog";
+import { PantrySuggestionsPanel } from "./PantrySuggestionsPanel";
 import type { RecipeListItem } from "@/types/kitchen";
 import type { Tag } from "@prisma/client";
 
@@ -27,8 +31,31 @@ const EMPTY_FILTERS: RecipeFilterState = {
 export function RecipeList({ recipes, tags, cookbooks, hasAI }: RecipeListProps) {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<RecipeFilterState>(EMPTY_FILTERS);
+  const router = useRouter();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [imageImportOpen, setImageImportOpen] = useState(false);
+  const [aiImportOpen, setAiImportOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+      if (importOpen || imageImportOpen || aiImportOpen) return;
+      if (e.key === "/") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        router.push("/kitchen/recipes/new");
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [router, importOpen, imageImportOpen, aiImportOpen]);
 
   const cuisines = useMemo(() => {
     const set = new Set<string>();
@@ -65,7 +92,11 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI }: RecipeListProps)
   if (recipes.length === 0) {
     return (
       <>
-        <EmptyState hasAI={hasAI} onImportUrl={() => setImportOpen(true)} />
+        <EmptyState
+          hasAI={hasAI}
+          onImportUrl={() => setImportOpen(true)}
+          onGenerateAI={() => setAiImportOpen(true)}
+        />
         <ImportFromUrlDialog open={importOpen} onClose={() => setImportOpen(false)} />
       </>
     );
@@ -80,10 +111,11 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI }: RecipeListProps)
         >
           <Search size={14} style={{ color: "var(--text-muted)" }} />
           <input
+            ref={searchInputRef}
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Szukaj przepisów…"
+            placeholder="Szukaj przepisów… ( / )"
             className="flex-1 bg-transparent border-none outline-none text-sm"
             style={{ color: "var(--text-primary)" }}
           />
@@ -124,6 +156,28 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI }: RecipeListProps)
                   >
                     <Globe size={14} style={{ color: "var(--accent-purple)" }} /> Import z URL
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setImageImportOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    <Camera size={14} style={{ color: "var(--accent-purple)" }} /> Import ze zdjęcia (OCR)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setAiImportOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    <Sparkles size={14} style={{ color: "var(--accent-purple)" }} /> Wygeneruj z AI
+                  </button>
                 </div>
               </>
             ) : null}
@@ -147,6 +201,8 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI }: RecipeListProps)
         cookbooks={cookbooks}
       />
 
+      <PantrySuggestionsPanel />
+
       {filtered.length === 0 ? (
         <div className="text-center py-10 text-sm" style={{ color: "var(--text-muted)" }}>
           Brak przepisów spełniających filtry.
@@ -163,11 +219,21 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI }: RecipeListProps)
       )}
 
       <ImportFromUrlDialog open={importOpen} onClose={() => setImportOpen(false)} />
+      <ImportFromImageDialog open={imageImportOpen} onClose={() => setImageImportOpen(false)} />
+      <ImportFromAIDialog open={aiImportOpen} onClose={() => setAiImportOpen(false)} />
     </div>
   );
 }
 
-function EmptyState({ hasAI, onImportUrl }: { hasAI?: boolean; onImportUrl: () => void }) {
+function EmptyState({
+  hasAI,
+  onImportUrl,
+  onGenerateAI,
+}: {
+  hasAI?: boolean;
+  onImportUrl: () => void;
+  onGenerateAI: () => void;
+}) {
   return (
     <div className="flex flex-col items-center justify-center h-full px-6 py-16 text-center">
       <ChefHat size={48} style={{ color: "var(--text-muted)" }} />
@@ -186,14 +252,24 @@ function EmptyState({ hasAI, onImportUrl }: { hasAI?: boolean; onImportUrl: () =
           <Plus size={16} /> Dodaj pierwszy przepis
         </Link>
         {hasAI ? (
-          <button
-            type="button"
-            onClick={onImportUrl}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded border text-sm"
-            style={{ borderColor: "var(--accent-purple)", color: "var(--accent-purple)" }}
-          >
-            <Globe size={14} /> Import z URL
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={onImportUrl}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded border text-sm"
+              style={{ borderColor: "var(--accent-purple)", color: "var(--accent-purple)" }}
+            >
+              <Globe size={14} /> Import z URL
+            </button>
+            <button
+              type="button"
+              onClick={onGenerateAI}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded border text-sm"
+              style={{ borderColor: "var(--accent-purple)", color: "var(--accent-purple)" }}
+            >
+              <Sparkles size={14} /> Wygeneruj z AI
+            </button>
+          </>
         ) : null}
       </div>
     </div>

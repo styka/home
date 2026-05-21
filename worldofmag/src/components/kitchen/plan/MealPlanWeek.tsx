@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { ChevronLeft, ChevronRight, ShoppingCart, Plus, CheckCircle2 } from "lucide-react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { ChevronLeft, ChevronRight, ShoppingCart, Plus, CheckCircle2, PanelRightOpen, PanelRightClose, Sparkles } from "lucide-react";
 import {
   DndContext,
   type DragEndEvent,
@@ -14,9 +14,11 @@ import {
 } from "@dnd-kit/core";
 import { addDays, subDays } from "date-fns";
 import { useToast } from "@/components/ui/Toast";
-import { moveMealPlanEntry } from "@/actions/mealPlans";
+import { moveMealPlanEntry, setMealPlanEntry } from "@/actions/mealPlans";
 import { SlotEditorSheet, type RecipePickerItem } from "./SlotEditorSheet";
 import { ShoppingFromPlanDialog } from "./ShoppingFromPlanDialog";
+import { RecipeDrawer } from "./RecipeDrawer";
+import { PlanWeekDialog } from "./PlanWeekDialog";
 import type { MealPlanEntryWithRecipe } from "@/actions/mealPlans";
 import type { MealSlot } from "@/types/kitchen";
 import { MEAL_SLOTS, MEAL_SLOT_LABELS } from "@/types/kitchen";
@@ -35,6 +37,7 @@ interface MealPlanWeekProps {
   entries: MealPlanEntryWithRecipe[];
   recipes: RecipePickerItem[];
   lists: Array<{ id: string; name: string }>;
+  hasAI?: boolean;
 }
 
 const SLOT_EMOJI: Record<MealSlot, string> = {
@@ -62,12 +65,33 @@ function entryLabel(e: MealPlanEntryWithRecipe): string {
   return e.recipe?.title ?? e.customTitle ?? "—";
 }
 
-export function MealPlanWeek({ initialWeek, entries, recipes, lists }: MealPlanWeekProps) {
+const DRAWER_KEY = "kitchen.plan.drawerOpen";
+
+export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI }: MealPlanWeekProps) {
   const [anchorDate, setAnchorDate] = useState<Date>(() => new Date(`${initialWeek}T12:00:00`));
   const [editing, setEditing] = useState<{ date: Date; slot: MealSlot; entry?: MealPlanEntryWithRecipe | null } | null>(null);
   const [shoppingOpen, setShoppingOpen] = useState(false);
+  const [planAIOpen, setPlanAIOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(true);
   const [pending, startTransition] = useTransition();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(DRAWER_KEY);
+      if (stored != null) setDrawerOpen(stored === "1");
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAWER_KEY, drawerOpen ? "1" : "0");
+    } catch {
+      /* noop */
+    }
+  }, [drawerOpen]);
 
   const weekDays = useMemo(() => getWeekDays(anchorDate), [anchorDate]);
   const matrix = useMemo(() => buildMatrix(entries), [entries]);
@@ -78,15 +102,36 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists }: MealPlanW
   );
 
   function handleDragEnd(event: DragEndEvent) {
-    const entryId = String(event.active.id);
+    const activeId = String(event.active.id);
     const overId = event.over?.id ? String(event.over.id) : null;
     if (!overId) return;
     const [dateStr, slot] = overId.split("::");
     if (!dateStr || !slot) return;
     const target = new Date(`${dateStr}T12:00:00`);
+
+    if (activeId.startsWith("recipe::")) {
+      const data = event.active.data.current as { recipeId?: string; servings?: number } | undefined;
+      const recipeId = data?.recipeId ?? activeId.slice("recipe::".length);
+      const servings = data?.servings ?? 2;
+      const existing = matrix[dateStr]?.[slot as MealSlot];
+      startTransition(async () => {
+        try {
+          if (existing) {
+            showToast("Slot zajęty — kliknij, by zamienić", "info");
+            return;
+          }
+          await setMealPlanEntry({ date: target, slot: slot as MealSlot, recipeId, servings });
+          showToast("Dodano do planu", "success");
+        } catch (e) {
+          showToast(e instanceof Error ? e.message : "Błąd dodawania", "error");
+        }
+      });
+      return;
+    }
+
     startTransition(async () => {
       try {
-        await moveMealPlanEntry(entryId, target, slot as MealSlot);
+        await moveMealPlanEntry(activeId, target, slot as MealSlot);
       } catch (e) {
         showToast(e instanceof Error ? e.message : "Błąd przenoszenia", "error");
       }
@@ -102,6 +147,27 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists }: MealPlanW
   function goToday() {
     setAnchorDate(new Date());
   }
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (editing || shoppingOpen) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+      if (e.key === "ArrowLeft" && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        goPrev();
+      } else if (e.key === "ArrowRight" && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        goNext();
+      } else if (e.key === "t" || e.key === "T") {
+        goToday();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editing, shoppingOpen]);
 
   function openEditor(date: Date, slot: MealSlot, entry?: MealPlanEntryWithRecipe) {
     setEditing({ date, slot, entry });
@@ -141,26 +207,52 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists }: MealPlanW
             {formatWeekRange(anchorDate)}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={() => setShoppingOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
-          style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
-        >
-          <ShoppingCart size={14} /> Lista zakupów z planu
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setDrawerOpen((v) => !v)}
+            className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-sm"
+            style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+            aria-label={drawerOpen ? "Ukryj panel przepisów" : "Pokaż panel przepisów"}
+            title={drawerOpen ? "Ukryj panel przepisów" : "Pokaż panel przepisów"}
+          >
+            {drawerOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
+          </button>
+          {hasAI ? (
+            <button
+              type="button"
+              onClick={() => setPlanAIOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border text-sm"
+              style={{ borderColor: "var(--accent-purple)", color: "var(--accent-purple)" }}
+            >
+              <Sparkles size={14} /> AI: zaproponuj plan
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setShoppingOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
+            style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+          >
+            <ShoppingCart size={14} /> Lista zakupów z planu
+          </button>
+        </div>
       </div>
 
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-        {/* Desktop: grid 7 cols × 4 slot rows */}
         <div
-          className="hidden md:grid gap-1 border rounded overflow-hidden"
-          style={{
-            gridTemplateColumns: "100px repeat(7, minmax(0, 1fr))",
-            borderColor: "var(--border)",
-            backgroundColor: "var(--border)",
-          }}
+          className="hidden md:grid gap-3"
+          style={{ gridTemplateColumns: drawerOpen ? "1fr 240px" : "1fr" }}
         >
+          {/* Desktop: grid 7 cols × 4 slot rows */}
+          <div
+            className="grid gap-1 border rounded overflow-hidden"
+            style={{
+              gridTemplateColumns: "100px repeat(7, minmax(0, 1fr))",
+              borderColor: "var(--border)",
+              backgroundColor: "var(--border)",
+            }}
+          >
           <div style={{ backgroundColor: "var(--bg-surface)" }} />
           {weekDays.map((d) => (
             <div
@@ -194,6 +286,8 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists }: MealPlanW
               })}
             </ShellRow>
           ))}
+          </div>
+          {drawerOpen ? <RecipeDrawer recipes={recipes} /> : null}
         </div>
 
         {/* Mobile: list dni */}
@@ -271,6 +365,15 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists }: MealPlanW
         defaultTo={getWeekEnd(anchorDate)}
         lists={lists}
       />
+
+      {hasAI ? (
+        <PlanWeekDialog
+          open={planAIOpen}
+          onClose={() => setPlanAIOpen(false)}
+          weekStart={getWeekStart(anchorDate)}
+          recipeCount={recipes.length}
+        />
+      ) : null}
 
       {pending ? (
         <div className="fixed bottom-4 right-4 text-xs px-3 py-1.5 rounded" style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}>

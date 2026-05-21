@@ -20,6 +20,17 @@ export async function assertCookbookAccess(cookbookId: string, userId: string): 
   throw new Error("Brak dostępu do tej książki kucharskiej");
 }
 
+export async function getCookbook(id: string): Promise<Cookbook | null> {
+  const user = await requireAuth();
+  const teamIds = await getUserTeamIds(user.id);
+
+  const cb = await prisma.cookbook.findUnique({ where: { id } });
+  if (!cb) return null;
+  if (cb.ownerId === user.id) return cb;
+  if (cb.ownerTeamId && teamIds.includes(cb.ownerTeamId)) return cb;
+  return null;
+}
+
 export async function getCookbooks(): Promise<CookbookWithCount[]> {
   const user = await requireAuth();
   const teamIds = await getUserTeamIds(user.id);

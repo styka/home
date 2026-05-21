@@ -114,5 +114,86 @@ export const llm = {
           matchedIngredients: string[];
         }>;
       }>("/api/llm/kitchen/suggest-from-pantry", {}),
+
+    categorize: (input: {
+      title: string;
+      description?: string | null;
+      ingredients?: Array<{ name: string }>;
+      steps?: Array<{ text: string }>;
+    }) =>
+      post<{
+        cuisine?: string | null;
+        mealType?: "breakfast" | "lunch" | "dinner" | "snack" | "dessert" | null;
+        difficulty?: "easy" | "medium" | "hard";
+        tags?: string[];
+        error?: string;
+      }>("/api/llm/kitchen/categorize", input),
+
+    ocrImage: (image: string) =>
+      post<{
+        recipe?: {
+          title: string;
+          description: string | null;
+          servings: number | null;
+          prepMinutes: number | null;
+          cookMinutes: number | null;
+          cuisine: string | null;
+          mealType: string | null;
+          ingredients: Array<{
+            name: string;
+            quantity: number | null;
+            unit: string | null;
+            note: string | null;
+            isOptional: boolean;
+          }>;
+          steps: Array<{ text: string }>;
+        };
+        error?: string;
+      }>("/api/llm/kitchen/ocr-image", { image }),
+
+    generateRecipe: (prompt: string) =>
+      post<{
+        recipe?: {
+          title: string;
+          description: string | null;
+          servings: number | null;
+          prepMinutes: number | null;
+          cookMinutes: number | null;
+          cuisine: string | null;
+          mealType: string | null;
+          ingredients: Array<{
+            name: string;
+            quantity: number | null;
+            unit: string | null;
+            note: string | null;
+            isOptional: boolean;
+          }>;
+          steps: Array<{ text: string }>;
+        };
+        error?: string;
+      }>("/api/llm/kitchen/generate-recipe", { prompt }),
+
+    planWeek: (input: {
+      weekStart: string;
+      slots: Array<"breakfast" | "lunch" | "dinner" | "snack">;
+      people: number;
+      avoid?: string[];
+      cuisines?: string[];
+      maxMinutes?: number | null;
+      mustUsePantry?: boolean;
+      noRepeats?: boolean;
+    }) =>
+      post<{
+        suggestions?: Array<{
+          date: string;
+          slot: "breakfast" | "lunch" | "dinner" | "snack";
+          recipeId: string;
+          slug: string;
+          title: string;
+          servings: number;
+          reason: string;
+        }>;
+        error?: string;
+      }>("/api/llm/kitchen/plan-week", input),
   },
 };
