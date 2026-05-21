@@ -17,7 +17,7 @@ export default async function TasksIndexPage() {
   const todayEnd = new Date(now);
   todayEnd.setHours(23, 59, 59, 999);
 
-  const [projects, todayCount, upcomingCount, overdueCount] = await Promise.all([
+  const [projects, todayCount, upcomingCount, overdueCount, todayTasks] = await Promise.all([
     getTaskProjects(),
     prisma.task.count({
       where: {
@@ -40,7 +40,26 @@ export default async function TasksIndexPage() {
         status: { notIn: ["DONE", "CANCELLED"] },
       },
     }),
+    prisma.task.findMany({
+      where: {
+        OR: [{ createdById: userId }, { assigneeId: userId }],
+        dueDate: { gte: todayStart, lte: todayEnd },
+        status: { notIn: ["DONE", "CANCELLED"] },
+      },
+      orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
+      take: 5,
+      include: { project: { select: { id: true, name: true, emoji: true } } },
+    }),
   ]);
+
+  const todayPreview = todayTasks.map((t) => ({
+    id: t.id,
+    title: t.title,
+    priority: t.priority as "NONE" | "LOW" | "MEDIUM" | "HIGH" | "URGENT",
+    projectId: t.projectId,
+    projectName: t.project?.name ?? null,
+    projectEmoji: t.project?.emoji ?? null,
+  }));
 
   return (
     <TasksHomePage
@@ -48,6 +67,7 @@ export default async function TasksIndexPage() {
       todayCount={todayCount}
       upcomingCount={upcomingCount}
       overdueCount={overdueCount}
+      todayPreview={todayPreview}
     />
   );
 }

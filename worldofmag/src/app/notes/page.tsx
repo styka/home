@@ -21,9 +21,20 @@ export default async function NotesRootPage() {
     createdAt: n.createdAt instanceof Date ? n.createdAt.toISOString() : String(n.createdAt),
   }));
 
+  const pinnedNotes = notes
+    .filter((n) => n.pinned)
+    .slice(0, 3)
+    .map((n) => ({
+      id: n.id,
+      title: n.title,
+      content: n.content,
+      group: n.group ? { id: n.group.id, name: n.group.name } : null,
+    }));
+
   return (
     <NotesHomePage
       recentNotes={recentNotes}
+      pinnedNotes={pinnedNotes}
       totalCount={notes.length}
       pinnedCount={notes.filter((n) => n.pinned).length}
       groupCount={groups.length}

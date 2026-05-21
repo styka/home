@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useTransition, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { MessageCircle, X, Search, ChevronLeft, LayoutGrid, List } from "lucide-react";
 import Link from "next/link";
 import { NoteList } from "./NoteList";
@@ -22,11 +23,16 @@ interface NotesPageProps {
 }
 
 export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
-  const [activeFilter, setActiveFilter] = useState<NoteFilter>("ALL");
+  const searchParams = useSearchParams();
+  const initialPinnedOnly = searchParams?.get("pinned") === "1";
+  const focusFromQuery = searchParams?.get("focus") ?? null;
+  const openNewFromQuery = searchParams?.get("new") === "1";
+
+  const [activeFilter, setActiveFilter] = useState<NoteFilter>(initialPinnedOnly ? "PINNED" : "ALL");
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
+  const [focusedNoteId, setFocusedNoteId] = useState<string | null>(focusFromQuery);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [isQAOpen, setIsQAOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
@@ -81,6 +87,20 @@ export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
     focusedNoteId,
     setFocusedNoteId
   );
+
+  // Handle deep-link from home page: open QuickNoteBar for new note, scroll to focused note
+  useEffect(() => {
+    if (openNewFromQuery) {
+      setTimeout(() => quickNoteRef.current?.focus(), 50);
+    }
+    if (focusFromQuery) {
+      setTimeout(() => {
+        const el = rowRefs.current.get(focusFromQuery);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openNewFromQuery, focusFromQuery]);
 
   function scrollToNote(noteId: string) {
     const el = rowRefs.current.get(noteId);

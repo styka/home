@@ -5,6 +5,7 @@ import { Sparkles, BookOpen, Lock } from "lucide-react";
 import { QuickStats } from "@/components/home/QuickStats";
 import { AISuggestions } from "@/components/home/AISuggestions";
 import { KitchenWidget } from "@/components/home/KitchenWidget";
+import { SectionHeading, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 
 interface ActivityItem {
   module: string;
@@ -63,25 +64,12 @@ function FooterLink({ href, label, locked }: FooterLinkProps) {
 export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, recentActivity, userRoles, userPermissions = [], kitchenWidget }: HomePageProps) {
   const isBetaOnly = !userPermissions.includes("module.tasks");
   const kitchenLocked = !userPermissions.includes("module.kitchen");
+  const hasKitchenContent =
+    !kitchenLocked && kitchenWidget && (kitchenWidget.todayMeals.length > 0 || kitchenWidget.expiring.length > 0);
 
   return (
-    <div
-      style={{
-        flex: 1,
-        overflowY: "auto",
-        backgroundColor: "var(--bg-base)",
-        padding: "24px 16px",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 640,
-          margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: 24,
-        }}
-      >
+    <div style={pageContainerStyle}>
+      <div style={pageInnerStyle}>
         {/* Greeting */}
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -90,21 +78,24 @@ export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, rec
               {getGreeting(userName)}
             </h1>
           </div>
-          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0, paddingLeft: 26 }}>
             Co możemy dziś razem zrobić?
           </p>
         </div>
 
         {/* Quick stats */}
-        <QuickStats
-          pendingItems={pendingItems}
-          todayTasks={todayTasks}
-          overdueTasks={overdueTasks}
-          locked={isBetaOnly}
-        />
+        <div>
+          <SectionHeading>Twój dzień</SectionHeading>
+          <QuickStats
+            pendingItems={pendingItems}
+            todayTasks={todayTasks}
+            overdueTasks={overdueTasks}
+            locked={isBetaOnly}
+          />
+        </div>
 
         {/* Kitchen widget */}
-        {kitchenWidget ? (
+        {hasKitchenContent && kitchenWidget ? (
           <KitchenWidget
             todayMeals={kitchenWidget.todayMeals}
             expiring={kitchenWidget.expiring}
@@ -113,7 +104,10 @@ export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, rec
         ) : null}
 
         {/* AI suggestions */}
-        <AISuggestions recentActivity={recentActivity} overdueTasks={overdueTasks} locked={isBetaOnly} />
+        <div>
+          <SectionHeading>Sugestie</SectionHeading>
+          <AISuggestions recentActivity={recentActivity} overdueTasks={overdueTasks} locked={isBetaOnly} />
+        </div>
 
         {/* Footer links */}
         <div
@@ -122,8 +116,11 @@ export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, rec
             alignItems: "center",
             justifyContent: "center",
             gap: 16,
+            paddingTop: 8,
             paddingBottom: 24,
             flexWrap: "wrap",
+            borderTop: "1px solid var(--border)",
+            marginTop: 8,
           }}
         >
           <FooterLink href="/tasks" label="Zadania" locked={isBetaOnly} />
@@ -131,6 +128,8 @@ export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, rec
           <FooterLink href="/shopping" label="Zakupy" />
           <span style={{ color: "var(--border)" }}>·</span>
           <FooterLink href="/notes" label="Notatki" locked={isBetaOnly} />
+          <span style={{ color: "var(--border)" }}>·</span>
+          <FooterLink href="/kitchen" label="Kuchnia" locked={kitchenLocked} />
           <span style={{ color: "var(--border)" }}>·</span>
           <Link
             href="/guide"
