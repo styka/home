@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Map, Image, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
+import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
 import { isPathLocked } from "@/lib/permissions";
 
 interface ModuleSidebarProps {
@@ -169,12 +170,11 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
 
         {/* Shopping */}
         <NavItem href="/shopping" label="Zakupy" icon={<ShoppingCart size={18} />} pathname={pathname} iconColor="var(--accent-blue)" locked={isLocked("/shopping")} />
-        {isShoppingActive && (
+        {isShoppingActive && !isLocked("/shopping") && (
           <div className="mb-1">
-            <NavSubItem href="/shopping/stores" label="Mapy sklepów" icon={<Map size={12} />} pathname={pathname} locked={isLocked("/shopping")} />
-            <NavSubItem href="/shopping/icons" label="Biblioteka ikon" icon={<Image size={12} />} pathname={pathname} locked={isLocked("/shopping")} />
+            <ShoppingSideNav />
             {pathname.startsWith("/shopping/icons") && (
-              <NavSubItem href="/shopping/icons/categories" label="Przypisania" pathname={pathname} locked={isLocked("/shopping")} />
+              <NavSubItem href="/shopping/icons/categories" label="Przypisania" pathname={pathname} />
             )}
           </div>
         )}
