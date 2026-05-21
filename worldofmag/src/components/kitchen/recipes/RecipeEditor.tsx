@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Save, ArrowLeft, Sparkles } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Sparkles, Wand2 } from "lucide-react";
 import { parseQuantity } from "@/lib/parseQuantity";
 import { llm } from "@/lib/llm-client";
 import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
@@ -43,6 +43,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiText, setAiText] = useState("");
   const [aiPending, setAiPending] = useState(false);
+  const [categorizePending, setCategorizePending] = useState(false);
 
   const [title, setTitle] = useState(recipe?.title ?? "");
   const [description, setDescription] = useState(recipe?.description ?? "");
@@ -139,6 +140,47 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
       showToast(e instanceof Error ? e.message : "Błąd AI", "error");
     } finally {
       setAiPending(false);
+    }
+  }
+
+  async function handleAICategorize() {
+    if (!title.trim()) {
+      showToast("Najpierw wpisz tytuł", "error");
+      return;
+    }
+    setCategorizePending(true);
+    try {
+      const res = await llm.kitchen.categorize({
+        title: title.trim(),
+        description: description.trim() || null,
+        ingredients: ingredients.filter((i) => i.name.trim()).map((i) => ({ name: i.name.trim() })),
+        steps: steps.filter((s) => s.text.trim()).map((s) => ({ text: s.text.trim() })),
+      });
+      if (res.error) {
+        showToast(res.error, "error");
+        return;
+      }
+      const changed: string[] = [];
+      if (res.cuisine && !cuisine.trim()) {
+        setCuisine(res.cuisine);
+        changed.push("kuchnia");
+      }
+      if (res.mealType && !mealType) {
+        setMealType(res.mealType);
+        changed.push("posiłek");
+      }
+      if (res.difficulty) {
+        setDifficulty(res.difficulty);
+        changed.push("trudność");
+      }
+      showToast(
+        changed.length > 0 ? `AI ustawiło: ${changed.join(", ")}` : "AI: brak zmian",
+        changed.length > 0 ? "success" : "info"
+      );
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Błąd AI", "error");
+    } finally {
+      setCategorizePending(false);
     }
   }
 
@@ -312,6 +354,21 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
             </select>
           </Field>
         </div>
+
+        {hasAI ? (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleAICategorize}
+              disabled={categorizePending}
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded disabled:opacity-50"
+              style={{ color: "var(--accent-purple)" }}
+              title="AI uzupełni kuchnię, posiłek i trudność na podstawie tytułu, składników i kroków"
+            >
+              <Wand2 size={12} /> {categorizePending ? "Zgaduję…" : "Zgaduj kategorię (AI)"}
+            </button>
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <Field label="Kuchnia">

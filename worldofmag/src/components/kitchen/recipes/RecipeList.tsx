@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, ChefHat, Globe, ChevronDown } from "lucide-react";
+import { Plus, Search, ChefHat, Globe, ChevronDown, Camera } from "lucide-react";
 import { RecipeCard } from "./RecipeCard";
 import { RecipeFilters, type RecipeFilterState } from "./RecipeFilters";
 import { ImportFromUrlDialog } from "./ImportFromUrlDialog";
+import { ImportFromImageDialog } from "./ImportFromImageDialog";
 import { PantrySuggestionsPanel } from "./PantrySuggestionsPanel";
 import type { RecipeListItem } from "@/types/kitchen";
 import type { Tag } from "@prisma/client";
@@ -29,6 +30,7 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI }: RecipeListProps)
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<RecipeFilterState>(EMPTY_FILTERS);
   const [importOpen, setImportOpen] = useState(false);
+  const [imageImportOpen, setImageImportOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const cuisines = useMemo(() => {
@@ -125,6 +127,17 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI }: RecipeListProps)
                   >
                     <Globe size={14} style={{ color: "var(--accent-purple)" }} /> Import z URL
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setImageImportOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    <Camera size={14} style={{ color: "var(--accent-purple)" }} /> Import ze zdjęcia (OCR)
+                  </button>
                 </div>
               </>
             ) : null}
@@ -166,6 +179,7 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI }: RecipeListProps)
       )}
 
       <ImportFromUrlDialog open={importOpen} onClose={() => setImportOpen(false)} />
+      <ImportFromImageDialog open={imageImportOpen} onClose={() => setImageImportOpen(false)} />
     </div>
   );
 }

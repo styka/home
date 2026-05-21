@@ -208,6 +208,93 @@ export async function markMealSkipped(id: string): Promise<void> {
   revalidatePath("/kitchen/plan");
 }
 
+// ─── Bulk create (AI plan tygodnia) ───────────────────────────────────────
+
+export interface BulkSetInput {
+  entries: Array<{
+    date: Date;
+    slot: MealSlot;
+    recipeId?: string | null;
+    customTitle?: string | null;
+    servings?: number;
+  }>;
+  replace?: boolean;
+  teamId?: string | null;
+}
+
+export interface BulkSetResult {
+  added: number;
+  skipped: number;
+}
+
+export async function bulkSetMealPlan(input: BulkSetInput): Promise<BulkSetResult> {
+  const user = await requireAuth();
+
+  if (input.teamId) {
+    const teamIds = await getUserTeamIds(user.id);
+    if (!teamIds.includes(input.teamId)) throw new Error("Nie jesteś członkiem tego teamu");
+  }
+
+  const ownerId = input.teamId ? null : user.id;
+  const ownerTeamId = input.teamId ?? null;
+
+  let added = 0;
+  let skipped = 0;
+
+  for (const e of input.entries) {
+    if (!e.recipeId && !e.customTitle?.trim()) {
+      skipped += 1;
+      continue;
+    }
+    const date = startOfDayUTC(e.date);
+    const existing = await prisma.mealPlanEntry.findFirst({
+      where: {
+        date,
+        slot: e.slot,
+        ...(ownerTeamId ? { ownerTeamId } : { ownerId }),
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      if (!input.replace) {
+        skipped += 1;
+        continue;
+      }
+      await prisma.mealPlanEntry.update({
+        where: { id: existing.id },
+        data: {
+          recipeId: e.recipeId ?? null,
+          customTitle: e.recipeId ? null : e.customTitle?.trim() || null,
+          servings: e.servings ?? 2,
+          status: "PLANNED",
+          cookedAt: null,
+        },
+      });
+      added += 1;
+      continue;
+    }
+
+    await prisma.mealPlanEntry.create({
+      data: {
+        date,
+        slot: e.slot,
+        recipeId: e.recipeId ?? null,
+        customTitle: e.recipeId ? null : e.customTitle?.trim() || null,
+        servings: e.servings ?? 2,
+        ownerId,
+        ownerTeamId,
+      },
+    });
+    added += 1;
+  }
+
+  void trackActivity("kitchen", "bulk_set_meal_plan", { added, skipped });
+  revalidatePath("/kitchen/plan");
+  revalidatePath("/");
+  return { added, skipped };
+}
+
 // ─── Move entry (drag-and-drop) ───────────────────────────────────────────
 
 export async function moveMealPlanEntry(

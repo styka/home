@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { ChevronLeft, ChevronRight, ShoppingCart, Plus, CheckCircle2, PanelRightOpen, PanelRightClose } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShoppingCart, Plus, CheckCircle2, PanelRightOpen, PanelRightClose, Sparkles } from "lucide-react";
 import {
   DndContext,
   type DragEndEvent,
@@ -18,6 +18,7 @@ import { moveMealPlanEntry, setMealPlanEntry } from "@/actions/mealPlans";
 import { SlotEditorSheet, type RecipePickerItem } from "./SlotEditorSheet";
 import { ShoppingFromPlanDialog } from "./ShoppingFromPlanDialog";
 import { RecipeDrawer } from "./RecipeDrawer";
+import { PlanWeekDialog } from "./PlanWeekDialog";
 import type { MealPlanEntryWithRecipe } from "@/actions/mealPlans";
 import type { MealSlot } from "@/types/kitchen";
 import { MEAL_SLOTS, MEAL_SLOT_LABELS } from "@/types/kitchen";
@@ -36,6 +37,7 @@ interface MealPlanWeekProps {
   entries: MealPlanEntryWithRecipe[];
   recipes: RecipePickerItem[];
   lists: Array<{ id: string; name: string }>;
+  hasAI?: boolean;
 }
 
 const SLOT_EMOJI: Record<MealSlot, string> = {
@@ -65,10 +67,11 @@ function entryLabel(e: MealPlanEntryWithRecipe): string {
 
 const DRAWER_KEY = "kitchen.plan.drawerOpen";
 
-export function MealPlanWeek({ initialWeek, entries, recipes, lists }: MealPlanWeekProps) {
+export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI }: MealPlanWeekProps) {
   const [anchorDate, setAnchorDate] = useState<Date>(() => new Date(`${initialWeek}T12:00:00`));
   const [editing, setEditing] = useState<{ date: Date; slot: MealSlot; entry?: MealPlanEntryWithRecipe | null } | null>(null);
   const [shoppingOpen, setShoppingOpen] = useState(false);
+  const [planAIOpen, setPlanAIOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [pending, startTransition] = useTransition();
   const { showToast } = useToast();
@@ -215,6 +218,16 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists }: MealPlanW
           >
             {drawerOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
           </button>
+          {hasAI ? (
+            <button
+              type="button"
+              onClick={() => setPlanAIOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border text-sm"
+              style={{ borderColor: "var(--accent-purple)", color: "var(--accent-purple)" }}
+            >
+              <Sparkles size={14} /> AI: zaproponuj plan
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => setShoppingOpen(true)}
@@ -352,6 +365,14 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists }: MealPlanW
         defaultTo={getWeekEnd(anchorDate)}
         lists={lists}
       />
+
+      {hasAI ? (
+        <PlanWeekDialog
+          open={planAIOpen}
+          onClose={() => setPlanAIOpen(false)}
+          weekStart={getWeekStart(anchorDate)}
+        />
+      ) : null}
 
       {pending ? (
         <div className="fixed bottom-4 right-4 text-xs px-3 py-1.5 rounded" style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
