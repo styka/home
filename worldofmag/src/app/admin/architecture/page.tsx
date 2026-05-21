@@ -154,12 +154,12 @@ await assertListAccess(listId, user.id);`} />
 {`app/layout.tsx
 └── AppShell [C]
     ├── ModuleSidebar [C]
-    │   └── TasksSideNav [C]  ← widoczny tylko na /tasks
+    │   ├── ShoppingSideNav [C] ← widoczny tylko na /shopping
+    │   └── TasksSideNav [C]    ← widoczny tylko na /tasks
     ├── AICommandSheet [C]    ← globalny FAB
     └── {children}
 
 /shopping/[listId]/page.tsx [S] → ShoppingPage [C]
-    ├── ListDropdown [C]
     ├── FilterTabs [C]
     ├── SearchBar [C]
     ├── QuickAddBar [C]       ← uses parseQuantity + ProductManager suggestions

@@ -5,6 +5,49 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import type { ShoppingList } from "@/types";
 
+export interface ListSummary {
+  id: string;
+  name: string;
+  pendingCount: number;
+  totalCount: number;
+  teamName: string | null;
+  archived?: boolean;
+}
+
+export async function getListSummaries(includeArchived = false): Promise<ListSummary[]> {
+  const user = await requireAuth();
+  const teamIds = await getUserTeamIds(user.id);
+
+  const lists = await prisma.shoppingList.findMany({
+    where: {
+      archived: includeArchived,
+      OR: [
+        { ownerId: user.id },
+        ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+      ],
+    },
+    include: { ownerTeam: { select: { id: true, name: true } } },
+    orderBy: includeArchived ? { archivedAt: "desc" } : { createdAt: "asc" },
+  });
+
+  return Promise.all(
+    lists.map(async (list) => {
+      const [pendingCount, totalCount] = await Promise.all([
+        prisma.item.count({ where: { listId: list.id, status: "NEEDED" } }),
+        prisma.item.count({ where: { listId: list.id } }),
+      ]);
+      return {
+        id: list.id,
+        name: list.name,
+        pendingCount,
+        totalCount,
+        teamName: list.ownerTeam?.name ?? null,
+        archived: list.archived,
+      };
+    })
+  );
+}
+
 /**
  * Returns all lists visible to the current user:
  * - Lists they personally own

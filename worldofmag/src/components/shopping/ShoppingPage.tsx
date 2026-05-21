@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useMemo, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
-import { ListDropdown } from "./ListDropdown";
 import { FilterTabs } from "./FilterTabs";
 import { ItemList } from "./ItemList";
 import { SearchBar } from "./SearchBar";
@@ -41,6 +41,7 @@ function loadSortMode(): SortMode {
 }
 
 export function ShoppingPage({ list, allLists, categoryEmojiMap, stores }: ShoppingPageProps) {
+  const router = useRouter();
   const { toggle: togglePalette } = useCommandPalette();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -161,7 +162,48 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, stores }: Shopp
         className="flex items-center gap-2 px-4 h-12 border-b flex-shrink-0"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
       >
-        <ListDropdown allLists={allLists} currentListId={list.id} />
+        {/* Mobile: native <select> as list switcher */}
+        <div className="md:hidden flex-1 min-w-0">
+          <select
+            value={list.id}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === "__catalog__") router.push("/shopping");
+              else router.push(`/shopping/${v}`);
+            }}
+            className="bg-transparent text-sm font-semibold focus:outline-none w-full truncate"
+            style={{ color: "var(--text-primary)" }}
+            aria-label="Wybierz listę zakupów"
+          >
+            {allLists.map((l) => (
+              <option key={l.id} value={l.id}>
+                🛒 {l.name}{l.ownerTeam ? ` · ${l.ownerTeam.name}` : ""}
+              </option>
+            ))}
+            <option value="__catalog__">+ Zarządzaj listami…</option>
+          </select>
+        </div>
+
+        {/* Desktop: list title (switching happens in sidebar) */}
+        <h1
+          className="hidden md:flex items-center gap-2 text-sm font-semibold truncate min-w-0"
+          style={{ color: "var(--text-primary)" }}
+        >
+          <span className="truncate">{list.name}</span>
+          {list.ownerTeam && (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
+              style={{
+                color: "var(--accent-purple)",
+                backgroundColor: "rgba(168,85,247,0.12)",
+                border: "1px solid rgba(168,85,247,0.2)",
+              }}
+            >
+              {list.ownerTeam.name}
+            </span>
+          )}
+        </h1>
+
         <div className="flex-1" />
         {counts.DONE > 0 && (
           <button
@@ -176,15 +218,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, stores }: Shopp
           </button>
         )}
         <SortControl sortMode={sortMode} stores={stores} onChange={handleSortChange} />
-        <a
-          href="/shopping/stores"
-          className="text-xs px-2 py-1 rounded"
-          style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}
-          title="Mapy sklepów"
-        >
-          🏪
-        </a>
-        <span className="text-xs hidden sm:block" style={{ color: "var(--text-muted)" }}>
+        <span className="text-xs hidden md:block" style={{ color: "var(--text-muted)" }}>
           {statsText}
         </span>
       </div>
