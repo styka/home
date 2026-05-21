@@ -1,17 +1,27 @@
-import { BookMarked } from "lucide-react";
-
 export const dynamic = "force-dynamic";
 
-export default function KitchenRecipesPage() {
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { getRecipes } from "@/actions/recipes";
+import { getCookbooks } from "@/actions/cookbooks";
+import { getTags } from "@/actions/tags";
+import { RecipeList } from "@/components/kitchen/recipes/RecipeList";
+
+export default async function KitchenRecipesPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/auth/signin");
+
+  const [recipes, cookbooks, tags] = await Promise.all([
+    getRecipes(),
+    getCookbooks(),
+    getTags(),
+  ]);
+
   return (
-    <div className="flex flex-col items-center justify-center h-full px-6 py-16 text-center">
-      <BookMarked size={48} style={{ color: "var(--text-muted)" }} />
-      <h2 className="mt-4 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-        Przepisy
-      </h2>
-      <p className="mt-2 max-w-md text-sm" style={{ color: "var(--text-secondary)" }}>
-        Wkrótce — Faza 1. Biblioteka przepisów z filtrami i tagami.
-      </p>
-    </div>
+    <RecipeList
+      recipes={recipes}
+      tags={tags}
+      cookbooks={cookbooks.map((cb) => ({ id: cb.id, name: cb.name, emoji: cb.emoji }))}
+    />
   );
 }
