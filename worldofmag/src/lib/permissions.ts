@@ -5,9 +5,17 @@ export const PERMISSIONS = {
   SHOPPING:    "module.shopping",
   TASKS:       "module.tasks",
   NOTES:       "module.notes",
+  KITCHEN:     "module.kitchen",
   SETTINGS:    "module.settings",
   ADMIN:       "module.admin",
   INVITATIONS: "module.invitations",
+  // Kitchen sub-permissions
+  KITCHEN_RECIPE_CREATE: "kitchen.recipe.create",
+  KITCHEN_RECIPE_EDIT:   "kitchen.recipe.edit",
+  KITCHEN_RECIPE_DELETE: "kitchen.recipe.delete",
+  KITCHEN_MEALPLAN_EDIT: "kitchen.mealplan.edit",
+  KITCHEN_PANTRY_EDIT:   "kitchen.pantry.edit",
+  KITCHEN_AI:            "kitchen.ai",
 } as const
 
 export type PermissionSlug = typeof PERMISSIONS[keyof typeof PERMISSIONS]
@@ -22,6 +30,7 @@ export function permissionForPath(path: string): string | null {
   if (path.startsWith("/shopping")) return PERMISSIONS.SHOPPING
   if (path.startsWith("/tasks")) return PERMISSIONS.TASKS
   if (path.startsWith("/notes")) return PERMISSIONS.NOTES
+  if (path.startsWith("/kitchen")) return PERMISSIONS.KITCHEN
   if (path.startsWith("/settings")) return PERMISSIONS.SETTINGS
   if (path.startsWith("/admin")) return PERMISSIONS.ADMIN
   if (path.startsWith("/invitations")) return PERMISSIONS.INVITATIONS

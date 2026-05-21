@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Map, Image, Lock, BookOpen } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Map, Image, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { isPathLocked } from "@/lib/permissions";
@@ -135,6 +135,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
   const isShoppingActive = pathname.startsWith("/shopping");
   const isNotesActive = pathname.startsWith("/notes");
   const isTasksActive = pathname.startsWith("/tasks");
+  const isKitchenActive = pathname.startsWith("/kitchen");
 
   function isLocked(href: string): boolean {
     return isPathLocked(userPermissions, href);
@@ -193,6 +194,17 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
         {isTasksActive && (
           <div className="mb-1">
             <TasksSideNav />
+          </div>
+        )}
+
+        {/* Kitchen with sub-items */}
+        <NavItem href="/kitchen" label="Kuchnia" icon={<ChefHat size={18} />} pathname={pathname} iconColor="var(--accent-orange)" locked={isLocked("/kitchen")} />
+        {isKitchenActive && (
+          <div className="mb-1">
+            <NavSubItem href="/kitchen/recipes" label="Przepisy" icon={<BookMarked size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
+            <NavSubItem href="/kitchen/plan" label="Plan" icon={<CalendarDays size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
+            <NavSubItem href="/kitchen/pantry" label="Spiżarnia" icon={<Package size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
+            <NavSubItem href="/kitchen/cookbooks" label="Książki" icon={<BookOpen size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
           </div>
         )}
 
