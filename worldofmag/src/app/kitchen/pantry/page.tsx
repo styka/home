@@ -1,17 +1,15 @@
-import { Package } from "lucide-react";
-
 export const dynamic = "force-dynamic";
 
-export default function KitchenPantryPage() {
-  return (
-    <div className="flex flex-col items-center justify-center h-full px-6 py-16 text-center">
-      <Package size={48} style={{ color: "var(--text-muted)" }} />
-      <h2 className="mt-4 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-        Spiżarnia
-      </h2>
-      <p className="mt-2 max-w-md text-sm" style={{ color: "var(--text-secondary)" }}>
-        Wkrótce — Faza 3. Stan magazynu, terminy ważności, auto-uzupełnianie.
-      </p>
-    </div>
-  );
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { getPantry, getExpiringSoon } from "@/actions/pantry";
+import { PantryList } from "@/components/kitchen/pantry/PantryList";
+
+export default async function KitchenPantryPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/auth/signin");
+
+  const [items, expiring] = await Promise.all([getPantry(), getExpiringSoon(3)]);
+
+  return <PantryList items={items} expiringSoon={expiring} />;
 }
