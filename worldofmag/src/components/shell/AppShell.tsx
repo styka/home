@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -22,6 +22,7 @@ const MODULES = [
   { id: "shopping",    label: "Zakupy",        icon: <ShoppingCart size={20} />, topBarIcon: <ShoppingCart size={16} />, color: "var(--accent-blue)",     href: "/shopping",    active: true,  exact: false },
   { id: "tasks",       label: "Zadania",       icon: <CheckSquare size={20} />,  topBarIcon: <CheckSquare size={16} />,  color: "var(--accent-green)",    href: "/tasks",       active: true,  exact: false },
   { id: "notes",       label: "Notatki",       icon: <FileText size={20} />,     topBarIcon: <FileText size={16} />,     color: "var(--accent-amber)",    href: "/notes",       active: true,  exact: false },
+  { id: "kitchen",     label: "Kuchnia",       icon: <ChefHat size={20} />,      topBarIcon: <ChefHat size={16} />,      color: "var(--accent-orange)",   href: "/kitchen",     active: true,  exact: false },
   { id: "calendar",    label: "Calendar",      icon: <Calendar size={20} />,     topBarIcon: <Calendar size={16} />,     color: "var(--text-muted)",      href: "/calendar",    active: false, exact: false },
   { id: "work",        label: "Work",          icon: <Briefcase size={20} />,    topBarIcon: <Briefcase size={16} />,    color: "var(--text-muted)",      href: "/work",        active: false, exact: false },
   { id: "settings",    label: "Ustawienia",    icon: null,                        topBarIcon: <Settings size={16} />,    color: "var(--text-secondary)",  href: "/settings",    active: false, exact: false },
@@ -137,6 +138,22 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
                 <div className="mb-1">
                   {[{ href: "/notes/all", label: "Wszystkie" }, { href: "/notes/groups", label: "Grupy" }, { href: "/notes/tags", label: "Tagi" }].map(({ href, label }) => (
                     <MobileSub key={href} href={href} pathname={pathname} locked={isLocked("/notes")}>{label}</MobileSub>
+                  ))}
+                </div>
+              )}
+
+              <MobileItem href="/kitchen" pathname={pathname} locked={isLocked("/kitchen")}>
+                <ChefHat size={20} style={{ color: "var(--accent-orange)", flexShrink: 0 }} /><span>Kuchnia</span>
+              </MobileItem>
+              {pathname.startsWith("/kitchen") && (
+                <div className="mb-1">
+                  {[
+                    { href: "/kitchen/recipes",  label: "Przepisy" },
+                    { href: "/kitchen/plan",     label: "Plan" },
+                    { href: "/kitchen/pantry",   label: "Spiżarnia" },
+                    { href: "/kitchen/cookbooks", label: "Książki" },
+                  ].map(({ href, label }) => (
+                    <MobileSub key={href} href={href} pathname={pathname} locked={isLocked("/kitchen")}>{label}</MobileSub>
                   ))}
                 </div>
               )}

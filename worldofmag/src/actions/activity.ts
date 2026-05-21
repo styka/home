@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import type { Prisma } from "@prisma/client";
 
 export async function trackActivity(
-  module: "shopping" | "tasks" | "notes",
+  module: "shopping" | "tasks" | "notes" | "kitchen",
   action: string,
   metadata?: Record<string, unknown>
 ): Promise<void> {

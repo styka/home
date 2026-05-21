@@ -21,6 +21,11 @@
   --accent-amber:   #f59e0b;
   --accent-amber-dim: #b45309;
   --accent-purple:  #a855f7;
+  --accent-orange:  #ff8a3d;
+  --accent-orange-dim: #c2410c;
+  --kitchen-pantry:    #4caf50;
+  --kitchen-expiring:  #ff9800;
+  --kitchen-expired:   #f44336;
   --sidebar-width:  220px;
 }
 

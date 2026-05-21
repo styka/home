@@ -17,38 +17,43 @@ model User {
   emailVerified DateTime?
   image         String?
   avatarUrl     String?
-  role          String    @default("USER")  // "USER" | "ADMIN"
+  role          String    @default("USER") // "USER" | "ADMIN"
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts          Account[]
-  sessions          Session[]
-  ownedTeams        Team[]                @relation("TeamOwner")
-  teamMemberships   TeamMember[]
-  sentInvitations   TeamInvitation[]      @relation("InvitedBy")
-  receivedInvitations TeamInvitation[]    @relation("InvitedUser")
-  ownedLists        ShoppingList[]
-  products          Product[]
-  units             Unit[]
-  categories        Category[]
-  ownedTaskProjects TaskProject[]         @relation("OwnedTaskProjects")
-  taskProjectMemberships TaskProjectMember[] @relation("TaskProjectMemberships")
-  tasksCreated      Task[]               @relation("TasksCreatedBy")
-  tasksAssigned     Task[]               @relation("TasksAssignedTo")
-  taskComments      TaskComment[]        @relation("TaskComments")
-  taskShares        TaskShare[]          @relation("TaskShares")
-  activities        UserActivity[]
-  stores            Store[]
-  categoryIconVariants CategoryIconVariant[]
-  userRoles         UserRole[]
-  ownedNotes        Note[]               @relation("OwnedNotes")
-  reports           Report[]             @relation("AuthoredReports")
+  accounts               Account[]
+  sessions               Session[]
+  ownedTeams             Team[]                @relation("TeamOwner")
+  teamMemberships        TeamMember[]
+  sentInvitations        TeamInvitation[]      @relation("InvitedBy")
+  receivedInvitations    TeamInvitation[]      @relation("InvitedUser")
+  ownedLists             ShoppingList[]
+  products               Product[]
+  units                  Unit[]
+  categories             Category[]
+  ownedTaskProjects      TaskProject[]         @relation("OwnedTaskProjects")
+  taskProjectMemberships TaskProjectMember[]   @relation("TaskProjectMemberships")
+  tasksCreated           Task[]                @relation("TasksCreatedBy")
+  tasksAssigned          Task[]                @relation("TasksAssignedTo")
+  taskComments           TaskComment[]         @relation("TaskComments")
+  taskShares             TaskShare[]           @relation("TaskShares")
+  activities             UserActivity[]
+  stores                 Store[]
+  categoryIconVariants   CategoryIconVariant[]
+  userRoles              UserRole[]
+  ownedNotes             Note[]                @relation("OwnedNotes")
+  reports                Report[]              @relation("AuthoredReports")
+  recipes                Recipe[]              @relation("OwnedRecipes")
+  cookbooks              Cookbook[]            @relation("OwnedCookbooks")
+  mealPlans              MealPlanEntry[]       @relation("OwnedMealPlans")
+  pantryItems            PantryItem[]          @relation("OwnedPantryItems")
+  recipeRatings          RecipeRating[]
 }
 
 model UserRole {
   id     String @id @default(cuid())
   userId String
-  role   String  // "USER" | "ADMIN" | "BETA_TESTER"
+  role   String // "USER" | "ADMIN" | "BETA_TESTER"
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -115,36 +120,40 @@ model VerificationToken {
 // ─── Teams ────────────────────────────────────────────────────────────────
 
 model Team {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  avatarUrl   String?
-  ownerId     String
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  avatarUrl    String?
+  ownerId      String
   parentTeamId String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  owner       User             @relation("TeamOwner", fields: [ownerId], references: [id])
-  parentTeam  Team?            @relation("SubTeams", fields: [parentTeamId], references: [id])
-  subTeams    Team[]           @relation("SubTeams")
-  members     TeamMember[]
-  invitations TeamInvitation[]
-  lists       ShoppingList[]   @relation("TeamLists")
-  products    Product[]
-  units       Unit[]
-  categories  Category[]
-  taskProjects TaskProject[]   @relation("TeamTaskProjects")
-  taskShares  TaskShare[]      @relation("TeamTaskShares")
-  notes       Note[]           @relation("TeamNotes")
+  owner                User                  @relation("TeamOwner", fields: [ownerId], references: [id])
+  parentTeam           Team?                 @relation("SubTeams", fields: [parentTeamId], references: [id])
+  subTeams             Team[]                @relation("SubTeams")
+  members              TeamMember[]
+  invitations          TeamInvitation[]
+  lists                ShoppingList[]        @relation("TeamLists")
+  products             Product[]
+  units                Unit[]
+  categories           Category[]
+  taskProjects         TaskProject[]         @relation("TeamTaskProjects")
+  taskShares           TaskShare[]           @relation("TeamTaskShares")
+  notes                Note[]                @relation("TeamNotes")
   categoryIconVariants CategoryIconVariant[] @relation("TeamIconVariants")
-  reports     Report[]         @relation("TeamReports")
+  reports              Report[]              @relation("TeamReports")
+  recipes              Recipe[]              @relation("TeamRecipes")
+  cookbooks            Cookbook[]            @relation("TeamCookbooks")
+  mealPlans            MealPlanEntry[]       @relation("TeamMealPlans")
+  pantryItems          PantryItem[]          @relation("TeamPantryItems")
 }
 
 model TeamMember {
-  teamId    String
-  userId    String
-  role      String   @default("MEMBER")  // "MEMBER" | "ADMIN" | "OWNER"
-  joinedAt  DateTime @default(now())
+  teamId   String
+  userId   String
+  role     String   @default("MEMBER") // "MEMBER" | "ADMIN" | "OWNER"
+  joinedAt DateTime @default(now())
 
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -157,7 +166,7 @@ model TeamInvitation {
   teamId        String
   invitedById   String
   invitedUserId String
-  status        String   @default("PENDING")  // "PENDING" | "ACCEPTED" | "REJECTED"
+  status        String   @default("PENDING") // "PENDING" | "ACCEPTED" | "REJECTED"
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -198,7 +207,8 @@ model Item {
   updatedAt DateTime @updatedAt
   listId    String
 
-  list ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  list         ShoppingList      @relation(fields: [listId], references: [id], onDelete: Cascade)
+  recipeOrigin ItemRecipeOrigin?
 }
 
 model ItemHistory {
@@ -226,6 +236,9 @@ model Product {
 
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
   team Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  recipeIngredients RecipeIngredient[]
+  pantryItems       PantryItem[]
 }
 
 // ─── System Config ────────────────────────────────────────────────────────
@@ -300,11 +313,12 @@ model NoteGroup {
 }
 
 model Tag {
-  id        String    @id @default(cuid())
-  name      String    @unique
+  id        String      @id @default(cuid())
+  name      String      @unique
   color     String?
-  createdAt DateTime  @default(now())
+  createdAt DateTime    @default(now())
   notes     NoteTag[]
+  recipes   RecipeTag[]
 }
 
 model Note {
@@ -347,16 +361,16 @@ model TaskProject {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner    User?              @relation("OwnedTaskProjects", fields: [ownerId], references: [id])
-  ownerTeam Team?             @relation("TeamTaskProjects", fields: [ownerTeamId], references: [id])
-  tasks    Task[]
-  members  TaskProjectMember[]
+  owner     User?               @relation("OwnedTaskProjects", fields: [ownerId], references: [id])
+  ownerTeam Team?               @relation("TeamTaskProjects", fields: [ownerTeamId], references: [id])
+  tasks     Task[]
+  members   TaskProjectMember[]
 }
 
 model TaskProjectMember {
   projectId String
   userId    String
-  role      String   @default("MEMBER")   // MEMBER | ADMIN | OWNER
+  role      String   @default("MEMBER") // MEMBER | ADMIN | OWNER
   createdAt DateTime @default(now())
 
   project TaskProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -377,13 +391,13 @@ model Task {
   id            String    @id @default(cuid())
   title         String
   description   String?
-  status        String    @default("TODO")    // TODO | IN_PROGRESS | DONE | CANCELLED | DEFERRED
-  priority      String    @default("NONE")    // NONE | LOW | MEDIUM | HIGH | URGENT
+  status        String    @default("TODO") // TODO | IN_PROGRESS | DONE | CANCELLED | DEFERRED
+  priority      String    @default("NONE") // NONE | LOW | MEDIUM | HIGH | URGENT
   dueDate       DateTime?
   startDate     DateTime?
   completedAt   DateTime?
   estimatedMins Int?
-  recurring     String?                        // JSON: RecurringRule
+  recurring     String? // JSON: RecurringRule
   category      String    @default("Other")
   order         Float     @default(0)
   projectId     String?
@@ -393,14 +407,14 @@ model Task {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  project      TaskProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  parent       Task?        @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
-  subtasks     Task[]       @relation("TaskSubtasks")
-  createdBy    User?        @relation("TasksCreatedBy", fields: [createdById], references: [id])
-  assignee     User?        @relation("TasksAssignedTo", fields: [assigneeId], references: [id])
-  tags         TaskTaskTag[]
-  comments     TaskComment[]
-  shares       TaskShare[]
+  project   TaskProject?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  parent    Task?         @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subtasks  Task[]        @relation("TaskSubtasks")
+  createdBy User?         @relation("TasksCreatedBy", fields: [createdById], references: [id])
+  assignee  User?         @relation("TasksAssignedTo", fields: [assigneeId], references: [id])
+  tags      TaskTaskTag[]
+  comments  TaskComment[]
+  shares    TaskShare[]
 }
 
 model TaskTaskTag {
@@ -430,7 +444,7 @@ model TaskShare {
   taskId    String
   userId    String?
   teamId    String?
-  role      String   @default("VIEWER")    // VIEWER | EDITOR
+  role      String   @default("VIEWER") // VIEWER | EDITOR
   createdAt DateTime @default(now())
 
   task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
@@ -444,8 +458,8 @@ model UserActivity {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module    String   // "shopping" | "tasks" | "notes"
-  action    String   // "add_item" | "create_task" | "create_note" | etc.
+  module    String // "shopping" | "tasks" | "notes"
+  action    String // "add_item" | "create_task" | "create_note" | etc.
   metadata  Json?
   createdAt DateTime @default(now())
 
@@ -496,7 +510,7 @@ model Report {
   id        String   @id @default(cuid())
   title     String
   slug      String   @unique
-  content   String   // markdown content
+  content   String // markdown content
   category  String   @default("general")
   authorId  String?
   teamId    String?
@@ -508,4 +522,199 @@ model Report {
   @@index([category, createdAt])
   @@index([authorId])
   @@index([teamId])
+}
+
+// ─── Kitchen / Recipes ────────────────────────────────────────────────────
+
+model Recipe {
+  id            String    @id @default(cuid())
+  title         String
+  slug          String    @unique
+  description   String?
+  introMarkdown String?   @default("")
+  notes         String?   @default("")
+  servings      Int       @default(2)
+  prepMinutes   Int?
+  cookMinutes   Int?
+  difficulty    String    @default("easy")
+  cuisine       String?
+  mealType      String?
+  coverImageUrl String?
+  ownerId       String?
+  ownerTeamId   String?
+  cookbookId    String?
+  cookCount     Int       @default(0)
+  lastCookedAt  DateTime?
+  rating        Float?
+  sourceUrl     String?
+  sourceType    String    @default("manual")
+  isPublic      Boolean   @default(false)
+  isArchived    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  owner          User?              @relation("OwnedRecipes", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerTeam      Team?              @relation("TeamRecipes", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  cookbook       Cookbook?          @relation(fields: [cookbookId], references: [id], onDelete: SetNull)
+  ingredients    RecipeIngredient[]
+  steps          RecipeStep[]
+  images         RecipeImage[]
+  tags           RecipeTag[]
+  plannedMeals   MealPlanEntry[]
+  ratings        RecipeRating[]
+  itemsGenerated ItemRecipeOrigin[] @relation("ItemsFromRecipe")
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+  @@index([cookbookId])
+  @@index([mealType, difficulty])
+}
+
+model RecipeIngredient {
+  id         String  @id @default(cuid())
+  recipeId   String
+  productId  String?
+  name       String
+  quantity   Float?
+  unit       String?
+  groupName  String?
+  order      Int     @default(0)
+  note       String?
+  isOptional Boolean @default(false)
+
+  recipe  Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([recipeId])
+  @@index([productId])
+}
+
+model RecipeStep {
+  id          String  @id @default(cuid())
+  recipeId    String
+  order       Int
+  text        String
+  imageUrl    String?
+  durationMin Int?
+  temperature String?
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId, order])
+}
+
+model RecipeImage {
+  id       String  @id @default(cuid())
+  recipeId String
+  url      String
+  caption  String?
+  order    Int     @default(0)
+  isCover  Boolean @default(false)
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+}
+
+model RecipeTag {
+  recipeId String
+  tagId    String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([recipeId, tagId])
+}
+
+model RecipeRating {
+  id        String   @id @default(cuid())
+  recipeId  String
+  userId    String
+  value     Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, userId])
+}
+
+model Cookbook {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  emoji       String   @default("📚")
+  color       String?
+  ownerId     String?
+  ownerTeamId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner     User?    @relation("OwnedCookbooks", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerTeam Team?    @relation("TeamCookbooks", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  recipes   Recipe[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+}
+
+model MealPlanEntry {
+  id          String    @id @default(cuid())
+  date        DateTime
+  slot        String
+  recipeId    String?
+  customTitle String?
+  servings    Int       @default(2)
+  notes       String?
+  ownerId     String?
+  ownerTeamId String?
+  status      String    @default("PLANNED")
+  cookedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  recipe    Recipe? @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  owner     User?   @relation("OwnedMealPlans", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerTeam Team?   @relation("TeamMealPlans", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId, date])
+  @@index([ownerTeamId, date])
+  @@index([date])
+}
+
+model PantryItem {
+  id          String    @id @default(cuid())
+  productId   String?
+  name        String
+  quantity    Float?
+  unit        String?
+  location    String?
+  addedAt     DateTime  @default(now())
+  expiresAt   DateTime?
+  openedAt    DateTime?
+  ownerId     String?
+  ownerTeamId String?
+  minQuantity Float?
+  autoShop    Boolean   @default(false)
+
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  owner     User?    @relation("OwnedPantryItems", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?    @relation("TeamPantryItems", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+  @@index([productId])
+  @@index([expiresAt])
+}
+
+model ItemRecipeOrigin {
+  itemId       String  @id
+  recipeId     String
+  servings     Int     @default(2)
+  ingredientId String?
+
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation("ItemsFromRecipe", fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
 }

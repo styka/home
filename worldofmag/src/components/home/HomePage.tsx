@@ -4,11 +4,17 @@ import Link from "next/link";
 import { Sparkles, BookOpen, Lock } from "lucide-react";
 import { QuickStats } from "@/components/home/QuickStats";
 import { AISuggestions } from "@/components/home/AISuggestions";
+import { KitchenWidget } from "@/components/home/KitchenWidget";
 
 interface ActivityItem {
   module: string;
   action: string;
   createdAt: Date;
+}
+
+export interface KitchenWidgetData {
+  todayMeals: Array<{ id: string; slot: string; title: string; servings: number; recipeSlug: string | null }>;
+  expiring: Array<{ id: string; name: string; daysLeft: number }>;
 }
 
 interface HomePageProps {
@@ -19,6 +25,7 @@ interface HomePageProps {
   recentActivity: ActivityItem[];
   userRoles: string[];
   userPermissions?: string[];
+  kitchenWidget?: KitchenWidgetData | null;
 }
 
 function getGreeting(name: string | null): string {
@@ -53,8 +60,9 @@ function FooterLink({ href, label, locked }: FooterLinkProps) {
   );
 }
 
-export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, recentActivity, userRoles, userPermissions = [] }: HomePageProps) {
+export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, recentActivity, userRoles, userPermissions = [], kitchenWidget }: HomePageProps) {
   const isBetaOnly = !userPermissions.includes("module.tasks");
+  const kitchenLocked = !userPermissions.includes("module.kitchen");
 
   return (
     <div
@@ -94,6 +102,15 @@ export function HomePage({ userName, pendingItems, todayTasks, overdueTasks, rec
           overdueTasks={overdueTasks}
           locked={isBetaOnly}
         />
+
+        {/* Kitchen widget */}
+        {kitchenWidget ? (
+          <KitchenWidget
+            todayMeals={kitchenWidget.todayMeals}
+            expiring={kitchenWidget.expiring}
+            locked={kitchenLocked}
+          />
+        ) : null}
 
         {/* AI suggestions */}
         <AISuggestions recentActivity={recentActivity} overdueTasks={overdueTasks} locked={isBetaOnly} />

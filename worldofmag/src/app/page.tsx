@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getRecentActivity } from "@/actions/activity";
-import { HomePage } from "@/components/home/HomePage";
+import { getTodaysMeals } from "@/actions/mealPlans";
+import { getExpiringSoon } from "@/actions/pantry";
+import { HomePage, type KitchenWidgetData } from "@/components/home/HomePage";
 
 export default async function HomePageRoute() {
   const session = await auth();
@@ -47,6 +49,31 @@ export default async function HomePageRoute() {
   const userRoles: string[] = session.user.roles ?? [];
   const userPermissions: string[] = session.user.permissions ?? [];
 
+  let kitchenWidget: KitchenWidgetData | null = null;
+  if (userPermissions.includes("module.kitchen")) {
+    try {
+      const [todayMeals, expiring] = await Promise.all([getTodaysMeals(), getExpiringSoon(3)]);
+      kitchenWidget = {
+        todayMeals: todayMeals.map((m) => ({
+          id: m.id,
+          slot: m.slot,
+          title: m.recipe?.title ?? m.customTitle ?? "—",
+          servings: m.servings,
+          recipeSlug: m.recipe?.slug ?? null,
+        })),
+        expiring: expiring.slice(0, 3).map((e) => {
+          const d = e.expiresAt ? new Date(e.expiresAt) : null;
+          const days = d
+            ? Math.floor((d.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24))
+            : 0;
+          return { id: e.id, name: e.name, daysLeft: days };
+        }),
+      };
+    } catch {
+      kitchenWidget = null;
+    }
+  }
+
   return (
     <HomePage
       userName={session.user.name ?? null}
@@ -56,6 +83,7 @@ export default async function HomePageRoute() {
       recentActivity={recentActivity}
       userRoles={userRoles}
       userPermissions={userPermissions}
+      kitchenWidget={kitchenWidget}
     />
   );
 }
