@@ -6,6 +6,7 @@ import { Plus, Search, ChefHat, Globe, ChevronDown } from "lucide-react";
 import { RecipeCard } from "./RecipeCard";
 import { RecipeFilters, type RecipeFilterState } from "./RecipeFilters";
 import { ImportFromUrlDialog } from "./ImportFromUrlDialog";
+import { PantrySuggestionsPanel } from "./PantrySuggestionsPanel";
 import type { RecipeListItem } from "@/types/kitchen";
 import type { Tag } from "@prisma/client";
 
@@ -146,6 +147,8 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI }: RecipeListProps)
         tags={tags}
         cookbooks={cookbooks}
       />
+
+      <PantrySuggestionsPanel />
 
       {filtered.length === 0 ? (
         <div className="text-center py-10 text-sm" style={{ color: "var(--text-muted)" }}>

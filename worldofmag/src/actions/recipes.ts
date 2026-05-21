@@ -618,15 +618,16 @@ export async function markRecipeCooked(id: string, servings: number): Promise<vo
   const user = await requireAuth();
   await assertRecipeAccess(id, user.id, "read");
 
-  await prisma.recipe.update({
+  const updated = await prisma.recipe.update({
     where: { id },
     data: {
       cookCount: { increment: 1 },
       lastCookedAt: new Date(),
     },
+    select: { slug: true },
   });
 
   void trackActivity("kitchen", "mark_cooked", { recipeId: id, servings });
   revalidatePath("/kitchen/recipes");
-  revalidatePath(`/kitchen/recipes/${id}`);
+  revalidatePath(`/kitchen/recipes/${updated.slug}`);
 }

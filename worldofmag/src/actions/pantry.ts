@@ -184,10 +184,12 @@ export async function consumePantryItem(id: string, quantity: number): Promise<P
   if (!existing) throw new Error("Pozycja nie istnieje");
 
   const next = Math.max(0, (existing.quantity ?? 0) - quantity);
-  return prisma.pantryItem.update({
+  const updated = await prisma.pantryItem.update({
     where: { id },
     data: { quantity: next },
   });
+  revalidatePath("/kitchen/pantry");
+  return updated;
 }
 
 export async function setPantryQuantity(id: string, quantity: number): Promise<PantryItem> {
