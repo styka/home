@@ -19,11 +19,13 @@ export default async function EditRecipePage({ params }: PageProps) {
   await assertRecipeAccess(recipe.id, session.user.id, "edit");
 
   const cookbooks = await getCookbooks();
+  const hasAI = session.user.permissions?.includes("kitchen.ai") ?? false;
 
   return (
     <RecipeEditor
       recipe={recipe}
       cookbooks={cookbooks.map((cb) => ({ id: cb.id, name: cb.name, emoji: cb.emoji }))}
+      hasAI={hasAI}
     />
   );
 }

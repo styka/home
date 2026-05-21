@@ -2,16 +2,18 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, ChefHat } from "lucide-react";
+import { Plus, Search, ChefHat, Globe, ChevronDown } from "lucide-react";
 import { RecipeCard } from "./RecipeCard";
 import { RecipeFilters, type RecipeFilterState } from "./RecipeFilters";
-import type { RecipeListItem, MealType } from "@/types/kitchen";
+import { ImportFromUrlDialog } from "./ImportFromUrlDialog";
+import type { RecipeListItem } from "@/types/kitchen";
 import type { Tag } from "@prisma/client";
 
 interface RecipeListProps {
   recipes: RecipeListItem[];
   tags: Tag[];
   cookbooks: Array<{ id: string; name: string; emoji: string }>;
+  hasAI?: boolean;
 }
 
 const EMPTY_FILTERS: RecipeFilterState = {
@@ -22,9 +24,11 @@ const EMPTY_FILTERS: RecipeFilterState = {
   cookbookId: null,
 };
 
-export function RecipeList({ recipes, tags, cookbooks }: RecipeListProps) {
+export function RecipeList({ recipes, tags, cookbooks, hasAI }: RecipeListProps) {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<RecipeFilterState>(EMPTY_FILTERS);
+  const [importOpen, setImportOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const cuisines = useMemo(() => {
     const set = new Set<string>();
@@ -59,7 +63,12 @@ export function RecipeList({ recipes, tags, cookbooks }: RecipeListProps) {
   }, [recipes, search, filters]);
 
   if (recipes.length === 0) {
-    return <EmptyState />;
+    return (
+      <>
+        <EmptyState hasAI={hasAI} onImportUrl={() => setImportOpen(true)} />
+        <ImportFromUrlDialog open={importOpen} onClose={() => setImportOpen(false)} />
+      </>
+    );
   }
 
   return (
@@ -79,13 +88,55 @@ export function RecipeList({ recipes, tags, cookbooks }: RecipeListProps) {
             style={{ color: "var(--text-primary)" }}
           />
         </div>
-        <Link
-          href="/kitchen/recipes/new"
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm whitespace-nowrap"
-          style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
-        >
-          <Plus size={16} /> Nowy
-        </Link>
+        {hasAI ? (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm whitespace-nowrap"
+              style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+            >
+              <Plus size={16} /> Nowy <ChevronDown size={12} />
+            </button>
+            {menuOpen ? (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                <div
+                  className="absolute right-0 mt-1 w-52 z-50 rounded border shadow-lg"
+                  style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}
+                >
+                  <Link
+                    href="/kitchen/recipes/new"
+                    className="flex items-center gap-2 px-3 py-2 text-sm"
+                    style={{ color: "var(--text-primary)" }}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <Plus size={14} /> Pusty przepis
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setImportOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    <Globe size={14} style={{ color: "var(--accent-purple)" }} /> Import z URL
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
+        ) : (
+          <Link
+            href="/kitchen/recipes/new"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm whitespace-nowrap"
+            style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+          >
+            <Plus size={16} /> Nowy
+          </Link>
+        )}
       </div>
 
       <RecipeFilters
@@ -110,11 +161,13 @@ export function RecipeList({ recipes, tags, cookbooks }: RecipeListProps) {
           ))}
         </div>
       )}
+
+      <ImportFromUrlDialog open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }
 
-function EmptyState() {
+function EmptyState({ hasAI, onImportUrl }: { hasAI?: boolean; onImportUrl: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full px-6 py-16 text-center">
       <ChefHat size={48} style={{ color: "var(--text-muted)" }} />
@@ -124,13 +177,25 @@ function EmptyState() {
       <p className="mt-2 max-w-md text-sm" style={{ color: "var(--text-secondary)" }}>
         Zacznij od stworzenia swojego pierwszego przepisu. Możesz dodać składniki, kroki, czas i porcje, a potem jednym kliknięciem wygenerować listę zakupów.
       </p>
-      <Link
-        href="/kitchen/recipes/new"
-        className="mt-6 inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm"
-        style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
-      >
-        <Plus size={16} /> Dodaj pierwszy przepis
-      </Link>
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+        <Link
+          href="/kitchen/recipes/new"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm"
+          style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+        >
+          <Plus size={16} /> Dodaj pierwszy przepis
+        </Link>
+        {hasAI ? (
+          <button
+            type="button"
+            onClick={onImportUrl}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded border text-sm"
+            style={{ borderColor: "var(--accent-purple)", color: "var(--accent-purple)" }}
+          >
+            <Globe size={14} /> Import z URL
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

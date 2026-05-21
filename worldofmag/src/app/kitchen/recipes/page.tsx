@@ -16,12 +16,14 @@ export default async function KitchenRecipesPage() {
     getCookbooks(),
     getTags(),
   ]);
+  const hasAI = session.user.permissions?.includes("kitchen.ai") ?? false;
 
   return (
     <RecipeList
       recipes={recipes}
       tags={tags}
       cookbooks={cookbooks.map((cb) => ({ id: cb.id, name: cb.name, emoji: cb.emoji }))}
+      hasAI={hasAI}
     />
   );
 }

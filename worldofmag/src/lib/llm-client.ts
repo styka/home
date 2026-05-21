@@ -65,4 +65,54 @@ export const llm = {
     execute: (intent: string, params: unknown) =>
       post<{ result?: string }>("/api/llm/home/execute", { intent, params }),
   },
+
+  kitchen: {
+    parseIngredients: (text: string) =>
+      post<{
+        ingredients?: Array<{
+          name: string;
+          quantity: number | null;
+          unit: string | null;
+          note: string | null;
+          isOptional: boolean;
+        }>;
+        error?: string;
+      }>("/api/llm/kitchen/parse-ingredients", { text }),
+
+    importFromUrl: (url: string) =>
+      post<{
+        recipe?: {
+          title: string;
+          description: string | null;
+          servings: number | null;
+          prepMinutes: number | null;
+          cookMinutes: number | null;
+          cuisine: string | null;
+          mealType: string | null;
+          coverImageUrl: string | null;
+          notes: string | null;
+          ingredients: Array<{
+            name: string;
+            quantity: number | null;
+            unit: string | null;
+            note: string | null;
+            isOptional: boolean;
+          }>;
+          steps: Array<{ text: string }>;
+        };
+        sourceUrl?: string;
+        error?: string;
+      }>("/api/llm/kitchen/import-url", { url }),
+
+    suggestFromPantry: () =>
+      post<{
+        suggestions?: Array<{
+          recipeId: string;
+          slug: string;
+          title: string;
+          reason: string;
+          matchedIngredients: string[];
+        }>;
+      }>("/api/llm/kitchen/suggest-from-pantry", {}),
+  },
 };

@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Sparkles } from "lucide-react";
 import { parseQuantity } from "@/lib/parseQuantity";
+import { llm } from "@/lib/llm-client";
 import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
 import { useToast } from "@/components/ui/Toast";
 import { createRecipe, updateRecipe } from "@/actions/recipes";
@@ -20,6 +21,7 @@ import { MEAL_TYPE_LABELS, DIFFICULTY_LABELS } from "@/types/kitchen";
 interface RecipeEditorProps {
   recipe?: RecipeFull;
   cookbooks: Array<{ id: string; name: string; emoji: string }>;
+  hasAI?: boolean;
 }
 
 interface IngredientRow extends IngredientInput {
@@ -34,10 +36,13 @@ function makeKey(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
-export function RecipeEditor({ recipe, cookbooks }: RecipeEditorProps) {
+export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
   const router = useRouter();
   const { showToast } = useToast();
   const [pending, startTransition] = useTransition();
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiText, setAiText] = useState("");
+  const [aiPending, setAiPending] = useState(false);
 
   const [title, setTitle] = useState(recipe?.title ?? "");
   const [description, setDescription] = useState(recipe?.description ?? "");
@@ -95,6 +100,46 @@ export function RecipeEditor({ recipe, cookbooks }: RecipeEditorProps) {
       quantity: parsed.quantity ?? null,
       unit: parsed.unit ?? null,
     });
+  }
+
+  async function handleAIParse() {
+    if (!aiText.trim()) {
+      showToast("Wklej tekst do parsowania", "error");
+      return;
+    }
+    setAiPending(true);
+    try {
+      const res = await llm.kitchen.parseIngredients(aiText.trim());
+      if (res.error) {
+        showToast(res.error, "error");
+        return;
+      }
+      const parsed = res.ingredients ?? [];
+      if (parsed.length === 0) {
+        showToast("AI nie znalazło składników", "info");
+        return;
+      }
+      setIngredients((prev) => {
+        // jeśli aktualne pole pierwszy ingredient jest puste — zastąp; inaczej dopisz
+        const isEmptySingle = prev.length === 1 && !prev[0].name.trim();
+        const merged: IngredientRow[] = parsed.map((p) => ({
+          _key: makeKey(),
+          name: p.name,
+          quantity: p.quantity,
+          unit: p.unit,
+          note: p.note,
+          isOptional: p.isOptional,
+        }));
+        return isEmptySingle ? merged : [...prev, ...merged];
+      });
+      showToast(`AI dodało ${parsed.length} składników`, "success");
+      setAiOpen(false);
+      setAiText("");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Błąd AI", "error");
+    } finally {
+      setAiPending(false);
+    }
   }
 
   function addStep() {
@@ -312,15 +357,65 @@ export function RecipeEditor({ recipe, cookbooks }: RecipeEditorProps) {
             <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
               Składniki
             </h2>
-            <button
-              type="button"
-              onClick={addIngredient}
-              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded"
-              style={{ color: "var(--accent-orange)" }}
-            >
-              <Plus size={12} /> Dodaj
-            </button>
+            <div className="flex items-center gap-1">
+              {hasAI ? (
+                <button
+                  type="button"
+                  onClick={() => setAiOpen((v) => !v)}
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded"
+                  style={{ color: "var(--accent-purple)" }}
+                >
+                  <Sparkles size={12} /> Wklej AI
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={addIngredient}
+                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded"
+                style={{ color: "var(--accent-orange)" }}
+              >
+                <Plus size={12} /> Dodaj
+              </button>
+            </div>
           </div>
+
+          {aiOpen ? (
+            <div
+              className="mb-2 p-2 rounded border"
+              style={{ borderColor: "var(--accent-purple)", backgroundColor: "var(--bg-surface)" }}
+            >
+              <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>
+                Wklej blok tekstu — AI rozpozna składniki.
+              </p>
+              <textarea
+                value={aiText}
+                onChange={(e) => setAiText(e.target.value)}
+                rows={5}
+                placeholder={"400 g mąki\n2 jajka\nszczypta soli"}
+                className="w-full px-2 py-1.5 rounded border text-xs"
+                style={inputStyle}
+              />
+              <div className="flex items-center justify-end gap-1 mt-1.5">
+                <button
+                  type="button"
+                  onClick={() => setAiOpen(false)}
+                  className="px-2 py-1 rounded text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Anuluj
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAIParse}
+                  disabled={aiPending}
+                  className="px-2 py-1 rounded text-xs disabled:opacity-50"
+                  style={{ backgroundColor: "var(--accent-purple)", color: "#fff" }}
+                >
+                  {aiPending ? "Parsuję…" : "Parsuj"}
+                </button>
+              </div>
+            </div>
+          ) : null}
           <div className="flex flex-col gap-1.5">
             {ingredients.map((ing, idx) => (
               <div
