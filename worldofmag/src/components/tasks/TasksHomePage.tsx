@@ -16,13 +16,25 @@ import {
   Users,
 } from "lucide-react";
 import { createTaskProject } from "@/actions/taskProjects";
-import type { TaskProject } from "@/types";
+import { PageHeader, StatTile, SectionHeading, ManagementGrid, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
+import type { TaskProject, TaskPriority } from "@/types";
+import { TASK_PRIORITY_COLORS } from "@/types";
+
+interface TodayPreviewItem {
+  id: string;
+  title: string;
+  priority: TaskPriority;
+  projectId: string | null;
+  projectName: string | null;
+  projectEmoji: string | null;
+}
 
 interface TasksHomePageProps {
   projects: TaskProject[];
   todayCount: number;
   upcomingCount: number;
   overdueCount: number;
+  todayPreview: TodayPreviewItem[];
 }
 
 export function TasksHomePage({
@@ -30,6 +42,7 @@ export function TasksHomePage({
   todayCount,
   upcomingCount,
   overdueCount,
+  todayPreview,
 }: TasksHomePageProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -37,6 +50,18 @@ export function TasksHomePage({
 
   const inbox = projects.find((p) => p.isInbox);
   const regularProjects = projects.filter((p) => !p.isInbox);
+  const totalOpenCount = todayCount + upcomingCount + overdueCount;
+
+  const subtitle =
+    overdueCount > 0
+      ? `${overdueCount} ${pluralizePolish(overdueCount, "zaległe", "zaległe", "zaległych")} zadanie · ${todayCount} na dziś`
+      : todayCount > 0
+      ? `${todayCount} ${pluralizePolish(todayCount, "zadanie", "zadania", "zadań")} na dziś`
+      : upcomingCount > 0
+      ? `${upcomingCount} ${pluralizePolish(upcomingCount, "zadanie", "zadania", "zadań")} nadchodzących`
+      : regularProjects.length > 0
+      ? `${regularProjects.length} ${pluralizePolish(regularProjects.length, "projekt", "projekty", "projektów")}`
+      : "Zacznij od utworzenia projektu";
 
   function handleCreate() {
     const name = newName.trim();
@@ -49,66 +74,35 @@ export function TasksHomePage({
   }
 
   return (
-    <div
-      style={{
-        flex: 1,
-        overflowY: "auto",
-        backgroundColor: "var(--bg-base)",
-        padding: "24px 16px",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 640,
-          margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: 24,
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <h1
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: "var(--text-primary)",
-              margin: 0,
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-            }}
-          >
-            <CheckSquare size={22} style={{ color: "var(--accent-green)" }} />
-            Zadania
-          </h1>
-          <button
-            onClick={() => setIsAdding((v) => !v)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              padding: "6px 12px",
-              borderRadius: 8,
-              border: "1px solid var(--border)",
-              background: "var(--bg-surface)",
-              color: "var(--text-secondary)",
-              fontSize: 13,
-              cursor: "pointer",
-            }}
-          >
-            <Plus size={13} />
-            Nowy projekt
-          </button>
-        </div>
+    <div style={pageContainerStyle}>
+      <div style={pageInnerStyle}>
+        <PageHeader
+          icon={<CheckSquare size={22} />}
+          iconColor="var(--accent-green)"
+          title="Zadania"
+          subtitle={subtitle}
+          action={
+            <button
+              onClick={() => setIsAdding((v) => !v)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "6px 12px",
+                borderRadius: 8,
+                border: "1px solid var(--border)",
+                background: "var(--bg-surface)",
+                color: "var(--text-secondary)",
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              <Plus size={13} />
+              Nowy projekt
+            </button>
+          }
+        />
 
-        {/* New project form */}
         {isAdding && (
           <div style={{ display: "flex", gap: 8 }}>
             <input
@@ -168,130 +162,158 @@ export function TasksHomePage({
           </div>
         )}
 
-        {/* Virtual views */}
-        <div>
-          <p
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: "var(--text-muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              marginBottom: 8,
-            }}
-          >
-            Widoki
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <VirtualViewCard
-              href="/tasks/today"
-              icon={<CalendarClock size={16} />}
-              label="Dziś"
-              count={todayCount}
-              accentColor="var(--accent-blue)"
-            />
-            <VirtualViewCard
-              href="/tasks/upcoming"
-              icon={<CalendarDays size={16} />}
-              label="Nadchodzące"
-              count={upcomingCount}
-              accentColor="var(--accent-amber)"
-            />
-            <VirtualViewCard
-              href="/tasks/overdue"
-              icon={<AlertCircle size={16} />}
-              label="Zaległe"
-              count={overdueCount}
-              accentColor="var(--accent-red)"
-            />
-            <VirtualViewCard
-              href="/tasks/all"
-              icon={<LayoutList size={16} />}
-              label="Wszystkie"
-              count={null}
-              accentColor="var(--text-secondary)"
-            />
-          </div>
+        {/* Stats — replaces "Widoki", each tile is clickable */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
+          <StatTile
+            value={todayCount}
+            label="Dziś"
+            color={todayCount > 0 ? "var(--accent-blue)" : "var(--text-muted)"}
+            icon={<CalendarClock size={14} />}
+            href="/tasks/today"
+          />
+          <StatTile
+            value={overdueCount}
+            label="Zaległe"
+            color={overdueCount > 0 ? "var(--accent-red)" : "var(--text-muted)"}
+            icon={<AlertCircle size={14} />}
+            href="/tasks/overdue"
+            emphasized={overdueCount > 0}
+          />
+          <StatTile
+            value={upcomingCount}
+            label="Nadchodzące"
+            color={upcomingCount > 0 ? "var(--accent-amber)" : "var(--text-muted)"}
+            icon={<CalendarDays size={14} />}
+            href="/tasks/upcoming"
+          />
+          <StatTile
+            value={totalOpenCount}
+            label="Wszystkie otwarte"
+            color="var(--text-secondary)"
+            icon={<LayoutList size={14} />}
+            href="/tasks/all"
+          />
         </div>
 
-        {/* Inbox */}
-        {inbox && (
+        {/* Today preview */}
+        {todayPreview.length > 0 && (
           <div>
-            <p
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: "var(--text-muted)",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                marginBottom: 8,
-              }}
+            <SectionHeading
+              action={
+                <Link
+                  href="/tasks/today"
+                  style={{
+                    fontSize: 11,
+                    color: "var(--text-muted)",
+                    textDecoration: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 3,
+                  }}
+                >
+                  Zobacz wszystkie <ChevronRight size={11} />
+                </Link>
+              }
             >
-              Skrzynka
-            </p>
-            <ProjectCard project={inbox} />
-          </div>
-        )}
-
-        {/* Projects */}
-        {regularProjects.length > 0 && (
-          <div>
-            <p
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: "var(--text-muted)",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                marginBottom: 8,
-              }}
-            >
-              Projekty
-            </p>
+              Na dziś
+            </SectionHeading>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {regularProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
+              {todayPreview.map((task) => (
+                <Link
+                  key={task.id}
+                  href={`/tasks/${task.projectId ?? "today"}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    border: "1px solid var(--border)",
+                    background: "var(--bg-surface)",
+                    textDecoration: "none",
+                    transition: "background 0.1s, border-color 0.1s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "var(--bg-elevated)";
+                    e.currentTarget.style.borderColor = "var(--border-focus)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "var(--bg-surface)";
+                    e.currentTarget.style.borderColor = "var(--border)";
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 999,
+                      background: TASK_PRIORITY_COLORS[task.priority],
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      flex: 1,
+                      fontSize: 13,
+                      color: "var(--text-primary)",
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {task.title}
+                  </span>
+                  {task.projectName && (
+                    <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0, display: "flex", alignItems: "center", gap: 3 }}>
+                      {task.projectEmoji && <span>{task.projectEmoji}</span>}
+                      {task.projectName}
+                    </span>
+                  )}
+                  <ChevronRight size={12} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                </Link>
               ))}
             </div>
           </div>
         )}
 
-        {/* Management */}
+        {/* Inbox */}
+        {inbox && (
+          <div>
+            <SectionHeading>Skrzynka</SectionHeading>
+            <ProjectCard project={inbox} />
+          </div>
+        )}
+
+        {/* Projects */}
         <div>
-          <p
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: "var(--text-muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              marginBottom: 8,
-            }}
-          >
-            Zarządzanie
-          </p>
-          <Link
-            href="/tasks/tags"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "12px 14px",
-              borderRadius: 10,
-              border: "1px solid var(--border)",
-              background: "var(--bg-surface)",
-              textDecoration: "none",
-              transition: "background 0.1s",
-            }}
-          >
-            <Tag size={15} style={{ color: "var(--accent-purple)" }} />
-            <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
-              Tagi
-            </span>
-            <ChevronRight size={13} style={{ color: "var(--text-muted)" }} />
-          </Link>
+          <SectionHeading>Projekty</SectionHeading>
+          {regularProjects.length === 0 ? (
+            <EmptyState
+              icon={<CheckSquare size={28} />}
+              message="Brak projektów"
+              hint="Stwórz projekt, żeby grupować zadania tematycznie"
+              cta={{ label: "+ Nowy projekt", onClick: () => setIsAdding(true), color: "var(--accent-green)" }}
+            />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {regularProjects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          )}
         </div>
 
+        {/* Management */}
+        <div>
+          <SectionHeading>Zarządzanie</SectionHeading>
+          <ManagementGrid
+            items={[
+              { href: "/tasks/tags", icon: <Tag size={16} />, label: "Tagi", color: "var(--accent-green)" },
+              { href: "/tasks/all", icon: <LayoutList size={16} />, label: "Wszystkie zadania", color: "var(--accent-green)" },
+            ]}
+          />
+        </div>
       </div>
     </div>
   );
@@ -310,7 +332,15 @@ function ProjectCard({ project }: { project: TaskProject }) {
         border: "1px solid var(--border)",
         background: "var(--bg-surface)",
         textDecoration: "none",
-        transition: "background 0.1s",
+        transition: "background 0.1s, border-color 0.1s",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "var(--bg-elevated)";
+        e.currentTarget.style.borderColor = "var(--border-focus)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "var(--bg-surface)";
+        e.currentTarget.style.borderColor = "var(--border)";
       }}
     >
       {project.isInbox ? (
@@ -318,11 +348,23 @@ function ProjectCard({ project }: { project: TaskProject }) {
       ) : (
         <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>{project.emoji}</span>
       )}
-      <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--text-primary)", minWidth: 0 }}>
+      <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {project.name}
       </span>
       {project.ownerTeamId && (
-        <span style={{ fontSize: 11, padding: "1px 5px", borderRadius: 10, backgroundColor: "rgba(139,92,246,0.15)", color: "var(--accent-purple)", display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+        <span
+          style={{
+            fontSize: 11,
+            padding: "1px 5px",
+            borderRadius: 10,
+            backgroundColor: "rgba(168,85,247,0.15)",
+            color: "var(--accent-purple)",
+            display: "flex",
+            alignItems: "center",
+            gap: 3,
+            flexShrink: 0,
+          }}
+        >
           <Users size={10} />
           Team
         </span>
@@ -336,6 +378,7 @@ function ProjectCard({ project }: { project: TaskProject }) {
             padding: "2px 8px",
             borderRadius: 10,
             border: "1px solid rgba(34,197,94,0.2)",
+            fontWeight: 600,
           }}
         >
           {project._count.tasks}
@@ -346,49 +389,10 @@ function ProjectCard({ project }: { project: TaskProject }) {
   );
 }
 
-function VirtualViewCard({
-  href,
-  icon,
-  label,
-  count,
-  accentColor,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  count: number | null;
-  accentColor: string;
-}) {
-  return (
-    <Link
-      href={href}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "12px 14px",
-        borderRadius: 10,
-        border: "1px solid var(--border)",
-        background: "var(--bg-surface)",
-        textDecoration: "none",
-        transition: "background 0.1s",
-      }}
-    >
-      <span style={{ color: accentColor, flexShrink: 0 }}>{icon}</span>
-      <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>
-        {label}
-      </span>
-      {count != null && count > 0 && (
-        <span
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: accentColor,
-          }}
-        >
-          {count}
-        </span>
-      )}
-    </Link>
-  );
+function pluralizePolish(n: number, one: string, few: string, many: string): string {
+  if (n === 1) return one;
+  const last = n % 10;
+  const last2 = n % 100;
+  if (last >= 2 && last <= 4 && (last2 < 12 || last2 > 14)) return few;
+  return many;
 }
