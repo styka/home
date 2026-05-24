@@ -137,6 +137,7 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /admin/categories/       # Global category management
 /admin/reports/          # Markdown reports (slug-based)
 /admin/playground/       # Component playground
+/admin/e2e/              # E2E click-tests guide (how to run Playwright)
 /auth/signin/            # Google OAuth sign-in
 ```
 

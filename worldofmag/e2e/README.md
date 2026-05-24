@@ -3,6 +3,9 @@
 Klikające testy end-to-end odtwarzające scenariusze QA z `/qa` w prawdziwej
 przeglądarce — wersja **desktopowa** i **mobilna** (iPhone 13).
 
+> Skrócona instrukcja jest też w aplikacji: **Panel admina → „Testy klikacze
+> E2E"** (`/admin/e2e`) — łatwa do znalezienia bez grzebania w repo.
+
 ## Dlaczego Playwright?
 
 Selenium i Protractor są przestarzałe (Protractor oficjalnie zarchiwizowany).
