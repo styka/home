@@ -1,4 +1,5 @@
 import NextAuth from "next-auth"
+import Credentials from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import { authConfig } from "@/auth.config"
@@ -9,8 +10,30 @@ if (!process.env.AUTH_SECRET) {
   process.env.AUTH_SECRET = "build-time-placeholder-set-real-value-on-render"
 }
 
+// E2E-only credentials provider. Gated by E2E_TEST_MODE so it can NEVER be
+// active in production (Render env never sets this var). Lets Playwright log
+// in as a known seeded user without going through Google OAuth.
+const e2eProviders =
+  process.env.E2E_TEST_MODE === "1"
+    ? [
+        Credentials({
+          id: "e2e",
+          name: "E2E",
+          credentials: { email: { label: "Email", type: "email" } },
+          async authorize(creds) {
+            const email = typeof creds?.email === "string" ? creds.email : null
+            if (!email) return null
+            const user = await prisma.user.findUnique({ where: { email } })
+            if (!user) return null
+            return { id: user.id, email: user.email, name: user.name, image: user.image }
+          },
+        }),
+      ]
+    : []
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  providers: [...authConfig.providers, ...e2eProviders],
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   callbacks: {

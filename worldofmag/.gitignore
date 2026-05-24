@@ -4,3 +4,10 @@ dev.db
 dev.db-journal
 .env.local
 *.tsbuildinfo
+
+# Playwright E2E
+/playwright-report/
+/test-results/
+/e2e/.auth/
+/blob-report/
+/playwright/.cache/
