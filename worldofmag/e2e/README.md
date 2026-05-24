@@ -18,24 +18,32 @@ npm install                 # instaluje też @playwright/test
 npm run test:e2e:install    # pobiera silnik Chromium (≈ przeglądarka)
 ```
 
-Potrzebna działająca baza danych w `.env.local` (`DATABASE_URL`, `DIRECT_URL`)
-oraz `AUTH_SECRET`. Schema jest PostgreSQL — wskaż lokalnego Postgresa lub
-testową gałąź Neon i zastosuj migracje:
+Potrzebny też **Docker** (do automatycznej, darmowej bazy testowej):
+- macOS najprościej: [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+  (darmowy do użytku osobistego), albo w pełni wolny [Colima](https://github.com/abiosoft/colima)
+  (`brew install colima docker docker-compose && colima start`).
+
+## Uruchomienie — JEDNA komenda (zalecane)
 
 ```bash
-npm run db:migrate          # lub: npx prisma migrate deploy
+npm run test:e2e:local      # stawia bazę, migruje, odpala demo (desktop + iPhone 13)
 ```
 
-## Uruchomienie (jedna komenda, demo)
+`scripts/e2e.sh` robi wszystko: podnosi efemeryczny Postgres z
+`docker-compose.e2e.yml`, stosuje migracje, ustawia `E2E_TEST_MODE=1` i odpala
+Playwright w trybie headed + slowMo — widać każde kliknięcie. Po pracy:
 
 ```bash
-npm run test:e2e            # headed, slowMo, desktop + mobile — widać każde kliknięcie
+npm run test:e2e:local:down # zatrzymuje i kasuje bazę testową
 ```
 
-Playwright sam wystartuje serwer (`npm run dev` z `E2E_TEST_MODE=1`), zaloguje
-użytkowników testowych i odpali całą serię. Inne tryby:
+### Tryby zaawansowane (własna baza)
+
+Jeśli masz własnego Postgresa/Neon w `.env.local` (`DATABASE_URL`,
+`DIRECT_URL`, `AUTH_SECRET`) i zastosowałeś migracje (`npm run db:migrate`):
 
 ```bash
+npm run test:e2e            # headed demo, desktop + mobile (zakłada gotową bazę)
 npm run test:e2e:desktop    # tylko desktop (headed)
 npm run test:e2e:mobile     # tylko iPhone 13 (headed)
 npm run test:e2e:ci         # headless, równolegle (CI)

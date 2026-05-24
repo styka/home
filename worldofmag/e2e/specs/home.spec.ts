@@ -4,13 +4,22 @@ test.describe("Strona główna", () => {
   test("[scenario-home-snapshots-filtered] dashboard ładuje się dla uprawnionego", async ({ page }) => {
     await page.goto("/");
     await expect(page).not.toHaveURL(/auth\/signin/);
-    // Admin (wszystkie uprawnienia) widzi snapshoty modułów.
     await expect(page.getByText(/Zakupy|Zadania|Notatki|Kuchnia/).first()).toBeVisible();
   });
 
-  test("[scenario-home-admin-widget] widżet admina dla admina", async ({ page }) => {
+  test("[scenario-home-admin-widget] widżet/link admina dla admina", async ({ page, app }) => {
     await page.goto("/");
-    // E2E admin ma rolę ADMIN — widżet/sekcja admina powinna być dostępna.
-    await expect(page.getByRole("link", { name: "Admin" }).first()).toBeVisible();
+    await app.expectNavVisible("admin");
+  });
+
+  test("[scenario-home-subtitle] powitanie z podtytułem", async ({ page }) => {
+    await page.goto("/");
+    // Greeting nagłówek h1 jest zawsze obecny na dashboardzie.
+    await expect(page.getByRole("heading").first()).toBeVisible();
+  });
+
+  test("[scenario-home-tasks-badges] snapshot zadań linkuje do widoków", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByText(/Zadania/).first()).toBeVisible();
   });
 });

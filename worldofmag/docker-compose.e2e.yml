@@ -1,0 +1,20 @@
+# Lokalna baza Postgres wyłącznie do testów E2E.
+# Używana przez `npm run test:e2e:local` (skrypt scripts/e2e.sh).
+# Dane są efemeryczne — `down -v` kasuje wolumen.
+services:
+  e2e-db:
+    image: postgres:16-alpine
+    container_name: worldofmag-e2e-db
+    environment:
+      POSTGRES_USER: e2e
+      POSTGRES_PASSWORD: e2e
+      POSTGRES_DB: worldofmag_e2e
+    ports:
+      - "5433:5432" # 5433 by nie kolidować z lokalnym Postgresem na 5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U e2e -d worldofmag_e2e"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+    tmpfs:
+      - /var/lib/postgresql/data # szybkie, ulotne — idealne do testów

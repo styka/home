@@ -4,6 +4,29 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-05-24 — Playwright: własny fixture `isMobile` tworzy cykl zależności
+
+**Problem:** Po dodaniu do `test.extend<>()` własnego fixture'a `isMobile`
+(`async ({ page }, use) => …`) `playwright test --list` wywalał: *Fixtures
+"page" -> "context" -> "isMobile" -> "page" form a dependency cycle* i zbierał
+0 testów. Powód: `isMobile` to **wbudowana opcja Playwrighta** (część
+deskryptora urządzenia, np. `devices['iPhone 13']`). Builtin `context` czyta
+opcję `isMobile`, a mój fixture `isMobile` zależał od `page` (które zależy od
+`context`) — kółko się zamknęło.
+
+**Rozwiązanie:** Usunąłem własny fixture. Testy nadal destrukturyzują
+`{ isMobile }` — i dostają wartość wbudowaną (true dla projektu iPhone 13,
+false dla desktop), dokładnie to, czego chciałem.
+
+**Lekcja:** Nie nadpisuj nazw wbudowanych opcji/fixture'ów Playwrighta
+(`isMobile`, `browserName`, `viewport`, `userAgent`, `storageState`, …) własnym
+fixturem zależnym od `page`/`context` — powstaje cykl. Jeśli potrzebujesz tej
+informacji, czytaj builtin (destrukturyzuj `{ isMobile }`) albo nadaj własnemu
+fixture'owi inną nazwę. Szybka walidacja całej serii bez przeglądarki:
+`npx playwright test --list` (kompiluje i zbiera testy, nie startuje serwera).
+
+---
+
 ## 2026-05-24 — E2E (Playwright) dla aplikacji z logowaniem tylko przez Google: env-gated credentials provider
 
 **Problem:** Aplikacja loguje się WYŁĄCZNIE przez Google OAuth (NextAuth v5), którego nie da się skryptować w Playwright (Google blokuje automatyzację, captcha/2FA). Bez rozwiązania logowania żaden test nie przejdzie dalej niż `/auth/signin`. Dodatkowo `hasPermission` nie ma bypassu dla ADMIN — uprawnienia pochodzą wyłącznie z `RolePermission`, więc testowy użytkownik „admin" bez nadanych grantów i tak nie wejdzie do modułów.

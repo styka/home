@@ -12,6 +12,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "seed:qa": "tsx prisma/seeds/qa-all.ts",
     "db:studio": "prisma studio",
+    "test:e2e:local": "bash scripts/e2e.sh --headed",
+    "test:e2e:local:down": "docker compose -f docker-compose.e2e.yml down -v",
     "test:e2e": "DEMO=1 playwright test --headed",
     "test:e2e:desktop": "DEMO=1 playwright test --headed --project=desktop",
     "test:e2e:mobile": "DEMO=1 playwright test --headed --project=mobile",
