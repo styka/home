@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
@@ -219,6 +219,9 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
             <NavSubItem href="/qa/kitchen" label="Kuchnia" pathname={pathname} />
           </div>
         )}
+
+        {/* Trasy TIR — dostępne dla ADMIN i BETA_TESTER */}
+        <NavItem href="/truck" label="Trasy TIR" icon={<Truck size={18} />} pathname={pathname} iconColor="var(--accent-blue)" locked={isLocked("/truck")} />
 
         {/* Reports — dostępne dla wszystkich */}
         <NavItem href="/reports" label="Raporty" icon={<BookOpen size={18} />} pathname={pathname} iconColor="var(--accent-purple)" locked={isLocked("/reports")} />
