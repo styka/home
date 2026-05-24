@@ -49,7 +49,7 @@ async function seedPermissions() {
 
 function seedQaScenarios() {
   try {
-    execSync("npx tsx prisma/seeds/qa-shopping.ts", { stdio: "inherit" })
+    execSync("npx tsx prisma/seeds/qa-all.ts", { stdio: "inherit" })
   } catch (err) {
     console.warn("⚠ Failed to seed QA scenarios (non-fatal):", err?.message ?? err)
   }
