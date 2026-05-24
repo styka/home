@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
@@ -137,6 +137,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
   const isNotesActive = pathname.startsWith("/notes");
   const isTasksActive = pathname.startsWith("/tasks");
   const isKitchenActive = pathname.startsWith("/kitchen");
+  const isQaActive = pathname.startsWith("/qa");
 
   function isLocked(href: string): boolean {
     return isPathLocked(userPermissions, href);
@@ -205,6 +206,17 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
             <NavSubItem href="/kitchen/plan" label="Plan" icon={<CalendarDays size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
             <NavSubItem href="/kitchen/pantry" label="Spiżarnia" icon={<Package size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
             <NavSubItem href="/kitchen/cookbooks" label="Książki" icon={<BookOpen size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
+          </div>
+        )}
+
+        {/* QA — dostępne dla ADMIN i TESTER */}
+        <NavItem href="/qa" label="QA" icon={<FlaskConical size={18} />} pathname={pathname} iconColor="var(--accent-red)" locked={isLocked("/qa")} />
+        {isQaActive && !isLocked("/qa") && (
+          <div className="mb-1">
+            <NavSubItem href="/qa/shopping" label="Zakupy" pathname={pathname} />
+            <NavSubItem href="/qa/tasks" label="Zadania" pathname={pathname} />
+            <NavSubItem href="/qa/notes" label="Notatki" pathname={pathname} />
+            <NavSubItem href="/qa/kitchen" label="Kuchnia" pathname={pathname} />
           </div>
         )}
 

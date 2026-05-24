@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat, FlaskConical } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -23,6 +23,7 @@ const MODULES = [
   { id: "tasks",       label: "Zadania",       icon: <CheckSquare size={20} />,  topBarIcon: <CheckSquare size={16} />,  color: "var(--accent-green)",    href: "/tasks",       active: true,  exact: false },
   { id: "notes",       label: "Notatki",       icon: <FileText size={20} />,     topBarIcon: <FileText size={16} />,     color: "var(--accent-amber)",    href: "/notes",       active: true,  exact: false },
   { id: "kitchen",     label: "Kuchnia",       icon: <ChefHat size={20} />,      topBarIcon: <ChefHat size={16} />,      color: "var(--accent-orange)",   href: "/kitchen",     active: true,  exact: false },
+  { id: "qa",          label: "QA",            icon: <FlaskConical size={20} />, topBarIcon: <FlaskConical size={16} />, color: "var(--accent-red)",      href: "/qa",          active: true,  exact: false },
   { id: "calendar",    label: "Calendar",      icon: <Calendar size={20} />,     topBarIcon: <Calendar size={16} />,     color: "var(--text-muted)",      href: "/calendar",    active: false, exact: false },
   { id: "work",        label: "Work",          icon: <Briefcase size={20} />,    topBarIcon: <Briefcase size={16} />,    color: "var(--text-muted)",      href: "/work",        active: false, exact: false },
   { id: "settings",    label: "Ustawienia",    icon: null,                        topBarIcon: <Settings size={16} />,    color: "var(--text-secondary)",  href: "/settings",    active: false, exact: false },
@@ -157,6 +158,10 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
                   ))}
                 </div>
               )}
+
+              <MobileItem href="/qa" pathname={pathname} locked={isLocked("/qa")}>
+                <FlaskConical size={20} style={{ color: "var(--accent-red)", flexShrink: 0 }} /><span>QA</span>
+              </MobileItem>
 
               <MobileItem href="/reports" pathname={pathname} locked={isLocked("/reports")}>
                 <BookOpen size={20} style={{ color: "var(--accent-purple)", flexShrink: 0 }} /><span>Raporty</span>

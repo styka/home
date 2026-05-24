@@ -124,5 +124,8 @@ export async function removeUserRole(userId: string, role: string): Promise<void
 export async function getAvailableRoles(): Promise<string[]> {
   await requireAdmin()
   const roles = await prisma.userRole.findMany({ select: { role: true }, distinct: ["role"] })
-  return roles.map((r) => r.role).sort()
+  const dbRoles = roles.map((r) => r.role)
+  // Ensure built-in roles always appear in dropdowns even if nobody has them yet
+  const builtin = ["ADMIN", "USER", "BETA_TESTER", "TESTER"]
+  return Array.from(new Set([...dbRoles, ...builtin])).sort()
 }

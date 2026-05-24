@@ -9,6 +9,7 @@ export const PERMISSIONS = {
   SETTINGS:    "module.settings",
   ADMIN:       "module.admin",
   INVITATIONS: "module.invitations",
+  QA:          "module.qa",
   // Kitchen sub-permissions
   KITCHEN_RECIPE_CREATE: "kitchen.recipe.create",
   KITCHEN_RECIPE_EDIT:   "kitchen.recipe.edit",
@@ -34,6 +35,7 @@ export function permissionForPath(path: string): string | null {
   if (path.startsWith("/settings")) return PERMISSIONS.SETTINGS
   if (path.startsWith("/admin")) return PERMISSIONS.ADMIN
   if (path.startsWith("/invitations")) return PERMISSIONS.INVITATIONS
+  if (path.startsWith("/qa")) return PERMISSIONS.QA
   return null
 }
 

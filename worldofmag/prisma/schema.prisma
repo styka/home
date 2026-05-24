@@ -43,6 +43,7 @@ model User {
   userRoles              UserRole[]
   ownedNotes             Note[]                @relation("OwnedNotes")
   reports                Report[]              @relation("AuthoredReports")
+  qaScenarios            QaTestScenario[]      @relation("QaAuthored")
   recipes                Recipe[]              @relation("OwnedRecipes")
   cookbooks              Cookbook[]            @relation("OwnedCookbooks")
   mealPlans              MealPlanEntry[]       @relation("OwnedMealPlans")
@@ -717,4 +718,58 @@ model ItemRecipeOrigin {
   recipe Recipe @relation("ItemsFromRecipe", fields: [recipeId], references: [id], onDelete: Cascade)
 
   @@index([recipeId])
+}
+
+// ─── QA module: hierarchical test scenarios ────────────────────────────────
+
+model QaEpic {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String?
+  module      String // "shopping" | "tasks" | "notes" | "kitchen" | "home" | "admin" | "settings" | "auth" | "teams" | "reports" | "qa"
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userStories QaUserStory[]
+
+  @@index([module, order])
+}
+
+model QaUserStory {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String?
+  epicId      String
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  epic      QaEpic           @relation(fields: [epicId], references: [id], onDelete: Cascade)
+  scenarios QaTestScenario[]
+
+  @@index([epicId, order])
+}
+
+model QaTestScenario {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  type      String   @default("positive") // "positive" | "negative" | "edge"
+  priority  String   @default("P1") // "P0" | "P1" | "P2"
+  content   String // markdown
+  storyId   String
+  authorId  String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  story  QaUserStory @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  author User?       @relation("QaAuthored", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([storyId, order])
+  @@index([priority])
+  @@index([type])
 }
