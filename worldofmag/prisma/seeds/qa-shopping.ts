@@ -1,0 +1,1040 @@
+/**
+ * Seed QA: kompletne scenariusze testowe dla modułu Zakupy.
+ * Idempotentny — upsert po slug. Uruchom: npx tsx prisma/seeds/qa-shopping.ts
+ */
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+interface ScenarioSeed {
+  slug: string;
+  title: string;
+  type: "positive" | "negative" | "edge";
+  priority: "P0" | "P1" | "P2";
+  pre: string[];
+  steps: string[];
+  expected: string[];
+  negatives?: [string, string][];
+  notes?: string;
+}
+
+interface StorySeed {
+  slug: string;
+  title: string;
+  description?: string;
+  scenarios: ScenarioSeed[];
+}
+
+interface EpicSeed {
+  slug: string;
+  title: string;
+  description?: string;
+  stories: StorySeed[];
+}
+
+function md(s: ScenarioSeed): string {
+  const parts: string[] = [];
+  parts.push("## Warunki wstępne\n");
+  parts.push(s.pre.map((p) => `- ${p}`).join("\n"));
+  parts.push("\n\n## Kroki\n");
+  parts.push(s.steps.map((st, i) => `${i + 1}. ${st}`).join("\n"));
+  parts.push("\n\n## Oczekiwany rezultat\n");
+  parts.push(s.expected.map((e) => `- ${e}`).join("\n"));
+  if (s.negatives && s.negatives.length > 0) {
+    parts.push("\n\n## Przypadki brzegowe / negatywne\n");
+    parts.push("| Akcja | Oczekiwany rezultat |\n|---|---|");
+    parts.push(s.negatives.map(([a, r]) => `| ${a} | ${r} |`).join("\n"));
+  }
+  if (s.notes) {
+    parts.push(`\n\n## Notatki\n\n> ${s.notes}`);
+  }
+  return parts.join("");
+}
+
+const EPICS: EpicSeed[] = [
+  {
+    slug: "epic-shopping-lists",
+    title: "Listy zakupowe",
+    description: "Tworzenie, edycja, archiwizacja, usuwanie i udostępnianie list zakupowych.",
+    stories: [
+      {
+        slug: "story-create-list",
+        title: "Tworzenie nowej listy",
+        scenarios: [
+          {
+            slug: "scenario-create-list-positive",
+            title: "Utworzenie listy z poprawną nazwą",
+            type: "positive",
+            priority: "P0",
+            pre: [
+              "Jesteś zalogowany jako użytkownik z uprawnieniem `module.shopping`",
+              "Jesteś na stronie `/shopping`",
+            ],
+            steps: [
+              "Kliknij przycisk dodawania nowej listy (lub skrót `a`/`n`)",
+              "Wpisz nazwę „Sklep ABC”",
+              "Zatwierdź (Enter / przycisk „Dodaj”)",
+            ],
+            expected: [
+              "Nowa lista „Sklep ABC” pojawia się na liście list w sidebarze",
+              "Następuje przekierowanie do `/shopping/<listId>` nowej listy",
+              "Lista jest pusta (empty state z CTA „Dodaj pierwszy produkt”)",
+              "Lista należy do bieżącego użytkownika (`ownerId`)",
+            ],
+            notes: "Sprawdź, że nazwa jest przycinana z białych znaków na początku i końcu.",
+          },
+          {
+            slug: "scenario-create-list-empty-name",
+            title: "Walidacja pustej nazwy",
+            type: "negative",
+            priority: "P1",
+            pre: ["Jesteś na stronie `/shopping`", "Otworzyłeś formularz/modal tworzenia listy"],
+            steps: ["Pozostaw pole nazwy puste", "Spróbuj zatwierdzić"],
+            expected: [
+              "Lista NIE zostaje utworzona",
+              "Przycisk „Dodaj” jest nieaktywny LUB pojawia się komunikat walidacji",
+            ],
+            negatives: [
+              ["Same spacje w nazwie", "Traktowane jak pusta nazwa — lista nie powstaje"],
+            ],
+          },
+          {
+            slug: "scenario-create-list-long-name",
+            title: "Bardzo długa nazwa listy",
+            type: "edge",
+            priority: "P2",
+            pre: ["Otworzyłeś formularz tworzenia listy"],
+            steps: ["Wpisz nazwę o długości 300+ znaków", "Zatwierdź"],
+            expected: [
+              "Lista powstaje LUB nazwa jest przycinana do limitu",
+              "Layout sidebara nie rozjeżdża się — długa nazwa jest obcinana wielokropkiem",
+            ],
+          },
+        ],
+      },
+      {
+        slug: "story-edit-list-name",
+        title: "Edycja nazwy listy",
+        scenarios: [
+          {
+            slug: "scenario-edit-list-name",
+            title: "Zmiana nazwy własnej listy",
+            type: "positive",
+            priority: "P1",
+            pre: ["Posiadasz listę „Sklep ABC”", "Jesteś na widoku tej listy"],
+            steps: ["Otwórz opcję zmiany nazwy listy", "Zmień nazwę na „Biedronka”", "Zatwierdź"],
+            expected: [
+              "Nazwa listy aktualizuje się natychmiast w nagłówku i w sidebarze",
+              "Zmiana jest trwała po odświeżeniu strony",
+            ],
+          },
+          {
+            slug: "scenario-edit-list-no-access",
+            title: "Próba edycji listy bez dostępu",
+            type: "negative",
+            priority: "P0",
+            pre: ["Istnieje lista należąca do innego użytkownika (nie Twoja, nie zespołowa)"],
+            steps: ["Spróbuj otworzyć `/shopping/<obcaListId>` bezpośrednio przez URL"],
+            expected: [
+              "Dostęp jest zablokowany (przekierowanie lub komunikat o braku dostępu)",
+              "Server action `assertListAccess()` rzuca błąd dla obcej listy",
+            ],
+            notes: "Weryfikuje wzorzec ownerId=user OR ownerTeamId in teamIds.",
+          },
+        ],
+      },
+      {
+        slug: "story-archive-list",
+        title: "Archiwizacja listy",
+        scenarios: [
+          {
+            slug: "scenario-archive-list",
+            title: "Archiwizacja własnej listy",
+            type: "positive",
+            priority: "P1",
+            pre: ["Posiadasz aktywną listę z kilkoma produktami"],
+            steps: ["Otwórz opcje listy", "Wybierz „Archiwizuj” / „Zakończ zakupy”", "Potwierdź"],
+            expected: [
+              "Lista zostaje oznaczona jako zarchiwizowana",
+              "Lista znika z domyślnego widoku aktywnych list",
+            ],
+            notes: "Funkcja „Complete shopping” jest na roadmapie — jeśli niezaimplementowana, oznacz scenariusz jako BLOCKED.",
+          },
+          {
+            slug: "scenario-archived-list-hidden",
+            title: "Zarchiwizowana lista znika z głównego widoku",
+            type: "positive",
+            priority: "P1",
+            pre: ["Masz co najmniej jedną zarchiwizowaną listę"],
+            steps: ["Przejdź do `/shopping`", "Przejrzyj listę aktywnych list"],
+            expected: [
+              "Zarchiwizowane listy nie są pokazywane razem z aktywnymi",
+              "Istnieje sposób na przejrzenie archiwum (jeśli zaimplementowano)",
+            ],
+          },
+          {
+            slug: "scenario-edit-archived-items",
+            title: "Próba edycji produktów na zarchiwizowanej liście",
+            type: "negative",
+            priority: "P1",
+            pre: ["Otworzyłeś zarchiwizowaną listę"],
+            steps: ["Spróbuj dodać / edytować produkt"],
+            expected: [
+              "Edycja jest zablokowana LUB lista jest tylko do odczytu",
+              "Czytelny komunikat, że lista jest zarchiwizowana",
+            ],
+          },
+        ],
+      },
+      {
+        slug: "story-delete-list",
+        title: "Usuwanie listy",
+        scenarios: [
+          {
+            slug: "scenario-delete-list-confirm",
+            title: "Usunięcie listy po potwierdzeniu",
+            type: "positive",
+            priority: "P1",
+            pre: ["Posiadasz listę do usunięcia"],
+            steps: ["Otwórz opcje listy", "Wybierz „Usuń”", "Potwierdź w oknie dialogowym"],
+            expected: [
+              "Lista zostaje usunięta wraz z produktami (kaskada)",
+              "Następuje przekierowanie do `/shopping` lub innej listy",
+              "Usunięta lista nie pojawia się po odświeżeniu",
+            ],
+          },
+          {
+            slug: "scenario-delete-list-cancel",
+            title: "Anulowanie usuwania listy",
+            type: "positive",
+            priority: "P2",
+            pre: ["Otworzyłeś dialog potwierdzenia usunięcia"],
+            steps: ["Kliknij „Anuluj” lub naciśnij `Esc`"],
+            expected: ["Lista NIE zostaje usunięta", "Dialog zamyka się, stan listy bez zmian"],
+          },
+        ],
+      },
+      {
+        slug: "story-share-list-team",
+        title: "Udostępnianie listy zespołowi",
+        scenarios: [
+          {
+            slug: "scenario-share-list-to-team",
+            title: "Przeniesienie własnej listy do zespołu",
+            type: "positive",
+            priority: "P1",
+            pre: ["Jesteś właścicielem zespołu lub jego członkiem", "Posiadasz własną listę"],
+            steps: ["Otwórz ustawienia udostępniania listy", "Wybierz zespół jako właściciela", "Zatwierdź"],
+            expected: [
+              "Lista zmienia właściciela na zespół (`ownerTeamId` ustawione, `ownerId` wyczyszczone)",
+              "Lista jest widoczna dla członków zespołu",
+            ],
+          },
+          {
+            slug: "scenario-team-member-sees-list",
+            title: "Członek zespołu widzi i edytuje listę zespołową",
+            type: "positive",
+            priority: "P0",
+            pre: ["Lista należy do zespołu", "Jesteś zalogowany jako inny członek tego zespołu"],
+            steps: ["Przejdź do `/shopping`", "Otwórz listę zespołową", "Dodaj produkt"],
+            expected: [
+              "Lista zespołowa jest widoczna na liście",
+              "Możesz dodawać i edytować produkty",
+              "Zmiany są widoczne dla pozostałych członków",
+            ],
+          },
+          {
+            slug: "scenario-non-member-no-access",
+            title: "Użytkownik spoza zespołu nie widzi listy",
+            type: "negative",
+            priority: "P0",
+            pre: ["Lista należy do zespołu", "Jesteś użytkownikiem spoza tego zespołu"],
+            steps: ["Spróbuj wejść na `/shopping/<listIdZespolu>`"],
+            expected: ["Brak dostępu — przekierowanie lub komunikat", "Lista nie pojawia się w Twoim widoku list"],
+          },
+        ],
+      },
+      {
+        slug: "story-navigate-lists",
+        title: "Nawigacja między listami",
+        scenarios: [
+          {
+            slug: "scenario-switch-lists-sidebar",
+            title: "Przełączanie list w sidebarze",
+            type: "positive",
+            priority: "P1",
+            pre: ["Posiadasz co najmniej 2 listy", "Jesteś na desktopie (szerokość ≥ md)"],
+            steps: ["Kliknij inną listę w sidebarze zakupów"],
+            expected: ["Widok przełącza się na wybraną listę", "Aktywna lista jest podświetlona w sidebarze"],
+          },
+          {
+            slug: "scenario-mobile-select-list",
+            title: "Mobilny select do zmiany listy",
+            type: "positive",
+            priority: "P0",
+            pre: ["Szerokość ekranu < md (np. iPhone 375px)", "Posiadasz kilka list"],
+            steps: ["Użyj natywnego `<select>` w górnym pasku do wyboru listy"],
+            expected: [
+              "Lista zmienia się zgodnie z wyborem",
+              "Sidebary są ukryte (`hidden md:flex`) — używany jest natywny select",
+            ],
+            notes: "Krytyczne dla iPhone — nigdy nie renderuj obu sidebarów na mobile.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "epic-shopping-items",
+    title: "Produkty w liście",
+    description: "Dodawanie, parsowanie, kategoryzacja, statusy, edycja i skróty klawiaturowe produktów.",
+    stories: [
+      {
+        slug: "story-add-item-simple",
+        title: "Dodawanie produktu",
+        scenarios: [
+          {
+            slug: "scenario-add-item-enter",
+            title: "Dodanie produktu przez Enter",
+            type: "positive",
+            priority: "P0",
+            pre: ["Jesteś na widoku listy zakupowej"],
+            steps: ["Ustaw fokus w polu dodawania", "Wpisz „mleko”", "Naciśnij Enter"],
+            expected: [
+              "Produkt „mleko” pojawia się na liście ze statusem NEEDED",
+              "Pole input zostaje wyczyszczone i gotowe na kolejny wpis",
+            ],
+          },
+          {
+            slug: "scenario-add-item-empty",
+            title: "Walidacja pustego pola",
+            type: "negative",
+            priority: "P1",
+            pre: ["Jesteś na widoku listy"],
+            steps: ["Naciśnij Enter z pustym polem"],
+            expected: ["Żaden produkt nie zostaje dodany", "Brak błędu w konsoli"],
+          },
+          {
+            slug: "scenario-add-item-whitespace",
+            title: "Pole zawierające tylko spacje",
+            type: "edge",
+            priority: "P2",
+            pre: ["Jesteś na widoku listy"],
+            steps: ["Wpisz same spacje", "Naciśnij Enter"],
+            expected: ["Traktowane jak puste — produkt nie powstaje"],
+          },
+        ],
+      },
+      {
+        slug: "story-smart-parsing",
+        title: "Inteligentne parsowanie wpisu",
+        description: "Funkcja parseQuantity rozbija wpis na ilość, jednostkę i nazwę.",
+        scenarios: [
+          {
+            slug: "scenario-parse-qty-unit-name",
+            title: "Parsowanie „2 butelki mleka”",
+            type: "positive",
+            priority: "P1",
+            pre: ["Jesteś na widoku listy"],
+            steps: ["Wpisz „2 butelki mleka”", "Zatwierdź"],
+            expected: [
+              "Powstaje produkt: ilość = 2, jednostka = „butelki”, nazwa = „mleka”",
+            ],
+            notes: "Wzorzec liczba + jednostka + nazwa.",
+          },
+          {
+            slug: "scenario-parse-name-qty-unit",
+            title: "Parsowanie „mleko 500ml”",
+            type: "positive",
+            priority: "P1",
+            pre: ["Jesteś na widoku listy"],
+            steps: ["Wpisz „mleko 500ml”", "Zatwierdź"],
+            expected: ["Powstaje produkt: ilość = 500, jednostka = „ml”, nazwa = „mleko”"],
+          },
+          {
+            slug: "scenario-parse-name-x2",
+            title: "Parsowanie „mleko x2”",
+            type: "positive",
+            priority: "P1",
+            pre: ["Jesteś na widoku listy"],
+            steps: ["Wpisz „mleko x2”", "Zatwierdź"],
+            expected: ["Powstaje produkt: ilość = 2, nazwa = „mleko” (bez jednostki)"],
+          },
+          {
+            slug: "scenario-parse-ambiguous",
+            title: "Wpis bez liczb („chleb”)",
+            type: "edge",
+            priority: "P2",
+            pre: ["Jesteś na widoku listy"],
+            steps: ["Wpisz „chleb”", "Zatwierdź"],
+            expected: ["Powstaje produkt: ilość = 1 (domyślnie), nazwa = „chleb”"],
+          },
+        ],
+      },
+      {
+        slug: "story-ai-categorization",
+        title: "Automatyczna kategoryzacja AI",
+        scenarios: [
+          {
+            slug: "scenario-ai-categorize-known",
+            title: "Znany produkt dostaje kategorię",
+            type: "positive",
+            priority: "P1",
+            pre: ["Kategorie są skonfigurowane (np. „Nabiał”)"],
+            steps: ["Dodaj produkt „mleko”"],
+            expected: [
+              "Produkt otrzymuje sugerowaną kategorię (np. „Nabiał”)",
+              "Kategoria jest widoczna przy produkcie / w grupowaniu",
+            ],
+            notes: "Kategoryzacja po polskich słowach kluczowych (categorize.ts).",
+          },
+          {
+            slug: "scenario-ai-categorize-unknown",
+            title: "Nieznany produkt — fallback kategorii",
+            type: "edge",
+            priority: "P2",
+            pre: ["Jesteś na widoku listy"],
+            steps: ["Dodaj nietypowy produkt (np. „xyzqwe”)"],
+            expected: ["Produkt trafia do „Inne” lub pozostaje bez kategorii — bez błędu"],
+          },
+        ],
+      },
+      {
+        slug: "story-item-status-cycle",
+        title: "Cykl statusu produktu",
+        description: "NEEDED → IN_CART → DONE → MISSING.",
+        scenarios: [
+          {
+            slug: "scenario-status-click-cycle",
+            title: "Klik cyklicznie zmienia status",
+            type: "positive",
+            priority: "P0",
+            pre: ["Lista zawiera produkt ze statusem NEEDED"],
+            steps: ["Klikaj checkbox/status produktu wielokrotnie"],
+            expected: [
+              "Status zmienia się cyklicznie: NEEDED → IN_CART → DONE → MISSING → NEEDED",
+              "Wygląd produktu (kolor/ikona) odzwierciedla status",
+            ],
+          },
+          {
+            slug: "scenario-status-keyboard",
+            title: "Zmiana statusu z klawiatury",
+            type: "positive",
+            priority: "P1",
+            pre: ["Produkt jest zaznaczony (nawigacja `j`/`k`)"],
+            steps: ["Naciśnij `Spacja` lub `x`"],
+            expected: ["Status zaznaczonego produktu zmienia się jak przy kliknięciu"],
+          },
+          {
+            slug: "scenario-status-filter",
+            title: "Filtrowanie po statusie (1–5)",
+            type: "positive",
+            priority: "P1",
+            pre: ["Lista zawiera produkty o różnych statusach"],
+            steps: ["Naciskaj klawisze `1`–`5` (zakładki filtrów)"],
+            expected: ["Lista pokazuje tylko produkty pasujące do wybranego filtra statusu"],
+          },
+        ],
+      },
+      {
+        slug: "story-edit-item",
+        title: "Edycja produktu",
+        scenarios: [
+          {
+            slug: "scenario-edit-item-name",
+            title: "Edycja nazwy produktu (`e`)",
+            type: "positive",
+            priority: "P1",
+            pre: ["Produkt jest zaznaczony"],
+            steps: ["Naciśnij `e`", "Zmień nazwę", "Zatwierdź"],
+            expected: ["Nazwa produktu aktualizuje się i jest trwała"],
+          },
+          {
+            slug: "scenario-edit-item-category",
+            title: "Zmiana kategorii produktu",
+            type: "positive",
+            priority: "P2",
+            pre: ["Produkt jest w trybie edycji"],
+            steps: ["Wybierz inną kategorię z listy", "Zatwierdź"],
+            expected: ["Produkt przenosi się do nowej kategorii w widoku grupowanym"],
+          },
+          {
+            slug: "scenario-edit-item-qty-unit",
+            title: "Zmiana ilości i jednostki",
+            type: "positive",
+            priority: "P1",
+            pre: ["Produkt jest w trybie edycji"],
+            steps: ["Zmień ilość na 3", "Zmień jednostkę na „kg”", "Zatwierdź"],
+            expected: ["Wyświetlana ilość i jednostka są zaktualizowane"],
+          },
+        ],
+      },
+      {
+        slug: "story-delete-item",
+        title: "Usuwanie produktu",
+        scenarios: [
+          {
+            slug: "scenario-delete-item-key",
+            title: "Usunięcie produktu (`d`/`Delete`)",
+            type: "positive",
+            priority: "P1",
+            pre: ["Produkt jest zaznaczony"],
+            steps: ["Naciśnij `d` lub `Delete`", "Potwierdź jeśli wymagane"],
+            expected: ["Produkt znika z listy", "Zaznaczenie przechodzi na sąsiedni produkt"],
+          },
+          {
+            slug: "scenario-delete-item-cancel",
+            title: "Anulowanie usuwania produktu",
+            type: "positive",
+            priority: "P2",
+            pre: ["Pojawiło się potwierdzenie usunięcia"],
+            steps: ["Anuluj (`Esc` / „Anuluj”)"],
+            expected: ["Produkt pozostaje na liście"],
+          },
+        ],
+      },
+      {
+        slug: "story-group-by-category",
+        title: "Grupowanie po kategorii",
+        scenarios: [
+          {
+            slug: "scenario-group-toggle",
+            title: "Przełączenie grupowania",
+            type: "positive",
+            priority: "P1",
+            pre: ["Lista zawiera produkty z różnych kategorii"],
+            steps: ["Włącz tryb grupowania po kategorii"],
+            expected: ["Produkty są pogrupowane w sekcje wg kategorii z nagłówkami"],
+          },
+          {
+            slug: "scenario-group-counts",
+            title: "Liczniki przy kategoriach",
+            type: "positive",
+            priority: "P2",
+            pre: ["Widok grupowany jest włączony"],
+            steps: ["Przejrzyj nagłówki kategorii"],
+            expected: ["Każda kategoria pokazuje poprawną liczbę produktów"],
+          },
+        ],
+      },
+      {
+        slug: "story-keyboard-shortcuts",
+        title: "Skróty klawiaturowe",
+        scenarios: [
+          {
+            slug: "scenario-shortcut-jk",
+            title: "Nawigacja `j`/`k`",
+            type: "positive",
+            priority: "P1",
+            pre: ["Lista zawiera kilka produktów"],
+            steps: ["Naciśnij `j` (w dół) i `k` (w górę)"],
+            expected: ["Zaznaczenie przesuwa się odpowiednio w dół i w górę"],
+          },
+          {
+            slug: "scenario-shortcut-ctrlk",
+            title: "`Ctrl+K` otwiera paletę poleceń",
+            type: "positive",
+            priority: "P1",
+            pre: ["Jesteś w aplikacji"],
+            steps: ["Naciśnij `Ctrl+K`"],
+            expected: ["Otwiera się command palette (cmdk)"],
+          },
+          {
+            slug: "scenario-shortcut-esc",
+            title: "`Esc` zamyka i resetuje",
+            type: "positive",
+            priority: "P2",
+            pre: ["Otwarty modal lub aktywne zaznaczenie"],
+            steps: ["Naciśnij `Esc`"],
+            expected: ["Modal się zamyka / zaznaczenie jest resetowane"],
+          },
+          {
+            slug: "scenario-shortcut-search",
+            title: "`/` lub `f` otwiera wyszukiwanie",
+            type: "positive",
+            priority: "P2",
+            pre: ["Jesteś na widoku listy"],
+            steps: ["Naciśnij `/` lub `f`"],
+            expected: ["Fokus przechodzi na pole wyszukiwania"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "epic-shopping-categories",
+    title: "Konfiguracja — Kategorie",
+    description: "Trzypoziomowy system kategorii: system / użytkownik / zespół.",
+    stories: [
+      {
+        slug: "story-browse-categories",
+        title: "Przeglądanie kategorii",
+        scenarios: [
+          {
+            slug: "scenario-categories-three-levels",
+            title: "Lista zawiera kategorie system + user + team",
+            type: "positive",
+            priority: "P1",
+            pre: ["Istnieją kategorie systemowe", "Masz własne kategorie", "Należysz do zespołu z kategoriami"],
+            steps: ["Przejdź do `/shopping/categories`"],
+            expected: [
+              "Widoczne są kategorie wszystkich trzech poziomów",
+              "Każda ma oznaczenie poziomu (isBase / isOwn / teamId)",
+            ],
+          },
+        ],
+      },
+      {
+        slug: "story-create-category",
+        title: "Tworzenie własnej kategorii",
+        scenarios: [
+          {
+            slug: "scenario-create-category",
+            title: "Utworzenie kategorii z nazwą i ikoną",
+            type: "positive",
+            priority: "P1",
+            pre: ["Jesteś na `/shopping/categories`"],
+            steps: ["Dodaj nową kategorię", "Wpisz nazwę „Napoje”", "Wybierz ikonę", "Zapisz"],
+            expected: ["Kategoria „Napoje” pojawia się jako własna (isOwn)", "Jest dostępna przy przypisywaniu produktów"],
+          },
+          {
+            slug: "scenario-create-category-duplicate",
+            title: "Walidacja duplikatu nazwy",
+            type: "negative",
+            priority: "P1",
+            pre: ["Masz już własną kategorię „Napoje”"],
+            steps: ["Spróbuj utworzyć drugą kategorię „Napoje”"],
+            expected: ["Tworzenie jest odrzucone lub pojawia się ostrzeżenie o duplikacie"],
+          },
+        ],
+      },
+      {
+        slug: "story-edit-category",
+        title: "Edycja kategorii",
+        scenarios: [
+          {
+            slug: "scenario-edit-own-category",
+            title: "Edycja własnej kategorii",
+            type: "positive",
+            priority: "P1",
+            pre: ["Masz własną kategorię"],
+            steps: ["Otwórz edycję", "Zmień nazwę/ikonę", "Zapisz"],
+            expected: ["Zmiany zapisują się i są widoczne"],
+          },
+          {
+            slug: "scenario-edit-system-category-blocked",
+            title: "Edycja kategorii systemowej zablokowana",
+            type: "negative",
+            priority: "P0",
+            pre: ["Istnieje kategoria systemowa (isBase)"],
+            steps: ["Spróbuj edytować kategorię systemową jako zwykły użytkownik"],
+            expected: ["Edycja niedostępna lub odrzucona — kategorie systemowe zmienia tylko admin"],
+          },
+        ],
+      },
+      {
+        slug: "story-delete-category",
+        title: "Usuwanie kategorii",
+        scenarios: [
+          {
+            slug: "scenario-delete-category-warns",
+            title: "Usunięcie kategorii ostrzega o produktach",
+            type: "negative",
+            priority: "P1",
+            pre: ["Masz własną kategorię z przypisanymi produktami"],
+            steps: ["Spróbuj usunąć tę kategorię"],
+            expected: [
+              "Pojawia się ostrzeżenie o przypisanych produktach LUB produkty trafiają do „Inne”",
+              "Brak osieroconych referencji do usuniętej kategorii",
+            ],
+          },
+        ],
+      },
+      {
+        slug: "story-category-icons",
+        title: "Ikony kategorii",
+        scenarios: [
+          {
+            slug: "scenario-assign-category-icon",
+            title: "Wybór wariantu ikony z biblioteki",
+            type: "positive",
+            priority: "P2",
+            pre: ["Jesteś na `/shopping/icons` lub w edycji kategorii"],
+            steps: ["Wybierz kategorię", "Przypisz wariant ikony/emoji"],
+            expected: ["Ikona kategorii aktualizuje się w listach i widokach grupowanych"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "epic-shopping-config-extra",
+    title: "Konfiguracja — Jednostki, Produkty, Ikony",
+    description: "Pozostałe słowniki konfiguracyjne modułu Zakupy.",
+    stories: [
+      {
+        slug: "story-units-crud",
+        title: "Jednostki",
+        scenarios: [
+          {
+            slug: "scenario-units-list",
+            title: "Lista jednostek (3 poziomy)",
+            type: "positive",
+            priority: "P1",
+            pre: ["Jesteś na `/shopping/units`"],
+            steps: ["Przejrzyj listę jednostek"],
+            expected: ["Widoczne jednostki system + user + team z oznaczeniami"],
+          },
+          {
+            slug: "scenario-units-create",
+            title: "Dodanie własnej jednostki",
+            type: "positive",
+            priority: "P1",
+            pre: ["Jesteś na `/shopping/units`"],
+            steps: ["Dodaj jednostkę „zgrzewka”", "Zapisz"],
+            expected: ["Jednostka pojawia się jako własna i jest dostępna przy produktach"],
+          },
+          {
+            slug: "scenario-units-edit-system-blocked",
+            title: "Edycja jednostki systemowej zablokowana",
+            type: "negative",
+            priority: "P0",
+            pre: ["Istnieje jednostka systemowa"],
+            steps: ["Spróbuj ją edytować jako zwykły użytkownik"],
+            expected: ["Edycja niedostępna lub odrzucona"],
+          },
+        ],
+      },
+      {
+        slug: "story-products-catalog",
+        title: "Katalog produktów",
+        scenarios: [
+          {
+            slug: "scenario-products-browse",
+            title: "Przeglądanie katalogu produktów",
+            type: "positive",
+            priority: "P2",
+            pre: ["Jesteś na `/shopping/products`"],
+            steps: ["Przejrzyj listę produktów"],
+            expected: ["Lista produktów ładuje się z kategoriami i domyślnymi jednostkami"],
+          },
+          {
+            slug: "scenario-products-add",
+            title: "Dodanie produktu do katalogu",
+            type: "positive",
+            priority: "P2",
+            pre: ["Jesteś na `/shopping/products`"],
+            steps: ["Dodaj nowy produkt z nazwą, kategorią i jednostką", "Zapisz"],
+            expected: ["Produkt pojawia się w katalogu i podpowiedziach przy dodawaniu"],
+          },
+        ],
+      },
+      {
+        slug: "story-icons-library",
+        title: "Biblioteka ikon",
+        scenarios: [
+          {
+            slug: "scenario-icons-browse",
+            title: "Przeglądanie biblioteki ikon",
+            type: "positive",
+            priority: "P2",
+            pre: ["Jesteś na `/shopping/icons`"],
+            steps: ["Przejrzyj dostępne ikony/emoji"],
+            expected: ["Biblioteka ikon wyświetla się poprawnie"],
+          },
+          {
+            slug: "scenario-icons-create-variant",
+            title: "Tworzenie wariantu ikony",
+            type: "positive",
+            priority: "P2",
+            pre: ["Jesteś na `/shopping/icons`"],
+            steps: ["Utwórz nowy wariant ikony (CategoryIconVariant)"],
+            expected: ["Wariant zapisuje się i jest dostępny do przypisania kategorii"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "epic-shopping-stores",
+    title: "Mapy sklepów",
+    description: "Sklepy jako graf węzłów (kategorie) i krawędzi z wagami; routing optymalnej trasy.",
+    stories: [
+      {
+        slug: "story-stores-list",
+        title: "Lista sklepów",
+        scenarios: [
+          {
+            slug: "scenario-stores-browse",
+            title: "Przeglądanie map sklepów",
+            type: "positive",
+            priority: "P2",
+            pre: ["Jesteś na `/shopping/stores`"],
+            steps: ["Przejrzyj listę swoich sklepów"],
+            expected: ["Sklepy użytkownika wyświetlają się na liście"],
+          },
+          {
+            slug: "scenario-stores-create",
+            title: "Utworzenie nowego sklepu",
+            type: "positive",
+            priority: "P2",
+            pre: ["Jesteś na `/shopping/stores`"],
+            steps: ["Dodaj nowy sklep", "Nadaj nazwę", "Zapisz"],
+            expected: ["Sklep pojawia się na liście", "Można otworzyć edytor mapy `/shopping/stores/<id>`"],
+          },
+        ],
+      },
+      {
+        slug: "story-store-map-editor",
+        title: "Edytor mapy sklepu",
+        scenarios: [
+          {
+            slug: "scenario-store-add-node",
+            title: "Dodawanie węzła (kategoria + pozycja)",
+            type: "positive",
+            priority: "P2",
+            pre: ["Otworzyłeś edytor mapy sklepu"],
+            steps: ["Dodaj węzeł", "Przypisz kategorię", "Ustaw pozycję x,y"],
+            expected: ["Węzeł (StoreNode) pojawia się na płótnie w zadanej pozycji"],
+          },
+          {
+            slug: "scenario-store-add-edge",
+            title: "Dodawanie krawędzi z wagą",
+            type: "positive",
+            priority: "P2",
+            pre: ["Istnieją co najmniej 2 węzły"],
+            steps: ["Połącz dwa węzły krawędzią", "Ustaw wagę"],
+            expected: ["Krawędź (StoreEdge) z wagą łączy węzły"],
+          },
+          {
+            slug: "scenario-store-drag-node",
+            title: "Przeciąganie węzła (drag&drop)",
+            type: "positive",
+            priority: "P2",
+            pre: ["Mapa zawiera węzeł"],
+            steps: ["Przeciągnij węzeł w nowe miejsce"],
+            expected: ["Pozycja węzła aktualizuje się i jest zapamiętana po zapisie"],
+          },
+          {
+            slug: "scenario-store-delete-node",
+            title: "Usuwanie węzła kasuje krawędzie",
+            type: "positive",
+            priority: "P2",
+            pre: ["Węzeł ma połączone krawędzie"],
+            steps: ["Usuń węzeł"],
+            expected: ["Węzeł znika", "Powiązane krawędzie również są usunięte (brak osieroconych)"],
+          },
+          {
+            slug: "scenario-store-save",
+            title: "Zapisanie mapy",
+            type: "positive",
+            priority: "P1",
+            pre: ["Wprowadziłeś zmiany w mapie"],
+            steps: ["Zapisz mapę", "Odśwież stronę"],
+            expected: ["Wszystkie węzły, krawędzie i pozycje są zachowane po odświeżeniu"],
+          },
+        ],
+      },
+      {
+        slug: "story-store-routing",
+        title: "Routing optymalnej trasy",
+        scenarios: [
+          {
+            slug: "scenario-store-optimal-route",
+            title: "Kolejność zakupów wg mapy",
+            type: "positive",
+            priority: "P2",
+            pre: ["Sklep ma zdefiniowaną mapę", "Lista zakupowa odpowiada kategoriom na mapie"],
+            steps: ["Włącz tryb trasy dla listy w danym sklepie"],
+            expected: ["Produkty są uporządkowane zgodnie z optymalną trasą po sklepie (storeRoute)"],
+          },
+          {
+            slug: "scenario-store-disconnected-graph",
+            title: "Zachowanie przy nieciągłym grafie",
+            type: "edge",
+            priority: "P2",
+            pre: ["Mapa zawiera węzły bez połączeń (graf nieciągły)"],
+            steps: ["Spróbuj wyznaczyć trasę"],
+            expected: ["Aplikacja nie zawiesza się — nieosiągalne węzły są obsłużone (na końcu lub pominięte)"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "epic-shopping-cross-cutting",
+    title: "Uprawnienia, zespoły i mobile",
+    description: "Przekrojowe scenariusze: gating uprawnień, puste stany, responsywność.",
+    stories: [
+      {
+        slug: "story-permission-gating",
+        title: "Gating uprawnień",
+        scenarios: [
+          {
+            slug: "scenario-no-permission-locked",
+            title: "Brak `module.shopping` — kłódka w sidebarze",
+            type: "positive",
+            priority: "P0",
+            pre: ["Zalogowany użytkownik bez uprawnienia `module.shopping`"],
+            steps: ["Spójrz na sidebar / menu mobilne"],
+            expected: ["Pozycja „Zakupy” jest wyszarzona z ikoną kłódki (`Lock`)", "Kliknięcie nie nawiguje do modułu"],
+          },
+          {
+            slug: "scenario-direct-url-blocked",
+            title: "Bezpośredni URL `/shopping` zablokowany",
+            type: "negative",
+            priority: "P0",
+            pre: ["Użytkownik bez `module.shopping`"],
+            steps: ["Wejdź ręcznie na `/shopping`"],
+            expected: ["Następuje przekierowanie na stronę główną (isPathLocked)"],
+          },
+        ],
+      },
+      {
+        slug: "story-empty-states",
+        title: "Puste stany",
+        scenarios: [
+          {
+            slug: "scenario-empty-list-cta",
+            title: "Pusta lista — CTA dodania produktu",
+            type: "positive",
+            priority: "P1",
+            pre: ["Masz nowo utworzoną, pustą listę"],
+            steps: ["Otwórz tę listę"],
+            expected: ["Widoczny empty state z czytelnym CTA „Dodaj pierwszy produkt”"],
+          },
+          {
+            slug: "scenario-no-lists-cta",
+            title: "Brak list — CTA utworzenia listy",
+            type: "positive",
+            priority: "P1",
+            pre: ["Użytkownik nie ma żadnej listy"],
+            steps: ["Wejdź na `/shopping`"],
+            expected: ["Widoczny empty state z CTA „Utwórz pierwszą listę”"],
+          },
+        ],
+      },
+      {
+        slug: "story-mobile-responsive",
+        title: "Responsywność mobilna",
+        scenarios: [
+          {
+            slug: "scenario-mobile-touch-targets",
+            title: "Cele dotykowe ≥ 44px",
+            type: "positive",
+            priority: "P0",
+            pre: ["Szerokość ekranu iPhone (375px)"],
+            steps: ["Sprawdź przyciski, checkboxy i pozycje listy"],
+            expected: ["Cele dotykowe mają min. ~44px (py-3, checkboxy 20×20px)", "Brak przypadkowych kliknięć sąsiednich elementów"],
+          },
+          {
+            slug: "scenario-mobile-bottom-bar",
+            title: "Dolny pasek widoczny, sidebar ukryty",
+            type: "positive",
+            priority: "P0",
+            pre: ["Szerokość < md"],
+            steps: ["Przejrzyj układ ekranu zakupów"],
+            expected: ["Oba sidebary są ukryte (`hidden md:flex`)", "Górny pasek z logo i selectem nawigacji jest widoczny"],
+          },
+          {
+            slug: "scenario-mobile-native-select",
+            title: "Natywny `<select>` zamiast dropdown",
+            type: "positive",
+            priority: "P1",
+            pre: ["Szerokość < md", "Masz kilka list"],
+            steps: ["Użyj selecta nawigacji w górnym pasku"],
+            expected: ["Renderowany jest natywny `<select>` (lepszy UX na iOS), a nie customowy dropdown"],
+          },
+        ],
+      },
+    ],
+  },
+];
+
+async function main() {
+  const owner = await prisma.user.findFirst({ where: { email: "tyka.szymon@gmail.com" }, select: { id: true } });
+  const authorId = owner?.id ?? null;
+
+  let epicCount = 0;
+  let storyCount = 0;
+  let scenarioCount = 0;
+
+  for (let ei = 0; ei < EPICS.length; ei++) {
+    const epicSeed = EPICS[ei];
+    const epic = await prisma.qaEpic.upsert({
+      where: { slug: epicSeed.slug },
+      create: {
+        slug: epicSeed.slug,
+        title: epicSeed.title,
+        description: epicSeed.description ?? null,
+        module: "shopping",
+        order: ei,
+      },
+      update: {
+        title: epicSeed.title,
+        description: epicSeed.description ?? null,
+        module: "shopping",
+        order: ei,
+      },
+    });
+    epicCount++;
+
+    for (let si = 0; si < epicSeed.stories.length; si++) {
+      const storySeed = epicSeed.stories[si];
+      const story = await prisma.qaUserStory.upsert({
+        where: { slug: storySeed.slug },
+        create: {
+          slug: storySeed.slug,
+          title: storySeed.title,
+          description: storySeed.description ?? null,
+          epicId: epic.id,
+          order: si,
+        },
+        update: {
+          title: storySeed.title,
+          description: storySeed.description ?? null,
+          epicId: epic.id,
+          order: si,
+        },
+      });
+      storyCount++;
+
+      for (let ci = 0; ci < storySeed.scenarios.length; ci++) {
+        const sc = storySeed.scenarios[ci];
+        await prisma.qaTestScenario.upsert({
+          where: { slug: sc.slug },
+          create: {
+            slug: sc.slug,
+            title: sc.title,
+            type: sc.type,
+            priority: sc.priority,
+            content: md(sc),
+            storyId: story.id,
+            order: ci,
+            authorId,
+          },
+          update: {
+            title: sc.title,
+            type: sc.type,
+            priority: sc.priority,
+            content: md(sc),
+            storyId: story.id,
+            order: ci,
+          },
+        });
+        scenarioCount++;
+      }
+    }
+  }
+
+  console.log(`✔ QA shopping seed: ${epicCount} epików, ${storyCount} user stories, ${scenarioCount} scenariuszy.`);
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
