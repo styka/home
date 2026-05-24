@@ -29,4 +29,14 @@ test.describe("Dział QA", () => {
     await expect(page).toHaveURL(/\/admin\/qa/);
     await expect(page.getByRole("heading", { name: /zarządzanie scenariuszami/i })).toBeVisible();
   });
+
+  test("[scenario-qa-tester-access] QA dostępne w nawigacji dla uprawnionego", async ({ app }) => {
+    await app.expectNavVisible("qa");
+  });
+
+  test("[scenario-qa-admin-edit-preview] edycja scenariusza z podglądem markdown", async ({ page }) => {
+    await page.goto("/admin/qa/scenario/scenario-create-list-positive/edit");
+    await expect(page).toHaveURL(/\/admin\/qa\/scenario\//);
+    await expect(page.getByText(/Podgląd|Markdown|Treść/i).first()).toBeVisible();
+  });
 });

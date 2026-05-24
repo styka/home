@@ -6,6 +6,9 @@ import { NotesPage } from "../pages/NotesPage";
 import { KitchenPage } from "../pages/KitchenPage";
 import { ReportsPage, QaPage, AdminPage, SettingsPage } from "../pages/MiscPages";
 
+// NOTE: nie definiujemy fixture `isMobile` — Playwright ma wbudowaną opcję o tej
+// nazwie (true dla projektu iPhone 13, false dla desktop). Testy destrukturyzują
+// `{ isMobile }` i dostają tę wbudowaną wartość.
 type Pages = {
   app: AppShell;
   shopping: ShoppingPage;
@@ -16,7 +19,6 @@ type Pages = {
   qa: QaPage;
   admin: AdminPage;
   settings: SettingsPage;
-  isMobile: boolean;
 };
 
 export const test = base.extend<Pages>({
@@ -29,10 +31,6 @@ export const test = base.extend<Pages>({
   qa: async ({ page }, use) => use(new QaPage(page)),
   admin: async ({ page }, use) => use(new AdminPage(page)),
   settings: async ({ page }, use) => use(new SettingsPage(page)),
-  isMobile: async ({ page }, use) => {
-    const vp = page.viewportSize();
-    await use(!!vp && vp.width < 768);
-  },
 });
 
 export { expect };
