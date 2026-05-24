@@ -49,6 +49,7 @@ model User {
   mealPlans              MealPlanEntry[]       @relation("OwnedMealPlans")
   pantryItems            PantryItem[]          @relation("OwnedPantryItems")
   recipeRatings          RecipeRating[]
+  vehicleProfile         VehicleProfile?
 }
 
 model UserRole {
@@ -249,6 +250,24 @@ model Config {
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+// ─── Truck routing (Trasy TIR) ────────────────────────────────────────────
+// Field names match the OpenRouteService `profile_params.restrictions` keys
+// so they can be passed straight through to the routing request.
+
+model VehicleProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  weight    Float    @default(40)   // tony (DMC)
+  height    Float    @default(4.0)  // metry
+  length    Float    @default(16.5) // metry
+  width     Float    @default(2.55) // metry
+  axleload  Float    @default(11.5) // tony / oś
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ─── Custom Units ─────────────────────────────────────────────────────────

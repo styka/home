@@ -23,15 +23,19 @@ async function seedPermissions() {
   try {
     const perms = [
       { slug: "module.qa", name: "Dział QA", description: "Przeglądanie scenariuszy testowych" },
+      { slug: "module.truck", name: "Trasy TIR", description: "Planowanie tras dla pojazdów ciężarowych" },
     ]
+    const grants = {
+      "module.qa": ["ADMIN", "TESTER"],
+      "module.truck": ["ADMIN", "BETA_TESTER"],
+    }
     for (const p of perms) {
       const perm = await prisma.permission.upsert({
         where: { slug: p.slug },
         create: p,
         update: { name: p.name, description: p.description },
       })
-      // Grant to ADMIN + TESTER roles
-      for (const role of ["ADMIN", "TESTER"]) {
+      for (const role of grants[p.slug] ?? ["ADMIN"]) {
         await prisma.rolePermission.upsert({
           where: { role_permissionId: { role, permissionId: perm.id } },
           create: { role, permissionId: perm.id },
