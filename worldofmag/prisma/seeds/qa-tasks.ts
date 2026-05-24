@@ -1,0 +1,417 @@
+import type { EpicSeed } from "./qa-helpers";
+
+/**
+ * Scenariusze testowe — moduł Zadania (tasks).
+ * Statusy: TODO | IN_PROGRESS | DONE | CANCELLED | DEFERRED.
+ * Priorytety: NONE | LOW | MEDIUM | HIGH | URGENT.
+ */
+export const TASKS_EPICS: EpicSeed[] = [
+  {
+    slug: "epic-tasks-projects",
+    title: "Projekty zadań",
+    description: "Tworzenie, edycja, usuwanie projektów, Skrzynka (Inbox) i członkowie.",
+    stories: [
+      {
+        slug: "story-tasks-create-project",
+        title: "Tworzenie projektu",
+        scenarios: [
+          {
+            slug: "scenario-tasks-create-project",
+            title: "Utworzenie projektu z nazwą, kolorem i emoji",
+            type: "positive",
+            priority: "P0",
+            pre: ["Zalogowany użytkownik z `module.tasks`", "Jesteś w module Zadania"],
+            steps: ["Utwórz nowy projekt", "Podaj nazwę „Praca”", "Wybierz kolor i emoji", "Zatwierdź"],
+            expected: [
+              "Projekt pojawia się w sidebarze zadań",
+              "Domyślny kolor `#6b7280` i emoji `📋` jeśli nie wybrano",
+              "Projekt należy do bieżącego użytkownika (`ownerId`)",
+            ],
+          },
+          {
+            slug: "scenario-tasks-inbox-autocreate",
+            title: "Skrzynka (Inbox) tworzy się automatycznie",
+            type: "positive",
+            priority: "P1",
+            pre: ["Użytkownik bez żadnego projektu"],
+            steps: ["Wejdź do modułu Zadania", "Dodaj zadanie bez wskazania projektu"],
+            expected: [
+              "Powstaje projekt Skrzynka (emoji `📥`, nazwa „Skrzynka”, `isInbox=true`)",
+              "Skrzynka jest pierwsza na liście (sort: isInbox desc)",
+            ],
+            notes: "getOrCreateInbox() leniwie tworzy projekt Inbox.",
+          },
+        ],
+      },
+      {
+        slug: "story-tasks-edit-delete-project",
+        title: "Edycja i usuwanie projektu",
+        scenarios: [
+          {
+            slug: "scenario-tasks-edit-project-admin",
+            title: "Edycja projektu wymaga roli ADMIN w projekcie",
+            type: "positive",
+            priority: "P1",
+            pre: ["Jesteś właścicielem/ADMIN-em projektu"],
+            steps: ["Otwórz ustawienia projektu", "Zmień nazwę/kolor/emoji", "Zapisz"],
+            expected: ["Zmiany zapisują się", "updateTaskProject wymaga roli ADMIN (assertProjectAccess)"],
+          },
+          {
+            slug: "scenario-tasks-edit-project-member-blocked",
+            title: "Zwykły członek nie edytuje projektu",
+            type: "negative",
+            priority: "P0",
+            pre: ["Jesteś członkiem projektu z rolą MEMBER (nie ADMIN)"],
+            steps: ["Spróbuj zmienić nazwę projektu lub go usunąć"],
+            expected: ["Operacja odrzucona — wymagana rola ADMIN", "assertProjectAccess rzuca błąd"],
+          },
+          {
+            slug: "scenario-tasks-delete-project",
+            title: "Usunięcie projektu kasuje zadania",
+            type: "positive",
+            priority: "P1",
+            pre: ["Jesteś ADMIN-em projektu z kilkoma zadaniami"],
+            steps: ["Usuń projekt", "Potwierdź"],
+            expected: ["Projekt znika z listy", "Zadania projektu usuwane kaskadowo"],
+          },
+        ],
+      },
+      {
+        slug: "story-tasks-project-members",
+        title: "Członkowie projektu",
+        scenarios: [
+          {
+            slug: "scenario-tasks-add-member",
+            title: "Dodanie członka do projektu",
+            type: "positive",
+            priority: "P1",
+            pre: ["Jesteś ADMIN-em projektu", "Istnieje inny użytkownik"],
+            steps: ["Dodaj członka (addProjectMember)", "Ustaw rolę MEMBER lub ADMIN"],
+            expected: ["Użytkownik widzi projekt na swojej liście", "TaskProjectMember zapisany z właściwą rolą"],
+          },
+          {
+            slug: "scenario-tasks-remove-member-admin-only",
+            title: "Usuwanie członka wymaga ADMIN",
+            type: "negative",
+            priority: "P1",
+            pre: ["Jesteś członkiem MEMBER"],
+            steps: ["Spróbuj usunąć innego członka"],
+            expected: ["Operacja odrzucona — removeProjectMember wymaga ADMIN"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "epic-tasks-crud",
+    title: "Zadania — tworzenie i edycja",
+    description: "CRUD zadań, podzadania, terminy, priorytety, estymacje.",
+    stories: [
+      {
+        slug: "story-tasks-add",
+        title: "Dodawanie zadania",
+        scenarios: [
+          {
+            slug: "scenario-tasks-add-quick",
+            title: "Szybkie dodanie zadania (`a`/`n`)",
+            type: "positive",
+            priority: "P0",
+            pre: ["Jesteś w widoku projektu lub Skrzynki"],
+            steps: ["Naciśnij `a` lub `n`", "Wpisz tytuł zadania", "Enter"],
+            expected: ["Zadanie pojawia się ze statusem TODO", "Pole quick-add gotowe na kolejny wpis"],
+          },
+          {
+            slug: "scenario-tasks-add-empty-blocked",
+            title: "Pusty tytuł nie tworzy zadania",
+            type: "negative",
+            priority: "P1",
+            pre: ["Otwarte pole dodawania"],
+            steps: ["Zatwierdź pusty tytuł"],
+            expected: ["Zadanie nie powstaje"],
+          },
+          {
+            slug: "scenario-tasks-add-full",
+            title: "Zadanie z terminem, priorytetem i estymacją",
+            type: "positive",
+            priority: "P1",
+            pre: ["Otwarty formularz zadania"],
+            steps: ["Podaj tytuł", "Ustaw dueDate", "Ustaw priorytet HIGH", "Ustaw estimatedMins", "Zapisz"],
+            expected: ["Zadanie pokazuje termin, priorytet i estymację", "Pola zapisane w bazie"],
+          },
+        ],
+      },
+      {
+        slug: "story-tasks-subtasks",
+        title: "Podzadania",
+        scenarios: [
+          {
+            slug: "scenario-tasks-subtask-create",
+            title: "Utworzenie podzadania",
+            type: "positive",
+            priority: "P2",
+            pre: ["Istnieje zadanie nadrzędne"],
+            steps: ["Dodaj podzadanie z `parentTaskId`"],
+            expected: ["Podzadanie zagnieżdżone pod rodzicem", "Lista główna nie pokazuje podzadań jako osobnych pozycji"],
+            notes: "getTasks wyklucza zadania-rodziców z głównej listy i dociąga podzadania w relacji.",
+          },
+        ],
+      },
+      {
+        slug: "story-tasks-edit-delete",
+        title: "Edycja i usuwanie zadania",
+        scenarios: [
+          {
+            slug: "scenario-tasks-edit",
+            title: "Edycja zadania (`e`)",
+            type: "positive",
+            priority: "P1",
+            pre: ["Zadanie jest zaznaczone"],
+            steps: ["Naciśnij `e`", "Zmień tytuł/opis/priorytet", "Zapisz"],
+            expected: ["Zmiany trwałe po odświeżeniu"],
+          },
+          {
+            slug: "scenario-tasks-delete",
+            title: "Usunięcie zadania (`d`/`Delete`)",
+            type: "positive",
+            priority: "P1",
+            pre: ["Zadanie zaznaczone"],
+            steps: ["Naciśnij `d`, `Delete` lub `Backspace`"],
+            expected: ["Zadanie znika z listy", "Zaznaczenie przechodzi dalej"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "epic-tasks-status",
+    title: "Statusy i cykl życia",
+    description: "Cykl TODO → IN_PROGRESS → DONE oraz statusy CANCELLED/DEFERRED.",
+    stories: [
+      {
+        slug: "story-tasks-toggle-status",
+        title: "Przełączanie statusu",
+        scenarios: [
+          {
+            slug: "scenario-tasks-toggle-cycle",
+            title: "`Spacja`/`x` cykluje status",
+            type: "positive",
+            priority: "P0",
+            pre: ["Zadanie ze statusem TODO zaznaczone"],
+            steps: ["Naciśnij `Spacja` lub `x` kilka razy"],
+            expected: [
+              "Status cykluje: TODO → IN_PROGRESS → DONE → TODO",
+              "Przy DONE ustawia się `completedAt`",
+            ],
+            notes: "toggleTaskStatus auto-ustawia completedAt na DONE.",
+          },
+          {
+            slug: "scenario-tasks-cancel-defer",
+            title: "Ustawienie CANCELLED / DEFERRED",
+            type: "positive",
+            priority: "P2",
+            pre: ["Otwarte zadanie"],
+            steps: ["Zmień status na CANCELLED lub DEFERRED przez edycję"],
+            expected: ["Zadanie znika z widoków Today/Overdue (filtr wyklucza DONE i CANCELLED)"],
+          },
+        ],
+      },
+      {
+        slug: "story-tasks-recurring",
+        title: "Zadania cykliczne",
+        scenarios: [
+          {
+            slug: "scenario-tasks-recurring-complete",
+            title: "Ukończenie zadania cyklicznego tworzy następne",
+            type: "positive",
+            priority: "P2",
+            pre: ["Zadanie z regułą `recurring` (DAILY/WEEKLY/MONTHLY/YEARLY)"],
+            steps: ["Ukończ bieżącą instancję (completeRecurringTask)"],
+            expected: ["Bieżące zadanie DONE", "Powstaje kolejna instancja wg RecurringRule (interval, daysOfWeek)"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "epic-tasks-views",
+    title: "Widoki wirtualne",
+    description: "Today, Upcoming, Overdue, All — filtrowanie po terminie.",
+    stories: [
+      {
+        slug: "story-tasks-virtual-views",
+        title: "Widoki Today / Upcoming / Overdue / All",
+        scenarios: [
+          {
+            slug: "scenario-tasks-view-today",
+            title: "Widok „Dziś” pokazuje zadania z dzisiejszym terminem",
+            type: "positive",
+            priority: "P1",
+            pre: ["Masz zadania z różnymi terminami"],
+            steps: ["Otwórz `/tasks/today`"],
+            expected: ["Tylko zadania z dueDate w [dziś 00:00, dziś 23:59]", "Pomijane DONE i CANCELLED"],
+          },
+          {
+            slug: "scenario-tasks-view-overdue",
+            title: "Widok „Zaległe” pokazuje przeterminowane",
+            type: "positive",
+            priority: "P1",
+            pre: ["Masz zadania z terminem w przeszłości"],
+            steps: ["Otwórz `/tasks/overdue`"],
+            expected: ["Tylko zadania z dueDate < dziś 00:00 i status nie DONE/CANCELLED"],
+          },
+          {
+            slug: "scenario-tasks-view-empty",
+            title: "Pusty widok ma własny komunikat",
+            type: "positive",
+            priority: "P2",
+            pre: ["Brak zadań pasujących do widoku"],
+            steps: ["Otwórz widok bez danych (np. Upcoming)"],
+            expected: ["Komunikat empty state właściwy dla widoku (np. „Brak nadchodzących zadań”)"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "epic-tasks-collab",
+    title: "Tagi, komentarze, udostępnianie",
+    description: "TaskTagDef, TaskComment, TaskShare.",
+    stories: [
+      {
+        slug: "story-tasks-tags",
+        title: "Tagi zadań",
+        scenarios: [
+          {
+            slug: "scenario-tasks-tag-create-assign",
+            title: "Utworzenie tagu i przypisanie do zadania",
+            type: "positive",
+            priority: "P2",
+            pre: ["Jesteś na `/tasks/tags`"],
+            steps: ["Utwórz tag (nazwa zostaje zlowercase'owana)", "Przypisz tag do zadania (updateTaskTags)"],
+            expected: ["Tag widoczny przy zadaniu z kolorem", "Domyślny kolor `#6b7280`"],
+          },
+          {
+            slug: "scenario-tasks-tag-delete-cascade",
+            title: "Usunięcie tagu kasuje powiązania",
+            type: "positive",
+            priority: "P2",
+            pre: ["Tag przypisany do kilku zadań"],
+            steps: ["Usuń tag (deleteTaskTag)"],
+            expected: ["Tag znika z wszystkich zadań (kaskada TaskTaskTag)"],
+          },
+        ],
+      },
+      {
+        slug: "story-tasks-comments",
+        title: "Komentarze",
+        scenarios: [
+          {
+            slug: "scenario-tasks-comment-add",
+            title: "Dodanie komentarza do zadania",
+            type: "positive",
+            priority: "P2",
+            pre: ["Otwarte zadanie"],
+            steps: ["Dodaj komentarz (addTaskComment)"],
+            expected: ["Komentarz widoczny z autorem i datą"],
+          },
+          {
+            slug: "scenario-tasks-comment-delete-owner",
+            title: "Komentarz usuwa tylko jego autor",
+            type: "negative",
+            priority: "P2",
+            pre: ["Istnieje komentarz innego użytkownika"],
+            steps: ["Spróbuj usunąć cudzy komentarz"],
+            expected: ["Operacja odrzucona — deleteTaskComment tylko dla autora"],
+          },
+        ],
+      },
+      {
+        slug: "story-tasks-sharing",
+        title: "Udostępnianie zadań",
+        scenarios: [
+          {
+            slug: "scenario-tasks-share-email",
+            title: "Udostępnienie zadania po e-mailu",
+            type: "positive",
+            priority: "P2",
+            pre: ["Otwarte zadanie", "Istnieje użytkownik o danym e-mailu"],
+            steps: ["Udostępnij zadanie po e-mailu (shareTaskByEmail) z rolą VIEWER lub EDITOR"],
+            expected: ["TaskShare utworzony", "Odbiorca widzi zadanie zgodnie z rolą"],
+          },
+          {
+            slug: "scenario-tasks-share-unknown-email",
+            title: "Udostępnienie na nieistniejący e-mail",
+            type: "negative",
+            priority: "P2",
+            pre: ["Otwarte zadanie"],
+            steps: ["Podaj e-mail użytkownika, którego nie ma w bazie"],
+            expected: ["Błąd — użytkownik nieznaleziony, share nie powstaje"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "epic-tasks-cross-cutting",
+    title: "Skróty, mobile i uprawnienia",
+    stories: [
+      {
+        slug: "story-tasks-keyboard",
+        title: "Skróty klawiaturowe",
+        scenarios: [
+          {
+            slug: "scenario-tasks-nav-jk",
+            title: "Nawigacja `j`/`k`/strzałki",
+            type: "positive",
+            priority: "P1",
+            pre: ["Lista zawiera kilka zadań"],
+            steps: ["Użyj `j`/`↓` i `k`/`↑`"],
+            expected: ["Zaznaczenie przesuwa się w dół/górę"],
+          },
+          {
+            slug: "scenario-tasks-ctrlk-palette",
+            title: "`Ctrl+K` otwiera paletę poleceń",
+            type: "positive",
+            priority: "P1",
+            pre: ["Jesteś w aplikacji"],
+            steps: ["Naciśnij `Ctrl/Cmd+K`"],
+            expected: ["Otwiera się command palette"],
+          },
+          {
+            slug: "scenario-tasks-filter-tabs",
+            title: "Klawisze `1`–`5` przełączają filtry",
+            type: "positive",
+            priority: "P2",
+            pre: ["Widok z zakładkami filtrów"],
+            steps: ["Naciśnij `1`–`5`"],
+            expected: ["Aktywna zakładka filtra zmienia się"],
+          },
+        ],
+      },
+      {
+        slug: "story-tasks-permission-mobile",
+        title: "Uprawnienia i mobile",
+        scenarios: [
+          {
+            slug: "scenario-tasks-no-permission",
+            title: "Brak `module.tasks` — kłódka i blokada URL",
+            type: "negative",
+            priority: "P0",
+            pre: ["Użytkownik bez `module.tasks`"],
+            steps: ["Sprawdź sidebar", "Wejdź ręcznie na `/tasks`"],
+            expected: ["Pozycja „Zadania” wyszarzona z kłódką", "Bezpośredni URL przekierowuje na stronę główną"],
+          },
+          {
+            slug: "scenario-tasks-mobile-detail",
+            title: "Szczegóły zadania jako pełnoekranowy modal na mobile",
+            type: "positive",
+            priority: "P1",
+            pre: ["Szerokość < md", "Otwierasz zadanie"],
+            steps: ["Kliknij zadanie na liście"],
+            expected: ["Panel szczegółów otwiera się pełnoekranowo", "Jest powrót do listy"],
+          },
+        ],
+      },
+    ],
+  },
+];
