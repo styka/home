@@ -52,6 +52,7 @@ model User {
   vehicleProfile         VehicleProfile?
   ownedPets              Pet[]                 @relation("OwnedPets")
   petShares              PetShare[]            @relation("PetShares")
+  ownedEnclosures        PetEnclosure[]        @relation("OwnedEnclosures")
 }
 
 model UserRole {
@@ -153,6 +154,7 @@ model Team {
   pantryItems          PantryItem[]          @relation("TeamPantryItems")
   pets                 Pet[]                 @relation("TeamPets")
   petShares            PetShare[]            @relation("TeamPetShares")
+  enclosures           PetEnclosure[]        @relation("TeamEnclosures")
 }
 
 model TeamMember {
@@ -820,6 +822,7 @@ model Pet {
   notes        String?
   presetKey    String    @default("companion")
   featureFlags String? // JSON: { MEASUREMENTS: true, ... } — nadpisania per zwierzę
+  enclosureId  String?
   ownerId      String?
   ownerTeamId  String?
   createdAt    DateTime  @default(now())
@@ -828,6 +831,7 @@ model Pet {
   owner         User?            @relation("OwnedPets", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerTeam     Team?            @relation("TeamPets", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   shares        PetShare[]
+  enclosure     PetEnclosure?     @relation(fields: [enclosureId], references: [id], onDelete: SetNull)
   measurements  PetMeasurement[]
   healthRecords PetHealthRecord[]
   vetVisits     PetVetVisit[]
@@ -837,6 +841,7 @@ model Pet {
 
   @@index([ownerId])
   @@index([ownerTeamId])
+  @@index([enclosureId])
 }
 
 model PetShare {
@@ -967,4 +972,58 @@ model PetCareLog {
   careTask  PetCareTask?  @relation(fields: [careTaskId], references: [id], onDelete: SetNull)
 
   @@index([petId, occurredAt])
+}
+
+// ─── Pets · Faza 2: Husbandry (terrarium / akwarium) ────────────────────────
+
+model PetEnclosure {
+  id           String   @id @default(cuid())
+  name         String
+  type         String   @default("TERRARIUM") // TERRARIUM|AQUARIUM|PALUDARIUM|CAGE|AVIARY|TANK|OTHER
+  lengthCm     Float?
+  widthCm      Float?
+  heightCm     Float?
+  volumeL      Float?
+  location     String?
+  equipment    String? // JSON: [{ name, kind, installedAt, replaceEveryDays }]
+  targetRanges String? // JSON: { paramKey: { min, max } } — nadpisania zakresów
+  notes        String?
+  ownerId      String?
+  ownerTeamId  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  owner     User?                   @relation("OwnedEnclosures", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?                   @relation("TeamEnclosures", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  pets      Pet[]
+  readings  PetEnvironmentReading[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+}
+
+model PetEnvironmentReading {
+  id          String   @id @default(cuid())
+  enclosureId String
+  measuredAt  DateTime @default(now())
+  // Terrarium
+  tempWarmC   Float?
+  tempCoolC   Float?
+  humidityPct Float?
+  uvbIndex    Float?
+  // Aquarium
+  waterTempC  Float?
+  ph          Float?
+  ammoniaPpm  Float?
+  nitritePpm  Float?
+  nitratePpm  Float?
+  salinityPpt Float?
+  gh          Float?
+  kh          Float?
+  note        String?
+  createdAt   DateTime @default(now())
+
+  enclosure PetEnclosure @relation(fields: [enclosureId], references: [id], onDelete: Cascade)
+
+  @@index([enclosureId, measuredAt])
 }

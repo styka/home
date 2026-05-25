@@ -81,6 +81,7 @@ export async function getPet(id: string): Promise<PetWithRelations | null> {
       treatments: { orderBy: [{ active: "desc" }, { nextDueAt: "asc" }] },
       careTasks: { orderBy: [{ active: "desc" }, { nextDueAt: "asc" }] },
       careLogs: { orderBy: { occurredAt: "desc" }, take: 50 },
+      enclosure: { include: { readings: { orderBy: { measuredAt: "desc" }, take: 30 } } },
     },
   });
 

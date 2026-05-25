@@ -1,4 +1,5 @@
 import type { CareAgendaItem, WelfareSuggestion } from "@/types";
+import { paramsForGroup, classifyValue, enclosureTypeMeta, envParam, type Range } from "@/lib/petEnvironment";
 
 const UPCOMING_DAYS = 7;
 const MS_DAY = 24 * 60 * 60 * 1000;
@@ -158,6 +159,66 @@ export function buildWelfareSuggestions(
           severity: "warning",
           title: `${pet.name}: spadek wagi o ${dropPct.toFixed(0)}%`,
           detail: "Znaczny spadek masy ciała — rozważ konsultację z weterynarzem.",
+        });
+      }
+    }
+  }
+
+  return out;
+}
+
+interface EnclosureLite {
+  id: string;
+  name: string;
+  type: string;
+  equipment: string | null;
+  targetRanges: string | null;
+  latest: Record<string, number | null> | null;
+}
+
+function safeParse<T>(raw: string | null, fallback: T): T {
+  if (!raw) return fallback;
+  try { return JSON.parse(raw) as T; } catch { return fallback; }
+}
+
+/**
+ * Husbandry (Faza 2) — reguły dobrostanu środowiskowego: parametry poza
+ * bezpiecznym zakresem (terrarium/akwarium) oraz przeterminowany sprzęt (UVB).
+ */
+export function buildEnvironmentSuggestions(enclosures: EnclosureLite[], now: Date): WelfareSuggestion[] {
+  const out: WelfareSuggestion[] = [];
+
+  for (const enc of enclosures) {
+    const meta = enclosureTypeMeta(enc.type);
+    const ranges = safeParse<Record<string, Range>>(enc.targetRanges, {});
+
+    if (enc.latest) {
+      for (const p of paramsForGroup(meta.group)) {
+        const value = enc.latest[p.key];
+        if (value == null) continue;
+        const status = classifyValue(p.key, value, ranges);
+        if (status === "danger" || status === "warn") {
+          const param = envParam(p.key);
+          out.push({
+            id: `env-${enc.id}-${p.key}`,
+            petId: null,
+            severity: status === "danger" ? "danger" : "warning",
+            title: `${enc.name}: ${param?.label ?? p.key} = ${value}${param?.unit ? " " + param.unit : ""}`,
+            detail: status === "danger" ? "Parametr poza bezpiecznym zakresem — zareaguj." : "Parametr blisko granicy — monitoruj.",
+          });
+        }
+      }
+    }
+
+    const equipment = safeParse<Array<{ name: string; replaceBy?: string | null }>>(enc.equipment, []);
+    for (const eq of equipment) {
+      if (eq.replaceBy && new Date(eq.replaceBy).getTime() < now.getTime()) {
+        out.push({
+          id: `equip-${enc.id}-${eq.name}`,
+          petId: null,
+          severity: "warning",
+          title: `${enc.name}: wymień „${eq.name}"`,
+          detail: "Termin wymiany sprzętu minął.",
         });
       }
     }

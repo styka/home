@@ -19,7 +19,11 @@ export const PET_ACTIONS_PROMPT = `ZWIERZĘTA (module: "pets"):
 - record_vet_visit: params { date?: string, reason?: string, vetName?: string, cost?: number }, searchQuery: string
   Zapisuje wizytę weterynaryjną. searchQuery to imię zwierzęcia. date w ISO 8601.
 - log_health_note: params { type?: "CONDITION"|"ALLERGY"|"SYMPTOM"|"INJURY"|"NOTE"|"MILESTONE", title: string, description?: string }, searchQuery: string
-  Dodaje wpis do dziennika zdrowia. searchQuery to imię zwierzęcia.`;
+  Dodaje wpis do dziennika zdrowia. searchQuery to imię zwierzęcia.
+- add_enclosure: params { name: string, type?: "TERRARIUM"|"AQUARIUM"|"PALUDARIUM"|"CAGE"|"AVIARY"|"TANK", volumeL?: number, assignTo?: string }
+  Tworzy zbiornik (terrarium/akwarium). assignTo = imię zwierzęcia do przypisania (opcjonalnie).
+- log_environment: params { tempWarmC?: number, tempCoolC?: number, humidityPct?: number, uvbIndex?: number, waterTempC?: number, ph?: number, ammoniaPpm?: number, nitritePpm?: number, nitratePpm?: number, salinityPpt?: number, gh?: number, kh?: number }, searchQuery: string
+  Zapisuje pomiar parametrów środowiska dla zbiornika przypisanego do zwierzęcia. searchQuery to imię zwierzęcia. Terrarium: temp/wilgotność/UVB. Akwarium: pH/amoniak/azotyny/azotany/temp. wody.`;
 
 export const PET_ACTION_EXAMPLES = `Polecenie: "dodaj psa Reksio, golden retriever"
 → [{ "id":"a1", "module":"pets", "type":"add_pet", "description":"Dodaj psa Reksio (golden retriever)", "params":{ "name":"Reksio", "species":"dog", "breed":"golden retriever" } }]
@@ -28,4 +32,7 @@ Polecenie: "zważ Reksia 12 kg"
 → [{ "id":"a1", "module":"pets", "type":"log_weight", "description":"Zapisz wagę Reksia: 12 kg", "params":{ "weightKg":12 }, "searchQuery":"Reksio" }]
 
 Polecenie: "zaplanuj odrobaczanie Reksia za 3 miesiące i powtarzaj co 3 miesiące"
-→ [{ "id":"a1", "module":"pets", "type":"schedule_treatment", "description":"Odrobaczanie Reksia co 3 miesiące", "params":{ "kind":"DEWORMER", "name":"Odrobaczanie", "everyDays":90 }, "searchQuery":"Reksio" }]`;
+→ [{ "id":"a1", "module":"pets", "type":"schedule_treatment", "description":"Odrobaczanie Reksia co 3 miesiące", "params":{ "kind":"DEWORMER", "name":"Odrobaczanie", "everyDays":90 }, "searchQuery":"Reksio" }]
+
+Polecenie: "zapisz parametry wody dla Nemo: ph 7.2, azotany 20, amoniak 0"
+→ [{ "id":"a1", "module":"pets", "type":"log_environment", "description":"Parametry wody dla Nemo", "params":{ "ph":7.2, "nitratePpm":20, "ammoniaPpm":0 }, "searchQuery":"Nemo" }]`;

@@ -14,6 +14,7 @@ import {
   FeedingSection, RoutinesSection, FinanceSection, DocumentsSection, SharingSection,
   FeatureSettingsSection, ComingSoonSection,
 } from "./PetSections";
+import { HusbandrySection, AquariumSection } from "./PetHusbandry";
 import { useToast } from "@/components/ui/Toast";
 import type { PetWithRelations, PetSex } from "@/types";
 
@@ -74,6 +75,8 @@ export function PetDetailPage({ pet, teams }: { pet: PetWithRelations; teams: Ar
       case "ROUTINES": return <RoutinesSection pet={pet} />;
       case "FINANCE": return <FinanceSection pet={pet} />;
       case "DOCUMENTS": return <DocumentsSection pet={pet} />;
+      case "HUSBANDRY": return <HusbandrySection pet={pet} />;
+      case "AQUARIUM": return <AquariumSection pet={pet} />;
       case "sharing": return <SharingSection pet={pet} teams={teams} />;
       case "settings": return <FeatureSettingsSection pet={pet} />;
       default: {

@@ -6,7 +6,7 @@ import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "@/actions/pets";
 import { computeNextDue, parseRecurringRule } from "@/lib/recurrence";
-import { buildAgenda, buildWelfareSuggestions, type AgendaSource } from "@/lib/petWelfare";
+import { buildAgenda, buildWelfareSuggestions, buildEnvironmentSuggestions, type AgendaSource } from "@/lib/petWelfare";
 import type {
   PetTreatment, PetCareTask, PetVetVisit, PetMeasurement, PetHealthRecord, PetCareLog,
   PetTreatmentKind, PetCareCategory, PetHealthType, RecurringRule,
@@ -396,7 +396,7 @@ export async function getPetWelfare(): Promise<{ agenda: CareAgendaItem[]; sugge
 
   const now = new Date();
   const [pets, treatments, careTasks, vetVisits, measurements] = await Promise.all([
-    prisma.pet.findMany({ where: { id: { in: petIds } }, select: { id: true, name: true, species: true, presetKey: true, featureFlags: true } }),
+    prisma.pet.findMany({ where: { id: { in: petIds } }, select: { id: true, name: true, species: true, presetKey: true, featureFlags: true, enclosureId: true } }),
     prisma.petTreatment.findMany({ where: { petId: { in: petIds }, active: true, nextDueAt: { not: null } } }),
     prisma.petCareTask.findMany({ where: { petId: { in: petIds }, active: true, nextDueAt: { not: null } } }),
     prisma.petVetVisit.findMany({ where: { petId: { in: petIds }, nextVisitAt: { not: null } } }),
@@ -406,5 +406,20 @@ export async function getPetWelfare(): Promise<{ agenda: CareAgendaItem[]; sugge
   const source: AgendaSource = { pets, treatments, careTasks, vetVisits };
   const agenda = buildAgenda(source, now);
   const suggestions = buildWelfareSuggestions({ pets, measurements }, now);
+
+  // Husbandry (Faza 2): sugestie środowiskowe dla zbiorników przypisanych do zwierząt
+  const enclosureIds = Array.from(new Set(pets.map((p) => p.enclosureId).filter((x): x is string => !!x)));
+  if (enclosureIds.length > 0) {
+    const enclosures = await prisma.petEnclosure.findMany({
+      where: { id: { in: enclosureIds } },
+      include: { readings: { orderBy: { measuredAt: "desc" }, take: 1 } },
+    });
+    const envInput = enclosures.map((e) => ({
+      id: e.id, name: e.name, type: e.type, equipment: e.equipment, targetRanges: e.targetRanges,
+      latest: e.readings[0] ? (e.readings[0] as unknown as Record<string, number | null>) : null,
+    }));
+    suggestions.push(...buildEnvironmentSuggestions(envInput, now));
+  }
+
   return { agenda, suggestions };
 }

@@ -57,11 +57,43 @@ async function executePetAction(action: AIAction, userId: string): Promise<strin
     return `Dodano zwierzę "${pet.name}"`;
   }
 
+  if (type === "add_enclosure") {
+    const name = ((params.name as string) ?? "").trim();
+    if (!name) throw new Error("Brak nazwy zbiornika");
+    const enc = await prisma.petEnclosure.create({
+      data: {
+        name,
+        type: (params.type as string) ?? "TERRARIUM",
+        volumeL: (params.volumeL as number) ?? null,
+        ownerId: userId,
+      },
+    });
+    const assignTo = (params.assignTo as string | undefined)?.trim();
+    if (assignTo) {
+      const target = await findPetByName(userId, assignTo);
+      if (target) await prisma.pet.update({ where: { id: target.id }, data: { enclosureId: enc.id } });
+    }
+    return `Utworzono zbiornik "${enc.name}"`;
+  }
+
   // Pozostałe akcje wymagają wskazania zwierzęcia po imieniu
   const pet = await findPetByName(userId, searchQuery ?? "");
-  const needsPet = ["log_weight", "schedule_treatment", "schedule_care_task", "log_feeding", "record_vet_visit", "log_health_note"];
+  const needsPet = ["log_weight", "schedule_treatment", "schedule_care_task", "log_feeding", "record_vet_visit", "log_health_note", "log_environment"];
   if (needsPet.includes(type) && !pet) {
     throw new Error(`Nie znaleziono zwierzęcia: "${searchQuery}"`);
+  }
+
+  if (type === "log_environment" && pet) {
+    if (!pet.enclosureId) throw new Error(`${pet.name} nie ma przypisanego zbiornika`);
+    const numKeys = ["tempWarmC", "tempCoolC", "humidityPct", "uvbIndex", "waterTempC", "ph", "ammoniaPpm", "nitritePpm", "nitratePpm", "salinityPpt", "gh", "kh"] as const;
+    const data: Record<string, number> = {};
+    for (const k of numKeys) {
+      const v = params[k];
+      if (typeof v === "number") data[k] = v;
+    }
+    if (Object.keys(data).length === 0) throw new Error("Brak parametrów do zapisania");
+    await prisma.petEnvironmentReading.create({ data: { enclosureId: pet.enclosureId, ...data } });
+    return `Zapisano parametry środowiska dla ${pet.name}`;
   }
 
   if (type === "log_weight" && pet) {

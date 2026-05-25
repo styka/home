@@ -38,9 +38,8 @@ export const PET_FEATURE_LABELS: Record<PetFeatureKey, string> = {
 };
 
 // Funkcje wprowadzane w późniejszych fazach — UI pokazuje „wkrótce".
+// Faza 2 (HUSBANDRY, AQUARIUM) jest już zaimplementowana.
 export const PET_FEATURE_PHASE: Partial<Record<PetFeatureKey, 2 | 3>> = {
-  HUSBANDRY: 2,
-  AQUARIUM: 2,
   BREEDING: 3,
   GENETICS: 3,
 };

@@ -14,6 +14,8 @@ import type {
   PetTreatment as PrismaPetTreatment,
   PetCareTask as PrismaPetCareTask,
   PetCareLog as PrismaPetCareLog,
+  PetEnclosure as PrismaPetEnclosure,
+  PetEnvironmentReading as PrismaPetEnvironmentReading,
 } from "@prisma/client";
 
 export type { ItemHistory };
@@ -292,6 +294,12 @@ export type PetVetVisit = PrismaPetVetVisit;
 export type PetTreatment = PrismaPetTreatment;
 export type PetCareTask = PrismaPetCareTask;
 export type PetCareLog = PrismaPetCareLog;
+export type PetEnclosure = PrismaPetEnclosure;
+export type PetEnvironmentReading = PrismaPetEnvironmentReading;
+
+export type PetEnclosureWithReadings = PetEnclosure & {
+  readings: PetEnvironmentReading[];
+};
 
 export type PetShare = PrismaPetShare & {
   user?: { id: string; name: string | null; email: string | null; image: string | null } | null;
@@ -311,6 +319,7 @@ export type PetWithRelations = Pet & {
   treatments: PetTreatment[];
   careTasks: PetCareTask[];
   careLogs: PetCareLog[];
+  enclosure: PetEnclosureWithReadings | null;
 };
 
 /** A single due/overdue/upcoming item in the unified care agenda. */
