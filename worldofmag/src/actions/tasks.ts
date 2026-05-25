@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
 import { assertProjectAccess } from "@/actions/taskProjects";
 import { trackActivity } from "@/actions/activity";
+import { computeNextDue } from "@/lib/recurrence";
 import type { Task, TaskStatus, TaskPriority, TaskWithRelations, RecurringRule } from "@/types";
 
 const TASK_INCLUDE = {
@@ -256,37 +257,6 @@ export async function completeRecurringTask(id: string): Promise<Task> {
   revalidatePath("/tasks");
   if (existing.projectId) revalidatePath(`/tasks/${existing.projectId}`);
   return toTask(nextTask);
-}
-
-function computeNextDue(from: Date, rule: RecurringRule): Date | null {
-  const d = new Date(from);
-  switch (rule.type) {
-    case "DAILY":
-      d.setDate(d.getDate() + rule.interval);
-      return d;
-    case "WEEKLY":
-      if (rule.daysOfWeek?.length) {
-        const currentDay = d.getDay();
-        const sorted = [...rule.daysOfWeek].sort((a, b) => a - b);
-        const next = sorted.find((day) => day > currentDay);
-        if (next !== undefined) {
-          d.setDate(d.getDate() + (next - currentDay));
-        } else {
-          d.setDate(d.getDate() + (7 - currentDay + sorted[0]));
-        }
-        return d;
-      }
-      d.setDate(d.getDate() + 7 * rule.interval);
-      return d;
-    case "MONTHLY":
-      d.setMonth(d.getMonth() + rule.interval);
-      return d;
-    case "YEARLY":
-      d.setFullYear(d.getFullYear() + rule.interval);
-      return d;
-    default:
-      return null;
-  }
 }
 
 export async function addTaskComment(taskId: string, content: string): Promise<void> {

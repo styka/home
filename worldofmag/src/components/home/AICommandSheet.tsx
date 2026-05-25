@@ -65,8 +65,15 @@ function deriveContextFromPath(pathname: string): RouteContext {
       routeHint: "Użytkownik jest w module Notatki",
     };
   }
+  if (pathname.startsWith("/pets")) {
+    return {
+      context: ["pets"],
+      placeholder: 'Np. "Zważ Reksia 12 kg" lub "Zaplanuj odrobaczanie Reksia za 3 miesiące"',
+      routeHint: "Użytkownik jest w module Zwierzęta",
+    };
+  }
   return {
-    context: ["shopping", "tasks", "notes"],
+    context: ["shopping", "tasks", "notes", "pets"],
     placeholder: 'Np. "Dodaj mleko do zakupów" lub "Stwórz zadanie na jutro"',
     routeHint: "Użytkownik jest na stronie głównej aplikacji",
   };

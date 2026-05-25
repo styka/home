@@ -50,6 +50,8 @@ model User {
   pantryItems            PantryItem[]          @relation("OwnedPantryItems")
   recipeRatings          RecipeRating[]
   vehicleProfile         VehicleProfile?
+  ownedPets              Pet[]                 @relation("OwnedPets")
+  petShares              PetShare[]            @relation("PetShares")
 }
 
 model UserRole {
@@ -149,6 +151,8 @@ model Team {
   cookbooks            Cookbook[]            @relation("TeamCookbooks")
   mealPlans            MealPlanEntry[]       @relation("TeamMealPlans")
   pantryItems          PantryItem[]          @relation("TeamPantryItems")
+  pets                 Pet[]                 @relation("TeamPets")
+  petShares            PetShare[]            @relation("TeamPetShares")
 }
 
 model TeamMember {
@@ -791,4 +795,176 @@ model QaTestScenario {
   @@index([storyId, order])
   @@index([priority])
   @@index([type])
+}
+
+// ─── Pets / Zwierzęta ───────────────────────────────────────────────────────
+// Status/kind/category/role are String (not enum) — projektowa konwencja.
+// featureFlags/recurring/details/payload trzymają JSON jako String.
+
+model Pet {
+  id           String    @id @default(cuid())
+  name         String
+  species      String    @default("other") // dog|cat|snake|lizard|turtle|fish|bird|rodent|rabbit|other
+  breed        String? // rasa / morph / odmiana
+  sex          String? // male|female|unknown
+  birthDate    DateTime?
+  birthApprox  Boolean   @default(false)
+  acquiredAt   DateTime?
+  acquiredFrom String?
+  microchipId  String?
+  identifier   String? // obrączka / tag
+  color        String?
+  photoUrl     String?
+  status       String    @default("ACTIVE") // ACTIVE|DECEASED|REHOMED|SOLD|ARCHIVED
+  deceasedAt   DateTime?
+  notes        String?
+  presetKey    String    @default("companion")
+  featureFlags String? // JSON: { MEASUREMENTS: true, ... } — nadpisania per zwierzę
+  ownerId      String?
+  ownerTeamId  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  owner         User?            @relation("OwnedPets", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam     Team?            @relation("TeamPets", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  shares        PetShare[]
+  measurements  PetMeasurement[]
+  healthRecords PetHealthRecord[]
+  vetVisits     PetVetVisit[]
+  treatments    PetTreatment[]
+  careTasks     PetCareTask[]
+  careLogs      PetCareLog[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+}
+
+model PetShare {
+  id        String   @id @default(cuid())
+  petId     String
+  userId    String?
+  teamId    String?
+  role      String   @default("VIEWER") // VIEWER|EDITOR
+  createdAt DateTime @default(now())
+
+  pet  Pet   @relation(fields: [petId], references: [id], onDelete: Cascade)
+  user User? @relation("PetShares", fields: [userId], references: [id], onDelete: Cascade)
+  team Team? @relation("TeamPetShares", fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([petId, userId])
+  @@unique([petId, teamId])
+  @@index([petId])
+}
+
+model PetMeasurement {
+  id          String   @id @default(cuid())
+  petId       String
+  date        DateTime @default(now())
+  weightGrams Float?
+  lengthCm    Float?
+  bodyScore   Int? // 1-9 BCS
+  note        String?
+  createdAt   DateTime @default(now())
+
+  pet Pet @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@index([petId, date])
+}
+
+model PetHealthRecord {
+  id          String   @id @default(cuid())
+  petId       String
+  type        String   @default("NOTE") // CONDITION|ALLERGY|SYMPTOM|INJURY|NOTE|MILESTONE
+  title       String
+  description String?
+  date        DateTime @default(now())
+  resolved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  pet Pet @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@index([petId, date])
+}
+
+model PetVetVisit {
+  id            String    @id @default(cuid())
+  petId         String
+  date          DateTime
+  vetName       String?
+  clinic        String?
+  reason        String?
+  diagnosis     String?
+  cost          Float?
+  nextVisitAt   DateTime?
+  attachmentUrl String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+
+  pet Pet @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@index([petId, date])
+  @@index([nextVisitAt])
+}
+
+model PetTreatment {
+  id        String    @id @default(cuid())
+  petId     String
+  kind      String    @default("MEDICATION") // MEDICATION|VACCINE|DEWORMER|PARASITE|SUPPLEMENT
+  name      String
+  dosage    String?
+  route     String? // oral|injection|topical|...
+  batch     String? // numer serii (szczepionki)
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+  recurring String? // JSON: RecurringRule
+  lastDoneAt DateTime?
+  nextDueAt DateTime?
+  active    Boolean   @default(true)
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  pet  Pet          @relation(fields: [petId], references: [id], onDelete: Cascade)
+  logs PetCareLog[]
+
+  @@index([petId])
+  @@index([nextDueAt])
+}
+
+model PetCareTask {
+  id         String    @id @default(cuid())
+  petId      String
+  category   String    @default("CUSTOM") // FEEDING|CLEANING|GROOMING|WALK|WATER_CHANGE|UVB_REPLACEMENT|WEIGHING|CUSTOM
+  title      String
+  details    String? // JSON: dane specyficzne (np. typ pokarmu, porcja)
+  recurring  String? // JSON: RecurringRule
+  lastDoneAt DateTime?
+  nextDueAt  DateTime?
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  pet  Pet          @relation(fields: [petId], references: [id], onDelete: Cascade)
+  logs PetCareLog[]
+
+  @@index([petId])
+  @@index([nextDueAt])
+}
+
+model PetCareLog {
+  id          String   @id @default(cuid())
+  petId       String
+  treatmentId String?
+  careTaskId  String?
+  category    String   @default("CUSTOM") // odzwierciedla kategorię/kind źródła lub FEEDING/HEALTH/...
+  occurredAt  DateTime @default(now())
+  payload     String? // JSON: np. { outcome: "REFUSED", preyType: "mysz" } lub parametry wody
+  note        String?
+  createdAt   DateTime @default(now())
+
+  pet       Pet           @relation(fields: [petId], references: [id], onDelete: Cascade)
+  treatment PetTreatment? @relation(fields: [treatmentId], references: [id], onDelete: SetNull)
+  careTask  PetCareTask?  @relation(fields: [careTaskId], references: [id], onDelete: SetNull)
+
+  @@index([petId, occurredAt])
 }

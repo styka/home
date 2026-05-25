@@ -4,6 +4,31 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-05-25 — Nowe modele (moduł Zwierzęta): JSON jako String, brak enumów, seed permisji w 2 miejscach
+
+**Problem:** Projektując schemat modułu Zwierzęta, narzucała się pokusa użycia
+typu Prisma `Json` (np. `featureFlags Json`) i enumów dla statusów — tak
+sugerowały automatyczne analizy. To jednak złamałoby konwencję projektu:
+`datasource` to `postgresql`, ale lokalny dev używa SQLite (`file:./dev.db`),
+gdzie `Json`/enum się nie kompilują, a `mode: "insensitive"` w zapytaniach jest
+Postgres-only. Drugi haczyk: permisje modułów są seedowane **wyłącznie w SQL
+migracji** (uruchamianym przez `migrate deploy` w buildzie prod), więc lokalny
+`db:push` ich nie tworzy i nowy moduł byłby niewidoczny lokalnie.
+
+**Rozwiązanie:** Wszystkie pola JSON (`featureFlags`, `recurring`, `details`,
+`payload`) jako `String?` z `JSON.parse/stringify` (jak istniejące
+`Task.recurring String? // JSON`); statusy/typy jako `String` + unia TS.
+Permisję `module.pets` zaseedowano w migracji `0026` (prod) **oraz**
+idempotentnie w `prisma/seed.ts` (upsert + grant ADMIN) dla lokalnego
+`db:push`.
+
+**Lekcja:** W tym repo zawsze: zero enumów, JSON trzymaj w `String`, a nową
+permisję modułu dopisuj w dwóch miejscach — w SQL migracji (prod) i w
+`seed.ts` (lokalny db:push). Wspólną logikę (np. `computeNextDue`) wydzielaj do
+`src/lib` zamiast duplikować między modułami.
+
+---
+
 ## 2026-05-24 — Playwright: własny fixture `isMobile` tworzy cykl zależności
 
 **Problem:** Po dodaniu do `test.extend<>()` własnego fixture'a `isMobile`

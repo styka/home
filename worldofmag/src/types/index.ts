@@ -1,4 +1,20 @@
-import type { Item as PrismaItem, ShoppingList as PrismaShoppingList, ItemHistory, Product as PrismaProduct, Note as PrismaNote, NoteGroup, Tag } from "@prisma/client";
+import type {
+  Item as PrismaItem,
+  ShoppingList as PrismaShoppingList,
+  ItemHistory,
+  Product as PrismaProduct,
+  Note as PrismaNote,
+  NoteGroup,
+  Tag,
+  Pet as PrismaPet,
+  PetShare as PrismaPetShare,
+  PetMeasurement as PrismaPetMeasurement,
+  PetHealthRecord as PrismaPetHealthRecord,
+  PetVetVisit as PrismaPetVetVisit,
+  PetTreatment as PrismaPetTreatment,
+  PetCareTask as PrismaPetCareTask,
+  PetCareLog as PrismaPetCareLog,
+} from "@prisma/client";
 
 export type { ItemHistory };
 
@@ -247,6 +263,76 @@ export type SortMode =
   | { type: "category" }
   | { type: "product" }
   | { type: "store"; storeId: string; storeName: string };
+
+// ─── Pets / Zwierzęta ───────────────────────────────────────────────────────
+
+export type {
+  PrismaPetShare,
+  PrismaPetMeasurement,
+  PrismaPetHealthRecord,
+  PrismaPetVetVisit,
+  PrismaPetTreatment,
+  PrismaPetCareTask,
+  PrismaPetCareLog,
+};
+
+export type PetSpecies =
+  | "dog" | "cat" | "snake" | "lizard" | "turtle" | "fish" | "bird" | "rodent" | "rabbit" | "other";
+export type PetSex = "male" | "female" | "unknown";
+export type PetStatus = "ACTIVE" | "DECEASED" | "REHOMED" | "SOLD" | "ARCHIVED";
+export type PetTreatmentKind = "MEDICATION" | "VACCINE" | "DEWORMER" | "PARASITE" | "SUPPLEMENT";
+export type PetCareCategory =
+  | "FEEDING" | "CLEANING" | "GROOMING" | "WALK" | "WATER_CHANGE" | "UVB_REPLACEMENT" | "WEIGHING" | "CUSTOM";
+export type PetHealthType = "CONDITION" | "ALLERGY" | "SYMPTOM" | "INJURY" | "NOTE" | "MILESTONE";
+export type ShareRole = "VIEWER" | "EDITOR";
+
+export type PetMeasurement = PrismaPetMeasurement;
+export type PetHealthRecord = PrismaPetHealthRecord;
+export type PetVetVisit = PrismaPetVetVisit;
+export type PetTreatment = PrismaPetTreatment;
+export type PetCareTask = PrismaPetCareTask;
+export type PetCareLog = PrismaPetCareLog;
+
+export type PetShare = PrismaPetShare & {
+  user?: { id: string; name: string | null; email: string | null; image: string | null } | null;
+  team?: { id: string; name: string } | null;
+};
+
+export type Pet = PrismaPet & {
+  ownerTeam?: { id: string; name: string } | null;
+  _count?: { treatments?: number; careTasks?: number; vetVisits?: number };
+};
+
+export type PetWithRelations = Pet & {
+  shares: PetShare[];
+  measurements: PetMeasurement[];
+  healthRecords: PetHealthRecord[];
+  vetVisits: PetVetVisit[];
+  treatments: PetTreatment[];
+  careTasks: PetCareTask[];
+  careLogs: PetCareLog[];
+};
+
+/** A single due/overdue/upcoming item in the unified care agenda. */
+export interface CareAgendaItem {
+  id: string;
+  petId: string;
+  petName: string;
+  petSpecies: string;
+  kind: "TREATMENT" | "CARE_TASK" | "VET_VISIT";
+  category: string; // PetTreatmentKind | PetCareCategory | "VET"
+  title: string;
+  dueAt: string; // ISO
+  bucket: "OVERDUE" | "TODAY" | "UPCOMING";
+}
+
+export interface WelfareSuggestion {
+  id: string;
+  petId: string | null;
+  severity: "info" | "warning" | "danger";
+  title: string;
+  detail?: string;
+}
 
 // ─── Shared ───────────────────────────────────────────────────────────────
 

@@ -196,4 +196,13 @@ export const llm = {
         error?: string;
       }>("/api/llm/kitchen/plan-week", input),
   },
+
+  pets: {
+    insights: (input: {
+      pets: Array<{ name: string; species: string; presetKey?: string }>;
+      agenda?: Array<{ petName: string; title: string; bucket: string; dueAt: string }>;
+      ruleSuggestions?: Array<{ title: string; detail?: string }>;
+    }) =>
+      post<{ tips?: string[]; unavailable?: boolean }>("/api/llm/pets/insights", input),
+  },
 };

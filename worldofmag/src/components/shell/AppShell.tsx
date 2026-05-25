@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat, FlaskConical, Truck } from "lucide-react";
+import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat, FlaskConical, Truck, PawPrint } from "lucide-react";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -22,6 +22,7 @@ const MODULES = [
   { id: "shopping",    label: "Zakupy",        icon: <ShoppingCart size={20} />, topBarIcon: <ShoppingCart size={16} />, color: "var(--accent-blue)",     href: "/shopping",    active: true,  exact: false },
   { id: "tasks",       label: "Zadania",       icon: <CheckSquare size={20} />,  topBarIcon: <CheckSquare size={16} />,  color: "var(--accent-green)",    href: "/tasks",       active: true,  exact: false },
   { id: "notes",       label: "Notatki",       icon: <FileText size={20} />,     topBarIcon: <FileText size={16} />,     color: "var(--accent-amber)",    href: "/notes",       active: true,  exact: false },
+  { id: "pets",        label: "Zwierzęta",     icon: <PawPrint size={20} />,     topBarIcon: <PawPrint size={16} />,     color: "var(--accent-orange)",   href: "/pets",        active: true,  exact: false },
   { id: "kitchen",     label: "Kuchnia",       icon: <ChefHat size={20} />,      topBarIcon: <ChefHat size={16} />,      color: "var(--accent-orange)",   href: "/kitchen",     active: true,  exact: false },
   { id: "qa",          label: "QA",            icon: <FlaskConical size={20} />, topBarIcon: <FlaskConical size={16} />, color: "var(--accent-red)",      href: "/qa",          active: true,  exact: false },
   { id: "truck",       label: "Trasy TIR",     icon: <Truck size={20} />,        topBarIcon: <Truck size={16} />,        color: "var(--accent-blue)",     href: "/truck",       active: true,  exact: false },
@@ -143,6 +144,10 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
                   ))}
                 </div>
               )}
+
+              <MobileItem href="/pets" pathname={pathname} locked={isLocked("/pets")}>
+                <PawPrint size={20} style={{ color: "var(--accent-orange)", flexShrink: 0 }} /><span>Zwierzęta</span>
+              </MobileItem>
 
               <MobileItem href="/kitchen" pathname={pathname} locked={isLocked("/kitchen")}>
                 <ChefHat size={20} style={{ color: "var(--accent-orange)", flexShrink: 0 }} /><span>Kuchnia</span>

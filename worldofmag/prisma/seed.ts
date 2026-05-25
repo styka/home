@@ -155,6 +155,20 @@ async function main() {
     console.log("Seeded final refactoring report");
   }
 
+  // Seed pets module permission + grant to ADMIN (idempotent; for local db:push)
+  const petsPerm = await prisma.permission.upsert({
+    where: { slug: "module.pets" },
+    update: {},
+    create: { slug: "module.pets", name: "Zwierzęta", description: "Dostęp do modułu zarządzania zwierzętami" },
+  });
+  const existingGrant = await prisma.rolePermission.findUnique({
+    where: { role_permissionId: { role: "ADMIN", permissionId: petsPerm.id } },
+  });
+  if (!existingGrant) {
+    await prisma.rolePermission.create({ data: { role: "ADMIN", permissionId: petsPerm.id } });
+  }
+  console.log("Seeded pets module permission (module.pets → ADMIN)");
+
   console.log("Done.");
 }
 

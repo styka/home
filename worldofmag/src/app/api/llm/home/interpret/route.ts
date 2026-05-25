@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { PET_ACTIONS_PROMPT, PET_ACTION_EXAMPLES } from "@/lib/ai/petActions";
 
 export interface AIAction {
   id: string;
-  module: "shopping" | "tasks" | "notes";
+  module: "shopping" | "tasks" | "notes" | "pets";
   description: string;
   type: string;
   params: Record<string, unknown>;
@@ -42,6 +43,8 @@ NOTATKI (module: "notes"):
 - append_to_note: params { content: string }, searchQuery: string
   Dopisuje treść do istniejącej notatki. searchQuery to tytuł notatki.
 
+${PET_ACTIONS_PROMPT}
+
 Zasady:
 - Jeden tekst może zawierać wiele niezależnych poleceń — zwróć każde jako osobną akcję
 - Jeśli akcja wymaga znalezienia istniejącego zasobu (update, delete, shift, append), ustaw searchQuery
@@ -67,6 +70,8 @@ Polecenie: "dodaj 2x Sachol"
 Polecenie: "przesuń mycie uszu psa o 2 tygodnie"
 → [{ "id":"a1", "module":"tasks", "type":"shift_task_due_date", "description":"Przesuń termin 'mycie uszu psa' o 14 dni", "params":{ "days":14 }, "searchQuery":"mycie uszu psa" }]
 
+${PET_ACTION_EXAMPLES}
+
 Zwróć TYLKO tablicę JSON, bez żadnego dodatkowego tekstu ani markdown.`;
 
 export async function POST(req: NextRequest) {
@@ -76,7 +81,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({})) as { text?: string; context?: string[]; today?: string; routeHint?: string };
-  const { text, context = ["shopping", "tasks", "notes"], today = new Date().toISOString(), routeHint } = body;
+  const { text, context = ["shopping", "tasks", "notes", "pets"], today = new Date().toISOString(), routeHint } = body;
 
   if (!text?.trim()) {
     return NextResponse.json({ error: "Empty text" }, { status: 400 });

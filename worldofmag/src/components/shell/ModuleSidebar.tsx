@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck, PawPrint } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
+import { PetsSideNav } from "@/components/pets/PetsSideNav";
 import { isPathLocked } from "@/lib/permissions";
 
 interface ModuleSidebarProps {
@@ -138,6 +139,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
   const isTasksActive = pathname.startsWith("/tasks");
   const isKitchenActive = pathname.startsWith("/kitchen");
   const isQaActive = pathname.startsWith("/qa");
+  const isPetsActive = pathname.startsWith("/pets");
 
   function isLocked(href: string): boolean {
     return isPathLocked(userPermissions, href);
@@ -195,6 +197,14 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
         {isTasksActive && (
           <div className="mb-1">
             <TasksSideNav />
+          </div>
+        )}
+
+        {/* Pets with sub-items */}
+        <NavItem href="/pets" label="Zwierzęta" icon={<PawPrint size={18} />} pathname={pathname} iconColor="var(--accent-orange)" locked={isLocked("/pets")} />
+        {isPetsActive && !isLocked("/pets") && (
+          <div className="mb-1">
+            <PetsSideNav />
           </div>
         )}
 
