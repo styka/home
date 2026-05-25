@@ -4,6 +4,23 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-05-25 — TS: iteracja po `Map.values()` wywala `tsc` (TS2802)
+
+**Problem:** W `petGenetics.ts` `for (const x of map.values())` wywaliło
+`tsc --noEmit`: *TS2802: can only be iterated through when using
+'--downlevelIteration' or '--target' 'es2015' or higher*. `next build` używa
+naszej konfiguracji TS i przy tym targecie iteracja po iteratorach Map/Set jest
+zablokowana.
+
+**Rozwiązanie:** Owinąć w `Array.from(map.values())` (działa też dla
+`map.keys()`, `map.entries()`, `set.values()`).
+
+**Lekcja:** W tym repo nie iteruj bezpośrednio po iteratorach `Map`/`Set` w
+`for...of` — używaj `Array.from(...)`. Dotyczy też spreadu `[...map.values()]`.
+Szybka walidacja przed buildem: `npx tsc --noEmit`.
+
+---
+
 ## 2026-05-25 — Nowe modele (moduł Zwierzęta): JSON jako String, brak enumów, seed permisji w 2 miejscach
 
 **Problem:** Projektując schemat modułu Zwierzęta, narzucała się pokusa użycia

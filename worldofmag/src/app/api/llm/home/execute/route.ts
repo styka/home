@@ -78,9 +78,40 @@ async function executePetAction(action: AIAction, userId: string): Promise<strin
 
   // Pozostałe akcje wymagają wskazania zwierzęcia po imieniu
   const pet = await findPetByName(userId, searchQuery ?? "");
-  const needsPet = ["log_weight", "schedule_treatment", "schedule_care_task", "log_feeding", "record_vet_visit", "log_health_note", "log_environment"];
+  const needsPet = ["log_weight", "schedule_treatment", "schedule_care_task", "log_feeding", "record_vet_visit", "log_health_note", "log_environment", "record_sale", "add_breeding_pair"];
   if (needsPet.includes(type) && !pet) {
     throw new Error(`Nie znaleziono zwierzęcia: "${searchQuery}"`);
+  }
+
+  if (type === "record_sale" && pet) {
+    await prisma.petSale.create({
+      data: {
+        petId: pet.id,
+        buyerName: (params.buyerName as string) ?? null,
+        buyerContact: (params.buyerContact as string) ?? null,
+        price: (params.price as number) ?? null,
+        ownerId: userId,
+      },
+    });
+    await prisma.pet.update({ where: { id: pet.id }, data: { status: "SOLD" } });
+    return `Zapisano sprzedaż ${pet.name}`;
+  }
+
+  if (type === "add_breeding_pair" && pet) {
+    const partnerName = (params.partner as string | undefined)?.trim();
+    const partner = partnerName ? await findPetByName(userId, partnerName) : null;
+    const maleId = pet.sex === "male" ? pet.id : partner?.sex === "male" ? partner.id : pet.id;
+    const femaleId = pet.sex === "female" ? pet.id : partner?.sex === "female" ? partner.id : partner?.id ?? null;
+    const pair = await prisma.petBreedingPair.create({
+      data: {
+        name: ((params.name as string) ?? `Para ${pet.name}`).trim(),
+        species: pet.species,
+        maleId,
+        femaleId,
+        ownerId: userId,
+      },
+    });
+    return `Utworzono parę hodowlaną "${pair.name}"`;
   }
 
   if (type === "log_environment" && pet) {

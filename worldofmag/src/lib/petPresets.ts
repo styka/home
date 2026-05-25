@@ -37,12 +37,9 @@ export const PET_FEATURE_LABELS: Record<PetFeatureKey, string> = {
   GENETICS: "Genetyka / morphy",
 };
 
-// Funkcje wprowadzane w późniejszych fazach — UI pokazuje „wkrótce".
-// Faza 2 (HUSBANDRY, AQUARIUM) jest już zaimplementowana.
-export const PET_FEATURE_PHASE: Partial<Record<PetFeatureKey, 2 | 3>> = {
-  BREEDING: 3,
-  GENETICS: 3,
-};
+// Wszystkie funkcje (Fazy 1–3) są zaimplementowane. Mapa pozostaje pusta —
+// może wskazywać przyszłe funkcje oznaczane jako „wkrótce".
+export const PET_FEATURE_PHASE: Partial<Record<PetFeatureKey, 2 | 3>> = {};
 
 export interface PetPreset {
   key: string;

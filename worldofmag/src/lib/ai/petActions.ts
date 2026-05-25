@@ -23,7 +23,11 @@ export const PET_ACTIONS_PROMPT = `ZWIERZĘTA (module: "pets"):
 - add_enclosure: params { name: string, type?: "TERRARIUM"|"AQUARIUM"|"PALUDARIUM"|"CAGE"|"AVIARY"|"TANK", volumeL?: number, assignTo?: string }
   Tworzy zbiornik (terrarium/akwarium). assignTo = imię zwierzęcia do przypisania (opcjonalnie).
 - log_environment: params { tempWarmC?: number, tempCoolC?: number, humidityPct?: number, uvbIndex?: number, waterTempC?: number, ph?: number, ammoniaPpm?: number, nitritePpm?: number, nitratePpm?: number, salinityPpt?: number, gh?: number, kh?: number }, searchQuery: string
-  Zapisuje pomiar parametrów środowiska dla zbiornika przypisanego do zwierzęcia. searchQuery to imię zwierzęcia. Terrarium: temp/wilgotność/UVB. Akwarium: pH/amoniak/azotyny/azotany/temp. wody.`;
+  Zapisuje pomiar parametrów środowiska dla zbiornika przypisanego do zwierzęcia. searchQuery to imię zwierzęcia. Terrarium: temp/wilgotność/UVB. Akwarium: pH/amoniak/azotyny/azotany/temp. wody.
+- record_sale: params { buyerName?: string, price?: number, buyerContact?: string }, searchQuery: string
+  Zapisuje sprzedaż zwierzęcia i oznacza je jako sprzedane. searchQuery to imię zwierzęcia.
+- add_breeding_pair: params { name?: string, partner?: string }, searchQuery: string
+  Tworzy parę hodowlaną. searchQuery to imię pierwszego zwierzęcia, partner to imię drugiego.`;
 
 export const PET_ACTION_EXAMPLES = `Polecenie: "dodaj psa Reksio, golden retriever"
 → [{ "id":"a1", "module":"pets", "type":"add_pet", "description":"Dodaj psa Reksio (golden retriever)", "params":{ "name":"Reksio", "species":"dog", "breed":"golden retriever" } }]

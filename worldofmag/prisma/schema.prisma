@@ -53,6 +53,8 @@ model User {
   ownedPets              Pet[]                 @relation("OwnedPets")
   petShares              PetShare[]            @relation("PetShares")
   ownedEnclosures        PetEnclosure[]        @relation("OwnedEnclosures")
+  ownedBreedingPairs     PetBreedingPair[]     @relation("OwnedPairs")
+  petSales               PetSale[]             @relation("OwnedPetSales")
 }
 
 model UserRole {
@@ -155,6 +157,8 @@ model Team {
   pets                 Pet[]                 @relation("TeamPets")
   petShares            PetShare[]            @relation("TeamPetShares")
   enclosures           PetEnclosure[]        @relation("TeamEnclosures")
+  breedingPairs        PetBreedingPair[]     @relation("TeamPairs")
+  petSales             PetSale[]             @relation("TeamPetSales")
 }
 
 model TeamMember {
@@ -823,25 +827,37 @@ model Pet {
   presetKey    String    @default("companion")
   featureFlags String? // JSON: { MEASUREMENTS: true, ... } — nadpisania per zwierzę
   enclosureId  String?
+  sireId       String? // ojciec (rodowód)
+  damId        String? // matka (rodowód)
+  genetics     String? // JSON: [{ gene, mode, zygosity }] — genotyp/morphy
   ownerId      String?
   ownerTeamId  String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  owner         User?            @relation("OwnedPets", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam     Team?            @relation("TeamPets", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  shares        PetShare[]
-  enclosure     PetEnclosure?     @relation(fields: [enclosureId], references: [id], onDelete: SetNull)
-  measurements  PetMeasurement[]
-  healthRecords PetHealthRecord[]
-  vetVisits     PetVetVisit[]
-  treatments    PetTreatment[]
-  careTasks     PetCareTask[]
-  careLogs      PetCareLog[]
+  owner           User?             @relation("OwnedPets", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam       Team?             @relation("TeamPets", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  shares          PetShare[]
+  enclosure       PetEnclosure?     @relation(fields: [enclosureId], references: [id], onDelete: SetNull)
+  sire            Pet?              @relation("PetSire", fields: [sireId], references: [id], onDelete: SetNull)
+  dam             Pet?              @relation("PetDam", fields: [damId], references: [id], onDelete: SetNull)
+  offspringAsSire Pet[]             @relation("PetSire")
+  offspringAsDam  Pet[]             @relation("PetDam")
+  measurements    PetMeasurement[]
+  healthRecords   PetHealthRecord[]
+  vetVisits       PetVetVisit[]
+  treatments      PetTreatment[]
+  careTasks       PetCareTask[]
+  careLogs        PetCareLog[]
+  pairsAsMale     PetBreedingPair[] @relation("PairMale")
+  pairsAsFemale   PetBreedingPair[] @relation("PairFemale")
+  sales           PetSale[]
 
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([enclosureId])
+  @@index([sireId])
+  @@index([damId])
 }
 
 model PetShare {
@@ -1026,4 +1042,75 @@ model PetEnvironmentReading {
   enclosure PetEnclosure @relation(fields: [enclosureId], references: [id], onDelete: Cascade)
 
   @@index([enclosureId, measuredAt])
+}
+
+// ─── Pets · Faza 3: Hodowla, rodowody, genetyka, sprzedaż ───────────────────
+
+model PetBreedingPair {
+  id          String   @id @default(cuid())
+  name        String
+  species     String   @default("other")
+  maleId      String?
+  femaleId    String?
+  status      String   @default("PLANNED") // PLANNED|PAIRED|COOLING|PRODUCTIVE|RETIRED
+  startedAt   DateTime?
+  notes       String?
+  ownerId     String?
+  ownerTeamId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  male      Pet?         @relation("PairMale", fields: [maleId], references: [id], onDelete: SetNull)
+  female    Pet?         @relation("PairFemale", fields: [femaleId], references: [id], onDelete: SetNull)
+  owner     User?        @relation("OwnedPairs", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?        @relation("TeamPairs", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  clutches  PetClutch[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+  @@index([maleId])
+  @@index([femaleId])
+}
+
+model PetClutch {
+  id              String    @id @default(cuid())
+  pairId          String
+  laidAt          DateTime?
+  eggCount        Int?
+  fertileCount    Int?
+  incubationTempC Float?
+  humidityPct     Float?
+  expectedHatchAt DateTime?
+  hatchedAt       DateTime?
+  hatchedCount    Int?
+  status          String    @default("INCUBATING") // INCUBATING|HATCHED|FAILED
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  pair PetBreedingPair @relation(fields: [pairId], references: [id], onDelete: Cascade)
+
+  @@index([pairId])
+  @@index([expectedHatchAt])
+}
+
+model PetSale {
+  id           String   @id @default(cuid())
+  petId        String
+  buyerName    String?
+  buyerContact String?
+  price        Float?
+  currency     String   @default("PLN")
+  soldAt       DateTime @default(now())
+  notes        String?
+  ownerId      String?
+  ownerTeamId  String?
+  createdAt    DateTime @default(now())
+
+  pet       Pet   @relation(fields: [petId], references: [id], onDelete: Cascade)
+  owner     User? @relation("OwnedPetSales", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team? @relation("TeamPetSales", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+
+  @@index([petId])
+  @@index([ownerId])
 }

@@ -16,6 +16,9 @@ import type {
   PetCareLog as PrismaPetCareLog,
   PetEnclosure as PrismaPetEnclosure,
   PetEnvironmentReading as PrismaPetEnvironmentReading,
+  PetBreedingPair as PrismaPetBreedingPair,
+  PetClutch as PrismaPetClutch,
+  PetSale as PrismaPetSale,
 } from "@prisma/client";
 
 export type { ItemHistory };
@@ -296,10 +299,32 @@ export type PetCareTask = PrismaPetCareTask;
 export type PetCareLog = PrismaPetCareLog;
 export type PetEnclosure = PrismaPetEnclosure;
 export type PetEnvironmentReading = PrismaPetEnvironmentReading;
+export type PetBreedingPair = PrismaPetBreedingPair;
+export type PetClutch = PrismaPetClutch;
+export type PetSale = PrismaPetSale;
 
 export type PetEnclosureWithReadings = PetEnclosure & {
   readings: PetEnvironmentReading[];
 };
+
+export type PetRef = { id: string; name: string; species?: string; sex?: string | null; status?: string };
+
+export type PetBreedingPairWithRelations = PetBreedingPair & {
+  male: PetRef | null;
+  female: PetRef | null;
+  clutches: PetClutch[];
+};
+
+/** Dane zakładek Hodowla / Genetyka (ładowane osobno, by nie obciążać getPet). */
+export interface PetBreedingData {
+  genetics: string | null;
+  sire: PetRef | null;
+  dam: PetRef | null;
+  offspring: PetRef[];
+  pairs: PetBreedingPairWithRelations[];
+  sales: PetSale[];
+  candidates: Array<PetRef & { genetics: string | null }>;
+}
 
 export type PetShare = PrismaPetShare & {
   user?: { id: string; name: string | null; email: string | null; image: string | null } | null;
