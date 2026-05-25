@@ -29,7 +29,7 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ["localhost:3000", "worldofmag.onrender.com"],
+      allowedOrigins: ["localhost:3000", "worldofmag.onrender.com", "omnia-prod.onrender.com"],
     },
   },
 };
