@@ -8,6 +8,7 @@ import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
 import { PetsSideNav } from "@/components/pets/PetsSideNav";
 import { isPathLocked } from "@/lib/permissions";
+import { APP_NAME } from "@/lib/appName";
 
 interface ModuleSidebarProps {
   invitationCount?: number;
@@ -162,7 +163,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
       >
         <Sparkles size={18} style={{ color: "var(--accent-purple)" }} />
         <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
-          WorldOfMag
+          {APP_NAME}
         </span>
       </div>
 

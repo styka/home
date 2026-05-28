@@ -8,6 +8,7 @@ import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 import { ToastProvider } from "@/components/ui/Toast";
 import { isPathLocked } from "@/lib/permissions";
+import { APP_NAME } from "@/lib/appName";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -84,7 +85,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               {activeModule?.topBarIcon ?? <Sparkles size={16} />}
             </span>
             <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              {activeModule?.label ?? "WorldOfMag"}
+              {activeModule?.label ?? APP_NAME}
             </span>
           </div>
         </div>
@@ -106,7 +107,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               <div className="flex items-center justify-between px-4" style={{ height: 44 }}>
                 <div className="flex items-center gap-2">
                   <Sparkles size={18} style={{ color: "var(--accent-purple)" }} />
-                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>WorldOfMag</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>{APP_NAME}</span>
                 </div>
                 <button onClick={() => setMenuOpen(false)} className="flex items-center justify-center w-8 h-8 rounded" style={{ color: "var(--text-secondary)" }} aria-label="Zamknij menu">
                   <X size={16} />
