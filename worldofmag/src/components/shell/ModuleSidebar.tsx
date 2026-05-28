@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Sparkles, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck, PawPrint } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck, PawPrint } from "lucide-react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
@@ -161,7 +162,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
         className="flex items-center gap-2 px-4 h-12 border-b"
         style={{ borderColor: "var(--border)" }}
       >
-        <Sparkles size={18} style={{ color: "var(--accent-purple)" }} />
+        <BrandLogo px={20} />
         <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
           {APP_NAME}
         </span>

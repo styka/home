@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Sparkles, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat, FlaskConical, Truck, PawPrint } from "lucide-react";
+import { Menu, X, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat, FlaskConical, Truck, PawPrint } from "lucide-react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -82,7 +83,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
           </button>
           <div className="flex items-center gap-1.5">
             <span style={{ color: activeModule?.color ?? "var(--accent-purple)" }}>
-              {activeModule?.topBarIcon ?? <Sparkles size={16} />}
+              {activeModule?.topBarIcon ?? <BrandLogo px={18} />}
             </span>
             <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
               {activeModule?.label ?? APP_NAME}
@@ -106,7 +107,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
             <div className="flex-shrink-0 border-b" style={{ borderColor: "var(--border)", paddingTop: "env(safe-area-inset-top)" }}>
               <div className="flex items-center justify-between px-4" style={{ height: 44 }}>
                 <div className="flex items-center gap-2">
-                  <Sparkles size={18} style={{ color: "var(--accent-purple)" }} />
+                  <BrandLogo px={20} />
                   <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>{APP_NAME}</span>
                 </div>
                 <button onClick={() => setMenuOpen(false)} className="flex items-center justify-center w-8 h-8 rounded" style={{ color: "var(--text-secondary)" }} aria-label="Zamknij menu">

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Sparkles, BookOpen, Lock } from "lucide-react";
+import { BookOpen, Lock } from "lucide-react";
+import { BrandLogoCycler } from "@/components/brand/BrandLogoCycler";
 import { AISuggestions } from "@/components/home/AISuggestions";
 import { InvitationsBanner } from "@/components/home/InvitationsBanner";
 import { ModuleSnapshotGrid } from "@/components/home/ModuleSnapshotGrid";
@@ -124,7 +125,7 @@ export function HomePage({
         {/* Greeting */}
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <Sparkles size={18} style={{ color: "var(--accent-purple)" }} />
+            <BrandLogoCycler px={22} />
             <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
               {getGreeting(userName)}
             </h1>
@@ -145,7 +146,7 @@ export function HomePage({
               </span>
             )}
           </div>
-          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0, paddingLeft: 26 }}>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0, paddingLeft: 30 }}>
             {getSubtitle(pendingItems, todayTasks, overdueTasks, todayMeals.length)}
           </p>
         </div>
