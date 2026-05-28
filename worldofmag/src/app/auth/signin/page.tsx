@@ -9,7 +9,11 @@ const FEATURES = [
   { icon: "📅", label: "Kalendarz",        desc: "Terminy i przypomnienia" },
 ]
 
-export default function SignInPage() {
+export default function SignInPage({ searchParams }: { searchParams?: { callbackUrl?: string } }) {
+  const raw = searchParams?.callbackUrl
+  // Tylko ścieżki względne (ochrona przed open-redirect); /auth/* → pulpit, by uniknąć pętli.
+  const callbackUrl =
+    raw && raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/auth") ? raw : "/"
   return (
     <>
       <style>{`
@@ -296,7 +300,7 @@ export default function SignInPage() {
             <form
               action={async () => {
                 "use server"
-                await signIn("google", { redirectTo: "/shopping" })
+                await signIn("google", { redirectTo: callbackUrl })
               }}
               style={{ width: "100%" }}
             >
