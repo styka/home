@@ -4,6 +4,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { auth } from "@/lib/auth";
 import { getPendingInvitationsCount } from "@/actions/invitations";
+import { APP_NAME } from "@/lib/appName";
 
 export const viewport: Viewport = {
   themeColor: "#0d0d0d",
@@ -14,22 +15,17 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "WorldOfMag",
+  title: APP_NAME,
   description: "Personal management system",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "WorldOfMag",
+    title: APP_NAME,
     startupImage: "/icons/apple-touch-icon.png",
   },
-  icons: {
-    icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
-  },
+  // Favicon (zakładka) i ikona iOS są generowane konwencją plikową:
+  // src/app/icon.tsx oraz src/app/apple-icon.tsx (kolor zależny od środowiska).
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
