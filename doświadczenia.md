@@ -4,6 +4,34 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-05-28 — Build na Render pada: `Module not found: '@/...'` bo `NODE_ENV=production` wycina devDependencies
+
+**Problem:** Nowy serwis prod na Render (`omnia-prod`) wywalał build:
+`Module not found: Can't resolve '@/actions/config'` (oraz `@/actions/reports`,
+`@/lib/auth`, `@/lib/permissions`) — same pliki pod `src/app/admin/`. Lokalnie
+build przechodził bez problemu, na obu wersjach Node (22 i 24). Mylące tropy:
+wielkość liter (Mac↔Linux), wersja Node, brak `baseUrl` w `tsconfig` — wszystkie
+okazały się fałszywe. Prawdziwy ślad był w logu: „added **111 packages**" —
+zdecydowanie za mało. `typescript` siedzi w `devDependencies`, a ustawione
+`NODE_ENV=production` każe `npm ci` pominąć devDependencies. Bez pakietu
+`typescript` Next.js po cichu nie wczytuje aliasu `@` z `tsconfig.json` →
+„Module not found". Widać tylko ~5 błędów (a nie 77), bo build przerywa się na
+pierwszych alfabetycznie trasach (`/admin/...`).
+
+**Rozwiązanie:** Dodano `worldofmag/.npmrc` z linią `include=dev`, co wymusza
+instalację devDependencies również przy `NODE_ENV=production`. Zweryfikowane:
+`NODE_ENV=production npm ci` z tym `.npmrc` instaluje 198 pakietów (zamiast 57),
+`typescript` jest obecny, a `next build` przechodzi (69/69 stron) na Node 24.
+
+**Lekcja:** Gdy build na Render/CI pada na `Module not found: '@/...'`, a
+lokalnie działa — sprawdź najpierw liczbę zainstalowanych pakietów w logu.
+`NODE_ENV=production` + `npm ci` = brak devDependencies (w tym `typescript`,
+`@types/*`, `tailwindcss`), których Next potrzebuje do BUILDU. Diagnozę
+odtwarzaj przez `NODE_ENV=production npm ci` w czystym checkoutcie, nie przez
+zwykłe `npm install`. Trzymaj `.npmrc` z `include=dev` w katalogu aplikacji.
+
+---
+
 ## 2026-05-25 — TS: iteracja po `Map.values()` wywala `tsc` (TS2802)
 
 **Problem:** W `petGenetics.ts` `for (const x of map.values())` wywaliło
