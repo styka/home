@@ -17,7 +17,6 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: APP_NAME,
   description: "Personal management system",
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
