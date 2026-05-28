@@ -260,6 +260,17 @@ git push origin master
 
 **Seed data** does not run automatically after deploy — run manually via Render Shell if needed.
 
+### Git workflow (merge przez `develop`)
+
+Obowiązuje przepływ **`feature → develop → master`**:
+- **`develop`** to gałąź integracyjna — pracę z gałęzi roboczych (`claude/*`)
+  mergujemy najpierw do `develop`.
+- **`master`** to produkcja (auto-deploy Render) — promocję `develop → master`
+  wykonujemy **tylko na wyraźną prośbę** użytkownika.
+- Preferowany fast-forward; jeśli gałąź docelowa się rozeszła, robimy zwykły
+  merge (bez force-push).
+
+
 ---
 
 ## AI Assistant Gotchas
