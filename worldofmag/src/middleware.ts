@@ -7,5 +7,8 @@ export const { auth: middleware } = NextAuth(authConfig)
 export default middleware
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|icons|manifest\\.json|sw\\.js).*)"],
+  // Bramka logowania pomija: API auth, zasoby _next, generowane ikony (icon/apple-icon/
+  // pwa-icon), manifest, service worker i favicon — muszą być publiczne, bo przeglądarka
+  // i iOS pobierają je BEZ sesji (inaczej dostają redirect i pokazują starą/cache'owaną ikonę).
+  matcher: ["/((?!api/auth|_next/static|_next/image|icon|apple-icon|pwa-icon|manifest|sw\\.js|favicon).*)"],
 }
