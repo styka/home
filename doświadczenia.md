@@ -4,6 +4,31 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-05-29 — Powiadomienie zadania pojawiało się podwójnie (Notification API bez dedup)
+**Problem:** Powiadomienie „Zadanie za chwilę: …” przychodziło dwukrotnie. `checkDueNotifications()`
+w `TasksPage.tsx` było wołane z `useEffect([tasks])`, więc każda zmiana propu `tasks`
+(re-render / `revalidatePath`) ponownie tworzyła `new Notification(...)` dla tego samego zadania.
+Brakowało też w treści informacji, z jakiego projektu jest zadanie — był tylko tytuł + „from Omnia”
+(„Omnia” to nazwa PWA doklejana jako źródło przez system, nie da się jej usunąć z poziomu kodu).
+**Rozwiązanie:** Dedup przez `useRef<Set<string>>` z kluczem `id:dueDate` (przeżywa re-rendery,
+re-notyfikacja tylko gdy zmieni się termin). Do treści powiadomienia dodano nazwę projektu (z emoji),
+więc widać konkretny projekt zamiast samej marki.
+**Lekcja:** Powiadomienia odpalane w `useEffect` zależnym od danych MUSZĄ mieć dedup poza stanem Reacta
+(`useRef`), bo efekt powtórzy się przy każdym re-renderze. Nazwy aplikacji w Notification API nie
+nadpiszesz — kontekst (projekt/źródło) podawaj w `title`/`body`.
+
+## 2026-05-29 — Margines ikony: licz od ZEWNĘTRZNEJ krawędzi pociągnięcia, nie od promienia
+**Problem:** Trzeba było dać ikonie aplikacji jednolity ~2px margines. Pierścienie rysowane są
+`stroke`iem o szerokości `sw`, więc realny zasięg grafiki to `R + sw/2`, a nie `R`. Liczenie marginesu
+od samego `R` zostawiłoby pół grubości stroke’a wystające poza zakładany margines.
+**Rozwiązanie:** W `brandLogo.ts` promień zewnętrzny liczony jako `R = 50 - MARGIN - MAX_SW/2`
+(siatka 100×100). Wewnętrzne pierścienie kurczą się same (`r *= K`). Po zmianie geometrii podbito
+`ICON_VERSION` (cache iOS).
+**Lekcja:** Przy marginesach grafiki wektorowej ze `stroke` uwzględniaj `sw/2`. Każda zmiana wyglądu
+ikony = podbicie `ICON_VERSION`.
+
+---
+
 ## 2026-05-29 — iOS uparcie cache'uje apple-touch-icon po ŚCIEŻCE (ignoruje ?query) → wersjonowanie ścieżki
 **Problem:** Po zmianie logo ikona na ekranie startowym iPhone nadal była stara, mimo że
 favicon w Safari/Chrome był nowy, a endpoint `/apple-icon` serwował poprawny PNG (zweryfikowane

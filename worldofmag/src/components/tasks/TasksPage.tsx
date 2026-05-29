@@ -37,6 +37,9 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const quickAddRef = useRef<QuickAddTaskHandle>(null);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const searchRef = useRef<HTMLInputElement>(null);
+  // Zadania, dla których już wysłaliśmy powiadomienie (klucz: id + termin).
+  // Przeżywa re-rendery i zmiany propu `tasks`, więc nie dublujemy notyfikacji.
+  const notifiedRef = useRef<Set<string>>(new Set());
 
   // For virtual views, create tasks in inbox instead
   const isVirtualView = ["today", "upcoming", "overdue", "all"].includes(projectId);
@@ -68,12 +71,21 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     taskList.forEach((t) => {
       if (!t.dueDate || t.status === "DONE" || t.status === "CANCELLED") return;
       const due = new Date(t.dueDate);
-      if (due >= now && due <= soon) {
-        new Notification(`Zadanie za chwilę: ${t.title}`, {
-          body: `Termin: ${due.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}`,
-          icon: "/pwa-icon/192",
-        });
-      }
+      if (due < now || due > soon) return;
+      // Dedup: jedno powiadomienie na zadanie + termin. Bez tego każdy re-render
+      // (zmiana propu `tasks` / rewalidacja) wysyłał kolejną notyfikację.
+      const key = `${t.id}:${t.dueDate}`;
+      if (notifiedRef.current.has(key)) return;
+      notifiedRef.current.add(key);
+      // Treść wskazuje konkretny projekt (a nie tylko nazwę aplikacji „Omnia”, którą
+      // system doklepuje jako źródło powiadomienia).
+      const project = t.project?.isInbox ? "Skrzynka" : t.project?.name ?? "Skrzynka";
+      const projectLabel = t.project?.emoji ? `${t.project.emoji} ${project}` : project;
+      const time = due.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
+      new Notification(`Zadanie za chwilę: ${t.title}`, {
+        body: `Projekt: ${projectLabel} · Termin: ${time}`,
+        icon: "/pwa-icon/192",
+      });
     });
   }
 
