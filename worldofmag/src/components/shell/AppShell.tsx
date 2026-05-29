@@ -5,11 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat, FlaskConical, Truck, PawPrint } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { AppName } from "@/components/brand/AppName";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 import { ToastProvider } from "@/components/ui/Toast";
 import { isPathLocked } from "@/lib/permissions";
-import { APP_NAME } from "@/lib/appName";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -86,7 +86,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               {activeModule?.topBarIcon ?? <BrandLogo px={18} />}
             </span>
             <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              {activeModule?.label ?? APP_NAME}
+              {activeModule?.label ?? <AppName />}
             </span>
           </div>
         </div>
@@ -108,7 +108,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               <div className="flex items-center justify-between px-4" style={{ height: 44 }}>
                 <div className="flex items-center gap-2">
                   <BrandLogo px={20} />
-                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>{APP_NAME}</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}><AppName /></span>
                 </div>
                 <button onClick={() => setMenuOpen(false)} className="flex items-center justify-center w-8 h-8 rounded" style={{ color: "var(--text-secondary)" }} aria-label="Zamknij menu">
                   <X size={16} />

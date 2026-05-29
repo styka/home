@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { BookOpen, Lock } from "lucide-react";
-import { BrandLogoCycler } from "@/components/brand/BrandLogoCycler";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AISuggestions } from "@/components/home/AISuggestions";
 import { InvitationsBanner } from "@/components/home/InvitationsBanner";
 import { ModuleSnapshotGrid } from "@/components/home/ModuleSnapshotGrid";
@@ -125,7 +125,7 @@ export function HomePage({
         {/* Greeting */}
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <BrandLogoCycler px={22} />
+            <BrandLogo px={24} />
             <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
               {getGreeting(userName)}
             </h1>

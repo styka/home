@@ -2,24 +2,18 @@
 
 import { useId } from "react";
 import { IS_PROD } from "@/lib/appName";
-import { BRAND_VARIANTS, brandTileGradient } from "@/lib/brandVariants";
+import { depthRings, brandColors } from "@/lib/brandLogo";
 
-// Znak marki jako kafel gradientowy + biały kształt. Kolor zależny od środowiska
-// (prod = indygo→fiolet, dev = szarość), chyba że `prod` wymuszone propsem.
-export function BrandLogo({
-  variant = 0,
-  px = 22,
-  prod,
-}: {
-  variant?: number;
-  px?: number;
-  prod?: boolean;
-}) {
+// Znak marki „pierścienie głębi": koncentryczne okręgi cieńsze i gęstsze ku środkowi,
+// z malejącą przezroczystością (efekt tunelu). Tło przezroczyste. Kolor zależny od
+// środowiska (prod = gradient indygo→fiolet, dev = cyjan), chyba że `prod` wymuszone.
+export function BrandLogo({ px = 22, prod }: { px?: number; prod?: boolean }) {
   const rawId = useId();
-  const id = `brand-${rawId.replace(/[^a-zA-Z0-9]/g, "")}`;
+  const id = `brandGrad-${rawId.replace(/[^a-zA-Z0-9]/g, "")}`;
   const isProd = prod ?? IS_PROD;
-  const g = brandTileGradient(isProd);
-  const inner = BRAND_VARIANTS[((variant % BRAND_VARIANTS.length) + BRAND_VARIANTS.length) % BRAND_VARIANTS.length];
+  const colors = brandColors(isProd);
+  const stroke = colors.kind === "gradient" ? `url(#${id})` : colors.color;
+  const rings = depthRings();
 
   return (
     <svg
@@ -30,21 +24,27 @@ export function BrandLogo({
       aria-label="Logo"
       style={{ display: "block", flexShrink: 0 }}
     >
-      <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor={g.from} />
-          <stop offset="1" stopColor={g.to} />
-        </linearGradient>
-      </defs>
-      <rect width="100" height="100" rx="22" fill={`url(#${id})`} />
-      <g
-        fill="none"
-        stroke="#fff"
-        strokeWidth={6}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        dangerouslySetInnerHTML={{ __html: inner }}
-      />
+      {colors.kind === "gradient" && (
+        <defs>
+          <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor={colors.from} />
+            <stop offset="1" stopColor={colors.to} />
+          </linearGradient>
+        </defs>
+      )}
+      <g fill="none" strokeLinecap="round">
+        {rings.map((ring, i) => (
+          <circle
+            key={i}
+            cx="50"
+            cy="50"
+            r={ring.r}
+            stroke={stroke}
+            strokeWidth={ring.sw}
+            strokeOpacity={ring.opacity}
+          />
+        ))}
+      </g>
     </svg>
   );
 }

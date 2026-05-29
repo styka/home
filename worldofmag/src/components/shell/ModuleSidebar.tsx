@@ -4,12 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck, PawPrint } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { AppName } from "@/components/brand/AppName";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
 import { PetsSideNav } from "@/components/pets/PetsSideNav";
 import { isPathLocked } from "@/lib/permissions";
-import { APP_NAME } from "@/lib/appName";
 
 interface ModuleSidebarProps {
   invitationCount?: number;
@@ -164,7 +164,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
       >
         <BrandLogo px={20} />
         <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
-          {APP_NAME}
+          <AppName />
         </span>
       </div>
 

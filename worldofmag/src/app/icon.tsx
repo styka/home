@@ -1,9 +1,13 @@
 import { ImageResponse } from "next/og";
-import { BrandMark } from "@/lib/brandIcon";
+import { IS_PROD } from "@/lib/appName";
+import { brandLogoSvgString } from "@/lib/brandLogo";
 
-export const size = { width: 32, height: 32 };
+export const size = { width: 64, height: 64 };
 export const contentType = "image/png";
 
+// Favicon — znak marki na przezroczystym tle (kolor zależny od środowiska).
 export default function Icon() {
-  return new ImageResponse(<BrandMark px={32} />, { ...size });
+  const svg = brandLogoSvgString(IS_PROD);
+  const src = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+  return new ImageResponse(<img width={size.width} height={size.height} src={src} />, { ...size });
 }
