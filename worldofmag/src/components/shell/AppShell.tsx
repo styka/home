@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat, FlaskConical, Truck, PawPrint } from "lucide-react";
+import { Menu, X, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat, FlaskConical, Truck, PawPrint, Car, Wallet } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { ModuleSidebar } from "./ModuleSidebar";
@@ -28,6 +28,8 @@ const MODULES = [
   { id: "kitchen",     label: "Kuchnia",       icon: <ChefHat size={20} />,      topBarIcon: <ChefHat size={16} />,      color: "var(--accent-orange)",   href: "/kitchen",     active: true,  exact: false },
   { id: "qa",          label: "QA",            icon: <FlaskConical size={20} />, topBarIcon: <FlaskConical size={16} />, color: "var(--accent-red)",      href: "/qa",          active: true,  exact: false },
   { id: "truck",       label: "Trasy TIR",     icon: <Truck size={20} />,        topBarIcon: <Truck size={16} />,        color: "var(--accent-blue)",     href: "/truck",       active: true,  exact: false },
+  { id: "flota",       label: "Flota",         icon: <Car size={20} />,          topBarIcon: <Car size={16} />,          color: "var(--accent-blue)",     href: "/flota",       active: true,  exact: false },
+  { id: "portfel",     label: "Portfel",       icon: <Wallet size={20} />,       topBarIcon: <Wallet size={16} />,       color: "var(--accent-green)",    href: "/portfel",     active: true,  exact: false },
   { id: "calendar",    label: "Calendar",      icon: <Calendar size={20} />,     topBarIcon: <Calendar size={16} />,     color: "var(--text-muted)",      href: "/calendar",    active: false, exact: false },
   { id: "work",        label: "Work",          icon: <Briefcase size={20} />,    topBarIcon: <Briefcase size={16} />,    color: "var(--text-muted)",      href: "/work",        active: false, exact: false },
   { id: "settings",    label: "Ustawienia",    icon: null,                        topBarIcon: <Settings size={16} />,    color: "var(--text-secondary)",  href: "/settings",    active: false, exact: false },
@@ -178,6 +180,14 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
 
               <MobileItem href="/truck" pathname={pathname} locked={isLocked("/truck")}>
                 <Truck size={20} style={{ color: "var(--accent-blue)", flexShrink: 0 }} /><span>Trasy TIR</span>
+              </MobileItem>
+
+              <MobileItem href="/flota" pathname={pathname} locked={isLocked("/flota")}>
+                <Car size={20} style={{ color: "var(--accent-blue)", flexShrink: 0 }} /><span>Flota</span>
+              </MobileItem>
+
+              <MobileItem href="/portfel" pathname={pathname} locked={isLocked("/portfel")}>
+                <Wallet size={20} style={{ color: "var(--accent-green)", flexShrink: 0 }} /><span>Portfel</span>
               </MobileItem>
 
               <MobileItem href="/reports" pathname={pathname} locked={isLocked("/reports")}>

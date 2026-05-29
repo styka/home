@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck, PawPrint } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck, PawPrint, Car, Wallet } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
 import { PetsSideNav } from "@/components/pets/PetsSideNav";
+import { FlotaSideNav } from "@/components/flota/FlotaSideNav";
+import { PortfelSideNav } from "@/components/portfel/PortfelSideNav";
 import { isPathLocked } from "@/lib/permissions";
 
 interface ModuleSidebarProps {
@@ -142,6 +144,8 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
   const isKitchenActive = pathname.startsWith("/kitchen");
   const isQaActive = pathname.startsWith("/qa");
   const isPetsActive = pathname.startsWith("/pets");
+  const isFlotaActive = pathname.startsWith("/flota");
+  const isPortfelActive = pathname.startsWith("/portfel");
 
   function isLocked(href: string): boolean {
     return isPathLocked(userPermissions, href);
@@ -236,6 +240,22 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
 
         {/* Trasy TIR — dostępne dla ADMIN i BETA_TESTER */}
         <NavItem href="/truck" label="Trasy TIR" icon={<Truck size={18} />} pathname={pathname} iconColor="var(--accent-blue)" locked={isLocked("/truck")} />
+
+        {/* Flota */}
+        <NavItem href="/flota" label="Flota" icon={<Car size={18} />} pathname={pathname} iconColor="var(--accent-blue)" locked={isLocked("/flota")} />
+        {isFlotaActive && !isLocked("/flota") && (
+          <div className="mb-1">
+            <FlotaSideNav />
+          </div>
+        )}
+
+        {/* Portfel */}
+        <NavItem href="/portfel" label="Portfel" icon={<Wallet size={18} />} pathname={pathname} iconColor="var(--accent-green)" locked={isLocked("/portfel")} />
+        {isPortfelActive && !isLocked("/portfel") && (
+          <div className="mb-1">
+            <PortfelSideNav />
+          </div>
+        )}
 
         {/* Reports — dostępne dla wszystkich */}
         <NavItem href="/reports" label="Raporty" icon={<BookOpen size={18} />} pathname={pathname} iconColor="var(--accent-purple)" locked={isLocked("/reports")} />

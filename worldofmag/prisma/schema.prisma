@@ -55,6 +55,8 @@ model User {
   ownedEnclosures        PetEnclosure[]        @relation("OwnedEnclosures")
   ownedBreedingPairs     PetBreedingPair[]     @relation("OwnedPairs")
   petSales               PetSale[]             @relation("OwnedPetSales")
+  vehicles               Vehicle[]             @relation("OwnedVehicles")
+  walletElements         WalletElement[]       @relation("OwnedWalletElements")
 }
 
 model UserRole {
@@ -159,6 +161,8 @@ model Team {
   enclosures           PetEnclosure[]        @relation("TeamEnclosures")
   breedingPairs        PetBreedingPair[]     @relation("TeamPairs")
   petSales             PetSale[]             @relation("TeamPetSales")
+  vehicles             Vehicle[]             @relation("TeamVehicles")
+  walletElements       WalletElement[]       @relation("TeamWalletElements")
 }
 
 model TeamMember {
@@ -1113,4 +1117,103 @@ model PetSale {
 
   @@index([petId])
   @@index([ownerId])
+}
+
+// ─── Flota (pojazdy: serwisy, opony, tankowania) ──────────────────────────
+
+model Vehicle {
+  id            String    @id @default(cuid())
+  name          String
+  make          String? // marka
+  model         String?
+  year          Int?
+  plate         String? // nr rejestracyjny
+  vin           String?
+  fuelType      String    @default("petrol") // petrol|diesel|lpg|electric|hybrid
+  odometer      Int       @default(0) // bieżący przebieg [km]
+  inspectionDue DateTime? // przegląd techniczny
+  insuranceDue  DateTime? // OC/AC
+  notes         String?
+  ownerId       String?
+  ownerTeamId   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  owner     User?           @relation("OwnedVehicles", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?           @relation("TeamVehicles", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  fuelLogs  FuelLog[]
+  services  ServiceRecord[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+}
+
+model FuelLog {
+  id        String   @id @default(cuid())
+  vehicleId String
+  date      DateTime @default(now())
+  odometer  Int // przebieg przy tankowaniu [km]
+  liters    Float
+  totalCost Float?
+  full      Boolean  @default(true) // pełny bak (do wyliczenia zużycia)
+  note      String?
+  createdAt DateTime @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId, date])
+}
+
+model ServiceRecord {
+  id        String   @id @default(cuid())
+  vehicleId String
+  date      DateTime @default(now())
+  odometer  Int?
+  type      String   @default("other") // oil|tires|repair|inspection|insurance|other
+  cost      Float?
+  note      String?
+  createdAt DateTime @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId, date])
+}
+
+// ─── Portfel (elementy majątku + historia zmian salda) ────────────────────
+
+model WalletElement {
+  id          String   @id @default(cuid())
+  name        String
+  kind        String   @default("account") // cash|account|savings|investment|property|receivable|debt
+  currency    String   @default("PLN")
+  balance     Float    @default(0) // bieżące saldo (zdenormalizowane)
+  archived    Boolean  @default(false)
+  note        String?
+  ownerId     String?
+  ownerTeamId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner     User?         @relation("OwnedWalletElements", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?         @relation("TeamWalletElements", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  entries   WalletEntry[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+}
+
+model WalletEntry {
+  id          String   @id @default(cuid())
+  elementId   String
+  date        DateTime @default(now())
+  balanceAfter Float // saldo po zmianie — szereg czasowy do wykresów
+  delta       Float // zmiana (+/-)
+  kind        String   @default("adjustment") // income|expense|adjustment
+  category    String?
+  note        String?
+  createdAt   DateTime @default(now())
+
+  element WalletElement @relation(fields: [elementId], references: [id], onDelete: Cascade)
+
+  @@index([elementId, date])
 }
