@@ -353,11 +353,11 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           </div>
         )}
 
-        {/* Detail panel — mobile modal */}
+        {/* Detail panel — mobile modal (padding-top = pasek stanu/notch iPhone) */}
         {openTask && (
           <div
             className="md:hidden fixed inset-0 z-50 flex flex-col"
-            style={{ backgroundColor: "var(--bg-surface)" }}
+            style={{ backgroundColor: "var(--bg-surface)", paddingTop: "env(safe-area-inset-top)" }}
           >
             <TaskDetail
               task={openTask}

@@ -30,6 +30,7 @@ const MODULES = [
   { id: "truck",       label: "Trasy TIR",     icon: <Truck size={20} />,        topBarIcon: <Truck size={16} />,        color: "var(--accent-blue)",     href: "/truck",       active: true,  exact: false },
   { id: "flota",       label: "Flota",         icon: <Car size={20} />,          topBarIcon: <Car size={16} />,          color: "var(--accent-blue)",     href: "/flota",       active: true,  exact: false },
   { id: "portfel",     label: "Portfel",       icon: <Wallet size={20} />,       topBarIcon: <Wallet size={16} />,       color: "var(--accent-green)",    href: "/portfel",     active: true,  exact: false },
+  { id: "reports",     label: "Raporty",       icon: <BookOpen size={20} />,     topBarIcon: <BookOpen size={16} />,     color: "var(--accent-purple)",   href: "/reports",     active: true,  exact: false },
   { id: "calendar",    label: "Calendar",      icon: <Calendar size={20} />,     topBarIcon: <Calendar size={16} />,     color: "var(--text-muted)",      href: "/calendar",    active: false, exact: false },
   { id: "work",        label: "Work",          icon: <Briefcase size={20} />,    topBarIcon: <Briefcase size={16} />,    color: "var(--text-muted)",      href: "/work",        active: false, exact: false },
   { id: "settings",    label: "Ustawienia",    icon: null,                        topBarIcon: <Settings size={16} />,    color: "var(--text-secondary)",  href: "/settings",    active: false, exact: false },
