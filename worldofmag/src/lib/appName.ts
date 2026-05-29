@@ -9,3 +9,8 @@ export const APP_NAME = "Omnia";
 // Czysty tekst do <title>, manifestu i tytułu iOS (bez indeksu górnego):
 // prod → „Omnia", dev → „Omnia DEV". Indeks górny ᴰᴱⱽ renderuje komponent <AppName/>.
 export const APP_TITLE = IS_PROD ? "Omnia" : "Omnia DEV";
+
+// Wersja ikony — podbij przy każdej zmianie wyglądu logo. iOS cache'uje
+// apple-touch-icon po SAMEJ ścieżce (ignoruje ?query), więc wymuszamy świeżość
+// zmianą ścieżki: /apple-touch-icon/<ICON_VERSION>. Patrz doświadczenia.md.
+export const ICON_VERSION = "2";

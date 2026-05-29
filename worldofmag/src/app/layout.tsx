@@ -4,7 +4,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { auth } from "@/lib/auth";
 import { getPendingInvitationsCount } from "@/actions/invitations";
-import { APP_TITLE } from "@/lib/appName";
+import { APP_TITLE, ICON_VERSION } from "@/lib/appName";
 
 export const viewport: Viewport = {
   themeColor: "#0d0d0d",
@@ -43,7 +43,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content={APP_TITLE} />
-        {/* Brak ręcznego <link rel="apple-touch-icon"> — używamy generowanej app/apple-icon.tsx. */}
+        {/* iOS cache'uje apple-touch-icon po SAMEJ ścieżce (ignoruje ?query), więc
+            podajemy go pod wersjonowaną ścieżką /apple-touch-icon/<ICON_VERSION>.
+            Podbij ICON_VERSION w appName.ts przy każdej zmianie wyglądu logo. */}
+        <link rel="apple-touch-icon" href={`/apple-touch-icon/${ICON_VERSION}`} />
       </head>
       <body>
         <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions}>{children}</AppShell>
