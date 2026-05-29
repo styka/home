@@ -1,6 +1,7 @@
 "use client";
 
 import { TaskRow } from "./TaskRow";
+import { CompletedSection } from "./CompletedSection";
 import type { Task, TaskStatusFilter, ViewMode } from "@/types";
 
 interface TaskListProps {
@@ -166,18 +167,7 @@ export function TaskList({ tasks, filter, viewMode, selectedTagIds, focusedTaskI
             {groupTasks.map(renderTask)}
           </div>
         ))}
-        {done.length > 0 && (
-          <div>
-            <div
-              className="flex items-center gap-2 px-4 py-1 text-xs font-medium sticky top-0"
-              style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-base)", borderBottom: "1px solid var(--border)" }}
-            >
-              ✓ Zrobione / Anulowane
-              <span style={{ fontWeight: 400 }}>({done.length})</span>
-            </div>
-            {done.map(renderTask)}
-          </div>
-        )}
+        <CompletedSection tasks={done} renderTask={renderTask} />
       </div>
     );
   }
@@ -205,18 +195,7 @@ export function TaskList({ tasks, filter, viewMode, selectedTagIds, focusedTaskI
           </div>
         );
       })}
-      {done.length > 0 && (
-        <div>
-          <div
-            className="flex items-center gap-2 px-4 py-1 text-xs font-medium sticky top-0"
-            style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-base)", borderBottom: "1px solid var(--border)" }}
-          >
-            ✓ Zrobione / Anulowane
-            <span style={{ fontWeight: 400 }}>({done.length})</span>
-          </div>
-          {done.map(renderTask)}
-        </div>
-      )}
+      <CompletedSection tasks={done} renderTask={renderTask} />
     </div>
   );
 }
