@@ -157,16 +157,18 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
         flexShrink: 0,
       }}
     >
-      {/* Logo */}
-      <div
+      {/* Logo → strona główna */}
+      <Link
+        href="/"
         className="flex items-center gap-2 px-4 h-12 border-b"
-        style={{ borderColor: "var(--border)" }}
+        style={{ borderColor: "var(--border)", textDecoration: "none" }}
+        title="Strona główna"
       >
         <BrandLogo px={20} />
         <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
           <AppName />
         </span>
-      </div>
+      </Link>
 
       {/* Modules */}
       <nav className="flex-1 py-2 overflow-y-auto">

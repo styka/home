@@ -81,14 +81,19 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               <span style={{ position: "absolute", top: 2, right: 2, background: "#ef4444", borderRadius: "50%", width: 8, height: 8 }} />
             )}
           </button>
-          <div className="flex items-center gap-1.5">
+          <Link
+            href={activeModule?.href ?? "/"}
+            className="flex items-center gap-1.5"
+            style={{ textDecoration: "none" }}
+            title={`Przejdź do: ${activeModule?.label ?? "Strona główna"}`}
+          >
             <span style={{ color: activeModule?.color ?? "var(--accent-purple)" }}>
               {activeModule?.topBarIcon ?? <BrandLogo px={18} />}
             </span>
             <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
               {activeModule?.label ?? <AppName />}
             </span>
-          </div>
+          </Link>
         </div>
       </div>
 

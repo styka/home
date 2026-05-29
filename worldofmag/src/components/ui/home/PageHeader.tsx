@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 interface PageHeaderProps {
   icon: ReactNode;
@@ -6,9 +7,19 @@ interface PageHeaderProps {
   title: string;
   subtitle?: string;
   action?: ReactNode;
+  /** Gdy podane — tytuł działu staje się linkiem do strony domowej działu. */
+  href?: string;
 }
 
-export function PageHeader({ icon, iconColor, title, subtitle, action }: PageHeaderProps) {
+export function PageHeader({ icon, iconColor, title, subtitle, action, href }: PageHeaderProps) {
+  const titleInner = (
+    <>
+      <span style={{ color: iconColor, display: "flex", flexShrink: 0 }}>{icon}</span>
+      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {title}
+      </span>
+    </>
+  );
   return (
     <div
       style={{
@@ -30,10 +41,13 @@ export function PageHeader({ icon, iconColor, title, subtitle, action }: PageHea
             gap: 10,
           }}
         >
-          <span style={{ color: iconColor, display: "flex", flexShrink: 0 }}>{icon}</span>
-          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {title}
-          </span>
+          {href ? (
+            <Link href={href} title="Strona główna działu" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, color: "inherit", textDecoration: "none" }}>
+              {titleInner}
+            </Link>
+          ) : (
+            titleInner
+          )}
         </h1>
         {subtitle && (
           <p
