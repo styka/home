@@ -151,15 +151,12 @@ export function AICommandSheet() {
 
   return (
     <>
-      {/* FAB */}
+      {/* FAB — na mobile podniesiony ponad dolny pasek nawigacji (z-40, 56px+safe-area) */}
       <button
         onClick={() => setIsOpen(true)}
         title="Polecenie AI"
+        className="fixed right-5 z-40 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
         style={{
-          position: "fixed",
-          bottom: 24,
-          right: 20,
-          zIndex: 30,
           width: 52,
           height: 52,
           borderRadius: "50%",
