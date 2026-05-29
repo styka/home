@@ -341,3 +341,45 @@ fixture'owi inną nazwę. Szybka walidacja całej serii bez przeglądarki:
 **Rozwiązanie:** Inline input wbudowany bezpośrednio w CommandPalette — `useState(creatingList)` + `useState(newListName)` + ref do focusu + obsługa `Enter`/`Escape`.
 
 **Lekcja:** Nigdy nie używać `window.prompt()`, `window.alert()`, `window.confirm()` w aplikacji Next.js. Zawsze zastępować własnym UI — inline inputem, modalem lub toast z akcją. Natywne dialogi są blokowane w PWA, iframe i na iOS Safari.
+
+## 2026-05-29 — Brak UI dodawania na liście zakupów → na mobile nie dało się nic dodać
+**Problem:** Widok listy zakupów (`ShoppingPage`) nie renderował żadnego pola dodawania
+produktu — jedyną drogą była paleta poleceń (`Ctrl+K`, tylko desktop). Komponent
+`QuickAddBar` istniał, ale był osierocony, a `[listId]/page.tsx` pobierał `categoryNames`
+i ich nie przekazywał. Na telefonie (brak skrótu klawiszowego) dodawanie było niemożliwe.
+**Rozwiązanie:** Podpięto istniejący, responsywny `QuickAddBar` w `ShoppingPage` i przekazano
+`categoryNames` z page.tsx.
+**Lekcja:** Każda funkcja sterowana wyłącznie skrótem klawiszowym musi mieć też widoczny
+element UI (przycisk/pole), inaczej znika na mobile. Po refaktorze sprawdź, czy komponenty
+nie zostały „osierocone" — `grep` na użycie komponentu, nie tylko na jego istnienie.
+
+## 2026-05-29 — FAB chowający się za mobilnym dolnym paskiem nawigacji
+**Problem:** „Magiczna" ikona AI (FAB) miała `position:fixed; bottom:24; z-index:30`, a dolny
+pasek nawigacji na mobile to `z-40`, wysokość `56px + safe-area` — FAB był pod paskiem i
+wyglądał na „zniknięty".
+**Rozwiązanie:** FAB na klasach Tailwind: `bottom-[calc(72px+env(safe-area-inset-bottom))]
+md:bottom-6 z-40` — ponad paskiem na mobile, bez zmian na desktopie.
+**Lekcja:** Elementy `position:fixed` w rogu muszą uwzględniać wysokość mobilnego paska
+nawigacji (+ `env(safe-area-inset-bottom)`) i mieć z-index ≥ pasek.
+
+## 2026-05-29 — Surowy „Digest" zamiast komunikatu przy błędzie Server Action
+**Problem:** Dodanie zadania z desktopu potrafiło rzucić błąd widoczny tylko jako
+„Digest: …", bo handler wołał `createTask` w `startTransition` bez `try/catch`, a akcja
+mogła rzucić m.in. gdy przekazano wirtualny widok (`all`/`today`) jako `projectId` do
+`assertProjectAccess`.
+**Rozwiązanie:** Utwardzono `createTask` (walidacja tytułu, wirtualne widoki = brak projektu,
+bezpieczne parsowanie dat) i owinięto wywołanie w `try/catch` z `useToast`.
+**Lekcja:** Każde wywołanie Server Action z UI owijaj w `try/catch` i pokazuj błąd (Toast) —
+„cichy Digest" to brak obsługi błędu. Akcje walidujące `projectId` muszą odsiewać wirtualne
+identyfikatory widoków, których nie ma w bazie.
+
+## 2026-05-29 — Lokalny dev: provider Prisma to tylko PostgreSQL (notka SQLite w CLAUDE.md nieaktualna)
+**Problem:** `npm run db:push` z `file:./dev.db` zawiódł — `schema.prisma` ma `provider =
+"postgresql"`, a Prisma CLI nie czyta `.env.local` (tylko `.env`). Build odpala też
+`scripts/migrate.js`, który próbuje połączyć się z bazą.
+**Rozwiązanie:** Do walidacji bez bazy wystarczy `prisma validate` + `prisma generate` z
+dowolnymi (atrapowymi) `DATABASE_URL`/`DIRECT_URL` (nie łączą się). `next build` kompiluje
+strony `force-dynamic` bez połączenia z bazą — błąd dotyczy wyłącznie post-build migracji.
+**Lekcja:** Schemat i typy waliduj `prisma validate` + `prisma generate` + `tsc --noEmit` +
+`next build`; połączenie z bazą (db:push/migrate) wymaga realnego Postgresa (Docker/Neon),
+nie pliku SQLite.
