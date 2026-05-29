@@ -18,7 +18,8 @@ export async function getOmniaTasksForClipboard(): Promise<{ title: string; desc
   return prisma.task.findMany({
     where: {
       projectId: { in: projects.map((p) => p.id) },
-      status: { notIn: ["DONE", "CANCELLED"] },
+      // Tylko zadania „do zrobienia" — pomijamy IN_PROGRESS/DEFERRED/DONE/CANCELLED.
+      status: "TODO",
       parentTaskId: null,
     },
     select: { title: true, description: true },
