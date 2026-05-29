@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
@@ -9,6 +10,7 @@ import { FilterTabs } from "./FilterTabs";
 import { ItemList } from "./ItemList";
 import { SearchBar } from "./SearchBar";
 import { SortControl } from "./SortControl";
+import { QuickAddBar } from "./QuickAddBar";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
 import { updateItemStatus, deleteItem, clearDoneItems } from "@/actions/items";
@@ -22,6 +24,7 @@ interface ShoppingPageProps {
   list: ShoppingListWithItems;
   allLists: ShoppingList[];
   categoryEmojiMap?: Record<string, string>;
+  categoryNames?: string[];
   stores: StoreWithGraph[];
 }
 
@@ -40,7 +43,7 @@ function loadSortMode(): SortMode {
   return { type: "category" };
 }
 
-export function ShoppingPage({ list, allLists, categoryEmojiMap, stores }: ShoppingPageProps) {
+export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames = [], stores }: ShoppingPageProps) {
   const router = useRouter();
   const { toggle: togglePalette } = useCommandPalette();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
@@ -184,12 +187,14 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, stores }: Shopp
           </select>
         </div>
 
-        {/* Desktop: list title (switching happens in sidebar) */}
+        {/* Desktop: list title — klik = strona główna działu Zakupy */}
         <h1
           className="hidden md:flex items-center gap-2 text-sm font-semibold truncate min-w-0"
           style={{ color: "var(--text-primary)" }}
         >
-          <span className="truncate">{list.name}</span>
+          <Link href="/shopping" className="truncate" style={{ color: "inherit", textDecoration: "none" }} title="Zakupy — strona główna działu">
+            {list.name}
+          </Link>
           {list.ownerTeam && (
             <span
               className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
@@ -230,6 +235,8 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, stores }: Shopp
           onClose={() => { setSearchQuery(""); setIsSearchOpen(false); }}
         />
       )}
+
+      <QuickAddBar listId={list.id} categoryNames={categoryNames} />
 
       <FilterTabs
         active={activeFilter}
