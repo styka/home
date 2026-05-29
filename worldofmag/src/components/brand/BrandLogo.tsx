@@ -45,6 +45,16 @@ export function BrandLogo({ px = 22, prod }: { px?: number; prod?: boolean }) {
           />
         ))}
       </g>
+      {!isProd && (
+        <>
+          <circle cx="50" cy="50" r="23" fill="#0d0d0d" fillOpacity={0.55} />
+          <g fill="none" stroke="#ffffff" strokeWidth={4.5} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M38 40 L29 50 L38 60" />
+            <path d="M62 40 L71 50 L62 60" />
+            <path d="M56 38 L44 62" />
+          </g>
+        </>
+      )}
     </svg>
   );
 }

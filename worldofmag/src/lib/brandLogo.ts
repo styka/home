@@ -52,6 +52,20 @@ export function brandColors(prod: boolean): BrandColors {
     : { kind: "solid", color: "#22d3ee" }; // dev: cyjan (wyraźnie inny)
 }
 
+// Wyróżnik środowiska DEV: jasny symbol </> na środku (≈ 42% szerokości ikony,
+// czyli prawie dwa razy mniejszy niż cała ikona), rysowany NAD kręgami. Tylko dev.
+// Pod symbolem półprzezroczysty ciemny krążek, by biały znak był czytelny na jasnych kręgach.
+export function devMarkerInner(): string {
+  return (
+    `<circle cx="50" cy="50" r="23" fill="#0d0d0d" fill-opacity="0.55"/>` +
+    `<g fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">` +
+    `<path d="M38 40 L29 50 L38 60"/>` + // lewy chevron <
+    `<path d="M62 40 L71 50 L62 60"/>` + // prawy chevron >
+    `<path d="M56 38 L44 62"/>` + // ukośnik /
+    `</g>`
+  );
+}
+
 // Pełny SVG (przezroczyste tło) — dla generatorów PNG (ImageResponse przez <img> data-URI).
 export function brandLogoSvgString(prod: boolean): string {
   const colors = brandColors(prod);
@@ -67,5 +81,6 @@ export function brandLogoSvgString(prod: boolean): string {
         `<circle cx="50" cy="50" r="${ring.r.toFixed(2)}" fill="none" stroke="${stroke}" stroke-width="${ring.sw.toFixed(2)}" stroke-opacity="${ring.opacity.toFixed(3)}"/>`,
     )
     .join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">${defs}${circles}</svg>`;
+  const marker = prod ? "" : devMarkerInner();
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">${defs}${circles}${marker}</svg>`;
 }
