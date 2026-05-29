@@ -421,3 +421,39 @@ aktywacji. Fallback: `writeText` (desktop/Android), a dla najstarszych przegląd
 **Lekcja:** Na iOS NIGDY nie wołaj `clipboard.writeText` po `await`. Jeśli tekst wymaga async pracy,
 przekaż `Promise` do `ClipboardItem` i użyj `clipboard.write([item])` — to jedyny sposób na zachowanie
 aktywacji użytkownika po fetchu. Zawsze testuj kopiowanie na realnym Safari/iPhone, nie tylko na desktopie.
+
+## 2026-05-29 — AI tworzyło zadanie w skrzynce zamiast w otwartym projekcie
+**Problem:** Na widoku `/tasks/<projectId>` polecenie do „magicznej ikony AI" („utwórz zadanie X")
+tworzyło zadanie w skrzynce, nie w otwartym projekcie. `AICommandSheet` wysyłał do LLM tylko opisowy
+`routeHint` („widok projektu zadań") bez ID/nazwy projektu, a `execute` przy braku `projectName`
+wpadał w fallback do inboxa.
+**Rozwiązanie:** `AICommandSheet` wyciąga `activeProjectId` ze ścieżki (tylko dla realnego projektu,
+nie widoków wirtualnych today/upcoming/overdue/all) i przekazuje `currentProjectId` do interpret i
+execute. Interpret dokleja nazwę bieżącego projektu do promptu (LLM ustawia `projectName` tylko gdy
+użytkownik wskaże inny). Execute: gdy brak `projectName`, używa `currentProjectId` (po sprawdzeniu
+dostępu) PRZED fallbackiem do skrzynki.
+**Lekcja:** Kontekst widoku przekazuj do LLM jako twarde dane (ID), nie tylko opis w `routeHint`.
+Domyślne wartości zależne od kontekstu egzekwuj po stronie serwera (execute), nie licz wyłącznie na to,
+że model „się domyśli".
+
+## 2026-05-29 — „from Omnia" w powiadomieniu jest NIEUSUWALNE z kodu
+**Problem:** Prośba o usunięcie „from Omnia" z tytułu powiadomienia. Śledztwo: aplikacja NIE wysyła
+e-maili (brak nodemailer/resend/itp.) ani web-push (brak handlera `push` w `sw.js`, brak VAPID).
+Powiadomienia to `new Notification()` w `TasksPage.tsx`. „Omnia" pochodzi z pola `name` manifestu PWA
+(`appName.ts` → `APP_TITLE`) i jest doklejane przez SYSTEM/przeglądarkę jako źródło powiadomienia.
+**Rozwiązanie:** Brak zmiany w kodzie — sufiks źródła jest dodawany przez OS dla zainstalowanego PWA
+(jak u każdej aplikacji) i nie ma API, by go usunąć. Jedyny kodowy regulator to zmiana `name` w
+manifeście (zmienia słowo, nie usuwa „from"). Udokumentowano w raporcie zamiast pozorować poprawkę.
+**Lekcja:** Atrybucji aplikacji w powiadomieniach (Notification API / web-push) nie da się usunąć z
+kodu — to zachowanie systemowe. Nie obiecuj „naprawy"; wyjaśnij ograniczenie i jedyny realny regulator
+(nazwa w manifeście).
+
+## 2026-05-29 — Załączniki zdjęć bez zewnętrznego storage → downscale do data-URL w DB
+**Problem:** Przepisy miały dostawać załączniki/zdjęcia, ale projekt nie ma żadnego storage (S3/CDN) —
+obrazy trzymane były dotąd tylko jako URL-e (string).
+**Rozwiązanie:** Zdjęcia zmniejszane po stronie klienta (canvas, max 1400 px, JPEG q≈0.82) i zapisywane
+jako `data:`-URL w `RecipeImage.url` (Postgres TEXT). OCR per zdjęcie (vision LLM) zapisuje transkrypcję
+w nowym polu `RecipeImage.ocrMarkdown` (NULL=nieanalizowane, ""=brak tekstu), prezentowaną obok zdjęcia.
+**Lekcja:** Bez storage pragmatycznie trzymaj zdjęcia jako downscalowane data-URL-e w DB, ale ZAWSZE
+zmniejszaj po stronie klienta przed zapisem (rozmiar wiersza/transferu). Rozróżniaj „nieanalizowane"
+(NULL) od „przeanalizowane, brak wyniku" ("") — inaczej nie wiadomo, czy ponowić OCR.
