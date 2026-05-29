@@ -61,33 +61,82 @@ Całościowy opis sesji implementacyjnej — ile zadań, główne obszary zmian,
 
 type State = "idle" | "loading" | "copied" | "empty" | "error";
 
+const EMPTY = "EMPTY";
+
+// Kopiowanie z tekstem dostarczanym leniwie (asynchronicznie).
+// Mobile (iOS Safari): writeText wywołany PO `await` traci aktywację użytkownika
+// (transient activation) → NotAllowedError. Dlatego najpierw próbujemy
+// `clipboard.write` z ClipboardItem, któremu wolno podać Promise<Blob> — zapis
+// startuje synchronicznie w obrębie gestu, a przeglądarka dokleja tekst gdy będzie
+// gotowy, nie tracąc aktywacji. Desktop/Android: fallback na writeText, a dla
+// najstarszych przeglądarek — textarea + execCommand.
+async function copyLazy(producer: () => Promise<string>): Promise<void> {
+  if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+    try {
+      const item = new ClipboardItem({
+        "text/plain": producer().then((t) => new Blob([t], { type: "text/plain" })),
+      });
+      await navigator.clipboard.write([item]);
+      return;
+    } catch (e) {
+      // „Pusto" propagujemy bez prób fallbacku; resztę traktujemy jak brak wsparcia
+      // Promise w ClipboardItem (starszy Chrome) i schodzimy niżej.
+      if (e instanceof Error && e.message === EMPTY) throw e;
+    }
+  }
+
+  const text = await producer();
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(ta);
+  }
+}
+
 export function OmniaClipboardButton() {
   const [state, setState] = useState<State>("idle");
 
   async function handleCopy() {
     setState("loading");
-    try {
+
+    // Producent tekstu wołany w obrębie gestu (patrz copyLazy). Wynik cache'owany,
+    // by ewentualny fallback nie pobierał zadań po raz drugi. Pusta lista → sygnał EMPTY.
+    let cached: string | null = null;
+    let wasEmpty = false;
+    const producer = async () => {
+      if (cached !== null) return cached;
       const tasks = await getOmniaTasksForClipboard();
-
       if (tasks.length === 0) {
-        setState("empty");
-        setTimeout(() => setState("idle"), 3000);
-        return;
+        wasEmpty = true;
+        throw new Error(EMPTY);
       }
-
       const json = JSON.stringify(
         tasks.map((t) => ({ tytuł: t.title, opis: t.description ?? "" })),
         null,
         2
       );
+      cached = `${LLM_PROMPT}\n\n\`\`\`json\n${json}\n\`\`\``;
+      return cached;
+    };
 
-      const text = `${LLM_PROMPT}\n\n\`\`\`json\n${json}\n\`\`\``;
-
-      await navigator.clipboard.writeText(text);
+    try {
+      await copyLazy(producer);
       setState("copied");
       setTimeout(() => setState("idle"), 3000);
     } catch {
-      setState("error");
+      setState(wasEmpty ? "empty" : "error");
       setTimeout(() => setState("idle"), 3000);
     }
   }

@@ -408,3 +408,16 @@ strony `force-dynamic` bez połączenia z bazą — błąd dotyczy wyłącznie p
 **Lekcja:** Schemat i typy waliduj `prisma validate` + `prisma generate` + `tsc --noEmit` +
 `next build`; połączenie z bazą (db:push/migrate) wymaga realnego Postgresa (Docker/Neon),
 nie pliku SQLite.
+
+## 2026-05-29 — Kopiowanie do schowka działało na desktopie, na mobile NotAllowedError
+**Problem:** Przycisk „Kopiuj prompt dla Claude Code" w adminie (`OmniaClipboardButton`)
+wywoływał `navigator.clipboard.writeText()` dopiero PO `await getOmniaTasksForClipboard()`
+(server action). Na iOS Safari po `await` przeglądarka traci „transient activation" z gestu
+kliknięcia i blokuje zapis do schowka → NotAllowedError. Na desktopie ten sam kod działał.
+**Rozwiązanie:** Zapis startujemy synchronicznie w obrębie gestu przez `navigator.clipboard.write`
+z `ClipboardItem`, któremu wolno podać `Promise<Blob>` — przeglądarka czeka na tekst nie tracąc
+aktywacji. Fallback: `writeText` (desktop/Android), a dla najstarszych przeglądarek textarea +
+`execCommand`. Wynik producenta tekstu cache'owany, by fallback nie pobierał danych dwa razy.
+**Lekcja:** Na iOS NIGDY nie wołaj `clipboard.writeText` po `await`. Jeśli tekst wymaga async pracy,
+przekaż `Promise` do `ClipboardItem` i użyj `clipboard.write([item])` — to jedyny sposób na zachowanie
+aktywacji użytkownika po fetchu. Zawsze testuj kopiowanie na realnym Safari/iPhone, nie tylko na desktopie.
