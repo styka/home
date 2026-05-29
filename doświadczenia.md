@@ -457,3 +457,29 @@ w nowym polu `RecipeImage.ocrMarkdown` (NULL=nieanalizowane, ""=brak tekstu), pr
 **Lekcja:** Bez storage pragmatycznie trzymaj zdjęcia jako downscalowane data-URL-e w DB, ale ZAWSZE
 zmniejszaj po stronie klienta przed zapisem (rozmiar wiersza/transferu). Rozróżniaj „nieanalizowane"
 (NULL) od „przeanalizowane, brak wyniku" ("") — inaczej nie wiadomo, czy ponowić OCR.
+
+## 2026-05-29 — Powiadomienia zadań nie działały na iPhone (new Notification vs Service Worker)
+**Problem:** Po poprzedniej poprawce powiadomienia o zadaniach pojawiały się tylko na desktopie,
+a na iPhone (Safari/PWA) w ogóle. Kod używał konstruktora `new Notification(...)`, który na iOS
+nie jest wspierany — iOS pokazuje powiadomienia wyłącznie przez Service Worker
+(`registration.showNotification`). Konstruktor cicho zawodził na telefonie.
+**Rozwiązanie:** Dodano `showTaskNotification()` w `TasksPage.tsx`, która najpierw próbuje
+`navigator.serviceWorker.ready` → `reg.showNotification(...)` (działa i na iOS, i na desktopie),
+a `new Notification()` jest tylko fallbackiem. W `sw.js` dodano handler `notificationclick`
+(fokus okna / otwarcie /tasks) i podbito wersję cache do v2. `tag` = klucz dedup, by system nie
+zdublował powiadomienia.
+**Lekcja:** Powiadomienia w PWA pisz od razu przez `registration.showNotification` — konstruktor
+`new Notification()` nie działa na iOS. Każda zmiana w `sw.js` wymaga podbicia wersji cache,
+by klient pobrał nowy worker.
+
+## 2026-05-29 — OCR przepisów zwracał błąd (wycofany model wizyjny Groq)
+**Problem:** Po wybraniu zdjęcia OCR przepisu zwracał błąd i przepis nie powstawał. Trasy
+`/api/llm/kitchen/ocr-image` i `/ocr-text` używały modelu `llama-3.2-11b-vision-preview`, który
+Groq WYCOFAŁ (`model_decommissioned`) — każde zapytanie wizyjne kończyło się błędem.
+**Rozwiązanie:** Nazwę modelu wyniesiono do `src/lib/groqVision.ts` (`GROQ_VISION_MODEL =
+meta-llama/llama-4-scout-17b-16e-instruct`) i podpięto w obu trasach. Dodano `parseGroqError()`,
+która wyciąga prawdziwy komunikat z odpowiedzi Groq i dokleja kod HTTP — przy kolejnej awarii widać
+realną przyczynę zamiast gołego statusu.
+**Lekcja:** Modele „preview" u Groq bywają wycofywane bez zapowiedzi — trzymaj nazwę modelu w jednym
+miejscu (stała) i przepuszczaj prawdziwy komunikat błędu dostawcy do frontu, by diagnoza nie wymagała
+zgadywania.

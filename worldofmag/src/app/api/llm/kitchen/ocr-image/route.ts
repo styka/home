@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { GROQ_VISION_MODEL, parseGroqError } from "@/lib/groqVision";
 
 const SYSTEM_PROMPT = `Jesteś OCR-em przepisów kulinarnych. Otrzymasz zdjęcie strony książki kucharskiej, kartki z notatkami albo ekranu z przepisem.
 Wyciągnij przepis i zwróć WYŁĄCZNIE obiekt JSON (bez markdown, bez komentarza) w schemacie:
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.value}` },
     body: JSON.stringify({
-      model: "llama-3.2-11b-vision-preview",
+      model: GROQ_VISION_MODEL,
       messages: [
         {
           role: "user",
@@ -73,7 +74,10 @@ export async function POST(req: NextRequest) {
 
   if (!groqRes.ok) {
     const err = await groqRes.text().catch(() => "unknown");
-    return NextResponse.json({ error: `Groq error: ${err.slice(0, 200)}` }, { status: 502 });
+    return NextResponse.json(
+      { error: `Groq (${groqRes.status}): ${parseGroqError(err).slice(0, 200)}` },
+      { status: 502 }
+    );
   }
 
   const data = await groqRes.json();

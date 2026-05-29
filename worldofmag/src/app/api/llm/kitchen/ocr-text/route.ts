@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { GROQ_VISION_MODEL, parseGroqError } from "@/lib/groqVision";
 
 // Odczyt CAŁEGO tekstu ze zdjęcia (np. kartki z przepisem) i zwrócenie go jako Markdown.
 // W odróżnieniu od /ocr-image (które parsuje ustrukturyzowany przepis) — tu chcemy
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.value}` },
     body: JSON.stringify({
-      model: "llama-3.2-11b-vision-preview",
+      model: GROQ_VISION_MODEL,
       messages: [
         {
           role: "user",
@@ -69,7 +70,10 @@ export async function POST(req: NextRequest) {
 
   if (!groqRes.ok) {
     const err = await groqRes.text().catch(() => "unknown");
-    return NextResponse.json({ error: `Groq error: ${err.slice(0, 200)}` }, { status: 502 });
+    return NextResponse.json(
+      { error: `Groq (${groqRes.status}): ${parseGroqError(err).slice(0, 200)}` },
+      { status: 502 }
+    );
   }
 
   const data = await groqRes.json();
