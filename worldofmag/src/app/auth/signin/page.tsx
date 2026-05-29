@@ -1,4 +1,7 @@
 import { signIn } from "@/lib/auth"
+import { BrandLogo } from "@/components/brand/BrandLogo"
+import { AppName } from "@/components/brand/AppName"
+import { APP_NAME } from "@/lib/appName"
 
 const FEATURES = [
   { icon: "🛒", label: "Lista zakupów",    desc: "Inteligentne listy z kategoriami" },
@@ -181,16 +184,10 @@ export default function SignInPage({ searchParams }: { searchParams?: { callback
         }
 
         .signin-card-logo {
-          width: 48px;
-          height: 48px;
-          border-radius: 12px;
-          background: linear-gradient(135deg, #7c3aed, #4f46e5);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 22px;
           margin-bottom: 20px;
-          box-shadow: 0 4px 20px #7c3aed40;
         }
 
         .signin-card-title {
@@ -262,7 +259,7 @@ export default function SignInPage({ searchParams }: { searchParams?: { callback
         {/* ── Left panel (desktop only) ── */}
         <div className="signin-left">
           <div className="signin-hero-title">
-            <span>WorldOfMag</span>
+            <span><AppName /></span>
           </div>
           <p className="signin-hero-sub">
             Twój osobisty świat w jednym miejscu.<br />
@@ -293,8 +290,8 @@ export default function SignInPage({ searchParams }: { searchParams?: { callback
           </div>
 
           <div className="signin-card">
-            <div className="signin-card-logo">✦</div>
-            <div className="signin-card-title">WorldOfMag</div>
+            <div className="signin-card-logo"><BrandLogo px={56} /></div>
+            <div className="signin-card-title"><AppName /></div>
             <div className="signin-card-sub">Zaloguj się, aby kontynuować</div>
 
             <form
@@ -316,7 +313,7 @@ export default function SignInPage({ searchParams }: { searchParams?: { callback
             </form>
 
             <p className="signin-footer">
-              Korzystając z aplikacji akceptujesz<br />politykę prywatności WorldOfMag.
+              Korzystając z aplikacji akceptujesz<br />politykę prywatności {APP_NAME}.
             </p>
           </div>
         </div>
