@@ -1,4 +1,4 @@
-const CACHE = "worldofmag-v1";
+const CACHE = "worldofmag-v2";
 const SHELL = ["/", "/shopping", "/icons/icon-192.png", "/icons/apple-touch-icon.png"];
 
 // Install: cache the app shell
@@ -15,6 +15,21 @@ self.addEventListener("activate", (e) => {
       .keys()
       .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
+  );
+});
+
+// Notification click: focus an open tab (or open the tasks page).
+// Wymagane dla powiadomień wyświetlanych przez `registration.showNotification`
+// (m.in. na iOS PWA, gdzie konstruktor `new Notification()` nie działa).
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ("focus" in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow("/tasks");
+    })
   );
 });
 

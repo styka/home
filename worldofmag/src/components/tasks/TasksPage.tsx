@@ -64,6 +64,28 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     return () => window.removeEventListener("popstate", onPop);
   }, [openTaskId]);
 
+  // Wyświetla powiadomienie przez Service Worker (`registration.showNotification`),
+  // a nie przez konstruktor `new Notification()`. Konstruktora NIE da się użyć na
+  // iOS Safari / PWA — tam działa wyłącznie ścieżka Service Workera. Wcześniejsza
+  // wersja używała `new Notification(...)`, przez co powiadomienia pojawiały się na
+  // desktopie, a na iPhone w ogóle. SW działa też na desktopie, więc jest uniwersalny.
+  async function showTaskNotification(title: string, options: NotificationOptions) {
+    try {
+      if ("serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.showNotification(title, options);
+        return;
+      }
+    } catch {
+      /* spadamy do fallbacku poniżej */
+    }
+    try {
+      new Notification(title, options);
+    } catch {
+      /* środowisko bez wsparcia powiadomień */
+    }
+  }
+
   function checkDueNotifications(taskList: Task[]) {
     if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
     const now = new Date();
@@ -82,9 +104,10 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
       const project = t.project?.isInbox ? "Skrzynka" : t.project?.name ?? "Skrzynka";
       const projectLabel = t.project?.emoji ? `${t.project.emoji} ${project}` : project;
       const time = due.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
-      new Notification(`Zadanie za chwilę: ${t.title}`, {
+      void showTaskNotification(`Zadanie za chwilę: ${t.title}`, {
         body: `Projekt: ${projectLabel} · Termin: ${time}`,
         icon: "/pwa-icon/192",
+        tag: key, // ten sam tag = system nie zdubluje powiadomienia
       });
     });
   }
