@@ -638,12 +638,15 @@ model RecipeStep {
 }
 
 model RecipeImage {
-  id       String  @id @default(cuid())
-  recipeId String
-  url      String
-  caption  String?
-  order    Int     @default(0)
-  isCover  Boolean @default(false)
+  id          String  @id @default(cuid())
+  recipeId    String
+  url         String
+  caption     String?
+  // Tekst odczytany ze zdjęcia przez LLM (OCR), jako Markdown. null = nie analizowano,
+  // "" = przeanalizowano, brak tekstu na zdjęciu.
+  ocrMarkdown String?
+  order       Int     @default(0)
+  isCover     Boolean @default(false)
 
   recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 

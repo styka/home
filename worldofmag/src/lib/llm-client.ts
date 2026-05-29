@@ -151,6 +151,12 @@ export const llm = {
         error?: string;
       }>("/api/llm/kitchen/ocr-image", { image }),
 
+    ocrText: (image: string) =>
+      post<{ hasText?: boolean; markdown?: string; error?: string }>(
+        "/api/llm/kitchen/ocr-text",
+        { image }
+      ),
+
     generateRecipe: (prompt: string) =>
       post<{
         recipe?: {

@@ -7,6 +7,7 @@ import { parseQuantity } from "@/lib/parseQuantity";
 import { llm } from "@/lib/llm-client";
 import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
 import { DurationInput } from "@/components/kitchen/shared/DurationInput";
+import { RecipeImagesEditor } from "./RecipeImagesEditor";
 import { useToast } from "@/components/ui/Toast";
 import { createRecipe, updateRecipe } from "@/actions/recipes";
 import type {
@@ -644,6 +645,19 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
             style={inputStyle}
           />
         </Field>
+
+        {recipe ? (
+          <RecipeImagesEditor recipeId={recipe.id} images={recipe.images} hasAI={hasAI} />
+        ) : (
+          <section>
+            <h2 className="text-sm font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--text-muted)" }}>
+              Zdjęcia i załączniki
+            </h2>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Zapisz przepis, aby dodać zdjęcia kartek i odczytać z nich tekst (OCR).
+            </p>
+          </section>
+        )}
       </div>
     </div>
   );

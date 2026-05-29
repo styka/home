@@ -16,7 +16,7 @@ import type {
   MealType,
   Difficulty,
 } from "@/types/kitchen";
-import type { Recipe, RecipeIngredient, RecipeStep, Item } from "@prisma/client";
+import type { Recipe, RecipeIngredient, RecipeStep, RecipeImage, Item } from "@prisma/client";
 
 // ─── Access control ───────────────────────────────────────────────────────
 
@@ -495,6 +495,74 @@ export async function reorderSteps(recipeId: string, orderedIds: string[]): Prom
     )
   );
   revalidatePath(`/kitchen/recipes`);
+}
+
+// ─── Images / attachments ─────────────────────────────────────────────────
+
+async function revalidateRecipeById(recipeId: string): Promise<void> {
+  const recipe = await prisma.recipe.findUnique({ where: { id: recipeId }, select: { slug: true } });
+  revalidatePath("/kitchen/recipes");
+  if (recipe?.slug) {
+    revalidatePath(`/kitchen/recipes/${recipe.slug}`);
+    revalidatePath(`/kitchen/recipes/${recipe.slug}/edit`);
+  }
+}
+
+export async function addRecipeImage(
+  recipeId: string,
+  data: { url: string; caption?: string | null }
+): Promise<RecipeImage> {
+  const user = await requireAuth();
+  await assertRecipeAccess(recipeId, user.id, "edit");
+  if (!data.url?.trim()) throw new Error("Brak obrazu");
+
+  const last = await prisma.recipeImage.findFirst({
+    where: { recipeId },
+    orderBy: { order: "desc" },
+    select: { order: true },
+  });
+
+  const image = await prisma.recipeImage.create({
+    data: {
+      recipeId,
+      url: data.url,
+      caption: data.caption?.trim() || null,
+      order: last ? last.order + 1 : 0,
+    },
+  });
+
+  await revalidateRecipeById(recipeId);
+  return image;
+}
+
+export async function updateRecipeImage(
+  imageId: string,
+  data: { caption?: string | null; ocrMarkdown?: string | null }
+): Promise<RecipeImage> {
+  const user = await requireAuth();
+  const existing = await prisma.recipeImage.findUnique({ where: { id: imageId }, select: { recipeId: true } });
+  if (!existing) throw new Error("Zdjęcie nie istnieje");
+  await assertRecipeAccess(existing.recipeId, user.id, "edit");
+
+  const image = await prisma.recipeImage.update({
+    where: { id: imageId },
+    data: {
+      ...(data.caption !== undefined ? { caption: data.caption?.trim() || null } : {}),
+      ...(data.ocrMarkdown !== undefined ? { ocrMarkdown: data.ocrMarkdown } : {}),
+    },
+  });
+
+  await revalidateRecipeById(existing.recipeId);
+  return image;
+}
+
+export async function deleteRecipeImage(imageId: string): Promise<void> {
+  const user = await requireAuth();
+  const existing = await prisma.recipeImage.findUnique({ where: { id: imageId }, select: { recipeId: true } });
+  if (!existing) return;
+  await assertRecipeAccess(existing.recipeId, user.id, "edit");
+  await prisma.recipeImage.delete({ where: { id: imageId } });
+  await revalidateRecipeById(existing.recipeId);
 }
 
 // ─── Shop for recipe ──────────────────────────────────────────────────────

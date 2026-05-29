@@ -8,6 +8,7 @@ import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
 import { ShopForRecipeDialog } from "./ShopForRecipeDialog";
 import { useToast } from "@/components/ui/Toast";
 import { markRecipeCooked, deleteRecipe } from "@/actions/recipes";
+import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import type { RecipeFull } from "@/types/kitchen";
 import { DIFFICULTY_LABELS, MEAL_TYPE_LABELS } from "@/types/kitchen";
 
@@ -269,6 +270,59 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
           <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--text-secondary)" }}>
             {recipe.notes}
           </p>
+        </section>
+      ) : null}
+
+      {recipe.images.length > 0 ? (
+        <section className="mt-6">
+          <style>{MARKDOWN_STYLES}</style>
+          <h2 className="text-sm font-semibold mb-2 uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+            Zdjęcia z przepisu
+          </h2>
+          <div className="flex flex-col gap-3">
+            {recipe.images.map((img, idx) => {
+              const hasText = img.ocrMarkdown != null && img.ocrMarkdown.trim() !== "";
+              return (
+                <div
+                  key={img.id}
+                  className="flex flex-col md:flex-row gap-3 p-2 rounded border"
+                  style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
+                >
+                  <div className="md:w-64 flex-shrink-0 flex flex-col gap-1">
+                    <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+                      Zdjęcie {idx + 1}
+                    </span>
+                    <a href={img.url} target="_blank" rel="noopener noreferrer">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img.url}
+                        alt={img.caption ?? `Zdjęcie ${idx + 1}`}
+                        className="w-full rounded border"
+                        style={{ aspectRatio: "4 / 3", objectFit: "cover", borderColor: "var(--border)" }}
+                      />
+                    </a>
+                    {img.caption ? (
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>{img.caption}</span>
+                    ) : null}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {hasText ? (
+                      <>
+                        <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>
+                          Tekst odczytany ze zdjęcia {idx + 1}
+                        </p>
+                        <div dangerouslySetInnerHTML={{ __html: markdownToHtml(img.ocrMarkdown as string) }} />
+                      </>
+                    ) : (
+                      <p className="text-xs italic mt-1" style={{ color: "var(--text-muted)" }}>
+                        Brak odczytanego tekstu z tego zdjęcia.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </section>
       ) : null}
 
