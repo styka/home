@@ -3,6 +3,7 @@
 import { useState, useRef, useTransition, useImperativeHandle, forwardRef } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { createTask } from "@/actions/tasks";
+import { useToast } from "@/components/ui/Toast";
 import type { TaskPriority } from "@/types";
 
 export interface QuickAddTaskHandle {
@@ -21,6 +22,7 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
     const [showExtra, setShowExtra] = useState(false);
     const [isPending, startTransition] = useTransition();
     const inputRef = useRef<HTMLInputElement>(null);
+    const { showToast } = useToast();
 
     useImperativeHandle(ref, () => ({
       focus: () => { inputRef.current?.focus(); setShowExtra(true); },
@@ -32,16 +34,20 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
       if (!title) return;
 
       startTransition(async () => {
-        await createTask({
-          title,
-          priority,
-          dueDate: dueDate ? new Date(dueDate) : null,
-          projectId: ["today", "upcoming", "overdue"].includes(projectId) ? null : projectId,
-        });
-        setValue("");
-        setDueDate("");
-        setPriority("NONE");
-        setShowExtra(false);
+        try {
+          await createTask({
+            title,
+            priority,
+            dueDate: dueDate ? new Date(dueDate) : null,
+            projectId: ["today", "upcoming", "overdue", "all"].includes(projectId) ? null : projectId,
+          });
+          setValue("");
+          setDueDate("");
+          setPriority("NONE");
+          setShowExtra(false);
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : "Nie udało się dodać zadania", "error");
+        }
       });
     }
 

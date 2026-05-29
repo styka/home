@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useMemo, useTransition, useEffect } from "react";
+import Link from "next/link";
 import { Search, X, Sparkles, Bell, BellOff } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
@@ -49,6 +50,16 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     }
     checkDueNotifications(tasks);
   }, [tasks]);
+
+  // Otwarte szczegóły → wpis w historii, by przycisk „wstecz" zamykał panel
+  // (zamiast opuszczać stronę), zwłaszcza na mobile.
+  useEffect(() => {
+    if (!openTaskId) return;
+    window.history.pushState({ taskDetail: true }, "");
+    const onPop = () => setOpenTaskId(null);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [openTaskId]);
 
   function checkDueNotifications(taskList: Task[]) {
     if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
@@ -214,10 +225,15 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           </select>
         </div>
 
-        {/* Desktop: title */}
-        <h1 className="hidden md:block text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+        {/* Desktop: title — klik = strona główna działu Zadania */}
+        <Link
+          href="/tasks"
+          className="hidden md:block text-sm font-semibold"
+          style={{ color: "var(--text-primary)", textDecoration: "none" }}
+          title="Zadania — strona główna działu"
+        >
           {projectName}
-        </h1>
+        </Link>
 
         {/* Actions */}
         <div className="flex items-center gap-2">

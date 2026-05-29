@@ -105,20 +105,35 @@ export async function createTask(data: {
 }): Promise<Task> {
   const user = await requireAuth();
 
-  if (data.projectId) await assertProjectAccess(data.projectId, user.id);
+  const title = data.title?.trim();
+  if (!title) throw new Error("Tytuł zadania nie może być pusty");
+
+  // Wirtualne widoki (today/upcoming/overdue/all) nie są projektami — traktuj jak brak projektu,
+  // żeby przypadkowe przekazanie wirtualnego id nie wywaliło assertProjectAccess („Project not found").
+  const VIRTUAL_VIEWS = ["today", "upcoming", "overdue", "all"];
+  const projectId = data.projectId && !VIRTUAL_VIEWS.includes(data.projectId) ? data.projectId : null;
+  if (projectId) await assertProjectAccess(projectId, user.id);
+
+  // Odporność na nieprawidłowe daty z inputów (Invalid Date → null).
+  const safeDate = (d: Date | null | undefined): Date | null => {
+    if (!d) return null;
+    const dt = d instanceof Date ? d : new Date(d as unknown as string);
+    return isNaN(dt.getTime()) ? null : dt;
+  };
+  const dueDate = safeDate(data.dueDate);
 
   const maxOrder = await prisma.task.aggregate({
-    where: { projectId: data.projectId ?? null },
+    where: { projectId },
     _max: { order: true },
   });
 
   const task = await prisma.task.create({
     data: {
-      title: data.title.trim(),
-      projectId: data.projectId ?? null,
+      title,
+      projectId,
       priority: data.priority ?? "NONE",
-      dueDate: data.dueDate ?? null,
-      startDate: data.startDate ?? null,
+      dueDate,
+      startDate: safeDate(data.startDate),
       estimatedMins: data.estimatedMins ?? null,
       description: data.description ?? null,
       parentTaskId: data.parentTaskId ?? null,
@@ -132,9 +147,9 @@ export async function createTask(data: {
     include: TASK_INCLUDE,
   });
 
-  void trackActivity("tasks", "create_task", { title: data.title, priority: data.priority ?? "NONE", dueDate: data.dueDate?.toISOString() ?? null });
+  void trackActivity("tasks", "create_task", { title, priority: data.priority ?? "NONE", dueDate: dueDate?.toISOString() ?? null });
   revalidatePath("/tasks");
-  if (data.projectId) revalidatePath(`/tasks/${data.projectId}`);
+  if (projectId) revalidatePath(`/tasks/${projectId}`);
   return toTask(task);
 }
 

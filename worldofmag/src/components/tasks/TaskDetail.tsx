@@ -3,12 +3,13 @@
 import { useState, useTransition, useEffect, useRef } from "react";
 import {
   X, Trash2, CheckCircle2, Circle, Clock, AlertCircle, MinusCircle, Loader2,
-  RefreshCw, Tag, Calendar, Timer, ChevronDown, Plus, Send, Sparkles,
+  RefreshCw, Tag, Calendar, Timer, ChevronDown, ChevronLeft, Plus, Send, Sparkles,
   MessageSquare, Share2, UserMinus,
 } from "lucide-react";
 import { updateTask, deleteTask, updateTaskTags, addTaskComment, createTask, completeRecurringTask, shareTaskByEmail, removeTaskShare } from "@/actions/tasks";
 import { createTaskTag } from "@/actions/taskTags";
 import { TaskTagBadge } from "./TaskTagBadge";
+import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import type { Task, TaskStatus, TaskPriority, TaskTagDef, RecurringRule } from "@/types";
 import { TASK_PRIORITY_COLORS } from "@/types";
 
@@ -46,6 +47,7 @@ const DAY_LABELS = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So"];
 export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
+  const [editingDesc, setEditingDesc] = useState(false);
   const [status, setStatus] = useState<TaskStatus>(task.status);
   const [priority, setPriority] = useState<TaskPriority>(task.priority);
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : "");
@@ -84,6 +86,7 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
     setStartDate(task.startDate ? new Date(task.startDate).toISOString().slice(0, 10) : "");
     setEstimatedMins(task.estimatedMins?.toString() ?? "");
     setSelectedTagIds((task.tags ?? []).map((t) => t.tag.id));
+    setEditingDesc(false);
     setShowRecurring(!!task.recurring);
     if (task.recurring) {
       try {
@@ -124,6 +127,7 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
   }
 
   function handleDescriptionBlur() {
+    setEditingDesc(false);
     if (description !== (task.description ?? "")) {
       run(() => updateTask(task.id, { description: description || null }));
     }
@@ -264,9 +268,19 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-12 border-b flex-shrink-0" style={{ borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {/* Mobile: wyraźny powrót */}
+          <button
+            onClick={onClose}
+            className="md:hidden flex items-center gap-1 -ml-1.5 pr-2 py-1.5 rounded focus:outline-none"
+            style={{ color: "var(--text-secondary)" }}
+            aria-label="Wróć do listy zadań"
+          >
+            <ChevronLeft size={18} />
+            <span className="text-sm">Wróć</span>
+          </button>
           {isPending && <Loader2 size={13} className="animate-spin" style={{ color: "var(--accent-blue)" }} />}
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>Szczegóły zadania</span>
+          <span className="text-xs hidden md:inline" style={{ color: "var(--text-muted)" }}>Szczegóły zadania</span>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -322,17 +336,36 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
           />
         </div>
 
-        {/* Description */}
+        {/* Description — Markdown: klik = edycja, blur = render */}
         <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={handleDescriptionBlur}
-            rows={3}
-            placeholder="Dodaj opis (Markdown obsługiwany)…"
-            className="w-full bg-transparent text-sm focus:outline-none resize-none"
-            style={{ color: "var(--text-secondary)", lineHeight: 1.6 }}
-          />
+          <style>{MARKDOWN_STYLES}</style>
+          {editingDesc ? (
+            <textarea
+              autoFocus
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onBlur={handleDescriptionBlur}
+              rows={Math.max(3, description.split("\n").length)}
+              placeholder="Dodaj opis (Markdown obsługiwany)…"
+              className="w-full bg-transparent text-sm focus:outline-none resize-none"
+              style={{ color: "var(--text-secondary)", lineHeight: 1.6 }}
+            />
+          ) : description.trim() ? (
+            <div
+              onClick={() => setEditingDesc(true)}
+              className="text-sm cursor-text"
+              style={{ color: "var(--text-secondary)" }}
+              dangerouslySetInnerHTML={{ __html: markdownToHtml(description) }}
+            />
+          ) : (
+            <button
+              onClick={() => setEditingDesc(true)}
+              className="text-sm text-left w-full focus:outline-none"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Dodaj opis (Markdown obsługiwany)…
+            </button>
+          )}
         </div>
 
         {/* Dates + Time */}
