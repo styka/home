@@ -13,4 +13,4 @@ export const APP_TITLE = IS_PROD ? "Omnia" : "Omnia DEV";
 // Wersja ikony — podbij przy każdej zmianie wyglądu logo. iOS cache'uje
 // apple-touch-icon po SAMEJ ścieżce (ignoruje ?query), więc wymuszamy świeżość
 // zmianą ścieżki: /apple-touch-icon/<ICON_VERSION>. Patrz doświadczenia.md.
-export const ICON_VERSION = "2";
+export const ICON_VERSION = "3";

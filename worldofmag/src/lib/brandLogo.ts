@@ -14,12 +14,17 @@ export interface RingSpec {
   opacity: number;
 }
 
-const R = 46; // promień zewnętrzny (większy — brak paddingu kafla)
 const K = 0.74; // współczynnik kurczenia promienia
 const MIN_R = 5;
 const SW_FACTOR = 0.11;
 const MIN_SW = 1.2;
 const MAX_SW = 5;
+// Margines bezpieczeństwa w siatce 100×100 (≈„2px" w przestrzeni projektowej),
+// jednolity dla każdego rozmiaru ikony. Promień zewnętrzny dobrany tak, by ZEWNĘTRZNA
+// krawędź pociągnięcia (R + MAX_SW/2) kończyła się MARGIN jednostek od krawędzi ikony.
+// Wewnętrzne pierścienie kurczą się same (r *= K), więc całość dopasowuje się do mniejszej powierzchni.
+const MARGIN = 2;
+const R = 50 - MARGIN - MAX_SW / 2; // = 45.5
 const OUTER_OPACITY = 1.0;
 const INNER_OPACITY = 0.22;
 
