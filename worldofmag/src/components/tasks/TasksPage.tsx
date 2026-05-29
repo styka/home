@@ -60,7 +60,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
       if (due >= now && due <= soon) {
         new Notification(`Zadanie za chwilę: ${t.title}`, {
           body: `Termin: ${due.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}`,
-          icon: "/icons/icon-192.png",
+          icon: "/pwa-icon/192",
         });
       }
     });
