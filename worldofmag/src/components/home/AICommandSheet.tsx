@@ -13,6 +13,7 @@ interface RouteContext {
   placeholder: string;
   routeHint: string;
   activeListId?: string;
+  activeProjectId?: string;
 }
 
 const LIST_SUB_PAGES = ["products", "units", "categories", "icons", "stores"];
@@ -45,10 +46,14 @@ function deriveContextFromPath(pathname: string): RouteContext {
       overdue: "widok zaległych zadań",
       all: "widok wszystkich zadań",
     };
+    // Widoki wirtualne (dziś/nadchodzące/zaległe/wszystkie) nie są projektem —
+    // tylko konkretny projekt (cuid w ścieżce) staje się domyślnym celem zadań.
+    const isVirtualView = seg in viewNames;
     return {
       context: ["tasks"],
       placeholder: 'Np. "Dodaj zadanie na jutro" lub "Przesuń mycie auta o tydzień"',
       routeHint: `Użytkownik jest na ${viewNames[seg] ?? "widoku projektu zadań"}`,
+      activeProjectId: !isVirtualView && seg ? seg : undefined,
     };
   }
   if (pathname === "/tasks") {
@@ -82,7 +87,7 @@ function deriveContextFromPath(pathname: string): RouteContext {
 export function AICommandSheet() {
   const pathname = usePathname();
   const router = useRouter();
-  const { context, placeholder, routeHint, activeListId } = deriveContextFromPath(pathname);
+  const { context, placeholder, routeHint, activeListId, activeProjectId } = deriveContextFromPath(pathname);
 
   const [isOpen, setIsOpen] = useState(false);
   const [inputText, setInputText] = useState("");
@@ -110,7 +115,7 @@ export function AICommandSheet() {
       const res = await fetch("/api/llm/home/interpret", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, context, routeHint, today: new Date().toISOString() }),
+        body: JSON.stringify({ text, context, routeHint, currentProjectId: activeProjectId, today: new Date().toISOString() }),
       });
       const data = (await res.json()) as { actions?: AIAction[]; error?: string };
       if (!res.ok) {
@@ -135,7 +140,7 @@ export function AICommandSheet() {
       const res = await fetch("/api/llm/home/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actions: confirmedActions, activeListId }),
+        body: JSON.stringify({ actions: confirmedActions, activeListId, currentProjectId: activeProjectId }),
       });
       const data = (await res.json()) as { results?: ActionResult[] };
       setResults(data.results ?? []);

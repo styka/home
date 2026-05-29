@@ -248,7 +248,7 @@ export interface ActionResult {
   error?: string;
 }
 
-async function executeAction(action: AIAction, userId: string, activeListId?: string): Promise<string> {
+async function executeAction(action: AIAction, userId: string, activeListId?: string, currentProjectId?: string): Promise<string> {
   const { module, type, params, searchQuery } = action;
 
   if (module === "shopping") {
@@ -325,6 +325,19 @@ async function executeAction(action: AIAction, userId: string, activeListId?: st
           },
         });
         if (project) projectId = project.id;
+      }
+
+      // Brak wskazanego projektu → użyj projektu otwartego na widoku (jeśli użytkownik
+      // ma do niego dostęp). Dopiero gdy i tego nie ma — fallback do skrzynki.
+      if (!projectId && currentProjectId) {
+        const current = await prisma.taskProject.findFirst({
+          where: {
+            id: currentProjectId,
+            OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+          },
+          select: { id: true },
+        });
+        if (current) projectId = current.id;
       }
 
       if (!projectId) {
@@ -436,14 +449,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json().catch(() => ({})) as { actions?: AIAction[]; activeListId?: string };
-  const { actions = [], activeListId } = body;
+  const body = await req.json().catch(() => ({})) as { actions?: AIAction[]; activeListId?: string; currentProjectId?: string };
+  const { actions = [], activeListId, currentProjectId } = body;
 
   const results: ActionResult[] = [];
 
   for (const action of actions) {
     try {
-      const message = await executeAction(action, session.user.id, activeListId);
+      const message = await executeAction(action, session.user.id, activeListId, currentProjectId);
       results.push({ id: action.id, success: true, description: message });
       // Audit log
       await prisma.userActivity.create({

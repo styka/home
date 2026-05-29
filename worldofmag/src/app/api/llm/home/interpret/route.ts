@@ -32,6 +32,8 @@ ZAKUPY (module: "shopping"):
 ZADANIA (module: "tasks"):
 - create_task: params { title: string, description?: string, priority: "NONE"|"LOW"|"MEDIUM"|"HIGH"|"URGENT", dueDate?: string, projectName?: string }
   Tworzy nowe zadanie. dueDate w formacie ISO 8601.
+  projectName ustaw TYLKO gdy użytkownik wyraźnie wskaże projekt ("do projektu X", "w projekcie Y").
+  Gdy użytkownik NIE wskazuje projektu, POMIŃ projectName — zadanie trafi do projektu, który użytkownik ma otwarty na widoku (podanego w kontekście jako "Bieżący projekt").
 - shift_task_due_date: params { days: number }, searchQuery: string
   Przesuwa termin zadania o N dni (ujemna = wcześniej). searchQuery to tytuł zadania.
 - update_task_status: params { status: "TODO"|"IN_PROGRESS"|"DONE" }, searchQuery: string
@@ -80,11 +82,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json().catch(() => ({})) as { text?: string; context?: string[]; today?: string; routeHint?: string };
-  const { text, context = ["shopping", "tasks", "notes", "pets"], today = new Date().toISOString(), routeHint } = body;
+  const body = await req.json().catch(() => ({})) as { text?: string; context?: string[]; today?: string; routeHint?: string; currentProjectId?: string };
+  const { text, context = ["shopping", "tasks", "notes", "pets"], today = new Date().toISOString(), routeHint, currentProjectId } = body;
 
   if (!text?.trim()) {
     return NextResponse.json({ error: "Empty text" }, { status: 400 });
+  }
+
+  // Nazwa bieżącego projektu zadań (jeśli użytkownik jest na jego widoku) — by LLM
+  // wiedział, że to domyślny cel nowych zadań i mógł rozróżnić, gdy użytkownik wskaże inny.
+  let currentProjectName: string | null = null;
+  if (currentProjectId) {
+    const project = await prisma.taskProject.findFirst({
+      where: {
+        id: currentProjectId,
+        OR: [{ ownerId: session.user.id }, { members: { some: { userId: session.user.id } } }],
+      },
+      select: { name: true },
+    });
+    currentProjectName = project?.name ?? null;
   }
 
   const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
@@ -104,6 +120,7 @@ export async function POST(req: NextRequest) {
     `Dzisiejsza data: ${today}`,
     `Aktywne moduły: ${modulesDesc}`,
     routeHint ? `Aktualny widok: ${routeHint}` : null,
+    currentProjectName ? `Bieżący projekt: "${currentProjectName}" (domyślny cel nowych zadań, jeśli użytkownik nie wskaże innego)` : null,
     ``,
     `Polecenie użytkownika: ${text.trim()}`,
   ].filter(Boolean).join("\n");
