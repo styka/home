@@ -51,7 +51,25 @@ NOTATKI (module "notes"):
 - create_note { title, content? }
 - append_to_note { content, noteId? } (searchQuery fallback)
 - update_note { title?, content?, noteId? } (searchQuery fallback)
-- delete_note { noteId? } (searchQuery fallback) — DESTRUKCYJNE`;
+- delete_note { noteId? } (searchQuery fallback) — DESTRUKCYJNE
+
+PRZEJŚCIE PO UTWORZENIU: do KAŻDEJ akcji tworzącej (create_task, create_note, create_list, create_project, add_item) możesz dodać params.openAfter:true, gdy użytkownik prosi, by od razu przejść/otworzyć utworzony element ("dodaj zadanie X i przejdź do niego"). Po wykonaniu aplikacja zaproponuje przekierowanie.`;
+
+const NAVIGATION_CATALOG = `NAWIGACJA (step "navigate") — przekieruj użytkownika na GOTOWY widok aplikacji, gdy prośba sprowadza się do „pokaż / otwórz / przejdź do …", a istnieje strona z odpowiednimi parametrami. To NIE wykona się od razu — użytkownik potwierdzi przekierowanie.
+{ "step":"navigate", "thought":"...", "url":"/tasks/all?status=IN_PROGRESS", "label":"Zadania w trakcie" }
+
+Dozwolone adresy (zawsze zaczynają się od "/"):
+- /tasks/today | /tasks/upcoming | /tasks/overdue | /tasks/all — widoki zadań. Opcjonalny ?status=TODO|IN_PROGRESS|DONE|DEFERRED|CANCELLED filtruje po statusie.
+- /tasks/<projectId> — konkretny projekt (id z list_projects). Opcjonalnie ?status=… oraz ?task=<taskId> (otwiera szczegóły zadania).
+- /tasks — strona główna działu Zadania.
+- /shopping — lista list zakupów; /shopping/<listId> — konkretna lista (id z list_shopping_lists).
+- /notes — notatki; ?pinned=1 = tylko przypięte; ?focus=<noteId> = podświetl notatkę.
+- /pets — zwierzęta.
+
+KIEDY "navigate" vs "answer":
+- Prośba „pokaż/otwórz/wyświetl listę X", którą da się odwzorować gotowym widokiem (np. „pokaż zadania w trakcie" → /tasks/all?status=IN_PROGRESS) → użyj "navigate".
+- Pytanie analityczne lub filtrowanie, którego strona NIE obsługuje (np. „zadania URGENT bez terminu z projektu X") → pobierz dane przez "query" i odpowiedz przez "answer" (markdown).
+- Jeśli potrzebujesz id (projektu/listy/notatki), najpierw "query", potem "navigate".`;
 
 function buildSystemPrompt(): string {
   return `Jesteś asystentem WorldOfMag — pracujesz NA DANYCH użytkownika tymi samymi regułami dostępu co aplikacja.
@@ -71,22 +89,45 @@ PROTOKÓŁ — w KAŻDEJ turze zwróć DOKŁADNIE JEDEN obiekt JSON (bez markdow
 4) Plan akcji (gdy użytkownik chce coś ZMIENIĆ/DODAĆ — akcje NIE wykonają się od razu, użytkownik je potwierdzi):
 { "step":"plan", "thought":"...", "actions":[ { "id":"a1", "module":"tasks", "type":"update_task_status", "description":"...", "params":{ "taskId":"...", "status":"DONE" } } ] }
 
+5) Przekierowanie (gdy użytkownik chce ZOBACZYĆ/OTWORZYĆ gotowy widok — użytkownik potwierdzi przejście):
+{ "step":"navigate", "thought":"...", "url":"/tasks/all?status=IN_PROGRESS", "label":"Zadania w trakcie" }
+
 ${READ_TOOLS_PROMPT}
 
 ${ACTION_CATALOG}
+
+${NAVIGATION_CATALOG}
 
 ${PET_ACTIONS_PROMPT}
 
 ZASADY:
 - Najpierw "query" po dane, dopiero potem "answer" lub "plan" z konkretnymi id.
 - Akcje ZBIORCZE (np. "oznacz wszystkie zadania o remoncie jako zrobione"): pobierz zadania przez query, SAM zdecyduj które pasują na podstawie tytułów/treści, a potem zwróć WIELE akcji — każda z własnym id. Nie ma akcji masowej; symulujesz ją pętlą pojedynczych akcji.
-- Dla PYTAŃ używaj "answer", nie twórz akcji. Dla POLECEŃ zmiany danych używaj "plan".
+- Dla PYTAŃ używaj "answer", nie twórz akcji. Dla POLECEŃ zmiany danych używaj "plan". Dla próśb „pokaż/otwórz/przejdź do …" z gotowym widokiem używaj "navigate".
 - Gdy czegoś brakuje lub jest niejednoznaczne — użyj "clarify" zanim zaproponujesz akcje.
 - Korzystaj z kontekstu (aktualny widok / aktywna lista / bieżący projekt) podanego w wiadomości użytkownika, gdy polecenie nie wskazuje wprost celu.
 - Twórz akcje tylko dla modułów: ${MODULES.join(", ")}.
 - Zawsze zwracaj wyłącznie poprawny JSON wg schematu, bez żadnego dodatkowego tekstu.
 
 ${PET_ACTION_EXAMPLES}`;
+}
+
+// Adresy nawigacji pochodzą od LLM, więc traktujemy je jak nieufne wejście: tylko
+// wewnętrzne ścieżki aplikacji z whitelisty prefiksów (bez protokołu, bez "//").
+const NAV_ALLOWED_PREFIXES = ["/tasks", "/shopping", "/notes", "/pets"];
+
+function sanitizeNavUrl(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const url = raw.trim();
+  if (!url.startsWith("/") || url.startsWith("//")) return null;
+  let pathname: string;
+  try {
+    pathname = new URL(url, "http://internal").pathname;
+  } catch {
+    return null;
+  }
+  const ok = NAV_ALLOWED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  return ok ? url : null;
 }
 
 function extractJson(content: string): unknown {
@@ -287,6 +328,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ step: "answer", answer, thought, log });
     }
 
+    if (step === "navigate") {
+      const url = sanitizeNavUrl(parsed.url);
+      if (!url) {
+        messages.push({
+          role: "user",
+          content:
+            "Nieprawidłowy lub niedozwolony adres. Podaj wewnętrzną ścieżkę aplikacji zaczynającą się od / (np. /tasks/all?status=IN_PROGRESS), albo użyj answer.",
+        });
+        continue;
+      }
+      const label =
+        typeof parsed.label === "string" && parsed.label.trim() ? parsed.label.trim() : "Otwórz widok";
+      log.push({ iter, step, thought });
+      return NextResponse.json({ step: "navigate", url, label, thought, log });
+    }
+
     if (step === "plan") {
       const actions = normalizeActions(parsed.actions);
       if (actions.length === 0) {
@@ -302,7 +359,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Nieznany step — poproś o poprawny format i próbuj dalej
-    messages.push({ role: "user", content: "Nieznany step. Użyj jednego z: query, clarify, answer, plan." });
+    messages.push({ role: "user", content: "Nieznany step. Użyj jednego z: query, clarify, answer, navigate, plan." });
   }
 
   // Wyczerpano limit iteracji bez stanu terminalnego

@@ -4,6 +4,11 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-05-30 — Nawigacja z asystenta AI: adresy od LLM trzeba walidować jak nieufne wejście
+**Problem:** Magiczna ikona (AICommandSheet) dostała krok `navigate` — LLM zwraca URL, na który mamy przekierować użytkownika (`router.push`). URL pochodzi z modelu, więc bez kontroli groziłby open-redirect (`//evil.com`, `http://…`) albo wejściem na ścieżki spoza aplikacji.
+**Rozwiązanie:** `sanitizeNavUrl()` w `agent/route.ts` przepuszcza tylko ścieżki zaczynające się od jednego `/` (odrzuca `//` i absolutne URL-e) i pasujące do whitelisty prefiksów (`/tasks`, `/shopping`, `/notes`, `/pets`). Gdy URL jest niedozwolony, prosimy LLM o poprawkę zamiast go zwracać. Żeby przekierowanie miało sens, `TasksPage` czyta `?status=` i `?task=` (analogicznie do `?focus=`/`?pinned=` w Notatkach).
+**Lekcja:** Każdy URL/identyfikator pochodzący z LLM traktuj jak dane od użytkownika — waliduj przeciw whitelist, nie blacklist. Nawigacja deep-link działa tylko, jeśli strona docelowa faktycznie czyta parametry z query — dodanie kroku `navigate` bez wsparcia parametrów po stronie widoku nic nie da.
+
 ## 2026-05-29 — Powiadomienie zadania pojawiało się podwójnie (Notification API bez dedup)
 **Problem:** Powiadomienie „Zadanie za chwilę: …” przychodziło dwukrotnie. `checkDueNotifications()`
 w `TasksPage.tsx` było wołane z `useEffect([tasks])`, więc każda zmiana propu `tasks`

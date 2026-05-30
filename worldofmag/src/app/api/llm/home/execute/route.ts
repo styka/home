@@ -253,6 +253,16 @@ export interface ActionResult {
   success: boolean;
   description: string;
   error?: string;
+  // Opcjonalny cel przekierowania po utworzeniu rekordu (params.openAfter).
+  navigateTo?: string;
+  navigateLabel?: string;
+}
+
+// Wynik pojedynczej akcji: komunikat + opcjonalna propozycja przejścia do utworzonego widoku.
+interface ExecOutcome {
+  message: string;
+  navigateTo?: string;
+  navigateLabel?: string;
 }
 
 // ── Helpery rozwiązywania rekordów (id-first, z fallbackiem po searchQuery) ──────────────
@@ -399,7 +409,7 @@ async function executeAction(
   userId: string,
   activeListId?: string,
   currentProjectId?: string
-): Promise<string> {
+): Promise<string | ExecOutcome> {
   const { module, type, params, searchQuery } = action;
 
   if (module === "shopping") {
@@ -411,7 +421,11 @@ async function executeAction(
         activeListId,
       });
       const item = await addItem(list.id, rawText.trim() || "Produkt");
-      return `Dodano "${item.name}" do listy "${list.name}"`;
+      const msg = `Dodano "${item.name}" do listy "${list.name}"`;
+      if (params.openAfter === true) {
+        return { message: msg, navigateTo: `/shopping/${list.id}`, navigateLabel: `Otwórz „${list.name}”` };
+      }
+      return msg;
     }
 
     if (type === "update_item_status") {
@@ -444,7 +458,11 @@ async function executeAction(
     if (type === "create_list") {
       const name = asStr(params.name) ?? "Nowa lista";
       const list = await createList(name);
-      return `Utworzono listę "${list.name}"`;
+      const msg = `Utworzono listę "${list.name}"`;
+      if (params.openAfter === true) {
+        return { message: msg, navigateTo: `/shopping/${list.id}`, navigateLabel: `Otwórz „${list.name}”` };
+      }
+      return msg;
     }
 
     if (type === "rename_list") {
@@ -474,7 +492,12 @@ async function executeAction(
         description: asStr(params.description) ?? null,
         projectId,
       });
-      return `Utworzono zadanie "${task.title}"`;
+      const msg = `Utworzono zadanie "${task.title}"`;
+      if (params.openAfter === true) {
+        const view = task.projectId ?? "all";
+        return { message: msg, navigateTo: `/tasks/${view}?task=${task.id}`, navigateLabel: `Otwórz „${task.title}”` };
+      }
+      return msg;
     }
 
     if (type === "update_task") {
@@ -515,14 +538,22 @@ async function executeAction(
     if (type === "create_project") {
       const name = asStr(params.name) ?? "Nowy projekt";
       const project = await createTaskProject(name, { emoji: asStr(params.emoji) });
-      return `Utworzono projekt "${project.name}"`;
+      const msg = `Utworzono projekt "${project.name}"`;
+      if (params.openAfter === true) {
+        return { message: msg, navigateTo: `/tasks/${project.id}`, navigateLabel: `Otwórz „${project.name}”` };
+      }
+      return msg;
     }
   }
 
   if (module === "notes") {
     if (type === "create_note") {
       const note = await createNote({ title: asStr(params.title) ?? "Nowa notatka", content: asStr(params.content) ?? "" });
-      return `Utworzono notatkę "${note.title}"`;
+      const msg = `Utworzono notatkę "${note.title}"`;
+      if (params.openAfter === true) {
+        return { message: msg, navigateTo: `/notes?focus=${note.id}`, navigateLabel: `Otwórz „${note.title}”` };
+      }
+      return msg;
     }
 
     if (type === "append_to_note") {
@@ -571,15 +602,22 @@ export async function POST(req: NextRequest) {
 
   for (const action of actions) {
     try {
-      const message = await executeAction(action, session.user.id, activeListId, currentProjectId);
-      results.push({ id: action.id, success: true, description: message });
+      const out = await executeAction(action, session.user.id, activeListId, currentProjectId);
+      const outcome: ExecOutcome = typeof out === "string" ? { message: out } : out;
+      results.push({
+        id: action.id,
+        success: true,
+        description: outcome.message,
+        navigateTo: outcome.navigateTo,
+        navigateLabel: outcome.navigateLabel,
+      });
       // Audit log (znacznik pochodzenia AI)
       await prisma.userActivity.create({
         data: {
           userId: session.user.id,
           module: "llm",
           action: `${action.module}/${action.type}`,
-          metadata: JSON.parse(JSON.stringify({ params: action.params, searchQuery: action.searchQuery, result: message })),
+          metadata: JSON.parse(JSON.stringify({ params: action.params, searchQuery: action.searchQuery, result: outcome.message })),
         },
       }).catch(() => {});
     } catch (e) {

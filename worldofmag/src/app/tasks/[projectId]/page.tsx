@@ -5,7 +5,8 @@ import { getTaskProjects } from "@/actions/taskProjects";
 import { getTaskTags } from "@/actions/taskTags";
 import { prisma } from "@/lib/prisma";
 import { TasksPage } from "@/components/tasks/TasksPage";
-import type { Task, ViewMode } from "@/types";
+import type { Task, ViewMode, TaskStatusFilter } from "@/types";
+import { TASK_STATUS_FILTERS } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -21,13 +22,22 @@ const VIRTUAL_LABELS: Record<VirtualView, string> = {
 
 interface Props {
   params: { projectId: string };
+  searchParams?: { status?: string; task?: string };
 }
 
-export default async function TaskProjectPage({ params }: Props) {
+export default async function TaskProjectPage({ params, searchParams }: Props) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
 
   const { projectId } = params;
+
+  // Wejście z asystenta/linka: ?status=… ustawia filtr, ?task=… otwiera szczegóły.
+  const statusParam = searchParams?.status;
+  const initialFilter: TaskStatusFilter | undefined =
+    statusParam && (TASK_STATUS_FILTERS as string[]).includes(statusParam)
+      ? (statusParam as TaskStatusFilter)
+      : undefined;
+  const initialOpenTaskId = searchParams?.task;
   const isVirtual = VIRTUAL_VIEWS.includes(projectId as VirtualView);
 
   const [allProjects, allTags] = await Promise.all([
@@ -93,6 +103,8 @@ export default async function TaskProjectPage({ params }: Props) {
       viewMode={viewMode}
       projectName={projectName}
       teamMembers={teamMembers.map((m: TeamMemberRow) => m.user)}
+      initialFilter={initialFilter}
+      initialOpenTaskId={initialOpenTaskId}
     />
   );
 }

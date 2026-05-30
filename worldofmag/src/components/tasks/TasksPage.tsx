@@ -21,17 +21,19 @@ interface TasksPageProps {
   viewMode: ViewMode;
   projectName: string;
   teamMembers: Array<{ id: string; name: string | null; email: string | null; image: string | null }>;
+  initialFilter?: TaskStatusFilter;
+  initialOpenTaskId?: string;
 }
 
-export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers }: TasksPageProps) {
-  const [activeFilter, setActiveFilter] = useState<TaskStatusFilter>("ALL");
+export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialFilter, initialOpenTaskId }: TasksPageProps) {
+  const [activeFilter, setActiveFilter] = useState<TaskStatusFilter>(initialFilter ?? "ALL");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAISearching, setIsAISearching] = useState(false);
   const [aiSearchResults, setAiSearchResults] = useState<string[] | null>(null);
-  const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  const [focusedTaskId, setFocusedTaskId] = useState<string | null>(initialOpenTaskId ?? null);
+  const [openTaskId, setOpenTaskId] = useState<string | null>(initialOpenTaskId ?? null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [, startTransition] = useTransition();
   const quickAddRef = useRef<QuickAddTaskHandle>(null);

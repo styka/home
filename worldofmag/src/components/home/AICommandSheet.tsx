@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
@@ -34,17 +34,19 @@ interface LogEntry {
 }
 
 interface AgentResponse {
-  step?: "clarify" | "answer" | "plan";
+  step?: "clarify" | "answer" | "plan" | "navigate";
   question?: string;
   options?: string[];
   answer?: string;
   actions?: AIAction[];
+  url?: string;
+  label?: string;
   log?: LogEntry[];
   messages?: ChatMessage[];
   error?: string;
 }
 
-type Phase = "idle" | "running" | "clarify" | "answer" | "plan" | "results";
+type Phase = "idle" | "running" | "clarify" | "answer" | "plan" | "navigate" | "results";
 
 const LIST_SUB_PAGES = ["products", "units", "categories", "icons", "stores"];
 
@@ -184,6 +186,7 @@ export function AICommandSheet() {
   const [pendingActions, setPendingActions] = useState<AIAction[] | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [results, setResults] = useState<ActionResult[] | null>(null);
+  const [navTarget, setNavTarget] = useState<{ url: string; label: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function resetRun() {
@@ -195,7 +198,13 @@ export function AICommandSheet() {
     setRunMessages(null);
     setPendingActions(null);
     setResults(null);
+    setNavTarget(null);
     setError(null);
+  }
+
+  function goTo(url: string) {
+    handleClose();
+    router.push(url);
   }
 
   function handleClose() {
@@ -221,6 +230,11 @@ export function AICommandSheet() {
     if (data.step === "answer") {
       setAnswer(data.answer ?? "");
       setPhase("answer");
+      return;
+    }
+    if (data.step === "navigate" && data.url) {
+      setNavTarget({ url: data.url, label: data.label ?? "Otwórz widok" });
+      setPhase("navigate");
       return;
     }
     if (data.step === "plan") {
@@ -465,6 +479,38 @@ export function AICommandSheet() {
                 </div>
               )}
 
+              {/* NAVIGATE — propozycja przekierowania do gotowego widoku */}
+              {phase === "navigate" && navTarget && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <p style={{ fontSize: 14, color: "var(--text-primary)", margin: 0 }}>
+                    Przejść do: <strong>{navTarget.label}</strong>?
+                  </p>
+                  <ReasoningLog log={log} />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => goTo(navTarget.url)}
+                      style={{
+                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                        padding: "10px 0", borderRadius: 10, border: "none",
+                        background: "var(--accent-blue)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer",
+                      }}
+                    >
+                      <ArrowRight size={15} /> Przejdź
+                    </button>
+                    <button
+                      onClick={handleClose}
+                      style={{
+                        padding: "10px 16px", borderRadius: 10,
+                        border: "1px solid var(--border)", background: "transparent",
+                        color: "var(--text-secondary)", fontSize: 13, cursor: "pointer",
+                      }}
+                    >
+                      Zostań
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* RESULTS */}
               {phase === "results" && results && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -486,6 +532,20 @@ export function AICommandSheet() {
                       </div>
                     ))}
                   </div>
+                  {/* Przejście do utworzonych elementów (params.openAfter) */}
+                  {results.filter((r) => r.success && r.navigateTo).map((r) => (
+                    <button
+                      key={`nav-${r.id}`}
+                      onClick={() => goTo(r.navigateTo!)}
+                      style={{
+                        width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                        padding: "10px 0", borderRadius: 10, border: "none",
+                        background: "var(--accent-blue)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer",
+                      }}
+                    >
+                      <ArrowRight size={15} /> {r.navigateLabel ?? "Przejdź"}
+                    </button>
+                  ))}
                   <ReasoningLog log={log} />
                   <button
                     onClick={handleClose}
