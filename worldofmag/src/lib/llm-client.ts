@@ -203,6 +203,19 @@ export const llm = {
       }>("/api/llm/kitchen/plan-week", input),
   },
 
+  languages: {
+    extract: (input: { sourceText: string; nativeLang: string; targetLang: string; max?: number }) =>
+      post<{
+        words?: Array<{
+          term: string;
+          translation: string;
+          example: string | null;
+          partOfSpeech: string | null;
+        }>;
+        error?: string;
+      }>("/api/llm/languages/extract", input),
+  },
+
   pets: {
     insights: (input: {
       pets: Array<{ name: string; species: string; presetKey?: string }>;

@@ -173,6 +173,8 @@ async function main() {
   for (const m of [
     { slug: "module.flota", name: "Flota", description: "Dostęp do modułu zarządzania flotą pojazdów" },
     { slug: "module.portfel", name: "Portfel", description: "Dostęp do modułu zarządzania finansami/portfelem" },
+    { slug: "module.languages", name: "Nauka języków", description: "Dostęp do działu nauki słownictwa (fiszki + powtórki)" },
+    { slug: "module.health", name: "Zdrowie", description: "Zarządzanie wizytami u lekarzy i badaniami" },
   ]) {
     const perm = await prisma.permission.upsert({
       where: { slug: m.slug },

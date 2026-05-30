@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck, PawPrint, Car, Wallet } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck, PawPrint, Car, Wallet, GraduationCap } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
 import { PetsSideNav } from "@/components/pets/PetsSideNav";
+import { LanguagesSideNav } from "@/components/languages/LanguagesSideNav";
 import { FlotaSideNav } from "@/components/flota/FlotaSideNav";
 import { PortfelSideNav } from "@/components/portfel/PortfelSideNav";
 import { isPathLocked } from "@/lib/permissions";
@@ -144,6 +145,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
   const isKitchenActive = pathname.startsWith("/kitchen");
   const isQaActive = pathname.startsWith("/qa");
   const isPetsActive = pathname.startsWith("/pets");
+  const isLanguagesActive = pathname.startsWith("/languages");
   const isFlotaActive = pathname.startsWith("/flota");
   const isPortfelActive = pathname.startsWith("/portfel");
 
@@ -224,6 +226,14 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
             <NavSubItem href="/kitchen/plan" label="Plan" icon={<CalendarDays size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
             <NavSubItem href="/kitchen/pantry" label="Spiżarnia" icon={<Package size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
             <NavSubItem href="/kitchen/cookbooks" label="Książki" icon={<BookOpen size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
+          </div>
+        )}
+
+        {/* Nauka języków */}
+        <NavItem href="/languages" label="Nauka języków" icon={<GraduationCap size={18} />} pathname={pathname} iconColor="var(--accent-purple)" locked={isLocked("/languages")} />
+        {isLanguagesActive && !isLocked("/languages") && (
+          <div className="mb-1">
+            <LanguagesSideNav />
           </div>
         )}
 

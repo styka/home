@@ -368,6 +368,65 @@ export interface WelfareSuggestion {
   detail?: string;
 }
 
+// ─── Nauka języków ──────────────────────────────────────────────────────────
+
+export type Vocabulary = {
+  id: string;
+  deckId: string;
+  term: string;
+  translation: string;
+  example: string | null;
+  partOfSpeech: string | null;
+  notes: string | null;
+  easeFactor: number;
+  intervalDays: number;
+  repetitions: number;
+  lapses: number;
+  dueAt: Date;
+  lastReviewedAt: Date | null;
+  createdAt: Date;
+};
+
+export type LanguageDeck = {
+  id: string;
+  name: string;
+  description: string | null;
+  nativeLang: string;
+  targetLang: string;
+  sourceText: string | null;
+  ownerId: string | null;
+  ownerTeamId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  _count?: { cards: number };
+  dueCount?: number;
+};
+
+// ─── Zdrowie ──────────────────────────────────────────────────────────────
+
+export type HealthKind = "VISIT" | "TEST";
+export type HealthStatus = "PLANNED" | "DONE" | "CANCELLED";
+
+export type HealthEvent = {
+  id: string;
+  kind: HealthKind;
+  title: string;
+  doctorName: string | null;
+  specialty: string | null;
+  facility: string | null;
+  location: string | null;
+  scheduledAt: Date;
+  status: HealthStatus;
+  notes: string | null;
+  result: string | null;
+  referral: string | null;
+  reminderAt: Date | null;
+  ownerId: string | null;
+  ownerTeamId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 // ─── Shared ───────────────────────────────────────────────────────────────
 
 export interface ShortcutHandlers {
