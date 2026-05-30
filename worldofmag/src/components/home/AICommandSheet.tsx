@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Sparkles, Loader2, CheckCircle, XCircle, X } from "lucide-react";
+import { Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
+import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
 import type { ActionResult } from "@/app/api/llm/home/execute/route";
 
@@ -16,6 +17,35 @@ interface RouteContext {
   activeProjectId?: string;
 }
 
+interface ChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+interface LogEntry {
+  iter: number;
+  step: string;
+  thought: string;
+  tools?: { tool: string; args: Record<string, unknown> }[];
+  results?: unknown;
+  question?: string;
+  options?: string[];
+  actionsCount?: number;
+}
+
+interface AgentResponse {
+  step?: "clarify" | "answer" | "plan";
+  question?: string;
+  options?: string[];
+  answer?: string;
+  actions?: AIAction[];
+  log?: LogEntry[];
+  messages?: ChatMessage[];
+  error?: string;
+}
+
+type Phase = "idle" | "running" | "clarify" | "answer" | "plan" | "results";
+
 const LIST_SUB_PAGES = ["products", "units", "categories", "icons", "stores"];
 
 function deriveContextFromPath(pathname: string): RouteContext {
@@ -24,7 +54,7 @@ function deriveContextFromPath(pathname: string): RouteContext {
     const isListView = seg && !LIST_SUB_PAGES.includes(seg);
     return {
       context: ["shopping"],
-      placeholder: 'Np. "Dodaj mleko i chleb" lub "Odznacz jabłka jako kupione"',
+      placeholder: 'Np. "Dodaj mleko i chleb" lub "Co jeszcze muszę kupić?"',
       routeHint: isListView
         ? "Użytkownik ogląda konkretną listę zakupów"
         : "Użytkownik jest na stronie głównej zakupów",
@@ -46,12 +76,10 @@ function deriveContextFromPath(pathname: string): RouteContext {
       overdue: "widok zaległych zadań",
       all: "widok wszystkich zadań",
     };
-    // Widoki wirtualne (dziś/nadchodzące/zaległe/wszystkie) nie są projektem —
-    // tylko konkretny projekt (cuid w ścieżce) staje się domyślnym celem zadań.
     const isVirtualView = seg in viewNames;
     return {
       context: ["tasks"],
-      placeholder: 'Np. "Dodaj zadanie na jutro" lub "Przesuń mycie auta o tydzień"',
+      placeholder: 'Np. "Które zadanie jest teraz najważniejsze?" lub "Zakończ zadania o remoncie"',
       routeHint: `Użytkownik jest na ${viewNames[seg] ?? "widoku projektu zadań"}`,
       activeProjectId: !isVirtualView && seg ? seg : undefined,
     };
@@ -66,22 +94,78 @@ function deriveContextFromPath(pathname: string): RouteContext {
   if (pathname.startsWith("/notes")) {
     return {
       context: ["notes"],
-      placeholder: 'Np. "Dodaj notatkę o..." lub "Dopisz do notatki X..."',
+      placeholder: 'Np. "Dodaj notatkę o..." lub "Znajdź notatkę o..."',
       routeHint: "Użytkownik jest w module Notatki",
     };
   }
   if (pathname.startsWith("/pets")) {
     return {
       context: ["pets"],
-      placeholder: 'Np. "Zważ Reksia 12 kg" lub "Zaplanuj odrobaczanie Reksia za 3 miesiące"',
+      placeholder: 'Np. "Zważ Reksia 12 kg" lub "Kiedy odrobaczanie Reksia?"',
       routeHint: "Użytkownik jest w module Zwierzęta",
     };
   }
   return {
     context: ["shopping", "tasks", "notes", "pets"],
-    placeholder: 'Np. "Dodaj mleko do zakupów" lub "Stwórz zadanie na jutro"',
+    placeholder: 'Zapytaj o cokolwiek lub wydaj polecenie…',
     routeHint: "Użytkownik jest na stronie głównej aplikacji",
   };
+}
+
+function ReasoningLog({ log }: { log: LogEntry[] }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!log.length) return null;
+  return (
+    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+      {/* Uproszczony log — myśli agenta */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {log.filter((l) => l.thought).map((l, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+            <Sparkles size={11} style={{ color: "var(--text-muted)", flexShrink: 0, marginTop: 3 }} />
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{l.thought}</span>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 11, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+      >
+        {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+        {expanded ? "Ukryj pełny log rozumowania" : "Pokaż pełny log rozumowania"}
+      </button>
+      {expanded && (
+        <pre
+          style={{
+            marginTop: 8,
+            padding: "10px 12px",
+            background: "var(--bg-elevated)",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            fontSize: 10.5,
+            lineHeight: 1.5,
+            color: "var(--text-secondary)",
+            overflowX: "auto",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            maxHeight: 280,
+            overflowY: "auto",
+          }}
+        >
+          {log
+            .map((l) => {
+              const head = `#${l.iter} [${l.step}] ${l.thought}`;
+              if (l.step === "query") {
+                return `${head}\n  narzędzia: ${JSON.stringify(l.tools)}\n  wyniki: ${JSON.stringify(l.results)}`;
+              }
+              if (l.step === "clarify") return `${head}\n  pytanie: ${l.question}`;
+              if (l.step === "plan") return `${head}\n  akcje: ${l.actionsCount}`;
+              return head;
+            })
+            .join("\n\n")}
+        </pre>
+      )}
+    </div>
+  );
 }
 
 export function AICommandSheet() {
@@ -91,47 +175,110 @@ export function AICommandSheet() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [inputText, setInputText] = useState("");
-  const [isInterpreting, setIsInterpreting] = useState(false);
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [log, setLog] = useState<LogEntry[]>([]);
+  const [answer, setAnswer] = useState<string | null>(null);
+  const [clarify, setClarify] = useState<{ question: string; options?: string[] } | null>(null);
+  const [clarifyInput, setClarifyInput] = useState("");
+  const [runMessages, setRunMessages] = useState<ChatMessage[] | null>(null);
   const [pendingActions, setPendingActions] = useState<AIAction[] | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [results, setResults] = useState<ActionResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  function resetRun() {
+    setPhase("idle");
+    setLog([]);
+    setAnswer(null);
+    setClarify(null);
+    setClarifyInput("");
+    setRunMessages(null);
+    setPendingActions(null);
+    setResults(null);
+    setError(null);
+  }
+
   function handleClose() {
     setIsOpen(false);
     setInputText("");
-    setError(null);
-    setResults(null);
-    setPendingActions(null);
+    resetRun();
   }
 
-  async function handleInterpret() {
-    const text = inputText.trim();
-    if (!text) return;
-    setIsInterpreting(true);
+  function applyResponse(data: AgentResponse) {
+    if (data.log) setLog(data.log);
+    if (data.error) {
+      setError(data.error);
+      setPhase("idle");
+      return;
+    }
+    if (data.step === "clarify") {
+      setClarify({ question: data.question ?? "Doprecyzuj polecenie.", options: data.options });
+      setRunMessages(data.messages ?? null);
+      setClarifyInput("");
+      setPhase("clarify");
+      return;
+    }
+    if (data.step === "answer") {
+      setAnswer(data.answer ?? "");
+      setPhase("answer");
+      return;
+    }
+    if (data.step === "plan") {
+      setPendingActions(data.actions ?? []);
+      setPhase("plan");
+      return;
+    }
+    setError("Nieoczekiwana odpowiedź asystenta.");
+    setPhase("idle");
+  }
+
+  async function runAgent(payload: Record<string, unknown>) {
     setError(null);
-    setResults(null);
+    setPhase("running");
     try {
-      const res = await fetch("/api/llm/home/interpret", {
+      const res = await fetch("/api/llm/home/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, context, routeHint, currentProjectId: activeProjectId, today: new Date().toISOString() }),
+        body: JSON.stringify(payload),
       });
-      const data = (await res.json()) as { actions?: AIAction[]; error?: string };
-      if (!res.ok) {
-        setError(data.error ?? "Błąd interpretacji");
+      const data = (await res.json()) as AgentResponse;
+      if (!res.ok && !data.step) {
+        setError(data.error ?? "Błąd asystenta");
+        setPhase("idle");
         return;
       }
-      if (!data.actions?.length) {
-        setError("Nie rozpoznano żadnych akcji. Spróbuj inaczej sformułować polecenie.");
-        return;
-      }
-      setPendingActions(data.actions);
+      applyResponse(data);
     } catch {
-      setError("Nie udało się połączyć z LLM");
-    } finally {
-      setIsInterpreting(false);
+      setError("Nie udało się połączyć z asystentem");
+      setPhase("idle");
     }
+  }
+
+  function handleSend() {
+    const text = inputText.trim();
+    if (!text) return;
+    void runAgent({
+      text,
+      context,
+      routeHint,
+      activeListId,
+      currentProjectId: activeProjectId,
+      today: new Date().toISOString(),
+    });
+  }
+
+  function submitClarify(value: string) {
+    const v = value.trim();
+    if (!v || !runMessages) return;
+    void runAgent({
+      messages: runMessages,
+      clarifyAnswer: v,
+      context,
+      routeHint,
+      activeListId,
+      currentProjectId: activeProjectId,
+      today: new Date().toISOString(),
+    });
   }
 
   async function handleExecute(confirmedActions: AIAction[]) {
@@ -144,22 +291,28 @@ export function AICommandSheet() {
       });
       const data = (await res.json()) as { results?: ActionResult[] };
       setResults(data.results ?? []);
-      setInputText("");
       setPendingActions(null);
+      setPhase("results");
       router.refresh();
     } catch {
       setResults([]);
+      setPendingActions(null);
+      setPhase("results");
     } finally {
       setIsExecuting(false);
     }
   }
 
+  const busy = phase === "running";
+
   return (
     <>
-      {/* FAB — na mobile podniesiony ponad dolny pasek nawigacji (z-40, 56px+safe-area) */}
+      <style>{MARKDOWN_STYLES}</style>
+
+      {/* FAB */}
       <button
         onClick={() => setIsOpen(true)}
-        title="Polecenie AI"
+        title="Asystent AI"
         className="fixed right-5 z-40 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
         style={{
           width: 52,
@@ -210,20 +363,12 @@ export function AICommandSheet() {
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <Sparkles size={15} style={{ color: "var(--accent-blue)" }} />
                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
-                  Polecenie AI
+                  Asystent AI
                 </span>
               </div>
               <button
                 onClick={handleClose}
-                style={{
-                  padding: 4,
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "var(--text-muted)",
-                  display: "flex",
-                  alignItems: "center",
-                }}
+                style={{ padding: 4, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center" }}
               >
                 <X size={16} />
               </button>
@@ -231,105 +376,146 @@ export function AICommandSheet() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-5 py-4" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <SmartTextarea
-                value={inputText}
-                onChange={setInputText}
-                placeholder={placeholder}
-                rows={4}
-                onSubmit={handleInterpret}
-              />
-
-              <button
-                onClick={handleInterpret}
-                disabled={!inputText.trim() || isInterpreting}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  padding: "10px 0",
-                  borderRadius: 10,
-                  border: "none",
-                  background: !inputText.trim() || isInterpreting ? "var(--bg-elevated)" : "var(--accent-blue)",
-                  color: !inputText.trim() || isInterpreting ? "var(--text-muted)" : "#fff",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: !inputText.trim() || isInterpreting ? "not-allowed" : "pointer",
-                  transition: "background 0.1s",
-                }}
-              >
-                {isInterpreting ? (
-                  <>
-                    <Loader2 size={15} className="animate-spin" />
-                    Interpretuję…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={15} />
-                    Interpretuj i wykonaj
-                  </>
-                )}
-              </button>
-
-              {error && (
-                <p style={{ fontSize: 12, color: "var(--accent-red)", textAlign: "center", margin: 0 }}>
-                  {error}
-                </p>
+              {/* INPUT (idle) */}
+              {(phase === "idle" || phase === "running") && (
+                <>
+                  <SmartTextarea
+                    value={inputText}
+                    onChange={setInputText}
+                    placeholder={placeholder}
+                    rows={4}
+                    onSubmit={handleSend}
+                    disabled={busy}
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!inputText.trim() || busy}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                      padding: "10px 0", borderRadius: 10, border: "none",
+                      background: !inputText.trim() || busy ? "var(--bg-elevated)" : "var(--accent-blue)",
+                      color: !inputText.trim() || busy ? "var(--text-muted)" : "#fff",
+                      fontSize: 14, fontWeight: 600, cursor: !inputText.trim() || busy ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {busy ? (<><Loader2 size={15} className="animate-spin" /> Myślę…</>) : (<><Sparkles size={15} /> Wyślij</>)}
+                  </button>
+                </>
               )}
 
-              {results && !pendingActions && (
-                <div
-                  style={{
-                    padding: "14px 16px",
-                    borderRadius: 10,
-                    border: "1px solid var(--border)",
-                    background: "var(--bg-elevated)",
-                  }}
-                >
-                  <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", margin: 0, marginBottom: 8 }}>
-                    Wyniki
-                  </p>
-                  {results.map((r) => (
-                    <div key={r.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
-                      <span style={{ flexShrink: 0, marginTop: 1, color: r.success ? "var(--accent-green)" : "var(--accent-red)" }}>
-                        {r.success ? <CheckCircle size={13} /> : <XCircle size={13} />}
-                      </span>
-                      <div>
-                        <p style={{ fontSize: 13, color: "var(--text-primary)", margin: 0 }}>{r.description}</p>
-                        {r.error && <p style={{ fontSize: 11, color: "var(--accent-red)", margin: 0 }}>{r.error}</p>}
-                      </div>
+              {/* CLARIFY */}
+              {phase === "clarify" && clarify && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <p style={{ fontSize: 14, color: "var(--text-primary)", margin: 0, fontWeight: 500 }}>{clarify.question}</p>
+                  {clarify.options && clarify.options.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {clarify.options.map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => submitClarify(opt)}
+                          style={{
+                            fontSize: 13, padding: "7px 14px", borderRadius: 8,
+                            border: "1px solid var(--border)", background: "var(--bg-elevated)",
+                            color: "var(--text-primary)", cursor: "pointer",
+                          }}
+                        >
+                          {opt}
+                        </button>
+                      ))}
                     </div>
-                  ))}
+                  )}
+                  <SmartTextarea
+                    value={clarifyInput}
+                    onChange={setClarifyInput}
+                    placeholder="Twoja odpowiedź…"
+                    rows={2}
+                    onSubmit={() => submitClarify(clarifyInput)}
+                  />
+                  <button
+                    onClick={() => submitClarify(clarifyInput)}
+                    disabled={!clarifyInput.trim()}
+                    style={{
+                      width: "100%", padding: "9px 0", borderRadius: 10, border: "none",
+                      background: clarifyInput.trim() ? "var(--accent-blue)" : "var(--bg-elevated)",
+                      color: clarifyInput.trim() ? "#fff" : "var(--text-muted)",
+                      fontSize: 13, fontWeight: 600, cursor: clarifyInput.trim() ? "pointer" : "not-allowed",
+                    }}
+                  >
+                    Odpowiedz
+                  </button>
+                  <ReasoningLog log={log} />
+                </div>
+              )}
+
+              {/* ANSWER */}
+              {phase === "answer" && answer !== null && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div dangerouslySetInnerHTML={{ __html: markdownToHtml(answer) }} />
+                  <ReasoningLog log={log} />
                   <button
                     onClick={handleClose}
                     style={{
-                      marginTop: 12,
-                      width: "100%",
-                      padding: "8px 0",
-                      borderRadius: 8,
-                      border: "1px solid var(--border)",
-                      background: "transparent",
-                      color: "var(--text-secondary)",
-                      fontSize: 13,
-                      cursor: "pointer",
+                      width: "100%", padding: "9px 0", borderRadius: 8,
+                      border: "1px solid var(--border)", background: "transparent",
+                      color: "var(--text-secondary)", fontSize: 13, cursor: "pointer",
                     }}
                   >
                     Zamknij
                   </button>
                 </div>
               )}
+
+              {/* RESULTS */}
+              {phase === "results" && results && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div
+                    style={{ padding: "14px 16px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-elevated)" }}
+                  >
+                    <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", margin: 0, marginBottom: 8 }}>
+                      Wykonano
+                    </p>
+                    {results.map((r) => (
+                      <div key={r.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
+                        <span style={{ flexShrink: 0, marginTop: 1, color: r.success ? "var(--accent-green)" : "var(--accent-red)" }}>
+                          {r.success ? <CheckCircle size={13} /> : <XCircle size={13} />}
+                        </span>
+                        <div>
+                          <p style={{ fontSize: 13, color: "var(--text-primary)", margin: 0 }}>{r.description}</p>
+                          {r.error && <p style={{ fontSize: 11, color: "var(--accent-red)", margin: 0 }}>{r.error}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <ReasoningLog log={log} />
+                  <button
+                    onClick={handleClose}
+                    style={{
+                      width: "100%", padding: "9px 0", borderRadius: 8,
+                      border: "1px solid var(--border)", background: "transparent",
+                      color: "var(--text-secondary)", fontSize: 13, cursor: "pointer",
+                    }}
+                  >
+                    Zamknij
+                  </button>
+                </div>
+              )}
+
+              {error && (
+                <p style={{ fontSize: 12, color: "var(--accent-red)", textAlign: "center", margin: 0 }}>
+                  {error}
+                </p>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* ActionDrawer renders above sheet (z-50) */}
-      {pendingActions && (
+      {/* ActionDrawer (plan) renders above sheet */}
+      {phase === "plan" && pendingActions && (
         <ActionDrawer
           actions={pendingActions}
           onConfirm={handleExecute}
-          onClose={() => { setPendingActions(null); setResults(null); }}
+          onClose={() => { setPendingActions(null); setPhase("idle"); }}
           isExecuting={isExecuting}
         />
       )}

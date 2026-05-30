@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { categorize } from "@/lib/categorize";
-import { parseQuantity } from "@/lib/parseQuantity";
 import { getUserTeamIds } from "@/lib/server-utils";
 import { computeNextDue, parseRecurringRule } from "@/lib/recurrence";
+import { createTask, updateTask, deleteTask } from "@/actions/tasks";
+import { createTaskProject } from "@/actions/taskProjects";
+import { addItem, updateItem, updateItemStatus, deleteItem } from "@/actions/items";
+import { createList, renameList, archiveList } from "@/actions/lists";
+import { createNote, updateNote, deleteNote } from "@/actions/notes";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
-import type { RecurringRule } from "@/types";
+import type { RecurringRule, TaskStatus, TaskPriority, ItemStatus } from "@/types";
 
 function addDays(d: Date, days: number): Date {
   const x = new Date(d);
   x.setDate(x.getDate() + days);
   return x;
+}
+
+function asStr(v: unknown): string | undefined {
+  return typeof v === "string" && v.trim() ? v.trim() : undefined;
 }
 
 const SPECIES_MAP: Record<string, string> = {
@@ -248,191 +255,299 @@ export interface ActionResult {
   error?: string;
 }
 
-async function executeAction(action: AIAction, userId: string, activeListId?: string, currentProjectId?: string): Promise<string> {
+// ── Helpery rozwiązywania rekordów (id-first, z fallbackiem po searchQuery) ──────────────
+// WAŻNE (bezpieczeństwo): payload `execute` jest edytowalny po stronie klienta, więc nigdy
+// nie ufamy id z klienta. Dla ścieżki id zwracamy je i pozwalamy Server Action zweryfikować
+// własność (assert*Access). Dla fallbacku po nazwie szukamy WYŁĄCZNIE w zakresie użytkownika.
+
+async function accessibleListIds(userId: string): Promise<string[]> {
+  const teamIds = await getUserTeamIds(userId);
+  const lists = await prisma.shoppingList.findMany({
+    where: { OR: teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }] },
+    select: { id: true },
+  });
+  return lists.map((l) => l.id);
+}
+
+async function resolveOrCreateList(
+  userId: string,
+  opts: { listId?: string; listName?: string; activeListId?: string }
+): Promise<{ id: string; name: string }> {
+  const teamIds = await getUserTeamIds(userId);
+  const ownerOr = teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
+
+  let list =
+    (opts.listId && (await prisma.shoppingList.findFirst({ where: { OR: ownerOr, id: opts.listId } }))) || null;
+  if (!list && opts.listName) {
+    list = await prisma.shoppingList.findFirst({ where: { OR: ownerOr, name: { contains: opts.listName, mode: "insensitive" } } });
+  }
+  if (!list && opts.activeListId) {
+    list = await prisma.shoppingList.findFirst({ where: { OR: ownerOr, id: opts.activeListId } });
+  }
+  if (!list) {
+    list = await prisma.shoppingList.findFirst({ where: { OR: ownerOr }, orderBy: { createdAt: "asc" } });
+  }
+  if (!list) {
+    const created = await createList("Zakupy");
+    return { id: created.id, name: created.name };
+  }
+  return { id: list.id, name: list.name };
+}
+
+async function resolveListId(
+  userId: string,
+  params: Record<string, unknown>,
+  searchQuery?: string,
+  activeListId?: string
+): Promise<string> {
+  const teamIds = await getUserTeamIds(userId);
+  const ownerOr = teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
+  const id = asStr(params.listId);
+  if (id) {
+    const l = await prisma.shoppingList.findFirst({ where: { OR: ownerOr, id } });
+    if (l) return l.id;
+  }
+  if (searchQuery) {
+    const l = await prisma.shoppingList.findFirst({ where: { OR: ownerOr, name: { contains: searchQuery, mode: "insensitive" } } });
+    if (l) return l.id;
+  }
+  if (activeListId) {
+    const l = await prisma.shoppingList.findFirst({ where: { OR: ownerOr, id: activeListId } });
+    if (l) return l.id;
+  }
+  throw new Error(`Nie znaleziono listy: "${searchQuery ?? asStr(params.listId) ?? ""}"`);
+}
+
+async function resolveItemId(userId: string, params: Record<string, unknown>, searchQuery?: string): Promise<string> {
+  const id = asStr(params.itemId);
+  if (id) return id; // updateItem*/deleteItem same w sobie asertują dostęp
+  const listIds = await accessibleListIds(userId);
+  const item = await prisma.item.findFirst({
+    where: { listId: { in: listIds }, name: { contains: searchQuery ?? "", mode: "insensitive" } },
+  });
+  if (!item) throw new Error(`Nie znaleziono produktu: "${searchQuery}"`);
+  return item.id;
+}
+
+async function resolveTaskId(
+  userId: string,
+  params: Record<string, unknown>,
+  searchQuery?: string,
+  opts?: { notDone?: boolean }
+): Promise<string> {
+  const id = asStr(params.taskId);
+  if (id) return id; // updateTask/deleteTask asertują dostęp
+  const task = await prisma.task.findFirst({
+    where: {
+      OR: [
+        { createdById: userId },
+        { assigneeId: userId },
+        { project: { ownerId: userId } },
+        { project: { members: { some: { userId } } } },
+      ],
+      title: { contains: searchQuery ?? "", mode: "insensitive" },
+      ...(opts?.notDone ? { status: { notIn: ["DONE", "CANCELLED"] } } : {}),
+    },
+  });
+  if (!task) throw new Error(`Nie znaleziono zadania: "${searchQuery}"`);
+  return task.id;
+}
+
+async function resolveProjectIdForCreate(
+  userId: string,
+  projectName?: string,
+  currentProjectId?: string
+): Promise<string | null> {
+  if (projectName) {
+    const p = await prisma.taskProject.findFirst({
+      where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }], name: { contains: projectName, mode: "insensitive" } },
+    });
+    if (p) return p.id;
+  }
+  if (currentProjectId) {
+    const p = await prisma.taskProject.findFirst({
+      where: { id: currentProjectId, OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
+    });
+    if (p) return p.id;
+  }
+  const inbox = await prisma.taskProject.findFirst({ where: { ownerId: userId, isInbox: true } });
+  return inbox?.id ?? null;
+}
+
+async function resolveNoteId(userId: string, params: Record<string, unknown>, searchQuery?: string): Promise<string> {
+  const id = asStr(params.noteId);
+  if (id) return id;
+  const teamIds = await getUserTeamIds(userId);
+  const note = await prisma.note.findFirst({
+    where: {
+      OR: teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }],
+      AND: {
+        OR: [
+          { title: { contains: searchQuery ?? "", mode: "insensitive" } },
+          { content: { contains: searchQuery ?? "", mode: "insensitive" } },
+        ],
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+  if (!note) throw new Error(`Nie znaleziono notatki: "${searchQuery}"`);
+  return note.id;
+}
+
+async function executeAction(
+  action: AIAction,
+  userId: string,
+  activeListId?: string,
+  currentProjectId?: string
+): Promise<string> {
   const { module, type, params, searchQuery } = action;
 
   if (module === "shopping") {
     if (type === "add_item") {
       const rawText = (params.rawText as string) ?? "";
-      const listName = params.listName as string | undefined;
-
-      let list = await prisma.shoppingList.findFirst({
-        where: listName
-          ? { ownerId: userId, name: { contains: listName, mode: "insensitive" } }
-          : activeListId
-            ? { id: activeListId, ownerId: userId }
-            : { ownerId: userId },
-        orderBy: listName || activeListId ? undefined : { createdAt: "asc" },
+      const list = await resolveOrCreateList(userId, {
+        listId: asStr(params.listId),
+        listName: asStr(params.listName),
+        activeListId,
       });
-
-      if (!list) {
-        list = await prisma.shoppingList.create({
-          data: { name: "Zakupy", ownerId: userId },
-        });
-      }
-
-      const { name, quantity, unit } = parseQuantity(rawText.trim() || "Produkt");
-      const category = categorize(name);
-      const item = await prisma.item.create({
-        data: { listId: list.id, name, quantity, unit, category },
-      });
+      const item = await addItem(list.id, rawText.trim() || "Produkt");
       return `Dodano "${item.name}" do listy "${list.name}"`;
     }
 
     if (type === "update_item_status") {
-      const status = (params.status as string) ?? "DONE";
-      const lists = await prisma.shoppingList.findMany({ where: { ownerId: userId }, select: { id: true } });
-      const listIds = lists.map((l) => l.id);
-      const item = await prisma.item.findFirst({
-        where: {
-          listId: { in: listIds },
-          name: { contains: searchQuery ?? "", mode: "insensitive" },
-        },
-      });
-      if (!item) throw new Error(`Nie znaleziono produktu: "${searchQuery}"`);
-      await prisma.item.update({ where: { id: item.id }, data: { status } });
+      const status = (asStr(params.status) ?? "DONE") as ItemStatus;
+      const id = await resolveItemId(userId, params, searchQuery);
+      const item = await updateItemStatus(id, status);
       return `Zaktualizowano status "${item.name}" → ${status}`;
     }
 
+    if (type === "update_item") {
+      const id = await resolveItemId(userId, params, searchQuery);
+      const patch: Parameters<typeof updateItem>[1] = {};
+      if (params.name !== undefined) patch.name = String(params.name);
+      if (params.quantity !== undefined) {
+        const q = asStr(params.quantity) ?? (params.quantity as number | null | undefined);
+        patch.quantity = q == null || q === "" ? null : Number(q);
+      }
+      if (params.unit !== undefined) patch.unit = asStr(params.unit) ?? null;
+      const item = await updateItem(id, patch);
+      return `Zaktualizowano "${item.name}"`;
+    }
+
     if (type === "delete_item") {
-      const lists = await prisma.shoppingList.findMany({ where: { ownerId: userId }, select: { id: true } });
-      const listIds = lists.map((l) => l.id);
-      const item = await prisma.item.findFirst({
-        where: {
-          listId: { in: listIds },
-          name: { contains: searchQuery ?? "", mode: "insensitive" },
-        },
-      });
-      if (!item) throw new Error(`Nie znaleziono produktu: "${searchQuery}"`);
-      await prisma.item.delete({ where: { id: item.id } });
-      return `Usunięto "${item.name}" z listy zakupów`;
+      const id = await resolveItemId(userId, params, searchQuery);
+      const existing = await prisma.item.findUnique({ where: { id }, select: { name: true } });
+      await deleteItem(id);
+      return `Usunięto "${existing?.name ?? "produkt"}" z listy zakupów`;
+    }
+
+    if (type === "create_list") {
+      const name = asStr(params.name) ?? "Nowa lista";
+      const list = await createList(name);
+      return `Utworzono listę "${list.name}"`;
+    }
+
+    if (type === "rename_list") {
+      const id = await resolveListId(userId, params, searchQuery, activeListId);
+      const name = asStr(params.name) ?? "Lista";
+      const list = await renameList(id, name);
+      return `Zmieniono nazwę listy na "${list.name}"`;
+    }
+
+    if (type === "archive_list") {
+      const id = await resolveListId(userId, params, searchQuery, activeListId);
+      await archiveList(id);
+      return `Zarchiwizowano listę`;
     }
   }
 
   if (module === "tasks") {
     if (type === "create_task") {
-      const title = (params.title as string) ?? "Nowe zadanie";
-      const priority = (params.priority as string) ?? "NONE";
+      const title = asStr(params.title) ?? "Nowe zadanie";
+      const priority = (asStr(params.priority) ?? "NONE") as TaskPriority;
       const dueDate = params.dueDate ? new Date(params.dueDate as string) : null;
-      const projectName = params.projectName as string | undefined;
-
-      let projectId: string | null = null;
-      if (projectName) {
-        const project = await prisma.taskProject.findFirst({
-          where: {
-            OR: [{ ownerId: userId }, { members: { some: { userId } } }],
-            name: { contains: projectName, mode: "insensitive" },
-          },
-        });
-        if (project) projectId = project.id;
-      }
-
-      // Brak wskazanego projektu → użyj projektu otwartego na widoku (jeśli użytkownik
-      // ma do niego dostęp). Dopiero gdy i tego nie ma — fallback do skrzynki.
-      if (!projectId && currentProjectId) {
-        const current = await prisma.taskProject.findFirst({
-          where: {
-            id: currentProjectId,
-            OR: [{ ownerId: userId }, { members: { some: { userId } } }],
-          },
-          select: { id: true },
-        });
-        if (current) projectId = current.id;
-      }
-
-      if (!projectId) {
-        const inbox = await prisma.taskProject.findFirst({
-          where: { ownerId: userId, isInbox: true },
-        });
-        if (inbox) projectId = inbox.id;
-      }
-
-      const maxOrder = await prisma.task.aggregate({
-        where: { projectId },
-        _max: { order: true },
-      });
-
-      const task = await prisma.task.create({
-        data: {
-          title: title.trim(),
-          priority,
-          dueDate,
-          description: (params.description as string) ?? null,
-          projectId,
-          createdById: userId,
-          order: (maxOrder._max.order ?? 0) + 1,
-        },
+      const projectId = await resolveProjectIdForCreate(userId, asStr(params.projectName), currentProjectId);
+      const task = await createTask({
+        title,
+        priority,
+        dueDate,
+        description: asStr(params.description) ?? null,
+        projectId,
       });
       return `Utworzono zadanie "${task.title}"`;
     }
 
-    if (type === "shift_task_due_date") {
-      const days = (params.days as number) ?? 0;
-      const task = await prisma.task.findFirst({
-        where: {
-          OR: [{ createdById: userId }, { assigneeId: userId }],
-          title: { contains: searchQuery ?? "", mode: "insensitive" },
-          status: { notIn: ["DONE", "CANCELLED"] },
-        },
-      });
-      if (!task) throw new Error(`Nie znaleziono zadania: "${searchQuery}"`);
-      const baseDate = task.dueDate ?? new Date();
-      const newDate = new Date(baseDate);
-      newDate.setDate(newDate.getDate() + days);
-      await prisma.task.update({ where: { id: task.id }, data: { dueDate: newDate } });
-      return `Przesunięto termin "${task.title}" o ${days > 0 ? "+" : ""}${days} dni`;
+    if (type === "update_task") {
+      const id = await resolveTaskId(userId, params, searchQuery);
+      const patch: Parameters<typeof updateTask>[1] = {};
+      if (params.title !== undefined) patch.title = String(params.title);
+      if (params.description !== undefined) patch.description = asStr(params.description) ?? null;
+      if (params.priority !== undefined) patch.priority = String(params.priority) as TaskPriority;
+      if (params.status !== undefined) patch.status = String(params.status) as TaskStatus;
+      if (params.dueDate !== undefined) patch.dueDate = params.dueDate ? new Date(String(params.dueDate)) : null;
+      const task = await updateTask(id, patch);
+      return `Zaktualizowano zadanie "${task.title}"`;
     }
 
     if (type === "update_task_status") {
-      const status = (params.status as string) ?? "DONE";
-      const task = await prisma.task.findFirst({
-        where: {
-          OR: [{ createdById: userId }, { assigneeId: userId }],
-          title: { contains: searchQuery ?? "", mode: "insensitive" },
-        },
-      });
-      if (!task) throw new Error(`Nie znaleziono zadania: "${searchQuery}"`);
-      const completedAt = status === "DONE" ? new Date() : null;
-      await prisma.task.update({
-        where: { id: task.id },
-        data: { status, completedAt },
-      });
+      const id = await resolveTaskId(userId, params, searchQuery);
+      const status = (asStr(params.status) ?? "DONE") as TaskStatus;
+      const task = await updateTask(id, { status });
       return `Zmieniono status "${task.title}" → ${status}`;
+    }
+
+    if (type === "shift_task_due_date") {
+      const id = await resolveTaskId(userId, params, searchQuery, { notDone: true });
+      const days = Number(params.days ?? 0);
+      const existing = await prisma.task.findUnique({ where: { id }, select: { dueDate: true } });
+      const newDate = addDays(existing?.dueDate ?? new Date(), days);
+      const task = await updateTask(id, { dueDate: newDate });
+      return `Przesunięto termin "${task.title}" o ${days > 0 ? "+" : ""}${days} dni`;
+    }
+
+    if (type === "delete_task") {
+      const id = await resolveTaskId(userId, params, searchQuery);
+      const existing = await prisma.task.findUnique({ where: { id }, select: { title: true } });
+      await deleteTask(id);
+      return `Usunięto zadanie "${existing?.title ?? ""}"`;
+    }
+
+    if (type === "create_project") {
+      const name = asStr(params.name) ?? "Nowy projekt";
+      const project = await createTaskProject(name, { emoji: asStr(params.emoji) });
+      return `Utworzono projekt "${project.name}"`;
     }
   }
 
   if (module === "notes") {
     if (type === "create_note") {
-      const title = (params.title as string) ?? "Nowa notatka";
-      const content = (params.content as string) ?? "";
-      const note = await prisma.note.create({
-        data: { title: title.trim(), content, ownerId: userId },
-      });
+      const note = await createNote({ title: asStr(params.title) ?? "Nowa notatka", content: asStr(params.content) ?? "" });
       return `Utworzono notatkę "${note.title}"`;
     }
 
     if (type === "append_to_note") {
-      const content = (params.content as string) ?? "";
-      const teamIds = await getUserTeamIds(userId);
-      const note = await prisma.note.findFirst({
-        where: {
-          OR: [
-            { ownerId: userId },
-            teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" },
-          ],
-          AND: {
-            OR: [
-              { title: { contains: searchQuery ?? "", mode: "insensitive" } },
-              { content: { contains: searchQuery ?? "", mode: "insensitive" } },
-            ],
-          },
-        },
-        orderBy: { updatedAt: "desc" },
-      });
-      if (!note) throw new Error(`Nie znaleziono notatki: "${searchQuery}"`);
-      const newContent = note.content ? `${note.content}\n\n${content}` : content;
-      await prisma.note.update({ where: { id: note.id }, data: { content: newContent } });
+      const id = await resolveNoteId(userId, params, searchQuery);
+      const existing = await prisma.note.findUnique({ where: { id }, select: { content: true } });
+      const addition = asStr(params.content) ?? "";
+      const newContent = existing?.content ? `${existing.content}\n\n${addition}` : addition;
+      const note = await updateNote(id, { content: newContent });
       return `Dopisano do notatki "${note.title}"`;
+    }
+
+    if (type === "update_note") {
+      const id = await resolveNoteId(userId, params, searchQuery);
+      const patch: Parameters<typeof updateNote>[1] = {};
+      if (params.title !== undefined) patch.title = String(params.title);
+      if (params.content !== undefined) patch.content = String(params.content);
+      const note = await updateNote(id, patch);
+      return `Zaktualizowano notatkę "${note.title}"`;
+    }
+
+    if (type === "delete_note") {
+      const id = await resolveNoteId(userId, params, searchQuery);
+      const existing = await prisma.note.findUnique({ where: { id }, select: { title: true } });
+      await deleteNote(id);
+      return `Usunięto notatkę "${existing?.title ?? ""}"`;
     }
   }
 
@@ -458,7 +573,7 @@ export async function POST(req: NextRequest) {
     try {
       const message = await executeAction(action, session.user.id, activeListId, currentProjectId);
       results.push({ id: action.id, success: true, description: message });
-      // Audit log
+      // Audit log (znacznik pochodzenia AI)
       await prisma.userActivity.create({
         data: {
           userId: session.user.id,

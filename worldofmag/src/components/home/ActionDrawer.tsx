@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, ShoppingCart, CheckSquare, FileText, CheckCircle, XCircle, Loader2, Square, CheckSquare2, ChevronDown, ChevronUp } from "lucide-react";
+import { X, ShoppingCart, CheckSquare, FileText, PawPrint, CheckCircle, XCircle, Loader2, Square, CheckSquare2, ChevronDown, ChevronUp } from "lucide-react";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
 import type { ActionResult } from "@/app/api/llm/home/execute/route";
 
@@ -13,20 +13,35 @@ interface ActionDrawerProps {
   results?: ActionResult[];
 }
 
+// Akcje destrukcyjne — domyślnie ODZNACZONE i oznaczone na czerwono (świadomy opt-in).
+const DESTRUCTIVE_TYPES = new Set(["delete_item", "delete_task", "delete_note", "archive_list"]);
+const ID_KEY = /Id$/;
+
 function moduleIcon(module: string) {
   if (module === "shopping") return <ShoppingCart size={15} />;
   if (module === "tasks") return <CheckSquare size={15} />;
+  if (module === "pets") return <PawPrint size={15} />;
   return <FileText size={15} />;
 }
 
 function moduleColor(module: string) {
   if (module === "shopping") return "var(--accent-blue)";
   if (module === "tasks") return "var(--accent-green)";
+  if (module === "pets") return "var(--accent-purple)";
   return "var(--accent-amber)";
 }
 
+function moduleLabel(module: string) {
+  if (module === "shopping") return "Zakupy";
+  if (module === "tasks") return "Zadania";
+  if (module === "pets") return "Zwierzęta";
+  return "Notatki";
+}
+
 export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results }: ActionDrawerProps) {
-  const [included, setIncluded] = useState<Set<string>>(new Set(actions.map((a) => a.id)));
+  const [included, setIncluded] = useState<Set<string>>(
+    new Set(actions.filter((a) => !DESTRUCTIVE_TYPES.has(a.type)).map((a) => a.id))
+  );
   const [descriptions, setDescriptions] = useState<Record<string, string>>(
     Object.fromEntries(actions.map((a) => [a.id, a.description]))
   );
@@ -197,9 +212,14 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                     <span style={{ color: moduleColor(action.module) }}>{moduleIcon(action.module)}</span>
                     <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: moduleColor(action.module) }}>
-                      {action.module === "shopping" ? "Zakupy" : action.module === "tasks" ? "Zadania" : "Notatki"}
+                      {moduleLabel(action.module)}
                     </span>
                     <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace" }}>{action.type}</span>
+                    {DESTRUCTIVE_TYPES.has(action.type) && (
+                      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "var(--accent-red)", border: "1px solid var(--accent-red)", borderRadius: 4, padding: "0 4px" }}>
+                        USUWA
+                      </span>
+                    )}
                   </div>
 
                   {/* Editable description */}
@@ -221,20 +241,26 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                   {/* Params editor */}
                   {paramsExpanded.has(action.id) && (
                     <div style={{ marginTop: 8, padding: "8px 10px", background: "var(--bg-elevated)", borderRadius: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                      {Object.entries(editedParams[action.id] ?? {}).map(([key, value]) => (
+                      {Object.entries(editedParams[action.id] ?? {}).map(([key, value]) => {
+                        const isId = ID_KEY.test(key);
+                        return (
                         <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontSize: 11, color: "var(--text-muted)", width: 90, flexShrink: 0, fontFamily: "monospace" }}>{key}</span>
                           <input
                             value={value}
-                            onChange={(e) => updateParam(action.id, key, e.target.value)}
+                            readOnly={isId}
+                            title={isId ? "Identyfikator rekordu — tylko do odczytu" : undefined}
+                            onChange={(e) => { if (!isId) updateParam(action.id, key, e.target.value); }}
                             style={{
-                              flex: 1, fontSize: 12, color: "var(--text-primary)",
-                              background: "var(--bg-surface)", border: "1px solid var(--border)",
+                              flex: 1, fontSize: 12, color: isId ? "var(--text-muted)" : "var(--text-primary)",
+                              background: isId ? "var(--bg-elevated)" : "var(--bg-surface)", border: "1px solid var(--border)",
                               borderRadius: 6, padding: "3px 8px", outline: "none",
+                              fontFamily: isId ? "monospace" : undefined,
                             }}
                           />
                         </div>
-                      ))}
+                        );
+                      })}
                       {action.searchQuery !== undefined && (
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontSize: 11, color: "var(--accent-amber)", width: 90, flexShrink: 0, fontFamily: "monospace" }}>searchQuery</span>
