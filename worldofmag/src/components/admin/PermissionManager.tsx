@@ -23,6 +23,30 @@ const ROLE_COLORS: Record<string, string> = {
   BETA_TESTER: "var(--accent-amber)",
 }
 
+// Brama do panelu /admin. Musi mieć ją zawsze co najmniej jeden użytkownik,
+// inaczej nikt nie odzyska dostępu z poziomu UI (patrz doświadczenia.md 2026-05-30).
+const ADMIN_PERM = "module.admin"
+
+// Liczy odrębnych użytkowników mających dostęp do /admin przy danym zestawie ról.
+function countAdminHolders(
+  users: UserData[],
+  rolePermissions: RoleWithPermissions[],
+  opts?: { excludeRoleGrant?: string; removeUserRole?: { userId: string; role: string } },
+): number {
+  const adminRoles = rolePermissions
+    .filter((rp) => rp.permissions.includes(ADMIN_PERM))
+    .map((rp) => rp.role)
+    .filter((r) => r !== opts?.excludeRoleGrant)
+  const holders = new Set<string>()
+  for (const u of users) {
+    for (const r of u.roles) {
+      if (opts?.removeUserRole && u.id === opts.removeUserRole.userId && r === opts.removeUserRole.role) continue
+      if (adminRoles.includes(r)) { holders.add(u.id); break }
+    }
+  }
+  return holders.size
+}
+
 function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   const tabs: { id: Tab; label: string }[] = [
     { id: "permissions", label: "Uprawnienia" },
@@ -76,12 +100,14 @@ function RoleBadge({ role }: { role: string }) {
 }
 
 // ---------- Permissions Tab ----------
-function PermissionsTab({ permissions }: { permissions: PermissionData[] }) {
+function PermissionsTab({ permissions, users, rolePermissions }: { permissions: PermissionData[]; users: UserData[]; rolePermissions: RoleWithPermissions[] }) {
   const [adding, setAdding] = useState(false)
   const [slug, setSlug] = useState("")
   const [name, setName] = useState("")
   const [desc, setDesc] = useState("")
   const [saving, setSaving] = useState(false)
+
+  const adminLocked = countAdminHolders(users, rolePermissions) > 0
 
   async function handleCreate() {
     if (!slug.trim() || !name.trim()) return
@@ -91,7 +117,7 @@ function PermissionsTab({ permissions }: { permissions: PermissionData[] }) {
 
   async function handleDelete(id: string) {
     if (!confirm("Usunąć to uprawnienie? Zostanie też usunięte z ról.")) return
-    await deletePermission(id)
+    try { await deletePermission(id) } catch (e) { alert(e instanceof Error ? e.message : "Nie udało się usunąć uprawnienia.") }
   }
 
   return (
@@ -137,12 +163,19 @@ function PermissionsTab({ permissions }: { permissions: PermissionData[] }) {
               </div>
               {p.description && <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>{p.description}</p>}
             </div>
-            <button onClick={() => handleDelete(p.id)}
-              style={{ flexShrink: 0, padding: 4, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", borderRadius: 4 }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)"; e.currentTarget.style.background = "var(--bg-hover)" }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.background = "none" }}>
-              <Trash2 size={13} />
-            </button>
+            {p.slug === ADMIN_PERM && adminLocked ? (
+              <span title="To brama dostępu do panelu administratora — nie można jej usunąć, dopóki ktoś z niej korzysta."
+                style={{ flexShrink: 0, padding: 4, color: "var(--text-muted)", opacity: 0.4, display: "flex", cursor: "not-allowed" }}>
+                <Trash2 size={13} />
+              </span>
+            ) : (
+              <button onClick={() => handleDelete(p.id)}
+                style={{ flexShrink: 0, padding: 4, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", borderRadius: 4 }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)"; e.currentTarget.style.background = "var(--bg-hover)" }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.background = "none" }}>
+                <Trash2 size={13} />
+              </button>
+            )}
           </div>
         ))}
         {permissions.length === 0 && (
@@ -154,13 +187,23 @@ function PermissionsTab({ permissions }: { permissions: PermissionData[] }) {
 }
 
 // ---------- Roles Tab ----------
-function RolesTab({ rolePermissions, permissions }: { rolePermissions: RoleWithPermissions[]; permissions: PermissionData[] }) {
+function RolesTab({ rolePermissions, permissions, users }: { rolePermissions: RoleWithPermissions[]; permissions: PermissionData[]; users: UserData[] }) {
   const [toggling, setToggling] = useState<string | null>(null)
+
+  // Czy odznaczenie module.admin dla tej roli zostawiłoby nikogo bez dostępu do /admin?
+  function lastAdminGrant(role: string): boolean {
+    const grantsAdmin = rolePermissions.find((rp) => rp.role === role)?.permissions.includes(ADMIN_PERM)
+    if (!grantsAdmin) return false
+    if (countAdminHolders(users, rolePermissions) === 0) return false
+    return countAdminHolders(users, rolePermissions, { excludeRoleGrant: role }) === 0
+  }
 
   async function handleToggle(role: string, slug: string) {
     const key = `${role}:${slug}`
     setToggling(key)
-    try { await toggleRolePermission(role, slug) } finally { setToggling(null) }
+    try { await toggleRolePermission(role, slug) }
+    catch (e) { alert(e instanceof Error ? e.message : "Nie udało się zmienić uprawnienia.") }
+    finally { setToggling(null) }
   }
 
   return (
@@ -176,15 +219,17 @@ function RolesTab({ rolePermissions, permissions }: { rolePermissions: RoleWithP
               const hasIt = rolePerms.includes(p.slug)
               const key = `${role}:${p.slug}`
               const isToggling = toggling === key
+              const locked = p.slug === ADMIN_PERM && hasIt && lastAdminGrant(role)
               return (
                 <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: i < permissions.length - 1 ? "1px solid var(--border)" : undefined }}>
                   <button
                     onClick={() => handleToggle(role, p.slug)}
-                    disabled={isToggling}
+                    disabled={isToggling || locked}
+                    title={locked ? "To jedyna droga dostępu do panelu administratora — nie można jej odebrać." : undefined}
                     style={{
                       width: 20, height: 20, borderRadius: 4, flexShrink: 0, border: `1.5px solid ${hasIt ? "var(--accent-blue)" : "var(--border)"}`,
                       background: hasIt ? "var(--accent-blue)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center",
-                      cursor: isToggling ? "default" : "pointer", opacity: isToggling ? 0.5 : 1,
+                      cursor: locked ? "not-allowed" : isToggling ? "default" : "pointer", opacity: locked ? 0.55 : isToggling ? 0.5 : 1,
                     }}
                   >
                     {hasIt && <Check size={12} color="#fff" />}
@@ -207,10 +252,16 @@ function RolesTab({ rolePermissions, permissions }: { rolePermissions: RoleWithP
 }
 
 // ---------- Users Tab ----------
-function UsersTab({ users, availableRoles }: { users: UserData[]; availableRoles: string[] }) {
+function UsersTab({ users, availableRoles, rolePermissions }: { users: UserData[]; availableRoles: string[]; rolePermissions: RoleWithPermissions[] }) {
   const [adding, setAdding] = useState<string | null>(null) // userId being edited
   const [newRole, setNewRole] = useState("")
   const [saving, setSaving] = useState(false)
+
+  // Czy usunięcie tej roli zostawiłoby nikogo z dostępem do /admin?
+  function lastAdminRole(userId: string, role: string): boolean {
+    if (countAdminHolders(users, rolePermissions) === 0) return false
+    return countAdminHolders(users, rolePermissions, { removeUserRole: { userId, role } }) === 0
+  }
 
   async function handleAddRole(userId: string) {
     if (!newRole) return
@@ -219,7 +270,7 @@ function UsersTab({ users, availableRoles }: { users: UserData[]; availableRoles
   }
 
   async function handleRemoveRole(userId: string, role: string) {
-    await removeUserRole(userId, role)
+    try { await removeUserRole(userId, role) } catch (e) { alert(e instanceof Error ? e.message : "Nie udało się usunąć roli.") }
   }
 
   return (
@@ -233,20 +284,30 @@ function UsersTab({ users, availableRoles }: { users: UserData[]; availableRoles
               </p>
               <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0, marginBottom: 6 }}>{user.email}</p>
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-                {user.roles.map((role) => (
-                  <div key={role} style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                    <RoleBadge role={role} />
-                    <button
-                      onClick={() => handleRemoveRole(user.id, role)}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: "var(--text-muted)", borderRadius: 3, display: "flex" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)" }}
-                      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
-                      title={`Usuń rolę ${role}`}
-                    >
-                      <X size={10} />
-                    </button>
-                  </div>
-                ))}
+                {user.roles.map((role) => {
+                  const locked = lastAdminRole(user.id, role)
+                  return (
+                    <div key={role} style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                      <RoleBadge role={role} />
+                      {locked ? (
+                        <span title="Ostatnia rola dająca dostęp do panelu administratora — nie można jej usunąć."
+                          style={{ padding: 2, color: "var(--text-muted)", opacity: 0.4, display: "flex", cursor: "not-allowed" }}>
+                          <X size={10} />
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleRemoveRole(user.id, role)}
+                          style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: "var(--text-muted)", borderRadius: 3, display: "flex" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)" }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)" }}
+                          title={`Usuń rolę ${role}`}
+                        >
+                          <X size={10} />
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
                 {adding === user.id ? (
                   <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                     <select value={newRole} onChange={(e) => setNewRole(e.target.value)}
@@ -287,9 +348,9 @@ export function PermissionManager({ permissions, rolePermissions, users, availab
   return (
     <div>
       <TabBar active={tab} onChange={setTab} />
-      {tab === "permissions" && <PermissionsTab permissions={permissions} />}
-      {tab === "roles" && <RolesTab rolePermissions={rolePermissions} permissions={permissions} />}
-      {tab === "users" && <UsersTab users={users} availableRoles={availableRoles} />}
+      {tab === "permissions" && <PermissionsTab permissions={permissions} users={users} rolePermissions={rolePermissions} />}
+      {tab === "roles" && <RolesTab rolePermissions={rolePermissions} permissions={permissions} users={users} />}
+      {tab === "users" && <UsersTab users={users} availableRoles={availableRoles} rolePermissions={rolePermissions} />}
     </div>
   )
 }

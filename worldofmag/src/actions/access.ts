@@ -11,6 +11,49 @@ async function requireAdmin() {
   return session!
 }
 
+const ADMIN_PERM_SLUG = PERMISSIONS.ADMIN // "module.admin" — brama do całej sekcji /admin
+
+/**
+ * Liczy odrębnych użytkowników, którzy mają dostęp do panelu administratora,
+ * czyli posiadają co najmniej jedną rolę przyznającą `module.admin`.
+ *
+ * Zabezpieczenie przed self-lockoutem (patrz doświadczenia.md, 2026-05-30):
+ * admin nie może operacją RBAC doprowadzić do stanu, w którym nikt nie ma już
+ * dostępu do /admin. Opcjonalnie symuluje hipotetyczną zmianę:
+ *  - `excludeRoleGrant`: udawaj, że ta rola NIE przyznaje już `module.admin`,
+ *  - `removeUserRole`: udawaj, że ten użytkownik stracił tę rolę.
+ */
+async function countAdminAccessHolders(opts?: {
+  excludeRoleGrant?: string
+  removeUserRole?: { userId: string; role: string }
+}): Promise<number> {
+  const perm = await prisma.permission.findUnique({ where: { slug: ADMIN_PERM_SLUG }, select: { id: true } })
+  if (!perm) return 0
+
+  let adminRoles = (
+    await prisma.rolePermission.findMany({ where: { permissionId: perm.id }, select: { role: true } })
+  ).map((g) => g.role)
+  if (opts?.excludeRoleGrant) adminRoles = adminRoles.filter((r) => r !== opts.excludeRoleGrant)
+  if (adminRoles.length === 0) return 0
+
+  const userRoles = await prisma.userRole.findMany({
+    where: { role: { in: adminRoles } },
+    select: { userId: true, role: true },
+  })
+  const holders = new Set<string>()
+  for (const ur of userRoles) {
+    if (
+      opts?.removeUserRole &&
+      ur.userId === opts.removeUserRole.userId &&
+      ur.role === opts.removeUserRole.role
+    ) {
+      continue
+    }
+    holders.add(ur.userId)
+  }
+  return holders.size
+}
+
 // --- Permissions ---
 
 export type PermissionData = {
@@ -40,6 +83,12 @@ export async function updatePermission(id: string, name: string, description?: s
 
 export async function deletePermission(id: string): Promise<void> {
   await requireAdmin()
+  const perm = await prisma.permission.findUnique({ where: { id }, select: { slug: true } })
+  if (perm?.slug === ADMIN_PERM_SLUG && (await countAdminAccessHolders()) > 0) {
+    throw new Error(
+      "Nie można usunąć uprawnienia „module.admin” — to brama dostępu do panelu administratora.",
+    )
+  }
   await prisma.permission.delete({ where: { id } })
   revalidatePath("/admin/access")
 }
@@ -79,6 +128,15 @@ export async function toggleRolePermission(role: string, permissionSlug: string)
     where: { role_permissionId: { role, permissionId: perm.id } },
   })
   if (existing) {
+    // Nie pozwól odebrać module.admin, jeśli zostawiłoby to nikogo bez dostępu do /admin.
+    if (permissionSlug === ADMIN_PERM_SLUG) {
+      const before = await countAdminAccessHolders()
+      if (before > 0 && (await countAdminAccessHolders({ excludeRoleGrant: role })) === 0) {
+        throw new Error(
+          "Nie można odebrać „module.admin” tej roli — żaden użytkownik nie miałby już dostępu do panelu administratora.",
+        )
+      }
+    }
     await prisma.rolePermission.delete({ where: { id: existing.id } })
   } else {
     await prisma.rolePermission.create({ data: { role, permissionId: perm.id } })
@@ -117,6 +175,13 @@ export async function addUserRole(userId: string, role: string): Promise<void> {
 
 export async function removeUserRole(userId: string, role: string): Promise<void> {
   await requireAdmin()
+  // Nie pozwól usunąć roli, jeśli zostawiłoby to nikogo z dostępem do /admin.
+  const before = await countAdminAccessHolders()
+  if (before > 0 && (await countAdminAccessHolders({ removeUserRole: { userId, role } })) === 0) {
+    throw new Error(
+      "Nie można usunąć tej roli — żaden użytkownik nie miałby już dostępu do panelu administratora.",
+    )
+  }
   await prisma.userRole.delete({ where: { userId_role: { userId, role } } })
   revalidatePath("/admin/access")
 }
