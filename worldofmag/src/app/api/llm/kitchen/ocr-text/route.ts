@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { GROQ_VISION_MODEL, parseGroqError } from "@/lib/groqVision";
+import { GROQ_VISION_MODEL, groqChat, stripJsonFence } from "@/lib/groqVision";
 
 // Odczyt CAŁEGO tekstu ze zdjęcia (np. kartki z przepisem) i zwrócenie go jako Markdown.
 // W odróżnieniu od /ocr-image (które parsuje ustrukturyzowany przepis) — tu chcemy
@@ -49,39 +49,30 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.value}` },
-    body: JSON.stringify({
-      model: GROQ_VISION_MODEL,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: SYSTEM_PROMPT },
-            { type: "image_url", image_url: { url: image } },
-          ],
-        },
-      ],
-      temperature: 0.1,
-      max_tokens: 3000,
-    }),
+  const groq = await groqChat(config.value, {
+    model: GROQ_VISION_MODEL,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: SYSTEM_PROMPT },
+          { type: "image_url", image_url: { url: image } },
+        ],
+      },
+    ],
+    temperature: 0.1,
+    max_tokens: 3000,
+    response_format: { type: "json_object" },
   });
 
-  if (!groqRes.ok) {
-    const err = await groqRes.text().catch(() => "unknown");
-    return NextResponse.json(
-      { error: `Groq (${groqRes.status}): ${parseGroqError(err).slice(0, 200)}` },
-      { status: 502 }
-    );
+  if (!groq.ok) {
+    return NextResponse.json({ error: `Groq (${groq.status}): ${groq.message}` }, { status: 502 });
   }
 
-  const data = await groqRes.json();
-  const content: string = data.choices?.[0]?.message?.content ?? "{}";
+  const content: string = groq.content || "{}";
 
   try {
-    const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "");
-    const parsed = JSON.parse(cleaned);
+    const parsed = JSON.parse(stripJsonFence(content));
     const markdown = typeof parsed.markdown === "string" ? parsed.markdown.trim() : "";
     const hasText = parsed.hasText === true && markdown.length > 0;
     return NextResponse.json({ hasText, markdown: hasText ? markdown : "" });

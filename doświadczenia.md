@@ -483,3 +483,31 @@ realną przyczynę zamiast gołego statusu.
 **Lekcja:** Modele „preview" u Groq bywają wycofywane bez zapowiedzi — trzymaj nazwę modelu w jednym
 miejscu (stała) i przepuszczaj prawdziwy komunikat błędu dostawcy do frontu, by diagnoza nie wymagała
 zgadywania.
+
+## 2026-05-30 — Powiadomienia: brak timera + zawieszanie na navigator.serviceWorker.ready
+**Problem:** Po przejściu na `registration.showNotification` powiadomienia działały gorzej —
+na komputerze potrafiły zniknąć, na iPhone (apka otwarta) też bywało źle. Dwa błędy: (1) BRAK
+timera — `checkDueNotifications` odpalało się tylko przy montażu i zmianie propu `tasks`, więc
+przypomnienie „10 min przed" pojawiało się tylko przypadkiem; (2) `navigator.serviceWorker.ready`
+to obietnica, która NIGDY się nie odrzuca — przy niezdrowym/nieaktywnym SW `await` wisiał w
+nieskończoność i nie było fallbacku na `new Notification()`.
+**Rozwiązanie:** Dodano `setInterval` co 30 s (czytający najnowsze zadania przez `tasksRef`) oraz
+ścigano `ready` z timeoutem 1,5 s (`Promise.race`) — gdy SW nie odpowie, spadamy na konstruktor
+`new Notification()` (desktop). iOS w tle nadal wymaga Web Push (osobny, zaplanowany krok).
+**Lekcja:** `navigator.serviceWorker.ready` nigdy nie rejectuje — nie czekaj na nią bez timeoutu,
+bo zabijesz ścieżkę fallback. Powiadomienia „o czasie" wymagają własnego timera; sama zależność od
+danych w `useEffect` nie wystarcza. Klient pokaże notyfikację tylko gdy apka żyje — tło to Web Push.
+
+## 2026-05-30 — OCR przepisu zwracał 422 (jednostrzałowe zdjęcie→JSON jest kruche)
+**Problem:** Po naprawie modelu (scout) import przepisu ze zdjęcia leciał 422 „not-a-recipe" nawet
+dla czytelnych kartek. Trasa `ocr-image` prosiła model wizyjny, by JEDNOCZEŚNIE odczytał obraz i
+zwrócił sztywny JSON przepisu — model często się „poddawał" i zwracał `{"error":"not-a-recipe"}`.
+Model był OK (scout to właściwy model wizyjny Groq; maverick jest wycofywany na rzecz tekstowego
+gpt-oss-120b), problemem było połączenie dwóch trudnych zadań w jednym wywołaniu.
+**Rozwiązanie:** Rozbito OCR na dwa kroki: (1) model wizyjny robi wierną transkrypcję tekstu ze
+zdjęcia, (2) model tekstowy (`llama-3.3-70b-versatile`, tryb `response_format: json_object`) układa
+transkrypcję w przepis. 422 zwracamy tylko gdy naprawdę nie odczytano tekstu. Wspólny helper
+`groqChat()` + `stripJsonFence()` w `groqVision.ts`. `ocr-text` też dostał tryb JSON.
+**Lekcja:** Nie każ modelowi wizyjnemu czytać i strukturyzować w jednym strzale — rozdziel
+„czytanie obrazu" (vision) od „układania w JSON" (model tekstowy + json_object). Dużo wyższa
+skuteczność, zwłaszcza dla pisma odręcznego.
