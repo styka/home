@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { GROQ_VISION_MODEL, GROQ_TEXT_MODEL, groqChat, stripJsonFence } from "@/lib/groqVision";
+import { chatComplete } from "@/lib/llm/chat";
+import { stripJsonFence } from "@/lib/groqVision";
 
 // Import przepisu ze zdjęcia — DWUETAPOWO (rozdzielone „czytanie" od „układania"):
 //   1) model wizyjny wiernie przepisuje cały tekst ze zdjęcia (transkrypcja),
@@ -59,18 +59,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Obraz za duży (max 8 MB)" }, { status: 413 });
   }
 
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) {
-    return NextResponse.json(
-      { error: "LLM nie jest skonfigurowany. Ustaw klucz Groq w panelu admina." },
-      { status: 503 }
-    );
-  }
-  const apiKey = config.value;
-
   // --- Krok 1: transkrypcja obrazu (model wizyjny) ---
-  const vision = await groqChat(apiKey, {
-    model: GROQ_VISION_MODEL,
+  const vision = await chatComplete({
+    op: "vision",
     messages: [
       {
         role: "user",
@@ -81,10 +72,10 @@ export async function POST(req: NextRequest) {
       },
     ],
     temperature: 0.1,
-    max_tokens: 3000,
+    maxTokens: 3000,
   });
   if (!vision.ok) {
-    return NextResponse.json({ error: `Groq (${vision.status}): ${vision.message}` }, { status: 502 });
+    return NextResponse.json({ error: vision.message }, { status: vision.status });
   }
 
   const transcript = vision.content.trim();
@@ -96,18 +87,18 @@ export async function POST(req: NextRequest) {
   }
 
   // --- Krok 2: strukturyzacja transkrypcji w przepis (model tekstowy, tryb JSON) ---
-  const structured = await groqChat(apiKey, {
-    model: GROQ_TEXT_MODEL,
+  const structured = await chatComplete({
+    op: "generation",
     messages: [
       { role: "system", content: STRUCTURE_PROMPT },
       { role: "user", content: transcript },
     ],
     temperature: 0.1,
-    max_tokens: 3000,
-    response_format: { type: "json_object" },
+    maxTokens: 3000,
+    json: true,
   });
   if (!structured.ok) {
-    return NextResponse.json({ error: `Groq (${structured.status}): ${structured.message}` }, { status: 502 });
+    return NextResponse.json({ error: structured.message }, { status: structured.status });
   }
 
   try {

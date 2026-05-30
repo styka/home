@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { chatComplete } from "@/lib/llm/chat";
 
 const SYSTEM_PROMPT = `Jesteś asystentem zarządzania zadaniami. Użytkownik poda tekst opisujący jedno lub więcej zadań.
 Przekształć go w tablicę JSON obiektów zadań.
@@ -32,37 +32,23 @@ export async function POST(req: NextRequest) {
   const { text, today } = await req.json().catch(() => ({ text: "", today: new Date().toISOString() }));
   if (!text?.trim()) return NextResponse.json({ error: "Empty text" }, { status: 400 });
 
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) {
-    return NextResponse.json(
-      { error: "LLM nie jest skonfigurowany. Ustaw klucz Groq w Panelu Admina." },
-      { status: 503 }
-    );
-  }
-
   const userMsg = `Dzisiejsza data: ${today}\n\nZadanie do sparsowania: ${text.trim()}`;
 
-  const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.value}` },
-    body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userMsg },
-      ],
-      temperature: 0.1,
-      max_tokens: 1024,
-    }),
+  const result = await chatComplete({
+    op: "dispatch",
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userMsg },
+    ],
+    temperature: 0.1,
+    maxTokens: 1024,
   });
 
-  if (!groqRes.ok) {
-    const err = await groqRes.text().catch(() => "unknown");
-    return NextResponse.json({ error: `Groq error: ${err}` }, { status: 502 });
+  if (!result.ok) {
+    return NextResponse.json({ error: result.message }, { status: result.status });
   }
 
-  const groqData = await groqRes.json();
-  const content: string = groqData.choices?.[0]?.message?.content ?? "[]";
+  const content: string = result.content || "[]";
 
   let tasks: unknown[];
   try {

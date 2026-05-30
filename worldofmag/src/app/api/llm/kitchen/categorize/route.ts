@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { chatComplete } from "@/lib/llm/chat";
 
 const SYSTEM_PROMPT = `Jesteś asystentem kulinarnym. Otrzymasz tytuł, opis, składniki i kroki przepisu.
 Zwróć WYŁĄCZNIE obiekt JSON (bez markdown, bez komentarza) w schemacie:
@@ -39,14 +39,6 @@ export async function POST(req: NextRequest) {
   const title = body.title?.trim();
   if (!title) return NextResponse.json({ error: "Tytuł jest wymagany" }, { status: 400 });
 
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) {
-    return NextResponse.json(
-      { error: "LLM nie jest skonfigurowany. Ustaw klucz Groq w panelu admina." },
-      { status: 503 }
-    );
-  }
-
   const ingredients = (body.ingredients ?? []).map((i) => i.name).filter(Boolean).slice(0, 30);
   const steps = (body.steps ?? []).map((s) => s.text?.slice(0, 200)).filter(Boolean).slice(0, 15);
 
@@ -57,27 +49,21 @@ export async function POST(req: NextRequest) {
     steps.length > 0 ? `Kroki (${steps.length}):\n${steps.map((s, i) => `${i + 1}. ${s}`).join("\n")}` : null,
   ].filter(Boolean).join("\n\n");
 
-  const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.value}` },
-    body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userContent.slice(0, 4000) },
-      ],
-      temperature: 0.2,
-      max_tokens: 400,
-    }),
+  const result = await chatComplete({
+    op: "dispatch",
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userContent.slice(0, 4000) },
+    ],
+    temperature: 0.2,
+    maxTokens: 400,
   });
 
-  if (!groqRes.ok) {
-    const err = await groqRes.text().catch(() => "unknown");
-    return NextResponse.json({ error: `Groq error: ${err}` }, { status: 502 });
+  if (!result.ok) {
+    return NextResponse.json({ error: result.message }, { status: result.status });
   }
 
-  const data = await groqRes.json();
-  const content: string = data.choices?.[0]?.message?.content ?? "{}";
+  const content: string = result.content || "{}";
 
   try {
     const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "");

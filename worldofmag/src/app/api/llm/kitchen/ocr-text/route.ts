@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { GROQ_VISION_MODEL, groqChat, stripJsonFence } from "@/lib/groqVision";
+import { chatComplete } from "@/lib/llm/chat";
+import { stripJsonFence } from "@/lib/groqVision";
 
 // Odczyt CAŁEGO tekstu ze zdjęcia (np. kartki z przepisem) i zwrócenie go jako Markdown.
 // W odróżnieniu od /ocr-image (które parsuje ustrukturyzowany przepis) — tu chcemy
@@ -41,16 +41,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Obraz za duży (max 8 MB)" }, { status: 413 });
   }
 
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) {
-    return NextResponse.json(
-      { error: "LLM nie jest skonfigurowany. Ustaw klucz Groq w panelu admina." },
-      { status: 503 }
-    );
-  }
-
-  const groq = await groqChat(config.value, {
-    model: GROQ_VISION_MODEL,
+  const groq = await chatComplete({
+    op: "vision",
     messages: [
       {
         role: "user",
@@ -61,12 +53,12 @@ export async function POST(req: NextRequest) {
       },
     ],
     temperature: 0.1,
-    max_tokens: 3000,
-    response_format: { type: "json_object" },
+    maxTokens: 3000,
+    json: true,
   });
 
   if (!groq.ok) {
-    return NextResponse.json({ error: `Groq (${groq.status}): ${groq.message}` }, { status: 502 });
+    return NextResponse.json({ error: groq.message }, { status: groq.status });
   }
 
   const content: string = groq.content || "{}";

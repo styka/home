@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { getConfigValue } from "@/actions/config";
 import { AdminConfigForm } from "./AdminConfigForm";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Cpu, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 export default async function AdminConfigPage() {
@@ -30,6 +30,30 @@ export default async function AdminConfigPage() {
             Konfiguracja systemu
           </h1>
         </div>
+
+        <Link
+          href="/admin/llm"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "14px 16px",
+            marginBottom: 24,
+            borderRadius: 10,
+            border: "1px solid var(--border)",
+            background: "var(--bg-surface)",
+            textDecoration: "none",
+          }}
+        >
+          <Cpu size={18} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, color: "var(--text-primary)" }}>Modele LLM</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+              Dostawcy i przypisanie modeli do typów operacji (dispatch, myślenie, obrazy, generowanie)
+            </div>
+          </div>
+          <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />
+        </Link>
 
         <AdminConfigForm groqKey={groqKey} />
       </div>

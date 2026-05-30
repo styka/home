@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { chatComplete } from "@/lib/llm/chat";
 
 export async function POST(req: NextRequest) {
   const { content, existingTags, existingGroups } = await req.json() as {
@@ -7,11 +7,6 @@ export async function POST(req: NextRequest) {
     existingTags: string[];
     existingGroups?: string[];
   };
-
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) {
-    return NextResponse.json({ error: "Groq API key not configured" }, { status: 503 });
-  }
 
   const groupsHint = existingGroups && existingGroups.length > 0
     ? `\nJeśli treść pasuje do jednej z grup: [${existingGroups.join(", ")}], podaj jej dokładną nazwę w polu "suggestedGroup". W przeciwnym razie null.`
@@ -31,29 +26,21 @@ Tagi powinny być krótkie (1-2 słowa), pisane małymi literami.`;
 Treść notatki:
 ${content.slice(0, 2000)}`;
 
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.value}`,
-    },
-    body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-      temperature: 0.3,
-      max_tokens: 200,
-    }),
+  const result = await chatComplete({
+    op: "dispatch",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userMessage },
+    ],
+    temperature: 0.3,
+    maxTokens: 200,
   });
 
-  if (!response.ok) {
-    return NextResponse.json({ error: "LLM request failed" }, { status: 502 });
+  if (!result.ok) {
+    return NextResponse.json({ error: result.message }, { status: result.status });
   }
 
-  const data = await response.json() as { choices: Array<{ message: { content: string } }> };
-  const text = data.choices[0]?.message?.content ?? "{}";
+  const text = result.content || "{}";
 
   try {
     const parsed = JSON.parse(text) as { suggested?: string[]; new?: string[]; suggestedGroup?: string | null };

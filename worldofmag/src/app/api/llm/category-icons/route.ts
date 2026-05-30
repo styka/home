@@ -1,26 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { chatComplete } from "@/lib/llm/chat";
 
 const GROQ_ITEMS_SYSTEM = `You are a shopping assistant for a Polish app. The app supports any shopping category (food, pets, cleaning, tools, etc.). Return ONLY a JSON array of exactly 6 English item names (1-3 words each) that are visually distinct and typical for the given category. No markdown, no explanation.`;
 
-async function getEnglishItems(category: string, additionalText: string, groqKey: string): Promise<string[]> {
+async function getEnglishItems(category: string, additionalText: string): Promise<string[]> {
   const userMsg = additionalText
     ? `Polish shopping category: "${category}". The user also described these items in Polish: "${additionalText}". Translate the described items to English (1-3 words each). If fewer than 6, add similar items from the same category. Return exactly 6 as a JSON array.`
     : `Polish shopping category: "${category}" (interpret this as a Polish word). List 6 specific, visually distinct typical items from this category in English. Return exactly 6 as a JSON array.`;
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${groqKey}` },
-    body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
-      messages: [{ role: "system", content: GROQ_ITEMS_SYSTEM }, { role: "user", content: userMsg }],
-      temperature: 0.4,
-      max_tokens: 150,
-    }),
+  const result = await chatComplete({
+    op: "dispatch",
+    messages: [{ role: "system", content: GROQ_ITEMS_SYSTEM }, { role: "user", content: userMsg }],
+    temperature: 0.4,
+    maxTokens: 150,
   });
-  if (!res.ok) throw new Error("Groq error");
-  const data = await res.json();
-  const text: string = data.choices?.[0]?.message?.content ?? "[]";
+  if (!result.ok) throw new Error(result.message);
+  const text: string = result.content || "[]";
   const match = text.match(/\[[\s\S]*?\]/);
   if (!match) throw new Error("bad format");
   const parsed = JSON.parse(match[0]);
@@ -55,15 +50,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Podaj kategorię lub opis" }, { status: 400 });
   }
 
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) {
-    return NextResponse.json({ error: "LLM nie jest skonfigurowany. Ustaw klucz Groq w Panelu Admina." }, { status: 503 });
-  }
-
   // Step 1: translate to English item names
   let items: string[];
   try {
-    items = await getEnglishItems(category, additionalText, config.value);
+    items = await getEnglishItems(category, additionalText);
     if (items.length === 0) throw new Error("empty");
   } catch {
     return NextResponse.json({ error: "Nie udało się wygenerować listy elementów" }, { status: 500 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { chatComplete } from "@/lib/llm/chat";
 
 interface ParsedRecipe {
   title: string;
@@ -142,9 +142,6 @@ function extractFromJsonLd(html: string): ParsedRecipe | null {
 }
 
 async function extractWithLLM(html: string, sourceUrl: string): Promise<ParsedRecipe | null> {
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) return null;
-
   // Strip tags to keep token budget lean
   const text = html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -168,26 +165,18 @@ async function extractWithLLM(html: string, sourceUrl: string): Promise<ParsedRe
 }
 Nazwy składników i kroki po polsku. Jeśli tekst nie wygląda jak przepis, zwróć {"error":"not-a-recipe"}.`;
 
-  const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.value}`,
-    },
-    body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: `URL: ${sourceUrl}\n\nText:\n${text}` },
-      ],
-      temperature: 0.1,
-      max_tokens: 3000,
-    }),
+  const result = await chatComplete({
+    op: "dispatch",
+    messages: [
+      { role: "system", content: SYSTEM },
+      { role: "user", content: `URL: ${sourceUrl}\n\nText:\n${text}` },
+    ],
+    temperature: 0.1,
+    maxTokens: 3000,
   });
 
-  if (!groqRes.ok) return null;
-  const data = await groqRes.json();
-  const content: string = data.choices?.[0]?.message?.content ?? "{}";
+  if (!result.ok) return null;
+  const content: string = result.content || "{}";
   try {
     const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "");
     const parsed = JSON.parse(cleaned);

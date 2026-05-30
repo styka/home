@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { chatComplete } from "@/lib/llm/chat";
 import { auth } from "@/lib/auth";
 
 interface InsightsBody {
@@ -26,9 +26,6 @@ export async function POST(req: NextRequest) {
   const pets = body.pets ?? [];
   if (pets.length === 0) return NextResponse.json({ tips: [] });
 
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) return NextResponse.json({ tips: [], unavailable: true }, { status: 200 });
-
   const userMsg = [
     `Zwierzęta: ${pets.map((p) => `${p.name} (${p.species})`).join(", ")}`,
     body.agenda?.length
@@ -39,24 +36,22 @@ export async function POST(req: NextRequest) {
       : null,
   ].filter(Boolean).join("\n");
 
-  try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.value}` },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userMsg },
-        ],
-        temperature: 0.4,
-        max_tokens: 512,
-      }),
-    });
-    if (!res.ok) return NextResponse.json({ tips: [], unavailable: true }, { status: 200 });
+  const result = await chatComplete({
+    op: "reasoning",
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userMsg },
+    ],
+    temperature: 0.4,
+    maxTokens: 512,
+  });
 
-    const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    const content = data.choices?.[0]?.message?.content ?? "{}";
+  if (!result.ok) {
+    return NextResponse.json({ tips: [], unavailable: true }, { status: 200 });
+  }
+
+  try {
+    const content = result.content || "{}";
     const cleaned = content.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "").replace(/^```\n?/, "");
     const parsed = JSON.parse(cleaned) as { tips?: string[] };
     const tips = Array.isArray(parsed.tips) ? parsed.tips.filter((t) => typeof t === "string").slice(0, 4) : [];

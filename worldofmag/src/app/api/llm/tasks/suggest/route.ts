@@ -1,14 +1,11 @@
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { chatComplete, chatStream } from "@/lib/llm/chat";
 
 export async function POST(req: NextRequest) {
   const { task, mode } = await req.json() as {
     task: { title: string; description?: string | null };
     mode: "subtasks" | "description" | "estimate";
   };
-
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) return new Response("Groq API key not configured", { status: 503 });
 
   let systemPrompt = "";
   let userMessage = "";
@@ -28,31 +25,30 @@ Zwróć TYLKO JSON.`;
     userMessage = `Zadanie: "${task.title}"${task.description ? `\nOpis: ${task.description}` : ""}`;
   }
 
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.value}` },
-    body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-      temperature: 0.3,
-      max_tokens: 512,
-      stream: mode === "description",
-    }),
-  });
-
-  if (!response.ok || !response.body) return new Response("LLM request failed", { status: 502 });
+  const messages = [
+    { role: "system" as const, content: systemPrompt },
+    { role: "user" as const, content: userMessage },
+  ];
 
   if (mode === "description") {
-    return new Response(response.body, {
-      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
+    return chatStream({
+      op: "dispatch",
+      messages,
+      temperature: 0.3,
+      maxTokens: 512,
     });
   }
 
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content ?? "{}";
+  const result = await chatComplete({
+    op: "dispatch",
+    messages,
+    temperature: 0.3,
+    maxTokens: 512,
+  });
+
+  if (!result.ok) return new Response(result.message, { status: result.status });
+
+  const content = result.content || "{}";
   try {
     const cleaned = content.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
     return new Response(cleaned, { headers: { "Content-Type": "application/json" } });

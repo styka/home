@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { chatComplete } from "@/lib/llm/chat";
 
 const PROMPTS: Record<string, string | ((instruction: string) => string)> = {
   correct: `Popraw błędy ortograficzne, gramatyczne i interpunkcyjne w tym tekście. Zachowaj oryginalny styl i strukturę. Odpowiedz TYLKO poprawionym tekstem bez żadnych wyjaśnień.`,
@@ -23,34 +23,19 @@ export async function POST(req: NextRequest) {
 
   const prompt = typeof promptDef === "function" ? promptDef(instruction ?? "") : promptDef;
 
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) {
-    return NextResponse.json({ error: "Groq API key not configured" }, { status: 503 });
-  }
-
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.value}`,
-    },
-    body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: prompt },
-        { role: "user", content: content.slice(0, 4000) },
-      ],
-      temperature: 0.4,
-      max_tokens: 2000,
-    }),
+  const result = await chatComplete({
+    op: "generation",
+    messages: [
+      { role: "system", content: prompt },
+      { role: "user", content: content.slice(0, 4000) },
+    ],
+    temperature: 0.4,
+    maxTokens: 2000,
   });
 
-  if (!response.ok) {
-    return NextResponse.json({ error: "LLM request failed" }, { status: 502 });
+  if (!result.ok) {
+    return NextResponse.json({ error: result.message }, { status: result.status });
   }
 
-  const data = await response.json() as { choices: Array<{ message: { content: string } }> };
-  const result = data.choices[0]?.message?.content ?? "";
-
-  return NextResponse.json({ result });
+  return NextResponse.json({ result: result.content || "" });
 }

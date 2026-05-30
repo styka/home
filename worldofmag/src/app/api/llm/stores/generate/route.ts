@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { chatComplete } from "@/lib/llm/chat";
 
 const CATEGORIES = [
   "Warzywa i owoce", "Nabiał i jaja", "Mięso i ryby", "Piekarnia",
@@ -83,35 +83,21 @@ export async function POST(req: NextRequest) {
   const { storeName } = await req.json().catch(() => ({ storeName: "" }));
   if (!storeName?.trim()) return NextResponse.json({ error: "Empty store name" }, { status: 400 });
 
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) {
-    return NextResponse.json(
-      { error: "LLM nie jest skonfigurowany. Ustaw klucz Groq w Panelu Admina." },
-      { status: 503 }
-    );
-  }
-
-  const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.value}` },
-    body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Wygeneruj mapę sklepu: "${storeName.trim()}"` },
-      ],
-      temperature: 0.2,
-      max_tokens: 2048,
-    }),
+  const result = await chatComplete({
+    op: "reasoning",
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: `Wygeneruj mapę sklepu: "${storeName.trim()}"` },
+    ],
+    temperature: 0.2,
+    maxTokens: 2048,
   });
 
-  if (!groqRes.ok) {
-    const err = await groqRes.text().catch(() => "unknown");
-    return NextResponse.json({ error: `Groq error: ${err}` }, { status: 502 });
+  if (!result.ok) {
+    return NextResponse.json({ error: result.message }, { status: result.status });
   }
 
-  const groqData = await groqRes.json();
-  const content: string = groqData.choices?.[0]?.message?.content ?? "{}";
+  const content: string = result.content || "{}";
 
   try {
     const cleaned = content.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { chatComplete } from "@/lib/llm/chat";
 
 const SYSTEM_PROMPT = `Jesteś szefem kuchni. Otrzymasz krótki opis dania po polsku (np. "spaghetti carbonara dla 2 osób", "szybki obiad z kurczakiem w 30 minut", "wegański deser bez piekarnika").
 Wygeneruj kompletny, realistyczny przepis. Zwróć WYŁĄCZNIE JSON (bez markdown, bez komentarza) w schemacie:
@@ -40,36 +40,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Opis za długi (max 500 znaków)" }, { status: 400 });
   }
 
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) {
-    return NextResponse.json(
-      { error: "LLM nie jest skonfigurowany. Ustaw klucz Groq w panelu admina." },
-      { status: 503 }
-    );
-  }
-
-  const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.value}` },
-    body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: trimmed },
-      ],
-      temperature: 0.4,
-      max_tokens: 2500,
-      response_format: { type: "json_object" },
-    }),
+  const result = await chatComplete({
+    op: "generation",
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: trimmed },
+    ],
+    temperature: 0.4,
+    maxTokens: 2500,
+    json: true,
   });
 
-  if (!groqRes.ok) {
-    const err = await groqRes.text().catch(() => "unknown");
-    return NextResponse.json({ error: `Groq error: ${err.slice(0, 200)}` }, { status: 502 });
+  if (!result.ok) {
+    return NextResponse.json({ error: result.message }, { status: result.status });
   }
 
-  const data = await groqRes.json();
-  const content: string = data.choices?.[0]?.message?.content ?? "{}";
+  const content: string = result.content || "{}";
 
   try {
     const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "");

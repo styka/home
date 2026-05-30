@@ -1,16 +1,11 @@
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { chatStream } from "@/lib/llm/chat";
 
 export async function POST(req: NextRequest) {
   const { question, notes } = await req.json() as {
     question: string;
     notes: Array<{ title: string; content: string }>;
   };
-
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) {
-    return new Response("Groq API key not configured", { status: 503 });
-  }
 
   const notesContext = notes
     .map((n, i) => `[${i + 1}] ${n.title}\n${n.content}`)
@@ -25,33 +20,13 @@ Na końcu odpowiedzi ZAWSZE dodaj blok: <!-- sources: [1,3] --> z numerami notat
 
   const userMessage = `Moje notatki:\n\n${notesContext}\n\n---\n\nPytanie: ${question}`;
 
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.value}`,
-    },
-    body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-      temperature: 0.5,
-      max_tokens: 800,
-      stream: true,
-    }),
-  });
-
-  if (!response.ok || !response.body) {
-    return new Response("LLM request failed", { status: 502 });
-  }
-
-  return new Response(response.body, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
+  return chatStream({
+    op: "reasoning",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userMessage },
+    ],
+    temperature: 0.5,
+    maxTokens: 800,
   });
 }

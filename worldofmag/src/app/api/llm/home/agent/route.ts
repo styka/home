@@ -3,9 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { PET_ACTIONS_PROMPT, PET_ACTION_EXAMPLES } from "@/lib/ai/petActions";
 import { READ_TOOLS_PROMPT, READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentTools";
+import { chatComplete } from "@/lib/llm/chat";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
 
-const GROQ_MODEL = "llama-3.3-70b-versatile";
 const MAX_ITERATIONS = 5;
 const MAX_TOOLS_PER_TURN = 4;
 
@@ -140,24 +140,20 @@ function extractJson(content: string): unknown {
   return JSON.parse(cleaned);
 }
 
-async function callGroq(apiKey: string, messages: ChatMessage[]): Promise<string> {
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      messages,
-      temperature: 0.1,
-      max_tokens: 1500,
-      response_format: { type: "json_object" },
-    }),
+async function callAgent(messages: ChatMessage[]): Promise<string> {
+  const result = await chatComplete({
+    op: "reasoning",
+    messages,
+    temperature: 0.1,
+    maxTokens: 1500,
+    json: true,
   });
-  if (!res.ok) {
-    const err = await res.text().catch(() => "unknown");
-    throw new Error(`Błąd LLM: ${err}`);
+  if (!result.ok) {
+    const err = new Error(result.message) as Error & { status?: number };
+    err.status = result.status;
+    throw err;
   }
-  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  return data.choices?.[0]?.message?.content ?? "{}";
+  return result.content || "{}";
 }
 
 function normalizeActions(raw: unknown): AIAction[] {
@@ -195,14 +191,6 @@ export async function POST(req: NextRequest) {
     messages?: ChatMessage[]; // transkrypt dialogu (bez system) do wznowienia
     clarifyAnswer?: string;
   };
-
-  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (!config?.value) {
-    return NextResponse.json(
-      { error: "LLM nie jest skonfigurowany. Ustaw klucz Groq w Panelu Admina." },
-      { status: 503 }
-    );
-  }
 
   // Zbuduj konwersację. System prompt zawsze budujemy po stronie serwera (nie ufamy klientowi).
   const messages: ChatMessage[] = [{ role: "system", content: buildSystemPrompt() }];
@@ -260,9 +248,10 @@ export async function POST(req: NextRequest) {
     for (let attempt = 0; attempt < 2 && parsed === null; attempt++) {
       let content: string;
       try {
-        content = await callGroq(config.value, messages);
+        content = await callAgent(messages);
       } catch (e) {
-        return NextResponse.json({ error: e instanceof Error ? e.message : "Błąd LLM" }, { status: 502 });
+        const status = (e as { status?: number }).status ?? 502;
+        return NextResponse.json({ error: e instanceof Error ? e.message : "Błąd LLM" }, { status });
       }
       messages.push({ role: "assistant", content });
       try {
