@@ -1,0 +1,314 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { PET_ACTIONS_PROMPT, PET_ACTION_EXAMPLES } from "@/lib/ai/petActions";
+import { READ_TOOLS_PROMPT, READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentTools";
+import type { AIAction } from "@/app/api/llm/home/interpret/route";
+
+const GROQ_MODEL = "llama-3.3-70b-versatile";
+const MAX_ITERATIONS = 5;
+const MAX_TOOLS_PER_TURN = 4;
+
+const MODULES = ["shopping", "tasks", "notes", "pets"] as const;
+
+interface ChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+interface LogEntry {
+  iter: number;
+  step: string;
+  thought: string;
+  tools?: { tool: string; args: Record<string, unknown> }[];
+  results?: unknown;
+  question?: string;
+  options?: string[];
+  actionsCount?: number;
+}
+
+const ACTION_CATALOG = `Dostępne akcje ZAPISU (step "plan"). Każda akcja: { id, module, type, description, params, searchQuery? }.
+Po wykonaniu zapytań CELUJ w konkretne rekordy przez id z wyników (taskId/itemId/noteId/listId). searchQuery to fallback po nazwie, gdy nie masz id.
+
+ZAKUPY (module "shopping"):
+- add_item { rawText, listName?, listId? } — rawText to TYLKO nazwa i ilość ("2 kg jabłek"), bez nazwy listy.
+- update_item_status { status:"NEEDED"|"IN_CART"|"DONE", itemId? } (searchQuery jako fallback)
+- update_item { name?, quantity?, unit?, itemId? }
+- delete_item { itemId? } (searchQuery fallback) — DESTRUKCYJNE
+- create_list { name }
+- rename_list { name, listId? } (searchQuery = obecna nazwa)
+- archive_list { listId? } (searchQuery fallback) — DESTRUKCYJNE
+
+ZADANIA (module "tasks"):
+- create_task { title, description?, priority:"NONE"|"LOW"|"MEDIUM"|"HIGH"|"URGENT", dueDate?(ISO), projectName? }
+- update_task { taskId?, title?, description?, priority?, status?, dueDate? } (searchQuery fallback)
+- update_task_status { status:"TODO"|"IN_PROGRESS"|"DONE"|"CANCELLED"|"DEFERRED", taskId? } (searchQuery fallback)
+- shift_task_due_date { days:number, taskId? } (searchQuery fallback; ujemne = wcześniej)
+- delete_task { taskId? } (searchQuery fallback) — DESTRUKCYJNE
+- create_project { name, emoji? }
+
+NOTATKI (module "notes"):
+- create_note { title, content? }
+- append_to_note { content, noteId? } (searchQuery fallback)
+- update_note { title?, content?, noteId? } (searchQuery fallback)
+- delete_note { noteId? } (searchQuery fallback) — DESTRUKCYJNE`;
+
+function buildSystemPrompt(): string {
+  return `Jesteś asystentem WorldOfMag — pracujesz NA DANYCH użytkownika tymi samymi regułami dostępu co aplikacja.
+Twoim zadaniem jest zrozumieć polecenie/pytanie, w razie potrzeby pobrać dane, a następnie ALBO odpowiedzieć, ALBO zaproponować akcje do potwierdzenia przez użytkownika.
+
+PROTOKÓŁ — w KAŻDEJ turze zwróć DOKŁADNIE JEDEN obiekt JSON (bez markdown, bez komentarzy) z polem "thought" (jedno krótkie zdanie po polsku, do logu) i polem "step":
+
+1) Pobranie danych (gdy potrzebujesz informacji):
+{ "step":"query", "thought":"...", "tools":[ { "tool":"list_tasks", "args":{ "status":"TODO" } } ] }
+
+2) Pytanie doprecyzowujące (gdy polecenie jest zbyt niejasne — ZANIM zaproponujesz akcje):
+{ "step":"clarify", "thought":"...", "question":"Którą listę masz na myśli?", "options":["Apteka","Tygodniowe"] }  // options opcjonalne
+
+3) Odpowiedź tekstowa (gdy użytkownik o coś PYTA — NIE twórz akcji):
+{ "step":"answer", "thought":"...", "answer":"Najważniejsze teraz: **Zapłać ZUS** (URGENT, termin dziś)." }  // markdown PL
+
+4) Plan akcji (gdy użytkownik chce coś ZMIENIĆ/DODAĆ — akcje NIE wykonają się od razu, użytkownik je potwierdzi):
+{ "step":"plan", "thought":"...", "actions":[ { "id":"a1", "module":"tasks", "type":"update_task_status", "description":"...", "params":{ "taskId":"...", "status":"DONE" } } ] }
+
+${READ_TOOLS_PROMPT}
+
+${ACTION_CATALOG}
+
+${PET_ACTIONS_PROMPT}
+
+ZASADY:
+- Najpierw "query" po dane, dopiero potem "answer" lub "plan" z konkretnymi id.
+- Akcje ZBIORCZE (np. "oznacz wszystkie zadania o remoncie jako zrobione"): pobierz zadania przez query, SAM zdecyduj które pasują na podstawie tytułów/treści, a potem zwróć WIELE akcji — każda z własnym id. Nie ma akcji masowej; symulujesz ją pętlą pojedynczych akcji.
+- Dla PYTAŃ używaj "answer", nie twórz akcji. Dla POLECEŃ zmiany danych używaj "plan".
+- Gdy czegoś brakuje lub jest niejednoznaczne — użyj "clarify" zanim zaproponujesz akcje.
+- Korzystaj z kontekstu (aktualny widok / aktywna lista / bieżący projekt) podanego w wiadomości użytkownika, gdy polecenie nie wskazuje wprost celu.
+- Twórz akcje tylko dla modułów: ${MODULES.join(", ")}.
+- Zawsze zwracaj wyłącznie poprawny JSON wg schematu, bez żadnego dodatkowego tekstu.
+
+${PET_ACTION_EXAMPLES}`;
+}
+
+function extractJson(content: string): unknown {
+  const cleaned = content
+    .trim()
+    .replace(/^```json\n?/i, "")
+    .replace(/^```\n?/, "")
+    .replace(/\n?```$/, "")
+    .trim();
+  return JSON.parse(cleaned);
+}
+
+async function callGroq(apiKey: string, messages: ChatMessage[]): Promise<string> {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages,
+      temperature: 0.1,
+      max_tokens: 1500,
+      response_format: { type: "json_object" },
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => "unknown");
+    throw new Error(`Błąd LLM: ${err}`);
+  }
+  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+  return data.choices?.[0]?.message?.content ?? "{}";
+}
+
+function normalizeActions(raw: unknown): AIAction[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((a: Partial<AIAction>, i: number): AIAction | null => {
+      const module = a.module && (MODULES as readonly string[]).includes(a.module) ? a.module : "shopping";
+      if (!a.type) return null;
+      return {
+        id: a.id ?? `a${i + 1}`,
+        module: module as AIAction["module"],
+        type: a.type,
+        description: a.description ?? "",
+        params: (a.params as Record<string, unknown>) ?? {},
+        searchQuery: a.searchQuery,
+      };
+    })
+    .filter((a): a is AIAction => a !== null);
+}
+
+export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const userId = session.user.id;
+
+  const body = (await req.json().catch(() => ({}))) as {
+    text?: string;
+    context?: string[];
+    today?: string;
+    routeHint?: string;
+    currentProjectId?: string;
+    activeListId?: string;
+    messages?: ChatMessage[]; // transkrypt dialogu (bez system) do wznowienia
+    clarifyAnswer?: string;
+  };
+
+  const config = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
+  if (!config?.value) {
+    return NextResponse.json(
+      { error: "LLM nie jest skonfigurowany. Ustaw klucz Groq w Panelu Admina." },
+      { status: 503 }
+    );
+  }
+
+  // Zbuduj konwersację. System prompt zawsze budujemy po stronie serwera (nie ufamy klientowi).
+  const messages: ChatMessage[] = [{ role: "system", content: buildSystemPrompt() }];
+
+  if (body.messages?.length) {
+    // Wznowienie po doprecyzowaniu: dołącz dialog klienta (pomijając ewentualny system) + odpowiedź użytkownika.
+    for (const m of body.messages) {
+      if (m.role !== "system" && typeof m.content === "string") {
+        messages.push({ role: m.role, content: m.content });
+      }
+    }
+    if (body.clarifyAnswer?.trim()) {
+      messages.push({ role: "user", content: `Odpowiedź na pytanie doprecyzowujące: ${body.clarifyAnswer.trim()}` });
+    }
+  } else {
+    const text = body.text?.trim();
+    if (!text) return NextResponse.json({ error: "Empty text" }, { status: 400 });
+
+    const today = body.today ?? new Date().toISOString();
+    const context = body.context?.length ? body.context : [...MODULES];
+
+    // Nazwa bieżącego projektu (jeśli użytkownik jest na jego widoku)
+    let currentProjectName: string | null = null;
+    if (body.currentProjectId) {
+      const project = await prisma.taskProject.findFirst({
+        where: {
+          id: body.currentProjectId,
+          OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+        },
+        select: { name: true },
+      });
+      currentProjectName = project?.name ?? null;
+    }
+
+    const userMsg = [
+      `Dzisiejsza data: ${today}`,
+      `Aktywne moduły: ${context.join(", ")}`,
+      body.routeHint ? `Aktualny widok: ${body.routeHint}` : null,
+      body.activeListId ? `Aktywna lista zakupów (id): ${body.activeListId}` : null,
+      currentProjectName ? `Bieżący projekt zadań: "${currentProjectName}" (id: ${body.currentProjectId})` : null,
+      ``,
+      `Polecenie użytkownika: ${text}`,
+    ]
+      .filter((l) => l !== null)
+      .join("\n");
+
+    messages.push({ role: "user", content: userMsg });
+  }
+
+  const log: LogEntry[] = [];
+
+  for (let iter = 1; iter <= MAX_ITERATIONS; iter++) {
+    // Jedna tura LLM z jednokrotnym ponowieniem przy błędzie parsowania JSON.
+    let parsed: Record<string, unknown> | null = null;
+    for (let attempt = 0; attempt < 2 && parsed === null; attempt++) {
+      let content: string;
+      try {
+        content = await callGroq(config.value, messages);
+      } catch (e) {
+        return NextResponse.json({ error: e instanceof Error ? e.message : "Błąd LLM" }, { status: 502 });
+      }
+      messages.push({ role: "assistant", content });
+      try {
+        const j = extractJson(content);
+        if (j && typeof j === "object" && !Array.isArray(j)) parsed = j as Record<string, unknown>;
+        else throw new Error("not an object");
+      } catch {
+        messages.push({ role: "user", content: "Zwróć wyłącznie poprawny JSON wg schematu (jeden obiekt z polem step)." });
+      }
+    }
+
+    if (!parsed) {
+      return NextResponse.json({ error: "LLM zwrócił nieprawidłowy format", log }, { status: 502 });
+    }
+
+    const step = String(parsed.step ?? "");
+    const thought = typeof parsed.thought === "string" ? parsed.thought : "";
+
+    if (step === "query") {
+      const rawTools = Array.isArray(parsed.tools) ? parsed.tools.slice(0, MAX_TOOLS_PER_TURN) : [];
+      const toolCalls = rawTools
+        .map((t) => t as { tool?: string; args?: Record<string, unknown> })
+        .filter((t) => t.tool && (READ_TOOL_NAMES as readonly string[]).includes(t.tool));
+
+      const results: { tool: string; args: Record<string, unknown>; data: unknown; error?: string }[] = [];
+      for (const call of toolCalls) {
+        try {
+          const data = await runReadTool(call.tool!, call.args ?? {}, userId);
+          results.push({ tool: call.tool!, args: call.args ?? {}, data });
+        } catch (e) {
+          results.push({ tool: call.tool!, args: call.args ?? {}, data: null, error: e instanceof Error ? e.message : "błąd" });
+        }
+      }
+
+      log.push({
+        iter,
+        step,
+        thought,
+        tools: toolCalls.map((t) => ({ tool: t.tool!, args: t.args ?? {} })),
+        results,
+      });
+
+      // Dołącz wyniki narzędzi do transkryptu i kontynuuj pętlę
+      messages.push({
+        role: "user",
+        content: `Wyniki narzędzi (JSON):\n${JSON.stringify(results)}`,
+      });
+      continue;
+    }
+
+    if (step === "clarify") {
+      const question = typeof parsed.question === "string" ? parsed.question : "Doprecyzuj proszę polecenie.";
+      const options = Array.isArray(parsed.options) ? parsed.options.map(String).slice(0, 6) : undefined;
+      log.push({ iter, step, thought, question, options });
+      // Zwróć dialog (bez system) do wznowienia po stronie klienta
+      const dialog = messages.filter((m) => m.role !== "system");
+      return NextResponse.json({ step: "clarify", question, options, thought, log, messages: dialog });
+    }
+
+    if (step === "answer") {
+      const answer = typeof parsed.answer === "string" ? parsed.answer : "Brak odpowiedzi.";
+      log.push({ iter, step, thought });
+      return NextResponse.json({ step: "answer", answer, thought, log });
+    }
+
+    if (step === "plan") {
+      const actions = normalizeActions(parsed.actions);
+      if (actions.length === 0) {
+        log.push({ iter, step: "answer", thought });
+        return NextResponse.json({
+          step: "answer",
+          answer: thought || "Nie wykryto żadnych akcji do wykonania.",
+          log,
+        });
+      }
+      log.push({ iter, step, thought, actionsCount: actions.length });
+      return NextResponse.json({ step: "plan", actions, thought, log });
+    }
+
+    // Nieznany step — poproś o poprawny format i próbuj dalej
+    messages.push({ role: "user", content: "Nieznany step. Użyj jednego z: query, clarify, answer, plan." });
+  }
+
+  // Wyczerpano limit iteracji bez stanu terminalnego
+  return NextResponse.json({
+    step: "answer",
+    answer: "Nie udało się dokończyć w limicie kroków. Spróbuj sformułować polecenie prościej lub bardziej konkretnie.",
+    log,
+  });
+}

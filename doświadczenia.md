@@ -457,3 +457,18 @@ w nowym polu `RecipeImage.ocrMarkdown` (NULL=nieanalizowane, ""=brak tekstu), pr
 **Lekcja:** Bez storage pragmatycznie trzymaj zdjęcia jako downscalowane data-URL-e w DB, ale ZAWSZE
 zmniejszaj po stronie klienta przed zapisem (rozmiar wiersza/transferu). Rozróżniaj „nieanalizowane"
 (NULL) od „przeanalizowane, brak wyniku" ("") — inaczej nie wiadomo, czy ponowić OCR.
+
+## 2026-05-30 — Agent „magicznej ikony": akcje celowane po id wymagają re-weryfikacji własności na serwerze
+**Problem:** Nowy agent AI pobiera dane przez narzędzia odczytu i generuje akcje zbiorcze celujące
+w konkretne rekordy przez `taskId`/`itemId`/`noteId`/`listId`. Te akcje trafiają najpierw do `ActionDrawer`,
+gdzie użytkownik może edytować payload — a więc id przychodzące do `/execute` są w pełni klienckie
+i NIE wolno im ufać (klient mógłby podstawić cudze id).
+**Rozwiązanie:** Egzekutor dla ścieżki id nie robi „gołego" `findUnique(id)`, tylko wykonuje akcję przez
+istniejące Server Actions z `src/actions/*` (`updateTask`, `deleteItem`, `updateNote`…), które same
+asertują dostęp (`assertProjectAccess`/`assertListAccess`/`assertNoteAccess`). Fallback po `searchQuery`
+wyszukuje WYŁĄCZNIE w zakresie własności użytkownika (OR ownerId/team/membership). Pętla agenta jest
+bezstanowa — przy `clarify` zwraca transkrypt do klienta i wznawia po dosłaniu odpowiedzi; nawet
+zmanipulowany transkrypt nie obejdzie kontroli dostępu, bo te są po stronie serwera w warstwie zapisu.
+**Lekcja:** Gdy LLM proponuje akcje na konkretnych rekordach po id, a użytkownik może edytować payload
+przed wykonaniem — id są nieufne. Wykonuj zapisy przez te same serwisy co UI (asercje dostępu wewnątrz),
+a nie bezpośrednim Prisma po id. Bezpieczeństwo trzymaj w warstwie zapisu, nie w transkrypcie/promptcie.
