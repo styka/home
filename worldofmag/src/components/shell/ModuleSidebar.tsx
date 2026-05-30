@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck, PawPrint, Car, Wallet, GraduationCap } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck, PawPrint, Car, Wallet, GraduationCap, HeartPulse } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { cn } from "@/lib/cn";
@@ -236,6 +236,9 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
             <LanguagesSideNav />
           </div>
         )}
+
+        {/* Zdrowie */}
+        <NavItem href="/health" label="Zdrowie" icon={<HeartPulse size={18} />} pathname={pathname} iconColor="var(--accent-red)" locked={isLocked("/health")} />
 
         {/* QA — dostępne dla ADMIN i TESTER */}
         <NavItem href="/qa" label="QA" icon={<FlaskConical size={18} />} pathname={pathname} iconColor="var(--accent-red)" locked={isLocked("/qa")} />
