@@ -4,6 +4,11 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-05-30 — Admin odebrał sobie dostęp do panelu /admin (RBAC lockout)
+**Problem:** Na dev administrator przez panel `/admin/access` przypadkowo usunął sobie dostęp do panelu admina i nie da się go odzyskać z poziomu UI (bramka `/admin` wymaga `module.admin`, a edycja RBAC sama jest pod tą bramką → klasyczny self-lockout). Brak dostępu do bazy.
+**Rozwiązanie:** Migracja `0043_restore_admin_access` odtwarza cały łańcuch uprawnień idempotentnie: (1) `Permission(slug='module.admin')`, (2) `RolePermission(ADMIN → module.admin)`, (3) `UserRole(role='ADMIN')` dla `tyka.szymon@gmail.com`. Każdy `INSERT ... SELECT ... WHERE NOT EXISTS`, więc bezpieczna do wielokrotnego uruchomienia i niezależna od tego, które ogniwo zostało usunięte. Stosuje te same wzorce co `0015_permissions` (`gen_random_uuid()::text`, Postgres).
+**Lekcja:** Dostęp do panelu admina zależy wyłącznie od uprawnienia `module.admin` (przez `UserRole`→`RolePermission`→`Permission`), nie od legacy `User.role`. Gdy nie ma dostępu do bazy, recovery RBAC robimy migracją idempotentną odtwarzającą wszystkie ogniwa łańcucha naraz — nie zgadujemy, które usunięto. Warto rozważyć zabezpieczenie w UI uniemożliwiające adminowi odebranie sobie ostatniego `module.admin`.
+
 ## 2026-05-30 — Nawigacja z asystenta AI: adresy od LLM trzeba walidować jak nieufne wejście
 **Problem:** Magiczna ikona (AICommandSheet) dostała krok `navigate` — LLM zwraca URL, na który mamy przekierować użytkownika (`router.push`). URL pochodzi z modelu, więc bez kontroli groziłby open-redirect (`//evil.com`, `http://…`) albo wejściem na ścieżki spoza aplikacji.
 **Rozwiązanie:** `sanitizeNavUrl()` w `agent/route.ts` przepuszcza tylko ścieżki zaczynające się od jednego `/` (odrzuca `//` i absolutne URL-e) i pasujące do whitelisty prefiksów (`/tasks`, `/shopping`, `/notes`, `/pets`). Gdy URL jest niedozwolony, prosimy LLM o poprawkę zamiast go zwracać. Żeby przekierowanie miało sens, `TasksPage` czyta `?status=` i `?task=` (analogicznie do `?focus=`/`?pinned=` w Notatkach).
