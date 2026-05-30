@@ -47,12 +47,27 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
 
   const openTask = openTaskId ? tasks.find((t) => t.id === openTaskId) ?? null : null;
 
+  // Najnowsza lista zadań dla timera — bez tego interwał (zależności []) widziałby
+  // tylko `tasks` z pierwszego renderu.
+  const tasksRef = useRef(tasks);
+  tasksRef.current = tasks;
+
   useEffect(() => {
     if (typeof Notification !== "undefined") {
       setNotificationsEnabled(Notification.permission === "granted");
     }
     checkDueNotifications(tasks);
   }, [tasks]);
+
+  // Cykliczne sprawdzanie terminów. Wcześniej `checkDueNotifications` odpalało się
+  // tylko przy montażu i zmianie propu `tasks`, więc przypomnienie „10 min przed"
+  // pojawiało się jedynie przypadkiem (gdy akurat coś przeładowało listę). Timer co
+  // 30 s gwarantuje, że termin zostanie złapany niezależnie od zmian danych.
+  useEffect(() => {
+    const id = setInterval(() => checkDueNotifications(tasksRef.current), 30_000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Otwarte szczegóły → wpis w historii, by przycisk „wstecz" zamykał panel
   // (zamiast opuszczać stronę), zwłaszcza na mobile.
@@ -64,20 +79,29 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     return () => window.removeEventListener("popstate", onPop);
   }, [openTaskId]);
 
-  // Wyświetla powiadomienie przez Service Worker (`registration.showNotification`),
-  // a nie przez konstruktor `new Notification()`. Konstruktora NIE da się użyć na
-  // iOS Safari / PWA — tam działa wyłącznie ścieżka Service Workera. Wcześniejsza
-  // wersja używała `new Notification(...)`, przez co powiadomienia pojawiały się na
-  // desktopie, a na iPhone w ogóle. SW działa też na desktopie, więc jest uniwersalny.
+  // Wyświetla powiadomienie. Preferuje Service Worker (`registration.showNotification`),
+  // bo iOS Safari / PWA NIE wspiera konstruktora `new Notification()` — tam działa tylko
+  // ścieżka SW. Na desktopie SW też działa.
+  //
+  // UWAGA: `navigator.serviceWorker.ready` to obietnica, która NIGDY nie jest odrzucana —
+  // gdy SW nie jest aktywny (np. błąd rejestracji), zawiesza się w nieskończoność. Poprzednia
+  // wersja czekała na nią bez limitu, więc przy niezdrowym SW powiadomienia na komputerze
+  // przestawały działać (brak fallbacku). Dlatego ścigamy `ready` z krótkim timeoutem i przy
+  // braku aktywnego SW spadamy na konstruktor (desktop), a gdy i to się nie uda — milczymy.
   async function showTaskNotification(title: string, options: NotificationOptions) {
-    try {
-      if ("serviceWorker" in navigator) {
-        const reg = await navigator.serviceWorker.ready;
-        await reg.showNotification(title, options);
-        return;
+    if ("serviceWorker" in navigator) {
+      try {
+        const reg = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+        ]);
+        if (reg && "showNotification" in reg) {
+          await reg.showNotification(title, options);
+          return;
+        }
+      } catch {
+        /* spadamy do fallbacku poniżej */
       }
-    } catch {
-      /* spadamy do fallbacku poniżej */
     }
     try {
       new Notification(title, options);
