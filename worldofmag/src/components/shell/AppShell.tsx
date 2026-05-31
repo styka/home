@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, X, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat, FlaskConical, Truck, PawPrint, Car, Wallet, GraduationCap, HeartPulse, Flame } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Menu, X, Calendar, Briefcase, Settings, Mail, Shield, Map, Image, Lock, MoreHorizontal, Plus } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 import { ToastProvider } from "@/components/ui/Toast";
 import { isPathLocked } from "@/lib/permissions";
+import { MODULES, resolveMenu, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
+import { updateMenuPrefs } from "@/actions/menuPrefs";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -17,37 +20,41 @@ interface AppShellProps {
   isAdmin?: boolean;
   userRoles?: string[];
   userPermissions?: string[];
+  menuPrefs?: MenuPrefs;
 }
 
-const MODULES = [
-  { id: "home",        label: "Strona główna", icon: <Home size={20} />,        topBarIcon: <Home size={16} />,        color: "var(--text-secondary)",  href: "/",            active: true,  exact: true  },
-  { id: "shopping",    label: "Zakupy",        icon: <ShoppingCart size={20} />, topBarIcon: <ShoppingCart size={16} />, color: "var(--accent-blue)",     href: "/shopping",    active: true,  exact: false },
-  { id: "tasks",       label: "Zadania",       icon: <CheckSquare size={20} />,  topBarIcon: <CheckSquare size={16} />,  color: "var(--accent-green)",    href: "/tasks",       active: true,  exact: false },
-  { id: "notes",       label: "Notatki",       icon: <FileText size={20} />,     topBarIcon: <FileText size={16} />,     color: "var(--accent-amber)",    href: "/notes",       active: true,  exact: false },
-  { id: "pets",        label: "Zwierzęta",     icon: <PawPrint size={20} />,     topBarIcon: <PawPrint size={16} />,     color: "var(--accent-orange)",   href: "/pets",        active: true,  exact: false },
-  { id: "kitchen",     label: "Kuchnia",       icon: <ChefHat size={20} />,      topBarIcon: <ChefHat size={16} />,      color: "var(--accent-orange)",   href: "/kitchen",     active: true,  exact: false },
-  { id: "languages",   label: "Nauka języków", icon: <GraduationCap size={20} />, topBarIcon: <GraduationCap size={16} />, color: "var(--accent-purple)",  href: "/languages",   active: true,  exact: false },
-  { id: "health",      label: "Zdrowie",       icon: <HeartPulse size={20} />,   topBarIcon: <HeartPulse size={16} />,   color: "var(--accent-red)",      href: "/health",      active: true,  exact: false },
-  { id: "habits",      label: "Nawyki",        icon: <Flame size={20} />,        topBarIcon: <Flame size={16} />,        color: "var(--accent-orange)",   href: "/habits",      active: true,  exact: false },
-  { id: "qa",          label: "QA",            icon: <FlaskConical size={20} />, topBarIcon: <FlaskConical size={16} />, color: "var(--accent-red)",      href: "/qa",          active: true,  exact: false },
-  { id: "truck",       label: "Trasy TIR",     icon: <Truck size={20} />,        topBarIcon: <Truck size={16} />,        color: "var(--accent-blue)",     href: "/truck",       active: true,  exact: false },
-  { id: "flota",       label: "Flota",         icon: <Car size={20} />,          topBarIcon: <Car size={16} />,          color: "var(--accent-blue)",     href: "/flota",       active: true,  exact: false },
-  { id: "portfel",     label: "Portfel",       icon: <Wallet size={20} />,       topBarIcon: <Wallet size={16} />,       color: "var(--accent-green)",    href: "/portfel",     active: true,  exact: false },
-  { id: "reports",     label: "Raporty",       icon: <BookOpen size={20} />,     topBarIcon: <BookOpen size={16} />,     color: "var(--accent-purple)",   href: "/reports",     active: true,  exact: false },
-  { id: "calendar",    label: "Calendar",      icon: <Calendar size={20} />,     topBarIcon: <Calendar size={16} />,     color: "var(--text-muted)",      href: "/calendar",    active: false, exact: false },
-  { id: "work",        label: "Work",          icon: <Briefcase size={20} />,    topBarIcon: <Briefcase size={16} />,    color: "var(--text-muted)",      href: "/work",        active: false, exact: false },
-  { id: "settings",    label: "Ustawienia",    icon: null,                        topBarIcon: <Settings size={16} />,    color: "var(--text-secondary)",  href: "/settings",    active: false, exact: false },
-  { id: "invitations", label: "Zaproszenia",   icon: null,                        topBarIcon: <Mail size={16} />,        color: "var(--text-secondary)",  href: "/invitations", active: false, exact: false },
-  { id: "admin",       label: "Admin",         icon: null,                        topBarIcon: <Shield size={16} />,      color: "var(--accent-purple)",   href: "/admin",       active: false, exact: false },
+// Pozycje dolne (stałe, niepodlegające konfiguracji) — do wykrywania aktywnego modułu i paska górnego.
+type BottomItem = { id: string; label: string; href: string; Icon: LucideIcon; color: string; exact?: boolean };
+const BOTTOM_ITEMS: BottomItem[] = [
+  { id: "settings",    label: "Ustawienia",  href: "/settings",    Icon: Settings, color: "var(--text-secondary)" },
+  { id: "invitations", label: "Zaproszenia", href: "/invitations", Icon: Mail,     color: "var(--text-secondary)" },
+  { id: "admin",       label: "Admin",       href: "/admin",       Icon: Shield,   color: "var(--accent-purple)" },
 ];
 
-export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [] }: AppShellProps) {
+export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs() }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [, startTransition] = useTransition();
   const pathname = usePathname();
-  const activeModule = MODULES.find((m) => m.exact ? pathname === m.href : pathname.startsWith(m.href));
+  const router = useRouter();
+
+  const { enabled, more } = resolveMenu(userPermissions, menuPrefs);
+
+  // Aktywny moduł (do paska górnego) — szukamy wśród wszystkich pozycji, nawet wyłączonych.
+  const activeModule =
+    [...MODULES].find((m) => (m.exact ? pathname === m.href : pathname.startsWith(m.href))) ??
+    BOTTOM_ITEMS.find((m) => pathname.startsWith(m.href));
 
   function isLocked(href: string): boolean {
     return isPathLocked(userPermissions, href);
+  }
+
+  function enableModule(id: string) {
+    const nextDisabled = menuPrefs.disabled.filter((d) => d !== id);
+    startTransition(async () => {
+      await updateMenuPrefs({ disabled: nextDisabled });
+      router.refresh();
+    });
   }
 
   useEffect(() => { setMenuOpen(false); }, [pathname]);
@@ -57,7 +64,8 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
-  const isShoppingActive = pathname.startsWith("/shopping");
+  // Dolny pasek (mobile): pierwsze do 4 włączonych modułów (z poszanowaniem uprawnień/kolejności).
+  const tabBar = enabled.slice(0, 4);
 
   return (
     <ToastProvider>
@@ -94,7 +102,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
             title={`Przejdź do: ${activeModule?.label ?? "Strona główna"}`}
           >
             <span style={{ color: activeModule?.color ?? "var(--accent-purple)" }}>
-              {activeModule?.topBarIcon ?? <BrandLogo px={18} />}
+              {activeModule ? <activeModule.Icon size={16} /> : <BrandLogo px={18} />}
             </span>
             <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
               {activeModule?.label ?? <AppName />}
@@ -128,88 +136,44 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
             </div>
 
             <nav className="flex-1 py-2 overflow-y-auto">
-              <MobileItem href="/" exact pathname={pathname} locked={isLocked("/")}>
-                <Home size={20} style={{ color: "var(--text-secondary)", flexShrink: 0 }} /><span>Strona główna</span>
-              </MobileItem>
+              {/* Moduły dostępne i włączone (w kolejności użytkownika) */}
+              {enabled.map((m) => (
+                <div key={m.id}>
+                  <MobileItem href={m.href} exact={m.exact} pathname={pathname}>
+                    <m.Icon size={20} style={{ color: m.color, flexShrink: 0 }} /><span>{m.label}</span>
+                  </MobileItem>
+                  {(m.exact ? pathname === m.href : pathname.startsWith(m.href)) && (
+                    <MobileModuleSubNav id={m.id} pathname={pathname} />
+                  )}
+                </div>
+              ))}
 
-              <MobileItem href="/shopping" pathname={pathname} locked={isLocked("/shopping")}>
-                <ShoppingCart size={20} style={{ color: "var(--accent-blue)", flexShrink: 0 }} /><span>Zakupy</span>
-              </MobileItem>
-              {isShoppingActive && (
+              {/* „Więcej…" — działy dostępne, ale wyłączone przez użytkownika */}
+              {more.length > 0 && (
                 <>
-                  <MobileSub href="/shopping/stores" pathname={pathname} locked={isLocked("/shopping")}><Map size={13} />Mapy sklepów</MobileSub>
-                  <MobileSub href="/shopping/icons" pathname={pathname} locked={isLocked("/shopping")}><Image size={13} />Biblioteka ikon</MobileSub>
-                  <MobileSub href="/shopping/icons/categories" pathname={pathname} locked={isLocked("/shopping")}>Przypisania ikon</MobileSub>
+                  <button
+                    onClick={() => setMoreOpen((v) => !v)}
+                    className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm w-[calc(100%-1rem)] focus:outline-none"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    <MoreHorizontal size={20} /><span>Więcej…</span>
+                  </button>
+                  {moreOpen && more.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => enableModule(m.id)}
+                      className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm w-[calc(100%-1rem)] focus:outline-none"
+                      style={{ color: "var(--text-secondary)" }}
+                      title={`Włącz „${m.label}" w menu`}
+                    >
+                      <m.Icon size={20} style={{ color: m.color, flexShrink: 0 }} /><span>{m.label}</span>
+                      <Plus size={14} style={{ marginLeft: "auto", color: "var(--text-muted)" }} />
+                    </button>
+                  ))}
                 </>
               )}
 
-              <MobileItem href="/tasks" pathname={pathname} locked={isLocked("/tasks")}>
-                <CheckSquare size={20} style={{ color: "var(--accent-green)", flexShrink: 0 }} /><span>Zadania</span>
-              </MobileItem>
-
-              <MobileItem href="/notes" pathname={pathname} locked={isLocked("/notes")}>
-                <FileText size={20} style={{ color: "var(--accent-amber)", flexShrink: 0 }} /><span>Notatki</span>
-              </MobileItem>
-              {pathname.startsWith("/notes") && (
-                <div className="mb-1">
-                  {[{ href: "/notes/all", label: "Wszystkie" }, { href: "/notes/groups", label: "Grupy" }, { href: "/notes/tags", label: "Tagi" }].map(({ href, label }) => (
-                    <MobileSub key={href} href={href} pathname={pathname} locked={isLocked("/notes")}>{label}</MobileSub>
-                  ))}
-                </div>
-              )}
-
-              <MobileItem href="/pets" pathname={pathname} locked={isLocked("/pets")}>
-                <PawPrint size={20} style={{ color: "var(--accent-orange)", flexShrink: 0 }} /><span>Zwierzęta</span>
-              </MobileItem>
-
-              <MobileItem href="/kitchen" pathname={pathname} locked={isLocked("/kitchen")}>
-                <ChefHat size={20} style={{ color: "var(--accent-orange)", flexShrink: 0 }} /><span>Kuchnia</span>
-              </MobileItem>
-              {pathname.startsWith("/kitchen") && (
-                <div className="mb-1">
-                  {[
-                    { href: "/kitchen/recipes",  label: "Przepisy" },
-                    { href: "/kitchen/plan",     label: "Plan" },
-                    { href: "/kitchen/pantry",   label: "Spiżarnia" },
-                    { href: "/kitchen/cookbooks", label: "Książki" },
-                  ].map(({ href, label }) => (
-                    <MobileSub key={href} href={href} pathname={pathname} locked={isLocked("/kitchen")}>{label}</MobileSub>
-                  ))}
-                </div>
-              )}
-
-              <MobileItem href="/languages" pathname={pathname} locked={isLocked("/languages")}>
-                <GraduationCap size={20} style={{ color: "var(--accent-purple)", flexShrink: 0 }} /><span>Nauka języków</span>
-              </MobileItem>
-
-              <MobileItem href="/health" pathname={pathname} locked={isLocked("/health")}>
-                <HeartPulse size={20} style={{ color: "var(--accent-red)", flexShrink: 0 }} /><span>Zdrowie</span>
-              </MobileItem>
-
-              <MobileItem href="/habits" pathname={pathname} locked={isLocked("/habits")}>
-                <Flame size={20} style={{ color: "var(--accent-orange)", flexShrink: 0 }} /><span>Nawyki</span>
-              </MobileItem>
-
-              <MobileItem href="/qa" pathname={pathname} locked={isLocked("/qa")}>
-                <FlaskConical size={20} style={{ color: "var(--accent-red)", flexShrink: 0 }} /><span>QA</span>
-              </MobileItem>
-
-              <MobileItem href="/truck" pathname={pathname} locked={isLocked("/truck")}>
-                <Truck size={20} style={{ color: "var(--accent-blue)", flexShrink: 0 }} /><span>Trasy TIR</span>
-              </MobileItem>
-
-              <MobileItem href="/flota" pathname={pathname} locked={isLocked("/flota")}>
-                <Car size={20} style={{ color: "var(--accent-blue)", flexShrink: 0 }} /><span>Flota</span>
-              </MobileItem>
-
-              <MobileItem href="/portfel" pathname={pathname} locked={isLocked("/portfel")}>
-                <Wallet size={20} style={{ color: "var(--accent-green)", flexShrink: 0 }} /><span>Portfel</span>
-              </MobileItem>
-
-              <MobileItem href="/reports" pathname={pathname} locked={isLocked("/reports")}>
-                <BookOpen size={20} style={{ color: "var(--accent-purple)", flexShrink: 0 }} /><span>Raporty</span>
-              </MobileItem>
-
+              {/* Coming soon (nie zależą od uprawnień) */}
               {[{ label: "Calendar", icon: <Calendar size={20} />, href: "/calendar" }, { label: "Work", icon: <Briefcase size={20} />, href: "/work" }].map((mod) => (
                 <div key={mod.href} className="flex items-center gap-3 px-4 py-3 mx-2 rounded" style={{ opacity: 0.35, color: "var(--text-secondary)", cursor: "not-allowed" }} title={`${mod.label} (coming soon)`}>
                   {mod.icon}<span className="text-sm">{mod.label}</span>
@@ -237,47 +201,81 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         </div>
       )}
 
-      <ModuleSidebar invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} />
+      <ModuleSidebar invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} />
 
       <main className="flex-1 overflow-hidden flex flex-col min-w-0 pb-14 md:pb-0">
         {children}
       </main>
 
       {/* Mobile bottom tab bar */}
-      <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex border-t"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border)",
-          paddingBottom: "env(safe-area-inset-bottom)",
-          height: "calc(56px + env(safe-area-inset-bottom))",
-        }}
-      >
-        {[
-          { href: "/", label: "Dom", icon: <Home size={20} />, exact: true, color: "var(--text-secondary)" },
-          { href: "/shopping", label: "Zakupy", icon: <ShoppingCart size={20} />, exact: false, color: "var(--accent-blue)" },
-          { href: "/tasks", label: "Zadania", icon: <CheckSquare size={20} />, exact: false, color: "var(--accent-green)" },
-          { href: "/notes", label: "Notatki", icon: <FileText size={20} />, exact: false, color: "var(--accent-amber)" },
-        ].map(({ href, label, icon, exact, color }) => {
-          const isActive = exact ? pathname === href : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs"
-              style={{ color: isActive ? color : "var(--text-muted)" }}
-            >
-              {icon}
-              <span style={{ fontSize: 10 }}>{label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      {tabBar.length > 0 && (
+        <nav
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex border-t"
+          style={{
+            backgroundColor: "var(--bg-surface)",
+            borderColor: "var(--border)",
+            paddingBottom: "env(safe-area-inset-bottom)",
+            height: "calc(56px + env(safe-area-inset-bottom))",
+          }}
+        >
+          {tabBar.map((m) => {
+            const isActive = m.exact ? pathname === m.href : pathname.startsWith(m.href);
+            return (
+              <Link
+                key={m.id}
+                href={m.href}
+                className="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs"
+                style={{ color: isActive ? m.color : "var(--text-muted)" }}
+              >
+                <m.Icon size={20} />
+                <span style={{ fontSize: 10 }}>{m.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      )}
 
       <AICommandSheet />
     </div>
     </ToastProvider>
   );
+}
+
+/** Mobilna sub-nawigacja modułu (tylko tam, gdzie miała sens w drawerze). */
+function MobileModuleSubNav({ id, pathname }: { id: string; pathname: string }) {
+  if (id === "shopping") {
+    return (
+      <>
+        <MobileSub href="/shopping/stores" pathname={pathname}><Map size={13} />Mapy sklepów</MobileSub>
+        <MobileSub href="/shopping/icons" pathname={pathname}><Image size={13} />Biblioteka ikon</MobileSub>
+        <MobileSub href="/shopping/icons/categories" pathname={pathname}>Przypisania ikon</MobileSub>
+      </>
+    );
+  }
+  if (id === "notes") {
+    return (
+      <div className="mb-1">
+        {[{ href: "/notes/all", label: "Wszystkie" }, { href: "/notes/groups", label: "Grupy" }, { href: "/notes/tags", label: "Tagi" }].map(({ href, label }) => (
+          <MobileSub key={href} href={href} pathname={pathname}>{label}</MobileSub>
+        ))}
+      </div>
+    );
+  }
+  if (id === "kitchen") {
+    return (
+      <div className="mb-1">
+        {[
+          { href: "/kitchen/recipes", label: "Przepisy" },
+          { href: "/kitchen/plan", label: "Plan" },
+          { href: "/kitchen/pantry", label: "Spiżarnia" },
+          { href: "/kitchen/cookbooks", label: "Książki" },
+        ].map(({ href, label }) => (
+          <MobileSub key={href} href={href} pathname={pathname}>{label}</MobileSub>
+        ))}
+      </div>
+    );
+  }
+  return null;
 }
 
 function MobileItem({ href, exact, pathname, locked, children }: { href: string; exact?: boolean; pathname: string; locked?: boolean; children: React.ReactNode }) {

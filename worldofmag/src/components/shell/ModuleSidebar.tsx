@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck, PawPrint, Car, Wallet, GraduationCap, HeartPulse, Flame } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { Calendar, Briefcase, Settings, Mail, Shield, FolderOpen, Tag, Lock, BookOpen, Package, BookMarked, CalendarDays, MoreHorizontal, Plus } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { cn } from "@/lib/cn";
@@ -13,12 +14,68 @@ import { LanguagesSideNav } from "@/components/languages/LanguagesSideNav";
 import { FlotaSideNav } from "@/components/flota/FlotaSideNav";
 import { PortfelSideNav } from "@/components/portfel/PortfelSideNav";
 import { isPathLocked } from "@/lib/permissions";
+import { resolveMenu, defaultMenuPrefs, type MenuPrefs, type ModuleDef } from "@/lib/modules";
+import { updateMenuPrefs } from "@/actions/menuPrefs";
 
 interface ModuleSidebarProps {
   invitationCount?: number;
   isAdmin?: boolean;
   userRoles?: string[];
   userPermissions?: string[];
+  menuPrefs?: MenuPrefs;
+}
+
+/** Sub-nawigacja danego modułu (renderowana, gdy moduł jest aktywny). */
+function ModuleSubNav({ id, pathname }: { id: string; pathname: string }) {
+  switch (id) {
+    case "shopping":
+      return (
+        <div className="mb-1">
+          <ShoppingSideNav />
+          {pathname.startsWith("/shopping/icons") && (
+            <NavSubItem href="/shopping/icons/categories" label="Przypisania" pathname={pathname} />
+          )}
+        </div>
+      );
+    case "notes":
+      return (
+        <div className="mb-1">
+          <NavSubItem href="/notes/all" label="Wszystkie" pathname={pathname} />
+          <NavSubItem href="/notes/groups" label="Grupy" icon={<FolderOpen size={12} />} pathname={pathname} />
+          <NavSubItem href="/notes/tags" label="Tagi" icon={<Tag size={12} />} pathname={pathname} />
+        </div>
+      );
+    case "tasks":
+      return <div className="mb-1"><TasksSideNav /></div>;
+    case "pets":
+      return <div className="mb-1"><PetsSideNav /></div>;
+    case "kitchen":
+      return (
+        <div className="mb-1">
+          <NavSubItem href="/kitchen/recipes" label="Przepisy" icon={<BookMarked size={12} />} pathname={pathname} />
+          <NavSubItem href="/kitchen/plan" label="Plan" icon={<CalendarDays size={12} />} pathname={pathname} />
+          <NavSubItem href="/kitchen/pantry" label="Spiżarnia" icon={<Package size={12} />} pathname={pathname} />
+          <NavSubItem href="/kitchen/cookbooks" label="Książki" icon={<BookOpen size={12} />} pathname={pathname} />
+        </div>
+      );
+    case "languages":
+      return <div className="mb-1"><LanguagesSideNav /></div>;
+    case "qa":
+      return (
+        <div className="mb-1">
+          <NavSubItem href="/qa/shopping" label="Zakupy" pathname={pathname} />
+          <NavSubItem href="/qa/tasks" label="Zadania" pathname={pathname} />
+          <NavSubItem href="/qa/notes" label="Notatki" pathname={pathname} />
+          <NavSubItem href="/qa/kitchen" label="Kuchnia" pathname={pathname} />
+        </div>
+      );
+    case "flota":
+      return <div className="mb-1"><FlotaSideNav /></div>;
+    case "portfel":
+      return <div className="mb-1"><PortfelSideNav /></div>;
+    default:
+      return null;
+  }
 }
 
 function NavItem({
@@ -137,20 +194,35 @@ function NavSubItem({
   );
 }
 
-export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [] }: ModuleSidebarProps) {
+export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs() }: ModuleSidebarProps) {
   const pathname = usePathname();
-  const isShoppingActive = pathname.startsWith("/shopping");
-  const isNotesActive = pathname.startsWith("/notes");
-  const isTasksActive = pathname.startsWith("/tasks");
-  const isKitchenActive = pathname.startsWith("/kitchen");
-  const isQaActive = pathname.startsWith("/qa");
-  const isPetsActive = pathname.startsWith("/pets");
-  const isLanguagesActive = pathname.startsWith("/languages");
-  const isFlotaActive = pathname.startsWith("/flota");
-  const isPortfelActive = pathname.startsWith("/portfel");
+  const router = useRouter();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [, startTransition] = useTransition();
+
+  const { enabled, more } = resolveMenu(userPermissions, menuPrefs);
 
   function isLocked(href: string): boolean {
     return isPathLocked(userPermissions, href);
+  }
+
+  // Włącz wyłączony moduł („Więcej…") — usuń go z listy `disabled`.
+  function enableModule(id: string) {
+    const nextDisabled = menuPrefs.disabled.filter((d) => d !== id);
+    startTransition(async () => {
+      await updateMenuPrefs({ disabled: nextDisabled });
+      router.refresh();
+    });
+  }
+
+  function renderModule(m: ModuleDef) {
+    const active = m.exact ? pathname === m.href : pathname.startsWith(m.href);
+    return (
+      <div key={m.id}>
+        <NavItem href={m.href} label={m.label} icon={<m.Icon size={18} />} pathname={pathname} exact={m.exact} iconColor={m.color} />
+        {active && <ModuleSubNav id={m.id} pathname={pathname} />}
+      </div>
+    );
   }
 
   return (
@@ -176,107 +248,38 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
         </span>
       </Link>
 
-      {/* Modules */}
+      {/* Modules — tylko dostępne i włączone, w kolejności użytkownika */}
       <nav className="flex-1 py-2 overflow-y-auto">
-        {/* Home */}
-        <NavItem href="/" label="Strona główna" icon={<Home size={18} />} pathname={pathname} exact locked={isLocked("/")} />
+        {enabled.map(renderModule)}
 
-        {/* Shopping */}
-        <NavItem href="/shopping" label="Zakupy" icon={<ShoppingCart size={18} />} pathname={pathname} iconColor="var(--accent-blue)" locked={isLocked("/shopping")} />
-        {isShoppingActive && !isLocked("/shopping") && (
-          <div className="mb-1">
-            <ShoppingSideNav />
-            {pathname.startsWith("/shopping/icons") && (
-              <NavSubItem href="/shopping/icons/categories" label="Przypisania" pathname={pathname} />
-            )}
-          </div>
+        {/* „Więcej…" — działy dostępne, ale wyłączone przez użytkownika */}
+        {more.length > 0 && (
+          <>
+            <button
+              onClick={() => setMoreOpen((v) => !v)}
+              className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm w-[calc(100%-1rem)] focus:outline-none"
+              style={{ color: "var(--text-muted)" }}
+            >
+              <MoreHorizontal size={18} />
+              <span>Więcej…</span>
+            </button>
+            {moreOpen && more.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => enableModule(m.id)}
+                className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm w-[calc(100%-1rem)] focus:outline-none"
+                style={{ color: "var(--text-secondary)", opacity: 0.85 }}
+                title={`Włącz „${m.label}" w menu`}
+              >
+                <span style={{ color: m.color, flexShrink: 0, display: "flex" }}><m.Icon size={18} /></span>
+                <span>{m.label}</span>
+                <Plus size={13} style={{ marginLeft: "auto", color: "var(--text-muted)" }} />
+              </button>
+            ))}
+          </>
         )}
 
-        {/* Notes with sub-items */}
-        <NavItem href="/notes" label="Notatki" icon={<FileText size={18} />} pathname={pathname} iconColor="var(--accent-amber)" exact locked={isLocked("/notes")} />
-        {isNotesActive && (
-          <div className="mb-1">
-            <NavSubItem href="/notes/all" label="Wszystkie" pathname={pathname} locked={isLocked("/notes")} />
-            <NavSubItem href="/notes/groups" label="Grupy" icon={<FolderOpen size={12} />} pathname={pathname} locked={isLocked("/notes")} />
-            <NavSubItem href="/notes/tags" label="Tagi" icon={<Tag size={12} />} pathname={pathname} locked={isLocked("/notes")} />
-          </div>
-        )}
-
-        {/* Tasks with sub-items */}
-        <NavItem href="/tasks" label="Zadania" icon={<CheckSquare size={18} />} pathname={pathname} iconColor="var(--accent-green)" locked={isLocked("/tasks")} />
-        {isTasksActive && (
-          <div className="mb-1">
-            <TasksSideNav />
-          </div>
-        )}
-
-        {/* Pets with sub-items */}
-        <NavItem href="/pets" label="Zwierzęta" icon={<PawPrint size={18} />} pathname={pathname} iconColor="var(--accent-orange)" locked={isLocked("/pets")} />
-        {isPetsActive && !isLocked("/pets") && (
-          <div className="mb-1">
-            <PetsSideNav />
-          </div>
-        )}
-
-        {/* Kitchen with sub-items */}
-        <NavItem href="/kitchen" label="Kuchnia" icon={<ChefHat size={18} />} pathname={pathname} iconColor="var(--accent-orange)" locked={isLocked("/kitchen")} />
-        {isKitchenActive && (
-          <div className="mb-1">
-            <NavSubItem href="/kitchen/recipes" label="Przepisy" icon={<BookMarked size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
-            <NavSubItem href="/kitchen/plan" label="Plan" icon={<CalendarDays size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
-            <NavSubItem href="/kitchen/pantry" label="Spiżarnia" icon={<Package size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
-            <NavSubItem href="/kitchen/cookbooks" label="Książki" icon={<BookOpen size={12} />} pathname={pathname} locked={isLocked("/kitchen")} />
-          </div>
-        )}
-
-        {/* Nauka języków */}
-        <NavItem href="/languages" label="Nauka języków" icon={<GraduationCap size={18} />} pathname={pathname} iconColor="var(--accent-purple)" locked={isLocked("/languages")} />
-        {isLanguagesActive && !isLocked("/languages") && (
-          <div className="mb-1">
-            <LanguagesSideNav />
-          </div>
-        )}
-
-        {/* Zdrowie */}
-        <NavItem href="/health" label="Zdrowie" icon={<HeartPulse size={18} />} pathname={pathname} iconColor="var(--accent-red)" locked={isLocked("/health")} />
-
-        {/* Nawyki */}
-        <NavItem href="/habits" label="Nawyki" icon={<Flame size={18} />} pathname={pathname} iconColor="var(--accent-orange)" locked={isLocked("/habits")} />
-
-        {/* QA — dostępne dla ADMIN i TESTER */}
-        <NavItem href="/qa" label="QA" icon={<FlaskConical size={18} />} pathname={pathname} iconColor="var(--accent-red)" locked={isLocked("/qa")} />
-        {isQaActive && !isLocked("/qa") && (
-          <div className="mb-1">
-            <NavSubItem href="/qa/shopping" label="Zakupy" pathname={pathname} />
-            <NavSubItem href="/qa/tasks" label="Zadania" pathname={pathname} />
-            <NavSubItem href="/qa/notes" label="Notatki" pathname={pathname} />
-            <NavSubItem href="/qa/kitchen" label="Kuchnia" pathname={pathname} />
-          </div>
-        )}
-
-        {/* Trasy TIR — dostępne dla ADMIN i BETA_TESTER */}
-        <NavItem href="/truck" label="Trasy TIR" icon={<Truck size={18} />} pathname={pathname} iconColor="var(--accent-blue)" locked={isLocked("/truck")} />
-
-        {/* Flota */}
-        <NavItem href="/flota" label="Flota" icon={<Car size={18} />} pathname={pathname} iconColor="var(--accent-blue)" locked={isLocked("/flota")} />
-        {isFlotaActive && !isLocked("/flota") && (
-          <div className="mb-1">
-            <FlotaSideNav />
-          </div>
-        )}
-
-        {/* Portfel */}
-        <NavItem href="/portfel" label="Portfel" icon={<Wallet size={18} />} pathname={pathname} iconColor="var(--accent-green)" locked={isLocked("/portfel")} />
-        {isPortfelActive && !isLocked("/portfel") && (
-          <div className="mb-1">
-            <PortfelSideNav />
-          </div>
-        )}
-
-        {/* Reports — dostępne dla wszystkich */}
-        <NavItem href="/reports" label="Raporty" icon={<BookOpen size={18} />} pathname={pathname} iconColor="var(--accent-purple)" locked={isLocked("/reports")} />
-
-        {/* Inactive modules */}
+        {/* Inactive modules (coming soon — nie zależą od uprawnień) */}
         {[
           { label: "Calendar", icon: <Calendar size={18} />, href: "/calendar" },
           { label: "Work", icon: <Briefcase size={18} />, href: "/work" },
