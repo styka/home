@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat, FlaskConical, Truck, PawPrint, Car, Wallet } from "lucide-react";
+import { Menu, X, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat, FlaskConical, Truck, PawPrint, Car, Wallet, GraduationCap, HeartPulse } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { ModuleSidebar } from "./ModuleSidebar";
@@ -26,6 +26,8 @@ const MODULES = [
   { id: "notes",       label: "Notatki",       icon: <FileText size={20} />,     topBarIcon: <FileText size={16} />,     color: "var(--accent-amber)",    href: "/notes",       active: true,  exact: false },
   { id: "pets",        label: "Zwierzęta",     icon: <PawPrint size={20} />,     topBarIcon: <PawPrint size={16} />,     color: "var(--accent-orange)",   href: "/pets",        active: true,  exact: false },
   { id: "kitchen",     label: "Kuchnia",       icon: <ChefHat size={20} />,      topBarIcon: <ChefHat size={16} />,      color: "var(--accent-orange)",   href: "/kitchen",     active: true,  exact: false },
+  { id: "languages",   label: "Nauka języków", icon: <GraduationCap size={20} />, topBarIcon: <GraduationCap size={16} />, color: "var(--accent-purple)",  href: "/languages",   active: true,  exact: false },
+  { id: "health",      label: "Zdrowie",       icon: <HeartPulse size={20} />,   topBarIcon: <HeartPulse size={16} />,   color: "var(--accent-red)",      href: "/health",      active: true,  exact: false },
   { id: "qa",          label: "QA",            icon: <FlaskConical size={20} />, topBarIcon: <FlaskConical size={16} />, color: "var(--accent-red)",      href: "/qa",          active: true,  exact: false },
   { id: "truck",       label: "Trasy TIR",     icon: <Truck size={20} />,        topBarIcon: <Truck size={16} />,        color: "var(--accent-blue)",     href: "/truck",       active: true,  exact: false },
   { id: "flota",       label: "Flota",         icon: <Car size={20} />,          topBarIcon: <Car size={16} />,          color: "var(--accent-blue)",     href: "/flota",       active: true,  exact: false },
@@ -174,6 +176,14 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
                   ))}
                 </div>
               )}
+
+              <MobileItem href="/languages" pathname={pathname} locked={isLocked("/languages")}>
+                <GraduationCap size={20} style={{ color: "var(--accent-purple)", flexShrink: 0 }} /><span>Nauka języków</span>
+              </MobileItem>
+
+              <MobileItem href="/health" pathname={pathname} locked={isLocked("/health")}>
+                <HeartPulse size={20} style={{ color: "var(--accent-red)", flexShrink: 0 }} /><span>Zdrowie</span>
+              </MobileItem>
 
               <MobileItem href="/qa" pathname={pathname} locked={isLocked("/qa")}>
                 <FlaskConical size={20} style={{ color: "var(--accent-red)", flexShrink: 0 }} /><span>QA</span>

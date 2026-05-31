@@ -4,6 +4,11 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-05-31 — Nowy moduł nie pojawił się w menu na mobile (dwa źródła nawigacji)
+**Problem:** Po dodaniu działów „Nauka języków" i „Zdrowie" wpisy pojawiły się na desktopie, ale na iPhonie ich nie było. Zaktualizowany był tylko `ModuleSidebar.tsx` (sidebar desktop), a nawigacja mobilna żyje **osobno** w `AppShell.tsx` (tablica `MODULES` + jawna lista `MobileItem`, plus dolny pasek zakładek). Pozycje zablokowane brakiem uprawnień i tak renderują się jako wyszarzone — więc „kompletny brak w menu" to sygnał, że to nie RBAC, tylko brakujący wpis/niewdrożony kod.
+**Rozwiązanie:** Dodano oba działy w `AppShell.tsx`: do `MODULES` (wykrywanie aktywnego modułu w górnym pasku) oraz do mobilnej listy jako `MobileItem` z `locked={isLocked(...)}`. Dolny pasek zakładek zostaje kuratorowany (4 pozycje) — bez zmian.
+**Lekcja:** Dodając moduł, aktualizuj OBA źródła nawigacji: `ModuleSidebar.tsx` (desktop) i `AppShell.tsx` (mobile: `MODULES` + `MobileItem`). Przy diagnozie „nie ma w menu" rozróżniaj: wyszarzone = brak uprawnienia (RBAC), całkowity brak = brakujący wpis w którymś menu albo niewdrożony build.
+
 ## 2026-05-30 — `npx prisma` ciągnie Prisma 7, schemat projektu to Prisma 5
 **Problem:** W świeżym kontenerze (brak `node_modules`) `npx prisma validate` pobrało najnowszą Prismę 7, która odrzuca `url`/`directUrl` w bloku `datasource` (P1012) — choć projekt jest na `prisma@^5.22`. Build/migracje wyglądały na zepsute, a problem był tylko w wersji narzędzia.
 **Rozwiązanie:** Najpierw `npm install`, potem wołać binarkę projektu: `./node_modules/.bin/prisma …` (nie `npx prisma`, które bez lokalnej instalacji ściąga latest). Migracje generować offline bez bazy: `git show HEAD:worldofmag/prisma/schema.prisma > /tmp/old.prisma` i `prisma migrate diff --from-schema-datamodel /tmp/old.prisma --to-schema-datamodel prisma/schema.prisma --script`.
