@@ -11,16 +11,18 @@ interface TaskFiltersProps {
   allTags: TaskTagDef[];
   selectedTagIds: string[];
   onTagToggle: (id: string) => void;
+  // Zakładki statusów do pokazania (zależne od konfiguracji listy). Domyślnie wszystkie systemowe.
+  filters?: TaskStatusFilter[];
 }
 
-export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds, onTagToggle }: TaskFiltersProps) {
+export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds, onTagToggle, filters = TASK_STATUS_FILTERS }: TaskFiltersProps) {
   return (
     <div
       className="flex-shrink-0 border-b"
       style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
     >
       <div className="flex items-center gap-0 overflow-x-auto px-2" style={{ minHeight: 38 }}>
-        {TASK_STATUS_FILTERS.map((f) => {
+        {filters.map((f) => {
           const isActive = active === f;
           const count = counts[f];
           return (

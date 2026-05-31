@@ -60,6 +60,17 @@ model User {
   languageDecks          LanguageDeck[]        @relation("OwnedLanguageDecks")
   healthEvents           HealthEvent[]         @relation("OwnedHealthEvents")
   habits                 Habit[]               @relation("OwnedHabits")
+  menuPref               UserMenuPref?
+}
+
+// Preferencje paska bocznego/menu per użytkownik: kolejność i wyłączone moduły.
+model UserMenuPref {
+  userId    String   @id
+  order     String   @default("[]") // JSON: string[] id modułów w kolejności użytkownika
+  disabled  String   @default("[]") // JSON: string[] id modułów wyłączonych przez użytkownika
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model UserRole {
@@ -398,6 +409,8 @@ model TaskProject {
   isInbox     Boolean  @default(false)
   ownerId     String?
   ownerTeamId String?
+  // JSON ProjectStatusConfig ({ enabled, chain }); null = domyślne statusy systemowe.
+  statusConfig String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
