@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart, CheckSquare, FileText, ChefHat, type LucideIcon } from "lucide-react";
+import { ShoppingCart, CheckSquare, FileText, ChefHat, PawPrint, Car, Wallet, type LucideIcon } from "lucide-react";
 
 interface ActivityItem {
   module: string;
@@ -20,6 +20,9 @@ const MODULE_INFO: Record<string, { color: string; icon: LucideIcon }> = {
   tasks: { color: "var(--accent-green)", icon: CheckSquare },
   notes: { color: "var(--accent-amber)", icon: FileText },
   kitchen: { color: "var(--accent-orange)", icon: ChefHat },
+  pets: { color: "var(--accent-orange)", icon: PawPrint },
+  flota: { color: "var(--accent-blue)", icon: Car },
+  portfel: { color: "var(--accent-green)", icon: Wallet },
 };
 
 export function ActivityFeed({ activities, permissions }: ActivityFeedProps) {
@@ -154,6 +157,26 @@ function describeActivity(activity: ActivityItem): { text: string; href?: string
       return { text: `Ugotowano „${subject}"`, href: slug ? `/kitchen/recipes/${slug}` : "/kitchen" };
     case "kitchen/add_pantry":
       return { text: `Dodano do spiżarni „${subject}"`, href: "/kitchen/pantry" };
+    case "pets/create_pet":
+      return { text: `Dodano zwierzę „${subject}"`, href: "/pets" };
+    case "pets/log_feeding":
+      return { text: `Zarejestrowano karmienie`, href: "/pets" };
+    case "pets/complete_treatment":
+      return { text: `Wykonano zabieg „${subject}"`, href: "/pets" };
+    case "pets/complete_care_task":
+      return { text: `Wykonano czynność „${subject}"`, href: "/pets" };
+    case "flota/create_vehicle":
+      return { text: `Dodano pojazd „${subject}"`, href: "/flota" };
+    case "flota/add_fuel":
+      return { text: `Zatankowano pojazd`, href: "/flota" };
+    case "flota/add_service":
+      return { text: `Dodano serwis pojazdu`, href: "/flota" };
+    case "portfel/create_element":
+      return { text: `Dodano element portfela „${subject}"`, href: "/portfel" };
+    case "portfel/add_entry":
+      return { text: `Nowy wpis w portfelu`, href: "/portfel" };
+    case "portfel/set_balance":
+      return { text: `Zaktualizowano saldo`, href: "/portfel" };
     default:
       return {
         text: `${moduleLabel(activity.module)}: ${activity.action.replace(/_/g, " ")}${subject !== "—" ? ` — ${subject}` : ""}`,
@@ -168,6 +191,9 @@ function moduleLabel(module: string): string {
     case "tasks": return "Zadania";
     case "notes": return "Notatki";
     case "kitchen": return "Kuchnia";
+    case "pets": return "Zwierzęta";
+    case "flota": return "Flota";
+    case "portfel": return "Portfel";
     default: return module;
   }
 }

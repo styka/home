@@ -8,8 +8,11 @@ import { getRecentActivity } from "@/actions/activity";
 import { getTodaysMeals } from "@/actions/mealPlans";
 import { getExpiringSoon } from "@/actions/pantry";
 import { getPendingInvitationsCount } from "@/actions/invitations";
+import { getCareAgenda } from "@/actions/petCare";
+import { getVehicles } from "@/actions/flota";
+import { getWalletOverview } from "@/actions/portfel";
 import { HomePage } from "@/components/home/HomePage";
-import type { TaskPriority } from "@/types";
+import type { TaskPriority, CareAgendaItem } from "@/types";
 
 export default async function HomePageRoute() {
   const session = await auth();
@@ -151,6 +154,60 @@ export default async function HomePageRoute() {
     }
   }
 
+  // Pets (conditional) — care agenda (overdue / today / upcoming)
+  let petCareDue = 0;
+  let petAgenda: CareAgendaItem[] = [];
+  if (has("module.pets")) {
+    try {
+      const agenda = await getCareAgenda();
+      petCareDue = agenda.filter((a) => a.bucket === "OVERDUE" || a.bucket === "TODAY").length;
+      petAgenda = agenda.slice(0, 4);
+    } catch {
+      petCareDue = 0;
+      petAgenda = [];
+    }
+  }
+
+  // Flota (conditional) — vehicle count + inspection/insurance due within 30 days
+  let vehiclesCount = 0;
+  let vehicleAlerts: Array<{ id: string; name: string; type: "inspection" | "insurance"; dueAt: string; daysLeft: number }> = [];
+  if (has("module.flota")) {
+    try {
+      const vehicles = await getVehicles();
+      vehiclesCount = vehicles.length;
+      const horizon = 30;
+      for (const v of vehicles) {
+        const checks: Array<["inspection" | "insurance", Date | null]> = [
+          ["inspection", v.inspectionDue],
+          ["insurance", v.insuranceDue],
+        ];
+        for (const [type, due] of checks) {
+          if (!due) continue;
+          const daysLeft = Math.ceil((new Date(due).getTime() - todayStart.getTime()) / 86_400_000);
+          if (daysLeft <= horizon) {
+            vehicleAlerts.push({ id: v.id, name: v.name, type, dueAt: new Date(due).toISOString(), daysLeft });
+          }
+        }
+      }
+      vehicleAlerts.sort((a, b) => a.daysLeft - b.daysLeft);
+      vehicleAlerts = vehicleAlerts.slice(0, 4);
+    } catch {
+      vehiclesCount = 0;
+      vehicleAlerts = [];
+    }
+  }
+
+  // Portfel (conditional) — net worth + monthly trend
+  let wallet: { totalNet: number; currency: string; monthlyRate: number } | null = null;
+  if (has("module.portfel")) {
+    try {
+      const overview = await getWalletOverview();
+      wallet = { totalNet: overview.totalNet, currency: overview.currency, monthlyRate: overview.monthlyRate };
+    } catch {
+      wallet = null;
+    }
+  }
+
   // Admin stats (conditional)
   let adminStats: { userCount: number; teamCount: number; reportCount: number } | null = null;
   if (isAdmin) {
@@ -184,6 +241,11 @@ export default async function HomePageRoute() {
       todayMeals={todayMealsForUI}
       expiringSoon={expiringCount}
       recentReports={recentReports}
+      petCareDue={petCareDue}
+      petAgenda={petAgenda}
+      vehiclesCount={vehiclesCount}
+      vehicleAlerts={vehicleAlerts}
+      wallet={wallet}
       recentActivity={recentActivityForUI}
       adminStats={adminStats}
     />
