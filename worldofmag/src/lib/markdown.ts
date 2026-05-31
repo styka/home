@@ -32,7 +32,10 @@ export function markdownToHtml(md: string): string {
     return `<table class="md-table">${thead}${tbody}</table>`;
   });
 
-  // ── Headings ──────────────────────────────────────────────────────────────
+  // ── Headings (h1–h6; longest prefix first so #### isn't caught by ###) ──────
+  html = html.replace(/^###### (.+)$/gm, (_, t) => `<h6 class="md-h6">${inlineFormat(t)}</h6>`);
+  html = html.replace(/^##### (.+)$/gm, (_, t) => `<h5 class="md-h5">${inlineFormat(t)}</h5>`);
+  html = html.replace(/^#### (.+)$/gm, (_, t) => `<h4 class="md-h4">${inlineFormat(t)}</h4>`);
   html = html.replace(/^### (.+)$/gm, (_, t) => `<h3 class="md-h3">${inlineFormat(t)}</h3>`);
   html = html.replace(/^## (.+)$/gm, (_, t) => `<h2 class="md-h2">${inlineFormat(t)}</h2>`);
   html = html.replace(/^# (.+)$/gm, (_, t) => `<h1 class="md-h1">${inlineFormat(t)}</h1>`);
@@ -48,20 +51,23 @@ export function markdownToHtml(md: string): string {
 
   // ── Ordered lists (1. 2. 3. …) — must come before unordered ─────────────────
   html = html.replace(/((?:^\d+\. .+\n?)+)/gm, (block) => {
-    const items = block.trim().split("\n").map((line) => {
+    const items = block.replace(/\n+$/, "").split("\n").map((line) => {
       const text = line.replace(/^\d+\. /, "");
       return `<li class="md-oli">${inlineFormat(text)}</li>`;
-    });
-    return `<ol class="md-ol">${items.join("")}</ol>`;
+    }).join("");
+    return `<ol class="md-ol">${items}</ol>`;
   });
 
-  // ── Unordered lists ───────────────────────────────────────────────────────
-  html = html.replace(/((?:^[-*] .+\n?)+)/gm, (block) => {
-    const items = block.trim().split("\n").map((line) => {
-      const text = line.replace(/^[-*] /, "");
-      return `<li class="md-li">${inlineFormat(text)}</li>`;
-    });
-    return `<ul class="md-ul">${items.join("")}</ul>`;
+  // ── Unordered lists (nesting via indentation: 2 spaces = 1 level) ──────────
+  html = html.replace(/((?:^[ \t]*[-*] .+\n?)+)/gm, (block) => {
+    const items = block.replace(/\n+$/, "").split("\n").map((line) => {
+      const m = /^([ \t]*)[-*] (.*)$/.exec(line);
+      if (!m) return "";
+      const depth = Math.floor(m[1].replace(/\t/g, "  ").length / 2);
+      const pad = depth > 0 ? ` style="margin-left:${depth * 1.1}rem"` : "";
+      return `<li class="md-li"${pad}>${inlineFormat(m[2])}</li>`;
+    }).join("");
+    return `<ul class="md-ul">${items}</ul>`;
   });
 
   // ── Paragraphs (blank-line separated, skip already wrapped elements) ───────
@@ -109,9 +115,14 @@ export const MARKDOWN_STYLES = `
 .md-h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 1.5rem 0 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
 .md-h2 { font-size: 1.15rem; font-weight: 600; color: var(--text-primary); margin: 1.5rem 0 0.5rem; }
 .md-h3 { font-size: 1rem; font-weight: 600; color: var(--text-secondary); margin: 1.25rem 0 0.4rem; }
+.md-h4 { font-size: 0.95rem; font-weight: 600; color: var(--text-secondary); margin: 1rem 0 0.3rem; }
+.md-h5 { font-size: 0.875rem; font-weight: 600; color: var(--text-muted); margin: 0.9rem 0 0.3rem; }
+.md-h6 { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin: 0.85rem 0 0.3rem; text-transform: uppercase; letter-spacing: 0.03em; }
 .md-p  { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.75; margin: 0.5rem 0; }
 .md-hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
 .md-ul { list-style: none; padding: 0; margin: 0.5rem 0 0.75rem 0; }
+.md-ol { list-style: decimal; padding-left: 1.4rem; margin: 0.5rem 0 0.75rem 0; }
+.md-oli { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7; margin-left: 0.2rem; }
 .md-li { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7; padding-left: 1rem; position: relative; }
 .md-li::before { content: "•"; position: absolute; left: 0; color: var(--text-muted); }
 .md-ol { list-style: decimal; padding-left: 1.5rem; margin: 0.5rem 0 0.75rem 0; }
