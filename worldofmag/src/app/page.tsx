@@ -11,6 +11,8 @@ import { getPendingInvitationsCount } from "@/actions/invitations";
 import { getCareAgenda } from "@/actions/petCare";
 import { getVehicles } from "@/actions/flota";
 import { getWalletOverview } from "@/actions/portfel";
+import { getDecks } from "@/actions/languageDecks";
+import { getHealthEvents } from "@/actions/health";
 import { HomePage } from "@/components/home/HomePage";
 import type { TaskPriority, CareAgendaItem } from "@/types";
 
@@ -208,6 +210,45 @@ export default async function HomePageRoute() {
     }
   }
 
+  // Nauka języków (conditional) — karty do powtórki (SRS)
+  let languagesDue = 0;
+  let languageDecks: Array<{ id: string; name: string; targetLang: string; dueCount: number }> = [];
+  if (has("module.languages")) {
+    try {
+      const decks = await getDecks();
+      languagesDue = decks.reduce((sum, d) => sum + (d.dueCount ?? 0), 0);
+      languageDecks = decks
+        .filter((d) => (d.dueCount ?? 0) > 0)
+        .sort((a, b) => (b.dueCount ?? 0) - (a.dueCount ?? 0))
+        .slice(0, 4)
+        .map((d) => ({ id: d.id, name: d.name, targetLang: d.targetLang, dueCount: d.dueCount ?? 0 }));
+    } catch {
+      languagesDue = 0;
+      languageDecks = [];
+    }
+  }
+
+  // Zdrowie (conditional) — nadchodzące wizyty i badania
+  let healthUpcomingCount = 0;
+  let healthUpcoming: Array<{ id: string; kind: "VISIT" | "TEST"; title: string; specialty: string | null; scheduledAt: string }> = [];
+  if (has("module.health")) {
+    try {
+      const events = await getHealthEvents({ scope: "upcoming" });
+      const planned = events.filter((e) => e.status !== "CANCELLED");
+      healthUpcomingCount = planned.length;
+      healthUpcoming = planned.slice(0, 4).map((e) => ({
+        id: e.id,
+        kind: e.kind,
+        title: e.title,
+        specialty: e.specialty,
+        scheduledAt: new Date(e.scheduledAt).toISOString(),
+      }));
+    } catch {
+      healthUpcomingCount = 0;
+      healthUpcoming = [];
+    }
+  }
+
   // Admin stats (conditional)
   let adminStats: { userCount: number; teamCount: number; reportCount: number } | null = null;
   if (isAdmin) {
@@ -246,6 +287,10 @@ export default async function HomePageRoute() {
       vehiclesCount={vehiclesCount}
       vehicleAlerts={vehicleAlerts}
       wallet={wallet}
+      languagesDue={languagesDue}
+      languageDecks={languageDecks}
+      healthUpcomingCount={healthUpcomingCount}
+      healthUpcoming={healthUpcoming}
       recentActivity={recentActivityForUI}
       adminStats={adminStats}
     />

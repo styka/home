@@ -45,6 +45,21 @@ export interface VehicleAlert {
   daysLeft: number;
 }
 
+export interface DeckDue {
+  id: string;
+  name: string;
+  targetLang: string;
+  dueCount: number;
+}
+
+export interface HealthUpcoming {
+  id: string;
+  kind: "VISIT" | "TEST";
+  title: string;
+  specialty: string | null;
+  scheduledAt: string;
+}
+
 interface AdminStats {
   userCount: number;
   teamCount: number;
@@ -70,6 +85,10 @@ interface HomePageProps {
   vehiclesCount: number;
   vehicleAlerts: VehicleAlert[];
   wallet: { totalNet: number; currency: string; monthlyRate: number } | null;
+  languagesDue: number;
+  languageDecks: DeckDue[];
+  healthUpcomingCount: number;
+  healthUpcoming: HealthUpcoming[];
   recentActivity: ActivityItem[];
   adminStats: AdminStats | null;
 }
@@ -131,6 +150,10 @@ export function HomePage({
   vehiclesCount,
   vehicleAlerts,
   wallet,
+  languagesDue,
+  languageDecks,
+  healthUpcomingCount,
+  healthUpcoming,
   recentActivity,
   adminStats,
 }: HomePageProps) {
@@ -142,11 +165,18 @@ export function HomePage({
     has("module.kitchen") ||
     has("module.pets") ||
     has("module.flota") ||
-    has("module.portfel");
+    has("module.portfel") ||
+    has("module.languages") ||
+    has("module.health");
 
   const overdueVehicles = vehicleAlerts.filter((v) => v.daysLeft < 0).length;
   const hasTodayContent =
-    todayTaskPreview.length > 0 || todayMeals.length > 0 || petAgenda.length > 0 || vehicleAlerts.length > 0;
+    todayTaskPreview.length > 0 ||
+    todayMeals.length > 0 ||
+    petAgenda.length > 0 ||
+    vehicleAlerts.length > 0 ||
+    languageDecks.length > 0 ||
+    healthUpcoming.length > 0;
 
   return (
     <div style={pageContainerStyle}>
@@ -183,6 +213,8 @@ export function HomePage({
               meals: todayMeals.length,
               petCareDue,
               overdueVehicles,
+              healthUpcoming: healthUpcomingCount,
+              languagesDue,
             })}
           </p>
         </div>
@@ -210,6 +242,8 @@ export function HomePage({
               vehiclesCount={vehiclesCount}
               vehicleAlerts={vehicleAlerts.length}
               wallet={wallet}
+              languagesDue={languagesDue}
+              healthUpcoming={healthUpcomingCount}
             />
           </div>
         ) : (
@@ -241,10 +275,14 @@ export function HomePage({
               meals={todayMeals}
               petAgenda={petAgenda}
               vehicleAlerts={vehicleAlerts}
+              languageDecks={languageDecks}
+              healthUpcoming={healthUpcoming}
               hasTasksAccess={has("module.tasks")}
               hasKitchenAccess={has("module.kitchen")}
               hasPetsAccess={has("module.pets")}
               hasFlotaAccess={has("module.flota")}
+              hasLanguagesAccess={has("module.languages")}
+              hasHealthAccess={has("module.health")}
             />
           </div>
         )}
@@ -272,6 +310,8 @@ export function HomePage({
             expiringSoon={expiringSoon}
             todayMeals={todayMeals.length}
             wallet={wallet}
+            languagesDue={languagesDue}
+            healthUpcoming={healthUpcoming}
           />
         </div>
 
@@ -314,6 +354,10 @@ export function HomePage({
           <span style={{ color: "var(--border)" }}>·</span>
           <FooterLink href="/portfel" label="Portfel" locked={!has("module.portfel")} />
           <span style={{ color: "var(--border)" }}>·</span>
+          <FooterLink href="/languages" label="Nauka języków" locked={!has("module.languages")} />
+          <span style={{ color: "var(--border)" }}>·</span>
+          <FooterLink href="/health" label="Zdrowie" locked={!has("module.health")} />
+          <span style={{ color: "var(--border)" }}>·</span>
           <FooterLink href="/truck" label="Trasy TIR" locked={!has("module.truck")} />
           <span style={{ color: "var(--border)" }}>·</span>
           <FooterLink href="/qa" label="QA" locked={!has("module.qa")} />
@@ -340,18 +384,24 @@ function getSubtitle(opts: {
   meals: number;
   petCareDue: number;
   overdueVehicles: number;
+  healthUpcoming: number;
+  languagesDue: number;
 }): string {
-  const { pending, todayTasks, overdueTasks, meals, petCareDue, overdueVehicles } = opts;
+  const { pending, todayTasks, overdueTasks, meals, petCareDue, overdueVehicles, healthUpcoming, languagesDue } = opts;
   if (overdueTasks > 0)
     return `Masz ${overdueTasks} ${pluralizePolish(overdueTasks, "zaległe zadanie", "zaległe zadania", "zaległych zadań")} — warto je dopiąć`;
   if (overdueVehicles > 0)
     return `${overdueVehicles} ${pluralizePolish(overdueVehicles, "pojazd ma", "pojazdy mają", "pojazdów ma")} zaległy przegląd lub OC`;
   if (petCareDue > 0)
     return `${petCareDue} ${pluralizePolish(petCareDue, "obowiązek", "obowiązki", "obowiązków")} opieki nad zwierzętami na dziś`;
+  if (healthUpcoming > 0)
+    return `${healthUpcoming} ${pluralizePolish(healthUpcoming, "nadchodząca wizyta", "nadchodzące wizyty", "nadchodzących wizyt")} lub ${pluralizePolish(healthUpcoming, "badanie", "badania", "badań")}`;
   if (todayTasks > 0)
     return `Dzisiaj czeka ${todayTasks} ${pluralizePolish(todayTasks, "zadanie", "zadania", "zadań")}${pending > 0 ? ` i ${pending} ${pluralizePolish(pending, "pozycja", "pozycje", "pozycji")} do kupienia` : ""}`;
   if (pending > 0)
     return `${pending} ${pluralizePolish(pending, "pozycja", "pozycje", "pozycji")} do kupienia w listach`;
+  if (languagesDue > 0)
+    return `${languagesDue} ${pluralizePolish(languagesDue, "słówko", "słówka", "słówek")} do powtórki`;
   if (meals > 0) return `Posiłki na dziś są zaplanowane`;
   return "Wszystko pod kontrolą — co możemy dziś zrobić?";
 }

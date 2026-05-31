@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, CheckSquare, AlertCircle, ChefHat, BookOpen, Pin, PawPrint, Car, Wallet } from "lucide-react";
+import { ShoppingCart, CheckSquare, AlertCircle, ChefHat, BookOpen, Pin, PawPrint, Car, Wallet, GraduationCap, HeartPulse } from "lucide-react";
 import { StatTile } from "@/components/ui/home";
 
 interface ModuleSnapshotGridProps {
@@ -16,6 +16,8 @@ interface ModuleSnapshotGridProps {
   vehiclesCount: number;
   vehicleAlerts: number;
   wallet: { totalNet: number; currency: string; monthlyRate: number } | null;
+  languagesDue: number;
+  healthUpcoming: number;
 }
 
 function formatCompactMoney(value: number): string {
@@ -40,6 +42,8 @@ export function ModuleSnapshotGrid({
   vehiclesCount,
   vehicleAlerts,
   wallet,
+  languagesDue,
+  healthUpcoming,
 }: ModuleSnapshotGridProps) {
   const has = (slug: string) => permissions.includes(slug);
 
@@ -93,6 +97,33 @@ export function ModuleSnapshotGrid({
         color={pinnedNotes > 0 ? "var(--accent-amber)" : "var(--text-muted)"}
         icon={<Pin size={14} />}
         href="/notes/all?pinned=1"
+      />
+    );
+  }
+
+  if (has("module.languages")) {
+    tiles.push(
+      <StatTile
+        key="languages"
+        value={languagesDue}
+        label="Słówka do powtórki"
+        color={languagesDue > 0 ? "var(--accent-purple)" : "var(--text-muted)"}
+        icon={<GraduationCap size={14} />}
+        href="/languages"
+        emphasized={languagesDue > 0}
+      />
+    );
+  }
+
+  if (has("module.health")) {
+    tiles.push(
+      <StatTile
+        key="health"
+        value={healthUpcoming}
+        label="Wizyty i badania"
+        color={healthUpcoming > 0 ? "var(--accent-red)" : "var(--text-muted)"}
+        icon={<HeartPulse size={14} />}
+        href="/health"
       />
     );
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckSquare, ChevronRight, Users, Clock, PawPrint, Car, ShieldCheck, Wrench, AlertCircle } from "lucide-react";
+import { CheckSquare, ChevronRight, Users, Clock, PawPrint, Car, ShieldCheck, Wrench, AlertCircle, GraduationCap, HeartPulse, Stethoscope, FlaskConical } from "lucide-react";
 import type { TaskPriority, CareAgendaItem } from "@/types";
 import { TASK_PRIORITY_COLORS } from "@/types";
 
@@ -11,6 +11,21 @@ interface VehicleAlert {
   type: "inspection" | "insurance";
   dueAt: string;
   daysLeft: number;
+}
+
+interface DeckDue {
+  id: string;
+  name: string;
+  targetLang: string;
+  dueCount: number;
+}
+
+interface HealthUpcoming {
+  id: string;
+  kind: "VISIT" | "TEST";
+  title: string;
+  specialty: string | null;
+  scheduledAt: string;
 }
 
 interface TodayTaskPreview {
@@ -35,10 +50,14 @@ interface TodaySnapshotProps {
   meals: TodayMealPreview[];
   petAgenda: CareAgendaItem[];
   vehicleAlerts: VehicleAlert[];
+  languageDecks: DeckDue[];
+  healthUpcoming: HealthUpcoming[];
   hasTasksAccess: boolean;
   hasKitchenAccess: boolean;
   hasPetsAccess: boolean;
   hasFlotaAccess: boolean;
+  hasLanguagesAccess: boolean;
+  hasHealthAccess: boolean;
 }
 
 const SLOT_EMOJI: Record<string, string> = {
@@ -77,23 +96,31 @@ export function TodaySnapshot({
   meals,
   petAgenda,
   vehicleAlerts,
+  languageDecks,
+  healthUpcoming,
   hasTasksAccess,
   hasKitchenAccess,
   hasPetsAccess,
   hasFlotaAccess,
+  hasLanguagesAccess,
+  hasHealthAccess,
 }: TodaySnapshotProps) {
   const showTasks = hasTasksAccess && tasks.length > 0;
   const showMeals = hasKitchenAccess && meals.length > 0;
   const showPets = hasPetsAccess && petAgenda.length > 0;
   const showVehicles = hasFlotaAccess && vehicleAlerts.length > 0;
+  const showHealth = hasHealthAccess && healthUpcoming.length > 0;
+  const showLanguages = hasLanguagesAccess && languageDecks.length > 0;
 
-  if (!showTasks && !showMeals && !showPets && !showVehicles) return null;
+  if (!showTasks && !showMeals && !showPets && !showVehicles && !showHealth && !showLanguages) return null;
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
       {showTasks && <TasksColumn tasks={tasks} />}
+      {showHealth && <HealthColumn events={healthUpcoming} />}
       {showPets && <PetsColumn agenda={petAgenda} />}
       {showVehicles && <VehiclesColumn alerts={vehicleAlerts} />}
+      {showLanguages && <LanguagesColumn decks={languageDecks} />}
       {showMeals && <MealsColumn meals={meals} />}
     </div>
   );
@@ -398,6 +425,204 @@ function VehiclesColumn({ alerts }: { alerts: VehicleAlert[] }) {
       </div>
     </div>
   );
+}
+
+function HealthColumn({ events }: { events: HealthUpcoming[] }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        padding: 14,
+        borderRadius: 10,
+        border: "1px solid var(--border)",
+        background: "var(--bg-surface)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <h3
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 12,
+            fontWeight: 600,
+            color: "var(--accent-red)",
+            margin: 0,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+          }}
+        >
+          <HeartPulse size={13} /> Zdrowie
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginLeft: 4 }}>
+            {events.length}
+          </span>
+        </h3>
+        <Link
+          href="/health"
+          style={{ fontSize: 11, color: "var(--text-muted)", textDecoration: "none", display: "flex", alignItems: "center", gap: 2 }}
+        >
+          Wszystkie <ChevronRight size={11} />
+        </Link>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {events.map((ev) => {
+          const Icon = ev.kind === "TEST" ? FlaskConical : Stethoscope;
+          return (
+            <Link
+              key={ev.id}
+              href="/health"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 10px",
+                borderRadius: 8,
+                background: "var(--bg-elevated)",
+                textDecoration: "none",
+                transition: "background 0.1s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--bg-hover)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "var(--bg-elevated)";
+              }}
+            >
+              <Icon size={13} style={{ color: "var(--accent-red)", flexShrink: 0 }} />
+              <span
+                style={{
+                  flex: 1,
+                  fontSize: 13,
+                  color: "var(--text-primary)",
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {ev.title}
+                {ev.specialty ? <span style={{ color: "var(--text-muted)" }}> · {ev.specialty}</span> : null}
+              </span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>
+                {healthDateLabel(ev.scheduledAt)}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LanguagesColumn({ decks }: { decks: DeckDue[] }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        padding: 14,
+        borderRadius: 10,
+        border: "1px solid var(--border)",
+        background: "var(--bg-surface)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <h3
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 12,
+            fontWeight: 600,
+            color: "var(--accent-purple)",
+            margin: 0,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+          }}
+        >
+          <GraduationCap size={13} /> Powtórki
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginLeft: 4 }}>
+            {decks.reduce((s, d) => s + d.dueCount, 0)}
+          </span>
+        </h3>
+        <Link
+          href="/languages"
+          style={{ fontSize: 11, color: "var(--text-muted)", textDecoration: "none", display: "flex", alignItems: "center", gap: 2 }}
+        >
+          Talie <ChevronRight size={11} />
+        </Link>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {decks.map((deck) => (
+          <Link
+            key={deck.id}
+            href={`/languages/${deck.id}/study`}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 10px",
+              borderRadius: 8,
+              background: "var(--bg-elevated)",
+              textDecoration: "none",
+              transition: "background 0.1s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--bg-hover)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "var(--bg-elevated)";
+            }}
+          >
+            <GraduationCap size={13} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
+            <span
+              style={{
+                flex: 1,
+                fontSize: 13,
+                color: "var(--text-primary)",
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {deck.name}
+              <span style={{ color: "var(--text-muted)" }}> · {deck.targetLang}</span>
+            </span>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: "var(--accent-purple)",
+                flexShrink: 0,
+                padding: "1px 7px",
+                borderRadius: 999,
+                background: "rgba(168,85,247,0.12)",
+              }}
+            >
+              {deck.dueCount}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function healthDateLabel(input: string): string {
+  const date = new Date(input);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(date);
+  due.setHours(0, 0, 0, 0);
+  const days = Math.round((due.getTime() - today.getTime()) / 86_400_000);
+  if (days === 0) return "dziś";
+  if (days === 1) return "jutro";
+  if (days > 1 && days < 7) return `za ${days} dni`;
+  return date.toLocaleDateString("pl-PL", { day: "numeric", month: "short" });
 }
 
 function dueLabel(daysLeft: number): string {
