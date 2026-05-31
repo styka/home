@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
-import type { TaskProject } from "@/types";
+import type { TaskProject, ProjectStatusConfig } from "@/types";
+import { serializeStatusConfig } from "@/types";
 
 function toProject(p: unknown): TaskProject {
   return p as TaskProject;
@@ -67,6 +68,30 @@ export async function updateTaskProject(
   });
 
   revalidatePath("/tasks");
+  return toProject(project);
+}
+
+/** Zapisuje konfigurację statusów listy (włączone statusy + ścieżka przejść). */
+export async function updateTaskProjectStatusConfig(
+  id: string,
+  config: ProjectStatusConfig
+): Promise<TaskProject> {
+  const user = await requireAuth();
+  await assertProjectAccess(id, user.id, "ADMIN");
+
+  // Deduplikacja + walidacja: musi zostać co najmniej jeden status, chain ⊆ enabled.
+  const enabled = config.enabled.filter((s, i, a) => a.indexOf(s) === i);
+  if (enabled.length === 0) throw new Error("Lista musi mieć co najmniej jeden status");
+  const chain = config.chain.filter((s, i, a) => a.indexOf(s) === i && enabled.includes(s));
+
+  const project = await prisma.taskProject.update({
+    where: { id },
+    data: { statusConfig: serializeStatusConfig({ enabled, chain }) },
+    include: { _count: { select: { tasks: true } } },
+  });
+
+  revalidatePath("/tasks");
+  revalidatePath(`/tasks/${id}`);
   return toProject(project);
 }
 

@@ -92,7 +92,7 @@ export const NOTE_FILTER_LABELS: Record<NoteFilter, string> = {
 
 // ─── Tasks ────────────────────────────────────────────────────────────────
 
-export type TaskStatus = "TODO" | "IN_PROGRESS" | "DONE" | "CANCELLED" | "DEFERRED";
+export type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_VERIFICATION" | "DONE" | "CANCELLED" | "DEFERRED";
 export type TaskPriority = "NONE" | "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export interface RecurringRule {
@@ -118,6 +118,7 @@ export type TaskProject = {
   isInbox: boolean;
   ownerId: string | null;
   ownerTeamId: string | null;
+  statusConfig: string | null;
   createdAt: Date;
   updatedAt: Date;
   _count?: { tasks: number };
@@ -196,6 +197,7 @@ export const TASK_FILTER_LABELS: Record<TaskFilter, string> = {
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   TODO: "Do zrobienia",
   IN_PROGRESS: "W trakcie",
+  IN_VERIFICATION: "W weryfikacji",
   DONE: "Zrobione",
   CANCELLED: "Anulowane",
   DEFERRED: "Odłożone",
@@ -220,15 +222,73 @@ export const TASK_PRIORITY_COLORS: Record<TaskPriority, string> = {
 export const TASK_STATUS_CYCLE: TaskStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
 
 export type TaskStatusFilter = "ALL" | TaskStatus;
-export const TASK_STATUS_FILTERS: TaskStatusFilter[] = ["ALL", "TODO", "IN_PROGRESS", "DONE", "DEFERRED", "CANCELLED"];
+export const TASK_STATUS_FILTERS: TaskStatusFilter[] = ["ALL", "TODO", "IN_PROGRESS", "IN_VERIFICATION", "DONE", "DEFERRED", "CANCELLED"];
 export const TASK_STATUS_FILTER_LABELS: Record<TaskStatusFilter, string> = {
   ALL: "Wszystkie",
   TODO: "Do zrobienia",
   IN_PROGRESS: "W trakcie",
+  IN_VERIFICATION: "W weryfikacji",
   DONE: "Zrobione",
   DEFERRED: "Odłożone",
   CANCELLED: "Anulowane",
 };
+
+// ─── Konfigurowalne statusy zadań (per projekt) ─────────────────────────────
+// Każda lista (TaskProject) może mieć własny zestaw włączonych statusów oraz
+// uporządkowaną „ścieżkę" przejść (przód/tył). Zawsze można skoczyć do dowolnego
+// włączonego statusu. `null` w DB ⇒ DEFAULT_STATUS_CONFIG (statusy systemowe bez weryfikacji).
+
+export type ProjectStatusConfig = {
+  enabled: TaskStatus[]; // uporządkowane — zakładki filtrów + cele „skoku"
+  chain: TaskStatus[];   // uporządkowany podzbiór enabled — cykl przód/tył (x/Spacja, klik checkboxa)
+};
+
+export type SystemTaskStatus = {
+  key: TaskStatus;
+  label: string;
+  color: string;
+  defaultEnabled: boolean; // czy w nowym projekcie status jest domyślnie widoczny
+  defaultInChain: boolean; // czy domyślnie należy do ścieżki przejść
+  isTerminal: boolean;     // status „zamykający" (DONE/CANCELLED) — ukrywany w widoku aktywnych
+};
+
+export const SYSTEM_TASK_STATUSES: SystemTaskStatus[] = [
+  { key: "TODO",            label: "Do zrobienia",  color: "var(--text-muted)",   defaultEnabled: true,  defaultInChain: true,  isTerminal: false },
+  { key: "IN_PROGRESS",     label: "W trakcie",     color: "var(--accent-blue)",  defaultEnabled: true,  defaultInChain: true,  isTerminal: false },
+  { key: "IN_VERIFICATION", label: "W weryfikacji", color: "var(--accent-amber)", defaultEnabled: false, defaultInChain: false, isTerminal: false },
+  { key: "DONE",            label: "Zrobione",      color: "var(--accent-green)", defaultEnabled: true,  defaultInChain: true,  isTerminal: true  },
+  { key: "DEFERRED",        label: "Odłożone",      color: "var(--accent-amber)", defaultEnabled: true,  defaultInChain: false, isTerminal: false },
+  { key: "CANCELLED",       label: "Anulowane",     color: "var(--text-muted)",   defaultEnabled: true,  defaultInChain: false, isTerminal: true  },
+];
+
+const ALL_STATUS_KEYS: TaskStatus[] = SYSTEM_TASK_STATUSES.map((s) => s.key);
+
+export const DEFAULT_STATUS_CONFIG: ProjectStatusConfig = {
+  enabled: SYSTEM_TASK_STATUSES.filter((s) => s.defaultEnabled).map((s) => s.key),
+  chain: SYSTEM_TASK_STATUSES.filter((s) => s.defaultInChain).map((s) => s.key),
+};
+
+export function statusMeta(key: TaskStatus): SystemTaskStatus {
+  return SYSTEM_TASK_STATUSES.find((s) => s.key === key) ?? SYSTEM_TASK_STATUSES[0];
+}
+
+/** Parsuje JSON statusConfig z DB; przy braku/uszkodzeniu zwraca konfigurację domyślną. */
+export function parseStatusConfig(json: string | null | undefined): ProjectStatusConfig {
+  if (!json) return DEFAULT_STATUS_CONFIG;
+  try {
+    const raw = JSON.parse(json) as Partial<ProjectStatusConfig>;
+    const enabled = (raw.enabled ?? []).filter((s): s is TaskStatus => ALL_STATUS_KEYS.includes(s as TaskStatus));
+    if (enabled.length === 0) return DEFAULT_STATUS_CONFIG;
+    const chain = (raw.chain ?? []).filter((s): s is TaskStatus => enabled.includes(s as TaskStatus));
+    return { enabled, chain: chain.length ? chain : enabled.slice(0, 1) };
+  } catch {
+    return DEFAULT_STATUS_CONFIG;
+  }
+}
+
+export function serializeStatusConfig(cfg: ProjectStatusConfig): string {
+  return JSON.stringify({ enabled: cfg.enabled, chain: cfg.chain });
+}
 
 export type ViewMode = "today" | "upcoming" | "overdue" | "all" | "project";
 

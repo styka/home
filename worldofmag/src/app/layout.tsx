@@ -4,6 +4,8 @@ import { AppShell } from "@/components/shell/AppShell";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { auth } from "@/lib/auth";
 import { getPendingInvitationsCount } from "@/actions/invitations";
+import { readMenuPrefs } from "@/actions/menuPrefs";
+import { defaultMenuPrefs } from "@/lib/modules";
 import { APP_TITLE, ICON_VERSION } from "@/lib/appName";
 
 export const viewport: Viewport = {
@@ -35,6 +37,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const userRoles: string[] = session?.user?.roles ?? [];
   const userPermissions: string[] = session?.user?.permissions ?? [];
   const isAdmin = userPermissions.includes("module.admin");
+  const menuPrefs = session?.user?.id
+    ? await readMenuPrefs(session.user.id).catch(() => defaultMenuPrefs())
+    : defaultMenuPrefs();
 
   return (
     <html lang="en" className="dark">
@@ -49,7 +54,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-icon" href={`/apple-touch-icon/${ICON_VERSION}`} />
       </head>
       <body>
-        <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions}>{children}</AppShell>
+        <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs}>{children}</AppShell>
         <ServiceWorkerRegistration />
       </body>
     </html>

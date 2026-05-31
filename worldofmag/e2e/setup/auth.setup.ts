@@ -17,8 +17,10 @@ async function loginAndSaveState(email: string, statePath: string) {
   const csrfRes = await ctx.get("/api/auth/csrf");
   const { csrfToken } = await csrfRes.json();
 
-  // Credentials sign-in. NextAuth sets the session cookie on success.
-  await ctx.post("/api/auth/callback/credentials", {
+  // Credentials sign-in. The E2E provider is registered with id "e2e"
+  // (see src/lib/auth.ts), so the callback path must match that id.
+  // NextAuth sets the session cookie on success.
+  await ctx.post("/api/auth/callback/e2e", {
     form: { csrfToken, email, callbackUrl: "/", json: "true" },
   });
 

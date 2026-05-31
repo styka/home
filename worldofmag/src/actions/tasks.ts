@@ -7,6 +7,7 @@ import { assertProjectAccess } from "@/actions/taskProjects";
 import { trackActivity } from "@/actions/activity";
 import { computeNextDue } from "@/lib/recurrence";
 import type { Task, TaskStatus, TaskPriority, TaskWithRelations, RecurringRule } from "@/types";
+import { parseStatusConfig, DEFAULT_STATUS_CONFIG } from "@/types";
 
 const TASK_INCLUDE = {
   tags: { include: { tag: true } },
@@ -224,14 +225,20 @@ export async function deleteTask(id: string): Promise<void> {
 
 export async function toggleTaskStatus(id: string): Promise<Task> {
   const user = await requireAuth();
-  const task = await prisma.task.findUnique({ where: { id } });
+  const task = await prisma.task.findUnique({
+    where: { id },
+    include: { project: { select: { statusConfig: true } } },
+  });
   if (!task) throw new Error("Task not found");
   if (task.projectId) await assertProjectAccess(task.projectId, user.id);
 
-  const cycle: TaskStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
+  // Cykl po skonfigurowanej ścieżce projektu (przód). Domyślnie TODO→IN_PROGRESS→DONE.
+  const { chain } = parseStatusConfig(task.project?.statusConfig ?? null);
+  const cycle = chain.length ? chain : DEFAULT_STATUS_CONFIG.chain;
   const current = task.status as TaskStatus;
   const idx = cycle.indexOf(current);
-  const next: TaskStatus = cycle[(idx + 1) % cycle.length];
+  // Status spoza ścieżki (np. CANCELLED/DEFERRED) → wskakujemy na początek ścieżki.
+  const next: TaskStatus = idx === -1 ? cycle[0] : cycle[(idx + 1) % cycle.length];
 
   return updateTask(id, { status: next });
 }

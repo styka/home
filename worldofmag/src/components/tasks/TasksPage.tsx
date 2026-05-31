@@ -2,15 +2,16 @@
 
 import { useState, useRef, useMemo, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, Sparkles, Bell, BellOff } from "lucide-react";
+import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { TaskDetail } from "./TaskDetail";
+import { TaskStatusConfigEditor } from "./TaskStatusConfigEditor";
 import { QuickAddTask, type QuickAddTaskHandle } from "./QuickAddTask";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { deleteTask, toggleTaskStatus } from "@/actions/tasks";
-import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode } from "@/types";
-import { TASK_STATUS_FILTERS } from "@/types";
+import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode, ProjectStatusConfig } from "@/types";
+import { SYSTEM_TASK_STATUSES, statusMeta, DEFAULT_STATUS_CONFIG } from "@/types";
 
 interface TasksPageProps {
   tasks: Task[];
@@ -23,9 +24,12 @@ interface TasksPageProps {
   teamMembers: Array<{ id: string; name: string | null; email: string | null; image: string | null }>;
   initialFilter?: TaskStatusFilter;
   initialOpenTaskId?: string;
+  statusConfig?: ProjectStatusConfig;
+  canEditStatuses?: boolean;
 }
 
-export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialFilter, initialOpenTaskId }: TasksPageProps) {
+export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialFilter, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false }: TasksPageProps) {
+  const [statusConfigOpen, setStatusConfigOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<TaskStatusFilter>(initialFilter ?? "ALL");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -162,14 +166,19 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
 
   const counts = useMemo(() => {
     const result = {} as Record<TaskStatusFilter, number>;
-    result["ALL"] = tasks.filter((t) => t.status !== "DONE" && t.status !== "CANCELLED").length;
-    result["TODO"] = tasks.filter((t) => t.status === "TODO").length;
-    result["IN_PROGRESS"] = tasks.filter((t) => t.status === "IN_PROGRESS").length;
-    result["DONE"] = tasks.filter((t) => t.status === "DONE").length;
-    result["DEFERRED"] = tasks.filter((t) => t.status === "DEFERRED").length;
-    result["CANCELLED"] = tasks.filter((t) => t.status === "CANCELLED").length;
+    // „Aktywne" = statusy nie-terminalne (DONE/CANCELLED wykluczone, ale W weryfikacji liczy się).
+    result["ALL"] = tasks.filter((t) => !statusMeta(t.status).isTerminal).length;
+    for (const s of SYSTEM_TASK_STATUSES) {
+      result[s.key] = tasks.filter((t) => t.status === s.key).length;
+    }
     return result;
   }, [tasks]);
+
+  // Zakładki filtrów zależne od konfiguracji listy: „Wszystkie" + włączone statusy.
+  const statusFilters = useMemo<TaskStatusFilter[]>(
+    () => ["ALL", ...statusConfig.enabled],
+    [statusConfig]
+  );
 
   const filteredForNav = displayedTasks;
 
@@ -217,7 +226,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         setIsSearchOpen(true);
         setTimeout(() => searchRef.current?.focus(), 10);
       },
-      onFilterTab: (index: number) => setActiveFilter(TASK_STATUS_FILTERS[index] ?? "ALL"),
+      onFilterTab: (index: number) => setActiveFilter(statusFilters[index] ?? "ALL"),
       onCommandPalette: () => {},
       onEscape: () => {
         if (aiSearchResults) { setAiSearchResults(null); setSearchQuery(""); return; }
@@ -226,7 +235,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         setFocusedTaskId(null);
       },
     }),
-    [focusedTaskId, filteredForNav, openTaskId, isSearchOpen, aiSearchResults]
+    [focusedTaskId, filteredForNav, openTaskId, isSearchOpen, aiSearchResults, statusFilters]
   );
 
   useKeyboardShortcuts(handlers);
@@ -319,8 +328,27 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           >
             {notificationsEnabled ? <Bell size={15} /> : <BellOff size={15} />}
           </button>
+
+          {canEditStatuses && (
+            <button
+              onClick={() => setStatusConfigOpen(true)}
+              className="p-1.5 rounded focus:outline-none"
+              style={{ color: "var(--text-muted)" }}
+              title="Statusy listy (konfiguracja)"
+            >
+              <SlidersHorizontal size={15} />
+            </button>
+          )}
         </div>
       </div>
+
+      {canEditStatuses && statusConfigOpen && (
+        <TaskStatusConfigEditor
+          projectId={projectId}
+          config={statusConfig}
+          onClose={() => setStatusConfigOpen(false)}
+        />
+      )}
 
       {/* Search bar */}
       {isSearchOpen && (
@@ -373,6 +401,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         allTags={allTags}
         selectedTagIds={selectedTagIds}
         onTagToggle={(id) => setSelectedTagIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
+        filters={statusFilters}
       />
 
       {aiSearchResults !== null && (
@@ -408,6 +437,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             <TaskDetail
               task={openTask}
               allTags={allTags}
+              statusConfig={statusConfig}
               onClose={() => setOpenTaskId(null)}
               onDelete={() => { setOpenTaskId(null); setFocusedTaskId(null); }}
             />
@@ -423,6 +453,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             <TaskDetail
               task={openTask}
               allTags={allTags}
+              statusConfig={statusConfig}
               onClose={() => setOpenTaskId(null)}
               onDelete={() => { setOpenTaskId(null); setFocusedTaskId(null); }}
             />
