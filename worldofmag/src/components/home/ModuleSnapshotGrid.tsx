@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, CheckSquare, AlertCircle, FileText, ChefHat, BookOpen, Pin } from "lucide-react";
+import { ShoppingCart, CheckSquare, AlertCircle, ChefHat, BookOpen, Pin, PawPrint, Car, Wallet } from "lucide-react";
 import { StatTile } from "@/components/ui/home";
 
 interface ModuleSnapshotGridProps {
@@ -12,6 +12,19 @@ interface ModuleSnapshotGridProps {
   todayMeals: number;
   expiringSoon: number;
   recentReports: number;
+  petCareDue: number;
+  vehiclesCount: number;
+  vehicleAlerts: number;
+  wallet: { totalNet: number; currency: string; monthlyRate: number } | null;
+}
+
+function formatCompactMoney(value: number): string {
+  const abs = Math.abs(value);
+  const sign = value < 0 ? "-" : "";
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(1).replace(".", ",")} mln`;
+  if (abs >= 10_000) return `${sign}${Math.round(abs / 1000)} tys.`;
+  if (abs >= 1_000) return `${sign}${(abs / 1000).toFixed(1).replace(".", ",")} tys.`;
+  return `${sign}${Math.round(abs)}`;
 }
 
 export function ModuleSnapshotGrid({
@@ -23,6 +36,10 @@ export function ModuleSnapshotGrid({
   todayMeals,
   expiringSoon,
   recentReports,
+  petCareDue,
+  vehiclesCount,
+  vehicleAlerts,
+  wallet,
 }: ModuleSnapshotGridProps) {
   const has = (slug: string) => permissions.includes(slug);
 
@@ -80,6 +97,20 @@ export function ModuleSnapshotGrid({
     );
   }
 
+  if (has("module.pets")) {
+    tiles.push(
+      <StatTile
+        key="pets"
+        value={petCareDue}
+        label="Opieka dziś"
+        color={petCareDue > 0 ? "var(--accent-orange)" : "var(--text-muted)"}
+        icon={<PawPrint size={14} />}
+        href={petCareDue > 0 ? "/pets/calendar" : "/pets"}
+        emphasized={petCareDue > 0}
+      />
+    );
+  }
+
   if (has("module.kitchen")) {
     tiles.push(
       <StatTile
@@ -104,6 +135,46 @@ export function ModuleSnapshotGrid({
         />
       );
     }
+  }
+
+  if (has("module.flota")) {
+    if (vehicleAlerts > 0) {
+      tiles.push(
+        <StatTile
+          key="flota-alerts"
+          value={vehicleAlerts}
+          label="Przegląd / OC wkrótce"
+          color="var(--accent-red)"
+          icon={<AlertCircle size={14} />}
+          href="/flota"
+          emphasized
+        />
+      );
+    } else {
+      tiles.push(
+        <StatTile
+          key="flota"
+          value={vehiclesCount}
+          label="Pojazdy"
+          color={vehiclesCount > 0 ? "var(--accent-blue)" : "var(--text-muted)"}
+          icon={<Car size={14} />}
+          href="/flota"
+        />
+      );
+    }
+  }
+
+  if (has("module.portfel") && wallet) {
+    tiles.push(
+      <StatTile
+        key="portfel"
+        value={formatCompactMoney(wallet.totalNet)}
+        label={`Majątek · ${wallet.currency}`}
+        color={wallet.totalNet >= 0 ? "var(--accent-green)" : "var(--accent-red)"}
+        icon={<Wallet size={14} />}
+        href="/portfel"
+      />
+    );
   }
 
   // Reports: brak osobnego permission, pokazujemy zawsze gdy są nowe

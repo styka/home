@@ -7,10 +7,11 @@ import { AISuggestions } from "@/components/home/AISuggestions";
 import { InvitationsBanner } from "@/components/home/InvitationsBanner";
 import { ModuleSnapshotGrid } from "@/components/home/ModuleSnapshotGrid";
 import { TodaySnapshot } from "@/components/home/TodaySnapshot";
-import { ActivityFeed } from "@/components/home/ActivityFeed";
+import { QuickActions } from "@/components/home/QuickActions";
+import { RecentlyUsed } from "@/components/home/RecentlyUsed";
 import { AdminDashboardWidget } from "@/components/home/AdminDashboardWidget";
 import { SectionHeading, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
-import type { TaskPriority } from "@/types";
+import type { TaskPriority, CareAgendaItem } from "@/types";
 
 interface ActivityItem {
   module: string;
@@ -36,6 +37,14 @@ interface MealPreview {
   recipeSlug: string | null;
 }
 
+export interface VehicleAlert {
+  id: string;
+  name: string;
+  type: "inspection" | "insurance";
+  dueAt: string;
+  daysLeft: number;
+}
+
 interface AdminStats {
   userCount: number;
   teamCount: number;
@@ -56,6 +65,11 @@ interface HomePageProps {
   todayMeals: MealPreview[];
   expiringSoon: number;
   recentReports: number;
+  petCareDue: number;
+  petAgenda: CareAgendaItem[];
+  vehiclesCount: number;
+  vehicleAlerts: VehicleAlert[];
+  wallet: { totalNet: number; currency: string; monthlyRate: number } | null;
   recentActivity: ActivityItem[];
   adminStats: AdminStats | null;
 }
@@ -112,12 +126,27 @@ export function HomePage({
   todayMeals,
   expiringSoon,
   recentReports,
+  petCareDue,
+  petAgenda,
+  vehiclesCount,
+  vehicleAlerts,
+  wallet,
   recentActivity,
   adminStats,
 }: HomePageProps) {
   const has = (slug: string) => userPermissions.includes(slug);
   const hasAnyModule =
-    has("module.shopping") || has("module.tasks") || has("module.notes") || has("module.kitchen");
+    has("module.shopping") ||
+    has("module.tasks") ||
+    has("module.notes") ||
+    has("module.kitchen") ||
+    has("module.pets") ||
+    has("module.flota") ||
+    has("module.portfel");
+
+  const overdueVehicles = vehicleAlerts.filter((v) => v.daysLeft < 0).length;
+  const hasTodayContent =
+    todayTaskPreview.length > 0 || todayMeals.length > 0 || petAgenda.length > 0 || vehicleAlerts.length > 0;
 
   return (
     <div style={pageContainerStyle}>
@@ -147,12 +176,22 @@ export function HomePage({
             )}
           </div>
           <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0, paddingLeft: 30 }}>
-            {getSubtitle(pendingItems, todayTasks, overdueTasks, todayMeals.length)}
+            {getSubtitle({
+              pending: pendingItems,
+              todayTasks,
+              overdueTasks,
+              meals: todayMeals.length,
+              petCareDue,
+              overdueVehicles,
+            })}
           </p>
         </div>
 
         {/* Pending invitations banner */}
         <InvitationsBanner count={pendingInvitations} />
+
+        {/* Recently used — szybki powrót do ostatnich działów */}
+        <RecentlyUsed activities={recentActivity} permissions={userPermissions} />
 
         {/* Module snapshot */}
         {hasAnyModule ? (
@@ -167,6 +206,10 @@ export function HomePage({
               todayMeals={todayMeals.length}
               expiringSoon={expiringSoon}
               recentReports={recentReports}
+              petCareDue={petCareDue}
+              vehiclesCount={vehiclesCount}
+              vehicleAlerts={vehicleAlerts.length}
+              wallet={wallet}
             />
           </div>
         ) : (
@@ -189,26 +232,28 @@ export function HomePage({
           </div>
         )}
 
-        {/* Today snapshot */}
-        {(todayTaskPreview.length > 0 || todayMeals.length > 0) && (
+        {/* Today & upcoming */}
+        {hasTodayContent && (
           <div>
-            <SectionHeading>Dziś</SectionHeading>
+            <SectionHeading>Dziś i nadchodzące</SectionHeading>
             <TodaySnapshot
               tasks={todayTaskPreview}
               meals={todayMeals}
+              petAgenda={petAgenda}
+              vehicleAlerts={vehicleAlerts}
               hasTasksAccess={has("module.tasks")}
               hasKitchenAccess={has("module.kitchen")}
+              hasPetsAccess={has("module.pets")}
+              hasFlotaAccess={has("module.flota")}
             />
           </div>
         )}
 
-        {/* Activity feed */}
-        {recentActivity.length > 0 && (
-          <div>
-            <SectionHeading>Aktywność</SectionHeading>
-            <ActivityFeed activities={recentActivity} permissions={userPermissions} />
-          </div>
-        )}
+        {/* Quick actions */}
+        <div>
+          <SectionHeading>Szybkie akcje</SectionHeading>
+          <QuickActions permissions={userPermissions} />
+        </div>
 
         {/* AI suggestions */}
         <div>
@@ -219,8 +264,14 @@ export function HomePage({
               action: a.action,
               createdAt: new Date(a.createdAt),
             }))}
+            permissions={userPermissions}
             overdueTasks={overdueTasks}
-            locked={!has("module.tasks")}
+            pendingItems={pendingItems}
+            petCareDue={petCareDue}
+            vehicleAlerts={vehicleAlerts}
+            expiringSoon={expiringSoon}
+            todayMeals={todayMeals.length}
+            wallet={wallet}
           />
         </div>
 
@@ -255,7 +306,17 @@ export function HomePage({
           <span style={{ color: "var(--border)" }}>·</span>
           <FooterLink href="/notes" label="Notatki" locked={!has("module.notes")} />
           <span style={{ color: "var(--border)" }}>·</span>
+          <FooterLink href="/pets" label="Zwierzęta" locked={!has("module.pets")} />
+          <span style={{ color: "var(--border)" }}>·</span>
           <FooterLink href="/kitchen" label="Kuchnia" locked={!has("module.kitchen")} />
+          <span style={{ color: "var(--border)" }}>·</span>
+          <FooterLink href="/flota" label="Flota" locked={!has("module.flota")} />
+          <span style={{ color: "var(--border)" }}>·</span>
+          <FooterLink href="/portfel" label="Portfel" locked={!has("module.portfel")} />
+          <span style={{ color: "var(--border)" }}>·</span>
+          <FooterLink href="/truck" label="Trasy TIR" locked={!has("module.truck")} />
+          <span style={{ color: "var(--border)" }}>·</span>
+          <FooterLink href="/qa" label="QA" locked={!has("module.qa")} />
           <span style={{ color: "var(--border)" }}>·</span>
           <FooterLink href="/reports" label="Raporty" />
           <span style={{ color: "var(--border)" }}>·</span>
@@ -272,10 +333,25 @@ export function HomePage({
   );
 }
 
-function getSubtitle(pending: number, todayT: number, overdue: number, meals: number): string {
-  if (overdue > 0) return `Masz ${overdue} ${pluralizePolish(overdue, "zaległe zadanie", "zaległe zadania", "zaległych zadań")} — warto je dopiąć`;
-  if (todayT > 0) return `Dzisiaj czeka ${todayT} ${pluralizePolish(todayT, "zadanie", "zadania", "zadań")}${pending > 0 ? ` i ${pending} ${pluralizePolish(pending, "pozycja", "pozycje", "pozycji")} do kupienia` : ""}`;
-  if (pending > 0) return `${pending} ${pluralizePolish(pending, "pozycja", "pozycje", "pozycji")} do kupienia w listach`;
+function getSubtitle(opts: {
+  pending: number;
+  todayTasks: number;
+  overdueTasks: number;
+  meals: number;
+  petCareDue: number;
+  overdueVehicles: number;
+}): string {
+  const { pending, todayTasks, overdueTasks, meals, petCareDue, overdueVehicles } = opts;
+  if (overdueTasks > 0)
+    return `Masz ${overdueTasks} ${pluralizePolish(overdueTasks, "zaległe zadanie", "zaległe zadania", "zaległych zadań")} — warto je dopiąć`;
+  if (overdueVehicles > 0)
+    return `${overdueVehicles} ${pluralizePolish(overdueVehicles, "pojazd ma", "pojazdy mają", "pojazdów ma")} zaległy przegląd lub OC`;
+  if (petCareDue > 0)
+    return `${petCareDue} ${pluralizePolish(petCareDue, "obowiązek", "obowiązki", "obowiązków")} opieki nad zwierzętami na dziś`;
+  if (todayTasks > 0)
+    return `Dzisiaj czeka ${todayTasks} ${pluralizePolish(todayTasks, "zadanie", "zadania", "zadań")}${pending > 0 ? ` i ${pending} ${pluralizePolish(pending, "pozycja", "pozycje", "pozycji")} do kupienia` : ""}`;
+  if (pending > 0)
+    return `${pending} ${pluralizePolish(pending, "pozycja", "pozycje", "pozycji")} do kupienia w listach`;
   if (meals > 0) return `Posiłki na dziś są zaplanowane`;
   return "Wszystko pod kontrolą — co możemy dziś zrobić?";
 }

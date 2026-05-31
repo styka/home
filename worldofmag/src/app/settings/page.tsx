@@ -1,12 +1,22 @@
 import { auth } from "@/lib/auth"
 import { getMyTeams } from "@/actions/teams"
+import { getRecentActivity } from "@/actions/activity"
 import { signOut } from "@/lib/auth"
 import Link from "next/link"
 import { Settings } from "lucide-react"
+import { ActivityFeed } from "@/components/home/ActivityFeed"
 
 export default async function SettingsPage() {
   const session = await auth()
   const teams = await getMyTeams()
+  const recentActivity = await getRecentActivity(30)
+  const userPermissions: string[] = session?.user?.permissions ?? []
+  const activityForUI = recentActivity.map((a) => ({
+    module: a.module,
+    action: a.action,
+    createdAt: a.createdAt instanceof Date ? a.createdAt.toISOString() : String(a.createdAt),
+    metadata: (a.metadata as Record<string, unknown> | null) ?? null,
+  }))
 
   return (
     <div style={{ flex: 1, overflowY: "auto", backgroundColor: "var(--bg-base)", padding: "24px 16px" }}>
@@ -130,6 +140,20 @@ export default async function SettingsPage() {
               </Link>
             ))}
           </div>
+        )}
+      </section>
+
+      {/* Activity */}
+      <section>
+        <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+          Aktywność
+        </h2>
+        {activityForUI.length === 0 ? (
+          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
+            Brak ostatniej aktywności.
+          </p>
+        ) : (
+          <ActivityFeed activities={activityForUI} permissions={userPermissions} />
         )}
       </section>
 
