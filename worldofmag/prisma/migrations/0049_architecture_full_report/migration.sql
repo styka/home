@@ -379,10 +379,10 @@ Trasy: `/reports`, `/reports/[slug]`, `/admin/reports(/new|/[slug]|/[slug]/edit)
 
 - Model `Report`: id (cuid), title, slug (unique), content (markdown, bez limitu), category (default „general"), authorId?, teamId?, timestamps.
 - Akcje (`actions/reports.ts`): `getReportsMeta` (admin), `getUserReportsMeta` (user: własne + systemowe + zespołowe), `getReport`/`getUserReport`, `createReport`, `updateReport`, `deleteReport`.
-- **Render** — własny parser `src/lib/markdown.ts` (nagłówki #/##/###, tabele, bloki kodu, listy `-`/`*`, cytaty, bold/italic/code/link, hr). **Brak** list numerowanych, zagnieżdżonych i surowego HTML.
+- **Render** — własny parser `src/lib/markdown.ts` (nagłówki #/##/###, tabele, bloki kodu, listy punktowane `-`/`*` i numerowane `1.`, cytaty `>`, bold/italic/code/link, hr). Surowy HTML jest escapowany (bezpieczeństwo). **Brak** list zagnieżdżonych i nagłówków `####`+.
 - **Ten dokument** został dodany jako raport systemowy przez migrację `0049_architecture_full_report`.
 
-**UX i co poprawić:** edytor markdown bez podglądu na żywo; brak list numerowanych w rendererze (ograniczenie); brak wyszukiwania/filtra po treści raportów; brak eksportu do PDF.
+**UX i co poprawić:** edytor markdown bez podglądu na żywo; brak wyszukiwania/filtra po treści raportów; brak eksportu do PDF; renderer nie wspiera list zagnieżdżonych ani nagłówków `####`+.
 
 ---
 

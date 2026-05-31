@@ -1,10 +1,15 @@
 export function markdownToHtml(md: string): string {
+  // Escape "&" and "<" outside code blocks up-front — that is what neutralises
+  // HTML injection (a lone ">" cannot open a tag, so it is left intact). Keeping
+  // ">" un-escaped is the whole point: the blockquote pass below matches "> ",
+  // which a global ">" → "&gt;" escape used to destroy before it ran.
   let html = escapeOutsideCodeBlocks(md);
 
   // ── Code blocks (``` ... ```) — must come before inline code ──────────────
+  // Code content is raw here (escapeOutsideCodeBlocks skips it), so escape it
+  // fully (including ">") for faithful display.
   html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-    const escaped = code.replace(/&amp;/g, "&").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    return `<pre class="md-pre"><code class="md-code-block${lang ? ` language-${lang}` : ""}">${escaped}</code></pre>`;
+    return `<pre class="md-pre"><code class="md-code-block${lang ? ` language-${lang}` : ""}">${escapeHtml(code)}</code></pre>`;
   });
 
   // ── Tables ────────────────────────────────────────────────────────────────
@@ -35,6 +40,21 @@ export function markdownToHtml(md: string): string {
   // ── Horizontal rules ──────────────────────────────────────────────────────
   html = html.replace(/^---+$/gm, '<hr class="md-hr" />');
 
+  // ── Blockquote (> text) — consecutive lines collapse into one block ─────────
+  html = html.replace(/((?:^> .+\n?)+)/gm, (block) => {
+    const lines = block.trim().split("\n").map((line) => inlineFormat(line.replace(/^> /, "")));
+    return `<blockquote class="md-blockquote">${lines.join("<br />")}</blockquote>`;
+  });
+
+  // ── Ordered lists (1. 2. 3. …) — must come before unordered ─────────────────
+  html = html.replace(/((?:^\d+\. .+\n?)+)/gm, (block) => {
+    const items = block.trim().split("\n").map((line) => {
+      const text = line.replace(/^\d+\. /, "");
+      return `<li class="md-oli">${inlineFormat(text)}</li>`;
+    });
+    return `<ol class="md-ol">${items.join("")}</ol>`;
+  });
+
   // ── Unordered lists ───────────────────────────────────────────────────────
   html = html.replace(/((?:^[-*] .+\n?)+)/gm, (block) => {
     const items = block.trim().split("\n").map((line) => {
@@ -43,9 +63,6 @@ export function markdownToHtml(md: string): string {
     });
     return `<ul class="md-ul">${items.join("")}</ul>`;
   });
-
-  // ── Blockquote (> text) ───────────────────────────────────────────────────
-  html = html.replace(/^> (.+)$/gm, (_, t) => `<blockquote class="md-blockquote">${inlineFormat(t)}</blockquote>`);
 
   // ── Paragraphs (blank-line separated, skip already wrapped elements) ───────
   const blocks = html.split(/\n{2,}/);
@@ -63,6 +80,9 @@ export function markdownToHtml(md: string): string {
 }
 
 function inlineFormat(text: string): string {
+  // Text reaching here has already been escaped (globally for prose, or via
+  // escapeHtml for code-derived cells), so only the inline Markdown transforms
+  // run — their generated tags must survive.
   return text
     .replace(/`([^`]+)`/g, '<code class="md-code">$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
@@ -70,12 +90,17 @@ function inlineFormat(text: string): string {
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a class="md-link" href="$2">$1</a>');
 }
 
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 function escapeOutsideCodeBlocks(md: string): string {
   const parts = md.split(/(```[\s\S]*?```)/g);
   return parts
     .map((part, i) => {
-      if (i % 2 === 1) return part;
-      return part.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      if (i % 2 === 1) return part; // inside a fenced code block — left raw, escaped later
+      // Escape "&" and "<" only; ">" stays so block markers like "> " survive.
+      return part.replace(/&/g, "&amp;").replace(/</g, "&lt;");
     })
     .join("");
 }
@@ -89,6 +114,8 @@ export const MARKDOWN_STYLES = `
 .md-ul { list-style: none; padding: 0; margin: 0.5rem 0 0.75rem 0; }
 .md-li { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7; padding-left: 1rem; position: relative; }
 .md-li::before { content: "•"; position: absolute; left: 0; color: var(--text-muted); }
+.md-ol { list-style: decimal; padding-left: 1.5rem; margin: 0.5rem 0 0.75rem 0; }
+.md-oli { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7; padding-left: 0.25rem; }
 .md-code { font-family: monospace; font-size: 0.8em; background: var(--bg-elevated); color: var(--accent-blue); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border); }
 .md-pre  { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin: 0.75rem 0; }
 .md-code-block { font-family: monospace; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.65; display: block; white-space: pre; }
