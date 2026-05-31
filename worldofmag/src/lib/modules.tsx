@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Home, ShoppingCart, CheckSquare, FileText, PawPrint, ChefHat, GraduationCap,
-  HeartPulse, Flame, FlaskConical, Truck, Car, Wallet, BookOpen, Handshake,
+  HeartPulse, Flame, FlaskConical, Truck, Car, Wallet, BookOpen, Handshake, Calendar,
 } from "lucide-react";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -21,6 +21,7 @@ export type ModuleDef = {
 // Jedno źródło prawdy dla górnych modułów (kolejność = domyślna kolejność menu).
 export const MODULES: ModuleDef[] = [
   { id: "home",      label: "Strona główna", href: "/",          exact: true, permission: PERMISSIONS.HOME,      color: "var(--text-secondary)", Icon: Home,          defaultEnabled: true },
+  { id: "calendar",  label: "Kalendarz",     href: "/calendar",  permission: PERMISSIONS.CALENDAR,  color: "var(--accent-purple)", Icon: Calendar,      defaultEnabled: true },
   { id: "shopping",  label: "Zakupy",        href: "/shopping",  permission: PERMISSIONS.SHOPPING,  color: "var(--accent-blue)",   Icon: ShoppingCart,  defaultEnabled: true },
   { id: "tasks",     label: "Zadania",       href: "/tasks",     permission: PERMISSIONS.TASKS,     color: "var(--accent-green)",  Icon: CheckSquare,   defaultEnabled: true },
   { id: "notes",     label: "Notatki",       href: "/notes",     permission: PERMISSIONS.NOTES,     color: "var(--accent-amber)",  Icon: FileText,      defaultEnabled: true },

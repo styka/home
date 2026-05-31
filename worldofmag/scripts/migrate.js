@@ -28,6 +28,7 @@ async function seedPermissions() {
       { slug: "module.health", name: "Zdrowie", description: "Zarządzanie wizytami u lekarzy i badaniami" },
       { slug: "module.habits", name: "Nawyki", description: "Śledzenie nawyków: codzienne odhaczanie, streaki i przypomnienia" },
       { slug: "module.services", name: "Usługi", description: "Rynek usług: oferty wykonawców i zlecenia (klient ↔ zleceniobiorca)" },
+      { slug: "module.calendar", name: "Kalendarz", description: "Wspólny kalendarz spinający terminy ze wszystkich modułów" },
     ]
     const grants = {
       "module.qa": ["ADMIN", "TESTER"],
@@ -36,6 +37,7 @@ async function seedPermissions() {
       "module.health": ["ADMIN"],
       "module.habits": ["ADMIN"],
       "module.services": ["ADMIN", "BETA_TESTER"],
+      "module.calendar": ["ADMIN", "BETA_TESTER"],
     }
     for (const p of perms) {
       const perm = await prisma.permission.upsert({

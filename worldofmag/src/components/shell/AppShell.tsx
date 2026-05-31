@@ -174,7 +174,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               )}
 
               {/* Coming soon (nie zależą od uprawnień) */}
-              {[{ label: "Calendar", icon: <Calendar size={20} />, href: "/calendar" }, { label: "Work", icon: <Briefcase size={20} />, href: "/work" }].map((mod) => (
+              {[{ label: "Work", icon: <Briefcase size={20} />, href: "/work" }].map((mod) => (
                 <div key={mod.href} className="flex items-center gap-3 px-4 py-3 mx-2 rounded" style={{ opacity: 0.35, color: "var(--text-secondary)", cursor: "not-allowed" }} title={`${mod.label} (coming soon)`}>
                   {mod.icon}<span className="text-sm">{mod.label}</span>
                 </div>

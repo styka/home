@@ -18,6 +18,7 @@ export const PERMISSIONS = {
   HEALTH:      "module.health",
   HABITS:      "module.habits",
   SERVICES:    "module.services",
+  CALENDAR:    "module.calendar",
   // Kitchen sub-permissions
   KITCHEN_RECIPE_CREATE: "kitchen.recipe.create",
   KITCHEN_RECIPE_EDIT:   "kitchen.recipe.edit",
@@ -52,6 +53,7 @@ export function permissionForPath(path: string): string | null {
   if (path.startsWith("/health")) return PERMISSIONS.HEALTH
   if (path.startsWith("/habits")) return PERMISSIONS.HABITS
   if (path.startsWith("/services")) return PERMISSIONS.SERVICES
+  if (path.startsWith("/calendar")) return PERMISSIONS.CALENDAR
   return null
 }
 
