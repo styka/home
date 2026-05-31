@@ -1,0 +1,70 @@
+// Stałe i typy modułu Usług. Wydzielone z `@/actions/services` (plik "use server"
+// może eksportować wyłącznie funkcje async — nie obiekty/typy).
+
+export type RequestStatus =
+  | "REQUESTED"
+  | "ACCEPTED"
+  | "DECLINED"
+  | "SCHEDULED"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED";
+
+export type PriceModel = "fixed" | "hourly" | "quote";
+
+export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
+  REQUESTED: "Zapytanie",
+  ACCEPTED: "Zaakceptowane",
+  DECLINED: "Odrzucone",
+  SCHEDULED: "Umówione",
+  IN_PROGRESS: "W trakcie",
+  COMPLETED: "Zakończone",
+  CANCELLED: "Anulowane",
+};
+
+export const PRICE_MODEL_LABELS: Record<PriceModel, string> = {
+  fixed: "Cena stała",
+  hourly: "Za godzinę",
+  quote: "Wycena indywidualna",
+};
+
+export type ServiceCategoryDTO = {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  isSystem: boolean;
+};
+
+export type ListingDTO = {
+  id: string;
+  title: string;
+  description: string | null;
+  priceModel: PriceModel;
+  priceAmount: number | null;
+  currency: string;
+  active: boolean;
+  category: { id: string; name: string; icon: string; color: string } | null;
+  provider: {
+    id: string;
+    displayName: string;
+    area: string | null;
+    ratingAvg: number;
+    ratingCount: number;
+  };
+};
+
+export type RequestDTO = {
+  id: string;
+  title: string;
+  description: string | null;
+  status: RequestStatus;
+  preferredAt: string | null;
+  scheduledAt: string | null;
+  createdAt: string;
+  listingTitle: string | null;
+  clientName: string;
+  providerName: string;
+  hasReview: boolean;
+  rating: number | null;
+};

@@ -60,6 +60,10 @@ model User {
   languageDecks          LanguageDeck[]        @relation("OwnedLanguageDecks")
   healthEvents           HealthEvent[]         @relation("OwnedHealthEvents")
   habits                 Habit[]               @relation("OwnedHabits")
+  serviceProvider        ServiceProvider?      @relation("UserServiceProvider")
+  serviceCategories      ServiceCategory[]     @relation("OwnedServiceCategories")
+  serviceRequestsAsClient ServiceRequest[]     @relation("ClientServiceRequests")
+  serviceReviews         ServiceReview[]       @relation("AuthoredServiceReviews")
   menuPref               UserMenuPref?
 }
 
@@ -180,6 +184,7 @@ model Team {
   languageDecks        LanguageDeck[]        @relation("TeamLanguageDecks")
   healthEvents         HealthEvent[]         @relation("TeamHealthEvents")
   habits               Habit[]               @relation("TeamHabits")
+  serviceCategories    ServiceCategory[]     @relation("TeamServiceCategories")
 }
 
 model TeamMember {
@@ -1386,4 +1391,117 @@ model HabitEntry {
 
   @@unique([habitId, date])
   @@index([habitId])
+}
+
+// ─── Usługi (Marketplace) ──────────────────────────────────────────────────
+// Dwustronny rynek usług (klient ↔ wykonawca) — konkurencja dla Fixly/Booksy.
+// Każdy użytkownik może być klientem (składa zlecenia) i/lub wykonawcą
+// (zakłada profil + oferty). Status zleceń trzymany jako String + unia TS
+// (zasada repo: bez enumów Prisma — kompatybilność z SQLite/Postgres).
+
+// Słownik kategorii usług, trójpoziomowy (system/user/team) wzorem Category.
+model ServiceCategory {
+  id          String  @id @default(cuid())
+  name        String
+  icon        String  @default("🛠️") // emoji
+  color       String  @default("var(--accent-blue)")
+  sortOrder   Int     @default(0)
+  // null/null = systemowa (widoczna dla wszystkich); userId = prywatna; teamId = zespołowa.
+  userId      String?
+  teamId      String?
+  createdAt   DateTime @default(now())
+
+  user      User? @relation("OwnedServiceCategories", fields: [userId], references: [id], onDelete: Cascade)
+  team      Team? @relation("TeamServiceCategories", fields: [teamId], references: [id], onDelete: Cascade)
+  listings  ServiceListing[]
+
+  @@index([userId])
+  @@index([teamId])
+}
+
+// Profil wykonawcy — jeden na użytkownika (rola „zleceniobiorca").
+model ServiceProvider {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  displayName String
+  bio         String?
+  // Obszar działania (miasto/region) — wyszukiwanie tekstowe na start.
+  area        String?
+  phone       String?
+  // "1" widoczny w katalogu, "0" ukryty (np. wstrzymany).
+  visible     Boolean @default(true)
+  // Średnia ocen (denormalizowana dla szybkiego listowania) + liczba ocen.
+  ratingAvg   Float   @default(0)
+  ratingCount Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User             @relation("UserServiceProvider", fields: [userId], references: [id], onDelete: Cascade)
+  listings ServiceListing[]
+  requests ServiceRequest[] @relation("ProviderServiceRequests")
+
+  @@index([visible])
+}
+
+// Pojedyncza oferta usługi wystawiona przez wykonawcę.
+model ServiceListing {
+  id          String  @id @default(cuid())
+  providerId  String
+  categoryId  String?
+  title       String
+  description String?
+  // Model ceny: "fixed" | "hourly" | "quote" (wycena indywidualna).
+  priceModel  String  @default("quote")
+  // Cena w groszach (gdy fixed/hourly); null dla "quote".
+  priceAmount Int?
+  currency    String  @default("PLN")
+  active      Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  provider ServiceProvider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  category ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  requests ServiceRequest[] @relation("ListingServiceRequests")
+
+  @@index([providerId, active])
+  @@index([categoryId])
+}
+
+// Zlecenie/rezerwacja: klient → wykonawca. Cykl życia w polu status.
+model ServiceRequest {
+  id          String  @id @default(cuid())
+  clientId    String
+  providerId  String
+  listingId   String?
+  title       String
+  description String?
+  // Preferowany termin realizacji (opcjonalny na etapie zapytania).
+  preferredAt DateTime?
+  // Ustalony termin po akceptacji przez wykonawcę.
+  scheduledAt DateTime?
+  // "REQUESTED" | "ACCEPTED" | "DECLINED" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"
+  status      String  @default("REQUESTED")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client   User            @relation("ClientServiceRequests", fields: [clientId], references: [id], onDelete: Cascade)
+  provider ServiceProvider @relation("ProviderServiceRequests", fields: [providerId], references: [id], onDelete: Cascade)
+  listing  ServiceListing? @relation("ListingServiceRequests", fields: [listingId], references: [id], onDelete: SetNull)
+  review   ServiceReview?
+
+  @@index([clientId, status])
+  @@index([providerId, status])
+}
+
+// Ocena wystawiana przez klienta po zakończeniu zlecenia (1 na zlecenie).
+model ServiceReview {
+  id        String  @id @default(cuid())
+  requestId String  @unique
+  authorId  String
+  rating    Int     // 1–5
+  comment   String?
+  createdAt DateTime @default(now())
+
+  request ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author  User           @relation("AuthoredServiceReviews", fields: [authorId], references: [id], onDelete: Cascade)
 }

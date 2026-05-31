@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Home, ShoppingCart, CheckSquare, FileText, PawPrint, ChefHat, GraduationCap,
-  HeartPulse, Flame, FlaskConical, Truck, Car, Wallet, BookOpen,
+  HeartPulse, Flame, FlaskConical, Truck, Car, Wallet, BookOpen, Handshake,
 } from "lucide-react";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -29,6 +29,7 @@ export const MODULES: ModuleDef[] = [
   { id: "languages", label: "Nauka języków", href: "/languages", permission: PERMISSIONS.LANGUAGES, color: "var(--accent-purple)", Icon: GraduationCap, defaultEnabled: true },
   { id: "health",    label: "Zdrowie",       href: "/health",    permission: PERMISSIONS.HEALTH,    color: "var(--accent-red)",    Icon: HeartPulse,    defaultEnabled: true },
   { id: "habits",    label: "Nawyki",        href: "/habits",    permission: PERMISSIONS.HABITS,    color: "var(--accent-orange)", Icon: Flame,         defaultEnabled: true },
+  { id: "services",  label: "Usługi",        href: "/services",  permission: PERMISSIONS.SERVICES,  color: "var(--accent-blue)",   Icon: Handshake,     defaultEnabled: true },
   { id: "qa",        label: "QA",            href: "/qa",        permission: PERMISSIONS.QA,        color: "var(--accent-red)",    Icon: FlaskConical,  defaultEnabled: false },
   { id: "truck",     label: "Trasy TIR",     href: "/truck",     permission: PERMISSIONS.TRUCK,     color: "var(--accent-blue)",   Icon: Truck,         defaultEnabled: true },
   { id: "flota",     label: "Flota",         href: "/flota",     permission: PERMISSIONS.FLOTA,     color: "var(--accent-blue)",   Icon: Car,           defaultEnabled: true },
