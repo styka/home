@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck, PawPrint, Car, Wallet, GraduationCap, HeartPulse } from "lucide-react";
+import { ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, FolderOpen, Tag, Lock, BookOpen, ChefHat, Package, BookMarked, CalendarDays, FlaskConical, Truck, PawPrint, Car, Wallet, GraduationCap, HeartPulse, Flame } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { cn } from "@/lib/cn";
@@ -239,6 +239,9 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
 
         {/* Zdrowie */}
         <NavItem href="/health" label="Zdrowie" icon={<HeartPulse size={18} />} pathname={pathname} iconColor="var(--accent-red)" locked={isLocked("/health")} />
+
+        {/* Nawyki */}
+        <NavItem href="/habits" label="Nawyki" icon={<Flame size={18} />} pathname={pathname} iconColor="var(--accent-orange)" locked={isLocked("/habits")} />
 
         {/* QA — dostępne dla ADMIN i TESTER */}
         <NavItem href="/qa" label="QA" icon={<FlaskConical size={18} />} pathname={pathname} iconColor="var(--accent-red)" locked={isLocked("/qa")} />

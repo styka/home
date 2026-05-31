@@ -59,6 +59,7 @@ model User {
   walletElements         WalletElement[]       @relation("OwnedWalletElements")
   languageDecks          LanguageDeck[]        @relation("OwnedLanguageDecks")
   healthEvents           HealthEvent[]         @relation("OwnedHealthEvents")
+  habits                 Habit[]               @relation("OwnedHabits")
 }
 
 model UserRole {
@@ -167,6 +168,7 @@ model Team {
   walletElements       WalletElement[]       @relation("TeamWalletElements")
   languageDecks        LanguageDeck[]        @relation("TeamLanguageDecks")
   healthEvents         HealthEvent[]         @relation("TeamHealthEvents")
+  habits               Habit[]               @relation("TeamHabits")
 }
 
 model TeamMember {
@@ -1330,4 +1332,45 @@ model HealthEvent {
 
   @@index([ownerId, scheduledAt])
   @@index([ownerTeamId, scheduledAt])
+}
+
+// ── Habits (Nawyki) ──────────────────────────────────────────────────────────
+// Tracker nawyków: definicja + dziennik wykonań (HabitEntry, jeden wpis na dzień).
+// Wzorzec ownerId/ownerTeamId taki sam jak HealthEvent — wsparcie kont i zespołów.
+model Habit {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  icon        String  @default("✅") // emoji
+  color       String  @default("var(--accent-orange)") // token CSS motywu
+  // CSV dni tygodnia 0=niedz..6=sob, np. "1,2,3,4,5". null/"" = codziennie.
+  daysOfWeek  String?
+  // Godzina przypomnienia w formacie "HH:MM" (czas lokalny). null = bez przypomnienia.
+  reminderTime String?
+  archived    Boolean @default(false)
+  sortOrder   Int     @default(0)
+  ownerId     String?
+  ownerTeamId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner     User? @relation("OwnedHabits", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerTeam Team? @relation("TeamHabits", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  entries   HabitEntry[]
+
+  @@index([ownerId, archived])
+  @@index([ownerTeamId, archived])
+}
+
+model HabitEntry {
+  id      String @id @default(cuid())
+  habitId String
+  // Dzień wykonania jako "YYYY-MM-DD" (lokalny) — bez strefy czasowej, stabilne dla heatmapy.
+  date    String
+  createdAt DateTime @default(now())
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+  @@index([habitId])
 }

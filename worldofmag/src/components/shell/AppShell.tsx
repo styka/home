@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat, FlaskConical, Truck, PawPrint, Car, Wallet, GraduationCap, HeartPulse } from "lucide-react";
+import { Menu, X, ShoppingCart, Calendar, FileText, Briefcase, Settings, Mail, Shield, CheckSquare, Home, Map, Image, Lock, BookOpen, ChefHat, FlaskConical, Truck, PawPrint, Car, Wallet, GraduationCap, HeartPulse, Flame } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { ModuleSidebar } from "./ModuleSidebar";
@@ -28,6 +28,7 @@ const MODULES = [
   { id: "kitchen",     label: "Kuchnia",       icon: <ChefHat size={20} />,      topBarIcon: <ChefHat size={16} />,      color: "var(--accent-orange)",   href: "/kitchen",     active: true,  exact: false },
   { id: "languages",   label: "Nauka języków", icon: <GraduationCap size={20} />, topBarIcon: <GraduationCap size={16} />, color: "var(--accent-purple)",  href: "/languages",   active: true,  exact: false },
   { id: "health",      label: "Zdrowie",       icon: <HeartPulse size={20} />,   topBarIcon: <HeartPulse size={16} />,   color: "var(--accent-red)",      href: "/health",      active: true,  exact: false },
+  { id: "habits",      label: "Nawyki",        icon: <Flame size={20} />,        topBarIcon: <Flame size={16} />,        color: "var(--accent-orange)",   href: "/habits",      active: true,  exact: false },
   { id: "qa",          label: "QA",            icon: <FlaskConical size={20} />, topBarIcon: <FlaskConical size={16} />, color: "var(--accent-red)",      href: "/qa",          active: true,  exact: false },
   { id: "truck",       label: "Trasy TIR",     icon: <Truck size={20} />,        topBarIcon: <Truck size={16} />,        color: "var(--accent-blue)",     href: "/truck",       active: true,  exact: false },
   { id: "flota",       label: "Flota",         icon: <Car size={20} />,          topBarIcon: <Car size={16} />,          color: "var(--accent-blue)",     href: "/flota",       active: true,  exact: false },
@@ -183,6 +184,10 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
 
               <MobileItem href="/health" pathname={pathname} locked={isLocked("/health")}>
                 <HeartPulse size={20} style={{ color: "var(--accent-red)", flexShrink: 0 }} /><span>Zdrowie</span>
+              </MobileItem>
+
+              <MobileItem href="/habits" pathname={pathname} locked={isLocked("/habits")}>
+                <Flame size={20} style={{ color: "var(--accent-orange)", flexShrink: 0 }} /><span>Nawyki</span>
               </MobileItem>
 
               <MobileItem href="/qa" pathname={pathname} locked={isLocked("/qa")}>

@@ -427,6 +427,41 @@ export type HealthEvent = {
   updatedAt: Date;
 };
 
+// ─── Nawyki ───────────────────────────────────────────────────────────────
+
+export type Habit = {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string;
+  color: string;
+  /** CSV dni tygodnia 0=niedz..6=sob, np. "1,2,3,4,5". null/"" = codziennie. */
+  daysOfWeek: string | null;
+  /** "HH:MM" czasu lokalnego lub null. */
+  reminderTime: string | null;
+  archived: boolean;
+  sortOrder: number;
+  ownerId: string | null;
+  ownerTeamId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+/** Nawyk wzbogacony o statystyki liczone po stronie serwera dla widoku. */
+export type HabitWithStats = Habit & {
+  /** Daty wykonań ("YYYY-MM-DD") z ostatniego roku, rosnąco. */
+  entryDates: string[];
+  completedToday: boolean;
+  /** Czy nawyk jest zaplanowany na dziś (wg daysOfWeek). */
+  scheduledToday: boolean;
+  currentStreak: number;
+  longestStreak: number;
+  /** Liczba zaplanowanych dni w bieżącym tygodniu, które wykonano. */
+  weekDone: number;
+  /** Liczba zaplanowanych dni w bieżącym tygodniu (cel). */
+  weekTarget: number;
+};
+
 // ─── Shared ───────────────────────────────────────────────────────────────
 
 export interface ShortcutHandlers {

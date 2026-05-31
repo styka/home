@@ -175,6 +175,7 @@ async function main() {
     { slug: "module.portfel", name: "Portfel", description: "Dostęp do modułu zarządzania finansami/portfelem" },
     { slug: "module.languages", name: "Nauka języków", description: "Dostęp do działu nauki słownictwa (fiszki + powtórki)" },
     { slug: "module.health", name: "Zdrowie", description: "Zarządzanie wizytami u lekarzy i badaniami" },
+    { slug: "module.habits", name: "Nawyki", description: "Śledzenie nawyków: codzienne odhaczanie, streaki i przypomnienia" },
   ]) {
     const perm = await prisma.permission.upsert({
       where: { slug: m.slug },

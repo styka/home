@@ -26,12 +26,14 @@ async function seedPermissions() {
       { slug: "module.truck", name: "Trasy TIR", description: "Planowanie tras dla pojazdów ciężarowych" },
       { slug: "module.languages", name: "Nauka języków", description: "Dostęp do działu nauki słownictwa (fiszki + powtórki)" },
       { slug: "module.health", name: "Zdrowie", description: "Zarządzanie wizytami u lekarzy i badaniami" },
+      { slug: "module.habits", name: "Nawyki", description: "Śledzenie nawyków: codzienne odhaczanie, streaki i przypomnienia" },
     ]
     const grants = {
       "module.qa": ["ADMIN", "TESTER"],
       "module.truck": ["ADMIN", "BETA_TESTER"],
       "module.languages": ["ADMIN"],
       "module.health": ["ADMIN"],
+      "module.habits": ["ADMIN"],
     }
     for (const p of perms) {
       const perm = await prisma.permission.upsert({

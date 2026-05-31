@@ -16,6 +16,7 @@ export const PERMISSIONS = {
   PORTFEL:     "module.portfel",
   LANGUAGES:   "module.languages",
   HEALTH:      "module.health",
+  HABITS:      "module.habits",
   // Kitchen sub-permissions
   KITCHEN_RECIPE_CREATE: "kitchen.recipe.create",
   KITCHEN_RECIPE_EDIT:   "kitchen.recipe.edit",
@@ -48,6 +49,7 @@ export function permissionForPath(path: string): string | null {
   if (path.startsWith("/portfel")) return PERMISSIONS.PORTFEL
   if (path.startsWith("/languages")) return PERMISSIONS.LANGUAGES
   if (path.startsWith("/health")) return PERMISSIONS.HEALTH
+  if (path.startsWith("/habits")) return PERMISSIONS.HABITS
   return null
 }
 
