@@ -1,13 +1,19 @@
-import { getUserTeamIds, requireUserId } from "@/lib/server-utils"
+import { getUserTeamIds, requireAuth } from "@/lib/server-utils"
 
-export { requireUserId, getUserTeamIds }
+export { getUserTeamIds }
+
+/** Returns the current authenticated user id, or throws ("Unauthorized"). */
+export async function requireUserId(): Promise<string> {
+  const user = await requireAuth()
+  return user.id
+}
 
 /**
  * Standard Prisma `where` fragment for the three-tier ownership model
  * (private `ownerId` OR team `ownerTeamId`). Use in list queries so the
  * access pattern is expressed once instead of being copy-pasted per action.
  *
- *   const teamIds = await getUserTeamIds(userId)
+ *   const { userId, teamIds } = await getUserScope()
  *   prisma.note.findMany({ where: ownedByWhere(userId, teamIds) })
  */
 export function ownedByWhere(userId: string, teamIds: string[]) {
