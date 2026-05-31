@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, ChevronRight, Calendar, User, Plus, LayoutList, Layers } from "lucide-react";
+import { BookOpen, ChevronRight, Calendar, User, Plus, Layers } from "lucide-react";
 import { PageHeader, StatTile, SectionHeading, ManagementGrid, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { getCategoryInfo } from "@/lib/reportCategories";
 
@@ -89,9 +89,9 @@ export function ReportsHomePage({ reports, myCount, teamCount, isAdmin }: Report
           />
         </div>
 
-        {/* Recent reports */}
+        {/* Wszystkie raporty — pełna, klikalna lista (każdy wiersz → szczegóły) */}
         <div>
-          <SectionHeading>Ostatnie raporty</SectionHeading>
+          <SectionHeading>Wszystkie raporty</SectionHeading>
           {reports.length === 0 ? (
             <EmptyState
               icon={<BookOpen size={28} />}
@@ -101,7 +101,7 @@ export function ReportsHomePage({ reports, myCount, teamCount, isAdmin }: Report
             />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {reports.slice(0, 8).map((r) => (
+              {reports.map((r) => (
                 <ReportRow key={r.id} report={r} />
               ))}
             </div>
@@ -160,18 +160,19 @@ export function ReportsHomePage({ reports, myCount, teamCount, isAdmin }: Report
           </div>
         )}
 
-        {/* Management */}
-        <div>
-          <SectionHeading>Zarządzanie</SectionHeading>
-          <ManagementGrid
-            items={[
-              { href: "/reports", icon: <LayoutList size={16} />, label: "Wszystkie raporty", color: "var(--accent-purple)" },
-              ...(isAdmin
-                ? [{ href: "/admin/reports", icon: <Plus size={16} />, label: "Panel admina", color: "var(--accent-purple)" }]
-                : []),
-            ]}
-          />
-        </div>
+        {/* Management — pokazujemy tylko gdy są realne miejsca do przejścia.
+            Wcześniej kafelek „Wszystkie raporty" linkował do /reports (tej samej
+            strony) — martwy link, przez który „nie dało się nigdzie przejść". */}
+        {isAdmin && (
+          <div>
+            <SectionHeading>Zarządzanie</SectionHeading>
+            <ManagementGrid
+              items={[
+                { href: "/admin/reports", icon: <Plus size={16} />, label: "Panel admina", color: "var(--accent-purple)" },
+              ]}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
