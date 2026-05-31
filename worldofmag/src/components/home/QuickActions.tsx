@@ -10,6 +10,8 @@ import {
   Fuel,
   Wallet,
   Truck,
+  GraduationCap,
+  HeartPulse,
   Plus,
   type LucideIcon,
 } from "lucide-react";
@@ -30,6 +32,8 @@ const ACTIONS: QuickAction[] = [
   { label: "Zaplanuj posiłek", href: "/kitchen/plan", icon: ChefHat, color: "var(--accent-orange)", permission: "module.kitchen" },
   { label: "Tankowanie", href: "/flota", icon: Fuel, color: "var(--accent-blue)", permission: "module.flota" },
   { label: "Wpis w portfelu", href: "/portfel", icon: Wallet, color: "var(--accent-green)", permission: "module.portfel" },
+  { label: "Powtórka słówek", href: "/languages", icon: GraduationCap, color: "var(--accent-purple)", permission: "module.languages" },
+  { label: "Wizyta / badanie", href: "/health", icon: HeartPulse, color: "var(--accent-red)", permission: "module.health" },
   { label: "Zaplanuj trasę", href: "/truck", icon: Truck, color: "var(--accent-blue)", permission: "module.truck" },
 ];
 

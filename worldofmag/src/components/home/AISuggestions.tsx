@@ -9,7 +9,8 @@ import {
   PawPrint,
   Wallet,
   Car,
-  Sparkles,
+  GraduationCap,
+  HeartPulse,
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
@@ -26,6 +27,14 @@ interface VehicleAlert {
   type: "inspection" | "insurance";
   dueAt: string;
   daysLeft: number;
+}
+
+interface HealthUpcoming {
+  id: string;
+  kind: "VISIT" | "TEST";
+  title: string;
+  specialty: string | null;
+  scheduledAt: string;
 }
 
 interface SuggestionCard {
@@ -47,10 +56,18 @@ interface AISuggestionsProps {
   expiringSoon: number;
   todayMeals: number;
   wallet: { totalNet: number; currency: string; monthlyRate: number } | null;
+  languagesDue: number;
+  healthUpcoming: HealthUpcoming[];
 }
 
 function pluralTasks(n: number): string {
   return n === 1 ? "zaległe zadanie" : n < 5 ? "zaległe zadania" : "zaległych zadań";
+}
+
+function startOfDay(d: Date): Date {
+  const out = new Date(d);
+  out.setHours(0, 0, 0, 0);
+  return out;
 }
 
 export function AISuggestions({
@@ -63,6 +80,8 @@ export function AISuggestions({
   expiringSoon,
   todayMeals,
   wallet,
+  languagesDue,
+  healthUpcoming,
 }: AISuggestionsProps) {
   const has = (slug: string) => permissions.includes(slug);
   const now = new Date();
@@ -112,6 +131,25 @@ export function AISuggestions({
     });
   }
 
+  if (has("module.health") && healthUpcoming.length > 0) {
+    const soonest = healthUpcoming
+      .map((e) => Math.ceil((startOfDay(new Date(e.scheduledAt)).getTime() - startOfDay(now).getTime()) / 86_400_000))
+      .sort((a, b) => a - b)[0];
+    if (soonest <= 3) {
+      const next = healthUpcoming.find(
+        (e) => Math.ceil((startOfDay(new Date(e.scheduledAt)).getTime() - startOfDay(now).getTime()) / 86_400_000) === soonest
+      );
+      suggestions.push({
+        icon: HeartPulse,
+        title: soonest <= 0 ? "Wizyta dziś" : soonest === 1 ? "Wizyta jutro" : `Wizyta za ${soonest} dni`,
+        subtitle: next ? next.title : "Sprawdź szczegóły terminu",
+        href: "/health",
+        accentColor: "var(--accent-red)",
+        priority: 1.5,
+      });
+    }
+  }
+
   if (has("module.kitchen") && expiringSoon > 0) {
     suggestions.push({
       icon: ChefHat,
@@ -143,6 +181,17 @@ export function AISuggestions({
       href: "/portfel",
       accentColor: "var(--accent-amber)",
       priority: 5,
+    });
+  }
+
+  if (has("module.languages") && languagesDue > 0) {
+    suggestions.push({
+      icon: GraduationCap,
+      title: `${languagesDue} ${languagesDue === 1 ? "słówko" : languagesDue < 5 ? "słówka" : "słówek"} do powtórki`,
+      subtitle: "Krótka sesja utrwali materiał",
+      href: "/languages",
+      accentColor: "var(--accent-purple)",
+      priority: 4.5,
     });
   }
 
@@ -198,6 +247,26 @@ export function AISuggestions({
         href: "/portfel",
         accentColor: "var(--accent-green)",
         priority: 12,
+      });
+    }
+    if (has("module.languages")) {
+      suggestions.push({
+        icon: GraduationCap,
+        title: "Ucz się słówek",
+        subtitle: "Brak powtórek — dodaj nową talię",
+        href: "/languages",
+        accentColor: "var(--accent-purple)",
+        priority: 13,
+      });
+    }
+    if (has("module.health")) {
+      suggestions.push({
+        icon: HeartPulse,
+        title: "Zaplanuj wizytę",
+        subtitle: "Zapisz nadchodzące badanie lub wizytę",
+        href: "/health",
+        accentColor: "var(--accent-red)",
+        priority: 14,
       });
     }
   }
