@@ -4,6 +4,11 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-05-31 — Smoke testy E2E padały na logowaniu: zły id providera w `auth.setup.ts`
+**Problem:** Wszystkie klikacze padały, bo projekt `setup:auth` nie tworzył sesji — `/api/auth/session` zwracało `null`. W logach serwera: `[auth][error] TypeError: Cannot read properties of undefined (reading 'type')`. Powód: provider credentials w `src/lib/auth.ts` jest zarejestrowany z `id: "e2e"`, więc jego callback to `/api/auth/callback/e2e`, ale `e2e/setup/auth.setup.ts` POST-ował na `/api/auth/callback/credentials`. NextAuth nie znajdował providera o tym id → błąd `Configuration` (302 na `/api/auth/error?error=Configuration`), brak ciasteczka sesji.
+**Rozwiązanie:** Zmieniono ścieżkę w `auth.setup.ts` na `/api/auth/callback/e2e` (zgodną z `id` providera). Po poprawce setup loguje admina i limited usera, a smoke przechodzi.
+**Lekcja:** Ścieżka callbacku NextAuth to `/api/auth/callback/<id>`, gdzie `<id>` to **`id` providera**, a nie jego typ. Gdy provider ma jawne `id`, endpoint logowania w testach musi go używać. Objaw „session = null + error=Configuration + Cannot read 'type'" = NextAuth nie dopasował providera po id w URL-u.
+
 ## 2026-05-31 — „Strona domowa raportów" nie pozwalała przejść do większości raportów
 **Problem:** Zgłoszenie „na stronie domowej raportów nie da się przejść do żadnych widoków". `/reports` (`ReportsHomePage`) to dashboard, który listował tylko `reports.slice(0, 8)` najnowszych raportów, a kafelek „Wszystkie raporty" w sekcji „Zarządzanie" linkował do `/reports` — czyli do samego siebie. W bazie jest ~20 raportów systemowych (wiele migracji `INSERT INTO "Report"`), więc starsze raporty były **całkowicie nieosiągalne** z tej strony. Trasa szczegółów `/reports/[slug]` i tak była dynamiczna (używa `auth()`), więc to nie był problem renderu — wiersze raportów działały, brakowało tylko dostępu do reszty.
 **Rozwiązanie:** Zdjęto limit `slice(0, 8)` (strona domowa = pełna, klikalna lista wszystkich raportów), usunięto zapętlony self-link „Wszystkie raporty", a sekcję „Zarządzanie" ograniczono do admina (realny cel: panel admina). Dodatkowo dla parytetu dodano `export const dynamic = "force-dynamic"` w `/reports/[slug]/page.tsx` (jedyna uwierzytelniona strona treści bez tego).
