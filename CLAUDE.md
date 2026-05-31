@@ -27,7 +27,7 @@ Nie pytaj o pozwolenie — po prostu dopisz i commituj razem z poprawką.
 
 ## Project Overview
 
-**WorldOfMag** is a modular personal life/work management system for **Szymon Tyka** (tyka.szymon@gmail.com). The name means "World of the Mage" — Szymon's personal digital world.
+**WorldOfMag** (internal/product name **Omnia**) is a modular personal life/work management system for **Szymon Tyka** (tyka.szymon@gmail.com). The name means "World of the Mage" — Szymon's personal digital world. It has grown well beyond the original 3 modules into a ~15-module "operating system for life" (shopping, tasks, notes, kitchen, pets, health, habits, vehicles, finance, languages, …) unified by a shared ownership model, RBAC, and an AI assistant.
 
 ### UX Philosophy
 - Keyboard-first (vim-style shortcuts: j/k, x, e, d)
@@ -36,13 +36,26 @@ Nie pytaj o pozwolenie — po prostu dopisz i commituj razem z poprawką.
 - Designed for a developer power user
 
 ### Module Status
-| Module | Status |
-|--------|--------|
-| Shopping List | Done and deployed |
-| Tasks | Done and deployed |
-| Notes | Done and deployed |
-| Calendar | Stub (sidebar icon only) |
-| Home (AI dashboard) | Beta — gated behind `BETA_TESTER` role |
+| Module | Route | Permission | Status |
+|--------|-------|------------|--------|
+| Home (AI dashboard) | `/` | `module.home` | Done — shows Beta badge for `BETA_TESTER` |
+| Shopping | `/shopping` | `module.shopping` | Done and deployed |
+| Tasks | `/tasks` | `module.tasks` | Done and deployed |
+| Notes | `/notes` | `module.notes` | Done and deployed |
+| Kitchen (recipes/meal plan/pantry) | `/kitchen` | `module.kitchen` (+ sub-perms) | Done and deployed |
+| Pets (care/husbandry/breeding) | `/pets` | `module.pets` | Done and deployed |
+| Health (visits/tests) | `/health` | `module.health` | Done and deployed |
+| Habits (tracker/heatmap) | `/habits` | `module.habits` | Done and deployed |
+| Flota (vehicles/fuel/service) | `/flota` | `module.flota` | Done and deployed |
+| Portfel (personal finance) | `/portfel` | `module.portfel` | Done and deployed |
+| Languages (SRS flashcards) | `/languages` | `module.languages` | Done and deployed |
+| Reports (markdown docs) | `/reports` | authenticated | Done (system/user/team reports) |
+| QA (test scenarios) | `/qa` | `module.qa` | Internal tooling |
+| Truck (heavy-vehicle routing) | `/truck` | `module.truck` | Partial — ORS client ready, UI minimal |
+| Calendar | `/calendar` | — | Stub (sidebar icon, "coming soon", disabled) |
+| Work / Praca | `/work` | — | Stub ("coming soon", disabled) |
+
+> **Keep this table honest.** When you add/finish/stub a module, update this table, the Route Structure block, the permission list, and the Database Schema section below.
 
 ---
 
@@ -116,47 +129,64 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 ### Route Structure (`src/app/`)
 
 ```
-/                        # Home page (AI dashboard, beta-gated)
-/shopping/               # Shopping lists
-/shopping/[listId]/      # Specific list
-/shopping/categories/    # Category management
-/shopping/units/         # Unit management
-/shopping/products/      # Product catalog
-/shopping/icons/         # Category icon/emoji management
-/shopping/stores/        # Store maps list
-/shopping/stores/[storeId]/  # Store map editor (node/edge graph)
-/tasks/                  # Task inbox
-/tasks/[projectId]/      # Specific task project
-/notes/                  # Notes list
-/settings/               # User settings
-/guide/                  # Help documentation
+/                        # Home page (AI dashboard + Sparkles AI assistant FAB)
+/shopping/ [listId]      # Lists; + /categories /units /products /icons /stores/[storeId] (graph editor)
+/tasks/ [projectId]      # Task projects; + /tasks/tags
+/notes/                  # Notes; + /all /groups /tags
+/kitchen/                # Recipes /recipes/[id]/(edit|cook), /cookbooks/[id], /plan, /pantry/stocktake
+/pets/ [petId]           # Pets profiles; + /pets/calendar (care calendar)
+/health/                 # Medical visits + lab tests
+/habits/                 # Habit tracker (heatmap, streaks)
+/flota/                  # Vehicles (fuel logs, service records)
+/portfel/                # Personal finance (wallet elements + entries)
+/languages/              # SRS vocabulary decks (SuperMemo-2)
+/qa/                     # QA test scenarios (Epic → Story → Scenario)
+/truck/                  # Heavy-vehicle routing (OpenRouteService)
+/reports/ [slug]         # Markdown reports (system/user/team), user-facing
+/settings/               # User profile; + /settings/team/new, /settings/team/[teamId]
 /invitations/            # Team invitations
-/admin/                  # Admin console (role-gated)
-/admin/config/           # System key-value config
-/admin/access/           # RBAC access control
-/admin/categories/       # Global category management
-/admin/reports/          # Markdown reports (slug-based)
+/guide/                  # Help documentation
+/admin/                  # Admin console (module.admin)
+/admin/access/           # RBAC: permissions, role↔permission, user↔role (self-lockout guard)
+/admin/config/           # System key-value config (e.g. groq_api_key)
+/admin/llm/              # LLM providers + model-per-operation-type assignment
+/admin/categories/       # Global system category management
+/admin/reports/          # Markdown reports CRUD (+ /new, /[slug], /[slug]/edit)
 /admin/playground/       # Component playground
+/admin/architecture/     # App structure overview (currently minimal)
 /admin/e2e/              # E2E click-tests guide (how to run Playwright)
+/admin/qa/               # QA scenario authoring
 /auth/signin/            # Google OAuth sign-in
 ```
 
 ### Component Organization (`src/components/`)
 
-Components are organized by module: `shopping/`, `tasks/`, `notes/`, `home/`, `shell/`, `command-palette/`, `admin/`, `teams/`, `ui/`. Each module has a `*Page.tsx` (client entry) and `*HomePage.tsx` (server wrapper). The `AppShell` wraps all pages with sidebar navigation.
+Components are organized by module: `shopping/`, `tasks/`, `notes/`, `kitchen/`, `pets/`, `health/`, `habits/`, `flota/`, `portfel/`, `languages/`, `qa/`, `truck/`, `reports/`, `home/`, `shell/`, `command-palette/`, `admin/`, `teams/`, `brand/`, `ui/`. Each module typically has a `*Page.tsx` (client entry) and `*HomePage.tsx` (server wrapper). The `AppShell` (`shell/`) wraps all pages with `ModuleSidebar` (desktop), a mobile top bar + bottom tab bar, and the global AI assistant.
+
+**The "magic icon" / AI assistant** (`home/AICommandSheet.tsx`): a global Sparkles floating action button (bottom-right, in `AppShell`) opening an AI sheet. Two modes — *interpret → execute* (`AICommandSection` + `ActionDrawer`, endpoints `/api/llm/home/interpret|execute`) and *agent* (`/api/llm/home/agent`, phases clarify/answer/navigate/plan). It emits typed `AIAction[]` (add_item, create_task, create_note, log_weight, …) reviewed in `ActionDrawer` before running; **destructive actions are opt-in** (unchecked by default).
 
 ### Server Actions (`src/actions/`)
 
-All data mutations use Next.js Server Actions with `revalidatePath()` at the end. Never add manual cache invalidation elsewhere. Key action files: `items`, `lists`, `tasks`, `taskProjects`, `notes`, `noteGroups`, `categories`, `units`, `products`, `stores`, `teams`, `invitations`, `access`, `adminCategories`, `categoryIcons`, `config`, `activity`, `reports`, `tags`.
+All data mutations use Next.js Server Actions with `revalidatePath()` at the end. Never add manual cache invalidation elsewhere. Action files (`src/actions/`):
+- **Shopping**: `items`, `lists`, `products`, `categories`, `units`, `stores`, `categoryIcons`
+- **Tasks**: `tasks`, `taskProjects`, `taskTags`
+- **Notes**: `notes`, `noteGroups`, `tags`
+- **Kitchen**: `recipes`, `cookbooks`, `mealPlans`, `pantry`
+- **Pets**: `pets`, `petCare`, `petHusbandry`, `petBreeding`
+- **Other modules**: `health`, `habits`, `flota`, `portfel`, `languageDecks`, `qa`, `truck`
+- **Collaboration / system**: `teams`, `invitations`, `access`, `activity`, `reports`, `config`, `llmConfig`, `adminCategories`, `admin-tools`
 
 ### Authentication & Authorization
 
 - **NextAuth v5** with Google OAuth is the only supported sign-in method
 - Session includes `user.id`, `user.roles`, `user.permissions`
 - **RBAC**: Users have `UserRole` entries → roles have `RolePermission` entries → permissions have slugs
-- Check permissions via `src/lib/permissions.ts`
-- Special roles: `ADMIN` (full access), `BETA_TESTER` (beta features like Home dashboard)
-- Teams: users can own or be members of teams; lists/projects can be team-scoped
+- Check permissions via `src/lib/permissions.ts` (`hasPermission`, `permissionForPath`, `isPathLocked`)
+- Permission slugs (`module.*`): `module.home`, `module.shopping`, `module.tasks`, `module.notes`, `module.kitchen`, `module.pets`, `module.health`, `module.habits`, `module.flota`, `module.portfel`, `module.languages`, `module.qa`, `module.truck`, `module.invitations`, `module.settings`, `module.admin`. Kitchen has sub-permissions: `kitchen.recipe.create|edit|delete`, `kitchen.mealplan.edit`, `kitchen.pantry.edit`, `kitchen.ai`.
+- `ModuleSidebar` greys out + locks nav items the user lacks permission for (`isPathLocked`); admin nav appears only for admins.
+- Special roles: `ADMIN` (full access), `BETA_TESTER` (shows Beta badge on Home)
+- **Admin self-lockout guard**: `access.ts` `countAdminAccessHolders()` blocks any RBAC change that would leave 0 users with `module.admin`.
+- Teams: users can own or be members of teams; most resources can be user- or team-scoped
 
 ### Database Schema (key models)
 
@@ -170,6 +200,18 @@ Store, StoreNode, StoreEdge                 — Store maps (graph)
 Note, NoteGroup, Tag, NoteTag               — Notes module
 TaskProject, TaskProjectMember, Task        — Tasks module
 TaskTagDef, TaskTaskTag, TaskComment, TaskShare — Tasks extras
+Recipe, RecipeIngredient, RecipeStep, RecipeImage, RecipeTag, RecipeRating — Kitchen recipes
+Cookbook, MealPlanEntry, PantryItem, ItemRecipeOrigin — Kitchen planning/pantry
+Pet, PetShare, PetMeasurement, PetHealthRecord, PetVetVisit, PetTreatment — Pets core/care
+PetCareTask, PetCareLog, PetEnclosure, PetEnvironmentReading — Pets husbandry
+PetBreedingPair, PetClutch, PetSale         — Pets breeding/sales
+HealthEvent                                 — Health module
+Habit, HabitEntry                           — Habits module
+Vehicle, FuelLog, ServiceRecord, VehicleProfile — Flota / Truck
+WalletElement, WalletEntry                  — Portfel (finance)
+LanguageDeck, Vocabulary                    — Languages (SRS)
+QaEpic, QaUserStory, QaTestScenario         — QA module
+LlmProvider, LlmAssignment                  — LLM config (admin)
 Config, UserActivity, Report                — System
 ```
 
@@ -186,14 +228,17 @@ const teamIds = await getUserTeamIds(userId);
 where: { OR: [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] }
 ```
 
+Most modules follow this `ownerId` / `ownerTeamId` pattern (Shopping lists, Task projects, Notes, Recipes/Cookbooks/MealPlans/Pantry, Pets, Health, Habits, Vehicles, Wallet, Language decks). Stores are user-only. Some entities add **per-entity sharing** with VIEWER/EDITOR roles on top of ownership (`TaskShare`, `PetShare`) and per-resource membership (`TaskProjectMember`).
+
 | Module | User ownership | Team ownership | Notes |
 |--------|---------------|----------------|-------|
 | Shopping Lists | `ownerId` | `ownerTeamId` | ✅ Full support |
-| Task Projects | `ownerId` | `ownerTeamId` | ✅ Full support |
+| Task Projects | `ownerId` | `ownerTeamId` | ✅ + `TaskShare`, `TaskProjectMember` |
 | Notes | `ownerId` | `ownerTeamId` | ✅ Added in 0016 migration |
+| Kitchen / Pets / Health / Habits / Flota / Portfel / Languages | `ownerId` | `ownerTeamId` | ✅ team-scoped; Pets also have `PetShare` |
 | Stores | `ownerId` | — | User-only |
 
-`assertListAccess()`, `assertNoteAccess()` — pattern for checking access including team membership.
+`assertListAccess()`, `assertNoteAccess()` — pattern for checking access including team membership (each module has its equivalent guard).
 
 ### Dictionary Ownership Levels
 
@@ -206,15 +251,26 @@ Three-tier system for categories, units, products:
 
 ### LLM Integration
 
-`src/lib/llm-client.ts` handles AI features:
-- Smart item categorization (Polish + English keywords via `categorize.ts`)
-- AI command parsing via the Home page command section
-- LLM prompts treat category names as Polish words (not English)
-- Category hints are injected into prompts from DB-driven categories
+`src/lib/llm-client.ts` is a typed client wrapping `/api/llm/*` routes. Namespaces: `notes` (suggestTags/Title, rewrite, qa), `tasks` (parse, suggest, search), `shopping` (normalize), `stores` (generate), `home` (interpret, execute; plus the agent route), `kitchen` (parse-ingredients, import-url, ocr-image/text, generate-recipe, plan-week, suggest-from-pantry, categorize), `languages` (extract), `pets` (insights).
+- Provider + model routing is **DB-driven** via `/admin/llm` (`LlmProvider` + `LlmAssignment`), resolved per operation type (`reasoning`, `dispatch`, `thinking`, `images`, `generation`) in `src/lib/llm/resolver.ts`. The Groq API key lives in `Config` (`groq_api_key`) / env.
+- Rule-based fallback for categorization (no LLM): `categorize.ts` (~500 Polish+English keywords).
+- LLM prompts treat category names as **Polish words** (not English); category hints injected from DB-driven categories.
 
 ### Store Maps
 
 Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[]` (connections with weights). `src/lib/storeLayout.ts` handles layout algorithms, `src/lib/storeRoute.ts` handles optimal routing.
+
+### Admin Panel (`/admin`, gated by `module.admin`)
+
+- **`/admin`** — console: build info (`NEXT_PUBLIC_BUILD_*`), active session, Omnia↔Claude Code clipboard export (`admin-tools.ts` → open Omnia tasks as JSON), links to tools.
+- **`/admin/access`** — RBAC manager (`PermissionManager`): permissions, role↔permission grid, user↔role; self-lockout guard.
+- **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, masked).
+- **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type).
+- **`/admin/categories`** — global system categories (name/color/icon).
+- **`/admin/reports`** — markdown reports CRUD.
+- **`/admin/playground`** — interactive UI component sandbox.
+- **`/admin/architecture`** — app-structure overview (currently minimal; the full architecture lives in the system report `architektura-omnia-pelna-2026-05-31`).
+- **`/admin/e2e`** + **`/admin/qa`** — Playwright run guide; QA scenario authoring. E2E login provider is **offline-only** (`E2E_TEST_MODE=1`, never on prod).
 
 ### Key Conventions
 
@@ -229,14 +285,16 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 ```
 Accent tokens: `accent-blue`, `accent-green`, `accent-red`, `accent-amber`, `accent-purple`.
 
-**Mobile responsiveness**: Both sidebars are `hidden md:flex`. Mobile gets a top bar with logo + `<select>` for navigation. Minimum touch targets: `py-3`, 20×20px checkboxes.
+**Mobile responsiveness**: The desktop `ModuleSidebar` is `hidden md:flex`. Mobile (`md:hidden`) instead gets a **top bar** (active module + hamburger), a full-screen **overlay menu** (hamburger), and a fixed **bottom tab bar** (Home/Shopping/Tasks/Notes). All respect `env(safe-area-inset-bottom)`. Minimum touch targets: `py-3`, 20×20px checkboxes. Register new modules in `ModuleSidebar` (and the bottom tab bar if they belong there).
 
 **Keyboard shortcuts** (defined in `src/hooks/useKeyboardShortcuts.ts`):
 `j/k` navigate, `x/Space` cycle status, `e` edit, `d/Delete` delete, `a/n` add, `//f` search, `1–5` filter tabs, `Ctrl+K` command palette, `Esc` close.
 
 **Smart parsing** (`parseQuantity.ts`): `"2 butelki mleka"` → `{qty:2, unit:"butelki", name:"mleka"}`, `"mleko 500ml"` → `{qty:500, unit:"ml", name:"mleko"}`, `"mleko x2"` → `{qty:2, name:"mleko"}`.
 
-**Build pipeline**: `npm run build` runs `prisma generate && next build && node scripts/migrate.js`. The `scripts/migrate.js` handles post-build DB migrations.
+**Markdown rendering** (`src/lib/markdown.ts`, used by reports, recipes, tasks, QA, AI sheet): a small custom renderer (not a library). Supports `#`/`##`/`###`, tables (with `|---|` separator), fenced + inline code, bullet lists (`-`/`*`), **ordered lists** (`1.`), blockquotes (`> `), `**bold**`/`*italic*`/`[link]()`, `---`. **Not** supported: nested lists, `####`+, raw HTML (escaped for safety). Security: `&` and `<` are escaped globally up-front (a lone `>` is left intact so the blockquote marker survives) — do **not** move escaping down into `inlineFormat` (it opened an XSS hole via the table/paragraph merge). Reports are seeded via Prisma migrations: `INSERT INTO "Report" (…) VALUES (gen_random_uuid()::text, …, $tag$…markdown…$tag$, 'category', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT ("slug") DO NOTHING;` (PostgreSQL-only, dollar-quoted, idempotent).
+
+**Build pipeline**: `npm run build` runs `prisma generate && next build && node scripts/migrate.js`. `scripts/migrate.js` runs `prisma migrate deploy` (with retries for Neon cold-start) then seeds permissions/LLM defaults/QA — **it touches the prod DB, so do not run `npm run build` locally against a prod `DATABASE_URL`**.
 
 **`next.config.mjs`**: Injects git metadata into `NEXT_PUBLIC_BUILD_*` env vars. Allowed server action origins: `localhost:3000` and `worldofmag.onrender.com`.
 
