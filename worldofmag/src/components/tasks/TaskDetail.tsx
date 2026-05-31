@@ -4,29 +4,22 @@ import { useState, useTransition, useEffect, useRef } from "react";
 import {
   X, Trash2, CheckCircle2, Circle, Clock, AlertCircle, MinusCircle, Loader2,
   RefreshCw, Tag, Calendar, Timer, ChevronDown, ChevronLeft, Plus, Send, Sparkles,
-  MessageSquare, Share2, UserMinus,
+  MessageSquare, Share2, UserMinus, Eye, Undo2,
 } from "lucide-react";
 import { updateTask, deleteTask, updateTaskTags, addTaskComment, createTask, completeRecurringTask, shareTaskByEmail, removeTaskShare } from "@/actions/tasks";
 import { createTaskTag } from "@/actions/taskTags";
 import { TaskTagBadge } from "./TaskTagBadge";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
-import type { Task, TaskStatus, TaskPriority, TaskTagDef, RecurringRule } from "@/types";
-import { TASK_PRIORITY_COLORS } from "@/types";
+import type { Task, TaskStatus, TaskPriority, TaskTagDef, RecurringRule, ProjectStatusConfig } from "@/types";
+import { TASK_PRIORITY_COLORS, statusMeta, DEFAULT_STATUS_CONFIG } from "@/types";
 
 interface TaskDetailProps {
   task: Task;
   allTags: TaskTagDef[];
+  statusConfig?: ProjectStatusConfig;
   onClose: () => void;
   onDelete: () => void;
 }
-
-const STATUS_OPTIONS: { value: TaskStatus; label: string; color: string }[] = [
-  { value: "TODO", label: "Do zrobienia", color: "var(--text-muted)" },
-  { value: "IN_PROGRESS", label: "W trakcie", color: "var(--accent-blue)" },
-  { value: "DONE", label: "Zrobione", color: "var(--accent-green)" },
-  { value: "DEFERRED", label: "Odłożone", color: "var(--accent-amber)" },
-  { value: "CANCELLED", label: "Anulowane", color: "var(--text-muted)" },
-];
 
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] = [
   { value: "NONE", label: "Brak", color: "var(--text-muted)" },
@@ -44,7 +37,7 @@ const RECURRING_TYPES = [
 ];
 const DAY_LABELS = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So"];
 
-export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps) {
+export function TaskDetail({ task, allTags, statusConfig = DEFAULT_STATUS_CONFIG, onClose, onDelete }: TaskDetailProps) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
   const [editingDesc, setEditingDesc] = useState(false);
@@ -258,7 +251,11 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
     }
   }
 
-  const statusOpt = STATUS_OPTIONS.find((s) => s.value === status)!;
+  // Opcje statusu = włączone statusy listy (zawsze z bieżącym, nawet gdy wyłączony) — „skok" do dowolnego.
+  const enabledKeys = statusConfig.enabled.length ? statusConfig.enabled : DEFAULT_STATUS_CONFIG.enabled;
+  const optionKeys: TaskStatus[] = enabledKeys.includes(status) ? enabledKeys : [...enabledKeys, status];
+  const statusOptions = optionKeys.map((k) => ({ value: k, ...statusMeta(k) }));
+  const statusOpt = statusMeta(status);
   const comments = (task.comments ?? []) as NonNullable<Task["comments"]>;
 
   return (
@@ -307,7 +304,7 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
             className="flex-1 bg-transparent text-sm focus:outline-none border rounded px-2 py-1"
             style={{ borderColor: "var(--border)", color: statusOpt.color }}
           >
-            {STATUS_OPTIONS.map((s) => (
+            {statusOptions.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
@@ -322,6 +319,36 @@ export function TaskDetail({ task, allTags, onClose, onDelete }: TaskDetailProps
             ))}
           </select>
         </div>
+
+        {/* Weryfikacja — gdy zadanie czeka na zatwierdzenie */}
+        {status === "IN_VERIFICATION" && (
+          <div
+            className="flex flex-col gap-2 px-4 py-3 border-b"
+            style={{ borderColor: "var(--border)", background: "rgba(245,158,11,0.08)" }}
+          >
+            <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--accent-amber)" }}>
+              <Eye size={13} /> Oczekuje na weryfikację
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleStatusChange("DONE")}
+                className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded focus:outline-none"
+                style={{ backgroundColor: "var(--accent-green)", color: "#fff" }}
+                title="Zweryfikowano — oznacz jako zrobione"
+              >
+                <CheckCircle2 size={13} /> Zatwierdź
+              </button>
+              <button
+                onClick={() => handleStatusChange("IN_PROGRESS")}
+                className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded focus:outline-none border"
+                style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+                title="Odrzuć — wróć do realizacji (lub wybierz inny status powyżej)"
+              >
+                <Undo2 size={13} /> Odrzuć
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Title */}
         <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>

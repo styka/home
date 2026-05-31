@@ -1,16 +1,19 @@
 import { auth } from "@/lib/auth"
 import { getMyTeams } from "@/actions/teams"
 import { getRecentActivity } from "@/actions/activity"
+import { getMenuPrefs } from "@/actions/menuPrefs"
 import { signOut } from "@/lib/auth"
 import Link from "next/link"
 import { Settings } from "lucide-react"
 import { ActivityFeed } from "@/components/home/ActivityFeed"
+import { MenuPrefsEditor } from "@/components/settings/MenuPrefsEditor"
 
 export default async function SettingsPage() {
   const session = await auth()
   const teams = await getMyTeams()
   const recentActivity = await getRecentActivity(30)
   const userPermissions: string[] = session?.user?.permissions ?? []
+  const menuPrefs = await getMenuPrefs()
   const activityForUI = recentActivity.map((a) => ({
     module: a.module,
     action: a.action,
@@ -141,6 +144,14 @@ export default async function SettingsPage() {
             ))}
           </div>
         )}
+      </section>
+
+      {/* Menu */}
+      <section>
+        <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+          Menu
+        </h2>
+        <MenuPrefsEditor permissions={userPermissions} prefs={menuPrefs} />
       </section>
 
       {/* Activity */}

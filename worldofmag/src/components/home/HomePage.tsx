@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Lock } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AISuggestions } from "@/components/home/AISuggestions";
 import { InvitationsBanner } from "@/components/home/InvitationsBanner";
@@ -108,18 +108,8 @@ interface FooterLinkProps {
 }
 
 function FooterLink({ href, label, locked, icon }: FooterLinkProps) {
-  if (locked) {
-    return (
-      <span
-        style={{ fontSize: 12, color: "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: 3, opacity: 0.4, cursor: "not-allowed" }}
-        title="Niedostępne dla Twojej roli"
-      >
-        {icon}
-        {label}
-        <Lock size={9} />
-      </span>
-    );
-  }
+  // Brak uprawnień → pozycja całkowicie ukryta (nie pokazujemy zablokowanego linku).
+  if (locked) return null;
   return (
     <Link
       href={href}

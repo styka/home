@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Circle, CheckCircle2, Clock, AlertCircle, MinusCircle, ChevronRight, RefreshCw, Paperclip } from "lucide-react";
+import { Circle, CheckCircle2, Clock, AlertCircle, MinusCircle, ChevronRight, RefreshCw, Paperclip, Eye } from "lucide-react";
 import { toggleTaskStatus, updateTask } from "@/actions/tasks";
 import { TaskTagBadge } from "./TaskTagBadge";
 import { RecurringBadge } from "./RecurringBadge";
@@ -11,6 +11,7 @@ import { TASK_PRIORITY_COLORS } from "@/types";
 const STATUS_ICONS: Record<TaskStatus, React.ReactNode> = {
   TODO: <Circle size={16} />,
   IN_PROGRESS: <Clock size={16} style={{ color: "var(--accent-blue)" }} />,
+  IN_VERIFICATION: <Eye size={16} style={{ color: "var(--accent-amber)" }} />,
   DONE: <CheckCircle2 size={16} style={{ color: "var(--accent-green)" }} />,
   CANCELLED: <MinusCircle size={16} style={{ color: "var(--text-muted)" }} />,
   DEFERRED: <AlertCircle size={16} style={{ color: "var(--accent-amber)" }} />,
