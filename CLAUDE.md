@@ -93,6 +93,22 @@ GOOGLE_CLIENT_ID      # Google OAuth
 GOOGLE_CLIENT_SECRET  # Google OAuth
 ```
 
+### Testy E2E (klikacze)
+
+**Gdy ktoś poprosi „puść testy e2e / klikacze":**
+- **Claude na web (zdalny sandbox)** — sieć blokuje pobieranie przeglądarek i
+  Dockera, więc NIE działa `npm run test:e2e:local`. Użyj gotowego skryptu i
+  runbooka, które omijają te ograniczenia (pre-instalowany Chromium + lokalny
+  Postgres, bez Dockera):
+  ```bash
+  cd worldofmag
+  nohup bash scripts/e2e-web.sh > /tmp/e2e.log 2>&1 &   # w TLE; potem: tail -40 /tmp/e2e.log
+  ```
+  Pełna instrukcja: **`worldofmag/docs/e2e/uruchamianie-e2e-claude.md`**.
+- **Lokalnie (człowiek, z Dockerem)** — `npm run test:e2e:local` (headed demo).
+  Instrukcja dla nietechnicznego testera: **`worldofmag/docs/e2e/instrukcja-testera-e2e.md`**.
+- Szczegóły o samym frameworku: `worldofmag/e2e/README.md` oraz `/admin/e2e`.
+
 ---
 
 ## Tech Stack
