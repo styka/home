@@ -263,10 +263,17 @@ git push origin master
 ### Git workflow (merge przez `develop`)
 
 Obowiązuje przepływ **`feature → develop → master`**:
-- **`develop`** to gałąź integracyjna — pracę z gałęzi roboczych (`claude/*`)
-  mergujemy najpierw do `develop`.
+- **`develop`** to gałąź integracyjna i **środowisko testowe**: push do `develop`
+  uruchamia auto-deploy na `worldofmag.onrender.com`. To jedyny sposób, by
+  zweryfikować, że wykonana praca faktycznie działa na żywo.
+- **Po ukończeniu zadania mergujemy gałąź roboczą (`claude/*`) → `develop`
+  domyślnie i automatycznie — bez pytania o zgodę.** Nie zatrzymujemy się z
+  meldunkiem „masz teraz uprawnienia / zrobione"; od razu mergujemy do `develop`,
+  żeby zmiana trafiła na test. Warunek: zadanie jest skończone, a `npm run build`
+  przechodzi.
 - **`master`** to produkcja (auto-deploy Render) — promocję `develop → master`
-  wykonujemy **tylko na wyraźną prośbę** użytkownika.
+  wykonujemy **tylko na wyraźną prośbę** użytkownika i dopiero po potwierdzeniu,
+  że na środowisku testowym (`develop`) wszystko działa.
 - Preferowany fast-forward; jeśli gałąź docelowa się rozeszła, robimy zwykły
   merge (bez force-push).
 
