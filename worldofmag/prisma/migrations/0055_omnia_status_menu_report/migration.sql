@@ -47,7 +47,7 @@ pokazać np. „Odłożone"/„Anulowane" jako filtry, trzymając je poza domyś
 Filtry i opcje statusu są teraz wyliczane z konfiguracji listy, a `toggleTaskStatus`
 cykluje po ścieżce projektu zamiast stałej tablicy.
 **Zmienione pliki:**
-- `prisma/schema.prisma` + `migrations/0049_task_status_config` — `TaskProject.statusConfig`.
+- `prisma/schema.prisma` + `migrations/0053_task_status_config` — `TaskProject.statusConfig`.
 - `src/types/index.ts` — status `IN_VERIFICATION`, `SYSTEM_TASK_STATUSES`, `ProjectStatusConfig`, helpery `parse/serialize/resolve`.
 - `src/actions/tasks.ts` — cykl po ścieżce projektu; `IN_VERIFICATION` nie jest terminalem.
 - `src/actions/taskProjects.ts` — `updateTaskProjectStatusConfig` (walidacja chain ⊆ enabled).
@@ -67,7 +67,7 @@ wszystko **oprócz QA**) pozwalają wyłączać działy i je porządkować; sekc
 działy dostępne, ale wyłączone (szybkie włączenie), a pełny edytor (on/off + ↑/↓) jest w
 ustawieniach. Strona domowa: linki w stopce bez uprawnień są teraz ukrywane, nie wyszarzane.
 **Zmienione pliki:**
-- `prisma/schema.prisma` + `migrations/0050_user_menu_pref` — model `UserMenuPref`.
+- `prisma/schema.prisma` + `migrations/0054_user_menu_pref` — model `UserMenuPref`.
 - `src/lib/modules.tsx` — lista modułów + helpery widoczności/kolejności.
 - `src/actions/menuPrefs.ts` — odczyt/zapis preferencji (upsert + revalidate layout).
 - `src/components/shell/{AppShell,ModuleSidebar}.tsx` — render z jednego źródła, „Więcej…", ukrywanie bez uprawnień.
@@ -80,7 +80,7 @@ Zrealizowano 2 z 3 zadań (3. — Drive — odłożone z uzasadnieniem). Główn
 **moduł Zadań** (konfigurowalne statusy per lista + przepływ weryfikacji, bez łamania
 istniejących list dzięki `statusConfig=null`) oraz **powłoka/nawigacja** (jedno źródło
 prawdy dla menu, ukrywanie zamiast wyłączania, preferencje kolejności i włączonych działów).
-Dwie migracje DB (0049, 0050), `npm run build` przechodzi, zmiany skomitowane na gałęzi
+Dwie migracje DB (0053, 0054), `npm run build` przechodzi, zmiany skomitowane na gałęzi
 roboczej i mergowane na `develop` (środowisko testowe). Lekcja o duplikacji nawigacji i
 „hidden vs disabled" dopisana do `doświadczenia.md`.
 $omnia_status_menu$,
