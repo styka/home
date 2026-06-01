@@ -1567,6 +1567,9 @@ model NewsKnowledge {
   content   String
   // Jednozdaniowy nagłówek „aktualny stan" do podglądu.
   headline  String?
+  // Markdown — opis CO SIĘ ZMIENIŁO w tej wersji względem poprzedniej
+  // (dla wersji bazowej: jak zbudowano bazę + jaka była ostatnia znana informacja).
+  changeNote String?
   createdAt DateTime @default(now())
 
   topic  NewsTopic  @relation(fields: [topicId], references: [id], onDelete: Cascade)

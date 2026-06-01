@@ -91,10 +91,15 @@ export function NewsPage({
     startRefresh(async () => {
       try {
         const r = await refreshTopic(selectedId);
-        showToast(
-          r.added > 0 ? `Dodano ${r.added} nowych wiadomości` : "Brak nowych istotnych wiadomości",
-          r.added > 0 ? "success" : "info"
-        );
+        const msg =
+          r.added > 0
+            ? `Dodano ${r.added} nowych wiadomości`
+            : r.bootstrapped > 0
+              ? `Brak nowości z 24h — zbudowano bazową bazę wiedzy (${r.bootstrapped} ${
+                  r.bootstrapped === 1 ? "źródło" : "źródła"
+                })`
+              : "Brak nowych istotnych wiadomości";
+        showToast(msg, r.added > 0 || r.bootstrapped > 0 ? "success" : "info");
         loadView(selectedId);
         router.refresh();
       } catch (e: any) {
