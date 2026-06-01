@@ -4,6 +4,11 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-01 — Magiczna ikona obcinała wsadowe polecenia do ~7 akcji (limit tokenów)
+**Problem:** Po wklejeniu do asystenta („magiczna ikona") dużego JSON-a z 47 zadaniami, drawer pokazywał tylko 7 pierwszych. Nie było jawnego limitu liczby akcji — wąskim gardłem był sztywny `maxTokens: 1024` w `src/app/api/llm/home/interpret/route.ts`. Każda akcja `create_task` to ~150–250 tokenów, więc w 1024 tokenach model „domykał" tablicę JSON na ~7 pozycjach.
+**Rozwiązanie:** Budżet tokenów skalowany do długości wejścia: `Math.min(8192, Math.max(1024, ceil(text.length/2)))`. Dodatkowo tolerancyjny parser `parseActionArray` — gdy odpowiedź urwie się mimo to, przycina do ostatniego kompletnego `}` i domyka `]`, więc zwraca tyle akcji, ile się zmieściło, zamiast 502.
+**Lekcja:** Sztywny `maxTokens` przy odpowiedziach o zmiennej długości (listy/JSON) to cichy obcinacz — skaluj budżet do rozmiaru wejścia i zawsze miej plan B na urwany JSON (graceful degrade zamiast twardego błędu). Przy poleceniach generujących N elementów licz „tokeny na element × N", nie jedną stałą.
+
 ## 2026-05-31 — Kolizja numerów migracji przy mergu gałęzi roboczej do `develop`
 **Problem:** Gałąź robocza dodawała migracje `0049`/`0050` (raporty E2E), ale w międzyczasie `develop` urósł o własne `0049_architecture_full_report`, `0049_omnia_implementation_report_v2` i `0050_omnia_handoff_prompt` (Faza 0 Omnia). Po `git fetch` okazało się, że te same numery są zajęte — merge stworzyłby zdublowane prefiksy migracji, a kolejność stosowania (Prisma sortuje po nazwie katalogu) stałaby się niejednoznaczna.
 **Rozwiązanie:** Przed mergem przenumerowałem swoje migracje na `0051`/`0052` (`git mv`), tak by trafiły po najnowszej na `develop`. Zweryfikowałem cały łańcuch `prisma migrate deploy` na świeżej bazie (51 migracji, raporty wstawione) oraz `npm run build`. Konflikt treści był tylko w `doświadczenia.md` (oba wpisy zachowane).

@@ -99,6 +99,23 @@ ${PET_ACTION_EXAMPLES}
 
 Zwróć TYLKO tablicę JSON, bez żadnego dodatkowego tekstu ani markdown.`;
 
+/**
+ * Parsuje tablicę akcji zwróconą przez LLM, tolerując urwanie w połowie (gdy
+ * odpowiedź dobiła do limitu tokenów). Najpierw normalna próba; jeśli się nie
+ * uda, przycinamy do ostatniego kompletnego obiektu `}` i domykamy `]`, dzięki
+ * czemu wsadowe polecenie zwraca tyle akcji, ile zdążyło się zmieścić, zamiast
+ * całkiem padać błędem 502.
+ */
+function parseActionArray(cleaned: string): unknown {
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const lastClose = cleaned.lastIndexOf("}");
+    if (!cleaned.trimStart().startsWith("[") || lastClose === -1) throw new Error("unrecoverable");
+    return JSON.parse(cleaned.slice(0, lastClose + 1) + "]");
+  }
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -140,6 +157,12 @@ export async function POST(req: NextRequest) {
     `Polecenie użytkownika: ${text.trim()}`,
   ].filter(Boolean).join("\n");
 
+  // Budżet tokenów odpowiedzi skalujemy do rozmiaru wejścia. Sztywne 1024 obcinało
+  // wsadowe polecenia (np. wklejony JSON z wieloma zadaniami) do ~7 akcji — model
+  // domykał tablicę, bo brakło miejsca na resztę. Każda akcja to ~150–250 tokenów,
+  // więc dajemy z grubsza tyle tokenów ile znaków wejścia, w widełkach 1024–8192.
+  const maxTokens = Math.min(8192, Math.max(1024, Math.ceil(text.trim().length / 2)));
+
   const result = await chatComplete({
     op: "reasoning",
     messages: [
@@ -147,7 +170,7 @@ export async function POST(req: NextRequest) {
       { role: "user", content: userMsg },
     ],
     temperature: 0.1,
-    maxTokens: 1024,
+    maxTokens,
   });
 
   if (!result.ok) {
@@ -159,7 +182,7 @@ export async function POST(req: NextRequest) {
   let actions: AIAction[];
   try {
     const cleaned = content.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "").replace(/^```\n?/, "");
-    const parsed = JSON.parse(cleaned);
+    const parsed = parseActionArray(cleaned);
     if (!Array.isArray(parsed)) throw new Error("not array");
     actions = parsed.map((a: Partial<AIAction>, i: number) => ({
       id: a.id ?? `a${i + 1}`,
