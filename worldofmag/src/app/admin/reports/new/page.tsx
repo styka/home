@@ -15,6 +15,7 @@ const CATEGORIES = [
   { value: "ux", label: "UX" },
   { value: "proposal", label: "Propozycja" },
   { value: "general", label: "Ogólny" },
+  { value: "backlog", label: "🚧 Backlog luk" },
 ];
 
 const inputStyle = {

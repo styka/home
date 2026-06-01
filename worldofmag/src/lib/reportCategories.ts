@@ -12,6 +12,7 @@ export const REPORT_CATEGORIES: Record<string, ReportCategoryInfo> = {
   general:      { slug: "general",      label: "Ogólny",          color: "var(--text-muted)"    },
   proposal:     { slug: "proposal",     label: "Propozycja",      color: "var(--accent-amber)"  },
   ux:           { slug: "ux",           label: "UX",              color: "var(--accent-purple)" },
+  backlog:      { slug: "backlog",      label: "🚧 Backlog luk",  color: "var(--accent-red)"    },
 };
 
 export function getCategoryInfo(cat: string): ReportCategoryInfo {
