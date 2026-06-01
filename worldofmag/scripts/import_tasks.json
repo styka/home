@@ -1,0 +1,705 @@
+[
+  {
+    "title": "Raj - Simparica (Trio do podania 28 maj - potem za kolejne 3 miesiące)",
+    "description": "- w koconiu skończyła się simparica trio\n\n— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co miesiąc\nPrzypisane: Asia\nPilność: !!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-04-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 6,
+    "recurring": {
+      "type": "MONTHLY",
+      "interval": 1
+    },
+    "category": "Raj",
+    "order": 0.0
+  },
+  {
+    "title": "Raj fizjoterapia",
+    "description": "- ćwiczyć\n- przygotować potrzebne sprzęty\n- po niecałym miesiącu ćwiczeń umówić się do VitalVet\n\n— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co 2 dni\nPrzypisane: Asia\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-05-16T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 30,
+    "recurring": {
+      "type": "DAILY",
+      "interval": 2
+    },
+    "category": "Raj",
+    "order": 1.0
+  },
+  {
+    "title": "Remont/ogród;",
+    "description": "- Łukasz - upomnieć się - czekam na odpowiedź mailową\n- Mateusz - kolory blatów\n- Andrzej - czekam co odpisze w sprawie wycen ekip; zawieszona kostka i mamy prawo do poprawek tarasu\n- musimy odpowiedzieć andrzejowi na ofertę mebli na wymiar\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Asia\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": null,
+    "category": "Dom",
+    "order": 2.0
+  },
+  {
+    "title": "Dowiedzieć się czy na obecnej konstrukcji dachu będzie można założyć panele słoneczne",
+    "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Szymon\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-05-05T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 30,
+    "recurring": null,
+    "category": "Dom",
+    "order": 3.0
+  },
+  {
+    "title": "Dermatolog (alergolog i inni) -",
+    "description": "- podsumować co było na wizycie i ustalić co dalej\n\nAllMedica w Wadowicach\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Szymon\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 30,
+    "recurring": null,
+    "category": "Zdrowie",
+    "order": 4.0
+  },
+  {
+    "title": "Szczepienie przeciwko kaszlowi kennelowemu",
+    "description": "- zastanowić się czy w tym roku będziemy szczepić (ostatnie szczepienie: 2025.06.18)\n\n— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co rok\nPrzypisane: Asia\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": null,
+    "recurring": {
+      "type": "YEARLY",
+      "interval": 1
+    },
+    "category": "Raj",
+    "order": 5.0
+  },
+  {
+    "title": "Schodzić z Forthyronu",
+    "description": "- badanie krwi (co miesiąc) - czekam na wyniki razem z cytologią\n- kontrola w ivet (20 maj)\n\nco dalej?\n\n— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co ile trzeba\nPrzypisane: Asia\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 30,
+    "recurring": null,
+    "category": "Raj",
+    "order": 6.0
+  },
+  {
+    "title": "Stomatologia",
+    "description": "- umówić wizytę\n- zdjęcie lekarstwa\n\n— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co ile trzeba\nMiejsce: Katowice\nPrzypisane: Szymon\nPilność: !!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-05-04T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 12,
+    "recurring": null,
+    "category": "Zdrowie",
+    "order": 7.0
+  },
+  {
+    "title": "Ogarnąć dla Asi prezent na kolejną okazję",
+    "description": "KRUK\n\nKwiatki na walentynki i na rocznicę zamówić (odbiór piątek i niedziela)\n\nwybrać romansidło\n\nZarezerwowany stolik w restauracji na 14:30 w sobotę: https://maps.app.goo.gl/6rnG78ykTk5ZEs2S6\n\nhttps://www.facebook.com/share/p/1D1BujfxZo/\n\nhttps://www.amazon.pl/s?k=kindle&i=electronics&rh=n%3A20657432031%2Cp_123%3A323125%2Cp_n_condition-type%3A21329610031%2Cp_6%3AA2R2221NX79QZP&dc&crid=UAF0BIQY7KQ3&qid=1756750445&rnid=20875378031&sprefix=k%2Caps%2C102&ref=sr_nr_p_6_1&ds=v1%3AaOMZ2cWsq%2B%2F3qvxSZB43C3tkuimM%2FJRzmgr5Qyw53%2Bskupić\nKindle Paperwhite 6 Signature Edition\nalbo colorsoft 32 GB\nsprawdzić recenzje colorsoft\n\n koszulę nocną, znaleźć teatr, ogarnąć restaurację, jeszcze coś? może coś drobnego, albo coś do Potworka? Nauka jazdy terenowej ( To ci się może przydać do prezentu dla mnie\nJedna dziewczyna z turnieju k9 byla u nich i była zadowolona\n\n\nhttps://www.facebook.com/eror4x4 ). Garmin który będzie się ładował słonecznie.\n\nkolczyki\nvoucher\n?\nhttps://www.perplexity.ai/search/podaj-10-pomyslow-na-33-urodzi-QG9pkkbSR4CaUOBK5gXrpA\n\n— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): 1 lipca\nPrzypisane: Szymon\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": null,
+    "category": "Inne",
+    "order": 8.0
+  },
+  {
+    "title": "Szczpienia",
+    "description": "(MAJ) \nZałatwić receptę, kupić i zaszczepić w czerwcu (procedurę zacząć w maju): \nodkleszczowe zapalenie mózgu:\n- Szymon - :FSME-IMMUN 0,5 ml 2,4 µg/0,5 ml\n- Asia - Encepur Adults\n\nDONE 1. Ze zdjęć żółtej książeczki stworzyć excela ze szczepieniami jakie mieliśmy; \n2. Wpisać daty szczepień covid; \n3. Uzupełnić listę o szczepienia z książeczek zdrowia dziecka; \n4. Spytać rodziców czy było więcej szczepień; \n5. Ustalić listę na co chcemy mieć odporność (m.in: kleszczowe zapalenie mózgu, koklusz); \n6. U lekarza w Gilowicach spytać na co jeszcze warto się zaszczepić; \n7. Z lekarzem zweryfikować listę odbytych szczepień i zrobić plan szczepień; \n8. Zaszczepić się zgodnie z planem szczepień;\n\nhttps://www.gov.pl/web/zdrowie/szczepienia-obowiazkowe-i-zalecane\n\nNiepubliczny Zakład Opieki Zdrowotnej \"VITA\" – Ślemień, Żywiecka 5 -\n tel: 338654075 - przychodniaslemien@gmail.com - to jest dobry numer!!!!!\n\n— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co ile? Maj\nPrzypisane: Asia\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": null,
+    "category": "Zdrowie",
+    "order": 9.0
+  },
+  {
+    "title": "Pomyśleć o czymś na rocznicę ślubu",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co rok - 1 marca\nPrzypisane: Asia\nPilność: !!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": {
+      "type": "YEARLY",
+      "interval": 1
+    },
+    "category": "Dom",
+    "order": 10.0
+  },
+  {
+    "title": "ZUK - umowa na przyłącza na czerwiec - być w kontakcie",
+    "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nMiejsce: Kocoń\nPrzypisane: Asia\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-05-15T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 30,
+    "recurring": null,
+    "category": "Dom",
+    "order": 11.0
+  },
+  {
+    "title": "CHRAPANIE - LARYNGOLOGIA",
+    "description": "- ćwiczenia\n- spać z ortezą\n\nLaryngolog Blicharz\n\nKOD: 8382\n\n— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co 2 dni\nPrzypisane: Szymon\nPilność: !!!",
+    "status": "TODO",
+    "priority": "HIGH",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": {
+      "type": "DAILY",
+      "interval": 2
+    },
+    "category": "Zdrowie",
+    "order": 12.0
+  },
+  {
+    "title": "Okulista",
+    "description": "- sprawdzić czy mam już zrobione wszystkie badania by iść do okulisty\n\n— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co 3 lata\nPrzypisane: Szymon\nPilność: !!!",
+    "status": "TODO",
+    "priority": "HIGH",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": {
+      "type": "YEARLY",
+      "interval": 3
+    },
+    "category": "Zdrowie",
+    "order": 13.0
+  },
+  {
+    "title": "ORTOPEDA:",
+    "description": "Zlecone badania krwi\numówić wizytę do ortopedy.\nSpytać o Badanie ORTO kręgosłupa na urazówce w Piekarach\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Szymon\nPilność: !!!",
+    "status": "TODO",
+    "priority": "HIGH",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 120,
+    "recurring": null,
+    "category": "Zdrowie",
+    "order": 14.0
+  },
+  {
+    "title": "Mateusz blaty - wybrać kolor",
+    "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Szymon\nPilność: !!!",
+    "status": "TODO",
+    "priority": "HIGH",
+    "dueDate": "2026-04-14T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": null,
+    "category": "Dom",
+    "order": 15.0
+  },
+  {
+    "title": "Odburzanie",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co miesiąc\nPrzypisane: Szymon\nPilność: !!",
+    "status": "TODO",
+    "priority": "HIGH",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 120,
+    "recurring": {
+      "type": "MONTHLY",
+      "interval": 1
+    },
+    "category": "Zdrowie",
+    "order": 16.0
+  },
+  {
+    "title": "Upewnić się że mamy w obu domach:",
+    "description": "- Simparice (+ Simparica trio na odrobaczanie)\n- Forthyron\n\n— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co 3 miiesiące\nPrzypisane: Asia\nPilność: !",
+    "status": "TODO",
+    "priority": "LOW",
+    "dueDate": "2026-04-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 12,
+    "recurring": {
+      "type": "MONTHLY",
+      "interval": 3
+    },
+    "category": "Raj",
+    "order": 17.0
+  },
+  {
+    "title": "Dyscyplina - koncentracja - cierpliwość",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): pn\nPrzypisane: Szymon\nPilność: !",
+    "status": "TODO",
+    "priority": "LOW",
+    "dueDate": "2026-05-26T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": null,
+    "recurring": {
+      "type": "WEEKLY",
+      "interval": 1,
+      "daysOfWeek": [
+        1
+      ]
+    },
+    "category": "Praca",
+    "order": 18.0
+  },
+  {
+    "title": "ćwiczenia: basen, gęsia stopka, rozciąganie barków i szyi, głębokie mięśnnie brzuch, JOGA",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co 2 dni\nPrzypisane: Szymon\nPilność: !!!",
+    "status": "TODO",
+    "priority": "MEDIUM",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 30,
+    "recurring": {
+      "type": "DAILY",
+      "interval": 2
+    },
+    "category": "Zdrowie",
+    "order": 19.0
+  },
+  {
+    "title": "Raj RTG całości? czy tylko bioder? Czekamy na wyniki cytologii",
+    "description": "gdzie wyniki z ARKI? wyniki cytologi i wymazu z ogona\n\n— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co 2 lata\nPrzypisane: Asia\nPilność: !!!",
+    "status": "TODO",
+    "priority": "MEDIUM",
+    "dueDate": "2026-04-27T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": null,
+    "recurring": {
+      "type": "YEARLY",
+      "interval": 2
+    },
+    "category": "Raj",
+    "order": 20.0
+  },
+  {
+    "title": "Odpajęczanie domu i posesji",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co 2 tygodnie\nMiejsce: Kocoń\nPrzypisane: Asia\nPilność: !!",
+    "status": "TODO",
+    "priority": "MEDIUM",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 120,
+    "recurring": {
+      "type": "WEEKLY",
+      "interval": 2
+    },
+    "category": "Dom",
+    "order": 21.0
+  },
+  {
+    "title": "Julka - wymyśleć coś fajnego",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co rok pół roku\nPrzypisane: Szymon\nPilność: !!",
+    "status": "TODO",
+    "priority": "LOW",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 90,
+    "recurring": null,
+    "category": "Inne",
+    "order": 22.0
+  },
+  {
+    "title": "Rozliczenie roku + zwrot Asi za mieszkanie, terapie, lekarze, masaże + sprawdzić czy Asia odesłała mi 20k",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co rok (2 stycznia)\nPrzypisane: Asia\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 120,
+    "recurring": {
+      "type": "YEARLY",
+      "interval": 1
+    },
+    "category": "Dom",
+    "order": 23.0
+  },
+  {
+    "title": "Chlorowanie studni",
+    "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Asia\nPilność: !!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-07-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 120,
+    "recurring": null,
+    "category": "Dom",
+    "order": 24.0
+  },
+  {
+    "title": "Rozliczenie miesiąca",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co miesiąc - 20 dnia miesiąca\nPrzypisane: Asia\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": {
+      "type": "MONTHLY",
+      "interval": 1,
+      "dayOfMonth": 20
+    },
+    "category": "Dom",
+    "order": 25.0
+  },
+  {
+    "title": "kupić:",
+    "description": "- suplementy (glicyna, ...)\n- koszulki\n- skarpetki\n- akcesoria basenowe (moskitiera?)\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Szymon\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": null,
+    "category": "Inne",
+    "order": 26.0
+  },
+  {
+    "title": "Odkurzanie (Kocoń)",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): pt\nMiejsce: Kocoń\nPrzypisane: Asia\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-05-08T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": {
+      "type": "WEEKLY",
+      "interval": 1,
+      "daysOfWeek": [
+        5
+      ]
+    },
+    "category": "Dom",
+    "order": 27.0
+  },
+  {
+    "title": "Mazda - drzwi - jechać do Specka?",
+    "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Szymon\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-03-29T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": null,
+    "category": "Samochód",
+    "order": 28.0
+  },
+  {
+    "title": "Ogarnąć nieprzeczytane i odłożone maile + zwolnić miejsce na gdrive",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co 2 dni\nPrzypisane: Szymon\nPilność: !!!",
+    "status": "TODO",
+    "priority": "URGENT",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": {
+      "type": "DAILY",
+      "interval": 2
+    },
+    "category": "Inne",
+    "order": 29.0
+  },
+  {
+    "title": "Zrobić porządek w aktach",
+    "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Szymon\nPilność: !!",
+    "status": "TODO",
+    "priority": "HIGH",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": null,
+    "category": "Dom",
+    "order": 30.0
+  },
+  {
+    "title": "Sprawdzić czy coś się zmieniło w temacie zbliżeniowych przelewó blik na iPhone",
+    "description": "https://www.perplexity.ai/search/czy-w-sklepach-z-terminalami-p-NlqXsL4bSgCxAWdYgjgMPA\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Szymon\nPilność: !",
+    "status": "TODO",
+    "priority": "MEDIUM",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": null,
+    "category": "Dom",
+    "order": 31.0
+  },
+  {
+    "title": "Raj - umyć miski (Kocoń)",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co 2 tygodnie\nMiejsce: Kocoń\nPrzypisane: Asia\nPilność: !!",
+    "status": "TODO",
+    "priority": "LOW",
+    "dueDate": "2026-05-09T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 30,
+    "recurring": {
+      "type": "WEEKLY",
+      "interval": 2
+    },
+    "category": "Raj",
+    "order": 32.0
+  },
+  {
+    "title": "Kupić szczotkę wirującą",
+    "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Asia\nPilność: !!",
+    "status": "TODO",
+    "priority": "MEDIUM",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": null,
+    "category": "Dom",
+    "order": 33.0
+  },
+  {
+    "title": "Zwolnić miejsce na gdrive",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co ile trzebba\nPrzypisane: Szymon\nPilność: !!",
+    "status": "TODO",
+    "priority": "MEDIUM",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 120,
+    "recurring": null,
+    "category": "Praca",
+    "order": 34.0
+  },
+  {
+    "title": "Raj - czesanie",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): pt\nPrzypisane: Asia\nPilność: !!",
+    "status": "TODO",
+    "priority": "MEDIUM",
+    "dueDate": "2026-05-04T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 30,
+    "recurring": {
+      "type": "WEEKLY",
+      "interval": 1,
+      "daysOfWeek": [
+        5
+      ]
+    },
+    "category": "Raj",
+    "order": 35.0
+  },
+  {
+    "title": "Wyczyścić rumbę",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co 10 tygodni\nMiejsce: Kocoń\nPrzypisane: Asia\nPilność: !!",
+    "status": "TODO",
+    "priority": "MEDIUM",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 30,
+    "recurring": {
+      "type": "WEEKLY",
+      "interval": 10
+    },
+    "category": "Dom",
+    "order": 36.0
+  },
+  {
+    "title": "Załatwić wymianę akumulatora do odkurzacza",
+    "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Asia\nPilność: !",
+    "status": "TODO",
+    "priority": "MEDIUM",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": null,
+    "category": "Dom",
+    "order": 37.0
+  },
+  {
+    "title": "Poodkładać rzeczy na miejsca (Kocoń)",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): pt\nMiejsce: Kocoń\nPrzypisane: Asia\nPilność: !!!",
+    "status": "TODO",
+    "priority": "LOW",
+    "dueDate": "2026-05-08T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": {
+      "type": "WEEKLY",
+      "interval": 1,
+      "daysOfWeek": [
+        5
+      ]
+    },
+    "category": "Dom",
+    "order": 38.0
+  },
+  {
+    "title": "Kupić dodatkowe ekrany do lapka z pracy",
+    "description": "Wybrać coś tu: https://www.google.com/search?sca_esv=37db28bfa134011b&rlz=1CDGOYI_enPL826PL826&hl=pl&sxsrf=ADLYWIJIdkN5Lg5aElpeSuqozwa09xtaIA:1719342820750&q=monitor+doczepiany+do+laptopa&udm=3\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Szymon\nPilność: !!!",
+    "status": "TODO",
+    "priority": "MEDIUM",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": null,
+    "category": "Praca",
+    "order": 39.0
+  },
+  {
+    "title": "Wytrzeć kurze (Kocoń)",
+    "description": "parapety, biurko, regał w salonie, drzwi + inne\n\n— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co 3 tygodnie\nMiejsce: Kocoń\nPrzypisane: Asia\nPilność: !!",
+    "status": "TODO",
+    "priority": "LOW",
+    "dueDate": "2026-04-18T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": {
+      "type": "WEEKLY",
+      "interval": 3
+    },
+    "category": "Dom",
+    "order": 40.0
+  },
+  {
+    "title": "Czyszczenie odpływów (sprawdzić wszystkie) - Kocoń",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co miesiąc\nMiejsce: Kocoń\nPrzypisane: Asia\nPilność: !",
+    "status": "TODO",
+    "priority": "LOW",
+    "dueDate": "2026-05-04T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 30,
+    "recurring": {
+      "type": "MONTHLY",
+      "interval": 1
+    },
+    "category": "Dom",
+    "order": 41.0
+  },
+  {
+    "title": "Sprawdzić czy w lodówce jest nadmiar wody i przeczyścić (Kocoń)",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co miesiąc\nMiejsce: Kocoń\nPrzypisane: Asia\nPilność: !",
+    "status": "TODO",
+    "priority": "LOW",
+    "dueDate": "2026-04-22T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 30,
+    "recurring": {
+      "type": "MONTHLY",
+      "interval": 1
+    },
+    "category": "Dom",
+    "order": 42.0
+  },
+  {
+    "title": "Działka Jeleśnia, sprawdzić ceny działek",
+    "description": "Dowiedzieć się czy sprzedaż wymaga podatku jeśli to idzie na remont. Jeśli tak to zastanowić się co dalej, czy sprzedać czy uzbroić czy wyrównać (ile to kosztuje)\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPrzypisane: Asia\nPilność: !!",
+    "status": "TODO",
+    "priority": "MEDIUM",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 120,
+    "recurring": null,
+    "category": "Dom",
+    "order": 43.0
+  },
+  {
+    "title": "Znaleźć kameralne koncerty zagranicznych artystow",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co rok\nPrzypisane: Szymon\nPilność: !!",
+    "status": "TODO",
+    "priority": "LOW",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 60,
+    "recurring": {
+      "type": "YEARLY",
+      "interval": 1
+    },
+    "category": "Inne",
+    "order": 44.0
+  },
+  {
+    "title": "Wymyśleć prezenty dla wszystkich na kolejną okazję",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): co rok (24 października)\nPrzypisane: Szymon\nPilność: !",
+    "status": "TODO",
+    "priority": "MEDIUM",
+    "dueDate": "2026-03-28T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 180,
+    "recurring": {
+      "type": "YEARLY",
+      "interval": 1
+    },
+    "category": "Dom",
+    "order": 45.0
+  },
+  {
+    "title": "Odczyt prądu (Kocoń) - Asia 20 dnia miesiąca",
+    "description": "— Meta (z arkusza) —\nTyp: cykliczne\nCykliczność (oryg.): do 22 dnia nieparzystego miesiąca\nMiejsce: Kocoń\nPrzypisane: Asia\nPilność: !",
+    "status": "TODO",
+    "priority": "MEDIUM",
+    "dueDate": "2026-05-22T00:00:00.000Z",
+    "startDate": null,
+    "completedAt": null,
+    "estimatedMins": 18,
+    "recurring": {
+      "type": "MONTHLY",
+      "interval": 2,
+      "dayOfMonth": 22
+    },
+    "category": "Dom",
+    "order": 46.0
+  }
+]
