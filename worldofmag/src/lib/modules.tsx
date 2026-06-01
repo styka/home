@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Home, ShoppingCart, CheckSquare, FileText, PawPrint, ChefHat, GraduationCap,
-  HeartPulse, Flame, FlaskConical, Truck, Car, Wallet, BookOpen,
+  HeartPulse, Flame, FlaskConical, Truck, Car, Wallet, BookOpen, Newspaper, CloudSun,
 } from "lucide-react";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -28,6 +28,8 @@ export const MODULES: ModuleDef[] = [
   { id: "kitchen",   label: "Kuchnia",       href: "/kitchen",   permission: PERMISSIONS.KITCHEN,   color: "var(--accent-orange)", Icon: ChefHat,       defaultEnabled: true },
   { id: "languages", label: "Nauka języków", href: "/languages", permission: PERMISSIONS.LANGUAGES, color: "var(--accent-purple)", Icon: GraduationCap, defaultEnabled: true },
   { id: "health",    label: "Zdrowie",       href: "/health",    permission: PERMISSIONS.HEALTH,    color: "var(--accent-red)",    Icon: HeartPulse,    defaultEnabled: true },
+  { id: "news",      label: "Wiadomości",    href: "/wiadomosci", permission: PERMISSIONS.NEWS,     color: "var(--accent-blue)",   Icon: Newspaper,     defaultEnabled: true },
+  { id: "weather",   label: "Pogoda",        href: "/pogoda",    permission: PERMISSIONS.WEATHER,   color: "var(--accent-amber)",  Icon: CloudSun,      defaultEnabled: true },
   { id: "habits",    label: "Nawyki",        href: "/habits",    permission: PERMISSIONS.HABITS,    color: "var(--accent-orange)", Icon: Flame,         defaultEnabled: true },
   { id: "qa",        label: "QA",            href: "/qa",        permission: PERMISSIONS.QA,        color: "var(--accent-red)",    Icon: FlaskConical,  defaultEnabled: false },
   { id: "truck",     label: "Trasy TIR",     href: "/truck",     permission: PERMISSIONS.TRUCK,     color: "var(--accent-blue)",   Icon: Truck,         defaultEnabled: true },

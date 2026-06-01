@@ -27,6 +27,8 @@ async function seedPermissions() {
       { slug: "module.languages", name: "Nauka języków", description: "Dostęp do działu nauki słownictwa (fiszki + powtórki)" },
       { slug: "module.health", name: "Zdrowie", description: "Zarządzanie wizytami u lekarzy i badaniami" },
       { slug: "module.habits", name: "Nawyki", description: "Śledzenie nawyków: codzienne odhaczanie, streaki i przypomnienia" },
+      { slug: "module.news", name: "Wiadomości", description: "Personalizowane streszczenia wiadomości: monitorowane tematy, baza wiedzy, gorące tematy" },
+      { slug: "module.weather", name: "Pogoda", description: "Szczegółowa pogoda z opisami AI i obserwatorami (alerty pogodowe)" },
     ]
     const grants = {
       "module.qa": ["ADMIN", "TESTER"],
@@ -34,6 +36,8 @@ async function seedPermissions() {
       "module.languages": ["ADMIN"],
       "module.health": ["ADMIN"],
       "module.habits": ["ADMIN"],
+      "module.news": ["ADMIN"],
+      "module.weather": ["ADMIN"],
     }
     for (const p of perms) {
       const perm = await prisma.permission.upsert({
