@@ -104,6 +104,32 @@ export function computeStreaks(
   return { currentStreak: current, longestStreak: longest };
 }
 
+/**
+ * Odsetek zaplanowanych dni wykonanych w zadanym zakresie dni (wstecz od dziś).
+ * Zwraca wartość 0–100 lub null jeśli brak zaplanowanych dni w zakresie.
+ */
+export function completionRate(
+  entryDates: string[],
+  daysOfWeek: string | null | undefined,
+  lookbackDays: number
+): number | null {
+  const done = new Set(entryDates);
+  const today = new Date();
+  const todayStr = isoDate(today);
+  let scheduled = 0;
+  let completed = 0;
+  for (let i = 0; i < lookbackDays; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i, 12, 0, 0, 0);
+    const ds = isoDate(d);
+    if (ds > todayStr) continue;
+    if (isScheduledOn(daysOfWeek, d)) {
+      scheduled++;
+      if (done.has(ds)) completed++;
+    }
+  }
+  return scheduled === 0 ? null : Math.round((completed / scheduled) * 100);
+}
+
 /** Poniedziałek bieżącego tygodnia (lokalnie, południe). */
 export function startOfWeek(date: Date): Date {
   const c = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0);

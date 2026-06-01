@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { GraduationCap, Plus, Sparkles, Loader2, ArrowRight } from "lucide-react";
+import { GraduationCap, Plus, Sparkles, Loader2, ArrowRight, BookOpen, Flame } from "lucide-react";
+import { StatTile, SectionHeading } from "@/components/ui/home";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle, cardHoverHandlers } from "@/components/ui/home";
 import { createDeck, bulkAddWords } from "@/actions/languageDecks";
 import { llm } from "@/lib/llm-client";
@@ -20,6 +21,9 @@ const inputStyle: React.CSSProperties = {
 };
 
 export function LanguagesHomePage({ decks }: { decks: LanguageDeck[] }) {
+  const totalCards = decks.reduce((s, d) => s + (d._count?.cards ?? 0), 0);
+  const totalDue = decks.reduce((s, d) => s + (d.dueCount ?? 0), 0);
+  const totalLearned = decks.reduce((s, d) => s + (d.learnedCount ?? 0), 0);
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
@@ -72,6 +76,15 @@ export function LanguagesHomePage({ decks }: { decks: LanguageDeck[] }) {
             </button>
           }
         />
+
+        {decks.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8 }}>
+            <StatTile value={decks.length} label="Talie" color="var(--accent-purple)" />
+            <StatTile value={totalCards} label="Słówek" color="var(--accent-blue)" icon={<BookOpen size={14} />} />
+            <StatTile value={totalLearned} label="Przeczonych" color="var(--accent-green)" />
+            {totalDue > 0 && <StatTile value={totalDue} label="Do nauki" color="var(--accent-amber)" icon={<Flame size={14} />} />}
+          </div>
+        )}
 
         {showForm && (
           <div style={{ ...cardStyle, flexDirection: "column", alignItems: "stretch", gap: 12, cursor: "default" }}>
@@ -135,7 +148,13 @@ export function LanguagesHomePage({ decks }: { decks: LanguageDeck[] }) {
                   <div style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 500 }}>{d.name}</div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                     {d.nativeLang} → {d.targetLang} · {d._count?.cards ?? 0} słówek
+                    {(d.learnedCount ?? 0) > 0 && ` · ${d.learnedCount} przeczonych`}
                   </div>
+                  {(d._count?.cards ?? 0) > 0 && (
+                    <div style={{ marginTop: 5, height: 3, borderRadius: 2, background: "var(--bg-elevated)", overflow: "hidden" }}>
+                      <div style={{ height: "100%", borderRadius: 2, background: "var(--accent-green)", width: `${Math.round(((d.learnedCount ?? 0) / (d._count?.cards ?? 1)) * 100)}%`, transition: "width 0.3s" }} />
+                    </div>
+                  )}
                 </div>
                 {(d.dueCount ?? 0) > 0 && (
                   <span
