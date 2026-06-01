@@ -116,8 +116,9 @@ export function NewsPage({
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
-      {/* Nagłówek */}
+    <div className="flex-1 overflow-y-auto">
+      <div className="mx-auto max-w-6xl px-4 py-6">
+        {/* Nagłówek */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex items-center gap-2 text-xl font-bold text-[var(--text-primary)]">
           <Newspaper size={22} className="text-[var(--accent-blue)]" /> Wiadomości
@@ -239,6 +240,7 @@ export function NewsPage({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
