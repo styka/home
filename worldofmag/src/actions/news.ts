@@ -7,6 +7,7 @@ import { chatComplete } from "@/lib/llm/chat";
 import { parseJsonLoose } from "@/lib/llm/json";
 import { fetchRss } from "@/lib/news/rss";
 import { fetchArticle } from "@/lib/news/article";
+import { webSearch } from "@/lib/news/webSearch";
 import { DEFAULT_SOURCES, type Leaning } from "@/lib/news/sources";
 
 export type SummaryLength = "short" | "medium" | "long";
@@ -393,7 +394,7 @@ interface FilterDecision {
   summary: string;
 }
 
-const MAX_BOOTSTRAP_ARTICLES = 8;
+const MAX_BOOTSTRAP_ARTICLES = 10;
 
 interface BootstrapResult {
   found: boolean;
@@ -402,46 +403,90 @@ interface BootstrapResult {
   changeNote: string;
 }
 
+// Ujednolicony kandydat do bazowej bazy wiedzy (z RSS albo z wyszukiwarki).
+interface BootstrapCandidate {
+  title: string;
+  url: string;
+  date: Date | null;
+  origin: "rss" | "web";
+}
+
+function hostnameOf(url: string): string | null {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Buduje BAZOWĄ wersję bazy wiedzy (wersja 1) dla danego źródła, gdy w ostatnich
- * 24h nic nie znaleziono i temat nie ma jeszcze żadnej wiedzy. Bierze wszystko, co
- * źródło ma w feedzie (bez limitu 24h), buduje chronologiczny opis stanu i wskazuje
- * ostatnią znaną informację. Zwraca true, jeśli utworzono wersję bazową.
+ * 24h nic nie znaleziono i temat nie ma jeszcze żadnej wiedzy. Materiał zbiera z
+ * dwóch kanałów: (1) feed RSS (świeże), (2) WYSZUKIWARKA INTERNETOWA — najpierw
+ * w obrębie domeny źródła (sięga do archiwum, którego nie ma w RSS), a potem
+ * szerzej w internecie, by uzupełnić wiedzę. Buduje chronologiczny opis stanu i
+ * wskazuje ostatnią znaną informację. Zwraca true, jeśli utworzono wersję bazową.
  */
 async function bootstrapKnowledge(
   topic: { id: string; title: string; semanticFilter: string },
-  source: { id: string; name: string },
+  source: { id: string; name: string; homepageUrl: string },
   feed: Awaited<ReturnType<typeof fetchRss>>
 ): Promise<boolean> {
-  // Najnowsze najpierw (pozycje z datą priorytetowo — potrzebne do chronologii).
-  const sorted = [...feed].sort(
+  const candidates: BootstrapCandidate[] = [];
+  const seen = new Set<string>();
+  const add = (c: BootstrapCandidate) => {
+    if (seen.has(c.url)) return;
+    seen.add(c.url);
+    candidates.push(c);
+  };
+
+  // (1) Wyszukiwarka: najpierw w obrębie domeny źródła, potem szerzej w internecie.
+  const domain = hostnameOf(source.homepageUrl);
+  const query = `${topic.title} ${topic.semanticFilter}`.slice(0, 200);
+  if (domain) {
+    for (const r of await webSearch(`${topic.title} site:${domain}`, 6)) {
+      add({ title: r.title, url: r.url, date: null, origin: "web" });
+    }
+  }
+  for (const r of await webSearch(query, 6)) {
+    add({ title: r.title, url: r.url, date: null, origin: "web" });
+  }
+
+  // (2) RSS źródła (świeże; data znana → przydatna do chronologii).
+  const rssSorted = [...feed].sort(
     (a, b) => (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0)
   );
-  const pick = sorted.slice(0, MAX_BOOTSTRAP_ARTICLES);
+  for (const f of rssSorted.slice(0, 6)) {
+    add({ title: f.title, url: f.link, date: f.publishedAt, origin: "rss" });
+  }
+
+  const pick = candidates.slice(0, MAX_BOOTSTRAP_ARTICLES);
   if (pick.length === 0) return false;
 
-  const articles = await Promise.all(pick.map((p) => fetchArticle(p.link)));
+  const articles = await Promise.all(pick.map((p) => fetchArticle(p.url)));
+  const usedWeb = pick.some((p) => p.origin === "web");
   const blocks = pick
     .map((p, i) => {
-      const body = articles[i].text || p.description;
-      const date = p.publishedAt ? p.publishedAt.toISOString().slice(0, 10) : "data nieznana";
-      return `### Artykuł ${i} (${date})\nTytuł: ${p.title}\nURL: ${p.link}\nTreść: ${body.slice(0, 1500)}`;
+      const body = articles[i].text || "";
+      const date = p.date ? p.date.toISOString().slice(0, 10) : "data nieznana";
+      return `### Materiał ${i} (${date}, ${p.origin === "web" ? "wyszukiwarka" : "RSS"})\nTytuł: ${p.title}\nURL: ${p.url}\nTreść: ${body.slice(0, 1500)}`;
     })
     .join("\n\n");
 
   const system =
-    "Budujesz BAZOWĄ (początkową) bazę wiedzy na zadany temat, z perspektywy jednego źródła, " +
-    "na podstawie dostępnych artykułów (różne daty). Najpierw odsiej artykuły NIEzwiązane z tematem. " +
+    "Budujesz BAZOWĄ (początkową) bazę wiedzy na zadany temat na podstawie materiałów z internetu " +
+    "(wyszukiwarka + RSS, różne daty i źródła). Najpierw odsiej materiały NIEzwiązane z tematem. " +
     "Jeśli zostaną trafne — zbuduj zwięzły, uporządkowany CHRONOLOGICZNIE opis stanu wiedzy w Markdown " +
     "(oś czasu wydarzeń, jeśli wynika z treści) i wyraźnie wskaż OSTATNIĄ ZNANĄ informację na moment " +
-    "tworzenia bazy (najnowsza data). Pisz po polsku. Zwróć WYŁĄCZNIE JSON.";
+    "tworzenia bazy (najnowsza data). Nie zmyślaj — opieraj się tylko na materiałach. " +
+    "Pisz po polsku. Zwróć WYŁĄCZNIE JSON.";
   const userPrompt =
-    `TEMAT: „${topic.title}"\nFILTR SEMANTYCZNY: ${topic.semanticFilter}\nŹRÓDŁO: ${source.name}\n\n` +
-    `ARTYKUŁY:\n${blocks}\n\n` +
+    `TEMAT: „${topic.title}"\nFILTR SEMANTYCZNY: ${topic.semanticFilter}\nŹRÓDŁO BAZOWE: ${source.name}\n\n` +
+    `MATERIAŁY:\n${blocks}\n\n` +
     `Zwróć JSON: {"found": true/false, "headline": "jednozdaniowy aktualny stan", ` +
     `"content": "pełna bazowa baza wiedzy w Markdown z chronologią i wskazaniem ostatniej znanej informacji", ` +
-    `"changeNote": "krótki opis: jak zbudowano bazę i jaka jest ostatnia znana informacja (z datą)"}. ` +
-    `found=false, gdy żaden artykuł nie dotyczy tematu.`;
+    `"changeNote": "krótki opis: jak zbudowano bazę (wyszukiwarka internetowa + RSS) i jaka jest ostatnia znana informacja (z datą)"}. ` +
+    `found=false, gdy żaden materiał nie dotyczy tematu.`;
 
   let out: BootstrapResult;
   try {
@@ -461,7 +506,9 @@ async function bootstrapKnowledge(
         headline: out.headline?.trim() || null,
         changeNote:
           out.changeNote?.trim() ||
-          "Utworzono bazową bazę wiedzy na podstawie dostępnych artykułów źródła.",
+          `Utworzono bazową bazę wiedzy na podstawie ${
+            usedWeb ? "wyszukiwarki internetowej i RSS" : "dostępnych artykułów RSS"
+          }.`,
       },
     });
     return true;

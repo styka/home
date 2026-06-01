@@ -49,7 +49,7 @@ Nie pytaj o pozwolenie — po prostu dopisz i commituj razem z poprawką.
 | Flota (vehicles/fuel/service) | `/flota` | `module.flota` | Done and deployed |
 | Portfel (personal finance) | `/portfel` | `module.portfel` | Done and deployed |
 | Languages (SRS flashcards) | `/languages` | `module.languages` | Done and deployed |
-| Wiadomości (news + knowledge base) | `/wiadomosci` | `module.news` | Done — RSS+LLM filtering, per-topic/per-source versioned knowledge base, hot topics, 24h freshness |
+| Wiadomości (news + knowledge base) | `/wiadomosci` | `module.news` | Done — RSS+LLM filtering, per-topic/per-source versioned knowledge base (full + change-per-version), web-search baseline bootstrap (Brave/DDG), hot topics, 24h freshness |
 | Pogoda (weather) | `/pogoda` | `module.weather` | Done — Open-Meteo, LLM day advice, preset + custom watchers |
 | Reports (markdown docs) | `/reports` | authenticated | Done (system/user/team reports) |
 | QA (test scenarios) | `/qa` | `module.qa` | Internal tooling |
@@ -286,7 +286,7 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 
 - **`/admin`** — console: build info (`NEXT_PUBLIC_BUILD_*`), active session, Omnia↔Claude Code clipboard export (`admin-tools.ts` → open Omnia tasks as JSON), links to tools.
 - **`/admin/access`** — RBAC manager (`PermissionManager`): permissions, role↔permission grid, user↔role; self-lockout guard.
-- **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, masked).
+- **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, `brave_search_api_key` for News web-search baseline, masked).
 - **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type).
 - **`/admin/categories`** — global system categories (name/color/icon).
 - **`/admin/reports`** — markdown reports CRUD.
