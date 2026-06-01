@@ -253,14 +253,17 @@ function PairCard({ pair, pet, onChange }: { pair: PetBreedingData["pairs"][numb
   const [isPending, startTransition] = useTransition();
   const [clutchOpen, setClutchOpen] = useState(false);
   const [offspringOpen, setOffspringOpen] = useState(false);
+  const [hatchModal, setHatchModal] = useState<{ clutchId: string; count: string } | null>(null);
 
   function changeStatus(status: string) {
     startTransition(async () => { await updateBreedingPair(pair.id, { status }); onChange(); });
   }
-  function hatch(clutchId: string) {
-    const n = prompt("Liczba wyklutych?");
-    if (n == null) return;
-    startTransition(async () => { await markClutchHatched(clutchId, parseInt(n, 10) || 0); onChange(); showToast("Oznaczono wyklucie", "success"); });
+  function confirmHatch() {
+    if (!hatchModal) return;
+    const n = parseInt(hatchModal.count, 10) || 0;
+    const clutchId = hatchModal.clutchId;
+    setHatchModal(null);
+    startTransition(async () => { await markClutchHatched(clutchId, n); onChange(); showToast("Oznaczono wyklucie", "success"); });
   }
 
   return (
@@ -286,7 +289,7 @@ function PairCard({ pair, pet, onChange }: { pair: PetBreedingData["pairs"][numb
                 {c.laidAt ? formatDate(c.laidAt) : "klutch"} · {c.eggCount ?? "?"} jaj{c.fertileCount != null ? ` (${c.fertileCount} płodne)` : ""}
                 {c.status === "HATCHED" ? ` · wyklute: ${c.hatchedCount ?? 0}` : c.expectedHatchAt ? ` · oczekiwane: ${formatDate(c.expectedHatchAt)}` : ""}
               </span>
-              {c.status !== "HATCHED" && <button onClick={() => hatch(c.id)} style={{ fontSize: 11, color: "var(--accent-green)", background: "none", border: "none", cursor: "pointer" }}>wyklute</button>}
+              {c.status !== "HATCHED" && <button onClick={() => setHatchModal({ clutchId: c.id, count: "" })} style={{ fontSize: 11, color: "var(--accent-green)", background: "none", border: "none", cursor: "pointer" }}>wyklute</button>}
               <button onClick={() => startTransition(async () => { await deleteClutch(c.id); onChange(); })} style={iconBtn}><Trash2 size={11} /></button>
             </div>
           ))}
@@ -300,6 +303,29 @@ function PairCard({ pair, pet, onChange }: { pair: PetBreedingData["pairs"][numb
 
       {clutchOpen && <ClutchModal pairId={pair.id} onClose={() => setClutchOpen(false)} onSaved={onChange} />}
       {offspringOpen && <OffspringModal pet={pet} pair={pair} onClose={() => setOffspringOpen(false)} onSaved={onChange} />}
+
+      {hatchModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setHatchModal(null)}>
+          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px", width: 280, display: "flex", flexDirection: "column", gap: 12 }}
+            onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Liczba wyklutych</div>
+            <input
+              type="number"
+              min={0}
+              autoFocus
+              value={hatchModal.count}
+              onChange={(e) => setHatchModal({ ...hatchModal, count: e.target.value })}
+              onKeyDown={(e) => { if (e.key === "Enter") confirmHatch(); if (e.key === "Escape") setHatchModal(null); }}
+              style={{ padding: "8px 10px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", fontSize: 14, outline: "none" }}
+            />
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setHatchModal(null)} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid var(--border)", background: "none", color: "var(--text-secondary)", fontSize: 13, cursor: "pointer" }}>Anuluj</button>
+              <button onClick={confirmHatch} style={{ padding: "6px 14px", borderRadius: 7, border: "none", background: "var(--accent-green)", color: "#fff", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Zapisz</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
