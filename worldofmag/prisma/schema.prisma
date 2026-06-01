@@ -65,6 +65,11 @@ model User {
   serviceRequestsAsClient ServiceRequest[]     @relation("ClientServiceRequests")
   serviceReviews         ServiceReview[]       @relation("AuthoredServiceReviews")
   menuPref               UserMenuPref?
+  newsSources            NewsSource[]          @relation("OwnedNewsSources")
+  newsTopics             NewsTopic[]           @relation("OwnedNewsTopics")
+  newsPref               NewsPref?             @relation("NewsPref")
+  weatherLocations       WeatherLocation[]     @relation("OwnedWeatherLocations")
+  weatherWatchers        WeatherWatcher[]      @relation("OwnedWeatherWatchers")
 }
 
 // Preferencje paska bocznego/menu per użytkownik: kolejność i wyłączone moduły.
@@ -1504,4 +1509,143 @@ model ServiceReview {
 
   request ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
   author  User           @relation("AuthoredServiceReviews", fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+// ─── Wiadomości (News) ────────────────────────────────────────────────────
+// Personalizowane streszczenia wiadomości z monitorowaniem tematów. Pobieranie
+// na żądanie (RSS + dociągnięcie artykułu), twardy limit świeżości 24h, baza
+// wiedzy per (temat × źródło) z wersjonowaniem. Prywatne per użytkownik.
+
+model NewsSource {
+  id          String   @id @default(cuid())
+  ownerId     String
+  // Stabilny klucz źródła: "onet" | "okopress" | "niezalezna" | własny slug.
+  key         String
+  name        String
+  rssUrl      String
+  homepageUrl String
+  // Profil światopoglądowy do oznaczania widoku: "left" | "center" | "right".
+  leaning     String   @default("center")
+  enabled     Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  owner     User            @relation("OwnedNewsSources", fields: [ownerId], references: [id], onDelete: Cascade)
+  items     NewsItem[]
+  knowledge NewsKnowledge[]
+
+  @@unique([ownerId, key])
+  @@index([ownerId])
+}
+
+model NewsTopic {
+  id              String    @id @default(cuid())
+  ownerId         String
+  title           String
+  // Filtr semantyczny w naturalnym języku (np. „perypetie Z. Ziobry w sprawie zarzutów").
+  semanticFilter  String
+  enabled         Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  lastRefreshedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  owner     User            @relation("OwnedNewsTopics", fields: [ownerId], references: [id], onDelete: Cascade)
+  items     NewsItem[]
+  knowledge NewsKnowledge[]
+
+  @@index([ownerId])
+}
+
+// Wersjonowany stan wiedzy dla (temat × źródło). Bieżący stan = najwyższy version.
+model NewsKnowledge {
+  id        String   @id @default(cuid())
+  topicId   String
+  sourceId  String
+  version   Int
+  // Markdown — narastający opis stanu wiedzy na temat (z perspektywy źródła).
+  content   String
+  // Jednozdaniowy nagłówek „aktualny stan" do podglądu.
+  headline  String?
+  createdAt DateTime @default(now())
+
+  topic  NewsTopic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  source NewsSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, sourceId, version])
+  @@index([topicId, sourceId])
+}
+
+model NewsItem {
+  id            String   @id @default(cuid())
+  topicId       String
+  sourceId      String
+  url           String
+  title         String
+  // Bieżące streszczenie w wybranej długości.
+  summary       String
+  // "short" | "medium" | "long" — poziom szczegółowości streszczenia.
+  summaryLength String   @default("medium")
+  // Co nowego wnosi względem stanu wiedzy (uzasadnienie „nowości").
+  noveltyNote   String?
+  imageUrl      String?
+  publishedAt   DateTime
+  // "PENDING" | "ACKNOWLEDGED" | "DISMISSED". Tylko ACKNOWLEDGED trafia do bazy wiedzy.
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+
+  topic  NewsTopic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  source NewsSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, sourceId, url])
+  @@index([topicId, status])
+}
+
+model NewsPref {
+  ownerId              String   @id
+  // Domyślna długość streszczeń: "short" | "medium" | "long".
+  defaultSummaryLength String   @default("medium")
+  // Ostatnio wybrane źródło w widoku (klucz NewsSource).
+  activeSourceKey      String?
+  updatedAt            DateTime @updatedAt
+
+  owner User @relation("NewsPref", fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+// ─── Pogoda (Weather) ─────────────────────────────────────────────────────
+// Dane pogodowe pobierane na żywo z Open-Meteo (bez klucza). W bazie trzymamy
+// tylko lokalizacje i „obserwatory" (alerty) użytkownika. Prywatne per user.
+
+model WeatherLocation {
+  id        String   @id @default(cuid())
+  ownerId   String
+  label     String
+  lat       Float
+  lon       Float
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  owner User @relation("OwnedWeatherLocations", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+}
+
+model WeatherWatcher {
+  id        String   @id @default(cuid())
+  ownerId   String
+  title     String
+  // "preset" (gotowy scenariusz aktywności) | "custom" (opis w naturalnym języku).
+  kind      String   @default("preset")
+  presetKey String?
+  // Treść obserwatora dla kind=custom (np. „weekend dobry na rower w górach").
+  query     String?
+  // Horyzont czasowy: "today" | "tomorrow" | "weekend" | "week".
+  horizon   String   @default("week")
+  enabled   Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  owner User @relation("OwnedWeatherWatchers", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
 }
