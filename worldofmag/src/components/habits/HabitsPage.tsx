@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Flame, Plus, Check, Bell, BellOff, Pencil, Trash2, ChevronDown, Archive, CalendarRange } from "lucide-react";
 import { PageHeader, StatTile, SectionHeading, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { createHabit, updateHabit, deleteHabit, setHabitArchived, toggleHabitDay } from "@/actions/habits";
-import { todayISO, computeStreaks, weekProgress } from "@/lib/habitStats";
+import { todayISO, computeStreaks, weekProgress, completionRate } from "@/lib/habitStats";
 import { showLocalNotification, notificationsGranted, requestNotificationPermission } from "@/lib/notifications";
 import { HabitFormModal, emptyHabitForm, type HabitFormValue } from "./HabitFormModal";
 import { HabitHeatmap } from "./HabitHeatmap";
@@ -256,6 +256,12 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
   );
 }
 
+const HEATMAP_PERIODS: { label: string; weeks: number }[] = [
+  { label: "3m", weeks: 13 },
+  { label: "6m", weeks: 26 },
+  { label: "1r", weeks: 52 },
+];
+
 function HabitCard({
   habit: h,
   focused,
@@ -277,6 +283,7 @@ function HabitCard({
   onArchive: () => void;
   onFocus: () => void;
 }) {
+  const [heatmapWeeks, setHeatmapWeeks] = useState(26);
   const dots = Math.min(7, h.weekTarget);
   return (
     <div
@@ -350,11 +357,33 @@ function HabitCard({
             <MiniStat label="Aktualna seria" value={`${h.currentStreak}`} />
             <MiniStat label="Najdłuższa seria" value={`${h.longestStreak}`} />
             <MiniStat label="Ten tydzień" value={`${h.weekDone}/${h.weekTarget}`} />
+            {(() => {
+              const rate = completionRate(h.entryDates, h.daysOfWeek, heatmapWeeks * 7);
+              return rate !== null ? <MiniStat label="Ukończenie" value={`${rate}%`} /> : null;
+            })()}
           </div>
-          <div style={{ margin: "12px 0 8px", fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 5 }}>
-            <CalendarRange size={12} /> Ostatnie miesiące
+          <div style={{ margin: "12px 0 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 5 }}>
+              <CalendarRange size={12} /> Historia
+            </div>
+            <div style={{ display: "flex", gap: 2 }}>
+              {HEATMAP_PERIODS.map((p) => (
+                <button
+                  key={p.weeks}
+                  onClick={() => setHeatmapWeeks(p.weeks)}
+                  style={{
+                    fontSize: 10, padding: "2px 8px", borderRadius: 5, border: "1px solid var(--border)",
+                    background: heatmapWeeks === p.weeks ? "var(--bg-hover)" : "none",
+                    color: heatmapWeeks === p.weeks ? "var(--text-primary)" : "var(--text-muted)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <HabitHeatmap entryDates={h.entryDates} color={h.color} daysOfWeek={h.daysOfWeek} />
+          <HabitHeatmap entryDates={h.entryDates} color={h.color} daysOfWeek={h.daysOfWeek} weeks={heatmapWeeks} />
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "none" }}>
               <Pencil size={13} /> Edytuj

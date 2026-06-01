@@ -13,6 +13,7 @@ const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
   ux: { label: "UX", color: "var(--accent-amber)" },
   proposal: { label: "Propozycja", color: "var(--accent-blue)" },
   general: { label: "Ogólny", color: "var(--text-muted)" },
+  backlog: { label: "🚧 Backlog luk", color: "var(--accent-red)" },
 };
 
 function formatDateTime(date: Date): string {

@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { BookOpen, ChevronRight, Calendar, User, Plus, Layers } from "lucide-react";
+import { BookOpen, ChevronRight, Calendar, User, Plus, Layers, Search } from "lucide-react";
 import { PageHeader, StatTile, SectionHeading, ManagementGrid, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { getCategoryInfo } from "@/lib/reportCategories";
 
@@ -24,6 +25,10 @@ interface ReportsHomePageProps {
 }
 
 export function ReportsHomePage({ reports, myCount, teamCount, isAdmin }: ReportsHomePageProps) {
+  const [query, setQuery] = useState("");
+  const filtered = query.trim()
+    ? reports.filter((r) => r.title.toLowerCase().includes(query.toLowerCase()))
+    : reports;
   const total = reports.length;
   const latest = reports[0];
 
@@ -89,9 +94,35 @@ export function ReportsHomePage({ reports, myCount, teamCount, isAdmin }: Report
           />
         </div>
 
+        {/* Wyszukiwarka */}
+        {total > 0 && (
+          <div style={{ position: "relative" }}>
+            <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }} />
+            <input
+              type="search"
+              placeholder="Szukaj raportu…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px 12px 8px 34px",
+                borderRadius: 8,
+                border: "1px solid var(--border)",
+                background: "var(--bg-surface)",
+                color: "var(--text-primary)",
+                fontSize: 13,
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+        )}
+
         {/* Wszystkie raporty — pełna, klikalna lista (każdy wiersz → szczegóły) */}
         <div>
-          <SectionHeading>Wszystkie raporty</SectionHeading>
+          <SectionHeading>
+            {query.trim() ? `Wyniki (${filtered.length})` : "Wszystkie raporty"}
+          </SectionHeading>
           {reports.length === 0 ? (
             <EmptyState
               icon={<BookOpen size={28} />}
@@ -99,9 +130,11 @@ export function ReportsHomePage({ reports, myCount, teamCount, isAdmin }: Report
               hint={isAdmin ? "Utwórz pierwszy raport w panelu admina" : "Raporty zostaną tu pokazane gdy się pojawią"}
               cta={isAdmin ? { label: "Otwórz panel", href: "/admin/reports", color: "var(--accent-purple)" } : undefined}
             />
+          ) : filtered.length === 0 ? (
+            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "12px 0" }}>Brak wyników dla „{query}"</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {reports.map((r) => (
+              {filtered.map((r) => (
                 <ReportRow key={r.id} report={r} />
               ))}
             </div>

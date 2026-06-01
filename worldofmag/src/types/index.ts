@@ -460,6 +460,7 @@ export type LanguageDeck = {
   updatedAt: Date;
   _count?: { cards: number };
   dueCount?: number;
+  learnedCount?: number;
 };
 
 // ─── Zdrowie ──────────────────────────────────────────────────────────────

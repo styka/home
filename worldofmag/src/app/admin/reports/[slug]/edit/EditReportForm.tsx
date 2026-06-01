@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Trash2, Columns, Eye, Edit3 } from "lucide-react";
 import { updateReport, deleteReport } from "@/actions/reports";
+import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 
 const CATEGORIES = [
   { value: "architecture", label: "Architektura" },
@@ -14,6 +15,7 @@ const CATEGORIES = [
   { value: "ux", label: "UX" },
   { value: "proposal", label: "Propozycja" },
   { value: "general", label: "Ogólny" },
+  { value: "backlog", label: "🚧 Backlog luk" },
 ];
 
 const inputStyle = {
@@ -39,6 +41,8 @@ export function EditReportForm({ report }: Props) {
   const [category, setCategory] = useState(report.category);
   const [content, setContent] = useState(report.content);
   const [error, setError] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState<"edit" | "split" | "preview">("edit");
+  const previewHtml = useMemo(() => markdownToHtml(content), [content]);
 
   function handleSave() {
     if (!title.trim() || !content.trim()) {
@@ -144,15 +148,35 @@ export function EditReportForm({ report }: Props) {
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>
-              Treść (Markdown)
-            </label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={28}
-              style={{ ...inputStyle, resize: "vertical", fontFamily: "monospace", fontSize: 13, lineHeight: 1.6 }}
-            />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                Treść (Markdown)
+              </label>
+              <div style={{ display: "flex", gap: 2 }}>
+                {([["edit", <Edit3 key="e" size={12} />, "Edytor"], ["split", <Columns key="s" size={12} />, "Split"], ["preview", <Eye key="p" size={12} />, "Podgląd"]] as const).map(([mode, icon, label]) => (
+                  <button key={mode} onClick={() => setPreviewMode(mode)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, padding: "3px 8px", borderRadius: 5, border: "1px solid var(--border)", background: previewMode === mode ? "var(--bg-hover)" : "none", color: previewMode === mode ? "var(--text-primary)" : "var(--text-muted)", cursor: "pointer" }}>
+                    {icon}{label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <style>{MARKDOWN_STYLES}</style>
+            <div style={{ display: "flex", gap: 12 }}>
+              {previewMode !== "preview" && (
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  rows={28}
+                  style={{ ...inputStyle, resize: "vertical", fontFamily: "monospace", fontSize: 13, lineHeight: 1.6, flex: 1, minWidth: 0 }}
+                />
+              )}
+              {previewMode !== "edit" && (
+                <div
+                  style={{ flex: 1, minWidth: 0, padding: "12px 16px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", overflowY: "auto", minHeight: 500 }}
+                  dangerouslySetInnerHTML={{ __html: previewHtml || '<p style="color:var(--text-muted);font-size:13px">Wpisz treść po lewej…</p>' }}
+                />
+              )}
+            </div>
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, paddingTop: 8 }}>

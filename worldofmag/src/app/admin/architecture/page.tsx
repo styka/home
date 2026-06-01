@@ -25,7 +25,7 @@ export default async function ArchitecturePage() {
           </h1>
         </div>
         <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 32, marginTop: 4 }}>
-          Developer guide — WorldOfMag. Ostatnia aktualizacja: 2026-05-18.
+          Developer guide — WorldOfMag. Ostatnia aktualizacja: 2026-06-01.
         </p>
 
         {/* Tech Stack */}
@@ -56,34 +56,62 @@ export default async function ArchitecturePage() {
 {`worldofmag/src/
 ├── app/                    # Next.js App Router pages
 │   ├── layout.tsx          # Root layout — SessionProvider, AppShell
-│   ├── page.tsx            # → redirect /shopping
-│   ├── admin/              # Panel administratora (ADMIN only)
-│   │   ├── page.tsx        # Build info + quick links
-│   │   ├── config/         # Konfiguracja LLM (klucz Groq)
-│   │   ├── playground/     # Component Playground
-│   │   └── architecture/   # Ten widok
+│   ├── page.tsx            # → redirect /
+│   ├── admin/              # Panel administratora (module.admin)
+│   │   ├── access/         # RBAC manager + self-lockout guard
+│   │   ├── config/         # key-value Config (groq_api_key)
+│   │   ├── llm/            # LlmProvider + LlmAssignment
+│   │   ├── categories/     # System category management
+│   │   ├── reports/        # Markdown reports CRUD
+│   │   ├── playground/     # Component sandbox
+│   │   ├── architecture/   # Ten widok
+│   │   ├── e2e/            # Playwright run guide
+│   │   └── qa/             # QA scenario authoring
 │   ├── api/
 │   │   ├── auth/[...nextauth]/  # NextAuth handlers
-│   │   └── llm/            # 10 endpointów AI (POST only)
-│   ├── shopping/           # Moduł zakupów
-│   ├── tasks/              # Moduł zadań
-│   ├── notes/              # Moduł notatek
-│   └── settings/           # Ustawienia + zarządzanie teamami
-├── components/
+│   │   └── llm/            # 15+ endpointów AI (POST only)
+│   ├── calendar/           # Kalendarz (terminy ze wszystkich modułów)
+│   ├── shopping/[listId]/  # Listy + /categories /units /products /icons /stores
+│   ├── tasks/[projectId]/  # Task projekty + /tags
+│   ├── notes/              # Notatki + /all /groups /tags
+│   ├── kitchen/            # Przepisy/plan/spiżarnia/cookbooks
+│   ├── pets/[petId]/       # Zwierzęta + /calendar
+│   ├── health/             # Wizyty + badania
+│   ├── habits/             # Heatmapa nawyków
+│   ├── flota/              # Pojazdy/paliwo/serwis
+│   ├── portfel/            # Majątek + wpisy
+│   ├── languages/          # Talie + fiszki SRS
+│   ├── services/           # Marketplace (lista/oferta/panel/moje)
+│   ├── qa/                 # QA scenariusze
+│   ├── truck/              # Routing ciężarówek
+│   ├── reports/[slug]/     # Markdown raporty
+│   ├── settings/           # Profil + /team/new /team/[teamId]
+│   └── invitations/        # Zaproszenia do teamów
+├── components/             # Organizacja wg modułów
 │   ├── shell/              # AppShell, ModuleSidebar
-│   ├── shopping/           # 12 komponentów modułu zakupów
-│   ├── tasks/              # 13 komponentów modułu zadań
-│   ├── notes/              # 9 komponentów modułu notatek
-│   ├── teams/              # 3 komponenty zarządzania zespołem
-│   ├── home/               # 6 komponentów dashboardu
-│   ├── command-palette/    # Globalna paleta komend
-│   ├── admin/              # ComponentPlayground
-│   └── ui/                 # SmartTextarea (shared)
-├── actions/                # 15 Server Action modules
+│   ├── home/               # HomePage, TodaySnapshot, AICommandSheet, ActionDrawer
+│   ├── shopping/           # ShoppingPage, ItemRow, QuickAddBar, CommandPalette…
+│   ├── tasks/              # TasksPage, TaskRow, TaskDetail, QuickAddTask…
+│   ├── notes/              # NotesPage, NoteRow, NoteGroupSection…
+│   ├── kitchen/            # RecipesPage, MealPlanPage, PantryPage…
+│   ├── pets/               # PetsPage, PetProfile, PetCare, PetBreeding…
+│   ├── health/             # HealthPage
+│   ├── habits/             # HabitsPage
+│   ├── flota/              # FlotaPage (incl. FlotaSideNav)
+│   ├── portfel/            # PortfelPage (incl. PortfelSideNav)
+│   ├── languages/          # LanguagesPage, FlashcardView
+│   ├── services/           # ServicesCatalogPage, ListingDetailPage, ProviderPanel…
+│   ├── calendar/           # CalendarPage (month grid + day list)
+│   ├── reports/            # ReportsHomePage, ReportPage
+│   ├── admin/              # PermissionManager, LlmConfigPanel, Playground…
+│   ├── command-palette/    # Globalny Ctrl+K
+│   ├── teams/              # TeamForm, TeamSettings, InvitePage
+│   ├── brand/              # BrandLogo, AppName
+│   └── ui/                 # home.tsx (prymitywy: PageHeader/StatTile/EmptyState/Card)
+├── actions/                # ~25 Server Action modules (auth-first, revalidatePath)
 ├── hooks/                  # useKeyboardShortcuts, useItemNavigation
-├── lib/                    # auth, prisma, cn, categorize, parseQuantity,
-│   │                       # server-utils, llm-client, categories
-│   └── ...
+├── lib/                    # auth, prisma, cn, permissions, modules, services,
+│                           # calendar, markdown, llm-client, ownership…
 └── types/                  # index.ts, next-auth.d.ts`}
           </pre>
         </Section>
@@ -119,18 +147,56 @@ await assertListAccess(listId, user.id);`} />
           </div>
         </Section>
 
+        {/* Modules table */}
+        <Section title="Moduły aplikacji" icon={<Package size={15} />}>
+          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+            {[
+              { route: "/", module: "Home — Dashboard AI", perm: "module.home", status: "✅ Gotowy" },
+              { route: "/calendar", module: "Kalendarz — terminy ze wszystkich modułów", perm: "module.calendar", status: "✅ Gotowy (v1, read-only)" },
+              { route: "/shopping", module: "Zakupy — listy, items, mapy, AI normalize", perm: "module.shopping", status: "✅ Gotowy (dojrzały)" },
+              { route: "/tasks", module: "Zadania — projekty, podzadania, SRS, tagi", perm: "module.tasks", status: "✅ Gotowy" },
+              { route: "/notes", module: "Notatki — MD, grupy, tagi, AI rewrite/QA", perm: "module.notes", status: "✅ Gotowy" },
+              { route: "/kitchen", module: "Kuchnia — przepisy, plan, spiżarnia, OCR", perm: "module.kitchen", status: "✅ Gotowy" },
+              { route: "/pets", module: "Zwierzęta — profil, opieka, husbandry, hodowla", perm: "module.pets", status: "✅ Gotowy" },
+              { route: "/health", module: "Zdrowie — wizyty, badania", perm: "module.health", status: "✅ Gotowy" },
+              { route: "/habits", module: "Nawyki — heatmapa, streak", perm: "module.habits", status: "✅ Gotowy" },
+              { route: "/flota", module: "Flota — pojazdy, paliwo, serwis", perm: "module.flota", status: "✅ Gotowy" },
+              { route: "/portfel", module: "Portfel — majątek, wpisy, wielowaluta", perm: "module.portfel", status: "✅ Gotowy" },
+              { route: "/languages", module: "Języki — talie, fiszki, SRS SuperMemo-2", perm: "module.languages", status: "✅ Gotowy" },
+              { route: "/services", module: "Usługi — marketplace klient ↔ wykonawca", perm: "module.services", status: "✅ Gotowy (v1)" },
+              { route: "/reports", module: "Raporty — Markdown, kategorie, wyszukiwanie", perm: "authenticated", status: "✅ Gotowy" },
+              { route: "/qa", module: "QA — Epic→Story→Scenario, powiązanie E2E", perm: "module.qa", status: "🔧 Wewnętrzny" },
+              { route: "/truck", module: "Trasy TIR — ORS routing ciężarówek", perm: "module.truck", status: "🚧 Szkielet" },
+              { route: "/work", module: "Praca — (planowany)", perm: "—", status: "📋 Coming soon" },
+            ].map((m, i, arr) => (
+              <div key={m.route} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 14px", borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : undefined, flexWrap: "wrap" }}>
+                <code style={{ fontSize: 11, color: "var(--accent-blue)", minWidth: 160, flexShrink: 0 }}>{m.route}</code>
+                <span style={{ flex: 1, fontSize: 12, color: "var(--text-secondary)", minWidth: 200 }}>{m.module}</span>
+                <code style={{ fontSize: 10, color: "var(--text-muted)", minWidth: 160 }}>{m.perm}</code>
+                <span style={{ fontSize: 11, color: "var(--text-muted)", minWidth: 120, textAlign: "right" }}>{m.status}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
         {/* Database schema overview */}
         <Section title="Schemat bazy danych" icon={<Database size={15} />}>
           <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 16 }}>
-            11 modeli Prisma pogrupowanych w 5 domenach:
+            56+ modeli Prisma w 14 domenach (migracja 0056, stan 2026-06-01):
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
-            <DomainCard title="Autentykacja" color="var(--accent-purple)" models={["User (id, email, role, avatarUrl)", "Account (OAuth provider links)", "Session (NextAuth)", "VerificationToken"]} />
-            <DomainCard title="Zakupy" color="var(--accent-green)" models={["ShoppingList (ownerId | ownerTeamId)", "Item (status, category, qty, unit)", "ItemHistory (autocomplete, useCount)", "Product (user/team/global catalog)", "Unit (custom units)", "Category (custom + emoji)"]} />
-            <DomainCard title="Zadania" color="var(--accent-blue)" models={["TaskProject (inbox concept, members)", "Task (priority, recurring JSON, subtasks)", "TaskTagDef + TaskTaskTag", "TaskComment, TaskShare"]} />
-            <DomainCard title="Notatki" color="var(--accent-amber)" models={["NoteGroup (kolor, opis)", "Note (title, content, pinned)", "Tag + NoteTag (pivot)"]} />
-            <DomainCard title="Zespoły" color="var(--accent-red)" models={["Team (owner, parentTeam)", "TeamMember (role: MEMBER|ADMIN|OWNER)", "TeamInvitation (status: PENDING|ACCEPTED…)"]} />
-            <DomainCard title="System" color="var(--text-muted)" models={["Config (key-value store)", "UserActivity (fire-and-forget logging)"]} />
+            <DomainCard title="Autentykacja / RBAC" color="var(--accent-purple)" models={["User, Account, Session, VerificationToken", "UserRole, Permission, RolePermission", "Config, UserActivity, Report"]} />
+            <DomainCard title="Zakupy" color="var(--accent-green)" models={["ShoppingList, Item, ItemHistory", "Product, Category, Unit", "CategoryIconVariant", "Store, StoreNode, StoreEdge"]} />
+            <DomainCard title="Zadania" color="var(--accent-blue)" models={["TaskProject, TaskProjectMember", "Task (recurring JSON, subtasks)", "TaskTagDef, TaskTaskTag", "TaskComment, TaskShare"]} />
+            <DomainCard title="Notatki" color="var(--accent-amber)" models={["NoteGroup, Note (pinned, isMarkdown)", "Tag, NoteTag (pivot)"]} />
+            <DomainCard title="Kuchnia" color="var(--accent-orange)" models={["Recipe, RecipeIngredient, RecipeStep", "RecipeImage, RecipeTag, RecipeRating", "Cookbook, MealPlanEntry", "PantryItem, ItemRecipeOrigin"]} />
+            <DomainCard title="Zwierzęta" color="var(--accent-orange)" models={["Pet, PetShare, PetMeasurement", "PetHealthRecord, PetVetVisit, PetTreatment", "PetCareTask, PetCareLog, PetEnclosure", "PetEnvironmentReading", "PetBreedingPair, PetClutch, PetSale"]} />
+            <DomainCard title="Zdrowie / Nawyki" color="var(--accent-red)" models={["HealthEvent (VISIT|TEST, status)", "Habit, HabitEntry (@@unique[habitId,date])"]} />
+            <DomainCard title="Flota / Portfel" color="var(--accent-blue)" models={["Vehicle, VehicleProfile, FuelLog", "ServiceRecord (pojazdy)", "WalletElement, WalletEntry"]} />
+            <DomainCard title="Języki / QA / Truck" color="var(--text-muted)" models={["LanguageDeck, Vocabulary (SRS)", "QaEpic, QaUserStory, QaTestScenario"]} />
+            <DomainCard title="Usługi (Marketplace)" color="var(--accent-green)" models={["ServiceCategory (3-poziom)", "ServiceProvider, ServiceListing", "ServiceRequest (status String+TS)", "ServiceReview"]} />
+            <DomainCard title="Zespoły" color="var(--accent-purple)" models={["Team (parentTeam, owner)", "TeamMember (MEMBER|ADMIN|OWNER)", "TeamInvitation (status)"]} />
+            <DomainCard title="LLM Config" color="var(--text-muted)" models={["LlmProvider, LlmAssignment"]} />
           </div>
           <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
             <span style={{ fontSize: 12, color: "var(--accent-amber)" }}>

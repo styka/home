@@ -281,7 +281,6 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
 
         {/* Inactive modules (coming soon — nie zależą od uprawnień) */}
         {[
-          { label: "Calendar", icon: <Calendar size={18} />, href: "/calendar" },
           { label: "Work", icon: <Briefcase size={18} />, href: "/work" },
         ].map((mod) => (
           <div

@@ -8,8 +8,13 @@ import { createTaskProject } from "@/actions/taskProjects";
 import { addItem, updateItem, updateItemStatus, deleteItem } from "@/actions/items";
 import { createList, renameList, archiveList } from "@/actions/lists";
 import { createNote, updateNote, deleteNote } from "@/actions/notes";
+import { toggleHabitDay } from "@/actions/habits";
+import { addEntry, getWalletElements } from "@/actions/portfel";
+import { setMealPlanEntry } from "@/actions/mealPlans";
+import { addFuelLog } from "@/actions/flota";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
 import type { RecurringRule, TaskStatus, TaskPriority, ItemStatus } from "@/types";
+import { isoDate } from "@/lib/habitStats";
 
 function addDays(d: Date, days: number): Date {
   const x = new Date(d);
@@ -584,6 +589,86 @@ async function executeAction(
 
   if (module === "pets") {
     return executePetAction(action, userId);
+  }
+
+  // ── Nawyki ────────────────────────────────────────────────────────────────
+  if (module === "habits") {
+    if (type === "toggle_habit") {
+      const q = (searchQuery ?? asStr(params.habitName) ?? "").toLowerCase();
+      if (!q) throw new Error("Podaj nazwę nawyku");
+      const teamIds = await getUserTeamIds(userId);
+      const habit = await prisma.habit.findFirst({
+        where: {
+          archived: false,
+          OR: [{ ownerId: userId }, teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" }],
+          name: { contains: q, mode: "insensitive" },
+        },
+      });
+      if (!habit) throw new Error(`Nie znaleziono nawyku pasującego do „${q}"`);
+      const result = await toggleHabitDay(habit.id, isoDate(new Date()));
+      return result.done ? `Odhaczono nawyk „${habit.name}"` : `Cofnięto odhaczenie nawyku „${habit.name}"`;
+    }
+  }
+
+  // ── Portfel ───────────────────────────────────────────────────────────────
+  if (module === "portfel") {
+    if (type === "add_expense" || type === "add_income") {
+      const amount = Number(params.amount);
+      if (!amount || isNaN(amount) || amount <= 0) throw new Error("Podaj kwotę większą od zera");
+      const kind: "expense" | "income" = type === "add_expense" ? "expense" : "income";
+      const elementName = asStr(params.elementName);
+      const elements = await getWalletElements();
+      let element = elements[0];
+      if (elementName) {
+        const found = elements.find((e) => e.name.toLowerCase().includes(elementName.toLowerCase()));
+        if (found) element = found;
+      }
+      if (!element) throw new Error("Brak elementów portfela — utwórz konto w /portfel");
+      await addEntry(element.id, {
+        kind,
+        amount,
+        category: asStr(params.category) ?? null,
+        note: asStr(params.note) ?? null,
+      });
+      const prefix = kind === "expense" ? "Wydatek" : "Przychód";
+      return `${prefix} ${amount} zł${params.category ? ` (${params.category})` : ""} dodany do „${element.name}"`;
+    }
+  }
+
+  // ── Kuchnia ───────────────────────────────────────────────────────────────
+  if (module === "kitchen") {
+    if (type === "plan_meal") {
+      const customTitle = asStr(params.customTitle);
+      if (!customTitle) throw new Error("Podaj nazwę posiłku");
+      const dateStr = asStr(params.date);
+      const date = dateStr ? new Date(dateStr) : new Date();
+      const slot = (asStr(params.slot) as "breakfast" | "lunch" | "dinner" | "snack") ?? "dinner";
+      const entry = await setMealPlanEntry({ date, slot, customTitle });
+      const dateLabel = isoDate(date);
+      return `Zaplanowano „${customTitle}" na ${dateLabel} (${slot})`;
+    }
+  }
+
+  // ── Flota ─────────────────────────────────────────────────────────────────
+  if (module === "flota") {
+    if (type === "add_fuel_log") {
+      const liters = Number(params.liters);
+      if (!liters || isNaN(liters) || liters <= 0) throw new Error("Podaj liczbę litrów większą od zera");
+      const teamIds = await getUserTeamIds(userId);
+      const vehicleName = asStr(params.vehicleName);
+      const vehicle = await prisma.vehicle.findFirst({
+        where: {
+          OR: [{ ownerId: userId }, teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" }],
+          ...(vehicleName ? { name: { contains: vehicleName, mode: "insensitive" } } : {}),
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+      if (!vehicle) throw new Error("Nie znaleziono pojazdu w Flocie");
+      const odometer = Number(params.odometer) || vehicle.odometer || 0;
+      const totalCost = params.totalCost != null ? Number(params.totalCost) : null;
+      await addFuelLog(vehicle.id, { liters, totalCost, odometer, note: asStr(params.note) });
+      return `Dodano tankowanie ${liters} L${totalCost ? ` (${totalCost} zł)` : ""} — ${vehicle.name}`;
+    }
   }
 
   throw new Error(`Nieznany typ akcji: ${module}/${type}`);

@@ -3,7 +3,7 @@
 import { useState, useMemo, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Trash2, CheckCircle2 } from "lucide-react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { FilterTabs } from "./FilterTabs";
@@ -14,6 +14,7 @@ import { QuickAddBar } from "./QuickAddBar";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
 import { updateItemStatus, deleteItem, clearDoneItems } from "@/actions/items";
+import { archiveList } from "@/actions/lists";
 import { computeOptimalCategoryOrder } from "@/lib/storeRoute";
 import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus, SortMode, StoreWithGraph } from "@/types";
 import { FILTER_TABS, STATUS_CYCLE } from "@/types";
@@ -220,6 +221,17 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
             <Trash2 size={11} />
             <span className="hidden sm:inline">Wyczyść ({counts.DONE})</span>
             <span className="sm:hidden">{counts.DONE}</span>
+          </button>
+        )}
+        {counts.NEEDED === 0 && counts.IN_CART === 0 && (counts.DONE + counts.MISSING) > 0 && (
+          <button
+            onClick={() => startTransition(async () => { await archiveList(list.id); router.push("/shopping"); })}
+            className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
+            style={{ color: "var(--accent-green)", backgroundColor: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", fontWeight: 600 }}
+            title="Zakończ zakupy — zarchiwizuj listę"
+          >
+            <CheckCircle2 size={11} />
+            <span>Zakończ zakupy</span>
           </button>
         )}
         <SortControl sortMode={sortMode} stores={stores} onChange={handleSortChange} />

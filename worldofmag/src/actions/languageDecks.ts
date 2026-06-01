@@ -38,15 +38,29 @@ export async function getDecks(): Promise<LanguageDeck[]> {
     orderBy: { updatedAt: "desc" },
   });
 
+  const deckIds = decks.map((d) => d.id);
+
   // Liczba kart „na dziś" (do powtórki) per talia.
   const dueRows = await prisma.vocabulary.groupBy({
     by: ["deckId"],
-    where: { deckId: { in: decks.map((d) => d.id) }, dueAt: { lte: now } },
+    where: { deckId: { in: deckIds }, dueAt: { lte: now } },
     _count: { _all: true },
   });
   const dueByDeck = new Map(dueRows.map((r) => [r.deckId, r._count._all]));
 
-  return decks.map((d) => ({ ...d, dueCount: dueByDeck.get(d.id) ?? 0 })) as LanguageDeck[];
+  // Liczba „przeczonych" kart (repetitions > 0) per talia.
+  const learnedRows = await prisma.vocabulary.groupBy({
+    by: ["deckId"],
+    where: { deckId: { in: deckIds }, repetitions: { gt: 0 } },
+    _count: { _all: true },
+  });
+  const learnedByDeck = new Map(learnedRows.map((r) => [r.deckId, r._count._all]));
+
+  return decks.map((d) => ({
+    ...d,
+    dueCount: dueByDeck.get(d.id) ?? 0,
+    learnedCount: learnedByDeck.get(d.id) ?? 0,
+  })) as LanguageDeck[];
 }
 
 export async function getDeck(
