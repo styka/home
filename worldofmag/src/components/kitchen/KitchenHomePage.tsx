@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useState } from "react";
 import Link from "next/link";
 import {
   ChefHat,
@@ -15,9 +15,11 @@ import {
   Users,
   CheckCircle2,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import { markMealCooked } from "@/actions/mealPlans";
 import { PageHeader, StatTile, SectionHeading, ManagementGrid, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
+import { llm } from "@/lib/llm-client";
 
 interface TodayMeal {
   id: string;
@@ -102,6 +104,22 @@ export function KitchenHomePage({
   totalCookbooks,
 }: KitchenHomePageProps) {
   const todayPlannedCount = todayMeals.filter((m) => m.status !== "SKIPPED").length;
+  const [suggestions, setSuggestions] = useState<Array<{ recipeId: string; slug: string; title: string; reason?: string }> | null>(null);
+  const [suggestBusy, setSuggestBusy] = useState(false);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
+
+  async function fetchSuggestions() {
+    setSuggestBusy(true);
+    setSuggestError(null);
+    try {
+      const res = await llm.kitchen.suggestFromPantry();
+      setSuggestions(res.suggestions ?? []);
+    } catch {
+      setSuggestError("Nie udało się pobrać sugestii — sprawdź klucz API w /admin/config");
+    } finally {
+      setSuggestBusy(false);
+    }
+  }
 
   const subtitle =
     recipeCount === 0
@@ -174,6 +192,42 @@ export function KitchenHomePage({
             emphasized={expiringSoonCount > 0}
           />
         </div>
+
+        {/* AI: Co ugotować z tego co mam (K3) */}
+        {pantryCount > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Co ugotować z tego co mam?</span>
+              <button
+                onClick={fetchSuggestions}
+                disabled={suggestBusy}
+                style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, padding: "4px 10px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--accent-orange)", cursor: "pointer", opacity: suggestBusy ? 0.6 : 1 }}
+              >
+                {suggestBusy ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                {suggestBusy ? "Sprawdzam…" : "Zaproponuj AI"}
+              </button>
+            </div>
+            {suggestError && <p style={{ fontSize: 12, color: "var(--accent-red)", margin: 0 }}>{suggestError}</p>}
+            {suggestions !== null && (
+              suggestions.length === 0 ? (
+                <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Brak sugestii — uzupełnij spiżarnię lub dodaj przepisy.</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {suggestions.map((s) => (
+                    <Link key={s.recipeId} href={`/kitchen/recipes/${s.slug}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--bg-surface)", textDecoration: "none" }}>
+                      <Sparkles size={14} style={{ color: "var(--accent-orange)", flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{s.title}</div>
+                        {s.reason && <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{s.reason}</div>}
+                      </div>
+                      <ChevronRight size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                    </Link>
+                  ))}
+                </div>
+              )
+            )}
+          </div>
+        )}
 
         {/* Today's meals (always show, even if empty) */}
         <div>
