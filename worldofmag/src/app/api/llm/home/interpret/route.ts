@@ -6,7 +6,7 @@ import { PET_ACTIONS_PROMPT, PET_ACTION_EXAMPLES } from "@/lib/ai/petActions";
 
 export interface AIAction {
   id: string;
-  module: "shopping" | "tasks" | "notes" | "pets";
+  module: "shopping" | "tasks" | "notes" | "pets" | "habits" | "portfel" | "kitchen" | "flota";
   description: string;
   type: string;
   params: Record<string, unknown>;
@@ -47,6 +47,28 @@ NOTATKI (module: "notes"):
   Dopisuje treść do istniejącej notatki. searchQuery to tytuł notatki.
 
 ${PET_ACTIONS_PROMPT}
+
+NAWYKI (module: "habits"):
+- toggle_habit: params {}, searchQuery: string
+  Odhacza nawyk na dzisiaj (lub cofa odhaczenie). searchQuery to nazwa nawyku lub jej fragment.
+  Przykład: "odhacz bieganie" → searchQuery: "bieganie"
+
+PORTFEL (module: "portfel"):
+- add_expense: params { amount: number, category?: string, note?: string, elementName?: string }
+  Dodaje wydatek. amount w PLN (lub innej walucie — wtedy wpisz ją w note). elementName to fragment nazwy konta/elementu portfela (opcjonalne).
+  Przykład: "wydałem 45 zł na jedzenie" → params { amount: 45, category: "Jedzenie" }
+- add_income: params { amount: number, category?: string, note?: string, elementName?: string }
+  Dodaje przychód. Przykład: "dostałem 2000 zł wynagrodzenia" → params { amount: 2000, category: "Wynagrodzenie" }
+
+KUCHNIA (module: "kitchen"):
+- plan_meal: params { customTitle: string, date?: string, slot?: "breakfast"|"lunch"|"dinner"|"snack" }
+  Planuje posiłek na dany dzień. date w formacie ISO 8601 (pomiń jeśli "dziś"). slot to pora dnia.
+  Przykład: "zaplanuj na jutro makaron z kurczakiem na obiad" → params { customTitle: "Makaron z kurczakiem", date: "...", slot: "dinner" }
+
+FLOTA (module: "flota"):
+- add_fuel_log: params { liters: number, totalCost?: number, odometer?: number, vehicleName?: string, note?: string }
+  Dodaje zatankowanie. liters wymagane; totalCost i odometer opcjonalne. vehicleName to fragment nazwy/modelu pojazdu.
+  Przykład: "zatankowałem 40 litrów za 260 zł" → params { liters: 40, totalCost: 260 }
 
 Zasady:
 - Jeden tekst może zawierać wiele niezależnych poleceń — zwróć każde jako osobną akcję
