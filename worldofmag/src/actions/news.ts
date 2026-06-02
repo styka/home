@@ -545,8 +545,9 @@ interface UpdateCandidate {
 /**
  * Odświeża temat. Dla każdego źródła:
  *  - brak bazy wiedzy → INICJALIZUJE (obszerna wersja 1, zawsze coś tworzy),
- *  - jest baza → szuka (wyszukiwarka + RSS) wiadomości z DATĄ PUBLIKACJI nowszą niż
- *    znacznik bazy, ocenia trafność/nowość i dodaje jako PENDING (ze zdjęciem).
+ *  - jest baza → szuka (wyszukiwarka + RSS) wiadomości z DATĄ PUBLIKACJI bieżącą
+ *    lub nowszą niż data OSTATNIEGO WYSZUKIWANIA tematu (topic.lastRefreshedAt),
+ *    ocenia trafność/nowość i dodaje jako PENDING (ze zdjęciem).
  * Bez okna 24h. Zwraca też `llmUnconfigured`, by UI pokazało czytelny błąd.
  */
 export async function refreshTopic(
@@ -556,6 +557,10 @@ export async function refreshTopic(
   const topic = await assertTopic(topicId, user.id);
   const pref = await prisma.newsPref.findUnique({ where: { ownerId: user.id } });
   const defaultLength = (pref?.defaultSummaryLength as SummaryLength) ?? "medium";
+
+  // Próg = data ostatniego wyszukiwania tematu (sprzed tej operacji); pobieramy
+  // wiadomości opublikowane w tym dniu lub później. Null → bez dolnego progu.
+  const since = topic.lastRefreshedAt;
 
   const sources = await prisma.newsSource.findMany({
     where: { ownerId: user.id, enabled: true },
@@ -584,14 +589,13 @@ export async function refreshTopic(
       continue;
     }
 
-    // ── Jest baza → AKTUALIZACJA od znacznika (data publikacji) ────────────
-    const watermark = currentK.lastPublishedAt;
+    // ── Jest baza → AKTUALIZACJA od daty ostatniego wyszukiwania ────────────
     const candMap = new Map<string, { title: string; link: string; date: Date | null; description: string }>();
 
     const feed = await fetchRss(source.rssUrl);
     for (const f of feed) {
-      // Pomiń pozycje RSS o znanej dacie nie nowszej niż znacznik (oszczędza pobrania).
-      if (watermark && f.publishedAt && f.publishedAt <= watermark) continue;
+      // Pomiń pozycje RSS o znanej dacie starszej niż ostatnie wyszukiwanie (oszczędza pobrania).
+      if (since && f.publishedAt && f.publishedAt < since) continue;
       if (!candMap.has(f.link))
         candMap.set(f.link, { title: f.title, link: f.link, date: f.publishedAt, description: f.description });
     }
@@ -630,8 +634,8 @@ export async function refreshTopic(
       text: arts[i].text,
     }));
 
-    // Filtr po znaczniku: data nowsza niż znacznik (nieznane daty zostawiamy jako kandydata).
-    const fresh = enriched.filter((c) => !watermark || !c.date || c.date > watermark);
+    // Filtr: data publikacji bieżąca/nowsza niż ostatnie wyszukiwanie (nieznane daty zostawiamy).
+    const fresh = enriched.filter((c) => !since || !c.date || c.date >= since);
     const candidates = fresh.slice(0, MAX_CANDIDATES_PER_SOURCE);
     if (candidates.length === 0) continue;
 
