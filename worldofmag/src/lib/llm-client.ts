@@ -216,6 +216,20 @@ export const llm = {
       }>("/api/llm/languages/extract", input),
   },
 
+  magazynowanie: {
+    scan: (image: string) =>
+      post<{
+        items?: Array<{
+          name: string;
+          quantity: number | null;
+          unit: string | null;
+          category: string | null;
+          notes: string | null;
+        }>;
+        error?: string;
+      }>("/api/llm/magazynowanie/scan", { image }),
+  },
+
   pets: {
     insights: (input: {
       pets: Array<{ name: string; species: string; presetKey?: string }>;

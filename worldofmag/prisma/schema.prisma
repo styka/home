@@ -48,6 +48,7 @@ model User {
   cookbooks              Cookbook[]            @relation("OwnedCookbooks")
   mealPlans              MealPlanEntry[]       @relation("OwnedMealPlans")
   pantryItems            PantryItem[]          @relation("OwnedPantryItems")
+  storageItems           StorageItem[]         @relation("OwnedStorageItems")
   recipeRatings          RecipeRating[]
   vehicleProfile         VehicleProfile?
   ownedPets              Pet[]                 @relation("OwnedPets")
@@ -179,6 +180,7 @@ model Team {
   cookbooks            Cookbook[]            @relation("TeamCookbooks")
   mealPlans            MealPlanEntry[]       @relation("TeamMealPlans")
   pantryItems          PantryItem[]          @relation("TeamPantryItems")
+  storageItems         StorageItem[]         @relation("TeamStorageItems")
   pets                 Pet[]                 @relation("TeamPets")
   petShares            PetShare[]            @relation("TeamPetShares")
   enclosures           PetEnclosure[]        @relation("TeamEnclosures")
@@ -771,6 +773,49 @@ model PantryItem {
   @@index([ownerTeamId])
   @@index([productId])
   @@index([expiresAt])
+}
+
+// Moduł Magazynowanie — ogólny magazyn (dom/firma/gospodarstwo): garaż, strych,
+// szafy, ale też magazyny firmowe/sklepowe/hurtownie. W odróżnieniu od kuchennej
+// spiżarni nie jest food-centric (brak dat ważności/produktów), za to ma SKU,
+// magazyn nadrzędny (warehouse) oraz dziennik ruchów (przyjęcie/wydanie/korekta).
+model StorageItem {
+  id          String   @id @default(cuid())
+  name        String
+  sku         String?
+  category    String?
+  warehouse   String?
+  location    String?
+  quantity    Float?
+  unit        String?
+  minQuantity Float?
+  notes       String?
+  ownerId     String?
+  ownerTeamId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner     User?             @relation("OwnedStorageItems", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?             @relation("TeamStorageItems", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  movements StorageMovement[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+  @@index([warehouse])
+  @@index([sku])
+}
+
+model StorageMovement {
+  id        String   @id @default(cuid())
+  itemId    String
+  delta     Float
+  reason    String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  item StorageItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId, createdAt])
 }
 
 model ItemRecipeOrigin {

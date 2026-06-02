@@ -54,6 +54,7 @@ Nie pytaj o pozwolenie — po prostu dopisz i commituj razem z poprawką.
 | Reports (markdown docs) | `/reports` | authenticated | Done (system/user/team reports) |
 | QA (test scenarios) | `/qa` | `module.qa` | Internal tooling |
 | Truck (heavy-vehicle routing) | `/truck` | `module.truck` | Partial — ORS client ready, UI minimal |
+| Magazynowanie (storage/inventory) | `/magazynowanie` | `module.magazynowanie` | Done — general storage (dom/firma/magazyny): items by warehouse+location, SKU, min-stock replenishment→shopping, stocktake, AI photo inventory, movement log |
 | Calendar | `/calendar` | — | Stub (sidebar icon, "coming soon", disabled) |
 | Work / Praca | `/work` | — | Stub ("coming soon", disabled) |
 
@@ -160,6 +161,7 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /languages/              # SRS vocabulary decks (SuperMemo-2)
 /wiadomosci/             # News: monitored topics (semantic filters), per-source versioned knowledge base, hot topics
 /pogoda/                 # Weather: Open-Meteo forecast + LLM "what to do" advice + watchers (presets + custom)
+/magazynowanie/          # Storage/inventory: items by warehouse+location; + /stocktake (spis), /scan (AI photo inventory)
 /qa/                     # QA test scenarios (Epic → Story → Scenario)
 /truck/                  # Heavy-vehicle routing (OpenRouteService)
 /reports/ [slug]         # Markdown reports (system/user/team), user-facing
@@ -193,7 +195,7 @@ All data mutations use Next.js Server Actions with `revalidatePath()` at the end
 - **Notes**: `notes`, `noteGroups`, `tags`
 - **Kitchen**: `recipes`, `cookbooks`, `mealPlans`, `pantry`
 - **Pets**: `pets`, `petCare`, `petHusbandry`, `petBreeding`
-- **Other modules**: `health`, `habits`, `flota`, `portfel`, `languageDecks`, `qa`, `truck`
+- **Other modules**: `health`, `habits`, `flota`, `portfel`, `languageDecks`, `qa`, `truck`, `storage` (Magazynowanie)
 - **Collaboration / system**: `teams`, `invitations`, `access`, `activity`, `reports`, `config`, `llmConfig`, `adminCategories`, `admin-tools`
 
 ### Authentication & Authorization
@@ -202,7 +204,7 @@ All data mutations use Next.js Server Actions with `revalidatePath()` at the end
 - Session includes `user.id`, `user.roles`, `user.permissions`
 - **RBAC**: Users have `UserRole` entries → roles have `RolePermission` entries → permissions have slugs
 - Check permissions via `src/lib/permissions.ts` (`hasPermission`, `permissionForPath`, `isPathLocked`)
-- Permission slugs (`module.*`): `module.home`, `module.shopping`, `module.tasks`, `module.notes`, `module.kitchen`, `module.pets`, `module.health`, `module.habits`, `module.flota`, `module.portfel`, `module.languages`, `module.news`, `module.weather`, `module.qa`, `module.truck`, `module.invitations`, `module.settings`, `module.admin`. Kitchen has sub-permissions: `kitchen.recipe.create|edit|delete`, `kitchen.mealplan.edit`, `kitchen.pantry.edit`, `kitchen.ai`.
+- Permission slugs (`module.*`): `module.home`, `module.shopping`, `module.tasks`, `module.notes`, `module.kitchen`, `module.pets`, `module.health`, `module.habits`, `module.flota`, `module.portfel`, `module.languages`, `module.news`, `module.weather`, `module.magazynowanie`, `module.qa`, `module.truck`, `module.invitations`, `module.settings`, `module.admin`. Kitchen has sub-permissions: `kitchen.recipe.create|edit|delete`, `kitchen.mealplan.edit`, `kitchen.pantry.edit`, `kitchen.ai`.
 - `ModuleSidebar` greys out + locks nav items the user lacks permission for (`isPathLocked`); admin nav appears only for admins.
 - Special roles: `ADMIN` (full access), `BETA_TESTER` (shows Beta badge on Home)
 - **Admin self-lockout guard**: `access.ts` `countAdminAccessHolders()` blocks any RBAC change that would leave 0 users with `module.admin`.
@@ -232,6 +234,7 @@ WalletElement, WalletEntry                  — Portfel (finance)
 LanguageDeck, Vocabulary                    — Languages (SRS)
 NewsSource, NewsTopic, NewsKnowledge, NewsItem, NewsPref — Wiadomości (news + versioned knowledge base)
 WeatherLocation, WeatherWatcher             — Pogoda (locations + alert watchers)
+StorageItem, StorageMovement                — Magazynowanie (storage items + movement log)
 QaEpic, QaUserStory, QaTestScenario         — QA module
 LlmProvider, LlmAssignment                  — LLM config (admin)
 Config, UserActivity, Report                — System
@@ -273,7 +276,7 @@ Three-tier system for categories, units, products:
 
 ### LLM Integration
 
-`src/lib/llm-client.ts` is a typed client wrapping `/api/llm/*` routes. Namespaces: `notes` (suggestTags/Title, rewrite, qa), `tasks` (parse, suggest, search), `shopping` (normalize), `stores` (generate), `home` (interpret, execute; plus the agent route), `kitchen` (parse-ingredients, import-url, ocr-image/text, generate-recipe, plan-week, suggest-from-pantry, categorize), `languages` (extract), `pets` (insights).
+`src/lib/llm-client.ts` is a typed client wrapping `/api/llm/*` routes. Namespaces: `notes` (suggestTags/Title, rewrite, qa), `tasks` (parse, suggest, search), `shopping` (normalize), `stores` (generate), `home` (interpret, execute; plus the agent route), `kitchen` (parse-ingredients, import-url, ocr-image/text, generate-recipe, plan-week, suggest-from-pantry, categorize), `languages` (extract), `pets` (insights), `magazynowanie` (scan — AI photo inventory, two-step vision→generation).
 - Provider + model routing is **DB-driven** via `/admin/llm` (`LlmProvider` + `LlmAssignment`), resolved per operation type (`reasoning`, `dispatch`, `thinking`, `images`, `generation`) in `src/lib/llm/resolver.ts`. The Groq API key lives in `Config` (`groq_api_key`) / env.
 - Rule-based fallback for categorization (no LLM): `categorize.ts` (~500 Polish+English keywords).
 - LLM prompts treat category names as **Polish words** (not English); category hints injected from DB-driven categories.
