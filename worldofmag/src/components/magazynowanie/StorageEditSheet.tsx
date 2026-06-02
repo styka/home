@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { X, Trash2, Plus, Minus } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { X, Trash2, Plus, Minus, ImagePlus, Loader2 } from "lucide-react";
 import {
   addStorageItem,
   updateStorageItem,
@@ -9,13 +9,18 @@ import {
   adjustStorageQuantity,
 } from "@/actions/storage";
 import { useToast } from "@/components/ui/Toast";
+import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import type { StorageItemWithMovements } from "@/actions/storage";
+import type { StorageSupplier } from "@prisma/client";
 
 interface StorageEditSheetProps {
   open: boolean;
   onClose: () => void;
   item?: StorageItemWithMovements | null;
   defaultWarehouse?: string | null;
+  suppliers?: StorageSupplier[];
+  currency?: string;
+  pro?: boolean;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -24,16 +29,30 @@ const inputStyle: React.CSSProperties = {
   color: "var(--text-primary)",
 };
 
-export function StorageEditSheet({ open, onClose, item, defaultWarehouse }: StorageEditSheetProps) {
+function toDateInput(d: Date | string | null | undefined): string {
+  if (!d) return "";
+  const date = d instanceof Date ? d : new Date(d);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+}
+
+export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppliers = [], currency = "PLN", pro = false }: StorageEditSheetProps) {
   const [name, setName] = useState(item?.name ?? "");
   const [sku, setSku] = useState(item?.sku ?? "");
+  const [barcode, setBarcode] = useState(item?.barcode ?? "");
   const [category, setCategory] = useState(item?.category ?? "");
   const [warehouse, setWarehouse] = useState(item?.warehouse ?? defaultWarehouse ?? "");
   const [location, setLocation] = useState(item?.location ?? "");
   const [quantity, setQuantity] = useState<string>(item?.quantity?.toString() ?? "");
   const [unit, setUnit] = useState(item?.unit ?? "");
   const [minQuantity, setMinQuantity] = useState<string>(item?.minQuantity?.toString() ?? "");
+  const [unitPrice, setUnitPrice] = useState<string>(item?.unitPrice?.toString() ?? "");
+  const [photoUrl, setPhotoUrl] = useState<string>(item?.photoUrl ?? "");
+  const [expiresAt, setExpiresAt] = useState<string>(toDateInput(item?.expiresAt));
+  const [warrantyUntil, setWarrantyUntil] = useState<string>(toDateInput(item?.warrantyUntil));
+  const [supplierId, setSupplierId] = useState<string>(item?.supplierId ?? "");
   const [notes, setNotes] = useState(item?.notes ?? "");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const { showToast } = useToast();
 
@@ -41,17 +60,37 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse }: Stor
     if (open) {
       setName(item?.name ?? "");
       setSku(item?.sku ?? "");
+      setBarcode(item?.barcode ?? "");
       setCategory(item?.category ?? "");
       setWarehouse(item?.warehouse ?? defaultWarehouse ?? "");
       setLocation(item?.location ?? "");
       setQuantity(item?.quantity?.toString() ?? "");
       setUnit(item?.unit ?? "");
       setMinQuantity(item?.minQuantity?.toString() ?? "");
+      setUnitPrice(item?.unitPrice?.toString() ?? "");
+      setPhotoUrl(item?.photoUrl ?? "");
+      setExpiresAt(toDateInput(item?.expiresAt));
+      setWarrantyUntil(toDateInput(item?.warrantyUntil));
+      setSupplierId(item?.supplierId ?? "");
       setNotes(item?.notes ?? "");
     }
   }, [open, item, defaultWarehouse]);
 
   if (!open) return null;
+
+  async function handlePhoto(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const url = await fileToDownscaledDataUrl(file, { maxDim: 800, quality: 0.75 });
+      setPhotoUrl(url);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Błąd zdjęcia", "error");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
 
   function handleSave() {
     if (!name.trim()) {
@@ -61,12 +100,18 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse }: Stor
     const payload = {
       name: name.trim(),
       sku: sku.trim() || null,
+      barcode: barcode.trim() || null,
       category: category.trim() || null,
       warehouse: warehouse.trim() || null,
       location: location.trim() || null,
       quantity: quantity ? Number(quantity) : null,
       unit: unit.trim() || null,
       minQuantity: minQuantity ? Number(minQuantity) : null,
+      unitPrice: unitPrice ? Number(unitPrice) : null,
+      photoUrl: photoUrl || null,
+      expiresAt: expiresAt || null,
+      warrantyUntil: warrantyUntil || null,
+      supplierId: supplierId || null,
       notes: notes.trim() || null,
     };
     startTransition(async () => {
@@ -228,17 +273,104 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse }: Stor
                 style={inputStyle}
               />
             </Field>
-            <Field label="SKU / kod">
+            <Field label="SKU (wewn.)">
               <input
                 type="text"
                 value={sku}
                 onChange={(e) => setSku(e.target.value)}
-                placeholder="EAN / kod"
+                placeholder="kod wewnętrzny"
                 className="w-full px-2 py-1.5 rounded border text-sm"
                 style={inputStyle}
               />
             </Field>
           </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Kod kreskowy (EAN)">
+              <input
+                type="text"
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                placeholder="5901234123457"
+                inputMode="numeric"
+                className="w-full px-2 py-1.5 rounded border text-sm tabular-nums"
+                style={inputStyle}
+              />
+            </Field>
+            <Field label={`Wartość / szt. (${currency})`}>
+              <input
+                type="number"
+                step="any"
+                value={unitPrice}
+                onChange={(e) => setUnitPrice(e.target.value)}
+                placeholder="np. 49.99"
+                className="w-full px-2 py-1.5 rounded border text-sm text-right tabular-nums"
+                style={inputStyle}
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Termin ważności">
+              <input
+                type="date"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="w-full px-2 py-1.5 rounded border text-sm"
+                style={inputStyle}
+              />
+            </Field>
+            <Field label="Gwarancja do">
+              <input
+                type="date"
+                value={warrantyUntil}
+                onChange={(e) => setWarrantyUntil(e.target.value)}
+                className="w-full px-2 py-1.5 rounded border text-sm"
+                style={inputStyle}
+              />
+            </Field>
+          </div>
+
+          {pro && suppliers.length > 0 ? (
+            <Field label="Dostawca">
+              <select
+                value={supplierId}
+                onChange={(e) => setSupplierId(e.target.value)}
+                className="w-full px-2 py-1.5 rounded border text-sm"
+                style={inputStyle}
+              >
+                <option value="">— brak —</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </Field>
+          ) : null}
+
+          <Field label="Zdjęcie">
+            <div className="flex items-center gap-3">
+              {photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photoUrl} alt="" className="w-16 h-16 rounded object-cover border" style={{ borderColor: "var(--border)" }} />
+              ) : null}
+              <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={(e) => handlePhoto(e.target.files)} />
+              <button
+                type="button"
+                onClick={() => photoRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs disabled:opacity-50"
+                style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+              >
+                {uploadingPhoto ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
+                {photoUrl ? "Zmień" : "Dodaj zdjęcie"}
+              </button>
+              {photoUrl ? (
+                <button type="button" onClick={() => setPhotoUrl("")} className="text-xs" style={{ color: "var(--accent-red)" }}>
+                  Usuń
+                </button>
+              ) : null}
+            </div>
+          </Field>
 
           <Field label="Stan minimalny (uzupełnianie)">
             <input

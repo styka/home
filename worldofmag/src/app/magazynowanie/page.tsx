@@ -1,26 +1,34 @@
 export const dynamic = "force-dynamic";
 
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { getStorageItems, getLowStock } from "@/actions/storage";
+import {
+  getStorageItems,
+  getLowStock,
+  getStorageSettings,
+  getSuppliers,
+  getExpiringStorage,
+} from "@/actions/storage";
 import { getLists } from "@/actions/lists";
 import { StorageList } from "@/components/magazynowanie/StorageList";
 
 export default async function MagazynowaniePage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.MAGAZYNOWANIE) && !hasPermission(session, PERMISSIONS.ADMIN)) {
-    redirect("/");
-  }
-
-  const [items, lowStock, lists] = await Promise.all([getStorageItems(), getLowStock(), getLists()]);
+  const [items, lowStock, lists, settings, suppliers, expiring] = await Promise.all([
+    getStorageItems(),
+    getLowStock(),
+    getLists(),
+    getStorageSettings(),
+    getSuppliers(),
+    getExpiringStorage(30),
+  ]);
 
   return (
     <StorageList
       items={items}
       lowStock={lowStock}
+      expiring={expiring}
       shoppingLists={lists.map((l) => ({ id: l.id, name: l.name }))}
+      suppliers={suppliers}
+      currency={settings.currency}
+      pro={settings.mode === "pro"}
     />
   );
 }

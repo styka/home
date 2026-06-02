@@ -2,21 +2,26 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { Plus, Search, Warehouse, AlertTriangle, ClipboardList, Camera, ShoppingCart } from "lucide-react";
+import { Plus, Search, Warehouse, AlertTriangle, ClipboardList, Camera, ShoppingCart, CalendarClock, ShieldCheck } from "lucide-react";
 import { StorageEditSheet } from "./StorageEditSheet";
-import { addLowStockToShoppingList } from "@/actions/storage";
+import { addLowStockToShoppingList, type ExpiringEntry } from "@/actions/storage";
 import { useToast } from "@/components/ui/Toast";
 import type { StorageItemWithMovements } from "@/actions/storage";
+import type { StorageSupplier } from "@prisma/client";
 
 interface StorageListProps {
   items: StorageItemWithMovements[];
   lowStock: StorageItemWithMovements[];
+  expiring?: ExpiringEntry[];
   shoppingLists: { id: string; name: string }[];
+  suppliers?: StorageSupplier[];
+  currency?: string;
+  pro?: boolean;
 }
 
 const NO_WAREHOUSE = "Bez magazynu";
 
-export function StorageList({ items, lowStock, shoppingLists }: StorageListProps) {
+export function StorageList({ items, lowStock, expiring = [], shoppingLists, suppliers = [], currency = "PLN", pro = false }: StorageListProps) {
   const { showToast } = useToast();
   const [search, setSearch] = useState("");
   const [activeWarehouse, setActiveWarehouse] = useState<string>("");
@@ -88,7 +93,7 @@ export function StorageList({ items, lowStock, shoppingLists }: StorageListProps
             <Plus size={16} /> Dodaj pozycję
           </button>
         </div>
-        {editing ? <StorageEditSheet open onClose={() => setEditing(null)} item={null} /> : null}
+        {editing ? <StorageEditSheet open onClose={() => setEditing(null)} item={null} suppliers={suppliers} currency={currency} pro={pro} /> : null}
       </div>
     );
   }
@@ -221,6 +226,46 @@ export function StorageList({ items, lowStock, shoppingLists }: StorageListProps
         </section>
       ) : null}
 
+      {expiring.length > 0 ? (
+        <section
+          className="rounded border p-3"
+          style={{ borderColor: "var(--accent-red)", backgroundColor: "rgba(244, 67, 54, 0.06)" }}
+        >
+          <h3
+            className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide mb-2"
+            style={{ color: "var(--accent-red)" }}
+          >
+            <CalendarClock size={12} /> Terminy i gwarancje ({expiring.length})
+          </h3>
+          <div className="flex flex-col gap-1">
+            {expiring.map((e) => {
+              const target = items.find((i) => i.id === e.id) ?? null;
+              return (
+                <button
+                  key={`${e.id}-${e.kind}`}
+                  type="button"
+                  onClick={() => target && setEditing({ item: target })}
+                  className="flex items-center justify-between gap-2 text-sm text-left px-2 py-1 rounded"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  <span className="flex items-center gap-1.5 min-w-0 truncate">
+                    {e.kind === "gwarancja" ? <ShieldCheck size={12} style={{ color: "var(--text-muted)" }} /> : <CalendarClock size={12} style={{ color: "var(--text-muted)" }} />}
+                    {e.name}
+                    <span style={{ color: "var(--text-muted)" }}>· {e.kind}</span>
+                  </span>
+                  <span
+                    className="text-xs tabular-nums whitespace-nowrap"
+                    style={{ color: e.daysLeft < 0 ? "var(--accent-red)" : e.daysLeft <= 7 ? "var(--accent-amber)" : "var(--text-muted)" }}
+                  >
+                    {e.daysLeft < 0 ? `${-e.daysLeft} dni po` : e.daysLeft === 0 ? "dziś" : `za ${e.daysLeft} dni`}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
       <div className="flex flex-col gap-4">
         {grouped.length === 0 ? (
           <p className="text-sm py-6 text-center" style={{ color: "var(--text-muted)" }}>
@@ -272,6 +317,9 @@ export function StorageList({ items, lowStock, shoppingLists }: StorageListProps
           onClose={() => setEditing(null)}
           item={editing.item}
           defaultWarehouse={editing.warehouse ?? null}
+          suppliers={suppliers}
+          currency={currency}
+          pro={pro}
         />
       ) : null}
     </div>

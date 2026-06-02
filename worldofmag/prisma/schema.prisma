@@ -49,6 +49,10 @@ model User {
   mealPlans              MealPlanEntry[]       @relation("OwnedMealPlans")
   pantryItems            PantryItem[]          @relation("OwnedPantryItems")
   storageItems           StorageItem[]         @relation("OwnedStorageItems")
+  storageSuppliers       StorageSupplier[]     @relation("OwnedStorageSuppliers")
+  storageDocuments       StorageDocument[]     @relation("OwnedStorageDocuments")
+  storageOrders          StoragePurchaseOrder[] @relation("OwnedStorageOrders")
+  storageSettings        StorageSettings?
   recipeRatings          RecipeRating[]
   vehicleProfile         VehicleProfile?
   ownedPets              Pet[]                 @relation("OwnedPets")
@@ -181,6 +185,9 @@ model Team {
   mealPlans            MealPlanEntry[]       @relation("TeamMealPlans")
   pantryItems          PantryItem[]          @relation("TeamPantryItems")
   storageItems         StorageItem[]         @relation("TeamStorageItems")
+  storageSuppliers     StorageSupplier[]     @relation("TeamStorageSuppliers")
+  storageDocuments     StorageDocument[]     @relation("TeamStorageDocuments")
+  storageOrders        StoragePurchaseOrder[] @relation("TeamStorageOrders")
   pets                 Pet[]                 @relation("TeamPets")
   petShares            PetShare[]            @relation("TeamPetShares")
   enclosures           PetEnclosure[]        @relation("TeamEnclosures")
@@ -780,42 +787,179 @@ model PantryItem {
 // spiżarni nie jest food-centric (brak dat ważności/produktów), za to ma SKU,
 // magazyn nadrzędny (warehouse) oraz dziennik ruchów (przyjęcie/wydanie/korekta).
 model StorageItem {
+  id           String    @id @default(cuid())
+  name         String
+  sku          String?
+  barcode      String?
+  category     String?
+  warehouse    String?
+  location     String?
+  quantity     Float?
+  unit         String?
+  minQuantity  Float?
+  unitPrice    Float?
+  photoUrl     String?
+  expiresAt    DateTime?
+  warrantyUntil DateTime?
+  supplierId   String?
+  notes        String?
+  ownerId      String?
+  ownerTeamId  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  owner     User?             @relation("OwnedStorageItems", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?             @relation("TeamStorageItems", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  supplier  StorageSupplier?  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  movements StorageMovement[]
+  batches   StorageBatch[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+  @@index([warehouse])
+  @@index([sku])
+  @@index([barcode])
+  @@index([supplierId])
+}
+
+model StorageMovement {
+  id         String   @id @default(cuid())
+  itemId     String
+  delta      Float
+  reason     String?
+  note       String?
+  batchId    String?
+  documentId String?
+  createdAt  DateTime @default(now())
+
+  item StorageItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId, createdAt])
+}
+
+// Preferencja użytkownika: tryb prosty (dom) vs profesjonalny (firma/magazyn).
+model StorageSettings {
+  userId    String   @id
+  mode      String   @default("home") // "home" | "pro"
+  currency  String   @default("PLN")
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Dostawca/kontrahent (tryb pro): faktury, zamówienia, preferowane źródło pozycji.
+model StorageSupplier {
   id          String   @id @default(cuid())
   name        String
-  sku         String?
-  category    String?
-  warehouse   String?
-  location    String?
-  quantity    Float?
-  unit        String?
-  minQuantity Float?
+  contact     String?
+  email       String?
+  phone       String?
   notes       String?
   ownerId     String?
   ownerTeamId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner     User?             @relation("OwnedStorageItems", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?             @relation("TeamStorageItems", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  movements StorageMovement[]
+  owner     User?                  @relation("OwnedStorageSuppliers", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?                  @relation("TeamStorageSuppliers", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  items     StorageItem[]
+  documents StorageDocument[]
+  orders    StoragePurchaseOrder[]
 
   @@index([ownerId])
   @@index([ownerTeamId])
-  @@index([warehouse])
-  @@index([sku])
 }
 
-model StorageMovement {
-  id        String   @id @default(cuid())
-  itemId    String
-  delta     Float
-  reason    String?
-  note      String?
-  createdAt DateTime @default(now())
+// Partia/seria (FEFO): podlot pozycji z własną ilością, numerem partii/serii i ważnością.
+model StorageBatch {
+  id         String    @id @default(cuid())
+  itemId     String
+  lotNo      String?
+  serialNo   String?
+  quantity   Float     @default(0)
+  expiresAt  DateTime?
+  receivedAt DateTime  @default(now())
+  note       String?
 
   item StorageItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
-  @@index([itemId, createdAt])
+  @@index([itemId])
+  @@index([expiresAt])
+}
+
+// Dokument magazynowy: PZ (przyjęcie), WZ (wydanie), faktura. Może powstać ze skanu.
+model StorageDocument {
+  id          String   @id @default(cuid())
+  type        String // "PZ" | "WZ" | "faktura"
+  number      String?
+  supplierId  String?
+  date        DateTime @default(now())
+  totalCost   Float?
+  imageUrl    String?
+  notes       String?
+  ownerId     String?
+  ownerTeamId String?
+  createdAt   DateTime @default(now())
+
+  owner     User?                 @relation("OwnedStorageDocuments", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?                 @relation("TeamStorageDocuments", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  supplier  StorageSupplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  lines     StorageDocumentLine[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+  @@index([supplierId])
+}
+
+model StorageDocumentLine {
+  id         String  @id @default(cuid())
+  documentId String
+  itemId     String?
+  name       String
+  quantity   Float   @default(0)
+  unit       String?
+  unitPrice  Float?
+  lineTotal  Float?
+
+  document StorageDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+// Zamówienie do dostawcy (tryb pro). Treść może zredagować LLM (draftText).
+model StoragePurchaseOrder {
+  id          String   @id @default(cuid())
+  supplierId  String?
+  status      String   @default("draft") // "draft" | "sent" | "received"
+  date        DateTime @default(now())
+  draftText   String?
+  notes       String?
+  ownerId     String?
+  ownerTeamId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner     User?                      @relation("OwnedStorageOrders", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?                      @relation("TeamStorageOrders", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  supplier  StorageSupplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  lines     StoragePurchaseOrderLine[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+  @@index([supplierId])
+}
+
+model StoragePurchaseOrderLine {
+  id       String  @id @default(cuid())
+  orderId  String
+  itemId   String?
+  name     String
+  quantity Float   @default(0)
+  unit     String?
+
+  order StoragePurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
 }
 
 model ItemRecipeOrigin {
