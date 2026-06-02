@@ -35,6 +35,8 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.1.6",
+    "@zxing/browser": "^0.2.0",
+    "@zxing/library": "^0.22.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.4",
@@ -43,6 +45,7 @@
     "lucide-react": "^0.468.0",
     "next": "14.2.29",
     "next-auth": "^5.0.0-beta.25",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^2.5.5"
@@ -50,6 +53,7 @@
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "@types/node": "^20.17.10",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "autoprefixer": "^10.4.20",

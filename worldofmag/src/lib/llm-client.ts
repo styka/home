@@ -228,6 +228,31 @@ export const llm = {
         }>;
         error?: string;
       }>("/api/llm/magazynowanie/scan", { image }),
+    enrich: (input: { barcode?: string; name?: string }) =>
+      post<{ name?: string; category?: string | null; unit?: string | null; unavailable?: boolean }>(
+        "/api/llm/magazynowanie/enrich",
+        input
+      ),
+    document: (image: string) =>
+      post<{
+        number?: string | null;
+        supplier?: string | null;
+        lines?: Array<{ name: string; quantity: number; unit: string | null; unitPrice: number | null }>;
+        error?: string;
+      }>("/api/llm/magazynowanie/document", { image }),
+    orderDraft: (input: { supplier?: string; lines: Array<{ name: string; quantity: number; unit?: string | null }> }) =>
+      post<{ text?: string; unavailable?: boolean; error?: string }>("/api/llm/magazynowanie/order-draft", input),
+    insights: (input: {
+      currency?: string;
+      totalValue?: number;
+      itemCount?: number;
+      lowStockCount?: number;
+      deadStockCount?: number;
+      topValue?: Array<{ name: string; value: number }>;
+      deadStock?: Array<{ name: string; value: number }>;
+    }) => post<{ tips?: string[]; unavailable?: boolean }>("/api/llm/magazynowanie/insights", input),
+    search: (input: { query: string; items: Array<{ id: string; name: string; category?: string | null }> }) =>
+      post<{ ids?: string[]; unavailable?: boolean }>("/api/llm/magazynowanie/search", input),
   },
 
   pets: {
