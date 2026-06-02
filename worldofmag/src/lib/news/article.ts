@@ -9,6 +9,25 @@ const UA =
 export interface FetchedArticle {
   text: string;
   imageUrl: string | null;
+  publishedAt: Date | null;
+}
+
+// Data publikacji ze standardowych miejsc: meta article:published_time,
+// JSON-LD datePublished, albo <time datetime="…">. Best-effort.
+function extractPublishedAt(html: string): Date | null {
+  const candidates = [
+    metaContent(html, "article:published_time"),
+    metaContent(html, "og:article:published_time"),
+    metaContent(html, "datePublished"),
+    /"datePublished"\s*:\s*"([^"]+)"/i.exec(html)?.[1] ?? null,
+    /<time[^>]+datetime=["']([^"']+)["']/i.exec(html)?.[1] ?? null,
+  ];
+  for (const c of candidates) {
+    if (!c) continue;
+    const d = new Date(c);
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+  return null;
 }
 
 function metaContent(html: string, prop: string): string | null {
@@ -60,10 +79,14 @@ export async function fetchArticle(url: string): Promise<FetchedArticle> {
       cache: "no-store",
       signal: AbortSignal.timeout(12_000),
     });
-    if (!res.ok) return { text: "", imageUrl: null };
+    if (!res.ok) return { text: "", imageUrl: null, publishedAt: null };
     const html = await res.text();
-    return { text: extractText(html), imageUrl: metaContent(html, "og:image") };
+    return {
+      text: extractText(html),
+      imageUrl: metaContent(html, "og:image"),
+      publishedAt: extractPublishedAt(html),
+    };
   } catch {
-    return { text: "", imageUrl: null };
+    return { text: "", imageUrl: null, publishedAt: null };
   }
 }

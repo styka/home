@@ -8,6 +8,7 @@ import {
   Plus,
   Loader2,
   Sparkles,
+  Shuffle,
   LocateFixed,
   Star,
   Trash2,
@@ -17,7 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
-import { FALLBACK_LOCATION } from "@/lib/weather/presets";
+import { FALLBACK_LOCATION, DAY_PARTS, currentDayPart, type DayPart } from "@/lib/weather/presets";
 import type { Forecast } from "@/lib/weather/openMeteo";
 import { ForecastView } from "./ForecastView";
 import { WatchersPanel } from "./WatchersPanel";
@@ -51,6 +52,8 @@ export function WeatherPage({
   const [loading, setLoading] = useState(true);
   const [aiText, setAiText] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [adviceDate, setAdviceDate] = useState<string | null>(null);
+  const [advicePart, setAdvicePart] = useState<DayPart>(() => currentDayPart());
   const [showLocations, setShowLocations] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -97,14 +100,31 @@ export function WeatherPage({
     if (coords) loadForecast(coords);
   }, [coords, loadForecast]);
 
-  function generateAdvice() {
-    if (!coords) return;
-    setAiLoading(true);
-    describeDay(coords.lat, coords.lon, coords.label)
-      .then(setAiText)
-      .catch((e) => showToast(e.message ?? "AI niedostępne", "error"))
-      .finally(() => setAiLoading(false));
-  }
+  // Domyślny dzień porady = pierwszy dzień prognozy (dziś), gdy jeszcze nieustawiony.
+  useEffect(() => {
+    if (forecast && !adviceDate) setAdviceDate(forecast.daily[0]?.date ?? null);
+  }, [forecast, adviceDate]);
+
+  const loadAdvice = useCallback(
+    (opts?: { variation?: boolean }) => {
+      if (!coords || !adviceDate) return;
+      setAiLoading(true);
+      describeDay(coords.lat, coords.lon, coords.label, {
+        date: adviceDate,
+        part: advicePart,
+        variation: opts?.variation,
+      })
+        .then(setAiText)
+        .catch((e) => showToast(e.message ?? "AI niedostępne", "error"))
+        .finally(() => setAiLoading(false));
+    },
+    [coords, adviceDate, advicePart, showToast]
+  );
+
+  // Auto-ładowanie porady po wejściu / zmianie lokalizacji / dnia / pory dnia.
+  useEffect(() => {
+    loadAdvice();
+  }, [loadAdvice]);
 
   function useGeolocation() {
     if (!navigator.geolocation) {
@@ -120,8 +140,8 @@ export function WeatherPage({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-5xl px-4 py-6">
+    <div className="min-w-0 flex-1 overflow-y-auto">
+      <div className="mx-auto min-w-0 max-w-5xl px-4 py-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex items-center gap-2 text-xl font-bold text-[var(--text-primary)]">
           <CloudSun size={22} className="text-[var(--accent-amber)]" /> Pogoda
@@ -141,21 +161,54 @@ export function WeatherPage({
           <span className="text-sm">{loading ? "Pobieram prognozę…" : "Brak danych pogodowych."}</span>
         </div>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
-          <div className="space-y-5">
+        <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="min-w-0 space-y-5">
             {/* Porada AI */}
             <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
-              <div className="mb-2 flex items-center justify-between">
+              <div className="mb-2 flex items-center justify-between gap-2">
                 <h3 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--text-primary)]">
-                  <Sparkles size={15} className="text-[var(--accent-purple)]" /> Co dziś robić?
+                  <Sparkles size={15} className="text-[var(--accent-purple)]" /> Co robić?
                 </h3>
-                {!aiText && (
-                  <Button size="sm" variant="secondary" onClick={generateAdvice} disabled={aiLoading}>
-                    {aiLoading ? <Loader2 size={14} className="animate-spin" /> : "Wygeneruj poradę"}
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => loadAdvice({ variation: true })}
+                  disabled={aiLoading || !adviceDate}
+                >
+                  {aiLoading ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <>
+                      <Shuffle size={14} /> Wylosuj inną
+                    </>
+                  )}
+                </Button>
               </div>
-              {aiLoading && !aiText ? (
+
+              {/* Wybór dnia */}
+              <div className="mb-2 flex flex-wrap gap-1">
+                {forecast.daily.map((d, i) => (
+                  <AdviceChip
+                    key={d.date}
+                    active={adviceDate === d.date}
+                    label={i === 0 ? "Dziś" : i === 1 ? "Jutro" : weekdayShort(d.date)}
+                    onClick={() => setAdviceDate(d.date)}
+                  />
+                ))}
+              </div>
+              {/* Wybór pory dnia */}
+              <div className="mb-3 flex flex-wrap gap-1">
+                {DAY_PARTS.map((p) => (
+                  <AdviceChip
+                    key={p.key}
+                    active={advicePart === p.key}
+                    label={p.label}
+                    onClick={() => setAdvicePart(p.key)}
+                  />
+                ))}
+              </div>
+
+              {aiLoading ? (
                 <p className="text-sm text-[var(--text-muted)]">Analizuję prognozę godzinową…</p>
               ) : aiText ? (
                 <>
@@ -167,7 +220,7 @@ export function WeatherPage({
                 </>
               ) : (
                 <p className="text-sm text-[var(--text-muted)]">
-                  Wygeneruj spersonalizowaną poradę na podstawie prognozy godzinowej i lokalizacji.
+                  Porada wczyta się automatycznie dla wybranego dnia i pory.
                 </p>
               )}
             </div>
@@ -206,6 +259,34 @@ export function WeatherPage({
       )}
       </div>
     </div>
+  );
+}
+
+function weekdayShort(dateIso: string): string {
+  return new Date(dateIso + "T12:00:00").toLocaleDateString("pl-PL", { weekday: "short" });
+}
+
+function AdviceChip({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "rounded-full border px-2.5 py-1 text-xs capitalize transition-colors",
+        active
+          ? "border-transparent bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-[inset_0_0_0_1px_var(--accent-purple)]"
+          : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+      )}
+    >
+      {label}
+    </button>
   );
 }
 

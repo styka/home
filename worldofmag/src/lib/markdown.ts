@@ -93,6 +93,13 @@ function inlineFormat(text: string): string {
     .replace(/`([^`]+)`/g, '<code class="md-code">$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+    // Obrazy (![alt](url)) — PRZED linkami, by nie złapała ich reguła linku.
+    // Tekst jest już zescapowany (&,<), dopuszczamy tylko http(s) i escapujemy " w atrybutach.
+    .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, alt: string, url: string) =>
+      /^https?:\/\//i.test(url)
+        ? `<img class="md-img" src="${url.replace(/"/g, "%22")}" alt="${alt.replace(/"/g, "&quot;")}" loading="lazy" referrerpolicy="no-referrer" />`
+        : m
+    )
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a class="md-link" href="$2">$1</a>');
 }
 
@@ -134,6 +141,7 @@ export const MARKDOWN_STYLES = `
 .md-th { text-align: left; padding: 7px 12px; background: var(--bg-elevated); color: var(--text-muted); font-weight: 600; border: 1px solid var(--border); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
 .md-td { padding: 7px 12px; border: 1px solid var(--border); color: var(--text-secondary); vertical-align: top; }
 .md-link { color: var(--accent-blue); text-decoration: underline; }
+.md-img { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); margin: 0.5rem 0; display: block; }
 .md-blockquote { border-left: 3px solid var(--accent-purple); padding-left: 12px; margin: 0.5rem 0; color: var(--text-muted); font-style: italic; font-size: 0.875rem; }
 strong { color: var(--text-primary); font-weight: 600; }
 `;

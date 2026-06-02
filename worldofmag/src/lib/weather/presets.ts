@@ -12,6 +12,23 @@ export const HORIZON_META: Record<Horizon, { label: string }> = {
   week: { label: "Najbliższy tydzień" },
 };
 
+// Pory dnia używane przy poradzie „co robić" (zakres godzin lokalnych).
+export type DayPart = "morning" | "noon" | "afternoon" | "evening";
+
+export const DAY_PARTS: { key: DayPart; label: string; from: number; to: number }[] = [
+  { key: "morning", label: "Rano", from: 6, to: 11 },
+  { key: "noon", label: "Południe", from: 11, to: 15 },
+  { key: "afternoon", label: "Popołudnie", from: 15, to: 19 },
+  { key: "evening", label: "Wieczór", from: 19, to: 23 },
+];
+
+/** Pora dnia wynikająca z bieżącej (lub podanej) godziny. */
+export function currentDayPart(d = new Date()): DayPart {
+  const h = d.getHours();
+  for (const p of DAY_PARTS) if (h >= p.from && h < p.to) return p.key;
+  return h < 6 ? "morning" : "evening";
+}
+
 export interface WeatherPreset {
   key: string;
   title: string;

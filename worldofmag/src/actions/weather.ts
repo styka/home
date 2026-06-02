@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
 import { chatComplete } from "@/lib/llm/chat";
 import { parseJsonLoose } from "@/lib/llm/json";
-import { fetchForecast, geocode, wmo, type Forecast } from "@/lib/weather/openMeteo";
-import { presetByKey, type Horizon } from "@/lib/weather/presets";
+import { fetchForecast, geocode, wmo, type Forecast, type HourPoint } from "@/lib/weather/openMeteo";
+import { presetByKey, DAY_PARTS, type Horizon, type DayPart } from "@/lib/weather/presets";
 
 export interface LocationDTO {
   id: string;
@@ -145,25 +145,74 @@ function hourlyDigest(f: Forecast, hours: number): string {
     .join("\n");
 }
 
-/** Generuje opis „co można dziś robić" znając parametry godzinowe i lokalizację. */
-export async function describeDay(lat: number, lon: number, label: string): Promise<string> {
+function digestHours(hours: HourPoint[]): string {
+  return hours
+    .map((h) => {
+      const w = wmo(h.code);
+      return `${h.time.slice(11, 16)}: ${Math.round(h.temp)}°C (odcz. ${Math.round(
+        h.apparent
+      )}°C), ${w.label}, opady ${h.precipProb}%, wiatr ${Math.round(h.windKph)} km/h`;
+    })
+    .join("\n");
+}
+
+/**
+ * Generuje poradę „co robić" dla wskazanego dnia i pory dnia (domyślnie: pierwszy
+ * dzień prognozy + pora przekazana przez klienta). `variation` losuje inną odpowiedź.
+ */
+export async function describeDay(
+  lat: number,
+  lon: number,
+  label: string,
+  opts?: { date?: string; part?: DayPart; variation?: boolean }
+): Promise<string> {
   await requireAuth();
   const f = await fetchForecast(lat, lon);
   if (!f) throw new Error("Brak danych pogodowych.");
 
+  const date =
+    opts?.date && f.daily.some((d) => d.date === opts.date)
+      ? opts.date
+      : f.daily[0]?.date ?? new Date().toISOString().slice(0, 10);
+  const partKey: DayPart = opts?.part ?? "morning";
+  const part = DAY_PARTS.find((p) => p.key === partKey) ?? DAY_PARTS[0];
+  const variation = opts?.variation ?? false;
+
+  // Godziny wskazanego dnia w zakresie wybranej pory; jeśli pora już minęła
+  // (brak godzin), bierzemy wszystkie pozostałe godziny tego dnia.
+  let hours = f.hourly.filter((h) => {
+    if (!h.time.startsWith(date)) return false;
+    const hour = Number(h.time.slice(11, 13));
+    return hour >= part.from && hour < part.to;
+  });
+  if (hours.length === 0) hours = f.hourly.filter((h) => h.time.startsWith(date));
+
+  const dayInfo = f.daily.find((d) => d.date === date);
+
   const system =
-    "Jesteś asystentem pogodowym. Na podstawie prognozy godzinowej i lokalizacji napisz krótką, " +
-    "konkretną poradę po polsku: co dobrze dziś zrobić, jak się ubrać, na co uważać i jakie są " +
-    "najlepsze okna godzinowe (np. na spacer/sport). Bez lania wody, maks. 5 zdań, można 1–2 emoji.";
+    "Jesteś asystentem pogodowym. Na podstawie prognozy godzinowej dla wskazanego dnia i pory dnia " +
+    "oraz lokalizacji napisz krótką, konkretną poradę po polsku: co dobrze zrobić w tym czasie, jak " +
+    "się ubrać, na co uważać. Bez lania wody, maks. 5 zdań, można 1–2 emoji." +
+    (variation
+      ? " Zaproponuj INNE, świeże, mniej oczywiste pomysły niż zwykle — bądź kreatywny."
+      : "");
   const userPrompt =
-    `Lokalizacja: ${label}\n\nPROGNOZA GODZINOWA (najbliższe godziny):\n${hourlyDigest(
-      f,
-      18
-    )}\n\nDZIŚ/NAJBLIŻSZE DNI:\n${dailyDigest(f).split("\n").slice(0, 2).join("\n")}`;
+    `Lokalizacja: ${label}\nDzień: ${weekday(date)} ${date}, pora dnia: ${part.label} (${part.from}:00–${part.to}:00)\n` +
+    (dayInfo
+      ? `Podsumowanie dnia: ${wmo(dayInfo.code).label}, ${Math.round(dayInfo.tMin)}–${Math.round(
+          dayInfo.tMax
+        )}°C, opady ${dayInfo.precipProbMax}%, wiatr do ${Math.round(dayInfo.windMaxKph)} km/h, UV ${dayInfo.uvMax.toFixed(
+          0
+        )}\n`
+      : "") +
+    `\nPROGNOZA GODZINOWA (${part.label}):\n${
+      digestHours(hours) || "(brak danych godzinowych dla tej pory)"
+    }` +
+    (variation ? `\n\n[wariant ${Math.random().toString(36).slice(2, 8)}]` : "");
 
   const res = await chatComplete({
     op: "generation",
-    temperature: 0.5,
+    temperature: variation ? 0.95 : 0.5,
     maxTokens: 350,
     messages: [
       { role: "system", content: system },

@@ -104,13 +104,12 @@ export async function getSources(): Promise<SourceDTO[]> {
 
 export async function getTopics(): Promise<TopicDTO[]> {
   const user = await requireAuth();
-  const cutoff = new Date(Date.now() - FRESHNESS_MS);
   const rows = await prisma.newsTopic.findMany({
     where: { ownerId: user.id },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
       _count: {
-        select: { items: { where: { status: "PENDING", publishedAt: { gte: cutoff } } } },
+        select: { items: { where: { status: "PENDING" } } },
       },
     },
   });
@@ -142,17 +141,16 @@ async function assertTopic(topicId: string, userId: string) {
   return t;
 }
 
-/** Pozycje (świeże, ≤24h) dla tematu + bieżący stan wiedzy per źródło. */
+/** Nowe (jeszcze nieobsłużone) pozycje dla tematu + bieżący stan wiedzy per źródło. */
 export async function getTopicView(topicId: string): Promise<{
   items: NewsItemDTO[];
   knowledge: KnowledgeDTO[];
 }> {
   const user = await requireAuth();
   await assertTopic(topicId, user.id);
-  const cutoff = new Date(Date.now() - FRESHNESS_MS);
 
   const items = await prisma.newsItem.findMany({
-    where: { topicId, status: "PENDING", publishedAt: { gte: cutoff } },
+    where: { topicId, status: "PENDING" },
     orderBy: { publishedAt: "desc" },
     include: { source: true },
   });
@@ -367,18 +365,31 @@ function lengthInstruction(length: SummaryLength): string {
   }
 }
 
-async function llmJson<T>(op: "reasoning" | "generation", system: string, user: string): Promise<T> {
+class LlmError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+async function llmJson<T>(
+  op: "reasoning" | "generation",
+  system: string,
+  user: string,
+  maxTokens = 2000
+): Promise<T> {
   const res = await chatComplete({
     op,
     json: true,
     temperature: 0.2,
-    maxTokens: 2000,
+    maxTokens,
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
     ],
   });
-  if (!res.ok) throw new Error(res.message);
+  if (!res.ok) throw new LlmError(res.status, res.message);
   const parsed = parseJsonLoose<T>(res.content);
   if (parsed == null) throw new Error("Nie udało się odczytać odpowiedzi LLM (niepoprawny JSON).");
   return parsed;
@@ -395,13 +406,6 @@ interface FilterDecision {
 }
 
 const MAX_BOOTSTRAP_ARTICLES = 10;
-
-interface BootstrapResult {
-  found: boolean;
-  headline: string;
-  content: string;
-  changeNote: string;
-}
 
 // Ujednolicony kandydat do bazowej bazy wiedzy (z RSS albo z wyszukiwarki).
 interface BootstrapCandidate {
@@ -420,12 +424,13 @@ function hostnameOf(url: string): string | null {
 }
 
 /**
- * Buduje BAZOWĄ wersję bazy wiedzy (wersja 1) dla danego źródła, gdy w ostatnich
- * 24h nic nie znaleziono i temat nie ma jeszcze żadnej wiedzy. Materiał zbiera z
- * dwóch kanałów: (1) feed RSS (świeże), (2) WYSZUKIWARKA INTERNETOWA — najpierw
- * w obrębie domeny źródła (sięga do archiwum, którego nie ma w RSS), a potem
- * szerzej w internecie, by uzupełnić wiedzę. Buduje chronologiczny opis stanu i
- * wskazuje ostatnią znaną informację. Zwraca true, jeśli utworzono wersję bazową.
+ * INICJALIZUJE bazę wiedzy (wersja 1) dla danego źródła, gdy temat nie ma jeszcze
+ * żadnej wiedzy z tego źródła. Tworzy OBSZERNY, encyklopedyczny (jak Wikipedia)
+ * opis w Markdown. Materiał zbiera z wyszukiwarki (domena źródła + szerzej) i RSS;
+ * jeśli pobieranie zawiedzie, pisze rzetelną wersję wstępną z wiedzy ogólnej (z
+ * adnotacją) — dzięki czemu inicjalizacja NIGDY nie kończy się pustką. Ustawia
+ * znacznik `lastPublishedAt`. Zwraca true, jeśli utworzono wersję 1. Rzuca
+ * `LlmError` przy niedostępnym LLM (caller to obsłuży).
  */
 async function bootstrapKnowledge(
   topic: { id: string; title: string; semanticFilter: string },
@@ -452,7 +457,7 @@ async function bootstrapKnowledge(
     add({ title: r.title, url: r.url, date: null, origin: "web" });
   }
 
-  // (2) RSS źródła (świeże; data znana → przydatna do chronologii).
+  // (2) RSS źródła.
   const rssSorted = [...feed].sort(
     (a, b) => (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0)
   );
@@ -461,40 +466,49 @@ async function bootstrapKnowledge(
   }
 
   const pick = candidates.slice(0, MAX_BOOTSTRAP_ARTICLES);
-  if (pick.length === 0) return false;
-
   const articles = await Promise.all(pick.map((p) => fetchArticle(p.url)));
-  const usedWeb = pick.some((p) => p.origin === "web");
+
+  // Wzbogać daty z artykułów, zbierz obrazy, policz znacznik (najnowsza data).
+  let watermark: Date | null = null;
+  const images: string[] = [];
   const blocks = pick
     .map((p, i) => {
-      const body = articles[i].text || "";
-      const date = p.date ? p.date.toISOString().slice(0, 10) : "data nieznana";
-      return `### Materiał ${i} (${date}, ${p.origin === "web" ? "wyszukiwarka" : "RSS"})\nTytuł: ${p.title}\nURL: ${p.url}\nTreść: ${body.slice(0, 1500)}`;
+      const art = articles[i];
+      const date = p.date ?? art.publishedAt ?? null;
+      if (date && (!watermark || date > watermark)) watermark = date;
+      if (art.imageUrl) images.push(art.imageUrl);
+      const dateStr = date ? date.toISOString().slice(0, 10) : "data nieznana";
+      return `### Materiał ${i} (${dateStr}, ${p.origin === "web" ? "wyszukiwarka" : "RSS"})\nTytuł: ${p.title}\nURL: ${p.url}\n${art.imageUrl ? `Obraz: ${art.imageUrl}\n` : ""}Treść: ${art.text.slice(0, 1800)}`;
     })
     .join("\n\n");
+  const hasMaterial = blocks.trim().length > 0;
 
   const system =
-    "Budujesz BAZOWĄ (początkową) bazę wiedzy na zadany temat na podstawie materiałów z internetu " +
-    "(wyszukiwarka + RSS, różne daty i źródła). Najpierw odsiej materiały NIEzwiązane z tematem. " +
-    "Jeśli zostaną trafne — zbuduj zwięzły, uporządkowany CHRONOLOGICZNIE opis stanu wiedzy w Markdown " +
-    "(oś czasu wydarzeń, jeśli wynika z treści) i wyraźnie wskaż OSTATNIĄ ZNANĄ informację na moment " +
-    "tworzenia bazy (najnowsza data). Nie zmyślaj — opieraj się tylko na materiałach. " +
-    "Pisz po polsku. Zwróć WYŁĄCZNIE JSON.";
+    "Tworzysz OBSZERNĄ, encyklopedyczną (jak Wikipedia) bazową bazę wiedzy na zadany temat, z " +
+    "perspektywy jednego źródła, po polsku, w Markdown. Użyj sekcji nagłówkowych (## …): " +
+    "wprowadzenie, tło/geneza, oś czasu wydarzeń, kluczowe postacie/strony, stan obecny. " +
+    "Jeśli masz materiały — opieraj się na nich i nie zmyślaj. Jeśli materiałów brak lub są ubogie, " +
+    "napisz rzetelną wersję wstępną z wiedzy ogólnej i ZACZNIJ dokument linią cytatu dokładnie: " +
+    "'> ⚠️ Wersja wstępna na podstawie wiedzy ogólnej — do weryfikacji i uzupełnienia bieżącymi źródłami.' " +
+    "Gdy podano adresy obrazów, wpleć 1–3 z nich składnią ![](url) w trafnych miejscach. " +
+    "Zwróć WYŁĄCZNIE JSON.";
   const userPrompt =
     `TEMAT: „${topic.title}"\nFILTR SEMANTYCZNY: ${topic.semanticFilter}\nŹRÓDŁO BAZOWE: ${source.name}\n\n` +
-    `MATERIAŁY:\n${blocks}\n\n` +
-    `Zwróć JSON: {"found": true/false, "headline": "jednozdaniowy aktualny stan", ` +
-    `"content": "pełna bazowa baza wiedzy w Markdown z chronologią i wskazaniem ostatniej znanej informacji", ` +
-    `"changeNote": "krótki opis: jak zbudowano bazę (wyszukiwarka internetowa + RSS) i jaka jest ostatnia znana informacja (z datą)"}. ` +
-    `found=false, gdy żaden materiał nie dotyczy tematu.`;
+    (hasMaterial
+      ? `MATERIAŁY:\n${blocks}\n\n`
+      : `MATERIAŁY: (nie udało się nic pobrać — napisz wersję wstępną z wiedzy ogólnej)\n\n`) +
+    (images.length ? `DOSTĘPNE OBRAZY (linkuj składnią ![](url), nie pobieraj): ${images.slice(0, 4).join(" , ")}\n\n` : "") +
+    `Zwróć JSON: {"headline":"jednozdaniowy aktualny stan tematu",` +
+    `"content":"OBSZERNA baza wiedzy w Markdown (sekcje ##, oś czasu, jeśli są — obrazy ![](url))",` +
+    `"changeNote":"krótko: jak zbudowano bazę i jaka jest ostatnia znana informacja (z datą)"}.`;
 
-  let out: BootstrapResult;
-  try {
-    out = await llmJson<BootstrapResult>("reasoning", system, userPrompt);
-  } catch {
-    return false;
-  }
-  if (!out.found || !out.content?.trim()) return false;
+  const out = await llmJson<{ headline: string; content: string; changeNote: string }>(
+    "reasoning",
+    system,
+    userPrompt,
+    6000
+  );
+  if (!out.content?.trim()) return false;
 
   try {
     await prisma.newsKnowledge.create({
@@ -506,9 +520,10 @@ async function bootstrapKnowledge(
         headline: out.headline?.trim() || null,
         changeNote:
           out.changeNote?.trim() ||
-          `Utworzono bazową bazę wiedzy na podstawie ${
-            usedWeb ? "wyszukiwarki internetowej i RSS" : "dostępnych artykułów RSS"
-          }.`,
+          (hasMaterial
+            ? "Zainicjowano bazę wiedzy z materiałów internetowych (wyszukiwarka + RSS)."
+            : "Zainicjowano wstępną bazę wiedzy z wiedzy ogólnej — do weryfikacji bieżącymi źródłami."),
+        lastPublishedAt: watermark ?? new Date(),
       },
     });
     return true;
@@ -518,10 +533,25 @@ async function bootstrapKnowledge(
   }
 }
 
-/** Pobiera świeże (≤24h) wiadomości dla tematu, ocenia trafność/nowość przez LLM. */
+interface UpdateCandidate {
+  title: string;
+  url: string;
+  date: Date | null;
+  description: string;
+  imageUrl: string | null;
+  text: string;
+}
+
+/**
+ * Odświeża temat. Dla każdego źródła:
+ *  - brak bazy wiedzy → INICJALIZUJE (obszerna wersja 1, zawsze coś tworzy),
+ *  - jest baza → szuka (wyszukiwarka + RSS) wiadomości z DATĄ PUBLIKACJI nowszą niż
+ *    znacznik bazy, ocenia trafność/nowość i dodaje jako PENDING (ze zdjęciem).
+ * Bez okna 24h. Zwraca też `llmUnconfigured`, by UI pokazało czytelny błąd.
+ */
 export async function refreshTopic(
   topicId: string
-): Promise<{ added: number; scanned: number; skippedOld: number; bootstrapped: number }> {
+): Promise<{ added: number; initialized: number; llmUnconfigured: boolean }> {
   const user = await requireAuth();
   const topic = await assertTopic(topicId, user.id);
   const pref = await prisma.newsPref.findUnique({ where: { ownerId: user.id } });
@@ -532,125 +562,133 @@ export async function refreshTopic(
     orderBy: { sortOrder: "asc" },
   });
 
-  const cutoff = new Date(Date.now() - FRESHNESS_MS);
   let added = 0;
-  let scanned = 0;
-  let skippedOld = 0;
-  let bootstrapped = 0;
-
-  // Sprzątanie: usuń przeterminowane (>24h) pozycje PENDING — uznane za nieistotne.
-  await prisma.newsItem.deleteMany({
-    where: { topicId, status: "PENDING", publishedAt: { lt: cutoff } },
-  });
+  let initialized = 0;
+  let llmUnconfigured = false;
 
   for (const source of sources) {
-    const feed = await fetchRss(source.rssUrl);
-
-    // Bieżący stan wiedzy dla tego źródła (do oceny nowości + decyzji o bootstrapie).
     const currentK = await prisma.newsKnowledge.findFirst({
       where: { topicId, sourceId: source.id },
       orderBy: { version: "desc" },
     });
 
-    // 1) Świeże (≤24h) kandydaci.
-    const fresh = feed.filter((f) => {
-      if (!f.publishedAt) return false;
-      if (f.publishedAt < cutoff) {
-        skippedOld++;
-        return false;
+    // ── Brak bazy wiedzy → INICJALIZACJA ──────────────────────────────────
+    if (!currentK) {
+      const feed = await fetchRss(source.rssUrl);
+      try {
+        if (await bootstrapKnowledge(topic, source, feed)) initialized++;
+      } catch (e) {
+        if (e instanceof LlmError && e.status === 503) llmUnconfigured = true;
+        // inny błąd jednego źródła nie blokuje pozostałych
       }
-      return true;
-    });
-    fresh.sort((a, b) => b.publishedAt!.getTime() - a.publishedAt!.getTime());
-    const limited = fresh.slice(0, MAX_CANDIDATES_PER_SOURCE);
+      continue;
+    }
 
-    // Pomijamy artykuły już przetworzone (po URL) dla tego tematu+źródła.
-    const knownUrls = new Set(
+    // ── Jest baza → AKTUALIZACJA od znacznika (data publikacji) ────────────
+    const watermark = currentK.lastPublishedAt;
+    const candMap = new Map<string, { title: string; link: string; date: Date | null; description: string }>();
+
+    const feed = await fetchRss(source.rssUrl);
+    for (const f of feed) {
+      // Pomiń pozycje RSS o znanej dacie nie nowszej niż znacznik (oszczędza pobrania).
+      if (watermark && f.publishedAt && f.publishedAt <= watermark) continue;
+      if (!candMap.has(f.link))
+        candMap.set(f.link, { title: f.title, link: f.link, date: f.publishedAt, description: f.description });
+    }
+    const domain = hostnameOf(source.homepageUrl);
+    const queries = domain
+      ? [`${topic.title} site:${domain}`, `${topic.title} ${topic.semanticFilter}`.slice(0, 200)]
+      : [`${topic.title} ${topic.semanticFilter}`.slice(0, 200)];
+    for (const q of queries) {
+      for (const r of await webSearch(q, 6)) {
+        if (!candMap.has(r.url))
+          candMap.set(r.url, { title: r.title, link: r.url, date: null, description: r.snippet });
+      }
+    }
+
+    // Odrzuć URL-e już przetworzone (dowolny status) dla tego tematu+źródła.
+    const allUrls = Array.from(candMap.keys());
+    const known = new Set(
       (
         await prisma.newsItem.findMany({
-          where: { topicId, sourceId: source.id, url: { in: limited.map((l) => l.link) } },
+          where: { topicId, sourceId: source.id, url: { in: allUrls } },
           select: { url: true },
         })
       ).map((r) => r.url)
     );
-    const candidates = limited.filter((l) => !knownUrls.has(l.link));
+    const raw = allUrls.filter((u) => !known.has(u)).map((u) => candMap.get(u)!).slice(0, 12);
+    if (raw.length === 0) continue;
 
-    let sourceAdded = 0;
-    if (candidates.length > 0) {
-      scanned += candidates.length;
+    // Dociągnij artykuły → daty publikacji + obrazy.
+    const arts = await Promise.all(raw.map((c) => fetchArticle(c.link)));
+    const enriched: UpdateCandidate[] = raw.map((c, i) => ({
+      title: c.title,
+      url: c.link,
+      date: c.date ?? arts[i].publishedAt ?? null,
+      description: c.description,
+      imageUrl: arts[i].imageUrl,
+      text: arts[i].text,
+    }));
 
-      // Dociągamy pełną treść artykułów (równolegle).
-      const articles = await Promise.all(candidates.map((c) => fetchArticle(c.link)));
+    // Filtr po znaczniku: data nowsza niż znacznik (nieznane daty zostawiamy jako kandydata).
+    const fresh = enriched.filter((c) => !watermark || !c.date || c.date > watermark);
+    const candidates = fresh.slice(0, MAX_CANDIDATES_PER_SOURCE);
+    if (candidates.length === 0) continue;
 
-      const candidateBlocks = candidates
-        .map((c, i) => {
-          const body = articles[i].text || c.description;
-          return `### Artykuł ${i}\nTytuł: ${c.title}\nData: ${c.publishedAt?.toISOString()}\nURL: ${c.link}\nTreść: ${body.slice(0, 2500)}`;
-        })
-        .join("\n\n");
+    const candidateBlocks = candidates
+      .map((c, i) => {
+        const body = c.text || c.description;
+        const d = c.date ? c.date.toISOString().slice(0, 10) : "nieznana";
+        return `### Artykuł ${i}\nTytuł: ${c.title}\nData: ${d}\nURL: ${c.url}\nTreść: ${body.slice(0, 2500)}`;
+      })
+      .join("\n\n");
 
-      const system =
-        "Jesteś redaktorem monitorującym wiadomości dla użytkownika. Oceniasz, czy artykuł " +
-        "pasuje SEMANTYCZNIE do zdefiniowanego tematu oraz czy wnosi REALNĄ NOWĄ informację " +
-        "względem dotychczasowego stanu wiedzy (odrzucaj clickbait i artykuły nic nie wnoszące). " +
-        "Pisz po polsku. Zwróć WYŁĄCZNIE JSON.";
+    const system =
+      "Jesteś redaktorem monitorującym wiadomości dla użytkownika. Oceniasz, czy artykuł " +
+      "pasuje SEMANTYCZNIE do zdefiniowanego tematu oraz czy wnosi REALNĄ NOWĄ informację " +
+      "względem dotychczasowego stanu wiedzy (odrzucaj clickbait i artykuły nic nie wnoszące). " +
+      "Pisz po polsku. Zwróć WYŁĄCZNIE JSON.";
+    const userPrompt =
+      `TEMAT: „${topic.title}"\n` +
+      `FILTR SEMANTYCZNY: ${topic.semanticFilter}\n\n` +
+      `DOTYCHCZASOWY STAN WIEDZY (źródło: ${source.name}):\n${currentK.content.slice(0, 4000)}\n\n` +
+      `KANDYDACI:\n${candidateBlocks}\n\n` +
+      `Dla KAŻDEGO artykułu zdecyduj: relevant (czy pasuje do tematu), novel (czy wnosi nową ` +
+      `istotną informację względem stanu wiedzy). ${lengthInstruction(defaultLength)}\n` +
+      `noveltyNote = jedno zdanie: co NOWEGO wnosi (lub dlaczego nic nie wnosi).\n` +
+      `Zwróć JSON: {"decisions":[{"index":0,"relevant":true,"novel":true,"noveltyNote":"...","summary":"..."}]}`;
 
-      const userPrompt =
-        `TEMAT: „${topic.title}"\n` +
-        `FILTR SEMANTYCZNY: ${topic.semanticFilter}\n\n` +
-        `DOTYCHCZASOWY STAN WIEDZY (źródło: ${source.name}):\n${
-          currentK?.content || "(brak — to pierwszy zbiór informacji na ten temat z tego źródła)"
-        }\n\n` +
-        `KANDYDACI:\n${candidateBlocks}\n\n` +
-        `Dla KAŻDEGO artykułu zdecyduj: relevant (czy pasuje do tematu), novel (czy wnosi nową ` +
-        `istotną informację względem stanu wiedzy). ${lengthInstruction(defaultLength)}\n` +
-        `noveltyNote = jedno zdanie: co NOWEGO wnosi (lub dlaczego nic nie wnosi).\n` +
-        `Zwróć JSON: {"decisions":[{"index":0,"relevant":true,"novel":true,"noveltyNote":"...","summary":"..."}]}`;
-
-      let decisions: FilterDecision[] = [];
-      try {
-        const out = await llmJson<{ decisions: FilterDecision[] }>("reasoning", system, userPrompt);
-        decisions = out.decisions ?? [];
-      } catch {
-        decisions = [];
-      }
-
-      for (const d of decisions) {
-        if (!d.relevant || !d.novel) continue;
-        const c = candidates[d.index];
-        if (!c) continue;
-        try {
-          await prisma.newsItem.create({
-            data: {
-              topicId,
-              sourceId: source.id,
-              url: c.link,
-              title: c.title,
-              summary: d.summary?.trim() || c.description.slice(0, 200),
-              summaryLength: defaultLength,
-              noveltyNote: d.noveltyNote?.trim() || null,
-              imageUrl: articles[d.index]?.imageUrl ?? null,
-              publishedAt: c.publishedAt!,
-              status: "PENDING",
-            },
-          });
-          added++;
-          sourceAdded++;
-        } catch {
-          // kolizja unikalności (równoległe odświeżenie) — pomiń
-        }
-      }
+    let decisions: FilterDecision[] = [];
+    try {
+      const out = await llmJson<{ decisions: FilterDecision[] }>("reasoning", system, userPrompt);
+      decisions = out.decisions ?? [];
+    } catch (e) {
+      if (e instanceof LlmError && e.status === 503) llmUnconfigured = true;
+      decisions = [];
     }
 
-    // 2) Bootstrap: gdy w 24h nic nie znaleziono, a temat nie ma jeszcze wiedzy
-    //    z tego źródła — zbuduj bazową bazę wiedzy ze wszystkiego, co źródło ma.
-    if (!currentK && sourceAdded === 0) {
-      const pendingFresh = await prisma.newsItem.count({
-        where: { topicId, sourceId: source.id, status: "PENDING", publishedAt: { gte: cutoff } },
-      });
-      if (pendingFresh === 0) {
-        const created = await bootstrapKnowledge(topic, source, feed);
-        if (created) bootstrapped++;
+    for (const d of decisions) {
+      if (!d.relevant || !d.novel) continue;
+      const c = candidates[d.index];
+      if (!c) continue;
+      try {
+        await prisma.newsItem.create({
+          data: {
+            topicId,
+            sourceId: source.id,
+            url: c.url,
+            title: c.title,
+            summary: d.summary?.trim() || c.description.slice(0, 200),
+            summaryLength: defaultLength,
+            noveltyNote: d.noveltyNote?.trim() || null,
+            imageUrl: c.imageUrl ?? null,
+            publishedAt: c.date ?? new Date(),
+            status: "PENDING",
+          },
+        });
+        added++;
+      } catch {
+        // kolizja unikalności (równoległe odświeżenie) — pomiń
       }
     }
   }
@@ -660,7 +698,7 @@ export async function refreshTopic(
     data: { lastRefreshedAt: new Date() },
   });
   revalidatePath("/wiadomosci");
-  return { added, scanned, skippedOld, bootstrapped };
+  return { added, initialized, llmUnconfigured };
 }
 
 // ─── Item actions ──────────────────────────────────────────────────────────
@@ -691,7 +729,11 @@ export async function resummarizeItem(itemId: string, length: SummaryLength): Pr
   return summary;
 }
 
-/** Oznacza pozycję jako przyjętą do wiadomości → wplata ją w bazę wiedzy (nowa wersja). */
+/**
+ * Przyjmuje pozycję „do wiedzy" → DOPISUJE nową, datowaną sekcję do bazy wiedzy
+ * (nie przepisuje wcześniejszej treści). Nagłówek sekcji ma datę PUBLIKACJI w
+ * mediach, a w sekcji (jeśli jest) linkowany obraz. Przesuwa znacznik świeżości.
+ */
 export async function acknowledgeItem(itemId: string): Promise<void> {
   const user = await requireAuth();
   const item = await prisma.newsItem.findUnique({
@@ -704,28 +746,38 @@ export async function acknowledgeItem(itemId: string): Promise<void> {
     where: { topicId: item.topicId, sourceId: item.sourceId },
     orderBy: { version: "desc" },
   });
+  const pubDate = item.publishedAt.toISOString().slice(0, 10);
 
+  // LLM pisze TYLKO treść nowej sekcji (zwięzła integracja) + zaktualizowany headline.
   const system =
-    "Prowadzisz narastającą bazę wiedzy na temat śledzony przez użytkownika, osobno dla każdego " +
-    "źródła. Otrzymujesz dotychczasowy stan wiedzy i nową, zaakceptowaną informację. Zaktualizuj " +
-    "opis stanu: zachowaj istotne wcześniejsze fakty, dołącz nowe, uporządkuj chronologicznie/logicznie " +
-    "(zachowaj/uzupełnij oś czasu wydarzeń, jeśli jest znana). Pisz zwięźle po polsku w Markdown. " +
-    "Zwróć WYŁĄCZNIE JSON {\"headline\":\"...\",\"content\":\"...\",\"changeNote\":\"...\"}.";
+    "Dopisujesz nową, datowaną sekcję do narastającej bazy wiedzy na temat (osobno per źródło). " +
+    "NIE przepisujesz wcześniejszych sekcji. Na podstawie nowej wiadomości napisz zwięzłą treść " +
+    "sekcji po polsku w Markdown (1–4 akapity/punkty), nawiązując do dotychczasowego stanu, jeśli to " +
+    "istotne. Zwróć WYŁĄCZNIE JSON {\"sectionBody\":\"...\",\"headline\":\"...\"} — bez nagłówka sekcji " +
+    "(nagłówek z datą dodajemy automatycznie).";
   const userPrompt =
     `TEMAT: „${item.topic.title}" (${item.topic.semanticFilter})\n` +
     `ŹRÓDŁO: ${item.source.name}\n\n` +
-    `DOTYCHCZASOWY STAN WIEDZY:\n${prev?.content || "(brak — to pierwszy wpis)"}\n\n` +
-    `NOWA INFORMACJA (z ${item.publishedAt.toISOString().slice(0, 10)}):\n` +
-    `Tytuł: ${item.title}\nStreszczenie: ${item.summary}\nCo nowego: ${item.noveltyNote ?? "—"}\nURL: ${item.url}\n\n` +
-    `headline = jednozdaniowy „aktualny stan" tematu.\n` +
-    `content = pełny, zaktualizowany opis stanu wiedzy (Markdown), z osią czasu jeśli to możliwe.\n` +
-    `changeNote = krótki Markdown: CO SIĘ ZMIENIŁO w tej wersji względem poprzedniej (co dodano/zmieniono).`;
+    `DOTYCHCZASOWY STAN WIEDZY (kontekst, NIE powtarzaj go):\n${(prev?.content ?? "").slice(0, 4000)}\n\n` +
+    `NOWA WIADOMOŚĆ (opublikowana ${pubDate}):\nTytuł: ${item.title}\nStreszczenie: ${item.summary}\n` +
+    `Co nowego: ${item.noveltyNote ?? "—"}\nURL: ${item.url}\n\n` +
+    `sectionBody = treść nowej sekcji (Markdown, bez nagłówka).\n` +
+    `headline = zaktualizowany jednozdaniowy „aktualny stan" tematu.`;
 
-  const out = await llmJson<{ headline: string; content: string; changeNote: string }>(
-    "reasoning",
-    system,
-    userPrompt
-  );
+  const out = await llmJson<{ sectionBody: string; headline: string }>("reasoning", system, userPrompt);
+
+  // Złóż sekcję: nagłówek z datą publikacji + (opcjonalnie) obraz + treść + źródło.
+  const sectionParts = [`## ${pubDate} — ${item.title}`];
+  if (item.imageUrl) sectionParts.push(`![](${item.imageUrl})`);
+  sectionParts.push(out.sectionBody?.trim() || item.summary);
+  sectionParts.push(`[Źródło](${item.url})`);
+  const section = sectionParts.join("\n\n");
+
+  const baseContent = prev?.content?.trim() ?? "";
+  const newContent = baseContent ? `${baseContent}\n\n${section}` : section;
+  const prevWatermark = prev?.lastPublishedAt ?? null;
+  const newWatermark =
+    prevWatermark && prevWatermark > item.publishedAt ? prevWatermark : item.publishedAt;
 
   await prisma.$transaction([
     prisma.newsKnowledge.create({
@@ -733,11 +785,10 @@ export async function acknowledgeItem(itemId: string): Promise<void> {
         topicId: item.topicId,
         sourceId: item.sourceId,
         version: (prev?.version ?? 0) + 1,
-        content: out.content?.trim() || item.summary,
-        headline: out.headline?.trim() || null,
-        changeNote:
-          out.changeNote?.trim() ||
-          `Dodano informację z ${item.publishedAt.toISOString().slice(0, 10)}: ${item.title}`,
+        content: newContent,
+        headline: out.headline?.trim() || prev?.headline || null,
+        changeNote: section,
+        lastPublishedAt: newWatermark,
       },
     }),
     prisma.newsItem.update({ where: { id: itemId }, data: { status: "ACKNOWLEDGED" } }),

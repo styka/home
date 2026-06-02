@@ -20,6 +20,7 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
   const [summary, setSummary] = useState(item.summary);
   const [length, setLength] = useState<SummaryLength>(item.summaryLength);
   const [resummarizing, setResummarizing] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const leaning = LEANING_META[item.leaning];
 
   function changeLength(next: SummaryLength) {
@@ -78,6 +79,19 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
         <span className="font-semibold leading-snug">{item.title}</span>
         <ExternalLink size={14} className="mt-1 shrink-0 opacity-60" />
       </a>
+
+      {item.imageUrl && !imgError && (
+        // Linkujemy do obrazu z portalu (bez pobierania/przechowywania bajtów).
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={item.imageUrl}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setImgError(true)}
+          className="mt-2 max-h-52 w-full rounded-md border border-[var(--border)] object-cover"
+        />
+      )}
 
       <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{summary}</p>
 

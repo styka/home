@@ -1570,6 +1570,9 @@ model NewsKnowledge {
   // Markdown — opis CO SIĘ ZMIENIŁO w tej wersji względem poprzedniej
   // (dla wersji bazowej: jak zbudowano bazę + jaka była ostatnia znana informacja).
   changeNote String?
+  // Znacznik świeżości: najnowsza DATA PUBLIKACJI materiału wchłoniętego w tej
+  // wersji. Kolejne odświeżenia pobierają tylko wiadomości nowsze niż ten znacznik.
+  lastPublishedAt DateTime?
   createdAt DateTime @default(now())
 
   topic  NewsTopic  @relation(fields: [topicId], references: [id], onDelete: Cascade)

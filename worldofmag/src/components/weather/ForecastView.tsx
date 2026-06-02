@@ -41,7 +41,7 @@ export function ForecastView({ forecast }: { forecast: Forecast }) {
         <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
           Najbliższe godziny
         </h3>
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex min-w-0 gap-2 overflow-x-auto pb-2">
           {nextHours.map((h) => (
             <div
               key={h.time}
