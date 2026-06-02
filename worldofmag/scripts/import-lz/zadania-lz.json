@@ -1,0 +1,2739 @@
+{
+  "_meta": {
+    "source": "Arkusz kalkulacyjny (TSV), import 2026-06-02",
+    "targetUserEmail": "tyka.szymon@gmail.com",
+    "targetProject": "LZ",
+    "spec": "worldofmag/docs/tasks/import-spec-zadania.md",
+    "taskCount": 149,
+    "conventions": {
+      "status": "wszystkie 'TODO'",
+      "priority": "1.Blocker→URGENT, 2.Critical→HIGH, 3.High→MEDIUM, 4.Normal→LOW, 5.Low→LOW, 6.Trivial→NONE",
+      "tags": "Kontekst + Miejsce jako tagi (TaskTagDef/TaskTaskTag); 'category' zostaje 'Other'",
+      "estimatedMins": "Czas(h) × 60, int; niedające się sparsować → null",
+      "dueDate": "Termin → ISO 8601 UTC; dzień miesiąca/data roczna kodowane w dueDate (nie w dayOfMonth)",
+      "recurring": "obiekt RecurringRule (przed INSERT-em do DB serializować JSON.stringify do kolumny Task.recurring jako string); null = jednorazowe lub cadencja niejednoznaczna (oryginał w opisie)",
+      "description": "Zadanie (po 1. linii) + Opis + Opis 2 + stopka 'Meta' (Poziom trudności, Przełożone, oryg. Cykliczność)"
+    },
+    "recurringNullButCyclic": [
+      "Opróżnić kosze (Katowice)",
+      "Schodzić z Forthyronu",
+      "Stomatologia",
+      "Szczpienia",
+      "Julka - wymyśleć coś fajnego",
+      "Zwolnić miejsce na gdrive",
+      "Koszenie trawy",
+      "Przerzucić kompost"
+    ]
+  },
+  "tasks": [
+    {
+      "title": "AI DEVS",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nPrzełożone: 12×\nCykliczność (oryg.): codziennie",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "DAILY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 0
+    },
+    {
+      "title": "Ustalić jaką kupić lampę UV i kto ją założy.",
+      "description": "Perplexity: https://www.perplexity.ai/search/perplexity-stacja-uzdatniania-xrVskzI7Q02F3K3LibRUZA\nPotem badać wodę\n\nStudnia głębinowa - badanie wody po 3-6 miesiący; jak będzie OK to potem co 12-24 miesiące\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 6×",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 1
+    },
+    {
+      "title": "Analizator pomyslow generujący raport sposób realizacji i ile można będzie na tym zarobić. Czyli analizę biznesową.",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nPrzełożone: 8×\nCykliczność (oryg.): 1 lipca",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 2
+    },
+    {
+      "title": "CZARNA",
+      "description": "- sprawdzić czy w ubezpieczalni sprawa zamknięta - powinien być zwrot kasy, potwierdzić że wszędzie jestem wypisany i że to koniec spraw z CZARNA\n- zweryfikować na mObywatel czy wyrejestrowali mi Czarną\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 16×",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 3
+    },
+    {
+      "title": "czyszczenie kuchennych szafek w środku (Kocoń)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nPrzełożone: 16×\nCykliczność (oryg.): Co rok",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 360,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 4
+    },
+    {
+      "title": "napisać do parkingów w Łodzi z pytaniem czy trzeba jakieś odsetki i o zwroot za złą strefę",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 12×",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "samochód",
+        "Katowice"
+      ],
+      "order": 5
+    },
+    {
+      "title": "czyszczenie kuchennych szafek w środku (Katowice)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nPrzełożone: 14×\nCykliczność (oryg.): Co rok",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 360,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 6
+    },
+    {
+      "title": "czyszczenie armatury i AGD w kuchni (Katowice) - Mariola",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nPrzełożone: 14×\nCykliczność (oryg.): Co 2 miesiące",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 7
+    },
+    {
+      "title": "czyszczenie armatury i AGD w kuchni (Kocoń)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nPrzełożone: 9×\nCykliczność (oryg.): Co 2 miesiące",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 8
+    },
+    {
+      "title": "Stworzyć nową piosenkę (o Krzysiu)",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 14×",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 240,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 9
+    },
+    {
+      "title": "Poszukać ubezpieczeń na życie które płacą za L4 (nie tylko przy nieszczęśliwych wypadkach)",
+      "description": "Spytać w AP Finance\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 6×",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 90,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "praca"
+      ],
+      "order": 10
+    },
+    {
+      "title": "Petsitter https://petsy.pl/p/alicja-dHuSth6",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 6×",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 11
+    },
+    {
+      "title": "Backup Maca",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nPrzełożone: 5×\nCykliczność (oryg.): co miesiąc",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-05-06T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 12,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 12
+    },
+    {
+      "title": "Zidentyfikować usterki w mieszkaniu w Katowicach i zlecić naprawy",
+      "description": "Okno w kuchni, serwis okien: https://www.facebook.com/serwiswin.warszawa\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 9×",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 13
+    },
+    {
+      "title": "Znaleźć i zainstalować hamak, kupić stojak",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nPrzełożone: 8×\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "inne",
+        "Kocoń"
+      ],
+      "order": 14
+    },
+    {
+      "title": "pomalować dach garażu",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Trudne\nPrzełożone: 8×",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 15
+    },
+    {
+      "title": "Tłumacz jak ze star treka na air podsy lub z napisami w rozszerzonej rzeczywistości",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Trudne\nPrzełożone: 6×",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 480,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "pomysły"
+      ],
+      "order": 16
+    },
+    {
+      "title": "Zainwestować w growboxy (uprzedzić o tym policję) by sprzedać je drożej jak zacznie się duży popyt po legalizacji zioła w Polsce. Może zainwestować też w jakieś inne akcesoria dla tego typu domowych upraw. DRUGA sprawa to spróbować zrobić idealną imprezę muzyczną w plenerze z wielkim ekranem i visualizacjami w systemie słuchawkowym z poziomami uczestnictwa, może powinna być DJka by to było kompletne, oczywiście dekosy i wszystko co najlepsze z festiwali",
+      "description": "Błażej powiedział że może też w lampy do growboxównawozy itd\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Trudne",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "praca"
+      ],
+      "order": 17
+    },
+    {
+      "title": "Sprawdzić apkę CapCut",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 1×",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 18
+    },
+    {
+      "title": "Stworzyć własną aplikację CMS dla graph ql",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Trudne",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "pomysły"
+      ],
+      "order": 19
+    },
+    {
+      "title": "Chce okulusy by np malować świat",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 20
+    },
+    {
+      "title": "Raj - Simparica (Trio do podania 28 maj - potem za kolejne 3 miesiące)",
+      "description": "- w koconiu skończyła się simparica trio\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): co miesiąc",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-04-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 6,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 21
+    },
+    {
+      "title": "Opróżnić kosze (Katowice)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): co wyjazd",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-05-26T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 12,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 22
+    },
+    {
+      "title": "Zabezpieczyć kranik przy studni przed zamarzaniem",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok - 1 października",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-10-01T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 23
+    },
+    {
+      "title": "OMNIMAT",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): co pt",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-06-05T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 1,
+        "daysOfWeek": [
+          5
+        ]
+      },
+      "category": "Other",
+      "tags": [
+        "praca"
+      ],
+      "order": 24
+    },
+    {
+      "title": "Raj fizjoterapia",
+      "description": "- ćwiczyć\n- przygotować potrzebne sprzęty\n- po niecałym miesiącu ćwiczeń umówić się do VitalVet\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 2 dni",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-05-16T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "DAILY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 25
+    },
+    {
+      "title": "Przygotować i złożyć PIT",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok - 3 marca",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2027-03-03T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "praca"
+      ],
+      "order": 26
+    },
+    {
+      "title": "Remont/ogród;",
+      "description": "- Łukasz - upomnieć się - czekam na odpowiedź mailową\n- Mateusz - kolory blatów\n- Andrzej - czekam co odpisze w sprawie wycen ekip; zawieszona kostka i mamy prawo do poprawek tarasu\n- musimy odpowiedzieć andrzejowi na ofertę mebli na wymiar\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 27
+    },
+    {
+      "title": "Dowiedzieć się czy na obecnej konstrukcji dachu będzie można założyć panele słoneczne",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-05-05T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 28
+    },
+    {
+      "title": "Studnia głębinowa - wymiana filtrów",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): na razie co 2 miesiące",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-07-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 29
+    },
+    {
+      "title": "DNA moczanowa? NERKI - UROLOG:",
+      "description": "DONE - 1. Wykonać UFL - 20.06 (piątek) 8-17\n\n- Zastanowić się czy nie choruję na ZZSK i na to na nerki co Asia wspominała\n\n2. Wykonać UFL - 29.08 (piątek) 8-17\n3. Oddać krew/mocz do badania - 27.08 (środa).\n4. Odebrać wyniki z badania krwi i moczu - 03.09 (środa)\n4. Wizyta - 12.09 (piątek).\n\ndr Sokołowski\n\nRejestracja: 326027000 (przychodnia przyszpitalna)\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 240,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "zdrowie",
+        "Katowice"
+      ],
+      "order": 30
+    },
+    {
+      "title": "czyszczenie lodówki (Katowice) - MARIOLA",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nCykliczność (oryg.): Co pół roku",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-07-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 6
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 31
+    },
+    {
+      "title": "OMNIMAT - koniec miesiąca + wystawić fakturę",
+      "description": "nie ma faktury w KSEF\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): co miesiąc - 23 dnia",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-06-23T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "praca"
+      ],
+      "order": 32
+    },
+    {
+      "title": "Dermatolog (alergolog i inni) -",
+      "description": "- podsumować co było na wizycie i ustalić co dalej\n\nAllMedica w Wadowicach\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 33
+    },
+    {
+      "title": "Szczepienie przeciwko kaszlowi kennelowemu",
+      "description": "- zastanowić się czy w tym roku będziemy szczepić (ostatnie szczepienie: 2025.06.18)\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 34
+    },
+    {
+      "title": "Schodzić z Forthyronu",
+      "description": "- badanie krwi (co miesiąc) - czekam na wyniki razem z cytologią\n- kontrola w ivet (20 maj)\n\nco dalej?\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co ile trzeba",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 35
+    },
+    {
+      "title": "Opłacić podatki - termin do 20 dnia miesiąca",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): 14 dnia miesiąca",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-05-14T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 12,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "praca"
+      ],
+      "order": 36
+    },
+    {
+      "title": "Stomatologia",
+      "description": "- umówić wizytę\n- zdjęcie lekarstwa\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co ile trzeba",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-05-04T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 12,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "zdrowie",
+        "Katowice"
+      ],
+      "order": 37
+    },
+    {
+      "title": "Raj umówić ortopedę na za miesiąc - USG kolana lewego i sprawdzenie mięśni i ruchomości",
+      "description": "dr Imioło\nCentrum Leczenia Zwierząt \"FIVET\" Wolności 121, 42-506 Będzin Telefon: 728 451 155\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-04-01T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 38
+    },
+    {
+      "title": "Ogarnąć dla Asi prezent na kolejną okazję",
+      "description": "KRUK\n\nKwiatki na walentynki i na rocznicę zamówić (odbiór piątek i niedziela)\n\nwybrać romansidło\n\nZarezerwowany stolik w restauracji na 14:30 w sobotę: https://maps.app.goo.gl/6rnG78ykTk5ZEs2S6\n\nhttps://www.facebook.com/share/p/1D1BujfxZo/\n\nhttps://www.amazon.pl/s?k=kindle&i=electronics&rh=n%3A20657432031%2Cp_123%3A323125%2Cp_n_condition-type%3A21329610031%2Cp_6%3AA2R2221NX79QZP&dc&crid=UAF0BIQY7KQ3&qid=1756750445&rnid=20875378031&sprefix=k%2Caps%2C102&ref=sr_nr_p_6_1&ds=v1%3AaOMZ2cWsq%2B%2F3qvxSZB43C3tkuimM%2FJRzmgr5Qyw53%2Bskupić\nKindle Paperwhite 6 Signature Edition\nalbo colorsoft 32 GB\nsprawdzić recenzje colorsoft\n\n koszulę nocną, znaleźć teatr, ogarnąć restaurację, jeszcze coś? może coś drobnego, albo coś do Potworka? Nauka jazdy terenowej ( To ci się może przydać do prezentu dla mnie\nJedna dziewczyna z turnieju k9 byla u nich i była zadowolona\n\n\nhttps://www.facebook.com/eror4x4 ). Garmin który będzie się ładował słonecznie.\n\nkolczyki\nvoucher\n?\nhttps://www.perplexity.ai/search/podaj-10-pomyslow-na-33-urodzi-QG9pkkbSR4CaUOBK5gXrpA\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nCykliczność (oryg.): 1 lipca",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 39
+    },
+    {
+      "title": "Raj - kontrolne USG, Echo serca",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 1,5 roku",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2027-09-19T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 18
+      },
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 40
+    },
+    {
+      "title": "Szczpienia",
+      "description": "(MAJ)\nZałatwić receptę, kupić i zaszczepić w czerwcu (procedurę zacząć w maju):\nodkleszczowe zapalenie mózgu:\n- Szymon - :FSME-IMMUN 0,5 ml 2,4 µg/0,5 ml\n- Asia - Encepur Adults\n\nDONE 1. Ze zdjęć żółtej książeczki stworzyć excela ze szczepieniami jakie mieliśmy;\n2. Wpisać daty szczepień covid;\n3. Uzupełnić listę o szczepienia z książeczek zdrowia dziecka;\n4. Spytać rodziców czy było więcej szczepień;\n5. Ustalić listę na co chcemy mieć odporność (m.in: kleszczowe zapalenie mózgu, koklusz);\n6. U lekarza w Gilowicach spytać na co jeszcze warto się zaszczepić;\n7. Z lekarzem zweryfikować listę odbytych szczepień i zrobić plan szczepień;\n8. Zaszczepić się zgodnie z planem szczepień;\n\nhttps://www.gov.pl/web/zdrowie/szczepienia-obowiazkowe-i-zalecane\n\nNiepubliczny Zakład Opieki Zdrowotnej \"VITA\" – Ślemień, Żywiecka 5 -\n tel: 338654075 - przychodniaslemien@gmail.com - to jest dobry numer!!!!!\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nCykliczność (oryg.): co ile? Maj",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 41
+    },
+    {
+      "title": "Składanie prania",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co tydzień",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-06-02T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 42
+    },
+    {
+      "title": "Bonus",
+      "description": "- wizyta umówić\n\nMałgorzata Ruty - somatic experiencing:\nKatowice ul. Żarnowcowa 19b\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-07-01T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 240,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 43
+    },
+    {
+      "title": "Znaleźć elektryka do zmadania instalacji elektrycznej",
+      "description": "https://www.perplexity.ai/search/kolega-ma-stary-dom-w-ktorym-o-d0lr5P._TeqRVpADr9e8Vw\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 1×",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-04-01T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 44
+    },
+    {
+      "title": "Pomyśleć o czymś na rocznicę ślubu",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nCykliczność (oryg.): co rok - 1 marca",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 45
+    },
+    {
+      "title": "OC (Perła) - termin do 7 kwietnia",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2027-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 46
+    },
+    {
+      "title": "ZUK - umowa na przyłącza na czerwiec - być w kontakcie",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Trudne",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-05-15T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 47
+    },
+    {
+      "title": "Mama i tata",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co sobotę",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-05-16T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 1,
+        "daysOfWeek": [
+          6
+        ]
+      },
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 48
+    },
+    {
+      "title": "Doszkalanie foresterem - jak najszybciej",
+      "description": "Ewa Leśniak <dom.beskidy@gmail.com>\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 4×",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-04-01T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 49
+    },
+    {
+      "title": "CHRAPANIE - LARYNGOLOGIA",
+      "description": "- ćwiczenia\n- spać z ortezą\n\nLaryngolog Blicharz\n\nKOD: 8382\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 2 dni",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "DAILY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 50
+    },
+    {
+      "title": "Raj - kastracja, czy to ma sens?",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2027-05-01T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 51
+    },
+    {
+      "title": "Okulista",
+      "description": "- sprawdzić czy mam już zrobione wszystkie badania by iść do okulisty\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 3 lata",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 3
+      },
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 52
+    },
+    {
+      "title": "Zainwestować w USD",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 1×",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 53
+    },
+    {
+      "title": "Raj - czyszczenie uszu",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co miesiąc",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-06-22T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "raj",
+        "Kocoń"
+      ],
+      "order": 54
+    },
+    {
+      "title": "Przygotować faktury (SKANOWAĆ!), wysłać/zanieść faktury - termin do 17 dnia miesiąca",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): do 5 dnia miesiąca",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-06-05T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "praca",
+        "Kocoń"
+      ],
+      "order": 55
+    },
+    {
+      "title": "Test osobowości -Chciałeś ten test osobowości https://www.16personalities.com/pl/darmowy-test-osobowosci",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "NONE",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 56
+    },
+    {
+      "title": "ORTOPEDA:",
+      "description": "Zlecone badania krwi\numówić wizytę do ortopedy.\nSpytać o Badanie ORTO kręgosłupa na urazówce w Piekarach\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 57
+    },
+    {
+      "title": "Umówić się na floating",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 58
+    },
+    {
+      "title": "Mateusz blaty - wybrać kolor",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-04-14T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 59
+    },
+    {
+      "title": "Odburzanie",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co miesiąc",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 60
+    },
+    {
+      "title": "OC (Potworek) - termin do 20 września",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-09-01T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 61
+    },
+    {
+      "title": "Upewnić się że mamy w obu domach:",
+      "description": "- Simparice (+ Simparica trio na odrobaczanie)\n- Forthyron\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): co 3 miiesiące",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-04-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 12,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 3
+      },
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 62
+    },
+    {
+      "title": "Przygotować iPhone nna wymiianę baterii - zgrać i backupy",
+      "description": "https://www.gov.pl/web/zdrowie/szczepienia-obowiazkowe-i-zalecane\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Trudne\nPrzełożone: 1×",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 90,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 63
+    },
+    {
+      "title": "Dyscyplina - koncentracja - cierpliwość",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): pn",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-05-26T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 1,
+        "daysOfWeek": [
+          1
+        ]
+      },
+      "category": "Other",
+      "tags": [
+        "praca"
+      ],
+      "order": 64
+    },
+    {
+      "title": "ćwiczenia: basen, gęsia stopka, rozciąganie barków i szyi, głębokie mięśnnie brzuch, JOGA",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 2 dni",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "DAILY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 65
+    },
+    {
+      "title": "Postarać się o podwyżkę",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Trudne",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-06-07T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "praca"
+      ],
+      "order": 66
+    },
+    {
+      "title": "Raj RTG całości? czy tylko bioder? Czekamy na wyniki cytologii",
+      "description": "gdzie wyniki z ARKI? wyniki cytologi i wymazu z ogona\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 2 lata",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-04-27T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 67
+    },
+    {
+      "title": "wymienić filtr w okapie (Katowice) + naprawić lampkę",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nPrzełożone: 10×\nCykliczność (oryg.): co pół roku",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-06-02T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 6
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 68
+    },
+    {
+      "title": "krew to co ortopeda zalecił i to co jest na karteczkach i to co inny ortopeda zalecił żelazo chyba itd",
+      "description": "Badania próby wątrobowe. ACTH od nadnerczy jeśli niski to przewlekły stres i jeśli duży kortyzol. Sprawdzić czy mam hjelikobakter\nSprawdzić kał na pasożyty i krew\nUmówić badanie krwi w luxmed na karłowicza na 23 czerwca rano.\nZbadać krew w tym tarczyca, poziom żelaza i ferrytynę, profil lipidowy, nerki, PSA, B12, D, magnez, tarczyca, kreatyna, kortyzol. Oraz wszystkie te badania: https://www.perplexity.ai/search/zaburzenia-lekowe-prowadza-do-WMoi.lPHQm2ueBSbWtZQrA\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nPrzełożone: 3×\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-06-02T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 69
+    },
+    {
+      "title": "Odpajęczanie domu i posesji",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 2 tygodnie",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 70
+    },
+    {
+      "title": "Julka - wymyśleć coś fajnego",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nPrzełożone: 3×\nCykliczność (oryg.): co rok pół roku",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 90,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 71
+    },
+    {
+      "title": "Opróżnić kosze (Kocoń)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): co wyjazd / co tydzień",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-05-05T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 18,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 72
+    },
+    {
+      "title": "Rozliczenie roku + zwrot Asi za mieszkanie, terapie, lekarze, masaże + sprawdzić czy Asia odesłała mi 20k",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nPrzełożone: 8×\nCykliczność (oryg.): co rok (2 stycznia)",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 73
+    },
+    {
+      "title": "Chlorowanie studni",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 6×",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-07-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 74
+    },
+    {
+      "title": "Rozliczenie miesiąca",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co miesiąc - 20 dnia miesiąca",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 75
+    },
+    {
+      "title": "kupić:",
+      "description": "- suplementy (glicyna, ...)\n- koszulki\n- skarpetki\n- akcesoria basenowe (moskitiera?)\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 76
+    },
+    {
+      "title": "Mycie ręczne i odkurzanie (Perła), dowiedzieć się jak dbać o skórę i jak najefektywniej samemu czyścić samochód",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nPrzełożone: 21×\nCykliczność (oryg.): co pół roku",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 180,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 6
+      },
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 77
+    },
+    {
+      "title": "poszukać kogoś do wyrównania/zaorania ziemi w Jeleśni i w koconiu",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Trudne\nPrzełożone: 6×",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-26T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 180,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 78
+    },
+    {
+      "title": "Odkurzanie (Kocoń)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): pt",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-05-08T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 1,
+        "daysOfWeek": [
+          5
+        ]
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 79
+    },
+    {
+      "title": "AC (Potworek) - termin do 6 lutego",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2027-01-21T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 80
+    },
+    {
+      "title": "Mazda - drzwi - jechać do Specka?",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-29T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 81
+    },
+    {
+      "title": "Opłacić podatek w Koconiu (czekam na maila z gminy)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2027-02-02T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 82
+    },
+    {
+      "title": "Ogarnąć nieprzeczytane i odłożone maile + zwolnić miejsce na gdrive",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 2 dni",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "DAILY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 83
+    },
+    {
+      "title": "Kupić Avata 2",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 6×",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 84
+    },
+    {
+      "title": "Fryzjer - umówić",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): co 3 miesiące",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-06-12T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 12,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 3
+      },
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 85
+    },
+    {
+      "title": "Sprawdzić czy nie tracimy na tym że nie lokujemy pieniędzy na lokaty czy obligacje",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 2×",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 86
+    },
+    {
+      "title": "Revolut wyrobić kartę",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 1×",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 87
+    },
+    {
+      "title": "Ogarnąć lepszą kłódkę do studni",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 88
+    },
+    {
+      "title": "Zrobić porządek w aktach",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 6×",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 89
+    },
+    {
+      "title": "Sprawdzić czy coś się zmieniło w temacie zbliżeniowych przelewó blik na iPhone",
+      "description": "https://www.perplexity.ai/search/czy-w-sklepach-z-terminalami-p-NlqXsL4bSgCxAWdYgjgMPA\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 4×",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 90
+    },
+    {
+      "title": "kupic: noktowizor, luźna bluza Metallica",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 1×",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 91
+    },
+    {
+      "title": "Raj - umyć miski (Kocoń)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): co 2 tygodnie",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-05-09T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "raj",
+        "Kocoń"
+      ],
+      "order": 92
+    },
+    {
+      "title": "Raj - umyć miski (Katowice)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): co 3 tygodnie",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-06-02T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 12,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 3
+      },
+      "category": "Other",
+      "tags": [
+        "raj",
+        "Katowice"
+      ],
+      "order": 93
+    },
+    {
+      "title": "Poziomowanie pralki.",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-05-06T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 94
+    },
+    {
+      "title": "Kupić szczotkę wirującą",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 95
+    },
+    {
+      "title": "Zwolnić miejsce na gdrive",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co ile trzebba",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "praca"
+      ],
+      "order": 96
+    },
+    {
+      "title": "Przegląd techniczny auta - termin do 27 sierpień (Potworek)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-08-10T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 180,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 97
+    },
+    {
+      "title": "Koszenie trawy",
+      "description": "- założyć nowe ostrza do kosiarki elektrycznej\n- przygotować kosiarki na przechowanie zimowe\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co ile trzeba",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-05-16T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 150,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 98
+    },
+    {
+      "title": "Ebooki i audiobooki w opisie filmu - https://youtu.be/y3QhCqHOwFY",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 1×",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 99
+    },
+    {
+      "title": "czyszczenie lodówki (Kocoń)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nCykliczność (oryg.): Co pół roku",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-09-22T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 6
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 100
+    },
+    {
+      "title": "Raj - czesanie",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): pt",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-05-04T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 1,
+        "daysOfWeek": [
+          5
+        ]
+      },
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 101
+    },
+    {
+      "title": "Wyczyścić rumbę",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 10 tygodni",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 10
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 102
+    },
+    {
+      "title": "Załatwić wymianę akumulatora do odkurzacza",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 103
+    },
+    {
+      "title": "Poodkładać rzeczy na miejsca (Kocoń)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): pt",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-05-08T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 1,
+        "daysOfWeek": [
+          5
+        ]
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 104
+    },
+    {
+      "title": "Raj - nauczyc 100 słów",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co tydzień",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 105
+    },
+    {
+      "title": "Przegląd techniczny auta - termin do 6 grudnia (Perła)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-11-20T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "samochód",
+        "Katowice"
+      ],
+      "order": 106
+    },
+    {
+      "title": "Kupić dodatkowe ekrany do lapka z pracy",
+      "description": "Wybrać coś tu: https://www.google.com/search?sca_esv=37db28bfa134011b&rlz=1CDGOYI_enPL826PL826&hl=pl&sxsrf=ADLYWIJIdkN5Lg5aElpeSuqozwa09xtaIA:1719342820750&q=monitor+doczepiany+do+laptopa&udm=3&fbs=AEQNm0Dvr3xYvXRaGaB8liPABJYdVC1NjYIFuBO3QJyWQ7GvBqotGuNIL7YJZii2ZN8ynNxI0n-SwmfZ81HoXvsBSMGhXatL8jIpqalbwmkoE0_H4z-YEnZ_ebQWsYkUEcf2rlsqhKa6TIlESMT6rh31_SMfc90zj9cEZzzroi0jKUoMBdRmTqdfaNzwL5vn-5kgUQUsVa73a9O5BKPmakgJ9Y11RuT5133-zYZSSM1WUPKMnjA0Bcw&sa=X&ved=2ahUKEwjOs8-Qu_eGAxVEKxAIHTOHD2gQs6gLegQIDxAB&biw=375&bih=713&dpr=3#ip=1\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Trudne\nPrzełożone: 1×",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "praca"
+      ],
+      "order": 107
+    },
+    {
+      "title": "Posprzątać szafkę w biurku w Katowicach",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Trudne\nPrzełożone: 1×",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-05-06T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 108
+    },
+    {
+      "title": "Określić swój poziom angielskiego",
+      "description": "https://eskk.pl/blog/jak-sprawdzic-swoj-poziom-angielskiego?gclid=CjwKCAjwv-GUBhAzEiwASUMm4od99QzLmYxwQZWeZYXK1EcjNGVqqXaznli1GbKwosUZyKenbaWSQxoCrsgQAvD_BwE\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nPrzełożone: 1×\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 109
+    },
+    {
+      "title": "umówić się na masaż do Gilowic lub gdzie indziej (jasmin kuków)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co miesiąc",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-05-20T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 110
+    },
+    {
+      "title": "Wytrzeć kurze (Kocoń)",
+      "description": "parapety, biurko, regał w salonie, drzwi + inne\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 3 tygodnie",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-04-18T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 3
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 111
+    },
+    {
+      "title": "umówić wymianę opon na letnie (Perła) - około 15 kwietnia",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): 1 kwietnia",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2027-04-01T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "samochód",
+        "Kocoń"
+      ],
+      "order": 112
+    },
+    {
+      "title": "umówić wymianę opon na letnie (Potworek) - około 15 kwietnia",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2027-04-01T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 113
+    },
+    {
+      "title": "Kredyt - sprawdzić czy wszystko ok (w tym ubezpieczenie domu i Szymka)",
+      "description": "Gdyby co to tak pisałem ale potem było OK: Dzień dobry, Jaki jest rezultat sprawy PSW385248201? Przesłałem brakujący dokument (\"Potwierdzenie zaktualizowania oznaczenia w księdze wieczystej\"). Dokument długo był w statusie \"analizowany\" aż niedawno ślad po tym zaginął i znowu mam tylko komunikat, że dokument nie został wysłany.\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nPrzełożone: 4×\nCykliczność (oryg.): co 5 maja",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 12,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 114
+    },
+    {
+      "title": "Raj umówić kardiolog na echo",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): co 2 lata",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-05-10T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": null,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 115
+    },
+    {
+      "title": "Czyszczenie odpływów (sprawdzić wszystkie) - Kocoń",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co miesiąc",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-05-04T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 116
+    },
+    {
+      "title": "Sprawdzić czy w lodówce jest nadmiar wody i przeczyścić (Kocoń)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co miesiąc",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-04-22T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 117
+    },
+    {
+      "title": "Umówić naprawę domofonu",
+      "description": "sprawdzić i zgłosić do spółdzielni\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Trudne\nPrzełożone: 1×",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 118
+    },
+    {
+      "title": "Test zdolności poznawczych i zaburzeń osobowościowych",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 6×",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 119
+    },
+    {
+      "title": "Działka Jeleśnia, sprawdzić ceny działek",
+      "description": "Dowiedzieć się czy sprzedaż wymaga podatku jeśli to idzie na remont. Jeśli tak to zastanowić się co dalej, czy sprzedać czy uzbroić czy wyrównać (ile to kosztuje)\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Trudne",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 120
+    },
+    {
+      "title": "Raj - szczepienie - termin do 19 sierpnia (wścieklizna, zakaźne, leptospiroza)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-07-19T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "raj"
+      ],
+      "order": 121
+    },
+    {
+      "title": "Znaleźć kameralne koncerty zagranicznych artystow",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nPrzełożone: 1×\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 122
+    },
+    {
+      "title": "Umówić serwis auta (Potworek)",
+      "description": "badanie techniczne jest ważne do 17 września\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-08-10T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 123
+    },
+    {
+      "title": "Przerzucić kompost",
+      "description": "najlepiej wtedy kiedy koszenie trawy\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co ile trzeba",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-05-16T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 90,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 124
+    },
+    {
+      "title": "Czyszczenie odpływów (sprawdzić wszystkie) - Katowice",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 2 miesiące",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-06-02T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 125
+    },
+    {
+      "title": "wyczyścić filtr w zmywarce (Kocoń)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co pół roku",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-05-15T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 6
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 126
+    },
+    {
+      "title": "Wymyśleć prezenty dla wszystkich na kolejną okazję",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nCykliczność (oryg.): co rok (24 października)",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 180,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 127
+    },
+    {
+      "title": "Odczyt prądu (Katowice) - Asia - 14 dnia nieparzystego miesiąca",
+      "description": "Maksymalnie 22 dnia nieparzystego miesiąca\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 2 miesiące nieparzyste) 10 dnia",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-05-10T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 12,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 128
+    },
+    {
+      "title": "Wyczyścić odkurzacz ręczny",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 10 tygodni",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-27T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 10
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 129
+    },
+    {
+      "title": "Poodkładać rzeczy na miejsca (Katowice)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): wt",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-06-02T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 1,
+        "daysOfWeek": [
+          2
+        ]
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Katowice"
+      ],
+      "order": 130
+    },
+    {
+      "title": "Umówić serwis pompy ciepła (przegląd ważny do 21 maja) - duplikat???",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nPrzełożone: 1×\nCykliczność (oryg.): co rok (21 kwiettnia)",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2027-04-21T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 131
+    },
+    {
+      "title": "Umówić serwis auta (Perła)",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok 25 listopada",
+      "status": "TODO",
+      "priority": "URGENT",
+      "dueDate": "2026-12-01T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 132
+    },
+    {
+      "title": "Umówić się z kimś na pizzę lub gdziekolwiek",
+      "description": "micia/zielak/olek/kwiatkowa-ekipa/monika/steriole/błażej...\n\n— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 2 miesiące",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-05-06T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 133
+    },
+    {
+      "title": "Kupić szafkę balkonową (do Katowic)",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie\nPrzełożone: 1×",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "dom"
+      ],
+      "order": 134
+    },
+    {
+      "title": "Odczyt prądu (Kocoń) - Asia 20 dnia miesiąca",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Łatwe\nCykliczność (oryg.): do 22 dnia nieparzystego miesiąca",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-05-22T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 18,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 135
+    },
+    {
+      "title": "Tworzyć grę",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nCykliczność (oryg.): co tydzień",
+      "status": "TODO",
+      "priority": "NONE",
+      "dueDate": "2026-09-08T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 180,
+      "recurring": {
+        "type": "WEEKLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 136
+    },
+    {
+      "title": "zdecydować co z paluchem",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Trudne",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2026-10-01T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "zdrowie"
+      ],
+      "order": 137
+    },
+    {
+      "title": "AC (Perła) - termin do 7 listopada",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-10-24T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 30,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 138
+    },
+    {
+      "title": "Feedly - monitorowanie wiadomości",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 139
+    },
+    {
+      "title": "Przygotować i przetestować odśnieżarkę na sezon",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 2 lata",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2026-11-03T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 140
+    },
+    {
+      "title": "wymiana opon na zimowe (Potworek) - około 15 listopada",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-11-15T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 141
+    },
+    {
+      "title": "wymiana opon na zimowe (Perła) - około 15 listopada",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-11-15T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "samochód"
+      ],
+      "order": 142
+    },
+    {
+      "title": "Apka do tworzenia planów domów RTG? - zweryfikować pomysł",
+      "description": "Wykonać zdjęcia domu pod różnymi kątami czymś co przenika przez ściany i pokazuje strukturę budynku. Zrobić analogiczne zdjęcia w normalny sposób. AI przeanalizuje zdjęcia by wyznaczyć model 3D na podstawie wykrycia na zdjęciach krawędzi ścian i naśnieżone na model 3D kolory odpowiednie do tych z normalnych zdjęć. Na tej podstawie można byłoby generować projekty rzutów domu z wymiarami a nawet naniesionymi na nie instalacjami hydraulicznymi i morze elektrycznymi. Możliwe że aby dobrze zmapować dom to trzeba będzie powstawiać do niego jakieś elementy dzięki którym AI będzie się łatwiej zorientować przestrzennie analizując zdjęcia.\n\n— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "pomysły"
+      ],
+      "order": 143
+    },
+    {
+      "title": "Ubezpieczenie na firmie OCD",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co rok",
+      "status": "TODO",
+      "priority": "HIGH",
+      "dueDate": "2027-01-05T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 1
+      },
+      "category": "Other",
+      "tags": [
+        "praca"
+      ],
+      "order": 144
+    },
+    {
+      "title": "Roda lub spotkanie capo-emerytów - napisać do Pieca, Virusa itd",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2027-02-08T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 145
+    },
+    {
+      "title": "Raj - mycie",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Trudne\nCykliczność (oryg.): co 3 miesiące",
+      "status": "TODO",
+      "priority": "LOW",
+      "dueDate": "2026-06-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 90,
+      "recurring": {
+        "type": "MONTHLY",
+        "interval": 3
+      },
+      "category": "Other",
+      "tags": [
+        "raj",
+        "Kocoń"
+      ],
+      "order": 146
+    },
+    {
+      "title": "Samolot z papieru https://fb.watch/kp7N2_zwlM/d",
+      "description": "— Meta (z arkusza) —\nTyp: jednorazowe\nPoziom trudności: Średnie",
+      "status": "TODO",
+      "priority": "NONE",
+      "dueDate": "2026-03-28T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 120,
+      "recurring": null,
+      "category": "Other",
+      "tags": [
+        "inne"
+      ],
+      "order": 147
+    },
+    {
+      "title": "SERWIS sprzętu Kosiarki / odśnieżarki",
+      "description": "— Meta (z arkusza) —\nTyp: cykliczne\nPoziom trudności: Średnie\nCykliczność (oryg.): co 2 lata",
+      "status": "TODO",
+      "priority": "MEDIUM",
+      "dueDate": "2027-09-23T00:00:00.000Z",
+      "startDate": null,
+      "completedAt": null,
+      "estimatedMins": 60,
+      "recurring": {
+        "type": "YEARLY",
+        "interval": 2
+      },
+      "category": "Other",
+      "tags": [
+        "dom",
+        "Kocoń"
+      ],
+      "order": 148
+    }
+  ]
+}
