@@ -4,18 +4,19 @@ import { useState, useTransition, useEffect, useRef } from "react";
 import {
   X, Trash2, CheckCircle2, Circle, Clock, AlertCircle, MinusCircle, Loader2,
   RefreshCw, Tag, Calendar, Timer, ChevronDown, ChevronLeft, Plus, Send, Sparkles,
-  MessageSquare, Share2, UserMinus, Eye, Undo2,
+  MessageSquare, Share2, UserMinus, Eye, Undo2, FolderInput,
 } from "lucide-react";
 import { updateTask, deleteTask, updateTaskTags, addTaskComment, createTask, completeRecurringTask, shareTaskByEmail, removeTaskShare } from "@/actions/tasks";
 import { createTaskTag } from "@/actions/taskTags";
 import { TaskTagBadge } from "./TaskTagBadge";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
-import type { Task, TaskStatus, TaskPriority, TaskTagDef, RecurringRule, ProjectStatusConfig } from "@/types";
+import type { Task, TaskStatus, TaskPriority, TaskTagDef, RecurringRule, ProjectStatusConfig, TaskProject } from "@/types";
 import { TASK_PRIORITY_COLORS, statusMeta, DEFAULT_STATUS_CONFIG } from "@/types";
 
 interface TaskDetailProps {
   task: Task;
   allTags: TaskTagDef[];
+  allProjects?: TaskProject[];
   statusConfig?: ProjectStatusConfig;
   onClose: () => void;
   onDelete: () => void;
@@ -37,7 +38,7 @@ const RECURRING_TYPES = [
 ];
 const DAY_LABELS = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So"];
 
-export function TaskDetail({ task, allTags, statusConfig = DEFAULT_STATUS_CONFIG, onClose, onDelete }: TaskDetailProps) {
+export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEFAULT_STATUS_CONFIG, onClose, onDelete }: TaskDetailProps) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
   const [editingDesc, setEditingDesc] = useState(false);
@@ -397,6 +398,24 @@ export function TaskDetail({ task, allTags, statusConfig = DEFAULT_STATUS_CONFIG
 
         {/* Dates + Time */}
         <div className="px-4 py-3 border-b space-y-2" style={{ borderColor: "var(--border)" }}>
+          {allProjects.length > 0 && (
+            <div className="flex items-center gap-2">
+              <FolderInput size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+              <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Projekt</label>
+              <select
+                value={task.projectId ?? ""}
+                onChange={(e) => { if (e.target.value && e.target.value !== task.projectId) run(() => updateTask(task.id, { projectId: e.target.value })); }}
+                className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
+                style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+                title="Przenieś do innego projektu"
+              >
+                {task.projectId == null && <option value="">— bez projektu —</option>}
+                {[...allProjects].sort((a, b) => Number(b.isInbox) - Number(a.isInbox)).map((p) => (
+                  <option key={p.id} value={p.id}>{p.isInbox ? "📥" : p.emoji} {p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Calendar size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
             <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Termin</label>

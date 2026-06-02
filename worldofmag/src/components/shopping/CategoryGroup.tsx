@@ -18,6 +18,7 @@ interface CategoryGroupProps {
   onItemStopEdit: () => void;
   rowRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   emojiOverride?: string;
+  otherLists?: { id: string; name: string }[];
 }
 
 function SvgIcon({ content, size = 14 }: { content: string; size?: number }) {
@@ -50,6 +51,7 @@ export function CategoryGroup({
   onItemStopEdit,
   rowRefs,
   emojiOverride,
+  otherLists,
 }: CategoryGroupProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -123,6 +125,7 @@ export function CategoryGroup({
               if (el) rowRefs.current.set(item.id, el);
               else rowRefs.current.delete(item.id);
             }}
+            otherLists={otherLists}
           />
         ))}
 

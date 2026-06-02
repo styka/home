@@ -267,6 +267,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
         categoryEmojiMap={categoryEmojiMap}
         categoryOrder={categoryOrder}
         sortBy={sortBy}
+        otherLists={allLists.filter((l) => l.id !== list.id).map((l) => ({ id: l.id, name: l.name }))}
       />
 
       <CommandPalette

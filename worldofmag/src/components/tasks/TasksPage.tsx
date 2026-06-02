@@ -437,6 +437,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             <TaskDetail
               task={openTask}
               allTags={allTags}
+              allProjects={allProjects}
               statusConfig={statusConfig}
               onClose={() => setOpenTaskId(null)}
               onDelete={() => { setOpenTaskId(null); setFocusedTaskId(null); }}
@@ -453,6 +454,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             <TaskDetail
               task={openTask}
               allTags={allTags}
+              allProjects={allProjects}
               statusConfig={statusConfig}
               onClose={() => setOpenTaskId(null)}
               onDelete={() => { setOpenTaskId(null); setFocusedTaskId(null); }}

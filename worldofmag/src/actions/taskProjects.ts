@@ -99,6 +99,12 @@ export async function deleteTaskProject(id: string): Promise<void> {
   const user = await requireAuth();
   await assertProjectAccess(id, user.id, "ADMIN");
 
+  // Skrzynka to specjalny projekt-domyślny — nie pozwalamy go usunąć.
+  const project = await prisma.taskProject.findUnique({ where: { id }, select: { isInbox: true } });
+  if (project?.isInbox) throw new Error("Nie można usunąć Skrzynki");
+
+  // Zadania nie są kasowane — relacja Task.projectId ma onDelete: SetNull,
+  // więc po usunięciu projektu zostają bez przypisania (widoczne w „Wszystkie").
   await prisma.taskProject.delete({ where: { id } });
   revalidatePath("/tasks");
 }

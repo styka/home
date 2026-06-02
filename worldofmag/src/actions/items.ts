@@ -71,6 +71,22 @@ export async function updateItem(
   return toItem(item);
 }
 
+export async function moveItem(id: string, targetListId: string): Promise<Item> {
+  const user = await requireAuth();
+  const existing = await prisma.item.findUnique({ where: { id } });
+  if (!existing) throw new Error("Item not found");
+  await assertListAccess(existing.listId, user.id);
+  if (targetListId === existing.listId) return toItem(existing);
+  // Dostęp do listy docelowej też musi być sprawdzony.
+  await assertListAccess(targetListId, user.id);
+
+  const item = await prisma.item.update({ where: { id }, data: { listId: targetListId } });
+  void trackActivity("shopping", "move_item", { id, from: existing.listId, to: targetListId });
+  revalidatePath(`/shopping/${existing.listId}`);
+  revalidatePath(`/shopping/${targetListId}`);
+  return toItem(item);
+}
+
 export async function deleteItem(id: string): Promise<void> {
   const user = await requireAuth();
   const item = await prisma.item.findUnique({ where: { id } });

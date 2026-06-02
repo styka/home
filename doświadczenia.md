@@ -4,6 +4,11 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-02 — Komunikat usuwania projektu kłamał o kasowaniu zadań
+**Problem:** `TasksSideNav` pokazywał `confirm("Usunąć projekt i wszystkie zadania?")`, ale relacja `Task.projectId` ma `onDelete: SetNull` — zadania NIE są kasowane, tylko tracą przypisanie (i nadal są widoczne w „Wszystkie", bo `getAllUserTasks` zwraca też `createdById = user`). Komunikat straszył utratą danych, której nie było.
+**Rozwiązanie:** Doprecyzowałem ostrzeżenie (liczba zadań + „nie zostaną usunięte, stracą przypisanie, pozostaną w «Wszystkie»"), dodałem ochronę przed usunięciem Skrzynki (`isInbox`) po stronie akcji i obsługę błędu w UI. Przy okazji: `updateTask` przepuszczał zmianę `projectId` bez sprawdzenia dostępu do celu — dodałem `assertProjectAccess(patch.projectId)`.
+**Lekcja:** Treść `confirm`/ostrzeżenia musi odpowiadać realnej semantyce relacji w schemacie (`SetNull` ≠ `Cascade`). Gdy dodajesz UI zmieniające FK (np. przeniesienie do innego projektu/listy), w akcji sprawdź dostęp zarówno do źródła, jak i do celu, oraz rewaliduj obie ścieżki.
+
 ## 2026-06-01 — Magiczna ikona obcinała wsadowe polecenia do ~7 akcji (limit tokenów)
 **Problem:** Po wklejeniu do asystenta („magiczna ikona") dużego JSON-a z 47 zadaniami, drawer pokazywał tylko 7 pierwszych. Nie było jawnego limitu liczby akcji — wąskim gardłem był sztywny `maxTokens: 1024` w `src/app/api/llm/home/interpret/route.ts`. Każda akcja `create_task` to ~150–250 tokenów, więc w 1024 tokenach model „domykał" tablicę JSON na ~7 pozycjach.
 **Rozwiązanie:** Budżet tokenów skalowany do długości wejścia: `Math.min(8192, Math.max(1024, ceil(text.length/2)))`. Dodatkowo tolerancyjny parser `parseActionArray` — gdy odpowiedź urwie się mimo to, przycina do ostatniego kompletnego `}` i domyka `]`, więc zwraca tyle akcji, ile się zmieściło, zamiast 502.

@@ -73,9 +73,20 @@ export function TasksSideNav() {
   function handleDelete(id: string, e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm("Usunąć projekt i wszystkie zadania?")) return;
+    const project = projects.find((p) => p.id === id);
+    const count = project?._count?.tasks ?? 0;
+    const name = project?.name ?? "ten projekt";
+    const msg =
+      count > 0
+        ? `Usunąć projekt „${name}"?\n\n${count} zadań NIE zostanie usuniętych — stracą przypisanie do projektu, ale pozostaną widoczne w „Wszystkie".`
+        : `Usunąć projekt „${name}"?`;
+    if (!confirm(msg)) return;
     startTransition(async () => {
-      await deleteTaskProject(id);
+      try {
+        await deleteTaskProject(id);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Nie udało się usunąć projektu");
+      }
       reload();
     });
   }

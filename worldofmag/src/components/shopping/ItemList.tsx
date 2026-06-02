@@ -13,6 +13,7 @@ interface ItemListProps {
   categoryEmojiMap?: Record<string, string>;
   categoryOrder?: string[];
   sortBy?: "category" | "product";
+  otherLists?: { id: string; name: string }[];
 }
 
 export function ItemList({
@@ -26,6 +27,7 @@ export function ItemList({
   categoryEmojiMap,
   categoryOrder,
   sortBy = "category",
+  otherLists,
 }: ItemListProps) {
   if (items.length === 0) {
     return (
@@ -55,6 +57,7 @@ export function ItemList({
               if (el) rowRefs.current.set(item.id, el);
               else rowRefs.current.delete(item.id);
             }}
+            otherLists={otherLists}
           />
         ))}
       </div>
@@ -93,6 +96,7 @@ export function ItemList({
           onItemStopEdit={onItemStopEdit}
           rowRefs={rowRefs}
           emojiOverride={categoryEmojiMap?.[category]}
+          otherLists={otherLists}
         />
       ))}
     </div>

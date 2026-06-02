@@ -6,7 +6,7 @@ import type { Item, ItemStatus } from "@/types";
 import { STATUS_CYCLE } from "@/types";
 import { StatusBadge } from "./StatusBadge";
 import { cn } from "@/lib/cn";
-import { updateItemStatus, updateItem, deleteItem } from "@/actions/items";
+import { updateItemStatus, updateItem, deleteItem, moveItem } from "@/actions/items";
 
 interface ItemRowProps {
   item: Item;
@@ -16,9 +16,11 @@ interface ItemRowProps {
   onStartEdit: () => void;
   onStopEdit: () => void;
   rowRef: (el: HTMLDivElement | null) => void;
+  /** Inne listy zakupowe, na które można przenieść produkt. */
+  otherLists?: { id: string; name: string }[];
 }
 
-export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, rowRef }: ItemRowProps) {
+export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, rowRef, otherLists = [] }: ItemRowProps) {
   const [isPending, startTransition] = useTransition();
   const [localStatus, setLocalStatus] = useState<ItemStatus>(item.status as ItemStatus);
   const [editName, setEditName] = useState(item.name);
@@ -57,6 +59,11 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
 
   function handleDelete() {
     startTransition(() => { deleteItem(item.id); });
+  }
+
+  function handleMove(targetListId: string) {
+    if (!targetListId) return;
+    startTransition(() => { moveItem(item.id, targetListId); });
   }
 
   function handleSaveEdit() {
@@ -237,6 +244,23 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
       {/* Action buttons — visible on focus/hover */}
       {isFocused && (
         <div className="flex items-center gap-1 ml-1">
+          {otherLists.length > 0 && (
+            <select
+              value=""
+              disabled={isPending}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => { e.stopPropagation(); handleMove(e.target.value); }}
+              className="text-xs bg-transparent border rounded focus:outline-none py-0.5"
+              style={{ borderColor: "var(--border)", color: "var(--text-muted)", maxWidth: 104 }}
+              title="Przenieś na inną listę"
+              aria-label="Przenieś na inną listę"
+            >
+              <option value="">⇄ Lista…</option>
+              {otherLists.map((l) => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </select>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); markMissing(); }}
             className="p-1 rounded focus:outline-none"

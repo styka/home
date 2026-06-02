@@ -174,6 +174,8 @@ export async function updateTask(
   const existing = await prisma.task.findUnique({ where: { id } });
   if (!existing) throw new Error("Task not found");
   if (existing.projectId) await assertProjectAccess(existing.projectId, user.id);
+  // Przeniesienie zadania do innego projektu — wymaga dostępu także do celu.
+  if (patch.projectId) await assertProjectAccess(patch.projectId, user.id);
 
   const completedAt =
     patch.status === "DONE" && existing.status !== "DONE"
@@ -193,7 +195,10 @@ export async function updateTask(
 
   void trackActivity("tasks", "update_task", { id, patchKeys: Object.keys(patch) });
   revalidatePath("/tasks");
-  if (task.projectId) revalidatePath(`/tasks/${task.projectId}`);
+  // Odśwież zarówno stary, jak i nowy projekt (przy przeniesieniu zadanie znika
+  // ze starej listy i pojawia się na nowej).
+  if (existing.projectId) revalidatePath(`/tasks/${existing.projectId}`);
+  if (task.projectId && task.projectId !== existing.projectId) revalidatePath(`/tasks/${task.projectId}`);
   return toTask(task);
 }
 
