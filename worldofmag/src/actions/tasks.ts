@@ -245,24 +245,42 @@ export async function toggleTaskStatus(id: string): Promise<Task> {
   // Status spoza ścieżki (np. CANCELLED/DEFERRED) → wskakujemy na początek ścieżki.
   const next: TaskStatus = idx === -1 ? cycle[0] : cycle[(idx + 1) % cycle.length];
 
+  // Spójność z panelem szczegółów: oznaczenie zadania cyklicznego jako „zrobione"
+  // z listy/skrótu również generuje kolejne wystąpienie.
+  if (next === "DONE" && task.recurring) {
+    return completeRecurringTask(id);
+  }
+
   return updateTask(id, { status: next });
 }
 
 export async function completeRecurringTask(id: string): Promise<Task> {
-  const existing = await prisma.task.findUnique({ where: { id } });
+  const existing = await prisma.task.findUnique({
+    where: { id },
+    include: { tags: { select: { tagId: true } } },
+  });
   if (!existing || !existing.recurring) throw new Error("Not a recurring task");
 
   const rule: RecurringRule = JSON.parse(existing.recurring);
   const now = new Date();
 
-  // Mark current as done
+  // Oznacz bieżące jako zrobione (zostaje jako rekord historyczny).
   await updateTask(id, { status: "DONE" });
 
-  // Compute next due date
-  const nextDue = computeNextDue(existing.dueDate ?? now, rule);
+  // Baza kolejnego terminu: od daty wykonania (COMPLETION) albo od terminu
+  // zadania (DUE — domyślnie). Bez terminu fallback na „teraz".
+  const base = rule.anchor === "COMPLETION" ? now : (existing.dueDate ?? now);
+  const nextDue = computeNextDue(base, rule);
   if (!nextDue) return toTask(existing);
 
   if (rule.endDate && nextDue > new Date(rule.endDate)) return toTask(existing);
+
+  // Zachowaj wyprzedzenie startu względem terminu (przesuwamy startDate o tę
+  // samą różnicę co termin). Bez terminu nie da się policzyć → start pomijamy.
+  let nextStart: Date | null = null;
+  if (existing.startDate && existing.dueDate) {
+    nextStart = new Date(existing.startDate.getTime() + (nextDue.getTime() - existing.dueDate.getTime()));
+  }
 
   const nextTask = await prisma.task.create({
     data: {
@@ -275,8 +293,13 @@ export async function completeRecurringTask(id: string): Promise<Task> {
       createdById: existing.createdById,
       assigneeId: existing.assigneeId,
       recurring: existing.recurring,
+      startDate: nextStart,
       dueDate: nextDue,
       order: existing.order,
+      // Skopiuj tagi do nowego wystąpienia.
+      ...(existing.tags.length > 0 && {
+        tags: { create: existing.tags.map((t) => ({ tagId: t.tagId })) },
+      }),
     },
     include: TASK_INCLUDE,
   });

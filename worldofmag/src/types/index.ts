@@ -101,6 +101,9 @@ export interface RecurringRule {
   daysOfWeek?: number[];   // 0=Sun…6=Sat, used for WEEKLY
   dayOfMonth?: number;     // 1-31, used for MONTHLY
   endDate?: string | null;
+  // Od czego liczyć następny termin po wykonaniu:
+  //  "DUE" (domyślnie) = od terminu zadania; "COMPLETION" = od daty wykonania.
+  anchor?: "DUE" | "COMPLETION";
 }
 
 export type TaskTagDef = {

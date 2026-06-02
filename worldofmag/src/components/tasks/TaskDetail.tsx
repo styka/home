@@ -56,6 +56,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
   const [recurringInterval, setRecurringInterval] = useState(1);
   const [recurringDays, setRecurringDays] = useState<number[]>([]);
   const [recurringEndDate, setRecurringEndDate] = useState("");
+  const [recurringAnchor, setRecurringAnchor] = useState<"DUE" | "COMPLETION">("DUE");
   const [newSubtask, setNewSubtask] = useState("");
   const [shareEmail, setShareEmail] = useState("");
   const [shareError, setShareError] = useState("");
@@ -89,6 +90,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
         setRecurringInterval(r.interval);
         setRecurringDays(r.daysOfWeek ?? []);
         setRecurringEndDate(r.endDate ?? "");
+        setRecurringAnchor(r.anchor ?? "DUE");
       } catch { /* ignore */ }
     }
   }, [task.id]);
@@ -174,6 +176,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
       interval: recurringInterval,
       daysOfWeek: recurringType === "WEEKLY" ? recurringDays : undefined,
       endDate: recurringEndDate || null,
+      anchor: recurringAnchor,
     };
     run(() => updateTask(task.id, { recurring: rule }));
   }
@@ -566,6 +569,20 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
                   className="bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
                   style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
                 />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Następny termin</span>
+                <select
+                  value={recurringAnchor}
+                  onChange={(e) => setRecurringAnchor(e.target.value as "DUE" | "COMPLETION")}
+                  className="flex-1 bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
+                  style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+                  title="Od czego liczyć kolejny termin po wykonaniu"
+                >
+                  <option value="DUE">licz od terminu</option>
+                  <option value="COMPLETION">licz od daty wykonania</option>
+                </select>
               </div>
 
               <div className="flex gap-2">

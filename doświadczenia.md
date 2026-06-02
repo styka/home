@@ -4,6 +4,11 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-02 — Zadania cykliczne: kolejne wystąpienie tylko z panelu, nie z listy
+**Problem:** Logika „oznacz cykliczne jako zrobione → utwórz kolejne wystąpienie" (`completeRecurringTask`) była wpięta tylko w panel szczegółów (`TaskDetail.handleStatusChange`). Oznaczenie zrobione z listy (checkbox / skrót `x`/spacja) szło przez `toggleTaskStatus` → `updateTask`, więc cyklicznie zadanie po prostu zmieniało status i NIE powstawało następne. Dodatkowo nowe wystąpienie nie kopiowało tagów ani `startDate`.
+**Rozwiązanie:** W `toggleTaskStatus` przy wejściu w `DONE` dla zadania z `recurring` deleguję do `completeRecurringTask` (jedna ścieżka prawdy). `completeRecurringTask` kopiuje teraz tagi i przesuwa `startDate` o tę samą różnicę co termin (zachowane wyprzedzenie). Dodałem `RecurringRule.anchor` (`DUE`|`COMPLETION`) + selektor w UI — następny termin liczony od terminu albo od daty wykonania.
+**Lekcja:** Gdy jakieś zachowanie ma „specjalną" logikę (np. cykliczność przy DONE), upewnij się, że WSZYSTKIE ścieżki UI prowadzące do tego stanu przez nią przechodzą (panel + lista + skrót), a nie tylko jedna. Najlepiej skupić to w jednej funkcji domenowej i z niej korzystać wszędzie.
+
 ## 2026-06-02 — Akcje chowane pod `hover` są niedostępne na dotyku (mobile)
 **Problem:** Usuwanie/zmiana nazwy projektu istniały tylko w bocznym menu (`TasksSideNav`), gdzie przyciski pokazują się dopiero `onMouseEnter` (hover). Na telefonie nie ma hovera, a sub-nav zadań w mobilnym menu i tak zwracał `null` — więc tych akcji NIE dało się wykonać na mobile.
 **Rozwiązanie:** Dodałem `ProjectActionsMenu` (zwykły przycisk „⋮" + menu, zamykane klikiem w tło) w nagłówku listy zadań — działa identycznie myszą i dotykiem. Do przenoszenia (projekt zadania, lista produktu) użyłem natywnych `<select>` — natywny picker OS to najlepszy UX na mobile.
