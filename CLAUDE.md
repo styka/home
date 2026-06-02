@@ -49,6 +49,8 @@ Nie pytaj o pozwolenie — po prostu dopisz i commituj razem z poprawką.
 | Flota (vehicles/fuel/service) | `/flota` | `module.flota` | Done and deployed |
 | Portfel (personal finance) | `/portfel` | `module.portfel` | Done and deployed |
 | Languages (SRS flashcards) | `/languages` | `module.languages` | Done and deployed |
+| Wiadomości (news + knowledge base) | `/wiadomosci` | `module.news` | Done — RSS+LLM filtering, per-topic/per-source versioned knowledge base (full + change-per-version), web-search baseline bootstrap (Brave/DDG), hot topics, 24h freshness |
+| Pogoda (weather) | `/pogoda` | `module.weather` | Done — Open-Meteo, LLM day advice, preset + custom watchers |
 | Reports (markdown docs) | `/reports` | authenticated | Done (system/user/team reports) |
 | QA (test scenarios) | `/qa` | `module.qa` | Internal tooling |
 | Truck (heavy-vehicle routing) | `/truck` | `module.truck` | Partial — ORS client ready, UI minimal |
@@ -156,6 +158,8 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /flota/                  # Vehicles (fuel logs, service records)
 /portfel/                # Personal finance (wallet elements + entries)
 /languages/              # SRS vocabulary decks (SuperMemo-2)
+/wiadomosci/             # News: monitored topics (semantic filters), per-source versioned knowledge base, hot topics
+/pogoda/                 # Weather: Open-Meteo forecast + LLM "what to do" advice + watchers (presets + custom)
 /qa/                     # QA test scenarios (Epic → Story → Scenario)
 /truck/                  # Heavy-vehicle routing (OpenRouteService)
 /reports/ [slug]         # Markdown reports (system/user/team), user-facing
@@ -198,7 +202,7 @@ All data mutations use Next.js Server Actions with `revalidatePath()` at the end
 - Session includes `user.id`, `user.roles`, `user.permissions`
 - **RBAC**: Users have `UserRole` entries → roles have `RolePermission` entries → permissions have slugs
 - Check permissions via `src/lib/permissions.ts` (`hasPermission`, `permissionForPath`, `isPathLocked`)
-- Permission slugs (`module.*`): `module.home`, `module.shopping`, `module.tasks`, `module.notes`, `module.kitchen`, `module.pets`, `module.health`, `module.habits`, `module.flota`, `module.portfel`, `module.languages`, `module.qa`, `module.truck`, `module.invitations`, `module.settings`, `module.admin`. Kitchen has sub-permissions: `kitchen.recipe.create|edit|delete`, `kitchen.mealplan.edit`, `kitchen.pantry.edit`, `kitchen.ai`.
+- Permission slugs (`module.*`): `module.home`, `module.shopping`, `module.tasks`, `module.notes`, `module.kitchen`, `module.pets`, `module.health`, `module.habits`, `module.flota`, `module.portfel`, `module.languages`, `module.news`, `module.weather`, `module.qa`, `module.truck`, `module.invitations`, `module.settings`, `module.admin`. Kitchen has sub-permissions: `kitchen.recipe.create|edit|delete`, `kitchen.mealplan.edit`, `kitchen.pantry.edit`, `kitchen.ai`.
 - `ModuleSidebar` greys out + locks nav items the user lacks permission for (`isPathLocked`); admin nav appears only for admins.
 - Special roles: `ADMIN` (full access), `BETA_TESTER` (shows Beta badge on Home)
 - **Admin self-lockout guard**: `access.ts` `countAdminAccessHolders()` blocks any RBAC change that would leave 0 users with `module.admin`.
@@ -226,6 +230,8 @@ Habit, HabitEntry                           — Habits module
 Vehicle, FuelLog, ServiceRecord, VehicleProfile — Flota / Truck
 WalletElement, WalletEntry                  — Portfel (finance)
 LanguageDeck, Vocabulary                    — Languages (SRS)
+NewsSource, NewsTopic, NewsKnowledge, NewsItem, NewsPref — Wiadomości (news + versioned knowledge base)
+WeatherLocation, WeatherWatcher             — Pogoda (locations + alert watchers)
 QaEpic, QaUserStory, QaTestScenario         — QA module
 LlmProvider, LlmAssignment                  — LLM config (admin)
 Config, UserActivity, Report                — System
@@ -280,7 +286,7 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 
 - **`/admin`** — console: build info (`NEXT_PUBLIC_BUILD_*`), active session, Omnia↔Claude Code clipboard export (`admin-tools.ts` → open Omnia tasks as JSON), links to tools.
 - **`/admin/access`** — RBAC manager (`PermissionManager`): permissions, role↔permission grid, user↔role; self-lockout guard.
-- **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, masked).
+- **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, `brave_search_api_key` for News web-search baseline, masked).
 - **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type).
 - **`/admin/categories`** — global system categories (name/color/icon).
 - **`/admin/reports`** — markdown reports CRUD.

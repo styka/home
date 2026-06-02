@@ -13,6 +13,7 @@ export default async function AdminConfigPage() {
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
   const groqKey = await getConfigValue("groq_api_key");
+  const braveKey = await getConfigValue("brave_search_api_key");
 
   return (
     <div
@@ -55,7 +56,7 @@ export default async function AdminConfigPage() {
           <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />
         </Link>
 
-        <AdminConfigForm groqKey={groqKey} />
+        <AdminConfigForm groqKey={groqKey} braveKey={braveKey} />
       </div>
     </div>
   );
