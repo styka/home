@@ -24,6 +24,20 @@ const PRIORITY_LABELS: Record<string, string> = {
   NONE: "⚪ Brak priorytetu",
 };
 
+/**
+ * Sortowanie wewnątrz grupy: po terminie rosnąco — najbardziej zaległe (najwcześniejsze)
+ * na górze, terminy przyszłe niżej; zadania bez terminu na końcu (stabilnie wg `order`).
+ */
+function byDueDateAsc(a: Task, b: Task): number {
+  const da = a.dueDate ? new Date(a.dueDate).getTime() : null;
+  const db = b.dueDate ? new Date(b.dueDate).getTime() : null;
+  if (da === null && db === null) return (a.order ?? 0) - (b.order ?? 0);
+  if (da === null) return 1;
+  if (db === null) return -1;
+  if (da !== db) return da - db;
+  return (a.order ?? 0) - (b.order ?? 0);
+}
+
 export function TaskList({ tasks, filter, viewMode, selectedTagIds, focusedTaskId, onFocus, onOpen, rowRefs }: TaskListProps) {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -164,7 +178,7 @@ export function TaskList({ tasks, filter, viewMode, selectedTagIds, focusedTaskI
               {label}
               <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({groupTasks.length})</span>
             </div>
-            {groupTasks.map(renderTask)}
+            {[...groupTasks].sort(byDueDateAsc).map(renderTask)}
           </div>
         ))}
         <CompletedSection tasks={done} renderTask={renderTask} />
@@ -180,7 +194,7 @@ export function TaskList({ tasks, filter, viewMode, selectedTagIds, focusedTaskI
   return (
     <div className="flex-1 overflow-y-auto">
       {PRIORITY_ORDER.map((priority) => {
-        const group = filtered.filter((t) => t.priority === priority);
+        const group = filtered.filter((t) => t.priority === priority).sort(byDueDateAsc);
         if (group.length === 0) return null;
         return (
           <div key={priority}>

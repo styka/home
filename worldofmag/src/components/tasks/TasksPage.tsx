@@ -8,6 +8,7 @@ import { TaskList } from "./TaskList";
 import { TaskDetail } from "./TaskDetail";
 import { TaskStatusConfigEditor } from "./TaskStatusConfigEditor";
 import { QuickAddTask, type QuickAddTaskHandle } from "./QuickAddTask";
+import { ProjectActionsMenu } from "./ProjectActionsMenu";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { deleteTask, toggleTaskStatus } from "@/actions/tasks";
 import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode, ProjectStatusConfig } from "@/types";
@@ -339,6 +340,12 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               <SlidersHorizontal size={15} />
             </button>
           )}
+
+          {/* Akcje projektu (zmień nazwę / usuń) — dostępne na dotyku i myszą */}
+          {viewMode === "project" && (() => {
+            const current = allProjects.find((p) => p.id === projectId);
+            return current && !current.isInbox ? <ProjectActionsMenu project={current} /> : null;
+          })()}
         </div>
       </div>
 

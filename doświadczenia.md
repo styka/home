@@ -4,6 +4,11 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-02 — Akcje chowane pod `hover` są niedostępne na dotyku (mobile)
+**Problem:** Usuwanie/zmiana nazwy projektu istniały tylko w bocznym menu (`TasksSideNav`), gdzie przyciski pokazują się dopiero `onMouseEnter` (hover). Na telefonie nie ma hovera, a sub-nav zadań w mobilnym menu i tak zwracał `null` — więc tych akcji NIE dało się wykonać na mobile.
+**Rozwiązanie:** Dodałem `ProjectActionsMenu` (zwykły przycisk „⋮" + menu, zamykane klikiem w tło) w nagłówku listy zadań — działa identycznie myszą i dotykiem. Do przenoszenia (projekt zadania, lista produktu) użyłem natywnych `<select>` — natywny picker OS to najlepszy UX na mobile.
+**Lekcja:** Każda akcja ukryta pod `hover` to potencjalnie funkcja niedostępna na mobile. Krytyczne akcje dawaj jako trwale widoczne przyciski/menu (klik, nie hover) i sprawdzaj, czy mobilna ścieżka (sub-nav/menu) w ogóle je renderuje.
+
 ## 2026-06-02 — Komunikat usuwania projektu kłamał o kasowaniu zadań
 **Problem:** `TasksSideNav` pokazywał `confirm("Usunąć projekt i wszystkie zadania?")`, ale relacja `Task.projectId` ma `onDelete: SetNull` — zadania NIE są kasowane, tylko tracą przypisanie (i nadal są widoczne w „Wszystkie", bo `getAllUserTasks` zwraca też `createdById = user`). Komunikat straszył utratą danych, której nie było.
 **Rozwiązanie:** Doprecyzowałem ostrzeżenie (liczba zadań + „nie zostaną usunięte, stracą przypisanie, pozostaną w «Wszystkie»"), dodałem ochronę przed usunięciem Skrzynki (`isInbox`) po stronie akcji i obsługę błędu w UI. Przy okazji: `updateTask` przepuszczał zmianę `projectId` bez sprawdzenia dostępu do celu — dodałem `assertProjectAccess(patch.projectId)`.
