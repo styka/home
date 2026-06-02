@@ -4,6 +4,11 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-02 — Ikona kalendarza/zegara niewidoczna w trybie ciemnym (pola date/time)
+**Problem:** Natywne pola `input[type="date"|"datetime-local"|"time"]` renderowały wbudowaną ikonę pickera (kalendarz/zegar) w prawie czarnym kolorze, więc na ciemnym tle motywu była praktycznie niewidoczna.
+**Rozwiązanie:** W `globals.css` ustawiłem `color-scheme: dark` na `html, body` (przeglądarka renderuje natywne kontrolki w wariancie ciemnym) oraz dodatkowo `filter: invert(1)` na `::-webkit-calendar-picker-indicator` dla wszystkich typów date/time, z hover/opacity dla czytelności. Fix globalny — działa dla wszystkich modułów bez ruszania pojedynczych pól.
+**Lekcja:** Natywne kontrolki formularzy (date/time/select/scrollbary) nie dziedziczą kolorów z CSS — w ciemnym motywie ustawiaj `color-scheme: dark` globalnie. To jedna linijka, która naprawia ikony pickerów wszędzie naraz, zamiast stylować każde pole z osobna.
+
 ## 2026-06-02 — Zadania cykliczne: kolejne wystąpienie tylko z panelu, nie z listy
 **Problem:** Logika „oznacz cykliczne jako zrobione → utwórz kolejne wystąpienie" (`completeRecurringTask`) była wpięta tylko w panel szczegółów (`TaskDetail.handleStatusChange`). Oznaczenie zrobione z listy (checkbox / skrót `x`/spacja) szło przez `toggleTaskStatus` → `updateTask`, więc cyklicznie zadanie po prostu zmieniało status i NIE powstawało następne. Dodatkowo nowe wystąpienie nie kopiowało tagów ani `startDate`.
 **Rozwiązanie:** W `toggleTaskStatus` przy wejściu w `DONE` dla zadania z `recurring` deleguję do `completeRecurringTask` (jedna ścieżka prawdy). `completeRecurringTask` kopiuje teraz tagi i przesuwa `startDate` o tę samą różnicę co termin (zachowane wyprzedzenie). Dodałem `RecurringRule.anchor` (`DUE`|`COMPLETION`) + selektor w UI — następny termin liczony od terminu albo od daty wykonania.
