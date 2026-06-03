@@ -168,6 +168,7 @@ export function AICommandSheet() {
   const [inputText, setInputText] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
+  const [liveThoughts, setLiveThoughts] = useState<string[]>([]); // myśli agenta na żywo (streaming)
   const [error, setError] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
 
@@ -306,6 +307,7 @@ export function AICommandSheet() {
   async function callAgent(payload: Record<string, unknown>, opts?: { isRetry?: boolean }) {
     setError(null);
     setBusy(true);
+    setLiveThoughts([]);
     if (!opts?.isRetry) lastPayloadRef.current = payload; // do „Generuj ponownie"
     const controller = new AbortController();
     abortRef.current = controller;
@@ -313,18 +315,51 @@ export function AICommandSheet() {
       const res = await fetch("/api/llm/home/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, stream: true }),
         signal: controller.signal,
       });
-      const data = (await res.json()) as AgentResponse;
-      if (!res.ok && !data.step) { setError(data.error ?? "Błąd asystenta"); return; }
-      applyResponse(data);
+
+      const ctype = res.headers.get("content-type") ?? "";
+      if (ctype.includes("text/event-stream") && res.body) {
+        // Streaming (SSE): myśli na żywo + finalny wynik.
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        let finalApplied = false;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const parts = buf.split("\n\n");
+          buf = parts.pop() ?? "";
+          for (const part of parts) {
+            const line = part.trim();
+            if (!line.startsWith("data:")) continue;
+            let evt: { type?: string; text?: string; status?: number; body?: AgentResponse };
+            try { evt = JSON.parse(line.slice(5).trim()); } catch { continue; }
+            if (evt.type === "thought" && evt.text) {
+              setLiveThoughts((prev) => [...prev, evt.text!]);
+            } else if (evt.type === "final" && evt.body) {
+              finalApplied = true;
+              if ((evt.status ?? 200) >= 400 && !evt.body.step) setError(evt.body.error ?? "Błąd asystenta");
+              else applyResponse(evt.body);
+            }
+          }
+        }
+        if (!finalApplied) setError("Połączenie przerwane przed odpowiedzią.");
+      } else {
+        // Fallback bez streamingu.
+        const data = (await res.json()) as AgentResponse;
+        if (!res.ok && !data.step) { setError(data.error ?? "Błąd asystenta"); return; }
+        applyResponse(data);
+      }
     } catch (e) {
       if ((e as Error)?.name === "AbortError") return; // świadome zatrzymanie — bez błędu
       setError("Nie udało się połączyć z asystentem");
     } finally {
       abortRef.current = null;
       setBusy(false);
+      setLiveThoughts([]);
     }
   }
 
@@ -574,11 +609,27 @@ export function AICommandSheet() {
                 ))}
 
                 {busy && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--text-muted)", fontSize: 13 }}>
-                    <Loader2 size={14} className="animate-spin" /> Myślę…
-                    <button onClick={stopGeneration} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-secondary)", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}>
-                      <Square size={11} /> Zatrzymaj
-                    </button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {/* Myśli agenta na żywo (streaming) */}
+                    {liveThoughts.length > 0 && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        {liveThoughts.map((t, i) => {
+                          const last = i === liveThoughts.length - 1;
+                          return (
+                            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, opacity: last ? 1 : 0.5 }}>
+                              <Sparkles size={11} style={{ color: "var(--accent-blue)", flexShrink: 0, marginTop: 3 }} />
+                              <span style={{ fontSize: 12, color: last ? "var(--text-secondary)" : "var(--text-muted)" }}>{t}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--text-muted)", fontSize: 13 }}>
+                      <Loader2 size={14} className="animate-spin" /> {liveThoughts.length ? "Pracuję…" : "Myślę…"}
+                      <button onClick={stopGeneration} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-secondary)", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}>
+                        <Square size={11} /> Zatrzymaj
+                      </button>
+                    </div>
                   </div>
                 )}
                 {error && (

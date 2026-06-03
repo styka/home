@@ -280,6 +280,133 @@ function normalizeActions(raw: unknown): AIAction[] {
     .filter((a): a is AIAction => a !== null);
 }
 
+interface LoopResult {
+  status?: number;
+  body: Record<string, unknown>;
+}
+
+// Rdzeń agenta: pętla narzędzi → krok terminalny. `onThought` (opcjonalne) dostaje
+// myśl każdej iteracji NA ŻYWO — używane przez tryb streamingu (SSE) do pokazania,
+// co asystent właśnie robi. Zwraca obiekt {status?, body} (bez NextResponse), żeby
+// współdzielić logikę między trybem zwykłym a strumieniowym.
+async function runAgentLoop(
+  messages: ChatMessage[],
+  userId: string,
+  onThought?: (thought: string) => void
+): Promise<LoopResult> {
+  const log: LogEntry[] = [];
+
+  for (let iter = 1; iter <= MAX_ITERATIONS; iter++) {
+    let parsed: Record<string, unknown> | null = null;
+    for (let attempt = 0; attempt < 2 && parsed === null; attempt++) {
+      let content: string;
+      try {
+        content = await callAgent(messages);
+      } catch (e) {
+        const status = (e as { status?: number }).status ?? 502;
+        return { status, body: { error: e instanceof Error ? e.message : "Błąd LLM" } };
+      }
+      messages.push({ role: "assistant", content });
+      try {
+        const j = extractJson(content);
+        if (j && typeof j === "object" && !Array.isArray(j)) parsed = j as Record<string, unknown>;
+        else throw new Error("not an object");
+      } catch {
+        messages.push({ role: "user", content: "Zwróć wyłącznie poprawny JSON wg schematu (jeden obiekt z polem step)." });
+      }
+    }
+
+    if (!parsed) {
+      return { status: 502, body: { error: "LLM zwrócił nieprawidłowy format", log } };
+    }
+
+    const step = String(parsed.step ?? "");
+    const thought = typeof parsed.thought === "string" ? parsed.thought : "";
+    if (thought) onThought?.(thought);
+
+    if (step === "query") {
+      const rawTools = Array.isArray(parsed.tools) ? parsed.tools.slice(0, MAX_TOOLS_PER_TURN) : [];
+      const toolCalls = rawTools
+        .map((t) => t as { tool?: string; args?: Record<string, unknown> })
+        .filter((t) => t.tool && ((READ_TOOL_NAMES as readonly string[]).includes(t.tool) || t.tool === "web_search"));
+
+      const results: { tool: string; args: Record<string, unknown>; data: unknown; error?: string }[] = [];
+      for (const call of toolCalls) {
+        try {
+          if (call.tool === "web_search") {
+            const query = typeof call.args?.query === "string" ? call.args.query : "";
+            const limit = typeof call.args?.limit === "number" ? Math.min(8, Math.max(1, call.args.limit)) : 5;
+            const data = query.trim() ? await webSearch(query, limit) : [];
+            results.push({ tool: call.tool, args: call.args ?? {}, data });
+          } else {
+            const data = await runReadTool(call.tool!, call.args ?? {}, userId);
+            results.push({ tool: call.tool!, args: call.args ?? {}, data });
+          }
+        } catch (e) {
+          results.push({ tool: call.tool!, args: call.args ?? {}, data: null, error: e instanceof Error ? e.message : "błąd" });
+        }
+      }
+
+      log.push({ iter, step, thought, tools: toolCalls.map((t) => ({ tool: t.tool!, args: t.args ?? {} })), results });
+      messages.push({ role: "user", content: `Wyniki narzędzi (JSON):\n${JSON.stringify(results)}` });
+      continue;
+    }
+
+    if (step === "clarify") {
+      const question = typeof parsed.question === "string" ? parsed.question : "Doprecyzuj proszę polecenie.";
+      const options = Array.isArray(parsed.options) ? parsed.options.map(String).slice(0, 6) : undefined;
+      log.push({ iter, step, thought, question, options });
+      const dialog = messages.filter((m) => m.role !== "system");
+      return { body: { step: "clarify", question, options, thought, log, messages: dialog } };
+    }
+
+    if (step === "answer") {
+      const answer = typeof parsed.answer === "string" ? parsed.answer : "Brak odpowiedzi.";
+      log.push({ iter, step, thought });
+      return { body: { step: "answer", answer, thought, log } };
+    }
+
+    if (step === "report") {
+      const title = typeof parsed.title === "string" && parsed.title.trim() ? parsed.title.trim() : "Raport z asystenta";
+      const content = typeof parsed.content === "string" ? parsed.content : "";
+      if (!content.trim()) {
+        messages.push({ role: "user", content: "Pusty raport. Zwróć pełny markdown w polu content." });
+        continue;
+      }
+      log.push({ iter, step, thought });
+      return { body: { step: "report", title, content, thought, log } };
+    }
+
+    if (step === "navigate") {
+      const url = sanitizeNavUrl(parsed.url);
+      if (!url) {
+        messages.push({ role: "user", content: "Nieprawidłowy lub niedozwolony adres. Podaj wewnętrzną ścieżkę aplikacji zaczynającą się od / (np. /tasks/all?status=IN_PROGRESS), albo użyj answer." });
+        continue;
+      }
+      const label = typeof parsed.label === "string" && parsed.label.trim() ? parsed.label.trim() : "Otwórz widok";
+      log.push({ iter, step, thought });
+      return { body: { step: "navigate", url, label, thought, log } };
+    }
+
+    if (step === "plan") {
+      const actions = normalizeActions(parsed.actions);
+      if (actions.length === 0) {
+        log.push({ iter, step: "answer", thought });
+        return { body: { step: "answer", answer: thought || "Nie wykryto żadnych akcji do wykonania.", log } };
+      }
+      log.push({ iter, step, thought, actionsCount: actions.length });
+      const dialog = messages.filter((m) => m.role !== "system");
+      return { body: { step: "plan", actions, thought, log, messages: dialog } };
+    }
+
+    messages.push({ role: "user", content: "Nieznany step. Użyj jednego z: query, clarify, answer, navigate, plan." });
+  }
+
+  return {
+    body: { step: "answer", answer: "Nie udało się dokończyć w limicie kroków. Spróbuj sformułować polecenie prościej lub bardziej konkretnie.", log },
+  };
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -298,6 +425,7 @@ export async function POST(req: NextRequest) {
     clarifyAnswer?: string;
     refine?: string; // uwagi użytkownika do zaproponowanego planu — przeplanuj
     history?: ChatMessage[]; // wcześniejsze tury rozmowy (poziom wyświetlania) do kontekstu wielo-turowego
+    stream?: boolean; // true → odpowiedź jako SSE z myślami na żywo
   };
 
   // Zbuduj konwersację. System prompt zawsze budujemy po stronie serwera (nie ufamy klientowi).
@@ -376,143 +504,29 @@ export async function POST(req: NextRequest) {
     messages.push({ role: "user", content: userMsg });
   }
 
-  const log: LogEntry[] = [];
-
-  for (let iter = 1; iter <= MAX_ITERATIONS; iter++) {
-    // Jedna tura LLM z jednokrotnym ponowieniem przy błędzie parsowania JSON.
-    let parsed: Record<string, unknown> | null = null;
-    for (let attempt = 0; attempt < 2 && parsed === null; attempt++) {
-      let content: string;
-      try {
-        content = await callAgent(messages);
-      } catch (e) {
-        const status = (e as { status?: number }).status ?? 502;
-        return NextResponse.json({ error: e instanceof Error ? e.message : "Błąd LLM" }, { status });
-      }
-      messages.push({ role: "assistant", content });
-      try {
-        const j = extractJson(content);
-        if (j && typeof j === "object" && !Array.isArray(j)) parsed = j as Record<string, unknown>;
-        else throw new Error("not an object");
-      } catch {
-        messages.push({ role: "user", content: "Zwróć wyłącznie poprawny JSON wg schematu (jeden obiekt z polem step)." });
-      }
-    }
-
-    if (!parsed) {
-      return NextResponse.json({ error: "LLM zwrócił nieprawidłowy format", log }, { status: 502 });
-    }
-
-    const step = String(parsed.step ?? "");
-    const thought = typeof parsed.thought === "string" ? parsed.thought : "";
-
-    if (step === "query") {
-      const rawTools = Array.isArray(parsed.tools) ? parsed.tools.slice(0, MAX_TOOLS_PER_TURN) : [];
-      const toolCalls = rawTools
-        .map((t) => t as { tool?: string; args?: Record<string, unknown> })
-        .filter((t) => t.tool && ((READ_TOOL_NAMES as readonly string[]).includes(t.tool) || t.tool === "web_search"));
-
-      const results: { tool: string; args: Record<string, unknown>; data: unknown; error?: string }[] = [];
-      for (const call of toolCalls) {
+  // Tryb strumieniowy (SSE): emitujemy myśli agenta NA ŻYWO, a na końcu pełny wynik.
+  if (body.stream === true) {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (obj: unknown) => {
+          try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`)); } catch { /* zamknięte */ }
+        };
         try {
-          // web_search działa poza zakresem własności użytkownika (dane publiczne z internetu).
-          if (call.tool === "web_search") {
-            const query = typeof call.args?.query === "string" ? call.args.query : "";
-            const limit = typeof call.args?.limit === "number" ? Math.min(8, Math.max(1, call.args.limit)) : 5;
-            const data = query.trim() ? await webSearch(query, limit) : [];
-            results.push({ tool: call.tool, args: call.args ?? {}, data });
-          } else {
-            const data = await runReadTool(call.tool!, call.args ?? {}, userId);
-            results.push({ tool: call.tool!, args: call.args ?? {}, data });
-          }
+          const result = await runAgentLoop(messages, userId, (t) => send({ type: "thought", text: t }));
+          send({ type: "final", status: result.status ?? 200, body: result.body });
         } catch (e) {
-          results.push({ tool: call.tool!, args: call.args ?? {}, data: null, error: e instanceof Error ? e.message : "błąd" });
+          send({ type: "final", status: 502, body: { error: e instanceof Error ? e.message : "Błąd asystenta" } });
+        } finally {
+          controller.close();
         }
-      }
-
-      log.push({
-        iter,
-        step,
-        thought,
-        tools: toolCalls.map((t) => ({ tool: t.tool!, args: t.args ?? {} })),
-        results,
-      });
-
-      // Dołącz wyniki narzędzi do transkryptu i kontynuuj pętlę
-      messages.push({
-        role: "user",
-        content: `Wyniki narzędzi (JSON):\n${JSON.stringify(results)}`,
-      });
-      continue;
-    }
-
-    if (step === "clarify") {
-      const question = typeof parsed.question === "string" ? parsed.question : "Doprecyzuj proszę polecenie.";
-      const options = Array.isArray(parsed.options) ? parsed.options.map(String).slice(0, 6) : undefined;
-      log.push({ iter, step, thought, question, options });
-      // Zwróć dialog (bez system) do wznowienia po stronie klienta
-      const dialog = messages.filter((m) => m.role !== "system");
-      return NextResponse.json({ step: "clarify", question, options, thought, log, messages: dialog });
-    }
-
-    if (step === "answer") {
-      const answer = typeof parsed.answer === "string" ? parsed.answer : "Brak odpowiedzi.";
-      log.push({ iter, step, thought });
-      return NextResponse.json({ step: "answer", answer, thought, log });
-    }
-
-    if (step === "report") {
-      const title =
-        typeof parsed.title === "string" && parsed.title.trim() ? parsed.title.trim() : "Raport z asystenta";
-      const content = typeof parsed.content === "string" ? parsed.content : "";
-      if (!content.trim()) {
-        messages.push({ role: "user", content: "Pusty raport. Zwróć pełny markdown w polu content." });
-        continue;
-      }
-      log.push({ iter, step, thought });
-      return NextResponse.json({ step: "report", title, content, thought, log });
-    }
-
-    if (step === "navigate") {
-      const url = sanitizeNavUrl(parsed.url);
-      if (!url) {
-        messages.push({
-          role: "user",
-          content:
-            "Nieprawidłowy lub niedozwolony adres. Podaj wewnętrzną ścieżkę aplikacji zaczynającą się od / (np. /tasks/all?status=IN_PROGRESS), albo użyj answer.",
-        });
-        continue;
-      }
-      const label =
-        typeof parsed.label === "string" && parsed.label.trim() ? parsed.label.trim() : "Otwórz widok";
-      log.push({ iter, step, thought });
-      return NextResponse.json({ step: "navigate", url, label, thought, log });
-    }
-
-    if (step === "plan") {
-      const actions = normalizeActions(parsed.actions);
-      if (actions.length === 0) {
-        log.push({ iter, step: "answer", thought });
-        return NextResponse.json({
-          step: "answer",
-          answer: thought || "Nie wykryto żadnych akcji do wykonania.",
-          log,
-        });
-      }
-      log.push({ iter, step, thought, actionsCount: actions.length });
-      // Dialog (bez system) wraca do klienta, by mógł poprosić o korektę planu („popraw przez AI").
-      const dialog = messages.filter((m) => m.role !== "system");
-      return NextResponse.json({ step: "plan", actions, thought, log, messages: dialog });
-    }
-
-    // Nieznany step — poproś o poprawny format i próbuj dalej
-    messages.push({ role: "user", content: "Nieznany step. Użyj jednego z: query, clarify, answer, navigate, plan." });
+      },
+    });
+    return new Response(stream, {
+      headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" },
+    });
   }
 
-  // Wyczerpano limit iteracji bez stanu terminalnego
-  return NextResponse.json({
-    step: "answer",
-    answer: "Nie udało się dokończyć w limicie kroków. Spróbuj sformułować polecenie prościej lub bardziej konkretnie.",
-    log,
-  });
+  const result = await runAgentLoop(messages, userId);
+  return NextResponse.json(result.body, result.status ? { status: result.status } : undefined);
 }
