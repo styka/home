@@ -11,6 +11,13 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-03 — Spread `Set` w strict mode (downlevelIteration) + niezależny dolny pasek
+**Problem:** `[...new Set(arr)]` w `menuPrefs.ts` wywaliło `error TS2802` — przy ustawionym `target` < es2015 spread iterowalnych (Set/Map) wymaga `--downlevelIteration`. Osobny temat: dolny pasek mobilny współdzielił kolejność z menu (`enabled.slice(0,4)`), więc nie dało się go ułożyć niezależnie.
+**Rozwiązanie:** Zamiast spreadu użyłem `Array.from(new Set(...))` (działa niezależnie od targetu). Dolny pasek dostał własne pole `MenuPrefs.tabBar` (JSON w `UserMenuPref.tabBar`) + helper `resolveTabBar`, niezależne od `order`/`disabled`.
+**Lekcja:** W tym repo (strict, starszy target) deduplikuj przez `Array.from(new Set(...))`, nie przez `[...set]`. A gdy dwie powierzchnie (menu boczne vs dolny pasek) mają „przypadkiem" tę samą kolejność — to znak, że brakuje osobnego stanu; lepiej dać im niezależne preferencje niż wyprowadzać jedną z drugiej.
+
+---
+
 ## 2026-06-03 — Magazynowanie 2.0: konflikt peer-deps @zxing i fałszywie „czysty" typecheck po cd
 **Problem:** (1) `npm i @zxing/browser@latest @zxing/library@latest` padało na ERESOLVE — `@zxing/browser@0.2.0` wymaga peer `@zxing/library@^0.22.0`, a `@latest` to 0.23.0. (2) Po serii `git commit` uruchamianych z `cd /home/user/home && …` katalog roboczy powłoki Bash został w `/home/user/home`, więc kolejne `npx tsc --noEmit -p tsconfig.json` zwracało „path does not exist: tsconfig.json" — a `grep` po tym pustym wyjściu pokazywał 0 błędów, czyli FAŁSZYWIE „czysto".
 **Rozwiązanie:** (1) Przypięto zgodne wersje: `@zxing/browser@0.2.0` + `@zxing/library@0.22.0` (peer spełniony, bez `--legacy-peer-deps`). (2) Każdą komendę typecheck/build poprzedzam jawnym `cd /home/user/home/worldofmag` i liczę błędy przez `grep -c "error TS"`.
