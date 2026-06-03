@@ -8,6 +8,8 @@ interface TaskListProps {
   tasks: Task[];
   filter: TaskStatusFilter;
   viewMode: ViewMode;
+  /** "default" = naturalne grupowanie widoku (po dniach/projektach); "priority" = grupowanie po priorytetach (jak w „Dziś"). */
+  groupBy: "default" | "priority";
   selectedTagIds: string[];
   focusedTaskId: string | null;
   onFocus: (id: string) => void;
@@ -38,7 +40,7 @@ function byDueDateAsc(a: Task, b: Task): number {
   return (a.order ?? 0) - (b.order ?? 0);
 }
 
-export function TaskList({ tasks, filter, viewMode, selectedTagIds, focusedTaskId, onFocus, onOpen, rowRefs }: TaskListProps) {
+export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, focusedTaskId, onFocus, onOpen, rowRefs }: TaskListProps) {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -88,8 +90,8 @@ export function TaskList({ tasks, filter, viewMode, selectedTagIds, focusedTaskI
     );
   }
 
-  // Upcoming view: group by day
-  if (viewMode === "upcoming") {
+  // Upcoming view: group by day (chyba że użytkownik wybrał grupowanie po priorytetach)
+  if (viewMode === "upcoming" && groupBy === "default") {
     const withDate = filtered.filter((t) => t.dueDate);
     const withoutDate = filtered.filter((t) => !t.dueDate);
 
@@ -122,7 +124,7 @@ export function TaskList({ tasks, filter, viewMode, selectedTagIds, focusedTaskI
               {label}
               <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({dayTasks.length})</span>
             </div>
-            {dayTasks.map(renderTask)}
+            {[...dayTasks].sort(byDueDateAsc).map(renderTask)}
           </div>
         ))}
         {withoutDate.length > 0 && (
@@ -141,17 +143,17 @@ export function TaskList({ tasks, filter, viewMode, selectedTagIds, focusedTaskI
     );
   }
 
-  // Overdue view: flat list sorted oldest first
-  if (viewMode === "overdue") {
+  // Overdue view: flat list sorted oldest first (po terminie z czasem) — chyba że grupowanie po priorytetach
+  if (viewMode === "overdue" && groupBy === "default") {
     return (
       <div className="flex-1 overflow-y-auto">
-        {filtered.map(renderTask)}
+        {[...filtered].sort(byDueDateAsc).map(renderTask)}
       </div>
     );
   }
 
-  // "all" view: group by project
-  if (viewMode === "all") {
+  // "all" view: group by project (chyba że użytkownik wybrał grupowanie po priorytetach)
+  if (viewMode === "all" && groupBy === "default") {
     const done = filter === "ALL"
       ? applyTagFilter(tasks.filter((t) => t.status === "DONE" || t.status === "CANCELLED"))
       : [];
@@ -186,7 +188,8 @@ export function TaskList({ tasks, filter, viewMode, selectedTagIds, focusedTaskI
     );
   }
 
-  // Today / project: group by priority
+  // Grupowanie po priorytetach: domyślne dla „Dziś"/projektu oraz dla każdego widoku,
+  // gdy użytkownik przełączy prezentację na „Priorytety". Wewnątrz grup sort po terminie z czasem.
   const done = filter === "ALL"
     ? applyTagFilter(tasks.filter((t) => t.status === "DONE" || t.status === "CANCELLED"))
     : [];
