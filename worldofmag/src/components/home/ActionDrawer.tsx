@@ -26,6 +26,19 @@ const DESTRUCTIVE_TYPES = new Set([
   "delete_word",
   "delete_news_topic",
   "delete_weather_location",
+  // Domknięcie pokrycia zapisu — wszystkie operacje usuwające/archiwizujące są opt-in.
+  "delete_list",
+  "delete_project",
+  "delete_habit",
+  "delete_wallet_element",
+  "delete_recipe",
+  "delete_meal_plan",
+  "delete_pantry_item",
+  "delete_vehicle",
+  "delete_deck",
+  "delete_weather_watcher",
+  "delete_storage_item",
+  "delete_pet",
 ]);
 const ID_KEY = /Id$/;
 

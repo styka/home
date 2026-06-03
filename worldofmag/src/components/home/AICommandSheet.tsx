@@ -4,14 +4,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks,
+  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import {
   listAiConversations, getAiConversation, createAiConversation, appendAiMessage,
-  deleteAiConversation, type ConversationMeta,
+  deleteAiConversation, renameAiConversation, type ConversationMeta,
 } from "@/actions/aiConversations";
 import { createUserReport } from "@/actions/reports";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
@@ -51,6 +51,7 @@ interface AgentResponse {
   label?: string;
   title?: string;
   content?: string;
+  followups?: string[];
   log?: LogEntry[];
   messages?: ChatMessage[];
   error?: string;
@@ -59,7 +60,7 @@ interface AgentResponse {
 // Jedna „kafelka" w wątku rozmowy. `data` z DB pozwala odtworzyć kartę bez ponownego uruchamiania agenta.
 type Turn =
   | { id: string; role: "user"; kind: "text"; content: string }
-  | { id: string; role: "assistant"; kind: "answer"; content: string; log?: LogEntry[] }
+  | { id: string; role: "assistant"; kind: "answer"; content: string; followups?: string[]; log?: LogEntry[] }
   | { id: string; role: "assistant"; kind: "clarify"; content: string; options?: string[]; messages?: ChatMessage[]; log?: LogEntry[]; resolved?: boolean }
   | { id: string; role: "assistant"; kind: "navigate"; content: string; url: string; label: string; log?: LogEntry[] }
   | { id: string; role: "assistant"; kind: "plan"; content: string; actions: AIAction[]; messages?: ChatMessage[]; log?: LogEntry[]; done?: boolean }
@@ -168,6 +169,7 @@ export function AICommandSheet() {
   const [inputText, setInputText] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
+  const [liveThoughts, setLiveThoughts] = useState<string[]>([]); // myśli agenta na żywo (streaming)
   const [error, setError] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
 
@@ -180,14 +182,47 @@ export function AICommandSheet() {
   // Historia rozmów
   const [showHistory, setShowHistory] = useState(false);
   const [conversations, setConversations] = useState<ConversationMeta[]>([]);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameText, setRenameText] = useState("");
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
   const convoIdRef = useRef<string | null>(null);
   convoIdRef.current = conversationId;
+  // Anulowanie generowania (Stop) + ostatni payload do „Generuj ponownie".
+  const abortRef = useRef<AbortController | null>(null);
+  const lastPayloadRef = useRef<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [turns, busy]);
+
+  // Esc zamyka sheet (gdy nie piszemy w polu — pozwalamy textarea obsłużyć własny Esc).
+  useEffect(() => {
+    if (!isOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        const tag = (document.activeElement?.tagName ?? "").toLowerCase();
+        if (tag !== "textarea" && tag !== "input") handleClose();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  // Zatrzymaj generowanie przy zamknięciu/unmount.
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  // Autofokus pola wejścia po otwarciu (desktop) — natychmiast piszesz.
+  useEffect(() => {
+    if (!isOpen || showHistory) return;
+    const t = setTimeout(() => {
+      const ta = sheetRef.current?.querySelector("textarea") as HTMLTextAreaElement | null;
+      ta?.focus();
+    }, 80);
+    return () => clearTimeout(t);
+  }, [isOpen, showHistory]);
 
   // Zapis wiadomości do DB (best-effort, nie blokuje UI).
   const persist = useCallback(async (role: "user" | "assistant", content: string, kind: string, data?: unknown) => {
@@ -257,8 +292,8 @@ export function AICommandSheet() {
     }
     if (data.step === "answer") {
       const content = data.answer ?? "";
-      setTurns((t) => [...t, { id, role: "assistant", kind: "answer", content, log: data.log ?? log }]);
-      void persist("assistant", content, "answer", { log: data.log ?? log });
+      setTurns((t) => [...t, { id, role: "assistant", kind: "answer", content, followups: data.followups, log: data.log ?? log }]);
+      void persist("assistant", content, "answer", { log: data.log ?? log, followups: data.followups });
       return;
     }
     if (data.step === "navigate" && data.url) {
@@ -283,23 +318,85 @@ export function AICommandSheet() {
     setError("Nieoczekiwana odpowiedź asystenta.");
   }
 
-  async function callAgent(payload: Record<string, unknown>) {
+  async function callAgent(payload: Record<string, unknown>, opts?: { isRetry?: boolean }) {
     setError(null);
     setBusy(true);
+    setLiveThoughts([]);
+    if (!opts?.isRetry) lastPayloadRef.current = payload; // do „Generuj ponownie"
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
       const res = await fetch("/api/llm/home/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, stream: true }),
+        signal: controller.signal,
       });
-      const data = (await res.json()) as AgentResponse;
-      if (!res.ok && !data.step) { setError(data.error ?? "Błąd asystenta"); return; }
-      applyResponse(data);
-    } catch {
+
+      const ctype = res.headers.get("content-type") ?? "";
+      if (ctype.includes("text/event-stream") && res.body) {
+        // Streaming (SSE): myśli na żywo + finalny wynik.
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        let finalApplied = false;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const parts = buf.split("\n\n");
+          buf = parts.pop() ?? "";
+          for (const part of parts) {
+            const line = part.trim();
+            if (!line.startsWith("data:")) continue;
+            let evt: { type?: string; text?: string; status?: number; body?: AgentResponse };
+            try { evt = JSON.parse(line.slice(5).trim()); } catch { continue; }
+            if (evt.type === "thought" && evt.text) {
+              setLiveThoughts((prev) => [...prev, evt.text!]);
+            } else if (evt.type === "final" && evt.body) {
+              finalApplied = true;
+              if ((evt.status ?? 200) >= 400 && !evt.body.step) setError(evt.body.error ?? "Błąd asystenta");
+              else applyResponse(evt.body);
+            }
+          }
+        }
+        if (!finalApplied) setError("Połączenie przerwane przed odpowiedzią.");
+      } else {
+        // Fallback bez streamingu.
+        const data = (await res.json()) as AgentResponse;
+        if (!res.ok && !data.step) { setError(data.error ?? "Błąd asystenta"); return; }
+        applyResponse(data);
+      }
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return; // świadome zatrzymanie — bez błędu
       setError("Nie udało się połączyć z asystentem");
     } finally {
+      abortRef.current = null;
       setBusy(false);
+      setLiveThoughts([]);
     }
+  }
+
+  function stopGeneration() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setBusy(false);
+  }
+
+  // Generuj ponownie: usuń ostatnią odpowiedź asystenta i powtórz ostatnie zapytanie.
+  function regenerate() {
+    const payload = lastPayloadRef.current;
+    if (!payload || busy) return;
+    setTurns((t) => {
+      const copy = [...t];
+      while (copy.length && copy[copy.length - 1].role === "assistant") copy.pop();
+      return copy;
+    });
+    void callAgent(payload, { isRetry: true });
+  }
+
+  function retryLast() {
+    if (lastPayloadRef.current) void callAgent(lastPayloadRef.current, { isRetry: true });
   }
 
   async function handleSend(textArg?: string) {
@@ -417,7 +514,7 @@ export function AICommandSheet() {
           case "plan": return { id: m.id, role: "assistant", kind: "plan", content: m.content, actions: (data.actions as AIAction[]) ?? [], done: true };
           case "results": return { id: m.id, role: "assistant", kind: "results", content: m.content, results: (data.results as ActionResult[]) ?? [] };
           case "clarify": return { id: m.id, role: "assistant", kind: "clarify", content: m.content, resolved: true };
-          default: return { id: m.id, role: "assistant", kind: "answer", content: m.content };
+          default: return { id: m.id, role: "assistant", kind: "answer", content: m.content, followups: Array.isArray(data.followups) ? (data.followups as string[]) : undefined };
         }
       });
       setTurns(rehydrated);
@@ -435,6 +532,14 @@ export function AICommandSheet() {
     } catch { /* ignore */ }
   }
 
+  async function commitRename(id: string) {
+    const title = renameText.trim();
+    setRenamingId(null);
+    if (!title) return;
+    setConversations((c) => c.map((x) => (x.id === id ? { ...x, title } : x)));
+    try { await renameAiConversation(id, title); } catch { /* ignore */ }
+  }
+
   const planTurn = planTurnId ? (turns.find((t) => t.id === planTurnId && t.kind === "plan") as Extract<Turn, { kind: "plan" }> | undefined) : undefined;
 
   return (
@@ -445,6 +550,7 @@ export function AICommandSheet() {
       <button
         onClick={() => setIsOpen(true)}
         title="Asystent AI"
+        aria-label="Otwórz asystenta AI"
         className="fixed right-5 z-40 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
         style={{ width: 52, height: 52, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
       >
@@ -458,6 +564,10 @@ export function AICommandSheet() {
           onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
         >
           <div
+            ref={sheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Asystent AI"
             className="w-full md:max-w-lg md:mx-4"
             style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "16px 16px 0 0", height: "85vh", maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}
           >
@@ -473,9 +583,9 @@ export function AICommandSheet() {
                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Asystent AI</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <button onClick={resetConversation} title="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
-                <button onClick={openHistory} title="Historia rozmów" style={iconBtn}><History size={16} /></button>
-                <button onClick={handleClose} title="Zamknij" style={iconBtn}><X size={16} /></button>
+                <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
+                <button onClick={openHistory} title="Historia rozmów" aria-label="Historia rozmów" style={iconBtn}><History size={16} /></button>
+                <button onClick={handleClose} title="Zamknij" aria-label="Zamknij asystenta" style={iconBtn}><X size={16} /></button>
               </div>
             </div>
 
@@ -488,15 +598,27 @@ export function AICommandSheet() {
                 {conversations.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 16 }}>Brak zapisanych rozmów.</p>}
                 {conversations.map((c) => (
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <button onClick={() => loadConversation(c.id)} style={{ ...rowBtn, flex: 1, justifyContent: "flex-start" }}>
-                      <span style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</span>
-                    </button>
-                    <button onClick={() => removeConversation(c.id)} title="Usuń" style={{ ...iconBtn, color: "var(--text-muted)" }}><Trash2 size={14} /></button>
+                    {renamingId === c.id ? (
+                      <input
+                        autoFocus
+                        value={renameText}
+                        onChange={(e) => setRenameText(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") commitRename(c.id); if (e.key === "Escape") setRenamingId(null); }}
+                        onBlur={() => commitRename(c.id)}
+                        style={{ flex: 1, fontSize: 13, padding: "9px 10px", borderRadius: 8, border: "1px solid var(--accent-blue)", background: "var(--bg-base)", color: "var(--text-primary)", outline: "none" }}
+                      />
+                    ) : (
+                      <button onClick={() => loadConversation(c.id)} style={{ ...rowBtn, flex: 1, justifyContent: "flex-start" }}>
+                        <span style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</span>
+                      </button>
+                    )}
+                    <button onClick={() => { setRenamingId(c.id); setRenameText(c.title); }} title="Zmień nazwę" aria-label="Zmień nazwę rozmowy" style={{ ...iconBtn, color: "var(--text-muted)" }}><Pencil size={13} /></button>
+                    <button onClick={() => removeConversation(c.id)} title="Usuń" aria-label="Usuń rozmowę" style={{ ...iconBtn, color: "var(--text-muted)" }}><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>
             ) : (
-              <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div ref={scrollRef} aria-live="polite" className="flex-1 overflow-y-auto px-4 py-4" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {/* Pusty wątek → sugestie startowe */}
                 {turns.length === 0 && !busy && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
@@ -511,24 +633,55 @@ export function AICommandSheet() {
                   </div>
                 )}
 
-                {turns.map((turn) => (
+                {turns.map((turn, i) => (
                   <TurnView
                     key={turn.id}
                     turn={turn}
+                    isLast={i === turns.length - 1}
                     onBubbleClick={handleBubbleClick}
                     onClarifySubmit={submitClarify}
                     onOpenPlan={(t) => { setPlanTurnId(t.id); setPlanVersion((v) => v + 1); }}
                     onNavigate={goTo}
                     onSaveReport={saveReport}
+                    onRegenerate={lastPayloadRef.current ? regenerate : undefined}
+                    onFollowup={(txt) => handleSend(txt)}
                   />
                 ))}
 
                 {busy && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-muted)", fontSize: 13 }}>
-                    <Loader2 size={14} className="animate-spin" /> Myślę…
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {/* Myśli agenta na żywo (streaming) */}
+                    {liveThoughts.length > 0 && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        {liveThoughts.map((t, i) => {
+                          const last = i === liveThoughts.length - 1;
+                          return (
+                            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, opacity: last ? 1 : 0.5 }}>
+                              <Sparkles size={11} style={{ color: "var(--accent-blue)", flexShrink: 0, marginTop: 3 }} />
+                              <span style={{ fontSize: 12, color: last ? "var(--text-secondary)" : "var(--text-muted)" }}>{t}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--text-muted)", fontSize: 13 }}>
+                      <Loader2 size={14} className="animate-spin" /> {liveThoughts.length ? "Pracuję…" : "Myślę…"}
+                      <button onClick={stopGeneration} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-secondary)", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}>
+                        <Square size={11} /> Zatrzymaj
+                      </button>
+                    </div>
                   </div>
                 )}
-                {error && <p style={{ fontSize: 12, color: "var(--accent-red)", margin: 0 }}>{error}</p>}
+                {error && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <p style={{ fontSize: 12, color: "var(--accent-red)", margin: 0 }}>{error}</p>
+                    {lastPayloadRef.current && (
+                      <button onClick={retryLast} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--accent-blue)", background: "none", border: "1px solid var(--border)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}>
+                        <RefreshCw size={11} /> Ponów
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -539,14 +692,24 @@ export function AICommandSheet() {
                   <div style={{ flex: 1 }}>
                     <SmartTextarea value={inputText} onChange={setInputText} placeholder={placeholder} rows={2} onSubmit={() => handleSend()} disabled={busy} />
                   </div>
-                  <button
-                    onClick={() => handleSend()}
-                    disabled={!inputText.trim() || busy}
-                    title="Wyślij"
-                    style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "none", background: !inputText.trim() || busy ? "var(--bg-elevated)" : "var(--accent-blue)", color: !inputText.trim() || busy ? "var(--text-muted)" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: !inputText.trim() || busy ? "not-allowed" : "pointer" }}
-                  >
-                    {busy ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                  </button>
+                  {busy ? (
+                    <button
+                      onClick={stopGeneration}
+                      title="Zatrzymaj"
+                      style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "none", background: "var(--accent-red)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    >
+                      <Square size={15} />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleSend()}
+                      disabled={!inputText.trim()}
+                      title="Wyślij"
+                      style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "none", background: !inputText.trim() ? "var(--bg-elevated)" : "var(--accent-blue)", color: !inputText.trim() ? "var(--text-muted)" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: !inputText.trim() ? "not-allowed" : "pointer" }}
+                    >
+                      <Send size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -575,15 +738,31 @@ const rowBtn: React.CSSProperties = { display: "flex", alignItems: "center", gap
 const chipBtn: React.CSSProperties = { fontSize: 12.5, padding: "8px 12px", borderRadius: 18, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", cursor: "pointer", textAlign: "left" };
 
 // ── Widok pojedynczej tury ──────────────────────────────────────────────────
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => { navigator.clipboard?.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); }}
+      title="Kopiuj"
+      style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: copied ? "var(--accent-green)" : "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+    >
+      {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? "Skopiowano" : "Kopiuj"}
+    </button>
+  );
+}
+
 function TurnView({
-  turn, onBubbleClick, onClarifySubmit, onOpenPlan, onNavigate, onSaveReport,
+  turn, isLast, onBubbleClick, onClarifySubmit, onOpenPlan, onNavigate, onSaveReport, onRegenerate, onFollowup,
 }: {
   turn: Turn;
+  isLast: boolean;
   onBubbleClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   onClarifySubmit: (turn: Extract<Turn, { kind: "clarify" }>, value: string) => void;
   onOpenPlan: (turn: Extract<Turn, { kind: "plan" }>) => void;
   onNavigate: (url: string) => void;
   onSaveReport: (turn: Extract<Turn, { kind: "report" }>) => void;
+  onRegenerate?: () => void;
+  onFollowup?: (text: string) => void;
 }) {
   const [clarifyInput, setClarifyInput] = useState("");
 
@@ -603,6 +782,23 @@ function TurnView({
       <div style={bubble}>
         <div onClick={onBubbleClick} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
         <ReasoningLog log={turn.log} />
+        {isLast && turn.followups && turn.followups.length > 0 && onFollowup && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+            {turn.followups.map((f) => (
+              <button key={f} onClick={() => onFollowup(f)} style={{ fontSize: 12, padding: "6px 11px", borderRadius: 16, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--accent-blue)", cursor: "pointer", textAlign: "left" }}>
+                {f}
+              </button>
+            ))}
+          </div>
+        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 6 }}>
+          <CopyButton text={turn.content} />
+          {isLast && onRegenerate && (
+            <button onClick={onRegenerate} title="Generuj ponownie" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+              <RefreshCw size={12} /> Ponów
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -673,6 +869,7 @@ function TurnView({
           <span style={{ fontWeight: 600 }}>{turn.title}</span>
         </div>
         <div onClick={onBubbleClick} style={{ maxHeight: 280, overflowY: "auto", borderTop: "1px solid var(--border)", paddingTop: 8 }} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
+        <div style={{ marginTop: 6 }}><CopyButton text={turn.content} /></div>
         {turn.savedSlug ? (
           <button onClick={() => onNavigate(`/reports/${turn.savedSlug}`)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-green)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             <ArrowRight size={15} /> Otwórz raport
