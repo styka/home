@@ -9,7 +9,17 @@ import type { AIAction } from "@/app/api/llm/home/interpret/route";
 const MAX_ITERATIONS = 5;
 const MAX_TOOLS_PER_TURN = 4;
 
-const MODULES = ["shopping", "tasks", "notes", "pets"] as const;
+const MODULES = [
+  "shopping",
+  "tasks",
+  "notes",
+  "pets",
+  "habits",
+  "portfel",
+  "kitchen",
+  "flota",
+  "magazynowanie",
+] as const;
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -52,6 +62,23 @@ NOTATKI (module "notes"):
 - append_to_note { content, noteId? } (searchQuery fallback)
 - update_note { title?, content?, noteId? } (searchQuery fallback)
 - delete_note { noteId? } (searchQuery fallback) — DESTRUKCYJNE
+
+NAWYKI (module "habits"):
+- toggle_habit {} (searchQuery = nazwa nawyku lub jej fragment) — odhacza nawyk na dziś lub cofa odhaczenie.
+
+PORTFEL (module "portfel"):
+- add_expense { amount:number, category?, note?, elementName? } — wydatek (kwota w PLN). elementName = fragment nazwy konta/elementu portfela.
+- add_income { amount:number, category?, note?, elementName? } — przychód (kwota w PLN).
+
+KUCHNIA (module "kitchen"):
+- plan_meal { customTitle, date?(ISO; pomiń jeśli „dziś"), slot?:"breakfast"|"lunch"|"dinner"|"snack" } — planuje posiłek w jadłospisie.
+
+FLOTA (module "flota"):
+- add_fuel_log { liters:number, totalCost?, odometer?, vehicleName?, note? } — zapis tankowania. vehicleName = fragment nazwy/modelu pojazdu.
+
+MAGAZYN (module "magazynowanie"):
+- add_storage_item { name, quantity?, unit?, warehouse?, location?, category? } — nowa pozycja magazynu (warehouse = magazyn nadrzędny, location = dokładne miejsce).
+- adjust_storage { delta:number } (searchQuery = nazwa pozycji) — przyjęcie (+) lub wydanie (−) ze stanu.
 
 PRZEJŚCIE PO UTWORZENIU: do KAŻDEJ akcji tworzącej (create_task, create_note, create_list, create_project, add_item) możesz dodać params.openAfter:true, gdy użytkownik prosi, by od razu przejść/otworzyć utworzony element ("dodaj zadanie X i przejdź do niego"). Po wykonaniu aplikacja zaproponuje przekierowanie.`;
 
@@ -106,6 +133,7 @@ ZASADY:
 - Dla PYTAŃ używaj "answer", nie twórz akcji. Dla POLECEŃ zmiany danych używaj "plan". Dla próśb „pokaż/otwórz/przejdź do …" z gotowym widokiem używaj "navigate".
 - Gdy czegoś brakuje lub jest niejednoznaczne — użyj "clarify" zanim zaproponujesz akcje.
 - Korzystaj z kontekstu (aktualny widok / aktywna lista / bieżący projekt) podanego w wiadomości użytkownika, gdy polecenie nie wskazuje wprost celu.
+- WYBÓR MODUŁU: gdy polecenie nie wskazuje wprost modułu, użyj modułu PODSTAWOWEGO (pierwszego na liście „Aktywne moduły"). Gdy użytkownik użyje słowa-klucza innego aktywnego modułu (np. „wydatek/przychód" → portfel, „zatankowałem" → flota, „nawyk/odhacz" → habits, „magazyn/wydaj ze stanu" → magazynowanie, „zaplanuj posiłek" → kitchen) — użyj tamtego modułu, o ile jest aktywny.
 - Twórz akcje tylko dla modułów: ${MODULES.join(", ")}.
 - Zawsze zwracaj wyłącznie poprawny JSON wg schematu, bez żadnego dodatkowego tekstu.
 
@@ -190,6 +218,7 @@ export async function POST(req: NextRequest) {
     activeListId?: string;
     messages?: ChatMessage[]; // transkrypt dialogu (bez system) do wznowienia
     clarifyAnswer?: string;
+    refine?: string; // uwagi użytkownika do zaproponowanego planu — przeplanuj
   };
 
   // Zbuduj konwersację. System prompt zawsze budujemy po stronie serwera (nie ufamy klientowi).
@@ -204,6 +233,15 @@ export async function POST(req: NextRequest) {
     }
     if (body.clarifyAnswer?.trim()) {
       messages.push({ role: "user", content: `Odpowiedź na pytanie doprecyzowujące: ${body.clarifyAnswer.trim()}` });
+    }
+    if (body.refine?.trim()) {
+      messages.push({
+        role: "user",
+        content:
+          `Użytkownik chce SKORYGOWAĆ zaproponowany plan akcji. Uwagi: ${body.refine.trim()}\n` +
+          `Zwróć poprawiony PEŁNY plan (step "plan") uwzględniający te uwagi — całą zaktualizowaną listę akcji, nie tylko zmienioną pozycję. ` +
+          `Jeśli uwagi są niejednoznaczne lub czegoś brakuje, użyj "clarify" zamiast zgadywać.`,
+      });
     }
   } else {
     const text = body.text?.trim();
@@ -344,7 +382,9 @@ export async function POST(req: NextRequest) {
         });
       }
       log.push({ iter, step, thought, actionsCount: actions.length });
-      return NextResponse.json({ step: "plan", actions, thought, log });
+      // Dialog (bez system) wraca do klienta, by mógł poprosić o korektę planu („popraw przez AI").
+      const dialog = messages.filter((m) => m.role !== "system");
+      return NextResponse.json({ step: "plan", actions, thought, log, messages: dialog });
     }
 
     // Nieznany step — poproś o poprawny format i próbuj dalej

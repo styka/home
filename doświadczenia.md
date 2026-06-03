@@ -4,6 +4,13 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-03 — Asystent AI (magiczna ikona): agent obsługiwał tylko 4 z 9 modułów akcji
+**Problem:** Główny przepływ magicznej ikony (`AICommandSheet`) korzysta WYŁĄCZNIE z `/api/llm/home/agent`, a ten miał `MODULES = ["shopping","tasks","notes","pets"]` i katalog akcji tylko dla tych modułów. Tymczasem `/api/llm/home/execute` od dawna potrafi wykonać też `habits`, `portfel`, `kitchen`, `flota`, `magazynowanie` (i taki sam komplet dokumentuje stara trasa `interpret`). Efekt: stojąc np. w `/portfel` i mówiąc „dodaj wydatek 50 zł" agent nie miał pojęcia o module portfel, a `normalizeActions` po cichu rzutowało nieznany moduł na `shopping`. Dodatkowo `deriveContextFromPath` rozpoznawało tylko 5 ścieżek — na `/portfel`, `/flota`, `/kitchen`, `/habits` asystent „nie wiedział, gdzie jest".
+**Rozwiązanie:** Zrównano zasięg agenta z możliwościami `execute`: rozszerzono `MODULES`, dopisano sekcje katalogu akcji (habits/portfel/kitchen/flota/magazyn) i regułę wyboru modułu podstawowego (jak w `interpret`). Rozszerzono `deriveContextFromPath` o wszystkie moduły akcji (helper `ctx(primary)` ustawia bieżący moduł jako podstawowy, a resztę jako dodatkowe — polecenia międzymodułowe działają z każdego ekranu). Dodano pętlę korekty planu: agent zwraca teraz transkrypt także przy `step:"plan"`, a klient odsyła go z polem `refine`, by przeplanować całość bez zamykania przeglądu akcji.
+**Lekcja:** Gdy istnieją dwie warstwy „rozumienia" (agent/interpret) i jedna „wykonania" (execute), ich zakresy MUSZĄ być trzymane w jednym źródle prawdy albo świadomie zsynchronizowane — inaczej warstwa wykonawcza cicho obsługuje akcje, których planista nigdy nie wyprodukuje. Przy dokładaniu modułu do `execute` zawsze sprawdź też katalog agenta, listę `MODULES`, `normalizeActions` i mapę kontekstu UI.
+
+---
+
 ## 2026-06-03 — Magazynowanie 2.0: konflikt peer-deps @zxing i fałszywie „czysty" typecheck po cd
 **Problem:** (1) `npm i @zxing/browser@latest @zxing/library@latest` padało na ERESOLVE — `@zxing/browser@0.2.0` wymaga peer `@zxing/library@^0.22.0`, a `@latest` to 0.23.0. (2) Po serii `git commit` uruchamianych z `cd /home/user/home && …` katalog roboczy powłoki Bash został w `/home/user/home`, więc kolejne `npx tsc --noEmit -p tsconfig.json` zwracało „path does not exist: tsconfig.json" — a `grep` po tym pustym wyjściu pokazywał 0 błędów, czyli FAŁSZYWIE „czysto".
 **Rozwiązanie:** (1) Przypięto zgodne wersje: `@zxing/browser@0.2.0` + `@zxing/library@0.22.0` (peer spełniony, bez `--legacy-peer-deps`). (2) Każdą komendę typecheck/build poprzedzam jawnym `cd /home/user/home/worldofmag` i liczę błędy przez `grep -c "error TS"`.
