@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { X, Trash2, Plus, Minus, ImagePlus, Loader2 } from "lucide-react";
+import { X, Trash2, Plus, Minus, ImagePlus, Loader2, ArrowLeftRight } from "lucide-react";
 import {
   addStorageItem,
   updateStorageItem,
   deleteStorageItem,
   adjustStorageQuantity,
+  transferStock,
 } from "@/actions/storage";
 import { useToast } from "@/components/ui/Toast";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
@@ -54,6 +55,10 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
   const [notes, setNotes] = useState(item?.notes ?? "");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferWh, setTransferWh] = useState("");
+  const [transferLoc, setTransferLoc] = useState("");
+  const [transferQty, setTransferQty] = useState("");
   const [pending, startTransition] = useTransition();
   const { showToast } = useToast();
 
@@ -74,6 +79,10 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
       setWarrantyUntil(toDateInput(item?.warrantyUntil));
       setSupplierId(item?.supplierId ?? "");
       setNotes(item?.notes ?? "");
+      setTransferOpen(false);
+      setTransferWh("");
+      setTransferLoc("");
+      setTransferQty("");
     }
   }, [open, item, defaultWarehouse]);
 
@@ -134,6 +143,28 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
         const updated = await adjustStorageQuantity(item.id, delta);
         setQuantity(updated.quantity?.toString() ?? "");
         showToast(delta > 0 ? "Przyjęcie +1" : "Wydanie −1", "success");
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : "Błąd", "error");
+      }
+    });
+  }
+
+  function handleTransfer() {
+    if (!item) return;
+    const qty = Number(transferQty);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      showToast("Podaj ilość do przeniesienia", "error");
+      return;
+    }
+    if (!transferWh.trim() && !transferLoc.trim()) {
+      showToast("Podaj magazyn lub lokalizację docelową", "error");
+      return;
+    }
+    startTransition(async () => {
+      try {
+        await transferStock(item.id, transferWh.trim() || null, transferLoc.trim() || null, qty);
+        showToast("Przeniesiono", "success");
+        onClose();
       } catch (e) {
         showToast(e instanceof Error ? e.message : "Błąd", "error");
       }
@@ -394,6 +425,59 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
               style={inputStyle}
             />
           </Field>
+
+          {item ? (
+            <div className="pt-1 border-t" style={{ borderColor: "var(--border)" }}>
+              <button
+                type="button"
+                onClick={() => setTransferOpen((v) => !v)}
+                className="mt-2 inline-flex items-center gap-1.5 text-xs"
+                style={{ color: "var(--accent-blue)" }}
+              >
+                <ArrowLeftRight size={13} /> Przenieś do innego magazynu
+              </button>
+              {transferOpen ? (
+                <div className="mt-2 flex flex-col gap-1.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      value={transferWh}
+                      onChange={(e) => setTransferWh(e.target.value)}
+                      placeholder="Magazyn docelowy"
+                      className="px-2 py-1.5 rounded border text-sm"
+                      style={inputStyle}
+                    />
+                    <input
+                      value={transferLoc}
+                      onChange={(e) => setTransferLoc(e.target.value)}
+                      placeholder="Lokalizacja"
+                      className="px-2 py-1.5 rounded border text-sm"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      value={transferQty}
+                      onChange={(e) => setTransferQty(e.target.value)}
+                      type="number"
+                      step="any"
+                      placeholder="Ilość"
+                      className="w-24 px-2 py-1.5 rounded border text-sm text-right tabular-nums"
+                      style={inputStyle}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleTransfer}
+                      disabled={pending}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-sm disabled:opacity-50"
+                      style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}
+                    >
+                      <ArrowLeftRight size={13} /> Przenieś
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {pro && item ? (
             <div className="pt-1 border-t" style={{ borderColor: "var(--border)" }}>
