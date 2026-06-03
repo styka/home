@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Mic, MicOff, Wand2, Loader2 } from "lucide-react";
 
 interface ISpeechResult {
@@ -56,6 +56,9 @@ export function SmartTextarea({
     recognitionRef.current?.stop();
     recognitionRef.current = null;
   }
+
+  // Never let dictation keep listening after this component unmounts.
+  useEffect(() => () => recognitionRef.current?.stop(), []);
 
   function startRecording(mode: "add" | "modify") {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -170,6 +173,10 @@ export function SmartTextarea({
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
+            if (state !== "idle") {
+              stopRecording();
+              setState("idle");
+            }
             onSubmit?.();
           }
         }}

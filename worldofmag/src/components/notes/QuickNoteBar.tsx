@@ -39,6 +39,9 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
 
     useImperativeHandle(ref, () => ({ focus: () => titleRef.current?.focus() }));
 
+    // Stop any active dictation if the component unmounts
+    useEffect(() => () => recognitionRef.current?.stop(), []);
+
     // Auto-suggest tags when title or content changes (debounce 1500ms)
     useEffect(() => {
       if (!expanded) return;
@@ -60,6 +63,7 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
     }, [content, expanded, title]); // eslint-disable-line react-hooks/exhaustive-deps
 
     function reset() {
+      stopVoiceInput();
       setTitle("");
       setContent("");
       setGroupId("");

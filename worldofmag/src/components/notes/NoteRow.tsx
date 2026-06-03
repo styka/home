@@ -82,6 +82,13 @@ export function NoteRow({
     }
   }, [isEditing, note]);
 
+  // Stop dictation when leaving edit mode (Cancel/Escape) or unmounting,
+  // so the mic never keeps listening after the edit UI is gone.
+  useEffect(() => {
+    if (!isEditing) recognitionRef.current?.stop();
+  }, [isEditing]);
+  useEffect(() => () => recognitionRef.current?.stop(), []);
+
   // Debounced auto-tagging when title/content changes in edit mode
   useEffect(() => {
     if (!isEditing) return;
@@ -120,6 +127,7 @@ export function NoteRow({
   }
 
   function handleSave() {
+    stopVoiceInput();
     if (!editTitle.trim()) { onStopEdit(); return; }
     startTransition(async () => {
       await updateNote(note.id, {
@@ -221,6 +229,7 @@ export function NoteRow({
       }
     };
     rec.onend = () => setIsVoiceEditing(false);
+    recognitionRef.current = rec;
     rec.start();
   }
 

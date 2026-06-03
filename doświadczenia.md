@@ -4,6 +4,13 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-03 — Mikrofon (dyktowanie) nie wyłącza się po zatwierdzeniu/wyjściu z pola
+**Problem:** W `QuickNoteBar` i `NoteRow` przycisk mikrofonu żyje wewnątrz sekcji warunkowej (`expanded` / tryb edycji). Zatwierdzenie (zapis notatki), Anuluj i Escape zwijały/zamykały tę sekcję, ale **nie zatrzymywały obiektu `SpeechRecognition`** — nagrywanie leciało dalej, a przycisk Stop znikał z DOM. Użytkownik musiał ponownie wejść w to samo miejsce, włączyć i wyłączyć mikrofon, żeby go w końcu uciszyć. `SmartTextarea` nie zatrzymywał dyktowania przy Ctrl+Enter ani przy unmount.
+**Rozwiązanie:** Dyktowanie zatrzymujemy w punkcie, w którym znika UI mikrofonu: `reset()` w `QuickNoteBar` woła `stopVoiceInput()`; w `NoteRow` `handleSave()` woła `stopVoiceInput()` + efekt `useEffect` zatrzymujący `recognition` gdy `isEditing` zejdzie na false (łapie Anuluj/Escape); `SmartTextarea` przy Ctrl+Enter najpierw `stopRecording()`. Dodatkowo każdy z komponentów ma efekt cleanup na unmount (`useEffect(() => () => recognitionRef.current?.stop(), [])`). W `NoteRow` zapisaliśmy też `recognitionRef.current = rec` w `startVoiceEdit`, żeby cleanup go obejmował.
+**Lekcja:** Zasób imperatywny z własnym cyklem życia (Web Speech API, WebSocket, `setInterval`) nie znika razem z warunkowo renderowanym przyciskiem — trzeba go jawnie zatrzymać w każdej ścieżce wyjścia (submit/cancel/escape) ORAZ na unmount. Stan `isRecording` ≠ faktyczny stan silnika rozpoznawania; sterujemy realnym obiektem, nie tylko flagą UI.
+
+---
+
 ## 2026-06-03 — Magazynowanie 2.0: konflikt peer-deps @zxing i fałszywie „czysty" typecheck po cd
 **Problem:** (1) `npm i @zxing/browser@latest @zxing/library@latest` padało na ERESOLVE — `@zxing/browser@0.2.0` wymaga peer `@zxing/library@^0.22.0`, a `@latest` to 0.23.0. (2) Po serii `git commit` uruchamianych z `cd /home/user/home && …` katalog roboczy powłoki Bash został w `/home/user/home`, więc kolejne `npx tsc --noEmit -p tsconfig.json` zwracało „path does not exist: tsconfig.json" — a `grep` po tym pustym wyjściu pokazywał 0 błędów, czyli FAŁSZYWIE „czysto".
 **Rozwiązanie:** (1) Przypięto zgodne wersje: `@zxing/browser@0.2.0` + `@zxing/library@0.22.0` (peer spełniony, bez `--legacy-peer-deps`). (2) Każdą komendę typecheck/build poprzedzam jawnym `cd /home/user/home/worldofmag` i liczę błędy przez `grep -c "error TS"`.
