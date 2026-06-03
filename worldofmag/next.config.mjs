@@ -31,6 +31,10 @@ const nextConfig = {
     serverActions: {
       allowedOrigins: ["localhost:3000", "worldofmag.onrender.com", "omnia-prod.onrender.com"],
     },
+    // Nie używaj ponownie Router Cache dla stron dynamicznych — nawigacja w aplikacji
+    // (zmień moduł → wróć) zawsze pobiera świeże dane. Razem z DataFreshness (router.refresh()
+    // na visibility/focus) domyka cross-device świeżość bez ręcznego odświeżania strony.
+    staleTimes: { dynamic: 0 },
   },
 };
 
