@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
-import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, Bot } from "lucide-react"
+import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, Bot, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes } from "lucide-react"
 import Link from "next/link"
 import { OmniaClipboardButton } from "@/components/admin/OmniaClipboardButton"
+import { prisma } from "@/lib/prisma"
 
 function fmtDate(iso: string | undefined) {
   if (!iso || iso === "unknown") return "—"
@@ -30,6 +31,42 @@ export default async function AdminPage() {
   const session = await auth()
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/")
   const safeSession = session!
+
+  // ── Metrics (parallel counts) ──────────────────────────────────────────────
+  const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const [
+    users, teams, reports, permissions, activity7d,
+    shoppingItems, tasks, notes, recipes, pets, storageItems,
+  ] = await Promise.all([
+    prisma.user.count(),
+    prisma.team.count(),
+    prisma.report.count(),
+    prisma.permission.count(),
+    prisma.userActivity.count({ where: { createdAt: { gte: since7d } } }),
+    prisma.item.count(),
+    prisma.task.count(),
+    prisma.note.count(),
+    prisma.recipe.count(),
+    prisma.pet.count(),
+    prisma.storageItem.count(),
+  ])
+
+  const systemMetrics: { icon: React.ReactNode; label: string; value: number }[] = [
+    { icon: <Users size={15} />,      label: "Użytkownicy",            value: users },
+    { icon: <Users size={15} />,      label: "Zespoły",                value: teams },
+    { icon: <BookOpen size={15} />,   label: "Raporty",                value: reports },
+    { icon: <Shield size={15} />,     label: "Uprawnienia",            value: permissions },
+    { icon: <Activity size={15} />,   label: "Aktywność (7 dni)",      value: activity7d },
+  ]
+
+  const contentMetrics: { icon: React.ReactNode; label: string; value: number }[] = [
+    { icon: <ShoppingCart size={15} />, label: "Pozycje zakupowe", value: shoppingItems },
+    { icon: <ListChecks size={15} />,   label: "Zadania",          value: tasks },
+    { icon: <StickyNote size={15} />,   label: "Notatki",          value: notes },
+    { icon: <ChefHat size={15} />,      label: "Przepisy",         value: recipes },
+    { icon: <PawPrint size={15} />,     label: "Zwierzęta",        value: pets },
+    { icon: <Boxes size={15} />,        label: "Pozycje magazynu", value: storageItems },
+  ]
 
   const rows: Row[] = [
     { icon: <GitBranch size={15} />, label: "Branch",       value: BUILD.branch,              mono: true },
@@ -108,6 +145,39 @@ export default async function AdminPage() {
                 </span>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Metrics */}
+        <section style={{ marginBottom: 24 }}>
+          <h2 style={{
+            fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
+            textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 12,
+            display: "flex", alignItems: "center", gap: 7,
+          }}>
+            <Database size={13} /> Metryki — system
+          </h2>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+            gap: 10, marginBottom: 16,
+          }}>
+            {systemMetrics.map((m) => <MetricCard key={m.label} {...m} />)}
+          </div>
+
+          <h2 style={{
+            fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
+            textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 12,
+            display: "flex", alignItems: "center", gap: 7,
+          }}>
+            <Boxes size={13} /> Metryki — zawartość
+          </h2>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+            gap: 10,
+          }}>
+            {contentMetrics.map((m) => <MetricCard key={m.label} {...m} />)}
           </div>
         </section>
 
@@ -202,6 +272,11 @@ export default async function AdminPage() {
               <span style={{ fontSize: 13 }}>Architektura aplikacji</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
+            <Link href="/admin/docs" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <FileText size={15} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Dokumentacja projektu (CLAUDE.md, doświadczenia.md)</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
             <Link href="/admin/categories" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Tag size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Kategorie systemowe</span>
@@ -270,6 +345,25 @@ export default async function AdminPage() {
           </div>
         </section>
 
+      </div>
+    </div>
+  )
+}
+
+function MetricCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+  return (
+    <div style={{
+      background: "var(--bg-surface)",
+      border: "1px solid var(--border)",
+      borderRadius: 10,
+      padding: "14px 16px",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text-muted)", marginBottom: 8 }}>
+        {icon}
+        <span style={{ fontSize: 12 }}>{label}</span>
+      </div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", fontFamily: "monospace" }}>
+        {value.toLocaleString("pl-PL")}
       </div>
     </div>
   )
