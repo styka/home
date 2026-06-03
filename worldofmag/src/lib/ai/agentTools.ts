@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getUserTeamIds } from "@/lib/server-utils";
+import { getCalendarEvents } from "@/actions/calendar";
 
 /**
  * Narzędzia ODCZYTU dla agenta „magicznej ikony". Każde narzędzie używa tych samych
@@ -28,7 +29,19 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_items: args { listId?, listName?, status?, search?, limit? } → [{ id, name, status, quantity, unit, listId, listName }]
 - list_notes: args { search?, limit? } → [{ id, title, snippet, updatedAt }]
 - list_pets: args { search? } → [{ id, name, species, status }]
-- list_storage_items: args { search?, warehouse?, lowStockOnly?, limit? } → [{ id, name, quantity, unit, warehouse, location, minQuantity }]. Pozycje magazynu (dom/firma). lowStockOnly=true zwraca tylko poniżej stanu minimalnego.`;
+- list_storage_items: args { search?, warehouse?, lowStockOnly?, limit? } → [{ id, name, quantity, unit, warehouse, location, minQuantity }]. Pozycje magazynu (dom/firma). lowStockOnly=true zwraca tylko poniżej stanu minimalnego.
+- list_habits: args {} → [{ id, name, doneToday }]. Nawyki użytkownika (doneToday = czy odhaczony dziś).
+- list_health_events: args { kind?, search?, limit? } → [{ id, kind, title, scheduledAt, status }]. Wizyty/badania (kind: "VISIT"|"TEST").
+- list_wallet: args {} → [{ id, name, kind, balance }]. Elementy portfela (konta/oszczędności/długi) z saldem w PLN.
+- list_recipes: args { search?, limit? } → [{ id, title }]. Przepisy kulinarne.
+- list_meal_plan: args { days?, limit? } → [{ id, date, slot, title }]. Zaplanowane posiłki (domyślnie najbliższe 7 dni).
+- list_pantry: args { search?, limit? } → [{ id, name, quantity, unit, expiresAt }]. Spiżarnia.
+- list_vehicles: args { search? } → [{ id, name, plate, odometer, inspectionDue, insuranceDue }]. Pojazdy z flota.
+- list_decks: args {} → [{ id, name, nativeLang, targetLang }]. Talie fiszek (nauka języków).
+- list_news_topics: args {} → [{ id, title }]. Monitorowane tematy wiadomości.
+- list_weather_locations: args {} → [{ id, label, isDefault }]. Lokalizacje pogodowe.
+- list_calendar: args { year?, month? } → [{ module, title, date, at, href }]. Zagregowany kalendarz (zadania + posiłki + zdrowie + przeglądy floty) dla danego miesiąca (domyślnie bieżący; month = 1-12).
+- web_search: args { query, limit? } → [{ title, url, snippet }]. Wyszukiwarka internetowa — użyj TYLKO gdy potrzebujesz informacji spoza danych użytkownika (ceny, fakty, definicje, świat zewnętrzny). W odpowiedzi cytuj źródła linkami markdown.`;
 
 export const READ_TOOL_NAMES = [
   "list_projects",
@@ -38,6 +51,17 @@ export const READ_TOOL_NAMES = [
   "list_notes",
   "list_pets",
   "list_storage_items",
+  "list_habits",
+  "list_health_events",
+  "list_wallet",
+  "list_recipes",
+  "list_meal_plan",
+  "list_pantry",
+  "list_vehicles",
+  "list_decks",
+  "list_news_topics",
+  "list_weather_locations",
+  "list_calendar",
 ] as const;
 
 async function accessibleProjectIds(userId: string): Promise<string[]> {
@@ -49,6 +73,17 @@ async function accessibleProjectIds(userId: string): Promise<string[]> {
 }
 
 async function accessibleListWhere(userId: string) {
+  const teamIds = await getUserTeamIds(userId);
+  return {
+    OR: [
+      { ownerId: userId },
+      ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+    ],
+  };
+}
+
+// Zakres własności (ownerId LUB zespół) dla modułów z modelem user/team.
+async function ownerScope(userId: string): Promise<{ OR: Record<string, unknown>[] }> {
   const teamIds = await getUserTeamIds(userId);
   return {
     OR: [
@@ -271,6 +306,173 @@ export async function runReadTool(
         location: i.location,
         minQuantity: i.minQuantity,
       }));
+    }
+
+    case "list_habits": {
+      const habits = await prisma.habit.findMany({
+        where: { archived: false, ...(await ownerScope(userId)) },
+        select: { id: true, name: true },
+        orderBy: { sortOrder: "asc" },
+        take: HARD_MAX,
+      });
+      const today = new Date().toISOString().slice(0, 10);
+      const ids = habits.map((h) => h.id);
+      const doneEntries = ids.length
+        ? await prisma.habitEntry.findMany({
+            where: { habitId: { in: ids }, date: today },
+            select: { habitId: true },
+          })
+        : [];
+      const doneSet = new Set(doneEntries.map((e) => e.habitId));
+      return habits.map((h) => ({ id: h.id, name: h.name, doneToday: doneSet.has(h.id) }));
+    }
+
+    case "list_health_events": {
+      const kind = asStr(args.kind);
+      const search = asStr(args.search);
+      const events = await prisma.healthEvent.findMany({
+        where: {
+          ...(await ownerScope(userId)),
+          ...(kind ? { kind } : {}),
+          ...(search ? { title: { contains: search, mode: "insensitive" } } : {}),
+        },
+        select: { id: true, kind: true, title: true, scheduledAt: true, status: true },
+        orderBy: { scheduledAt: "desc" },
+        take: clampLimit(args.limit),
+      });
+      return events.map((e) => ({
+        id: e.id,
+        kind: e.kind,
+        title: e.title,
+        scheduledAt: e.scheduledAt.toISOString(),
+        status: e.status,
+      }));
+    }
+
+    case "list_wallet": {
+      const elements = await prisma.walletElement.findMany({
+        where: { archived: false, ...(await ownerScope(userId)) },
+        select: { id: true, name: true, kind: true, balance: true },
+        orderBy: { createdAt: "asc" },
+        take: HARD_MAX,
+      });
+      return elements;
+    }
+
+    case "list_recipes": {
+      const search = asStr(args.search);
+      const recipes = await prisma.recipe.findMany({
+        where: {
+          ...(await ownerScope(userId)),
+          ...(search ? { title: { contains: search, mode: "insensitive" } } : {}),
+        },
+        select: { id: true, title: true },
+        orderBy: { updatedAt: "desc" },
+        take: clampLimit(args.limit),
+      });
+      return recipes;
+    }
+
+    case "list_meal_plan": {
+      const days = typeof args.days === "number" ? Math.max(1, Math.min(30, args.days)) : 7;
+      const from = new Date();
+      from.setHours(0, 0, 0, 0);
+      const to = new Date(from);
+      to.setDate(to.getDate() + days);
+      const entries = await prisma.mealPlanEntry.findMany({
+        where: { ...(await ownerScope(userId)), date: { gte: from, lt: to } },
+        select: { id: true, date: true, slot: true, customTitle: true, recipe: { select: { title: true } } },
+        orderBy: { date: "asc" },
+        take: clampLimit(args.limit),
+      });
+      return entries.map((e) => ({
+        id: e.id,
+        date: e.date.toISOString().slice(0, 10),
+        slot: e.slot,
+        title: e.customTitle ?? e.recipe?.title ?? "(posiłek)",
+      }));
+    }
+
+    case "list_pantry": {
+      const search = asStr(args.search);
+      const items = await prisma.pantryItem.findMany({
+        where: {
+          ...(await ownerScope(userId)),
+          ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
+        },
+        select: { id: true, name: true, quantity: true, unit: true, expiresAt: true },
+        orderBy: { name: "asc" },
+        take: clampLimit(args.limit),
+      });
+      return items.map((i) => ({
+        id: i.id,
+        name: i.name,
+        quantity: i.quantity,
+        unit: i.unit,
+        expiresAt: i.expiresAt?.toISOString().slice(0, 10) ?? null,
+      }));
+    }
+
+    case "list_vehicles": {
+      const search = asStr(args.search);
+      const vehicles = await prisma.vehicle.findMany({
+        where: {
+          ...(await ownerScope(userId)),
+          ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
+        },
+        select: { id: true, name: true, plate: true, odometer: true, inspectionDue: true, insuranceDue: true },
+        orderBy: { updatedAt: "desc" },
+        take: HARD_MAX,
+      });
+      return vehicles.map((v) => ({
+        id: v.id,
+        name: v.name,
+        plate: v.plate,
+        odometer: v.odometer,
+        inspectionDue: v.inspectionDue?.toISOString().slice(0, 10) ?? null,
+        insuranceDue: v.insuranceDue?.toISOString().slice(0, 10) ?? null,
+      }));
+    }
+
+    case "list_decks": {
+      const decks = await prisma.languageDeck.findMany({
+        where: await ownerScope(userId),
+        select: { id: true, name: true, nativeLang: true, targetLang: true },
+        orderBy: { updatedAt: "desc" },
+        take: HARD_MAX,
+      });
+      return decks;
+    }
+
+    case "list_news_topics": {
+      // NewsTopic jest user-only (ownerId wymagany).
+      const topics = await prisma.newsTopic.findMany({
+        where: { ownerId: userId },
+        select: { id: true, title: true },
+        orderBy: { sortOrder: "asc" },
+        take: HARD_MAX,
+      });
+      return topics;
+    }
+
+    case "list_weather_locations": {
+      // WeatherLocation jest user-only (ownerId wymagany).
+      const locations = await prisma.weatherLocation.findMany({
+        where: { ownerId: userId },
+        select: { id: true, label: true, isDefault: true },
+        orderBy: { createdAt: "asc" },
+        take: HARD_MAX,
+      });
+      return locations;
+    }
+
+    case "list_calendar": {
+      // Reużywa agregatu kalendarza (zadania + posiłki + zdrowie + flota), scoping user/zespół wewnątrz.
+      const now = new Date();
+      const year = typeof args.year === "number" ? args.year : now.getFullYear();
+      const month1 = typeof args.month === "number" ? Math.max(1, Math.min(12, args.month)) : now.getMonth() + 1;
+      const events = await getCalendarEvents(year, month1 - 1);
+      return events.map((e) => ({ module: e.module, title: e.title, date: e.date, at: e.at, href: e.href }));
     }
 
     default:

@@ -4,17 +4,28 @@ import { auth } from "@/lib/auth";
 import { getUserTeamIds } from "@/lib/server-utils";
 import { computeNextDue, parseRecurringRule } from "@/lib/recurrence";
 import { createTask, updateTask, deleteTask } from "@/actions/tasks";
-import { createTaskProject } from "@/actions/taskProjects";
-import { addItem, updateItem, updateItemStatus, deleteItem } from "@/actions/items";
-import { createList, renameList, archiveList } from "@/actions/lists";
-import { createNote, updateNote, deleteNote } from "@/actions/notes";
+import { createTaskProject, updateTaskProject, deleteTaskProject } from "@/actions/taskProjects";
+import { addItem, updateItem, updateItemStatus, deleteItem, clearDoneItems, markAllInCart } from "@/actions/items";
+import { createList, renameList, archiveList, deleteList } from "@/actions/lists";
+import { createNote, updateNote, deleteNote, toggleNotePin } from "@/actions/notes";
 import { toggleHabitDay } from "@/actions/habits";
 import { addEntry, getWalletElements } from "@/actions/portfel";
 import { setMealPlanEntry } from "@/actions/mealPlans";
-import { addFuelLog } from "@/actions/flota";
-import { addStorageItem, adjustStorageQuantity } from "@/actions/storage";
+import { addFuelLog, addServiceRecord, createVehicle, updateVehicle, deleteVehicle } from "@/actions/flota";
+import { addStorageItem, adjustStorageQuantity, updateStorageItem, deleteStorageItem, transferStock } from "@/actions/storage";
+import { createHabit, updateHabit, setHabitArchived, deleteHabit } from "@/actions/habits";
+import { createElement, updateElement, setBalance, archiveElement, deleteElement } from "@/actions/portfel";
+import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent } from "@/actions/health";
+import { createDeck, updateDeck, deleteDeck, addWord, updateWord, deleteWord } from "@/actions/languageDecks";
+import { addPantryItem, updatePantryItem, consumePantryItem, deletePantryItem } from "@/actions/pantry";
+import { createRecipe, deleteRecipe } from "@/actions/recipes";
+import { markMealCooked, deleteMealPlanEntry } from "@/actions/mealPlans";
+import { createTopic, updateTopic, deleteTopic, refreshTopic } from "@/actions/news";
+import { addLocationByName, deleteLocation, setDefaultLocation, addPresetWatcher, deleteWatcher } from "@/actions/weather";
+import { updatePet, setPetStatus, deletePet } from "@/actions/pets";
+import { createUserReport } from "@/actions/reports";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
-import type { RecurringRule, TaskStatus, TaskPriority, ItemStatus } from "@/types";
+import type { RecurringRule, TaskStatus, TaskPriority, ItemStatus, HealthKind, HealthStatus, PetStatus } from "@/types";
 import { isoDate } from "@/lib/habitStats";
 
 function addDays(d: Date, days: number): Date {
@@ -91,9 +102,22 @@ async function executePetAction(action: AIAction, userId: string): Promise<strin
 
   // Pozostałe akcje wymagają wskazania zwierzęcia po imieniu
   const pet = await findPetByName(userId, searchQuery ?? "");
-  const needsPet = ["log_weight", "schedule_treatment", "schedule_care_task", "log_feeding", "record_vet_visit", "log_health_note", "log_environment", "record_sale", "add_breeding_pair"];
+  const needsPet = ["log_weight", "schedule_treatment", "schedule_care_task", "log_feeding", "record_vet_visit", "log_health_note", "log_environment", "record_sale", "add_breeding_pair", "update_pet", "set_pet_status", "delete_pet"];
   if (needsPet.includes(type) && !pet) {
     throw new Error(`Nie znaleziono zwierzęcia: "${searchQuery}"`);
+  }
+
+  if (type === "update_pet" && pet) {
+    await updatePet(pet.id, { name: (params.name as string) ?? undefined, breed: (params.breed as string) ?? undefined });
+    return `Zaktualizowano zwierzę ${pet.name}`;
+  }
+  if (type === "set_pet_status" && pet) {
+    await setPetStatus(pet.id, ((params.status as string) ?? "ACTIVE") as PetStatus);
+    return `Zmieniono status zwierzęcia ${pet.name}`;
+  }
+  if (type === "delete_pet" && pet) {
+    await deletePet(pet.id);
+    return `Usunięto zwierzę ${pet.name}`;
   }
 
   if (type === "record_sale" && pet) {
@@ -410,6 +434,67 @@ async function resolveNoteId(userId: string, params: Record<string, unknown>, se
   return note.id;
 }
 
+async function resolveHealthEventId(userId: string, params: Record<string, unknown>, searchQuery?: string): Promise<string> {
+  const id = asStr(params.eventId);
+  const teamIds = await getUserTeamIds(userId);
+  const ownerOr = teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
+  if (id) {
+    const ev = await prisma.healthEvent.findFirst({ where: { OR: ownerOr, id } });
+    if (ev) return ev.id;
+  }
+  const ev = await prisma.healthEvent.findFirst({
+    where: { OR: ownerOr, title: { contains: searchQuery ?? "", mode: "insensitive" } },
+    orderBy: { scheduledAt: "desc" },
+  });
+  if (!ev) throw new Error(`Nie znaleziono wpisu zdrowia: "${searchQuery}"`);
+  return ev.id;
+}
+
+async function resolveDeckId(userId: string, params: Record<string, unknown>, deckName?: string): Promise<string> {
+  const id = asStr(params.deckId);
+  const teamIds = await getUserTeamIds(userId);
+  const ownerOr = teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
+  if (id) {
+    const d = await prisma.languageDeck.findFirst({ where: { OR: ownerOr, id } });
+    if (d) return d.id;
+  }
+  const name = deckName ?? asStr(params.deckName);
+  if (name) {
+    const d = await prisma.languageDeck.findFirst({ where: { OR: ownerOr, name: { contains: name, mode: "insensitive" } } });
+    if (d) return d.id;
+  }
+  const first = await prisma.languageDeck.findFirst({ where: { OR: ownerOr }, orderBy: { updatedAt: "desc" } });
+  if (!first) throw new Error("Brak talii fiszek — utwórz najpierw talię");
+  return first.id;
+}
+
+async function ownerOrArr(userId: string) {
+  const teamIds = await getUserTeamIds(userId);
+  return teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
+}
+
+// Generyczny resolver „id z paramu LUB pierwszy pasujący po nazwie w zakresie użytkownika".
+// `finder` dostaje warunek `where` i zwraca rekord {id} albo null. Bezpieczeństwo: zawsze
+// zawężamy do własności użytkownika/zespołu, więc id z klienta nie pozwoli sięgnąć cudzych danych.
+async function resolveByName(
+  finder: (where: Record<string, unknown>) => Promise<{ id: string } | null>,
+  ownerOr: Record<string, unknown>[],
+  idVal: string | undefined,
+  nameField: string,
+  query: string | undefined,
+  label: string
+): Promise<string> {
+  if (idVal) {
+    const byId = await finder({ OR: ownerOr, id: idVal });
+    if (byId) return byId.id;
+  }
+  if (query) {
+    const byName = await finder({ OR: ownerOr, [nameField]: { contains: query, mode: "insensitive" } });
+    if (byName) return byName.id;
+  }
+  throw new Error(`Nie znaleziono: ${label} „${query ?? idVal ?? ""}"`);
+}
+
 async function executeAction(
   action: AIAction,
   userId: string,
@@ -704,6 +789,457 @@ async function executeAction(
       if (!item) throw new Error(`Nie znaleziono pozycji „${query}" w magazynie`);
       const updated = await adjustStorageQuantity(item.id, delta, delta > 0 ? "przyjęcie" : "wydanie", "AI");
       return `${delta > 0 ? "Przyjęto" : "Wydano"} ${Math.abs(delta)} — ${item.name} (stan: ${updated.quantity ?? 0})`;
+    }
+  }
+
+  // ── Nawyki (tworzenie) ──────────────────────────────────────────────────────
+  if (module === "habits" && type === "create_habit") {
+    const name = asStr(params.name);
+    if (!name) throw new Error("Podaj nazwę nawyku");
+    const habit = await createHabit({
+      name,
+      description: asStr(params.description) ?? null,
+      icon: asStr(params.icon),
+    });
+    return `Utworzono nawyk „${habit.name}"`;
+  }
+
+  // ── Kuchnia (spiżarnia) ──────────────────────────────────────────────────────
+  if (module === "kitchen" && type === "add_pantry_item") {
+    const name = asStr(params.name);
+    if (!name) throw new Error("Podaj nazwę produktu");
+    const item = await addPantryItem({
+      name,
+      quantity: params.quantity != null ? Number(params.quantity) : null,
+      unit: asStr(params.unit) ?? null,
+      expiresAt: params.expiresAt ? new Date(String(params.expiresAt)) : null,
+    });
+    return `Dodano do spiżarni: ${item.name}`;
+  }
+
+  // ── Portfel (nowy element) ───────────────────────────────────────────────────
+  if (module === "portfel" && type === "create_wallet_element") {
+    const name = asStr(params.name);
+    if (!name) throw new Error("Podaj nazwę elementu portfela");
+    const el = await createElement({
+      name,
+      kind: asStr(params.kind),
+      initialBalance: params.initialBalance != null ? Number(params.initialBalance) : 0,
+    });
+    return `Utworzono element portfela „${el.name}"`;
+  }
+
+  // ── Flota (serwis) ───────────────────────────────────────────────────────────
+  if (module === "flota" && type === "add_service_record") {
+    const teamIds = await getUserTeamIds(userId);
+    const vehicleName = asStr(params.vehicleName);
+    const vehicle = await prisma.vehicle.findFirst({
+      where: {
+        OR: [{ ownerId: userId }, teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" }],
+        ...(vehicleName ? { name: { contains: vehicleName, mode: "insensitive" } } : {}),
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+    if (!vehicle) throw new Error("Nie znaleziono pojazdu w Flocie");
+    await addServiceRecord(vehicle.id, {
+      type: asStr(params.serviceType) ?? "other",
+      cost: params.cost != null ? Number(params.cost) : null,
+      odometer: params.odometer != null ? Number(params.odometer) : null,
+      note: asStr(params.note) ?? null,
+    });
+    return `Dodano wpis serwisowy — ${vehicle.name}`;
+  }
+
+  // ── Zdrowie ──────────────────────────────────────────────────────────────────
+  if (module === "health") {
+    if (type === "create_health_event") {
+      const title = asStr(params.title);
+      if (!title) throw new Error("Podaj tytuł wizyty/badania");
+      const kind = (asStr(params.kind) === "TEST" ? "TEST" : "VISIT") as HealthKind;
+      const scheduledAt = params.scheduledAt ? new Date(String(params.scheduledAt)) : new Date();
+      const ev = await createHealthEvent({
+        kind,
+        title,
+        scheduledAt,
+        doctorName: asStr(params.doctorName) ?? null,
+        specialty: asStr(params.specialty) ?? null,
+        facility: asStr(params.facility) ?? null,
+        notes: asStr(params.notes) ?? null,
+      });
+      const msg = `Dodano ${kind === "TEST" ? "badanie" : "wizytę"}: „${ev.title}"`;
+      if (params.openAfter === true) return { message: msg, navigateTo: `/health`, navigateLabel: "Otwórz Zdrowie" };
+      return msg;
+    }
+    if (type === "update_health_event") {
+      const id = await resolveHealthEventId(userId, params, searchQuery);
+      const patch: Parameters<typeof updateHealthEvent>[1] = {};
+      if (params.title !== undefined) patch.title = String(params.title);
+      if (params.scheduledAt !== undefined) patch.scheduledAt = new Date(String(params.scheduledAt));
+      if (params.notes !== undefined) patch.notes = asStr(params.notes) ?? null;
+      if (params.status !== undefined) patch.status = String(params.status) as HealthStatus;
+      await updateHealthEvent(id, patch);
+      return `Zaktualizowano wpis zdrowia`;
+    }
+    if (type === "set_health_status") {
+      const id = await resolveHealthEventId(userId, params, searchQuery);
+      const status = (asStr(params.status) ?? "DONE") as HealthStatus;
+      await setHealthStatus(id, status);
+      return `Zmieniono status wpisu zdrowia → ${status}`;
+    }
+    if (type === "delete_health_event") {
+      const id = await resolveHealthEventId(userId, params, searchQuery);
+      await deleteHealthEvent(id);
+      return `Usunięto wpis zdrowia`;
+    }
+  }
+
+  // ── Języki (fiszki) ──────────────────────────────────────────────────────────
+  if (module === "languages") {
+    if (type === "create_deck") {
+      const name = asStr(params.name);
+      if (!name) throw new Error("Podaj nazwę talii");
+      const deck = await createDeck({
+        name,
+        nativeLang: asStr(params.nativeLang) ?? "polski",
+        targetLang: asStr(params.targetLang) ?? "angielski",
+      });
+      return `Utworzono talię „${deck.name}"`;
+    }
+    if (type === "add_word") {
+      const term = asStr(params.term);
+      const translation = asStr(params.translation);
+      if (!term || !translation) throw new Error("Podaj słówko i tłumaczenie");
+      const deckId = await resolveDeckId(userId, params, asStr(params.deckName));
+      const card = await addWord(deckId, { term, translation, example: asStr(params.example) ?? null });
+      return `Dodano fiszkę „${card.term}" → „${card.translation}"`;
+    }
+    if (type === "delete_word") {
+      const id = asStr(params.wordId);
+      if (!id) throw new Error("Wskaż fiszkę do usunięcia");
+      await deleteWord(id);
+      return `Usunięto fiszkę`;
+    }
+  }
+
+  // ── Wiadomości (tematy) ──────────────────────────────────────────────────────
+  if (module === "news") {
+    if (type === "create_news_topic") {
+      const title = asStr(params.title);
+      if (!title) throw new Error("Podaj tytuł tematu");
+      const topic = await createTopic({ title, semanticFilter: asStr(params.semanticFilter) ?? title });
+      const msg = `Utworzono temat wiadomości „${title}"`;
+      if (params.openAfter === true) return { message: msg, navigateTo: `/wiadomosci`, navigateLabel: "Otwórz Wiadomości" };
+      return msg;
+    }
+    if (type === "delete_news_topic") {
+      const id = asStr(params.topicId);
+      let topicId = id;
+      if (!topicId && searchQuery) {
+        const t = await prisma.newsTopic.findFirst({
+          where: { ownerId: userId, title: { contains: searchQuery, mode: "insensitive" } },
+        });
+        topicId = t?.id;
+      }
+      if (!topicId) throw new Error(`Nie znaleziono tematu: "${searchQuery}"`);
+      await deleteTopic(topicId);
+      return `Usunięto temat wiadomości`;
+    }
+  }
+
+  // ── Pogoda (lokalizacje) ──────────────────────────────────────────────────────
+  if (module === "weather") {
+    if (type === "add_weather_location") {
+      const name = asStr(params.name);
+      if (!name) throw new Error("Podaj nazwę miejscowości");
+      const loc = await addLocationByName(name);
+      const msg = `Dodano lokalizację pogodową „${loc.label ?? name}"`;
+      if (params.openAfter === true) return { message: msg, navigateTo: `/pogoda`, navigateLabel: "Otwórz Pogodę" };
+      return msg;
+    }
+    if (type === "delete_weather_location") {
+      const id = asStr(params.locationId);
+      let locId = id;
+      if (!locId && searchQuery) {
+        const l = await prisma.weatherLocation.findFirst({
+          where: { ownerId: userId, label: { contains: searchQuery, mode: "insensitive" } },
+        });
+        locId = l?.id;
+      }
+      if (!locId) throw new Error(`Nie znaleziono lokalizacji: "${searchQuery}"`);
+      await deleteLocation(locId);
+      return `Usunięto lokalizację pogodową`;
+    }
+  }
+
+  // ── Raporty (zapis wyniku / sesji) ────────────────────────────────────────────
+  if (module === "reports" && type === "save_report") {
+    const title = asStr(params.title) ?? "Raport z asystenta";
+    const content = asStr(params.content) ?? String(params.content ?? "");
+    if (!content.trim()) throw new Error("Pusta treść raportu");
+    const report = await createUserReport({ title, content });
+    return { message: `Zapisano raport „${title}"`, navigateTo: `/reports/${report.slug}`, navigateLabel: "Otwórz raport" };
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // DODATKOWE AKCJE CRUD (domknięcie pokrycia zapisu do ~100% encji użytkownika).
+  // Każda mapuje na istniejący Server Action; id rozwiązywane id-first + po nazwie
+  // w zakresie własności użytkownika/zespołu.
+  // ════════════════════════════════════════════════════════════════════════════
+  const teamOr = await ownerOrArr(userId);
+
+  // ── Zakupy (rozszerzenie) ─────────────────────────────────────────────────────
+  if (module === "shopping") {
+    if (type === "delete_list") {
+      const id = await resolveListId(userId, params, searchQuery, activeListId);
+      await deleteList(id);
+      return `Usunięto listę zakupów`;
+    }
+    if (type === "clear_done_items") {
+      const id = await resolveListId(userId, params, searchQuery, activeListId);
+      await clearDoneItems(id);
+      return `Wyczyszczono kupione pozycje z listy`;
+    }
+    if (type === "mark_all_in_cart") {
+      const id = await resolveListId(userId, params, searchQuery, activeListId);
+      await markAllInCart(id);
+      return `Oznaczono wszystkie pozycje jako w koszyku`;
+    }
+  }
+
+  // ── Zadania (projekty) ────────────────────────────────────────────────────────
+  if (module === "tasks") {
+    const resolveProject = async () => {
+      const projOr = [{ ownerId: userId }, { members: { some: { userId } } }];
+      const id = asStr(params.projectId);
+      if (id) { const p = await prisma.taskProject.findFirst({ where: { OR: projOr, id } }); if (p) return p.id; }
+      const q = searchQuery ?? asStr(params.name) ?? "";
+      const p = await prisma.taskProject.findFirst({ where: { OR: projOr, name: { contains: q, mode: "insensitive" } } });
+      if (!p) throw new Error(`Nie znaleziono projektu: "${q}"`);
+      return p.id;
+    };
+    if (type === "update_project") {
+      const id = await resolveProject();
+      await updateTaskProject(id, { name: asStr(params.name), emoji: asStr(params.emoji), description: asStr(params.description) });
+      return `Zaktualizowano projekt`;
+    }
+    if (type === "delete_project") {
+      const id = await resolveProject();
+      await deleteTaskProject(id);
+      return `Usunięto projekt`;
+    }
+  }
+
+  // ── Notatki (przypięcie) ──────────────────────────────────────────────────────
+  if (module === "notes" && type === "toggle_pin") {
+    const id = await resolveNoteId(userId, params, searchQuery);
+    const note = await toggleNotePin(id);
+    return note.pinned ? `Przypięto notatkę „${note.title}"` : `Odpięto notatkę „${note.title}"`;
+  }
+
+  // ── Nawyki (edycja/archiwum/usuwanie) ─────────────────────────────────────────
+  if (module === "habits") {
+    const resolveHabit = () => resolveByName((w) => prisma.habit.findFirst({ where: w, select: { id: true } }), teamOr, asStr(params.habitId), "name", searchQuery ?? asStr(params.name), "nawyk");
+    if (type === "update_habit") {
+      const id = await resolveHabit();
+      await updateHabit(id, { name: asStr(params.name), description: asStr(params.description), icon: asStr(params.icon) });
+      return `Zaktualizowano nawyk`;
+    }
+    if (type === "archive_habit") {
+      const id = await resolveHabit();
+      await setHabitArchived(id, params.archived !== false);
+      return params.archived === false ? `Przywrócono nawyk` : `Zarchiwizowano nawyk`;
+    }
+    if (type === "delete_habit") {
+      const id = await resolveHabit();
+      await deleteHabit(id);
+      return `Usunięto nawyk`;
+    }
+  }
+
+  // ── Portfel (edycja/saldo/archiwum/usuwanie) ─────────────────────────────────
+  if (module === "portfel") {
+    const resolveEl = () => resolveByName((w) => prisma.walletElement.findFirst({ where: w, select: { id: true } }), teamOr, asStr(params.elementId), "name", searchQuery ?? asStr(params.elementName), "element portfela");
+    if (type === "update_wallet_element") {
+      const id = await resolveEl();
+      await updateElement(id, { name: asStr(params.name), note: asStr(params.note) ?? null });
+      return `Zaktualizowano element portfela`;
+    }
+    if (type === "set_wallet_balance") {
+      const id = await resolveEl();
+      const targetBalance = Number(params.amount ?? params.targetBalance);
+      if (isNaN(targetBalance)) throw new Error("Podaj docelowe saldo");
+      await setBalance(id, { targetBalance, note: asStr(params.note) ?? null });
+      return `Ustawiono saldo na ${targetBalance}`;
+    }
+    if (type === "archive_wallet_element") {
+      const id = await resolveEl();
+      await archiveElement(id, params.archived !== false);
+      return params.archived === false ? `Przywrócono element portfela` : `Zarchiwizowano element portfela`;
+    }
+    if (type === "delete_wallet_element") {
+      const id = await resolveEl();
+      await deleteElement(id);
+      return `Usunięto element portfela`;
+    }
+  }
+
+  // ── Kuchnia (przepisy/jadłospis/spiżarnia) ───────────────────────────────────
+  if (module === "kitchen") {
+    if (type === "create_recipe") {
+      const title = asStr(params.title);
+      if (!title) throw new Error("Podaj tytuł przepisu");
+      const recipe = await createRecipe({
+        title,
+        description: asStr(params.description) ?? null,
+        servings: params.servings != null ? Number(params.servings) : undefined,
+        introMarkdown: asStr(params.body) ?? null,
+      });
+      const msg = `Utworzono przepis „${recipe.title}"`;
+      if (params.openAfter === true) return { message: msg, navigateTo: `/kitchen/recipes/${recipe.id}`, navigateLabel: `Otwórz „${recipe.title}"` };
+      return msg;
+    }
+    if (type === "delete_recipe") {
+      const id = await resolveByName((w) => prisma.recipe.findFirst({ where: w, select: { id: true } }), teamOr, asStr(params.recipeId), "title", searchQuery, "przepis");
+      await deleteRecipe(id);
+      return `Usunięto przepis`;
+    }
+    if (type === "mark_meal_cooked") {
+      const id = await resolveByName((w) => prisma.mealPlanEntry.findFirst({ where: w, select: { id: true } }), teamOr, asStr(params.entryId), "customTitle", searchQuery, "posiłek");
+      await markMealCooked(id);
+      return `Oznaczono posiłek jako ugotowany`;
+    }
+    if (type === "delete_meal_plan") {
+      const id = await resolveByName((w) => prisma.mealPlanEntry.findFirst({ where: w, select: { id: true } }), teamOr, asStr(params.entryId), "customTitle", searchQuery, "posiłek");
+      await deleteMealPlanEntry(id);
+      return `Usunięto pozycję jadłospisu`;
+    }
+    const resolvePantry = () => resolveByName((w) => prisma.pantryItem.findFirst({ where: w, select: { id: true } }), teamOr, asStr(params.pantryItemId), "name", searchQuery ?? asStr(params.name), "pozycja spiżarni");
+    if (type === "update_pantry_item") {
+      const id = await resolvePantry();
+      await updatePantryItem(id, { quantity: params.quantity != null ? Number(params.quantity) : undefined, unit: asStr(params.unit), expiresAt: params.expiresAt ? new Date(String(params.expiresAt)) : undefined });
+      return `Zaktualizowano pozycję spiżarni`;
+    }
+    if (type === "consume_pantry") {
+      const id = await resolvePantry();
+      const qty = Number(params.quantity ?? 1);
+      await consumePantryItem(id, qty);
+      return `Zużyto ${qty} ze spiżarni`;
+    }
+    if (type === "delete_pantry_item") {
+      const id = await resolvePantry();
+      await deletePantryItem(id);
+      return `Usunięto pozycję spiżarni`;
+    }
+  }
+
+  // ── Flota (pojazdy) ───────────────────────────────────────────────────────────
+  if (module === "flota") {
+    if (type === "create_vehicle") {
+      const name = asStr(params.name);
+      if (!name) throw new Error("Podaj nazwę pojazdu");
+      const v = await createVehicle({ name, make: asStr(params.make) ?? null, model: asStr(params.model) ?? null, plate: asStr(params.plate) ?? null, year: params.year != null ? Number(params.year) : null });
+      const msg = `Dodano pojazd „${v.name}"`;
+      if (params.openAfter === true) return { message: msg, navigateTo: `/flota/${v.id}`, navigateLabel: `Otwórz „${v.name}"` };
+      return msg;
+    }
+    const resolveVeh = () => resolveByName((w) => prisma.vehicle.findFirst({ where: w, select: { id: true } }), teamOr, asStr(params.vehicleId), "name", searchQuery ?? asStr(params.vehicleName), "pojazd");
+    if (type === "update_vehicle") {
+      const id = await resolveVeh();
+      await updateVehicle(id, { name: asStr(params.name), plate: asStr(params.plate) ?? null, odometer: params.odometer != null ? Number(params.odometer) : undefined });
+      return `Zaktualizowano pojazd`;
+    }
+    if (type === "delete_vehicle") {
+      const id = await resolveVeh();
+      await deleteVehicle(id);
+      return `Usunięto pojazd`;
+    }
+  }
+
+  // ── Języki (edycja talii/fiszek) ──────────────────────────────────────────────
+  if (module === "languages") {
+    if (type === "update_deck") {
+      const id = await resolveDeckId(userId, params, asStr(params.deckName) ?? searchQuery);
+      await updateDeck(id, { name: asStr(params.name), nativeLang: asStr(params.nativeLang), targetLang: asStr(params.targetLang) });
+      return `Zaktualizowano talię`;
+    }
+    if (type === "delete_deck") {
+      const id = await resolveDeckId(userId, params, asStr(params.deckName) ?? searchQuery);
+      await deleteDeck(id);
+      return `Usunięto talię`;
+    }
+    if (type === "update_word") {
+      let id = asStr(params.wordId);
+      if (!id) {
+        const q = searchQuery ?? asStr(params.term) ?? "";
+        const card = await prisma.vocabulary.findFirst({ where: { term: { contains: q, mode: "insensitive" }, deck: { OR: teamOr } }, select: { id: true } });
+        if (!card) throw new Error(`Nie znaleziono fiszki: "${q}"`);
+        id = card.id;
+      }
+      await updateWord(id, { term: asStr(params.term), translation: asStr(params.translation), example: asStr(params.example) });
+      return `Zaktualizowano fiszkę`;
+    }
+  }
+
+  // ── Wiadomości (edycja/odświeżanie tematu) ────────────────────────────────────
+  if (module === "news") {
+    const resolveTopic = async () => {
+      const id = asStr(params.topicId);
+      if (id) { const t = await prisma.newsTopic.findFirst({ where: { ownerId: userId, id } }); if (t) return t.id; }
+      const t = await prisma.newsTopic.findFirst({ where: { ownerId: userId, title: { contains: searchQuery ?? asStr(params.title) ?? "", mode: "insensitive" } } });
+      if (!t) throw new Error(`Nie znaleziono tematu: "${searchQuery}"`);
+      return t.id;
+    };
+    if (type === "update_news_topic") {
+      const id = await resolveTopic();
+      await updateTopic(id, { title: asStr(params.title), semanticFilter: asStr(params.semanticFilter) });
+      return `Zaktualizowano temat wiadomości`;
+    }
+    if (type === "refresh_news_topic") {
+      const id = await resolveTopic();
+      const r = await refreshTopic(id);
+      return `Odświeżono temat — nowych pozycji: ${r.added}`;
+    }
+  }
+
+  // ── Pogoda (domyślna lokalizacja / obserwatorzy) ─────────────────────────────
+  if (module === "weather") {
+    if (type === "set_default_weather_location") {
+      const id = asStr(params.locationId) ?? (await prisma.weatherLocation.findFirst({ where: { ownerId: userId, label: { contains: searchQuery ?? "", mode: "insensitive" } } }))?.id;
+      if (!id) throw new Error(`Nie znaleziono lokalizacji: "${searchQuery}"`);
+      await setDefaultLocation(id);
+      return `Ustawiono domyślną lokalizację pogodową`;
+    }
+    if (type === "add_weather_watcher") {
+      const preset = asStr(params.presetKey);
+      if (!preset) throw new Error("Podaj preset obserwatora");
+      await addPresetWatcher(preset);
+      return `Dodano obserwatora pogody`;
+    }
+    if (type === "delete_weather_watcher") {
+      const id = asStr(params.watcherId) ?? (await prisma.weatherWatcher.findFirst({ where: { ownerId: userId, title: { contains: searchQuery ?? "", mode: "insensitive" } } }))?.id;
+      if (!id) throw new Error(`Nie znaleziono obserwatora: "${searchQuery}"`);
+      await deleteWatcher(id);
+      return `Usunięto obserwatora pogody`;
+    }
+  }
+
+  // ── Magazyn (edycja/usuwanie/przesunięcie) ───────────────────────────────────
+  if (module === "magazynowanie") {
+    const resolveStorage = () => resolveByName((w) => prisma.storageItem.findFirst({ where: w, select: { id: true } }), teamOr, asStr(params.itemId), "name", searchQuery ?? asStr(params.name), "pozycja magazynu");
+    if (type === "update_storage_item") {
+      const id = await resolveStorage();
+      await updateStorageItem(id, { name: asStr(params.name), unit: asStr(params.unit), warehouse: asStr(params.warehouse), location: asStr(params.location) });
+      return `Zaktualizowano pozycję magazynu`;
+    }
+    if (type === "delete_storage_item") {
+      const id = await resolveStorage();
+      await deleteStorageItem(id);
+      return `Usunięto pozycję magazynu`;
+    }
+    if (type === "transfer_storage") {
+      const id = await resolveStorage();
+      await transferStock(id, asStr(params.toWarehouse) ?? null, asStr(params.toLocation) ?? null, Number(params.quantity ?? 0));
+      return `Przeniesiono pozycję magazynu`;
     }
   }
 

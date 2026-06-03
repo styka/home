@@ -115,6 +115,50 @@ export async function createReport(data: {
   return report;
 }
 
+/**
+ * User: create a report owned by the current user (np. raport z sesji asystenta AI).
+ * W odróżnieniu od `createReport` NIE wymaga admina — `authorId` = bieżący user.
+ * Slug jest unikalny w całej tabeli, więc generujemy bezkolizyjny wariant.
+ */
+export async function createUserReport(data: {
+  title: string;
+  content: string;
+  category?: string;
+}): Promise<{ id: string; slug: string }> {
+  const user = await requireAuth();
+  const title = data.title.trim() || "Raport";
+  const base =
+    title
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "raport";
+
+  // Bezkolizyjny slug: base, base-2, base-3, …
+  let slug = base;
+  for (let i = 2; i < 100; i++) {
+    const existing = await prisma.report.findUnique({ where: { slug }, select: { id: true } });
+    if (!existing) break;
+    slug = `${base}-${i}`;
+  }
+
+  const report = await prisma.report.create({
+    data: {
+      title,
+      slug,
+      content: data.content,
+      category: data.category ?? "ai-session",
+      authorId: user.id,
+    },
+    select: { id: true, slug: true },
+  });
+
+  revalidatePath("/reports");
+  return report;
+}
+
 /** Admin: update existing report */
 export async function updateReport(
   slug: string,
