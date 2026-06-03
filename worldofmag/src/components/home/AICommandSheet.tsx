@@ -50,12 +50,34 @@ type Phase = "idle" | "running" | "clarify" | "answer" | "plan" | "navigate" | "
 
 const LIST_SUB_PAGES = ["products", "units", "categories", "icons", "stores"];
 
+// Wszystkie moduły, na których asystent potrafi WYKONYWAĆ akcje (zgodne z agentem + execute).
+// Kolejność = priorytet: pierwszy element listy "Aktywne moduły" jest modułem podstawowym
+// (domyślnym celem akcji, gdy polecenie nie wskazuje modułu wprost).
+const ACTIONABLE_MODULES = [
+  "shopping",
+  "tasks",
+  "notes",
+  "pets",
+  "habits",
+  "portfel",
+  "kitchen",
+  "flota",
+  "magazynowanie",
+] as const;
+
+// Ustawia dany moduł jako podstawowy (pierwszy), a resztę dokłada jako dodatkowe —
+// dzięki temu asystent domyślnie działa „tu, gdzie jesteś", ale polecenia
+// międzymodułowe („znajdź notatkę i dodaj zadanie") nadal działają z każdego ekranu.
+function ctx(primary: string): string[] {
+  return [primary, ...ACTIONABLE_MODULES.filter((m) => m !== primary)];
+}
+
 function deriveContextFromPath(pathname: string): RouteContext {
   if (pathname.startsWith("/shopping/")) {
     const seg = pathname.split("/")[2] ?? "";
     const isListView = seg && !LIST_SUB_PAGES.includes(seg);
     return {
-      context: ["shopping"],
+      context: ctx("shopping"),
       placeholder: 'Np. "Dodaj mleko i chleb" lub "Co jeszcze muszę kupić?"',
       routeHint: isListView
         ? "Użytkownik ogląda konkretną listę zakupów"
@@ -65,7 +87,7 @@ function deriveContextFromPath(pathname: string): RouteContext {
   }
   if (pathname === "/shopping") {
     return {
-      context: ["shopping"],
+      context: ctx("shopping"),
       placeholder: 'Np. "Dodaj mleko do zakupów" lub "Stwórz nową listę"',
       routeHint: "Użytkownik jest na stronie głównej modułu Zakupy",
     };
@@ -80,7 +102,7 @@ function deriveContextFromPath(pathname: string): RouteContext {
     };
     const isVirtualView = seg in viewNames;
     return {
-      context: ["tasks"],
+      context: ctx("tasks"),
       placeholder: 'Np. "Które zadanie jest teraz najważniejsze?" lub "Zakończ zadania o remoncie"',
       routeHint: `Użytkownik jest na ${viewNames[seg] ?? "widoku projektu zadań"}`,
       activeProjectId: !isVirtualView && seg ? seg : undefined,
@@ -88,35 +110,63 @@ function deriveContextFromPath(pathname: string): RouteContext {
   }
   if (pathname === "/tasks") {
     return {
-      context: ["tasks"],
+      context: ctx("tasks"),
       placeholder: 'Np. "Dodaj zadanie kupić leki na jutro"',
       routeHint: "Użytkownik jest na stronie głównej modułu Zadania",
     };
   }
   if (pathname.startsWith("/notes")) {
     return {
-      context: ["notes"],
+      context: ctx("notes"),
       placeholder: 'Np. "Dodaj notatkę o..." lub "Znajdź notatkę o..."',
       routeHint: "Użytkownik jest w module Notatki",
     };
   }
   if (pathname.startsWith("/pets")) {
     return {
-      context: ["pets"],
+      context: ctx("pets"),
       placeholder: 'Np. "Zważ Reksia 12 kg" lub "Kiedy odrobaczanie Reksia?"',
       routeHint: "Użytkownik jest w module Zwierzęta",
     };
   }
+  if (pathname.startsWith("/habits")) {
+    return {
+      context: ctx("habits"),
+      placeholder: 'Np. "Odhacz bieganie" lub "Zaznacz medytację na dziś"',
+      routeHint: "Użytkownik jest w module Nawyki",
+    };
+  }
+  if (pathname.startsWith("/portfel")) {
+    return {
+      context: ctx("portfel"),
+      placeholder: 'Np. "Wydałem 45 zł na jedzenie" lub "Dodaj przychód 2000 zł"',
+      routeHint: "Użytkownik jest w module Portfel (finanse)",
+    };
+  }
+  if (pathname.startsWith("/flota")) {
+    return {
+      context: ctx("flota"),
+      placeholder: 'Np. "Zatankowałem 40 litrów za 260 zł"',
+      routeHint: "Użytkownik jest w module Flota (pojazdy)",
+    };
+  }
+  if (pathname.startsWith("/kitchen")) {
+    return {
+      context: ctx("kitchen"),
+      placeholder: 'Np. "Zaplanuj na jutro makaron z kurczakiem na obiad"',
+      routeHint: "Użytkownik jest w module Kuchnia",
+    };
+  }
   if (pathname.startsWith("/magazynowanie")) {
     return {
-      context: ["magazynowanie"],
+      context: ctx("magazynowanie"),
       placeholder: 'Np. "Dodaj 5 wkrętarek do garażu" lub "Wydaj 3 śruby M8"',
       routeHint: "Użytkownik jest w module Magazynowanie",
     };
   }
   return {
-    context: ["shopping", "tasks", "notes", "pets"],
-    placeholder: 'Zapytaj o cokolwiek lub wydaj polecenie…',
+    context: ctx("shopping"),
+    placeholder: "Zapytaj o cokolwiek lub wydaj polecenie…",
     routeHint: "Użytkownik jest na stronie głównej aplikacji",
   };
 }
@@ -191,6 +241,8 @@ export function AICommandSheet() {
   const [clarifyInput, setClarifyInput] = useState("");
   const [runMessages, setRunMessages] = useState<ChatMessage[] | null>(null);
   const [pendingActions, setPendingActions] = useState<AIAction[] | null>(null);
+  const [planVersion, setPlanVersion] = useState(0);
+  const [isRefining, setIsRefining] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [results, setResults] = useState<ActionResult[] | null>(null);
   const [navTarget, setNavTarget] = useState<{ url: string; label: string } | null>(null);
@@ -204,6 +256,7 @@ export function AICommandSheet() {
     setClarifyInput("");
     setRunMessages(null);
     setPendingActions(null);
+    setIsRefining(false);
     setResults(null);
     setNavTarget(null);
     setError(null);
@@ -246,6 +299,8 @@ export function AICommandSheet() {
     }
     if (data.step === "plan") {
       setPendingActions(data.actions ?? []);
+      setRunMessages(data.messages ?? null); // transkrypt do ewentualnej korekty planu
+      setPlanVersion((v) => v + 1); // wymusza świeży ActionDrawer po przeplanowaniu
       setPhase("plan");
       return;
     }
@@ -300,6 +355,40 @@ export function AICommandSheet() {
       currentProjectId: activeProjectId,
       today: new Date().toISOString(),
     });
+  }
+
+  // „Popraw przez AI" — użytkownik opisuje, co mu nie pasuje w zaproponowanym planie,
+  // a agent układa CAŁY plan na nowo (lub dopytuje), bez zamykania przeglądu akcji.
+  async function handleRefine(feedback: string) {
+    const fb = feedback.trim();
+    if (!fb || !runMessages) return;
+    setError(null);
+    setIsRefining(true);
+    try {
+      const res = await fetch("/api/llm/home/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: runMessages,
+          refine: fb,
+          context,
+          routeHint,
+          activeListId,
+          currentProjectId: activeProjectId,
+          today: new Date().toISOString(),
+        }),
+      });
+      const data = (await res.json()) as AgentResponse;
+      if (!res.ok && !data.step) {
+        setError(data.error ?? "Błąd asystenta");
+        return;
+      }
+      applyResponse(data);
+    } catch {
+      setError("Nie udało się połączyć z asystentem");
+    } finally {
+      setIsRefining(false);
+    }
   }
 
   async function handleExecute(confirmedActions: AIAction[]) {
@@ -580,8 +669,11 @@ export function AICommandSheet() {
       {/* ActionDrawer (plan) renders above sheet */}
       {phase === "plan" && pendingActions && (
         <ActionDrawer
+          key={planVersion}
           actions={pendingActions}
           onConfirm={handleExecute}
+          onRefine={runMessages ? handleRefine : undefined}
+          isRefining={isRefining}
           onClose={() => { setPendingActions(null); setPhase("idle"); }}
           isExecuting={isExecuting}
         />

@@ -8,6 +8,7 @@ import type { LucideIcon } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { ModuleSidebar } from "./ModuleSidebar";
+import { DataFreshness } from "./DataFreshness";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 import { ToastProvider } from "@/components/ui/Toast";
 import { isPathLocked } from "@/lib/permissions";
@@ -69,6 +70,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
 
   return (
     <ToastProvider>
+    <DataFreshness />
     <div
       className="flex flex-col md:flex-row h-screen overflow-hidden"
       style={{
