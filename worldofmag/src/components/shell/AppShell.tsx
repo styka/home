@@ -11,7 +11,7 @@ import { ModuleSidebar } from "./ModuleSidebar";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 import { ToastProvider } from "@/components/ui/Toast";
 import { isPathLocked } from "@/lib/permissions";
-import { MODULES, resolveMenu, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
+import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
 
 interface AppShellProps {
@@ -64,8 +64,8 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
-  // Dolny pasek (mobile): pierwsze do 4 włączonych modułów (z poszanowaniem uprawnień/kolejności).
-  const tabBar = enabled.slice(0, 4);
+  // Dolny pasek (mobile): osobno konfigurowalny zestaw/kolejność ikon (niezależny od menu).
+  const tabBar = resolveTabBar(userPermissions, menuPrefs);
 
   return (
     <ToastProvider>

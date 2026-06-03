@@ -44,12 +44,20 @@ export const MODULES: ModuleDef[] = [
 
 const MODULE_INDEX = new Map(MODULES.map((m, i) => [m.id, i]));
 
-export type MenuPrefs = { order: string[]; disabled: string[] };
+// Maksymalna liczba ikon w dolnym pasku (mobile) — przy większej liczbie robi się ciasno.
+export const MAX_TAB_BAR = 5;
+
+// Domyślny dolny pasek (mobile) — niezależny od kolejności menu bocznego.
+// Wymaganie właściciela: Strona główna, Zadania, Zakupy.
+export const DEFAULT_TAB_BAR = ["home", "tasks", "shopping"];
+
+export type MenuPrefs = { order: string[]; disabled: string[]; tabBar: string[] };
 
 export function defaultMenuPrefs(): MenuPrefs {
   return {
     order: MODULES.map((m) => m.id),
     disabled: MODULES.filter((m) => !m.defaultEnabled).map((m) => m.id),
+    tabBar: [...DEFAULT_TAB_BAR],
   };
 }
 
@@ -84,4 +92,26 @@ export function accessibleModulesInOrder(permissions: string[], prefs: MenuPrefs
   const { enabled, more } = resolveMenu(permissions, prefs);
   // enabled w kolejności użytkownika, potem dostępne-wyłączone
   return [...enabled, ...more];
+}
+
+/**
+ * Moduły dolnego paska (mobile) w kolejności wybranej przez użytkownika — niezależnej
+ * od menu bocznego. Filtruje wg uprawnień, ucina do MAX_TAB_BAR. Gdy nic nie zostanie
+ * (np. brak uprawnień do wybranych), wraca do pierwszych włączonych modułów menu.
+ */
+export function resolveTabBar(permissions: string[], prefs: MenuPrefs): ModuleDef[] {
+  const byId = new Map(MODULES.map((m) => [m.id, m]));
+  const seen = new Set<string>();
+  const picked: ModuleDef[] = [];
+  for (const id of prefs.tabBar) {
+    if (seen.has(id)) continue;
+    const m = byId.get(id);
+    if (m && hasAccess(m, permissions)) {
+      picked.push(m);
+      seen.add(id);
+    }
+    if (picked.length >= MAX_TAB_BAR) break;
+  }
+  if (picked.length > 0) return picked;
+  return resolveMenu(permissions, prefs).enabled.slice(0, 4);
 }
