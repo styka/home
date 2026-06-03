@@ -30,17 +30,46 @@ export function AdminConfigForm({ groqKey, braveKey }: AdminConfigFormProps) {
       <div style={{ height: 24 }} />
 
       <ApiKeyCard
-        sectionTitle="Wyszukiwarka internetowa (Wiadomości)"
+        sectionTitle="Wyszukiwarka internetowa (Asystent AI + Wiadomości)"
         label="Klucz API Brave Search"
         configKey="brave_search_api_key"
         initial={braveKey}
         placeholder="BSA..."
         help={
           <>
-            Opcjonalny. Używany przy budowaniu <strong>bazowej bazy wiedzy</strong> w module
-            Wiadomości (gdy z ostatnich 24h nic nie ma — moduł doszukuje informacje w internecie).
-            Bez klucza działa darmowy fallback (DuckDuckGo), ale bywa zawodny z serwerowni. Darmowy
-            klucz: <span style={{ color: "var(--accent-blue)" }}>brave.com/search/api</span>.
+            Opcjonalny, ale <strong>zalecany</strong>. Z tego klucza korzysta narzędzie{" "}
+            <code>web_search</code> <strong>asystenta AI</strong> (gdy potrzebuje informacji spoza
+            Twoich danych — ceny, fakty, definicje) oraz moduł <strong>Wiadomości</strong> przy
+            budowaniu bazowej bazy wiedzy. Bez klucza działa darmowy fallback DuckDuckGo, ale bywa
+            ograniczany dla IP serwerowni (Render), więc wyniki potrafią być puste.
+            <br />
+            <br />
+            <strong>Jak zdobyć darmowy klucz (≈2&nbsp;000 zapytań/mc):</strong>
+            <ol style={{ margin: "6px 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
+              <li>
+                Wejdź na{" "}
+                <a
+                  href="https://brave.com/search/api/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "var(--accent-blue)" }}
+                >
+                  brave.com/search/api
+                </a>{" "}
+                i kliknij „Get started".
+              </li>
+              <li>Załóż konto (Brave Search API) i potwierdź e-mail.</li>
+              <li>
+                W panelu wybierz plan <strong>„Free"</strong> (Data for Search / Free) — do ~2&nbsp;000
+                zapytań miesięcznie, 1&nbsp;zapytanie/s. Brave może poprosić o kartę do weryfikacji,
+                ale plan Free pozostaje bezpłatny.
+              </li>
+              <li>
+                Przejdź do <strong>API Keys</strong> → „Add API key", skopiuj token (zaczyna się od{" "}
+                <code>BSA…</code>).
+              </li>
+              <li>Wklej token poniżej i kliknij „Zapisz".</li>
+            </ol>
           </>
         }
       />

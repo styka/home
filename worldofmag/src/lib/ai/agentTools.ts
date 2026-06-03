@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getUserTeamIds } from "@/lib/server-utils";
+import { getCalendarEvents } from "@/actions/calendar";
 
 /**
  * Narzędzia ODCZYTU dla agenta „magicznej ikony". Każde narzędzie używa tych samych
@@ -39,6 +40,7 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_decks: args {} → [{ id, name, nativeLang, targetLang }]. Talie fiszek (nauka języków).
 - list_news_topics: args {} → [{ id, title }]. Monitorowane tematy wiadomości.
 - list_weather_locations: args {} → [{ id, label, isDefault }]. Lokalizacje pogodowe.
+- list_calendar: args { year?, month? } → [{ module, title, date, at, href }]. Zagregowany kalendarz (zadania + posiłki + zdrowie + przeglądy floty) dla danego miesiąca (domyślnie bieżący; month = 1-12).
 - web_search: args { query, limit? } → [{ title, url, snippet }]. Wyszukiwarka internetowa — użyj TYLKO gdy potrzebujesz informacji spoza danych użytkownika (ceny, fakty, definicje, świat zewnętrzny). W odpowiedzi cytuj źródła linkami markdown.`;
 
 export const READ_TOOL_NAMES = [
@@ -59,6 +61,7 @@ export const READ_TOOL_NAMES = [
   "list_decks",
   "list_news_topics",
   "list_weather_locations",
+  "list_calendar",
 ] as const;
 
 async function accessibleProjectIds(userId: string): Promise<string[]> {
@@ -461,6 +464,15 @@ export async function runReadTool(
         take: HARD_MAX,
       });
       return locations;
+    }
+
+    case "list_calendar": {
+      // Reużywa agregatu kalendarza (zadania + posiłki + zdrowie + flota), scoping user/zespół wewnątrz.
+      const now = new Date();
+      const year = typeof args.year === "number" ? args.year : now.getFullYear();
+      const month1 = typeof args.month === "number" ? Math.max(1, Math.min(12, args.month)) : now.getMonth() + 1;
+      const events = await getCalendarEvents(year, month1 - 1);
+      return events.map((e) => ({ module: e.module, title: e.title, date: e.date, at: e.at, href: e.href }));
     }
 
     default:

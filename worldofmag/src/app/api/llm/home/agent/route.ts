@@ -179,7 +179,9 @@ ZASADY:
 - Akcje ZBIORCZE (np. "oznacz wszystkie zadania o remoncie jako zrobione"): pobierz zadania przez query, SAM zdecyduj które pasują na podstawie tytułów/treści, a potem zwróć WIELE akcji — każda z własnym id. Nie ma akcji masowej; symulujesz ją pętlą pojedynczych akcji.
 - Dla PYTAŃ używaj "answer", nie twórz akcji. Dla POLECEŃ zmiany danych używaj "plan". Dla próśb „pokaż/otwórz/przejdź do …" z gotowym widokiem używaj "navigate".
 - Gdy czegoś brakuje lub jest niejednoznaczne — użyj "clarify" zanim zaproponujesz akcje.
-- Korzystaj z kontekstu (aktualny widok / aktywna lista / bieżący projekt) podanego w wiadomości użytkownika, gdy polecenie nie wskazuje wprost celu.
+- INTERNET: gdy odpowiedź wymaga informacji spoza danych użytkownika (ceny, fakty, definicje, wydarzenia, rzeczy ze świata), użyj "query" z narzędziem web_search, a w odpowiedzi CYTUJ źródła linkami markdown. Najpierw sprawdź dane użytkownika, dopiero potem sięgaj do internetu.
+- RAPORT: gdy użytkownik prosi o raport/podsumowanie sesji lub obszerne zestawienie ("zrób raport", "podsumuj naszą rozmowę bez pomijania faktów") — użyj kroku "report" z pełnym markdownem (nie pomijaj konkretnych danych z rozmowy).
+- Korzystaj z kontekstu (aktualny widok / aktywna lista / bieżący projekt) podanego w wiadomości użytkownika, gdy polecenie nie wskazuje wprost celu. Wcześniejsze tury rozmowy bywają dołączone jako kontekst — wykorzystuj je dla ciągłości.
 - WYBÓR MODUŁU: gdy polecenie nie wskazuje wprost modułu, użyj modułu PODSTAWOWEGO (pierwszego na liście „Aktywne moduły"). Gdy użytkownik użyje słowa-klucza innego aktywnego modułu (np. „wydatek/przychód" → portfel, „zatankowałem" → flota, „nawyk/odhacz" → habits, „magazyn/wydaj ze stanu" → magazynowanie, „zaplanuj posiłek" → kitchen) — użyj tamtego modułu, o ile jest aktywny.
 - Twórz akcje tylko dla modułów: ${MODULES.join(", ")}.
 - Zawsze zwracaj wyłącznie poprawny JSON wg schematu, bez żadnego dodatkowego tekstu.
@@ -235,7 +237,7 @@ async function callAgent(messages: ChatMessage[]): Promise<string> {
     op: "reasoning",
     messages,
     temperature: 0.1,
-    maxTokens: 1500,
+    maxTokens: 2800, // zapas na pełny raport (step "report") — przy 1500 markdown bywał ucinany w połowie JSON
     json: true,
   });
   if (!result.ok) {
