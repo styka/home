@@ -59,6 +59,7 @@ function moduleColor(module: string) {
   if (module === "languages") return "var(--accent-blue)";
   if (module === "news") return "var(--accent-amber)";
   if (module === "weather") return "var(--accent-blue)";
+  if (module === "reports") return "var(--accent-amber)";
   return "var(--accent-amber)";
 }
 

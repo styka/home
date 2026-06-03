@@ -217,7 +217,8 @@ export function AICommandSheet() {
     router.push(url);
   }
 
-  // Klik w link wewnętrzny w treści markdown → nawigacja SPA zamiast pełnego przeładowania.
+  // Klik w link w treści markdown: wewnętrzny ("/…") → nawigacja SPA (zamyka sheet);
+  // zewnętrzny (http/https, np. wyniki web_search) → nowa karta, żeby nie wyrzucić z aplikacji.
   function handleBubbleClick(e: React.MouseEvent<HTMLDivElement>) {
     const target = (e.target as HTMLElement).closest("a");
     if (!target) return;
@@ -225,6 +226,9 @@ export function AICommandSheet() {
     if (href.startsWith("/") && !href.startsWith("//")) {
       e.preventDefault();
       goTo(href);
+    } else if (/^https?:\/\//i.test(href)) {
+      e.preventDefault();
+      window.open(href, "_blank", "noopener,noreferrer");
     }
   }
 
