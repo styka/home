@@ -10,6 +10,7 @@ import {
 } from "@/actions/storage";
 import { useToast } from "@/components/ui/Toast";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
+import { BatchesManager } from "./BatchesManager";
 import type { StorageItemWithMovements } from "@/actions/storage";
 import type { StorageSupplier } from "@prisma/client";
 
@@ -393,6 +394,14 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
               style={inputStyle}
             />
           </Field>
+
+          {pro && item ? (
+            <div className="pt-1 border-t" style={{ borderColor: "var(--border)" }}>
+              <div className="pt-2">
+                <BatchesManager itemId={item.id} />
+              </div>
+            </div>
+          ) : null}
 
           {item && item.movements.length > 0 ? (
             <div>

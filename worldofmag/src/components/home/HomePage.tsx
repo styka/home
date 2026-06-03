@@ -89,6 +89,8 @@ interface HomePageProps {
   languageDecks: DeckDue[];
   healthUpcomingCount: number;
   healthUpcoming: HealthUpcoming[];
+  storageLowStock: number;
+  storageExpiring: number;
   recentActivity: ActivityItem[];
   adminStats: AdminStats | null;
 }
@@ -144,6 +146,8 @@ export function HomePage({
   languageDecks,
   healthUpcomingCount,
   healthUpcoming,
+  storageLowStock,
+  storageExpiring,
   recentActivity,
   adminStats,
 }: HomePageProps) {
@@ -157,7 +161,8 @@ export function HomePage({
     has("module.flota") ||
     has("module.portfel") ||
     has("module.languages") ||
-    has("module.health");
+    has("module.health") ||
+    has("module.magazynowanie");
 
   const overdueVehicles = vehicleAlerts.filter((v) => v.daysLeft < 0).length;
   const hasTodayContent =
@@ -234,6 +239,8 @@ export function HomePage({
               wallet={wallet}
               languagesDue={languagesDue}
               healthUpcoming={healthUpcomingCount}
+              storageLowStock={storageLowStock}
+              storageExpiring={storageExpiring}
             />
           </div>
         ) : (

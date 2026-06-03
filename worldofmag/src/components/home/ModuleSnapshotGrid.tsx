@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, CheckSquare, AlertCircle, ChefHat, BookOpen, Pin, PawPrint, Car, Wallet, GraduationCap, HeartPulse } from "lucide-react";
+import { ShoppingCart, CheckSquare, AlertCircle, ChefHat, BookOpen, Pin, PawPrint, Car, Wallet, GraduationCap, HeartPulse, Boxes, CalendarClock } from "lucide-react";
 import { StatTile } from "@/components/ui/home";
 
 interface ModuleSnapshotGridProps {
@@ -18,6 +18,8 @@ interface ModuleSnapshotGridProps {
   wallet: { totalNet: number; currency: string; monthlyRate: number } | null;
   languagesDue: number;
   healthUpcoming: number;
+  storageLowStock: number;
+  storageExpiring: number;
 }
 
 function formatCompactMoney(value: number): string {
@@ -44,6 +46,8 @@ export function ModuleSnapshotGrid({
   wallet,
   languagesDue,
   healthUpcoming,
+  storageLowStock,
+  storageExpiring,
 }: ModuleSnapshotGridProps) {
   const has = (slug: string) => permissions.includes(slug);
 
@@ -190,6 +194,47 @@ export function ModuleSnapshotGrid({
           color={vehiclesCount > 0 ? "var(--accent-blue)" : "var(--text-muted)"}
           icon={<Car size={14} />}
           href="/flota"
+        />
+      );
+    }
+  }
+
+  if (has("module.magazynowanie")) {
+    if (storageLowStock > 0) {
+      tiles.push(
+        <StatTile
+          key="storage-low"
+          value={storageLowStock}
+          label="Magazyn: do uzupełnienia"
+          color="var(--accent-amber)"
+          icon={<AlertCircle size={14} />}
+          href="/magazynowanie"
+          emphasized
+        />
+      );
+    }
+    if (storageExpiring > 0) {
+      tiles.push(
+        <StatTile
+          key="storage-expiring"
+          value={storageExpiring}
+          label="Magazyn: terminy / gwarancje"
+          color="var(--accent-red)"
+          icon={<CalendarClock size={14} />}
+          href="/magazynowanie"
+          emphasized
+        />
+      );
+    }
+    if (storageLowStock === 0 && storageExpiring === 0) {
+      tiles.push(
+        <StatTile
+          key="storage"
+          value=""
+          label="Magazyn"
+          color="var(--accent-blue)"
+          icon={<Boxes size={14} />}
+          href="/magazynowanie"
         />
       );
     }

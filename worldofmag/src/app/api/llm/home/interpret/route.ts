@@ -6,7 +6,7 @@ import { PET_ACTIONS_PROMPT, PET_ACTION_EXAMPLES } from "@/lib/ai/petActions";
 
 export interface AIAction {
   id: string;
-  module: "shopping" | "tasks" | "notes" | "pets" | "habits" | "portfel" | "kitchen" | "flota";
+  module: "shopping" | "tasks" | "notes" | "pets" | "habits" | "portfel" | "kitchen" | "flota" | "magazynowanie";
   description: string;
   type: string;
   params: Record<string, unknown>;
@@ -69,6 +69,14 @@ FLOTA (module: "flota"):
 - add_fuel_log: params { liters: number, totalCost?: number, odometer?: number, vehicleName?: string, note?: string }
   Dodaje zatankowanie. liters wymagane; totalCost i odometer opcjonalne. vehicleName to fragment nazwy/modelu pojazdu.
   Przykład: "zatankowałem 40 litrów za 260 zł" → params { liters: 40, totalCost: 260 }
+
+MAGAZYNOWANIE (module: "magazynowanie"):
+- add_storage_item: params { name: string, quantity?: number, unit?: string, warehouse?: string, location?: string, category?: string }
+  Dodaje pozycję do magazynu. warehouse to magazyn nadrzędny (np. "garaż", "magazyn główny"), location to dokładne miejsce (np. "regał A3").
+  Przykład: "dodaj do magazynu 5 wkrętarek na regał A3 w garażu" → params { name: "wkrętarka", quantity: 5, warehouse: "garaż", location: "regał A3" }
+- adjust_storage: params { delta: number }, searchQuery: string
+  Przyjęcie (+) lub wydanie (−) ze stanu. searchQuery to nazwa pozycji magazynowej.
+  Przykład: "wydaj 3 śruby M8 z magazynu" → params { delta: -3 }, searchQuery: "śruby M8"
 
 Zasady:
 - Jeden tekst może zawierać wiele niezależnych poleceń — zwróć każde jako osobną akcję

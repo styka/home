@@ -12,6 +12,7 @@ import { toggleHabitDay } from "@/actions/habits";
 import { addEntry, getWalletElements } from "@/actions/portfel";
 import { setMealPlanEntry } from "@/actions/mealPlans";
 import { addFuelLog } from "@/actions/flota";
+import { addStorageItem, adjustStorageQuantity } from "@/actions/storage";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
 import type { RecurringRule, TaskStatus, TaskPriority, ItemStatus } from "@/types";
 import { isoDate } from "@/lib/habitStats";
@@ -668,6 +669,41 @@ async function executeAction(
       const totalCost = params.totalCost != null ? Number(params.totalCost) : null;
       await addFuelLog(vehicle.id, { liters, totalCost, odometer, note: asStr(params.note) });
       return `Dodano tankowanie ${liters} L${totalCost ? ` (${totalCost} zł)` : ""} — ${vehicle.name}`;
+    }
+  }
+
+  // ── Magazynowanie ───────────────────────────────────────────────────────────
+  if (module === "magazynowanie") {
+    if (type === "add_storage_item") {
+      const name = asStr(params.name);
+      if (!name) throw new Error("Podaj nazwę pozycji");
+      await addStorageItem({
+        name,
+        quantity: params.quantity != null ? Number(params.quantity) : null,
+        unit: asStr(params.unit) ?? null,
+        warehouse: asStr(params.warehouse) ?? null,
+        location: asStr(params.location) ?? null,
+        category: asStr(params.category) ?? null,
+      });
+      return `Dodano do magazynu: ${name}`;
+    }
+
+    if (type === "adjust_storage") {
+      const delta = Number(params.delta);
+      if (!delta || isNaN(delta)) throw new Error("Podaj zmianę ilości (np. -3)");
+      const query = action.searchQuery?.trim();
+      if (!query) throw new Error("Wskaż pozycję magazynową");
+      const teamIds = await getUserTeamIds(userId);
+      const item = await prisma.storageItem.findFirst({
+        where: {
+          OR: [{ ownerId: userId }, teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" }],
+          name: { contains: query, mode: "insensitive" },
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+      if (!item) throw new Error(`Nie znaleziono pozycji „${query}" w magazynie`);
+      const updated = await adjustStorageQuantity(item.id, delta, delta > 0 ? "przyjęcie" : "wydanie", "AI");
+      return `${delta > 0 ? "Przyjęto" : "Wydano"} ${Math.abs(delta)} — ${item.name} (stan: ${updated.quantity ?? 0})`;
     }
   }
 

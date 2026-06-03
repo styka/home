@@ -107,6 +107,13 @@ function deriveContextFromPath(pathname: string): RouteContext {
       routeHint: "Użytkownik jest w module Zwierzęta",
     };
   }
+  if (pathname.startsWith("/magazynowanie")) {
+    return {
+      context: ["magazynowanie"],
+      placeholder: 'Np. "Dodaj 5 wkrętarek do garażu" lub "Wydaj 3 śruby M8"',
+      routeHint: "Użytkownik jest w module Magazynowanie",
+    };
+  }
   return {
     context: ["shopping", "tasks", "notes", "pets"],
     placeholder: 'Zapytaj o cokolwiek lub wydaj polecenie…',

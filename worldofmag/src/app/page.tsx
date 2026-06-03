@@ -13,6 +13,7 @@ import { getVehicles } from "@/actions/flota";
 import { getWalletOverview } from "@/actions/portfel";
 import { getDecks } from "@/actions/languageDecks";
 import { getHealthEvents } from "@/actions/health";
+import { getLowStock, getExpiringStorage } from "@/actions/storage";
 import { HomePage } from "@/components/home/HomePage";
 import type { TaskPriority, CareAgendaItem } from "@/types";
 
@@ -249,6 +250,20 @@ export default async function HomePageRoute() {
     }
   }
 
+  // Magazynowanie (conditional) — braki i terminy/gwarancje
+  let storageLowStock = 0;
+  let storageExpiring = 0;
+  if (has("module.magazynowanie")) {
+    try {
+      const [low, expiring] = await Promise.all([getLowStock(), getExpiringStorage(30)]);
+      storageLowStock = low.length;
+      storageExpiring = expiring.length;
+    } catch {
+      storageLowStock = 0;
+      storageExpiring = 0;
+    }
+  }
+
   // Admin stats (conditional)
   let adminStats: { userCount: number; teamCount: number; reportCount: number } | null = null;
   if (isAdmin) {
@@ -291,6 +306,8 @@ export default async function HomePageRoute() {
       languageDecks={languageDecks}
       healthUpcomingCount={healthUpcomingCount}
       healthUpcoming={healthUpcoming}
+      storageLowStock={storageLowStock}
+      storageExpiring={storageExpiring}
       recentActivity={recentActivityForUI}
       adminStats={adminStats}
     />

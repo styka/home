@@ -27,7 +27,8 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_shopping_lists: args { includeArchived? } → [{ id, name, pendingCount, totalCount, archived }]
 - list_items: args { listId?, listName?, status?, search?, limit? } → [{ id, name, status, quantity, unit, listId, listName }]
 - list_notes: args { search?, limit? } → [{ id, title, snippet, updatedAt }]
-- list_pets: args { search? } → [{ id, name, species, status }]`;
+- list_pets: args { search? } → [{ id, name, species, status }]
+- list_storage_items: args { search?, warehouse?, lowStockOnly?, limit? } → [{ id, name, quantity, unit, warehouse, location, minQuantity }]. Pozycje magazynu (dom/firma). lowStockOnly=true zwraca tylko poniżej stanu minimalnego.`;
 
 export const READ_TOOL_NAMES = [
   "list_projects",
@@ -36,6 +37,7 @@ export const READ_TOOL_NAMES = [
   "list_items",
   "list_notes",
   "list_pets",
+  "list_storage_items",
 ] as const;
 
 async function accessibleProjectIds(userId: string): Promise<string[]> {
@@ -237,6 +239,38 @@ export async function runReadTool(
         take: HARD_MAX,
       });
       return pets.map((p) => ({ id: p.id, name: p.name, species: p.species, status: p.status }));
+    }
+
+    case "list_storage_items": {
+      const search = asStr(args.search);
+      const warehouse = asStr(args.warehouse);
+      const lowStockOnly = args.lowStockOnly === true || args.lowStockOnly === "true";
+      const teamIds = await getUserTeamIds(userId);
+      const items = await prisma.storageItem.findMany({
+        where: {
+          OR: [
+            { ownerId: userId },
+            ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+          ],
+          ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
+          ...(warehouse ? { warehouse: { contains: warehouse, mode: "insensitive" } } : {}),
+          ...(lowStockOnly ? { minQuantity: { not: null } } : {}),
+        },
+        orderBy: [{ warehouse: "asc" }, { name: "asc" }],
+        take: clampLimit(args.limit),
+      });
+      const filtered = lowStockOnly
+        ? items.filter((i) => i.minQuantity != null && (i.quantity ?? 0) < i.minQuantity)
+        : items;
+      return filtered.map((i) => ({
+        id: i.id,
+        name: i.name,
+        quantity: i.quantity,
+        unit: i.unit,
+        warehouse: i.warehouse,
+        location: i.location,
+        minQuantity: i.minQuantity,
+      }));
     }
 
     default:

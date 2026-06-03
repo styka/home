@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, ShoppingCart, CheckSquare, FileText, PawPrint, CheckCircle, XCircle, Loader2, Square, CheckSquare2, ChevronDown, ChevronUp } from "lucide-react";
+import { X, ShoppingCart, CheckSquare, FileText, PawPrint, Boxes, CheckCircle, XCircle, Loader2, Square, CheckSquare2, ChevronDown, ChevronUp } from "lucide-react";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
 import type { ActionResult } from "@/app/api/llm/home/execute/route";
 
@@ -21,6 +21,7 @@ function moduleIcon(module: string) {
   if (module === "shopping") return <ShoppingCart size={15} />;
   if (module === "tasks") return <CheckSquare size={15} />;
   if (module === "pets") return <PawPrint size={15} />;
+  if (module === "magazynowanie") return <Boxes size={15} />;
   return <FileText size={15} />;
 }
 
@@ -28,6 +29,7 @@ function moduleColor(module: string) {
   if (module === "shopping") return "var(--accent-blue)";
   if (module === "tasks") return "var(--accent-green)";
   if (module === "pets") return "var(--accent-purple)";
+  if (module === "magazynowanie") return "var(--accent-blue)";
   return "var(--accent-amber)";
 }
 
@@ -35,6 +37,7 @@ function moduleLabel(module: string) {
   if (module === "shopping") return "Zakupy";
   if (module === "tasks") return "Zadania";
   if (module === "pets") return "Zwierzęta";
+  if (module === "magazynowanie") return "Magazyn";
   return "Notatki";
 }
 
