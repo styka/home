@@ -185,7 +185,7 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 
 Components are organized by module: `shopping/`, `tasks/`, `notes/`, `kitchen/`, `pets/`, `health/`, `habits/`, `flota/`, `portfel/`, `languages/`, `qa/`, `truck/`, `reports/`, `home/`, `shell/`, `command-palette/`, `admin/`, `teams/`, `brand/`, `ui/`. Each module typically has a `*Page.tsx` (client entry) and `*HomePage.tsx` (server wrapper). The `AppShell` (`shell/`) wraps all pages with `ModuleSidebar` (desktop), a mobile top bar + bottom tab bar, and the global AI assistant.
 
-**The "magic icon" / AI assistant** (`home/AICommandSheet.tsx`): a global Sparkles floating action button (bottom-right, in `AppShell`) opening an AI sheet. Two modes — *interpret → execute* (`AICommandSection` + `ActionDrawer`, endpoints `/api/llm/home/interpret|execute`) and *agent* (`/api/llm/home/agent`, phases clarify/answer/navigate/plan). It emits typed `AIAction[]` (add_item, create_task, create_note, log_weight, …) reviewed in `ActionDrawer` before running; **destructive actions are opt-in** (unchecked by default).
+**The "magic icon" / AI assistant** (`home/AICommandSheet.tsx`): a global Sparkles floating action button (bottom-right, in `AppShell`) opening a **conversational chat sheet** — persistent message thread (user/assistant bubbles), free back-and-forth dialog, history persisted in DB (`AiConversation`/`AiMessage`, per-user) with a history drawer + "new conversation", starter suggestion chips on an empty thread, and voice dictation (reuses `SmartTextarea`'s Web Speech input). The chat talks to the *agent* (`/api/llm/home/agent`), which runs a JSON-protocol tool loop and returns one of the steps **query / clarify / answer / navigate / plan / report**. It can **read every module** (read-tools in `lib/ai/agentTools.ts` cover tasks, shopping, notes, pets, storage, habits, health, wallet, recipes, meal-plan, pantry, vehicles, decks, news, weather) and **search the web** (`web_search` → `lib/news/webSearch.ts`, Brave→DDG) when it needs external facts. It emits typed `AIAction[]` (add_item, create_task, …, plus health/languages/news/weather writes) reviewed in `ActionDrawer` before running; **destructive actions are opt-in** (unchecked by default). Analytical results render as markdown with clickable deep-links; the agent can also propose a **report** (full markdown with summary + facts) saved to `/reports` via `createUserReport` (per-user, no admin needed). The legacy *interpret → execute* widget (`AICommandSection`, endpoints `/api/llm/home/interpret|execute`) still exists for quick one-shot parsing.
 
 ### Server Actions (`src/actions/`)
 
@@ -196,7 +196,7 @@ All data mutations use Next.js Server Actions with `revalidatePath()` at the end
 - **Kitchen**: `recipes`, `cookbooks`, `mealPlans`, `pantry`
 - **Pets**: `pets`, `petCare`, `petHusbandry`, `petBreeding`
 - **Other modules**: `health`, `habits`, `flota`, `portfel`, `languageDecks`, `qa`, `truck`, `storage` (Magazynowanie)
-- **Collaboration / system**: `teams`, `invitations`, `access`, `activity`, `reports`, `config`, `llmConfig`, `adminCategories`, `admin-tools`
+- **Collaboration / system**: `teams`, `invitations`, `access`, `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `admin-tools`, `aiConversations` (AI assistant chat persistence)
 
 ### Authentication & Authorization
 
@@ -241,6 +241,7 @@ StoragePurchaseOrder, StoragePurchaseOrderLine — Magazynowanie pro (zamówieni
 QaEpic, QaUserStory, QaTestScenario         — QA module
 LlmProvider, LlmAssignment                  — LLM config (admin)
 Config, UserActivity, Report                — System
+AiConversation, AiMessage                   — AI assistant chat memory (per-user; message kind: text/plan/report/navigate/clarify/results)
 ```
 
 **Important**: `Item.status` is a `String` (not Prisma enum) because SQLite doesn't support enums. TypeScript union `ItemStatus = "NEEDED" | "IN_CART" | "DONE" | "MISSING"` enforces correctness at compile time. Never change this to a Prisma enum.
