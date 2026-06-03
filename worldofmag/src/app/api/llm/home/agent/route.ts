@@ -38,7 +38,8 @@ interface LogEntry {
 }
 
 const ACTION_CATALOG = `Dostępne akcje ZAPISU (step "plan"). Każda akcja: { id, module, type, description, params, searchQuery? }.
-Po wykonaniu zapytań CELUJ w konkretne rekordy przez id z wyników (taskId/itemId/noteId/listId). searchQuery to fallback po nazwie, gdy nie masz id.
+Po wykonaniu zapytań możesz CELOWAĆ w konkretny rekord przez jego id z wyników (taskId/itemId/noteId/listId) — to precyzyjny, opcjonalny namiar dla backendu.
+WAŻNE (czytelność dla użytkownika): id NIE jest pokazywane w panelu potwierdzenia, bo nic mu nie mówi. Dlatego dla KAŻDEJ akcji celującej w istniejący rekord ZAWSZE wypełnij też "searchQuery" czytelną nazwą/tytułem tego rekordu (np. tytuł zadania, nazwa listy, imię zwierzęcia) — to ją zobaczy użytkownik. Dodatkowo "description" musi po ludzku nazywać cel akcji.
 
 ZAKUPY (module "shopping"):
 - add_item { rawText, listName?, listId? } — rawText to TYLKO nazwa i ilość ("2 kg jabłek"), bez nazwy listy.
@@ -114,7 +115,7 @@ PROTOKÓŁ — w KAŻDEJ turze zwróć DOKŁADNIE JEDEN obiekt JSON (bez markdow
 { "step":"answer", "thought":"...", "answer":"Najważniejsze teraz: **Zapłać ZUS** (URGENT, termin dziś)." }  // markdown PL
 
 4) Plan akcji (gdy użytkownik chce coś ZMIENIĆ/DODAĆ — akcje NIE wykonają się od razu, użytkownik je potwierdzi):
-{ "step":"plan", "thought":"...", "actions":[ { "id":"a1", "module":"tasks", "type":"update_task_status", "description":"...", "params":{ "taskId":"...", "status":"DONE" } } ] }
+{ "step":"plan", "thought":"...", "actions":[ { "id":"a1", "module":"tasks", "type":"update_task_status", "description":"Oznacz „Zapłać ZUS" jako zrobione", "params":{ "taskId":"...", "status":"DONE" }, "searchQuery":"Zapłać ZUS" } ] }
 
 5) Przekierowanie (gdy użytkownik chce ZOBACZYĆ/OTWORZYĆ gotowy widok — użytkownik potwierdzi przejście):
 { "step":"navigate", "thought":"...", "url":"/tasks/all?status=IN_PROGRESS", "label":"Zadania w trakcie" }
