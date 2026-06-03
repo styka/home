@@ -123,6 +123,20 @@ POGODA (module "weather"):
 RAPORTY (module "reports"):
 - save_report { title, content } — zapisuje raport (markdown) do działu Raporty użytkownika. Używaj, gdy użytkownik prosi „zapisz to jako raport". Dla pełnego raportu z sesji preferuj jednak krok "report" (niżej), który pozwala użytkownikowi obejrzeć szkic przed zapisem.
 
+DODATKOWE AKCJE (pełne CRUD — searchQuery = nazwa/tytuł do wyszukania, gdy brak id; DESTRUKCYJNE oznaczone):
+ZAKUPY: delete_list (DESTRUKCYJNE) · clear_done_items (usuń kupione) · mark_all_in_cart.
+ZADANIA: update_project { name?, emoji?, projectId? } · delete_project (DESTRUKCYJNE).
+NOTATKI: toggle_pin (przypnij/odepnij; searchQuery = tytuł).
+NAWYKI: update_habit { name?, icon?, description? } · archive_habit { archived } · delete_habit (DESTRUKCYJNE).
+PORTFEL: update_wallet_element { name?, note?, elementName? } · set_wallet_balance { amount, elementName? } · archive_wallet_element { archived } · delete_wallet_element (DESTRUKCYJNE).
+KUCHNIA: create_recipe { title, description?, servings?, body? } · delete_recipe (DESTRUKCYJNE) · mark_meal_cooked · delete_meal_plan · update_pantry_item { quantity?, unit?, expiresAt? } · consume_pantry { quantity } · delete_pantry_item (DESTRUKCYJNE).
+FLOTA: create_vehicle { name, make?, model?, plate?, year? } · update_vehicle { name?, plate?, odometer? } · delete_vehicle (DESTRUKCYJNE).
+JĘZYKI: update_deck { name?, nativeLang?, targetLang?, deckName? } · delete_deck (DESTRUKCYJNE) · update_word { term?, translation?, example?, wordId? }.
+WIADOMOŚCI: update_news_topic { title?, semanticFilter?, topicId? } · refresh_news_topic { topicId? }.
+POGODA: set_default_weather_location { locationId? } · add_weather_watcher { presetKey } · delete_weather_watcher { watcherId? } (DESTRUKCYJNE).
+MAGAZYN: update_storage_item { name?, unit?, warehouse?, location? } · delete_storage_item (DESTRUKCYJNE) · transfer_storage { toWarehouse?, toLocation?, quantity }.
+ZWIERZĘTA: update_pet { name?, breed? } (searchQuery = imię) · set_pet_status { status:"ACTIVE"|"SOLD"|"DECEASED"|"ARCHIVED" } · delete_pet (DESTRUKCYJNE).
+
 PRZEJŚCIE PO UTWORZENIU: do KAŻDEJ akcji tworzącej (create_task, create_note, create_list, create_project, add_item) możesz dodać params.openAfter:true, gdy użytkownik prosi, by od razu przejść/otworzyć utworzony element ("dodaj zadanie X i przejdź do niego"). Po wykonaniu aplikacja zaproponuje przekierowanie.`;
 
 const NAVIGATION_CATALOG = `NAWIGACJA (step "navigate") — przekieruj użytkownika na GOTOWY widok aplikacji, gdy prośba sprowadza się do „pokaż / otwórz / przejdź do …", a istnieje strona z odpowiednimi parametrami. To NIE wykona się od razu — użytkownik potwierdzi przekierowanie.
