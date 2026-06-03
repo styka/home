@@ -4,14 +4,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check,
+  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import {
   listAiConversations, getAiConversation, createAiConversation, appendAiMessage,
-  deleteAiConversation, type ConversationMeta,
+  deleteAiConversation, renameAiConversation, type ConversationMeta,
 } from "@/actions/aiConversations";
 import { createUserReport } from "@/actions/reports";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
@@ -51,6 +51,7 @@ interface AgentResponse {
   label?: string;
   title?: string;
   content?: string;
+  followups?: string[];
   log?: LogEntry[];
   messages?: ChatMessage[];
   error?: string;
@@ -59,7 +60,7 @@ interface AgentResponse {
 // Jedna „kafelka" w wątku rozmowy. `data` z DB pozwala odtworzyć kartę bez ponownego uruchamiania agenta.
 type Turn =
   | { id: string; role: "user"; kind: "text"; content: string }
-  | { id: string; role: "assistant"; kind: "answer"; content: string; log?: LogEntry[] }
+  | { id: string; role: "assistant"; kind: "answer"; content: string; followups?: string[]; log?: LogEntry[] }
   | { id: string; role: "assistant"; kind: "clarify"; content: string; options?: string[]; messages?: ChatMessage[]; log?: LogEntry[]; resolved?: boolean }
   | { id: string; role: "assistant"; kind: "navigate"; content: string; url: string; label: string; log?: LogEntry[] }
   | { id: string; role: "assistant"; kind: "plan"; content: string; actions: AIAction[]; messages?: ChatMessage[]; log?: LogEntry[]; done?: boolean }
@@ -181,8 +182,11 @@ export function AICommandSheet() {
   // Historia rozmów
   const [showHistory, setShowHistory] = useState(false);
   const [conversations, setConversations] = useState<ConversationMeta[]>([]);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameText, setRenameText] = useState("");
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
   const convoIdRef = useRef<string | null>(null);
   convoIdRef.current = conversationId;
   // Anulowanie generowania (Stop) + ostatni payload do „Generuj ponownie".
@@ -209,6 +213,16 @@ export function AICommandSheet() {
 
   // Zatrzymaj generowanie przy zamknięciu/unmount.
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  // Autofokus pola wejścia po otwarciu (desktop) — natychmiast piszesz.
+  useEffect(() => {
+    if (!isOpen || showHistory) return;
+    const t = setTimeout(() => {
+      const ta = sheetRef.current?.querySelector("textarea") as HTMLTextAreaElement | null;
+      ta?.focus();
+    }, 80);
+    return () => clearTimeout(t);
+  }, [isOpen, showHistory]);
 
   // Zapis wiadomości do DB (best-effort, nie blokuje UI).
   const persist = useCallback(async (role: "user" | "assistant", content: string, kind: string, data?: unknown) => {
@@ -278,8 +292,8 @@ export function AICommandSheet() {
     }
     if (data.step === "answer") {
       const content = data.answer ?? "";
-      setTurns((t) => [...t, { id, role: "assistant", kind: "answer", content, log: data.log ?? log }]);
-      void persist("assistant", content, "answer", { log: data.log ?? log });
+      setTurns((t) => [...t, { id, role: "assistant", kind: "answer", content, followups: data.followups, log: data.log ?? log }]);
+      void persist("assistant", content, "answer", { log: data.log ?? log, followups: data.followups });
       return;
     }
     if (data.step === "navigate" && data.url) {
@@ -500,7 +514,7 @@ export function AICommandSheet() {
           case "plan": return { id: m.id, role: "assistant", kind: "plan", content: m.content, actions: (data.actions as AIAction[]) ?? [], done: true };
           case "results": return { id: m.id, role: "assistant", kind: "results", content: m.content, results: (data.results as ActionResult[]) ?? [] };
           case "clarify": return { id: m.id, role: "assistant", kind: "clarify", content: m.content, resolved: true };
-          default: return { id: m.id, role: "assistant", kind: "answer", content: m.content };
+          default: return { id: m.id, role: "assistant", kind: "answer", content: m.content, followups: Array.isArray(data.followups) ? (data.followups as string[]) : undefined };
         }
       });
       setTurns(rehydrated);
@@ -518,6 +532,14 @@ export function AICommandSheet() {
     } catch { /* ignore */ }
   }
 
+  async function commitRename(id: string) {
+    const title = renameText.trim();
+    setRenamingId(null);
+    if (!title) return;
+    setConversations((c) => c.map((x) => (x.id === id ? { ...x, title } : x)));
+    try { await renameAiConversation(id, title); } catch { /* ignore */ }
+  }
+
   const planTurn = planTurnId ? (turns.find((t) => t.id === planTurnId && t.kind === "plan") as Extract<Turn, { kind: "plan" }> | undefined) : undefined;
 
   return (
@@ -528,6 +550,7 @@ export function AICommandSheet() {
       <button
         onClick={() => setIsOpen(true)}
         title="Asystent AI"
+        aria-label="Otwórz asystenta AI"
         className="fixed right-5 z-40 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
         style={{ width: 52, height: 52, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
       >
@@ -541,6 +564,10 @@ export function AICommandSheet() {
           onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
         >
           <div
+            ref={sheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Asystent AI"
             className="w-full md:max-w-lg md:mx-4"
             style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "16px 16px 0 0", height: "85vh", maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}
           >
@@ -556,9 +583,9 @@ export function AICommandSheet() {
                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Asystent AI</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <button onClick={resetConversation} title="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
-                <button onClick={openHistory} title="Historia rozmów" style={iconBtn}><History size={16} /></button>
-                <button onClick={handleClose} title="Zamknij" style={iconBtn}><X size={16} /></button>
+                <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
+                <button onClick={openHistory} title="Historia rozmów" aria-label="Historia rozmów" style={iconBtn}><History size={16} /></button>
+                <button onClick={handleClose} title="Zamknij" aria-label="Zamknij asystenta" style={iconBtn}><X size={16} /></button>
               </div>
             </div>
 
@@ -571,15 +598,27 @@ export function AICommandSheet() {
                 {conversations.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 16 }}>Brak zapisanych rozmów.</p>}
                 {conversations.map((c) => (
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <button onClick={() => loadConversation(c.id)} style={{ ...rowBtn, flex: 1, justifyContent: "flex-start" }}>
-                      <span style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</span>
-                    </button>
-                    <button onClick={() => removeConversation(c.id)} title="Usuń" style={{ ...iconBtn, color: "var(--text-muted)" }}><Trash2 size={14} /></button>
+                    {renamingId === c.id ? (
+                      <input
+                        autoFocus
+                        value={renameText}
+                        onChange={(e) => setRenameText(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") commitRename(c.id); if (e.key === "Escape") setRenamingId(null); }}
+                        onBlur={() => commitRename(c.id)}
+                        style={{ flex: 1, fontSize: 13, padding: "9px 10px", borderRadius: 8, border: "1px solid var(--accent-blue)", background: "var(--bg-base)", color: "var(--text-primary)", outline: "none" }}
+                      />
+                    ) : (
+                      <button onClick={() => loadConversation(c.id)} style={{ ...rowBtn, flex: 1, justifyContent: "flex-start" }}>
+                        <span style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</span>
+                      </button>
+                    )}
+                    <button onClick={() => { setRenamingId(c.id); setRenameText(c.title); }} title="Zmień nazwę" aria-label="Zmień nazwę rozmowy" style={{ ...iconBtn, color: "var(--text-muted)" }}><Pencil size={13} /></button>
+                    <button onClick={() => removeConversation(c.id)} title="Usuń" aria-label="Usuń rozmowę" style={{ ...iconBtn, color: "var(--text-muted)" }}><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>
             ) : (
-              <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div ref={scrollRef} aria-live="polite" className="flex-1 overflow-y-auto px-4 py-4" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {/* Pusty wątek → sugestie startowe */}
                 {turns.length === 0 && !busy && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
@@ -605,6 +644,7 @@ export function AICommandSheet() {
                     onNavigate={goTo}
                     onSaveReport={saveReport}
                     onRegenerate={lastPayloadRef.current ? regenerate : undefined}
+                    onFollowup={(txt) => handleSend(txt)}
                   />
                 ))}
 
@@ -712,7 +752,7 @@ function CopyButton({ text }: { text: string }) {
 }
 
 function TurnView({
-  turn, isLast, onBubbleClick, onClarifySubmit, onOpenPlan, onNavigate, onSaveReport, onRegenerate,
+  turn, isLast, onBubbleClick, onClarifySubmit, onOpenPlan, onNavigate, onSaveReport, onRegenerate, onFollowup,
 }: {
   turn: Turn;
   isLast: boolean;
@@ -722,6 +762,7 @@ function TurnView({
   onNavigate: (url: string) => void;
   onSaveReport: (turn: Extract<Turn, { kind: "report" }>) => void;
   onRegenerate?: () => void;
+  onFollowup?: (text: string) => void;
 }) {
   const [clarifyInput, setClarifyInput] = useState("");
 
@@ -741,6 +782,15 @@ function TurnView({
       <div style={bubble}>
         <div onClick={onBubbleClick} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
         <ReasoningLog log={turn.log} />
+        {isLast && turn.followups && turn.followups.length > 0 && onFollowup && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+            {turn.followups.map((f) => (
+              <button key={f} onClick={() => onFollowup(f)} style={{ fontSize: 12, padding: "6px 11px", borderRadius: 16, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--accent-blue)", cursor: "pointer", textAlign: "left" }}>
+                {f}
+              </button>
+            ))}
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 6 }}>
           <CopyButton text={turn.content} />
           {isLast && onRegenerate && (

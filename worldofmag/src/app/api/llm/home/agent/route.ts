@@ -168,7 +168,7 @@ PROTOKÓŁ — w KAŻDEJ turze zwróć DOKŁADNIE JEDEN obiekt JSON (bez markdow
 { "step":"clarify", "thought":"...", "question":"Którą listę masz na myśli?", "options":["Apteka","Tygodniowe"] }  // options opcjonalne
 
 3) Odpowiedź tekstowa (gdy użytkownik o coś PYTA — NIE twórz akcji):
-{ "step":"answer", "thought":"...", "answer":"Najważniejsze teraz: **Zapłać ZUS** (URGENT, termin dziś)." }  // markdown PL
+{ "step":"answer", "thought":"...", "answer":"Najważniejsze teraz: **Zapłać ZUS** (URGENT, termin dziś).", "followups":["Pokaż wszystkie pilne zadania","Przesuń mniej ważne na jutro"] }  // markdown PL; followups OPCJONALNE: 2-3 KRÓTKIE, trafne propozycje następnego pytania/polecenia (z perspektywy użytkownika, w 1. osobie)
 
 4) Plan akcji (gdy użytkownik chce coś ZMIENIĆ/DODAĆ — akcje NIE wykonają się od razu, użytkownik je potwierdzi):
 { "step":"plan", "thought":"...", "actions":[ { "id":"a1", "module":"tasks", "type":"update_task_status", "description":"...", "params":{ "taskId":"...", "status":"DONE" } } ] }
@@ -362,8 +362,11 @@ async function runAgentLoop(
 
     if (step === "answer") {
       const answer = typeof parsed.answer === "string" ? parsed.answer : "Brak odpowiedzi.";
+      const followups = Array.isArray(parsed.followups)
+        ? parsed.followups.map(String).map((s) => s.trim()).filter(Boolean).slice(0, 3)
+        : undefined;
       log.push({ iter, step, thought });
-      return { body: { step: "answer", answer, thought, log } };
+      return { body: { step: "answer", answer, thought, log, ...(followups?.length ? { followups } : {}) } };
     }
 
     if (step === "report") {
