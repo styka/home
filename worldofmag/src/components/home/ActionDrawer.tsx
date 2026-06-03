@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, ShoppingCart, CheckSquare, FileText, PawPrint, Boxes, CheckCircle, XCircle, Loader2, Square, CheckSquare2, ChevronDown, ChevronUp } from "lucide-react";
+import { X, ShoppingCart, CheckSquare, FileText, PawPrint, Boxes, Wallet, Fuel, ChefHat, Repeat, Wand2, CheckCircle, XCircle, Loader2, Square, CheckSquare2, ChevronDown, ChevronUp } from "lucide-react";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
 import type { ActionResult } from "@/app/api/llm/home/execute/route";
 
@@ -11,6 +11,9 @@ interface ActionDrawerProps {
   onClose: () => void;
   isExecuting: boolean;
   results?: ActionResult[];
+  /** Korekta planu przez AI: użytkownik opisuje, co poprawić, a agent przeplanowuje całość. */
+  onRefine?: (feedback: string) => void;
+  isRefining?: boolean;
 }
 
 // Akcje destrukcyjne — domyślnie ODZNACZONE i oznaczone na czerwono (świadomy opt-in).
@@ -22,6 +25,10 @@ function moduleIcon(module: string) {
   if (module === "tasks") return <CheckSquare size={15} />;
   if (module === "pets") return <PawPrint size={15} />;
   if (module === "magazynowanie") return <Boxes size={15} />;
+  if (module === "portfel") return <Wallet size={15} />;
+  if (module === "flota") return <Fuel size={15} />;
+  if (module === "kitchen") return <ChefHat size={15} />;
+  if (module === "habits") return <Repeat size={15} />;
   return <FileText size={15} />;
 }
 
@@ -30,6 +37,10 @@ function moduleColor(module: string) {
   if (module === "tasks") return "var(--accent-green)";
   if (module === "pets") return "var(--accent-purple)";
   if (module === "magazynowanie") return "var(--accent-blue)";
+  if (module === "portfel") return "var(--accent-green)";
+  if (module === "flota") return "var(--accent-blue)";
+  if (module === "kitchen") return "var(--accent-amber)";
+  if (module === "habits") return "var(--accent-purple)";
   return "var(--accent-amber)";
 }
 
@@ -38,10 +49,15 @@ function moduleLabel(module: string) {
   if (module === "tasks") return "Zadania";
   if (module === "pets") return "Zwierzęta";
   if (module === "magazynowanie") return "Magazyn";
+  if (module === "portfel") return "Portfel";
+  if (module === "flota") return "Flota";
+  if (module === "kitchen") return "Kuchnia";
+  if (module === "habits") return "Nawyki";
   return "Notatki";
 }
 
-export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results }: ActionDrawerProps) {
+export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results, onRefine, isRefining }: ActionDrawerProps) {
+  const [refineText, setRefineText] = useState("");
   const [included, setIncluded] = useState<Set<string>>(
     new Set(actions.filter((a) => !DESTRUCTIVE_TYPES.has(a.type)).map((a) => a.id))
   );
@@ -313,8 +329,51 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
           ))}
         </div>
 
-        {/* Hint (only in pending state) */}
-        {!showResults && (
+        {/* Korekta planu przez AI (only in pending state) */}
+        {!showResults && onRefine && (
+          <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)", flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
+              Edytuj szczegóły w „Parametry", albo opisz poniżej, co poprawić — AI ułoży plan na nowo:
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                value={refineText}
+                onChange={(e) => setRefineText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey && refineText.trim() && !isRefining) {
+                    e.preventDefault();
+                    onRefine(refineText.trim());
+                  }
+                }}
+                placeholder='Np. "termin na piątek, nie sobotę" lub "pomiń ostatnie zadanie"'
+                disabled={isRefining || isExecuting}
+                style={{
+                  flex: 1, fontSize: 12, color: "var(--text-primary)",
+                  background: "var(--bg-elevated)", border: "1px solid var(--border)",
+                  borderRadius: 8, padding: "7px 10px", outline: "none",
+                }}
+              />
+              <button
+                onClick={() => { if (refineText.trim()) onRefine(refineText.trim()); }}
+                disabled={!refineText.trim() || isRefining || isExecuting}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  fontSize: 12, fontWeight: 600, padding: "7px 12px", borderRadius: 8, border: "none",
+                  background: !refineText.trim() || isRefining ? "var(--bg-elevated)" : "var(--accent-purple)",
+                  color: !refineText.trim() || isRefining ? "var(--text-muted)" : "#fff",
+                  cursor: !refineText.trim() || isRefining ? "not-allowed" : "pointer",
+                  flexShrink: 0,
+                }}
+              >
+                {isRefining ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
+                {isRefining ? "Poprawiam…" : "Popraw"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Hint (only in pending state, when refine not available) */}
+        {!showResults && !onRefine && (
           <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
             <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
               Kliknij &quot;Parametry&quot; przy akcji, aby edytować szczegóły przed wykonaniem.
@@ -366,16 +425,16 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                 </button>
                 <button
                   onClick={handleConfirm}
-                  disabled={selectedCount === 0 || isExecuting}
+                  disabled={selectedCount === 0 || isExecuting || isRefining}
                   style={{
                     fontSize: 13,
                     fontWeight: 600,
                     padding: "7px 16px",
                     borderRadius: 8,
                     border: "none",
-                    background: selectedCount === 0 ? "var(--bg-elevated)" : "var(--accent-blue)",
-                    color: selectedCount === 0 ? "var(--text-muted)" : "#fff",
-                    cursor: selectedCount === 0 ? "not-allowed" : "pointer",
+                    background: selectedCount === 0 || isRefining ? "var(--bg-elevated)" : "var(--accent-blue)",
+                    color: selectedCount === 0 || isRefining ? "var(--text-muted)" : "#fff",
+                    cursor: selectedCount === 0 || isRefining ? "not-allowed" : "pointer",
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
