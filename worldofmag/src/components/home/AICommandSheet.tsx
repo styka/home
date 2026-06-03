@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks,
+  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
@@ -184,10 +184,30 @@ export function AICommandSheet() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const convoIdRef = useRef<string | null>(null);
   convoIdRef.current = conversationId;
+  // Anulowanie generowania (Stop) + ostatni payload do „Generuj ponownie".
+  const abortRef = useRef<AbortController | null>(null);
+  const lastPayloadRef = useRef<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [turns, busy]);
+
+  // Esc zamyka sheet (gdy nie piszemy w polu — pozwalamy textarea obsłużyć własny Esc).
+  useEffect(() => {
+    if (!isOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        const tag = (document.activeElement?.tagName ?? "").toLowerCase();
+        if (tag !== "textarea" && tag !== "input") handleClose();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  // Zatrzymaj generowanie przy zamknięciu/unmount.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   // Zapis wiadomości do DB (best-effort, nie blokuje UI).
   const persist = useCallback(async (role: "user" | "assistant", content: string, kind: string, data?: unknown) => {
@@ -283,23 +303,51 @@ export function AICommandSheet() {
     setError("Nieoczekiwana odpowiedź asystenta.");
   }
 
-  async function callAgent(payload: Record<string, unknown>) {
+  async function callAgent(payload: Record<string, unknown>, opts?: { isRetry?: boolean }) {
     setError(null);
     setBusy(true);
+    if (!opts?.isRetry) lastPayloadRef.current = payload; // do „Generuj ponownie"
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
       const res = await fetch("/api/llm/home/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
       const data = (await res.json()) as AgentResponse;
       if (!res.ok && !data.step) { setError(data.error ?? "Błąd asystenta"); return; }
       applyResponse(data);
-    } catch {
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return; // świadome zatrzymanie — bez błędu
       setError("Nie udało się połączyć z asystentem");
     } finally {
+      abortRef.current = null;
       setBusy(false);
     }
+  }
+
+  function stopGeneration() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setBusy(false);
+  }
+
+  // Generuj ponownie: usuń ostatnią odpowiedź asystenta i powtórz ostatnie zapytanie.
+  function regenerate() {
+    const payload = lastPayloadRef.current;
+    if (!payload || busy) return;
+    setTurns((t) => {
+      const copy = [...t];
+      while (copy.length && copy[copy.length - 1].role === "assistant") copy.pop();
+      return copy;
+    });
+    void callAgent(payload, { isRetry: true });
+  }
+
+  function retryLast() {
+    if (lastPayloadRef.current) void callAgent(lastPayloadRef.current, { isRetry: true });
   }
 
   async function handleSend(textArg?: string) {
@@ -511,24 +559,38 @@ export function AICommandSheet() {
                   </div>
                 )}
 
-                {turns.map((turn) => (
+                {turns.map((turn, i) => (
                   <TurnView
                     key={turn.id}
                     turn={turn}
+                    isLast={i === turns.length - 1}
                     onBubbleClick={handleBubbleClick}
                     onClarifySubmit={submitClarify}
                     onOpenPlan={(t) => { setPlanTurnId(t.id); setPlanVersion((v) => v + 1); }}
                     onNavigate={goTo}
                     onSaveReport={saveReport}
+                    onRegenerate={lastPayloadRef.current ? regenerate : undefined}
                   />
                 ))}
 
                 {busy && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-muted)", fontSize: 13 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--text-muted)", fontSize: 13 }}>
                     <Loader2 size={14} className="animate-spin" /> Myślę…
+                    <button onClick={stopGeneration} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-secondary)", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}>
+                      <Square size={11} /> Zatrzymaj
+                    </button>
                   </div>
                 )}
-                {error && <p style={{ fontSize: 12, color: "var(--accent-red)", margin: 0 }}>{error}</p>}
+                {error && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <p style={{ fontSize: 12, color: "var(--accent-red)", margin: 0 }}>{error}</p>
+                    {lastPayloadRef.current && (
+                      <button onClick={retryLast} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--accent-blue)", background: "none", border: "1px solid var(--border)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}>
+                        <RefreshCw size={11} /> Ponów
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -539,14 +601,24 @@ export function AICommandSheet() {
                   <div style={{ flex: 1 }}>
                     <SmartTextarea value={inputText} onChange={setInputText} placeholder={placeholder} rows={2} onSubmit={() => handleSend()} disabled={busy} />
                   </div>
-                  <button
-                    onClick={() => handleSend()}
-                    disabled={!inputText.trim() || busy}
-                    title="Wyślij"
-                    style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "none", background: !inputText.trim() || busy ? "var(--bg-elevated)" : "var(--accent-blue)", color: !inputText.trim() || busy ? "var(--text-muted)" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: !inputText.trim() || busy ? "not-allowed" : "pointer" }}
-                  >
-                    {busy ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                  </button>
+                  {busy ? (
+                    <button
+                      onClick={stopGeneration}
+                      title="Zatrzymaj"
+                      style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "none", background: "var(--accent-red)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    >
+                      <Square size={15} />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleSend()}
+                      disabled={!inputText.trim()}
+                      title="Wyślij"
+                      style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "none", background: !inputText.trim() ? "var(--bg-elevated)" : "var(--accent-blue)", color: !inputText.trim() ? "var(--text-muted)" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: !inputText.trim() ? "not-allowed" : "pointer" }}
+                    >
+                      <Send size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -575,15 +647,30 @@ const rowBtn: React.CSSProperties = { display: "flex", alignItems: "center", gap
 const chipBtn: React.CSSProperties = { fontSize: 12.5, padding: "8px 12px", borderRadius: 18, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", cursor: "pointer", textAlign: "left" };
 
 // ── Widok pojedynczej tury ──────────────────────────────────────────────────
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => { navigator.clipboard?.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); }}
+      title="Kopiuj"
+      style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: copied ? "var(--accent-green)" : "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+    >
+      {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? "Skopiowano" : "Kopiuj"}
+    </button>
+  );
+}
+
 function TurnView({
-  turn, onBubbleClick, onClarifySubmit, onOpenPlan, onNavigate, onSaveReport,
+  turn, isLast, onBubbleClick, onClarifySubmit, onOpenPlan, onNavigate, onSaveReport, onRegenerate,
 }: {
   turn: Turn;
+  isLast: boolean;
   onBubbleClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   onClarifySubmit: (turn: Extract<Turn, { kind: "clarify" }>, value: string) => void;
   onOpenPlan: (turn: Extract<Turn, { kind: "plan" }>) => void;
   onNavigate: (url: string) => void;
   onSaveReport: (turn: Extract<Turn, { kind: "report" }>) => void;
+  onRegenerate?: () => void;
 }) {
   const [clarifyInput, setClarifyInput] = useState("");
 
@@ -603,6 +690,14 @@ function TurnView({
       <div style={bubble}>
         <div onClick={onBubbleClick} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
         <ReasoningLog log={turn.log} />
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 6 }}>
+          <CopyButton text={turn.content} />
+          {isLast && onRegenerate && (
+            <button onClick={onRegenerate} title="Generuj ponownie" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+              <RefreshCw size={12} /> Ponów
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -673,6 +768,7 @@ function TurnView({
           <span style={{ fontWeight: 600 }}>{turn.title}</span>
         </div>
         <div onClick={onBubbleClick} style={{ maxHeight: 280, overflowY: "auto", borderTop: "1px solid var(--border)", paddingTop: 8 }} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
+        <div style={{ marginTop: 6 }}><CopyButton text={turn.content} /></div>
         {turn.savedSlug ? (
           <button onClick={() => onNavigate(`/reports/${turn.savedSlug}`)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-green)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             <ArrowRight size={15} /> Otwórz raport
