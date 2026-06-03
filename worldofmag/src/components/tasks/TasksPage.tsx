@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal } from "lucide-react";
+import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { TaskDetail } from "./TaskDetail";
@@ -40,6 +40,10 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(initialOpenTaskId ?? null);
   const [openTaskId, setOpenTaskId] = useState<string | null>(initialOpenTaskId ?? null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  // Prezentacja listy: "default" = naturalne grupowanie widoku (dni/projekty), "priority" = po priorytetach.
+  // Dotyczy widoków „Nadchodzące/Zaległe/Wszystkie" (Dziś i projekty są zawsze po priorytetach).
+  const [groupBy, setGroupBy] = useState<"default" | "priority">("default");
+  const canToggleGrouping = viewMode === "upcoming" || viewMode === "overdue" || viewMode === "all";
   const [, startTransition] = useTransition();
   const quickAddRef = useRef<QuickAddTaskHandle>(null);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -65,6 +69,15 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     }
     checkDueNotifications(tasks);
   }, [tasks]);
+
+  // Preferencja grupowania przeżywa nawigację między widokami (localStorage).
+  useEffect(() => {
+    const saved = localStorage.getItem("tasks.groupBy");
+    if (saved === "priority" || saved === "default") setGroupBy(saved);
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("tasks.groupBy", groupBy);
+  }, [groupBy]);
 
   // Cykliczne sprawdzanie terminów. Wcześniej `checkDueNotifications` odpalało się
   // tylko przy montażu i zmianie propu `tasks`, więc przypomnienie „10 min przed"
@@ -312,6 +325,37 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             {counts.ALL > 0 && `${counts.ALL} aktywne`}
           </span>
 
+          {/* Przełącznik prezentacji: naturalne grupowanie widoku ↔ po priorytetach */}
+          {canToggleGrouping && (
+            <div
+              className="flex items-center rounded overflow-hidden"
+              style={{ border: "1px solid var(--border)" }}
+            >
+              <button
+                onClick={() => setGroupBy("default")}
+                className="flex items-center justify-center p-1.5 focus:outline-none"
+                style={{
+                  color: groupBy === "default" ? "var(--text-primary)" : "var(--text-muted)",
+                  backgroundColor: groupBy === "default" ? "var(--bg-hover)" : "transparent",
+                }}
+                title="Grupuj jak w widoku (dni / projekty)"
+              >
+                <ListTree size={15} />
+              </button>
+              <button
+                onClick={() => setGroupBy("priority")}
+                className="flex items-center justify-center p-1.5 focus:outline-none"
+                style={{
+                  color: groupBy === "priority" ? "var(--text-primary)" : "var(--text-muted)",
+                  backgroundColor: groupBy === "priority" ? "var(--bg-hover)" : "transparent",
+                }}
+                title="Grupuj po priorytetach (jak w „Dziś”)"
+              >
+                <Flag size={15} />
+              </button>
+            </div>
+          )}
+
           <button
             onClick={() => { setIsSearchOpen((v) => !v); setTimeout(() => searchRef.current?.focus(), 10); }}
             className="p-1.5 rounded focus:outline-none"
@@ -428,6 +472,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           tasks={displayedTasks}
           filter={activeFilter}
           viewMode={viewMode}
+          groupBy={canToggleGrouping ? groupBy : "default"}
           selectedTagIds={selectedTagIds}
           focusedTaskId={focusedTaskId}
           onFocus={setFocusedTaskId}
