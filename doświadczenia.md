@@ -4,6 +4,13 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-03 — Magazynowanie 2.0: konflikt peer-deps @zxing i fałszywie „czysty" typecheck po cd
+**Problem:** (1) `npm i @zxing/browser@latest @zxing/library@latest` padało na ERESOLVE — `@zxing/browser@0.2.0` wymaga peer `@zxing/library@^0.22.0`, a `@latest` to 0.23.0. (2) Po serii `git commit` uruchamianych z `cd /home/user/home && …` katalog roboczy powłoki Bash został w `/home/user/home`, więc kolejne `npx tsc --noEmit -p tsconfig.json` zwracało „path does not exist: tsconfig.json" — a `grep` po tym pustym wyjściu pokazywał 0 błędów, czyli FAŁSZYWIE „czysto".
+**Rozwiązanie:** (1) Przypięto zgodne wersje: `@zxing/browser@0.2.0` + `@zxing/library@0.22.0` (peer spełniony, bez `--legacy-peer-deps`). (2) Każdą komendę typecheck/build poprzedzam jawnym `cd /home/user/home/worldofmag` i liczę błędy przez `grep -c "error TS"`.
+**Lekcja:** Przy parach paczek z `peerDependencies` (jak @zxing/browser↔library) NIE używaj `@latest` na obu — przypnij wersje spełniające peer. I pamiętaj, że `cwd` powłoki Bash bywa „lepki" między wywołaniami: jeśli wynik narzędzia zależy od katalogu (tsc z `-p`), zawsze ustaw `cd` w tej samej komendzie, bo inaczej puste/błędne wyjście udaje sukces.
+
+---
+
 ## 2026-06-02 — Ikona kalendarza/zegara niewidoczna w trybie ciemnym (pola date/time)
 **Problem:** Natywne pola `input[type="date"|"datetime-local"|"time"]` renderowały wbudowaną ikonę pickera (kalendarz/zegar) w prawie czarnym kolorze, więc na ciemnym tle motywu była praktycznie niewidoczna.
 **Rozwiązanie:** Najpierw ustawiłem `color-scheme: dark` + `filter: invert(1)` na `::-webkit-calendar-picker-indicator` — ale to NIE zadziałało: `color-scheme: dark` już renderuje ikonę na biało, a `invert(1)` zamieniał ją z powrotem na czarno (dwie poprawki znosiły się nawzajem). Ostateczny fix: zostawiam `color-scheme: dark`, usuwam invert i podmieniam ikonę na własny jasny SVG (`background-image` z `stroke=%23e8e8e8`) — osobny kalendarz dla date/datetime/month/week i zegar dla time. Deterministyczne, niezależne od tego jak przeglądarka traktuje color-scheme.

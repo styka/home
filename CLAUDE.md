@@ -54,7 +54,7 @@ Nie pytaj o pozwolenie — po prostu dopisz i commituj razem z poprawką.
 | Reports (markdown docs) | `/reports` | authenticated | Done (system/user/team reports) |
 | QA (test scenarios) | `/qa` | `module.qa` | Internal tooling |
 | Truck (heavy-vehicle routing) | `/truck` | `module.truck` | Partial — ORS client ready, UI minimal |
-| Magazynowanie (storage/inventory) | `/magazynowanie` | `module.magazynowanie` | Done — general storage (dom/firma/magazyny): items by warehouse+location, SKU, min-stock replenishment→shopping, stocktake, AI photo inventory, movement log |
+| Magazynowanie (storage/inventory) | `/magazynowanie` | `module.magazynowanie` | Done — **dwa tryby (Dom/Pro, per-user `StorageSettings`)**. Wspólne: items by warehouse+location, SKU/EAN, min-stock replenishment→shopping, stocktake, AI photo inventory, movement log. **Dom:** „gdzie to jest?" (AI search), etykiety QR (druk+skan), gwarancje/terminy ważności, wartość+zdjęcia (eksport CSV). **Pro:** skan kodów we/wy (`@zxing`), dostawcy, dokumenty PZ/WZ/faktura (OCR), zamówienia (LLM draft), analityka (wartość/ABC/martwy zapas/trend + AI wnioski), partie/serie + FEFO. AI w asystencie (add_storage_item/adjust_storage + read-tool `list_storage_items`) |
 | Calendar | `/calendar` | — | Stub (sidebar icon, "coming soon", disabled) |
 | Work / Praca | `/work` | — | Stub ("coming soon", disabled) |
 
@@ -161,7 +161,7 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /languages/              # SRS vocabulary decks (SuperMemo-2)
 /wiadomosci/             # News: monitored topics (semantic filters), per-source versioned knowledge base, hot topics
 /pogoda/                 # Weather: Open-Meteo forecast + LLM "what to do" advice + watchers (presets + custom)
-/magazynowanie/          # Storage/inventory: items by warehouse+location; + /stocktake (spis), /scan (AI photo inventory)
+/magazynowanie/          # Storage: items by warehouse+location (mode-aware sub-nav). Dom+Pro: /szukaj (AI „gdzie to jest?"), /etykiety (QR), /scan (AI photo), /stocktake (spis), /ustawienia (tryb Dom/Pro + waluta). Pro: /przeplyw (skan we/wy), /analityka, /dostawcy, /zamowienia, /dokumenty (OCR PZ/WZ/faktura)
 /qa/                     # QA test scenarios (Epic → Story → Scenario)
 /truck/                  # Heavy-vehicle routing (OpenRouteService)
 /reports/ [slug]         # Markdown reports (system/user/team), user-facing
@@ -234,7 +234,10 @@ WalletElement, WalletEntry                  — Portfel (finance)
 LanguageDeck, Vocabulary                    — Languages (SRS)
 NewsSource, NewsTopic, NewsKnowledge, NewsItem, NewsPref — Wiadomości (news + versioned knowledge base)
 WeatherLocation, WeatherWatcher             — Pogoda (locations + alert watchers)
-StorageItem, StorageMovement                — Magazynowanie (storage items + movement log)
+StorageItem, StorageMovement                — Magazynowanie (storage items + movement log; item ma barcode/unitPrice/photoUrl/expiresAt/warrantyUntil/supplierId)
+StorageSettings, StorageSupplier, StorageBatch — Magazynowanie pro (tryb Dom/Pro per-user; dostawcy; partie/serie FEFO)
+StorageDocument, StorageDocumentLine        — Magazynowanie pro (dokumenty PZ/WZ/faktura + pozycje)
+StoragePurchaseOrder, StoragePurchaseOrderLine — Magazynowanie pro (zamówienia do dostawców)
 QaEpic, QaUserStory, QaTestScenario         — QA module
 LlmProvider, LlmAssignment                  — LLM config (admin)
 Config, UserActivity, Report                — System
@@ -276,7 +279,7 @@ Three-tier system for categories, units, products:
 
 ### LLM Integration
 
-`src/lib/llm-client.ts` is a typed client wrapping `/api/llm/*` routes. Namespaces: `notes` (suggestTags/Title, rewrite, qa), `tasks` (parse, suggest, search), `shopping` (normalize), `stores` (generate), `home` (interpret, execute; plus the agent route), `kitchen` (parse-ingredients, import-url, ocr-image/text, generate-recipe, plan-week, suggest-from-pantry, categorize), `languages` (extract), `pets` (insights), `magazynowanie` (scan — AI photo inventory, two-step vision→generation).
+`src/lib/llm-client.ts` is a typed client wrapping `/api/llm/*` routes. Namespaces: `notes` (suggestTags/Title, rewrite, qa), `tasks` (parse, suggest, search), `shopping` (normalize), `stores` (generate), `home` (interpret, execute; plus the agent route), `kitchen` (parse-ingredients, import-url, ocr-image/text, generate-recipe, plan-week, suggest-from-pantry, categorize), `languages` (extract), `pets` (insights), `magazynowanie` (scan — AI photo inventory; document — OCR faktury/WZ vision→generation; enrich — kod/nazwa→nazwa/kategoria/jednostka; order-draft — treść zamówienia; insights — narracja analityki; search — semantyczne „gdzie to jest?").
 - Provider + model routing is **DB-driven** via `/admin/llm` (`LlmProvider` + `LlmAssignment`), resolved per operation type (`reasoning`, `dispatch`, `thinking`, `images`, `generation`) in `src/lib/llm/resolver.ts`. The Groq API key lives in `Config` (`groq_api_key`) / env.
 - Rule-based fallback for categorization (no LLM): `categorize.ts` (~500 Polish+English keywords).
 - LLM prompts treat category names as **Polish words** (not English); category hints injected from DB-driven categories.
