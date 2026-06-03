@@ -3,11 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { PET_ACTIONS_PROMPT, PET_ACTION_EXAMPLES } from "@/lib/ai/petActions";
 import { READ_TOOLS_PROMPT, READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentTools";
+import { webSearch } from "@/lib/news/webSearch";
 import { chatComplete } from "@/lib/llm/chat";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
 
-const MAX_ITERATIONS = 5;
+const MAX_ITERATIONS = 6;
 const MAX_TOOLS_PER_TURN = 4;
+
+// Ile wcześniejszych tur rozmowy (poziom wyświetlania) wstrzykujemy do kontekstu.
+const MAX_HISTORY_MESSAGES = 12;
 
 const MODULES = [
   "shopping",
@@ -19,6 +23,11 @@ const MODULES = [
   "kitchen",
   "flota",
   "magazynowanie",
+  "health",
+  "languages",
+  "news",
+  "weather",
+  "reports",
 ] as const;
 
 interface ChatMessage {
@@ -80,6 +89,40 @@ MAGAZYN (module "magazynowanie"):
 - add_storage_item { name, quantity?, unit?, warehouse?, location?, category? } — nowa pozycja magazynu (warehouse = magazyn nadrzędny, location = dokładne miejsce).
 - adjust_storage { delta:number } (searchQuery = nazwa pozycji) — przyjęcie (+) lub wydanie (−) ze stanu.
 
+NAWYKI (module "habits"):
+- create_habit { name, description?, icon? } — tworzy nowy nawyk.
+
+KUCHNIA (module "kitchen"):
+- add_pantry_item { name, quantity?, unit?, expiresAt?(ISO) } — dodaje produkt do spiżarni.
+
+PORTFEL (module "portfel"):
+- create_wallet_element { name, kind?, initialBalance? } — tworzy konto/element portfela.
+
+FLOTA (module "flota"):
+- add_service_record { vehicleName?, serviceType?, cost?, odometer?, note? } — wpis serwisowy pojazdu.
+
+ZDROWIE (module "health"):
+- create_health_event { title, kind:"VISIT"|"TEST", scheduledAt(ISO), doctorName?, specialty?, facility?, notes? } — wizyta lub badanie.
+- update_health_event { eventId?, title?, scheduledAt?, status?, notes? } (searchQuery = tytuł)
+- set_health_status { status:"PLANNED"|"DONE"|"CANCELLED", eventId? } (searchQuery fallback)
+- delete_health_event { eventId? } (searchQuery fallback) — DESTRUKCYJNE
+
+JĘZYKI (module "languages"):
+- create_deck { name, nativeLang?, targetLang? } — nowa talia fiszek.
+- add_word { term, translation, example?, deckName? } — dodaje fiszkę (deckName = fragment nazwy talii; pominięty = ostatnia talia).
+- delete_word { wordId } — DESTRUKCYJNE
+
+WIADOMOŚCI (module "news"):
+- create_news_topic { title, semanticFilter? } — nowy monitorowany temat.
+- delete_news_topic { topicId? } (searchQuery = tytuł) — DESTRUKCYJNE
+
+POGODA (module "weather"):
+- add_weather_location { name } — dodaje lokalizację pogodową po nazwie miejscowości.
+- delete_weather_location { locationId? } (searchQuery = nazwa) — DESTRUKCYJNE
+
+RAPORTY (module "reports"):
+- save_report { title, content } — zapisuje raport (markdown) do działu Raporty użytkownika. Używaj, gdy użytkownik prosi „zapisz to jako raport". Dla pełnego raportu z sesji preferuj jednak krok "report" (niżej), który pozwala użytkownikowi obejrzeć szkic przed zapisem.
+
 PRZEJŚCIE PO UTWORZENIU: do KAŻDEJ akcji tworzącej (create_task, create_note, create_list, create_project, add_item) możesz dodać params.openAfter:true, gdy użytkownik prosi, by od razu przejść/otworzyć utworzony element ("dodaj zadanie X i przejdź do niego"). Po wykonaniu aplikacja zaproponuje przekierowanie.`;
 
 const NAVIGATION_CATALOG = `NAWIGACJA (step "navigate") — przekieruj użytkownika na GOTOWY widok aplikacji, gdy prośba sprowadza się do „pokaż / otwórz / przejdź do …", a istnieje strona z odpowiednimi parametrami. To NIE wykona się od razu — użytkownik potwierdzi przekierowanie.
@@ -119,6 +162,10 @@ PROTOKÓŁ — w KAŻDEJ turze zwróć DOKŁADNIE JEDEN obiekt JSON (bez markdow
 5) Przekierowanie (gdy użytkownik chce ZOBACZYĆ/OTWORZYĆ gotowy widok — użytkownik potwierdzi przejście):
 { "step":"navigate", "thought":"...", "url":"/tasks/all?status=IN_PROGRESS", "label":"Zadania w trakcie" }
 
+6) Raport (gdy użytkownik prosi o RAPORT/podsumowanie sesji lub obszerne zestawienie — zwróć pełny markdown; użytkownik obejrzy szkic i zdecyduje, czy zapisać):
+{ "step":"report", "thought":"...", "title":"Tytuł raportu", "content":"# Tytuł\\n\\n## Podsumowanie\\n...\\n\\n## Fakty i dane\\n| ... |\\n\\n## Wnioski\\n..." }
+Raport „z naszej sesji bez pomijania faktów, z podsumowaniem": uwzględnij WSZYSTKIE konkretne dane omówione w rozmowie (liczby, nazwy, terminy — w tabelach), sekcję ## Podsumowanie oraz linki markdown do elementów ([tytuł](/tasks/<id>)). Nie pomijaj faktów.
+
 ${READ_TOOLS_PROMPT}
 
 ${ACTION_CATALOG}
@@ -142,7 +189,22 @@ ${PET_ACTION_EXAMPLES}`;
 
 // Adresy nawigacji pochodzą od LLM, więc traktujemy je jak nieufne wejście: tylko
 // wewnętrzne ścieżki aplikacji z whitelisty prefiksów (bez protokołu, bez "//").
-const NAV_ALLOWED_PREFIXES = ["/tasks", "/shopping", "/notes", "/pets"];
+const NAV_ALLOWED_PREFIXES = [
+  "/tasks",
+  "/shopping",
+  "/notes",
+  "/pets",
+  "/habits",
+  "/portfel",
+  "/kitchen",
+  "/flota",
+  "/magazynowanie",
+  "/health",
+  "/languages",
+  "/wiadomosci",
+  "/pogoda",
+  "/reports",
+];
 
 function sanitizeNavUrl(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
@@ -219,10 +281,28 @@ export async function POST(req: NextRequest) {
     messages?: ChatMessage[]; // transkrypt dialogu (bez system) do wznowienia
     clarifyAnswer?: string;
     refine?: string; // uwagi użytkownika do zaproponowanego planu — przeplanuj
+    history?: ChatMessage[]; // wcześniejsze tury rozmowy (poziom wyświetlania) do kontekstu wielo-turowego
   };
 
   // Zbuduj konwersację. System prompt zawsze budujemy po stronie serwera (nie ufamy klientowi).
   const messages: ChatMessage[] = [{ role: "system", content: buildSystemPrompt() }];
+
+  // Higiena kontekstu: wstrzykujemy tylko ostatnie N wiadomości historii (user/assistant),
+  // żeby długie rozmowy nie rozsadziły okna tokenów modelu.
+  function pushTrimmedHistory() {
+    const hist = (body.history ?? []).filter(
+      (m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim()
+    );
+    const recent = hist.slice(-MAX_HISTORY_MESSAGES);
+    if (recent.length) {
+      messages.push({
+        role: "user",
+        content:
+          "Kontekst wcześniejszej rozmowy (dla ciągłości — NIE odpowiadaj na to ponownie):\n" +
+          recent.map((m) => `${m.role === "user" ? "Użytkownik" : "Asystent"}: ${m.content}`).join("\n"),
+      });
+    }
+  }
 
   if (body.messages?.length) {
     // Wznowienie po doprecyzowaniu: dołącz dialog klienta (pomijając ewentualny system) + odpowiedź użytkownika.
@@ -246,6 +326,8 @@ export async function POST(req: NextRequest) {
   } else {
     const text = body.text?.trim();
     if (!text) return NextResponse.json({ error: "Empty text" }, { status: 400 });
+
+    pushTrimmedHistory();
 
     const today = body.today ?? new Date().toISOString();
     const context = body.context?.length ? body.context : [...MODULES];
@@ -312,13 +394,21 @@ export async function POST(req: NextRequest) {
       const rawTools = Array.isArray(parsed.tools) ? parsed.tools.slice(0, MAX_TOOLS_PER_TURN) : [];
       const toolCalls = rawTools
         .map((t) => t as { tool?: string; args?: Record<string, unknown> })
-        .filter((t) => t.tool && (READ_TOOL_NAMES as readonly string[]).includes(t.tool));
+        .filter((t) => t.tool && ((READ_TOOL_NAMES as readonly string[]).includes(t.tool) || t.tool === "web_search"));
 
       const results: { tool: string; args: Record<string, unknown>; data: unknown; error?: string }[] = [];
       for (const call of toolCalls) {
         try {
-          const data = await runReadTool(call.tool!, call.args ?? {}, userId);
-          results.push({ tool: call.tool!, args: call.args ?? {}, data });
+          // web_search działa poza zakresem własności użytkownika (dane publiczne z internetu).
+          if (call.tool === "web_search") {
+            const query = typeof call.args?.query === "string" ? call.args.query : "";
+            const limit = typeof call.args?.limit === "number" ? Math.min(8, Math.max(1, call.args.limit)) : 5;
+            const data = query.trim() ? await webSearch(query, limit) : [];
+            results.push({ tool: call.tool, args: call.args ?? {}, data });
+          } else {
+            const data = await runReadTool(call.tool!, call.args ?? {}, userId);
+            results.push({ tool: call.tool!, args: call.args ?? {}, data });
+          }
         } catch (e) {
           results.push({ tool: call.tool!, args: call.args ?? {}, data: null, error: e instanceof Error ? e.message : "błąd" });
         }
@@ -353,6 +443,18 @@ export async function POST(req: NextRequest) {
       const answer = typeof parsed.answer === "string" ? parsed.answer : "Brak odpowiedzi.";
       log.push({ iter, step, thought });
       return NextResponse.json({ step: "answer", answer, thought, log });
+    }
+
+    if (step === "report") {
+      const title =
+        typeof parsed.title === "string" && parsed.title.trim() ? parsed.title.trim() : "Raport z asystenta";
+      const content = typeof parsed.content === "string" ? parsed.content : "";
+      if (!content.trim()) {
+        messages.push({ role: "user", content: "Pusty raport. Zwróć pełny markdown w polu content." });
+        continue;
+      }
+      log.push({ iter, step, thought });
+      return NextResponse.json({ step: "report", title, content, thought, log });
     }
 
     if (step === "navigate") {

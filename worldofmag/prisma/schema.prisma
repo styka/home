@@ -43,6 +43,7 @@ model User {
   userRoles              UserRole[]
   ownedNotes             Note[]                @relation("OwnedNotes")
   reports                Report[]              @relation("AuthoredReports")
+  aiConversations        AiConversation[]      @relation("AiConversations")
   qaScenarios            QaTestScenario[]      @relation("QaAuthored")
   recipes                Recipe[]              @relation("OwnedRecipes")
   cookbooks              Cookbook[]            @relation("OwnedCookbooks")
@@ -595,6 +596,36 @@ model Report {
   @@index([category, createdAt])
   @@index([authorId])
   @@index([teamId])
+}
+
+// Asystent AI ("magiczna ikona") — trwała pamięć rozmów per-user.
+model AiConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String   @default("Nowa rozmowa")
+  // Krótkie podsumowanie starszych tur — wysyłane do LLM zamiast pełnej historii
+  // (higiena kontekstu w długich rozmowach).
+  summary   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User        @relation("AiConversations", fields: [userId], references: [id], onDelete: Cascade)
+  messages  AiMessage[]
+
+  @@index([userId, updatedAt])
+}
+
+model AiMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String // "user" | "assistant" (TS union — bez enuma, zgodnie z regułą SQLite)
+  content        String // markdown (asystent) / tekst (użytkownik)
+  // Sidecar do odtworzenia kart w UI bez ponownego uruchamiania agenta.
+  kind           String   @default("text") // "text" | "plan" | "report" | "navigate" | "clarify" | "results"
+  data           Json? // actions[] | szkic raportu | cel nawigacji | log rozumowania
+  createdAt      DateTime @default(now())
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }
 
 // ─── Kitchen / Recipes ────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ node_modules/
 dev.db
 dev.db-journal
 .env.local
+.env
 *.tsbuildinfo
 
 # Playwright E2E

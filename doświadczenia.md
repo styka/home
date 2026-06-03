@@ -4,6 +4,13 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-03 — Asystent-czat: lokalny build (SQLite vs Postgres) + higiena kontekstu
+**Problem:** Przy rozbudowie „magicznej ikony" do pełnego czatu pojawiły się dwa wyboje. (1) `prisma db push` z `.env.local` (file:./dev.db) padał: `Environment variable not found: DIRECT_URL` oraz `Datasource db: PostgreSQL` — Prisma CLI czyta `.env` (nie `.env.local`), a datasource jest na sztywno `postgresql`, więc lokalnie nie da się ot tak pushnąć SQLite. (2) Pełna historia rozmowy wstrzykiwana do LLM w każdej turze grozi przepełnieniem okna kontekstu (Groq llama-3.3-70b ≈ 32k).
+**Rozwiązanie:** (1) Do samego typecheck/buildu wystarczy `npx prisma generate` (nie łączy się z bazą) + atrapa `DATABASE_URL`/`DIRECT_URL` w `.env`. Schemat rozmów (`AiConversation`/`AiMessage`) wjeżdża na prod migracją Postgres (`0078_…`, idempotentną przez `DO $$ … EXCEPTION WHEN duplicate_object`), bo `migrate.js` z `npm run build` rusza dopiero po `next build`. Build weryfikujemy `npx next build` (bez kroku migrate na prod DB). (2) Do agenta przekazujemy tylko ostatnie `MAX_HISTORY_MESSAGES` tur (poziom wyświetlania), a nie surowy transkrypt narzędzi — historia żyje w DB, do modelu idzie przycięty kontekst.
+**Lekcja:** `npm run build` w tym repo dotyka prod DB (migrate.js) — do lokalnej weryfikacji używaj `npx tsc --noEmit` + `npx next build`. Prisma CLI ≠ Next.js w kwestii plików env. Persystencję rozmowy trzymaj w bazie, ale do LLM zawsze wysyłaj przycięte, zwięzłe okno — nie cały transkrypt.
+
+---
+
 ## 2026-06-03 — Mikrofon (dyktowanie) nie wyłącza się po zatwierdzeniu/wyjściu z pola
 **Problem:** W `QuickNoteBar` i `NoteRow` przycisk mikrofonu żyje wewnątrz sekcji warunkowej (`expanded` / tryb edycji). Zatwierdzenie (zapis notatki), Anuluj i Escape zwijały/zamykały tę sekcję, ale **nie zatrzymywały obiektu `SpeechRecognition`** — nagrywanie leciało dalej, a przycisk Stop znikał z DOM. Użytkownik musiał ponownie wejść w to samo miejsce, włączyć i wyłączyć mikrofon, żeby go w końcu uciszyć. `SmartTextarea` nie zatrzymywał dyktowania przy Ctrl+Enter ani przy unmount.
 **Rozwiązanie:** Dyktowanie zatrzymujemy w punkcie, w którym znika UI mikrofonu: `reset()` w `QuickNoteBar` woła `stopVoiceInput()`; w `NoteRow` `handleSave()` woła `stopVoiceInput()` + efekt `useEffect` zatrzymujący `recognition` gdy `isEditing` zejdzie na false (łapie Anuluj/Escape); `SmartTextarea` przy Ctrl+Enter najpierw `stopRecording()`. Dodatkowo każdy z komponentów ma efekt cleanup na unmount (`useEffect(() => () => recognitionRef.current?.stop(), [])`). W `NoteRow` zapisaliśmy też `recognitionRef.current = rec` w `startVoiceEdit`, żeby cleanup go obejmował.

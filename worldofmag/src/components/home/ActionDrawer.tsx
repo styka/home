@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, ShoppingCart, CheckSquare, FileText, PawPrint, Boxes, Wallet, Fuel, ChefHat, Repeat, Wand2, CheckCircle, XCircle, Loader2, Square, CheckSquare2, ChevronDown, ChevronUp } from "lucide-react";
+import { X, ShoppingCart, CheckSquare, FileText, PawPrint, Boxes, Wallet, Fuel, ChefHat, Repeat, Wand2, CheckCircle, XCircle, Loader2, Square, CheckSquare2, ChevronDown, ChevronUp, HeartPulse, Languages, Newspaper, CloudSun } from "lucide-react";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
 import type { ActionResult } from "@/app/api/llm/home/execute/route";
 
@@ -17,7 +17,16 @@ interface ActionDrawerProps {
 }
 
 // Akcje destrukcyjne — domyślnie ODZNACZONE i oznaczone na czerwono (świadomy opt-in).
-const DESTRUCTIVE_TYPES = new Set(["delete_item", "delete_task", "delete_note", "archive_list"]);
+const DESTRUCTIVE_TYPES = new Set([
+  "delete_item",
+  "delete_task",
+  "delete_note",
+  "archive_list",
+  "delete_health_event",
+  "delete_word",
+  "delete_news_topic",
+  "delete_weather_location",
+]);
 const ID_KEY = /Id$/;
 
 function moduleIcon(module: string) {
@@ -29,6 +38,11 @@ function moduleIcon(module: string) {
   if (module === "flota") return <Fuel size={15} />;
   if (module === "kitchen") return <ChefHat size={15} />;
   if (module === "habits") return <Repeat size={15} />;
+  if (module === "health") return <HeartPulse size={15} />;
+  if (module === "languages") return <Languages size={15} />;
+  if (module === "news") return <Newspaper size={15} />;
+  if (module === "weather") return <CloudSun size={15} />;
+  if (module === "reports") return <FileText size={15} />;
   return <FileText size={15} />;
 }
 
@@ -41,6 +55,10 @@ function moduleColor(module: string) {
   if (module === "flota") return "var(--accent-blue)";
   if (module === "kitchen") return "var(--accent-amber)";
   if (module === "habits") return "var(--accent-purple)";
+  if (module === "health") return "var(--accent-red)";
+  if (module === "languages") return "var(--accent-blue)";
+  if (module === "news") return "var(--accent-amber)";
+  if (module === "weather") return "var(--accent-blue)";
   return "var(--accent-amber)";
 }
 
@@ -53,6 +71,11 @@ function moduleLabel(module: string) {
   if (module === "flota") return "Flota";
   if (module === "kitchen") return "Kuchnia";
   if (module === "habits") return "Nawyki";
+  if (module === "health") return "Zdrowie";
+  if (module === "languages") return "Języki";
+  if (module === "news") return "Wiadomości";
+  if (module === "weather") return "Pogoda";
+  if (module === "reports") return "Raport";
   return "Notatki";
 }
 

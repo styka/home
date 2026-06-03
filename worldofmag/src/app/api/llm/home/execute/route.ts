@@ -11,10 +11,18 @@ import { createNote, updateNote, deleteNote } from "@/actions/notes";
 import { toggleHabitDay } from "@/actions/habits";
 import { addEntry, getWalletElements } from "@/actions/portfel";
 import { setMealPlanEntry } from "@/actions/mealPlans";
-import { addFuelLog } from "@/actions/flota";
+import { addFuelLog, addServiceRecord } from "@/actions/flota";
 import { addStorageItem, adjustStorageQuantity } from "@/actions/storage";
+import { createHabit } from "@/actions/habits";
+import { createElement } from "@/actions/portfel";
+import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent } from "@/actions/health";
+import { createDeck, addWord, deleteWord } from "@/actions/languageDecks";
+import { addPantryItem } from "@/actions/pantry";
+import { createTopic, deleteTopic } from "@/actions/news";
+import { addLocationByName, deleteLocation } from "@/actions/weather";
+import { createUserReport } from "@/actions/reports";
 import type { AIAction } from "@/app/api/llm/home/interpret/route";
-import type { RecurringRule, TaskStatus, TaskPriority, ItemStatus } from "@/types";
+import type { RecurringRule, TaskStatus, TaskPriority, ItemStatus, HealthKind, HealthStatus } from "@/types";
 import { isoDate } from "@/lib/habitStats";
 
 function addDays(d: Date, days: number): Date {
@@ -410,6 +418,40 @@ async function resolveNoteId(userId: string, params: Record<string, unknown>, se
   return note.id;
 }
 
+async function resolveHealthEventId(userId: string, params: Record<string, unknown>, searchQuery?: string): Promise<string> {
+  const id = asStr(params.eventId);
+  const teamIds = await getUserTeamIds(userId);
+  const ownerOr = teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
+  if (id) {
+    const ev = await prisma.healthEvent.findFirst({ where: { OR: ownerOr, id } });
+    if (ev) return ev.id;
+  }
+  const ev = await prisma.healthEvent.findFirst({
+    where: { OR: ownerOr, title: { contains: searchQuery ?? "", mode: "insensitive" } },
+    orderBy: { scheduledAt: "desc" },
+  });
+  if (!ev) throw new Error(`Nie znaleziono wpisu zdrowia: "${searchQuery}"`);
+  return ev.id;
+}
+
+async function resolveDeckId(userId: string, params: Record<string, unknown>, deckName?: string): Promise<string> {
+  const id = asStr(params.deckId);
+  const teamIds = await getUserTeamIds(userId);
+  const ownerOr = teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
+  if (id) {
+    const d = await prisma.languageDeck.findFirst({ where: { OR: ownerOr, id } });
+    if (d) return d.id;
+  }
+  const name = deckName ?? asStr(params.deckName);
+  if (name) {
+    const d = await prisma.languageDeck.findFirst({ where: { OR: ownerOr, name: { contains: name, mode: "insensitive" } } });
+    if (d) return d.id;
+  }
+  const first = await prisma.languageDeck.findFirst({ where: { OR: ownerOr }, orderBy: { updatedAt: "desc" } });
+  if (!first) throw new Error("Brak talii fiszek — utwórz najpierw talię");
+  return first.id;
+}
+
 async function executeAction(
   action: AIAction,
   userId: string,
@@ -705,6 +747,194 @@ async function executeAction(
       const updated = await adjustStorageQuantity(item.id, delta, delta > 0 ? "przyjęcie" : "wydanie", "AI");
       return `${delta > 0 ? "Przyjęto" : "Wydano"} ${Math.abs(delta)} — ${item.name} (stan: ${updated.quantity ?? 0})`;
     }
+  }
+
+  // ── Nawyki (tworzenie) ──────────────────────────────────────────────────────
+  if (module === "habits" && type === "create_habit") {
+    const name = asStr(params.name);
+    if (!name) throw new Error("Podaj nazwę nawyku");
+    const habit = await createHabit({
+      name,
+      description: asStr(params.description) ?? null,
+      icon: asStr(params.icon),
+    });
+    return `Utworzono nawyk „${habit.name}"`;
+  }
+
+  // ── Kuchnia (spiżarnia) ──────────────────────────────────────────────────────
+  if (module === "kitchen" && type === "add_pantry_item") {
+    const name = asStr(params.name);
+    if (!name) throw new Error("Podaj nazwę produktu");
+    const item = await addPantryItem({
+      name,
+      quantity: params.quantity != null ? Number(params.quantity) : null,
+      unit: asStr(params.unit) ?? null,
+      expiresAt: params.expiresAt ? new Date(String(params.expiresAt)) : null,
+    });
+    return `Dodano do spiżarni: ${item.name}`;
+  }
+
+  // ── Portfel (nowy element) ───────────────────────────────────────────────────
+  if (module === "portfel" && type === "create_wallet_element") {
+    const name = asStr(params.name);
+    if (!name) throw new Error("Podaj nazwę elementu portfela");
+    const el = await createElement({
+      name,
+      kind: asStr(params.kind),
+      initialBalance: params.initialBalance != null ? Number(params.initialBalance) : 0,
+    });
+    return `Utworzono element portfela „${el.name}"`;
+  }
+
+  // ── Flota (serwis) ───────────────────────────────────────────────────────────
+  if (module === "flota" && type === "add_service_record") {
+    const teamIds = await getUserTeamIds(userId);
+    const vehicleName = asStr(params.vehicleName);
+    const vehicle = await prisma.vehicle.findFirst({
+      where: {
+        OR: [{ ownerId: userId }, teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" }],
+        ...(vehicleName ? { name: { contains: vehicleName, mode: "insensitive" } } : {}),
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+    if (!vehicle) throw new Error("Nie znaleziono pojazdu w Flocie");
+    await addServiceRecord(vehicle.id, {
+      type: asStr(params.serviceType) ?? "other",
+      cost: params.cost != null ? Number(params.cost) : null,
+      odometer: params.odometer != null ? Number(params.odometer) : null,
+      note: asStr(params.note) ?? null,
+    });
+    return `Dodano wpis serwisowy — ${vehicle.name}`;
+  }
+
+  // ── Zdrowie ──────────────────────────────────────────────────────────────────
+  if (module === "health") {
+    if (type === "create_health_event") {
+      const title = asStr(params.title);
+      if (!title) throw new Error("Podaj tytuł wizyty/badania");
+      const kind = (asStr(params.kind) === "TEST" ? "TEST" : "VISIT") as HealthKind;
+      const scheduledAt = params.scheduledAt ? new Date(String(params.scheduledAt)) : new Date();
+      const ev = await createHealthEvent({
+        kind,
+        title,
+        scheduledAt,
+        doctorName: asStr(params.doctorName) ?? null,
+        specialty: asStr(params.specialty) ?? null,
+        facility: asStr(params.facility) ?? null,
+        notes: asStr(params.notes) ?? null,
+      });
+      const msg = `Dodano ${kind === "TEST" ? "badanie" : "wizytę"}: „${ev.title}"`;
+      if (params.openAfter === true) return { message: msg, navigateTo: `/health`, navigateLabel: "Otwórz Zdrowie" };
+      return msg;
+    }
+    if (type === "update_health_event") {
+      const id = await resolveHealthEventId(userId, params, searchQuery);
+      const patch: Parameters<typeof updateHealthEvent>[1] = {};
+      if (params.title !== undefined) patch.title = String(params.title);
+      if (params.scheduledAt !== undefined) patch.scheduledAt = new Date(String(params.scheduledAt));
+      if (params.notes !== undefined) patch.notes = asStr(params.notes) ?? null;
+      if (params.status !== undefined) patch.status = String(params.status) as HealthStatus;
+      await updateHealthEvent(id, patch);
+      return `Zaktualizowano wpis zdrowia`;
+    }
+    if (type === "set_health_status") {
+      const id = await resolveHealthEventId(userId, params, searchQuery);
+      const status = (asStr(params.status) ?? "DONE") as HealthStatus;
+      await setHealthStatus(id, status);
+      return `Zmieniono status wpisu zdrowia → ${status}`;
+    }
+    if (type === "delete_health_event") {
+      const id = await resolveHealthEventId(userId, params, searchQuery);
+      await deleteHealthEvent(id);
+      return `Usunięto wpis zdrowia`;
+    }
+  }
+
+  // ── Języki (fiszki) ──────────────────────────────────────────────────────────
+  if (module === "languages") {
+    if (type === "create_deck") {
+      const name = asStr(params.name);
+      if (!name) throw new Error("Podaj nazwę talii");
+      const deck = await createDeck({
+        name,
+        nativeLang: asStr(params.nativeLang) ?? "polski",
+        targetLang: asStr(params.targetLang) ?? "angielski",
+      });
+      return `Utworzono talię „${deck.name}"`;
+    }
+    if (type === "add_word") {
+      const term = asStr(params.term);
+      const translation = asStr(params.translation);
+      if (!term || !translation) throw new Error("Podaj słówko i tłumaczenie");
+      const deckId = await resolveDeckId(userId, params, asStr(params.deckName));
+      const card = await addWord(deckId, { term, translation, example: asStr(params.example) ?? null });
+      return `Dodano fiszkę „${card.term}" → „${card.translation}"`;
+    }
+    if (type === "delete_word") {
+      const id = asStr(params.wordId);
+      if (!id) throw new Error("Wskaż fiszkę do usunięcia");
+      await deleteWord(id);
+      return `Usunięto fiszkę`;
+    }
+  }
+
+  // ── Wiadomości (tematy) ──────────────────────────────────────────────────────
+  if (module === "news") {
+    if (type === "create_news_topic") {
+      const title = asStr(params.title);
+      if (!title) throw new Error("Podaj tytuł tematu");
+      const topic = await createTopic({ title, semanticFilter: asStr(params.semanticFilter) ?? title });
+      const msg = `Utworzono temat wiadomości „${title}"`;
+      if (params.openAfter === true) return { message: msg, navigateTo: `/wiadomosci`, navigateLabel: "Otwórz Wiadomości" };
+      return msg;
+    }
+    if (type === "delete_news_topic") {
+      const id = asStr(params.topicId);
+      let topicId = id;
+      if (!topicId && searchQuery) {
+        const t = await prisma.newsTopic.findFirst({
+          where: { ownerId: userId, title: { contains: searchQuery, mode: "insensitive" } },
+        });
+        topicId = t?.id;
+      }
+      if (!topicId) throw new Error(`Nie znaleziono tematu: "${searchQuery}"`);
+      await deleteTopic(topicId);
+      return `Usunięto temat wiadomości`;
+    }
+  }
+
+  // ── Pogoda (lokalizacje) ──────────────────────────────────────────────────────
+  if (module === "weather") {
+    if (type === "add_weather_location") {
+      const name = asStr(params.name);
+      if (!name) throw new Error("Podaj nazwę miejscowości");
+      const loc = await addLocationByName(name);
+      const msg = `Dodano lokalizację pogodową „${loc.label ?? name}"`;
+      if (params.openAfter === true) return { message: msg, navigateTo: `/pogoda`, navigateLabel: "Otwórz Pogodę" };
+      return msg;
+    }
+    if (type === "delete_weather_location") {
+      const id = asStr(params.locationId);
+      let locId = id;
+      if (!locId && searchQuery) {
+        const l = await prisma.weatherLocation.findFirst({
+          where: { ownerId: userId, label: { contains: searchQuery, mode: "insensitive" } },
+        });
+        locId = l?.id;
+      }
+      if (!locId) throw new Error(`Nie znaleziono lokalizacji: "${searchQuery}"`);
+      await deleteLocation(locId);
+      return `Usunięto lokalizację pogodową`;
+    }
+  }
+
+  // ── Raporty (zapis wyniku / sesji) ────────────────────────────────────────────
+  if (module === "reports" && type === "save_report") {
+    const title = asStr(params.title) ?? "Raport z asystenta";
+    const content = asStr(params.content) ?? String(params.content ?? "");
+    if (!content.trim()) throw new Error("Pusta treść raportu");
+    const report = await createUserReport({ title, content });
+    return { message: `Zapisano raport „${title}"`, navigateTo: `/reports/${report.slug}`, navigateLabel: "Otwórz raport" };
   }
 
   throw new Error(`Nieznany typ akcji: ${module}/${type}`);

@@ -6,7 +6,21 @@ import { PET_ACTIONS_PROMPT, PET_ACTION_EXAMPLES } from "@/lib/ai/petActions";
 
 export interface AIAction {
   id: string;
-  module: "shopping" | "tasks" | "notes" | "pets" | "habits" | "portfel" | "kitchen" | "flota" | "magazynowanie";
+  module:
+    | "shopping"
+    | "tasks"
+    | "notes"
+    | "pets"
+    | "habits"
+    | "portfel"
+    | "kitchen"
+    | "flota"
+    | "magazynowanie"
+    | "health"
+    | "languages"
+    | "news"
+    | "weather"
+    | "reports";
   description: string;
   type: string;
   params: Record<string, unknown>;
