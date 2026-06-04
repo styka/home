@@ -196,6 +196,21 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     [statusConfig]
   );
 
+  // Zadania faktycznie widoczne w bieżącej zakładce — to samo filtrowanie co w TaskList
+  // (status zakładki + tagi, na bazie wyników wyszukiwania). Używane przez przycisk
+  // „Kopiuj prompt dla Claude", żeby kopiował dokładnie to, co admin ma przed sobą,
+  // a nie wszystkie aktywne zadania listy.
+  const visibleTasks = useMemo(() => {
+    const byStatus =
+      activeFilter === "ALL"
+        ? displayedTasks.filter((t) => t.status !== "DONE" && t.status !== "CANCELLED")
+        : displayedTasks.filter((t) => t.status === activeFilter);
+    if (selectedTagIds.length === 0) return byStatus;
+    return byStatus.filter((t) =>
+      selectedTagIds.every((tid) => t.tags?.some((tt) => tt.tag.id === tid))
+    );
+  }, [displayedTasks, activeFilter, selectedTagIds]);
+
   const filteredForNav = displayedTasks;
 
   function navigateDown() {
@@ -388,8 +403,8 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             </button>
           )}
 
-          {/* Admin: skopiuj prompt dla Claude Code z zadaniami tej konkretnej listy */}
-          {isAdmin && <TaskListClipboardButton tasks={tasks} />}
+          {/* Admin: skopiuj prompt dla Claude Code z zadaniami widocznymi w tej zakładce */}
+          {isAdmin && <TaskListClipboardButton tasks={visibleTasks} />}
 
           {/* Akcje projektu (zmień nazwę / usuń) — dostępne na dotyku i myszą */}
           {viewMode === "project" && (() => {
