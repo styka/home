@@ -533,8 +533,12 @@ async function executeAction(
     if (type === "update_item_status") {
       const status = (asStr(params.status) ?? "DONE") as ItemStatus;
       const id = await resolveItemId(userId, params, searchQuery);
+      const before = await prisma.item.findUnique({ where: { id }, select: { status: true } });
       const item = await updateItemStatus(id, status);
-      return `Zaktualizowano status "${item.name}" → ${status}`;
+      const undo = before
+        ? { ...undoAction("shopping", "update_item_status", { itemId: id, status: before.status }, `Przywróć status "${item.name}" → ${before.status}`), searchQuery: item.name }
+        : undefined;
+      return { message: `Zaktualizowano status "${item.name}" → ${status}`, undo };
     }
 
     if (type === "update_item") {
@@ -571,8 +575,12 @@ async function executeAction(
     if (type === "rename_list") {
       const id = await resolveListId(userId, params, searchQuery, activeListId);
       const name = asStr(params.name) ?? "Lista";
+      const before = await prisma.shoppingList.findUnique({ where: { id }, select: { name: true } });
       const list = await renameList(id, name);
-      return `Zmieniono nazwę listy na "${list.name}"`;
+      const undo = before
+        ? { ...undoAction("shopping", "rename_list", { listId: id, name: before.name }, `Przywróć nazwę listy → "${before.name}"`), searchQuery: name }
+        : undefined;
+      return { message: `Zmieniono nazwę listy na "${list.name}"`, undo };
     }
 
     if (type === "archive_list") {
@@ -606,21 +614,30 @@ async function executeAction(
 
     if (type === "update_task") {
       const id = await resolveTaskId(userId, params, searchQuery);
+      const before = await prisma.task.findUnique({ where: { id }, select: { title: true, description: true, priority: true, status: true, dueDate: true } });
       const patch: Parameters<typeof updateTask>[1] = {};
-      if (params.title !== undefined) patch.title = String(params.title);
-      if (params.description !== undefined) patch.description = asStr(params.description) ?? null;
-      if (params.priority !== undefined) patch.priority = String(params.priority) as TaskPriority;
-      if (params.status !== undefined) patch.status = String(params.status) as TaskStatus;
-      if (params.dueDate !== undefined) patch.dueDate = params.dueDate ? new Date(String(params.dueDate)) : null;
+      const undoParams: Record<string, unknown> = { taskId: id };
+      if (params.title !== undefined) { patch.title = String(params.title); undoParams.title = before?.title ?? ""; }
+      if (params.description !== undefined) { patch.description = asStr(params.description) ?? null; undoParams.description = before?.description ?? null; }
+      if (params.priority !== undefined) { patch.priority = String(params.priority) as TaskPriority; undoParams.priority = before?.priority; }
+      if (params.status !== undefined) { patch.status = String(params.status) as TaskStatus; undoParams.status = before?.status; }
+      if (params.dueDate !== undefined) { patch.dueDate = params.dueDate ? new Date(String(params.dueDate)) : null; undoParams.dueDate = before?.dueDate?.toISOString() ?? null; }
       const task = await updateTask(id, patch);
-      return `Zaktualizowano zadanie "${task.title}"`;
+      const undo = before
+        ? { ...undoAction("tasks", "update_task", undoParams, `Cofnij zmiany w zadaniu "${task.title}"`), searchQuery: task.title }
+        : undefined;
+      return { message: `Zaktualizowano zadanie "${task.title}"`, undo };
     }
 
     if (type === "update_task_status") {
       const id = await resolveTaskId(userId, params, searchQuery);
       const status = (asStr(params.status) ?? "DONE") as TaskStatus;
+      const before = await prisma.task.findUnique({ where: { id }, select: { status: true } });
       const task = await updateTask(id, { status });
-      return `Zmieniono status "${task.title}" → ${status}`;
+      const undo = before
+        ? { ...undoAction("tasks", "update_task_status", { taskId: id, status: before.status }, `Przywróć status "${task.title}" → ${before.status}`), searchQuery: task.title }
+        : undefined;
+      return { message: `Zmieniono status "${task.title}" → ${status}`, undo };
     }
 
     if (type === "shift_task_due_date") {
@@ -629,7 +646,9 @@ async function executeAction(
       const existing = await prisma.task.findUnique({ where: { id }, select: { dueDate: true } });
       const newDate = addDays(existing?.dueDate ?? new Date(), days);
       const task = await updateTask(id, { dueDate: newDate });
-      return `Przesunięto termin "${task.title}" o ${days > 0 ? "+" : ""}${days} dni`;
+      // Cofnięcie = przesunięcie o przeciwną liczbę dni (od nowego terminu wróci na stary).
+      const undo = { ...undoAction("tasks", "shift_task_due_date", { taskId: id, days: -days }, `Cofnij przesunięcie terminu "${task.title}"`), searchQuery: task.title };
+      return { message: `Przesunięto termin "${task.title}" o ${days > 0 ? "+" : ""}${days} dni`, undo };
     }
 
     if (type === "delete_task") {
@@ -673,11 +692,16 @@ async function executeAction(
 
     if (type === "update_note") {
       const id = await resolveNoteId(userId, params, searchQuery);
+      const before = await prisma.note.findUnique({ where: { id }, select: { title: true, content: true } });
       const patch: Parameters<typeof updateNote>[1] = {};
-      if (params.title !== undefined) patch.title = String(params.title);
-      if (params.content !== undefined) patch.content = String(params.content);
+      const undoParams: Record<string, unknown> = { noteId: id };
+      if (params.title !== undefined) { patch.title = String(params.title); undoParams.title = before?.title ?? ""; }
+      if (params.content !== undefined) { patch.content = String(params.content); undoParams.content = before?.content ?? ""; }
       const note = await updateNote(id, patch);
-      return `Zaktualizowano notatkę "${note.title}"`;
+      const undo = before
+        ? { ...undoAction("notes", "update_note", undoParams, `Cofnij zmiany w notatce "${note.title}"`), searchQuery: note.title }
+        : undefined;
+      return { message: `Zaktualizowano notatkę "${note.title}"`, undo };
     }
 
     if (type === "delete_note") {
@@ -1010,8 +1034,13 @@ async function executeAction(
   if (module === "shopping") {
     if (type === "delete_list") {
       const id = await resolveListId(userId, params, searchQuery, activeListId);
+      const meta = await prisma.shoppingList.findUnique({ where: { id }, select: { name: true, _count: { select: { items: true } } } });
       await deleteList(id);
-      return `Usunięto listę zakupów`;
+      const n = meta?._count.items ?? 0;
+      // Ostrzeżenie post-hoc: jawnie mówimy, ile pozycji zniknęło wraz z listą.
+      return n > 0
+        ? `Usunięto listę "${meta?.name ?? ""}" wraz z ${n} ${n === 1 ? "pozycją" : "pozycjami"}`
+        : `Usunięto pustą listę "${meta?.name ?? ""}"`;
     }
     if (type === "clear_done_items") {
       const id = await resolveListId(userId, params, searchQuery, activeListId);
@@ -1043,8 +1072,12 @@ async function executeAction(
     }
     if (type === "delete_project") {
       const id = await resolveProject();
+      const meta = await prisma.taskProject.findUnique({ where: { id }, select: { name: true, _count: { select: { tasks: true } } } });
       await deleteTaskProject(id);
-      return `Usunięto projekt`;
+      const n = meta?._count.tasks ?? 0;
+      return n > 0
+        ? `Usunięto projekt "${meta?.name ?? ""}" wraz z ${n} ${n === 1 ? "zadaniem" : "zadaniami"}`
+        : `Usunięto pusty projekt "${meta?.name ?? ""}"`;
     }
   }
 
