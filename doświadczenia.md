@@ -4,6 +4,18 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-04 — Polski cudzysłów „…" w stringu JS rozwala build (swc: „Expected unicode escape")
+**Problem:** Dwukrotnie przy edycji promptów/tekstów wstawiłem `„tekst"` w środku stringa JS w podwójnych cudzysłowach (`"… „od czego zacząć".\n"`). Prosty `"` (U+0022) po polskim otwierającym `„` PRZEDWCZEŚNIE zamyka string, a dalszy `\n` daje błąd składni `Expected unicode escape`. swc wskazywał mylną linię (np. 9:1 albo środek innego stringa), co utrudniało namiar.
+**Rozwiązanie:** W literałach JS używaj polskiego cudzysłowu zamykającego `”` (U+201D), nie prostego `"`: `„od czego zacząć”`. Alternatywnie escape `\"` albo backticki. Przy zagadkowym „Expected unicode escape"/„Syntax Error" w pliku z polskim tekstem szukaj prostego `"` wewnątrz `"…"`.
+**Lekcja:** Polski tekst w stringach JS = pole minowe na proste cudzysłowy. Trzymaj się pary `„ … ”` (curly) w treści, a `"` rezerwuj na granice stringa. To powtórka — wpisane, by nie tracić czasu trzeci raz.
+
+## 2026-06-04 — Rozrost asystenta: katalog akcji vs executor i odchudzanie promptu
+**Problem:** „Magiczna ikona" ma ~90 akcji opisanych w wielkim stringu-katalogu (`agent/route.ts`) i wykonywanych łańcuchem `if` (`execute/route.ts`) — utrzymywane w dwóch miejscach, łatwo o rozjazd (agent proponuje akcję, której executor nie zna → „Nieznany typ akcji" w runtime). Dodatkowo cały katalog (~4k tokenów) leciał w KAŻDEJ iteracji pętli, podbijając koszt/latencję.
+**Rozwiązanie:** (1) `scripts/check-action-coverage.js` w buildzie pilnuje, że każdy typ z katalogu ma obsługę w executorze (statycznie, bez DB). (2) Katalog rozbity per-moduł + tani router (op „dispatch") wybiera moduły istotne dla polecenia i wstrzykuje tylko ich sekcje. KLUCZOWE: router ma fallback do pełnego katalogu (błąd/pusto/≤3 moduły) i zawsze dorzuca moduł podstawowy — w najgorszym razie zachowanie = jak przed zmianą (zero regresji).
+**Lekcja:** Gdy dwie powierzchnie (prompt-katalog i dispatcher) muszą być zgodne — dodaj tani guard w buildzie, nie licz na pamięć. Optymalizując prompt LLM przez „selekcję kontekstu", zawsze zostaw bezpieczny fallback do pełnego kontekstu, żeby błąd selekcji nie psuł funkcji, a jedynie nie dawał oszczędności.
+
+---
+
 ## 2026-06-03 — Magiczna ikona pokazywała surowe id w parametrach akcji (tryb agenta)
 **Problem:** Zgłoszenie dotyczyło starej (sprzed przebudowy) magicznej ikony: dodanie produktu do listy zakupów pokazywało akcję z parametrem `id`, który nic nie mówi użytkownikowi. Weryfikacja obecnej implementacji: tryb prosty (`interpret`→`execute`) jest czysty — prompt emituje wyłącznie nazwy (`listName`, `projectName`, `vehicleName`, …) + `searchQuery`, a backend rozwiązuje je na id. ALE tryb **agenta** (`/api/llm/home/agent`) wciąż mógł odtworzyć ten błąd: `ACTION_CATALOG` jawnie instruował model, by „CELOWAĆ w konkretne rekordy przez id z wyników (taskId/itemId/noteId/listId)", a te surowe cuid trafiały do `ActionDrawer` i były pokazywane użytkownikowi (read-only, ale wciąż nieczytelne).
 **Rozwiązanie:** Nie tykamy backendu (resolvery id-first z fallbackiem po nazwie są zweryfikowane pod kątem bezpieczeństwa — id z klienta nigdy nie jest ufane, Server Action asertuje dostęp). Zamiast tego: (1) `ActionDrawer` w ogóle nie renderuje parametrów `*Id` — i tak przechodzą dalej do backendu dla precyzyjnego namiaru, więc nic nie tracimy, a użytkownik nie widzi śmieci; (2) prompt agenta każe dla każdej akcji celującej w istniejący rekord ZAWSZE wypełnić czytelny `searchQuery` (nazwa/tytuł) obok opcjonalnego id — to ten tekst widzi użytkownik. Precyzja namiaru zachowana, czytelność naprawiona.
