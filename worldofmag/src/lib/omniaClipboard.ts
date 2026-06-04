@@ -1,10 +1,9 @@
-"use client";
+// Wspólna logika „skopiuj prompt dla Claude Code" — używana przez przyciski na
+// listach zadań. Prompt + JSON zadań trafia do schowka i jest gotowy do wklejenia
+// w Claude Code. Trzymane w lib (a nie w komponencie), bo korzysta z tego więcej
+// niż jeden przycisk i chcemy jeden, spójny tekst promptu.
 
-import { useState } from "react";
-import { ClipboardCopy, Check, Loader2, AlertCircle } from "lucide-react";
-import { getOmniaTasksForClipboard } from "@/actions/admin-tools";
-
-const LLM_PROMPT = `Jesteś Claude Code — zaawansowanym agentem AI z dostępem do kodu aplikacji WorldOfMag (Omnia), osobistego systemu zarządzania życiem i pracą developera.
+export const OMNIA_LLM_PROMPT = `Jesteś Claude Code — zaawansowanym agentem AI z dostępem do kodu aplikacji WorldOfMag (Omnia), osobistego systemu zarządzania życiem i pracą developera.
 
 Poniżej znajduje się lista zadań zgłoszonych przez administratora projektu Omnia. Zadania mogą dotyczyć: napraw błędów, nowych funkcjonalności, poprawek UX, prac utrzymaniowych i refaktoryzacji.
 
@@ -59,9 +58,18 @@ Całościowy opis sesji implementacyjnej — ile zadań, główne obszary zmian,
 
 ## Zadania do realizacji`;
 
-type State = "idle" | "loading" | "copied" | "empty" | "error";
+// Sentinel wyrzucany przez producenta tekstu, gdy nie ma żadnych zadań do skopiowania.
+export const OMNIA_CLIPBOARD_EMPTY = "EMPTY";
 
-const EMPTY = "EMPTY";
+/** Składa pełny tekst „prompt + JSON zadań" gotowy do wklejenia w Claude Code. */
+export function buildOmniaPrompt(tasks: { title: string; description: string | null }[]): string {
+  const json = JSON.stringify(
+    tasks.map((t) => ({ tytuł: t.title, opis: t.description ?? "" })),
+    null,
+    2
+  );
+  return `${OMNIA_LLM_PROMPT}\n\n\`\`\`json\n${json}\n\`\`\``;
+}
 
 // Kopiowanie z tekstem dostarczanym leniwie (asynchronicznie).
 // Mobile (iOS Safari): writeText wywołany PO `await` traci aktywację użytkownika
@@ -70,7 +78,7 @@ const EMPTY = "EMPTY";
 // startuje synchronicznie w obrębie gestu, a przeglądarka dokleja tekst gdy będzie
 // gotowy, nie tracąc aktywacji. Desktop/Android: fallback na writeText, a dla
 // najstarszych przeglądarek — textarea + execCommand.
-async function copyLazy(producer: () => Promise<string>): Promise<void> {
+export async function copyLazy(producer: () => Promise<string>): Promise<void> {
   if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
     try {
       const item = new ClipboardItem({
@@ -81,7 +89,7 @@ async function copyLazy(producer: () => Promise<string>): Promise<void> {
     } catch (e) {
       // „Pusto" propagujemy bez prób fallbacku; resztę traktujemy jak brak wsparcia
       // Promise w ClipboardItem (starszy Chrome) i schodzimy niżej.
-      if (e instanceof Error && e.message === EMPTY) throw e;
+      if (e instanceof Error && e.message === OMNIA_CLIPBOARD_EMPTY) throw e;
     }
   }
 
@@ -103,107 +111,4 @@ async function copyLazy(producer: () => Promise<string>): Promise<void> {
   } finally {
     document.body.removeChild(ta);
   }
-}
-
-export function OmniaClipboardButton() {
-  const [state, setState] = useState<State>("idle");
-
-  async function handleCopy() {
-    setState("loading");
-
-    // Producent tekstu wołany w obrębie gestu (patrz copyLazy). Wynik cache'owany,
-    // by ewentualny fallback nie pobierał zadań po raz drugi. Pusta lista → sygnał EMPTY.
-    let cached: string | null = null;
-    let wasEmpty = false;
-    const producer = async () => {
-      if (cached !== null) return cached;
-      const tasks = await getOmniaTasksForClipboard();
-      if (tasks.length === 0) {
-        wasEmpty = true;
-        throw new Error(EMPTY);
-      }
-      const json = JSON.stringify(
-        tasks.map((t) => ({ tytuł: t.title, opis: t.description ?? "" })),
-        null,
-        2
-      );
-      cached = `${LLM_PROMPT}\n\n\`\`\`json\n${json}\n\`\`\``;
-      return cached;
-    };
-
-    try {
-      await copyLazy(producer);
-      setState("copied");
-      setTimeout(() => setState("idle"), 3000);
-    } catch {
-      setState(wasEmpty ? "empty" : "error");
-      setTimeout(() => setState("idle"), 3000);
-    }
-  }
-
-  const label: Record<State, string> = {
-    idle:    "Kopiuj prompt dla Claude Code",
-    loading: "Pobieranie zadań…",
-    copied:  "Skopiowano do schowka!",
-    empty:   "Brak otwartych zadań w Omnia",
-    error:   "Błąd — spróbuj ponownie",
-  };
-
-  const accentColor: Record<State, string> = {
-    idle:    "var(--accent-blue)",
-    loading: "var(--text-muted)",
-    copied:  "var(--accent-green)",
-    empty:   "var(--accent-amber)",
-    error:   "var(--accent-red)",
-  };
-
-  const Icon = state === "loading"
-    ? Loader2
-    : state === "copied"
-    ? Check
-    : state === "error" || state === "empty"
-    ? AlertCircle
-    : ClipboardCopy;
-
-  return (
-    <button
-      onClick={handleCopy}
-      disabled={state === "loading"}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        width: "100%",
-        padding: "14px 16px",
-        background: "none",
-        border: "none",
-        borderRadius: 0,
-        cursor: state === "loading" ? "default" : "pointer",
-        textAlign: "left",
-        color: "var(--text-primary)",
-        transition: "background 0.1s",
-      }}
-      onMouseEnter={(e) => {
-        if (state !== "loading") (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-hover)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.background = "none";
-      }}
-    >
-      <Icon
-        size={15}
-        style={{
-          color: accentColor[state],
-          flexShrink: 0,
-          animation: state === "loading" ? "spin 1s linear infinite" : undefined,
-        }}
-      />
-      <span style={{ fontSize: 13, flex: 1 }}>{label[state]}</span>
-      {state === "idle" && (
-        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-          prompt + JSON zadań
-        </span>
-      )}
-    </button>
-  );
 }

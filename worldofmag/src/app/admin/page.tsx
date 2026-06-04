@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
-import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, Bot, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes } from "lucide-react"
+import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes } from "lucide-react"
 import Link from "next/link"
-import { OmniaClipboardButton } from "@/components/admin/OmniaClipboardButton"
 import { prisma } from "@/lib/prisma"
 
 function fmtDate(iso: string | undefined) {
@@ -212,41 +211,6 @@ export default async function AdminPage() {
               <span style={{ fontSize: 13 }}>Konfiguracja LLM (klucz Groq)</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
-          </div>
-        </section>
-
-        {/* Omnia → Claude Code */}
-        <section style={{ marginBottom: 24 }}>
-          <h2 style={{
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "var(--text-muted)",
-            marginBottom: 12,
-          }}>
-            Omnia — Claude Code
-          </h2>
-          <div style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border)",
-            borderRadius: 10,
-            overflow: "hidden",
-          }}>
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "12px 16px",
-              borderBottom: "1px solid var(--border)",
-            }}>
-              <Bot size={15} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                Kopiuje do schowka prompt LLM + JSON z otwartymi zadaniami projektu Omnia.
-                Wklej do Claude Code — agent przeanalizuje zadania, wdroży poprawki i zapisze raport w&nbsp;Raportach.
-              </span>
-            </div>
-            <OmniaClipboardButton />
           </div>
         </section>
 

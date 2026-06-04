@@ -196,7 +196,7 @@ All data mutations use Next.js Server Actions with `revalidatePath()` at the end
 - **Kitchen**: `recipes`, `cookbooks`, `mealPlans`, `pantry`
 - **Pets**: `pets`, `petCare`, `petHusbandry`, `petBreeding`
 - **Other modules**: `health`, `habits`, `flota`, `portfel`, `languageDecks`, `qa`, `truck`, `storage` (Magazynowanie)
-- **Collaboration / system**: `teams`, `invitations`, `access`, `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `admin-tools`, `aiConversations` (AI assistant chat persistence)
+- **Collaboration / system**: `teams`, `invitations`, `access`, `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `aiConversations` (AI assistant chat persistence)
 
 ### Authentication & Authorization
 
@@ -292,7 +292,7 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 
 ### Admin Panel (`/admin`, gated by `module.admin`)
 
-- **`/admin`** — console: build info (`NEXT_PUBLIC_BUILD_*`), active session, Omnia↔Claude Code clipboard export (`admin-tools.ts` → open Omnia tasks as JSON), links to tools.
+- **`/admin`** — console: build info (`NEXT_PUBLIC_BUILD_*`), active session, links to tools. (The Omnia→Claude Code clipboard export moved out of the admin panel: it's now an **admin-only per-list button** in the Tasks header — `TaskListClipboardButton`, prompt+copy logic in `src/lib/omniaClipboard.ts` — that copies the prompt + JSON of *that list's* active tasks.)
 - **`/admin/access`** — RBAC manager (`PermissionManager`): permissions, role↔permission grid, user↔role; self-lockout guard.
 - **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, `brave_search_api_key` for News web-search baseline, masked).
 - **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type).

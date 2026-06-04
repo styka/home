@@ -9,6 +9,7 @@ import { TaskDetail } from "./TaskDetail";
 import { TaskStatusConfigEditor } from "./TaskStatusConfigEditor";
 import { QuickAddTask, type QuickAddTaskHandle } from "./QuickAddTask";
 import { ProjectActionsMenu } from "./ProjectActionsMenu";
+import { TaskListClipboardButton } from "./TaskListClipboardButton";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { deleteTask, toggleTaskStatus } from "@/actions/tasks";
 import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode, ProjectStatusConfig } from "@/types";
@@ -27,9 +28,10 @@ interface TasksPageProps {
   initialOpenTaskId?: string;
   statusConfig?: ProjectStatusConfig;
   canEditStatuses?: boolean;
+  isAdmin?: boolean;
 }
 
-export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialFilter, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false }: TasksPageProps) {
+export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialFilter, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false }: TasksPageProps) {
   const [statusConfigOpen, setStatusConfigOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<TaskStatusFilter>(initialFilter ?? "ALL");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -384,6 +386,9 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               <SlidersHorizontal size={15} />
             </button>
           )}
+
+          {/* Admin: skopiuj prompt dla Claude Code z zadaniami tej konkretnej listy */}
+          {isAdmin && <TaskListClipboardButton tasks={tasks} />}
 
           {/* Akcje projektu (zmień nazwę / usuń) — dostępne na dotyku i myszą */}
           {viewMode === "project" && (() => {

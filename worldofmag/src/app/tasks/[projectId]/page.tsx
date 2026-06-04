@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { getTasks, getTodayTasks, getOverdueTasks, getAllUserTasks } from "@/actions/tasks";
 import { getTaskProjects } from "@/actions/taskProjects";
 import { getTaskTags } from "@/actions/taskTags";
@@ -112,6 +113,7 @@ export default async function TaskProjectPage({ params, searchParams }: Props) {
       initialOpenTaskId={initialOpenTaskId}
       statusConfig={statusConfig}
       canEditStatuses={canEditStatuses}
+      isAdmin={hasPermission(session, PERMISSIONS.ADMIN)}
     />
   );
 }
