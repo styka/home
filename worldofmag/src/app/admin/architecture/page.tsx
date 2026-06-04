@@ -281,8 +281,8 @@ await assertListAccess(listId, user.id);`} />
                 ["/api/llm/tasks/parse", "Parsowanie opisu zadań z free-form tekstu na Task[]"],
                 ["/api/llm/tasks/suggest", "Sugestie zadań do projektu"],
                 ["/api/llm/tasks/search", "Semantyczne wyszukiwanie zadań (fuzzy match)"],
-                ["/api/llm/home/interpret", "Interpretacja komendy głosowej/tekstowej → intencja + params"],
-                ["/api/llm/home/execute", "Wykonanie intencji → akcja w systemie + odpowiedź tekstowa"],
+                ["/api/llm/home/agent", "Asystent „magicznej ikony” — pętla narzędzi (query/clarify/answer/navigate/plan/report), SSE"],
+                ["/api/llm/home/execute", "Wykonanie zatwierdzonego planu akcji → zmiany w modułach + wyniki"],
               ].map(([endpoint, desc]) => (
                 <div key={endpoint} style={{ display: "flex", gap: 12, alignItems: "start" }}>
                   <code style={{ fontSize: 11, color: "var(--accent-blue)", minWidth: 220, flexShrink: 0 }}>{endpoint}</code>

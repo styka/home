@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, ShoppingCart, CheckSquare, FileText, PawPrint, Boxes, Wallet, Fuel, ChefHat, Repeat, Wand2, CheckCircle, XCircle, Loader2, Square, CheckSquare2, ChevronDown, ChevronUp, HeartPulse, Languages, Newspaper, CloudSun } from "lucide-react";
-import type { AIAction } from "@/app/api/llm/home/interpret/route";
+import type { AIAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/app/api/llm/home/execute/route";
 
 interface ActionDrawerProps {

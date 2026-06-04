@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/copy-docs.js && prisma generate && next build && node scripts/migrate.js",
+    "check:actions": "node scripts/check-action-coverage.js",
+    "build": "node scripts/copy-docs.js && node scripts/check-action-coverage.js && prisma generate && next build && node scripts/migrate.js",
     "start": "next start -H 0.0.0.0",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",

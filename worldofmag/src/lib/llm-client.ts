@@ -58,14 +58,6 @@ export const llm = {
       }>("/api/llm/stores/generate", { storeName }),
   },
 
-  home: {
-    interpret: (command: string, context: unknown) =>
-      post<{ intent?: string; params?: unknown }>("/api/llm/home/interpret", { command, context }),
-
-    execute: (intent: string, params: unknown) =>
-      post<{ result?: string }>("/api/llm/home/execute", { intent, params }),
-  },
-
   kitchen: {
     parseIngredients: (text: string) =>
       post<{

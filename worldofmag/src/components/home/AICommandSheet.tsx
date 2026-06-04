@@ -14,7 +14,7 @@ import {
   deleteAiConversation, renameAiConversation, type ConversationMeta,
 } from "@/actions/aiConversations";
 import { createUserReport } from "@/actions/reports";
-import type { AIAction } from "@/app/api/llm/home/interpret/route";
+import type { AIAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/app/api/llm/home/execute/route";
 
 interface RouteContext {

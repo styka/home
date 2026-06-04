@@ -1,5 +1,5 @@
-// Katalog akcji AI dla modułu Zwierzęta. Wstrzykiwany do promptu interpretacji
-// (interpret/route.ts) i obsługiwany w dispatcherze (execute/route.ts).
+// Katalog akcji AI dla modułu Zwierzęta. Wstrzykiwany do promptu agenta
+// (agent/route.ts) i obsługiwany w dispatcherze (execute/route.ts).
 // Trzymany osobno, by prompt pozostał czytelny mimo wielu akcji.
 
 export const PET_ACTIONS_PROMPT = `ZWIERZĘTA (module: "pets"):

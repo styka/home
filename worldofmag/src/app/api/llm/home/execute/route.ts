@@ -24,7 +24,7 @@ import { createTopic, updateTopic, deleteTopic, refreshTopic } from "@/actions/n
 import { addLocationByName, deleteLocation, setDefaultLocation, addPresetWatcher, deleteWatcher } from "@/actions/weather";
 import { updatePet, setPetStatus, deletePet } from "@/actions/pets";
 import { createUserReport } from "@/actions/reports";
-import type { AIAction } from "@/app/api/llm/home/interpret/route";
+import type { AIAction } from "@/lib/ai/aiAction";
 import type { RecurringRule, TaskStatus, TaskPriority, ItemStatus, HealthKind, HealthStatus, PetStatus } from "@/types";
 import { isoDate } from "@/lib/habitStats";
 

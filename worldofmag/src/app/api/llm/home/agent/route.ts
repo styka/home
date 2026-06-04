@@ -5,7 +5,7 @@ import { PET_ACTIONS_PROMPT, PET_ACTION_EXAMPLES } from "@/lib/ai/petActions";
 import { READ_TOOLS_PROMPT, READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentTools";
 import { webSearch } from "@/lib/news/webSearch";
 import { chatComplete } from "@/lib/llm/chat";
-import type { AIAction } from "@/app/api/llm/home/interpret/route";
+import type { AIAction } from "@/lib/ai/aiAction";
 
 const MAX_ITERATIONS = 6;
 const MAX_TOOLS_PER_TURN = 4;
