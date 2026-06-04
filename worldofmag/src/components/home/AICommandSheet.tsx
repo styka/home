@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2,
+  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
@@ -65,7 +65,7 @@ type Turn =
   | { id: string; role: "assistant"; kind: "navigate"; content: string; url: string; label: string; log?: LogEntry[] }
   | { id: string; role: "assistant"; kind: "plan"; content: string; actions: AIAction[]; messages?: ChatMessage[]; log?: LogEntry[]; done?: boolean }
   | { id: string; role: "assistant"; kind: "report"; content: string; title: string; savedSlug?: string; log?: LogEntry[] }
-  | { id: string; role: "assistant"; kind: "results"; content: string; results: ActionResult[] };
+  | { id: string; role: "assistant"; kind: "results"; content: string; results: ActionResult[]; undone?: boolean };
 
 const LIST_SUB_PAGES = ["products", "units", "categories", "icons", "stores"];
 
@@ -486,6 +486,29 @@ export function AICommandSheet() {
     }
   }
 
+  // Cofnij: wykonaj akcje odwracające (delete utworzonego / przeciwna korekta)
+  // w odwrotnej kolejności, przez ten sam /execute (te same asercje dostępu).
+  async function undoActions(turn: Extract<Turn, { kind: "results" }>) {
+    const undos = turn.results.filter((r) => r.success && r.undo).map((r) => r.undo!);
+    if (!undos.length) return;
+    try {
+      const res = await fetch("/api/llm/home/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actions: [...undos].reverse(), activeListId, currentProjectId: activeProjectId }),
+      });
+      const data = (await res.json()) as { results?: ActionResult[] };
+      const undoResults = data.results ?? [];
+      setTurns((t) => t.map((x) => (x.id === turn.id && x.kind === "results" ? { ...x, undone: true } : x)));
+      setTurns((t) => [...t, { id: newId(), role: "user", kind: "text", content: "Cofnij" }, { id: newId(), role: "assistant", kind: "results", content: "Cofnięto", results: undoResults, undone: true }]);
+      void persist("user", "Cofnij", "text");
+      void persist("assistant", "Cofnięto", "results", { results: undoResults });
+      router.refresh();
+    } catch {
+      setError("Nie udało się cofnąć akcji");
+    }
+  }
+
   // Autokorekta: oddaj nieudane akcje agentowi, by zaproponował poprawiony plan.
   function fixFailedActions(results: ActionResult[]) {
     const failed = results.filter((r) => !r.success);
@@ -661,6 +684,7 @@ export function AICommandSheet() {
                     onRegenerate={lastPayloadRef.current ? regenerate : undefined}
                     onFollowup={(txt) => handleSend(txt)}
                     onFixFailed={fixFailedActions}
+                    onUndo={undoActions}
                   />
                 ))}
 
@@ -768,7 +792,7 @@ function CopyButton({ text }: { text: string }) {
 }
 
 function TurnView({
-  turn, isLast, onBubbleClick, onClarifySubmit, onOpenPlan, onNavigate, onSaveReport, onRegenerate, onFollowup, onFixFailed,
+  turn, isLast, onBubbleClick, onClarifySubmit, onOpenPlan, onNavigate, onSaveReport, onRegenerate, onFollowup, onFixFailed, onUndo,
 }: {
   turn: Turn;
   isLast: boolean;
@@ -780,6 +804,7 @@ function TurnView({
   onRegenerate?: () => void;
   onFollowup?: (text: string) => void;
   onFixFailed?: (results: ActionResult[]) => void;
+  onUndo?: (turn: Extract<Turn, { kind: "results" }>) => void;
 }) {
   const [clarifyInput, setClarifyInput] = useState("");
 
@@ -920,14 +945,30 @@ function TurnView({
           </div>
         </div>
       ))}
-      {isLast && onFixFailed && turn.results.some((r) => !r.success) && (
-        <button
-          onClick={() => onFixFailed(turn.results)}
-          style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--accent-amber)", background: "transparent", color: "var(--accent-amber)", fontSize: 12, cursor: "pointer" }}
-        >
-          <Wand2 size={12} /> Popraw nieudane ({turn.results.filter((r) => !r.success).length})
-        </button>
-      )}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+        {isLast && onFixFailed && turn.results.some((r) => !r.success) && (
+          <button
+            onClick={() => onFixFailed(turn.results)}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--accent-amber)", background: "transparent", color: "var(--accent-amber)", fontSize: 12, cursor: "pointer" }}
+          >
+            <Wand2 size={12} /> Popraw nieudane ({turn.results.filter((r) => !r.success).length})
+          </button>
+        )}
+        {isLast && onUndo && !turn.undone && turn.results.some((r) => r.success && r.undo) && (
+          <button
+            onClick={() => onUndo(turn)}
+            title="Cofnij skutki tych akcji"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 12, cursor: "pointer" }}
+          >
+            <RotateCcw size={12} /> Cofnij ({turn.results.filter((r) => r.success && r.undo).length})
+          </button>
+        )}
+        {turn.undone && (
+          <span style={{ fontSize: 11.5, color: "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <RotateCcw size={11} /> cofnięte
+          </span>
+        )}
+      </div>
     </div>
   );
 }

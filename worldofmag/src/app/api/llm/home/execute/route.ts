@@ -286,6 +286,10 @@ export interface ActionResult {
   // Opcjonalny cel przekierowania po utworzeniu rekordu (params.openAfter).
   navigateTo?: string;
   navigateLabel?: string;
+  // Akcja odwracająca skutek (np. utworzono → usuń utworzony rekord). Klient
+  // pokazuje „Cofnij" i wykonuje te akcje ponownie przez /execute (te same
+  // asercje dostępu). Brak = akcji nie da się prosto cofnąć.
+  undo?: AIAction;
 }
 
 // Wynik pojedynczej akcji: komunikat + opcjonalna propozycja przejścia do utworzonego widoku.
@@ -293,6 +297,12 @@ interface ExecOutcome {
   message: string;
   navigateTo?: string;
   navigateLabel?: string;
+  undo?: AIAction;
+}
+
+// Helper: zbuduj akcję odwracającą (cofnięcie). description jest po ludzku — to ją widzi użytkownik.
+function undoAction(module: AIAction["module"], type: string, params: Record<string, unknown>, description: string): AIAction {
+  return { id: `undo_${Math.random().toString(36).slice(2, 8)}`, module, type, description, params };
 }
 
 // ── Helpery rozwiązywania rekordów (id-first, z fallbackiem po searchQuery) ──────────────
@@ -513,10 +523,11 @@ async function executeAction(
       });
       const item = await addItem(list.id, rawText.trim() || "Produkt");
       const msg = `Dodano "${item.name}" do listy "${list.name}"`;
+      const undo = undoAction("shopping", "delete_item", { itemId: item.id }, `Usuń "${item.name}" z listy "${list.name}"`);
       if (params.openAfter === true) {
-        return { message: msg, navigateTo: `/shopping/${list.id}`, navigateLabel: `Otwórz „${list.name}”` };
+        return { message: msg, undo, navigateTo: `/shopping/${list.id}`, navigateLabel: `Otwórz „${list.name}”` };
       }
-      return msg;
+      return { message: msg, undo };
     }
 
     if (type === "update_item_status") {
@@ -550,10 +561,11 @@ async function executeAction(
       const name = asStr(params.name) ?? "Nowa lista";
       const list = await createList(name);
       const msg = `Utworzono listę "${list.name}"`;
+      const undo = undoAction("shopping", "delete_list", { listId: list.id }, `Usuń listę "${list.name}"`);
       if (params.openAfter === true) {
-        return { message: msg, navigateTo: `/shopping/${list.id}`, navigateLabel: `Otwórz „${list.name}”` };
+        return { message: msg, undo, navigateTo: `/shopping/${list.id}`, navigateLabel: `Otwórz „${list.name}”` };
       }
-      return msg;
+      return { message: msg, undo };
     }
 
     if (type === "rename_list") {
@@ -584,11 +596,12 @@ async function executeAction(
         projectId,
       });
       const msg = `Utworzono zadanie "${task.title}"`;
+      const undo = undoAction("tasks", "delete_task", { taskId: task.id }, `Usuń zadanie "${task.title}"`);
       if (params.openAfter === true) {
         const view = task.projectId ?? "all";
-        return { message: msg, navigateTo: `/tasks/${view}?task=${task.id}`, navigateLabel: `Otwórz „${task.title}”` };
+        return { message: msg, undo, navigateTo: `/tasks/${view}?task=${task.id}`, navigateLabel: `Otwórz „${task.title}”` };
       }
-      return msg;
+      return { message: msg, undo };
     }
 
     if (type === "update_task") {
@@ -630,10 +643,11 @@ async function executeAction(
       const name = asStr(params.name) ?? "Nowy projekt";
       const project = await createTaskProject(name, { emoji: asStr(params.emoji) });
       const msg = `Utworzono projekt "${project.name}"`;
+      const undo = undoAction("tasks", "delete_project", { projectId: project.id }, `Usuń projekt "${project.name}"`);
       if (params.openAfter === true) {
-        return { message: msg, navigateTo: `/tasks/${project.id}`, navigateLabel: `Otwórz „${project.name}”` };
+        return { message: msg, undo, navigateTo: `/tasks/${project.id}`, navigateLabel: `Otwórz „${project.name}”` };
       }
-      return msg;
+      return { message: msg, undo };
     }
   }
 
@@ -641,10 +655,11 @@ async function executeAction(
     if (type === "create_note") {
       const note = await createNote({ title: asStr(params.title) ?? "Nowa notatka", content: asStr(params.content) ?? "" });
       const msg = `Utworzono notatkę "${note.title}"`;
+      const undo = undoAction("notes", "delete_note", { noteId: note.id }, `Usuń notatkę "${note.title}"`);
       if (params.openAfter === true) {
-        return { message: msg, navigateTo: `/notes?focus=${note.id}`, navigateLabel: `Otwórz „${note.title}”` };
+        return { message: msg, undo, navigateTo: `/notes?focus=${note.id}`, navigateLabel: `Otwórz „${note.title}”` };
       }
-      return msg;
+      return { message: msg, undo };
     }
 
     if (type === "append_to_note") {
@@ -692,7 +707,9 @@ async function executeAction(
       });
       if (!habit) throw new Error(`Nie znaleziono nawyku pasującego do „${q}"`);
       const result = await toggleHabitDay(habit.id, isoDate(new Date()));
-      return result.done ? `Odhaczono nawyk „${habit.name}"` : `Cofnięto odhaczenie nawyku „${habit.name}"`;
+      // toggle_habit jest samoodwracalny — ponowne odhaczenie cofa zmianę.
+      const undo = undoAction("habits", "toggle_habit", { habitName: habit.name }, `Cofnij zmianę nawyku „${habit.name}"`);
+      return { message: result.done ? `Odhaczono nawyk „${habit.name}"` : `Cofnięto odhaczenie nawyku „${habit.name}"`, undo };
     }
   }
 
@@ -788,7 +805,9 @@ async function executeAction(
       });
       if (!item) throw new Error(`Nie znaleziono pozycji „${query}" w magazynie`);
       const updated = await adjustStorageQuantity(item.id, delta, delta > 0 ? "przyjęcie" : "wydanie", "AI");
-      return `${delta > 0 ? "Przyjęto" : "Wydano"} ${Math.abs(delta)} — ${item.name} (stan: ${updated.quantity ?? 0})`;
+      // Odwrócenie = przeciwna korekta o tę samą wartość.
+      const undo = { ...undoAction("magazynowanie", "adjust_storage", { delta: -delta }, `Cofnij korektę stanu — ${item.name}`), searchQuery: item.name };
+      return { message: `${delta > 0 ? "Przyjęto" : "Wydano"} ${Math.abs(delta)} — ${item.name} (stan: ${updated.quantity ?? 0})`, undo };
     }
   }
 
@@ -1267,6 +1286,7 @@ export async function POST(req: NextRequest) {
         description: outcome.message,
         navigateTo: outcome.navigateTo,
         navigateLabel: outcome.navigateLabel,
+        undo: outcome.undo,
       });
       // Audit log (znacznik pochodzenia AI)
       await prisma.userActivity.create({
