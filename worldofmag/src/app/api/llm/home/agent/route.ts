@@ -294,6 +294,34 @@ async function callAgent(messages: ChatMessage[]): Promise<string> {
 
 const CATALOG_MODULES = Object.keys(ACTION_CATALOG_BY_MODULE);
 
+// Słowa-klucze per moduł — do TANIEGO pre-routingu bez LLM. Dobierane tak, by
+// były wysoce dystynktywne (mało fałszywych trafień). Granice słów (\b) + formy.
+const KEYWORD_ROUTES: Record<string, RegExp> = {
+  portfel: /\b(wydatek|wydałem|wydała|przychód|zarobiłem|kwot\w*|portfel\w*|\d+\s*(zł|pln|euro|eur))\b/i,
+  flota: /\b(zatankow\w*|tankowani\w*|paliw\w*|przebieg\w*|serwis\w*|pojazd\w*|auto|samoch\w*|opon\w*|przegląd\w*)\b/i,
+  habits: /\b(nawyk\w*|odhacz\w*|odhaczyć|streak|seri\w* dni)\b/i,
+  magazynowanie: /\b(magazyn\w*|na stani\w*|stan magazyn\w*|wyda(j|ć|łem) ze stanu|przyję(cie|ć)|regał\w*|półk\w*)\b/i,
+  kitchen: /\b(posiłek|posiłk\w*|przepis\w*|spiżarni\w*|jadłospis\w*|ugotow\w*|śniadani\w*|obiad\w*|kolacj\w*)\b/i,
+  health: /\b(wizyt\w*|badani\w*|lekarz\w*|przychodni\w*|recept\w*|wynik\w* bada\w*)\b/i,
+  languages: /\b(fiszk\w*|słówk\w*|słowk\w*|tali\w*|powtórk\w* słów|tłumaczeni\w*)\b/i,
+  news: /\b(wiadomoś\w*|news\w*|temat\w* wiadomoś\w*|monitoruj\w* temat)\b/i,
+  weather: /\b(pogod\w*|prognoz\w*|deszcz\w*|temperatur\w*|lokalizacj\w* pogod\w*)\b/i,
+  shopping: /\b(zakup\w*|do listy|na list[ęe]|kup(ić|ię|ę|cie|)|sklep\w*)\b/i,
+  tasks: /\b(zadani\w*|projekt\w*|to-?do|deadline\w*|termin\w* zadani\w*)\b/i,
+  notes: /\b(notatk\w*|zanotuj|zapisz notatk\w*)\b/i,
+  pets: /\b(zwierz\w*|pies|psa|kot\w*|wąż|węż\w*|terrari\w*|karmieni\w*|waż\w* (psa|kota|zwierz\w*))\b/i,
+  reports: /\b(raport\w*)\b/i,
+};
+
+// Pre-routing: jeśli słowa-klucze jednoznacznie wskazują 1–2 moduły, zwróć je BEZ
+// wywołania LLM (niższa latencja). null = brak pewności → użyj routera LLM.
+function keywordRoute(text: string, allowed: string[], primary: string): string[] | null {
+  const hits = allowed.filter((m) => KEYWORD_ROUTES[m]?.test(text));
+  if (hits.length === 0 || hits.length > 2) return null; // 0 = niejasne; >2 = zbyt szerokie → LLM
+  const set = new Set<string>([primary, ...hits].filter((m) => allowed.includes(m)));
+  return Array.from(set);
+}
+
 // Dwustopniowy routing — KROK 1: tani klasyfikator wybiera moduły istotne dla
 // polecenia, żeby do głównej pętli wstrzyknąć tylko ich katalog akcji (mniej
 // tokenów, mniej rozproszenia). Zawsze dorzucamy moduł podstawowy. Przy
@@ -302,6 +330,11 @@ const CATALOG_MODULES = Object.keys(ACTION_CATALOG_BY_MODULE);
 async function routeModules(text: string, activeModules: string[], primary: string): Promise<string[]> {
   const allowed = activeModules.filter((m) => CATALOG_MODULES.includes(m));
   if (allowed.length <= 3) return allowed; // i tak mało — nie ma co klasyfikować
+
+  // KROK 0 (bez LLM): jednoznaczne słowa-klucze → pomijamy dodatkowy round-trip.
+  const byKeyword = keywordRoute(text, allowed, primary);
+  if (byKeyword) return byKeyword;
+
   try {
     const result = await chatComplete({
       op: "dispatch",
@@ -498,6 +531,7 @@ export async function POST(req: NextRequest) {
     clarifyAnswer?: string;
     refine?: string; // uwagi użytkownika do zaproponowanego planu — przeplanuj
     history?: ChatMessage[]; // wcześniejsze tury rozmowy (poziom wyświetlania) do kontekstu wielo-turowego
+    preferences?: string; // stałe preferencje użytkownika („custom instructions")
     stream?: boolean; // true → odpowiedź jako SSE z myślami na żywo
   };
 
@@ -573,12 +607,15 @@ export async function POST(req: NextRequest) {
       currentProjectName = project?.name ?? null;
     }
 
+    const prefs = typeof body.preferences === "string" ? body.preferences.trim().slice(0, 1000) : "";
+
     const userMsg = [
       `Dzisiejsza data: ${today}`,
       `Aktywne moduły: ${context.join(", ")}`,
       body.routeHint ? `Aktualny widok: ${body.routeHint}` : null,
       body.activeListId ? `Aktywna lista zakupów (id): ${body.activeListId}` : null,
       currentProjectName ? `Bieżący projekt zadań: "${currentProjectName}" (id: ${body.currentProjectId})` : null,
+      prefs ? `Stałe preferencje użytkownika (uwzględniaj, o ile nie kolidują z bieżącym poleceniem): ${prefs}` : null,
       ``,
       `Polecenie użytkownika: ${text}`,
     ]

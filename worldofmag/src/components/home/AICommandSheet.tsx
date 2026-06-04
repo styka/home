@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus,
+  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
@@ -195,6 +195,12 @@ export function AICommandSheet() {
   // Załącznik-zdjęcie (multimodal): rozpoznanie przedmiotów → plan akcji.
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  // Stałe preferencje użytkownika („custom instructions") — pamięć per-urządzenie
+  // (localStorage), wstrzykiwana do każdego polecenia. Ref, by uniknąć stale-closure.
+  const [prefs, setPrefs] = useState("");
+  const prefsRef = useRef("");
+  prefsRef.current = prefs;
+  const [showPrefs, setShowPrefs] = useState(false);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -216,6 +222,31 @@ export function AICommandSheet() {
 
   // Zatrzymaj generowanie przy zamknięciu/unmount.
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  // Wczytaj zapamiętane preferencje (localStorage) raz przy montażu.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("omnia.aiPrefs");
+      if (raw) setPrefs(raw);
+    } catch { /* ignore */ }
+  }, []);
+
+  // Globalny skrót Ctrl/Cmd+J — otwórz asystenta (działa też gdy jest zamknięty).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        setIsOpen((v) => !v);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  function savePrefs(value: string) {
+    setPrefs(value);
+    try { localStorage.setItem("omnia.aiPrefs", value); } catch { /* ignore */ }
+  }
 
   // Autofokus pola wejścia po otwarciu (desktop) — natychmiast piszesz.
   useEffect(() => {
@@ -332,7 +363,7 @@ export function AICommandSheet() {
       const res = await fetch("/api/llm/home/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, stream: true }),
+        body: JSON.stringify({ ...payload, preferences: prefsRef.current.trim() || undefined, stream: true }),
         signal: controller.signal,
       });
 
@@ -690,11 +721,29 @@ export function AICommandSheet() {
                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Asystent AI</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <button onClick={() => setShowPrefs((v) => !v)} title="Stałe preferencje" aria-label="Stałe preferencje" style={{ ...iconBtn, color: showPrefs || prefs.trim() ? "var(--accent-blue)" : undefined }}><Settings size={16} /></button>
                 <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
                 <button onClick={openHistory} title="Historia rozmów" aria-label="Historia rozmów" style={iconBtn}><History size={16} /></button>
                 <button onClick={handleClose} title="Zamknij" aria-label="Zamknij asystenta" style={iconBtn}><X size={16} /></button>
               </div>
             </div>
+
+            {/* Panel stałych preferencji (custom instructions) */}
+            {showPrefs && (
+              <div className="px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-base)" }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
+                  Stałe preferencje (asystent uwzględnia je w każdym poleceniu)
+                </label>
+                <textarea
+                  value={prefs}
+                  onChange={(e) => savePrefs(e.target.value)}
+                  rows={3}
+                  placeholder={'Np. „Domyślnie dodawaj do listy Tygodniowe. Kwoty w PLN. Pisz zwięźle."'}
+                  style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none", resize: "vertical" }}
+                />
+                <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>Zapisywane na tym urządzeniu. Zmiany zapisują się automatycznie.</p>
+              </div>
+            )}
 
             {/* Body: historia LUB wątek */}
             {showHistory ? (
