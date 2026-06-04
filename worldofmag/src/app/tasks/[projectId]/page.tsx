@@ -4,6 +4,7 @@ import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { getTasks, getTodayTasks, getOverdueTasks, getAllUserTasks, getTasksForProjects } from "@/actions/tasks";
 import { getTaskProjects } from "@/actions/taskProjects";
 import { getTaskTags } from "@/actions/taskTags";
+import { getTaskView } from "@/actions/taskViews";
 import { prisma } from "@/lib/prisma";
 import { TasksPage } from "@/components/tasks/TasksPage";
 import type { Task, ViewMode, TaskStatusFilter } from "@/types";
@@ -24,8 +25,11 @@ const VIRTUAL_LABELS: Record<VirtualView, string> = {
 
 interface Props {
   params: { projectId: string };
-  searchParams?: { status?: string; task?: string; projects?: string };
+  searchParams?: { status?: string; task?: string; projects?: string; view?: string };
 }
+
+/** Projekt w „pasku zakresu” widoku wielu projektów (chip pod nagłówkiem). */
+type ScopeProject = { id: string; name: string; emoji: string; isInbox: boolean };
 
 export default async function TaskProjectPage({ params, searchParams }: Props) {
   const session = await auth();
@@ -55,6 +59,9 @@ export default async function TaskProjectPage({ params, searchParams }: Props) {
   let tasks: Task[];
   let viewMode: ViewMode;
   let projectName: string;
+  // Widok wielu projektów: lista projektów w zakresie + id zapisanego widoku (do edycji).
+  let scopeProjects: ScopeProject[] = [];
+  let multiViewId: string | undefined;
 
   if (projectId === "today") {
     tasks = await getTodayTasks();
@@ -78,15 +85,29 @@ export default async function TaskProjectPage({ params, searchParams }: Props) {
     viewMode = "all";
     projectName = VIRTUAL_LABELS.all;
   } else if (projectId === "multi") {
-    // ?projects=id1,id2,… — zadania z kilku projektów naraz (grupowane po projekcie).
-    const requestedIds = (searchParams?.projects ?? "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const validIds = requestedIds.filter((id) => allProjects.some((p) => p.id === id));
-    tasks = await getTasksForProjects(validIds);
+    // Dwa źródła zakresu: zapisany widok (?view=<id>) lub doraźna lista (?projects=id1,id2,…).
+    let scopeIds: string[];
+    if (searchParams?.view) {
+      const view = await getTaskView(searchParams.view);
+      if (!view) notFound();
+      scopeIds = view.projectIds;
+      multiViewId = view.id;
+      projectName = `${view.emoji} ${view.name}`;
+    } else {
+      const requestedIds = (searchParams?.projects ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      scopeIds = requestedIds.filter((id) => allProjects.some((p) => p.id === id));
+      projectName = `🗂 Wiele projektów (${scopeIds.length})`;
+    }
+    tasks = await getTasksForProjects(scopeIds);
     viewMode = "multi";
-    projectName = `🗂 Wiele projektów (${validIds.length})`;
+    // Zachowaj kolejność z zakresu i opisz każdy projekt (chip pod nagłówkiem).
+    scopeProjects = scopeIds
+      .map((id) => allProjects.find((p) => p.id === id))
+      .filter((p): p is NonNullable<typeof p> => !!p)
+      .map((p) => ({ id: p.id, name: p.name, emoji: p.emoji, isInbox: p.isInbox }));
   } else {
     tasks = await getTasks(projectId);
     const project = allProjects.find((p) => p.id === projectId)!;
@@ -125,6 +146,8 @@ export default async function TaskProjectPage({ params, searchParams }: Props) {
       statusConfig={statusConfig}
       canEditStatuses={canEditStatuses}
       isAdmin={hasPermission(session, PERMISSIONS.ADMIN)}
+      scopeProjects={scopeProjects}
+      multiViewId={multiViewId}
     />
   );
 }

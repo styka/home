@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag } from "lucide-react";
+import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { TaskDetail } from "./TaskDetail";
@@ -29,9 +29,13 @@ interface TasksPageProps {
   statusConfig?: ProjectStatusConfig;
   canEditStatuses?: boolean;
   isAdmin?: boolean;
+  /** Widok wielu projektów: projekty w zakresie (chipy pod nagłówkiem). */
+  scopeProjects?: Array<{ id: string; name: string; emoji: string; isInbox: boolean }>;
+  /** Id zapisanego widoku wielu projektów (gdy otwarty z zapisanego widoku) — do edycji. */
+  multiViewId?: string;
 }
 
-export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialFilter, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false }: TasksPageProps) {
+export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialFilter, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiViewId }: TasksPageProps) {
   const [statusConfigOpen, setStatusConfigOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<TaskStatusFilter>(initialFilter ?? "ALL");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -398,6 +402,41 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           })()}
         </div>
       </div>
+
+      {/* Pasek zakresu widoku wielu projektów: zawsze widać, z jakich projektów są zadania.
+          Każdy chip prowadzi do pojedynczego projektu; ołówek otwiera edycję zapisanego widoku. */}
+      {viewMode === "multi" && scopeProjects.length > 0 && (
+        <div
+          className="flex items-center gap-1.5 px-4 py-1.5 border-b flex-shrink-0 overflow-x-auto"
+          style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elevated)" }}
+        >
+          <span className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>
+            Projekty:
+          </span>
+          {scopeProjects.map((p) => (
+            <Link
+              key={p.id}
+              href={`/tasks/${p.id}`}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs flex-shrink-0"
+              style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
+              title={`Otwórz projekt: ${p.name}`}
+            >
+              <span>{p.isInbox ? "📥" : p.emoji}</span>
+              <span className="truncate" style={{ maxWidth: 140 }}>{p.name}</span>
+            </Link>
+          ))}
+          {multiViewId && (
+            <Link
+              href={`/tasks/multi?view=${multiViewId}&edit=1`}
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-xs flex-shrink-0 ml-1"
+              style={{ color: "var(--text-muted)" }}
+              title="Edytuj widok (nazwa / projekty)"
+            >
+              <Pencil size={11} />
+            </Link>
+          )}
+        </div>
+      )}
 
       {canEditStatuses && statusConfigOpen && (
         <TaskStatusConfigEditor

@@ -150,7 +150,7 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 ```
 /                        # Home page (AI dashboard + Sparkles AI assistant FAB)
 /shopping/ [listId]      # Lists; + /categories /units /products /icons /stores/[storeId] (graph editor)
-/tasks/ [projectId]      # Task projects; + /tasks/tags
+/tasks/ [projectId]      # Task projects (+ widoki wirtualne today/upcoming/overdue/all + /tasks/multi?view=|projects= dla wielu projektów); + /tasks/tags
 /notes/                  # Notes; + /all /groups /tags
 /kitchen/                # Recipes /recipes/[id]/(edit|cook), /cookbooks/[id], /plan, /pantry/stocktake
 /pets/ [petId]           # Pets profiles; + /pets/calendar (care calendar)
@@ -191,7 +191,7 @@ Components are organized by module: `shopping/`, `tasks/`, `notes/`, `kitchen/`,
 
 All data mutations use Next.js Server Actions with `revalidatePath()` at the end. Never add manual cache invalidation elsewhere. Action files (`src/actions/`):
 - **Shopping**: `items`, `lists`, `products`, `categories`, `units`, `stores`, `categoryIcons`
-- **Tasks**: `tasks`, `taskProjects`, `taskTags`
+- **Tasks**: `tasks`, `taskProjects`, `taskTags`, `taskViews` (zapisane widoki wielu projektów)
 - **Notes**: `notes`, `noteGroups`, `tags`
 - **Kitchen**: `recipes`, `cookbooks`, `mealPlans`, `pantry`
 - **Pets**: `pets`, `petCare`, `petHusbandry`, `petBreeding`
@@ -222,6 +222,7 @@ Store, StoreNode, StoreEdge                 — Store maps (graph)
 Note, NoteGroup, Tag, NoteTag               — Notes module
 TaskProject, TaskProjectMember, Task        — Tasks module
 TaskTagDef, TaskTaskTag, TaskComment, TaskShare — Tasks extras
+TaskView                                    — Zapisane widoki wielu projektów (per-user; projectIds=JSON string[]); trasa /tasks/multi?view=<id>
 Recipe, RecipeIngredient, RecipeStep, RecipeImage, RecipeTag, RecipeRating — Kitchen recipes
 Cookbook, MealPlanEntry, PantryItem, ItemRecipeOrigin — Kitchen planning/pantry
 Pet, PetShare, PetMeasurement, PetHealthRecord, PetVetVisit, PetTreatment — Pets core/care

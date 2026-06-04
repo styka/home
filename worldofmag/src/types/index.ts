@@ -128,6 +128,17 @@ export type TaskProject = {
   members?: { userId: string; role: string }[];
 };
 
+/** Zapisany widok wielu projektów (np. „Praca + Dom"). projectIds = lista id projektów. */
+export type TaskView = {
+  id: string;
+  name: string;
+  emoji: string;
+  projectIds: string[];
+  order: number;
+  /** Liczba aktywnych (nie-terminalnych) zadań we wszystkich projektach widoku. */
+  activeCount?: number;
+};
+
 export type TaskCommentType = {
   id: string;
   taskId: string;
