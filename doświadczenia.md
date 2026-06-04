@@ -4,6 +4,16 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-04 — Lokalna weryfikacja buildu bez prod-DB i bez Prisma 7
+**Problem:** `npm run build` kończy się `node scripts/migrate.js`, który robi `prisma migrate deploy` na PRAWDZIWEJ bazie (Neon) — nie wolno tego puszczać lokalnie. Do tego `datasource.provider = "postgresql"`, więc obiecywany w docsach SQLite (`file:./dev.db`) nie zadziała wprost z `db:push`. Dodatkowo `npx prisma generate` bez zainstalowanych `node_modules` ściąga Prisma 7, która odrzuca składnię `url`/`directUrl` ze schematu Prisma 5 (P1012).
+**Rozwiązanie:** Najpierw `npm install` (postinstall sam odpala lokalną Prisma 5 `generate` i waliduje schemat). Do sprawdzenia kodu wystarczy podzbiór pipeline'u: `node scripts/check-action-coverage.js` + `npx next build` z dowolnymi (atrapowymi) `DATABASE_URL`/`DIRECT_URL`/`AUTH_SECRET` — strony są `force-dynamic`, więc build nie odpytuje bazy (błędy `UntrustedHost` przy prerenderze są nieszkodliwe). Pomijamy `migrate.js`.
+**Lekcja:** „Sprawdź build" lokalnie = `next build`, nie pełne `npm run build` (które dotyka prod). Zawsze używaj lokalnej Prisma z `node_modules` (po `npm install`), nie globalnego `npx prisma`.
+
+## 2026-06-04 — Generyczny harmonogram leków = jedna tabela z `kind` (MEDICATION|CARE)
+**Problem:** Wymaganie „poddział leki + dawkowanie, ale na tej samej zasadzie zmiana opatrunku/paznokcie" mogło skusić do dwóch osobnych modeli albo do per-modułowego silnika cykliczności.
+**Rozwiązanie:** Jeden model `MedicationSchedule` z polem `kind` i „płaską" cyklicznością (`freqType` DAILY/WEEKLY/HOURLY + `interval` + `daysOfWeek` CSV + `timesOfDay` JSON + okno `startDate/endDate`), rozwijaną do slotów przez czysty helper `src/lib/medicationSchedule.ts` (reużywa `habitStats`: `isoDate`/`parseDays`). Ten sam helper karmi agendę „na dziś", Kalendarz i read-tool AI — bez duplikacji logiki dni/godzin.
+**Lekcja:** Gdy „dwie rzeczy działają na identycznej zasadzie", różnicuj je polem-dyskryminatorem, a logikę trzymaj w jednej czystej funkcji współdzielonej przez UI/serwer/AI. Dzień licz LOKALNIE ("YYYY-MM-DD") jak Nawyki, nie w UTC.
+
 ## 2026-06-04 — Polski cudzysłów „…" w stringu JS rozwala build (swc: „Expected unicode escape")
 **Problem:** Dwukrotnie przy edycji promptów/tekstów wstawiłem `„tekst"` w środku stringa JS w podwójnych cudzysłowach (`"… „od czego zacząć".\n"`). Prosty `"` (U+0022) po polskim otwierającym `„` PRZEDWCZEŚNIE zamyka string, a dalszy `\n` daje błąd składni `Expected unicode escape`. swc wskazywał mylną linię (np. 9:1 albo środek innego stringa), co utrudniało namiar.
 **Rozwiązanie:** W literałach JS używaj polskiego cudzysłowu zamykającego `”` (U+201D), nie prostego `"`: `„od czego zacząć”`. Alternatywnie escape `\"` albo backticki. Przy zagadkowym „Expected unicode escape"/„Syntax Error" w pliku z polskim tekstem szukaj prostego `"` wewnątrz `"…"`.

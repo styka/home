@@ -65,6 +65,7 @@ model User {
   walletElements         WalletElement[]       @relation("OwnedWalletElements")
   languageDecks          LanguageDeck[]        @relation("OwnedLanguageDecks")
   healthEvents           HealthEvent[]         @relation("OwnedHealthEvents")
+  medicationSchedules    MedicationSchedule[]  @relation("OwnedMedicationSchedules")
   habits                 Habit[]               @relation("OwnedHabits")
   serviceProvider        ServiceProvider?      @relation("UserServiceProvider")
   serviceCategories      ServiceCategory[]     @relation("OwnedServiceCategories")
@@ -199,6 +200,7 @@ model Team {
   walletElements       WalletElement[]       @relation("TeamWalletElements")
   languageDecks        LanguageDeck[]        @relation("TeamLanguageDecks")
   healthEvents         HealthEvent[]         @relation("TeamHealthEvents")
+  medicationSchedules  MedicationSchedule[]  @relation("TeamMedicationSchedules")
   habits               Habit[]               @relation("TeamHabits")
   serviceCategories    ServiceCategory[]     @relation("TeamServiceCategories")
 }
@@ -1576,6 +1578,58 @@ model HealthEvent {
 
   @@index([ownerId, scheduledAt])
   @@index([ownerTeamId, scheduledAt])
+}
+
+// ── Leki i pielęgnacja (harmonogram podawania) ───────────────────────────────
+// Generyczny harmonogram: leki ORAZ czynności pielęgnacyjne (zmiana opatrunku,
+// obcinanie paznokci itd.) — rozróżnia je pole `kind`. Cykliczność trzymamy
+// "płasko" (freqType + interval + daysOfWeek + timesOfDay/hourly) — prościej niż
+// JSON RecurringRule i wystarcza do: codziennie / wybrane dni / co N dni / co N godzin.
+// Wykonania (odhaczenia konkretnych dawek) trafiają do MedicationLog.
+model MedicationSchedule {
+  id           String    @id @default(cuid())
+  kind         String    @default("MEDICATION") // MEDICATION | CARE
+  name         String // "Ibuprom" / "Zmiana opatrunku"
+  dosage       String? // "200 mg" / "1 tabletka" / "1 plaster"
+  route        String? // oral | injection | topical (dla leków)
+  reason       String? // wskazanie / po co
+  instructions String? // "po posiłku", "lewa ręka"
+  freqType     String    @default("DAILY") // DAILY (co N dni) | WEEKLY | HOURLY
+  interval     Int       @default(1) // DAILY: co N dni; HOURLY: co N godzin
+  daysOfWeek   String? // CSV "1,3,5" (0=nd..6=sb) dla WEEKLY
+  timesOfDay   String? // JSON ["08:00","20:00"] dla DAILY/WEEKLY
+  hourlyStart  String? // "08:00" — kotwica dla HOURLY
+  hourlyEnd    String? // "22:00" — granica dzienna dla HOURLY
+  startDate    DateTime  @default(now())
+  endDate      DateTime? // okno kuracji (opcjonalne)
+  active       Boolean   @default(true)
+  notes        String?
+  ownerId      String?
+  ownerTeamId  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  owner     User?           @relation("OwnedMedicationSchedules", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerTeam Team?           @relation("TeamMedicationSchedules", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  logs      MedicationLog[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+}
+
+model MedicationLog {
+  id         String   @id @default(cuid())
+  scheduleId String
+  date       String // "YYYY-MM-DD" (lokalny dzień, stabilny klucz)
+  slot       String // "HH:MM" — który slot dnia
+  outcome    String   @default("TAKEN") // TAKEN | SKIPPED
+  takenAt    DateTime @default(now())
+  note       String?
+
+  schedule MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleId, date, slot])
+  @@index([scheduleId, date])
 }
 
 // ── Habits (Nawyki) ──────────────────────────────────────────────────────────

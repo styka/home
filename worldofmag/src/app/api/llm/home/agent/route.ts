@@ -130,7 +130,10 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - create_health_event { title, kind:"VISIT"|"TEST", scheduledAt(ISO), doctorName?, specialty?, facility?, notes? } — wizyta lub badanie.
 - update_health_event { eventId?, title?, scheduledAt?, status?, notes? } (searchQuery = tytuł)
 - set_health_status { status:"PLANNED"|"DONE"|"CANCELLED", eventId? } (searchQuery fallback)
-- delete_health_event { eventId? } (searchQuery fallback) — DESTRUKCYJNE`,
+- delete_health_event { eventId? } (searchQuery fallback) — DESTRUKCYJNE
+- create_medication { name, kind:"MEDICATION"|"CARE", dosage?, freqType:"DAILY"|"WEEKLY"|"HOURLY", interval?, daysOfWeek?(np. [1,3,5]; 0=nd..6=sb), timesOfDay?(np. ["08:00","20:00"]), hourlyStart?, hourlyEnd?, startDate?(ISO), endDate?(ISO), instructions?, reason? } — harmonogram leku (kind MEDICATION) lub czynności pielęgnacyjnej (kind CARE, np. zmiana opatrunku).
+- log_dose { medicationId?, slot?(HH:MM), date?(YYYY-MM-DD) } (searchQuery = nazwa leku) — odhacza dawkę/czynność (domyślnie dziś).
+- delete_medication { medicationId? } (searchQuery = nazwa) — DESTRUKCYJNE`,
 
   languages: `JĘZYKI (module "languages"):
 - create_deck { name, nativeLang?, targetLang? } — nowa talia fiszek.

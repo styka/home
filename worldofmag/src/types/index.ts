@@ -491,6 +491,58 @@ export type HealthEvent = {
   updatedAt: Date;
 };
 
+// ─── Leki i pielęgnacja (harmonogram podawania) ─────────────────────────────
+
+export type MedicationKind = "MEDICATION" | "CARE";
+export type MedicationFreqType = "DAILY" | "WEEKLY" | "HOURLY";
+export type MedicationOutcome = "TAKEN" | "SKIPPED";
+
+export type MedicationSchedule = {
+  id: string;
+  kind: MedicationKind;
+  name: string;
+  dosage: string | null;
+  route: string | null;
+  reason: string | null;
+  instructions: string | null;
+  freqType: MedicationFreqType;
+  interval: number;
+  daysOfWeek: string | null;
+  timesOfDay: string | null;
+  hourlyStart: string | null;
+  hourlyEnd: string | null;
+  startDate: Date;
+  endDate: Date | null;
+  active: boolean;
+  notes: string | null;
+  ownerId: string | null;
+  ownerTeamId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type MedicationLog = {
+  id: string;
+  scheduleId: string;
+  date: string;
+  slot: string;
+  outcome: MedicationOutcome;
+  takenAt: Date;
+  note: string | null;
+};
+
+/** Pojedynczy slot dawki/czynności na dany dzień — wynik rozwinięcia harmonogramu. */
+export type DoseSlot = {
+  scheduleId: string;
+  kind: MedicationKind;
+  name: string;
+  dosage: string | null;
+  instructions: string | null;
+  slot: string; // "HH:MM"
+  done: boolean;
+  outcome: MedicationOutcome | null;
+};
+
 // ─── Nawyki ───────────────────────────────────────────────────────────────
 
 export type Habit = {

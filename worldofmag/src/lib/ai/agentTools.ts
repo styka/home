@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { getUserTeamIds } from "@/lib/server-utils";
 import { getCalendarEvents } from "@/actions/calendar";
+import { describeFrequency } from "@/lib/medicationSchedule";
+import type { MedicationSchedule } from "@/types";
 
 /**
  * Narzędzia ODCZYTU dla agenta „magicznej ikony". Każde narzędzie używa tych samych
@@ -34,6 +36,7 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_storage_items: args { search?, warehouse?, lowStockOnly?, limit? } → [{ id, name, quantity, unit, warehouse, location, minQuantity }]. Pozycje magazynu (dom/firma). lowStockOnly=true zwraca tylko poniżej stanu minimalnego.
 - list_habits: args {} → [{ id, name, doneToday }]. Nawyki użytkownika (doneToday = czy odhaczony dziś).
 - list_health_events: args { kind?, search?, limit? } → [{ id, kind, title, scheduledAt, status }]. Wizyty/badania (kind: "VISIT"|"TEST").
+- list_medications: args { search?, limit? } → [{ id, kind, name, dosage, frequency, active }]. Harmonogramy leków (kind "MEDICATION") i czynności pielęgnacyjnych (kind "CARE") z opisem cykliczności.
 - list_wallet: args {} → [{ id, name, kind, balance }]. Elementy portfela (konta/oszczędności/długi) z saldem w PLN.
 - list_recipes: args { search?, limit? } → [{ id, title }]. Przepisy kulinarne.
 - list_meal_plan: args { days?, limit? } → [{ id, date, slot, title }]. Zaplanowane posiłki (domyślnie najbliższe 7 dni).
@@ -57,6 +60,7 @@ export const READ_TOOL_NAMES = [
   "list_storage_items",
   "list_habits",
   "list_health_events",
+  "list_medications",
   "list_wallet",
   "list_recipes",
   "list_meal_plan",
@@ -421,6 +425,26 @@ export async function runReadTool(
         title: e.title,
         scheduledAt: e.scheduledAt.toISOString(),
         status: e.status,
+      }));
+    }
+
+    case "list_medications": {
+      const search = asStr(args.search);
+      const schedules = await prisma.medicationSchedule.findMany({
+        where: {
+          ...(await ownerScope(userId)),
+          ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
+        },
+        orderBy: [{ active: "desc" }, { name: "asc" }],
+        take: clampLimit(args.limit),
+      });
+      return schedules.map((s) => ({
+        id: s.id,
+        kind: s.kind,
+        name: s.name,
+        dosage: s.dosage,
+        frequency: describeFrequency(s as unknown as MedicationSchedule),
+        active: s.active,
       }));
     }
 

@@ -39,6 +39,7 @@ const DESTRUCTIVE_TYPES = new Set([
   "delete_weather_watcher",
   "delete_storage_item",
   "delete_pet",
+  "delete_medication",
 ]);
 // Surowe identyfikatory rekordów (taskId/listId/itemId/noteId…) nic nie mówią
 // użytkownikowi, więc NIE pokazujemy ich w edytorze parametrów — i tak przechodzą

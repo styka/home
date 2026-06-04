@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { isoDay, monthRange, type CalendarEvent } from "@/lib/calendar";
+import { slotsForDate } from "@/lib/medicationSchedule";
+import type { MedicationSchedule } from "@/types";
 
 /**
  * Agreguje zdarzenia z wielu modułów (zadania, plan posiłków, zdrowie, przeglądy
@@ -15,7 +17,7 @@ export async function getCalendarEvents(year: number, month0: number): Promise<C
   const { start, end } = monthRange(year, month0);
   const ownScope = [{ ownerId: user.id }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])];
 
-  const [tasks, meals, health, vehicles] = await Promise.all([
+  const [tasks, meals, health, vehicles, medications] = await Promise.all([
     // Zadania z terminem w miesiącu (pomijamy ukończone/anulowane — kalendarz to „co przede mną").
     prisma.task.findMany({
       where: {
@@ -44,6 +46,8 @@ export async function getCalendarEvents(year: number, month0: number): Promise<C
       },
       select: { id: true, name: true, inspectionDue: true, insuranceDue: true },
     }),
+    // Aktywne harmonogramy leków/pielęgnacji — sloty rozwijamy poniżej per dzień.
+    prisma.medicationSchedule.findMany({ where: { active: true, OR: ownScope } }),
   ]);
 
   const events: CalendarEvent[] = [];
@@ -108,6 +112,26 @@ export async function getCalendarEvents(year: number, month0: number): Promise<C
         href: "/flota",
         accent: "var(--accent-blue)",
       });
+    }
+  }
+
+  // Leki/pielęgnacja: rozwiń każdy harmonogram na sloty należne w dniach miesiąca.
+  for (let day = new Date(start); day < end; day.setDate(day.getDate() + 1)) {
+    const date = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 12, 0, 0, 0);
+    for (const s of medications as MedicationSchedule[]) {
+      for (const slot of slotsForDate(s, date)) {
+        const [h, mm] = slot.split(":").map(Number);
+        const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, mm, 0, 0);
+        events.push({
+          id: `med-${s.id}-${isoDay(date)}-${slot}`,
+          module: "health",
+          title: `${s.name}${s.dosage ? ` ${s.dosage}` : ""} (${slot})`,
+          date: isoDay(date),
+          at: at.toISOString(),
+          href: "/health/leki",
+          accent: "var(--accent-red)",
+        });
+      }
     }
   }
 

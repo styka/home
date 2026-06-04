@@ -44,7 +44,7 @@ Nie pytaj o pozwolenie — po prostu dopisz i commituj razem z poprawką.
 | Notes | `/notes` | `module.notes` | Done and deployed |
 | Kitchen (recipes/meal plan/pantry) | `/kitchen` | `module.kitchen` (+ sub-perms) | Done and deployed |
 | Pets (care/husbandry/breeding) | `/pets` | `module.pets` | Done and deployed |
-| Health (visits/tests) | `/health` | `module.health` | Done and deployed |
+| Health (visits/tests + meds) | `/health` | `module.health` | Done — wizyty/badania + poddział **Leki i pielęgnacja** (`/health/leki`): harmonogram dawkowania leków i cyklicznych czynności pielęgnacyjnych (zmiana opatrunku, paznokcie…), agenda „na dziś" z odhaczaniem, integracja z Kalendarzem i asystentem AI |
 | Habits (tracker/heatmap) | `/habits` | `module.habits` | Done and deployed |
 | Flota (vehicles/fuel/service) | `/flota` | `module.flota` | Done and deployed |
 | Portfel (personal finance) | `/portfel` | `module.portfel` | Done and deployed |
@@ -154,7 +154,7 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /notes/                  # Notes; + /all /groups /tags
 /kitchen/                # Recipes /recipes/[id]/(edit|cook), /cookbooks/[id], /plan, /pantry/stocktake
 /pets/ [petId]           # Pets profiles; + /pets/calendar (care calendar)
-/health/                 # Medical visits + lab tests
+/health/                 # Medical visits + lab tests; + /health/leki (medication & care scheduling: dosing, times, recurrence, today-agenda)
 /habits/                 # Habit tracker (heatmap, streaks)
 /flota/                  # Vehicles (fuel logs, service records)
 /portfel/                # Personal finance (wallet elements + entries)
@@ -227,7 +227,8 @@ Cookbook, MealPlanEntry, PantryItem, ItemRecipeOrigin — Kitchen planning/pantr
 Pet, PetShare, PetMeasurement, PetHealthRecord, PetVetVisit, PetTreatment — Pets core/care
 PetCareTask, PetCareLog, PetEnclosure, PetEnvironmentReading — Pets husbandry
 PetBreedingPair, PetClutch, PetSale         — Pets breeding/sales
-HealthEvent                                 — Health module
+HealthEvent                                 — Health module (wizyty/badania)
+MedicationSchedule, MedicationLog           — Leki i pielęgnacja (harmonogram dawkowania leków/czynności + dziennik odhaczeń; kind MEDICATION|CARE, freqType DAILY|WEEKLY|HOURLY)
 Habit, HabitEntry                           — Habits module
 Vehicle, FuelLog, ServiceRecord, VehicleProfile — Flota / Truck
 WalletElement, WalletEntry                  — Portfel (finance)

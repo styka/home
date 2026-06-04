@@ -16,6 +16,7 @@ import { addStorageItem, adjustStorageQuantity, updateStorageItem, deleteStorage
 import { createHabit, updateHabit, setHabitArchived, deleteHabit } from "@/actions/habits";
 import { createElement, updateElement, setBalance, archiveElement, deleteElement } from "@/actions/portfel";
 import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent } from "@/actions/health";
+import { createMedicationSchedule, deleteMedicationSchedule, logDose, getMedicationDay } from "@/actions/medications";
 import { createDeck, updateDeck, deleteDeck, addWord, updateWord, deleteWord } from "@/actions/languageDecks";
 import { addPantryItem, updatePantryItem, consumePantryItem, deletePantryItem } from "@/actions/pantry";
 import { createRecipe, deleteRecipe } from "@/actions/recipes";
@@ -458,6 +459,22 @@ async function resolveHealthEventId(userId: string, params: Record<string, unkno
   });
   if (!ev) throw new Error(`Nie znaleziono wpisu zdrowia: "${searchQuery}"`);
   return ev.id;
+}
+
+async function resolveMedicationId(userId: string, params: Record<string, unknown>, searchQuery?: string): Promise<string> {
+  const id = asStr(params.medicationId);
+  const teamIds = await getUserTeamIds(userId);
+  const ownerOr = teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
+  if (id) {
+    const s = await prisma.medicationSchedule.findFirst({ where: { OR: ownerOr, id } });
+    if (s) return s.id;
+  }
+  const s = await prisma.medicationSchedule.findFirst({
+    where: { OR: ownerOr, name: { contains: searchQuery ?? asStr(params.name) ?? "", mode: "insensitive" } },
+    orderBy: { active: "desc" },
+  });
+  if (!s) throw new Error(`Nie znaleziono leku/czynności: "${searchQuery ?? asStr(params.name) ?? ""}"`);
+  return s.id;
 }
 
 async function resolveDeckId(userId: string, params: Record<string, unknown>, deckName?: string): Promise<string> {
@@ -933,6 +950,45 @@ async function executeAction(
       const id = await resolveHealthEventId(userId, params, searchQuery);
       await deleteHealthEvent(id);
       return `Usunięto wpis zdrowia`;
+    }
+    if (type === "create_medication") {
+      const name = asStr(params.name);
+      if (!name) throw new Error("Podaj nazwę leku lub czynności");
+      const kind = asStr(params.kind) === "CARE" ? "CARE" : "MEDICATION";
+      const s = await createMedicationSchedule({
+        kind,
+        name,
+        dosage: asStr(params.dosage) ?? null,
+        reason: asStr(params.reason) ?? null,
+        instructions: asStr(params.instructions) ?? null,
+        freqType: (asStr(params.freqType) as "DAILY" | "WEEKLY" | "HOURLY") ?? "DAILY",
+        interval: params.interval != null ? Number(params.interval) : 1,
+        daysOfWeek: Array.isArray(params.daysOfWeek) ? (params.daysOfWeek as number[]) : asStr(params.daysOfWeek) ?? null,
+        timesOfDay: Array.isArray(params.timesOfDay) ? (params.timesOfDay as string[]) : asStr(params.timesOfDay) ?? null,
+        hourlyStart: asStr(params.hourlyStart) ?? null,
+        hourlyEnd: asStr(params.hourlyEnd) ?? null,
+        startDate: params.startDate ? String(params.startDate) : null,
+        endDate: params.endDate ? String(params.endDate) : null,
+      });
+      return `Dodano harmonogram: „${s.name}"`;
+    }
+    if (type === "log_dose") {
+      const id = await resolveMedicationId(userId, params, searchQuery);
+      const date = asStr(params.date) ?? new Date().toISOString().slice(0, 10);
+      let slot = asStr(params.slot);
+      if (!slot) {
+        const day = await getMedicationDay(date);
+        const pending = day.slots.find((sl) => sl.scheduleId === id && !sl.done) ?? day.slots.find((sl) => sl.scheduleId === id);
+        slot = pending?.slot;
+      }
+      if (!slot) throw new Error("Brak zaplanowanej dawki tego dnia — podaj godzinę (slot)");
+      await logDose(id, date, slot, "TAKEN");
+      return `Odhaczono dawkę o ${slot}`;
+    }
+    if (type === "delete_medication") {
+      const id = await resolveMedicationId(userId, params, searchQuery);
+      await deleteMedicationSchedule(id);
+      return `Usunięto harmonogram`;
     }
   }
 
