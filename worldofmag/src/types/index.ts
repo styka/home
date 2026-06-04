@@ -293,7 +293,7 @@ export function serializeStatusConfig(cfg: ProjectStatusConfig): string {
   return JSON.stringify({ enabled: cfg.enabled, chain: cfg.chain });
 }
 
-export type ViewMode = "today" | "upcoming" | "overdue" | "all" | "project";
+export type ViewMode = "today" | "upcoming" | "overdue" | "all" | "project" | "multi";
 
 // ─── Store Maps ───────────────────────────────────────────────────────────────
 

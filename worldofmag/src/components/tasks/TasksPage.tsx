@@ -45,7 +45,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // Prezentacja listy: "default" = naturalne grupowanie widoku (dni/projekty), "priority" = po priorytetach.
   // Dotyczy widoków „Nadchodzące/Zaległe/Wszystkie" (Dziś i projekty są zawsze po priorytetach).
   const [groupBy, setGroupBy] = useState<"default" | "priority">("default");
-  const canToggleGrouping = viewMode === "upcoming" || viewMode === "overdue" || viewMode === "all";
+  const canToggleGrouping = viewMode === "upcoming" || viewMode === "overdue" || viewMode === "all" || viewMode === "multi";
   const [, startTransition] = useTransition();
   const quickAddRef = useRef<QuickAddTaskHandle>(null);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -55,7 +55,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const notifiedRef = useRef<Set<string>>(new Set());
 
   // For virtual views, create tasks in inbox instead
-  const isVirtualView = ["today", "upcoming", "overdue", "all"].includes(projectId);
+  const isVirtualView = ["today", "upcoming", "overdue", "all", "multi"].includes(projectId);
   const addProjectId = isVirtualView ? inboxId : projectId;
 
   const openTask = openTaskId ? tasks.find((t) => t.id === openTaskId) ?? null : null;
@@ -302,6 +302,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             <option value="upcoming">📆 Nadchodzące</option>
             <option value="overdue">⚠️ Zaległe</option>
             <option value="all">◎ Wszystkie</option>
+            {projectId === "multi" && <option value="multi">🗂 Wiele projektów</option>}
             {allProjects.filter((p) => p.isInbox).map((p) => (
               <option key={p.id} value={p.id}>📥 {p.name}</option>
             ))}

@@ -1,7 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { getTasks, getTodayTasks, getOverdueTasks, getAllUserTasks } from "@/actions/tasks";
+import { getTasks, getTodayTasks, getOverdueTasks, getAllUserTasks, getTasksForProjects } from "@/actions/tasks";
 import { getTaskProjects } from "@/actions/taskProjects";
 import { getTaskTags } from "@/actions/taskTags";
 import { prisma } from "@/lib/prisma";
@@ -11,7 +11,7 @@ import { TASK_STATUS_FILTERS, parseStatusConfig } from "@/types";
 
 export const dynamic = "force-dynamic";
 
-const VIRTUAL_VIEWS = ["today", "upcoming", "overdue", "all"] as const;
+const VIRTUAL_VIEWS = ["today", "upcoming", "overdue", "all", "multi"] as const;
 type VirtualView = typeof VIRTUAL_VIEWS[number];
 
 const VIRTUAL_LABELS: Record<VirtualView, string> = {
@@ -19,11 +19,12 @@ const VIRTUAL_LABELS: Record<VirtualView, string> = {
   upcoming: "📆 Nadchodzące",
   overdue: "⚠️ Zaległe",
   all: "◎ Wszystkie zadania",
+  multi: "🗂 Wiele projektów",
 };
 
 interface Props {
   params: { projectId: string };
-  searchParams?: { status?: string; task?: string };
+  searchParams?: { status?: string; task?: string; projects?: string };
 }
 
 export default async function TaskProjectPage({ params, searchParams }: Props) {
@@ -76,6 +77,16 @@ export default async function TaskProjectPage({ params, searchParams }: Props) {
     tasks = await getAllUserTasks();
     viewMode = "all";
     projectName = VIRTUAL_LABELS.all;
+  } else if (projectId === "multi") {
+    // ?projects=id1,id2,… — zadania z kilku projektów naraz (grupowane po projekcie).
+    const requestedIds = (searchParams?.projects ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const validIds = requestedIds.filter((id) => allProjects.some((p) => p.id === id));
+    tasks = await getTasksForProjects(validIds);
+    viewMode = "multi";
+    projectName = `🗂 Wiele projektów (${validIds.length})`;
   } else {
     tasks = await getTasks(projectId);
     const project = allProjects.find((p) => p.id === projectId)!;

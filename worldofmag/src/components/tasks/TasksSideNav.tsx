@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   CalendarClock, CalendarDays, AlertCircle, Inbox, Tag, Plus,
-  Loader2, Pencil, Check, X, LayoutList, Trash2,
+  Loader2, Pencil, Check, X, LayoutList, Trash2, CheckSquare, Square, Layers,
 } from "lucide-react";
 import { getTaskProjects, createTaskProject, updateTaskProject, deleteTaskProject } from "@/actions/taskProjects";
 import type { TaskProject } from "@/types";
@@ -19,6 +19,7 @@ const VIRTUAL_VIEWS = [
 
 export function TasksSideNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [projects, setProjects] = useState<TaskProject[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -26,6 +27,20 @@ export function TasksSideNav() {
   const [editName, setEditName] = useState("");
   const [hovered, setHovered] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  // Tryb „Wiele projektów”: zaznaczanie kilku projektów do wspólnego widoku.
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  function showMultiView() {
+    if (selectedIds.length === 0) return;
+    router.push(`/tasks/multi?projects=${selectedIds.join(",")}`);
+    setSelectMode(false);
+    setSelectedIds([]);
+  }
 
   function reload() {
     getTaskProjects().then(setProjects).catch(() => {});
@@ -110,22 +125,56 @@ export function TasksSideNav() {
       <div className="mx-4 my-1" style={{ borderTop: "1px solid var(--border)" }} />
 
       {inbox && (
-        <Link
-          href={`/tasks/${inbox.id}`}
-          onMouseEnter={() => setHovered(inbox.id)}
-          onMouseLeave={() => setHovered(null)}
-          className="flex items-center gap-2 mx-2 rounded text-xs"
-          style={itemStyle(inbox.id)}
-        >
-          <Inbox size={12} />
-          <span className="flex-1">Skrzynka</span>
-          {(inbox._count?.tasks ?? 0) > 0 && (
-            <span style={{ fontSize: 10 }}>{inbox._count!.tasks}</span>
-          )}
-        </Link>
+        selectMode ? (
+          <button
+            onClick={() => toggleSelected(inbox.id)}
+            className="flex items-center gap-2 mx-2 rounded text-xs w-[calc(100%-16px)]"
+            style={{ ...itemStyle(inbox.id), color: "var(--text-secondary)" }}
+          >
+            {selectedIds.includes(inbox.id)
+              ? <CheckSquare size={12} style={{ color: "var(--accent-blue)" }} />
+              : <Square size={12} />}
+            <Inbox size={12} />
+            <span className="flex-1 text-left">Skrzynka</span>
+            {(inbox._count?.tasks ?? 0) > 0 && (
+              <span style={{ fontSize: 10 }}>{inbox._count!.tasks}</span>
+            )}
+          </button>
+        ) : (
+          <Link
+            href={`/tasks/${inbox.id}`}
+            onMouseEnter={() => setHovered(inbox.id)}
+            onMouseLeave={() => setHovered(null)}
+            className="flex items-center gap-2 mx-2 rounded text-xs"
+            style={itemStyle(inbox.id)}
+          >
+            <Inbox size={12} />
+            <span className="flex-1">Skrzynka</span>
+            {(inbox._count?.tasks ?? 0) > 0 && (
+              <span style={{ fontSize: 10 }}>{inbox._count!.tasks}</span>
+            )}
+          </Link>
+        )
       )}
 
       {regularProjects.map((p) => (
+        selectMode ? (
+          <button
+            key={p.id}
+            onClick={() => toggleSelected(p.id)}
+            className="flex items-center gap-2 mx-2 rounded text-xs w-[calc(100%-16px)] py-1"
+            style={{ paddingLeft: 40, paddingRight: 8, color: "var(--text-secondary)" }}
+          >
+            {selectedIds.includes(p.id)
+              ? <CheckSquare size={12} style={{ color: "var(--accent-blue)" }} />
+              : <Square size={12} />}
+            <span>{p.emoji}</span>
+            <span className="flex-1 truncate text-left">{p.name}</span>
+            {(p._count?.tasks ?? 0) > 0 && (
+              <span style={{ fontSize: 10 }}>{p._count!.tasks}</span>
+            )}
+          </button>
+        ) : (
         <div
           key={p.id}
           onMouseEnter={() => setHovered(p.id)}
@@ -186,7 +235,44 @@ export function TasksSideNav() {
             </>
           )}
         </div>
+        )
       ))}
+
+      {/* Tryb „Wiele projektów” — zaznacz kilka projektów i pokaż je w jednym widoku */}
+      {regularProjects.length > 0 && (
+        selectMode ? (
+          <div className="mx-2 mt-1 flex items-center gap-1">
+            <button
+              onClick={showMultiView}
+              disabled={selectedIds.length === 0}
+              className="flex items-center gap-1.5 flex-1 rounded text-xs py-1.5 justify-center focus:outline-none disabled:opacity-40"
+              style={{ paddingLeft: 8, backgroundColor: "var(--accent-blue)", color: "#fff" }}
+            >
+              <Layers size={12} />
+              Pokaż wybrane ({selectedIds.length})
+            </button>
+            <button
+              onClick={() => { setSelectMode(false); setSelectedIds([]); }}
+              className="focus:outline-none rounded p-1.5"
+              style={{ color: "var(--text-muted)" }}
+              title="Anuluj"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setSelectMode(true)}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ""; e.currentTarget.style.color = "var(--text-muted)"; }}
+            className="flex items-center gap-2 mx-2 rounded text-xs w-[calc(100%-16px)]"
+            style={{ paddingLeft: 40, paddingTop: 5, paddingBottom: 5, color: "var(--text-muted)" }}
+          >
+            <Layers size={11} />
+            Wiele projektów
+          </button>
+        )
+      )}
 
       {isAdding ? (
         <div className="flex items-center gap-1 mx-2 py-1 pr-2" style={{ paddingLeft: 40 }}>

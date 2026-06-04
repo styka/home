@@ -47,6 +47,34 @@ export async function getTasks(projectId: string): Promise<Task[]> {
   return tasks.map(toTask);
 }
 
+/**
+ * Zadania z kilku projektów naraz (widok „Wiele projektów”). Sprawdza dostęp do
+ * każdego projektu osobno; nieprawidłowe / niedostępne id są pomijane (bez wyjątku),
+ * żeby pojedynczy „martwy” id w linku nie wywalił całego widoku.
+ */
+export async function getTasksForProjects(projectIds: string[]): Promise<Task[]> {
+  const user = await requireAuth();
+
+  const allowed: string[] = [];
+  for (const id of projectIds) {
+    try {
+      await assertProjectAccess(id, user.id);
+      allowed.push(id);
+    } catch {
+      /* brak dostępu lub nieistniejący projekt — pomijamy */
+    }
+  }
+  if (allowed.length === 0) return [];
+
+  const tasks = await prisma.task.findMany({
+    where: { projectId: { in: allowed }, parentTaskId: null },
+    include: TASK_INCLUDE,
+    orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+  });
+
+  return tasks.map(toTask);
+}
+
 export async function getAllUserTasks(): Promise<Task[]> {
   const user = await requireAuth();
 

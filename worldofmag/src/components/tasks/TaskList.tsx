@@ -79,6 +79,7 @@ export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, foc
     overdue: "Brak zaległych zadań",
     all: "Brak zadań",
     project: "Brak zadań w projekcie",
+    multi: "Brak zadań w wybranych projektach",
   };
 
   if (filtered.length === 0) {
@@ -139,8 +140,8 @@ export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, foc
     );
   }
 
-  // "all" view: group by project (chyba że użytkownik wybrał grupowanie po priorytetach)
-  if (viewMode === "all" && groupBy === "default") {
+  // "all"/"multi" view: group by project (chyba że użytkownik wybrał grupowanie po priorytetach)
+  if ((viewMode === "all" || viewMode === "multi") && groupBy === "default") {
     const done = filter === "ALL"
       ? applyTagFilter(tasks.filter((t) => t.status === "DONE" || t.status === "CANCELLED"))
       : [];
