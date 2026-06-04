@@ -73,6 +73,7 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - update_task { taskId?, title?, description?, priority?, status?, dueDate? } (searchQuery fallback)
 - update_task_status { status:"TODO"|"IN_PROGRESS"|"DONE"|"CANCELLED"|"DEFERRED", taskId? } (searchQuery fallback)
 - shift_task_due_date { days:number, taskId? } (searchQuery fallback; ujemne = wcześniej)
+- shift_task_priority { steps:number, taskId? } (searchQuery fallback) — podnosi/obniża priorytet WZGLĘDNIE o "steps" szczebli na drabinie NONE<LOW<MEDIUM<HIGH<URGENT (ujemne = obniż). Każde zadanie zmienia się względem SWOJEGO obecnego priorytetu — użyj TEJ akcji (osobny shift_task_priority per zadanie) zamiast ustawiać wspólny priorytet przez update_task, gdy ktoś prosi „podnieś/zmniejsz priorytet o N".
 - delete_task { taskId? } (searchQuery fallback) — DESTRUKCYJNE
 - create_project { name, emoji? }
 - update_project { name?, emoji?, projectId? } (searchQuery = nazwa projektu)

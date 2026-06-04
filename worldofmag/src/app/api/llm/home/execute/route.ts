@@ -35,6 +35,18 @@ function addDays(d: Date, days: number): Date {
   return x;
 }
 
+// Priorytety to skala porządkowa — „podnieś o 1" działa na każdym zadaniu względem
+// JEGO obecnego priorytetu (nie ustawia wspólnej wartości). Przesunięcie klampujemy
+// do zakresu NONE..URGENT, więc bump powyżej/poniżej skali jest no-opem zamiast błędu.
+const PRIORITY_LADDER: TaskPriority[] = ["NONE", "LOW", "MEDIUM", "HIGH", "URGENT"];
+
+function shiftPriority(current: TaskPriority, steps: number): TaskPriority {
+  const idx = PRIORITY_LADDER.indexOf(current);
+  const base = idx === -1 ? 0 : idx;
+  const next = Math.max(0, Math.min(PRIORITY_LADDER.length - 1, base + steps));
+  return PRIORITY_LADDER[next];
+}
+
 function asStr(v: unknown): string | undefined {
   return typeof v === "string" && v.trim() ? v.trim() : undefined;
 }
@@ -666,6 +678,23 @@ async function executeAction(
       // Cofnięcie = przesunięcie o przeciwną liczbę dni (od nowego terminu wróci na stary).
       const undo = { ...undoAction("tasks", "shift_task_due_date", { taskId: id, days: -days }, `Cofnij przesunięcie terminu "${task.title}"`), searchQuery: task.title };
       return { message: `Przesunięto termin "${task.title}" o ${days > 0 ? "+" : ""}${days} dni`, undo };
+    }
+
+    if (type === "shift_task_priority") {
+      const id = await resolveTaskId(userId, params, searchQuery);
+      const steps = Math.trunc(Number(params.steps ?? 1)) || 0;
+      const before = await prisma.task.findUnique({ where: { id }, select: { priority: true } });
+      const current = (before?.priority ?? "NONE") as TaskPriority;
+      const next = shiftPriority(current, steps);
+      const task = await updateTask(id, { priority: next });
+      // Cofnięcie ustawia z powrotem dokładną wartość sprzed zmiany (klamp mógł ją „zjeść").
+      const undo = before
+        ? { ...undoAction("tasks", "update_task", { taskId: id, priority: current }, `Przywróć priorytet "${task.title}" → ${current}`), searchQuery: task.title }
+        : undefined;
+      const msg = next === current
+        ? `Priorytet "${task.title}" bez zmian (${current})`
+        : `Zmieniono priorytet "${task.title}": ${current} → ${next}`;
+      return { message: msg, undo };
     }
 
     if (type === "delete_task") {
