@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { ClipboardCopy, Check, AlertCircle } from "lucide-react";
 import { buildOmniaPrompt, copyLazy, OMNIA_CLIPBOARD_EMPTY } from "@/lib/omniaClipboard";
-import { statusMeta } from "@/types";
 import type { Task } from "@/types";
 
 type State = "idle" | "copied" | "empty" | "error";
@@ -13,8 +12,8 @@ type State = "idle" | "copied" | "empty" | "error";
  * Wcześniej funkcja żyła w panelu Admina (jeden zlepek „zadań Omnia"); teraz jest na
  * każdej liście zadań, więc admin bierze do pracy dokładnie te zadania, które ogląda.
  *
- * Bierzemy zadania aktywne (nie-terminalne) i tylko wierzchołkowe (bez podzadań),
- * bo to one są pozycjami do realizacji — odhaczone/anulowane i podzadania pomijamy.
+ * `tasks` to zadania już przefiltrowane przez aktywną zakładkę (status) i tagi —
+ * dokładnie te widoczne na ekranie. Tu tylko składamy prompt i kopiujemy.
  */
 export function TaskListClipboardButton({ tasks }: { tasks: Task[] }) {
   const [state, setState] = useState<State>("idle");
@@ -22,14 +21,11 @@ export function TaskListClipboardButton({ tasks }: { tasks: Task[] }) {
   async function handleCopy() {
     let wasEmpty = false;
     const producer = async () => {
-      const actionable = tasks.filter(
-        (t) => t.parentTaskId == null && !statusMeta(t.status).isTerminal
-      );
-      if (actionable.length === 0) {
+      if (tasks.length === 0) {
         wasEmpty = true;
         throw new Error(OMNIA_CLIPBOARD_EMPTY);
       }
-      return buildOmniaPrompt(actionable);
+      return buildOmniaPrompt(tasks);
     };
 
     try {
@@ -43,9 +39,9 @@ export function TaskListClipboardButton({ tasks }: { tasks: Task[] }) {
   }
 
   const title: Record<State, string> = {
-    idle: "Kopiuj prompt dla Claude Code (zadania tej listy)",
+    idle: "Kopiuj prompt dla Claude Code (zadania z bieżącej zakładki)",
     copied: "Skopiowano prompt + JSON zadań do schowka",
-    empty: "Brak aktywnych zadań na tej liście",
+    empty: "Brak zadań w bieżącej zakładce",
     error: "Błąd kopiowania — spróbuj ponownie",
   };
 
