@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw,
+  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
@@ -192,6 +192,9 @@ export function AICommandSheet() {
   // Anulowanie generowania (Stop) + ostatni payload do „Generuj ponownie".
   const abortRef = useRef<AbortController | null>(null);
   const lastPayloadRef = useRef<Record<string, unknown> | null>(null);
+  // Załącznik-zdjęcie (multimodal): rozpoznanie przedmiotów → plan akcji.
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -399,7 +402,73 @@ export function AICommandSheet() {
     if (lastPayloadRef.current) void callAgent(lastPayloadRef.current, { isRetry: true });
   }
 
+  // Wczytaj plik graficzny jako data URL (z prostym ograniczeniem rozmiaru).
+  function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // pozwól wybrać ten sam plik ponownie
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { setError("Wybierz plik graficzny."); return; }
+    if (file.size > 8 * 1024 * 1024) { setError("Zdjęcie za duże (max 8 MB)."); return; }
+    const reader = new FileReader();
+    reader.onload = () => setAttachedImage(typeof reader.result === "string" ? reader.result : null);
+    reader.onerror = () => setError("Nie udało się wczytać zdjęcia.");
+    reader.readAsDataURL(file);
+  }
+
+  // Multimodal: zdjęcie → rozpoznanie przedmiotów (reużywa /magazynowanie/scan)
+  // → plan akcji (magazyn lub zakupy, zależnie od kontekstu/podpisu) do przeglądu.
+  async function sendImage(dataUrl: string, caption: string) {
+    if (busy) return;
+    setAttachedImage(null);
+    setError(null);
+    setBusy(true);
+    const userLabel = caption ? `${caption} (📷 zdjęcie)` : "📷 Zdjęcie do rozpoznania";
+    setTurns((t) => [...t, { id: newId(), role: "user", kind: "text", content: userLabel }]);
+    void persist("user", userLabel, "text");
+    if (!convoIdRef.current) {
+      try { const convo = await createAiConversation(userLabel); setConversationId(convo.id); convoIdRef.current = convo.id; } catch { /* ignore */ }
+    }
+    try {
+      const res = await fetch("/api/llm/magazynowanie/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const data = (await res.json()) as { items?: { name: string; quantity: number | null; unit: string | null; category: string | null }[]; error?: string };
+      if (!res.ok) { setError(data.error ?? "Nie udało się przetworzyć zdjęcia"); return; }
+      const items = data.items ?? [];
+      if (!items.length) { setError("Nie rozpoznano przedmiotów na zdjęciu. Spróbuj wyraźniejszego ujęcia."); return; }
+      const toShopping = context[0] === "shopping" || /zakup|lista|kup/i.test(caption);
+      const actions: AIAction[] = items.map((it, i) => {
+        if (toShopping) {
+          return {
+            id: `img${i}`, module: "shopping", type: "add_item",
+            params: { rawText: it.quantity ? `${it.quantity} ${it.name}` : it.name },
+            description: `Dodaj „${it.name}" do zakupów`,
+          };
+        }
+        const params: Record<string, unknown> = { name: it.name };
+        if (it.quantity != null) params.quantity = it.quantity;
+        if (it.unit) params.unit = it.unit;
+        if (it.category) params.category = it.category;
+        return {
+          id: `img${i}`, module: "magazynowanie", type: "add_storage_item", params,
+          description: `Dodaj do magazynu: ${it.name}${it.quantity != null ? ` (${it.quantity}${it.unit ? ` ${it.unit}` : ""})` : ""}`,
+        };
+      });
+      const content = `Rozpoznano ${actions.length} ${actions.length === 1 ? "pozycję" : "pozycji"} ze zdjęcia`;
+      setTurns((t) => [...t, { id: newId(), role: "assistant", kind: "plan", content, actions }]);
+      void persist("assistant", content, "plan", { actions });
+    } catch {
+      setError("Nie udało się przetworzyć zdjęcia");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleSend(textArg?: string) {
+    // Wysyłka ze zdjęciem ma własną ścieżkę (vision → plan).
+    if (attachedImage) { void sendImage(attachedImage, (textArg ?? inputText).trim()); setInputText(""); return; }
     const text = (textArg ?? inputText).trim();
     if (!text || busy) return;
     setInputText("");
@@ -728,9 +797,28 @@ export function AICommandSheet() {
             {/* Composer */}
             {!showHistory && (
               <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
+                {attachedImage && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={attachedImage} alt="załącznik" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border)" }} />
+                    <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>Zdjęcie gotowe — opisz (np. „do zakupów") i wyślij, by rozpoznać przedmioty.</span>
+                    <button onClick={() => setAttachedImage(null)} title="Usuń zdjęcie" style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex" }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+                <input ref={fileRef} type="file" accept="image/*" onChange={onPickImage} style={{ display: "none" }} />
                 <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    disabled={busy}
+                    title="Dodaj zdjęcie (rozpoznanie przedmiotów)"
+                    style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "1px solid var(--border)", background: attachedImage ? "var(--bg-elevated)" : "transparent", color: attachedImage ? "var(--accent-blue)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: busy ? "default" : "pointer" }}
+                  >
+                    <ImagePlus size={17} />
+                  </button>
                   <div style={{ flex: 1 }}>
-                    <SmartTextarea value={inputText} onChange={setInputText} placeholder={placeholder} rows={2} onSubmit={() => handleSend()} disabled={busy} />
+                    <SmartTextarea value={inputText} onChange={setInputText} placeholder={attachedImage ? 'Opcjonalny opis, np. „do zakupów"' : placeholder} rows={2} onSubmit={() => handleSend()} disabled={busy} />
                   </div>
                   {busy ? (
                     <button
@@ -743,9 +831,9 @@ export function AICommandSheet() {
                   ) : (
                     <button
                       onClick={() => handleSend()}
-                      disabled={!inputText.trim()}
+                      disabled={!inputText.trim() && !attachedImage}
                       title="Wyślij"
-                      style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "none", background: !inputText.trim() ? "var(--bg-elevated)" : "var(--accent-blue)", color: !inputText.trim() ? "var(--text-muted)" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: !inputText.trim() ? "not-allowed" : "pointer" }}
+                      style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "none", background: (!inputText.trim() && !attachedImage) ? "var(--bg-elevated)" : "var(--accent-blue)", color: (!inputText.trim() && !attachedImage) ? "var(--text-muted)" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: (!inputText.trim() && !attachedImage) ? "not-allowed" : "pointer" }}
                     >
                       <Send size={16} />
                     </button>
