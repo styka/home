@@ -7,6 +7,7 @@ import { AISuggestions } from "@/components/home/AISuggestions";
 import { InvitationsBanner } from "@/components/home/InvitationsBanner";
 import { ModuleSnapshotGrid } from "@/components/home/ModuleSnapshotGrid";
 import { TodaySnapshot } from "@/components/home/TodaySnapshot";
+import { DailyBriefingCard } from "@/components/home/DailyBriefingCard";
 import { QuickActions } from "@/components/home/QuickActions";
 import { RecentlyUsed } from "@/components/home/RecentlyUsed";
 import { AdminDashboardWidget } from "@/components/home/AdminDashboardWidget";
@@ -219,6 +220,9 @@ export function HomePage({
 
         {/* Recently used — szybki powrót do ostatnich działów */}
         <RecentlyUsed activities={recentActivity} permissions={userPermissions} />
+
+        {/* Briefing dnia — AI podsumowanie na żądanie */}
+        {hasAnyModule && <DailyBriefingCard />}
 
         {/* Module snapshot */}
         {hasAnyModule ? (
