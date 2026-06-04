@@ -2,6 +2,7 @@
 
 import { TaskRow } from "./TaskRow";
 import { CompletedSection } from "./CompletedSection";
+import { TaskGroup } from "./TaskGroup";
 import type { Task, TaskStatusFilter, ViewMode } from "@/types";
 
 interface TaskListProps {
@@ -116,28 +117,14 @@ export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, foc
     return (
       <div className="flex-1 overflow-y-auto">
         {entries.map(([key, { label, tasks: dayTasks }]) => (
-          <div key={key}>
-            <div
-              className="flex items-center gap-2 px-4 py-1 text-xs font-medium sticky top-0"
-              style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg-base)", borderBottom: "1px solid var(--border)" }}
-            >
-              {label}
-              <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({dayTasks.length})</span>
-            </div>
+          <TaskGroup key={key} label={label} count={dayTasks.length}>
             {[...dayTasks].sort(byDueDateAsc).map(renderTask)}
-          </div>
+          </TaskGroup>
         ))}
         {withoutDate.length > 0 && (
-          <div>
-            <div
-              className="flex items-center gap-2 px-4 py-1 text-xs font-medium sticky top-0"
-              style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-base)", borderBottom: "1px solid var(--border)" }}
-            >
-              Bez terminu
-              <span style={{ fontWeight: 400 }}>({withoutDate.length})</span>
-            </div>
+          <TaskGroup label="Bez terminu" count={withoutDate.length} muted>
             {withoutDate.map(renderTask)}
-          </div>
+          </TaskGroup>
         )}
       </div>
     );
@@ -172,16 +159,9 @@ export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, foc
     return (
       <div className="flex-1 overflow-y-auto">
         {Array.from(projectMap.entries()).map(([key, { label, tasks: groupTasks }]) => (
-          <div key={key}>
-            <div
-              className="flex items-center gap-2 px-4 py-1 text-xs font-medium sticky top-0"
-              style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg-base)", borderBottom: "1px solid var(--border)" }}
-            >
-              {label}
-              <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({groupTasks.length})</span>
-            </div>
+          <TaskGroup key={key} label={label} count={groupTasks.length}>
             {[...groupTasks].sort(byDueDateAsc).map(renderTask)}
-          </div>
+          </TaskGroup>
         ))}
         <CompletedSection tasks={done} renderTask={renderTask} />
       </div>
@@ -200,16 +180,9 @@ export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, foc
         const group = filtered.filter((t) => t.priority === priority).sort(byDueDateAsc);
         if (group.length === 0) return null;
         return (
-          <div key={priority}>
-            <div
-              className="flex items-center gap-2 px-4 py-1 text-xs font-medium sticky top-0"
-              style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-base)", borderBottom: "1px solid var(--border)" }}
-            >
-              {PRIORITY_LABELS[priority]}
-              <span style={{ fontWeight: 400 }}>({group.length})</span>
-            </div>
+          <TaskGroup key={priority} label={PRIORITY_LABELS[priority]} count={group.length} muted>
             {group.map(renderTask)}
-          </div>
+          </TaskGroup>
         );
       })}
       <CompletedSection tasks={done} renderTask={renderTask} />
