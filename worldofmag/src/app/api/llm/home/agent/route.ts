@@ -46,11 +46,17 @@ interface LogEntry {
   actionsCount?: number;
 }
 
-const ACTION_CATALOG = `Dostępne akcje ZAPISU (step "plan"). Każda akcja: { id, module, type, description, params, searchQuery? }.
+const ACTION_CATALOG_HEADER = `Dostępne akcje ZAPISU (step "plan"). Każda akcja: { id, module, type, description, params, searchQuery? }.
 Po wykonaniu zapytań możesz CELOWAĆ w konkretny rekord przez jego id z wyników (taskId/itemId/noteId/listId) — to precyzyjny, opcjonalny namiar dla backendu.
-WAŻNE (czytelność dla użytkownika): id NIE jest pokazywane w panelu potwierdzenia, bo nic mu nie mówi. Dlatego dla KAŻDEJ akcji celującej w istniejący rekord ZAWSZE wypełnij też "searchQuery" czytelną nazwą/tytułem tego rekordu (np. tytuł zadania, nazwa listy, imię zwierzęcia) — to ją zobaczy użytkownik. Dodatkowo "description" musi po ludzku nazywać cel akcji.
+WAŻNE (czytelność dla użytkownika): id NIE jest pokazywane w panelu potwierdzenia, bo nic mu nie mówi. Dlatego dla KAŻDEJ akcji celującej w istniejący rekord ZAWSZE wypełnij też "searchQuery" czytelną nazwą/tytułem tego rekordu (np. tytuł zadania, nazwa listy, imię zwierzęcia) — to ją zobaczy użytkownik. Dodatkowo "description" musi po ludzku nazywać cel akcji.`;
 
-ZAKUPY (module "shopping"):
+const ACTION_CATALOG_FOOTER = `PRZEJŚCIE PO UTWORZENIU: do KAŻDEJ akcji tworzącej (create_task, create_note, create_list, create_project, add_item) możesz dodać params.openAfter:true, gdy użytkownik prosi, by od razu przejść/otworzyć utworzony element ("dodaj zadanie X i przejdź do niego"). Po wykonaniu aplikacja zaproponuje przekierowanie.`;
+
+// Katalog akcji ROZBITY na moduły — do system promptu wstrzykujemy tylko sekcje
+// modułów istotnych dla bieżącego polecenia (router niżej), co tnie tokeny i
+// rozprasza model mniej. Pełny katalog (fallback + guard) = wszystkie sekcje.
+const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
+  shopping: `ZAKUPY (module "shopping"):
 - add_item { rawText, listName?, listId? } — rawText to TYLKO nazwa i ilość ("2 kg jabłek"), bez nazwy listy.
 - update_item_status { status:"NEEDED"|"IN_CART"|"DONE", itemId? } (searchQuery jako fallback)
 - update_item { name?, quantity?, unit?, itemId? }
@@ -58,87 +64,109 @@ ZAKUPY (module "shopping"):
 - create_list { name }
 - rename_list { name, listId? } (searchQuery = obecna nazwa)
 - archive_list { listId? } (searchQuery fallback) — DESTRUKCYJNE
+- delete_list { listId? } (searchQuery = nazwa) — DESTRUKCYJNE
+- clear_done_items {} (searchQuery/listName = lista) — usuwa kupione pozycje.
+- mark_all_in_cart {} (searchQuery/listName = lista) — oznacza wszystkie jako w koszyku.`,
 
-ZADANIA (module "tasks"):
+  tasks: `ZADANIA (module "tasks"):
 - create_task { title, description?, priority:"NONE"|"LOW"|"MEDIUM"|"HIGH"|"URGENT", dueDate?(ISO), projectName? }
 - update_task { taskId?, title?, description?, priority?, status?, dueDate? } (searchQuery fallback)
 - update_task_status { status:"TODO"|"IN_PROGRESS"|"DONE"|"CANCELLED"|"DEFERRED", taskId? } (searchQuery fallback)
 - shift_task_due_date { days:number, taskId? } (searchQuery fallback; ujemne = wcześniej)
 - delete_task { taskId? } (searchQuery fallback) — DESTRUKCYJNE
 - create_project { name, emoji? }
+- update_project { name?, emoji?, projectId? } (searchQuery = nazwa projektu)
+- delete_project { projectId? } (searchQuery = nazwa) — DESTRUKCYJNE`,
 
-NOTATKI (module "notes"):
+  notes: `NOTATKI (module "notes"):
 - create_note { title, content? }
 - append_to_note { content, noteId? } (searchQuery fallback)
 - update_note { title?, content?, noteId? } (searchQuery fallback)
 - delete_note { noteId? } (searchQuery fallback) — DESTRUKCYJNE
+- toggle_pin { noteId? } (searchQuery = tytuł) — przypnij/odepnij notatkę.`,
 
-NAWYKI (module "habits"):
+  habits: `NAWYKI (module "habits"):
 - toggle_habit {} (searchQuery = nazwa nawyku lub jej fragment) — odhacza nawyk na dziś lub cofa odhaczenie.
+- create_habit { name, description?, icon? } — tworzy nowy nawyk.
+- update_habit { name?, icon?, description? } (searchQuery = nazwa)
+- archive_habit { archived } (searchQuery = nazwa)
+- delete_habit {} (searchQuery = nazwa) — DESTRUKCYJNE`,
 
-PORTFEL (module "portfel"):
+  portfel: `PORTFEL (module "portfel"):
 - add_expense { amount:number, category?, note?, elementName? } — wydatek (kwota w PLN). elementName = fragment nazwy konta/elementu portfela.
 - add_income { amount:number, category?, note?, elementName? } — przychód (kwota w PLN).
+- create_wallet_element { name, kind?, initialBalance? } — tworzy konto/element portfela.
+- update_wallet_element { name?, note?, elementName? }
+- set_wallet_balance { amount, elementName? }
+- archive_wallet_element { archived } (elementName?)
+- delete_wallet_element {} (elementName? / searchQuery = nazwa) — DESTRUKCYJNE`,
 
-KUCHNIA (module "kitchen"):
+  kitchen: `KUCHNIA (module "kitchen"):
 - plan_meal { customTitle, date?(ISO; pomiń jeśli „dziś"), slot?:"breakfast"|"lunch"|"dinner"|"snack" } — planuje posiłek w jadłospisie.
+- add_pantry_item { name, quantity?, unit?, expiresAt?(ISO) } — dodaje produkt do spiżarni.
+- create_recipe { title, description?, servings?, body? }
+- delete_recipe {} (searchQuery = tytuł) — DESTRUKCYJNE
+- mark_meal_cooked {} (searchQuery = tytuł posiłku)
+- delete_meal_plan {} (searchQuery = tytuł posiłku)
+- update_pantry_item { quantity?, unit?, expiresAt? } (searchQuery = nazwa)
+- consume_pantry { quantity } (searchQuery = nazwa)
+- delete_pantry_item {} (searchQuery = nazwa) — DESTRUKCYJNE`,
 
-FLOTA (module "flota"):
+  flota: `FLOTA (module "flota"):
 - add_fuel_log { liters:number, totalCost?, odometer?, vehicleName?, note? } — zapis tankowania. vehicleName = fragment nazwy/modelu pojazdu.
+- add_service_record { vehicleName?, serviceType?, cost?, odometer?, note? } — wpis serwisowy pojazdu.
+- create_vehicle { name, make?, model?, plate?, year? }
+- update_vehicle { name?, plate?, odometer? } (searchQuery = nazwa)
+- delete_vehicle {} (searchQuery = nazwa) — DESTRUKCYJNE`,
 
-MAGAZYN (module "magazynowanie"):
+  magazynowanie: `MAGAZYN (module "magazynowanie"):
 - add_storage_item { name, quantity?, unit?, warehouse?, location?, category? } — nowa pozycja magazynu (warehouse = magazyn nadrzędny, location = dokładne miejsce).
 - adjust_storage { delta:number } (searchQuery = nazwa pozycji) — przyjęcie (+) lub wydanie (−) ze stanu.
+- update_storage_item { name?, unit?, warehouse?, location? } (searchQuery = nazwa)
+- delete_storage_item {} (searchQuery = nazwa) — DESTRUKCYJNE
+- transfer_storage { toWarehouse?, toLocation?, quantity } (searchQuery = nazwa)`,
 
-NAWYKI (module "habits"):
-- create_habit { name, description?, icon? } — tworzy nowy nawyk.
-
-KUCHNIA (module "kitchen"):
-- add_pantry_item { name, quantity?, unit?, expiresAt?(ISO) } — dodaje produkt do spiżarni.
-
-PORTFEL (module "portfel"):
-- create_wallet_element { name, kind?, initialBalance? } — tworzy konto/element portfela.
-
-FLOTA (module "flota"):
-- add_service_record { vehicleName?, serviceType?, cost?, odometer?, note? } — wpis serwisowy pojazdu.
-
-ZDROWIE (module "health"):
+  health: `ZDROWIE (module "health"):
 - create_health_event { title, kind:"VISIT"|"TEST", scheduledAt(ISO), doctorName?, specialty?, facility?, notes? } — wizyta lub badanie.
 - update_health_event { eventId?, title?, scheduledAt?, status?, notes? } (searchQuery = tytuł)
 - set_health_status { status:"PLANNED"|"DONE"|"CANCELLED", eventId? } (searchQuery fallback)
-- delete_health_event { eventId? } (searchQuery fallback) — DESTRUKCYJNE
+- delete_health_event { eventId? } (searchQuery fallback) — DESTRUKCYJNE`,
 
-JĘZYKI (module "languages"):
+  languages: `JĘZYKI (module "languages"):
 - create_deck { name, nativeLang?, targetLang? } — nowa talia fiszek.
 - add_word { term, translation, example?, deckName? } — dodaje fiszkę (deckName = fragment nazwy talii; pominięty = ostatnia talia).
 - delete_word { wordId } — DESTRUKCYJNE
+- update_deck { name?, nativeLang?, targetLang?, deckName? }
+- delete_deck {} (searchQuery = nazwa) — DESTRUKCYJNE
+- update_word { term?, translation?, example?, wordId? }`,
 
-WIADOMOŚCI (module "news"):
+  news: `WIADOMOŚCI (module "news"):
 - create_news_topic { title, semanticFilter? } — nowy monitorowany temat.
 - delete_news_topic { topicId? } (searchQuery = tytuł) — DESTRUKCYJNE
+- update_news_topic { title?, semanticFilter?, topicId? } (searchQuery = tytuł)
+- refresh_news_topic { topicId? } (searchQuery = tytuł)`,
 
-POGODA (module "weather"):
+  weather: `POGODA (module "weather"):
 - add_weather_location { name } — dodaje lokalizację pogodową po nazwie miejscowości.
 - delete_weather_location { locationId? } (searchQuery = nazwa) — DESTRUKCYJNE
+- set_default_weather_location { locationId? } (searchQuery = nazwa)
+- add_weather_watcher { presetKey }
+- delete_weather_watcher { watcherId? } — DESTRUKCYJNE`,
 
-RAPORTY (module "reports"):
-- save_report { title, content } — zapisuje raport (markdown) do działu Raporty użytkownika. Używaj, gdy użytkownik prosi „zapisz to jako raport". Dla pełnego raportu z sesji preferuj jednak krok "report" (niżej), który pozwala użytkownikowi obejrzeć szkic przed zapisem.
+  reports: `RAPORTY (module "reports"):
+- save_report { title, content } — zapisuje raport (markdown) do działu Raporty użytkownika. Używaj, gdy użytkownik prosi „zapisz to jako raport". Dla pełnego raportu z sesji preferuj jednak krok "report" (niżej), który pozwala użytkownikowi obejrzeć szkic przed zapisem.`,
 
-DODATKOWE AKCJE (pełne CRUD — searchQuery = nazwa/tytuł do wyszukania, gdy brak id; DESTRUKCYJNE oznaczone):
-ZAKUPY: delete_list (DESTRUKCYJNE) · clear_done_items (usuń kupione) · mark_all_in_cart.
-ZADANIA: update_project { name?, emoji?, projectId? } · delete_project (DESTRUKCYJNE).
-NOTATKI: toggle_pin (przypnij/odepnij; searchQuery = tytuł).
-NAWYKI: update_habit { name?, icon?, description? } · archive_habit { archived } · delete_habit (DESTRUKCYJNE).
-PORTFEL: update_wallet_element { name?, note?, elementName? } · set_wallet_balance { amount, elementName? } · archive_wallet_element { archived } · delete_wallet_element (DESTRUKCYJNE).
-KUCHNIA: create_recipe { title, description?, servings?, body? } · delete_recipe (DESTRUKCYJNE) · mark_meal_cooked · delete_meal_plan · update_pantry_item { quantity?, unit?, expiresAt? } · consume_pantry { quantity } · delete_pantry_item (DESTRUKCYJNE).
-FLOTA: create_vehicle { name, make?, model?, plate?, year? } · update_vehicle { name?, plate?, odometer? } · delete_vehicle (DESTRUKCYJNE).
-JĘZYKI: update_deck { name?, nativeLang?, targetLang?, deckName? } · delete_deck (DESTRUKCYJNE) · update_word { term?, translation?, example?, wordId? }.
-WIADOMOŚCI: update_news_topic { title?, semanticFilter?, topicId? } · refresh_news_topic { topicId? }.
-POGODA: set_default_weather_location { locationId? } · add_weather_watcher { presetKey } · delete_weather_watcher { watcherId? } (DESTRUKCYJNE).
-MAGAZYN: update_storage_item { name?, unit?, warehouse?, location? } · delete_storage_item (DESTRUKCYJNE) · transfer_storage { toWarehouse?, toLocation?, quantity }.
-ZWIERZĘTA: update_pet { name?, breed? } (searchQuery = imię) · set_pet_status { status:"ACTIVE"|"SOLD"|"DECEASED"|"ARCHIVED" } · delete_pet (DESTRUKCYJNE).
+  pets: `ZWIERZĘTA (module "pets") — dodatkowe (główne akcje w sekcji ZWIERZĘTA poniżej):
+- update_pet { name?, breed? } (searchQuery = imię)
+- set_pet_status { status:"ACTIVE"|"SOLD"|"DECEASED"|"ARCHIVED" } (searchQuery = imię)
+- delete_pet {} (searchQuery = imię) — DESTRUKCYJNE`,
+};
 
-PRZEJŚCIE PO UTWORZENIU: do KAŻDEJ akcji tworzącej (create_task, create_note, create_list, create_project, add_item) możesz dodać params.openAfter:true, gdy użytkownik prosi, by od razu przejść/otworzyć utworzony element ("dodaj zadanie X i przejdź do niego"). Po wykonaniu aplikacja zaproponuje przekierowanie.`;
+// Składa katalog dla wybranych modułów (header + sekcje + footer).
+function buildActionCatalog(modules: string[]): string {
+  const sections = modules.map((m) => ACTION_CATALOG_BY_MODULE[m]).filter(Boolean);
+  return [ACTION_CATALOG_HEADER, ...sections, ACTION_CATALOG_FOOTER].join("\n\n");
+}
 
 const NAVIGATION_CATALOG = `NAWIGACJA (step "navigate") — przekieruj użytkownika na GOTOWY widok aplikacji, gdy prośba sprowadza się do „pokaż / otwórz / przejdź do …", a istnieje strona z odpowiednimi parametrami. To NIE wykona się od razu — użytkownik potwierdzi przekierowanie.
 { "step":"navigate", "thought":"...", "url":"/tasks/all?status=IN_PROGRESS", "label":"Zadania w trakcie" }
@@ -156,7 +184,11 @@ KIEDY "navigate" vs "answer":
 - Pytanie analityczne lub filtrowanie, którego strona NIE obsługuje (np. „zadania URGENT bez terminu z projektu X") → pobierz dane przez "query" i odpowiedz przez "answer" (markdown).
 - Jeśli potrzebujesz id (projektu/listy/notatki), najpierw "query", potem "navigate".`;
 
-function buildSystemPrompt(): string {
+function buildSystemPrompt(modules: string[]): string {
+  // Wstrzykujemy katalog akcji tylko dla wybranych modułów (router). Sekcję
+  // „głównych" akcji ZWIERZĄT (PET_ACTIONS_PROMPT) i jej przykłady dodajemy tylko,
+  // gdy pets jest w grze — to największe pojedyncze bloki promptu.
+  const includePets = modules.includes("pets");
   return `Jesteś asystentem WorldOfMag — pracujesz NA DANYCH użytkownika tymi samymi regułami dostępu co aplikacja.
 Twoim zadaniem jest zrozumieć polecenie/pytanie, w razie potrzeby pobrać dane, a następnie ALBO odpowiedzieć, ALBO zaproponować akcje do potwierdzenia przez użytkownika.
 
@@ -183,12 +215,10 @@ Raport „z naszej sesji bez pomijania faktów, z podsumowaniem": uwzględnij WS
 
 ${READ_TOOLS_PROMPT}
 
-${ACTION_CATALOG}
+${buildActionCatalog(modules)}
 
 ${NAVIGATION_CATALOG}
-
-${PET_ACTIONS_PROMPT}
-
+${includePets ? `\n${PET_ACTIONS_PROMPT}\n` : ""}
 ZASADY:
 - Najpierw "query" po dane, dopiero potem "answer" lub "plan" z konkretnymi id.
 - Akcje ZBIORCZE (np. "oznacz wszystkie zadania o remoncie jako zrobione"): pobierz zadania przez query, SAM zdecyduj które pasują na podstawie tytułów/treści, a potem zwróć WIELE akcji — każda z własnym id. Nie ma akcji masowej; symulujesz ją pętlą pojedynczych akcji.
@@ -198,10 +228,9 @@ ZASADY:
 - RAPORT: gdy użytkownik prosi o raport/podsumowanie sesji lub obszerne zestawienie ("zrób raport", "podsumuj naszą rozmowę bez pomijania faktów") — użyj kroku "report" z pełnym markdownem (nie pomijaj konkretnych danych z rozmowy).
 - Korzystaj z kontekstu (aktualny widok / aktywna lista / bieżący projekt) podanego w wiadomości użytkownika, gdy polecenie nie wskazuje wprost celu. Wcześniejsze tury rozmowy bywają dołączone jako kontekst — wykorzystuj je dla ciągłości.
 - WYBÓR MODUŁU: gdy polecenie nie wskazuje wprost modułu, użyj modułu PODSTAWOWEGO (pierwszego na liście „Aktywne moduły"). Gdy użytkownik użyje słowa-klucza innego aktywnego modułu (np. „wydatek/przychód" → portfel, „zatankowałem" → flota, „nawyk/odhacz" → habits, „magazyn/wydaj ze stanu" → magazynowanie, „zaplanuj posiłek" → kitchen) — użyj tamtego modułu, o ile jest aktywny.
-- Twórz akcje tylko dla modułów: ${MODULES.join(", ")}.
+- Twórz akcje tylko dla modułów, których katalog masz wyżej: ${modules.join(", ")}. Jeśli polecenie wyraźnie dotyczy INNEGO modułu (nie ma go w katalogu) — użyj "clarify" lub "answer" i poproś o doprecyzowanie, NIE zgaduj akcji spoza katalogu.
 - Zawsze zwracaj wyłącznie poprawny JSON wg schematu, bez żadnego dodatkowego tekstu.
-
-${PET_ACTION_EXAMPLES}`;
+${includePets ? `\n${PET_ACTION_EXAMPLES}` : ""}`;
 }
 
 // Adresy nawigacji pochodzą od LLM, więc traktujemy je jak nieufne wejście: tylko
@@ -261,6 +290,46 @@ async function callAgent(messages: ChatMessage[]): Promise<string> {
     throw err;
   }
   return result.content || "{}";
+}
+
+const CATALOG_MODULES = Object.keys(ACTION_CATALOG_BY_MODULE);
+
+// Dwustopniowy routing — KROK 1: tani klasyfikator wybiera moduły istotne dla
+// polecenia, żeby do głównej pętli wstrzyknąć tylko ich katalog akcji (mniej
+// tokenów, mniej rozproszenia). Zawsze dorzucamy moduł podstawowy. Przy
+// jakiejkolwiek niepewności (błąd/pusto) zwracamy PEŁNY zestaw aktywnych modułów
+// — wtedy zachowanie = jak przed optymalizacją (zero regresji w najgorszym razie).
+async function routeModules(text: string, activeModules: string[], primary: string): Promise<string[]> {
+  const allowed = activeModules.filter((m) => CATALOG_MODULES.includes(m));
+  if (allowed.length <= 3) return allowed; // i tak mało — nie ma co klasyfikować
+  try {
+    const result = await chatComplete({
+      op: "dispatch",
+      messages: [
+        {
+          role: "system",
+          content:
+            `Wskaż moduły istotne dla polecenia użytkownika. Wybieraj WYŁĄCZNIE z: ${allowed.join(", ")}.\n` +
+            `Zwykle 1 moduł; dodaj 2.–3. tylko gdy polecenie wyraźnie dotyczy kilku obszarów. Gdy niejasne — zwróć "${primary}".\n` +
+            `Słowa-klucze: wydatek/przychód/zł→portfel; zatankowałem/serwis/przebieg→flota; nawyk/odhacz→habits; magazyn/stan/wydaj→magazynowanie; posiłek/przepis/spiżarnia→kitchen; wizyta/badanie→health; fiszka/słówko/talia→languages; temat wiadomości→news; pogoda/lokalizacja→weather; lista/kup→shopping; zadanie/projekt→tasks; notatka→notes; zwierzę/pies/kot/waż/karmienie→pets; raport→reports.\n` +
+            `Zwróć WYŁĄCZNIE JSON: {"modules":["..."]}`,
+        },
+        { role: "user", content: text.slice(0, 600) },
+      ],
+      temperature: 0,
+      maxTokens: 120,
+      json: true,
+    });
+    if (!result.ok || !result.content) return allowed;
+    const parsed = JSON.parse(result.content.trim().replace(/^```json\n?/i, "").replace(/```$/, "")) as { modules?: unknown };
+    const picked = Array.isArray(parsed.modules)
+      ? parsed.modules.map(String).filter((m) => allowed.includes(m))
+      : [];
+    const set = new Set<string>([primary, ...picked].filter((m) => allowed.includes(m)));
+    return set.size > 0 ? Array.from(set) : allowed;
+  } catch {
+    return allowed; // fallback: pełny katalog aktywnych modułów
+  }
 }
 
 function normalizeActions(raw: unknown): AIAction[] {
@@ -433,7 +502,10 @@ export async function POST(req: NextRequest) {
   };
 
   // Zbuduj konwersację. System prompt zawsze budujemy po stronie serwera (nie ufamy klientowi).
-  const messages: ChatMessage[] = [{ role: "system", content: buildSystemPrompt() }];
+  // Moduły do katalogu akcji ustala router (krok 1) na ścieżce świeżego polecenia;
+  // przy wznawianiu (clarify/refine) dajemy pełny zestaw aktywnych modułów.
+  const messages: ChatMessage[] = [];
+  let selectedModules: string[] = CATALOG_MODULES;
 
   // Higiena kontekstu: wstrzykujemy tylko ostatnie N wiadomości historii (user/assistant),
   // żeby długie rozmowy nie rozsadziły okna tokenów modelu.
@@ -453,6 +525,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.messages?.length) {
+    // Wznowienie po doprecyzowaniu/korekcie — pełny katalog aktywnych modułów (bez routera).
+    const ctx = body.context?.length ? body.context : CATALOG_MODULES;
+    selectedModules = ctx.filter((m) => CATALOG_MODULES.includes(m));
+    if (selectedModules.length === 0) selectedModules = CATALOG_MODULES;
     // Wznowienie po doprecyzowaniu: dołącz dialog klienta (pomijając ewentualny system) + odpowiedź użytkownika.
     for (const m of body.messages) {
       if (m.role !== "system" && typeof m.content === "string") {
@@ -479,6 +555,10 @@ export async function POST(req: NextRequest) {
 
     const today = body.today ?? new Date().toISOString();
     const context = body.context?.length ? body.context : [...MODULES];
+    const primary = context[0] ?? "shopping";
+
+    // KROK 1 (router): zawęź katalog akcji do modułów istotnych dla polecenia.
+    selectedModules = await routeModules(text, context, primary);
 
     // Nazwa bieżącego projektu (jeśli użytkownik jest na jego widoku)
     let currentProjectName: string | null = null;
@@ -507,6 +587,9 @@ export async function POST(req: NextRequest) {
 
     messages.push({ role: "user", content: userMsg });
   }
+
+  // System prompt (z katalogiem tylko wybranych modułów) na początek konwersacji.
+  messages.unshift({ role: "system", content: buildSystemPrompt(selectedModules) });
 
   // Tryb strumieniowy (SSE): emitujemy myśli agenta NA ŻYWO, a na końcu pełny wynik.
   if (body.stream === true) {
