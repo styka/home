@@ -27,7 +27,9 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_tasks: args { projectId?, status?, priority?, search?, dueBefore?, limit? } → [{ id, title, status, priority, dueDate, projectId, projectName }]. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO.
 - list_shopping_lists: args { includeArchived? } → [{ id, name, pendingCount, totalCount, archived }]
 - list_items: args { listId?, listName?, status?, search?, limit? } → [{ id, name, status, quantity, unit, listId, listName }]
-- list_notes: args { search?, limit? } → [{ id, title, snippet, updatedAt }]
+- list_notes: args { search?, limit? } → [{ id, title, snippet, updatedAt }]. Lista (snippet skrócony). Do PEŁNEJ treści użyj get_note.
+- get_note: args { noteId? | search? } → { id, title, content, updatedAt } | null. PEŁNA treść jednej notatki — wywołaj PRZED przepisaniem/edycją treści (update_note/append_to_note), gdy potrzebujesz aktualnego tekstu.
+- get_task: args { taskId? | search? } → { id, title, description, status, priority, dueDate, projectName } | null. PEŁNY opis jednego zadania — wywołaj PRZED edycją opisu (update_task), gdy potrzebujesz aktualnej treści.
 - list_pets: args { search? } → [{ id, name, species, status }]
 - list_storage_items: args { search?, warehouse?, lowStockOnly?, limit? } → [{ id, name, quantity, unit, warehouse, location, minQuantity }]. Pozycje magazynu (dom/firma). lowStockOnly=true zwraca tylko poniżej stanu minimalnego.
 - list_habits: args {} → [{ id, name, doneToday }]. Nawyki użytkownika (doneToday = czy odhaczony dziś).
@@ -46,9 +48,11 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 export const READ_TOOL_NAMES = [
   "list_projects",
   "list_tasks",
+  "get_task",
   "list_shopping_lists",
   "list_items",
   "list_notes",
+  "get_note",
   "list_pets",
   "list_storage_items",
   "list_habits",
@@ -168,6 +172,39 @@ export async function runReadTool(
       }));
     }
 
+    case "get_task": {
+      const taskId = asStr(args.taskId);
+      const search = asStr(args.search);
+      const projectIds = await accessibleProjectIds(userId);
+      const access = {
+        OR: [
+          { projectId: { in: projectIds } },
+          { createdById: userId },
+          { assigneeId: userId },
+        ],
+      };
+      const task = await prisma.task.findFirst({
+        where: taskId
+          ? { id: taskId, ...access }
+          : { ...access, ...(search ? { title: { contains: search, mode: "insensitive" } } : {}) },
+        select: {
+          id: true, title: true, description: true, status: true,
+          priority: true, dueDate: true, project: { select: { name: true } },
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+      if (!task) return null;
+      return {
+        id: task.id,
+        title: task.title,
+        description: task.description ?? "",
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate?.toISOString() ?? null,
+        projectName: task.project?.name ?? null,
+      };
+    }
+
     case "list_shopping_lists": {
       const includeArchived = args.includeArchived === true;
       const lists = await prisma.shoppingList.findMany({
@@ -255,6 +292,44 @@ export async function runReadTool(
         snippet: (n.content ?? "").slice(0, 120),
         updatedAt: n.updatedAt.toISOString(),
       }));
+    }
+
+    case "get_note": {
+      const noteId = asStr(args.noteId);
+      const search = asStr(args.search);
+      const teamIds = await getUserTeamIds(userId);
+      const ownerOr = [
+        { ownerId: userId },
+        ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+      ];
+      const note = await prisma.note.findFirst({
+        where: noteId
+          ? { id: noteId, OR: ownerOr }
+          : {
+              OR: ownerOr,
+              ...(search
+                ? {
+                    AND: [
+                      {
+                        OR: [
+                          { title: { contains: search, mode: "insensitive" } },
+                          { content: { contains: search, mode: "insensitive" } },
+                        ],
+                      },
+                    ],
+                  }
+                : {}),
+            },
+        select: { id: true, title: true, content: true, updatedAt: true },
+        orderBy: { updatedAt: "desc" },
+      });
+      if (!note) return null;
+      return {
+        id: note.id,
+        title: note.title,
+        content: note.content ?? "",
+        updatedAt: note.updatedAt.toISOString(),
+      };
     }
 
     case "list_pets": {

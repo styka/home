@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil,
+  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
@@ -486,6 +486,21 @@ export function AICommandSheet() {
     }
   }
 
+  // Autokorekta: oddaj nieudane akcje agentowi, by zaproponował poprawiony plan.
+  function fixFailedActions(results: ActionResult[]) {
+    const failed = results.filter((r) => !r.success);
+    if (!failed.length || busy) return;
+    const lines = failed.map((r) => `- ${r.description}${r.error ? ` — błąd: ${r.error}` : ""}`).join("\n");
+    const text =
+      `Poprzednia próba wykonania akcji częściowo się nie powiodła. Nieudane pozycje i błędy:\n${lines}\n\n` +
+      `Zaproponuj POPRAWIONY plan naprawiający te niepowodzenia (np. doprecyzuj nazwę/utwórz brakujący zasób/popraw parametry). ` +
+      `Nie powtarzaj akcji, które się powiodły. Jeśli przyczyna jest niejednoznaczna — dopytaj.`;
+    const history = buildHistory();
+    setTurns((t) => [...t, { id: newId(), role: "user", kind: "text", content: "Popraw nieudane akcje" }]);
+    void persist("user", "Popraw nieudane akcje", "text");
+    void callAgent({ text, context, routeHint, activeListId, currentProjectId: activeProjectId, today: new Date().toISOString(), history });
+  }
+
   async function saveReport(turn: Extract<Turn, { kind: "report" }>) {
     try {
       const report = await createUserReport({ title: turn.title, content: turn.content });
@@ -645,6 +660,7 @@ export function AICommandSheet() {
                     onSaveReport={saveReport}
                     onRegenerate={lastPayloadRef.current ? regenerate : undefined}
                     onFollowup={(txt) => handleSend(txt)}
+                    onFixFailed={fixFailedActions}
                   />
                 ))}
 
@@ -752,7 +768,7 @@ function CopyButton({ text }: { text: string }) {
 }
 
 function TurnView({
-  turn, isLast, onBubbleClick, onClarifySubmit, onOpenPlan, onNavigate, onSaveReport, onRegenerate, onFollowup,
+  turn, isLast, onBubbleClick, onClarifySubmit, onOpenPlan, onNavigate, onSaveReport, onRegenerate, onFollowup, onFixFailed,
 }: {
   turn: Turn;
   isLast: boolean;
@@ -763,6 +779,7 @@ function TurnView({
   onSaveReport: (turn: Extract<Turn, { kind: "report" }>) => void;
   onRegenerate?: () => void;
   onFollowup?: (text: string) => void;
+  onFixFailed?: (results: ActionResult[]) => void;
 }) {
   const [clarifyInput, setClarifyInput] = useState("");
 
@@ -903,6 +920,14 @@ function TurnView({
           </div>
         </div>
       ))}
+      {isLast && onFixFailed && turn.results.some((r) => !r.success) && (
+        <button
+          onClick={() => onFixFailed(turn.results)}
+          style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--accent-amber)", background: "transparent", color: "var(--accent-amber)", fontSize: 12, cursor: "pointer" }}
+        >
+          <Wand2 size={12} /> Popraw nieudane ({turn.results.filter((r) => !r.success).length})
+        </button>
+      )}
     </div>
   );
 }
