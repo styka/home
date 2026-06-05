@@ -77,7 +77,7 @@ model User {
   newsPref               NewsPref?             @relation("NewsPref")
   weatherLocations       WeatherLocation[]     @relation("OwnedWeatherLocations")
   weatherWatchers        WeatherWatcher[]      @relation("OwnedWeatherWatchers")
-  taskViews              TaskView[]            @relation("OwnedTaskViews")
+  projectGroups          ProjectGroup[]        @relation("OwnedProjectGroups")
 }
 
 // Preferencje paska bocznego/menu per użytkownik: kolejność i wyłączone moduły.
@@ -456,22 +456,25 @@ model TaskProjectMember {
   @@id([projectId, userId])
 }
 
-// Zapisany widok wielu projektów: stała, nazwana kombinacja projektów użytkownika
-// (np. „Praca + Dom"), oglądana razem na /tasks/multi?view=<id>. Lista projektów trzymana
-// jako JSON string[] (jak statusConfig / UserMenuPref) — bez tabeli łączącej.
-model TaskView {
+// Grupa projektów: stała, nazwana kombinacja projektów użytkownika (np. „Dom + Auto"),
+// oglądana razem na /tasks/multi?group=<id>. Projekt może należeć do wielu grup (wiele-do-wielu),
+// więc listę trzymamy jako JSON string[] (jak statusConfig / UserMenuPref) — bez tabeli łączącej.
+// Nazwa tabeli w DB to historycznie „TaskView" (@@map) — koncepcja przemianowana na grupy.
+model ProjectGroup {
   id         String   @id @default(cuid())
   name       String
   emoji      String   @default("🗂")
-  projectIds String   @default("[]") // JSON: string[] id projektów w widoku
+  color      String? // opcjonalny kolor (hex / token) na kropkę-znacznik przy projekcie
+  projectIds String   @default("[]") // JSON: string[] id projektów w grupie
   ownerId    String
   order      Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  owner User @relation("OwnedTaskViews", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner User @relation("OwnedProjectGroups", fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
+  @@map("TaskView")
 }
 
 model TaskTagDef {

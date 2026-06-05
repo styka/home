@@ -31,11 +31,11 @@ interface TasksPageProps {
   isAdmin?: boolean;
   /** Widok wielu projektów: projekty w zakresie (chipy pod nagłówkiem). */
   scopeProjects?: Array<{ id: string; name: string; emoji: string; isInbox: boolean }>;
-  /** Id zapisanego widoku wielu projektów (gdy otwarty z zapisanego widoku) — do edycji. */
-  multiViewId?: string;
+  /** Id zapisanej grupy projektów (gdy widok otwarty z grupy) — do edycji. */
+  multiGroupId?: string;
 }
 
-export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialFilter, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiViewId }: TasksPageProps) {
+export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialFilter, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId }: TasksPageProps) {
   const [statusConfigOpen, setStatusConfigOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<TaskStatusFilter>(initialFilter ?? "ALL");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -440,12 +440,12 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               <span className="truncate" style={{ maxWidth: 140 }}>{p.name}</span>
             </Link>
           ))}
-          {multiViewId && (
+          {multiGroupId && (
             <Link
-              href={`/tasks/multi?view=${multiViewId}&edit=1`}
+              href={`/tasks/multi?group=${multiGroupId}&edit=1`}
               className="flex items-center gap-1 px-2 py-0.5 rounded text-xs flex-shrink-0 ml-1"
               style={{ color: "var(--text-muted)" }}
-              title="Edytuj widok (nazwa / projekty)"
+              title="Edytuj grupę (nazwa / projekty)"
             >
               <Pencil size={11} />
             </Link>

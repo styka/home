@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
-import type { TaskView } from "@/types";
+import type { ProjectGroup } from "@/types";
 
 const TERMINAL_STATUSES = ["DONE", "CANCELLED"];
 
@@ -26,18 +26,18 @@ async function accessibleProjectIds(userId: string): Promise<Set<string>> {
   return new Set(projects.map((p: { id: string }) => p.id));
 }
 
-export async function getTaskViews(): Promise<TaskView[]> {
+export async function getProjectGroups(): Promise<ProjectGroup[]> {
   const user = await requireAuth();
 
   const [rows, accessible] = await Promise.all([
-    prisma.taskView.findMany({
+    prisma.projectGroup.findMany({
       where: { ownerId: user.id },
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     }),
     accessibleProjectIds(user.id),
   ]);
 
-  // Liczby aktywnych zadań per projekt — jedno zapytanie, sumowane potem per widok.
+  // Liczby aktywnych zadań per projekt — jedno zapytanie, sumowane potem per grupa.
   const grouped = await prisma.task.groupBy({
     by: ["projectId"],
     where: {
@@ -53,47 +53,49 @@ export async function getTaskViews(): Promise<TaskView[]> {
       .map((g) => [g.projectId, g._count._all])
   );
 
-  return rows.map((r): TaskView => {
+  return rows.map((r): ProjectGroup => {
     // Trzymamy tylko wciąż dostępne projekty (skasowane/odebrane znikają cicho).
     const ids = parseProjectIds(r.projectIds).filter((id) => accessible.has(id));
     const activeCount = ids.reduce((sum, id) => sum + (countByProject.get(id) ?? 0), 0);
-    return { id: r.id, name: r.name, emoji: r.emoji, projectIds: ids, order: r.order, activeCount };
+    return { id: r.id, name: r.name, emoji: r.emoji, color: r.color, projectIds: ids, order: r.order, activeCount };
   });
 }
 
-/** Pojedynczy widok (z odfiltrowaniem niedostępnych projektów). Null, gdy nie należy do usera. */
-export async function getTaskView(id: string): Promise<TaskView | null> {
+/** Pojedyncza grupa (z odfiltrowaniem niedostępnych projektów). Null, gdy nie należy do usera. */
+export async function getProjectGroup(id: string): Promise<ProjectGroup | null> {
   const user = await requireAuth();
-  const row = await prisma.taskView.findFirst({ where: { id, ownerId: user.id } });
+  const row = await prisma.projectGroup.findFirst({ where: { id, ownerId: user.id } });
   if (!row) return null;
   const accessible = await accessibleProjectIds(user.id);
   const ids = parseProjectIds(row.projectIds).filter((pid) => accessible.has(pid));
-  return { id: row.id, name: row.name, emoji: row.emoji, projectIds: ids, order: row.order };
+  return { id: row.id, name: row.name, emoji: row.emoji, color: row.color, projectIds: ids, order: row.order };
 }
 
-export async function createTaskView(data: {
+export async function createProjectGroup(data: {
   name: string;
   projectIds: string[];
   emoji?: string;
-}): Promise<TaskView> {
+  color?: string | null;
+}): Promise<ProjectGroup> {
   const user = await requireAuth();
   const name = data.name.trim();
-  if (!name) throw new Error("Nazwa widoku nie może być pusta");
+  if (!name) throw new Error("Nazwa grupy nie może być pusta");
 
   // Zapisujemy tylko projekty, do których user faktycznie ma dostęp.
   const accessible = await accessibleProjectIds(user.id);
   const ids = data.projectIds.filter((id) => accessible.has(id));
   if (ids.length === 0) throw new Error("Wybierz co najmniej jeden projekt");
 
-  const maxOrder = await prisma.taskView.aggregate({
+  const maxOrder = await prisma.projectGroup.aggregate({
     where: { ownerId: user.id },
     _max: { order: true },
   });
 
-  const row = await prisma.taskView.create({
+  const row = await prisma.projectGroup.create({
     data: {
       name,
       emoji: data.emoji?.trim() || "🗂",
+      color: data.color ?? null,
       projectIds: JSON.stringify(ids),
       ownerId: user.id,
       order: (maxOrder._max.order ?? 0) + 1,
@@ -101,24 +103,25 @@ export async function createTaskView(data: {
   });
 
   revalidatePath("/tasks");
-  return { id: row.id, name: row.name, emoji: row.emoji, projectIds: ids, order: row.order };
+  return { id: row.id, name: row.name, emoji: row.emoji, color: row.color, projectIds: ids, order: row.order };
 }
 
-export async function updateTaskView(
+export async function updateProjectGroup(
   id: string,
-  patch: { name?: string; projectIds?: string[]; emoji?: string }
-): Promise<TaskView> {
+  patch: { name?: string; projectIds?: string[]; emoji?: string; color?: string | null }
+): Promise<ProjectGroup> {
   const user = await requireAuth();
-  const existing = await prisma.taskView.findFirst({ where: { id, ownerId: user.id } });
-  if (!existing) throw new Error("Widok nie znaleziony");
+  const existing = await prisma.projectGroup.findFirst({ where: { id, ownerId: user.id } });
+  if (!existing) throw new Error("Grupa nie znaleziona");
 
   const data: Record<string, unknown> = {};
   if (patch.name !== undefined) {
     const name = patch.name.trim();
-    if (!name) throw new Error("Nazwa widoku nie może być pusta");
+    if (!name) throw new Error("Nazwa grupy nie może być pusta");
     data.name = name;
   }
   if (patch.emoji !== undefined) data.emoji = patch.emoji.trim() || "🗂";
+  if (patch.color !== undefined) data.color = patch.color;
   if (patch.projectIds !== undefined) {
     const accessible = await accessibleProjectIds(user.id);
     const ids = patch.projectIds.filter((pid) => accessible.has(pid));
@@ -126,21 +129,22 @@ export async function updateTaskView(
     data.projectIds = JSON.stringify(ids);
   }
 
-  const row = await prisma.taskView.update({ where: { id }, data });
+  const row = await prisma.projectGroup.update({ where: { id }, data });
   revalidatePath("/tasks");
   return {
     id: row.id,
     name: row.name,
     emoji: row.emoji,
+    color: row.color,
     projectIds: parseProjectIds(row.projectIds),
     order: row.order,
   };
 }
 
-export async function deleteTaskView(id: string): Promise<void> {
+export async function deleteProjectGroup(id: string): Promise<void> {
   const user = await requireAuth();
-  const existing = await prisma.taskView.findFirst({ where: { id, ownerId: user.id } });
+  const existing = await prisma.projectGroup.findFirst({ where: { id, ownerId: user.id } });
   if (!existing) return;
-  await prisma.taskView.delete({ where: { id } });
+  await prisma.projectGroup.delete({ where: { id } });
   revalidatePath("/tasks");
 }

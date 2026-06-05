@@ -128,14 +128,15 @@ export type TaskProject = {
   members?: { userId: string; role: string }[];
 };
 
-/** Zapisany widok wielu projektów (np. „Praca + Dom"). projectIds = lista id projektów. */
-export type TaskView = {
+/** Grupa projektów (np. „Dom + Auto"). projectIds = lista id projektów (wiele-do-wielu). */
+export type ProjectGroup = {
   id: string;
   name: string;
   emoji: string;
+  color: string | null;
   projectIds: string[];
   order: number;
-  /** Liczba aktywnych (nie-terminalnych) zadań we wszystkich projektach widoku. */
+  /** Liczba aktywnych (nie-terminalnych) zadań we wszystkich projektach grupy. */
   activeCount?: number;
 };
 

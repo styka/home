@@ -4,7 +4,7 @@ import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { getTasks, getTodayTasks, getOverdueTasks, getAllUserTasks, getTasksForProjects } from "@/actions/tasks";
 import { getTaskProjects } from "@/actions/taskProjects";
 import { getTaskTags } from "@/actions/taskTags";
-import { getTaskView } from "@/actions/taskViews";
+import { getProjectGroup } from "@/actions/projectGroups";
 import { prisma } from "@/lib/prisma";
 import { TasksPage } from "@/components/tasks/TasksPage";
 import type { Task, ViewMode, TaskStatusFilter } from "@/types";
@@ -25,7 +25,7 @@ const VIRTUAL_LABELS: Record<VirtualView, string> = {
 
 interface Props {
   params: { projectId: string };
-  searchParams?: { status?: string; task?: string; projects?: string; view?: string };
+  searchParams?: { status?: string; task?: string; projects?: string; group?: string; view?: string };
 }
 
 /** Projekt w „pasku zakresu” widoku wielu projektów (chip pod nagłówkiem). */
@@ -59,9 +59,9 @@ export default async function TaskProjectPage({ params, searchParams }: Props) {
   let tasks: Task[];
   let viewMode: ViewMode;
   let projectName: string;
-  // Widok wielu projektów: lista projektów w zakresie + id zapisanego widoku (do edycji).
+  // Widok wielu projektów: lista projektów w zakresie + id zapisanej grupy (do edycji).
   let scopeProjects: ScopeProject[] = [];
-  let multiViewId: string | undefined;
+  let multiGroupId: string | undefined;
 
   if (projectId === "today") {
     tasks = await getTodayTasks();
@@ -85,14 +85,15 @@ export default async function TaskProjectPage({ params, searchParams }: Props) {
     viewMode = "all";
     projectName = VIRTUAL_LABELS.all;
   } else if (projectId === "multi") {
-    // Dwa źródła zakresu: zapisany widok (?view=<id>) lub doraźna lista (?projects=id1,id2,…).
+    // Dwa źródła zakresu: zapisana grupa (?group=<id>, alias wsteczny ?view=) lub doraźna lista (?projects=).
     let scopeIds: string[];
-    if (searchParams?.view) {
-      const view = await getTaskView(searchParams.view);
-      if (!view) notFound();
-      scopeIds = view.projectIds;
-      multiViewId = view.id;
-      projectName = `${view.emoji} ${view.name}`;
+    const groupId = searchParams?.group ?? searchParams?.view;
+    if (groupId) {
+      const group = await getProjectGroup(groupId);
+      if (!group) notFound();
+      scopeIds = group.projectIds;
+      multiGroupId = group.id;
+      projectName = `${group.emoji} ${group.name}`;
     } else {
       const requestedIds = (searchParams?.projects ?? "")
         .split(",")
@@ -147,7 +148,7 @@ export default async function TaskProjectPage({ params, searchParams }: Props) {
       canEditStatuses={canEditStatuses}
       isAdmin={hasPermission(session, PERMISSIONS.ADMIN)}
       scopeProjects={scopeProjects}
-      multiViewId={multiViewId}
+      multiGroupId={multiGroupId}
     />
   );
 }
