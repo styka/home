@@ -510,7 +510,11 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         </div>
       )}
 
-      <QuickAddTask ref={quickAddRef} projectId={addProjectId} />
+      <QuickAddTask
+        ref={quickAddRef}
+        projectId={addProjectId}
+        onCreated={(id) => { setOpenTaskId(id); setFocusedTaskId(id); }}
+      />
 
       <TaskFilters
         active={activeFilter}

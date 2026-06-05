@@ -12,10 +12,12 @@ export interface QuickAddTaskHandle {
 
 interface QuickAddTaskProps {
   projectId: string;
+  /** Po utworzeniu zadania — otwiera jego szczegóły, by ustawić pozostałe parametry. */
+  onCreated?: (taskId: string) => void;
 }
 
 export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
-  function QuickAddTask({ projectId }, ref) {
+  function QuickAddTask({ projectId, onCreated }, ref) {
     const [value, setValue] = useState("");
     const [priority, setPriority] = useState<TaskPriority>("NONE");
     const [dueDate, setDueDate] = useState("");
@@ -35,7 +37,7 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
 
       startTransition(async () => {
         try {
-          await createTask({
+          const created = await createTask({
             title,
             priority,
             dueDate: dueDate ? new Date(dueDate) : null,
@@ -45,6 +47,7 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
           setDueDate("");
           setPriority("NONE");
           setShowExtra(false);
+          onCreated?.(created.id);
         } catch (err) {
           showToast(err instanceof Error ? err.message : "Nie udało się dodać zadania", "error");
         }
