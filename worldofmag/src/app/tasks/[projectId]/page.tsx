@@ -8,7 +8,7 @@ import { getProjectGroup } from "@/actions/projectGroups";
 import { prisma } from "@/lib/prisma";
 import { TasksPage } from "@/components/tasks/TasksPage";
 import type { Task, ViewMode, TaskStatusFilter } from "@/types";
-import { TASK_STATUS_FILTERS, parseStatusConfig } from "@/types";
+import { TASK_STATUS_FILTERS, parseStatusConfig, aggregateStatusConfig } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -119,10 +119,20 @@ export default async function TaskProjectPage({ params, searchParams }: Props) {
   const inbox = allProjects.find((p) => p.isInbox);
   const inboxId = inbox?.id ?? "";
 
-  // Konfiguracja statusów listy (tylko realne projekty; widoki wirtualne → domyślne, bez edycji).
+  // Konfiguracja statusów. Realny projekt → jego własna konfiguracja (z edycją).
+  // Widok zbiorczy (Wszystkie/Dziś/Nadchodzące/Zaległe/Grupy) → konfiguracja scalona
+  // z list w zakresie, by zadania z własnymi statusami miały zakładkę i etykiety; bez edycji.
   const currentProject = isVirtual ? null : allProjects.find((p) => p.id === projectId) ?? null;
-  const statusConfig = parseStatusConfig(currentProject?.statusConfig ?? null);
   const canEditStatuses = !!currentProject;
+  const scopeForStatuses =
+    viewMode === "multi"
+      ? scopeProjects
+          .map((sp) => allProjects.find((p) => p.id === sp.id))
+          .filter((p): p is NonNullable<typeof p> => !!p)
+      : allProjects;
+  const statusConfig = currentProject
+    ? parseStatusConfig(currentProject.statusConfig)
+    : aggregateStatusConfig(scopeForStatuses, tasks);
 
   type TeamMemberRow = { user: { id: string; name: string | null; email: string | null; image: string | null } };
   const teamMembers = await prisma.teamMember

@@ -358,6 +358,34 @@ export function serializeStatusConfig(cfg: ProjectStatusConfig): string {
   return JSON.stringify({ enabled: cfg.enabled, chain: cfg.chain, custom: cfg.custom ?? [] });
 }
 
+/**
+ * Buduje zbiorczą konfigurację statusów dla widoków obejmujących wiele list
+ * (Wszystkie / Dziś / Nadchodzące / Zaległe / Grupy projektów). Własne statusy są
+ * per-lista, więc bez scalenia zadanie z własnym statusem nie miałoby zakładki ani
+ * etykiety w widoku zbiorczym. Scala definicje własnych statusów ze wszystkich list
+ * w zakresie (klucze `c_<rand>` są globalnie unikalne), a do zakładek dokłada tylko te
+ * własne statusy, które faktycznie występują wśród zadań — by nie pokazywać pustych obcych zakładek.
+ */
+export function aggregateStatusConfig(
+  projects: { statusConfig: string | null }[],
+  tasks: { status: string }[],
+): ProjectStatusConfig {
+  const customByKey = new Map<string, CustomTaskStatus>();
+  for (const p of projects) {
+    for (const c of parseStatusConfig(p.statusConfig).custom ?? []) {
+      if (!customByKey.has(c.key)) customByKey.set(c.key, c);
+    }
+  }
+  const present = new Set(tasks.map((t) => t.status));
+  const allCustom = Array.from(customByKey.values());
+  const appearingCustom = allCustom.filter((c) => present.has(c.key)).map((c) => c.key);
+  return {
+    enabled: [...DEFAULT_STATUS_CONFIG.enabled, ...appearingCustom],
+    chain: DEFAULT_STATUS_CONFIG.chain,
+    custom: allCustom,
+  };
+}
+
 export type ViewMode = "today" | "upcoming" | "overdue" | "all" | "project" | "multi";
 
 // ─── Store Maps ───────────────────────────────────────────────────────────────

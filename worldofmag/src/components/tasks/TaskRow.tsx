@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { Clock, ChevronRight, Paperclip } from "lucide-react";
 import { toggleTaskStatus, updateTask } from "@/actions/tasks";
 import { TaskTagBadge } from "./TaskTagBadge";
 import { RecurringBadge } from "./RecurringBadge";
 import { StatusIcon } from "./StatusIcon";
 import type { Task, ProjectStatusConfig } from "@/types";
-import { TASK_PRIORITY_COLORS, DEFAULT_STATUS_CONFIG, statusMetaFor } from "@/types";
+import { TASK_PRIORITY_COLORS, DEFAULT_STATUS_CONFIG, statusMetaFor, parseStatusConfig } from "@/types";
 
 function formatDate(date: Date | null): { text: string; isOverdue: boolean; isToday: boolean } | null {
   if (!date) return null;
@@ -44,7 +44,13 @@ interface TaskRowProps {
 export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, indent = 0, statusConfig = DEFAULT_STATUS_CONFIG }: TaskRowProps) {
   const [isPending, startTransition] = useTransition();
   const [editingDate, setEditingDate] = useState(false);
-  const statusMeta = statusMetaFor(task.status, statusConfig);
+  // Meta statusu z WŁASNEJ listy zadania (w widokach zbiorczych `statusConfig` jest scalony
+  // z wielu list — własna konfiguracja projektu daje pewność poprawnej etykiety/ikony/koloru).
+  const effectiveConfig = useMemo(
+    () => (task.project?.statusConfig ? parseStatusConfig(task.project.statusConfig) : statusConfig),
+    [task.project?.statusConfig, statusConfig]
+  );
+  const statusMeta = statusMetaFor(task.status, effectiveConfig);
   const isTerminal = statusMeta.isTerminal;
   const dateInfo = formatDate(task.dueDate);
   const priorityColor = TASK_PRIORITY_COLORS[task.priority];

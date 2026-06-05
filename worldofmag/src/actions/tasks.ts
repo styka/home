@@ -7,7 +7,7 @@ import { assertProjectAccess } from "@/actions/taskProjects";
 import { trackActivity } from "@/actions/activity";
 import { computeNextDue } from "@/lib/recurrence";
 import type { Task, TaskPriority, TaskWithRelations, RecurringRule } from "@/types";
-import { parseStatusConfig, DEFAULT_STATUS_CONFIG } from "@/types";
+import { parseStatusConfig, DEFAULT_STATUS_CONFIG, SYSTEM_TASK_STATUSES } from "@/types";
 
 const TASK_INCLUDE = {
   tags: { include: { tag: true } },
@@ -26,7 +26,7 @@ const TASK_INCLUDE = {
     },
   },
   assignee: { select: { id: true, name: true, email: true, image: true } },
-  project: { select: { id: true, name: true, emoji: true, isInbox: true } },
+  project: { select: { id: true, name: true, emoji: true, isInbox: true, statusConfig: true } },
   _count: { select: { subtasks: true, comments: true } },
 };
 
@@ -204,6 +204,22 @@ export async function updateTask(
   if (existing.projectId) await assertProjectAccess(existing.projectId, user.id);
   // Przeniesienie zadania do innego projektu — wymaga dostępu także do celu.
   if (patch.projectId) await assertProjectAccess(patch.projectId, user.id);
+
+  // Przeniesienie do innego projektu: własne statusy są per-lista, więc status z klucza
+  // custom, którego docelowy projekt nie zna, „osierociałby" (brak etykiety/zakładki).
+  // Gdy zmiana statusu nie jest jawnie w patchu, resetuj taki status do pierwszego
+  // włączonego statusu celu (statusy systemowe są uniwersalne i zostają bez zmian).
+  if (patch.projectId && patch.projectId !== existing.projectId && patch.status === undefined) {
+    const isSystemStatus = SYSTEM_TASK_STATUSES.some((s) => s.key === existing.status);
+    if (!isSystemStatus) {
+      const target = await prisma.taskProject.findUnique({ where: { id: patch.projectId }, select: { statusConfig: true } });
+      const cfg = parseStatusConfig(target?.statusConfig ?? null);
+      const known = new Set<string>([...SYSTEM_TASK_STATUSES.map((s) => s.key), ...(cfg.custom ?? []).map((c) => c.key)]);
+      if (!known.has(existing.status)) {
+        patch = { ...patch, status: cfg.enabled[0] ?? "TODO" };
+      }
+    }
+  }
 
   const completedAt =
     patch.status === "DONE" && existing.status !== "DONE"

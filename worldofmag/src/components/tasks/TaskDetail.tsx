@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef } from "react";
+import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import {
   X, Trash2, CheckCircle2, Circle, Clock, AlertCircle, MinusCircle, Loader2,
   RefreshCw, Tag, Calendar, Timer, ChevronDown, ChevronLeft, Plus, Send, Sparkles,
@@ -11,7 +11,7 @@ import { createTaskTag } from "@/actions/taskTags";
 import { TaskTagBadge } from "./TaskTagBadge";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import type { Task, TaskPriority, TaskTagDef, RecurringRule, ProjectStatusConfig, TaskProject } from "@/types";
-import { TASK_PRIORITY_COLORS, statusMetaFor, DEFAULT_STATUS_CONFIG } from "@/types";
+import { TASK_PRIORITY_COLORS, statusMetaFor, DEFAULT_STATUS_CONFIG, parseStatusConfig } from "@/types";
 
 interface TaskDetailProps {
   task: Task;
@@ -255,11 +255,18 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
     }
   }
 
+  // Statusy rozwiązujemy względem WŁASNEJ listy zadania (jego projektu), nie konfiguracji
+  // strony — bo w widokach zbiorczych ta druga jest scalona z wielu list. Dzięki temu
+  // dropdown pokazuje statusy właściwej listy i poprawne nazwy (a nie surowe id).
+  const effectiveConfig = useMemo(
+    () => (task.project?.statusConfig ? parseStatusConfig(task.project.statusConfig) : statusConfig),
+    [task.project?.statusConfig, statusConfig]
+  );
   // Opcje statusu = włączone statusy listy (zawsze z bieżącym, nawet gdy wyłączony) — „skok" do dowolnego.
-  const enabledKeys = statusConfig.enabled.length ? statusConfig.enabled : DEFAULT_STATUS_CONFIG.enabled;
+  const enabledKeys = effectiveConfig.enabled.length ? effectiveConfig.enabled : DEFAULT_STATUS_CONFIG.enabled;
   const optionKeys: string[] = enabledKeys.includes(status) ? enabledKeys : [...enabledKeys, status];
-  const statusOptions = optionKeys.map((k) => ({ value: k, ...statusMetaFor(k, statusConfig) }));
-  const statusOpt = statusMetaFor(status, statusConfig);
+  const statusOptions = optionKeys.map((k) => ({ value: k, ...statusMetaFor(k, effectiveConfig) }));
+  const statusOpt = statusMetaFor(status, effectiveConfig);
   const comments = (task.comments ?? []) as NonNullable<Task["comments"]>;
 
   return (
