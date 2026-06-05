@@ -253,27 +253,49 @@ export const TASK_STATUS_FILTER_LABELS: Record<TaskStatusFilter, string> = {
 // uporządkowaną „ścieżkę" przejść (przód/tył). Zawsze można skoczyć do dowolnego
 // włączonego statusu. `null` w DB ⇒ DEFAULT_STATUS_CONFIG (statusy systemowe bez weryfikacji).
 
+// Własny status zdefiniowany przez użytkownika dla danej listy. Te same atrybuty
+// co status systemowy (nazwa/kolor/ikona/„zamykający") — różni się tym, że można go usunąć.
+export type CustomTaskStatus = {
+  key: string;        // klucz „c_<losowy>"; zapisywany w Task.status (String)
+  label: string;
+  color: string;
+  icon: string;       // nazwa ikony z rejestru StatusIcon
+  isTerminal: boolean;
+};
+
+// Ujednolicony kształt statusu (systemowy lub własny) używany przy renderowaniu.
+export type ResolvedStatus = {
+  key: string;
+  label: string;
+  color: string;
+  icon: string;
+  isTerminal: boolean;
+  isSystem: boolean;
+};
+
 export type ProjectStatusConfig = {
-  enabled: TaskStatus[]; // uporządkowane — zakładki filtrów + cele „skoku"
-  chain: TaskStatus[];   // uporządkowany podzbiór enabled — cykl przód/tył (x/Spacja, klik checkboxa)
+  enabled: string[];           // uporządkowane — zakładki filtrów + cele „skoku" (klucze systemowe lub własne)
+  chain: string[];             // uporządkowany podzbiór enabled — cykl przód/tył (x/Spacja, klik checkboxa)
+  custom?: CustomTaskStatus[]; // własne statusy zdefiniowane dla tej listy
 };
 
 export type SystemTaskStatus = {
   key: TaskStatus;
   label: string;
   color: string;
+  icon: string;            // nazwa ikony z rejestru StatusIcon
   defaultEnabled: boolean; // czy w nowym projekcie status jest domyślnie widoczny
   defaultInChain: boolean; // czy domyślnie należy do ścieżki przejść
   isTerminal: boolean;     // status „zamykający" (DONE/CANCELLED) — ukrywany w widoku aktywnych
 };
 
 export const SYSTEM_TASK_STATUSES: SystemTaskStatus[] = [
-  { key: "TODO",            label: "Do zrobienia",  color: "var(--text-muted)",   defaultEnabled: true,  defaultInChain: true,  isTerminal: false },
-  { key: "IN_PROGRESS",     label: "W trakcie",     color: "var(--accent-blue)",  defaultEnabled: true,  defaultInChain: true,  isTerminal: false },
-  { key: "IN_VERIFICATION", label: "W weryfikacji", color: "var(--accent-amber)", defaultEnabled: false, defaultInChain: false, isTerminal: false },
-  { key: "DONE",            label: "Zrobione",      color: "var(--accent-green)", defaultEnabled: true,  defaultInChain: true,  isTerminal: true  },
-  { key: "DEFERRED",        label: "Odłożone",      color: "var(--accent-amber)", defaultEnabled: true,  defaultInChain: false, isTerminal: false },
-  { key: "CANCELLED",       label: "Anulowane",     color: "var(--text-muted)",   defaultEnabled: true,  defaultInChain: false, isTerminal: true  },
+  { key: "TODO",            label: "Do zrobienia",  color: "var(--text-muted)",   icon: "circle",        defaultEnabled: true,  defaultInChain: true,  isTerminal: false },
+  { key: "IN_PROGRESS",     label: "W trakcie",     color: "var(--accent-blue)",  icon: "clock",         defaultEnabled: true,  defaultInChain: true,  isTerminal: false },
+  { key: "IN_VERIFICATION", label: "W weryfikacji", color: "var(--accent-amber)", icon: "eye",           defaultEnabled: false, defaultInChain: false, isTerminal: false },
+  { key: "DONE",            label: "Zrobione",      color: "var(--accent-green)", icon: "check-circle",  defaultEnabled: true,  defaultInChain: true,  isTerminal: true  },
+  { key: "DEFERRED",        label: "Odłożone",      color: "var(--accent-amber)", icon: "alert-circle",  defaultEnabled: true,  defaultInChain: false, isTerminal: false },
+  { key: "CANCELLED",       label: "Anulowane",     color: "var(--text-muted)",   icon: "minus-circle",  defaultEnabled: true,  defaultInChain: false, isTerminal: true  },
 ];
 
 const ALL_STATUS_KEYS: TaskStatus[] = SYSTEM_TASK_STATUSES.map((s) => s.key);
@@ -281,10 +303,31 @@ const ALL_STATUS_KEYS: TaskStatus[] = SYSTEM_TASK_STATUSES.map((s) => s.key);
 export const DEFAULT_STATUS_CONFIG: ProjectStatusConfig = {
   enabled: SYSTEM_TASK_STATUSES.filter((s) => s.defaultEnabled).map((s) => s.key),
   chain: SYSTEM_TASK_STATUSES.filter((s) => s.defaultInChain).map((s) => s.key),
+  custom: [],
 };
 
 export function statusMeta(key: TaskStatus): SystemTaskStatus {
   return SYSTEM_TASK_STATUSES.find((s) => s.key === key) ?? SYSTEM_TASK_STATUSES[0];
+}
+
+/** Zwraca listę wszystkich statusów (systemowe + własne) w jednolitym kształcie. */
+export function resolveStatuses(config: ProjectStatusConfig): ResolvedStatus[] {
+  const system: ResolvedStatus[] = SYSTEM_TASK_STATUSES.map((s) => ({
+    key: s.key, label: s.label, color: s.color, icon: s.icon, isTerminal: s.isTerminal, isSystem: true,
+  }));
+  const custom: ResolvedStatus[] = (config.custom ?? []).map((c) => ({
+    key: c.key, label: c.label, color: c.color, icon: c.icon, isTerminal: c.isTerminal, isSystem: false,
+  }));
+  return [...system, ...custom];
+}
+
+/** Metadane pojedynczego statusu (systemowego lub własnego) z fallbackiem. */
+export function statusMetaFor(key: string, config: ProjectStatusConfig): ResolvedStatus {
+  return (
+    resolveStatuses(config).find((s) => s.key === key) ?? {
+      key, label: key, color: "var(--text-muted)", icon: "circle", isTerminal: false, isSystem: false,
+    }
+  );
 }
 
 /** Parsuje JSON statusConfig z DB; przy braku/uszkodzeniu zwraca konfigurację domyślną. */
@@ -292,17 +335,27 @@ export function parseStatusConfig(json: string | null | undefined): ProjectStatu
   if (!json) return DEFAULT_STATUS_CONFIG;
   try {
     const raw = JSON.parse(json) as Partial<ProjectStatusConfig>;
-    const enabled = (raw.enabled ?? []).filter((s): s is TaskStatus => ALL_STATUS_KEYS.includes(s as TaskStatus));
-    if (enabled.length === 0) return DEFAULT_STATUS_CONFIG;
-    const chain = (raw.chain ?? []).filter((s): s is TaskStatus => enabled.includes(s as TaskStatus));
-    return { enabled, chain: chain.length ? chain : enabled.slice(0, 1) };
+    const custom: CustomTaskStatus[] = (raw.custom ?? [])
+      .filter((c): c is CustomTaskStatus => !!c && typeof c.key === "string" && c.key.length > 0)
+      .map((c) => ({
+        key: c.key,
+        label: typeof c.label === "string" && c.label.trim() ? c.label : c.key,
+        color: typeof c.color === "string" && c.color ? c.color : "var(--text-muted)",
+        icon: typeof c.icon === "string" && c.icon ? c.icon : "circle",
+        isTerminal: c.isTerminal === true,
+      }));
+    const validKeys = new Set<string>([...ALL_STATUS_KEYS, ...custom.map((c) => c.key)]);
+    const enabled = (raw.enabled ?? []).filter((s): s is string => typeof s === "string" && validKeys.has(s));
+    if (enabled.length === 0) return { ...DEFAULT_STATUS_CONFIG, custom };
+    const chain = (raw.chain ?? []).filter((s): s is string => typeof s === "string" && enabled.includes(s));
+    return { enabled, chain: chain.length ? chain : enabled.slice(0, 1), custom };
   } catch {
     return DEFAULT_STATUS_CONFIG;
   }
 }
 
 export function serializeStatusConfig(cfg: ProjectStatusConfig): string {
-  return JSON.stringify({ enabled: cfg.enabled, chain: cfg.chain });
+  return JSON.stringify({ enabled: cfg.enabled, chain: cfg.chain, custom: cfg.custom ?? [] });
 }
 
 export type ViewMode = "today" | "upcoming" | "overdue" | "all" | "project" | "multi";

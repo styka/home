@@ -6,7 +6,7 @@ import { requireAuth } from "@/lib/server-utils";
 import { assertProjectAccess } from "@/actions/taskProjects";
 import { trackActivity } from "@/actions/activity";
 import { computeNextDue } from "@/lib/recurrence";
-import type { Task, TaskStatus, TaskPriority, TaskWithRelations, RecurringRule } from "@/types";
+import type { Task, TaskPriority, TaskWithRelations, RecurringRule } from "@/types";
 import { parseStatusConfig, DEFAULT_STATUS_CONFIG } from "@/types";
 
 const TASK_INCLUDE = {
@@ -187,7 +187,7 @@ export async function updateTask(
   patch: Partial<{
     title: string;
     description: string | null;
-    status: TaskStatus;
+    status: string; // klucz statusu (systemowy lub własny — Task.status to String)
     priority: TaskPriority;
     dueDate: Date | null;
     startDate: Date | null;
@@ -268,10 +268,9 @@ export async function toggleTaskStatus(id: string): Promise<Task> {
   // Cykl po skonfigurowanej ścieżce projektu (przód). Domyślnie TODO→IN_PROGRESS→DONE.
   const { chain } = parseStatusConfig(task.project?.statusConfig ?? null);
   const cycle = chain.length ? chain : DEFAULT_STATUS_CONFIG.chain;
-  const current = task.status as TaskStatus;
-  const idx = cycle.indexOf(current);
+  const idx = cycle.indexOf(task.status);
   // Status spoza ścieżki (np. CANCELLED/DEFERRED) → wskakujemy na początek ścieżki.
-  const next: TaskStatus = idx === -1 ? cycle[0] : cycle[(idx + 1) % cycle.length];
+  const next: string = idx === -1 ? cycle[0] : cycle[(idx + 1) % cycle.length];
 
   // Spójność z panelem szczegółów: oznaczenie zadania cyklicznego jako „zrobione"
   // z listy/skrótu również generuje kolejne wystąpienie.

@@ -3,11 +3,13 @@
 import { TaskRow } from "./TaskRow";
 import { CompletedSection } from "./CompletedSection";
 import { TaskGroup } from "./TaskGroup";
-import type { Task, TaskStatusFilter, ViewMode } from "@/types";
+import type { Task, ViewMode, ProjectStatusConfig } from "@/types";
+import { DEFAULT_STATUS_CONFIG, statusMetaFor } from "@/types";
 
 interface TaskListProps {
   tasks: Task[];
-  filter: TaskStatusFilter;
+  // "ALL" | status systemowy | klucz własnego statusu.
+  filter: string;
   viewMode: ViewMode;
   /** "default" = naturalne grupowanie widoku (po dniach/projektach); "priority" = grupowanie po priorytetach (jak w „Dziś"). */
   groupBy: "default" | "priority";
@@ -16,6 +18,7 @@ interface TaskListProps {
   onFocus: (id: string) => void;
   onOpen: (id: string) => void;
   rowRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
+  statusConfig?: ProjectStatusConfig;
 }
 
 const PRIORITY_ORDER = ["URGENT", "HIGH", "MEDIUM", "LOW", "NONE"] as const;
@@ -41,9 +44,10 @@ function byDueDateAsc(a: Task, b: Task): number {
   return (a.order ?? 0) - (b.order ?? 0);
 }
 
-export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, focusedTaskId, onFocus, onOpen, rowRefs }: TaskListProps) {
+export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, focusedTaskId, onFocus, onOpen, rowRefs, statusConfig = DEFAULT_STATUS_CONFIG }: TaskListProps) {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const isTerminal = (status: string) => statusMetaFor(status, statusConfig).isTerminal;
 
   function applyTagFilter(list: Task[]): Task[] {
     if (selectedTagIds.length === 0) return list;
@@ -53,7 +57,7 @@ export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, foc
   }
 
   function applyStatusFilter(list: Task[]): Task[] {
-    if (filter === "ALL") return list.filter((t) => t.status !== "DONE" && t.status !== "CANCELLED");
+    if (filter === "ALL") return list.filter((t) => !isTerminal(t.status));
     return list.filter((t) => t.status === filter);
   }
 
@@ -69,6 +73,7 @@ export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, foc
         onFocus={() => onFocus(task.id)}
         onOpen={() => onOpen(task.id)}
         rowRef={(el) => { if (el) rowRefs.current.set(task.id, el); else rowRefs.current.delete(task.id); }}
+        statusConfig={statusConfig}
       />
     );
   }
@@ -143,7 +148,7 @@ export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, foc
   // "all"/"multi" view: group by project (chyba że użytkownik wybrał grupowanie po priorytetach)
   if ((viewMode === "all" || viewMode === "multi") && groupBy === "default") {
     const done = filter === "ALL"
-      ? applyTagFilter(tasks.filter((t) => t.status === "DONE" || t.status === "CANCELLED"))
+      ? applyTagFilter(tasks.filter((t) => isTerminal(t.status)))
       : [];
 
     const projectMap = new Map<string, { label: string; tasks: Task[] }>();
@@ -172,7 +177,7 @@ export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, foc
   // Grupowanie po priorytetach: domyślne dla „Dziś"/projektu oraz dla każdego widoku,
   // gdy użytkownik przełączy prezentację na „Priorytety". Wewnątrz grup sort po terminie z czasem.
   const done = filter === "ALL"
-    ? applyTagFilter(tasks.filter((t) => t.status === "DONE" || t.status === "CANCELLED"))
+    ? applyTagFilter(tasks.filter((t) => isTerminal(t.status)))
     : [];
 
   return (

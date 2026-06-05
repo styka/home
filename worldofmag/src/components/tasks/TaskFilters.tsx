@@ -5,17 +5,20 @@ import { TASK_STATUS_FILTERS, TASK_STATUS_FILTER_LABELS } from "@/types";
 import { TaskTagBadge } from "./TaskTagBadge";
 
 interface TaskFiltersProps {
-  active: TaskStatusFilter;
-  counts: Record<TaskStatusFilter, number>;
-  onChange: (f: TaskStatusFilter) => void;
+  // Klucz zakładki: "ALL" | status systemowy | klucz własnego statusu (stąd string).
+  active: string;
+  counts: Record<string, number>;
+  onChange: (f: string) => void;
   allTags: TaskTagDef[];
   selectedTagIds: string[];
   onTagToggle: (id: string) => void;
   // Zakładki statusów do pokazania (zależne od konfiguracji listy). Domyślnie wszystkie systemowe.
-  filters?: TaskStatusFilter[];
+  filters?: string[];
+  // Etykiety zakładek (zawiera też nazwy własnych statusów). Fallback: klucz statusu.
+  labels?: Record<string, string>;
 }
 
-export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds, onTagToggle, filters = TASK_STATUS_FILTERS }: TaskFiltersProps) {
+export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds, onTagToggle, filters = TASK_STATUS_FILTERS, labels }: TaskFiltersProps) {
   return (
     <div
       className="flex-shrink-0 border-b"
@@ -36,7 +39,7 @@ export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds,
                 marginBottom: -1,
               }}
             >
-              {TASK_STATUS_FILTER_LABELS[f]}
+              {labels?.[f] ?? TASK_STATUS_FILTER_LABELS[f as TaskStatusFilter] ?? f}
               {count > 0 && (
                 <span
                   className="rounded-full px-1.5"

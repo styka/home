@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
 import type { TaskProject, ProjectStatusConfig } from "@/types";
-import { serializeStatusConfig } from "@/types";
+import { serializeStatusConfig, parseStatusConfig, SYSTEM_TASK_STATUSES } from "@/types";
 
 function toProject(p: unknown): TaskProject {
   return p as TaskProject;
@@ -79,14 +79,39 @@ export async function updateTaskProjectStatusConfig(
   const user = await requireAuth();
   await assertProjectAccess(id, user.id, "ADMIN");
 
-  // Deduplikacja + walidacja: musi zostać co najmniej jeden status, chain ⊆ enabled.
-  const enabled = config.enabled.filter((s, i, a) => a.indexOf(s) === i);
+  // Sanityzacja własnych statusów (dedupe po kluczu, niepusta nazwa, defaulty pól).
+  const custom = (config.custom ?? [])
+    .filter((c) => c && typeof c.key === "string" && c.key.length > 0)
+    .filter((c, i, a) => a.findIndex((x) => x.key === c.key) === i)
+    .map((c) => ({
+      key: c.key,
+      label: (c.label ?? "").trim() || c.key,
+      color: c.color || "var(--text-muted)",
+      icon: c.icon || "circle",
+      isTerminal: c.isTerminal === true,
+    }));
+
+  // Zbiór dozwolonych kluczy = systemowe ∪ własne. Filtrujemy enabled/chain.
+  const validKeys = new Set<string>([...SYSTEM_TASK_STATUSES.map((s) => s.key), ...custom.map((c) => c.key)]);
+  const enabled = config.enabled.filter((s, i, a) => a.indexOf(s) === i && validKeys.has(s));
   if (enabled.length === 0) throw new Error("Lista musi mieć co najmniej jeden status");
   const chain = config.chain.filter((s, i, a) => a.indexOf(s) === i && enabled.includes(s));
 
+  // Blokada usunięcia własnego statusu, który jest w użyciu przez zadania.
+  const existing = await prisma.taskProject.findUnique({ where: { id }, select: { statusConfig: true } });
+  const prevCustomKeys = parseStatusConfig(existing?.statusConfig ?? null).custom?.map((c) => c.key) ?? [];
+  const removed = prevCustomKeys.filter((k) => !custom.some((c) => c.key === k));
+  for (const key of removed) {
+    const inUse = await prisma.task.count({ where: { projectId: id, status: key } });
+    if (inUse > 0) {
+      const label = parseStatusConfig(existing?.statusConfig ?? null).custom?.find((c) => c.key === key)?.label ?? key;
+      throw new Error(`Nie można usunąć statusu „${label}" — używa go ${inUse} ${inUse === 1 ? "zadanie" : "zadań"}. Najpierw przenieś te zadania.`);
+    }
+  }
+
   const project = await prisma.taskProject.update({
     where: { id },
-    data: { statusConfig: serializeStatusConfig({ enabled, chain }) },
+    data: { statusConfig: serializeStatusConfig({ enabled, chain, custom }) },
     include: { _count: { select: { tasks: true } } },
   });
 

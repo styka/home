@@ -13,7 +13,7 @@ import { TaskListClipboardButton } from "./TaskListClipboardButton";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { deleteTask, toggleTaskStatus } from "@/actions/tasks";
 import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode, ProjectStatusConfig } from "@/types";
-import { SYSTEM_TASK_STATUSES, statusMeta, DEFAULT_STATUS_CONFIG } from "@/types";
+import { resolveStatuses, statusMetaFor, DEFAULT_STATUS_CONFIG } from "@/types";
 
 interface TasksPageProps {
   tasks: Task[];
@@ -37,7 +37,8 @@ interface TasksPageProps {
 
 export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialFilter, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId }: TasksPageProps) {
   const [statusConfigOpen, setStatusConfigOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<TaskStatusFilter>(initialFilter ?? "ALL");
+  // Klucz aktywnej zakładki: "ALL" | status systemowy | klucz własnego statusu.
+  const [activeFilter, setActiveFilter] = useState<string>(initialFilter ?? "ALL");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -185,17 +186,23 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   }, [tasks, searchQuery, aiSearchResults]);
 
   const counts = useMemo(() => {
-    const result = {} as Record<TaskStatusFilter, number>;
+    const result: Record<string, number> = {};
     // „Aktywne" = statusy nie-terminalne (DONE/CANCELLED wykluczone, ale W weryfikacji liczy się).
-    result["ALL"] = tasks.filter((t) => !statusMeta(t.status).isTerminal).length;
-    for (const s of SYSTEM_TASK_STATUSES) {
+    result["ALL"] = tasks.filter((t) => !statusMetaFor(t.status, statusConfig).isTerminal).length;
+    for (const s of resolveStatuses(statusConfig)) {
       result[s.key] = tasks.filter((t) => t.status === s.key).length;
     }
     return result;
-  }, [tasks]);
+  }, [tasks, statusConfig]);
+
+  // Etykiety zakładek (z nazwami własnych statusów); „ALL" stałe.
+  const filterLabels = useMemo<Record<string, string>>(
+    () => ({ ALL: "Wszystkie", ...Object.fromEntries(resolveStatuses(statusConfig).map((s) => [s.key, s.label])) }),
+    [statusConfig]
+  );
 
   // Zakładki filtrów zależne od konfiguracji listy: „Wszystkie" + włączone statusy.
-  const statusFilters = useMemo<TaskStatusFilter[]>(
+  const statusFilters = useMemo<string[]>(
     () => ["ALL", ...statusConfig.enabled],
     [statusConfig]
   );
@@ -207,13 +214,13 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const visibleTasks = useMemo(() => {
     const byStatus =
       activeFilter === "ALL"
-        ? displayedTasks.filter((t) => t.status !== "DONE" && t.status !== "CANCELLED")
+        ? displayedTasks.filter((t) => !statusMetaFor(t.status, statusConfig).isTerminal)
         : displayedTasks.filter((t) => t.status === activeFilter);
     if (selectedTagIds.length === 0) return byStatus;
     return byStatus.filter((t) =>
       selectedTagIds.every((tid) => t.tags?.some((tt) => tt.tag.id === tid))
     );
-  }, [displayedTasks, activeFilter, selectedTagIds]);
+  }, [displayedTasks, activeFilter, selectedTagIds, statusConfig]);
 
   const filteredForNav = displayedTasks;
 
@@ -513,6 +520,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         selectedTagIds={selectedTagIds}
         onTagToggle={(id) => setSelectedTagIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
         filters={statusFilters}
+        labels={filterLabels}
       />
 
       {aiSearchResults !== null && (
@@ -531,6 +539,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         <TaskList
           tasks={displayedTasks}
           filter={activeFilter}
+          statusConfig={statusConfig}
           viewMode={viewMode}
           groupBy={canToggleGrouping ? groupBy : "default"}
           selectedTagIds={selectedTagIds}

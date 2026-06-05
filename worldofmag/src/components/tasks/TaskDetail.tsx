@@ -10,8 +10,8 @@ import { updateTask, deleteTask, updateTaskTags, addTaskComment, createTask, com
 import { createTaskTag } from "@/actions/taskTags";
 import { TaskTagBadge } from "./TaskTagBadge";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
-import type { Task, TaskStatus, TaskPriority, TaskTagDef, RecurringRule, ProjectStatusConfig, TaskProject } from "@/types";
-import { TASK_PRIORITY_COLORS, statusMeta, DEFAULT_STATUS_CONFIG } from "@/types";
+import type { Task, TaskPriority, TaskTagDef, RecurringRule, ProjectStatusConfig, TaskProject } from "@/types";
+import { TASK_PRIORITY_COLORS, statusMetaFor, DEFAULT_STATUS_CONFIG } from "@/types";
 
 interface TaskDetailProps {
   task: Task;
@@ -42,7 +42,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
   const [editingDesc, setEditingDesc] = useState(false);
-  const [status, setStatus] = useState<TaskStatus>(task.status);
+  const [status, setStatus] = useState<string>(task.status);
   const [priority, setPriority] = useState<TaskPriority>(task.priority);
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : "");
   const [startDate, setStartDate] = useState(task.startDate ? new Date(task.startDate).toISOString().slice(0, 10) : "");
@@ -102,7 +102,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
     }, 600);
   }
 
-  function handleStatusChange(s: TaskStatus) {
+  function handleStatusChange(s: string) {
     setStatus(s);
     if (s === "DONE" && task.recurring) {
       run(() => completeRecurringTask(task.id));
@@ -257,9 +257,9 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
 
   // Opcje statusu = włączone statusy listy (zawsze z bieżącym, nawet gdy wyłączony) — „skok" do dowolnego.
   const enabledKeys = statusConfig.enabled.length ? statusConfig.enabled : DEFAULT_STATUS_CONFIG.enabled;
-  const optionKeys: TaskStatus[] = enabledKeys.includes(status) ? enabledKeys : [...enabledKeys, status];
-  const statusOptions = optionKeys.map((k) => ({ value: k, ...statusMeta(k) }));
-  const statusOpt = statusMeta(status);
+  const optionKeys: string[] = enabledKeys.includes(status) ? enabledKeys : [...enabledKeys, status];
+  const statusOptions = optionKeys.map((k) => ({ value: k, ...statusMetaFor(k, statusConfig) }));
+  const statusOpt = statusMetaFor(status, statusConfig);
   const comments = (task.comments ?? []) as NonNullable<Task["comments"]>;
 
   return (
@@ -304,7 +304,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
         <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
           <select
             value={status}
-            onChange={(e) => handleStatusChange(e.target.value as TaskStatus)}
+            onChange={(e) => handleStatusChange(e.target.value)}
             className="flex-1 bg-transparent text-sm focus:outline-none border rounded px-2 py-1"
             style={{ borderColor: "var(--border)", color: statusOpt.color }}
           >
