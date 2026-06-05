@@ -1,21 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Circle, CheckCircle2, Clock, AlertCircle, MinusCircle, ChevronRight, RefreshCw, Paperclip, Eye } from "lucide-react";
+import { Clock, ChevronRight, Paperclip } from "lucide-react";
 import { toggleTaskStatus, updateTask } from "@/actions/tasks";
 import { TaskTagBadge } from "./TaskTagBadge";
 import { RecurringBadge } from "./RecurringBadge";
-import type { Task, TaskStatus, TaskPriority } from "@/types";
-import { TASK_PRIORITY_COLORS } from "@/types";
-
-const STATUS_ICONS: Record<TaskStatus, React.ReactNode> = {
-  TODO: <Circle size={16} />,
-  IN_PROGRESS: <Clock size={16} style={{ color: "var(--accent-blue)" }} />,
-  IN_VERIFICATION: <Eye size={16} style={{ color: "var(--accent-amber)" }} />,
-  DONE: <CheckCircle2 size={16} style={{ color: "var(--accent-green)" }} />,
-  CANCELLED: <MinusCircle size={16} style={{ color: "var(--text-muted)" }} />,
-  DEFERRED: <AlertCircle size={16} style={{ color: "var(--accent-amber)" }} />,
-};
+import { StatusIcon } from "./StatusIcon";
+import type { Task, ProjectStatusConfig } from "@/types";
+import { TASK_PRIORITY_COLORS, DEFAULT_STATUS_CONFIG, statusMetaFor } from "@/types";
 
 function formatDate(date: Date | null): { text: string; isOverdue: boolean; isToday: boolean } | null {
   if (!date) return null;
@@ -46,13 +38,14 @@ interface TaskRowProps {
   onOpen: () => void;
   rowRef?: (el: HTMLDivElement | null) => void;
   indent?: number;
+  statusConfig?: ProjectStatusConfig;
 }
 
-export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, indent = 0 }: TaskRowProps) {
+export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, indent = 0, statusConfig = DEFAULT_STATUS_CONFIG }: TaskRowProps) {
   const [isPending, startTransition] = useTransition();
   const [editingDate, setEditingDate] = useState(false);
-  const isDone = task.status === "DONE";
-  const isCancelled = task.status === "CANCELLED";
+  const statusMeta = statusMetaFor(task.status, statusConfig);
+  const isTerminal = statusMeta.isTerminal;
   const dateInfo = formatDate(task.dueDate);
   const priorityColor = TASK_PRIORITY_COLORS[task.priority];
   const tags = task.tags ?? [];
@@ -86,7 +79,7 @@ export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, 
         paddingLeft: 12 + indent * 20,
         backgroundColor: isFocused ? "var(--bg-elevated)" : undefined,
         borderLeft: isFocused ? "2px solid var(--accent-blue)" : "2px solid transparent",
-        opacity: isDone || isCancelled ? 0.55 : 1,
+        opacity: isTerminal ? 0.55 : 1,
       }}
       onMouseEnter={(e) => { if (!isFocused) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
       onMouseLeave={(e) => { if (!isFocused) e.currentTarget.style.backgroundColor = ""; }}
@@ -109,13 +102,13 @@ export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, 
         onClick={handleToggle}
         disabled={isPending}
         className="flex-shrink-0 mt-0.5 focus:outline-none hover:opacity-70"
-        style={{ color: isDone ? "var(--accent-green)" : "var(--text-muted)" }}
+        style={{ color: statusMeta.color }}
         title="Zmień status"
       >
         {isPending ? (
           <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "var(--border)", borderTopColor: "var(--accent-blue)" }} />
         ) : (
-          STATUS_ICONS[task.status]
+          <StatusIcon name={statusMeta.icon} size={16} color={statusMeta.color} />
         )}
       </button>
 
@@ -126,7 +119,7 @@ export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, 
             className="text-sm"
             style={{
               color: "var(--text-primary)",
-              textDecoration: isDone || isCancelled ? "line-through" : undefined,
+              textDecoration: isTerminal ? "line-through" : undefined,
             }}
           >
             {task.title}
