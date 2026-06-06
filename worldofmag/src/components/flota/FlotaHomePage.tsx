@@ -60,7 +60,7 @@ export function FlotaHomePage({ vehicles, teams }: Props) {
                 {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             )}
-            <button onClick={handleCreate} disabled={isPending || !name.trim()} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "var(--accent-blue)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+            <button onClick={handleCreate} disabled={isPending || !name.trim()} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
               {isPending ? <Loader2 size={13} className="animate-spin" /> : null} Dodaj
             </button>
             <button onClick={() => setAdding(false)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 13, cursor: "pointer" }}>Anuluj</button>

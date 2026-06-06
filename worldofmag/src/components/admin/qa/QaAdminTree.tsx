@@ -120,7 +120,7 @@ function ModuleSection({ module, epics }: { module: string; epics: AdminEpic[] }
             padding: "3px 8px",
             borderRadius: 4,
             background: "var(--accent-red)",
-            color: "#fff",
+            color: "var(--on-accent)",
             textDecoration: "none",
             display: "inline-flex",
             alignItems: "center",

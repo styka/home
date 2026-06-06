@@ -86,7 +86,7 @@ export function StorageSearch({ items, initialLocation }: StorageSearchProps) {
           onClick={askAI}
           disabled={loading || !query.trim()}
           className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded text-sm disabled:opacity-50"
-          style={{ backgroundColor: "var(--accent-purple)", color: "#fff" }}
+          style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}
         >
           {loading ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />} AI
         </button>

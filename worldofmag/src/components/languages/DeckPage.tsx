@@ -121,7 +121,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
         <div style={{ display: "flex", gap: 8 }}>
           <input style={inputStyle} value={term} onChange={(e) => setTerm(e.target.value)} placeholder={`Słówko (${deck.targetLang})`} onKeyDown={(e) => { if (e.key === "Enter") add(); }} />
           <input style={inputStyle} value={translation} onChange={(e) => setTranslation(e.target.value)} placeholder={`Tłumaczenie (${deck.nativeLang})`} onKeyDown={(e) => { if (e.key === "Enter") add(); }} />
-          <button onClick={add} disabled={!term.trim() || !translation.trim()} className="flex items-center px-3 rounded disabled:opacity-40" style={{ background: "var(--accent-blue)", color: "#fff", border: "none" }}>
+          <button onClick={add} disabled={!term.trim() || !translation.trim()} className="flex items-center px-3 rounded disabled:opacity-40" style={{ background: "var(--accent-blue)", color: "var(--on-accent)", border: "none" }}>
             <Plus size={16} />
           </button>
         </div>
@@ -136,7 +136,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
               placeholder="Wklej tekst — AI wyciągnie z niego kolejne słówka…"
             />
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={generate} disabled={genBusy || !genText.trim()} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium disabled:opacity-40" style={{ background: "var(--accent-amber)", color: "#fff", border: "none" }}>
+              <button onClick={generate} disabled={genBusy || !genText.trim()} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium disabled:opacity-40" style={{ background: "var(--accent-amber)", color: "var(--on-accent)", border: "none" }}>
                 {genBusy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                 {genBusy ? "Generuję…" : "Wygeneruj słówka"}
               </button>

@@ -60,7 +60,7 @@ export function TagsManager({ tags }: TagsManagerProps) {
         <button
           onClick={() => setCreating(true)}
           className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
-          style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+          style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
         >
           <Plus size={13} />
           Nowy tag
@@ -101,7 +101,7 @@ export function TagsManager({ tags }: TagsManagerProps) {
             <div className="flex gap-2">
               <button onClick={handleCreate} disabled={!newName.trim()}
                 className="text-xs px-3 py-1 rounded"
-                style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}>
+                style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>
                 Utwórz
               </button>
               <button onClick={() => setCreating(false)}
@@ -153,7 +153,7 @@ export function TagsManager({ tags }: TagsManagerProps) {
                 </div>
                 <button onClick={() => handleSave(tag.id)}
                   className="text-xs px-2 py-0.5 rounded"
-                  style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}>
+                  style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>
                   OK
                 </button>
                 <button onClick={() => setEditingId(null)}

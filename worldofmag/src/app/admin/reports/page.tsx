@@ -62,7 +62,7 @@ export default async function ReportsPage() {
               padding: "6px 12px",
               borderRadius: 8,
               backgroundColor: "var(--accent-purple)",
-              color: "#fff",
+              color: "var(--on-accent)",
               textDecoration: "none",
             }}
           >

@@ -113,7 +113,7 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
             type="submit"
             disabled={!value.trim() || isPending}
             className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded focus:outline-none disabled:opacity-30"
-            style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+            style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
           >
             {isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
           </button>

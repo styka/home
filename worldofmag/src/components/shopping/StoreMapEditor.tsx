@@ -531,7 +531,7 @@ function NodeTypeDialog({ dialog, existingNodes, pos, onChange, onConfirm, onCan
         <button
           onClick={onConfirm}
           className="flex-1 text-xs py-1.5 rounded font-medium"
-          style={{ backgroundColor: "#16a34a", color: "#fff" }}
+          style={{ backgroundColor: "#16a34a", color: "var(--on-accent)" }}
         >
           Dodaj
         </button>
@@ -593,7 +593,7 @@ function WeightInputDialog({ fromLabel, toLabel, pos, value, onChange, onConfirm
         <button
           onClick={onConfirm}
           className="flex-1 text-xs py-1.5 rounded font-medium"
-          style={{ backgroundColor: "#2563eb", color: "#fff" }}
+          style={{ backgroundColor: "#2563eb", color: "var(--on-accent)" }}
         >
           Połącz
         </button>

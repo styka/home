@@ -78,7 +78,7 @@ export function ElementDetailPage({ element }: { element: ElementWithEntries }) 
             <input value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submit()} placeholder={mode === "adjustment" ? "Nowe saldo" : "Kwota"} type="number" step="0.01" style={mini} />
             {mode !== "adjustment" && <input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Kategoria" style={mini} />}
             <input value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submit()} placeholder="Notatka" style={{ ...mini, flex: 2 }} />
-            <button onClick={submit} disabled={isPending} style={{ display: "flex", alignItems: "center", gap: 4, padding: "7px 14px", borderRadius: 7, border: "none", background: "var(--accent-green)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            <button onClick={submit} disabled={isPending} style={{ display: "flex", alignItems: "center", gap: 4, padding: "7px 14px", borderRadius: 7, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               {isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} Zapisz
             </button>
           </div>

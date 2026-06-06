@@ -187,7 +187,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               <MobileItem href="/invitations" pathname={pathname} locked={isLocked("/invitations")}>
                 <Mail size={20} /><span>Zaproszenia</span>
                 {invitationCount > 0 && (
-                  <span style={{ marginLeft: "auto", background: "#ef4444", color: "#fff", fontSize: 11, borderRadius: 999, padding: "1px 6px" }}>{invitationCount}</span>
+                  <span style={{ marginLeft: "auto", background: "#ef4444", color: "var(--on-accent)", fontSize: 11, borderRadius: 999, padding: "1px 6px" }}>{invitationCount}</span>
                 )}
               </MobileItem>
               <MobileItem href="/settings" pathname={pathname} locked={isLocked("/settings")}>

@@ -7,6 +7,8 @@ import Link from "next/link"
 import { Settings } from "lucide-react"
 import { ActivityFeed } from "@/components/home/ActivityFeed"
 import { MenuPrefsEditor } from "@/components/settings/MenuPrefsEditor"
+import { SkinPicker } from "@/components/settings/SkinPicker"
+import { listAvailableSkins, getActiveSkinId } from "@/actions/skins"
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -14,6 +16,9 @@ export default async function SettingsPage() {
   const recentActivity = await getRecentActivity(30)
   const userPermissions: string[] = session?.user?.permissions ?? []
   const menuPrefs = await getMenuPrefs()
+  const skins = await listAvailableSkins()
+  const activeSkinId = await getActiveSkinId()
+  const teamOpts = teams.map((t) => ({ id: t.id, name: t.name }))
   const activityForUI = recentActivity.map((a) => ({
     module: a.module,
     action: a.action,
@@ -152,6 +157,14 @@ export default async function SettingsPage() {
           Menu
         </h2>
         <MenuPrefsEditor permissions={userPermissions} prefs={menuPrefs} />
+      </section>
+
+      {/* Wygląd / Skórka */}
+      <section>
+        <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+          Wygląd — skórka
+        </h2>
+        <SkinPicker skins={skins} activeId={activeSkinId} teams={teamOpts} />
       </section>
 
       {/* Activity */}

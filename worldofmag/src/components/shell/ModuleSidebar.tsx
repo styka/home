@@ -303,7 +303,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
               style={{
                 marginLeft: "auto",
                 background: "#ef4444",
-                color: "#fff",
+                color: "var(--on-accent)",
                 fontSize: 11,
                 borderRadius: 999,
                 padding: "1px 6px",

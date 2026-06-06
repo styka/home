@@ -303,7 +303,7 @@ export function HabitFormModal({
             onClick={save}
             disabled={busy}
             className="flex items-center gap-2 px-4 py-2.5 rounded text-sm font-semibold disabled:opacity-40"
-            style={{ background: form.color, color: "#fff", border: "none", flex: 1, justifyContent: "center" }}
+            style={{ background: form.color, color: "var(--on-accent)", border: "none", flex: 1, justifyContent: "center" }}
           >
             <Check size={15} /> Zapisz
           </button>

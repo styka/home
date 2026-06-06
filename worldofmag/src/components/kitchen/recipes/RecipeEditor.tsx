@@ -465,7 +465,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
                   onClick={handleAIParse}
                   disabled={aiPending}
                   className="px-2 py-1 rounded text-xs disabled:opacity-50"
-                  style={{ backgroundColor: "var(--accent-purple)", color: "#fff" }}
+                  style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}
                 >
                   {aiPending ? "Parsuję…" : "Parsuj"}
                 </button>

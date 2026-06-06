@@ -124,7 +124,7 @@ export function ImportFromUrlDialog({ open, onClose }: ImportFromUrlDialogProps)
             onClick={handleImport}
             disabled={pending}
             className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
-            style={{ backgroundColor: "var(--accent-purple)", color: "#fff" }}
+            style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}
           >
             {pending ? "Importuję…" : "Importuj"}
           </button>

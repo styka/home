@@ -117,7 +117,7 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
                 borderRadius: 8,
                 border: "none",
                 background: "var(--accent-blue)",
-                color: "#fff",
+                color: "var(--on-accent)",
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: "pointer",

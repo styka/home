@@ -344,7 +344,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
               <button
                 onClick={() => handleStatusChange("DONE")}
                 className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded focus:outline-none"
-                style={{ backgroundColor: "var(--accent-green)", color: "#fff" }}
+                style={{ backgroundColor: "var(--accent-green)", color: "var(--on-accent)" }}
                 title="Zweryfikowano — oznacz jako zrobione"
               >
                 <CheckCircle2 size={13} /> Zatwierdź
@@ -593,7 +593,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
               </div>
 
               <div className="flex gap-2">
-                <button onClick={handleRecurringSave} className="text-xs px-2 py-1 rounded focus:outline-none" style={{ backgroundColor: "var(--accent-purple)", color: "#fff" }}>
+                <button onClick={handleRecurringSave} className="text-xs px-2 py-1 rounded focus:outline-none" style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}>
                   Zapisz
                 </button>
                 <button onClick={handleRecurringClear} className="text-xs focus:outline-none" style={{ color: "var(--text-muted)" }}>
@@ -636,7 +636,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
                       });
                     }}
                     className="text-xs px-1.5 py-0.5 rounded focus:outline-none"
-                    style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+                    style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
                   >
                     +
                   </button>
@@ -731,7 +731,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
               onClick={handleShare}
               disabled={!shareEmail.trim()}
               className="text-xs px-2 py-1 rounded focus:outline-none disabled:opacity-30"
-              style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+              style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
             >
               +
             </button>

@@ -170,7 +170,7 @@ export function CookMode({ recipe }: CookModeProps) {
     return (
       <div
         className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6"
-        style={{ backgroundColor: "var(--kitchen-cook-bg, #050505)", color: "#fff" }}
+        style={{ backgroundColor: "var(--kitchen-cook-bg, #050505)", color: "var(--on-accent)" }}
       >
         <p className="text-lg mb-4">Ten przepis nie ma jeszcze kroków.</p>
         <button
@@ -190,7 +190,7 @@ export function CookMode({ recipe }: CookModeProps) {
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col"
-      style={{ backgroundColor: "var(--kitchen-cook-bg, #050505)", color: "#fff" }}
+      style={{ backgroundColor: "var(--kitchen-cook-bg, #050505)", color: "var(--on-accent)" }}
     >
       {/* Top bar */}
       <header
@@ -243,7 +243,7 @@ export function CookMode({ recipe }: CookModeProps) {
             className="leading-snug max-w-3xl"
             style={{
               fontSize: "clamp(22px, 4vw, 36px)",
-              color: "#fff",
+              color: "var(--on-accent)",
               whiteSpace: "pre-wrap",
             }}
           >
@@ -280,7 +280,7 @@ export function CookMode({ recipe }: CookModeProps) {
                   type="button"
                   onClick={() => handleTimerReset(activeTimer.stepId, currentStep?.durationMin ?? 0)}
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm border"
-                  style={{ borderColor: "#333", color: "#fff" }}
+                  style={{ borderColor: "#333", color: "var(--on-accent)" }}
                 >
                   <Square size={14} /> Reset
                 </button>
@@ -320,7 +320,7 @@ export function CookMode({ recipe }: CookModeProps) {
           onClick={prev}
           disabled={stepIdx === 0}
           className="inline-flex items-center gap-1 px-3 py-2 rounded text-sm disabled:opacity-30"
-          style={{ color: "#fff" }}
+          style={{ color: "var(--on-accent)" }}
         >
           <ChevronLeft size={16} /> Poprzedni
         </button>

@@ -504,7 +504,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               onClick={handleAISearch}
               disabled={isAISearching}
               className="flex items-center gap-1 text-xs px-2 py-1 rounded focus:outline-none"
-              style={{ backgroundColor: "var(--accent-purple)", color: "#fff" }}
+              style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}
               title="Wyszukaj semantycznie przez AI"
             >
               {isAISearching ? (

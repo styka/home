@@ -138,7 +138,7 @@ export default function StoreSortingGuidePage() {
         </div>
 
         <div className="flex justify-center pt-2">
-          <Link href="/shopping/stores" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium" style={{ backgroundColor: C.green, color: "#fff" }}>
+          <Link href="/shopping/stores" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium" style={{ backgroundColor: C.green, color: "var(--on-accent)" }}>
             🗺️ Otwórz Mapy sklepów
           </Link>
         </div>
@@ -162,7 +162,7 @@ function Step({ number, title, children }: { number: number; title: string; chil
   return (
     <div className="mb-10">
       <div className="flex items-center gap-3 mb-4">
-        <span className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold" style={{ backgroundColor: C.green, color: "#fff" }}>
+        <span className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold" style={{ backgroundColor: C.green, color: "var(--on-accent)" }}>
           {number}
         </span>
         <h2 className="text-base font-semibold" style={{ color: C.textPrimary }}>{title}</h2>

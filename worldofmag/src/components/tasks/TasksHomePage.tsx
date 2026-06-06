@@ -133,7 +133,7 @@ export function TasksHomePage({
                 borderRadius: 8,
                 border: "none",
                 background: "var(--accent-green)",
-                color: "#fff",
+                color: "var(--on-accent)",
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: "pointer",

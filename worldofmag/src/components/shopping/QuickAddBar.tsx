@@ -184,7 +184,7 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
               onClick={submit}
               disabled={!name.trim() || isPending}
               className="flex items-center gap-1.5 justify-center rounded px-2.5 py-1.5 text-xs font-medium focus:outline-none disabled:opacity-40 flex-shrink-0"
-              style={{ backgroundColor: "var(--accent-green)", color: "#fff" }}
+              style={{ backgroundColor: "var(--accent-green)", color: "var(--on-accent)" }}
               title="Dodaj (Enter)"
             >
               {isPending

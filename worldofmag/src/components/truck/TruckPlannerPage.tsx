@@ -200,7 +200,7 @@ export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleIn
                 borderRadius: 6,
                 border: "none",
                 background: "var(--accent-blue)",
-                color: "#fff",
+                color: "var(--on-accent)",
                 cursor: planningPending ? "default" : "pointer",
               }}
             >
@@ -261,7 +261,7 @@ export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleIn
                   padding: "10px 16px",
                   borderRadius: 8,
                   background: "var(--accent-green)",
-                  color: "#fff",
+                  color: "var(--on-accent)",
                   textDecoration: "none",
                 }}
               >

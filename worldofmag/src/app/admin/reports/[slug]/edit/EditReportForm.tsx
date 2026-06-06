@@ -210,7 +210,7 @@ export function EditReportForm({ report }: Props) {
                 borderRadius: 8,
                 border: "none",
                 background: "var(--accent-purple)",
-                color: "#fff",
+                color: "var(--on-accent)",
                 cursor: isPending ? "wait" : "pointer",
                 opacity: isPending || !title.trim() || !content.trim() ? 0.6 : 1,
               }}

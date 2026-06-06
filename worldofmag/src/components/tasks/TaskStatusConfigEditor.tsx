@@ -294,7 +294,7 @@ export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
             onClick={handleSave}
             disabled={isPending}
             className="flex items-center gap-1 text-xs px-3 py-1.5 rounded focus:outline-none disabled:opacity-50"
-            style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+            style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
           >
             {isPending && <Loader2 size={12} className="animate-spin" />}
             Zapisz

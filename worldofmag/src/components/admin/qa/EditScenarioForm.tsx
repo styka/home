@@ -193,7 +193,7 @@ const cancelBtn: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, padding: "8px 16px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", textDecoration: "none",
 };
 const saveBtn = (disabled: boolean): React.CSSProperties => ({
-  display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 8, border: "none", background: "var(--accent-red)", color: "#fff", cursor: disabled ? "wait" : "pointer", opacity: disabled ? 0.6 : 1,
+  display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 8, border: "none", background: "var(--accent-red)", color: "var(--on-accent)", cursor: disabled ? "wait" : "pointer", opacity: disabled ? 0.6 : 1,
 });
 const errBox: React.CSSProperties = {
   padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "var(--accent-red)", fontSize: 13, marginBottom: 20,
