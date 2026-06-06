@@ -47,6 +47,54 @@ const DESTRUCTIVE_TYPES = new Set([
 // akcję po opisie i po czytelnym `searchQuery` (nazwa/tytuł rekordu).
 const ID_KEY = /Id$/;
 
+// Parametry-daty agent przesyła jako surowy string ISO z JSON-a
+// (np. „2026-06-08T00:00:00.000Z"). W podglądzie akcji to nieczytelne, więc
+// wykrywamy takie wartości i pokazujemy je natywnym date/datetime-pickerem,
+// który prezentuje datę w formacie lokalnym (pl) i pozwala ją wygodnie edytować.
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
+
+function isDateValue(value: string): boolean {
+  const v = value.trim();
+  return ISO_DATE_RE.test(v) && !Number.isNaN(new Date(v).getTime());
+}
+
+// Czy wartość niesie ZNACZĄCY czas (nie samą północ). Datę typu „2026-06-08"
+// oraz „2026-06-08T00:00:00.000Z" traktujemy jako datę (picker dzienny), nie datę+godzinę.
+function hasTime(value: string): boolean {
+  const m = value.trim().match(/[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!m) return false;
+  return !(m[1] === "00" && m[2] === "00" && (m[3] === undefined || m[3] === "00"));
+}
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+// Wartość dla natywnego inputa: type=date → „YYYY-MM-DD"; type=datetime-local → „YYYY-MM-DDTHH:mm" (czas lokalny).
+function toInputValue(value: string): string {
+  const v = value.trim();
+  if (!hasTime(v)) return v.slice(0, 10);
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+// Czytelna etykieta pomocnicza obok pickera („8 czerwca 2026" / „…, 15:00").
+function formatDateLabel(value: string): string {
+  const v = value.trim();
+  const withTime = hasTime(v);
+  let d: Date;
+  if (withTime) {
+    d = new Date(v);
+  } else {
+    const [y, m, day] = v.slice(0, 10).split("-").map(Number);
+    d = new Date(y, m - 1, day); // buduj lokalnie — bez przesunięcia strefy dla daty bez czasu
+  }
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString("pl-PL", {
+    day: "numeric", month: "long", year: "numeric",
+    ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
+  });
+}
+
 function moduleIcon(module: string) {
   if (module === "shopping") return <ShoppingCart size={15} />;
   if (module === "tasks") return <CheckSquare size={15} />;
@@ -302,20 +350,41 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                   {/* Params editor (pomijamy surowe identyfikatory — patrz ID_KEY) */}
                   {paramsExpanded.has(action.id) && (
                     <div style={{ marginTop: 8, padding: "8px 10px", background: "var(--bg-elevated)", borderRadius: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                      {Object.entries(editedParams[action.id] ?? {}).filter(([key]) => !ID_KEY.test(key)).map(([key, value]) => (
-                        <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 11, color: "var(--text-muted)", width: 90, flexShrink: 0, fontFamily: "monospace" }}>{key}</span>
-                          <input
-                            value={value}
-                            onChange={(e) => updateParam(action.id, key, e.target.value)}
-                            style={{
-                              flex: 1, fontSize: 12, color: "var(--text-primary)",
-                              background: "var(--bg-surface)", border: "1px solid var(--border)",
-                              borderRadius: 6, padding: "3px 8px", outline: "none",
-                            }}
-                          />
-                        </div>
-                      ))}
+                      {Object.entries(editedParams[action.id] ?? {}).filter(([key]) => !ID_KEY.test(key)).map(([key, value]) => {
+                        const isDate = isDateValue(value);
+                        return (
+                          <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 11, color: "var(--text-muted)", width: 90, flexShrink: 0, fontFamily: "monospace" }}>{key}</span>
+                            {isDate ? (
+                              <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                                <input
+                                  type={hasTime(value) ? "datetime-local" : "date"}
+                                  value={toInputValue(value)}
+                                  onChange={(e) => updateParam(action.id, key, e.target.value)}
+                                  style={{
+                                    fontSize: 12, color: "var(--text-primary)",
+                                    background: "var(--bg-surface)", border: "1px solid var(--border)",
+                                    borderRadius: 6, padding: "3px 8px", outline: "none",
+                                  }}
+                                />
+                                <span style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {formatDateLabel(value)}
+                                </span>
+                              </div>
+                            ) : (
+                              <input
+                                value={value}
+                                onChange={(e) => updateParam(action.id, key, e.target.value)}
+                                style={{
+                                  flex: 1, fontSize: 12, color: "var(--text-primary)",
+                                  background: "var(--bg-surface)", border: "1px solid var(--border)",
+                                  borderRadius: 6, padding: "3px 8px", outline: "none",
+                                }}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
                       {action.searchQuery !== undefined && (
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontSize: 11, color: "var(--accent-amber)", width: 90, flexShrink: 0, fontFamily: "monospace" }}>searchQuery</span>
