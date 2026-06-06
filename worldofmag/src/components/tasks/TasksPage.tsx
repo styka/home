@@ -46,6 +46,10 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const [aiSearchResults, setAiSearchResults] = useState<string[] | null>(null);
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(initialOpenTaskId ?? null);
   const [openTaskId, setOpenTaskId] = useState<string | null>(initialOpenTaskId ?? null);
+  // Świeżo dodane zadanie — fallback dla panelu szczegółów. W widokach wirtualnych
+  // (Dziś/Nadchodzące/Zaległe) nowe zadanie trafia do Skrzynki bez terminu, więc nie
+  // wchodzi do przefiltrowanej `tasks`; trzymamy zwrócony obiekt, by panel i tak się otworzył.
+  const [justCreated, setJustCreated] = useState<Task | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   // Prezentacja listy: "default" = naturalne grupowanie widoku (dni/projekty), "priority" = po priorytetach.
   // Dotyczy widoków „Nadchodzące/Zaległe/Wszystkie" (Dziś i projekty są zawsze po priorytetach).
@@ -63,7 +67,10 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const isVirtualView = ["today", "upcoming", "overdue", "all", "multi"].includes(projectId);
   const addProjectId = isVirtualView ? inboxId : projectId;
 
-  const openTask = openTaskId ? tasks.find((t) => t.id === openTaskId) ?? null : null;
+  // Preferuj świeżą wersję z listy; jeśli zadania tam (jeszcze) nie ma — użyj świeżo utworzonego.
+  const openTask = openTaskId
+    ? tasks.find((t) => t.id === openTaskId) ?? (justCreated?.id === openTaskId ? justCreated : null)
+    : null;
 
   // Najnowsza lista zadań dla timera — bez tego interwał (zależności []) widziałby
   // tylko `tasks` z pierwszego renderu.
@@ -98,6 +105,11 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
 
   // Otwarte szczegóły → wpis w historii, by przycisk „wstecz" zamykał panel
   // (zamiast opuszczać stronę), zwłaszcza na mobile.
+  // Po zamknięciu panelu porzuć fallback świeżo utworzonego zadania (każda ścieżka zamknięcia).
+  useEffect(() => {
+    if (!openTaskId) setJustCreated(null);
+  }, [openTaskId]);
+
   useEffect(() => {
     if (!openTaskId) return;
     window.history.pushState({ taskDetail: true }, "");
@@ -513,7 +525,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
       <QuickAddTask
         ref={quickAddRef}
         projectId={addProjectId}
-        onCreated={(id) => { setOpenTaskId(id); setFocusedTaskId(id); }}
+        onCreated={(t) => { setJustCreated(t); setOpenTaskId(t.id); setFocusedTaskId(t.id); }}
       />
 
       <TaskFilters

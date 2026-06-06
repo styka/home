@@ -4,7 +4,7 @@ import { useState, useRef, useTransition, useImperativeHandle, forwardRef } from
 import { Plus, Loader2 } from "lucide-react";
 import { createTask } from "@/actions/tasks";
 import { useToast } from "@/components/ui/Toast";
-import type { TaskPriority } from "@/types";
+import type { Task, TaskPriority } from "@/types";
 
 export interface QuickAddTaskHandle {
   focus: () => void;
@@ -12,8 +12,10 @@ export interface QuickAddTaskHandle {
 
 interface QuickAddTaskProps {
   projectId: string;
-  /** Po utworzeniu zadania — otwiera jego szczegóły, by ustawić pozostałe parametry. */
-  onCreated?: (taskId: string) => void;
+  /** Po utworzeniu zadania — otwiera jego szczegóły, by ustawić pozostałe parametry.
+   *  Przekazuje cały obiekt, bo w widokach wirtualnych (Dziś/Nadchodzące…) nowe zadanie
+   *  trafia do Skrzynki i nie wchodzi do przefiltrowanej listy — panel używa go jako fallback. */
+  onCreated?: (task: Task) => void;
 }
 
 export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
@@ -47,7 +49,7 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
           setDueDate("");
           setPriority("NONE");
           setShowExtra(false);
-          onCreated?.(created.id);
+          onCreated?.(created);
         } catch (err) {
           showToast(err instanceof Error ? err.message : "Nie udało się dodać zadania", "error");
         }
