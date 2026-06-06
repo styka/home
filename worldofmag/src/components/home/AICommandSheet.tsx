@@ -119,13 +119,6 @@ const STARTER_CHIPS = [
   "Zrób raport z tej rozmowy",
 ];
 
-// Pełna polska data („piątek, 6 czerwca 2026") — to samo „dziś", które dostaje agent,
-// pokazane użytkownikowi, by kontekst był przejrzysty. Pierwsza litera wielka.
-function formatToday(d: Date): string {
-  const s = d.toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 function ReasoningLog({ log }: { log?: LogEntry[] }) {
   const [expanded, setExpanded] = useState(false);
   if (!log?.length) return null;
@@ -173,7 +166,6 @@ export function AICommandSheet() {
   const { context, placeholder, routeHint, activeListId, activeProjectId } = deriveContextFromPath(pathname);
 
   const [isOpen, setIsOpen] = useState(false);
-  const [todayLabel, setTodayLabel] = useState(""); // pełna data „dziś" (liczona po stronie klienta, bez FOUC/hydration mismatch)
   const [inputText, setInputText] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
@@ -230,11 +222,6 @@ export function AICommandSheet() {
 
   // Zatrzymaj generowanie przy zamknięciu/unmount.
   useEffect(() => () => abortRef.current?.abort(), []);
-
-  // Aktualizuj etykietę „dziś" przy każdym otwarciu (świeża, nawet po północy).
-  useEffect(() => {
-    if (isOpen) setTodayLabel(formatToday(new Date()));
-  }, [isOpen]);
 
   // Wczytaj zapamiętane preferencje (localStorage) raz przy montażu.
   useEffect(() => {
@@ -731,10 +718,7 @@ export function AICommandSheet() {
             <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <Sparkles size={15} style={{ color: "var(--accent-blue)" }} />
-                <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Asystent AI</span>
-                  {todayLabel && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{todayLabel}</span>}
-                </div>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Asystent AI</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <button onClick={() => setShowPrefs((v) => !v)} title="Stałe preferencje" aria-label="Stałe preferencje" style={{ ...iconBtn, color: showPrefs || prefs.trim() ? "var(--accent-blue)" : undefined }}><Settings size={16} /></button>
