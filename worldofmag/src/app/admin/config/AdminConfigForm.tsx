@@ -192,7 +192,7 @@ function ApiKeyCard({
               className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium focus:outline-none disabled:opacity-40"
               style={{
                 backgroundColor: saved ? "var(--accent-green)" : "var(--accent-blue)",
-                color: "#fff",
+                color: "var(--on-accent)",
                 transition: "background-color 0.2s",
               }}
             >

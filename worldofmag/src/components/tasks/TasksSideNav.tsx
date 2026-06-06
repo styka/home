@@ -425,7 +425,7 @@ export function TasksSideNav() {
               onClick={saveGroup}
               disabled={isPending}
               className="flex items-center gap-1 rounded text-xs px-2 py-1 focus:outline-none disabled:opacity-50"
-              style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+              style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
             >
               {isPending ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
               {groupEditor.mode === "edit" ? "Zapisz" : "Utwórz grupę"}

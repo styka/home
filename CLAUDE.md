@@ -244,6 +244,7 @@ QaEpic, QaUserStory, QaTestScenario         — QA module
 LlmProvider, LlmAssignment                  — LLM config (admin)
 Config, UserActivity, Report                — System
 AiConversation, AiMessage                   — AI assistant chat memory (per-user; message kind: text/plan/report/navigate/clarify/results)
+Skin, UserSkinPref                          — Skórki/motywy (system/user/team; tokens=JSON mapa zmiennych CSS, isPublic do współdzielenia; UserSkinPref = wybór per-user)
 ```
 
 **Important**: `Item.status` is a `String` (not Prisma enum) because SQLite doesn't support enums. TypeScript union `ItemStatus = "NEEDED" | "IN_CART" | "DONE" | "MISSING"` enforces correctness at compile time. Never change this to a Prisma enum.
@@ -315,6 +316,8 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 --text-secondary: #b0b0b0  --text-muted: #808080
 ```
 Accent tokens: `accent-blue`, `accent-green`, `accent-red`, `accent-amber`, `accent-purple`.
+
+**Skórki / motywy (skins)**: użytkownik wybiera skórkę w `Ustawienia → Wygląd` (`SkinPicker`); admin zarządza skórkami systemowymi w `/admin/skins`. Skórka to **częściowa mapa zmiennych CSS** (`Skin.tokens` JSON) aplikowana **inline na `<html>`** w `layout.tsx` (`readActiveSkin` → `tokensToStyle`), więc nadpisuje `:root` z `globals.css` bez FOUC; pominięte zmienne dziedziczą domyślne (ciemne) wartości, a skórka „Ciemny" = `{}`. Lista sterowalnych zmiennych, kontrolki edytora i **walidacja** (`sanitizeTokenValue` — whitelista + regex, blokada CSS-injection) żyją w `src/lib/skins.ts`. Tokeny sterowane skórką poza kolorami: `--color-scheme` (jasny/ciemny dla natywnych kontrolek + `data-skin-scheme` na `<html>`), `--radius`/`--radius-lg` (zaokrąglenie), `--font-size-base` (gęstość), `--on-accent` (tekst na akcentach — **używaj go zamiast `#fff`** na kolorowych przyciskach). 5 skórek systemowych seedowanych migracją (Ciemny/Jasny/Casual/Błękit/Róż). Modele: `Skin` (system/user/team, `isPublic` do współdzielenia), `UserSkinPref` (wybór per-user); akcje w `src/actions/skins.ts`.
 
 **Mobile responsiveness**: The desktop `ModuleSidebar` is `hidden md:flex`. Mobile (`md:hidden`) instead gets a **top bar** (active module + hamburger), a full-screen **overlay menu** (hamburger), and a fixed **bottom tab bar** (Home/Shopping/Tasks/Notes). All respect `env(safe-area-inset-bottom)`. Minimum touch targets: `py-3`, 20×20px checkboxes. Register new modules in `ModuleSidebar` (and the bottom tab bar if they belong there).
 

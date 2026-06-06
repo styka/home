@@ -70,7 +70,7 @@ export function LanguagesHomePage({ decks }: { decks: LanguageDeck[] }) {
             <button
               onClick={() => setShowForm((v) => !v)}
               className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium"
-              style={{ background: "var(--accent-purple)", color: "#fff", border: "none" }}
+              style={{ background: "var(--accent-purple)", color: "var(--on-accent)", border: "none" }}
             >
               <Plus size={15} /> Nowa talia
             </button>
@@ -120,7 +120,7 @@ export function LanguagesHomePage({ decks }: { decks: LanguageDeck[] }) {
                 onClick={submit}
                 disabled={busy || !name.trim()}
                 className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium disabled:opacity-40"
-                style={{ background: "var(--accent-blue)", color: "#fff", border: "none" }}
+                style={{ background: "var(--accent-blue)", color: "var(--on-accent)", border: "none" }}
               >
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                 {busy ? (sourceText.trim() ? "Generuję słówka…" : "Tworzę…") : "Utwórz talię"}
@@ -161,7 +161,7 @@ export function LanguagesHomePage({ decks }: { decks: LanguageDeck[] }) {
                     style={{
                       fontSize: 11,
                       fontWeight: 600,
-                      color: "#fff",
+                      color: "var(--on-accent)",
                       background: "var(--accent-green)",
                       borderRadius: 999,
                       padding: "2px 8px",

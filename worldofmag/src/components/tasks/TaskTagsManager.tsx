@@ -92,7 +92,7 @@ export function TaskTagsManager({ initialTags }: TaskTagsManagerProps) {
         <button
           onClick={() => setIsAdding(true)}
           className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded focus:outline-none"
-          style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+          style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
         >
           <Plus size={12} />
           Nowy tag
@@ -127,7 +127,7 @@ export function TaskTagsManager({ initialTags }: TaskTagsManagerProps) {
                 onClick={handleAdd}
                 disabled={!newName.trim() || isPending}
                 className="flex items-center gap-1 text-xs px-3 py-1.5 rounded focus:outline-none disabled:opacity-40"
-                style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+                style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
               >
                 <Check size={12} /> Dodaj
               </button>

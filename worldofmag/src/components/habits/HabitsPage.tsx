@@ -188,7 +188,7 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
               >
                 {notifOn ? <Bell size={16} /> : <BellOff size={16} />}
               </button>
-              <button onClick={() => setModal({ mode: "create" })} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-orange)", color: "#fff", border: "none" }}>
+              <button onClick={() => setModal({ mode: "create" })} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-orange)", color: "var(--on-accent)", border: "none" }}>
                 <Plus size={15} /> Dodaj
               </button>
             </div>
@@ -307,7 +307,7 @@ function HabitCard({
             flexShrink: 0,
             background: h.completedToday ? h.color : "transparent",
             border: `2px solid ${h.color}`,
-            color: "#fff",
+            color: "var(--on-accent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

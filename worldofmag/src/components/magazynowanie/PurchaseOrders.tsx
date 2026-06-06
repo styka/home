@@ -146,7 +146,7 @@ function OrderRow({
                 {STATUS_LABEL[s]}
               </button>
             ))}
-            <button type="button" onClick={generate} disabled={drafting} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs disabled:opacity-50" style={{ backgroundColor: "var(--accent-purple)", color: "#fff" }}>
+            <button type="button" onClick={generate} disabled={drafting} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs disabled:opacity-50" style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}>
               {drafting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Redaguj AI
             </button>
             <button type="button" onClick={remove} disabled={pending} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs" style={{ color: "var(--accent-red)" }}>

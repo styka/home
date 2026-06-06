@@ -128,7 +128,7 @@ export function ImportFromAIDialog({ open, onClose }: ImportFromAIDialogProps) {
             onClick={handleGenerate}
             disabled={pending || !prompt.trim()}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm disabled:opacity-50"
-            style={{ backgroundColor: "var(--accent-purple)", color: "#fff" }}
+            style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}
           >
             <Sparkles size={14} /> {pending ? "Generuję…" : "Wygeneruj"}
           </button>

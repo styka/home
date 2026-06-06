@@ -690,7 +690,7 @@ export function AICommandSheet() {
         title="Asystent AI"
         aria-label="Otwórz asystenta AI"
         className="fixed right-5 z-40 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
-        style={{ width: 52, height: 52, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
+        style={{ width: 52, height: 52, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
       >
         <Sparkles size={22} />
       </button>
@@ -873,7 +873,7 @@ export function AICommandSheet() {
                     <button
                       onClick={stopGeneration}
                       title="Zatrzymaj"
-                      style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "none", background: "var(--accent-red)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                      style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "none", background: "var(--accent-red)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     >
                       <Square size={15} />
                     </button>
@@ -947,7 +947,7 @@ function TurnView({
 
   if (turn.role === "user") {
     return (
-      <div style={{ alignSelf: "flex-end", maxWidth: "85%", background: "var(--accent-blue)", color: "#fff", padding: "8px 12px", borderRadius: "12px 12px 2px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+      <div style={{ alignSelf: "flex-end", maxWidth: "85%", background: "var(--accent-blue)", color: "var(--on-accent)", padding: "8px 12px", borderRadius: "12px 12px 2px 12px", fontSize: 14, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
         {turn.content}
       </div>
     );
@@ -1009,7 +1009,7 @@ function TurnView({
     return (
       <div style={bubble}>
         <p style={{ margin: 0 }}>{turn.content}</p>
-        <button onClick={() => onNavigate(turn.url)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-blue)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+        <button onClick={() => onNavigate(turn.url)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           <ArrowRight size={15} /> {turn.label}
         </button>
         <ReasoningLog log={turn.log} />
@@ -1031,7 +1031,7 @@ function TurnView({
         {turn.done ? (
           <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--accent-green)", display: "flex", alignItems: "center", gap: 6 }}><CheckCircle size={13} /> Wykonano</p>
         ) : (
-          <button onClick={() => onOpenPlan(turn)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-blue)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={() => onOpenPlan(turn)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             Przejrzyj i wykonaj
           </button>
         )}
@@ -1050,11 +1050,11 @@ function TurnView({
         <div onClick={onBubbleClick} style={{ maxHeight: 280, overflowY: "auto", borderTop: "1px solid var(--border)", paddingTop: 8 }} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
         <div style={{ marginTop: 6 }}><CopyButton text={turn.content} /></div>
         {turn.savedSlug ? (
-          <button onClick={() => onNavigate(`/reports/${turn.savedSlug}`)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-green)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={() => onNavigate(`/reports/${turn.savedSlug}`)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             <ArrowRight size={15} /> Otwórz raport
           </button>
         ) : (
-          <button onClick={() => onSaveReport(turn)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-blue)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={() => onSaveReport(turn)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             <FileText size={15} /> Zapisz jako raport
           </button>
         )}

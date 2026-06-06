@@ -192,7 +192,7 @@ export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
               onClick={processText}
               disabled={!text.trim() || loading}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
-              style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+              style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
             >
               {loading ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
               Przetwórz
@@ -267,7 +267,7 @@ export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
                 onClick={addTasks}
                 disabled={selectedCount === 0 || isPending}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
-                style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+                style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
               >
                 {isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
                 Dodaj zadania

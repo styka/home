@@ -119,7 +119,7 @@ function ProviderEditor({ providers }: { providers: ProviderDTO[] }) {
               onClick={add}
               disabled={isPending}
               className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium disabled:opacity-40"
-              style={{ background: "var(--accent-blue)", color: "#fff" }}
+              style={{ background: "var(--accent-blue)", color: "var(--on-accent)" }}
             >
               <Plus size={14} /> Dodaj
             </button>
@@ -213,7 +213,7 @@ function ProviderRow({ provider }: { provider: ProviderDTO }) {
             onClick={saveKey}
             disabled={isPending || !apiKey.trim()}
             className="flex items-center gap-1 px-3 py-2 rounded text-sm disabled:opacity-40"
-            style={{ background: "var(--accent-blue)", color: "#fff" }}
+            style={{ background: "var(--accent-blue)", color: "var(--on-accent)" }}
           >
             <Check size={14} /> Zapisz
           </button>
@@ -267,7 +267,7 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
           onClick={save}
           disabled={isPending || !providerId || !model.trim()}
           className="flex items-center gap-1 px-3 py-2 rounded text-sm font-medium disabled:opacity-40"
-          style={{ background: saved ? "var(--accent-green)" : "var(--accent-blue)", color: "#fff", height: 35 }}
+          style={{ background: saved ? "var(--accent-green)" : "var(--accent-blue)", color: "var(--on-accent)", height: 35 }}
         >
           {saved ? <Check size={14} /> : null}
           {saved ? "Zapisano" : "Zapisz"}

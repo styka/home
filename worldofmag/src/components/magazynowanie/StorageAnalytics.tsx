@@ -77,7 +77,7 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
             <button type="button" onClick={exportCsv} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border" style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
               <Download size={12} /> CSV
             </button>
-            <button type="button" onClick={loadTips} disabled={loadingTips} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded disabled:opacity-50" style={{ backgroundColor: "var(--accent-purple)", color: "#fff" }}>
+            <button type="button" onClick={loadTips} disabled={loadingTips} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded disabled:opacity-50" style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}>
               {loadingTips ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Analizuj
             </button>
           </div>

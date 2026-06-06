@@ -64,7 +64,7 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
                 background: "var(--accent-green, #22c55e)",
                 border: "none",
                 borderRadius: 6,
-                color: "#fff",
+                color: "var(--on-accent)",
                 fontSize: 13,
                 cursor: "pointer",
                 opacity: busy === inv.id ? 0.5 : 1,

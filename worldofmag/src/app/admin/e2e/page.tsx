@@ -223,7 +223,7 @@ function InfoGrid({ rows }: { rows: Array<{ label: string; value: string }> }) {
 function Step({ n, label, desc }: { n: number; label: string; desc: string }) {
   return (
     <div style={{ display: "flex", gap: 12, alignItems: "start" }}>
-      <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--accent-red)", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{n}</span>
+      <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--accent-red)", color: "var(--on-accent)", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{n}</span>
       <div>
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{label}</span>
         <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: "2px 0 0", lineHeight: 1.6 }}>{desc}</p>

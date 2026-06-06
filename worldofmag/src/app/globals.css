@@ -27,6 +27,12 @@
   --kitchen-expiring:  #ff9800;
   --kitchen-expired:   #f44336;
   --sidebar-width:  220px;
+  /* Tokeny sterowane przez skórki (motywy). Skórka nadpisuje je inline na <html>. */
+  --color-scheme:   dark;        /* schemat natywnych kontrolek */
+  --on-accent:      #ffffff;     /* kolor tekstu/ikon na tłach akcentowych */
+  --radius:         6px;         /* promień zaokrąglenia */
+  --radius-lg:      10px;
+  --font-size-base: 14px;        /* gęstość — bazowy rozmiar tekstu */
 }
 
 * {
@@ -39,14 +45,15 @@ html, body {
   color: var(--text-primary);
   /* Prevent scroll bounce on iOS PWA */
   overscroll-behavior: none;
-  /* Render native form controls (date/time pickers, etc.) in dark mode so
-     their built-in icons stay visible on the dark theme. */
-  color-scheme: dark;
+  /* Render native form controls (date/time pickers, etc.) following the active
+     skin's scheme so their built-in icons stay visible. Driven by a token so a
+     light skin can switch them to light. */
+  color-scheme: var(--color-scheme, dark);
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 14px;
+  font-size: var(--font-size-base, 14px);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -119,17 +126,17 @@ input[type="number"]::-webkit-outer-spin-button {
    filter: invert() is NOT used here on purpose: combined with
    color-scheme: dark (which already renders a light icon) it would invert the
    light icon back to black. */
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator,
-input[type="month"]::-webkit-calendar-picker-indicator,
-input[type="week"]::-webkit-calendar-picker-indicator {
+html[data-skin-scheme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+html[data-skin-scheme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+html[data-skin-scheme="dark"] input[type="month"]::-webkit-calendar-picker-indicator,
+html[data-skin-scheme="dark"] input[type="week"]::-webkit-calendar-picker-indicator {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23e8e8e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4' width='18' height='18' rx='2' ry='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/></svg>");
   background-repeat: no-repeat;
   background-position: center;
   cursor: pointer;
   opacity: 0.75;
 }
-input[type="time"]::-webkit-calendar-picker-indicator {
+html[data-skin-scheme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23e8e8e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><polyline points='12 7 12 12 15 14'/></svg>");
   background-repeat: no-repeat;
   background-position: center;

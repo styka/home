@@ -137,7 +137,7 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
           <button
             onClick={handleSaveEdit}
             className="text-xs px-2 py-0.5 rounded"
-            style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+            style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
           >
             Save
           </button>

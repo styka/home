@@ -76,7 +76,7 @@ export const primaryButtonStyle: React.CSSProperties = {
   padding: "8px 14px",
   borderRadius: 8,
   background: "var(--accent-blue)",
-  color: "#fff",
+  color: "var(--on-accent)",
   fontSize: 13,
   fontWeight: 600,
   border: "none",

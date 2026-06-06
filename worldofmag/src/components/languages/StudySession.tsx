@@ -76,7 +76,7 @@ export function StudySession({ deck, cards }: { deck: LanguageDeck; cards: Vocab
             <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
               {reviewed > 0 ? `Powtórzono ${reviewed} słówek. Wróć później po kolejne.` : "Wszystkie słówka są na bieżąco. Dodaj nowe lub wróć później."}
             </p>
-            <Link href={`/languages/${deck.id}`} className="px-4 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-purple)", color: "#fff", textDecoration: "none", marginTop: 8 }}>
+            <Link href={`/languages/${deck.id}`} className="px-4 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-purple)", color: "var(--on-accent)", textDecoration: "none", marginTop: 8 }}>
               Wróć do talii
             </Link>
           </div>

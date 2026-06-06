@@ -69,7 +69,7 @@ export function QaHomePage({
                   padding: "7px 12px",
                   borderRadius: 6,
                   background: "var(--accent-red)",
-                  color: "#fff",
+                  color: "var(--on-accent)",
                   textDecoration: "none",
                   display: "inline-flex",
                   alignItems: "center",

@@ -137,7 +137,7 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormState; onSave: 
       )}
       {error && <p style={{ fontSize: 12, color: "var(--accent-red)", margin: 0 }}>{error}</p>}
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={save} disabled={busy} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium disabled:opacity-40" style={{ background: "var(--accent-blue)", color: "#fff", border: "none" }}>
+        <button onClick={save} disabled={busy} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium disabled:opacity-40" style={{ background: "var(--accent-blue)", color: "var(--on-accent)", border: "none" }}>
           <Check size={14} /> Zapisz
         </button>
         <button onClick={onCancel} disabled={busy} className="px-3 py-2 rounded text-sm" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)" }}>Anuluj</button>
@@ -246,7 +246,7 @@ export function HealthHomePage({ events }: { events: HealthEvent[] }) {
           title="Zdrowie"
           subtitle="Wizyty u lekarzy i badania — terminy, statusy i wyniki"
           action={
-            <button onClick={() => { setAdding(true); setEditing(null); }} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-red)", color: "#fff", border: "none" }}>
+            <button onClick={() => { setAdding(true); setEditing(null); }} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-red)", color: "var(--on-accent)", border: "none" }}>
               <Plus size={15} /> Dodaj
             </button>
           }

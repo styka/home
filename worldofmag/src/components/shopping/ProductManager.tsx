@@ -101,7 +101,7 @@ export function ProductManager({ products, userId, categoryNames }: ProductManag
         <button
           onClick={() => setAdding(true)}
           className="flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium focus:outline-none"
-          style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+          style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
         >
           <Plus size={14} />
           Nowy produkt

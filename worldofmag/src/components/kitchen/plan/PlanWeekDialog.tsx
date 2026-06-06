@@ -403,7 +403,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
                 onClick={handleGenerate}
                 disabled={selectedSlots.size === 0 || recipeCount === 0}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm disabled:opacity-50"
-                style={{ backgroundColor: "var(--accent-purple)", color: "#fff" }}
+                style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}
               >
                 <Wand2 size={14} /> Generuj plan
               </button>

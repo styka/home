@@ -148,7 +148,7 @@ function PermissionsTab({ permissions, users, rolePermissions }: { permissions: 
             <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
               <button onClick={() => setAdding(false)} style={{ fontSize: 12, padding: "5px 10px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", cursor: "pointer" }}>Anuluj</button>
               <button onClick={handleCreate} disabled={saving || !slug.trim() || !name.trim()}
-                style={{ fontSize: 12, padding: "5px 12px", borderRadius: 6, border: "none", background: "var(--accent-blue)", color: "#fff", cursor: "pointer", opacity: saving ? 0.6 : 1 }}>
+                style={{ fontSize: 12, padding: "5px 12px", borderRadius: 6, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", cursor: "pointer", opacity: saving ? 0.6 : 1 }}>
                 {saving ? "…" : "Dodaj"}
               </button>
             </div>
@@ -318,7 +318,7 @@ function UsersTab({ users, availableRoles, rolePermissions }: { users: UserData[
                       ))}
                     </select>
                     <button onClick={() => handleAddRole(user.id)} disabled={!newRole || saving}
-                      style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, border: "none", background: "var(--accent-blue)", color: "#fff", cursor: "pointer" }}>
+                      style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", cursor: "pointer" }}>
                       {saving ? "…" : "Dodaj"}
                     </button>
                     <button onClick={() => { setAdding(null); setNewRole("") }}

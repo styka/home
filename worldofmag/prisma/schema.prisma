@@ -78,6 +78,8 @@ model User {
   weatherLocations       WeatherLocation[]     @relation("OwnedWeatherLocations")
   weatherWatchers        WeatherWatcher[]      @relation("OwnedWeatherWatchers")
   projectGroups          ProjectGroup[]        @relation("OwnedProjectGroups")
+  skins                  Skin[]                @relation("SkinOwner")
+  skinPref               UserSkinPref?
 }
 
 // Preferencje paska bocznego/menu per użytkownik: kolejność i wyłączone moduły.
@@ -86,6 +88,39 @@ model UserMenuPref {
   order     String   @default("[]") // JSON: string[] id modułów w kolejności użytkownika
   disabled  String   @default("[]") // JSON: string[] id modułów wyłączonych przez użytkownika
   tabBar    String   @default("[]") // JSON: string[] id modułów w dolnym pasku (mobile), w kolejności użytkownika
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Skórka (motyw): częściowa mapa zmiennych CSS aplikowana inline na <html>.
+// Skórki systemowe (isSystem=true, ownerId/ownerTeamId=null) zarządza admin.
+// Skórki użytkownika/zespołu mają ownera; isPublic ⇒ widoczna i reużywalna przez wszystkich.
+model Skin {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isSystem    Boolean  @default(false)
+  colorScheme String   @default("dark") // "dark" | "light" — schemat natywnych kontrolek
+  tokens      String   @default("{}")   // JSON: { "--bg-base":"#..", "--radius":"8px", ... }
+  ownerId     String?
+  ownerTeamId String?
+  isPublic    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner     User? @relation("SkinOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team? @relation("SkinTeam", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+}
+
+// Wybrana przez użytkownika skórka (null ⇒ domyślna ciemna).
+model UserSkinPref {
+  userId    String   @id
+  skinId    String?
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -204,6 +239,7 @@ model Team {
   medicationSchedules  MedicationSchedule[]  @relation("TeamMedicationSchedules")
   habits               Habit[]               @relation("TeamHabits")
   serviceCategories    ServiceCategory[]     @relation("TeamServiceCategories")
+  skins                Skin[]                @relation("SkinTeam")
 }
 
 model TeamMember {

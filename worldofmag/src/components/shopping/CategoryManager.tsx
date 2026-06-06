@@ -212,7 +212,7 @@ export function CategoryManager({ categories, activeIconMap = {}, userTeams = []
             onClick={() => setAdding("user")}
             disabled={isPending}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
-            style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+            style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
           >
             {isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
             Nowa kategoria
@@ -249,7 +249,7 @@ export function CategoryManager({ categories, activeIconMap = {}, userTeams = []
                 onClick={() => setAdding({ teamId: team.id, teamName: team.name })}
                 disabled={isPending}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
-                style={{ backgroundColor: "var(--accent-green)", color: "#fff" }}
+                style={{ backgroundColor: "var(--accent-green)", color: "var(--on-accent)" }}
               >
                 {isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
                 Nowa
@@ -410,7 +410,7 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
                 disabled={!custom.trim()}
                 onClick={() => { if (custom.trim()) { onChange(custom.trim()); setOpen(false); } }}
                 className="px-2 py-1 rounded text-xs focus:outline-none disabled:opacity-40"
-                style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+                style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
               >
                 OK
               </button>

@@ -57,7 +57,7 @@ export function BarcodeScanner({ onDetected, onClose, hint }: BarcodeScannerProp
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col" style={{ backgroundColor: "#000" }}>
-      <div className="flex items-center justify-between px-4 py-3" style={{ color: "#fff" }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ color: "var(--on-accent)" }}>
         <span className="text-sm font-medium">{hint ?? "Skanuj kod"}</span>
         <button type="button" onClick={onClose} aria-label="Zamknij skaner" className="p-1">
           <X size={22} />
@@ -69,14 +69,14 @@ export function BarcodeScanner({ onDetected, onClose, hint }: BarcodeScannerProp
         <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover" playsInline muted />
 
         {status === "loading" ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2" style={{ color: "#fff" }}>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2" style={{ color: "var(--on-accent)" }}>
             <Loader2 size={28} className="animate-spin" />
             <span className="text-sm">Uruchamiam kamerę…</span>
           </div>
         ) : null}
 
         {status === "error" ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center" style={{ color: "#fff" }}>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center" style={{ color: "var(--on-accent)" }}>
             <CameraOff size={28} />
             <span className="text-sm max-w-xs">{errorMsg}</span>
           </div>

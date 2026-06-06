@@ -423,7 +423,7 @@ export function NoteRow({
           <button
             onClick={handleSave}
             className="text-xs px-3 py-1 rounded font-medium"
-            style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+            style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
           >
             Zapisz
           </button>

@@ -170,7 +170,7 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
                 type="button"
                 onClick={handleClear}
                 className="absolute top-2 right-2 rounded-full p-1"
-                style={{ backgroundColor: "rgba(0,0,0,0.6)", color: "#fff" }}
+                style={{ backgroundColor: "rgba(0,0,0,0.6)", color: "var(--on-accent)" }}
                 aria-label="Usuń zdjęcie"
               >
                 <X size={14} />
@@ -187,7 +187,7 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
             onClick={handleImport}
             disabled={pending || !preview}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm disabled:opacity-50"
-            style={{ backgroundColor: "var(--accent-purple)", color: "#fff" }}
+            style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}
           >
             {pending ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
             {pending ? "Rozpoznaję…" : "Rozpoznaj i importuj"}

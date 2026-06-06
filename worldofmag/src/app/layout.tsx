@@ -5,7 +5,9 @@ import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistratio
 import { auth } from "@/lib/auth";
 import { getPendingInvitationsCount } from "@/actions/invitations";
 import { readMenuPrefs } from "@/actions/menuPrefs";
+import { readActiveSkin } from "@/actions/skins";
 import { defaultMenuPrefs } from "@/lib/modules";
+import { tokensToStyle } from "@/lib/skins";
 import { APP_TITLE, ICON_VERSION } from "@/lib/appName";
 
 export const viewport: Viewport = {
@@ -41,8 +43,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? await readMenuPrefs(session.user.id).catch(() => defaultMenuPrefs())
     : defaultMenuPrefs();
 
+  // Aktywna skórka: tokeny aplikowane inline na <html> (nadpisują :root z globals.css,
+  // bez migotania bo renderowane po stronie serwera). data-skin-scheme steruje m.in.
+  // widocznością natywnych ikon pól date/time.
+  const skin = session?.user?.id
+    ? await readActiveSkin(session.user.id).catch(() => ({ skinId: null, tokens: {}, colorScheme: "dark" as const }))
+    : { skinId: null, tokens: {}, colorScheme: "dark" as const };
+
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" data-skin-scheme={skin.colorScheme} style={tokensToStyle(skin.tokens)}>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

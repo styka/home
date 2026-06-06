@@ -200,7 +200,7 @@ export default function NewReportPage() {
                 borderRadius: 8,
                 border: "none",
                 background: "var(--accent-purple)",
-                color: "#fff",
+                color: "var(--on-accent)",
                 cursor: isPending ? "wait" : "pointer",
                 opacity: isPending || !title.trim() || !slug.trim() || !content.trim() ? 0.6 : 1,
               }}

@@ -145,7 +145,7 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
             onClick={processText}
             disabled={!text.trim() || loading}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40 mt-2"
-            style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+            style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
             title="Przetwórz przez AI (Ctrl+Enter)"
           >
             {loading
@@ -272,7 +272,7 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
                 onClick={addToList}
                 disabled={selectedCount === 0 || isPending}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
-                style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}
+                style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
               >
                 {isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
                 Dodaj do listy

@@ -321,7 +321,7 @@ function PairCard({ pair, pet, onChange }: { pair: PetBreedingData["pairs"][numb
             />
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button onClick={() => setHatchModal(null)} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid var(--border)", background: "none", color: "var(--text-secondary)", fontSize: 13, cursor: "pointer" }}>Anuluj</button>
-              <button onClick={confirmHatch} style={{ padding: "6px 14px", borderRadius: 7, border: "none", background: "var(--accent-green)", color: "#fff", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Zapisz</button>
+              <button onClick={confirmHatch} style={{ padding: "6px 14px", borderRadius: 7, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Zapisz</button>
             </div>
           </div>
         </div>

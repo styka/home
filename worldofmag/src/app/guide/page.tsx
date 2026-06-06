@@ -231,7 +231,7 @@ export default function GuidePage() {
               padding: "10px 20px",
               borderRadius: 10,
               background: "var(--accent-blue)",
-              color: "#fff",
+              color: "var(--on-accent)",
               textDecoration: "none",
               fontSize: 13,
               fontWeight: 600,
