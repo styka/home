@@ -70,6 +70,7 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 
   tasks: `ZADANIA (module "tasks"):
 - create_task { title, description?, priority:"NONE"|"LOW"|"MEDIUM"|"HIGH"|"URGENT", dueDate?(ISO), projectName? }
+  • OPIS (description): wstaw DOKŁADNIE to, co użytkownik podał jako treść zadania — przepisz to wiernie. Wolno CIĘ tylko lekko zredagować: zamień na formę bezosobową/rzeczową i popraw gramatykę/interpunkcję. NIE streszczaj, NIE skracaj, NIE zmieniaj znaczenia i NIE pomijaj ŻADNYCH faktów, liczb, nazw ani szczegółów. title = krótka etykieta (kilka słów); description = pełna treść polecenia po lekkiej redakcji. Pomiń description tylko gdy użytkownik podał wyłącznie sam krótki tytuł bez dodatkowej treści.
 - update_task { taskId?, title?, description?, priority?, status?, dueDate? } (searchQuery fallback)
 - update_task_status { status:"TODO"|"IN_PROGRESS"|"DONE"|"CANCELLED"|"DEFERRED", taskId? } (searchQuery fallback)
 - shift_task_due_date { days:number, taskId? } (searchQuery fallback; ujemne = wcześniej)
