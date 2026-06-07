@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { notifyUser } from "@/actions/notifications";
+import { REQUEST_STATUS_LABELS } from "@/lib/services";
 import type {
   RequestStatus,
   PriceModel,
@@ -282,7 +284,7 @@ export async function createServiceRequest(data: {
   if (!provider) throw new Error("Wykonawca nie istnieje");
   if (provider.userId === user.id) throw new Error("Nie możesz zlecić usługi samemu sobie");
 
-  await prisma.serviceRequest.create({
+  const created = await prisma.serviceRequest.create({
     data: {
       clientId: user.id,
       providerId: provider.id,
@@ -292,6 +294,14 @@ export async function createServiceRequest(data: {
       preferredAt: data.preferredAt ? new Date(data.preferredAt) : null,
       status: "REQUESTED",
     },
+  });
+  // M6: powiadom wykonawcę o nowym zleceniu.
+  await notifyUser({
+    userId: provider.userId,
+    module: "services",
+    title: `Nowe zlecenie: ${title}`,
+    href: "/services/requests",
+    dedupeKey: `svc-req-${created.id}`,
   });
   revalidatePath("/services/requests");
 }
@@ -319,6 +329,14 @@ export async function advanceRequestStatus(
       status: next,
       ...(next === "SCHEDULED" && opts?.scheduledAt ? { scheduledAt: new Date(opts.scheduledAt) } : {}),
     },
+  });
+  // M6: powiadom klienta o zmianie statusu jego zlecenia.
+  await notifyUser({
+    userId: req.clientId,
+    module: "services",
+    title: `Status zlecenia „${req.title}": ${REQUEST_STATUS_LABELS[next] ?? next}`,
+    href: "/services/requests",
+    dedupeKey: `svc-status-${id}-${next}`,
   });
   revalidatePath("/services/requests");
   revalidatePath("/services/provider");

@@ -11,6 +11,13 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-07 — Iteracja po `Map`/`Set` wywala build (target TS) + lokalny Postgres jako weryfikowalny build w sandboxie
+**Problem:** (1) `for (const [k, v] of someMap)` w akcji serwerowej wywaliło `next build`: „Map can only be iterated through with '--downlevelIteration' or '--target' es2015+". Konfiguracja TS repo na to nie pozwala. (2) Realny problem przekrojowy: w sandboxie web nie ma `DATABASE_URL`, więc `npm run build` (który kończy się `scripts/migrate.js` = `prisma migrate deploy`) zawsze padał — nie dało się zweryfikować zmian.
+**Rozwiązanie:** (1) zamiast iterować po `Map` użyj `Array.from(map.values())` (lub `.entries()` opakowane w `Array.from`). (2) Postawiono lokalny Postgres 16 (jest w obrazie, `pg_ctlcluster 16 main start`), rola+baza `omnia/omnia_dev`, `.env.local` z `DATABASE_URL`/`DIRECT_URL` na `127.0.0.1:5432`, `npx prisma migrate deploy` zaaplikował wszystkie migracje. Od tego momentu pełny `npm run build` przechodzi lokalnie i każda zmiana jest weryfikowalna — bez dotykania produkcji.
+**Lekcja:** Nie iteruj bezpośrednio po `Map`/`Set` w tym repo — `Array.from(...)`. A gdy trzeba realnie zbudować/odpalić appkę w sandboxie, postaw lokalny Postgres i wskaż go w `.env.local` zamiast walczyć z brakiem bazy (eksportuj te zmienne też do shella, bo `scripts/migrate.js` nie ładuje `.env.local`).
+
+---
+
 ## 2026-06-07 — „Spaghetti" wymagań: zadania odwołujące się do starszych raportów, których stan już się zdezaktualizował
 **Problem:** Dwa zgłoszenia administratora (marketplace Fixly/Booksy + „dokończ wskazania raportu architektury 2026-05-31") zazębiały się i odwoływały do raportów sprzed tygodnia. Raporty luk (`omnia-luki-wdrozeniowe-2026-06-01`) opisywały stan na 01.06, a od tego czasu doszły całe moduły (Magazynowanie, Warsztaty, Wiadomości, Pogoda, Skiny) i przebudowa asystenta na czat — więc backlog liczony „z pamięci/ze starego raportu" byłby fałszywy. Ryzyko: zaplanować implementację rzeczy już zrobionych lub odwrotnie.
 **Rozwiązanie:** Zanim cokolwiek zaplanowano, **zweryfikowano każdą sporną pozycję bezpośrednio w kodzie** (grep modeli `Notification`/`Contact`/`Service*`, odczyt `src/actions/calendar.ts` pod kątem agregowanych źródeł, lista komponentów `tasks/`). Powstał jeden scalający raport `omnia-master-plan-domkniecie-2026-06-07` z kolumną statusu ✅/🟡/❌ **opartą na audycie kodu**, a nie na poprzednich raportach. Treść raportu trzymana w pliku `docs/reports/<slug>.md` i **generowana z niego** do migracji seedującej skryptem (jedno źródło prawdy, brak rozjazdu plik↔baza). Dollar-quoting `$omnia_master_plan$` + walidacja braku kolizji znacznika w treści przed zapisem.
