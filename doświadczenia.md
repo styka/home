@@ -4,6 +4,13 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-07 — Quick-add zadania (pole nad listą) dublował logikę tytuł/treść poza asystentem AI
+**Problem:** Regułę „pojedynczy tekst → treść, tytuł generowany" wdrożono najpierw tylko w prompcie asystenta AI (`agent/route.ts`). Ale szybkie pole „Dodaj zadanie…" nad listą zadań (`QuickAddTask`) omija asystenta i woła `createTask` bezpośrednio — wrzucało cały wpisany tekst do `title`, a `description` zostawiało puste. Czyli ta sama luka istniała w drugim, niezależnym punkcie wejścia.
+**Rozwiązanie:** `QuickAddTask.handleSubmit` traktuje teraz wpisany tekst jako `description` i generuje zwięzły `title` przez nowy route `/api/llm/tasks/title` (wzorzec skopiowany z `/api/llm/notes/title`, op „dispatch"). Fallback offline: lokalny `deriveLocalTitle` (pierwszy wiersz przycięty do ~60 zn.), więc brak LLM nie blokuje dodania. Zachowano wyjątek dla krótkiego, jednowierszowego wpisu (≤50 zn., bez `\n`) — to po prostu sam tytuł (np. „kup mleko"), bez wołania LLM i bez dublowania w opisie — spójnie z regułą wyjątku w prompcie agenta.
+**Lekcja:** Reguła UX dotycząca tworzenia rekordu musi być wdrożona w KAŻDYM punkcie wejścia, nie tylko w asystencie AI. Po zmianie zachowania asystenta sprawdź szybkie pola dodawania (QuickAdd*) w modułach — one wołają Server Actions bezpośrednio i łatwo o nich zapomnieć.
+
+---
+
 ## 2026-06-07 — AI: pojedynczy tekst przy tworzeniu zadania/notatki = treść, tytuł generowany
 **Problem:** Gdy użytkownik dyktuje asystentowi jeden blok tekstu bez wyraźnego rozdzielenia „tytuł" vs „treść", AI wrzucało cały tekst jako tytuł (zwłaszcza dla notatek — `create_note` w katalogu akcji nie miało żadnej wskazówki redakcyjnej), zamiast potraktować go jako zawartość i wygenerować zwięzły tytuł.
 **Rozwiązanie:** Zmiana wyłącznie w prompcie agenta (`ACTION_CATALOG_BY_MODULE` w `src/app/api/llm/home/agent/route.ts`) — executor przepuszcza title/description/content 1:1, więc o mapowaniu decyduje model. Do `create_task` i `create_note` dodano regułę „TYTUŁ vs TREŚĆ": jeden tekst → traktuj jako treść (description/content), title wygeneruj jako krótką etykietę; wyjątek dla wyraźnie krótkiego samego tytułu.
