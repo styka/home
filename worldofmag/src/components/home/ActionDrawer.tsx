@@ -217,8 +217,9 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+      data-omnia-overlay="assistant"
+      className="fixed inset-0 flex items-end md:items-center md:justify-center"
+      style={{ zIndex: 9991, backgroundColor: "rgba(0,0,0,0.7)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
