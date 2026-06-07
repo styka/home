@@ -150,19 +150,21 @@ export function FeedbackInspector() {
               }}
             />
           )}
-          {/* Pasek instrukcji */}
+          {/* Pasek instrukcji. Na mobile u dołu (nad paskiem zakładek), na desktopie u góry.
+              Sam pasek jest „przezroczysty dla dotyku" (pointer-events: none), więc element
+              pod nim da się normalnie wskazać/kliknąć — interaktywny jest tylko przycisk Anuluj. */}
           <div
             {...{ [FEEDBACK_UI_ATTR]: "" }}
-            className="fixed left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3"
-            style={{ top: "calc(12px + env(safe-area-inset-top))", padding: "8px 14px", borderRadius: 999, background: "var(--bg-surface)", border: "1px solid var(--accent-purple)", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}
+            className="fixed left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 max-w-[calc(100vw-24px)] bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-auto md:top-[calc(12px+env(safe-area-inset-top))]"
+            style={{ pointerEvents: "none", padding: "8px 14px", borderRadius: 999, background: "var(--bg-surface)", border: "1px solid var(--accent-purple)", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}
           >
             <Bug size={15} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: "var(--text-primary)" }}>Kliknij element, którego dotyczy zgłoszenie</span>
+            <span style={{ fontSize: 13, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Wskaż element zgłoszenia</span>
             <button
               onClick={() => { setActive(false); setRect(null); }}
               title="Anuluj (Esc)"
               aria-label="Anuluj tryb zgłaszania"
-              style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-secondary)", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 999, padding: "3px 9px", cursor: "pointer" }}
+              style={{ pointerEvents: "auto", flexShrink: 0, display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-secondary)", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 999, padding: "3px 9px", cursor: "pointer" }}
             >
               <X size={12} /> Anuluj
             </button>
