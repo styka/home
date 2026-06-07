@@ -16,6 +16,7 @@ import {
 import { createUserReport } from "@/actions/reports";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/app/api/llm/home/execute/route";
+import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
 
 interface RouteContext {
   context: string[];
@@ -201,6 +202,10 @@ export function AICommandSheet() {
   const prefsRef = useRef("");
   prefsRef.current = prefs;
   const [showPrefs, setShowPrefs] = useState(false);
+  // Tryb zgłoszenia (admin): kontekst wskazanego miejsca; gdy ustawiony, kolejna
+  // wiadomość admina staje się opisem zadania w projekcie „Omnia". Ref — bo
+  // listener zdarzenia i handleSend muszą widzieć aktualną wartość bez re-bind.
+  const feedbackRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -241,6 +246,32 @@ export function AICommandSheet() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Otwarcie asystenta z zewnątrz (magistrala zdarzeń). W trybie zgłoszenia
+  // zaczynamy świeżą rozmowę z kartą informującą, co trafiło do kontekstu.
+  useEffect(() => {
+    function onOpen(e: Event) {
+      const detail = (e as CustomEvent<AssistantOpenDetail>).detail ?? {};
+      setIsOpen(true);
+      setShowHistory(false);
+      if (detail.feedbackContext) {
+        setConversationId(null);
+        convoIdRef.current = null;
+        setPlanTurnId(null);
+        setError(null);
+        setInputText("");
+        feedbackRef.current = detail.feedbackContext;
+        const info =
+          "📍 **Tryb zgłoszenia błędu / sugestii**\n\n" +
+          "Do kontekstu rozmowy trafiło wskazane miejsce:\n\n" +
+          detail.feedbackContext +
+          "\n\nOpisz teraz **błąd lub sugestię** — utworzę na tej podstawie zadanie w projekcie **Omnia** (tytuł wygeneruję automatycznie z opisu).";
+        setTurns([{ id: newId(), role: "assistant", kind: "answer", content: info }]);
+      }
+    }
+    window.addEventListener(ASSISTANT_OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(ASSISTANT_OPEN_EVENT, onOpen);
   }, []);
 
   function savePrefs(value: string) {
@@ -503,6 +534,34 @@ export function AICommandSheet() {
     const text = (textArg ?? inputText).trim();
     if (!text || busy) return;
     setInputText("");
+
+    // Tryb zgłoszenia: opis admina → zadanie w projekcie „Omnia" (tytuł z AI).
+    const feedbackContext = feedbackRef.current;
+    if (feedbackContext) {
+      feedbackRef.current = null; // jednorazowo — kolejne wiadomości są zwykłe
+      if (!convoIdRef.current) {
+        try {
+          const convo = await createAiConversation(`Zgłoszenie: ${text.slice(0, 48)}`);
+          setConversationId(convo.id);
+          convoIdRef.current = convo.id;
+        } catch { /* działamy dalej bez persystencji */ }
+      }
+      setTurns((t) => [...t, { id: newId(), role: "user", kind: "text", content: text }]);
+      void persist("user", text, "text");
+      const prompt =
+        "[ZGŁOSZENIE ADMINA — TRYB WSKAZYWANIA]\n" +
+        'Utwórz dokładnie JEDNO zadanie w projekcie „Omnia" (module: tasks, type: create_task, params.projectName="Omnia").\n' +
+        "- params.title: wygeneruj zwięzły, konkretny tytuł po polsku podsumowujący zgłoszenie (max ~80 znaków).\n" +
+        "- params.description: pełny opis admina ORAZ poniższy kontekst wskazanego miejsca.\n" +
+        "Nie dopytuj i nie odpowiadaj tekstem — od razu zaproponuj plan z tym jednym zadaniem.\n\n" +
+        `Opis zgłoszony przez admina:\n${text}\n\nKontekst wskazanego miejsca (UI):\n${feedbackContext}`;
+      await callAgent({
+        text: prompt, context: ctx("tasks"),
+        routeHint: "Zgłoszenie błędu/sugestii od admina przez tryb wskazywania UI",
+        today: new Date().toISOString(), history: [],
+      });
+      return;
+    }
 
     // Utwórz rozmowę przy pierwszej wiadomości.
     if (!convoIdRef.current) {

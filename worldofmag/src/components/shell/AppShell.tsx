@@ -10,6 +10,7 @@ import { AppName } from "@/components/brand/AppName";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { DataFreshness } from "./DataFreshness";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
+import { FeedbackInspector } from "./FeedbackInspector";
 import { ToastProvider } from "@/components/ui/Toast";
 import { isPathLocked } from "@/lib/permissions";
 import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
@@ -238,6 +239,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
       )}
 
       <AICommandSheet />
+      {isAdmin && <FeedbackInspector />}
     </div>
     </ToastProvider>
   );
