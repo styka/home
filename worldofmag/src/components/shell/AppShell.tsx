@@ -118,6 +118,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
       {/* Mobile menu overlay */}
       {menuOpen && (
         <div
+          data-omnia-overlay="nav"
           className="md:hidden fixed inset-0 z-50 flex"
           style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
           onClick={() => setMenuOpen(false)}
