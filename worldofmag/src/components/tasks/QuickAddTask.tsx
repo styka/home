@@ -3,11 +3,21 @@
 import { useState, useRef, useTransition, useImperativeHandle, forwardRef } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { createTask } from "@/actions/tasks";
+import { llm } from "@/lib/llm-client";
 import { useToast } from "@/components/ui/Toast";
 import type { Task, TaskPriority } from "@/types";
 
 export interface QuickAddTaskHandle {
   focus: () => void;
+}
+
+/** Awaryjny tytuł z treści, gdy LLM jest niedostępny: pierwszy wiersz, przycięty do ~60 znaków. */
+function deriveLocalTitle(text: string): string {
+  const firstLine = text.split("\n")[0].trim();
+  if (firstLine.length <= 60) return firstLine;
+  const cut = firstLine.slice(0, 60);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 30 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
 }
 
 interface QuickAddTaskProps {
@@ -34,13 +44,33 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
 
     function handleSubmit(e?: React.FormEvent) {
       e?.preventDefault();
-      const title = value.trim();
-      if (!title) return;
+      const text = value.trim();
+      if (!text) return;
 
       startTransition(async () => {
         try {
+          // Wpisany tekst traktujemy jako TREŚĆ zadania, a tytuł generujemy z niej.
+          // Wyjątek: krótki, jednowierszowy tekst to po prostu sam tytuł (np. „kup mleko") —
+          // wtedy nie dublujemy go w opisie ani nie wołamy LLM.
+          const isShortTitle = !text.includes("\n") && text.length <= 50;
+
+          let title = text;
+          let description: string | null = null;
+
+          if (!isShortTitle) {
+            description = text;
+            title = deriveLocalTitle(text);
+            try {
+              const res = await llm.tasks.suggestTitle(text);
+              if (res.title?.trim()) title = res.title.trim();
+            } catch {
+              /* brak LLM / offline — zostaje tytuł lokalny */
+            }
+          }
+
           const created = await createTask({
             title,
+            description,
             priority,
             dueDate: dueDate ? new Date(dueDate) : null,
             projectId: ["today", "upcoming", "overdue", "all"].includes(projectId) ? null : projectId,
@@ -93,7 +123,7 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onFocus={() => setShowExtra(true)}
-            placeholder="Dodaj zadanie… (a / n)"
+            placeholder="Dodaj lub opisz zadanie — tytuł powstanie sam (a / n)"
             className="flex-1 bg-transparent text-sm focus:outline-none"
             style={{ color: "var(--text-primary)" }}
           />

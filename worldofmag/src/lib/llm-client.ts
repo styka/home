@@ -36,6 +36,9 @@ export const llm = {
     suggest: (context: unknown) =>
       post<{ suggestions?: string[] }>("/api/llm/tasks/suggest", context),
 
+    suggestTitle: (content: string) =>
+      post<{ title?: string }>("/api/llm/tasks/title", { content }),
+
     search: (query: string, tasks: unknown[]) =>
       post<{ matches?: number[] }>("/api/llm/tasks/search", { query, tasks }),
   },
