@@ -22,6 +22,7 @@ export const PERMISSIONS = {
   NEWS:        "module.news",
   WEATHER:     "module.weather",
   MAGAZYNOWANIE: "module.magazynowanie",
+  WARSZTATY:   "module.warsztaty",
   // Kitchen sub-permissions
   KITCHEN_RECIPE_CREATE: "kitchen.recipe.create",
   KITCHEN_RECIPE_EDIT:   "kitchen.recipe.edit",
@@ -60,6 +61,7 @@ export function permissionForPath(path: string): string | null {
   if (path.startsWith("/wiadomosci")) return PERMISSIONS.NEWS
   if (path.startsWith("/pogoda")) return PERMISSIONS.WEATHER
   if (path.startsWith("/magazynowanie")) return PERMISSIONS.MAGAZYNOWANIE
+  if (path.startsWith("/warsztaty")) return PERMISSIONS.WARSZTATY
   return null
 }
 

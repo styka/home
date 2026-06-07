@@ -42,6 +42,7 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_meal_plan: args { days?, limit? } → [{ id, date, slot, title }]. Zaplanowane posiłki (domyślnie najbliższe 7 dni).
 - list_pantry: args { search?, limit? } → [{ id, name, quantity, unit, expiresAt }]. Spiżarnia.
 - list_vehicles: args { search? } → [{ id, name, plate, odometer, inspectionDue, insuranceDue }]. Pojazdy z flota.
+- list_workshops: args { search? } → [{ id, name, type, itemCount }]. Warsztaty/pracownie użytkownika (np. stolarski, samochodowy, malarski) z liczbą pozycji wyposażenia.
 - list_decks: args {} → [{ id, name, nativeLang, targetLang }]. Talie fiszek (nauka języków).
 - list_news_topics: args {} → [{ id, title }]. Monitorowane tematy wiadomości.
 - list_weather_locations: args {} → [{ id, label, isDefault }]. Lokalizacje pogodowe.
@@ -66,6 +67,7 @@ export const READ_TOOL_NAMES = [
   "list_meal_plan",
   "list_pantry",
   "list_vehicles",
+  "list_workshops",
   "list_decks",
   "list_news_topics",
   "list_weather_locations",
@@ -530,6 +532,25 @@ export async function runReadTool(
         odometer: v.odometer,
         inspectionDue: v.inspectionDue?.toISOString().slice(0, 10) ?? null,
         insuranceDue: v.insuranceDue?.toISOString().slice(0, 10) ?? null,
+      }));
+    }
+
+    case "list_workshops": {
+      const search = asStr(args.search);
+      const workshops = await prisma.workshop.findMany({
+        where: {
+          ...(await ownerScope(userId)),
+          ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
+        },
+        include: { _count: { select: { items: true } } },
+        orderBy: { updatedAt: "desc" },
+        take: HARD_MAX,
+      });
+      return workshops.map((w) => ({
+        id: w.id,
+        name: w.name,
+        type: w.type,
+        itemCount: w._count.items,
       }));
     }
 

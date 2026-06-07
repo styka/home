@@ -55,6 +55,7 @@ Nie pytaj o pozwolenie — po prostu dopisz i commituj razem z poprawką.
 | QA (test scenarios) | `/qa` | `module.qa` | Internal tooling |
 | Truck (heavy-vehicle routing) | `/truck` | `module.truck` | Partial — ORS client ready, UI minimal |
 | Magazynowanie (storage/inventory) | `/magazynowanie` | `module.magazynowanie` | Done — **dwa tryby (Dom/Pro, per-user `StorageSettings`)**. Wspólne: items by warehouse+location, SKU/EAN, min-stock replenishment→shopping, stocktake, AI photo inventory, movement log. **Dom:** „gdzie to jest?" (AI search), etykiety QR (druk+skan), gwarancje/terminy ważności, wartość+zdjęcia (eksport CSV). **Pro:** skan kodów we/wy (`@zxing`), dostawcy, dokumenty PZ/WZ/faktura (OCR), zamówienia (LLM draft), analityka (wartość/ABC/martwy zapas/trend + AI wnioski), partie/serie + FEFO. AI w asystencie (add_storage_item/adjust_storage + read-tool `list_storage_items`) |
+| Warsztaty (workshop/studio) | `/warsztaty` | `module.warsztaty` | Done — **dwa tryby (Dom/Pro, per-user `WarsztatSettings`)**. Warsztat/pracownia dowolnego typu (stolarski/samochodowy/malarski/elektroniczny/ślusarski/ceramiczny/krawiecki/jubilerski/ogólny). Ewidencja wyposażenia (`WorkshopItem`: kind narzędzie/maszyna/materiał/BHP, kondycja, ilość+min-stock, przegląd `nextServiceAt`), **statyczny katalog podpowiedzi sprzętu wg profilu** (`src/lib/warsztat/catalog.ts`, tiery podstawowe/zalecane/zaawansowane) jako checklista „dodaj do wyposażenia". **Pro:** własność zespołowa, przypisanie narzędzi (kto ma / stanowisko), agenda przeglądów + materiałów low-stock (`/warsztaty/przeglady`), dziennik projektów (`WorkshopProject`). AI: read-tool `list_workshops` + akcje `create_workshop`/`add_workshop_item` |
 | Calendar | `/calendar` | — | Stub (sidebar icon, "coming soon", disabled) |
 | Work / Praca | `/work` | — | Stub ("coming soon", disabled) |
 
@@ -162,6 +163,7 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /wiadomosci/             # News: monitored topics (semantic filters), per-source versioned knowledge base, hot topics
 /pogoda/                 # Weather: Open-Meteo forecast + LLM "what to do" advice + watchers (presets + custom)
 /magazynowanie/          # Storage: items by warehouse+location (mode-aware sub-nav). Dom+Pro: /szukaj (AI „gdzie to jest?"), /etykiety (QR), /scan (AI photo), /stocktake (spis), /ustawienia (tryb Dom/Pro + waluta). Pro: /przeplyw (skan we/wy), /analityka, /dostawcy, /zamowienia, /dokumenty (OCR PZ/WZ/faktura)
+/warsztaty/ [workshopId] # Warsztaty: lista warsztatów/pracowni + szczegół z zakładkami (Wyposażenie / Podpowiedzi sprzętu wg profilu / Projekty-Pro). Mode-aware sub-nav: /przeglady (Pro: agenda przeglądów + materiały low-stock), /ustawienia (tryb Dom/Pro)
 /qa/                     # QA test scenarios (Epic → Story → Scenario)
 /truck/                  # Heavy-vehicle routing (OpenRouteService)
 /reports/ [slug]         # Markdown reports (system/user/team), user-facing
@@ -195,7 +197,7 @@ All data mutations use Next.js Server Actions with `revalidatePath()` at the end
 - **Notes**: `notes`, `noteGroups`, `tags`
 - **Kitchen**: `recipes`, `cookbooks`, `mealPlans`, `pantry`
 - **Pets**: `pets`, `petCare`, `petHusbandry`, `petBreeding`
-- **Other modules**: `health`, `habits`, `flota`, `portfel`, `languageDecks`, `qa`, `truck`, `storage` (Magazynowanie)
+- **Other modules**: `health`, `habits`, `flota`, `portfel`, `languageDecks`, `qa`, `truck`, `storage` (Magazynowanie), `warsztat` (Warsztaty)
 - **Collaboration / system**: `teams`, `invitations`, `access`, `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `aiConversations` (AI assistant chat persistence)
 
 ### Authentication & Authorization
@@ -204,7 +206,7 @@ All data mutations use Next.js Server Actions with `revalidatePath()` at the end
 - Session includes `user.id`, `user.roles`, `user.permissions`
 - **RBAC**: Users have `UserRole` entries → roles have `RolePermission` entries → permissions have slugs
 - Check permissions via `src/lib/permissions.ts` (`hasPermission`, `permissionForPath`, `isPathLocked`)
-- Permission slugs (`module.*`): `module.home`, `module.shopping`, `module.tasks`, `module.notes`, `module.kitchen`, `module.pets`, `module.health`, `module.habits`, `module.flota`, `module.portfel`, `module.languages`, `module.news`, `module.weather`, `module.magazynowanie`, `module.qa`, `module.truck`, `module.invitations`, `module.settings`, `module.admin`. Kitchen has sub-permissions: `kitchen.recipe.create|edit|delete`, `kitchen.mealplan.edit`, `kitchen.pantry.edit`, `kitchen.ai`.
+- Permission slugs (`module.*`): `module.home`, `module.shopping`, `module.tasks`, `module.notes`, `module.kitchen`, `module.pets`, `module.health`, `module.habits`, `module.flota`, `module.portfel`, `module.languages`, `module.news`, `module.weather`, `module.magazynowanie`, `module.warsztaty`, `module.qa`, `module.truck`, `module.invitations`, `module.settings`, `module.admin`. Kitchen has sub-permissions: `kitchen.recipe.create|edit|delete`, `kitchen.mealplan.edit`, `kitchen.pantry.edit`, `kitchen.ai`.
 - `ModuleSidebar` greys out + locks nav items the user lacks permission for (`isPathLocked`); admin nav appears only for admins.
 - Special roles: `ADMIN` (full access), `BETA_TESTER` (shows Beta badge on Home)
 - **Admin self-lockout guard**: `access.ts` `countAdminAccessHolders()` blocks any RBAC change that would leave 0 users with `module.admin`.
@@ -240,6 +242,8 @@ StorageItem, StorageMovement                — Magazynowanie (storage items + m
 StorageSettings, StorageSupplier, StorageBatch — Magazynowanie pro (tryb Dom/Pro per-user; dostawcy; partie/serie FEFO)
 StorageDocument, StorageDocumentLine        — Magazynowanie pro (dokumenty PZ/WZ/faktura + pozycje)
 StoragePurchaseOrder, StoragePurchaseOrderLine — Magazynowanie pro (zamówienia do dostawców)
+WarsztatSettings                            — Warsztaty (tryb Dom/Pro per-user)
+Workshop, WorkshopItem, WorkshopProject     — Warsztaty (warsztat/pracownia + wyposażenie [kind/kondycja/min-stock/przegląd] + projekty-Pro; katalog podpowiedzi sprzętu statyczny w src/lib/warsztat/catalog.ts)
 QaEpic, QaUserStory, QaTestScenario         — QA module
 LlmProvider, LlmAssignment                  — LLM config (admin)
 Config, UserActivity, Report                — System

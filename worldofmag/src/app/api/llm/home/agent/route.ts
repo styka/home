@@ -23,6 +23,7 @@ const MODULES = [
   "kitchen",
   "flota",
   "magazynowanie",
+  "warsztaty",
   "health",
   "languages",
   "news",
@@ -126,6 +127,10 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - update_storage_item { name?, unit?, warehouse?, location? } (searchQuery = nazwa)
 - delete_storage_item {} (searchQuery = nazwa) — DESTRUKCYJNE
 - transfer_storage { toWarehouse?, toLocation?, quantity } (searchQuery = nazwa)`,
+
+  warsztaty: `WARSZTATY (module "warsztaty"):
+- create_workshop { name, type?, location? } — nowy warsztat/pracownia (type: "stolarski"|"samochodowy"|"malarski"|"elektroniczny"|"slusarski"|"ceramiczny"|"krawiecki"|"jubilerski"|"ogolny").
+- add_workshop_item { name, workshopName?, kind?, quantity?, unit?, category? } — dodaj pozycję wyposażenia do warsztatu (kind: "tool"|"machine"|"consumable"|"safety"|"material"; searchQuery = nazwa warsztatu).`,
 
   health: `ZDROWIE (module "health"):
 - create_health_event { title, kind:"VISIT"|"TEST", scheduledAt(ISO), doctorName?, specialty?, facility?, notes? } — wizyta lub badanie.
@@ -305,6 +310,7 @@ const KEYWORD_ROUTES: Record<string, RegExp> = {
   flota: /\b(zatankow\w*|tankowani\w*|paliw\w*|przebieg\w*|serwis\w*|pojazd\w*|auto|samoch\w*|opon\w*|przegląd\w*)\b/i,
   habits: /\b(nawyk\w*|odhacz\w*|odhaczyć|streak|seri\w* dni)\b/i,
   magazynowanie: /\b(magazyn\w*|na stani\w*|stan magazyn\w*|wyda(j|ć|łem) ze stanu|przyję(cie|ć)|regał\w*|półk\w*)\b/i,
+  warsztaty: /\b(warsztat\w*|pracowni\w*|narzędzi\w*|narzedzi\w*|stanowis\w*|wyposażeni\w*|przegląd\w* (narzędzi|sprzętu))\b/i,
   kitchen: /\b(posiłek|posiłk\w*|przepis\w*|spiżarni\w*|jadłospis\w*|ugotow\w*|śniadani\w*|obiad\w*|kolacj\w*)\b/i,
   health: /\b(wizyt\w*|badani\w*|lekarz\w*|przychodni\w*|recept\w*|wynik\w* bada\w*)\b/i,
   languages: /\b(fiszk\w*|słówk\w*|słowk\w*|tali\w*|powtórk\w* słów|tłumaczeni\w*)\b/i,
