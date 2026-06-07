@@ -82,6 +82,7 @@ model User {
   skinPref               UserSkinPref?
   warsztatSettings       WarsztatSettings?
   ownedWorkshops         Workshop[]            @relation("OwnedWorkshops")
+  notifications          Notification[]        @relation("UserNotifications")
 }
 
 // Preferencje paska bocznego/menu per użytkownik: kolejność i wyłączone moduły.
@@ -2077,4 +2078,30 @@ model WorkshopProject {
   workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
 
   @@index([workshopId])
+}
+
+// ─── Powiadomienia (NM3) ──────────────────────────────────────────────────
+// Centralny silnik powiadomień zaprojektowany pod free tier (bez crona): skan
+// nadchodzących terminów uruchamiany przy logowaniu / na żądanie (otwarcie
+// dzwonka) generuje rekordy idempotentnie (dedupeKey). Web-push to przyszłe
+// rozszerzenie — model jest fundamentem zarówno dla in-app, jak i push.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  module    String // tasks|health|flota|pets|languages|kitchen|services|system…
+  title     String
+  body      String?
+  href      String?
+  // Kiedy zdarzenie źródłowe jest należne (sortowanie + przyszłe push).
+  dueAt     DateTime?
+  readAt    DateTime?
+  // Deterministyczny klucz źródła (np. "task-due-<id>"), by skan nie duplikował.
+  dedupeKey String?
+  createdAt DateTime  @default(now())
+
+  user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
 }
