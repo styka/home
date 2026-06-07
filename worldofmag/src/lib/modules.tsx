@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Home, ShoppingCart, CheckSquare, FileText, PawPrint, ChefHat, GraduationCap,
   HeartPulse, Flame, FlaskConical, Truck, Car, Wallet, BookOpen, Handshake, Calendar,
-  Newspaper, CloudSun, Warehouse,
+  Newspaper, CloudSun, Warehouse, Wrench,
 } from "lucide-react";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -39,6 +39,7 @@ export const MODULES: ModuleDef[] = [
   { id: "flota",     label: "Flota",         href: "/flota",     permission: PERMISSIONS.FLOTA,     color: "var(--accent-blue)",   Icon: Car,           defaultEnabled: true },
   { id: "portfel",   label: "Portfel",       href: "/portfel",   permission: PERMISSIONS.PORTFEL,   color: "var(--accent-green)",  Icon: Wallet,        defaultEnabled: true },
   { id: "magazynowanie", label: "Magazynowanie", href: "/magazynowanie", permission: PERMISSIONS.MAGAZYNOWANIE, color: "var(--accent-blue)", Icon: Warehouse, defaultEnabled: true },
+  { id: "warsztaty", label: "Warsztaty",     href: "/warsztaty", permission: PERMISSIONS.WARSZTATY,  color: "var(--accent-amber)",  Icon: Wrench,        defaultEnabled: true },
   { id: "reports",   label: "Raporty",       href: "/reports",   permission: null,                  color: "var(--accent-purple)", Icon: BookOpen,      defaultEnabled: true },
 ];
 

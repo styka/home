@@ -13,6 +13,7 @@ import { addEntry, getWalletElements } from "@/actions/portfel";
 import { setMealPlanEntry } from "@/actions/mealPlans";
 import { addFuelLog, addServiceRecord, createVehicle, updateVehicle, deleteVehicle } from "@/actions/flota";
 import { addStorageItem, adjustStorageQuantity, updateStorageItem, deleteStorageItem, transferStock } from "@/actions/storage";
+import { createWorkshop, addWorkshopItem } from "@/actions/warsztat";
 import { createHabit, updateHabit, setHabitArchived, deleteHabit } from "@/actions/habits";
 import { createElement, updateElement, setBalance, archiveElement, deleteElement } from "@/actions/portfel";
 import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent } from "@/actions/health";
@@ -878,6 +879,43 @@ async function executeAction(
       // Odwrócenie = przeciwna korekta o tę samą wartość.
       const undo = { ...undoAction("magazynowanie", "adjust_storage", { delta: -delta }, `Cofnij korektę stanu — ${item.name}`), searchQuery: item.name };
       return { message: `${delta > 0 ? "Przyjęto" : "Wydano"} ${Math.abs(delta)} — ${item.name} (stan: ${updated.quantity ?? 0})`, undo };
+    }
+  }
+
+  // ── Warsztaty ─────────────────────────────────────────────────────────────
+  if (module === "warsztaty") {
+    if (type === "create_workshop") {
+      const name = asStr(params.name);
+      if (!name) throw new Error("Podaj nazwę warsztatu");
+      const ws = await createWorkshop({
+        name,
+        type: asStr(params.type) ?? null,
+        location: asStr(params.location) ?? null,
+      });
+      return `Utworzono warsztat „${ws.name}"`;
+    }
+
+    if (type === "add_workshop_item") {
+      const name = asStr(params.name);
+      if (!name) throw new Error("Podaj nazwę pozycji");
+      const wsName = asStr(params.workshopName) ?? action.searchQuery?.trim();
+      const teamIds = await getUserTeamIds(userId);
+      const ownerOr = [{ ownerId: userId }, teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" }];
+      const workshop = wsName
+        ? await prisma.workshop.findFirst({
+            where: { OR: ownerOr, name: { contains: wsName, mode: "insensitive" } },
+            orderBy: { updatedAt: "desc" },
+          })
+        : await prisma.workshop.findFirst({ where: { OR: ownerOr }, orderBy: { updatedAt: "desc" } });
+      if (!workshop) throw new Error(wsName ? `Nie znaleziono warsztatu „${wsName}"` : "Brak warsztatu — najpierw utwórz warsztat");
+      const item = await addWorkshopItem(workshop.id, {
+        name,
+        kind: asStr(params.kind) ?? null,
+        category: asStr(params.category) ?? null,
+        quantity: params.quantity != null ? Number(params.quantity) : null,
+        unit: asStr(params.unit) ?? null,
+      });
+      return `Dodano do warsztatu „${workshop.name}": ${item.name}`;
     }
   }
 

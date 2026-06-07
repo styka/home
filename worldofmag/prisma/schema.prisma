@@ -80,6 +80,8 @@ model User {
   projectGroups          ProjectGroup[]        @relation("OwnedProjectGroups")
   skins                  Skin[]                @relation("SkinOwner")
   skinPref               UserSkinPref?
+  warsztatSettings       WarsztatSettings?
+  ownedWorkshops         Workshop[]            @relation("OwnedWorkshops")
 }
 
 // Preferencje paska bocznego/menu per użytkownik: kolejność i wyłączone moduły.
@@ -240,6 +242,7 @@ model Team {
   habits               Habit[]               @relation("TeamHabits")
   serviceCategories    ServiceCategory[]     @relation("TeamServiceCategories")
   skins                Skin[]                @relation("SkinTeam")
+  workshops            Workshop[]            @relation("TeamWorkshops")
 }
 
 model TeamMember {
@@ -1987,4 +1990,91 @@ model WeatherWatcher {
   owner User @relation("OwnedWeatherWatchers", fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
+}
+
+// ─── Warsztaty (Workshop) ───────────────────────────────────────────────────
+// Zarządzanie przydomowym warsztatem/pracownią DOWOLNEGO typu (stolarski,
+// samochodowy, malarski, elektroniczny…). Tryb Dom (hobbysta) / Pro (firma,
+// kolektyw, zespół) — per-user, jak StorageSettings.
+
+model WarsztatSettings {
+  userId    String   @id
+  mode      String   @default("home") // "home" | "pro"
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Pojedynczy warsztat/pracownia. `type` = klucz profilu z katalogu podpowiedzi
+// (src/lib/warsztat/catalog.ts), np. "stolarski" | "samochodowy" | "malarski".
+model Workshop {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   @default("ogolny")
+  description String?
+  location    String?
+  ownerId     String?
+  ownerTeamId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner     User?             @relation("OwnedWorkshops", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?             @relation("TeamWorkshops", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  items     WorkshopItem[]
+  projects  WorkshopProject[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+}
+
+// Wyposażenie warsztatu: narzędzia, maszyny, materiały eksploatacyjne, BHP.
+// Dostęp dziedziczony z Workshop (brak własnego ownera). `kind`/`condition`/
+// `status` to String (SQLite = brak enumów).
+model WorkshopItem {
+  id            String    @id @default(cuid())
+  workshopId    String
+  name          String
+  kind          String    @default("tool") // "tool" | "machine" | "consumable" | "safety" | "material"
+  category      String?
+  quantity      Float?
+  unit          String?
+  minQuantity   Float?    // próg low-stock (głównie materiały eksploatacyjne)
+  condition     String    @default("good") // "new" | "good" | "worn" | "broken"
+  status        String    @default("owned") // "owned" | "wishlist"
+  brand         String?
+  station       String?   // stanowisko / miejsce w warsztacie
+  assignedTo    String?   // Pro: kto aktualnie ma narzędzie / komu wypożyczone
+  purchasePrice Float?
+  purchaseDate  DateTime?
+  lastServiceAt DateTime?
+  nextServiceAt DateTime? // termin następnego przeglądu/serwisu
+  suggestionKey String?   // powiązanie z pozycją katalogu podpowiedzi
+  photoUrl      String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+
+  @@index([workshopId])
+  @@index([nextServiceAt])
+}
+
+// Pro: prosty dziennik projektów/zleceń realizowanych w warsztacie.
+model WorkshopProject {
+  id          String    @id @default(cuid())
+  workshopId  String
+  name        String
+  description String?
+  status      String    @default("planned") // "planned" | "active" | "done"
+  assignedTo  String?
+  startedAt   DateTime?
+  dueAt       DateTime?
+  doneAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+
+  @@index([workshopId])
 }

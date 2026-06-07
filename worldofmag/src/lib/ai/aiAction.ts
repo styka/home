@@ -13,6 +13,7 @@ export type AIActionModule =
   | "kitchen"
   | "flota"
   | "magazynowanie"
+  | "warsztaty"
   | "health"
   | "languages"
   | "news"
