@@ -152,6 +152,30 @@ export async function getOrCreateInbox(): Promise<TaskProject> {
   return toProject(inbox);
 }
 
+/**
+ * Find-or-create projektu „Omnia" — kosza na zgłoszenia błędów/sugestii admina
+ * (tryb wskazywania UI). Dopasowanie po nazwie (case-insensitive), jak robi to
+ * resolver akcji AI przy tworzeniu zadania z `projectName: "Omnia"`.
+ */
+export async function ensureOmniaProject(): Promise<TaskProject> {
+  const user = await requireAuth();
+
+  let project = await prisma.taskProject.findFirst({
+    where: { ownerId: user.id, name: { equals: "Omnia", mode: "insensitive" } },
+    include: { _count: { select: { tasks: true } } },
+  });
+
+  if (!project) {
+    project = await prisma.taskProject.create({
+      data: { name: "Omnia", emoji: "🐛", color: "#a855f7", description: "Zgłoszenia błędów i sugestii do aplikacji", ownerId: user.id },
+      include: { _count: { select: { tasks: true } } },
+    });
+    revalidatePath("/tasks");
+  }
+
+  return toProject(project);
+}
+
 export async function addProjectMember(projectId: string, userId: string, role = "MEMBER"): Promise<void> {
   const user = await requireAuth();
   await assertProjectAccess(projectId, user.id, "ADMIN");
