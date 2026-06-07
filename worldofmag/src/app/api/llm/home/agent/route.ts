@@ -71,7 +71,8 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 
   tasks: `ZADANIA (module "tasks"):
 - create_task { title, description?, priority:"NONE"|"LOW"|"MEDIUM"|"HIGH"|"URGENT", dueDate?(ISO), projectName? }
-  • OPIS (description): wstaw DOKŁADNIE to, co użytkownik podał jako treść zadania — przepisz to wiernie. Wolno CIĘ tylko lekko zredagować: zamień na formę bezosobową/rzeczową i popraw gramatykę/interpunkcję. NIE streszczaj, NIE skracaj, NIE zmieniaj znaczenia i NIE pomijaj ŻADNYCH faktów, liczb, nazw ani szczegółów. title = krótka etykieta (kilka słów); description = pełna treść polecenia po lekkiej redakcji. Pomiń description tylko gdy użytkownik podał wyłącznie sam krótki tytuł bez dodatkowej treści.
+  • TYTUŁ vs TREŚĆ: gdy użytkownik NIE rozdziela wyraźnie tytułu od treści, a podał tylko JEDEN tekst (np. dłuższe zdanie/opis) — potraktuj ten tekst jako TREŚĆ zadania (description), a title WYGENERUJ samodzielnie jako krótką, zwięzłą etykietę (kilka słów) na jego podstawie. NIE wrzucaj całego tekstu jako tytułu. Wyjątek: jeśli tekst to wyraźnie sam krótki tytuł (kilka słów, np. „kup mleko") — użyj go jako title i pomiń description.
+  • OPIS (description): wstaw DOKŁADNIE to, co użytkownik podał jako treść zadania — przepisz to wiernie. Wolno CIĘ tylko lekko zredagować: zamień na formę bezosobową/rzeczową i popraw gramatykę/interpunkcję. NIE streszczaj, NIE skracaj, NIE zmieniaj znaczenia i NIE pomijaj ŻADNYCH faktów, liczb, nazw ani szczegółów. title = krótka etykieta (kilka słów); description = pełna treść polecenia po lekkiej redakcji.
 - update_task { taskId?, title?, description?, priority?, status?, dueDate? } (searchQuery fallback)
 - update_task_status { status:"TODO"|"IN_PROGRESS"|"DONE"|"CANCELLED"|"DEFERRED", taskId? } (searchQuery fallback)
 - shift_task_due_date { days:number, taskId? } (searchQuery fallback; ujemne = wcześniej)
@@ -83,6 +84,7 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 
   notes: `NOTATKI (module "notes"):
 - create_note { title, content? }
+  • TYTUŁ vs TREŚĆ: gdy użytkownik NIE rozdziela wyraźnie tytułu od treści, a podał tylko JEDEN tekst — potraktuj ten tekst jako ZAWARTOŚĆ notatki (content) przepisaną wiernie, a title WYGENERUJ samodzielnie jako krótką, zwięzłą etykietę (kilka słów) na jego podstawie. NIE wrzucaj całego tekstu jako tytułu. Wyjątek: jeśli to wyraźnie sam krótki tytuł — użyj go jako title i pomiń content.
 - append_to_note { content, noteId? } (searchQuery fallback)
 - update_note { title?, content?, noteId? } (searchQuery fallback)
 - delete_note { noteId? } (searchQuery fallback) — DESTRUKCYJNE

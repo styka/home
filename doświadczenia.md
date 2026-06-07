@@ -4,6 +4,13 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-07 — AI: pojedynczy tekst przy tworzeniu zadania/notatki = treść, tytuł generowany
+**Problem:** Gdy użytkownik dyktuje asystentowi jeden blok tekstu bez wyraźnego rozdzielenia „tytuł" vs „treść", AI wrzucało cały tekst jako tytuł (zwłaszcza dla notatek — `create_note` w katalogu akcji nie miało żadnej wskazówki redakcyjnej), zamiast potraktować go jako zawartość i wygenerować zwięzły tytuł.
+**Rozwiązanie:** Zmiana wyłącznie w prompcie agenta (`ACTION_CATALOG_BY_MODULE` w `src/app/api/llm/home/agent/route.ts`) — executor przepuszcza title/description/content 1:1, więc o mapowaniu decyduje model. Do `create_task` i `create_note` dodano regułę „TYTUŁ vs TREŚĆ": jeden tekst → traktuj jako treść (description/content), title wygeneruj jako krótką etykietę; wyjątek dla wyraźnie krótkiego samego tytułu.
+**Lekcja:** Reguły mapowania pól przy tworzeniu rekordów przez AI to kwestia promptu, nie kodu — i muszą być spójne między analogicznymi akcjami (to, co dodano dla zadań w 0097, trzeba było replikować dla notatek). Przy dodawaniu wskazówki redakcyjnej dla jednej akcji sprawdź bliźniacze akcje w tym samym katalogu.
+
+---
+
 ## 2026-06-07 — „Spaghetti" wymagań: zadania odwołujące się do starszych raportów, których stan już się zdezaktualizował
 **Problem:** Dwa zgłoszenia administratora (marketplace Fixly/Booksy + „dokończ wskazania raportu architektury 2026-05-31") zazębiały się i odwoływały do raportów sprzed tygodnia. Raporty luk (`omnia-luki-wdrozeniowe-2026-06-01`) opisywały stan na 01.06, a od tego czasu doszły całe moduły (Magazynowanie, Warsztaty, Wiadomości, Pogoda, Skiny) i przebudowa asystenta na czat — więc backlog liczony „z pamięci/ze starego raportu" byłby fałszywy. Ryzyko: zaplanować implementację rzeczy już zrobionych lub odwrotnie.
 **Rozwiązanie:** Zanim cokolwiek zaplanowano, **zweryfikowano każdą sporną pozycję bezpośrednio w kodzie** (grep modeli `Notification`/`Contact`/`Service*`, odczyt `src/actions/calendar.ts` pod kątem agregowanych źródeł, lista komponentów `tasks/`). Powstał jeden scalający raport `omnia-master-plan-domkniecie-2026-06-07` z kolumną statusu ✅/🟡/❌ **opartą na audycie kodu**, a nie na poprzednich raportach. Treść raportu trzymana w pliku `docs/reports/<slug>.md` i **generowana z niego** do migracji seedującej skryptem (jedno źródło prawdy, brak rozjazdu plik↔baza). Dollar-quoting `$omnia_master_plan$` + walidacja braku kolizji znacznika w treści przed zapisem.
