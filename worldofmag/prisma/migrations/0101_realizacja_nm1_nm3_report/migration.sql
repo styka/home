@@ -1,4 +1,12 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0101: odhaczenie NM1/NM3 w master-planie (re-seed z pliku md) + raport implementacyjny sesji.
+-- Oba INSERTy idempotentne (ON CONFLICT (slug) DO UPDATE).
+
+INSERT INTO "Report" ("id", "title", "slug", "content", "category", "authorId", "createdAt", "updatedAt")
+VALUES (
+  gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -366,3 +374,64 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$,
+  'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+)
+ON CONFLICT ("slug") DO UPDATE SET
+  "content" = EXCLUDED."content", "updatedAt" = CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id", "title", "slug", "content", "category", "authorId", "createdAt", "updatedAt")
+VALUES (
+  gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (NM1, NM3)',
+  'omnia-implementacja-2026-06-07-nm1-nm3',
+  $omnia_impl_0607$# Omnia — Raport implementacji 2026-06-07 (realizacja: NM1, NM3)
+
+Sesja realizująca pierwsze pozycje master-planu domknięcia
+(`omnia-master-plan-domkniecie-2026-06-07`) — fundament Fazy 1.
+
+## NM1 — Kalendarz: domknięcie agregacji (✅)
+**Diagnoza:** `getCalendarEvents` agregował Zadania/Posiłki/Zdrowie/Pojazdy/Leki, ale §18.5
+raportu architektury wymaga „dat ze WSZYSTKICH modułów" — brakowało opieki nad zwierzętami i
+powtórek SRS języków.
+**Rozwiązanie (i dlaczego tak):** dodano agregację `PetCareTask`/`PetTreatment` (po `nextDueAt`,
+scoping przez właściciela zwierzęcia) oraz `Vocabulary` (po `dueAt`). Powtórki SRS są grupowane
+per talia+dzień (jedno zdarzenie „Powtórka: <talia> (N)"), bo pojedyncze fiszki zalałyby siatkę.
+Moduły `pets`/`languages` dodane do `CalendarModule` + `MODULE_META` (UI legendy jest dynamiczne).
+**Zmienione pliki:** `src/lib/calendar.ts` (typy + meta), `src/actions/calendar.ts` (agregacja).
+
+## NM3 — Silnik powiadomień pod free tier (✅ rdzeń)
+**Diagnoza:** brak jakiegokolwiek serwerowego silnika powiadomień (istniało tylko klienckie
+`showLocalNotification`). NM3 to krytyczny bloker: bez niego nie działają M6 (marketplace) ani
+przypomnienia T3/Z4/F2/K4/L5. Render free tier nie ma crona.
+**Rozwiązanie (i dlaczego tak):** model `Notification` z idempotencją po `(userId, dedupeKey)` —
+dzięki temu skan można odpalać wielokrotnie bez duplikatów. `syncReminders` skanuje zaległe i
+nadchodzące terminy ze wszystkich modułów i jest wołany **przy montażu powłoki (logowanie) oraz
+przy otwarciu dzwonka** — to celowy wzorzec „bez crona" pasujący do free tier. Globalny dzwonek
+(`NotificationBell`) ustawiony w stosie nad FAB asystenta (wolny róg — bez kolizji z nagłówkami
+stron), panel otwiera się w górę. Web-push PWA świadomie odłożony jako rozszerzenie (model gotowy),
+by nie wprowadzać zależności `web-push`/VAPID w tym kroku.
+**Zmienione pliki:** `prisma/schema.prisma` (model Notification + relacja User),
+`prisma/migrations/0100_notifications`, `src/actions/notifications.ts`,
+`src/components/shell/NotificationBell.tsx`, `src/components/shell/AppShell.tsx`.
+
+## M6 — Powiadomienia marketplace (🟡 częściowo, przy okazji NM3)
+**Diagnoza:** marketplace nie informował stron o zdarzeniach.
+**Rozwiązanie:** zdarzeniowe haki `notifyUser` w `createServiceRequest` (wykonawca ← nowe zlecenie)
+i `advanceRequestStatus` (klient ← zmiana statusu). Reszta zdarzeń (czat/wycena/rezerwacja)
+dojdzie z M1/M2/M3.
+**Zmienione pliki:** `src/actions/services.ts`.
+
+## Weryfikacja
+- Pełny `npm run build` przechodzi (copy-docs, kontrola pokrycia 95 akcji AI, next build 109 stron,
+  migrate deploy, seedy). Build uruchomiony na lokalnym Postgresie 16 (środowisko deweloperskie
+  postawione w tej sesji), bez dotykania produkcji.
+
+## Podsumowanie
+Domknięto dwa krytyczne fundamenty Fazy 1: NM1 (kalendarz spina teraz wszystkie moduły) oraz NM3
+(silnik powiadomień), który odblokowuje 6+ kolejnych pozycji backlogu. Status odhaczony w
+master-planie (sekcja „Dziennik realizacji"). Następna sesja: NM9 (Kontakty/CRM) → Marketplace Etap A.$omnia_impl_0607$,
+  'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+)
+ON CONFLICT ("slug") DO UPDATE SET
+  "content" = EXCLUDED."content", "updatedAt" = CURRENT_TIMESTAMP;
