@@ -17,6 +17,7 @@ import { createUserReport } from "@/actions/reports";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/app/api/llm/home/execute/route";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
+import { useOverlayState } from "@/hooks/useOverlayState";
 
 interface RouteContext {
   context: string[];
@@ -167,6 +168,9 @@ export function AICommandSheet() {
   const { context, placeholder, routeHint, activeListId, activeProjectId } = deriveContextFromPath(pathname);
 
   const [isOpen, setIsOpen] = useState(false);
+  // Magiczną ikonę chowamy, gdy otwarty jest modal treściowy — nie nakładamy
+  // dialogu na dialog i nie odciągamy uwagi od skupionego zadania w modalu.
+  const { modalOpen } = useOverlayState();
   const [inputText, setInputText] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
@@ -743,21 +747,26 @@ export function AICommandSheet() {
     <>
       <style>{MARKDOWN_STYLES}</style>
 
-      {/* FAB */}
-      <button
-        onClick={() => setIsOpen(true)}
-        title="Asystent AI"
-        aria-label="Otwórz asystenta AI"
-        className="fixed right-5 z-40 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
-        style={{ width: 52, height: 52, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
-      >
-        <Sparkles size={22} />
-      </button>
+      {/* FAB — akcja główna (najwyższy z-index wśród pływających przycisków, by
+          ewentualnie zasłaniać przycisk admina, nigdy odwrotnie). Chowany, gdy
+          otwarty jest modal treściowy. */}
+      {!modalOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          title="Asystent AI"
+          aria-label="Otwórz asystenta AI"
+          className="fixed right-5 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
+          style={{ zIndex: 41, width: 52, height: 52, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
+        >
+          <Sparkles size={22} />
+        </button>
+      )}
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 flex items-end md:items-center md:justify-center"
-          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+          data-omnia-overlay="assistant"
+          className="fixed inset-0 flex items-end md:items-center md:justify-center"
+          style={{ zIndex: 9990, backgroundColor: "rgba(0,0,0,0.6)" }}
           onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
         >
           <div
