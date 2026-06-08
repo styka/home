@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0116: odhaczenie T1/T2 w master-planie (re-seed z md) + raport implementacyjny widoków zadań.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -422,3 +427,39 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (Zadania: T1 timeline + T2 Kanban)',
+  'omnia-implementacja-2026-06-07-zadania-t1-t2',
+  $omnia_impl_0607i$# Omnia — Raport implementacji 2026-06-07 (Zadania: T1 timeline + T2 Kanban)
+
+Dziewiąta porcja — wizualizacje listy zadań (Faza 1).
+
+## T2 — Tablica Kanban (✅)
+**Diagnoza:** statusy TODO/IN_PROGRESS/DONE proszą się o Kanban (dla wzrokowców).
+**Rozwiązanie (i dlaczego tak):** `KanbanBoard` jako **dodatkowy układ** (przełącznik
+Lista/Kanban/Timeline w pasku narzędzi) — nie ruszono dojrzałego `TaskList` (mniejsze ryzyko
+regresji). Kolumny = włączone statusy listy (`statusConfig.enabled`), więc Kanban respektuje
+własne statusy per-projekt. Karty przeciągane natywnym HTML5 DnD (bez nowej zależności) →
+`updateTask({status})` + `router.refresh()`. Karta pokazuje priorytet (lewy pasek) i termin
+(czerwony, gdy zaległy i kolumna nieterminalna).
+**Pliki:** `KanbanBoard.tsx`, `TasksPage.tsx`.
+
+## T1 — Widok timeline (✅)
+**Diagnoza:** zadania mają daty, brakowało wizualizacji osi czasu.
+**Rozwiązanie:** `TimelineView` grupuje zadania po dniu terminu (zaległe→przyszłe, nagłówki
+„Dziś/Jutro/Wczoraj", „Bez terminu" na końcu); klik otwiera panel szczegółów. Lekki, bez nowej
+tabeli — czyta te same `displayedTasks` co lista.
+**Pliki:** `TimelineView.tsx`, `TasksPage.tsx`.
+
+## Weryfikacja
+- `next build` zielony.
+
+## Podsumowanie
+Moduł Zadań ma teraz trzy układy (lista/Kanban/timeline). Następne domknięcia 🟡: R2 (szukanie
+raportów po treści) i S2 (podsumowanie zakupów). Pełny widok kalendarza zadań realizuje już
+moduł Kalendarz (NM1), z którym Zadania są spięte.$omnia_impl_0607i$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
