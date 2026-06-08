@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0106: odhaczenie M2/M8 w master-planie (re-seed z md) + raport implementacyjny rezerwacji.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -380,3 +385,45 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (Marketplace Etap A: M2/M8 rezerwacja)',
+  'omnia-implementacja-2026-06-07-marketplace-booking',
+  $omnia_impl_0607c$# Omnia — Raport implementacji 2026-06-07 (Marketplace Etap A: M2/M8 — rezerwacja Booksy)
+
+Trzecia porcja realizacji master-planu — drugi tor marketplace (model Booksy:
+kalendarz dostępności + rezerwacja slotów). Zamyka rdzeń Etapu A.
+
+## M8 — Czas trwania usługi (✅ częściowo; warianty pozostają)
+**Diagnoza:** rezerwacja slotów wymaga znajomości czasu trwania usługi.
+**Rozwiązanie:** `ServiceListing.durationMin` + `bookingEnabled` (włącznik rezerwacji na ofercie).
+Pełne warianty cennika (`ServiceVariant`) świadomie odłożone — rdzeń Booksy potrzebuje tylko
+czasu trwania, a warianty to rozszerzenie (M8 pozostaje 🟡).
+**Pliki:** `prisma/schema.prisma`, `0105_service_booking`, `src/actions/services.ts` (create/update
+Listing), `ProviderPanelPage.tsx` (pola w formularzu oferty).
+
+## M2 — Kalendarz dostępności + rezerwacja slotów (✅, rdzeń Booksy)
+**Diagnoza:** brak rezerwacji terminów — kluczowa funkcja Booksy, bez której nie „wygramy".
+**Rozwiązanie (i dlaczego tak):** reguły tygodniowe `ServiceAvailability`; logika generowania
+slotów wydzielona do **czystego** `src/lib/serviceSlots.ts` (`generateDaySlots`: krok = czas
+trwania, pomija sloty zajęte i przeszłe) — bez zależności od DB, łatwa do testów jednostkowych.
+Akcje `getMyAvailability`/`setAvailability` (wykonawca), `getAvailableSlots` (klient) i
+`bookSlot` (waliduje, że slot wciąż wolny → tworzy zlecenie od razu w statusie SCHEDULED +
+powiadamia wykonawcę). UI: `AvailabilityEditor` (godziny pracy per dzień) w panelu wykonawcy,
+`BookingWidget` (wybór dnia + klikalne sloty) na stronie oferty. Rezerwacje wpięte w
+**Kalendarz** (`getCalendarEvents` — nowy moduł `services`), spełniając wymóg „spięcia z NM1".
+**Pliki:** `0105_service_booking`, `src/lib/serviceSlots.ts`, `src/actions/services.ts`,
+`src/actions/calendar.ts`, `src/lib/calendar.ts`, `AvailabilityEditor.tsx`, `ListingDetailPage.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja zaaplikowana na lokalnym Postgresie.
+
+## Podsumowanie
+Rdzeń Etapu A marketplace jest **zamknięty**: oba tory transakcyjne działają — Fixly
+(zlecenie → wycena → akceptacja → czat) i Booksy (rezerwacja slotu → wizyta), z portfolio,
+powiadomieniami i spięciem z Kalendarzem. Pozostaje: M8 warianty cennika, oraz Etap B
+(geo/mapa, weryfikacja, płatności+faktury, filtry, reschedule, onboarding).$omnia_impl_0607c$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
