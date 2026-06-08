@@ -85,6 +85,7 @@ export async function getMyProviderProfile() {
         orderBy: { createdAt: "desc" },
         include: { category: { select: { id: true, name: true, icon: true, color: true } } },
       },
+      images: { orderBy: { order: "asc" } },
     },
   });
 }
@@ -261,6 +262,7 @@ export async function getProviderPublic(providerId: string) {
         orderBy: { updatedAt: "desc" },
         take: 20,
       },
+      images: { orderBy: { order: "asc" } },
     },
   });
   return provider;
@@ -601,5 +603,29 @@ export async function respondToQuote(quoteId: string, accept: boolean): Promise<
     dedupeKey: null,
   });
   revalidatePath("/services/requests");
+  revalidatePath("/services/provider");
+}
+
+// ─── M4 portfolio zdjęć wykonawcy ──────────────────────────────────────────
+
+/** Dodaje zdjęcie do portfolio wykonawcy. url = data-URL (limit ~2MB) lub link. */
+export async function addServiceImage(url: string, caption?: string | null): Promise<void> {
+  const user = await requireAuth();
+  const provider = await requireOwnProvider(user.id);
+  if (!url || (!url.startsWith("data:image/") && !url.startsWith("http"))) throw new Error("Nieprawidłowy obraz");
+  if (url.length > 2_800_000) throw new Error("Zdjęcie jest za duże (max ~2MB)");
+  const max = await prisma.serviceImage.aggregate({ where: { providerId: provider.id }, _max: { order: true } });
+  await prisma.serviceImage.create({
+    data: { providerId: provider.id, url, caption: caption?.trim() || null, order: (max._max.order ?? -1) + 1 },
+  });
+  revalidatePath("/services/provider");
+}
+
+export async function deleteServiceImage(id: string): Promise<void> {
+  const user = await requireAuth();
+  const provider = await requireOwnProvider(user.id);
+  const img = await prisma.serviceImage.findUnique({ where: { id }, select: { providerId: true } });
+  if (!img || img.providerId !== provider.id) throw new Error("Brak dostępu do zdjęcia");
+  await prisma.serviceImage.delete({ where: { id } });
   revalidatePath("/services/provider");
 }

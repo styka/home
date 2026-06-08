@@ -54,6 +54,12 @@ export type ServiceQuoteDTO = {
   createdAt: string;
 };
 
+export type ServiceImageDTO = {
+  id: string;
+  url: string;
+  caption: string | null;
+};
+
 export type RequestThreadDTO = {
   requestId: string;
   title: string;

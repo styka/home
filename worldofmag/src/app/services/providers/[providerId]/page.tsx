@@ -31,6 +31,7 @@ export default async function ProviderProfilePage({ params }: { params: { provid
           currency: l.currency,
           categoryIcon: l.category?.icon ?? "🛠️",
         })),
+        images: provider.images.map((img) => ({ id: img.id, url: img.url, caption: img.caption })),
         reviews: provider.requests
           .filter((r) => r.review)
           .map((r) => ({

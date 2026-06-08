@@ -1783,6 +1783,7 @@ model ServiceProvider {
   listings ServiceListing[]
   requests ServiceRequest[] @relation("ProviderServiceRequests")
   quotes   ServiceQuote[]
+  images   ServiceImage[]
 
   @@index([visible])
 }
@@ -2142,4 +2143,18 @@ model ServiceQuote {
   provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([requestId, createdAt])
+}
+
+// Portfolio wykonawcy (M4): zdjęcia realizacji. url = data-URL lub link (wzorzec RecipeImage).
+model ServiceImage {
+  id         String   @id @default(cuid())
+  providerId String
+  url        String
+  caption    String?
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId, order])
 }
