@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0111: odhaczenie M9 w master-planie (re-seed z md) + raport implementacyjny płatności.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -399,3 +404,36 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (Marketplace Etap B: M9 płatności)',
+  'omnia-implementacja-2026-06-07-marketplace-b3',
+  $omnia_impl_0607f$# Omnia — Raport implementacji 2026-06-07 (Marketplace Etap B: M9 płatności + Portfel)
+
+Szósta porcja — domknięcie transakcji w aplikacji (synergia z Portfelem).
+
+## M9 — Płatności + faktury + spięcie z Portfelem (✅; depozyt pozostaje)
+**Diagnoza:** domknięcie transakcji w aplikacji (a nie poza nią) buduje przewagę i przychód;
+Portfel już istnieje, więc integracja to naturalna synergia Omnia.
+**Rozwiązanie (i dlaczego tak):** model `ServicePayment` (1/zlecenie: kwota w groszach, metoda
+cash/transfer/card/other, status UNPAID/PAID, nr faktury). Wykonawca ustala kwotę
+(`setServicePayment`) i oznacza opłacone (`markPaymentPaid`) z **opcjonalnym** księgowaniem
+przychodu w wybranym elemencie Portfela; klient może zaksięgować swój **wydatek**
+(`bookClientExpense`). Spięcie z Portfelem zrobione przez istniejące `addEntry` (waliduje
+własność elementu, liczy saldo) — bez duplikowania logiki księgowania. Integracja jest
+**opt-in po obu stronach** (nie wymuszamy konta w Portfelu), więc nie blokuje użycia bez Portfela.
+Depozyt rezerwacyjny świadomie odłożony (mniejsza wartość, większa złożoność).
+**Pliki:** `prisma/schema.prisma`, `0110_service_payment`, `src/lib/services.ts`,
+`src/actions/services.ts`, `src/components/services/RequestThread.tsx` (PaymentSection).
+
+## Weryfikacja
+- `next build` zielony; migracja zaaplikowana lokalnie.
+
+## Podsumowanie
+Marketplace ma teraz pełen cykl transakcyjny z rozliczeniem: zapytanie/rezerwacja → wycena →
+realizacja → **płatność (z księgowaniem w Portfelu)** → ocena. Z 20 luk domkniętych 11.
+Ostatnia duża luka Etapu B: M5/M20 (geo + mapa + promień).$omnia_impl_0607f$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
