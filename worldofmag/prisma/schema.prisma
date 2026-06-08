@@ -1776,6 +1776,9 @@ model ServiceProvider {
   // Średnia ocen (denormalizowana dla szybkiego listowania) + liczba ocen.
   ratingAvg   Float   @default(0)
   ratingCount Int     @default(0)
+  // M7: weryfikacja wykonawcy (badge zaufania). NIP podaje wykonawca, verified ustawia admin.
+  nip         String?
+  verified    Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

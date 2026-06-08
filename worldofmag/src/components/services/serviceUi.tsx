@@ -1,6 +1,16 @@
-import { Star } from "lucide-react";
+import { Star, BadgeCheck } from "lucide-react";
 import type { RequestStatus, PriceModel } from "@/lib/services";
 import { REQUEST_STATUS_LABELS, PRICE_MODEL_LABELS } from "@/lib/services";
+
+/** Plakietka „zweryfikowany wykonawca" (M7). */
+export function VerifiedBadge({ size = 13, withLabel = false }: { size?: number; withLabel?: boolean }) {
+  return (
+    <span title="Zweryfikowany wykonawca" style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--accent-green)", fontSize: 11, fontWeight: 600 }}>
+      <BadgeCheck size={size} />
+      {withLabel && "Zweryfikowany"}
+    </span>
+  );
+}
 
 export const STATUS_COLOR: Record<RequestStatus, string> = {
   REQUESTED: "var(--accent-amber)",

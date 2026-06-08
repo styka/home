@@ -94,6 +94,7 @@ export type ListingDTO = {
     area: string | null;
     ratingAvg: number;
     ratingCount: number;
+    verified: boolean;
   };
 };
 

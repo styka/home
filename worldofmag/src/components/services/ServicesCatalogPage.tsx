@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Handshake, Search, Briefcase, ClipboardList, MapPin } from "lucide-react";
+import { Handshake, Search, Briefcase, ClipboardList, MapPin, SlidersHorizontal } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle, cardHoverHandlers } from "@/components/ui/home";
-import { getListings } from "@/actions/services";
+import { getListings, type ListingSort } from "@/actions/services";
 import type { ListingDTO, ServiceCategoryDTO } from "@/lib/services";
-import { RatingStars, formatPrice, fieldInputStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
+import { RatingStars, formatPrice, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle, VerifiedBadge } from "./serviceUi";
 
 interface Props {
   initialListings: ListingDTO[];
@@ -20,11 +20,33 @@ export function ServicesCatalogPage({ initialListings, categories, hasProviderPr
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function applyFilters(nextCat: string | null, nextQuery: string) {
+  // M10 — filtry zaawansowane
+  const [showFilters, setShowFilters] = useState(false);
+  const [sort, setSort] = useState<ListingSort>("rating");
+  const [minRating, setMinRating] = useState(0);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [bookingOnly, setBookingOnly] = useState(false);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+
+  function applyFilters(nextCat: string | null, nextQuery: string, over?: Partial<{ sort: ListingSort; minRating: number; minPrice: string; maxPrice: string; bookingOnly: boolean; verifiedOnly: boolean }>) {
+    const s = over?.sort ?? sort;
+    const mr = over?.minRating ?? minRating;
+    const mnp = over?.minPrice ?? minPrice;
+    const mxp = over?.maxPrice ?? maxPrice;
+    const bo = over?.bookingOnly ?? bookingOnly;
+    const vo = over?.verifiedOnly ?? verifiedOnly;
+    const toGrosze = (v: string) => { const n = parseFloat(v.replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 100) : null; };
     startTransition(async () => {
       const results = await getListings({
         categoryId: nextCat ?? undefined,
         query: nextQuery.trim() || undefined,
+        sort: s,
+        minRating: mr > 0 ? mr : null,
+        minPrice: mnp.trim() ? toGrosze(mnp) : null,
+        maxPrice: mxp.trim() ? toGrosze(mxp) : null,
+        bookingOnly: bo,
+        verifiedOnly: vo,
       });
       setListings(results);
     });
@@ -74,7 +96,50 @@ export function ServicesCatalogPage({ initialListings, categories, hasProviderPr
           <button type="submit" style={primaryButtonStyle} disabled={pending}>
             Szukaj
           </button>
+          <button type="button" onClick={() => setShowFilters((v) => !v)} title="Filtry" style={{ ...secondaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <SlidersHorizontal size={15} /> Filtry
+          </button>
         </form>
+
+        {/* Filtry zaawansowane (M10) */}
+        {showFilters && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, padding: 12, borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)", alignItems: "flex-end" }}>
+            <div>
+              <label style={fieldLabelStyle}>Sortuj</label>
+              <select value={sort} onChange={(e) => { const v = e.target.value as ListingSort; setSort(v); applyFilters(activeCat, query, { sort: v }); }} style={{ ...fieldInputStyle, width: 160 }}>
+                <option value="rating">Najlepiej oceniani</option>
+                <option value="priceAsc">Cena rosnąco</option>
+                <option value="priceDesc">Cena malejąco</option>
+                <option value="newest">Najnowsze</option>
+              </select>
+            </div>
+            <div>
+              <label style={fieldLabelStyle}>Min. ocena</label>
+              <select value={minRating} onChange={(e) => { const v = Number(e.target.value); setMinRating(v); applyFilters(activeCat, query, { minRating: v }); }} style={{ ...fieldInputStyle, width: 120 }}>
+                <option value={0}>dowolna</option>
+                <option value={3}>3+ ★</option>
+                <option value={4}>4+ ★</option>
+                <option value={4.5}>4.5+ ★</option>
+              </select>
+            </div>
+            <div>
+              <label style={fieldLabelStyle}>Cena (PLN)</label>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <input value={minPrice} onChange={(e) => setMinPrice(e.target.value)} onBlur={() => applyFilters(activeCat, query)} placeholder="od" inputMode="decimal" style={{ ...fieldInputStyle, width: 80 }} />
+                <span style={{ color: "var(--text-muted)" }}>–</span>
+                <input value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} onBlur={() => applyFilters(activeCat, query)} placeholder="do" inputMode="decimal" style={{ ...fieldInputStyle, width: 80 }} />
+              </div>
+            </div>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", cursor: "pointer", paddingBottom: 8 }}>
+              <input type="checkbox" checked={bookingOnly} onChange={(e) => { setBookingOnly(e.target.checked); applyFilters(activeCat, query, { bookingOnly: e.target.checked }); }} />
+              Z rezerwacją online
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", cursor: "pointer", paddingBottom: 8 }}>
+              <input type="checkbox" checked={verifiedOnly} onChange={(e) => { setVerifiedOnly(e.target.checked); applyFilters(activeCat, query, { verifiedOnly: e.target.checked }); }} />
+              Tylko zweryfikowani
+            </label>
+          </div>
+        )}
 
         {/* Kategorie */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -107,7 +172,10 @@ export function ServicesCatalogPage({ initialListings, categories, hasProviderPr
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{l.title}</div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
-                    <span>{l.provider.displayName}</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      {l.provider.displayName}
+                      {l.provider.verified && <VerifiedBadge size={12} />}
+                    </span>
                     {l.provider.area && (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
                         <MapPin size={11} /> {l.provider.area}

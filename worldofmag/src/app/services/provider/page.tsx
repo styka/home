@@ -26,6 +26,8 @@ export default async function ServicesProviderPage() {
               bio: provider.bio,
               area: provider.area,
               phone: provider.phone,
+              nip: provider.nip,
+              verified: provider.verified,
               visible: provider.visible,
               ratingAvg: provider.ratingAvg,
               ratingCount: provider.ratingCount,
