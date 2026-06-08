@@ -85,6 +85,8 @@ export type ListingDTO = {
   priceAmount: number | null;
   currency: string;
   active: boolean;
+  durationMin: number | null;
+  bookingEnabled: boolean;
   category: { id: string; name: string; icon: string; color: string } | null;
   provider: {
     id: string;

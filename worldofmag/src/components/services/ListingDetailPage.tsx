@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Handshake, MapPin, Send, Check } from "lucide-react";
+import { ArrowLeft, Handshake, MapPin, Send, Check, CalendarClock, Clock } from "lucide-react";
 import { PageHeader, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
-import { createServiceRequest } from "@/actions/services";
+import { createServiceRequest, getAvailableSlots, bookSlot } from "@/actions/services";
 import type { ListingDTO } from "@/lib/services";
-import { RatingStars, formatPrice, fieldInputStyle, fieldLabelStyle, primaryButtonStyle } from "./serviceUi";
+import { RatingStars, formatPrice, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
+
+function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 export function ListingDetailPage({ listing, isOwnListing }: { listing: ListingDTO; isOwnListing: boolean }) {
   const router = useRouter();
@@ -82,6 +87,11 @@ export function ListingDetailPage({ listing, isOwnListing }: { listing: ListingD
           </p>
         )}
 
+        {/* Rezerwacja terminu (M2 / Booksy) */}
+        {!isOwnListing && !sent && listing.bookingEnabled && listing.durationMin && (
+          <BookingWidget listingId={listing.id} durationMin={listing.durationMin} />
+        )}
+
         {/* Formularz zlecenia */}
         {isOwnListing ? (
           <div style={{ ...cardStyle, cursor: "default", color: "var(--text-muted)", fontSize: 13 }}>
@@ -115,6 +125,82 @@ export function ListingDetailPage({ listing, isOwnListing }: { listing: ListingD
           </form>
         )}
       </div>
+    </div>
+  );
+}
+
+function BookingWidget({ listingId, durationMin }: { listingId: string; durationMin: number }) {
+  const router = useRouter();
+  const [date, setDate] = useState(todayISO());
+  const [slots, setSlots] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [booking, setBooking] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true); setError(null);
+    getAvailableSlots(listingId, date)
+      .then((s) => { if (active) setSlots(s); })
+      .catch((e) => { if (active) setError(e instanceof Error ? e.message : "Błąd"); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [listingId, date]);
+
+  async function book(iso: string) {
+    setBooking(iso); setError(null);
+    try {
+      await bookSlot(listingId, iso);
+      setDone(true);
+      setTimeout(() => router.push("/services/requests"), 900);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Nie udało się zarezerwować");
+      // odśwież sloty (mogło się zmienić)
+      getAvailableSlots(listingId, date).then(setSlots).catch(() => {});
+    } finally {
+      setBooking(null);
+    }
+  }
+
+  if (done) {
+    return (
+      <div style={{ ...cardStyle, cursor: "default", color: "var(--accent-green)", fontSize: 14, fontWeight: 600 }}>
+        <Check size={18} /> Termin zarezerwowany! Przekierowuję…
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 16, borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+        <CalendarClock size={16} color="var(--accent-purple)" /> Zarezerwuj termin
+        <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 500, color: "var(--text-muted)" }}>
+          <Clock size={12} /> {durationMin} min
+        </span>
+      </div>
+      <div>
+        <label style={fieldLabelStyle}>Dzień</label>
+        <input type="date" value={date} min={todayISO()} onChange={(e) => setDate(e.target.value)} style={{ ...fieldInputStyle, width: 180 }} />
+      </div>
+      {loading ? (
+        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Szukam wolnych terminów…</div>
+      ) : slots.length === 0 ? (
+        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Brak wolnych terminów tego dnia. Wybierz inny dzień.</div>
+      ) : (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {slots.map((iso) => {
+            const t = new Date(iso).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
+            return (
+              <button key={iso} onClick={() => book(iso)} disabled={booking !== null}
+                style={{ ...secondaryButtonStyle, padding: "6px 12px", opacity: booking && booking !== iso ? 0.5 : 1, borderColor: "var(--accent-purple)" }}>
+                {booking === iso ? "…" : t}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {error && <div style={{ fontSize: 12, color: "var(--accent-red)" }}>{error}</div>}
     </div>
   );
 }
