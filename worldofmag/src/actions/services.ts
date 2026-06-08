@@ -8,6 +8,7 @@ import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { notifyUser } from "@/actions/notifications";
 import { addEntry } from "@/actions/portfel";
 import { generateDaySlots, minutesOfDay, type AvailabilityRule, type BookedInterval } from "@/lib/serviceSlots";
+import { haversineKm } from "@/lib/serviceGeo";
 import { REQUEST_STATUS_LABELS } from "@/lib/services";
 import type {
   RequestStatus,
@@ -42,8 +43,8 @@ function toListingDTO(l: {
   durationMin: number | null;
   bookingEnabled: boolean;
   category: { id: string; name: string; icon: string; color: string } | null;
-  provider: { id: string; displayName: string; area: string | null; ratingAvg: number; ratingCount: number; verified: boolean };
-}): ListingDTO {
+  provider: { id: string; displayName: string; area: string | null; ratingAvg: number; ratingCount: number; verified: boolean; lat: number | null; lon: number | null };
+}, distanceKm: number | null = null): ListingDTO {
   return {
     id: l.id,
     title: l.title,
@@ -55,6 +56,7 @@ function toListingDTO(l: {
     durationMin: l.durationMin,
     bookingEnabled: l.bookingEnabled,
     category: l.category,
+    distanceKm,
     provider: l.provider,
   };
 }
@@ -127,6 +129,17 @@ export async function upsertServiceProvider(data: {
     create: { userId: user.id, ...fields },
     update: fields,
   });
+  revalidatePath("/services/provider");
+  revalidatePath("/services");
+}
+
+/** M5: ustawia (lub czyści) lokalizację wykonawcy — wołane z przeglądarkowej geolokalizacji. */
+export async function setProviderLocation(lat: number | null, lon: number | null): Promise<void> {
+  const user = await requireAuth();
+  const provider = await requireOwnProvider(user.id);
+  if (lat != null && (lat < -90 || lat > 90)) throw new Error("Nieprawidłowa szerokość");
+  if (lon != null && (lon < -180 || lon > 180)) throw new Error("Nieprawidłowa długość");
+  await prisma.serviceProvider.update({ where: { id: provider.id }, data: { lat, lon } });
   revalidatePath("/services/provider");
   revalidatePath("/services");
 }
@@ -230,7 +243,9 @@ export async function deleteListing(id: string): Promise<void> {
 
 // ─── Katalog (przeglądanie ofert) ──────────────────────────────────────────
 
-export type ListingSort = "rating" | "priceAsc" | "priceDesc" | "newest";
+export type ListingSort = "rating" | "priceAsc" | "priceDesc" | "newest" | "distance";
+
+const PROVIDER_CARD_SELECT = { id: true, displayName: true, area: true, ratingAvg: true, ratingCount: true, verified: true, lat: true, lon: true } as const;
 
 export async function getListings(filters?: {
   categoryId?: string;
@@ -241,6 +256,7 @@ export async function getListings(filters?: {
   bookingOnly?: boolean;
   verifiedOnly?: boolean;
   sort?: ListingSort;
+  near?: { lat: number; lon: number; radiusKm?: number | null } | null;
 }): Promise<ListingDTO[]> {
   await requireAuth();
   const q = filters?.query?.trim();
@@ -253,6 +269,7 @@ export async function getListings(filters?: {
   const priceFilter: Record<string, number> = {};
   if (filters?.minPrice != null) priceFilter.gte = filters.minPrice;
   if (filters?.maxPrice != null) priceFilter.lte = filters.maxPrice;
+  const near = filters?.near ?? null;
 
   const listings = await prisma.serviceListing.findMany({
     where: {
@@ -261,6 +278,8 @@ export async function getListings(filters?: {
         visible: true,
         ...(filters?.minRating ? { ratingAvg: { gte: filters.minRating } } : {}),
         ...(filters?.verifiedOnly ? { verified: true } : {}),
+        // Gdy filtrujemy po odległości — pokazujemy tylko wykonawców z lokalizacją.
+        ...(near ? { lat: { not: null }, lon: { not: null } } : {}),
       },
       ...(filters?.categoryId ? { categoryId: filters.categoryId } : {}),
       ...(filters?.bookingOnly ? { bookingEnabled: true } : {}),
@@ -278,11 +297,25 @@ export async function getListings(filters?: {
     orderBy,
     include: {
       category: { select: { id: true, name: true, icon: true, color: true } },
-      provider: { select: { id: true, displayName: true, area: true, ratingAvg: true, ratingCount: true, verified: true } },
+      provider: { select: PROVIDER_CARD_SELECT },
     },
-    take: 100,
+    take: near ? 300 : 100,
   });
-  return listings.map(toListingDTO);
+
+  let dtos = listings.map((l) => {
+    const dist = near && l.provider.lat != null && l.provider.lon != null
+      ? haversineKm(near.lat, near.lon, l.provider.lat, l.provider.lon)
+      : null;
+    return toListingDTO(l, dist);
+  });
+
+  if (near) {
+    const radius = near.radiusKm ?? null;
+    if (radius != null) dtos = dtos.filter((d) => d.distanceKm != null && d.distanceKm <= radius);
+    if (filters?.sort === "distance") dtos.sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+    dtos = dtos.slice(0, 100);
+  }
+  return dtos;
 }
 
 export async function getListing(id: string): Promise<ListingDTO | null> {
@@ -291,7 +324,7 @@ export async function getListing(id: string): Promise<ListingDTO | null> {
     where: { id },
     include: {
       category: { select: { id: true, name: true, icon: true, color: true } },
-      provider: { select: { id: true, displayName: true, area: true, ratingAvg: true, ratingCount: true, verified: true } },
+      provider: { select: PROVIDER_CARD_SELECT },
     },
   });
   return l ? toListingDTO(l) : null;
