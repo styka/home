@@ -60,6 +60,25 @@ export type ServiceImageDTO = {
   caption: string | null;
 };
 
+export type PaymentMethod = "cash" | "transfer" | "card" | "other";
+export type PaymentStatus = "UNPAID" | "PAID";
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: "Gotówka",
+  transfer: "Przelew",
+  card: "Karta",
+  other: "Inna",
+};
+
+export type ServicePaymentDTO = {
+  amount: number; // grosze
+  currency: string;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  invoiceNo: string | null;
+  paidAt: string | null;
+};
+
 export type RequestThreadDTO = {
   requestId: string;
   title: string;
@@ -67,6 +86,7 @@ export type RequestThreadDTO = {
   role: "client" | "provider";
   messages: ServiceMessageDTO[];
   quotes: ServiceQuoteDTO[];
+  payment: ServicePaymentDTO | null;
 };
 
 export type ServiceCategoryDTO = {

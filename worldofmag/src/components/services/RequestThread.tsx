@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Send, MessageSquare, Tag, Check, X } from "lucide-react";
+import { Send, MessageSquare, Tag, Check, X, Wallet } from "lucide-react";
 import {
   getRequestThread,
   sendServiceMessage,
   sendQuote,
   respondToQuote,
+  setServicePayment,
+  markPaymentPaid,
+  bookClientExpense,
 } from "@/actions/services";
-import type { RequestThreadDTO, ServiceQuoteDTO } from "@/lib/services";
-import { QUOTE_STATUS_LABELS } from "@/lib/services";
+import { getWalletElements } from "@/actions/portfel";
+import type { RequestThreadDTO, ServiceQuoteDTO, ServicePaymentDTO, PaymentMethod } from "@/lib/services";
+import { QUOTE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/services";
 import { fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 
 function money(grosze: number, currency: string): string {
@@ -53,6 +57,9 @@ export function RequestThread({ requestId }: { requestId: string }) {
         )}
         {canQuote && <QuoteForm requestId={requestId} onSent={() => reload()} />}
       </div>
+
+      {/* Płatność (M9) */}
+      <PaymentSection requestId={requestId} role={thread.role} payment={thread.payment} onChange={() => reload()} />
 
       {/* Czat */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -164,5 +171,96 @@ function MessageForm({ requestId, onSent }: { requestId: string; onSent: () => v
         <Send size={14} /> Wyślij
       </button>
     </form>
+  );
+}
+
+function PaymentSection({ requestId, role, payment, onChange }: { requestId: string; role: "client" | "provider"; payment: ServicePaymentDTO | null; onChange: () => void }) {
+  const [amount, setAmount] = useState(payment ? String(payment.amount / 100) : "");
+  const [method, setMethod] = useState<PaymentMethod>(payment?.method ?? "cash");
+  const [invoiceNo, setInvoiceNo] = useState(payment?.invoiceNo ?? "");
+  const [elements, setElements] = useState<{ id: string; name: string; currency: string }[]>([]);
+  const [walletId, setWalletId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+
+  const loadWallets = async () => {
+    if (elements.length) return;
+    try {
+      const els = await getWalletElements();
+      setElements(els.filter((e) => !e.archived).map((e) => ({ id: e.id, name: e.name, currency: e.currency })));
+    } catch { /* Portfel niedostępny — pomijamy */ }
+  };
+
+  async function saveAmount() {
+    const pln = parseFloat(amount.replace(",", "."));
+    if (!Number.isFinite(pln) || pln <= 0) { setError("Podaj poprawną kwotę"); return; }
+    setBusy(true); setError(null);
+    try { await setServicePayment(requestId, Math.round(pln * 100), method, invoiceNo.trim() || null); onChange(); }
+    catch (e) { setError(e instanceof Error ? e.message : "Błąd"); } finally { setBusy(false); }
+  }
+
+  async function markPaid() {
+    setBusy(true); setError(null);
+    try { await markPaymentPaid(requestId, walletId || null); setInfo(walletId ? "Oznaczono i zaksięgowano przychód" : "Oznaczono jako opłacone"); onChange(); }
+    catch (e) { setError(e instanceof Error ? e.message : "Błąd"); } finally { setBusy(false); }
+  }
+
+  async function bookExpense() {
+    if (!walletId) { setError("Wybierz element portfela"); return; }
+    setBusy(true); setError(null);
+    try { await bookClientExpense(requestId, walletId); setInfo("Zapisano wydatek w Portfelu"); }
+    catch (e) { setError(e instanceof Error ? e.message : "Błąd"); } finally { setBusy(false); }
+  }
+
+  const paid = payment?.status === "PAID";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
+        <Wallet size={13} /> Płatność
+        {payment && (
+          <span style={{ marginLeft: 6, fontSize: 12, fontWeight: 700, color: paid ? "var(--accent-green)" : "var(--accent-amber)" }}>
+            {money(payment.amount, payment.currency)} · {paid ? "Opłacone" : "Do zapłaty"} · {PAYMENT_METHOD_LABELS[payment.method]}
+            {payment.invoiceNo ? ` · ${payment.invoiceNo}` : ""}
+          </span>
+        )}
+      </span>
+
+      {role === "provider" && !paid && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+          <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="kwota PLN" style={{ ...fieldInputStyle, width: 100 }} />
+          <select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)} style={{ ...fieldInputStyle, width: 110 }}>
+            {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map((m) => <option key={m} value={m}>{PAYMENT_METHOD_LABELS[m]}</option>)}
+          </select>
+          <input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="nr faktury (opc.)" style={{ ...fieldInputStyle, width: 130 }} />
+          <button onClick={saveAmount} disabled={busy} style={secondaryButtonStyle}>Zapisz kwotę</button>
+        </div>
+      )}
+
+      {role === "provider" && payment && !paid && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+          <select value={walletId} onFocusCapture={loadWallets} onChange={(e) => setWalletId(e.target.value)} style={{ ...fieldInputStyle, width: 200 }}>
+            <option value="">Księguj przychód w… (opcjonalnie)</option>
+            {elements.map((el) => <option key={el.id} value={el.id}>{el.name}</option>)}
+          </select>
+          <button onClick={markPaid} disabled={busy} style={{ ...primaryButtonStyle, background: "var(--accent-green)" }}>Oznacz jako opłacone</button>
+        </div>
+      )}
+
+      {role === "client" && paid && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+          <select value={walletId} onFocusCapture={loadWallets} onChange={(e) => setWalletId(e.target.value)} style={{ ...fieldInputStyle, width: 200 }}>
+            <option value="">Zapisz wydatek w…</option>
+            {elements.map((el) => <option key={el.id} value={el.id}>{el.name}</option>)}
+          </select>
+          <button onClick={bookExpense} disabled={busy || !walletId} style={secondaryButtonStyle}>Zapisz wydatek w Portfelu</button>
+        </div>
+      )}
+
+      {role === "client" && !payment && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Wykonawca nie wystawił jeszcze płatności.</span>}
+      {error && <span style={{ fontSize: 11, color: "var(--accent-red)" }}>{error}</span>}
+      {info && <span style={{ fontSize: 11, color: "var(--accent-green)" }}>{info}</span>}
+    </div>
   );
 }

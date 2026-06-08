@@ -1842,9 +1842,27 @@ model ServiceRequest {
   review   ServiceReview?
   messages ServiceMessage[]
   quotes   ServiceQuote[]
+  payment  ServicePayment?
 
   @@index([clientId, status])
   @@index([providerId, status])
+}
+
+// Płatność za zlecenie (M9): kwota, metoda, status. Spięcie z Portfelem opt-in
+// (osobno strona wykonawcy=przychód i klienta=wydatek). Jedna płatność / zlecenie.
+model ServicePayment {
+  id        String    @id @default(cuid())
+  requestId String    @unique
+  amount    Int // grosze
+  currency  String    @default("PLN")
+  method    String    @default("cash") // cash|transfer|card|other
+  status    String    @default("UNPAID") // UNPAID|PAID
+  invoiceNo String?
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  request ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 }
 
 // Ocena wystawiana przez klienta po zakończeniu zlecenia (1 na zlecenie).
