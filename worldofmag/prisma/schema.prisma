@@ -83,6 +83,7 @@ model User {
   warsztatSettings       WarsztatSettings?
   ownedWorkshops         Workshop[]            @relation("OwnedWorkshops")
   notifications          Notification[]        @relation("UserNotifications")
+  serviceMessages        ServiceMessage[]      @relation("SentServiceMessages")
 }
 
 // Preferencje paska bocznego/menu per użytkownik: kolejność i wyłączone moduły.
@@ -1781,6 +1782,7 @@ model ServiceProvider {
   user     User             @relation("UserServiceProvider", fields: [userId], references: [id], onDelete: Cascade)
   listings ServiceListing[]
   requests ServiceRequest[] @relation("ProviderServiceRequests")
+  quotes   ServiceQuote[]
 
   @@index([visible])
 }
@@ -1830,6 +1832,8 @@ model ServiceRequest {
   provider ServiceProvider @relation("ProviderServiceRequests", fields: [providerId], references: [id], onDelete: Cascade)
   listing  ServiceListing? @relation("ListingServiceRequests", fields: [listingId], references: [id], onDelete: SetNull)
   review   ServiceReview?
+  messages ServiceMessage[]
+  quotes   ServiceQuote[]
 
   @@index([clientId, status])
   @@index([providerId, status])
@@ -2104,4 +2108,38 @@ model Notification {
   @@unique([userId, dedupeKey])
   @@index([userId, readAt])
   @@index([userId, createdAt])
+}
+
+// ─── Marketplace: czat (M1) i wyceny (M3) ─────────────────────────────────
+// Wątek wiadomości i historia wycen są zakotwiczone w zleceniu (ServiceRequest)
+// — to wspólny kontener obu torów (Fixly/Booksy). Statusy jako String + unia TS.
+model ServiceMessage {
+  id        String    @id @default(cuid())
+  requestId String
+  senderId  String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  request ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sender  User           @relation("SentServiceMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
+}
+
+model ServiceQuote {
+  id         String    @id @default(cuid())
+  requestId  String
+  providerId String
+  amount     Int // grosze
+  currency   String    @default("PLN")
+  message    String?
+  status     String    @default("SENT") // SENT | ACCEPTED | REJECTED
+  validUntil DateTime?
+  createdAt  DateTime  @default(now())
+
+  request  ServiceRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
 }
