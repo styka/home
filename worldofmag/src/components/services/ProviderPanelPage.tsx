@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Briefcase, ArrowLeft, Plus, Pencil, Trash2, Check, X, Eye, EyeOff, ImagePlus } from "lucide-react";
+import { Briefcase, ArrowLeft, Plus, Pencil, Trash2, Check, X, Eye, EyeOff, ImagePlus, Rocket, CheckCircle2, Circle } from "lucide-react";
 import { PageHeader, EmptyState, SectionHeading, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
 import {
   upsertServiceProvider,
@@ -49,6 +49,7 @@ type ProviderData = {
   ratingCount: number;
   listings: ListingItem[];
   images: { id: string; url: string; caption: string | null }[];
+  availabilityCount: number;
 };
 
 interface Props {
@@ -106,6 +107,15 @@ export function ProviderPanelPage({ provider, categories, incomingRequests }: Pr
               <Pencil size={14} />
             </button>
           </div>
+        )}
+
+        {/* Onboarding wykonawcy (M18) */}
+        {provider && !editingProfile && (
+          <OnboardingChecklist
+            hasListing={provider.listings.length > 0}
+            hasAvailability={provider.availabilityCount > 0}
+            hasImages={provider.images.length > 0}
+          />
         )}
 
         {/* Oferty */}
@@ -526,6 +536,36 @@ function PortfolioSection({ images, onChange }: { images: { id: string; url: str
         </label>
       </div>
       {error && <div style={{ fontSize: 12, color: "var(--accent-red)", marginTop: 6 }}>{error}</div>}
+    </div>
+  );
+}
+
+function OnboardingChecklist({ hasListing, hasAvailability, hasImages }: { hasListing: boolean; hasAvailability: boolean; hasImages: boolean }) {
+  const steps = [
+    { done: true, label: "Załóż profil wykonawcy" },
+    { done: hasListing, label: "Dodaj pierwszą ofertę usługi" },
+    { done: hasAvailability, label: "Ustaw dostępność (by przyjmować rezerwacje)" },
+    { done: hasImages, label: "Dodaj zdjęcia realizacji do portfolio" },
+  ];
+  const doneCount = steps.filter((s) => s.done).length;
+  if (doneCount === steps.length) return null;
+
+  return (
+    <div style={{ padding: 14, borderRadius: 10, border: "1px solid var(--accent-blue)", background: "color-mix(in srgb, var(--accent-blue) 8%, transparent)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <Rocket size={16} color="var(--accent-blue)" />
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Dokończ konfigurację profilu ({doneCount}/{steps.length})</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {steps.map((s, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: s.done ? "var(--text-muted)" : "var(--text-secondary)" }}>
+            {s.done
+              ? <CheckCircle2 size={15} color="var(--accent-green)" />
+              : <Circle size={15} color="var(--text-muted)" />}
+            <span style={{ textDecoration: s.done ? "line-through" : "none" }}>{s.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

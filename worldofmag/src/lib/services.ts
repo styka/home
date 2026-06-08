@@ -107,6 +107,9 @@ export type RequestDTO = {
   scheduledAt: string | null;
   createdAt: string;
   listingTitle: string | null;
+  listingId: string | null;
+  bookingEnabled: boolean;
+  durationMin: number | null;
   clientName: string;
   providerName: string;
   hasReview: boolean;
