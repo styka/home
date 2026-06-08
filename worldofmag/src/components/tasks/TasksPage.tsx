@@ -2,9 +2,11 @@
 
 import { useState, useRef, useMemo, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil } from "lucide-react";
+import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
+import { KanbanBoard } from "./KanbanBoard";
+import { TimelineView } from "./TimelineView";
 import { TaskDetail } from "./TaskDetail";
 import { TaskStatusConfigEditor } from "./TaskStatusConfigEditor";
 import { QuickAddTask, type QuickAddTaskHandle } from "./QuickAddTask";
@@ -54,6 +56,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // Prezentacja listy: "default" = naturalne grupowanie widoku (dni/projekty), "priority" = po priorytetach.
   // Dotyczy widoków „Nadchodzące/Zaległe/Wszystkie" (Dziś i projekty są zawsze po priorytetach).
   const [groupBy, setGroupBy] = useState<"default" | "priority">("default");
+  const [layout, setLayout] = useState<"list" | "kanban" | "timeline">("list");
   const canToggleGrouping = viewMode === "upcoming" || viewMode === "overdue" || viewMode === "all" || viewMode === "multi";
   const [, startTransition] = useTransition();
   const quickAddRef = useRef<QuickAddTaskHandle>(null);
@@ -426,6 +429,26 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             </button>
           )}
 
+          {/* Przełącznik układu: Lista / Kanban / Timeline (T1/T2) */}
+          <div className="flex items-center gap-0.5 rounded" style={{ border: "1px solid var(--border)" }}>
+            {([
+              { key: "list", label: "Lista", Icon: ListIcon },
+              { key: "kanban", label: "Kanban", Icon: Columns3 },
+              { key: "timeline", label: "Timeline", Icon: CalendarRange },
+            ] as const).map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                onClick={() => setLayout(key)}
+                className="p-1.5 focus:outline-none"
+                title={label}
+                aria-label={label}
+                style={{ color: layout === key ? "var(--accent-blue)" : "var(--text-muted)", background: layout === key ? "var(--bg-hover)" : "transparent" }}
+              >
+                <Icon size={15} />
+              </button>
+            ))}
+          </div>
+
           {/* Admin: skopiuj prompt dla Claude Code z zadaniami widocznymi w tej zakładce */}
           {isAdmin && <TaskListClipboardButton tasks={visibleTasks} />}
 
@@ -552,18 +575,24 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
       )}
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        <TaskList
-          tasks={displayedTasks}
-          filter={activeFilter}
-          statusConfig={statusConfig}
-          viewMode={viewMode}
-          groupBy={canToggleGrouping ? groupBy : "default"}
-          selectedTagIds={selectedTagIds}
-          focusedTaskId={focusedTaskId}
-          onFocus={setFocusedTaskId}
-          onOpen={(id) => setOpenTaskId(id)}
-          rowRefs={rowRefs}
-        />
+        {layout === "kanban" ? (
+          <KanbanBoard tasks={displayedTasks} statusConfig={statusConfig} onOpen={(id) => setOpenTaskId(id)} />
+        ) : layout === "timeline" ? (
+          <TimelineView tasks={displayedTasks} statusConfig={statusConfig} onOpen={(id) => setOpenTaskId(id)} />
+        ) : (
+          <TaskList
+            tasks={displayedTasks}
+            filter={activeFilter}
+            statusConfig={statusConfig}
+            viewMode={viewMode}
+            groupBy={canToggleGrouping ? groupBy : "default"}
+            selectedTagIds={selectedTagIds}
+            focusedTaskId={focusedTaskId}
+            onFocus={setFocusedTaskId}
+            onOpen={(id) => setOpenTaskId(id)}
+            rowRefs={rowRefs}
+          />
+        )}
 
         {/* Detail panel — desktop */}
         {openTask && (
