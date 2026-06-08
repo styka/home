@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0113: odhaczenie M5/M20 w master-planie (re-seed z md) + raport implementacyjny geo.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -407,3 +412,40 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (Marketplace Etap B: M5 geolokalizacja)',
+  'omnia-implementacja-2026-06-07-marketplace-b4',
+  $omnia_impl_0607g$# Omnia — Raport implementacji 2026-06-07 (Marketplace Etap B: M5/M20 geolokalizacja)
+
+Siódma porcja — domknięcie Etapu B marketplace.
+
+## M5/M20 — Geolokalizacja + filtr w promieniu (✅; mapa-kafelki odłożona)
+**Diagnoza:** usługi są lokalne — „hydraulik w pobliżu" to podstawowe zapytanie; bez geo tracimy
+do Fixly/Booksy. Wcześniej był tylko `area` jako tekst.
+**Rozwiązanie (i dlaczego tak):** `ServiceProvider.lat/lon` ustawiane **przeglądarkową
+geolokalizacją** (`navigator.geolocation`) — świadomie BEZ zewnętrznego geocodera ani serwera
+kafelków mapy, bo polityka sieci sandboxa/produkcji je blokuje, a geolokalizacja przeglądarki
+działa lokalnie i daje dobry UX („Użyj mojej lokalizacji" zamiast wpisywania współrzędnych).
+Dystans liczony wzorem **haversine** w czystym `src/lib/serviceGeo.ts` (testowalny). `getListings`
+przyjmuje `near {lat,lon,radiusKm}`: dolicza dystans, filtruje po promieniu, sortuje po
+odległości (gdy aktywne) i zwraca `distanceKm`. Filtrowanie po dystansie w aplikacji (brak
+PostGIS) — przy skali do rozważenia indeks geo, na teraz wystarcza (limit pobrania 300).
+UI: `LocationControl` w panelu wykonawcy, przycisk „W pobliżu" + wybór promienia w katalogu,
+dystans na kartach ofert. Interaktywna mapa (kafelki) odłożona jako osobne rozszerzenie.
+**Pliki:** `prisma/schema.prisma`, `0112_service_provider_geo`, `src/lib/serviceGeo.ts`,
+`src/lib/services.ts`, `src/actions/services.ts`, `ServicesCatalogPage.tsx`, `ProviderPanelPage.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja zaaplikowana lokalnie.
+
+## Podsumowanie — Etap B zamknięty
+Marketplace „Usługi" ma domknięty Etap B: zaufanie (M7), filtry (M10), rezerwacje+reschedule
+(M2/M12), płatności+Portfel (M9), onboarding (M18), geolokalizacja (M5). Z 20 luk domkniętych
+**12** (wszystkie P0 + 7 z P1); pozostają: warianty cennika (M8), depozyt, mapa-kafelki oraz
+Etap C/P2 (ulubieni, statystyki, firma+pracownicy, abonamenty, promocje, moderacja, SEO).
+Oba tory — Fixly i Booksy — są w pełni używalne i konkurencyjne.$omnia_impl_0607g$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
