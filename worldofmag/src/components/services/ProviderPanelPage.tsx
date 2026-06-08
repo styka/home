@@ -21,7 +21,7 @@ import {
   type RequestDTO,
   type RequestStatus,
 } from "@/lib/services";
-import { RatingStars, formatPrice, StatusBadge, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
+import { RatingStars, formatPrice, StatusBadge, VerifiedBadge, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 import { AvailabilityEditor } from "./AvailabilityEditor";
 
 type ListingItem = {
@@ -42,6 +42,8 @@ type ProviderData = {
   bio: string | null;
   area: string | null;
   phone: string | null;
+  nip: string | null;
+  verified: boolean;
   visible: boolean;
   ratingAvg: number;
   ratingCount: number;
@@ -89,6 +91,7 @@ export function ProviderPanelPage({ provider, categories, incomingRequests }: Pr
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{provider.displayName}</span>
+                {provider.verified && <VerifiedBadge size={14} withLabel />}
                 {provider.visible ? (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "var(--accent-green)" }}><Eye size={12} /> Widoczny</span>
                 ) : (
@@ -151,6 +154,7 @@ function ProfileForm({
   const [displayName, setDisplayName] = useState(initial?.displayName ?? "");
   const [area, setArea] = useState(initial?.area ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
+  const [nip, setNip] = useState(initial?.nip ?? "");
   const [bio, setBio] = useState(initial?.bio ?? "");
   const [visible, setVisible] = useState(initial?.visible ?? true);
   const [busy, setBusy] = useState(false);
@@ -165,7 +169,7 @@ function ProfileForm({
     setBusy(true);
     setError(null);
     try {
-      await upsertServiceProvider({ displayName, area, phone, bio, visible });
+      await upsertServiceProvider({ displayName, area, phone, nip, bio, visible });
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nie udało się zapisać profilu");
@@ -189,6 +193,10 @@ function ProfileForm({
           <label style={fieldLabelStyle}>Telefon</label>
           <input value={phone} onChange={(e) => setPhone(e.target.value)} style={fieldInputStyle} placeholder="opcjonalnie" />
         </div>
+      </div>
+      <div style={{ width: 200 }}>
+        <label style={fieldLabelStyle}>NIP (do weryfikacji)</label>
+        <input value={nip} onChange={(e) => setNip(e.target.value)} style={fieldInputStyle} placeholder="opcjonalnie" />
       </div>
       <div>
         <label style={fieldLabelStyle}>O mnie</label>

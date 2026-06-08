@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Star, MessageSquare } from "lucide-react";
 import { PageHeader, SectionHeading, pageContainerStyle, pageInnerStyle, cardStyle, cardHoverHandlers } from "@/components/ui/home";
-import { RatingStars, formatPrice } from "./serviceUi";
+import { RatingStars, formatPrice, VerifiedBadge, secondaryButtonStyle } from "./serviceUi";
+import { setProviderVerified } from "@/actions/services";
 import type { PriceModel } from "@/lib/services";
 
 interface ProviderPublic {
@@ -13,12 +15,25 @@ interface ProviderPublic {
   area: string | null;
   ratingAvg: number;
   ratingCount: number;
+  verified: boolean;
+  nip: string | null;
   listings: { id: string; title: string; priceModel: PriceModel; priceAmount: number | null; currency: string; categoryIcon: string }[];
   images: { id: string; url: string; caption: string | null }[];
   reviews: { id: string; rating: number; comment: string | null; clientName: string }[];
 }
 
-export function ProviderPublicPage({ provider }: { provider: ProviderPublic }) {
+export function ProviderPublicPage({ provider, isAdmin = false }: { provider: ProviderPublic; isAdmin?: boolean }) {
+  const [verified, setVerified] = useState(provider.verified);
+  const [pending, startTransition] = useTransition();
+
+  function toggleVerified() {
+    startTransition(async () => {
+      const next = !verified;
+      await setProviderVerified(provider.id, next);
+      setVerified(next);
+    });
+  }
+
   return (
     <div style={pageContainerStyle}>
       <div style={pageInnerStyle}>
@@ -32,12 +47,19 @@ export function ProviderPublicPage({ provider }: { provider: ProviderPublic }) {
           subtitle={provider.area ?? undefined}
         />
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <RatingStars avg={provider.ratingAvg} count={provider.ratingCount} size={15} />
+          {verified && <VerifiedBadge size={15} withLabel />}
           {provider.area && (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}>
               <MapPin size={12} /> {provider.area}
             </span>
+          )}
+          {provider.nip && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>NIP: {provider.nip}</span>}
+          {isAdmin && (
+            <button onClick={toggleVerified} disabled={pending} style={{ ...secondaryButtonStyle, marginLeft: "auto", fontSize: 12, padding: "5px 10px" }}>
+              {verified ? "Cofnij weryfikację" : "Zweryfikuj (admin)"}
+            </button>
           )}
         </div>
 

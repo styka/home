@@ -13,9 +13,11 @@ export default async function ProviderProfilePage({ params }: { params: { provid
 
   const provider = await getProviderPublic(params.providerId);
   if (!provider) notFound();
+  const isAdmin = hasPermission(session, PERMISSIONS.ADMIN);
 
   return (
     <ProviderPublicPage
+      isAdmin={isAdmin}
       provider={{
         id: provider.id,
         displayName: provider.displayName,
@@ -23,6 +25,8 @@ export default async function ProviderProfilePage({ params }: { params: { provid
         area: provider.area,
         ratingAvg: provider.ratingAvg,
         ratingCount: provider.ratingCount,
+        verified: provider.verified,
+        nip: provider.nip,
         listings: provider.listings.map((l) => ({
           id: l.id,
           title: l.title,

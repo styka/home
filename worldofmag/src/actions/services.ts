@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { auth } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { notifyUser } from "@/actions/notifications";
 import { generateDaySlots, minutesOfDay, type AvailabilityRule, type BookedInterval } from "@/lib/serviceSlots";
 import { REQUEST_STATUS_LABELS } from "@/lib/services";
@@ -37,7 +39,7 @@ function toListingDTO(l: {
   durationMin: number | null;
   bookingEnabled: boolean;
   category: { id: string; name: string; icon: string; color: string } | null;
-  provider: { id: string; displayName: string; area: string | null; ratingAvg: number; ratingCount: number };
+  provider: { id: string; displayName: string; area: string | null; ratingAvg: number; ratingCount: number; verified: boolean };
 }): ListingDTO {
   return {
     id: l.id,
@@ -100,6 +102,7 @@ export async function upsertServiceProvider(data: {
   bio?: string | null;
   area?: string | null;
   phone?: string | null;
+  nip?: string | null;
   visible?: boolean;
 }): Promise<void> {
   const user = await requireAuth();
@@ -111,6 +114,7 @@ export async function upsertServiceProvider(data: {
     bio: data.bio?.trim() || null,
     area: data.area?.trim() || null,
     phone: data.phone?.trim() || null,
+    nip: data.nip?.trim() || null,
     visible: data.visible ?? true,
   };
 
@@ -222,17 +226,41 @@ export async function deleteListing(id: string): Promise<void> {
 
 // ─── Katalog (przeglądanie ofert) ──────────────────────────────────────────
 
+export type ListingSort = "rating" | "priceAsc" | "priceDesc" | "newest";
+
 export async function getListings(filters?: {
   categoryId?: string;
   query?: string;
+  minPrice?: number | null; // grosze
+  maxPrice?: number | null; // grosze
+  minRating?: number | null; // 0..5
+  bookingOnly?: boolean;
+  verifiedOnly?: boolean;
+  sort?: ListingSort;
 }): Promise<ListingDTO[]> {
   await requireAuth();
   const q = filters?.query?.trim();
+  const orderBy =
+    filters?.sort === "priceAsc" ? [{ priceAmount: "asc" as const }, { createdAt: "desc" as const }]
+    : filters?.sort === "priceDesc" ? [{ priceAmount: "desc" as const }, { createdAt: "desc" as const }]
+    : filters?.sort === "newest" ? [{ createdAt: "desc" as const }]
+    : [{ provider: { ratingAvg: "desc" as const } }, { createdAt: "desc" as const }];
+
+  const priceFilter: Record<string, number> = {};
+  if (filters?.minPrice != null) priceFilter.gte = filters.minPrice;
+  if (filters?.maxPrice != null) priceFilter.lte = filters.maxPrice;
+
   const listings = await prisma.serviceListing.findMany({
     where: {
       active: true,
-      provider: { visible: true },
+      provider: {
+        visible: true,
+        ...(filters?.minRating ? { ratingAvg: { gte: filters.minRating } } : {}),
+        ...(filters?.verifiedOnly ? { verified: true } : {}),
+      },
       ...(filters?.categoryId ? { categoryId: filters.categoryId } : {}),
+      ...(filters?.bookingOnly ? { bookingEnabled: true } : {}),
+      ...(Object.keys(priceFilter).length ? { priceAmount: priceFilter } : {}),
       ...(q
         ? {
             OR: [
@@ -243,10 +271,10 @@ export async function getListings(filters?: {
           }
         : {}),
     },
-    orderBy: [{ provider: { ratingAvg: "desc" } }, { createdAt: "desc" }],
+    orderBy,
     include: {
       category: { select: { id: true, name: true, icon: true, color: true } },
-      provider: { select: { id: true, displayName: true, area: true, ratingAvg: true, ratingCount: true } },
+      provider: { select: { id: true, displayName: true, area: true, ratingAvg: true, ratingCount: true, verified: true } },
     },
     take: 100,
   });
@@ -259,7 +287,7 @@ export async function getListing(id: string): Promise<ListingDTO | null> {
     where: { id },
     include: {
       category: { select: { id: true, name: true, icon: true, color: true } },
-      provider: { select: { id: true, displayName: true, area: true, ratingAvg: true, ratingCount: true } },
+      provider: { select: { id: true, displayName: true, area: true, ratingAvg: true, ratingCount: true, verified: true } },
     },
   });
   return l ? toListingDTO(l) : null;
@@ -757,4 +785,28 @@ export async function bookSlot(listingId: string, startISO: string): Promise<voi
   });
   revalidatePath("/services/requests");
   revalidatePath("/services/provider");
+}
+
+// ─── M7 weryfikacja wykonawcy (admin) ──────────────────────────────────────
+
+/** Admin nadaje/odbiera weryfikację wykonawcy (badge zaufania). */
+export async function setProviderVerified(providerId: string, verified: boolean): Promise<void> {
+  const session = await auth();
+  if (!hasPermission(session, PERMISSIONS.ADMIN)) throw new Error("Forbidden");
+  const provider = await prisma.serviceProvider.update({
+    where: { id: providerId },
+    data: { verified },
+    select: { userId: true, displayName: true },
+  });
+  if (verified) {
+    await notifyUser({
+      userId: provider.userId,
+      module: "services",
+      title: "Twój profil wykonawcy został zweryfikowany ✓",
+      href: "/services/provider",
+      dedupeKey: `provider-verified-${providerId}`,
+    });
+  }
+  revalidatePath("/services");
+  revalidatePath(`/services/providers/${providerId}`);
 }
