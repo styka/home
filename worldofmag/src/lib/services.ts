@@ -108,6 +108,7 @@ export type ListingDTO = {
   durationMin: number | null;
   bookingEnabled: boolean;
   category: { id: string; name: string; icon: string; color: string } | null;
+  distanceKm: number | null;
   provider: {
     id: string;
     displayName: string;
@@ -115,6 +116,8 @@ export type ListingDTO = {
     ratingAvg: number;
     ratingCount: number;
     verified: boolean;
+    lat: number | null;
+    lon: number | null;
   };
 };
 

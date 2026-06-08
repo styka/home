@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Handshake, Search, Briefcase, ClipboardList, MapPin, SlidersHorizontal } from "lucide-react";
+import { Handshake, Search, Briefcase, ClipboardList, MapPin, SlidersHorizontal, Navigation } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle, cardHoverHandlers } from "@/components/ui/home";
 import { getListings, type ListingSort } from "@/actions/services";
 import type { ListingDTO, ServiceCategoryDTO } from "@/lib/services";
+import { formatDistance } from "@/lib/serviceGeo";
 import { RatingStars, formatPrice, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle, VerifiedBadge } from "./serviceUi";
 
 interface Props {
@@ -28,28 +29,49 @@ export function ServicesCatalogPage({ initialListings, categories, hasProviderPr
   const [maxPrice, setMaxPrice] = useState("");
   const [bookingOnly, setBookingOnly] = useState(false);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [nearPos, setNearPos] = useState<{ lat: number; lon: number } | null>(null);
+  const [radiusKm, setRadiusKm] = useState(10);
+  const [geoMsg, setGeoMsg] = useState<string | null>(null);
 
-  function applyFilters(nextCat: string | null, nextQuery: string, over?: Partial<{ sort: ListingSort; minRating: number; minPrice: string; maxPrice: string; bookingOnly: boolean; verifiedOnly: boolean }>) {
+  function applyFilters(nextCat: string | null, nextQuery: string, over?: Partial<{ sort: ListingSort; minRating: number; minPrice: string; maxPrice: string; bookingOnly: boolean; verifiedOnly: boolean; nearPos: { lat: number; lon: number } | null; radiusKm: number }>) {
     const s = over?.sort ?? sort;
     const mr = over?.minRating ?? minRating;
     const mnp = over?.minPrice ?? minPrice;
     const mxp = over?.maxPrice ?? maxPrice;
     const bo = over?.bookingOnly ?? bookingOnly;
     const vo = over?.verifiedOnly ?? verifiedOnly;
+    const np = over?.nearPos !== undefined ? over.nearPos : nearPos;
+    const rk = over?.radiusKm ?? radiusKm;
     const toGrosze = (v: string) => { const n = parseFloat(v.replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 100) : null; };
     startTransition(async () => {
       const results = await getListings({
         categoryId: nextCat ?? undefined,
         query: nextQuery.trim() || undefined,
-        sort: s,
+        sort: np && s === "rating" ? "distance" : s,
         minRating: mr > 0 ? mr : null,
         minPrice: mnp.trim() ? toGrosze(mnp) : null,
         maxPrice: mxp.trim() ? toGrosze(mxp) : null,
         bookingOnly: bo,
         verifiedOnly: vo,
+        near: np ? { lat: np.lat, lon: np.lon, radiusKm: rk } : null,
       });
       setListings(results);
     });
+  }
+
+  function toggleNear() {
+    if (nearPos) { setNearPos(null); setGeoMsg(null); applyFilters(activeCat, query, { nearPos: null }); return; }
+    if (typeof navigator === "undefined" || !navigator.geolocation) { setGeoMsg("Brak geolokalizacji w przeglądarce"); return; }
+    setGeoMsg("Pobieram lokalizację…");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const p = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        setNearPos(p); setGeoMsg(null);
+        applyFilters(activeCat, query, { nearPos: p });
+      },
+      () => setGeoMsg("Nie udało się pobrać lokalizacji"),
+      { enableHighAccuracy: false, timeout: 10000 }
+    );
   }
 
   function selectCategory(id: string | null) {
@@ -138,8 +160,22 @@ export function ServicesCatalogPage({ initialListings, categories, hasProviderPr
               <input type="checkbox" checked={verifiedOnly} onChange={(e) => { setVerifiedOnly(e.target.checked); applyFilters(activeCat, query, { verifiedOnly: e.target.checked }); }} />
               Tylko zweryfikowani
             </label>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+              <button type="button" onClick={toggleNear} style={{ ...(nearPos ? primaryButtonStyle : secondaryButtonStyle), display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Navigation size={14} /> {nearPos ? "W pobliżu: wł." : "W pobliżu"}
+              </button>
+              {nearPos && (
+                <div>
+                  <label style={fieldLabelStyle}>Promień</label>
+                  <select value={radiusKm} onChange={(e) => { const v = Number(e.target.value); setRadiusKm(v); applyFilters(activeCat, query, { radiusKm: v }); }} style={{ ...fieldInputStyle, width: 110 }}>
+                    {[2, 5, 10, 25, 50].map((r) => <option key={r} value={r}>{r} km</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
           </div>
         )}
+        {geoMsg && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{geoMsg}</div>}
 
         {/* Kategorie */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -182,6 +218,11 @@ export function ServicesCatalogPage({ initialListings, categories, hasProviderPr
                       </span>
                     )}
                     <RatingStars avg={l.provider.ratingAvg} count={l.provider.ratingCount} size={11} />
+                    {l.distanceKm != null && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--accent-blue)" }}>
+                        <Navigation size={11} /> {formatDistance(l.distanceKm)}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--accent-green)", flexShrink: 0, textAlign: "right" }}>

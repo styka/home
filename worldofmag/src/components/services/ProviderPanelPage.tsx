@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Briefcase, ArrowLeft, Plus, Pencil, Trash2, Check, X, Eye, EyeOff, ImagePlus, Rocket, CheckCircle2, Circle } from "lucide-react";
+import { Briefcase, ArrowLeft, Plus, Pencil, Trash2, Check, X, Eye, EyeOff, ImagePlus, Rocket, CheckCircle2, Circle, MapPin } from "lucide-react";
 import { PageHeader, EmptyState, SectionHeading, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
 import {
   upsertServiceProvider,
@@ -13,6 +13,7 @@ import {
   advanceRequestStatus,
   addServiceImage,
   deleteServiceImage,
+  setProviderLocation,
 } from "@/actions/services";
 import {
   PRICE_MODEL_LABELS,
@@ -50,6 +51,7 @@ type ProviderData = {
   listings: ListingItem[];
   images: { id: string; url: string; caption: string | null }[];
   availabilityCount: number;
+  hasLocation: boolean;
 };
 
 interface Props {
@@ -127,6 +129,9 @@ export function ProviderPanelPage({ provider, categories, incomingRequests }: Pr
         {provider && (
           <PortfolioSection images={provider.images} onChange={() => router.refresh()} />
         )}
+
+        {/* Lokalizacja (M5) */}
+        {provider && <LocationControl hasLocation={provider.hasLocation} onChange={() => router.refresh()} />}
 
         {/* Dostępność do rezerwacji (M2) */}
         {provider && <AvailabilityEditor />}
@@ -565,6 +570,48 @@ function OnboardingChecklist({ hasListing, hasAvailability, hasImages }: { hasLi
             <span style={{ textDecoration: s.done ? "line-through" : "none" }}>{s.label}</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function LocationControl({ hasLocation, onChange }: { hasLocation: boolean; onChange: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  function useMyLocation() {
+    if (typeof navigator === "undefined" || !navigator.geolocation) { setMsg("Przeglądarka nie wspiera geolokalizacji"); return; }
+    setBusy(true); setMsg(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await setProviderLocation(pos.coords.latitude, pos.coords.longitude);
+          setMsg("Zapisano lokalizację");
+          onChange();
+        } catch (e) { setMsg(e instanceof Error ? e.message : "Błąd zapisu"); }
+        finally { setBusy(false); }
+      },
+      () => { setBusy(false); setMsg("Nie udało się pobrać lokalizacji (brak zgody?)"); },
+      { enableHighAccuracy: false, timeout: 10000 }
+    );
+  }
+
+  async function clearLocation() {
+    setBusy(true); setMsg(null);
+    try { await setProviderLocation(null, null); setMsg("Usunięto lokalizację"); onChange(); }
+    catch (e) { setMsg(e instanceof Error ? e.message : "Błąd"); } finally { setBusy(false); }
+  }
+
+  return (
+    <div>
+      <SectionHeading>Lokalizacja (do wyszukiwania w pobliżu)</SectionHeading>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: hasLocation ? "var(--accent-green)" : "var(--text-muted)" }}>
+          <MapPin size={15} /> {hasLocation ? "Lokalizacja ustawiona" : "Brak lokalizacji"}
+        </span>
+        <button onClick={useMyLocation} disabled={busy} style={{ ...primaryButtonStyle, opacity: busy ? 0.6 : 1 }}>Użyj mojej lokalizacji</button>
+        {hasLocation && <button onClick={clearLocation} disabled={busy} style={secondaryButtonStyle}>Usuń</button>}
+        {msg && <span style={{ fontSize: 12, color: msg.startsWith("Zapisano") || msg.startsWith("Usunięto") ? "var(--accent-green)" : "var(--accent-red)" }}>{msg}</span>}
       </div>
     </div>
   );

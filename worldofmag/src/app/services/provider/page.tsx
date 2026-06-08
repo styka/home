@@ -45,6 +45,7 @@ export default async function ServicesProviderPage() {
               })),
               images: provider.images.map((img) => ({ id: img.id, url: img.url, caption: img.caption })),
               availabilityCount: provider.availability.length,
+              hasLocation: provider.lat != null && provider.lon != null,
             }
           : null
       }

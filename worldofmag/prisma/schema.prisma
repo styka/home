@@ -1779,6 +1779,9 @@ model ServiceProvider {
   // M7: weryfikacja wykonawcy (badge zaufania). NIP podaje wykonawca, verified ustawia admin.
   nip         String?
   verified    Boolean @default(false)
+  // M5: lokalizacja (filtr „w promieniu X km" + dystans). Ustawiana przez przeglądarkę.
+  lat         Float?
+  lon         Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
