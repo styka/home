@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0117: odhaczenie R2/S2 w master-planie (re-seed z md) + raport implementacyjny domknięć.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -426,3 +431,38 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (domknięcia R2 + S2)',
+  'omnia-implementacja-2026-06-07-domkniecia-r2-s2',
+  $omnia_impl_0607j$# Omnia — Raport implementacji 2026-06-07 (domknięcia: R2 + S2)
+
+Dziesiąta porcja — domknięcie pozycji częściowych (🟡 → ✅).
+
+## R2 — Wyszukiwarka raportów po treści (✅)
+**Diagnoza:** lista raportów filtrowała tylko po tytule (klient), `getReportsMeta` nie zwraca
+treści. Przy wielu raportach to za mało.
+**Rozwiązanie (i dlaczego tak):** serwerowa akcja `searchReports(query)` szuka po `title` ORAZ
+`content` (insensitive), respektując tę samą widoczność co `getUserReportsMeta` (autor/systemowe/
+zespołowe), ale zwraca metadane BEZ treści (lekko). `ReportsHomePage` woła ją z **debounce 300ms**
+zamiast filtra po tytule; pusta fraza → pełna lista. Dzięki temu nie pobieramy treści wszystkich
+raportów do klienta, a i tak szukamy w treści.
+**Pliki:** `src/actions/reports.ts`, `src/components/reports/ReportsHomePage.tsx`.
+
+## S2 — „Zakończ zakupy" z podsumowaniem (✅)
+**Diagnoza:** archiwizacja listy działała, ale bez ekranu podsumowania (§2.6).
+**Rozwiązanie:** przycisk „Zakończ zakupy" otwiera modal z podsumowaniem (kupione/brakujące/
+pozostałe + razem, ostrzeżenie o nieukończonych) i dopiero po potwierdzeniu archiwizuje listę.
+Bez cen (Item nie ma pola price — to osobna pozycja S6), więc podsumowanie liczbowe po statusach.
+**Pliki:** `src/components/shopping/ShoppingPage.tsx`.
+
+## Weryfikacja
+- `next build` zielony.
+
+## Podsumowanie
+Domknięto ostatnie „częściowe" pozycje z Fazy 1/2 backlogu (poza M6/M8, które zależą od dalszych
+prac). Następne: Faza 3 (Notatki N1–N4, Kuchnia, Zdrowie, Języki) lub Etap C marketplace (P2).$omnia_impl_0607j$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
