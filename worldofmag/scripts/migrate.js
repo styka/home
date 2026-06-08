@@ -33,6 +33,7 @@ async function seedPermissions() {
       { slug: "module.weather", name: "Pogoda", description: "Szczegółowa pogoda z opisami AI i obserwatorami (alerty pogodowe)" },
       { slug: "module.magazynowanie", name: "Magazynowanie", description: "Magazyn dla domu/firmy/gospodarstwa: inwentaryzacja, stan minimalny, skan ze zdjęć" },
       { slug: "module.warsztaty", name: "Warsztaty", description: "Zarządzanie warsztatem/pracownią dowolnego typu: wyposażenie, podpowiedzi sprzętu, przeglądy; tryb Dom/Pro (zespoły)" },
+      { slug: "module.contacts", name: "Kontakty", description: "Osobisty CRM: baza kontaktów (klienci/wykonawcy/znajomi) z tagami i notatkami" },
     ]
     const grants = {
       "module.qa": ["ADMIN", "TESTER"],
@@ -46,6 +47,7 @@ async function seedPermissions() {
       "module.weather": ["ADMIN"],
       "module.magazynowanie": ["ADMIN"],
       "module.warsztaty": ["ADMIN"],
+      "module.contacts": ["ADMIN", "BETA_TESTER"],
     }
     for (const p of perms) {
       const perm = await prisma.permission.upsert({
