@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, Calendar, Briefcase, Settings, Mail, Shield, Map, Image, Lock, MoreHorizontal, Plus } from "lucide-react";
+import { Menu, X, Calendar, Briefcase, Settings, Mail, Shield, Map, Image, Lock, MoreHorizontal, Plus, Bug } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
@@ -12,6 +12,7 @@ import { DataFreshness } from "./DataFreshness";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
 import { FeedbackInspector } from "./FeedbackInspector";
 import { NotificationBell } from "./NotificationBell";
+import { startFeedbackInspector } from "@/lib/ai/feedbackBus";
 import { ToastProvider } from "@/components/ui/Toast";
 import { isPathLocked } from "@/lib/permissions";
 import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
@@ -112,6 +113,22 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               {activeModule?.label ?? <AppName />}
             </span>
           </Link>
+
+          {/* Prawa strona paska: powiadomienia (wszyscy) + zgłaszanie błędu (admin) */}
+          <div className="ml-auto flex items-center gap-0.5 flex-shrink-0">
+            <NotificationBell placement="topbar" />
+            {isAdmin && (
+              <button
+                onClick={() => startFeedbackInspector()}
+                className="flex items-center justify-center rounded-full"
+                style={{ width: 34, height: 34, background: "transparent", border: "none", color: "var(--accent-purple)" }}
+                title="Zgłoś błąd / sugestię (wskaż element) — Ctrl+Shift+B"
+                aria-label="Zgłoś błąd lub sugestię (tryb wskazywania)"
+              >
+                <Bug size={18} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -240,7 +257,6 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         </nav>
       )}
 
-      <NotificationBell />
       <AICommandSheet />
       {isAdmin && <FeedbackInspector />}
     </div>
