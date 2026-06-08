@@ -14,6 +14,7 @@ interface ProviderPublic {
   ratingAvg: number;
   ratingCount: number;
   listings: { id: string; title: string; priceModel: PriceModel; priceAmount: number | null; currency: string; categoryIcon: string }[];
+  images: { id: string; url: string; caption: string | null }[];
   reviews: { id: string; rating: number; comment: string | null; clientName: string }[];
 }
 
@@ -42,6 +43,20 @@ export function ProviderPublicPage({ provider }: { provider: ProviderPublic }) {
 
         {provider.bio && (
           <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap" }}>{provider.bio}</p>
+        )}
+
+        {/* Portfolio (M4) */}
+        {provider.images.length > 0 && (
+          <div>
+            <SectionHeading>Portfolio</SectionHeading>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+              {provider.images.map((img) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={img.id} src={img.url} alt={img.caption ?? "Realizacja"}
+                  style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }} />
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Oferty */}

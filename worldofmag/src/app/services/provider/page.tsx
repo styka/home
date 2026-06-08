@@ -39,6 +39,7 @@ export default async function ServicesProviderPage() {
                 active: l.active,
                 category: l.category,
               })),
+              images: provider.images.map((img) => ({ id: img.id, url: img.url, caption: img.caption })),
             }
           : null
       }

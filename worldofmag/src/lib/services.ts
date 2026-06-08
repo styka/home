@@ -28,6 +28,47 @@ export const PRICE_MODEL_LABELS: Record<PriceModel, string> = {
   quote: "Wycena indywidualna",
 };
 
+export type QuoteStatus = "SENT" | "ACCEPTED" | "REJECTED";
+
+export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
+  SENT: "Wysłana",
+  ACCEPTED: "Zaakceptowana",
+  REJECTED: "Odrzucona",
+};
+
+export type ServiceMessageDTO = {
+  id: string;
+  body: string;
+  mine: boolean;
+  senderName: string | null;
+  createdAt: string;
+};
+
+export type ServiceQuoteDTO = {
+  id: string;
+  amount: number; // grosze
+  currency: string;
+  message: string | null;
+  status: QuoteStatus;
+  validUntil: string | null;
+  createdAt: string;
+};
+
+export type ServiceImageDTO = {
+  id: string;
+  url: string;
+  caption: string | null;
+};
+
+export type RequestThreadDTO = {
+  requestId: string;
+  title: string;
+  status: RequestStatus;
+  role: "client" | "provider";
+  messages: ServiceMessageDTO[];
+  quotes: ServiceQuoteDTO[];
+};
+
 export type ServiceCategoryDTO = {
   id: string;
   name: string;

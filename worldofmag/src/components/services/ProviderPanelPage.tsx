@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Briefcase, ArrowLeft, Plus, Pencil, Trash2, Check, X, Eye, EyeOff } from "lucide-react";
+import { Briefcase, ArrowLeft, Plus, Pencil, Trash2, Check, X, Eye, EyeOff, ImagePlus } from "lucide-react";
 import { PageHeader, EmptyState, SectionHeading, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
 import {
   upsertServiceProvider,
@@ -11,6 +11,8 @@ import {
   updateListing,
   deleteListing,
   advanceRequestStatus,
+  addServiceImage,
+  deleteServiceImage,
 } from "@/actions/services";
 import {
   PRICE_MODEL_LABELS,
@@ -41,6 +43,7 @@ type ProviderData = {
   ratingAvg: number;
   ratingCount: number;
   listings: ListingItem[];
+  images: { id: string; url: string; caption: string | null }[];
 };
 
 interface Props {
@@ -102,6 +105,11 @@ export function ProviderPanelPage({ provider, categories, incomingRequests }: Pr
         {/* Oferty */}
         {provider && (
           <ListingsSection listings={provider.listings} categories={categories} onChange={() => router.refresh()} />
+        )}
+
+        {/* Portfolio (M4) */}
+        {provider && (
+          <PortfolioSection images={provider.images} onChange={() => router.refresh()} />
         )}
 
         {/* Przychodzące zlecenia */}
@@ -436,4 +444,56 @@ function nextActionsFor(status: RequestDTO["status"]): RequestStatus[] {
     case "IN_PROGRESS": return ["COMPLETED", "CANCELLED"];
     default: return [];
   }
+}
+
+function PortfolioSection({ images, onChange }: { images: { id: string; url: string; caption: string | null }[]; onChange: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 2_000_000) { setError("Zdjęcie jest za duże (max ~2MB)"); return; }
+    setBusy(true); setError(null);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = () => reject(new Error("Nie udało się wczytać pliku"));
+        r.readAsDataURL(file);
+      });
+      await addServiceImage(dataUrl);
+      onChange();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Błąd dodawania zdjęcia");
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div>
+      <SectionHeading>Portfolio realizacji</SectionHeading>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+        {images.map((img) => (
+          <div key={img.id} style={{ position: "relative", width: 104, height: 104, borderRadius: 8, overflow: "hidden", border: "1px solid var(--border)" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={img.url} alt={img.caption ?? "Realizacja"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <button
+              onClick={async () => { if (confirm("Usunąć zdjęcie?")) { await deleteServiceImage(img.id); onChange(); } }}
+              aria-label="Usuń zdjęcie"
+              style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: 6, background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        ))}
+        <label style={{ width: 104, height: 104, borderRadius: 8, border: "1px dashed var(--border)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: busy ? "wait" : "pointer", color: "var(--text-muted)", fontSize: 11 }}>
+          <ImagePlus size={20} />
+          {busy ? "Wgrywanie…" : "Dodaj zdjęcie"}
+          <input type="file" accept="image/*" onChange={onFile} disabled={busy} style={{ display: "none" }} />
+        </label>
+      </div>
+      {error && <div style={{ fontSize: 12, color: "var(--accent-red)", marginTop: 6 }}>{error}</div>}
+    </div>
+  );
 }

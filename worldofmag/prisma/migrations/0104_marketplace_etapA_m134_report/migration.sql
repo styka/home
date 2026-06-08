@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0104: odhaczenie M1/M3/M4 w master-planie (re-seed z md) + raport implementacyjny Etap A.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -373,3 +378,47 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (Marketplace Etap A: M1/M3/M4)',
+  'omnia-implementacja-2026-06-07-marketplace-a',
+  $omnia_impl_0607b$# Omnia — Raport implementacji 2026-06-07 (Marketplace Etap A: M1/M3/M4)
+
+Druga porcja realizacji master-planu — rdzeń transakcyjny marketplace „Usługi"
+(konkurent Fixly/Booksy). Oba tory korzystają z tych funkcji.
+
+## M1 — Czat klient↔wykonawca (✅)
+**Diagnoza:** ServiceRequest był jednokierunkowy — nie dało się ustalić szczegółów zlecenia.
+**Rozwiązanie:** model `ServiceMessage` zakotwiczony w zleceniu; `getRequestThread` zwraca wątek
+z rolą bieżącego użytkownika i automatycznie oznacza cudze wiadomości jako przeczytane;
+`sendServiceMessage` powiadamia drugą stronę (M6). UI: dymki user/druga-strona w `RequestThread`.
+**Pliki:** `prisma/schema.prisma`, `0102_service_messages_quotes`, `src/actions/services.ts`,
+`src/components/services/RequestThread.tsx`, `MyRequestsPage.tsx`.
+
+## M3 — Wyceny (✅, rdzeń Fixly)
+**Diagnoza:** `priceModel:'quote'` było tylko flagą bez przepływu wyceny.
+**Rozwiązanie:** model `ServiceQuote` (status SENT|ACCEPTED|REJECTED). Wykonawca wysyła wycenę
+(kwota w groszach), klient akceptuje/odrzuca; akceptacja w transakcji odrzuca pozostałe wyceny
+i przesuwa zlecenie REQUESTED→ACCEPTED. Powiadomienia po każdym kroku.
+**Pliki:** jw. + `src/lib/services.ts` (typy/etykiety QuoteStatus).
+
+## M4 — Portfolio zdjęć (✅)
+**Diagnoza:** wybór wykonawcy jest wizualny, a oferty były czysto tekstowe.
+**Rozwiązanie (i dlaczego tak):** model `ServiceImage` z `url` jako data-URL — świadomie wzorzec
+`RecipeImage`, bez wprowadzania zewnętrznego magazynu blobów (zgodnie z obecną architekturą
+obrazów w repo). Upload przez `FileReader` (limit ~2MB) w panelu wykonawcy, galeria na profilu
+publicznym.
+**Pliki:** `0103_service_images`, `src/actions/services.ts`, `ProviderPanelPage.tsx`,
+`ProviderPublicPage.tsx`, trasy provider/[providerId].
+
+## Weryfikacja
+- `next build` zielony po każdej pozycji; migracje aplikowane na lokalnym Postgresie.
+
+## Podsumowanie
+Marketplace ma teraz rdzeń transakcyjny obu torów: zapytanie → wycena → akceptacja → czat →
+realizacja → ocena, z portfolio wykonawcy. Pozostało w Etapie A: M8 (czas trwania/warianty) i
+M2 (kalendarz dostępności + rezerwacja slotów — rdzeń Booksy). Status odhaczony w master-planie.$omnia_impl_0607b$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

@@ -3,11 +3,12 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ClipboardList, ArrowLeft, Star, X } from "lucide-react";
+import { ClipboardList, ArrowLeft, Star, X, MessagesSquare } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
 import { cancelMyRequest, addReview } from "@/actions/services";
 import type { RequestDTO } from "@/lib/services";
 import { StatusBadge, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
+import { RequestThread } from "./RequestThread";
 
 type Tab = "client" | "provider";
 
@@ -74,6 +75,7 @@ function TabButton({ active, onClick, label }: { active: boolean; onClick: () =>
 function RequestCard({ request, role, onChange }: { request: RequestDTO; role: Tab; onChange: () => void }) {
   const [pending, startTransition] = useTransition();
   const [reviewing, setReviewing] = useState(false);
+  const [threadOpen, setThreadOpen] = useState(false);
 
   const canCancel = role === "client" && request.status !== "COMPLETED" && request.status !== "CANCELLED" && request.status !== "DECLINED";
   const canReview = role === "client" && request.status === "COMPLETED" && !request.hasReview;
@@ -100,25 +102,28 @@ function RequestCard({ request, role, onChange }: { request: RequestDTO; role: T
       {reviewing ? (
         <ReviewForm requestId={request.id} onDone={() => { setReviewing(false); onChange(); }} onCancel={() => setReviewing(false)} />
       ) : (
-        (canCancel || canReview) && (
-          <div style={{ display: "flex", gap: 8 }}>
-            {canReview && (
-              <button onClick={() => setReviewing(true)} style={{ ...primaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <Star size={14} /> Oceń
-              </button>
-            )}
-            {canCancel && (
-              <button
-                disabled={pending}
-                onClick={() => startTransition(async () => { await cancelMyRequest(request.id); onChange(); })}
-                style={{ ...secondaryButtonStyle, color: "var(--accent-red)" }}
-              >
-                Anuluj zlecenie
-              </button>
-            )}
-          </div>
-        )
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={() => setThreadOpen((o) => !o)} style={{ ...secondaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <MessagesSquare size={14} /> {threadOpen ? "Ukryj czat i wyceny" : "Czat i wyceny"}
+          </button>
+          {canReview && (
+            <button onClick={() => setReviewing(true)} style={{ ...primaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <Star size={14} /> Oceń
+            </button>
+          )}
+          {canCancel && (
+            <button
+              disabled={pending}
+              onClick={() => startTransition(async () => { await cancelMyRequest(request.id); onChange(); })}
+              style={{ ...secondaryButtonStyle, color: "var(--accent-red)" }}
+            >
+              Anuluj zlecenie
+            </button>
+          )}
+        </div>
       )}
+
+      {threadOpen && <RequestThread requestId={request.id} />}
     </div>
   );
 }
