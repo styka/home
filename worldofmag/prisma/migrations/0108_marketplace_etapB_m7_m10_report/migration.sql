@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0108: odhaczenie M7/M10 w master-planie (re-seed z md) + raport implementacyjny Etap B.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -385,3 +390,39 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (Marketplace Etap B: M7/M10)',
+  'omnia-implementacja-2026-06-07-marketplace-b1',
+  $omnia_impl_0607d$# Omnia — Raport implementacji 2026-06-07 (Marketplace Etap B: M7 weryfikacja + M10 filtry)
+
+Czwarta porcja — początek Etapu B marketplace (zaufanie i wygoda).
+
+## M7 — Weryfikacja wykonawcy (✅)
+**Diagnoza:** zaufanie to waluta marketplace; anonimowe oferty słabo konwertują.
+**Rozwiązanie (i dlaczego tak):** `ServiceProvider.nip` (podaje wykonawca) + `verified` (nadaje
+admin akcją `setProviderVerified`, bramka `module.admin`). Świadomie rozdzielono: dane podaje
+wykonawca, ale o badge decyduje moderacja (admin) — inaczej weryfikacja nic nie znaczy.
+Po nadaniu — powiadomienie do wykonawcy. `VerifiedBadge` widoczny w katalogu, na profilu publicznym
+i w panelu; admin ma na profilu przycisk Zweryfikuj/Cofnij.
+**Pliki:** `prisma/schema.prisma`, `0107_service_provider_verification`, `src/actions/services.ts`,
+`serviceUi.tsx`, `ProviderPublicPage.tsx`, `ProviderPanelPage.tsx`, trasy provider/[providerId].
+
+## M10 — Filtry zaawansowane (✅)
+**Diagnoza:** przy wielu ofertach katalog bez filtrów jest bezużyteczny.
+**Rozwiązanie:** `getListings` rozszerzone o filtry: cena min/max (grosze), min. ocena wykonawcy,
+„tylko z rezerwacją online", „tylko zweryfikowani" + sortowanie (ocena/cena rosnąco/malejąco/
+najnowsze). Panel filtrów (rozwijany) w katalogu, filtrowanie po stronie serwera.
+**Pliki:** `src/actions/services.ts` (typ ListingSort + filtry), `ServicesCatalogPage.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja zaaplikowana lokalnie.
+
+## Podsumowanie
+Etap B ruszył: marketplace ma sygnały zaufania (weryfikacja + badge) i pełne filtrowanie katalogu.
+Następne w Etapie B: M5/M20 (geo+mapa), M9 (płatności/faktury → Portfel), M12 (reschedule),
+M18 (onboarding wykonawcy).$omnia_impl_0607d$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
