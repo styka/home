@@ -44,6 +44,7 @@ export default async function ServicesProviderPage() {
                 category: l.category,
               })),
               images: provider.images.map((img) => ({ id: img.id, url: img.url, caption: img.caption })),
+              availabilityCount: provider.availability.length,
             }
           : null
       }

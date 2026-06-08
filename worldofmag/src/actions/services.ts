@@ -93,6 +93,7 @@ export async function getMyProviderProfile() {
         include: { category: { select: { id: true, name: true, icon: true, color: true } } },
       },
       images: { orderBy: { order: "asc" } },
+      availability: { select: { id: true } },
     },
   });
 }
@@ -411,7 +412,8 @@ function mapRequest(r: {
   preferredAt: Date | null;
   scheduledAt: Date | null;
   createdAt: Date;
-  listing: { title: string } | null;
+  listingId: string | null;
+  listing: { title: string; bookingEnabled: boolean; durationMin: number | null } | null;
   client: { name: string | null };
   provider: { displayName: string };
   review: { rating: number } | null;
@@ -425,6 +427,9 @@ function mapRequest(r: {
     scheduledAt: r.scheduledAt ? r.scheduledAt.toISOString() : null,
     createdAt: r.createdAt.toISOString(),
     listingTitle: r.listing?.title ?? null,
+    listingId: r.listingId,
+    bookingEnabled: r.listing?.bookingEnabled ?? false,
+    durationMin: r.listing?.durationMin ?? null,
     clientName: r.client.name ?? "Klient",
     providerName: r.provider.displayName,
     hasReview: r.review != null,
@@ -435,7 +440,7 @@ function mapRequest(r: {
 export async function getMyRequests(): Promise<{ asClient: RequestDTO[]; asProvider: RequestDTO[] }> {
   const user = await requireAuth();
   const include = {
-    listing: { select: { title: true } },
+    listing: { select: { title: true, bookingEnabled: true, durationMin: true } },
     client: { select: { name: true } },
     provider: { select: { displayName: true } },
     review: { select: { rating: true } },
@@ -707,7 +712,7 @@ export async function setAvailability(rules: AvailabilityRule[]): Promise<void> 
   revalidatePath("/services/provider");
 }
 
-async function computeSlots(listingId: string, dateISO: string): Promise<{ listingTitle: string; providerUserId: string; slots: string[] }> {
+async function computeSlots(listingId: string, dateISO: string, excludeRequestId?: string): Promise<{ listingTitle: string; providerUserId: string; slots: string[] }> {
   const listing = await prisma.serviceListing.findUnique({
     where: { id: listingId },
     select: { id: true, title: true, durationMin: true, bookingEnabled: true, providerId: true, provider: { select: { userId: true } } },
@@ -725,7 +730,12 @@ async function computeSlots(listingId: string, dateISO: string): Promise<{ listi
   const [rules, bookedRows] = await Promise.all([
     prisma.serviceAvailability.findMany({ where: { providerId: listing.providerId, weekday }, select: { weekday: true, startMin: true, endMin: true } }),
     prisma.serviceRequest.findMany({
-      where: { providerId: listing.providerId, status: { in: BOOKED_STATUSES }, scheduledAt: { gte: dayStart, lt: dayEnd } },
+      where: {
+        providerId: listing.providerId,
+        status: { in: BOOKED_STATUSES },
+        scheduledAt: { gte: dayStart, lt: dayEnd },
+        ...(excludeRequestId ? { id: { not: excludeRequestId } } : {}),
+      },
       select: { scheduledAt: true, listing: { select: { durationMin: true } } },
     }),
   ]);
@@ -745,9 +755,9 @@ async function computeSlots(listingId: string, dateISO: string): Promise<{ listi
 }
 
 /** Wolne sloty (ISO) danej oferty na wskazany dzień ("YYYY-MM-DD"). */
-export async function getAvailableSlots(listingId: string, dateISO: string): Promise<string[]> {
+export async function getAvailableSlots(listingId: string, dateISO: string, excludeRequestId?: string): Promise<string[]> {
   await requireAuth();
-  const { slots } = await computeSlots(listingId, dateISO);
+  const { slots } = await computeSlots(listingId, dateISO, excludeRequestId);
   return slots;
 }
 
@@ -781,6 +791,46 @@ export async function bookSlot(listingId: string, startISO: string): Promise<voi
     title: `Nowa rezerwacja: ${listingTitle}`,
     body: start.toLocaleString("pl-PL"),
     href: "/services/provider",
+    dedupeKey: null,
+  });
+  revalidatePath("/services/requests");
+  revalidatePath("/services/provider");
+}
+
+/** M12: zmiana terminu umówionego zlecenia (klient lub wykonawca). */
+export async function rescheduleRequest(requestId: string, newStartISO: string): Promise<void> {
+  const user = await requireAuth();
+  const start = new Date(newStartISO);
+  if (Number.isNaN(start.getTime())) throw new Error("Nieprawidłowy termin");
+  const req = await prisma.serviceRequest.findUnique({
+    where: { id: requestId },
+    select: {
+      id: true, title: true, status: true, clientId: true, listingId: true,
+      provider: { select: { userId: true } },
+      listing: { select: { bookingEnabled: true, durationMin: true } },
+    },
+  });
+  if (!req) throw new Error("Zlecenie nie istnieje");
+  const isClient = req.clientId === user.id;
+  const isProvider = req.provider.userId === user.id;
+  if (!isClient && !isProvider) throw new Error("Brak dostępu do zlecenia");
+  if (req.status !== "SCHEDULED") throw new Error("Termin można zmienić tylko dla umówionego zlecenia");
+
+  // Dla ofert z rezerwacją — nowy termin musi być wolnym slotem (z pominięciem bieżącego zlecenia).
+  if (req.listingId && req.listing?.bookingEnabled && req.listing.durationMin) {
+    const dateISO = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+    const { slots } = await computeSlots(req.listingId, dateISO, req.id);
+    if (!slots.includes(start.toISOString())) throw new Error("Wybrany termin jest zajęty — wybierz inny");
+  }
+
+  await prisma.serviceRequest.update({ where: { id: requestId }, data: { scheduledAt: start } });
+  const recipientUserId = isClient ? req.provider.userId : req.clientId;
+  await notifyUser({
+    userId: recipientUserId,
+    module: "services",
+    title: `Zmieniono termin: ${req.title}`,
+    body: start.toLocaleString("pl-PL"),
+    href: isClient ? "/services/provider" : "/services/requests",
     dedupeKey: null,
   });
   revalidatePath("/services/requests");

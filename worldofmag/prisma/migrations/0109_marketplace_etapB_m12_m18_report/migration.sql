@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0109: odhaczenie M12/M18 w master-planie (re-seed z md) + raport implementacyjny Etap B.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -392,3 +397,40 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (Marketplace Etap B: M12/M18)',
+  'omnia-implementacja-2026-06-07-marketplace-b2',
+  $omnia_impl_0607e$# Omnia — Raport implementacji 2026-06-07 (Marketplace Etap B: M12 reschedule + M18 onboarding)
+
+Piąta porcja — Etap B marketplace (wygoda i aktywacja wykonawców).
+
+## M12 — Reschedule + polityka anulowania (✅)
+**Diagnoza:** Booksy bez przekładania wizyt nie istnieje; bez tego rosną no-show i frustracja.
+**Rozwiązanie:** `rescheduleRequest(requestId, newStartISO)` — klient lub wykonawca zmienia termin
+umówionego (SCHEDULED) zlecenia. Dla ofert z rezerwacją nowy termin musi być **wolnym slotem**;
+`computeSlots` dostał parametr `excludeRequestId`, by przy walidacji pominąć bieżące zlecenie
+(inaczej własny slot blokowałby zmianę). Druga strona dostaje powiadomienie. Anulowanie już
+istniało (klient: `cancelMyRequest`; wykonawca: przejście do CANCELLED) — M12 domyka przekładanie.
+UI: `RescheduleControl` (slot-picker dla rezerwacji / datetime dla pozostałych) w karcie zlecenia.
+`RequestDTO` wzbogacony o `listingId`/`bookingEnabled`/`durationMin`.
+**Pliki:** `src/lib/services.ts`, `src/actions/services.ts`, `MyRequestsPage.tsx`.
+
+## M18 — Onboarding wykonawcy (✅)
+**Diagnoza:** dobry onboarding = więcej aktywnych wykonawców (podaż napędza marketplace).
+**Rozwiązanie (i dlaczego tak):** zamiast ciężkiego modala-kreatora — lekka, nieblokująca
+`OnboardingChecklist` w panelu wykonawcy z postępem (profil → oferta → dostępność → portfolio).
+Znika, gdy wszystkie kroki gotowe. `getMyProviderProfile` dolicza liczbę reguł dostępności.
+**Pliki:** `src/actions/services.ts`, `ProviderPanelPage.tsx`, trasa provider.
+
+## Weryfikacja
+- `next build` zielony; brak zmian schematu (wykorzystano istniejące pola).
+
+## Podsumowanie
+Etap B marketplace mocno do przodu: zaufanie (M7), filtry (M10), przekładanie wizyt (M12) i
+onboarding (M18). Pozostaje w Etapie B: M9 (płatności/faktury → Portfel) i M5/M20 (geo + mapa).
+Z 20 luk marketplace domkniętych już 10.$omnia_impl_0607e$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
