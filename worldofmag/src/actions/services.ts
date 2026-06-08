@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { notifyUser } from "@/actions/notifications";
+import { generateDaySlots, minutesOfDay, type AvailabilityRule, type BookedInterval } from "@/lib/serviceSlots";
 import { REQUEST_STATUS_LABELS } from "@/lib/services";
 import type {
   RequestStatus,
@@ -33,6 +34,8 @@ function toListingDTO(l: {
   priceAmount: number | null;
   currency: string;
   active: boolean;
+  durationMin: number | null;
+  bookingEnabled: boolean;
   category: { id: string; name: string; icon: string; color: string } | null;
   provider: { id: string; displayName: string; area: string | null; ratingAvg: number; ratingCount: number };
 }): ListingDTO {
@@ -44,6 +47,8 @@ function toListingDTO(l: {
     priceAmount: l.priceAmount,
     currency: l.currency,
     active: l.active,
+    durationMin: l.durationMin,
+    bookingEnabled: l.bookingEnabled,
     category: l.category,
     provider: l.provider,
   };
@@ -133,6 +138,8 @@ export async function createListing(data: {
   priceModel?: PriceModel;
   priceAmount?: number | null;
   currency?: string;
+  durationMin?: number | null;
+  bookingEnabled?: boolean;
 }): Promise<void> {
   const user = await requireAuth();
   const provider = await requireOwnProvider(user.id);
@@ -140,6 +147,7 @@ export async function createListing(data: {
   if (!title) throw new Error("Tytuł oferty jest wymagany");
 
   const priceModel: PriceModel = data.priceModel ?? "quote";
+  const bookingEnabled = data.bookingEnabled ?? false;
   await prisma.serviceListing.create({
     data: {
       providerId: provider.id,
@@ -149,6 +157,9 @@ export async function createListing(data: {
       priceModel,
       priceAmount: priceModel === "quote" ? null : data.priceAmount ?? null,
       currency: data.currency?.trim() || "PLN",
+      durationMin: data.durationMin && data.durationMin > 0 ? Math.round(data.durationMin) : null,
+      // rezerwacja wymaga czasu trwania
+      bookingEnabled: bookingEnabled && !!data.durationMin && data.durationMin > 0,
     },
   });
   revalidatePath("/services/provider");
@@ -165,11 +176,13 @@ export async function updateListing(
     priceAmount?: number | null;
     currency?: string;
     active?: boolean;
+    durationMin?: number | null;
+    bookingEnabled?: boolean;
   }
 ): Promise<void> {
   const user = await requireAuth();
   const provider = await requireOwnProvider(user.id);
-  const listing = await prisma.serviceListing.findUnique({ where: { id }, select: { providerId: true } });
+  const listing = await prisma.serviceListing.findUnique({ where: { id }, select: { providerId: true, durationMin: true } });
   if (!listing || listing.providerId !== provider.id) throw new Error("Brak dostępu do oferty");
 
   const data: Record<string, unknown> = {};
@@ -184,8 +197,13 @@ export async function updateListing(
   if (patch.priceAmount !== undefined) data.priceAmount = patch.priceAmount;
   if (patch.currency !== undefined) data.currency = patch.currency.trim() || "PLN";
   if (patch.active !== undefined) data.active = patch.active;
+  if (patch.durationMin !== undefined) data.durationMin = patch.durationMin && patch.durationMin > 0 ? Math.round(patch.durationMin) : null;
+  if (patch.bookingEnabled !== undefined) data.bookingEnabled = patch.bookingEnabled;
   // Wycena indywidualna nie ma kwoty.
   if (data.priceModel === "quote") data.priceAmount = null;
+  // Rezerwacja wymaga czasu trwania — bez niego wyłącz.
+  const effectiveDuration = data.durationMin !== undefined ? (data.durationMin as number | null) : listing.durationMin;
+  if (!effectiveDuration) data.bookingEnabled = false;
 
   await prisma.serviceListing.update({ where: { id }, data });
   revalidatePath("/services/provider");
@@ -627,5 +645,116 @@ export async function deleteServiceImage(id: string): Promise<void> {
   const img = await prisma.serviceImage.findUnique({ where: { id }, select: { providerId: true } });
   if (!img || img.providerId !== provider.id) throw new Error("Brak dostępu do zdjęcia");
   await prisma.serviceImage.delete({ where: { id } });
+  revalidatePath("/services/provider");
+}
+
+// ─── M2 dostępność + rezerwacja slotów (Booksy) ─────────────────────────────
+
+const BOOKED_STATUSES = ["SCHEDULED", "ACCEPTED", "IN_PROGRESS"];
+
+/** Reguły dostępności bieżącego wykonawcy. */
+export async function getMyAvailability(): Promise<AvailabilityRule[]> {
+  const user = await requireAuth();
+  const provider = await prisma.serviceProvider.findUnique({ where: { userId: user.id }, select: { id: true } });
+  if (!provider) return [];
+  const rows = await prisma.serviceAvailability.findMany({
+    where: { providerId: provider.id },
+    orderBy: [{ weekday: "asc" }, { startMin: "asc" }],
+    select: { weekday: true, startMin: true, endMin: true },
+  });
+  return rows;
+}
+
+/** Zastępuje cały zestaw reguł dostępności wykonawcy. */
+export async function setAvailability(rules: AvailabilityRule[]): Promise<void> {
+  const user = await requireAuth();
+  const provider = await requireOwnProvider(user.id);
+  const clean = rules
+    .filter((r) => r.weekday >= 0 && r.weekday <= 6 && r.startMin < r.endMin && r.startMin >= 0 && r.endMin <= 24 * 60)
+    .map((r) => ({ providerId: provider.id, weekday: r.weekday, startMin: r.startMin, endMin: r.endMin }));
+  await prisma.$transaction([
+    prisma.serviceAvailability.deleteMany({ where: { providerId: provider.id } }),
+    ...(clean.length ? [prisma.serviceAvailability.createMany({ data: clean })] : []),
+  ]);
+  revalidatePath("/services/provider");
+}
+
+async function computeSlots(listingId: string, dateISO: string): Promise<{ listingTitle: string; providerUserId: string; slots: string[] }> {
+  const listing = await prisma.serviceListing.findUnique({
+    where: { id: listingId },
+    select: { id: true, title: true, durationMin: true, bookingEnabled: true, providerId: true, provider: { select: { userId: true } } },
+  });
+  if (!listing) throw new Error("Oferta nie istnieje");
+  if (!listing.bookingEnabled || !listing.durationMin) {
+    return { listingTitle: listing.title, providerUserId: listing.provider.userId, slots: [] };
+  }
+  const [y, m, d] = dateISO.split("-").map(Number);
+  if (!y || !m || !d) throw new Error("Nieprawidłowa data");
+  const dayStart = new Date(y, m - 1, d, 0, 0, 0, 0);
+  const dayEnd = new Date(y, m - 1, d + 1, 0, 0, 0, 0);
+  const weekday = dayStart.getDay();
+
+  const [rules, bookedRows] = await Promise.all([
+    prisma.serviceAvailability.findMany({ where: { providerId: listing.providerId, weekday }, select: { weekday: true, startMin: true, endMin: true } }),
+    prisma.serviceRequest.findMany({
+      where: { providerId: listing.providerId, status: { in: BOOKED_STATUSES }, scheduledAt: { gte: dayStart, lt: dayEnd } },
+      select: { scheduledAt: true, listing: { select: { durationMin: true } } },
+    }),
+  ]);
+
+  const booked: BookedInterval[] = bookedRows
+    .filter((b) => b.scheduledAt)
+    .map((b) => {
+      const startMin = minutesOfDay(b.scheduledAt as Date);
+      return { startMin, endMin: startMin + (b.listing?.durationMin ?? listing.durationMin!) };
+    });
+
+  const now = new Date();
+  const isToday = now.getFullYear() === y && now.getMonth() === m - 1 && now.getDate() === d;
+  const slotMins = generateDaySlots(rules, weekday, listing.durationMin, booked, isToday ? minutesOfDay(now) : null);
+  const slots = slotMins.map((min) => new Date(y, m - 1, d, Math.floor(min / 60), min % 60, 0, 0).toISOString());
+  return { listingTitle: listing.title, providerUserId: listing.provider.userId, slots };
+}
+
+/** Wolne sloty (ISO) danej oferty na wskazany dzień ("YYYY-MM-DD"). */
+export async function getAvailableSlots(listingId: string, dateISO: string): Promise<string[]> {
+  await requireAuth();
+  const { slots } = await computeSlots(listingId, dateISO);
+  return slots;
+}
+
+/** Klient rezerwuje wolny slot — tworzy zlecenie od razu w statusie SCHEDULED. */
+export async function bookSlot(listingId: string, startISO: string): Promise<void> {
+  const user = await requireAuth();
+  const start = new Date(startISO);
+  if (Number.isNaN(start.getTime())) throw new Error("Nieprawidłowy termin");
+  const dateISO = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+  const { listingTitle, providerUserId, slots } = await computeSlots(listingId, dateISO);
+  if (providerUserId === user.id) throw new Error("Nie możesz zarezerwować własnej usługi");
+  if (!slots.includes(start.toISOString())) throw new Error("Ten termin jest już zajęty — odśwież i wybierz inny");
+
+  const listing = await prisma.serviceListing.findUnique({ where: { id: listingId }, select: { providerId: true } });
+  if (!listing) throw new Error("Oferta nie istnieje");
+
+  await prisma.serviceRequest.create({
+    data: {
+      clientId: user.id,
+      providerId: listing.providerId,
+      listingId,
+      title: listingTitle,
+      preferredAt: start,
+      scheduledAt: start,
+      status: "SCHEDULED",
+    },
+  });
+  await notifyUser({
+    userId: providerUserId,
+    module: "services",
+    title: `Nowa rezerwacja: ${listingTitle}`,
+    body: start.toLocaleString("pl-PL"),
+    href: "/services/provider",
+    dedupeKey: null,
+  });
+  revalidatePath("/services/requests");
   revalidatePath("/services/provider");
 }

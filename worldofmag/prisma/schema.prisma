@@ -1784,6 +1784,7 @@ model ServiceProvider {
   requests ServiceRequest[] @relation("ProviderServiceRequests")
   quotes   ServiceQuote[]
   images   ServiceImage[]
+  availability ServiceAvailability[]
 
   @@index([visible])
 }
@@ -1801,6 +1802,9 @@ model ServiceListing {
   priceAmount Int?
   currency    String  @default("PLN")
   active      Boolean @default(true)
+  // M8/M2: czas trwania usługi (min) + czy klient może rezerwować sloty (Booksy).
+  durationMin    Int?
+  bookingEnabled Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -2143,6 +2147,19 @@ model ServiceQuote {
   provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([requestId, createdAt])
+}
+
+// Dostępność wykonawcy (M2): reguły tygodniowe. weekday 0=niedz…6=sob; minuty od północy.
+model ServiceAvailability {
+  id         String @id @default(cuid())
+  providerId String
+  weekday    Int // 0..6
+  startMin   Int // np. 540 = 09:00
+  endMin     Int // np. 1020 = 17:00
+
+  provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId, weekday])
 }
 
 // Portfolio wykonawcy (M4): zdjęcia realizacji. url = data-URL lub link (wzorzec RecipeImage).

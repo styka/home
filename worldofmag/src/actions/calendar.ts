@@ -20,7 +20,7 @@ export async function getCalendarEvents(year: number, month0: number): Promise<C
 
   const petScope = { pet: { is: { OR: ownScope } } };
 
-  const [tasks, meals, health, vehicles, medications, petCare, petTreatments, dueCards] = await Promise.all([
+  const [tasks, meals, health, vehicles, medications, petCare, petTreatments, dueCards, serviceBookings] = await Promise.all([
     // Zadania z terminem w miesiącu (pomijamy ukończone/anulowane — kalendarz to „co przede mną").
     prisma.task.findMany({
       where: {
@@ -65,6 +65,15 @@ export async function getCalendarEvents(year: number, month0: number): Promise<C
     prisma.vocabulary.findMany({
       where: { dueAt: { gte: start, lt: end }, deck: { is: { OR: ownScope } } },
       select: { id: true, dueAt: true, deckId: true, deck: { select: { name: true } } },
+    }),
+    // Usługi: zarezerwowane/umówione wizyty (jako klient lub wykonawca).
+    prisma.serviceRequest.findMany({
+      where: {
+        scheduledAt: { gte: start, lt: end },
+        status: { in: ["SCHEDULED", "ACCEPTED", "IN_PROGRESS"] },
+        OR: [{ clientId: user.id }, { provider: { is: { userId: user.id } } }],
+      },
+      select: { id: true, title: true, scheduledAt: true, clientId: true },
     }),
   ]);
 
@@ -177,6 +186,20 @@ export async function getCalendarEvents(year: number, month0: number): Promise<C
       at: null,
       href: "/languages",
       accent: "var(--accent-purple)",
+    });
+  }
+
+  for (const b of serviceBookings) {
+    if (!b.scheduledAt) continue;
+    const asClient = b.clientId === user.id;
+    events.push({
+      id: `svc-${b.id}`,
+      module: "services",
+      title: `${asClient ? "Wizyta" : "Klient"}: ${b.title}`,
+      date: isoDay(b.scheduledAt),
+      at: b.scheduledAt.toISOString(),
+      href: asClient ? "/services/requests" : "/services/provider",
+      accent: "var(--accent-blue)",
     });
   }
 

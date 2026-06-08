@@ -37,6 +37,8 @@ export default async function ServicesProviderPage() {
                 priceAmount: l.priceAmount,
                 currency: l.currency,
                 active: l.active,
+                durationMin: l.durationMin,
+                bookingEnabled: l.bookingEnabled,
                 category: l.category,
               })),
               images: provider.images.map((img) => ({ id: img.id, url: img.url, caption: img.caption })),

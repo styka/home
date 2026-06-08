@@ -22,6 +22,7 @@ import {
   type RequestStatus,
 } from "@/lib/services";
 import { RatingStars, formatPrice, StatusBadge, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
+import { AvailabilityEditor } from "./AvailabilityEditor";
 
 type ListingItem = {
   id: string;
@@ -31,6 +32,8 @@ type ListingItem = {
   priceAmount: number | null;
   currency: string;
   active: boolean;
+  durationMin: number | null;
+  bookingEnabled: boolean;
   category: { id: string; name: string; icon: string; color: string } | null;
 };
 
@@ -111,6 +114,9 @@ export function ProviderPanelPage({ provider, categories, incomingRequests }: Pr
         {provider && (
           <PortfolioSection images={provider.images} onChange={() => router.refresh()} />
         )}
+
+        {/* Dostępność do rezerwacji (M2) */}
+        {provider && <AvailabilityEditor />}
 
         {/* Przychodzące zlecenia */}
         {provider && (
@@ -287,6 +293,8 @@ function ListingForm({
   const [priceModel, setPriceModel] = useState<PriceModel>(listing?.priceModel ?? "quote");
   const [priceValue, setPriceValue] = useState(listing?.priceAmount != null ? String(listing.priceAmount / 100) : "");
   const [active, setActive] = useState(listing?.active ?? true);
+  const [durationMin, setDurationMin] = useState(listing?.durationMin != null ? String(listing.durationMin) : "");
+  const [bookingEnabled, setBookingEnabled] = useState(listing?.bookingEnabled ?? false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -301,13 +309,19 @@ function ListingForm({
       setError("Podaj poprawną cenę");
       return;
     }
+    const dur = durationMin.trim() ? Math.round(parseInt(durationMin, 10)) : null;
+    if (durationMin.trim() && (dur == null || isNaN(dur) || dur <= 0)) {
+      setError("Podaj poprawny czas trwania (w minutach)");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
+      const common = { title, description, categoryId: categoryId || null, priceModel, priceAmount: amount, durationMin: dur, bookingEnabled };
       if (listing) {
-        await updateListing(listing.id, { title, description, categoryId: categoryId || null, priceModel, priceAmount: amount, active });
+        await updateListing(listing.id, { ...common, active });
       } else {
-        await createListing({ title, description, categoryId: categoryId || null, priceModel, priceAmount: amount });
+        await createListing(common);
       }
       onDone();
     } catch (err) {
@@ -352,6 +366,16 @@ function ListingForm({
           <input value={priceValue} onChange={(e) => setPriceValue(e.target.value)} style={fieldInputStyle} placeholder="np. 150" inputMode="decimal" />
         </div>
       )}
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+        <div style={{ width: 150 }}>
+          <label style={fieldLabelStyle}>Czas trwania (min)</label>
+          <input value={durationMin} onChange={(e) => setDurationMin(e.target.value)} style={fieldInputStyle} placeholder="np. 60" inputMode="numeric" />
+        </div>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: durationMin.trim() ? "var(--text-secondary)" : "var(--text-muted)", cursor: durationMin.trim() ? "pointer" : "not-allowed", paddingBottom: 8 }}>
+          <input type="checkbox" checked={bookingEnabled} disabled={!durationMin.trim()} onChange={(e) => setBookingEnabled(e.target.checked)} />
+          Rezerwacja terminów (Booksy)
+        </label>
+      </div>
       {listing && (
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-secondary)", cursor: "pointer" }}>
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
