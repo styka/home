@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { BookOpen, ChevronRight, Calendar, User, Plus, Layers, Search } from "lucide-react";
 import { PageHeader, StatTile, SectionHeading, ManagementGrid, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { getCategoryInfo } from "@/lib/reportCategories";
+import { searchReports } from "@/actions/reports";
 
 export interface ReportSummary {
   id: string;
@@ -26,9 +27,27 @@ interface ReportsHomePageProps {
 
 export function ReportsHomePage({ reports, myCount, teamCount, isAdmin }: ReportsHomePageProps) {
   const [query, setQuery] = useState("");
-  const filtered = query.trim()
-    ? reports.filter((r) => r.title.toLowerCase().includes(query.toLowerCase()))
-    : reports;
+  const [results, setResults] = useState<ReportSummary[] | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  // R2: szukanie po tytule ORAZ treści — serwerowo, z debounce. Pusta fraza → pełna lista.
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) { setResults(null); return; }
+    const h = setTimeout(() => {
+      startTransition(async () => {
+        const rows = await searchReports(q);
+        setResults(rows.map((r) => ({
+          id: r.id, title: r.title, slug: r.slug, category: r.category,
+          authorId: r.authorId, teamId: r.teamId, authorName: r.authorName ?? null,
+          createdAt: typeof r.createdAt === "string" ? r.createdAt : new Date(r.createdAt).toISOString(),
+        })));
+      });
+    }, 300);
+    return () => clearTimeout(h);
+  }, [query]);
+
+  const filtered = query.trim() ? (results ?? []) : reports;
   const total = reports.length;
   const latest = reports[0];
 
@@ -130,8 +149,10 @@ export function ReportsHomePage({ reports, myCount, teamCount, isAdmin }: Report
               hint={isAdmin ? "Utwórz pierwszy raport w panelu admina" : "Raporty zostaną tu pokazane gdy się pojawią"}
               cta={isAdmin ? { label: "Otwórz panel", href: "/admin/reports", color: "var(--accent-purple)" } : undefined}
             />
+          ) : query.trim() && pending && results === null ? (
+            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "12px 0" }}>Szukam…</p>
           ) : filtered.length === 0 ? (
-            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "12px 0" }}>Brak wyników dla „{query}"</p>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "12px 0" }}>Brak wyników dla „{query}" (przeszukano też treść)</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {filtered.map((r) => (

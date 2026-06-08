@@ -71,6 +71,44 @@ export async function getUserReportsMeta(): Promise<ReportMeta[]> {
   })) as unknown as ReportMeta[];
 }
 
+/** R2: wyszukiwarka raportów po tytule ORAZ treści (zwraca metadane bez treści). */
+export async function searchReports(query: string): Promise<ReportMeta[]> {
+  const user = await requireAuth();
+  const teamIds = await getUserTeamIds(user.id);
+  const q = query.trim();
+  if (!q) return getUserReportsMeta();
+  const rows = await prisma.report.findMany({
+    where: {
+      AND: [
+        {
+          OR: [
+            { authorId: user.id },
+            { authorId: null },
+            ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
+          ],
+        },
+        {
+          OR: [
+            { title: { contains: q, mode: "insensitive" } },
+            { content: { contains: q, mode: "insensitive" } },
+          ],
+        },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true, title: true, slug: true, category: true, authorId: true,
+      teamId: true, createdAt: true, updatedAt: true,
+      author: { select: { name: true, email: true } },
+    },
+  });
+  return rows.map((r) => ({
+    ...r,
+    authorName: r.author?.name ?? r.author?.email ?? null,
+    author: undefined,
+  })) as unknown as ReportMeta[];
+}
+
 /** Admin: full report content */
 export async function getReport(slug: string): Promise<Report | null> {
   await requireAdmin();

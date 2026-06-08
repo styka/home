@@ -53,7 +53,8 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>({ type: "category" });
-  const [, startTransition] = useTransition();
+  const [completeOpen, setCompleteOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setSortMode(loadSortMode());
@@ -225,10 +226,10 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
         )}
         {counts.NEEDED === 0 && counts.IN_CART === 0 && (counts.DONE + counts.MISSING) > 0 && (
           <button
-            onClick={() => startTransition(async () => { await archiveList(list.id); router.push("/shopping"); })}
+            onClick={() => setCompleteOpen(true)}
             className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
             style={{ color: "var(--accent-green)", backgroundColor: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", fontWeight: 600 }}
-            title="Zakończ zakupy — zarchiwizuj listę"
+            title="Zakończ zakupy — podsumowanie i archiwizacja listy"
           >
             <CheckCircle2 size={11} />
             <span>Zakończ zakupy</span>
@@ -276,6 +277,70 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
         onFocusQuickAdd={() => {}}
       />
 
+      {completeOpen && (
+        <CompleteShoppingModal
+          listName={list.name}
+          items={list.items as Item[]}
+          pending={isPending}
+          onConfirm={() => startTransition(async () => { await archiveList(list.id); router.push("/shopping"); })}
+          onCancel={() => setCompleteOpen(false)}
+        />
+      )}
+
+    </div>
+  );
+}
+
+function CompleteShoppingModal({ listName, items, pending, onConfirm, onCancel }: {
+  listName: string;
+  items: Item[];
+  pending: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const total = items.length;
+  const done = items.filter((i) => i.status === "DONE").length;
+  const missing = items.filter((i) => i.status === "MISSING").length;
+  const left = items.filter((i) => i.status === "NEEDED" || i.status === "IN_CART").length;
+  const rows: { label: string; value: number; color: string }[] = [
+    { label: "Kupione", value: done, color: "var(--accent-green)" },
+    { label: "Brakujące", value: missing, color: "var(--accent-amber)" },
+    { label: "Pozostałe", value: left, color: "var(--text-muted)" },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.6)" }} onClick={onCancel}>
+      <div onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Podsumowanie zakupów"
+        style={{ width: "min(360px, calc(100vw - 32px))", background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg, 12px)", padding: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <CheckCircle2 size={18} style={{ color: "var(--accent-green)" }} />
+          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>Zakończ zakupy</span>
+        </div>
+        <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: "0 0 12px" }}>Podsumowanie listy „{listName}":</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
+          {rows.map((r) => (
+            <div key={r.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+              <span style={{ color: "var(--text-secondary)" }}>{r.label}</span>
+              <span style={{ fontWeight: 700, color: r.color }}>{r.value}</span>
+            </div>
+          ))}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13, borderTop: "1px solid var(--border)", paddingTop: 6 }}>
+            <span style={{ color: "var(--text-secondary)" }}>Razem pozycji</span>
+            <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{total}</span>
+          </div>
+        </div>
+        {left > 0 && (
+          <p style={{ fontSize: 12, color: "var(--accent-amber)", margin: "0 0 12px" }}>
+            Uwaga: {left} {left === 1 ? "pozycja jest nieukończona" : "pozycji jest nieukończonych"} — i tak trafią do archiwum.
+          </p>
+        )}
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button onClick={onCancel} className="text-sm px-3 py-1.5 rounded" style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Anuluj</button>
+          <button onClick={onConfirm} disabled={pending} className="text-sm px-3 py-1.5 rounded" style={{ background: "var(--accent-green)", color: "var(--on-accent)", fontWeight: 600, border: "none", opacity: pending ? 0.6 : 1 }}>
+            Zarchiwizuj listę
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
