@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { Calendar, Briefcase, Settings, Mail, Shield, FolderOpen, Tag, Lock, BookOpen, Package, BookMarked, CalendarDays, MoreHorizontal, Plus } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
+import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
@@ -295,8 +296,10 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
         ))}
       </nav>
 
-      {/* Bottom: Invitations + Settings + Admin */}
+      {/* Bottom: Powiadomienia + Invitations + Settings + Admin */}
       <div className="py-2 border-t" style={{ borderColor: "var(--border)" }}>
+        <NotificationBell placement="sidebar" />
+
         <NavItem href="/invitations" label="Zaproszenia" icon={<Mail size={18} />} pathname={pathname} locked={isLocked("/invitations")}>
           {invitationCount > 0 && !isLocked("/invitations") && (
             <span

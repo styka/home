@@ -21,11 +21,15 @@ function accentFor(module: string): string {
 
 /**
  * Globalny dzwonek powiadomień (NM3). Przy montażu uruchamia skan terminów pod
- * free tier (`syncReminders` — bez crona), pokazuje licznik nieprzeczytanych i
- * listę w rozwijanym panelu. Klik pozycji oznacza ją jako przeczytaną i nawiguje
- * do źródła.
+ * free tier (`syncReminders` — bez crona, idempotentny po dedupeKey), pokazuje
+ * licznik nieprzeczytanych i listę w rozwijanym panelu. Klik pozycji oznacza ją
+ * jako przeczytaną i nawiguje do źródła.
+ *
+ * Element chrome (nie pływający FAB) — osadzany w nawigacji:
+ *  - `placement="sidebar"` → wiersz w stopce sidebara (desktop); panel rozwija się W GÓRĘ,
+ *  - `placement="topbar"` → kompaktowa ikona w górnym pasku (mobile); panel rozwija się W DÓŁ.
  */
-export function NotificationBell() {
+export function NotificationBell({ placement = "topbar" }: { placement?: "topbar" | "sidebar" }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
@@ -85,41 +89,59 @@ export function NotificationBell() {
     setCount(0);
   }, []);
 
+  const isSidebar = placement === "sidebar";
+  // Panel: w stopce sidebara rozwija się W GÓRĘ i w prawo (nad rzędem), w górnym pasku — W DÓŁ i w lewo.
+  const panelAnchor: React.CSSProperties = isSidebar
+    ? { bottom: "calc(100% + 8px)", left: 8 }
+    : { top: "calc(100% + 8px)", right: 0 };
+
   return (
-    <div
-      ref={panelRef}
-      className="fixed right-5 z-40 bottom-[calc(132px+env(safe-area-inset-bottom))] md:bottom-[84px]"
-    >
-      <button
-        onClick={toggle}
-        aria-label={`Powiadomienia${count ? ` (${count} nieprzeczytane)` : ""}`}
-        className="flex items-center justify-center rounded-full"
-        style={{
-          width: 38, height: 38,
-          background: "var(--bg-elevated)", border: "1px solid var(--border)",
-          color: "var(--text-secondary)", position: "relative",
-        }}
-      >
-        <Bell size={18} />
-        {count > 0 && (
-          <span
-            style={{
-              position: "absolute", top: -3, right: -3, minWidth: 17, height: 17, padding: "0 4px",
-              borderRadius: 99, background: "var(--accent-red)", color: "var(--on-accent, #fff)",
-              fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >
-            {count > 99 ? "99+" : count}
-          </span>
-        )}
-      </button>
+    <div ref={panelRef} className="relative" style={isSidebar ? undefined : { display: "flex" }}>
+      {isSidebar ? (
+        <button
+          onClick={toggle}
+          aria-label={`Powiadomienia${count ? ` (${count} nieprzeczytane)` : ""}`}
+          className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm w-[calc(100%-1rem)]"
+          style={{ color: "var(--text-secondary)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ""; e.currentTarget.style.color = "var(--text-secondary)"; }}
+        >
+          <Bell size={18} style={{ flexShrink: 0 }} />
+          <span>Powiadomienia</span>
+          {count > 0 && (
+            <span style={{ marginLeft: "auto", background: "var(--accent-red)", color: "var(--on-accent, #fff)", fontSize: 11, borderRadius: 999, padding: "1px 6px", minWidth: 18, textAlign: "center" }}>
+              {count > 99 ? "99+" : count}
+            </span>
+          )}
+        </button>
+      ) : (
+        <button
+          onClick={toggle}
+          aria-label={`Powiadomienia${count ? ` (${count} nieprzeczytane)` : ""}`}
+          className="flex items-center justify-center rounded-full"
+          style={{ width: 34, height: 34, background: "transparent", border: "none", color: "var(--text-secondary)", position: "relative" }}
+        >
+          <Bell size={19} />
+          {count > 0 && (
+            <span
+              style={{
+                position: "absolute", top: -1, right: -1, minWidth: 16, height: 16, padding: "0 4px",
+                borderRadius: 99, background: "var(--accent-red)", color: "var(--on-accent, #fff)",
+                fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              {count > 99 ? "99+" : count}
+            </span>
+          )}
+        </button>
+      )}
 
       {open && (
         <div
           role="dialog"
           aria-label="Powiadomienia"
           style={{
-            position: "absolute", bottom: 46, right: 0, width: "min(360px, calc(100vw - 24px))",
+            position: "absolute", ...panelAnchor, zIndex: 60, width: "min(360px, calc(100vw - 24px))",
             maxHeight: "min(70vh, 520px)", overflowY: "auto",
             background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg, 10px)",
             boxShadow: "0 12px 32px rgba(0,0,0,0.45)",

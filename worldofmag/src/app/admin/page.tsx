@@ -4,6 +4,7 @@ import { hasPermission, PERMISSIONS } from "@/lib/permissions"
 import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes, Palette } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
+import { FeedbackTriggerButton } from "@/components/admin/FeedbackTriggerButton"
 
 function fmtDate(iso: string | undefined) {
   if (!iso || iso === "unknown") return "—"
@@ -221,6 +222,7 @@ export default async function AdminPage() {
           </h2>
           <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
             <style>{`.admin-tool-link:hover { background-color: var(--bg-hover); }`}</style>
+            <FeedbackTriggerButton />
             <Link href="/admin/access" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Shield size={15} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Zarządzanie dostępem (role & uprawnienia)</span>
