@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0115: odhaczenie NM9 w master-planie (re-seed z md) + raport implementacyjny CRM.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -414,3 +419,35 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (NM9 Kontakty/CRM)',
+  'omnia-implementacja-2026-06-07-nm9-crm',
+  $omnia_impl_0607h$# Omnia — Raport implementacji 2026-06-07 (NM9 — Kontakty / osobisty CRM)
+
+Ósma porcja — nowy dział poza marketplace: lekki CRM (fundament „mali usługodawcy").
+
+## NM9 — Kontakty / CRM (✅)
+**Diagnoza:** §18.5/§18.6 — baza relacji to fundament pod usługodawców i wygodę kontaktu
+klient↔wykonawca; wcześniej moduł nie istniał.
+**Rozwiązanie (i dlaczego tak):** nowy moduł `/contacts` zgodnie z niezmiennikami repo:
+model `Contact` z własnością 3-poziom (`ownerId`/`ownerTeamId` jako pola skalarne — dostęp przez
+`ownedByWhere`/`assertOwnership`, bez zbędnych relacji w User/Team), tagi jako JSON string[].
+Akcje CRUD z wyszukiwaniem (nazwa/tel/email/firma/tag/notatka). `ContactsPage`: lista, szukajka,
+dodawanie/edycja inline, klikalne tel:/mailto:, chipy tagów. Uprawnienie `module.contacts`
+(permissions.ts + bramka trasy + seed w migrate.js, ADMIN/BETA_TESTER). Rejestracja w
+`src/lib/modules.tsx` (jedno źródło zasila ModuleSidebar desktop i mobilny wybór w AppShell).
+**Pliki:** `prisma/schema.prisma`, `0114_contacts_module`, `src/actions/contacts.ts`,
+`src/app/contacts/page.tsx`, `src/components/contacts/ContactsPage.tsx`, `src/lib/permissions.ts`,
+`src/lib/modules.tsx`, `scripts/migrate.js`.
+
+## Weryfikacja
+- Pełny `npm run build` zielony; uprawnienie `module.contacts` zaseedowane.
+
+## Podsumowanie
+Dostarczono fundament CRM. Marketplace + NM9 razem domykają wizję „mali usługodawcy".
+Następne: Zadania T1 (timeline) i T2 (Kanban), domknięcia R2/S2; potem Faza 3 i Etap C marketplace.$omnia_impl_0607h$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
