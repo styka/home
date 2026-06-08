@@ -6,6 +6,7 @@ import { Bug, X } from "lucide-react";
 import { openAssistant } from "@/lib/ai/assistantBus";
 import { FEEDBACK_START_EVENT } from "@/lib/ai/feedbackBus";
 import { ensureOmniaProject } from "@/actions/taskProjects";
+import { useOverlayState } from "@/hooks/useOverlayState";
 
 // Tryb wskazywania (admin-only): admin włącza tryb, najeżdża/klika dowolny element
 // UI, a my rozpoznajemy „miejsce" (route + obszar + element + tekst w pobliżu) i
@@ -67,6 +68,10 @@ export function FeedbackInspector() {
   const pathname = usePathname();
   const [active, setActive] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  // Pływający przycisk musi działać też NAD modalem (by wskazać element w modalu):
+  // gdy modal jest otwarty, asystent chowa swój FAB, więc nasz wskakuje w jego
+  // (główne) miejsce i nad modal. Przy otwartym asystencie chowamy się, by go nie zasłaniać.
+  const { modalOpen, assistantOpen } = useOverlayState();
 
   const capture = useCallback(async (el: HTMLElement) => {
     const context = describeElement(el, pathname);
@@ -76,9 +81,8 @@ export function FeedbackInspector() {
     openAssistant({ feedbackContext: context });
   }, [pathname]);
 
-  // Tryb wskazywania nie ma już stałego pływającego przycisku (róg należy do
-  // asystenta AI). Uruchamiają go: skrót Ctrl/Cmd+Shift+B, przycisk w panelu
-  // admina i admiński przycisk w górnym pasku (mobile) — oba przez `feedbackBus`.
+  // Dodatkowe wejścia (poza pływającym przyciskiem): skrót Ctrl/Cmd+Shift+B oraz
+  // wpis w panelu admina (przez `feedbackBus`).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "b") {
@@ -129,9 +133,32 @@ export function FeedbackInspector() {
     };
   }, [active, capture]);
 
-  // Bez stałego FAB — komponent renderuje tylko overlay trybu wskazywania, gdy aktywny.
   return (
     <>
+      {/* Pływający przycisk (admin-only — montaż za `isAdmin` w AppShell). Mały,
+          nad asystentem AI, ale niżej w z-index (39 < 41), więc to asystent
+          ewentualnie zasłania ten przycisk, nigdy odwrotnie; odstęp dobrany tak,
+          by się nie nakładały. Gdy otwarty jest modal treściowy, asystent chowa
+          swój FAB — nasz wskakuje w jego (główne) miejsce i NAD modal (wysoki
+          z-index), żeby dało się wskazać element w modalu. Chowany w trybie
+          aktywnym (sterujemy z paska) oraz gdy otwarty jest asystent. */}
+      {!active && !assistantOpen && (
+        <button
+          {...{ [FEEDBACK_UI_ATTR]: "" }}
+          onClick={() => setActive(true)}
+          title="Zgłoś błąd / sugestię (wskaż element) — Ctrl+Shift+B"
+          aria-label="Tryb zgłaszania błędu lub sugestii"
+          className={
+            modalOpen
+              ? "fixed right-5 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
+              : "fixed right-5 bottom-[calc(132px+env(safe-area-inset-bottom))] md:bottom-[84px]"
+          }
+          style={{ zIndex: modalOpen ? 10001 : 39, width: 44, height: 44, borderRadius: "50%", border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-purple)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
+        >
+          <Bug size={20} />
+        </button>
+      )}
+
       {active && (
         <>
           {/* Podświetlenie najechanego elementu */}
