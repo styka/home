@@ -712,6 +712,11 @@ model Recipe {
   ownerId       String?
   ownerTeamId   String?
   cookbookId    String?
+  // K2: wartości odżywcze na 1 porcję (opcjonalne).
+  kcal          Int?
+  protein       Float?
+  carbs         Float?
+  fat           Float?
   cookCount     Int       @default(0)
   lastCookedAt  DateTime?
   rating        Float?

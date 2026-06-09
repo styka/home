@@ -57,6 +57,10 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
   const [cuisine, setCuisine] = useState(recipe?.cuisine ?? "");
   const [mealType, setMealType] = useState<MealType | "">((recipe?.mealType as MealType) ?? "");
   const [cookbookId, setCookbookId] = useState<string>(recipe?.cookbookId ?? "");
+  const [kcal, setKcal] = useState<string>(recipe?.kcal?.toString() ?? "");
+  const [protein, setProtein] = useState<string>(recipe?.protein?.toString() ?? "");
+  const [carbs, setCarbs] = useState<string>(recipe?.carbs?.toString() ?? "");
+  const [fat, setFat] = useState<string>(recipe?.fat?.toString() ?? "");
   const [notes, setNotes] = useState(recipe?.notes ?? "");
 
   const [ingredients, setIngredients] = useState<IngredientRow[]>(
@@ -217,6 +221,10 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
       cuisine: cuisine.trim() || null,
       mealType: mealType || null,
       cookbookId: cookbookId || null,
+      kcal: kcal.trim() ? Math.round(Number(kcal)) : null,
+      protein: protein.trim() ? Number(protein) : null,
+      carbs: carbs.trim() ? Number(carbs) : null,
+      fat: fat.trim() ? Number(fat) : null,
       notes,
       ingredients: ingredients
         .filter((ing) => ing.name.trim())
@@ -634,6 +642,15 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
             ))}
           </div>
         </section>
+
+        <Field label="Wartości odżywcze (na 1 porcję, opcjonalnie)">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <input type="number" min="0" inputMode="numeric" value={kcal} onChange={(e) => setKcal(e.target.value)} placeholder="kcal" className="w-full px-3 py-2 rounded border text-sm" style={inputStyle} />
+            <input type="number" min="0" step="0.1" inputMode="decimal" value={protein} onChange={(e) => setProtein(e.target.value)} placeholder="białko (g)" className="w-full px-3 py-2 rounded border text-sm" style={inputStyle} />
+            <input type="number" min="0" step="0.1" inputMode="decimal" value={carbs} onChange={(e) => setCarbs(e.target.value)} placeholder="węgl. (g)" className="w-full px-3 py-2 rounded border text-sm" style={inputStyle} />
+            <input type="number" min="0" step="0.1" inputMode="decimal" value={fat} onChange={(e) => setFat(e.target.value)} placeholder="tłuszcz (g)" className="w-full px-3 py-2 rounded border text-sm" style={inputStyle} />
+          </div>
+        </Field>
 
         <Field label="Notatki kucharza">
           <textarea

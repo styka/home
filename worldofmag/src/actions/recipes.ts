@@ -204,6 +204,10 @@ export async function createRecipe(data: CreateRecipeInput): Promise<Recipe> {
       notes: data.notes ?? "",
       introMarkdown: data.introMarkdown ?? "",
       cookbookId: data.cookbookId ?? null,
+      kcal: data.kcal ?? null,
+      protein: data.protein ?? null,
+      carbs: data.carbs ?? null,
+      fat: data.fat ?? null,
       ownerId: data.ownerTeamId ? null : user.id,
       ownerTeamId: data.ownerTeamId ?? null,
       tags: data.tagIds?.length
@@ -262,6 +266,10 @@ export async function updateRecipe(id: string, data: UpdateRecipeInput): Promise
   if (data.notes !== undefined) patch.notes = data.notes ?? "";
   if (data.introMarkdown !== undefined) patch.introMarkdown = data.introMarkdown ?? "";
   if (data.cookbookId !== undefined) patch.cookbookId = data.cookbookId;
+  if (data.kcal !== undefined) patch.kcal = data.kcal;
+  if (data.protein !== undefined) patch.protein = data.protein;
+  if (data.carbs !== undefined) patch.carbs = data.carbs;
+  if (data.fat !== undefined) patch.fat = data.fat;
 
   const recipe = await prisma.recipe.update({ where: { id }, data: patch });
 
