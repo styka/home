@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState, useEffect, useTransition } from "react";
-import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download } from "lucide-react";
+import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { TagChip } from "./TagChip";
 import { TagSuggestions } from "./TagSuggestions";
 import { updateNote, deleteNote, toggleNotePin, setNoteTags } from "@/actions/notes";
@@ -54,6 +55,7 @@ export function NoteRow({
   const [editTagIds, setEditTagIds] = useState(note.tags.map((nt) => nt.tag.id));
   const [editTagInput, setEditTagInput] = useState("");
   const [rewriteMode, setRewriteMode] = useState<"correct" | "rewrite" | "to_markdown">("correct");
+  const [showPreview, setShowPreview] = useState(false);
   const [rewriting, setRewriting] = useState(false);
   const [previousContent, setPreviousContent] = useState<string | null>(null);
 
@@ -258,18 +260,48 @@ export function NoteRow({
           placeholder="Tytuł..."
         />
 
-        {/* Content */}
-        <textarea
-          value={editContent}
-          onChange={(e) => setEditContent(e.target.value)}
-          rows={5}
-          className="w-full bg-transparent text-xs focus:outline-none resize-none font-mono"
-          style={{ color: "var(--text-primary)", lineHeight: 1.7 }}
-          placeholder="Treść notatki..."
-        />
+        {/* Content — edytor + opcjonalny live-preview markdown (N1) */}
+        {showPreview ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              rows={8}
+              className="w-full bg-transparent text-xs focus:outline-none resize-none font-mono"
+              style={{ color: "var(--text-primary)", lineHeight: 1.7, border: "1px solid var(--border)", borderRadius: 6, padding: 8 }}
+              placeholder="Treść notatki (markdown)..."
+            />
+            <div style={{ border: "1px solid var(--border)", borderRadius: 6, padding: 8, overflow: "auto", maxHeight: 240 }}>
+              <style>{MARKDOWN_STYLES}</style>
+              <div
+                className="markdown-body"
+                style={{ fontSize: 13 }}
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(editContent) || '<p style="color:var(--text-muted);font-size:12px">Podgląd…</p>' }}
+              />
+            </div>
+          </div>
+        ) : (
+          <textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            rows={5}
+            className="w-full bg-transparent text-xs focus:outline-none resize-none font-mono"
+            style={{ color: "var(--text-primary)", lineHeight: 1.7 }}
+            placeholder="Treść notatki..."
+          />
+        )}
 
         {/* AI rewrite + mic + voice edit */}
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setShowPreview((v) => !v)}
+            className="flex items-center gap-1 text-xs px-2 py-0.5 rounded"
+            style={{ backgroundColor: "var(--bg-hover)", color: showPreview ? "#8b5cf6" : "var(--text-muted)" }}
+            title="Podgląd markdown na żywo"
+          >
+            {showPreview ? <EyeOff size={11} /> : <Eye size={11} />}
+            Podgląd
+          </button>
           <button
             onClick={isRecording ? stopVoiceInput : startVoiceInput}
             className="flex items-center gap-1 text-xs px-2 py-0.5 rounded"
