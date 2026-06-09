@@ -331,7 +331,7 @@ export async function getListing(id: string): Promise<ListingDTO | null> {
 }
 
 export async function getProviderPublic(providerId: string) {
-  await requireAuth();
+  const user = await requireAuth();
   const provider = await prisma.serviceProvider.findUnique({
     where: { id: providerId },
     include: {
@@ -348,7 +348,12 @@ export async function getProviderPublic(providerId: string) {
       images: { orderBy: { order: "asc" } },
     },
   });
-  return provider;
+  if (!provider) return null;
+  const fav = await prisma.serviceFavorite.findUnique({
+    where: { userId_providerId: { userId: user.id, providerId } },
+    select: { id: true },
+  });
+  return { ...provider, isFavorite: !!fav };
 }
 
 // ─── Zlecenia ──────────────────────────────────────────────────────────────
@@ -980,4 +985,82 @@ export async function bookClientExpense(requestId: string, walletElementId: stri
     note: `Usługa: ${req.title}`,
   });
   revalidatePath("/services/requests");
+}
+
+// ─── M11 ulubieni wykonawcy ─────────────────────────────────────────────────
+
+export async function toggleFavorite(providerId: string): Promise<{ favored: boolean }> {
+  const user = await requireAuth();
+  const existing = await prisma.serviceFavorite.findUnique({
+    where: { userId_providerId: { userId: user.id, providerId } },
+    select: { id: true },
+  });
+  if (existing) {
+    await prisma.serviceFavorite.delete({ where: { id: existing.id } });
+    revalidatePath("/services");
+    revalidatePath(`/services/providers/${providerId}`);
+    return { favored: false };
+  }
+  await prisma.serviceFavorite.create({ data: { userId: user.id, providerId } });
+  revalidatePath("/services");
+  revalidatePath(`/services/providers/${providerId}`);
+  return { favored: true };
+}
+
+export async function getMyFavoriteProviders(): Promise<{ id: string; displayName: string; area: string | null; ratingAvg: number; ratingCount: number; verified: boolean }[]> {
+  const user = await requireAuth();
+  const favs = await prisma.serviceFavorite.findMany({
+    where: { userId: user.id, provider: { visible: true } },
+    orderBy: { createdAt: "desc" },
+    select: { provider: { select: { id: true, displayName: true, area: true, ratingAvg: true, ratingCount: true, verified: true } } },
+  });
+  return favs.map((f) => f.provider);
+}
+
+// ─── M13 statystyki wykonawcy ───────────────────────────────────────────────
+
+export type ProviderStats = {
+  total: number;
+  completed: number;
+  active: number;
+  cancelled: number;
+  conversionPct: number; // completed / (total - active)
+  revenue: number; // grosze (suma opłaconych płatności)
+  ratingAvg: number;
+  ratingCount: number;
+};
+
+export async function getProviderStats(): Promise<ProviderStats | null> {
+  const user = await requireAuth();
+  const provider = await prisma.serviceProvider.findUnique({
+    where: { userId: user.id },
+    select: { id: true, ratingAvg: true, ratingCount: true },
+  });
+  if (!provider) return null;
+
+  const [grouped, paid] = await Promise.all([
+    prisma.serviceRequest.groupBy({
+      by: ["status"],
+      where: { providerId: provider.id },
+      _count: { _all: true },
+    }),
+    prisma.servicePayment.aggregate({
+      where: { status: "PAID", request: { providerId: provider.id } },
+      _sum: { amount: true },
+    }),
+  ]);
+
+  const countOf = (s: string) => grouped.find((g) => g.status === s)?._count._all ?? 0;
+  const total = grouped.reduce((acc, g) => acc + g._count._all, 0);
+  const completed = countOf("COMPLETED");
+  const cancelled = countOf("CANCELLED") + countOf("DECLINED");
+  const active = countOf("REQUESTED") + countOf("ACCEPTED") + countOf("SCHEDULED") + countOf("IN_PROGRESS");
+  const settled = total - active; // zlecenia rozstrzygnięte
+  const conversionPct = settled > 0 ? Math.round((completed / settled) * 100) : 0;
+
+  return {
+    total, completed, active, cancelled, conversionPct,
+    revenue: paid._sum.amount ?? 0,
+    ratingAvg: provider.ratingAvg, ratingCount: provider.ratingCount,
+  };
 }

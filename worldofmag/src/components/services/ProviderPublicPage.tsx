@@ -4,8 +4,9 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Star, MessageSquare } from "lucide-react";
 import { PageHeader, SectionHeading, pageContainerStyle, pageInnerStyle, cardStyle, cardHoverHandlers } from "@/components/ui/home";
+import { Heart } from "lucide-react";
 import { RatingStars, formatPrice, VerifiedBadge, secondaryButtonStyle } from "./serviceUi";
-import { setProviderVerified } from "@/actions/services";
+import { setProviderVerified, toggleFavorite } from "@/actions/services";
 import type { PriceModel } from "@/lib/services";
 
 interface ProviderPublic {
@@ -17,6 +18,7 @@ interface ProviderPublic {
   ratingCount: number;
   verified: boolean;
   nip: string | null;
+  isFavorite: boolean;
   listings: { id: string; title: string; priceModel: PriceModel; priceAmount: number | null; currency: string; categoryIcon: string }[];
   images: { id: string; url: string; caption: string | null }[];
   reviews: { id: string; rating: number; comment: string | null; clientName: string }[];
@@ -24,7 +26,13 @@ interface ProviderPublic {
 
 export function ProviderPublicPage({ provider, isAdmin = false }: { provider: ProviderPublic; isAdmin?: boolean }) {
   const [verified, setVerified] = useState(provider.verified);
+  const [favored, setFavored] = useState(provider.isFavorite);
   const [pending, startTransition] = useTransition();
+
+  function onToggleFav() {
+    setFavored((v) => !v);
+    startTransition(async () => { const r = await toggleFavorite(provider.id); setFavored(r.favored); });
+  }
 
   function toggleVerified() {
     startTransition(async () => {
@@ -49,6 +57,10 @@ export function ProviderPublicPage({ provider, isAdmin = false }: { provider: Pr
 
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <RatingStars avg={provider.ratingAvg} count={provider.ratingCount} size={15} />
+          <button onClick={onToggleFav} disabled={pending} title={favored ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
+            style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", color: favored ? "var(--accent-red)" : "var(--text-muted)", fontSize: 12 }}>
+            <Heart size={15} fill={favored ? "var(--accent-red)" : "none"} /> {favored ? "Ulubiony" : "Obserwuj"}
+          </button>
           {verified && <VerifiedBadge size={15} withLabel />}
           {provider.area && (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}>

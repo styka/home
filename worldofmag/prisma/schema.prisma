@@ -1793,8 +1793,22 @@ model ServiceProvider {
   quotes   ServiceQuote[]
   images   ServiceImage[]
   availability ServiceAvailability[]
+  favorites    ServiceFavorite[]
 
   @@index([visible])
+}
+
+// M11: ulubieni/obserwowani wykonawcy (per użytkownik). userId jako pole skalarne.
+model ServiceFavorite {
+  id         String   @id @default(cuid())
+  userId     String
+  providerId String
+  createdAt  DateTime @default(now())
+
+  provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, providerId])
+  @@index([userId])
 }
 
 // Pojedyncza oferta usługi wystawiona przez wykonawcę.

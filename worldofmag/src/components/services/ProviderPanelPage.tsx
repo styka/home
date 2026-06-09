@@ -22,6 +22,7 @@ import {
   type RequestDTO,
   type RequestStatus,
 } from "@/lib/services";
+import type { ProviderStats } from "@/actions/services";
 import { RatingStars, formatPrice, StatusBadge, VerifiedBadge, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 import { AvailabilityEditor } from "./AvailabilityEditor";
 
@@ -58,9 +59,10 @@ interface Props {
   provider: ProviderData | null;
   categories: ServiceCategoryDTO[];
   incomingRequests: RequestDTO[];
+  stats?: ProviderStats | null;
 }
 
-export function ProviderPanelPage({ provider, categories, incomingRequests }: Props) {
+export function ProviderPanelPage({ provider, categories, incomingRequests, stats }: Props) {
   const router = useRouter();
   const [editingProfile, setEditingProfile] = useState(provider == null);
 
@@ -110,6 +112,9 @@ export function ProviderPanelPage({ provider, categories, incomingRequests }: Pr
             </button>
           </div>
         )}
+
+        {/* Statystyki wykonawcy (M13) */}
+        {provider && stats && stats.total > 0 && <ProviderStatsRow stats={stats} />}
 
         {/* Onboarding wykonawcy (M18) */}
         {provider && !editingProfile && (
@@ -612,6 +617,29 @@ function LocationControl({ hasLocation, onChange }: { hasLocation: boolean; onCh
         <button onClick={useMyLocation} disabled={busy} style={{ ...primaryButtonStyle, opacity: busy ? 0.6 : 1 }}>Użyj mojej lokalizacji</button>
         {hasLocation && <button onClick={clearLocation} disabled={busy} style={secondaryButtonStyle}>Usuń</button>}
         {msg && <span style={{ fontSize: 12, color: msg.startsWith("Zapisano") || msg.startsWith("Usunięto") ? "var(--accent-green)" : "var(--accent-red)" }}>{msg}</span>}
+      </div>
+    </div>
+  );
+}
+
+function ProviderStatsRow({ stats }: { stats: ProviderStats }) {
+  const cards = [
+    { label: "Zlecenia", value: String(stats.total) },
+    { label: "Zrealizowane", value: String(stats.completed) },
+    { label: "Aktywne", value: String(stats.active) },
+    { label: "Konwersja", value: `${stats.conversionPct}%` },
+    { label: "Przychód", value: `${(stats.revenue / 100).toLocaleString("pl-PL", { maximumFractionDigits: 0 })} zł` },
+  ];
+  return (
+    <div>
+      <SectionHeading>Statystyki</SectionHeading>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+        {cards.map((c) => (
+          <div key={c.label} style={{ flex: "1 1 100px", minWidth: 100, padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>{c.value}</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{c.label}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
