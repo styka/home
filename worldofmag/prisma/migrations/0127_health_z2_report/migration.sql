@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0127: odhaczenie Z2 w master-planie (re-seed z md) + raport implementacyjny zdrowia.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -450,3 +455,32 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (Zdrowie: Z2 trendy badan)',
+  'omnia-implementacja-2026-06-07-zdrowie-z2',
+  $omnia_impl_0607p$# Omnia — Raport implementacji 2026-06-07 (Zdrowie: Z2 trendy badan)
+
+Szesnasta porcja — Faza 3, modul Zdrowie.
+
+## Z2 — Trendy badan w czasie (OK)
+**Diagnoza:** par 7 — brak trendow badan (morfologia w czasie to kluczowa wartosc zdrowotna);
+`HealthEvent.result` byl tylko tekstem.
+**Rozwiazanie (i dlaczego tak):** `HealthEvent.numericValue` + `unit` (wartosc liczbowa wyniku
+badania) — pola w formularzu badania. `getTestTrends` grupuje badania (kind TEST) z wartoscia
+liczbowa po nazwie (case-insensitive), zwraca serie z >=2 pomiarami. Sekcja „Trendy badan" w
+`HealthHomePage` rysuje **sparkline inline SVG** (bez zaleznosci wykresowej — minimalizm i zero
+nowych pakietow) + pierwszy/ostatni pomiar i delta z kolorem kierunku.
+**Pliki:** `prisma/schema.prisma`, `0126_health_numeric_result`, `src/types/index.ts`,
+`src/actions/health.ts`, `HealthHomePage.tsx`, trasa health.
+
+## Weryfikacja
+- `next build` zielony; migracja zaaplikowana lokalnie.
+
+## Podsumowanie
+Faza 3 mocno do przodu. Pozostale: Notatki N2 (wikilinks)/N3/N4, Jezyki L2/L3, Kuchnia K1/K5,
+Zdrowie Z1/Z3, oraz Etap C marketplace (M14/M16/M17/M19) i Faza 4 (skala/branze).$omnia_impl_0607p$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
