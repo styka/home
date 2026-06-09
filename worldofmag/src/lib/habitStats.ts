@@ -138,6 +138,20 @@ export function startOfWeek(date: Date): Date {
   return addDays(c, diff);
 }
 
+/** HA2: liczba wykonań w bieżącym tygodniu (pon→dziś), niezależnie od dni — dla celu N×/tydzień. */
+export function weekDoneCount(entryDates: string[]): number {
+  const set = new Set(entryDates);
+  const monday = startOfWeek(new Date());
+  const todayStr = todayISO();
+  let done = 0;
+  for (let i = 0; i < 7; i++) {
+    const ds = isoDate(addDays(monday, i));
+    if (ds > todayStr) break;
+    if (set.has(ds)) done++;
+  }
+  return done;
+}
+
 /** Postęp w bieżącym tygodniu: ile zaplanowanych dni wykonano vs cel. */
 export function weekProgress(
   entryDates: string[],

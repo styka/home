@@ -646,6 +646,8 @@ export type Habit = {
   color: string;
   /** CSV dni tygodnia 0=niedz..6=sob, np. "1,2,3,4,5". null/"" = codziennie. */
   daysOfWeek: string | null;
+  /** HA2: cel tygodniowy (N×/tydz., dowolne dni). null = tryb dni tygodnia. */
+  weeklyGoal: number | null;
   /** "HH:MM" czasu lokalnego lub null. */
   reminderTime: string | null;
   archived: boolean;

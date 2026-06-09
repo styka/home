@@ -1706,6 +1706,8 @@ model Habit {
   color       String  @default("var(--accent-orange)") // token CSS motywu
   // CSV dni tygodnia 0=niedz..6=sob, np. "1,2,3,4,5". null/"" = codziennie.
   daysOfWeek  String?
+  // HA2: cel tygodniowy (np. 3×/tydzień, dowolne dni). null = tryb dni tygodnia (daysOfWeek).
+  weeklyGoal  Int?
   // Godzina przypomnienia w formacie "HH:MM" (czas lokalny). null = bez przypomnienia.
   reminderTime String?
   archived    Boolean @default(false)
