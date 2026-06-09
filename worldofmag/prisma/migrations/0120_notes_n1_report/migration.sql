@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0120: odhaczenie N1 w master-planie (re-seed z md) + raport implementacyjny notatek.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -434,3 +439,30 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (Notatki: N1 live-preview)',
+  'omnia-implementacja-2026-06-07-notatki-n1',
+  $omnia_impl_0607l$# Omnia — Raport implementacji 2026-06-07 (Notatki: N1 live-preview)
+
+Dwunasta porcja — Faza 3, edytor notatek.
+
+## N1 — Edytor notatek z live-preview markdown (✅)
+**Diagnoza:** §4.3 — przy dłuższych notatkach brak podglądu obok pola markdown był ograniczeniem.
+**Rozwiązanie (i dlaczego tak):** w trybie edycji notatki dodano przełącznik „Podgląd": split
+textarea + renderowany markdown na żywo (`markdownToHtml` + `MARKDOWN_STYLES`). Świadomie reużyto
+ten sam mechanizm co w edytorze raportów (R1) — żadnej nowej zależności (np. edytora WYSIWYG),
+spójny renderer w całej aplikacji, bezpieczny (HTML escapowany w `src/lib/markdown.ts`).
+Pełny WYSIWYG odłożony jako przyszłe rozszerzenie — live-preview pokrywa główną potrzebę.
+**Pliki:** `src/components/notes/NoteRow.tsx`.
+
+## Weryfikacja
+- `next build` zielony.
+
+## Podsumowanie
+Faza 3 postępuje. Następne pozycje: Zdrowie Z2 (trendy badań), Kuchnia K5 (review po OCR),
+Języki L3 (gamifikacja), oraz Etap C marketplace (P2: ulubieni/statystyki/firma+pracownicy).$omnia_impl_0607l$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
