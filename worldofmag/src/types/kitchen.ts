@@ -117,6 +117,11 @@ export interface CreateRecipeInput {
   notes?: string | null;
   introMarkdown?: string | null;
   cookbookId?: string | null;
+  // K2: wartości odżywcze na 1 porcję.
+  kcal?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fat?: number | null;
   ownerTeamId?: string | null;
   tagIds?: string[];
   ingredients?: IngredientInput[];

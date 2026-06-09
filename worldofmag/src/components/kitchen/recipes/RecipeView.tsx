@@ -136,6 +136,18 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
             {recipe.description}
           </p>
         ) : null}
+        {(recipe.kcal != null || recipe.protein != null || recipe.carbs != null || recipe.fat != null) && (
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: "var(--text-secondary)" }}>
+            <span style={{ fontWeight: 600 }}>Na porcję:</span>
+            {recipe.kcal != null && <span>{recipe.kcal} kcal</span>}
+            {recipe.protein != null && <span>· B {recipe.protein} g</span>}
+            {recipe.carbs != null && <span>· W {recipe.carbs} g</span>}
+            {recipe.fat != null && <span>· T {recipe.fat} g</span>}
+            {recipe.kcal != null && servings !== recipe.servings && (
+              <span style={{ color: "var(--text-muted)" }}>· razem ({servings} porc.): {recipe.kcal * servings} kcal</span>
+            )}
+          </div>
+        )}
       </header>
 
       {recipe.coverImageUrl ? (

@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0125: odhaczenie K2 w master-planie (re-seed z md) + raport implementacyjny kuchni.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -446,3 +451,31 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (Kuchnia: K2 wartosci odzywcze)',
+  'omnia-implementacja-2026-06-07-kuchnia-k2',
+  $omnia_impl_0607o$# Omnia — Raport implementacji 2026-06-07 (Kuchnia: K2 wartosci odzywcze)
+
+Pietnasta porcja — Faza 3, modul Kuchnia.
+
+## K2 — Wartosci odzywcze przepisu (OK)
+**Diagnoza:** par 5.5 — brak kalorii/makro; konkurenci (Paprika/Mealime) to maja.
+**Rozwiazanie:** `Recipe.kcal/protein/carbs/fat` (na 1 porcje, opcjonalne).
+`CreateRecipeInput`/`UpdateRecipeInput` + `createRecipe`/`updateRecipe` przepuszczaja pola.
+Pola w `RecipeEditor` (wiersz 4 inputow), wyswietlanie w `RecipeView`: na porcje, a przy zmianie
+liczby porcji dodatkowo suma (kcal * porcje). Przechowywanie per-porcja jest spojne ze
+skalowaniem przepisu (servings) — bez przeliczania zapisanej wartosci.
+**Pliki:** `prisma/schema.prisma`, `0124_recipe_nutrition`, `src/types/kitchen.ts`,
+`src/actions/recipes.ts`, `RecipeEditor.tsx`, `RecipeView.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja zaaplikowana lokalnie.
+
+## Podsumowanie
+Faza 3 postepuje. Pozostale: Zdrowie Z2 (trendy badan), Notatki N2 (wikilinks)/N3/N4, Jezyki
+L2/L3, Kuchnia K1/K5, oraz Etap C marketplace (M14/M16/M17/M19) i Faza 4.$omnia_impl_0607o$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
