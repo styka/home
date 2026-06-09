@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { getListings, getServiceCategories, getMyProviderProfile } from "@/actions/services";
+import { getListings, getServiceCategories, getMyProviderProfile, getMyFavoriteProviders } from "@/actions/services";
 import { ServicesCatalogPage } from "@/components/services/ServicesCatalogPage";
 
 export default async function ServicesRootPage() {
@@ -11,10 +11,11 @@ export default async function ServicesRootPage() {
   if (!session?.user?.id) redirect("/auth/signin");
   if (!hasPermission(session, PERMISSIONS.SERVICES)) redirect("/");
 
-  const [listings, categories, provider] = await Promise.all([
+  const [listings, categories, provider, favorites] = await Promise.all([
     getListings(),
     getServiceCategories(),
     getMyProviderProfile(),
+    getMyFavoriteProviders(),
   ]);
 
   return (
@@ -22,6 +23,7 @@ export default async function ServicesRootPage() {
       initialListings={listings}
       categories={categories}
       hasProviderProfile={provider != null}
+      favorites={favorites}
     />
   );
 }

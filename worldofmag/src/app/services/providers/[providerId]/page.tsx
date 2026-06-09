@@ -27,6 +27,7 @@ export default async function ProviderProfilePage({ params }: { params: { provid
         ratingCount: provider.ratingCount,
         verified: provider.verified,
         nip: provider.nip,
+        isFavorite: provider.isFavorite,
         listings: provider.listings.map((l) => ({
           id: l.id,
           title: l.title,

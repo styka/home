@@ -2,20 +2,23 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Handshake, Search, Briefcase, ClipboardList, MapPin, SlidersHorizontal, Navigation } from "lucide-react";
+import { Handshake, Search, Briefcase, ClipboardList, MapPin, SlidersHorizontal, Navigation, Heart } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle, cardHoverHandlers } from "@/components/ui/home";
 import { getListings, type ListingSort } from "@/actions/services";
 import type { ListingDTO, ServiceCategoryDTO } from "@/lib/services";
 import { formatDistance } from "@/lib/serviceGeo";
 import { RatingStars, formatPrice, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle, VerifiedBadge } from "./serviceUi";
 
+type FavProvider = { id: string; displayName: string; area: string | null; ratingAvg: number; ratingCount: number; verified: boolean };
+
 interface Props {
   initialListings: ListingDTO[];
   categories: ServiceCategoryDTO[];
   hasProviderProfile: boolean;
+  favorites?: FavProvider[];
 }
 
-export function ServicesCatalogPage({ initialListings, categories, hasProviderProfile }: Props) {
+export function ServicesCatalogPage({ initialListings, categories, hasProviderProfile, favorites = [] }: Props) {
   const [listings, setListings] = useState<ListingDTO[]>(initialListings);
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState<string | null>(null);
@@ -191,6 +194,25 @@ export function ServicesCatalogPage({ initialListings, categories, hasProviderPr
             />
           ))}
         </div>
+
+        {/* Ulubieni wykonawcy (M11) */}
+        {favorites.length > 0 && (
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+              <Heart size={13} fill="var(--accent-red)" color="var(--accent-red)" /> Ulubieni wykonawcy
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {favorites.map((f) => (
+                <Link key={f.id} href={`/services/providers/${f.id}`}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, border: "1px solid var(--border)", background: "var(--bg-surface)", textDecoration: "none", fontSize: 12, color: "var(--text-primary)" }}>
+                  {f.displayName}
+                  {f.verified && <VerifiedBadge size={11} />}
+                  <RatingStars avg={f.ratingAvg} count={f.ratingCount} size={10} />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Lista ofert */}
         {listings.length === 0 ? (
