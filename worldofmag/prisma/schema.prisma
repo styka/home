@@ -1634,6 +1634,9 @@ model HealthEvent {
   status      String    @default("PLANNED")
   notes       String?
   result      String? // wynik badania / podsumowanie wizyty
+  // Z2: wartość liczbowa wyniku badania + jednostka — do trendów w czasie.
+  numericValue Float?
+  unit        String?
   referral    String? // skierowanie
   reminderAt  DateTime?
   ownerId     String?

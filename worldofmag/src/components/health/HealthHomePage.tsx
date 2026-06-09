@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { HeartPulse, Plus, Stethoscope, FlaskConical, Trash2, Pencil, Check, X, MapPin, CalendarClock } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
-import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent } from "@/actions/health";
+import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent, type TestTrend } from "@/actions/health";
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
 
 const inputStyle: React.CSSProperties = {
@@ -47,10 +47,12 @@ interface FormState {
   referral: string;
   notes: string;
   result: string;
+  numericValue: string;
+  unit: string;
 }
 
 const emptyForm = (kind: HealthKind): FormState => ({
-  kind, title: "", scheduledAt: "", doctorName: "", specialty: "", facility: "", location: "", referral: "", notes: "", result: "",
+  kind, title: "", scheduledAt: "", doctorName: "", specialty: "", facility: "", location: "", referral: "", notes: "", result: "", numericValue: "", unit: "",
 });
 
 function EventForm({ initial, onSave, onCancel }: { initial: FormState; onSave: (f: FormState) => Promise<void>; onCancel: () => void }) {
@@ -130,10 +132,22 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormState; onSave: 
         <textarea style={{ ...inputStyle, minHeight: 56, resize: "vertical", fontFamily: "inherit" }} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
       </div>
       {isTest && (
-        <div>
-          <label style={labelStyle}>Wynik</label>
-          <textarea style={{ ...inputStyle, minHeight: 48, resize: "vertical", fontFamily: "inherit" }} value={form.result} onChange={(e) => set("result", e.target.value)} placeholder="Wynik badania (po realizacji)" />
-        </div>
+        <>
+          <div>
+            <label style={labelStyle}>Wynik</label>
+            <textarea style={{ ...inputStyle, minHeight: 48, resize: "vertical", fontFamily: "inherit" }} value={form.result} onChange={(e) => set("result", e.target.value)} placeholder="Wynik badania (po realizacji)" />
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Wartość liczbowa (do trendu)</label>
+              <input style={inputStyle} type="number" step="any" inputMode="decimal" value={form.numericValue} onChange={(e) => set("numericValue", e.target.value)} placeholder="np. 5.2" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Jednostka</label>
+              <input style={inputStyle} value={form.unit} onChange={(e) => set("unit", e.target.value)} placeholder="np. mg/dl" />
+            </div>
+          </div>
+        </>
       )}
       {error && <p style={{ fontSize: 12, color: "var(--accent-red)", margin: 0 }}>{error}</p>}
       <div style={{ display: "flex", gap: 8 }}>
@@ -193,7 +207,7 @@ function EventCard({ ev, onEdit }: { ev: HealthEvent; onEdit: () => void }) {
 
 type Tab = "ALL" | "VISIT" | "TEST";
 
-export function HealthHomePage({ events }: { events: HealthEvent[] }) {
+export function HealthHomePage({ events, trends = [] }: { events: HealthEvent[]; trends?: TestTrend[] }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("ALL");
   const [adding, setAdding] = useState(false);
@@ -204,11 +218,14 @@ export function HealthHomePage({ events }: { events: HealthEvent[] }) {
   const upcoming = filtered.filter((e) => new Date(e.scheduledAt).getTime() >= now && e.status !== "CANCELLED");
   const past = filtered.filter((e) => new Date(e.scheduledAt).getTime() < now || e.status === "CANCELLED");
 
+  const parseNum = (s: string) => { const n = parseFloat(s.replace(",", ".")); return Number.isFinite(n) ? n : null; };
+
   async function handleCreate(f: FormState) {
     await createHealthEvent({
       kind: f.kind, title: f.title, scheduledAt: f.scheduledAt,
       doctorName: f.doctorName, specialty: f.specialty, facility: f.facility,
       location: f.location, referral: f.referral, notes: f.notes, result: f.result,
+      numericValue: f.kind === "TEST" ? parseNum(f.numericValue) : null, unit: f.unit,
     });
     setAdding(false);
     router.refresh();
@@ -220,6 +237,7 @@ export function HealthHomePage({ events }: { events: HealthEvent[] }) {
       kind: f.kind, title: f.title, scheduledAt: f.scheduledAt,
       doctorName: f.doctorName, specialty: f.specialty, facility: f.facility,
       location: f.location, referral: f.referral, notes: f.notes, result: f.result,
+      numericValue: f.kind === "TEST" ? parseNum(f.numericValue) : null, unit: f.unit,
     });
     setEditing(null);
     router.refresh();
@@ -229,6 +247,7 @@ export function HealthHomePage({ events }: { events: HealthEvent[] }) {
     kind: ev.kind, title: ev.title, scheduledAt: toLocalInput(ev.scheduledAt),
     doctorName: ev.doctorName ?? "", specialty: ev.specialty ?? "", facility: ev.facility ?? "",
     location: ev.location ?? "", referral: ev.referral ?? "", notes: ev.notes ?? "", result: ev.result ?? "",
+    numericValue: ev.numericValue != null ? String(ev.numericValue) : "", unit: ev.unit ?? "",
   });
 
   const TABS: Array<{ id: Tab; label: string }> = [
@@ -272,6 +291,16 @@ export function HealthHomePage({ events }: { events: HealthEvent[] }) {
         {adding && <EventForm initial={emptyForm(tab === "TEST" ? "TEST" : "VISIT")} onSave={handleCreate} onCancel={() => setAdding(false)} />}
         {editing && <EventForm initial={formFromEvent(editing)} onSave={handleUpdate} onCancel={() => setEditing(null)} />}
 
+        {/* Z2: trendy badań */}
+        {(tab === "ALL" || tab === "TEST") && trends.length > 0 && (
+          <section>
+            <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Trendy badań</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {trends.map((t) => <TrendRow key={t.title} trend={t} />)}
+            </div>
+          </section>
+        )}
+
         {filtered.length === 0 && !adding ? (
           <EmptyState
             icon={<HeartPulse size={32} />}
@@ -299,6 +328,41 @@ export function HealthHomePage({ events }: { events: HealthEvent[] }) {
             )}
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+function TrendRow({ trend }: { trend: TestTrend }) {
+  const pts = trend.points;
+  const first = pts[0].value;
+  const last = pts[pts.length - 1].value;
+  const delta = last - first;
+  const vals = pts.map((p) => p.value);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const span = max - min || 1;
+  const W = 120, H = 28;
+  const poly = pts.map((p, i) => {
+    const x = pts.length === 1 ? 0 : (i / (pts.length - 1)) * W;
+    const y = H - ((p.value - min) / span) * H;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  const deltaColor = delta > 0 ? "var(--accent-amber)" : delta < 0 ? "var(--accent-blue)" : "var(--text-muted)";
+
+  return (
+    <div style={{ ...cardStyle, cursor: "default", alignItems: "center", gap: 12 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{trend.title}</div>
+        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+          {pts.length} pomiarów · {first}{trend.unit ? ` ${trend.unit}` : ""} → {last}{trend.unit ? ` ${trend.unit}` : ""}
+        </div>
+      </div>
+      <svg width={W} height={H} style={{ flexShrink: 0, overflow: "visible" }} aria-hidden>
+        <polyline points={poly} fill="none" stroke="var(--accent-red)" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      </svg>
+      <div style={{ fontSize: 13, fontWeight: 700, color: deltaColor, flexShrink: 0, minWidth: 56, textAlign: "right" }}>
+        {delta > 0 ? "▲ +" : delta < 0 ? "▼ " : ""}{delta !== 0 ? delta.toLocaleString("pl-PL", { maximumFractionDigits: 2 }) : "—"}
       </div>
     </div>
   );

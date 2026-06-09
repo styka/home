@@ -66,6 +66,8 @@ export async function createHealthEvent(data: {
   location?: string | null;
   notes?: string | null;
   result?: string | null;
+  numericValue?: number | null;
+  unit?: string | null;
   referral?: string | null;
   reminderAt?: Date | string | null;
   ownerTeamId?: string | null;
@@ -94,6 +96,8 @@ export async function createHealthEvent(data: {
       location: data.location?.trim() || null,
       notes: data.notes?.trim() || null,
       result: data.result?.trim() || null,
+      numericValue: data.numericValue ?? null,
+      unit: data.unit?.trim() || null,
       referral: data.referral?.trim() || null,
       reminderAt: safeDate(data.reminderAt),
       ownerId: ownerTeamId ? null : user.id,
@@ -117,6 +121,8 @@ export async function updateHealthEvent(
     status?: HealthStatus;
     notes?: string | null;
     result?: string | null;
+    numericValue?: number | null;
+    unit?: string | null;
     referral?: string | null;
     reminderAt?: Date | string | null;
   }
@@ -138,6 +144,8 @@ export async function updateHealthEvent(
   if (patch.location !== undefined) data.location = patch.location?.trim() || null;
   if (patch.notes !== undefined) data.notes = patch.notes?.trim() || null;
   if (patch.result !== undefined) data.result = patch.result?.trim() || null;
+  if (patch.numericValue !== undefined) data.numericValue = patch.numericValue;
+  if (patch.unit !== undefined) data.unit = patch.unit?.trim() || null;
   if (patch.referral !== undefined) data.referral = patch.referral?.trim() || null;
   if (patch.reminderAt !== undefined) data.reminderAt = safeDate(patch.reminderAt);
 
@@ -157,4 +165,36 @@ export async function deleteHealthEvent(id: string): Promise<void> {
   await assertEventAccess(id, user.id);
   await prisma.healthEvent.delete({ where: { id } });
   revalidatePath("/health");
+}
+
+export type TestTrend = {
+  title: string;
+  unit: string | null;
+  points: { date: string; value: number }[];
+};
+
+/** Z2: trendy badań — grupuje badania (TEST) z wartością liczbową po nazwie, rosnąco wg daty. */
+export async function getTestTrends(): Promise<TestTrend[]> {
+  const user = await requireAuth();
+  const teamIds = await getUserTeamIds(user.id);
+  const rows = await prisma.healthEvent.findMany({
+    where: {
+      kind: "TEST",
+      numericValue: { not: null },
+      OR: [{ ownerId: user.id }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])],
+    },
+    orderBy: { scheduledAt: "asc" },
+    select: { title: true, unit: true, numericValue: true, scheduledAt: true },
+  });
+
+  const map = new Map<string, TestTrend>();
+  for (const r of rows) {
+    const key = r.title.trim().toLowerCase();
+    let t = map.get(key);
+    if (!t) { t = { title: r.title.trim(), unit: r.unit, points: [] }; map.set(key, t); }
+    if (!t.unit && r.unit) t.unit = r.unit;
+    t.points.push({ date: r.scheduledAt.toISOString(), value: r.numericValue as number });
+  }
+  // Tylko serie z co najmniej 2 pomiarami mają sens jako trend.
+  return Array.from(map.values()).filter((t) => t.points.length >= 2);
 }
