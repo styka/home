@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0119: odhaczenie HA2/HA3 w master-planie (re-seed z md) + raport implementacyjny nawyków.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -430,3 +435,37 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (Nawyki: HA2 cele + HA3 nawyk-zadanie)',
+  'omnia-implementacja-2026-06-07-nawyki-ha2-ha3',
+  $omnia_impl_0607k$# Omnia — Raport implementacji 2026-06-07 (Nawyki: HA2 cele + HA3 nawyk→zadanie)
+
+Jedenasta porcja — Faza 3 w module Nawyki.
+
+## HA2 — Cele tygodniowe (✅)
+**Diagnoza:** nie każdy nawyk to konkretne dni — często cel to „N razy w tygodniu".
+**Rozwiązanie (i dlaczego tak):** `Habit.weeklyGoal` (Int?, null = klasyczny tryb dni tygodnia).
+W trybie celu `getHabits` liczy wykonania w bieżącym tygodniu (`weekDoneCount`, pon→dziś, dowolne
+dni) zamiast dni zaplanowanych; `scheduledToday = weekDone < goal` (nawyk „należny" codziennie aż
+cel osiągnięty). Pole „Cel tygodniowy" w formularzu; optymistyczny przelicznik w `HabitsPage`
+też respektuje cel, by pasek postępu zgadzał się od razu po odhaczeniu.
+**Pliki:** `prisma/schema.prisma`, `0118_habit_weekly_goal`, `src/types/index.ts`,
+`src/lib/habitStats.ts` (weekDoneCount), `src/actions/habits.ts`, `HabitFormModal.tsx`, `HabitsPage.tsx`.
+
+## HA3 — Synergia z Zadaniami (nawyk→zadanie) (✅)
+**Diagnoza:** §8 — spójność ekosystemu; czasem z nawyku chce się zrobić jednorazowe zadanie.
+**Rozwiązanie:** `createTaskFromHabit` reużywa istniejące `createTask` (tytuł/opis z nawyku → Skrzynka),
+bez duplikowania logiki tworzenia zadań. Przycisk „→ Zadanie" w karcie nawyku.
+**Pliki:** `src/actions/habits.ts`, `HabitsPage.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja zaaplikowana lokalnie.
+
+## Podsumowanie
+Moduł Nawyki domknięty względem backlogu (HA1/HA4/HA5 wcześniej, teraz HA2/HA3). Następne w
+Fazie 3: Kuchnia K5 (review po OCR), Zdrowie Z2 (trendy badań), Notatki N1 (live-preview).$omnia_impl_0607k$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
