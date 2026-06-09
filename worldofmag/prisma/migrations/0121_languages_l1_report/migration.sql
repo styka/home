@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0121: odhaczenie L1 w master-planie (re-seed z md) + raport implementacyjny TTS.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -438,3 +443,31 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (Jezyki: L1 wymowa TTS)',
+  'omnia-implementacja-2026-06-07-jezyki-l1',
+  $omnia_impl_0607m$# Omnia — Raport implementacji 2026-06-07 (Jezyki: L1 wymowa TTS)
+
+Trzynasta porcja — Faza 3, modul Jezyki.
+
+## L1 — Wymowa slowek (TTS) (OK)
+**Diagnoza:** par 4.11 — brak audio/wymowy; ustepowalismy Anki/Duolingo.
+**Rozwiazanie (i dlaczego tak):** wymowa przez przegladarkowy **Web Speech API**
+(`SpeechSynthesis`) — swiadomie BEZ zewnetrznej uslugi TTS, bo polityka sieci ja blokuje, a
+synteza w przegladarce dziala lokalnie i pokrywa potrzebe. `src/lib/tts.ts`: `speak()` +
+`langToBcp47()` (mapowanie nazw jezykow PL/EN i kodow na BCP-47, z fallbackiem). `SpeakButton`
+(ukryty, gdy brak wsparcia) wpiety w liste slowek (DeckPage) i sesje nauki (StudySession);
+wymawia `term` w jezyku docelowym talii. `stopPropagation`, by klik glosnika nie odslanial karty.
+**Pliki:** `src/lib/tts.ts`, `src/components/languages/SpeakButton.tsx`, `DeckPage.tsx`, `StudySession.tsx`.
+
+## Weryfikacja
+- `next build` zielony.
+
+## Podsumowanie
+Faza 3 postepuje. Nastepne: Zdrowie Z2 (trendy badan), Kuchnia K5 (review po OCR) / K2 (kalorie),
+Notatki N2 (wikilinks), oraz Etap C marketplace (P2).$omnia_impl_0607m$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

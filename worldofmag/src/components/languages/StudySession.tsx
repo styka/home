@@ -6,6 +6,7 @@ import { ChevronLeft, RotateCcw, PartyPopper } from "lucide-react";
 import { pageContainerStyle } from "@/components/ui/home";
 import { submitReview } from "@/actions/languageDecks";
 import { REVIEW_OPTIONS, type ReviewGrade } from "@/lib/srs";
+import { SpeakButton } from "./SpeakButton";
 import type { LanguageDeck, Vocabulary } from "@/types";
 
 export function StudySession({ deck, cards }: { deck: LanguageDeck; cards: Vocabulary[] }) {
@@ -100,7 +101,10 @@ export function StudySession({ deck, cards }: { deck: LanguageDeck; cards: Vocab
                 textAlign: "center",
               }}
             >
-              <div style={{ fontSize: 24, fontWeight: 600, color: "var(--text-primary)" }}>{current.term}</div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 24, fontWeight: 600, color: "var(--text-primary)" }}>{current.term}</span>
+                <SpeakButton text={current.term} lang={deck.targetLang} size={18} />
+              </div>
               {current.partOfSpeech && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{current.partOfSpeech}</div>}
               {revealed ? (
                 <>

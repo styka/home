@@ -7,6 +7,7 @@ import { ChevronLeft, Plus, Trash2, Play, Sparkles, Loader2, Pencil, Check, X } 
 import { pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
 import { addWord, bulkAddWords, deleteWord, updateWord, deleteDeck } from "@/actions/languageDecks";
 import { llm } from "@/lib/llm-client";
+import { SpeakButton } from "./SpeakButton";
 import type { LanguageDeck, Vocabulary } from "@/types";
 
 const inputStyle: React.CSSProperties = {
@@ -171,6 +172,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
                     {card.example && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{card.example}</div>}
                   </div>
                   {isDue(card) && <span title="Do powtórki" style={{ width: 8, height: 8, borderRadius: 999, background: "var(--accent-green)", flexShrink: 0 }} />}
+                  <SpeakButton text={card.term} lang={deck.targetLang} />
                   <button onClick={() => startEdit(card)} className="p-1 rounded" style={{ color: "var(--text-muted)", background: "none", border: "none" }}><Pencil size={14} /></button>
                   <button onClick={() => remove(card.id)} className="p-1 rounded" style={{ color: "var(--accent-red)", background: "none", border: "none" }}><Trash2 size={14} /></button>
                 </>
