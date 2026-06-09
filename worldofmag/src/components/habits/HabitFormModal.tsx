@@ -41,11 +41,12 @@ export interface HabitFormValue {
   icon: string;
   color: string;
   daysOfWeek: string | null;
+  weeklyGoal: number | null;
   reminderTime: string | null;
 }
 
 export function emptyHabitForm(): HabitFormValue {
-  return { name: "", description: "", icon: "✅", color: "var(--accent-orange)", daysOfWeek: null, reminderTime: null };
+  return { name: "", description: "", icon: "✅", color: "var(--accent-orange)", daysOfWeek: null, weeklyGoal: null, reminderTime: null };
 }
 
 type Preset = "daily" | "weekdays" | "weekend" | "custom";
@@ -272,6 +273,23 @@ export function HabitFormModal({
               })}
             </div>
           )}
+        </div>
+
+        {/* HA2: cel tygodniowy (zamiast konkretnych dni) */}
+        <div>
+          <label style={labelStyle}>Cel tygodniowy (zamiast dni)</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="number" min={0} max={7}
+              value={form.weeklyGoal ?? ""}
+              onChange={(e) => { const n = parseInt(e.target.value, 10); set("weeklyGoal", Number.isInteger(n) && n > 0 ? Math.min(7, n) : null); }}
+              placeholder="np. 3"
+              style={{ width: 80, background: "var(--bg-base)", border: "1px solid var(--border)", borderRadius: 6, padding: "8px 10px", color: "var(--text-primary)", fontSize: 13 }}
+            />
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+              {form.weeklyGoal ? `${form.weeklyGoal}× w tygodniu (dowolne dni)` : "wyłączone — używane są dni tygodnia powyżej"}
+            </span>
+          </div>
         </div>
 
         {/* Przypomnienie */}

@@ -2,10 +2,10 @@
 
 import { useState, useRef, useEffect, useMemo, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Flame, Plus, Check, Bell, BellOff, Pencil, Trash2, ChevronDown, Archive, CalendarRange } from "lucide-react";
+import { Flame, Plus, Check, Bell, BellOff, Pencil, Trash2, ChevronDown, Archive, CalendarRange, CheckSquare } from "lucide-react";
 import { PageHeader, StatTile, SectionHeading, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
-import { createHabit, updateHabit, deleteHabit, setHabitArchived, toggleHabitDay } from "@/actions/habits";
-import { todayISO, computeStreaks, weekProgress, completionRate } from "@/lib/habitStats";
+import { createHabit, updateHabit, deleteHabit, setHabitArchived, toggleHabitDay, createTaskFromHabit } from "@/actions/habits";
+import { todayISO, computeStreaks, weekProgress, weekDoneCount, completionRate } from "@/lib/habitStats";
 import { showLocalNotification, notificationsGranted, requestNotificationPermission } from "@/lib/notifications";
 import { HabitFormModal, emptyHabitForm, type HabitFormValue } from "./HabitFormModal";
 import { HabitHeatmap } from "./HabitHeatmap";
@@ -100,7 +100,9 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
         const has = h.entryDates.includes(today);
         const entryDates = has ? h.entryDates.filter((d) => d !== today) : [...h.entryDates, today].sort();
         const s = computeStreaks(entryDates, h.daysOfWeek);
-        const w = weekProgress(entryDates, h.daysOfWeek);
+        // HA2: dla celu tygodniowego liczymy wykonania w tygodniu, inaczej tryb dni.
+        const goal = h.weeklyGoal && h.weeklyGoal > 0 ? h.weeklyGoal : null;
+        const w = goal ? { done: weekDoneCount(entryDates), target: goal } : weekProgress(entryDates, h.daysOfWeek);
         return { ...h, entryDates, completedToday: !has, currentStreak: s.currentStreak, longestStreak: s.longestStreak, weekDone: w.done, weekTarget: w.target };
       })
     );
@@ -112,6 +114,11 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
         router.refresh(); // przywróć stan z serwera przy błędzie
       }
     });
+  }
+
+  async function handleToTask(id: string, name: string) {
+    await createTaskFromHabit(id);
+    alert(`Utworzono zadanie „${name}" w Skrzynce zadań.`);
   }
 
   async function handleSave(v: HabitFormValue) {
@@ -166,6 +173,7 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
       onEdit={() => setModal({ mode: "edit", habit: h })}
       onDelete={() => handleDelete(h.id)}
       onArchive={() => handleArchive(h.id)}
+      onToTask={() => handleToTask(h.id, h.name)}
       onFocus={() => setFocused(index)}
     />
   );
@@ -244,6 +252,7 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
                   icon: modal.habit.icon,
                   color: modal.habit.color,
                   daysOfWeek: modal.habit.daysOfWeek,
+                  weeklyGoal: modal.habit.weeklyGoal,
                   reminderTime: modal.habit.reminderTime,
                 }
               : emptyHabitForm()
@@ -271,6 +280,7 @@ function HabitCard({
   onEdit,
   onDelete,
   onArchive,
+  onToTask,
   onFocus,
 }: {
   habit: HabitWithStats;
@@ -281,6 +291,7 @@ function HabitCard({
   onEdit: () => void;
   onDelete: () => void;
   onArchive: () => void;
+  onToTask: () => void;
   onFocus: () => void;
 }) {
   const [heatmapWeeks, setHeatmapWeeks] = useState(26);
@@ -387,6 +398,9 @@ function HabitCard({
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "none" }}>
               <Pencil size={13} /> Edytuj
+            </button>
+            <button onClick={onToTask} className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "none" }} title="Utwórz zadanie z tego nawyku">
+              <CheckSquare size={13} /> → Zadanie
             </button>
             <button onClick={onArchive} className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "none" }}>
               <Archive size={13} /> Archiwizuj

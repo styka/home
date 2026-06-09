@@ -10,7 +10,10 @@ import {
   computeStreaks,
   isScheduledOn,
   weekProgress,
+  weekDoneCount,
 } from "@/lib/habitStats";
+import { createTask } from "@/actions/tasks";
+
 
 async function assertHabitAccess(id: string, userId: string): Promise<void> {
   const teamIds = await getUserTeamIds(userId);
@@ -56,7 +59,12 @@ export async function getHabits(opts?: { includeArchived?: boolean }): Promise<H
     const entryDates = h.entries.map((e) => e.date);
     const set = new Set(entryDates);
     const { currentStreak, longestStreak } = computeStreaks(entryDates, h.daysOfWeek);
-    const { done: weekDone, target: weekTarget } = weekProgress(entryDates, h.daysOfWeek);
+    // HA2: tryb celu tygodniowego (N×/tydz., dowolne dni) lub klasyczny tryb dni tygodnia.
+    const goal = h.weeklyGoal && h.weeklyGoal > 0 ? h.weeklyGoal : null;
+    const { done: weekDone, target: weekTarget } = goal
+      ? { done: weekDoneCount(entryDates), target: goal }
+      : weekProgress(entryDates, h.daysOfWeek);
+    const scheduledToday = goal ? weekDone < goal : isScheduledOn(h.daysOfWeek, now);
     return {
       id: h.id,
       name: h.name,
@@ -64,6 +72,7 @@ export async function getHabits(opts?: { includeArchived?: boolean }): Promise<H
       icon: h.icon,
       color: h.color,
       daysOfWeek: h.daysOfWeek,
+      weeklyGoal: h.weeklyGoal,
       reminderTime: h.reminderTime,
       archived: h.archived,
       sortOrder: h.sortOrder,
@@ -73,7 +82,7 @@ export async function getHabits(opts?: { includeArchived?: boolean }): Promise<H
       updatedAt: h.updatedAt,
       entryDates,
       completedToday: set.has(today),
-      scheduledToday: isScheduledOn(h.daysOfWeek, now),
+      scheduledToday,
       currentStreak,
       longestStreak,
       weekDone,
@@ -94,6 +103,13 @@ function normalizeDays(daysOfWeek?: string | null): string | null {
   return uniq.join(",");
 }
 
+function normalizeGoal(weeklyGoal?: number | null): number | null {
+  if (weeklyGoal == null) return null;
+  const n = Math.round(Number(weeklyGoal));
+  if (!Number.isInteger(n) || n < 1) return null;
+  return Math.min(7, n);
+}
+
 function normalizeReminder(reminderTime?: string | null): string | null {
   if (!reminderTime || !reminderTime.trim()) return null;
   const m = /^(\d{1,2}):(\d{2})$/.exec(reminderTime.trim());
@@ -109,6 +125,7 @@ export async function createHabit(data: {
   icon?: string;
   color?: string;
   daysOfWeek?: string | null;
+  weeklyGoal?: number | null;
   reminderTime?: string | null;
   ownerTeamId?: string | null;
 }): Promise<Habit> {
@@ -136,6 +153,7 @@ export async function createHabit(data: {
       icon: data.icon?.trim() || "✅",
       color: data.color?.trim() || "var(--accent-orange)",
       daysOfWeek: normalizeDays(data.daysOfWeek),
+      weeklyGoal: normalizeGoal(data.weeklyGoal),
       reminderTime: normalizeReminder(data.reminderTime),
       sortOrder: (min._min.sortOrder ?? 0) - 1,
       ownerId: ownerTeamId ? null : user.id,
@@ -154,6 +172,7 @@ export async function updateHabit(
     icon?: string;
     color?: string;
     daysOfWeek?: string | null;
+    weeklyGoal?: number | null;
     reminderTime?: string | null;
   }
 ): Promise<void> {
@@ -170,6 +189,7 @@ export async function updateHabit(
   if (patch.icon !== undefined) data.icon = patch.icon?.trim() || "✅";
   if (patch.color !== undefined) data.color = patch.color?.trim() || "var(--accent-orange)";
   if (patch.daysOfWeek !== undefined) data.daysOfWeek = normalizeDays(patch.daysOfWeek);
+  if (patch.weeklyGoal !== undefined) data.weeklyGoal = normalizeGoal(patch.weeklyGoal);
   if (patch.reminderTime !== undefined) data.reminderTime = normalizeReminder(patch.reminderTime);
 
   await prisma.habit.update({ where: { id }, data });
@@ -219,4 +239,19 @@ export async function reorderHabits(orderedIds: string[]): Promise<void> {
     await prisma.habit.update({ where: { id: orderedIds[i] }, data: { sortOrder: i } });
   }
   revalidatePath("/habits");
+}
+
+/** HA3: tworzy zadanie na bazie nawyku (np. „zaplanuj/przygotuj"). Trafia do Skrzynki zadań. */
+export async function createTaskFromHabit(habitId: string, dueDate?: string | null): Promise<void> {
+  const user = await requireAuth();
+  await assertHabitAccess(habitId, user.id);
+  const habit = await prisma.habit.findUnique({ where: { id: habitId }, select: { name: true, description: true } });
+  if (!habit) throw new Error("Nawyk nie istnieje");
+  await createTask({
+    title: habit.name,
+    description: habit.description,
+    dueDate: dueDate && /^\d{4}-\d{2}-\d{2}$/.test(dueDate) ? new Date(dueDate + "T12:00:00") : null,
+  });
+  revalidatePath("/habits");
+  revalidatePath("/tasks");
 }
