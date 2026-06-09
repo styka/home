@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0123: odhaczenie M11/M13 w master-planie (re-seed z md) + raport implementacyjny Etap C.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -442,3 +447,36 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-07 (Marketplace Etap C: M11/M13)',
+  'omnia-implementacja-2026-06-07-marketplace-c1',
+  $omnia_impl_0607n$# Omnia — Raport implementacji 2026-06-07 (Marketplace Etap C: M11 ulubieni + M13 statystyki)
+
+Czternasta porcja — Etap C marketplace (skala/retencja).
+
+## M11 — Ulubieni/obserwowani wykonawcy (OK)
+**Diagnoza:** par 3.5 — powroty klientow i retencja; brak mechanizmu obserwowania.
+**Rozwiazanie:** model `ServiceFavorite` (unikat per [userId, providerId]); `toggleFavorite` +
+`getMyFavoriteProviders`; serce „Obserwuj/Ulubiony" na profilu publicznym (`getProviderPublic`
+zwraca `isFavorite`), sekcja „Ulubieni wykonawcy" (chipy z oceną/badge) w katalogu.
+**Pliki:** `prisma/schema.prisma`, `0122_service_favorite`, `src/actions/services.ts`,
+`ProviderPublicPage.tsx`, `ServicesCatalogPage.tsx`, trasy services.
+
+## M13 — Statystyki wykonawcy (OK)
+**Diagnoza:** wykonawca-profesjonalista potrzebuje panelu biznesowego (przewaga nad Fixly).
+**Rozwiazanie (i dlaczego tak):** `getProviderStats` liczy z istniejacych danych (bez nowej
+tabeli): zlecenia ogolem/zrealizowane/aktywne, konwersja (completed / rozstrzygniete) oraz
+przychod z opłaconych płatności (`ServicePayment` PAID, suma). Sekcja „Statystyki" w panelu wykonawcy.
+**Pliki:** `src/actions/services.ts`, `ProviderPanelPage.tsx`, trasa provider.
+
+## Weryfikacja
+- `next build` zielony; migracja zaaplikowana lokalnie.
+
+## Podsumowanie
+Marketplace ma 14/20 luk domknietych. Pozostaly Etap C: M14 (firma+pracownicy), M15 (abonamenty),
+M16 (promocje), M17 (moderacja), M19 (profil/SEO) + drobne (M8 warianty, depozyt, mapa-kafelki).$omnia_impl_0607n$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
