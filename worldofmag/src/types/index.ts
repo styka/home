@@ -576,6 +576,8 @@ export type HealthEvent = {
   status: HealthStatus;
   notes: string | null;
   result: string | null;
+  numericValue: number | null;
+  unit: string | null;
   referral: string | null;
   reminderAt: Date | null;
   ownerId: string | null;
