@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0135: odhaczenie N3 w master-planie (re-seed z md) + raport implementacyjny notatek.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -470,3 +475,30 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-08 (Notatki: N3 zalaczniki)',
+  'omnia-implementacja-2026-06-08-notatki-n3',
+  $omnia_impl_0608e$# Omnia — Raport implementacji 2026-06-08 (Notatki: N3 zalaczniki)
+
+Dwudziesta pierwsza porcja — Faza 3, modul Notatki.
+
+## N3 — Zalaczniki/obrazy w notatce (OK)
+**Diagnoza:** par 4.3 — notatki bez plikow sa ograniczone (brak obrazow/zalacznikow).
+**Rozwiazanie:** model `NoteAttachment` (url = data-URL/link, wzorzec VehicleAttachment/
+HealthAttachment — bez zewnetrznego magazynu). Akcje `getNoteAttachments`/`addNoteAttachment`
+(limit ~2,5 MB)/`deleteNoteAttachment`. W trybie edycji notatki sekcja zalacznikow: miniatury dla
+obrazow (klik = pelny rozmiar w nowej karcie), link do pobrania dla PDF, upload przez FileReader,
+usuwanie. Spojne z reszta zalacznikow w aplikacji (F3/Z1).
+**Pliki:** `prisma/schema.prisma`, `0134_note_attachment`, `src/actions/notes.ts`, `NoteRow.tsx`.
+
+## Weryfikacja
+- `next build` zielony.
+
+## Podsumowanie
+Faza 3 prawie kompletna. Pozostale: Notatki N2 (wikilinks)/N4 (wersjonowanie), Kuchnia K5
+(review po OCR), oraz Etap C marketplace (M14/M16/M17/M19) i Faza 4 (skala/branze V1–V5).$omnia_impl_0608e$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
