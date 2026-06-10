@@ -71,12 +71,22 @@ export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (n) =>
-          n.title.toLowerCase().includes(q) ||
-          n.content.toLowerCase().includes(q) ||
-          n.tags.some((nt) => nt.tag.name.includes(q))
-      );
+      // N2: ważony full-text — dopasowanie w tytule/tagu liczy się wyżej niż w treści.
+      const scored = result
+        .map((n) => {
+          const title = n.title.toLowerCase();
+          const inTag = n.tags.some((nt) => nt.tag.name.toLowerCase().includes(q));
+          let score = 0;
+          if (title === q) score = 100;
+          else if (title.startsWith(q)) score = 80;
+          else if (title.includes(q)) score = 60;
+          else if (inTag) score = 40;
+          else if (n.content.toLowerCase().includes(q)) score = 20;
+          return { n, score };
+        })
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score);
+      result = scored.map((x) => x.n);
     }
 
     return result;
@@ -307,6 +317,7 @@ export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
 
         <NoteList
           notes={filteredNotes}
+          allNotes={notes}
           allTags={tags}
           allGroups={groups}
           focusedNoteId={focusedNoteId}
@@ -314,6 +325,7 @@ export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
           onNoteFocus={setFocusedNoteId}
           onNoteStartEdit={setEditingNoteId}
           onNoteStopEdit={() => setEditingNoteId(null)}
+          onNavigateToNote={(id) => { setEditingNoteId(null); scrollToNote(id); }}
           onTagsChanged={() => {}}
           rowRefs={rowRefs}
           searchQuery={searchQuery}

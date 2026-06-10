@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useState, useEffect, useTransition } from "react";
-import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download, Eye, EyeOff, Paperclip, History, RotateCcw } from "lucide-react";
+import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download, Eye, EyeOff, Paperclip, History, RotateCcw, Link2, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
+import { outgoingLinks, backlinks } from "@/lib/wikilinks";
 import { TagChip } from "./TagChip";
 import { TagSuggestions } from "./TagSuggestions";
 import { updateNote, deleteNote, toggleNotePin, setNoteTags, getNoteAttachments, addNoteAttachment, deleteNoteAttachment, getNoteRevisions, restoreNoteRevision, type NoteAttachmentDTO, type NoteRevisionDTO } from "@/actions/notes";
@@ -12,6 +13,7 @@ import type { Note, Tag, NoteGroup } from "@/types";
 
 interface NoteRowProps {
   note: Note;
+  allNotes?: Note[];
   allTags: Tag[];
   allGroups: NoteGroup[];
   isFocused: boolean;
@@ -19,6 +21,7 @@ interface NoteRowProps {
   onFocus: () => void;
   onStartEdit: () => void;
   onStopEdit: () => void;
+  onNavigateToNote?: (id: string) => void;
   onTagsChanged: () => void;
   rowRef: (el: HTMLDivElement | null) => void;
   searchQuery?: string;
@@ -46,7 +49,7 @@ function highlightMatch(text: string, query: string) {
 }
 
 export function NoteRow({
-  note, allTags, allGroups, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, onTagsChanged, rowRef, searchQuery = "",
+  note, allNotes, allTags, allGroups, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, onNavigateToNote, onTagsChanged, rowRef, searchQuery = "",
 }: NoteRowProps) {
   const [, startTransition] = useTransition();
   const [editTitle, setEditTitle] = useState(note.title);
@@ -456,6 +459,9 @@ export function NoteRow({
         {/* Historia wersji (N4) */}
         <NoteHistory noteId={note.id} onRestored={() => { onStopEdit(); }} />
 
+        {/* Powiązane notatki — wikilinki (N2) */}
+        <NoteLinks note={note} allNotes={allNotes ?? []} onNavigate={onNavigateToNote} />
+
         {/* Save / Cancel */}
         <div className="flex items-center gap-2">
           <button
@@ -710,6 +716,52 @@ function NoteHistory({ noteId, onRestored }: { noteId: string; onRestored: () =>
               )}
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NoteLinks({ note, allNotes, onNavigate }: { note: Note; allNotes: Note[]; onNavigate?: (id: string) => void }) {
+  const { resolved, unresolved } = outgoingLinks(note, allNotes);
+  const back = backlinks(note, allNotes);
+  if (resolved.length === 0 && unresolved.length === 0 && back.length === 0) return null;
+
+  const chip = (label: string, onClick?: () => void, muted = false) => (
+    <button
+      key={label + (muted ? "-u" : "")}
+      onClick={onClick}
+      disabled={!onClick}
+      className="flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded"
+      style={{
+        backgroundColor: muted ? "transparent" : "var(--bg-hover)",
+        color: muted ? "var(--text-muted)" : "var(--accent-blue)",
+        border: muted ? "1px dashed var(--border)" : "none",
+        cursor: onClick ? "pointer" : "default",
+      }}
+      title={muted ? "Brak notatki o tym tytule" : "Przejdź do notatki"}
+    >
+      <Link2 size={10} /> {label}
+    </button>
+  );
+
+  return (
+    <div className="flex flex-col gap-1">
+      {(resolved.length > 0 || unresolved.length > 0) && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
+            <ArrowUpRight size={11} /> Linkuje do:
+          </span>
+          {resolved.map((n) => chip(n.title, onNavigate ? () => onNavigate(n.id) : undefined))}
+          {unresolved.map((t) => chip(t, undefined, true))}
+        </div>
+      )}
+      {back.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
+            <Link2 size={11} /> Linkują tu:
+          </span>
+          {back.map((n) => chip(n.title, onNavigate ? () => onNavigate(n.id) : undefined))}
         </div>
       )}
     </div>

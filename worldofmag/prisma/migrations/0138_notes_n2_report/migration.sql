@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0138: odhaczenie N2 w master-planie (re-seed z md) + raport implementacyjny notatek.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -485,3 +490,35 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Notatki: N2 wikilinki)',
+  'omnia-implementacja-2026-06-10-notatki-n2',
+  $omnia_impl_0138$# Omnia — Raport implementacji 2026-06-10 (Notatki: N2 wikilinki)
+
+Dwudziesta trzecia porcja — Faza 3, modul Notatki.
+
+## N2 — Wikilinki [[Tytul]] + wazony full-text (OK)
+**Diagnoza:** par 4.4 — krok w strone „drugiego mozgu" (Obsidian/Notion); notatki bez wzajemnych
+powiazan sa silosami.
+**Rozwiazanie:** czysta biblioteka `src/lib/wikilinks.ts` — `extractWikilinks` (parsowanie
+`[[Tytul]]`, bez duplikatow), `resolveByTitle` (case-insensitive), `outgoingLinks` (rozwiazane +
+nierozwiazane), `backlinks` (kto linkuje tu). W trybie edycji notatki sekcja „Powiazane": „Linkuje
+do" (rozwiazane = klikalne chipy z nawigacja, nierozwiazane = wyszarzone) oraz „Linkuja tu"
+(backlinki). Nawigacja przez `onNavigateToNote` (scroll+focus) przekazywana z `NotesPage` przez
+`NoteList`/`NoteGroupSection` razem z `allNotes`. Wyszukiwarka notatek dostala wazone sortowanie
+(tytul dokladny > prefix > zawiera > tag > tresc) zamiast plaskiego filtra.
+**Pliki:** `src/lib/wikilinks.ts`, `NotesPage.tsx`, `NoteList.tsx`, `NoteGroupSection.tsx`,
+`NoteRow.tsx`.
+
+## Weryfikacja
+- `next build` zielony.
+
+## Podsumowanie
+Modul Notatki domkniety w Fazie 3 (N1 preview, N3 zalaczniki, N4 historia, N2 wikilinki;
+N5 AI Q&A juz bylo). Pozostale w F3: Kuchnia K5 (review po OCR). Dalej: Etap C marketplace
+(M14/M16/M17/M19) i Faza 4 (skala/branze V1-V5).$omnia_impl_0138$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

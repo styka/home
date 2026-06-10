@@ -5,6 +5,7 @@ import type { Note, Tag, NoteGroup } from "@/types";
 
 interface NoteListProps {
   notes: Note[];
+  allNotes?: Note[];
   allTags: Tag[];
   allGroups: NoteGroup[];
   focusedNoteId: string | null;
@@ -12,6 +13,7 @@ interface NoteListProps {
   onNoteFocus: (id: string) => void;
   onNoteStartEdit: (id: string) => void;
   onNoteStopEdit: () => void;
+  onNavigateToNote?: (id: string) => void;
   onTagsChanged: () => void;
   rowRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   searchQuery?: string;
@@ -19,8 +21,8 @@ interface NoteListProps {
 }
 
 export function NoteList({
-  notes, allTags, allGroups, focusedNoteId, editingNoteId,
-  onNoteFocus, onNoteStartEdit, onNoteStopEdit, onTagsChanged, rowRefs,
+  notes, allNotes, allTags, allGroups, focusedNoteId, editingNoteId,
+  onNoteFocus, onNoteStartEdit, onNoteStopEdit, onNavigateToNote, onTagsChanged, rowRefs,
   searchQuery = "", viewMode = "list",
 }: NoteListProps) {
   if (notes.length === 0) {
@@ -52,8 +54,8 @@ export function NoteList({
   });
 
   const sharedProps = {
-    allTags, allGroups, focusedNoteId, editingNoteId,
-    onNoteFocus, onNoteStartEdit, onNoteStopEdit, onTagsChanged, rowRefs,
+    allNotes: allNotes ?? notes, allTags, allGroups, focusedNoteId, editingNoteId,
+    onNoteFocus, onNoteStartEdit, onNoteStopEdit, onNavigateToNote, onTagsChanged, rowRefs,
     searchQuery, viewMode,
   };
 

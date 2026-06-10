@@ -10,6 +10,7 @@ interface NoteGroupSectionProps {
   groupName: string;
   groupColor?: string | null;
   notes: Note[];
+  allNotes?: Note[];
   allTags: Tag[];
   allGroups: NoteGroup[];
   focusedNoteId: string | null;
@@ -17,6 +18,7 @@ interface NoteGroupSectionProps {
   onNoteFocus: (id: string) => void;
   onNoteStartEdit: (id: string) => void;
   onNoteStopEdit: () => void;
+  onNavigateToNote?: (id: string) => void;
   onTagsChanged: () => void;
   rowRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   searchQuery?: string;
@@ -39,14 +41,15 @@ function highlightMatch(text: string, query: string) {
 }
 
 export function NoteGroupSection({
-  groupName, groupColor, notes, allTags, allGroups,
-  focusedNoteId, editingNoteId, onNoteFocus, onNoteStartEdit, onNoteStopEdit, onTagsChanged,
+  groupName, groupColor, notes, allNotes, allTags, allGroups,
+  focusedNoteId, editingNoteId, onNoteFocus, onNoteStartEdit, onNoteStopEdit, onNavigateToNote, onTagsChanged,
   rowRefs, searchQuery = "", viewMode = "list",
 }: NoteGroupSectionProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   const sharedNoteProps = (note: Note) => ({
     note,
+    allNotes: allNotes ?? notes,
     allTags,
     allGroups,
     isFocused: focusedNoteId === note.id,
@@ -54,6 +57,7 @@ export function NoteGroupSection({
     onFocus: () => onNoteFocus(note.id),
     onStartEdit: () => onNoteStartEdit(note.id),
     onStopEdit: onNoteStopEdit,
+    onNavigateToNote,
     onTagsChanged,
     rowRef: (el: HTMLDivElement | null) => {
       if (el) rowRefs.current.set(note.id, el);
