@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0131: odhaczenie F3+Z3 w master-planie (re-seed z md) + raport implementacyjny.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -462,3 +467,36 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-08 (Flota F3 + Zdrowie Z3)',
+  'omnia-implementacja-2026-06-08-f3-z3',
+  $omnia_impl_0608c$# Omnia — Raport implementacji 2026-06-08 (Flota F3 + Zdrowie Z3)
+
+Dziewietnasta porcja — Faza 3.
+
+## F3 — Zalaczniki pojazdu (OK)
+**Diagnoza:** par 9 — brak miejsca na dokumenty pojazdu (faktury, dowod rej., OC).
+**Rozwiazanie:** model `VehicleAttachment` (url = data-URL/link, wzorzec ServiceImage/RecipeImage).
+Akcje `addVehicleAttachment` (limit ~2,5 MB)/`deleteVehicleAttachment`; `getVehicle` dolacza
+attachments (pole opcjonalne w typie, by getVehicles bez nich dzialalo). Sekcja „Dokumenty i
+zalaczniki" w VehicleDetailPage: upload przez FileReader (image/pdf), lista z pobieraniem i
+usuwaniem. Bez zewnetrznego magazynu blobow (zgodnie z architektura obrazow w repo).
+**Pliki:** `prisma/schema.prisma`, `0130_vehicle_attachment`, `src/actions/flota.ts`,
+`VehicleDetailPage.tsx`.
+
+## Z3 — Leki/suplementy czlowieka (OK — weryfikacja)
+**Ustalenie:** modul JUZ istnieje — `/health/leki` + `MedicationSchedule` (kind MEDICATION|CARE,
+harmonogram dawkowania DAILY/WEEKLY/HOURLY, agenda na dzis, integracja z kalendarzem/asystentem).
+Z3 odhaczone po weryfikacji w kodzie; bez zmian.
+
+## Weryfikacja
+- `next build` zielony.
+
+## Podsumowanie
+Faza 3 niemal domknieta. Pozostale: Notatki N2/N3/N4, Kuchnia K5, Zdrowie Z1, oraz Etap C
+marketplace (M14/M16/M17/M19) i Faza 4 (skala/branze V1–V5).$omnia_impl_0608c$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
