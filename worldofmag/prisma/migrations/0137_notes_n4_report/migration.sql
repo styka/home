@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0137: odhaczenie N4 w master-planie (re-seed z md) + raport implementacyjny notatek.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -477,3 +482,31 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-08 (Notatki: N4 wersjonowanie)',
+  'omnia-implementacja-2026-06-08-notatki-n4',
+  $omnia_impl_0137$# Omnia — Raport implementacji 2026-06-08 (Notatki: N4 wersjonowanie)
+
+Dwudziesta druga porcja — Faza 3, modul Notatki.
+
+## N4 — Wersjonowanie/historia notatki (OK)
+**Diagnoza:** par 4.4 — wspolna edycja zespolowa wymaga historii zmian; brak mozliwosci
+podejrzenia/przywrocenia poprzedniej tresci notatki.
+**Rozwiazanie:** model `NoteRevision { noteId, title, content, createdAt }` (kaskada od Note).
+W `updateNote` przy kazdej zmianie tytulu/tresci zapisywana jest migawka POPRZEDNIEJ wersji
+(limit 20 ostatnich na notatke). Akcje `getNoteRevisions`/`restoreNoteRevision` (przywrocenie tez
+trafia do historii przez updateNote). W trybie edycji notatki sekcja „Historia": lista wersji z
+data, podglad tresci i przycisk „Przywroc".
+**Pliki:** `prisma/schema.prisma`, `0136_note_revision`, `src/actions/notes.ts`, `NoteRow.tsx`.
+
+## Weryfikacja
+- `next build` zielony.
+
+## Podsumowanie
+Faza 3 prawie kompletna. Pozostale: Notatki N2 (wikilinks), Kuchnia K5 (review po OCR),
+oraz Etap C marketplace (M14/M16/M17/M19) i Faza 4 (skala/branze V1-V5).$omnia_impl_0137$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

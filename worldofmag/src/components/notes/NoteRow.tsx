@@ -1,12 +1,12 @@
 "use client";
 
 import { useRef, useState, useEffect, useTransition } from "react";
-import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download, Eye, EyeOff, Paperclip } from "lucide-react";
+import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download, Eye, EyeOff, Paperclip, History, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { TagChip } from "./TagChip";
 import { TagSuggestions } from "./TagSuggestions";
-import { updateNote, deleteNote, toggleNotePin, setNoteTags, getNoteAttachments, addNoteAttachment, deleteNoteAttachment, type NoteAttachmentDTO } from "@/actions/notes";
+import { updateNote, deleteNote, toggleNotePin, setNoteTags, getNoteAttachments, addNoteAttachment, deleteNoteAttachment, getNoteRevisions, restoreNoteRevision, type NoteAttachmentDTO, type NoteRevisionDTO } from "@/actions/notes";
 import { createTag } from "@/actions/tags";
 import type { Note, Tag, NoteGroup } from "@/types";
 
@@ -453,6 +453,9 @@ export function NoteRow({
         {/* Załączniki (N3) */}
         <NoteAttachments noteId={note.id} />
 
+        {/* Historia wersji (N4) */}
+        <NoteHistory noteId={note.id} onRestored={() => { onStopEdit(); }} />
+
         {/* Save / Cancel */}
         <div className="flex items-center gap-2">
           <button
@@ -629,6 +632,86 @@ function NoteAttachments({ noteId }: { noteId: string }) {
         </label>
       </div>
       {error && <span className="text-xs" style={{ color: "var(--accent-red)" }}>{error}</span>}
+    </div>
+  );
+}
+
+function NoteHistory({ noteId, onRestored }: { noteId: string; onRestored: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<NoteRevisionDTO[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState<NoteRevisionDTO | null>(null);
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && items === null) {
+      getNoteRevisions(noteId).then(setItems).catch(() => setItems([]));
+    }
+  }
+
+  async function restore(rev: NoteRevisionDTO) {
+    if (!confirm("Przywrócić tę wersję? Aktualna treść trafi do historii.")) return;
+    setBusy(true);
+    try {
+      await restoreNoteRevision(rev.id);
+      onRestored();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <button
+        onClick={toggle}
+        className="flex items-center gap-1 text-xs self-start px-2 py-0.5 rounded"
+        style={{ backgroundColor: "var(--bg-hover)", color: open ? "var(--text-secondary)" : "var(--text-muted)" }}
+        title="Historia wersji notatki"
+      >
+        <History size={11} />
+        Historia{items && items.length > 0 ? ` (${items.length})` : ""}
+      </button>
+      {open && (
+        <div className="flex flex-col gap-1" style={{ borderLeft: "2px solid var(--border)", paddingLeft: 8 }}>
+          {items === null && <Loader2 size={12} className="animate-spin" style={{ color: "var(--text-muted)" }} />}
+          {items !== null && items.length === 0 && (
+            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Brak wcześniejszych wersji.</span>
+          )}
+          {(items ?? []).map((r) => (
+            <div key={r.id} className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] flex-1 truncate" style={{ color: "var(--text-secondary)" }}>
+                  <strong style={{ color: "var(--text-primary)" }}>{r.title || "(bez tytułu)"}</strong>
+                  {" · "}
+                  {new Date(r.createdAt).toLocaleString("pl-PL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                </span>
+                <button
+                  onClick={() => setPreview(preview?.id === r.id ? null : r)}
+                  className="text-[11px] px-1.5 py-0 rounded"
+                  style={{ color: "var(--accent-blue)", backgroundColor: "rgba(59,130,246,0.1)" }}
+                >
+                  {preview?.id === r.id ? "Ukryj" : "Podgląd"}
+                </button>
+                <button
+                  onClick={() => restore(r)}
+                  disabled={busy}
+                  className="flex items-center gap-1 text-[11px] px-1.5 py-0 rounded"
+                  style={{ color: "var(--accent-amber)", backgroundColor: "rgba(245,158,11,0.1)" }}
+                  title="Przywróć tę wersję"
+                >
+                  <RotateCcw size={10} /> Przywróć
+                </button>
+              </div>
+              {preview?.id === r.id && (
+                <pre className="text-[11px] whitespace-pre-wrap" style={{ color: "var(--text-muted)", maxHeight: 140, overflow: "auto", margin: 0, fontFamily: "inherit" }}>
+                  {r.content || "(pusta treść)"}
+                </pre>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

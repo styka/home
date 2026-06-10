@@ -453,6 +453,20 @@ model Note {
   updatedAt   DateTime   @updatedAt
   tags        NoteTag[]
   attachments NoteAttachment[]
+  revisions   NoteRevision[]
+}
+
+// N4: historia/wersjonowanie notatki — migawka treści sprzed zmiany.
+model NoteRevision {
+  id        String   @id @default(cuid())
+  noteId    String
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId, createdAt])
 }
 
 // N3: załączniki notatki (obrazy/pliki). url = data-URL lub link.

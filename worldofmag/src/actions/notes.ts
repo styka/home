@@ -123,6 +123,21 @@ export async function updateNote(
   const user = await requireAuth();
   await assertNoteAccess(id, user.id);
 
+  // N4: gdy zmienia się tytuł/treść — zapisz migawkę POPRZEDNIEJ wersji (historia).
+  if (patch.title !== undefined || patch.content !== undefined) {
+    const prev = await prisma.note.findUnique({ where: { id }, select: { title: true, content: true } });
+    const newTitle = patch.title !== undefined ? patch.title.trim() : prev?.title;
+    const newContent = patch.content !== undefined ? patch.content : prev?.content;
+    if (prev && (prev.title !== newTitle || prev.content !== newContent)) {
+      await prisma.noteRevision.create({ data: { noteId: id, title: prev.title, content: prev.content } });
+      // Zostaw maks. 20 ostatnich migawek.
+      const old = await prisma.noteRevision.findMany({
+        where: { noteId: id }, orderBy: { createdAt: "desc" }, skip: 20, select: { id: true },
+      });
+      if (old.length) await prisma.noteRevision.deleteMany({ where: { id: { in: old.map((r) => r.id) } } });
+    }
+  }
+
   const data: Record<string, unknown> = { ...patch };
   if (patch.title) data.title = patch.title.trim();
 
@@ -216,5 +231,34 @@ export async function deleteNoteAttachment(id: string): Promise<void> {
   if (!att) throw new Error("Załącznik nie istnieje");
   await assertNoteAccess(att.noteId, user.id);
   await prisma.noteAttachment.delete({ where: { id } });
+  revalidatePath("/notes");
+}
+
+// ─── N4 historia wersji notatki ─────────────────────────────────────────────
+
+export type NoteRevisionDTO = { id: string; title: string; content: string; createdAt: string };
+
+export async function getNoteRevisions(noteId: string): Promise<NoteRevisionDTO[]> {
+  const user = await requireAuth();
+  await assertNoteAccess(noteId, user.id);
+  const rows = await prisma.noteRevision.findMany({
+    where: { noteId },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    content: r.content,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+/** Przywraca treść z migawki. Aktualny stan trafia najpierw do historii (przez updateNote). */
+export async function restoreNoteRevision(revisionId: string): Promise<void> {
+  const user = await requireAuth();
+  const rev = await prisma.noteRevision.findUnique({ where: { id: revisionId } });
+  if (!rev) throw new Error("Wersja nie istnieje");
+  await assertNoteAccess(rev.noteId, user.id);
+  await updateNote(rev.noteId, { title: rev.title, content: rev.content });
   revalidatePath("/notes");
 }
