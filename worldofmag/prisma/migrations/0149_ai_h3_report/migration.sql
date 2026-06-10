@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0149: odhaczenie H3 w master-planie (re-seed z md) + raport implementacyjny AI.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -562,3 +567,40 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (AI pro: H3 transparentnosc)',
+  'omnia-implementacja-2026-06-10-h3-transparentnosc',
+  $omnia_impl_0149$# Omnia — Raport implementacji 2026-06-10 (AI pro: H3 transparentnosc)
+
+Trzydziesta porcja — Faza 2, Home/AI.
+
+## H3 — Transparentnosc asystenta („ktory model" + tokeny + undo + historia)
+**Diagnoza:** par 4.1 — agent dzialal jako „czarna skrzynka": uzytkownik nie wiedzial, ktory model
+odpowiedzial ani ile to kosztowalo (tokeny); brakowalo tez jawnego undo i wgladu w historie.
+**Rozwiazanie:**
+- `chatComplete` (`src/lib/llm/chat.ts`) zwraca teraz `model` oraz `usage` (TokenUsage). OpenAI:
+  z pola `usage`; Anthropic: z `usage.input_tokens/output_tokens`.
+- Agent (`api/llm/home/agent/route.ts`): typ `AgentMeta` zbiera uzyty model i SUMUJE tokeny przez
+  cala petle narzedzi (`callAgent` aktualizuje meta). Po zakonczeniu petli body dostaje pole `meta`
+  (`{model, tokens}`) — w obu trybach (SSE `final` i zwykly JSON).
+- Klient `AICommandSheet`: `AgentMeta` na turach asystenta + komponent `MetaFooter` renderowany pod
+  odpowiedzia (answer/clarify/navigate/plan) — drobny podpis „model · N tok.".
+**Pozostale czesci H3 byly juz obecne** (zweryfikowane): historia polecen = persistencja watkow
+`AiConversation`/`AiMessage` z szufladka historii; undo = `undoActions` dla planow akcji ORAZ — nowo
+od H5 — kosz dla usuniec wykonanych przez asystenta (AI woła te same `deleteNote`/`deleteTask`, ktore
+trafiaja do kosza, wiec sa odwracalne).
+**Pliki:** `src/lib/llm/chat.ts`, `src/app/api/llm/home/agent/route.ts`,
+`src/components/home/AICommandSheet.tsx`.
+
+## Weryfikacja
+- `next build` zielony; brak zmian w bazie (migracja tylko re-seeduje raporty).
+
+## Podsumowanie
+AI pro: zostalo H4 (niezawodnosc — graceful degradation przy braku klucza/limicie, rate-limit per
+user, kolejka ciezkich operacji). Dalej: Etap C marketplace (M14/M16/M17/M19), S6 (ceny zakupow),
+Faza 4.$omnia_impl_0149$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

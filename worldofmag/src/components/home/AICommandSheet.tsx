@@ -57,16 +57,20 @@ interface AgentResponse {
   log?: LogEntry[];
   messages?: ChatMessage[];
   error?: string;
+  meta?: AgentMeta;
 }
+
+// H3: transparentność — który model odpowiedział i ile tokenów zużyto.
+type AgentMeta = { model?: string; tokens?: number };
 
 // Jedna „kafelka" w wątku rozmowy. `data` z DB pozwala odtworzyć kartę bez ponownego uruchamiania agenta.
 type Turn =
   | { id: string; role: "user"; kind: "text"; content: string }
-  | { id: string; role: "assistant"; kind: "answer"; content: string; followups?: string[]; log?: LogEntry[] }
-  | { id: string; role: "assistant"; kind: "clarify"; content: string; options?: string[]; messages?: ChatMessage[]; log?: LogEntry[]; resolved?: boolean }
-  | { id: string; role: "assistant"; kind: "navigate"; content: string; url: string; label: string; log?: LogEntry[] }
-  | { id: string; role: "assistant"; kind: "plan"; content: string; actions: AIAction[]; messages?: ChatMessage[]; log?: LogEntry[]; done?: boolean }
-  | { id: string; role: "assistant"; kind: "report"; content: string; title: string; savedSlug?: string; log?: LogEntry[] }
+  | { id: string; role: "assistant"; kind: "answer"; content: string; followups?: string[]; log?: LogEntry[]; meta?: AgentMeta }
+  | { id: string; role: "assistant"; kind: "clarify"; content: string; options?: string[]; messages?: ChatMessage[]; log?: LogEntry[]; resolved?: boolean; meta?: AgentMeta }
+  | { id: string; role: "assistant"; kind: "navigate"; content: string; url: string; label: string; log?: LogEntry[]; meta?: AgentMeta }
+  | { id: string; role: "assistant"; kind: "plan"; content: string; actions: AIAction[]; messages?: ChatMessage[]; log?: LogEntry[]; done?: boolean; meta?: AgentMeta }
+  | { id: string; role: "assistant"; kind: "report"; content: string; title: string; savedSlug?: string; log?: LogEntry[]; meta?: AgentMeta }
   | { id: string; role: "assistant"; kind: "results"; content: string; results: ActionResult[]; undone?: boolean };
 
 const LIST_SUB_PAGES = ["products", "units", "categories", "icons", "stores"];
@@ -120,6 +124,19 @@ const STARTER_CHIPS = [
   "Znajdź 5 obowiązków pasujących do mojego nastroju i posortuj priorytetami",
   "Zrób raport z tej rozmowy",
 ];
+
+// H3: drobny podpis pod odpowiedzią — który model i ile tokenów (transparentność).
+function MetaFooter({ meta }: { meta?: AgentMeta }) {
+  if (!meta?.model && !meta?.tokens) return null;
+  const parts: string[] = [];
+  if (meta.model) parts.push(meta.model);
+  if (meta.tokens) parts.push(`${meta.tokens} tok.`);
+  return (
+    <div style={{ marginTop: 6, fontSize: 10, color: "var(--text-muted)", opacity: 0.75 }} title="Model i zużycie tokenów tej odpowiedzi">
+      {parts.join(" · ")}
+    </div>
+  );
+}
 
 function ReasoningLog({ log }: { log?: LogEntry[] }) {
   const [expanded, setExpanded] = useState(false);
@@ -353,34 +370,35 @@ export function AICommandSheet() {
   function applyResponse(data: AgentResponse, log?: LogEntry[]) {
     if (data.error) { setError(data.error); return; }
     const id = newId();
+    const meta = data.meta;
     if (data.step === "clarify") {
       const content = data.question ?? "Doprecyzuj polecenie.";
-      setTurns((t) => [...t, { id, role: "assistant", kind: "clarify", content, options: data.options, messages: data.messages, log: data.log ?? log }]);
+      setTurns((t) => [...t, { id, role: "assistant", kind: "clarify", content, options: data.options, messages: data.messages, log: data.log ?? log, meta }]);
       void persist("assistant", content, "clarify", { options: data.options });
       return;
     }
     if (data.step === "answer") {
       const content = data.answer ?? "";
-      setTurns((t) => [...t, { id, role: "assistant", kind: "answer", content, followups: data.followups, log: data.log ?? log }]);
+      setTurns((t) => [...t, { id, role: "assistant", kind: "answer", content, followups: data.followups, log: data.log ?? log, meta }]);
       void persist("assistant", content, "answer", { log: data.log ?? log, followups: data.followups });
       return;
     }
     if (data.step === "navigate" && data.url) {
       const label = data.label ?? "Otwórz widok";
-      setTurns((t) => [...t, { id, role: "assistant", kind: "navigate", content: `Przejść do: ${label}?`, url: data.url!, label, log: data.log ?? log }]);
+      setTurns((t) => [...t, { id, role: "assistant", kind: "navigate", content: `Przejść do: ${label}?`, url: data.url!, label, log: data.log ?? log, meta }]);
       void persist("assistant", `Propozycja przejścia: ${label}`, "navigate", { url: data.url, label });
       return;
     }
     if (data.step === "report") {
       const title = data.title ?? "Raport";
       const content = data.content ?? "";
-      setTurns((t) => [...t, { id, role: "assistant", kind: "report", title, content, log: data.log ?? log }]);
+      setTurns((t) => [...t, { id, role: "assistant", kind: "report", title, content, log: data.log ?? log, meta }]);
       void persist("assistant", content, "report", { title });
       return;
     }
     if (data.step === "plan") {
       const actions = data.actions ?? [];
-      setTurns((t) => [...t, { id, role: "assistant", kind: "plan", content: `Zaproponowano ${actions.length} ${actions.length === 1 ? "akcję" : "akcji"}`, actions, messages: data.messages, log: data.log ?? log }]);
+      setTurns((t) => [...t, { id, role: "assistant", kind: "plan", content: `Zaproponowano ${actions.length} ${actions.length === 1 ? "akcję" : "akcji"}`, actions, messages: data.messages, log: data.log ?? log, meta }]);
       void persist("assistant", `Zaproponowano ${actions.length} akcji`, "plan", { actions });
       return;
     }
@@ -1029,6 +1047,7 @@ function TurnView({
       <div style={bubble}>
         <div onClick={onBubbleClick} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
         <ReasoningLog log={turn.log} />
+        <MetaFooter meta={turn.meta} />
         {isLast && turn.followups && turn.followups.length > 0 && onFollowup && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
             {turn.followups.map((f) => (
@@ -1069,6 +1088,7 @@ function TurnView({
           </>
         )}
         <ReasoningLog log={turn.log} />
+        <MetaFooter meta={turn.meta} />
       </div>
     );
   }
@@ -1081,6 +1101,7 @@ function TurnView({
           <ArrowRight size={15} /> {turn.label}
         </button>
         <ReasoningLog log={turn.log} />
+        <MetaFooter meta={turn.meta} />
       </div>
     );
   }
@@ -1104,6 +1125,7 @@ function TurnView({
           </button>
         )}
         <ReasoningLog log={turn.log} />
+        <MetaFooter meta={turn.meta} />
       </div>
     );
   }

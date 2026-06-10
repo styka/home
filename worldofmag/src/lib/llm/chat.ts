@@ -26,8 +26,10 @@ export interface ChatOptions {
   json?: boolean;
 }
 
+export type TokenUsage = { prompt: number; completion: number; total: number };
+
 export type ChatResult =
-  | { ok: true; content: string }
+  | { ok: true; content: string; model?: string; usage?: TokenUsage }
   | { ok: false; status: number; message: string };
 
 const UNCONFIGURED = {
@@ -75,9 +77,15 @@ async function openAiComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<Chat
     return { ok: false, status: 502, message: parseErr(err).slice(0, 200) };
   }
   const data = (await res.json().catch(() => null)) as
-    | { choices?: Array<{ message?: { content?: string } }> }
+    | { choices?: Array<{ message?: { content?: string } }>; usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } }
     | null;
-  return { ok: true, content: data?.choices?.[0]?.message?.content ?? "" };
+  const u = data?.usage;
+  return {
+    ok: true,
+    content: data?.choices?.[0]?.message?.content ?? "",
+    model: cfg.model,
+    usage: u ? { prompt: u.prompt_tokens ?? 0, completion: u.completion_tokens ?? 0, total: u.total_tokens ?? (u.prompt_tokens ?? 0) + (u.completion_tokens ?? 0) } : undefined,
+  };
 }
 
 // --- Anthropic (Messages API) ---
@@ -142,13 +150,19 @@ async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<C
     return { ok: false, status: 502, message: parseErr(err).slice(0, 200) };
   }
   const data = (await res.json().catch(() => null)) as
-    | { content?: Array<{ type: string; text?: string }> }
+    | { content?: Array<{ type: string; text?: string }>; usage?: { input_tokens?: number; output_tokens?: number } }
     | null;
   const text = (data?.content ?? [])
     .filter((b) => b.type === "text")
     .map((b) => b.text ?? "")
     .join("");
-  return { ok: true, content: text };
+  const u = data?.usage;
+  return {
+    ok: true,
+    content: text,
+    model: cfg.model,
+    usage: u ? { prompt: u.input_tokens ?? 0, completion: u.output_tokens ?? 0, total: (u.input_tokens ?? 0) + (u.output_tokens ?? 0) } : undefined,
+  };
 }
 
 // --- Streaming ---

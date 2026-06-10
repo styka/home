@@ -288,7 +288,10 @@ function extractJson(content: string): unknown {
   return JSON.parse(cleaned);
 }
 
-async function callAgent(messages: ChatMessage[]): Promise<string> {
+// H3 (transparentność): zbiera użyty model + sumę tokenów z całej pętli agenta.
+type AgentMeta = { model?: string; tokens: number };
+
+async function callAgent(messages: ChatMessage[], meta?: AgentMeta): Promise<string> {
   const result = await chatComplete({
     op: "reasoning",
     messages,
@@ -300,6 +303,10 @@ async function callAgent(messages: ChatMessage[]): Promise<string> {
     const err = new Error(result.message) as Error & { status?: number };
     err.status = result.status;
     throw err;
+  }
+  if (meta) {
+    if (result.model) meta.model = result.model;
+    if (result.usage) meta.tokens += result.usage.total;
   }
   return result.content || "{}";
 }
@@ -408,7 +415,8 @@ interface LoopResult {
 async function runAgentLoop(
   messages: ChatMessage[],
   userId: string,
-  onThought?: (thought: string) => void
+  onThought?: (thought: string) => void,
+  meta?: AgentMeta
 ): Promise<LoopResult> {
   const log: LogEntry[] = [];
 
@@ -417,7 +425,7 @@ async function runAgentLoop(
     for (let attempt = 0; attempt < 2 && parsed === null; attempt++) {
       let content: string;
       try {
-        content = await callAgent(messages);
+        content = await callAgent(messages, meta);
       } catch (e) {
         const status = (e as { status?: number }).status ?? 502;
         return { status, body: { error: e instanceof Error ? e.message : "Błąd LLM" } };
@@ -650,7 +658,11 @@ export async function POST(req: NextRequest) {
           try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`)); } catch { /* zamknięte */ }
         };
         try {
-          const result = await runAgentLoop(messages, userId, (t) => send({ type: "thought", text: t }));
+          const meta: AgentMeta = { tokens: 0 };
+          const result = await runAgentLoop(messages, userId, (t) => send({ type: "thought", text: t }), meta);
+          if (result.body && typeof result.body === "object" && !result.body.error) {
+            result.body.meta = { model: meta.model, tokens: meta.tokens };
+          }
           send({ type: "final", status: result.status ?? 200, body: result.body });
         } catch (e) {
           send({ type: "final", status: 502, body: { error: e instanceof Error ? e.message : "Błąd asystenta" } });
@@ -664,6 +676,10 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const result = await runAgentLoop(messages, userId);
+  const meta: AgentMeta = { tokens: 0 };
+  const result = await runAgentLoop(messages, userId, undefined, meta);
+  if (result.body && typeof result.body === "object" && !result.body.error) {
+    result.body.meta = { model: meta.model, tokens: meta.tokens };
+  }
   return NextResponse.json(result.body, result.status ? { status: result.status } : undefined);
 }
