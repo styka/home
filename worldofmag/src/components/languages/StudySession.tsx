@@ -1,13 +1,34 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { ChevronLeft, RotateCcw, PartyPopper } from "lucide-react";
+import { ChevronLeft, RotateCcw, PartyPopper, Check, X, Pencil, Layers } from "lucide-react";
 import { pageContainerStyle } from "@/components/ui/home";
 import { submitReview } from "@/actions/languageDecks";
 import { REVIEW_OPTIONS, type ReviewGrade } from "@/lib/srs";
 import { SpeakButton } from "./SpeakButton";
 import type { LanguageDeck, Vocabulary } from "@/types";
+
+// L2: normalizacja odpowiedzi do porównania (małe litery, bez znaków diakr./interpunkcji).
+function normalizeAnswer(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[.,;:!?()/\\[\]{}"'\u201c\u201d\u201e\u00ab\u00bb\-\u2013\u2014_\u2026]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Czy wpisana odpowiedź pasuje do tłumaczenia (akceptuje warianty po "," lub "/"). */
+function answerMatches(input: string, translation: string): boolean {
+  const given = normalizeAnswer(input);
+  if (!given) return false;
+  return translation
+    .split(/[,/;]/)
+    .map((v) => normalizeAnswer(v))
+    .filter(Boolean)
+    .some((v) => v === given);
+}
 
 export function StudySession({ deck, cards }: { deck: LanguageDeck; cards: Vocabulary[] }) {
   const [queue, setQueue] = useState<Vocabulary[]>(cards);
@@ -15,6 +36,10 @@ export function StudySession({ deck, cards }: { deck: LanguageDeck; cards: Vocab
   const [revealed, setRevealed] = useState(false);
   const [reviewed, setReviewed] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<"flip" | "write">("flip");
+  const [answer, setAnswer] = useState("");
+  const [correct, setCorrect] = useState<boolean | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const current = queue[index];
   const done = index >= queue.length;
@@ -27,6 +52,8 @@ export function StudySession({ deck, cards }: { deck: LanguageDeck; cards: Vocab
         await submitReview(current.id, g);
         setIndex((i) => i + 1);
         setRevealed(false);
+        setAnswer("");
+        setCorrect(null);
         setReviewed((r) => r + 1);
       } finally {
         setBusy(false);
@@ -35,26 +62,39 @@ export function StudySession({ deck, cards }: { deck: LanguageDeck; cards: Vocab
     [current, busy]
   );
 
-  // Klawiatura: spacja odsłania, 1–4 oceniają.
+  // W trybie pisania sprawdza odpowiedź i odsłania kartę.
+  const checkAnswer = useCallback(() => {
+    if (!current || revealed) return;
+    setCorrect(answerMatches(answer, current.translation));
+    setRevealed(true);
+  }, [current, revealed, answer]);
+
+  // Po przejściu do nowej karty w trybie pisania — fokus na polu.
+  useEffect(() => {
+    if (mode === "write" && !revealed && !done) inputRef.current?.focus();
+  }, [index, mode, revealed, done]);
+
+  // Klawiatura: spacja odsłania (tryb fiszek), 1–4 oceniają. W trybie pisania
+  // przed odsłonięciem nie przechwytujemy klawiszy — pisanie obsługuje pole tekstowe.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (done) return;
-      if (e.key === " " || e.key === "Enter") {
-        e.preventDefault();
-        if (!revealed) setRevealed(true);
+      if (!revealed) {
+        if (mode === "flip" && (e.key === " " || e.key === "Enter")) {
+          e.preventDefault();
+          setRevealed(true);
+        }
         return;
       }
-      if (revealed) {
-        const opt = REVIEW_OPTIONS.find((o) => o.key === e.key);
-        if (opt) {
-          e.preventDefault();
-          grade(opt.grade);
-        }
+      const opt = REVIEW_OPTIONS.find((o) => o.key === e.key);
+      if (opt) {
+        e.preventDefault();
+        grade(opt.grade);
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [revealed, done, grade]);
+  }, [revealed, done, grade, mode]);
 
   return (
     <div style={pageContainerStyle}>
@@ -63,9 +103,23 @@ export function StudySession({ deck, cards }: { deck: LanguageDeck; cards: Vocab
           <Link href={`/languages/${deck.id}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none" }}>
             <ChevronLeft size={14} /> {deck.name}
           </Link>
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-            {done ? `${reviewed} powtórzonych` : `${index + 1} / ${queue.length}`}
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {!done && (
+              <div style={{ display: "flex", gap: 2, borderRadius: 8, border: "1px solid var(--border)", overflow: "hidden" }}>
+                <button onClick={() => { setMode("flip"); setRevealed(false); setCorrect(null); setAnswer(""); }} title="Fiszki"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", fontSize: 11, border: "none", cursor: "pointer", background: mode === "flip" ? "var(--bg-hover)" : "transparent", color: mode === "flip" ? "var(--accent-purple)" : "var(--text-muted)" }}>
+                  <Layers size={12} /> Fiszki
+                </button>
+                <button onClick={() => { setMode("write"); setRevealed(false); setCorrect(null); setAnswer(""); }} title="Pisanie"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", fontSize: 11, border: "none", cursor: "pointer", background: mode === "write" ? "var(--bg-hover)" : "transparent", color: mode === "write" ? "var(--accent-purple)" : "var(--text-muted)" }}>
+                  <Pencil size={12} /> Pisanie
+                </button>
+              </div>
+            )}
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+              {done ? `${reviewed} powtórzonych` : `${index + 1} / ${queue.length}`}
+            </span>
+          </div>
         </div>
 
         {done ? (
@@ -85,7 +139,7 @@ export function StudySession({ deck, cards }: { deck: LanguageDeck; cards: Vocab
           <>
             {/* Karta */}
             <div
-              onClick={() => !revealed && setRevealed(true)}
+              onClick={() => { if (!revealed && mode === "flip") setRevealed(true); }}
               style={{
                 minHeight: 200,
                 display: "flex",
@@ -108,10 +162,29 @@ export function StudySession({ deck, cards }: { deck: LanguageDeck; cards: Vocab
               {current.partOfSpeech && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{current.partOfSpeech}</div>}
               {revealed ? (
                 <>
+                  {mode === "write" && correct !== null && (
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: correct ? "var(--accent-green)" : "var(--accent-red)" }}>
+                      {correct ? <><Check size={15} /> Dobrze!</> : <><X size={15} /> {answer.trim() ? `„${answer.trim()}" — niepoprawnie` : "Brak odpowiedzi"}</>}
+                    </div>
+                  )}
                   <div style={{ width: 40, borderTop: "1px solid var(--border)" }} />
                   <div style={{ fontSize: 20, color: "var(--accent-purple)" }}>{current.translation}</div>
                   {current.example && <div style={{ fontSize: 13, color: "var(--text-muted)", fontStyle: "italic" }}>{current.example}</div>}
                 </>
+              ) : mode === "write" ? (
+                <form onSubmit={(e) => { e.preventDefault(); checkAnswer(); }} style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 320 }}>
+                  <input
+                    ref={inputRef}
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    placeholder={`Wpisz tłumaczenie (${deck.nativeLang})`}
+                    autoComplete="off" autoCorrect="off" spellCheck={false}
+                    style={{ width: "100%", textAlign: "center", background: "var(--bg-base)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", color: "var(--text-primary)", fontSize: 16 }}
+                  />
+                  <button type="submit" className="px-4 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-purple)", color: "var(--on-accent)", border: "none" }}>
+                    Sprawdź
+                  </button>
+                </form>
               ) : (
                 <div style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>
                   <RotateCcw size={12} /> Kliknij lub spacja, aby odsłonić
