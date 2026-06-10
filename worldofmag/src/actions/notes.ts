@@ -188,3 +188,33 @@ export async function removeTagFromNote(noteId: string, tagId: string): Promise<
   await prisma.noteTag.delete({ where: { noteId_tagId: { noteId, tagId } } });
   revalidatePath("/notes");
 }
+
+// ─── N3 załączniki notatki ──────────────────────────────────────────────────
+
+export type NoteAttachmentDTO = { id: string; name: string; url: string; createdAt: string };
+
+export async function getNoteAttachments(noteId: string): Promise<NoteAttachmentDTO[]> {
+  const user = await requireAuth();
+  await assertNoteAccess(noteId, user.id);
+  const rows = await prisma.noteAttachment.findMany({ where: { noteId }, orderBy: { createdAt: "desc" } });
+  return rows.map((a) => ({ id: a.id, name: a.name, url: a.url, createdAt: a.createdAt.toISOString() }));
+}
+
+export async function addNoteAttachment(noteId: string, name: string, url: string): Promise<void> {
+  const user = await requireAuth();
+  await assertNoteAccess(noteId, user.id);
+  const n = name.trim() || "Załącznik";
+  if (!url || (!url.startsWith("data:") && !url.startsWith("http"))) throw new Error("Nieprawidłowy plik");
+  if (url.length > 3_500_000) throw new Error("Plik jest za duży (max ~2,5 MB)");
+  await prisma.noteAttachment.create({ data: { noteId, name: n, url } });
+  revalidatePath("/notes");
+}
+
+export async function deleteNoteAttachment(id: string): Promise<void> {
+  const user = await requireAuth();
+  const att = await prisma.noteAttachment.findUnique({ where: { id }, select: { noteId: true } });
+  if (!att) throw new Error("Załącznik nie istnieje");
+  await assertNoteAccess(att.noteId, user.id);
+  await prisma.noteAttachment.delete({ where: { id } });
+  revalidatePath("/notes");
+}

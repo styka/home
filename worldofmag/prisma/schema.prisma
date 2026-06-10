@@ -452,6 +452,20 @@ model Note {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   tags        NoteTag[]
+  attachments NoteAttachment[]
+}
+
+// N3: załączniki notatki (obrazy/pliki). url = data-URL lub link.
+model NoteAttachment {
+  id        String   @id @default(cuid())
+  noteId    String
+  name      String
+  url       String
+  createdAt DateTime @default(now())
+
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
 }
 
 model NoteTag {

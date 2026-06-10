@@ -1,12 +1,12 @@
 "use client";
 
 import { useRef, useState, useEffect, useTransition } from "react";
-import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download, Eye, EyeOff } from "lucide-react";
+import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download, Eye, EyeOff, Paperclip } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { TagChip } from "./TagChip";
 import { TagSuggestions } from "./TagSuggestions";
-import { updateNote, deleteNote, toggleNotePin, setNoteTags } from "@/actions/notes";
+import { updateNote, deleteNote, toggleNotePin, setNoteTags, getNoteAttachments, addNoteAttachment, deleteNoteAttachment, type NoteAttachmentDTO } from "@/actions/notes";
 import { createTag } from "@/actions/tags";
 import type { Note, Tag, NoteGroup } from "@/types";
 
@@ -450,6 +450,9 @@ export function NoteRow({
           onTagsChanged={onTagsChanged}
         />
 
+        {/* Załączniki (N3) */}
+        <NoteAttachments noteId={note.id} />
+
         {/* Save / Cancel */}
         <div className="flex items-center gap-2">
           <button
@@ -571,6 +574,61 @@ export function NoteRow({
           {new Date(note.updatedAt).toLocaleDateString("pl-PL", { day: "2-digit", month: "short" })}
         </span>
       </div>
+    </div>
+  );
+}
+
+function NoteAttachments({ noteId }: { noteId: string }) {
+  const [items, setItems] = useState<NoteAttachmentDTO[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { getNoteAttachments(noteId).then(setItems).catch(() => setItems([])); }, [noteId]);
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 2_500_000) { setError("Plik za duży (max ~2,5 MB)"); return; }
+    setBusy(true); setError(null);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = () => reject(new Error("Nie udało się wczytać"));
+        r.readAsDataURL(file);
+      });
+      await addNoteAttachment(noteId, file.name, dataUrl);
+      setItems(await getNoteAttachments(noteId));
+    } catch (err) { setError(err instanceof Error ? err.message : "Błąd"); }
+    finally { setBusy(false); }
+  }
+
+  const isImg = (a: NoteAttachmentDTO) => a.url.startsWith("data:image") || /\.(png|jpe?g|gif|webp|svg)$/i.test(a.name);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        {(items ?? []).map((a) => (
+          <div key={a.id} className="relative" style={{ border: "1px solid var(--border)", borderRadius: 6, overflow: "hidden" }}>
+            {isImg(a) ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <a href={a.url} target="_blank" rel="noopener noreferrer"><img src={a.url} alt={a.name} style={{ width: 64, height: 64, objectFit: "cover", display: "block" }} /></a>
+            ) : (
+              <a href={a.url} target="_blank" rel="noopener noreferrer" download={a.name} className="flex items-center justify-center" style={{ width: 64, height: 64, fontSize: 10, color: "var(--accent-blue)", textAlign: "center", padding: 4 }}>{a.name.slice(0, 18)}</a>
+            )}
+            <button onClick={async () => { await deleteNoteAttachment(a.id); setItems(await getNoteAttachments(noteId)); }} title="Usuń"
+              style={{ position: "absolute", top: 1, right: 1, width: 18, height: 18, borderRadius: 4, background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Trash2 size={11} />
+            </button>
+          </div>
+        ))}
+        <label className="flex items-center gap-1 text-xs" style={{ cursor: busy ? "wait" : "pointer", color: "var(--text-muted)", border: "1px dashed var(--border)", borderRadius: 6, padding: "0 8px", height: 28 }}>
+          <Paperclip size={12} /> {busy ? "Wgrywanie…" : "Załącznik"}
+          <input type="file" accept="image/*,application/pdf" onChange={onFile} disabled={busy} style={{ display: "none" }} />
+        </label>
+      </div>
+      {error && <span className="text-xs" style={{ color: "var(--accent-red)" }}>{error}</span>}
     </div>
   );
 }
