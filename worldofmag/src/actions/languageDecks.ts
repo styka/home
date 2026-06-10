@@ -250,3 +250,35 @@ export async function submitReview(cardId: string, grade: ReviewGrade): Promise<
   revalidatePath(`/languages/${deckId}`);
   revalidatePath("/languages");
 }
+
+/** L3: seria nauki — liczba kolejnych dni (do dziś/wczoraj) z co najmniej jedną powtórką. */
+export async function getStudyStreak(): Promise<{ streak: number; reviewedToday: number }> {
+  const user = await requireAuth();
+  const teamIds = await getUserTeamIds(user.id);
+  const ownScope = [{ ownerId: user.id }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])];
+
+  const rows = await prisma.vocabulary.findMany({
+    where: { lastReviewedAt: { not: null }, deck: { is: { OR: ownScope } } },
+    select: { lastReviewedAt: true },
+  });
+
+  const iso = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+  const days = new Set(rows.map((r) => iso(r.lastReviewedAt as Date)));
+
+  const today = new Date();
+  const todayStr = iso(today);
+  const reviewedToday = rows.filter((r) => iso(r.lastReviewedAt as Date) === todayStr).length;
+
+  // Start od dziś (jeśli był review) lub wczoraj; potem cofamy się dzień po dniu.
+  let streak = 0;
+  const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  if (!days.has(iso(cursor))) cursor.setDate(cursor.getDate() - 1); // dozwolona przerwa „dziś jeszcze nie"
+  while (days.has(iso(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return { streak, reviewedToday };
+}
