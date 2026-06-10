@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Wallet, Plus, Loader2, ChevronRight, TrendingUp, TrendingDown, Users, PiggyBank, Target } from "lucide-react";
+import { Wallet, Plus, Loader2, ChevronRight, TrendingUp, TrendingDown, Users, PiggyBank, Target, BarChart3 } from "lucide-react";
 import { PageHeader, SectionHeading, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { LineChart } from "@/components/ui/LineChart";
 import { createElement, type WalletOverview } from "@/actions/portfel";
@@ -70,6 +70,16 @@ export function PortfelHomePage({ overview, teams }: Props) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", display: "block" }}>Budżety i cele</span>
             <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Limity wydatków per kategoria + cele oszczędnościowe</span>
+          </div>
+          <ChevronRight size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+        </Link>
+
+        {/* Szybkie wejście: raporty miesięczne */}
+        <Link href="/portfel/raporty" style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)", textDecoration: "none" }}>
+          <BarChart3 size={18} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", display: "block" }}>Raporty miesięczne</span>
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Gdzie poszły pieniądze — podział wydatków na kategorie</span>
           </div>
           <ChevronRight size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
         </Link>

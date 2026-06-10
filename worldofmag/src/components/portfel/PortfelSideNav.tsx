@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Wallet, Target } from "lucide-react";
+import { Wallet, Target, BarChart3 } from "lucide-react";
 import { getWalletElements } from "@/actions/portfel";
 
 export function PortfelSideNav() {
@@ -35,6 +35,15 @@ export function PortfelSideNav() {
         style={itemStyle(pathname === "/portfel/budzety", "__budzety")}
       >
         <Target size={12} /> Budżety i cele
+      </Link>
+      <Link
+        href="/portfel/raporty"
+        onMouseEnter={() => setHovered("__raporty")}
+        onMouseLeave={() => setHovered(null)}
+        className="flex items-center gap-2 mx-2 rounded text-xs"
+        style={itemStyle(pathname === "/portfel/raporty", "__raporty")}
+      >
+        <BarChart3 size={12} /> Raporty miesięczne
       </Link>
       {elements.map((el) => (
         <Link

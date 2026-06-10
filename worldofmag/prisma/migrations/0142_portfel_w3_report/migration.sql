@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0142: odhaczenie W3 w master-planie (re-seed z md) + raport implementacyjny portfela.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -514,3 +519,36 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Portfel: W3 raporty miesieczne)',
+  'omnia-implementacja-2026-06-10-portfel-w3',
+  $omnia_impl_0142$# Omnia — Raport implementacji 2026-06-10 (Portfel: W3 raporty miesieczne)
+
+Dwudziesta szosta porcja — Faza 2, modul Portfel.
+
+## W3 — Raporty miesieczne „gdzie poszly pieniadze" (OK)
+**Diagnoza:** par 4.10 — Portfel rejestrowal salda i wydatki, ale brakowalo warstwy analitycznej:
+ile w danym miesiacu wplynelo/wyplynelo i NA CO konkretnie poszly pieniadze.
+**Rozwiazanie:** akcja `src/actions/portfelReports.ts/getMonthlyReport(monthOffset)` agreguje wpisy
+`WalletEntry` (income/expense) wybranego miesiaca z elementow uzytkownika/zespolow: suma przychodow,
+suma wydatkow, bilans, podzial wydatkow per `category` (malejaco, z udzialem %), porownanie wydatkow
+do poprzedniego miesiaca (`expenseDeltaPct`) oraz flaga `hasOlder` (czy sa starsze wpisy → nawigacja
+wstecz). UI `/portfel/raporty` (`MonthlyReportPage`): kafle przychod/wydatek/bilans, lista kategorii
+z kolorowymi paskami %, przelacznik miesiaca (starszy/nowszy) z fetchem on-demand przez akcje.
+Wejscie w pod-nawigacji Portfela + kafel skrotu na stronie glownej.
+**Reuse:** korzysta z istniejacych `WalletEntry.kind/category/delta` — zero zmian w schemacie
+(migracja zawiera tylko re-seed raportu). Spojne z `formatMoney` i wzorcem `pageContainerStyle`.
+**Pliki:** `src/actions/portfelReports.ts`, `app/portfel/raporty/page.tsx`, `MonthlyReportPage.tsx`,
+`PortfelSideNav.tsx`, `PortfelHomePage.tsx`.
+
+## Weryfikacja
+- `next build` zielony; brak zmian w bazie (tylko raport).
+
+## Podsumowanie
+Finanse: zostalo W4 (auto-wydatki Zakupy/Flota/Kuchnia -> Portfel) i W5 (kursy walut). Dalej: AI pro
+(H3/H4/H5), Etap C marketplace (M14/M16/M17/M19), Faza 4.$omnia_impl_0142$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
