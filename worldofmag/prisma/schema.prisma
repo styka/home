@@ -66,6 +66,7 @@ model User {
   budgets                Budget[]              @relation("OwnedBudgets")
   financeGoals           FinanceGoal[]         @relation("OwnedFinanceGoals")
   financeSettings        FinanceSettings?      @relation("UserFinanceSettings")
+  exchangeRates          ExchangeRate[]        @relation("UserExchangeRates")
   languageDecks          LanguageDeck[]        @relation("OwnedLanguageDecks")
   healthEvents           HealthEvent[]         @relation("OwnedHealthEvents")
   medicationSchedules    MedicationSchedule[]  @relation("OwnedMedicationSchedules")
@@ -1597,10 +1598,25 @@ model FinanceSettings {
   userId               String   @unique
   autoExpenseEnabled   Boolean  @default(false)
   autoExpenseElementId String? // docelowy element portfela dla auto-wydatków
+  baseCurrency         String   @default("PLN") // W5: waluta sprawozdawcza (przeliczanie majątku)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
   user User @relation("UserFinanceSettings", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// W5: kursy walut (per-user). rate = ile jednostek baseCurrency za 1 jednostkę `currency`.
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  userId    String
+  currency  String // np. "EUR"
+  rate      Float // 1 `currency` = rate × baseCurrency
+  source    String   @default("manual") // manual | nbp
+  updatedAt DateTime @updatedAt
+
+  user User @relation("UserExchangeRates", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, currency])
 }
 
 // W1: budżet wydatków per kategoria (limit na okres) — kategoria pasuje do WalletEntry.category.

@@ -14,7 +14,7 @@ interface Props {
 }
 
 export function PortfelHomePage({ overview, teams }: Props) {
-  const { elements, totalNet, currency, series, monthlyRate, projection6m } = overview;
+  const { elements, totalNet, currency, series, monthlyRate, projection6m, missingRates } = overview;
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [kind, setKind] = useState("account");
@@ -63,6 +63,12 @@ export function PortfelHomePage({ overview, teams }: Props) {
             <span style={{ fontSize: 18, fontWeight: 600, color: "var(--text-secondary)" }}>{formatMoney(projection6m, currency)}</span>
           </div>
         </div>
+
+        {missingRates && missingRates.length > 0 && (
+          <Link href="/portfel/ustawienia" style={{ display: "block", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--accent-amber)", background: "rgba(245,158,11,0.08)", textDecoration: "none", fontSize: 12, color: "var(--text-secondary)" }}>
+            ⚠ Brak kursu dla: <strong style={{ color: "var(--text-primary)" }}>{missingRates.join(", ")}</strong> — te konta liczone 1:1 do {currency}. Ustaw kursy w Ustawieniach.
+          </Link>
+        )}
 
         {/* Szybkie wejście: budżety i cele */}
         <Link href="/portfel/budzety" style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)", textDecoration: "none" }}>

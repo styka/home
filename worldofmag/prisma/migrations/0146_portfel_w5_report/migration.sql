@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0146: odhaczenie W5 w master-planie (re-seed z md) + raport implementacyjny portfela.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -538,3 +543,42 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Portfel: W5 kursy walut)',
+  'omnia-implementacja-2026-06-10-portfel-w5',
+  $omnia_impl_0146$# Omnia — Raport implementacji 2026-06-10 (Portfel: W5 kursy walut)
+
+Dwudziesta osma porcja — Faza 2, modul Portfel.
+
+## W5 — Wielowalutowosc i kursy (OK)
+**Diagnoza:** par 4.10 — majatek netto sumowal salda wszystkich kont NAIWNIE, ignorujac waluty
+(konto w EUR liczone jak PLN). Wielowalutowosc bez kursow jest mylaca.
+**Rozwiazanie:** `FinanceSettings.baseCurrency` (waluta sprawozdawcza) + tabela `ExchangeRate`
+(per-user, unikat userId+currency; `rate` = ile baseCurrency za 1 jednostke waluty; source
+manual|nbp). Helper `src/lib/portfel/currency.ts` (`loadRates`/`toBase`). `getWalletOverview`
+przelicza majatek netto ORAZ szereg czasowy na baze i zwraca `missingRates` (waluty bez kursu —
+liczone 1:1, z ostrzezeniem na stronie glownej Portfela). Akcje `portfelCurrency.ts`:
+`getCurrencySettings`, `setBaseCurrency`, `setExchangeRate`/`deleteExchangeRate` (reczne) oraz
+`refreshRatesFromNBP` — best-effort pobranie tabeli A z api.nbp.pl, przeliczenie kursow wzgledem
+bazy (rate = mid_code/mid_base), upsert ze source=nbp. UI: sekcja „Waluty i kursy" w
+`/portfel/ustawienia` (waluta bazowa, lista kursow z edycja inline, dodawanie, przycisk „Pobierz
+z NBP").
+**Sandbox vs prod:** w zdalnym sandboxie wyjscie do api.nbp.pl jest zablokowane („Host not in
+allowlist") — `refreshRatesFromNBP` zwraca wtedy czytelny blad i uzytkownik korzysta z kursow
+recznych; na Render (otwarta siec) pobieranie dziala. Kursy reczne to w pelni offline'owy,
+deterministyczny rdzen funkcji.
+**Pliki:** `prisma/schema.prisma`, `0145_finance_w5_currency`, `src/lib/portfel/currency.ts`,
+`src/actions/portfelCurrency.ts`, `src/actions/portfel.ts` (getWalletOverview), `PortfelSettingsPage.tsx`,
+`PortfelHomePage.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja `0145` zastosowana lokalnie.
+
+## Podsumowanie
+Finanse domkniete (W1 budzety+cele, W3 raporty, W4 auto-wydatki, W5 waluty; W2 import banku odlozony
+jako P2). Dalej: AI pro (H3/H4/H5), Etap C marketplace (M14/M16/M17/M19), S6 (ceny zakupow), Faza 4.$omnia_impl_0146$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

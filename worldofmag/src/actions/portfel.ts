@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
+import { loadRates, toBase } from "@/lib/portfel/currency";
 import type { WalletElement, WalletEntry } from "@prisma/client";
 
 export type ElementWithEntries = WalletElement & { entries: WalletEntry[] };
@@ -38,10 +39,11 @@ export async function getWalletElements(): Promise<WalletElement[]> {
 export interface WalletOverview {
   elements: WalletElement[];
   totalNet: number;
-  currency: string;
-  series: { x: number; y: number; label: string }[]; // saldo całości w czasie
+  currency: string; // waluta sprawozdawcza (base)
+  series: { x: number; y: number; label: string }[]; // saldo całości w czasie (w base)
   monthlyRate: number; // tempo zmian majątku [waluta / miesiąc]
   projection6m: number; // prognoza majątku za 6 miesięcy
+  missingRates: string[]; // W5: waluty bez ustawionego kursu (liczone 1:1)
 }
 
 export async function getWalletOverview(): Promise<WalletOverview> {
@@ -54,8 +56,18 @@ export async function getWalletOverview(): Promise<WalletOverview> {
   });
 
   const active = elements.filter((e) => !e.archived);
-  const totalNet = active.reduce((s, e) => s + signedBalance(e), 0);
-  const currency = active[0]?.currency ?? "PLN";
+
+  // W5: przelicz wszystko na walutę sprawozdawczą; zbierz waluty bez kursu.
+  const rateInfo = await loadRates(user.id);
+  const currency = rateInfo.base;
+  const missingSet = new Set<string>();
+  const convElement = (el: { kind: string; balance: number; currency: string }): number => {
+    const { value, converted } = toBase(signedBalance(el), el.currency, rateInfo);
+    if (!converted) missingSet.add((el.currency || currency).toUpperCase());
+    return value;
+  };
+
+  const totalNet = active.reduce((s, e) => s + convElement(e), 0);
 
   // Szereg czasowy majątku: dla każdego znacznika czasu sumujemy ostatnie znane saldo
   // każdego elementu (funkcje schodkowe) — skala osobista, więc O(wpisy*elementy) wystarcza.
@@ -69,7 +81,8 @@ export async function getWalletOverview(): Promise<WalletOverview> {
       const past = el.entries.filter((en) => new Date(en.date).getTime() <= t);
       if (past.length === 0) continue;
       const bal = past[past.length - 1].balanceAfter;
-      total += el.kind === "debt" ? -bal : bal;
+      const signed = el.kind === "debt" ? -bal : bal;
+      total += toBase(signed, el.currency, rateInfo).value;
     }
     return { x: t, y: total, label: new Date(t).toLocaleDateString("pl-PL", { day: "numeric", month: "short", year: "2-digit" }) };
   });
@@ -94,7 +107,7 @@ export async function getWalletOverview(): Promise<WalletOverview> {
     }
   }
 
-  return { elements, totalNet, currency, series, monthlyRate, projection6m };
+  return { elements, totalNet, currency, series, monthlyRate, projection6m, missingRates: Array.from(missingSet) };
 }
 
 export async function getElement(id: string): Promise<ElementWithEntries | null> {

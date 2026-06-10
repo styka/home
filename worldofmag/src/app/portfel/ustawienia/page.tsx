@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { getWalletElements } from "@/actions/portfel";
 import { getFinanceSettings } from "@/actions/portfelAuto";
+import { getCurrencySettings } from "@/actions/portfelCurrency";
 import { PortfelSettingsPage } from "@/components/portfel/PortfelSettingsPage";
 
 export default async function PortfelUstawieniaPage() {
@@ -14,11 +15,15 @@ export default async function PortfelUstawieniaPage() {
     redirect("/");
   }
 
-  const [elements, settings] = await Promise.all([getWalletElements(), getFinanceSettings()]);
+  const [elements, settings, currency] = await Promise.all([
+    getWalletElements(),
+    getFinanceSettings(),
+    getCurrencySettings(),
+  ]);
   // tylko prywatne, aktywne konta jako cel auto-wydatków
   const accounts = elements
     .filter((e) => !e.archived && e.ownerId === session.user!.id)
     .map((e) => ({ id: e.id, name: e.name }));
 
-  return <PortfelSettingsPage accounts={accounts} settings={settings} />;
+  return <PortfelSettingsPage accounts={accounts} settings={settings} currency={currency} />;
 }
