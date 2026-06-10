@@ -198,3 +198,33 @@ export async function getTestTrends(): Promise<TestTrend[]> {
   // Tylko serie z co najmniej 2 pomiarami mają sens jako trend.
   return Array.from(map.values()).filter((t) => t.points.length >= 2);
 }
+
+// ─── Z1 załączniki wyników ──────────────────────────────────────────────────
+
+export type HealthAttachmentDTO = { id: string; name: string; url: string; createdAt: string };
+
+export async function getHealthAttachments(eventId: string): Promise<HealthAttachmentDTO[]> {
+  const user = await requireAuth();
+  await assertEventAccess(eventId, user.id);
+  const rows = await prisma.healthAttachment.findMany({ where: { eventId }, orderBy: { createdAt: "desc" } });
+  return rows.map((a) => ({ id: a.id, name: a.name, url: a.url, createdAt: a.createdAt.toISOString() }));
+}
+
+export async function addHealthAttachment(eventId: string, name: string, url: string): Promise<void> {
+  const user = await requireAuth();
+  await assertEventAccess(eventId, user.id);
+  const n = name.trim() || "Wynik";
+  if (!url || (!url.startsWith("data:") && !url.startsWith("http"))) throw new Error("Nieprawidłowy plik");
+  if (url.length > 3_500_000) throw new Error("Plik jest za duży (max ~2,5 MB)");
+  await prisma.healthAttachment.create({ data: { eventId, name: n, url } });
+  revalidatePath("/health");
+}
+
+export async function deleteHealthAttachment(id: string): Promise<void> {
+  const user = await requireAuth();
+  const att = await prisma.healthAttachment.findUnique({ where: { id }, select: { eventId: true } });
+  if (!att) throw new Error("Załącznik nie istnieje");
+  await assertEventAccess(att.eventId, user.id);
+  await prisma.healthAttachment.delete({ where: { id } });
+  revalidatePath("/health");
+}
