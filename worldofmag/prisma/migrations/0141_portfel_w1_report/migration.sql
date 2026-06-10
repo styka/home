@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0141: odhaczenie W1 w master-planie (re-seed z md) + raport implementacyjny portfela.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -504,3 +509,39 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Portfel: W1 budzety i cele)',
+  'omnia-implementacja-2026-06-10-portfel-w1',
+  $omnia_impl_0141$# Omnia — Raport implementacji 2026-06-10 (Portfel: W1 budzety i cele)
+
+Dwudziesta piata porcja — Faza 1/2, modul Portfel.
+
+## W1 — Budzety wydatkow + cele oszczednosciowe (OK)
+**Diagnoza:** par 4.10 — bez budzetow Portfel to tylko rejestr sald; brak limitow per kategoria
+i celow oszczednosciowych (wkad wlasny, wakacje).
+**Rozwiazanie:** dwa modele z wlasnoscia 3-poziomowa (`ownerId`/`ownerTeamId`):
+`Budget { category, limitAmount, period=monthly, currency }` oraz
+`FinanceGoal { name, targetAmount, currentAmount, deadline?, achievedAt? }`. Akcje w
+`src/actions/portfelBudgets.ts`: `getBudgetsWithSpending` liczy WYDATKI biezacego miesiaca z
+wpisow `WalletEntry.kind='expense'` (po `category`, z elementow uzytkownika/zespolow) i zwraca
+postep (spent/remaining/pct); CRUD budzetu; cele CRUD + `contributeGoal` (wplata/wycofanie z
+auto-ustawieniem `achievedAt` po przekroczeniu targetu). UI `/portfel/budzety` (`BudgetsPage`):
+paski postepu (zielony / bursztyn >=80% / czerwony >100% dla budzetu), inline wplaty do celow,
+wejscie w pod-nawigacji Portfela + kafel skrotu na stronie glownej (mobile-friendly).
+**Reuse:** kategorie budzetow celowo dziela namespace z `WalletEntry.category` (free-text) — zero
+nowego slownika; postep liczy sie automatycznie z istniejacych wydatkow.
+**Pliki:** `prisma/schema.prisma`, `0140_finance_budget_goal`, `src/actions/portfelBudgets.ts`,
+`app/portfel/budzety/page.tsx`, `BudgetsPage.tsx`, `PortfelSideNav.tsx`, `PortfelHomePage.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja `0140` zastosowana lokalnie.
+
+## Podsumowanie
+Portfel zyskal warstwe planowania. Pozostalo w finansach: W3 (raporty miesieczne), W4 (auto-wydatki
+Zakupy/Flota/Kuchnia -> Portfel), W5 (kursy walut). Dalej: AI pro (H3/H4/H5), Etap C marketplace,
+Faza 4.$omnia_impl_0141$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

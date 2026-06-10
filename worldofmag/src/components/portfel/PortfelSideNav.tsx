@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Wallet } from "lucide-react";
+import { Wallet, Target } from "lucide-react";
 import { getWalletElements } from "@/actions/portfel";
 
 export function PortfelSideNav() {
@@ -25,10 +25,17 @@ export function PortfelSideNav() {
     };
   }
 
-  if (elements.length === 0) return null;
-
   return (
     <div className="pb-2">
+      <Link
+        href="/portfel/budzety"
+        onMouseEnter={() => setHovered("__budzety")}
+        onMouseLeave={() => setHovered(null)}
+        className="flex items-center gap-2 mx-2 rounded text-xs"
+        style={itemStyle(pathname === "/portfel/budzety", "__budzety")}
+      >
+        <Target size={12} /> Budżety i cele
+      </Link>
       {elements.map((el) => (
         <Link
           key={el.id}

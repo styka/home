@@ -63,6 +63,8 @@ model User {
   petSales               PetSale[]             @relation("OwnedPetSales")
   vehicles               Vehicle[]             @relation("OwnedVehicles")
   walletElements         WalletElement[]       @relation("OwnedWalletElements")
+  budgets                Budget[]              @relation("OwnedBudgets")
+  financeGoals           FinanceGoal[]         @relation("OwnedFinanceGoals")
   languageDecks          LanguageDeck[]        @relation("OwnedLanguageDecks")
   healthEvents           HealthEvent[]         @relation("OwnedHealthEvents")
   medicationSchedules    MedicationSchedule[]  @relation("OwnedMedicationSchedules")
@@ -238,6 +240,8 @@ model Team {
   petSales             PetSale[]             @relation("TeamPetSales")
   vehicles             Vehicle[]             @relation("TeamVehicles")
   walletElements       WalletElement[]       @relation("TeamWalletElements")
+  budgets              Budget[]              @relation("TeamBudgets")
+  financeGoals         FinanceGoal[]         @relation("TeamFinanceGoals")
   languageDecks        LanguageDeck[]        @relation("TeamLanguageDecks")
   healthEvents         HealthEvent[]         @relation("TeamHealthEvents")
   medicationSchedules  MedicationSchedule[]  @relation("TeamMedicationSchedules")
@@ -1581,6 +1585,48 @@ model WalletEntry {
   element WalletElement @relation(fields: [elementId], references: [id], onDelete: Cascade)
 
   @@index([elementId, date])
+}
+
+// W1: budżet wydatków per kategoria (limit na okres) — kategoria pasuje do WalletEntry.category.
+model Budget {
+  id          String   @id @default(cuid())
+  category    String // dopasowanie do WalletEntry.category (free-text, konwencja PL)
+  limitAmount Float // limit wydatków w okresie
+  period      String   @default("monthly") // monthly (na razie tylko miesięczny)
+  currency    String   @default("PLN")
+  note        String?
+  ownerId     String?
+  ownerTeamId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner     User? @relation("OwnedBudgets", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team? @relation("TeamBudgets", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
+}
+
+// W1: cel oszczędnościowy (target + bieżący postęp, opcjonalny termin).
+model FinanceGoal {
+  id            String    @id @default(cuid())
+  name          String
+  targetAmount  Float
+  currentAmount Float     @default(0)
+  currency      String    @default("PLN")
+  deadline      DateTime?
+  achievedAt    DateTime?
+  note          String?
+  ownerId       String?
+  ownerTeamId   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  owner     User? @relation("OwnedFinanceGoals", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team? @relation("TeamFinanceGoals", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
 }
 
 // ─── LLM model management ───────────────────────────────────────────────────
