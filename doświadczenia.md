@@ -28,6 +28,13 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-08 — Regex z flagą `u` / `\p{...}` wywala build (target TS < es6)
+**Problem:** `text.replace(/[^\p{L}\p{N}\s]/gu, " ")` w komponencie nauki języków wywaliło `next build`: „This regular expression flag is only available when targeting 'es6' or later". Repo ma starszy target TS — unicode property escapes (`\p{L}`) i flaga `u` są niedozwolone.
+**Rozwiązanie:** zamiast `\p{L}\p{N}` + flaga `u` — usuwanie diakrytyków przez `normalize("NFD").replace(/[̀-ͯ]/g, "")` i strip interpunkcji jawną listą znaków (`/[.,;:!?()…—–\-_"'„"«»]/g`) bez flagi `u`. Polskie litery (ł, ż) zostają, bo nie są dekomponowane przez NFD i nie ma ich na liście interpunkcji.
+**Lekcja:** w tym repo NIE używaj flagi regex `u` ani `\p{...}` (target TS to blokuje, podobnie jak iterację po Map). Diakrytyki: NFD + `[̀-ͯ]`. Interpunkcja: jawna lista znaków, nie `\P{L}`.
+
+---
+
 ## 2026-06-07 — Iteracja po `Map`/`Set` wywala build (target TS) + lokalny Postgres jako weryfikowalny build w sandboxie
 **Problem:** (1) `for (const [k, v] of someMap)` w akcji serwerowej wywaliło `next build`: „Map can only be iterated through with '--downlevelIteration' or '--target' es2015+". Konfiguracja TS repo na to nie pozwala. (2) Realny problem przekrojowy: w sandboxie web nie ma `DATABASE_URL`, więc `npm run build` (który kończy się `scripts/migrate.js` = `prisma migrate deploy`) zawsze padał — nie dało się zweryfikować zmian.
 **Rozwiązanie:** (1) zamiast iterować po `Map` użyj `Array.from(map.values())` (lub `.entries()` opakowane w `Array.from`). (2) Postawiono lokalny Postgres 16 (jest w obrazie, `pg_ctlcluster 16 main start`), rola+baza `omnia/omnia_dev`, `.env.local` z `DATABASE_URL`/`DIRECT_URL` na `127.0.0.1:5432`, `npx prisma migrate deploy` zaaplikował wszystkie migracje. Od tego momentu pełny `npm run build` przechodzi lokalnie i każda zmiana jest weryfikowalna — bez dotykania produkcji.

@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0128: odhaczenie L2 w master-planie (re-seed z md) + raport implementacyjny jezykow.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -454,3 +459,34 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-08 (Jezyki: L2 tryb pisania)',
+  'omnia-implementacja-2026-06-08-jezyki-l2',
+  $omnia_impl_0608a$# Omnia — Raport implementacji 2026-06-08 (Jezyki: L2 tryb pisania)
+
+Siedemnasta porcja — Faza 3, modul Jezyki.
+
+## L2 — Typy cwiczen: tryb pisania (OK)
+**Diagnoza:** par 4.11 — brak roznych typow cwiczen; ustepowalismy Duolingo.
+**Rozwiazanie (i dlaczego tak):** przelacznik Fiszki/Pisanie w `StudySession`. W trybie pisania
+uzytkownik wpisuje tlumaczenie, `answerMatches` porownuje po normalizacji (male litery, usuniecie
+diakrytykow przez NFD, strip interpunkcji, warianty po przecinku/ukosniku), po czym odslania karte
+z informacja zwrotna (dobrze/zle) — ocena SRS jak dotad (uzytkownik decyduje 1–4). Globalny
+listener klawiatury nie przechwytuje pisania przed odslonieciem. Bez nowej zaleznosci.
+**Pliki:** `src/components/languages/StudySession.tsx`.
+
+## Lekcja (doswiadczenia.md)
+Regex z flaga `u` / `\p{...}` wywala build (target TS < es6) — diakrytyki przez NFD+[combining],
+interpunkcja jawna lista znakow zamiast `\p{L}`.
+
+## Weryfikacja
+- `next build` zielony (po poprawce regexa bez flagi u).
+
+## Podsumowanie
+Faza 3 mocno do przodu (L1+L2 w jezykach, K2, Z2, N1, HA2/HA3). Pozostale: N2 (wikilinks)/N3/N4,
+L3 (gamifikacja), K1/K5, Z1/Z3, Etap C marketplace (M14/M16/M17/M19) i Faza 4 (skala/branze).$omnia_impl_0608a$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
