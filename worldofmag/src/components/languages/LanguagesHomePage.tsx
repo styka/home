@@ -20,7 +20,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: 13,
 };
 
-export function LanguagesHomePage({ decks }: { decks: LanguageDeck[] }) {
+export function LanguagesHomePage({ decks, streak }: { decks: LanguageDeck[]; streak?: { streak: number; reviewedToday: number } }) {
   const totalCards = decks.reduce((s, d) => s + (d._count?.cards ?? 0), 0);
   const totalDue = decks.reduce((s, d) => s + (d.dueCount ?? 0), 0);
   const totalLearned = decks.reduce((s, d) => s + (d.learnedCount ?? 0), 0);
@@ -83,6 +83,9 @@ export function LanguagesHomePage({ decks }: { decks: LanguageDeck[] }) {
             <StatTile value={totalCards} label="Słówek" color="var(--accent-blue)" icon={<BookOpen size={14} />} />
             <StatTile value={totalLearned} label="Przeczonych" color="var(--accent-green)" />
             {totalDue > 0 && <StatTile value={totalDue} label="Do nauki" color="var(--accent-amber)" icon={<Flame size={14} />} />}
+            {streak && streak.streak > 0 && (
+              <StatTile value={`${streak.streak} dni`} label={streak.reviewedToday > 0 ? `Seria · dziś ${streak.reviewedToday}` : "Seria nauki"} color="var(--accent-orange)" icon={<Flame size={14} />} />
+            )}
           </div>
         )}
 

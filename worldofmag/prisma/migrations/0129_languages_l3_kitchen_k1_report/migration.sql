@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0129: odhaczenie L3+K1 w master-planie (re-seed z md) + raport implementacyjny.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -458,3 +463,36 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-08 (Jezyki L3 + Kuchnia K1)',
+  'omnia-implementacja-2026-06-08-l3-k1',
+  $omnia_impl_0608b$# Omnia — Raport implementacji 2026-06-08 (Jezyki L3 + Kuchnia K1)
+
+Osiemnasta porcja — Faza 3.
+
+## L3 — Gamifikacja: seria nauki (OK)
+**Diagnoza:** par 4.11 — brak gamifikacji (jak Duolingo: serie).
+**Rozwiazanie:** `getStudyStreak` liczy serie kolejnych dni z co najmniej jedna powtorka, na
+podstawie `Vocabulary.lastReviewedAt` (dozwolona przerwa „dzis jeszcze nie powtarzano" — start od
+wczoraj) + ile powtorzono dzis. Kafel „Seria nauki" na stronie jezykow. Bez nowej tabeli; streak
+liczony z istniejacych dat ostatniej powtorki (przyblizenie wystarczajace dla pojedynczego usera).
+**Pliki:** `src/actions/languageDecks.ts`, `src/app/languages/page.tsx`, `LanguagesHomePage.tsx`.
+
+## K1 — Skalowanie porcji do zakupow (OK — weryfikacja)
+**Diagnoza:** raport listowal K1 jako niezrobione.
+**Ustalenie:** funkcja JUZ istnieje — `shopForRecipe(recipeId, listId, servings, ...)` +
+`ShopForRecipeDialog` skaluja skladniki wg wybranej liczby porcji (servings/recipe.servings),
+z pominieciem spizarni i opcjonalnych. Dodatkowo plan→zakupy (`previewShoppingListFromPlan`) tez
+skaluje. Pozycja odhaczona po weryfikacji w kodzie; bez zmian (uniknieto duplikacji).
+
+## Weryfikacja
+- `next build` zielony.
+
+## Podsumowanie
+Modul Jezyki domkniety wzgledem backlogu (L1/L2/L3/L4). Pozostale w Fazie 3: Notatki N2/N3/N4,
+Kuchnia K5, Zdrowie Z1/Z3, oraz Etap C marketplace (M14/M16/M17/M19) i Faza 4.$omnia_impl_0608b$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
