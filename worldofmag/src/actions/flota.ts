@@ -6,7 +6,8 @@ import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
 import type { Vehicle, FuelLog, ServiceRecord } from "@prisma/client";
 
-export type VehicleWithStats = Vehicle & { fuelLogs: FuelLog[]; services: ServiceRecord[] };
+export type VehicleAttachmentDTO = { id: string; name: string; url: string; createdAt: Date };
+export type VehicleWithStats = Vehicle & { fuelLogs: FuelLog[]; services: ServiceRecord[]; attachments?: VehicleAttachmentDTO[] };
 
 async function ownershipFilter(userId: string) {
   const teamIds = await getUserTeamIds(userId);
@@ -45,6 +46,7 @@ export async function getVehicle(id: string): Promise<VehicleWithStats | null> {
     include: {
       fuelLogs: { orderBy: { date: "asc" } },
       services: { orderBy: { date: "desc" } },
+      attachments: { orderBy: { createdAt: "desc" } },
     },
   });
 }
@@ -187,4 +189,25 @@ export async function deleteServiceRecord(id: string): Promise<void> {
   await assertVehicleAccess(rec.vehicleId, user.id);
   await prisma.serviceRecord.delete({ where: { id } });
   revalidatePath(`/flota/${rec.vehicleId}`);
+}
+
+// ─── F3 załączniki pojazdu ──────────────────────────────────────────────────
+
+export async function addVehicleAttachment(vehicleId: string, name: string, url: string): Promise<void> {
+  const user = await requireAuth();
+  await assertVehicleAccess(vehicleId, user.id);
+  const n = name.trim() || "Załącznik";
+  if (!url || (!url.startsWith("data:") && !url.startsWith("http"))) throw new Error("Nieprawidłowy plik");
+  if (url.length > 3_500_000) throw new Error("Plik jest za duży (max ~2,5 MB)");
+  await prisma.vehicleAttachment.create({ data: { vehicleId, name: n, url } });
+  revalidatePath(`/flota/${vehicleId}`);
+}
+
+export async function deleteVehicleAttachment(id: string): Promise<void> {
+  const user = await requireAuth();
+  const att = await prisma.vehicleAttachment.findUnique({ where: { id }, select: { vehicleId: true } });
+  if (!att) throw new Error("Załącznik nie istnieje");
+  await assertVehicleAccess(att.vehicleId, user.id);
+  await prisma.vehicleAttachment.delete({ where: { id } });
+  revalidatePath(`/flota/${att.vehicleId}`);
 }
