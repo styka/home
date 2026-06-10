@@ -67,6 +67,7 @@ model User {
   financeGoals           FinanceGoal[]         @relation("OwnedFinanceGoals")
   financeSettings        FinanceSettings?      @relation("UserFinanceSettings")
   exchangeRates          ExchangeRate[]        @relation("UserExchangeRates")
+  trashItems             TrashItem[]           @relation("UserTrashItems")
   languageDecks          LanguageDeck[]        @relation("OwnedLanguageDecks")
   healthEvents           HealthEvent[]         @relation("OwnedHealthEvents")
   medicationSchedules    MedicationSchedule[]  @relation("OwnedMedicationSchedules")
@@ -1605,7 +1606,22 @@ model FinanceSettings {
   user User @relation("UserFinanceSettings", fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// W5: kursy walut (per-user). rate = ile jednostek baseCurrency za 1 jednostkę `currency`.
+// H5: kosz / soft-delete. Zamiast twardo usuwać, zapisujemy migawkę (JSON) encji,
+// by można ją było przywrócić. Lista list nie filtruje deletedAt — wiersz jest realnie usuwany,
+// a przywracanie odtwarza go z migawki (z oryginalnym id).
+model TrashItem {
+  id        String   @id @default(cuid())
+  userId    String // kto usunął (zakres widoczności kosza)
+  module    String // "notes" | "tasks" | …
+  entityId  String // oryginalne id encji
+  title     String // czytelna etykieta
+  payload   String // migawka JSON
+  deletedAt DateTime @default(now())
+
+  user User @relation("UserTrashItems", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deletedAt])
+}
 model ExchangeRate {
   id        String   @id @default(cuid())
   userId    String

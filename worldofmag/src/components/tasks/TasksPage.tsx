@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange } from "lucide-react";
+import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, Trash2 } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
@@ -368,6 +368,15 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {counts.ALL > 0 && `${counts.ALL} aktywne`}
           </span>
+
+          <Link
+            href="/trash"
+            className="flex items-center justify-center p-1.5 rounded"
+            style={{ color: "var(--text-muted)" }}
+            title="Kosz (usunięte do przywrócenia)"
+          >
+            <Trash2 size={15} />
+          </Link>
 
           {/* Przełącznik prezentacji: naturalne grupowanie widoku ↔ po priorytetach */}
           {canToggleGrouping && (

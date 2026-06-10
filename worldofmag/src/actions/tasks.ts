@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
 import { assertProjectAccess } from "@/actions/taskProjects";
 import { trackActivity } from "@/actions/activity";
+import { recordTrash } from "@/lib/trash";
 import { computeNextDue } from "@/lib/recurrence";
 import type { Task, TaskPriority, TaskWithRelations, RecurringRule } from "@/types";
 import { parseStatusConfig, DEFAULT_STATUS_CONFIG, SYSTEM_TASK_STATUSES } from "@/types";
@@ -263,9 +264,24 @@ export async function updateTaskTags(taskId: string, tagIds: string[]): Promise<
 
 export async function deleteTask(id: string): Promise<void> {
   const user = await requireAuth();
-  const task = await prisma.task.findUnique({ where: { id } });
+  const task = await prisma.task.findUnique({ where: { id }, include: { tags: { select: { tagId: true } } } });
   if (!task) return;
   if (task.projectId) await assertProjectAccess(task.projectId, user.id);
+
+  // H5: migawka do kosza (pola skalarne + tagi; podzadania/komentarze nie są odtwarzane).
+  await recordTrash(user.id, {
+    module: "tasks",
+    entityId: task.id,
+    title: task.title,
+    payload: {
+      id: task.id, title: task.title, description: task.description, status: task.status,
+      priority: task.priority, dueDate: task.dueDate, startDate: task.startDate,
+      completedAt: task.completedAt, estimatedMins: task.estimatedMins, recurring: task.recurring,
+      category: task.category, order: task.order, projectId: task.projectId,
+      parentTaskId: task.parentTaskId, createdById: task.createdById, assigneeId: task.assigneeId,
+      createdAt: task.createdAt, tagIds: task.tags.map((t) => t.tagId),
+    },
+  });
 
   await prisma.task.delete({ where: { id } });
   revalidatePath("/tasks");

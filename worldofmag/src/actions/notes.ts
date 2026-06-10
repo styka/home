@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import type { Note } from "@/types";
 import { trackActivity } from "@/actions/activity";
+import { recordTrash } from "@/lib/trash";
 
 async function assertNoteAccess(noteId: string, userId: string): Promise<void> {
   const teamIds = await getUserTeamIds(userId);
@@ -155,6 +156,25 @@ export async function updateNote(
 export async function deleteNote(id: string): Promise<void> {
   const user = await requireAuth();
   await assertNoteAccess(id, user.id);
+
+  // H5: migawka do kosza przed usunięciem (z tagami do późniejszego re-linkowania).
+  const full = await prisma.note.findUnique({
+    where: { id },
+    include: { tags: { select: { tagId: true } } },
+  });
+  if (full) {
+    await recordTrash(user.id, {
+      module: "notes",
+      entityId: full.id,
+      title: full.title,
+      payload: {
+        id: full.id, title: full.title, content: full.content, isMarkdown: full.isMarkdown,
+        pinned: full.pinned, groupId: full.groupId, ownerId: full.ownerId, ownerTeamId: full.ownerTeamId,
+        createdAt: full.createdAt, tagIds: full.tags.map((t) => t.tagId),
+      },
+    });
+  }
+
   await prisma.note.delete({ where: { id } });
   revalidatePath("/notes");
 }

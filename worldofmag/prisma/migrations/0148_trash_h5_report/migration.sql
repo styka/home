@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0148: odhaczenie H5 w master-planie (re-seed z md) + raport implementacyjny kosza.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -551,3 +556,42 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (AI pro: H5 kosz / soft-delete)',
+  'omnia-implementacja-2026-06-10-h5-kosz',
+  $omnia_impl_0148$# Omnia — Raport implementacji 2026-06-10 (AI pro: H5 kosz / soft-delete)
+
+Dwudziesta dziewiata porcja — Faza 2, cross-cutting (Home/AI + Notatki + Zadania).
+
+## H5 — Kosz / soft-delete + przywracanie (infra + Notatki/Zadania)
+**Diagnoza:** par 4.1 — opt-in na akcje destrukcyjne byl, ale twarde `prisma.delete` bez „kosza"
+jest grozne: pomylkowe usuniecie notatki/zadania bylo nieodwracalne.
+**Rozwiazanie:** generyczna infrastruktura kosza zamiast `deletedAt` na kazdym modelu (zero zmian
+w zapytaniach listujacych — wiersz jest realnie usuwany, a przywracanie odtwarza go z migawki):
+- Model `TrashItem { userId, module, entityId, title, payload(JSON), deletedAt }` (per-user,
+  retencja 30 dni, sprzatane przy zapisie i przy wejsciu na /trash — free-tier bez crona).
+- Helper `src/lib/trash.ts/recordTrash` (server-side, NIE „use server" → nie eksponowany do
+  klienta) wolany w `deleteNote`/`deleteTask` PRZED usunieciem (zapisuje pola skalarne + tagi).
+- Akcje `src/actions/trash.ts`: `getTrash`, `restoreTrashItem` (dispatch po module do restoratora),
+  `purgeTrashItem`, `emptyTrash`. Restoratory odtwarzaja encje z ORYGINALNYM id (deep-linki dzialaja);
+  nieistniejace referencje (projekt/grupa/parent) → null; tagi re-linkowane tylko gdy nadal istnieja;
+  podzadania/komentarze/share NIE sa odtwarzane (swiadome ograniczenie).
+- UI `/trash` (`TrashPage`): lista z ikona typu, Przywroc / Usun trwale (confirm) / Oprozdz kosz.
+  Wejscie (ikona kosza) w naglowkach Notatek i Zadan.
+**Rozszerzalnosc:** nowy modul = wywolac `recordTrash` w jego delete + dodac case w
+`restoreTrashItem`. Wzorzec gotowy dla Zakupow/Kuchni/Pets itd.
+**Pliki:** `prisma/schema.prisma`, `0147_trash_soft_delete`, `src/lib/trash.ts`,
+`src/actions/trash.ts`, `src/actions/notes.ts`, `src/actions/tasks.ts`, `app/trash/page.tsx`,
+`components/trash/TrashPage.tsx`, `NotesPage.tsx`, `TasksPage.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja `0147` zastosowana lokalnie.
+
+## Podsumowanie
+AI pro: zostalo H3 (transparentnosc/undo/„ktory model") i H4 (niezawodnosc/rate-limit). Dalej:
+Etap C marketplace (M14/M16/M17/M19), S6 (ceny zakupow), Faza 4.$omnia_impl_0148$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
