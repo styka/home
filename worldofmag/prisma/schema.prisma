@@ -1660,9 +1660,23 @@ model HealthEvent {
 
   owner     User? @relation("OwnedHealthEvents", fields: [ownerId], references: [id], onDelete: SetNull)
   ownerTeam Team? @relation("TeamHealthEvents", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  attachments HealthAttachment[]
 
   @@index([ownerId, scheduledAt])
   @@index([ownerTeamId, scheduledAt])
+}
+
+// Z1: repozytorium wyników — załączniki do wizyty/badania (PDF, zdjęcia). url = data-URL/link.
+model HealthAttachment {
+  id        String   @id @default(cuid())
+  eventId   String
+  name      String
+  url       String
+  createdAt DateTime @default(now())
+
+  event HealthEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
 }
 
 // ── Leki i pielęgnacja (harmonogram podawania) ───────────────────────────────

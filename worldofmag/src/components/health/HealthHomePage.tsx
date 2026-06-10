@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { HeartPulse, Plus, Stethoscope, FlaskConical, Trash2, Pencil, Check, X, MapPin, CalendarClock } from "lucide-react";
+import { HeartPulse, Plus, Stethoscope, FlaskConical, Trash2, Pencil, Check, X, MapPin, CalendarClock, Paperclip } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
-import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent, type TestTrend } from "@/actions/health";
+import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent, getHealthAttachments, addHealthAttachment, deleteHealthAttachment, type TestTrend, type HealthAttachmentDTO } from "@/actions/health";
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
 
 const inputStyle: React.CSSProperties = {
@@ -191,6 +191,7 @@ function EventCard({ ev, onEdit }: { ev: HealthEvent; onEdit: () => void }) {
         </div>
         {ev.notes && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>{ev.notes}</div>}
         {ev.result && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}><b>Wynik:</b> {ev.result}</div>}
+        <HealthAttachments eventId={ev.id} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
         <button onClick={cycleStatus} className="text-xs px-2 py-1 rounded" style={{ color: status.color, border: `1px solid ${status.color}`, background: "transparent" }} title="Zmień status">
@@ -364,6 +365,60 @@ function TrendRow({ trend }: { trend: TestTrend }) {
       <div style={{ fontSize: 13, fontWeight: 700, color: deltaColor, flexShrink: 0, minWidth: 56, textAlign: "right" }}>
         {delta > 0 ? "▲ +" : delta < 0 ? "▼ " : ""}{delta !== 0 ? delta.toLocaleString("pl-PL", { maximumFractionDigits: 2 }) : "—"}
       </div>
+    </div>
+  );
+}
+
+function HealthAttachments({ eventId }: { eventId: string }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<HealthAttachmentDTO[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    try { setItems(await getHealthAttachments(eventId)); } catch { setItems([]); }
+  }
+  function toggle() { setOpen((o) => { const n = !o; if (n && items === null) void load(); return n; }); }
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 2_500_000) { setError("Plik za duży (max ~2,5 MB)"); return; }
+    setBusy(true); setError(null);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = () => reject(new Error("Nie udało się wczytać"));
+        r.readAsDataURL(file);
+      });
+      await addHealthAttachment(eventId, file.name, dataUrl);
+      await load();
+    } catch (err) { setError(err instanceof Error ? err.message : "Błąd"); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <div style={{ marginTop: 6 }}>
+      <button onClick={toggle} className="inline-flex items-center gap-1 text-xs" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}>
+        <Paperclip size={12} /> Wyniki / załączniki{items && items.length > 0 ? ` (${items.length})` : ""}
+      </button>
+      {open && (
+        <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 4 }}>
+          {(items ?? []).map((a) => (
+            <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
+              <a href={a.url} target="_blank" rel="noopener noreferrer" download={a.name} style={{ color: "var(--accent-blue)", textDecoration: "none", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</a>
+              <button onClick={async () => { if (confirm("Usunąć?")) { await deleteHealthAttachment(a.id); await load(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title="Usuń"><Trash2 size={12} /></button>
+            </div>
+          ))}
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--accent-blue)", cursor: busy ? "wait" : "pointer" }}>
+            <Plus size={12} /> {busy ? "Wgrywanie…" : "Dodaj plik (PDF/zdjęcie)"}
+            <input type="file" accept="image/*,application/pdf" onChange={onFile} disabled={busy} style={{ display: "none" }} />
+          </label>
+          {error && <span style={{ fontSize: 11, color: "var(--accent-red)" }}>{error}</span>}
+        </div>
+      )}
     </div>
   );
 }
