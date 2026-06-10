@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0133: odhaczenie Z1 w master-planie (re-seed z md) + raport implementacyjny zdrowia.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -466,3 +471,31 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-08 (Zdrowie: Z1 repozytorium wynikow)',
+  'omnia-implementacja-2026-06-08-zdrowie-z1',
+  $omnia_impl_0608d$# Omnia — Raport implementacji 2026-06-08 (Zdrowie: Z1 repozytorium wynikow)
+
+Dwudziesta porcja — Faza 3, modul Zdrowie.
+
+## Z1 — Repozytorium wynikow (zalaczniki) (OK)
+**Diagnoza:** par 7 — brak miejsca na wyniki badan (PDF/zdjecia).
+**Rozwiazanie (i dlaczego tak):** model `HealthAttachment` (url = data-URL/link, wzorzec
+VehicleAttachment/ServiceImage — bez zewnetrznego magazynu blobow). Akcje `getHealthAttachments`
+(on-demand per wpis), `addHealthAttachment` (limit ~2,5 MB), `deleteHealthAttachment`. Rozwijana
+sekcja „Wyniki / zalaczniki" w karcie wpisu (HealthHomePage): leniwe ladowanie przy rozwinieciu
+(nie obciaza listy), upload przez FileReader (image/pdf), pobieranie i usuwanie.
+**Pliki:** `prisma/schema.prisma`, `0132_health_attachment`, `src/actions/health.ts`,
+`HealthHomePage.tsx`.
+
+## Weryfikacja
+- `next build` zielony.
+
+## Podsumowanie
+Faza 3 niemal kompletna (Z1/Z2/Z3, K1/K2, L1/L2/L3, N1, HA2/HA3, F3). Pozostale: Notatki
+N2/N3/N4, Kuchnia K5, oraz Etap C marketplace (M14/M16/M17/M19) i Faza 4 (skala/branze).$omnia_impl_0608d$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
