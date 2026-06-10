@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0139: odhaczenie K5 w master-planie (re-seed z md) + raport implementacyjny kuchni.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -494,3 +499,38 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Kuchnia: K5 rewizja importu)',
+  'omnia-implementacja-2026-06-10-kuchnia-k5',
+  $omnia_impl_0139$# Omnia — Raport implementacji 2026-06-10 (Kuchnia: K5 rewizja importu)
+
+Dwudziesta czwarta porcja — Faza 3, modul Kuchnia.
+
+## K5 — Rewizja przed zapisem po OCR/imporcie (OK)
+**Diagnoza:** par 4.5 — jakosc OCR (i parsowania URL / generacji AI) jest zmienna; dotad import
+ze zdjecia, z URL i z AI TWORZYL przepis od razu i nawigowal do niego, bez szansy na korekte. Bledne
+dane (zle rozpoznane skladniki, ilosci, kroki) ladowaly prosto do bazy.
+**Rozwiazanie:** importy przekazuja teraz szkic `CreateRecipeInput` do `sessionStorage`
+(`src/lib/kitchen/recipeImportDraft.ts` — `stashImportDraft`/`popImportDraft`, jednorazowy) i
+nawiguja na `/kitchen/recipes/new?import=1`. Tam `RecipeImportReview` (klient) wczytuje szkic i
+renderuje istniejacy `RecipeEditor` z nowym propem `initialDraft` (seed pol tytul/skladniki/kroki/
+makro) + baner „dane z AI moga zawierac bledy — sprawdz i popraw przed zapisem". Zapis dopiero po
+akceptacji (zwykly przycisk Zapisz edytora). Trzy dialogi (`ImportFromImageDialog`,
+`ImportFromUrlDialog`, `ImportFromAIDialog`) przepiete — nie wolaja juz `createRecipe`.
+**Reuse:** zero duplikacji UI edytora — pelna moc istniejacego `RecipeEditor` (smart-paste ilosci,
+AI-kategoryzacja, makra) dostepna od razu na ekranie rewizji.
+**Pliki:** `src/lib/kitchen/recipeImportDraft.ts`, `RecipeImportReview.tsx`, `RecipeEditor.tsx`,
+`app/kitchen/recipes/new/page.tsx`, trzy dialogi `ImportFrom*Dialog.tsx`.
+
+## Weryfikacja
+- `next build` zielony.
+
+## Podsumowanie
+Faza 3 domknieta (Notatki N1-N5, Kuchnia K1/K2/K5, Zdrowie Z1-Z3, Nawyki HA2/HA3, Jezyki L1-L4,
+Flota F3). Pozostalo: Etap C marketplace (M14/M16/M17/M19) i Faza 4 (skala/monetyzacja, branze
+V1-V5, nowe dzialy NM2/NM4/NM6-NM8/NM10).$omnia_impl_0139$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { X, Camera, Upload, Loader2 } from "lucide-react";
 import { llm } from "@/lib/llm-client";
 import { useToast } from "@/components/ui/Toast";
-import { createRecipe } from "@/actions/recipes";
+import { stashImportDraft } from "@/lib/kitchen/recipeImportDraft";
 import type { CreateRecipeInput, MealType, Difficulty } from "@/types/kitchen";
 
 interface ImportFromImageDialogProps {
@@ -90,9 +90,10 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
         })),
         steps: r.steps.map((s, idx) => ({ text: s.text, order: idx })),
       };
-      const created = await createRecipe(payload);
-      showToast("Zaimportowano przepis ze zdjęcia", "success");
-      router.push(`/kitchen/recipes/${created.slug}`);
+      // K5: nie zapisuj od razu — przekaż do rewizji w edytorze (OCR bywa zawodny).
+      stashImportDraft({ source: "image", recipe: payload });
+      onClose();
+      router.push(`/kitchen/recipes/new?import=1`);
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Błąd importu", "error");
     } finally {

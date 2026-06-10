@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Save, ArrowLeft, Sparkles, Wand2 } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Sparkles, Wand2, ClipboardCheck } from "lucide-react";
 import { parseQuantity } from "@/lib/parseQuantity";
 import { llm } from "@/lib/llm-client";
 import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
@@ -24,6 +24,9 @@ interface RecipeEditorProps {
   recipe?: RecipeFull;
   cookbooks: Array<{ id: string; name: string; emoji: string }>;
   hasAI?: boolean;
+  /** K5: szkic z importu (OCR/URL/AI) do rewizji przed zapisem. */
+  initialDraft?: CreateRecipeInput | null;
+  importSourceLabel?: string;
 }
 
 interface IngredientRow extends IngredientInput {
@@ -38,7 +41,7 @@ function makeKey(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
-export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
+export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSourceLabel }: RecipeEditorProps) {
   const router = useRouter();
   const { showToast } = useToast();
   const [pending, startTransition] = useTransition();
@@ -47,21 +50,25 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
   const [aiPending, setAiPending] = useState(false);
   const [categorizePending, setCategorizePending] = useState(false);
 
-  const [title, setTitle] = useState(recipe?.title ?? "");
-  const [description, setDescription] = useState(recipe?.description ?? "");
-  const [coverImageUrl, setCoverImageUrl] = useState(recipe?.coverImageUrl ?? "");
-  const [servings, setServings] = useState(recipe?.servings ?? 2);
-  const [prepMinutes, setPrepMinutes] = useState<string>(recipe?.prepMinutes?.toString() ?? "");
-  const [cookMinutes, setCookMinutes] = useState<string>(recipe?.cookMinutes?.toString() ?? "");
-  const [difficulty, setDifficulty] = useState<Difficulty>((recipe?.difficulty as Difficulty) ?? "easy");
-  const [cuisine, setCuisine] = useState(recipe?.cuisine ?? "");
-  const [mealType, setMealType] = useState<MealType | "">((recipe?.mealType as MealType) ?? "");
-  const [cookbookId, setCookbookId] = useState<string>(recipe?.cookbookId ?? "");
-  const [kcal, setKcal] = useState<string>(recipe?.kcal?.toString() ?? "");
-  const [protein, setProtein] = useState<string>(recipe?.protein?.toString() ?? "");
-  const [carbs, setCarbs] = useState<string>(recipe?.carbs?.toString() ?? "");
-  const [fat, setFat] = useState<string>(recipe?.fat?.toString() ?? "");
-  const [notes, setNotes] = useState(recipe?.notes ?? "");
+  // K5: gdy nie edytujemy istniejącego przepisu, seed z importowanego szkicu (do rewizji).
+  const d = recipe ? null : initialDraft ?? null;
+  const isReview = !!d;
+
+  const [title, setTitle] = useState(recipe?.title ?? d?.title ?? "");
+  const [description, setDescription] = useState(recipe?.description ?? d?.description ?? "");
+  const [coverImageUrl, setCoverImageUrl] = useState(recipe?.coverImageUrl ?? d?.coverImageUrl ?? "");
+  const [servings, setServings] = useState(recipe?.servings ?? d?.servings ?? 2);
+  const [prepMinutes, setPrepMinutes] = useState<string>(recipe?.prepMinutes?.toString() ?? d?.prepMinutes?.toString() ?? "");
+  const [cookMinutes, setCookMinutes] = useState<string>(recipe?.cookMinutes?.toString() ?? d?.cookMinutes?.toString() ?? "");
+  const [difficulty, setDifficulty] = useState<Difficulty>((recipe?.difficulty as Difficulty) ?? (d?.difficulty as Difficulty) ?? "easy");
+  const [cuisine, setCuisine] = useState(recipe?.cuisine ?? d?.cuisine ?? "");
+  const [mealType, setMealType] = useState<MealType | "">((recipe?.mealType as MealType) ?? (d?.mealType as MealType) ?? "");
+  const [cookbookId, setCookbookId] = useState<string>(recipe?.cookbookId ?? d?.cookbookId ?? "");
+  const [kcal, setKcal] = useState<string>(recipe?.kcal?.toString() ?? d?.kcal?.toString() ?? "");
+  const [protein, setProtein] = useState<string>(recipe?.protein?.toString() ?? d?.protein?.toString() ?? "");
+  const [carbs, setCarbs] = useState<string>(recipe?.carbs?.toString() ?? d?.carbs?.toString() ?? "");
+  const [fat, setFat] = useState<string>(recipe?.fat?.toString() ?? d?.fat?.toString() ?? "");
+  const [notes, setNotes] = useState(recipe?.notes ?? d?.notes ?? "");
 
   const [ingredients, setIngredients] = useState<IngredientRow[]>(
     recipe?.ingredients.map((ing) => ({
@@ -74,6 +81,13 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
       note: ing.note,
       isOptional: ing.isOptional,
       order: ing.order,
+    })) ?? d?.ingredients?.map((ing) => ({
+      _key: makeKey(),
+      name: ing.name,
+      quantity: ing.quantity ?? null,
+      unit: ing.unit ?? null,
+      note: ing.note ?? null,
+      isOptional: ing.isOptional ?? false,
     })) ?? [{ _key: makeKey(), name: "" }]
   );
 
@@ -85,6 +99,11 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
       durationMin: s.durationMin,
       temperature: s.temperature,
       imageUrl: s.imageUrl,
+    })) ?? d?.steps?.map((s) => ({
+      _key: makeKey(),
+      text: s.text,
+      durationMin: s.durationMin ?? null,
+      temperature: s.temperature ?? null,
     })) ?? [{ _key: makeKey(), text: "" }]
   );
 
@@ -291,8 +310,21 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
       </div>
 
       <h1 className="text-lg font-semibold mb-3" style={{ color: "var(--text-primary)" }}>
-        {isEdit ? "Edycja przepisu" : "Nowy przepis"}
+        {isEdit ? "Edycja przepisu" : isReview ? "Sprawdź zaimportowany przepis" : "Nowy przepis"}
       </h1>
+
+      {isReview && (
+        <div
+          className="flex items-start gap-2 mb-3 px-3 py-2 rounded border text-xs"
+          style={{ borderColor: "var(--accent-purple)", backgroundColor: "rgba(139,92,246,0.08)", color: "var(--text-secondary)" }}
+        >
+          <ClipboardCheck size={15} style={{ color: "var(--accent-purple)", flexShrink: 0, marginTop: 1 }} />
+          <span>
+            Dane wczytane {importSourceLabel ? `(${importSourceLabel})` : ""} przez AI mogą zawierać błędy.
+            <strong style={{ color: "var(--text-primary)" }}> Sprawdź i popraw</strong> tytuł, składniki i kroki przed zapisaniem.
+          </span>
+        </div>
+      )}
 
       <div className="flex flex-col gap-3">
         <Field label="Tytuł">

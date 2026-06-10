@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { X, Sparkles } from "lucide-react";
 import { llm } from "@/lib/llm-client";
 import { useToast } from "@/components/ui/Toast";
-import { createRecipe } from "@/actions/recipes";
+import { stashImportDraft } from "@/lib/kitchen/recipeImportDraft";
 import type { CreateRecipeInput, MealType, Difficulty } from "@/types/kitchen";
 
 interface ImportFromAIDialogProps {
@@ -58,9 +58,10 @@ export function ImportFromAIDialog({ open, onClose }: ImportFromAIDialogProps) {
         })),
         steps: r.steps.map((s, idx) => ({ text: s.text, order: idx })),
       };
-      const created = await createRecipe(payload);
-      showToast("Wygenerowano przepis", "success");
-      router.push(`/kitchen/recipes/${created.slug}`);
+      // K5: do rewizji przed zapisem — AI bywa kreatywne, użytkownik zatwierdza.
+      stashImportDraft({ source: "ai", recipe: payload });
+      onClose();
+      router.push(`/kitchen/recipes/new?import=1`);
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Błąd generowania", "error");
     } finally {
