@@ -35,4 +35,4 @@ export const ADMIN_DOCS: AdminDoc[] = [
   }
 ]
 
-export const ADMIN_DOCS_GENERATED_AT = "2026-06-10T20:46:01.025Z"
+export const ADMIN_DOCS_GENERATED_AT = "2026-06-10T21:04:39.123Z"

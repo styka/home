@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0144: odhaczenie W4 w master-planie (re-seed z md) + raport implementacyjny portfela.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -526,3 +531,45 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Portfel: W4 auto-wydatki)',
+  'omnia-implementacja-2026-06-10-portfel-w4',
+  $omnia_impl_0144$# Omnia — Raport implementacji 2026-06-10 (Portfel: W4 auto-wydatki)
+
+Dwudziesta siodma porcja — Faza 2, modul Portfel × Flota.
+
+## W4 — Automatyczne ksiegowanie wydatkow do Portfela (silnik + Flota)
+**Diagnoza:** par 4.10 — wydatki dalo sie dodawac tylko recznie (lub przez AI `add_expense`).
+Brakowalo AUTOMATYCZNEJ integracji: realne koszty z innych modulow (tankowania, serwisy) nie
+trafialy do bilansu Portfela. To mial byc wyrozniк Omnia — wydatki z realnych zdarzen.
+**Rozwiazanie:** generyczny silnik `src/lib/portfel/autoExpense.ts` (NIE „use server" — wewnetrzny,
+wolany przez Server Actions, nie eksponowany do klienta):
+- `bookAutoExpense(userId, {module, sourceId, amount, category, note, date})` — ksieguje wydatek na
+  domyslnym koncie, o ile auto-ksiegowanie wlaczone; idempotentny po `(sourceModule, sourceId)`
+  (ponowne wolanie aktualizuje kwote i koryguje saldo o roznice); ksieguje TYLKO na prywatne,
+  aktywne konto uzytkownika (nigdy zespolowe/cudze automatycznie).
+- `removeAutoExpense(module, sourceId)` — przy kasowaniu rekordu zrodlowego usuwa wpis i odwraca saldo.
+Model `FinanceSettings` (per-user: `autoExpenseEnabled` + `autoExpenseElementId`) + akcje
+`portfelAuto.ts` (`get/setFinanceSettings`, walidacja ze konto jest wlasne). Nowe kolumny
+`WalletEntry.sourceModule/sourceId` (+ indeks) do powiazania i idempotencji.
+Spiecie z Flota: `addFuelLog` → koszt jako „paliwo" (notka „Tankowanie N l"), `addServiceRecord` →
+koszt jako „serwis pojazdu" (notka = typ serwisu); `deleteFuelLog`/`deleteServiceRecord` cofaja wpis.
+UI `/portfel/ustawienia` (`PortfelSettingsPage`): wlacznik + wybor konta z autosave; wejscie w
+pod-nawigacji Portfela.
+**Zakres:** dzialaja zrodla z gotowym kosztem (Flota: `FuelLog.totalCost`, `ServiceRecord.cost`).
+Zakupy/Kuchnia dolacza, gdy pozycje zyskaja ceny (pozycja S6) — silnik jest juz gotowy i generyczny.
+**Pliki:** `prisma/schema.prisma`, `0143_finance_w4_autoexpense`, `src/lib/portfel/autoExpense.ts`,
+`src/actions/portfelAuto.ts`, `src/actions/flota.ts`, `app/portfel/ustawienia/page.tsx`,
+`PortfelSettingsPage.tsx`, `PortfelSideNav.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja `0143` zastosowana lokalnie.
+
+## Podsumowanie
+Finanse: zostalo W5 (kursy walut). Auto-wydatki domkna sie w pelni po S6 (ceny w Zakupach). Dalej:
+AI pro (H3/H4/H5), Etap C marketplace (M14/M16/M17/M19), Faza 4.$omnia_impl_0144$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

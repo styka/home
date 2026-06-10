@@ -65,6 +65,7 @@ model User {
   walletElements         WalletElement[]       @relation("OwnedWalletElements")
   budgets                Budget[]              @relation("OwnedBudgets")
   financeGoals           FinanceGoal[]         @relation("OwnedFinanceGoals")
+  financeSettings        FinanceSettings?      @relation("UserFinanceSettings")
   languageDecks          LanguageDeck[]        @relation("OwnedLanguageDecks")
   healthEvents           HealthEvent[]         @relation("OwnedHealthEvents")
   medicationSchedules    MedicationSchedule[]  @relation("OwnedMedicationSchedules")
@@ -1580,11 +1581,26 @@ model WalletEntry {
   kind        String   @default("adjustment") // income|expense|adjustment
   category    String?
   note        String?
+  sourceModule String? // W4: moduł źródłowy auto-wydatku (np. "flota")
+  sourceId     String? // W4: id rekordu źródłowego (FuelLog/ServiceRecord) — idempotencja + usuwanie
   createdAt   DateTime @default(now())
 
   element WalletElement @relation(fields: [elementId], references: [id], onDelete: Cascade)
 
   @@index([elementId, date])
+  @@index([sourceModule, sourceId])
+}
+
+// W4: ustawienia automatycznego księgowania wydatków do Portfela (per-user).
+model FinanceSettings {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  autoExpenseEnabled   Boolean  @default(false)
+  autoExpenseElementId String? // docelowy element portfela dla auto-wydatków
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation("UserFinanceSettings", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // W1: budżet wydatków per kategoria (limit na okres) — kategoria pasuje do WalletEntry.category.

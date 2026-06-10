@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
+import { bookAutoExpense, removeAutoExpense } from "@/lib/portfel/autoExpense";
+import { SERVICE_LABELS } from "@/lib/flota";
 import type { Vehicle, FuelLog, ServiceRecord } from "@prisma/client";
 
 export type VehicleAttachmentDTO = { id: string; name: string; url: string; createdAt: Date };
@@ -146,9 +148,21 @@ export async function addFuelLog(
     where: { id: vehicleId, odometer: { lt: data.odometer } },
     data: { odometer: data.odometer },
   });
+  // W4: auto-wydatek do Portfela (jeśli włączony) — koszt tankowania.
+  if (log.totalCost && log.totalCost > 0) {
+    await bookAutoExpense(user.id, {
+      module: "flota",
+      sourceId: log.id,
+      amount: log.totalCost,
+      category: "paliwo",
+      note: `Tankowanie ${log.liters} l`,
+      date: log.date,
+    });
+  }
   void trackActivity("flota", "add_fuel", { vehicleId, liters: data.liters });
   revalidatePath(`/flota/${vehicleId}`);
   revalidatePath("/flota");
+  revalidatePath("/portfel");
   return log;
 }
 
@@ -158,7 +172,9 @@ export async function deleteFuelLog(id: string): Promise<void> {
   if (!log) return;
   await assertVehicleAccess(log.vehicleId, user.id);
   await prisma.fuelLog.delete({ where: { id } });
+  await removeAutoExpense("flota", id);
   revalidatePath(`/flota/${log.vehicleId}`);
+  revalidatePath("/portfel");
 }
 
 export async function addServiceRecord(
@@ -177,8 +193,20 @@ export async function addServiceRecord(
       note: data.note?.trim() || null,
     },
   });
+  // W4: auto-wydatek do Portfela (jeśli włączony) — koszt serwisu.
+  if (rec.cost && rec.cost > 0) {
+    await bookAutoExpense(user.id, {
+      module: "flota",
+      sourceId: rec.id,
+      amount: rec.cost,
+      category: "serwis pojazdu",
+      note: SERVICE_LABELS[rec.type] ?? rec.type,
+      date: rec.date,
+    });
+  }
   void trackActivity("flota", "add_service", { vehicleId, type: data.type ?? "other" });
   revalidatePath(`/flota/${vehicleId}`);
+  revalidatePath("/portfel");
   return rec;
 }
 
@@ -188,7 +216,9 @@ export async function deleteServiceRecord(id: string): Promise<void> {
   if (!rec) return;
   await assertVehicleAccess(rec.vehicleId, user.id);
   await prisma.serviceRecord.delete({ where: { id } });
+  await removeAutoExpense("flota", id);
   revalidatePath(`/flota/${rec.vehicleId}`);
+  revalidatePath("/portfel");
 }
 
 // ─── F3 załączniki pojazdu ──────────────────────────────────────────────────
