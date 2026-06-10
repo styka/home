@@ -22,3 +22,5 @@ nbbuild/
 dist/
 nbdist/
 .nb-gradle/
+# Build artifacts (stray root-level Next.js traces)
+.next/
