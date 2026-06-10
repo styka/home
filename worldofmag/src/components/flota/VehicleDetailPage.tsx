@@ -3,11 +3,12 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Car, ArrowLeft, Gauge, Fuel, Wrench, Plus, Loader2, Trash2, CalendarClock, ShieldCheck,
+  Car, ArrowLeft, Gauge, Fuel, Wrench, Plus, Loader2, Trash2, CalendarClock, ShieldCheck, Paperclip,
 } from "lucide-react";
 import { LineChart } from "@/components/ui/LineChart";
 import {
   addFuelLog, deleteFuelLog, addServiceRecord, deleteServiceRecord, updateVehicle, deleteVehicle,
+  addVehicleAttachment, deleteVehicleAttachment,
   type VehicleWithStats,
 } from "@/actions/flota";
 import { FUEL_LABELS, SERVICE_LABELS, deadlineStatus, computeConsumption } from "@/lib/flota";
@@ -148,7 +149,64 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
             </div>
           )}
         </div>
+
+        {/* Załączniki (F3) */}
+        <AttachmentsSection vehicle={vehicle} />
       </div>
+    </div>
+  );
+}
+
+function AttachmentsSection({ vehicle }: { vehicle: VehicleWithStats }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const attachments = vehicle.attachments ?? [];
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 2_500_000) { setError("Plik za duży (max ~2,5 MB)"); return; }
+    setBusy(true); setError(null);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = () => reject(new Error("Nie udało się wczytać pliku"));
+        r.readAsDataURL(file);
+      });
+      await addVehicleAttachment(vehicle.id, file.name, dataUrl);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Błąd dodawania");
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div style={card}>
+      <h2 style={h2}><Paperclip size={16} /> Dokumenty i załączniki</h2>
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ ...addBtn, display: "inline-flex", cursor: busy ? "wait" : "pointer" }}>
+          {busy ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} Dodaj plik
+          <input type="file" accept="image/*,application/pdf" onChange={onFile} disabled={busy} style={{ display: "none" }} />
+        </label>
+        <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 8 }}>faktury, dowód rej., polisa OC (max ~2,5 MB)</span>
+      </div>
+      {error && <p style={{ fontSize: 12, color: "var(--accent-red)", margin: "0 0 8px" }}>{error}</p>}
+      {attachments.length === 0 ? (
+        <p style={emptyText}>Brak załączników.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {attachments.map((a) => (
+            <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--text-primary)", padding: "6px 8px", borderRadius: 6, background: "var(--bg-base)" }}>
+              <span style={{ color: "var(--text-muted)", width: 78 }}>{new Date(a.createdAt).toLocaleDateString("pl-PL")}</span>
+              <a href={a.url} target="_blank" rel="noopener noreferrer" download={a.name} style={{ flex: 1, color: "var(--accent-blue)", textDecoration: "none", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</a>
+              <button onClick={async () => { if (confirm("Usunąć załącznik?")) { await deleteVehicleAttachment(a.id); router.refresh(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title="Usuń"><Trash2 size={13} /></button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

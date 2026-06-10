@@ -1466,9 +1466,23 @@ model Vehicle {
   ownerTeam Team?           @relation("TeamVehicles", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   fuelLogs  FuelLog[]
   services  ServiceRecord[]
+  attachments VehicleAttachment[]
 
   @@index([ownerId])
   @@index([ownerTeamId])
+}
+
+// F3: załączniki pojazdu (faktury, dowód rejestracyjny, OC). url = data-URL lub link.
+model VehicleAttachment {
+  id        String   @id @default(cuid())
+  vehicleId String
+  name      String
+  url       String
+  createdAt DateTime @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
 }
 
 model FuelLog {
