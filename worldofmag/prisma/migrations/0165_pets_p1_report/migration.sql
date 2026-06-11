@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0165: odhaczenie P1 (weryfikacja) w master-planie (re-seed z md) + raport.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -685,3 +690,36 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Zwierzeta: P1 weryfikacja)',
+  'omnia-implementacja-2026-06-10-pets-p1',
+  $omnia_impl_0165$# Omnia — Raport implementacji 2026-06-10 (Zwierzeta: P1 weryfikacja)
+
+Czterdziesta porcja — Faza 1, modul Zwierzeta (weryfikacja, bez zmian w kodzie).
+
+## P1 — Progressive disclosure funkcji pro (JUZ ISTNIEJE — odhaczone)
+**Diagnoza:** par 4.6 — modul Zwierzeta obsluguje i zwyklego pupila (kot/pies), i hodowce gadow;
+sekcje pro (terrarium, hodowla, genetyka) nie powinny przytlaczac zwyklego usera.
+**Stan faktyczny (audyt 2026-06-10):** mechanizm jest w pelni zaimplementowany:
+- `src/lib/petPresets.ts`: 7 presetow (companion, reptile_keeper, reptile_breeder, aquarium, bird,
+  small_mammal, custom) z lista widocznych funkcji; `suggestedPresetForSpecies` mapuje gatunek→preset.
+- Per-pet `featureFlags` (JSON) nadpisuja flagi presetu w `resolveFeatures` (merge nad baza presetu).
+- `PetDetailPage` buduje zakladki TYLKO z funkcji wlaczonych (`FEATURE_ORDER.filter(features[f])`),
+  wiec companion ukrywa HUSBANDRY/AQUARIUM/BREEDING/GENETICS.
+- Kreator `PetForm` proponuje preset wg gatunku (z mozliwoscia zmiany); zakladka „Widocznosc"
+  (`FeatureSettingsSection`) pozwala zmienic preset i przelaczyc poszczegolne funkcje
+  (`updatePetFeatures(petId, presetKey, flagsJSON)`).
+**Decyzja:** odhaczone jako zrobione (wzorzec K1/Z3 — weryfikacja zamiast duplikacji). Brak zmian
+w kodzie; migracja tylko re-seeduje raport.
+
+## Weryfikacja
+- `next build` zielony; brak zmian w bazie ani w komponentach.
+
+## Podsumowanie
+Pets: P1 zweryfikowane. Pozostale Pets: P2 (alerty parametrow terrariow), P3 (eksport pomiarow),
+P4 (spiecie /pets/calendar z NM1). Dalej: M14 (firma+pracownicy), Faza 4, X2/X3, X5.$omnia_impl_0165$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
