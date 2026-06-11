@@ -14,13 +14,15 @@ interface Props {
   initialYear: number;
   initialMonth0: number;
   initialEvents: CalendarEvent[];
+  initialModule?: CalendarModule | null; // P4: wstępny filtr (np. ?module=pets)
 }
 
-export function CalendarPage({ initialYear, initialMonth0, initialEvents }: Props) {
+export function CalendarPage({ initialYear, initialMonth0, initialEvents, initialModule = null }: Props) {
   const [year, setYear] = useState(initialYear);
   const [month0, setMonth0] = useState(initialMonth0);
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [selected, setSelected] = useState<string>(isoDay(new Date()));
+  const [filter, setFilter] = useState<CalendarModule | null>(initialModule);
   const [pending, startTransition] = useTransition();
 
   function go(deltaMonths: number) {
@@ -34,9 +36,13 @@ export function CalendarPage({ initialYear, initialMonth0, initialEvents }: Prop
     });
   }
 
-  // Mapa dzień → zdarzenia.
+  // P4: filtr po module (klik w legendę). Wszystkie moduły obecne w miesiącu (do legendy).
+  const allModules = Array.from(new Set(events.map((e) => e.module)));
+  const shown = filter ? events.filter((e) => e.module === filter) : events;
+
+  // Mapa dzień → zdarzenia (po filtrze).
   const byDay = new Map<string, CalendarEvent[]>();
-  for (const e of events) {
+  for (const e of shown) {
     const arr = byDay.get(e.date) ?? [];
     arr.push(e);
     byDay.set(e.date, arr);
@@ -45,7 +51,7 @@ export function CalendarPage({ initialYear, initialMonth0, initialEvents }: Prop
   const cells = buildGrid(year, month0);
   const todayKey = isoDay(new Date());
   const selectedEvents = byDay.get(selected) ?? [];
-  const activeModules = Array.from(new Set(events.map((e) => e.module)));
+  const activeModules = allModules;
 
   return (
     <div style={pageContainerStyle}>
@@ -66,15 +72,30 @@ export function CalendarPage({ initialYear, initialMonth0, initialEvents }: Prop
           }
         />
 
-        {/* Legenda modułów obecnych w miesiącu */}
+        {/* Legenda modułów obecnych w miesiącu — klik filtruje (P4) */}
         {activeModules.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-            {activeModules.map((m) => (
-              <span key={m} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--text-muted)" }}>
-                <span style={{ width: 8, height: 8, borderRadius: 99, background: MODULE_META[m as CalendarModule].accent }} />
-                {MODULE_META[m as CalendarModule].label}
-              </span>
-            ))}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+            {activeModules.map((m) => {
+              const active = filter === m;
+              return (
+                <button
+                  key={m}
+                  onClick={() => setFilter(active ? null : (m as CalendarModule))}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "3px 9px", borderRadius: 99, cursor: "pointer",
+                    border: `1px solid ${active ? MODULE_META[m as CalendarModule].accent : "var(--border)"}`,
+                    background: active ? "color-mix(in srgb, " + MODULE_META[m as CalendarModule].accent + " 14%, var(--bg-surface))" : "transparent",
+                    color: active ? "var(--text-primary)" : "var(--text-muted)" }}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: 99, background: MODULE_META[m as CalendarModule].accent }} />
+                  {MODULE_META[m as CalendarModule].label}
+                </button>
+              );
+            })}
+            {filter && (
+              <button onClick={() => setFilter(null)} style={{ fontSize: 11, color: "var(--accent-blue)", background: "none", border: "none", cursor: "pointer" }}>
+                Pokaż wszystkie
+              </button>
+            )}
           </div>
         )}
 

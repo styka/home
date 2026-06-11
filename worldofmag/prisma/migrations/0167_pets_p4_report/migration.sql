@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0167: odhaczenie P4 w master-planie (re-seed z md) + raport implementacyjny zwierzat.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -705,3 +710,36 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Zwierzeta: P4 spiecie kalendarza)',
+  'omnia-implementacja-2026-06-10-pets-p4',
+  $omnia_impl_0167$# Omnia — Raport implementacji 2026-06-10 (Zwierzeta: P4 spiecie kalendarza)
+
+Czterdziesta druga porcja — Faza 1, Zwierzeta x Kalendarz (NM1).
+
+## P4 — Jedna warstwa kalendarza dla opieki nad zwierzetami (OK)
+**Diagnoza:** par 4.6 — `/pets/calendar` pokazywal OSOBNA agende opieki (`getCareAgenda`), podczas
+gdy NM1 ma juz wspolny kalendarz miesieczny (`getCalendarEvents`). Dwie rozne warstwy kalendarza.
+**Stan wejsciowy:** `getCalendarEvents` JUZ agreguje opieke nad zwierzetami (PetCareTask +
+PetTreatment → module „pets", href /pets/<id>) — domkniete przy NM1.
+**Rozwiazanie:** wspolny `/calendar` (`CalendarPage`) zyskal FILTR modulu — legenda modulow stala
+sie klikalnymi chipami (klik = filtruj do modulu, ponowny klik / „Pokaz wszystkie" = reset);
+filtrowane sa kropki w siatce i lista wybranego dnia. Strona `/calendar` czyta `?module=` (walidacja
+po `MODULE_META`) i przekazuje `initialModule`. `/pets/calendar` (agenda zalegle/nadchodzace,
+actionable) dostala akcje naglowka „Widok miesieczny" → `/calendar?module=pets` (tylko gdy user ma
+`module.calendar`). Dzieki temu opieka nad zwierzetami to JEDNA warstwa we wspolnym kalendarzu, a
+agenda pozostaje jako szybka lista do odhaczania.
+**Pliki:** `src/components/calendar/CalendarPage.tsx`, `app/calendar/page.tsx`,
+`app/pets/calendar/page.tsx`.
+
+## Weryfikacja
+- `next build` zielony; brak zmian w bazie.
+
+## Podsumowanie
+Pets: P1/P2/P4 zrobione. Zostalo P3 (eksport pomiarow PDF/dla weterynarza). Dalej: M14 (firma+
+pracownicy), Faza 4 (SC2-SC7, branze V1-V5), X2/X3 propagacja design systemu, X5 a11y.$omnia_impl_0167$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
