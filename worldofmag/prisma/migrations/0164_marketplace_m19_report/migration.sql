@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0164: odhaczenie M19 w master-planie (re-seed z md) + raport implementacyjny marketplace.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -673,3 +678,40 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Marketplace: M19 profil publiczny/SEO)',
+  'omnia-implementacja-2026-06-10-marketplace-m19',
+  $omnia_impl_0164$# Omnia — Raport implementacji 2026-06-10 (Marketplace: M19 profil publiczny/SEO)
+
+Trzydziesta dziewiata porcja — Etap C marketplace.
+
+## M19 — Profil publiczny / SEO (OK)
+**Diagnoza:** rozdz. 3.5 — profil wykonawcy nie mial czytelnego, stabilnego linku do udostepniania
+ani metadanych (tytul/opis), co utrudnia akwizycje klientow i dzielenie sie profilem.
+**Rozwiazanie:** `ServiceProvider.slug` (unikat) + `tagline`. `slugify` (NFD→ASCII, myslniki) +
+`uniqueProviderSlug` (sufiks liczbowy przy kolizji) nadaja slug RAZ przy zapisie profilu (stabilny).
+`upsertServiceProvider` zapisuje tagline i (gdy brak) slug. `getProviderPublic` przyjmuje id LUB
+slug. Strona `/services/providers/[providerId]` dostala `generateMetadata` (tytul = nazwa+obszar,
+description = tagline/bio, OpenGraph). `ProviderPublicPage`: tagline w podtytule + przycisk
+„Udostepnij" (kopiuje `/services/providers/<slug>` do schowka). Panel wykonawcy: pole „Haslo/tagline"
+w formularzu + link do wlasnego profilu publicznego.
+**Granica/uczciwosc:** pelne SEO-indeksowanie (sitemap, robots, crawl Google) jest N/A dopoki cala
+aplikacja wymaga logowania (gotcha #8 — brak trybu anonimowego); wprowadzenie „trybu publicznego"
+dla profili to zadanie Fazy 4. Tu dostarczamy: czytelny shareowalny URL, sensowne metadane karty/
+unfurla i edytowalny tagline. Istniejacy wykonawcy dostaja slug przy najblizszym zapisie (link po id
+dziala do tego czasu).
+**Pliki:** `prisma/schema.prisma`, `0163_provider_slug_tagline`, `src/actions/services.ts`,
+`app/services/providers/[providerId]/page.tsx`, `app/services/provider/page.tsx`,
+`components/services/ProviderPublicPage.tsx`, `components/services/ProviderPanelPage.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja `0163` zastosowana lokalnie.
+
+## Podsumowanie
+Etap C marketplace prawie zamkniety (M11/M13/M16/M17/M19 ✅). Zostalo M14 (firma+pracownicy) i M15
+(abonamenty=monetyzacja, F4). Dalej: Faza 4 (SC2-SC7, branze V1-V5), pomniejsze (P1-P4, X2/X3, X5).$omnia_impl_0164$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

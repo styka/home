@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Briefcase, ArrowLeft, Plus, Pencil, Trash2, Check, X, Eye, EyeOff, ImagePlus, Rocket, CheckCircle2, Circle, MapPin } from "lucide-react";
+import { Briefcase, ArrowLeft, Plus, Pencil, Trash2, Check, X, Eye, EyeOff, ImagePlus, Rocket, CheckCircle2, Circle, MapPin, Share2 } from "lucide-react";
 import { PageHeader, EmptyState, SectionHeading, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
 import {
   upsertServiceProvider,
@@ -42,6 +42,8 @@ type ListingItem = {
 
 type ProviderData = {
   displayName: string;
+  slug: string | null;
+  tagline: string | null;
   bio: string | null;
   area: string | null;
   phone: string | null;
@@ -104,9 +106,15 @@ export function ProviderPanelPage({ provider, categories, incomingRequests, stat
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "var(--text-muted)" }}><EyeOff size={12} /> Ukryty</span>
                 )}
               </div>
+              {provider.tagline && <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 2, fontStyle: "italic" }}>{provider.tagline}</div>}
               {provider.area && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{provider.area}</div>}
               {provider.bio && <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6, whiteSpace: "pre-wrap" }}>{provider.bio}</div>}
               <div style={{ marginTop: 8 }}><RatingStars avg={provider.ratingAvg} count={provider.ratingCount} /></div>
+              {provider.slug && (
+                <Link href={`/services/providers/${provider.slug}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--accent-blue)", textDecoration: "none", marginTop: 8 }}>
+                  <Share2 size={12} /> Twój publiczny profil: /services/providers/{provider.slug}
+                </Link>
+              )}
             </div>
             <button onClick={() => setEditingProfile(true)} style={secondaryButtonStyle}>
               <Pencil size={14} />
@@ -176,6 +184,7 @@ function ProfileForm({
   onCancel?: () => void;
 }) {
   const [displayName, setDisplayName] = useState(initial?.displayName ?? "");
+  const [tagline, setTagline] = useState(initial?.tagline ?? "");
   const [area, setArea] = useState(initial?.area ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
   const [nip, setNip] = useState(initial?.nip ?? "");
@@ -193,7 +202,7 @@ function ProfileForm({
     setBusy(true);
     setError(null);
     try {
-      await upsertServiceProvider({ displayName, area, phone, nip, bio, visible });
+      await upsertServiceProvider({ displayName, tagline, area, phone, nip, bio, visible });
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nie udało się zapisać profilu");
@@ -207,6 +216,9 @@ function ProfileForm({
       <div>
         <label style={fieldLabelStyle}>Nazwa wyświetlana *</label>
         <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} style={fieldInputStyle} placeholder="np. Jan Kowalski — usługi hydrauliczne" />
+
+        <label style={fieldLabelStyle}>Hasło / tagline (na profil i link)</label>
+        <input value={tagline} onChange={(e) => setTagline(e.target.value)} maxLength={160} style={fieldInputStyle} placeholder="np. Hydraulik z 15-letnim doświadczeniem, Warszawa" />
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <div style={{ flex: 1 }}>

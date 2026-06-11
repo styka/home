@@ -25,6 +25,8 @@ export default async function ServicesProviderPage() {
         provider
           ? {
               displayName: provider.displayName,
+              slug: provider.slug,
+              tagline: provider.tagline,
               bio: provider.bio,
               area: provider.area,
               phone: provider.phone,

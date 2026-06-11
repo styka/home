@@ -1957,6 +1957,10 @@ model ServiceProvider {
   id          String  @id @default(cuid())
   userId      String  @unique
   displayName String
+  // M19: czytelny, stabilny slug do udostępniania profilu (/services/providers/<slug>).
+  slug        String? @unique
+  // M19: krótkie hasło/tagline na profil publiczny (meta-opis + nagłówek).
+  tagline     String?
   bio         String?
   // Obszar działania (miasto/region) — wyszukiwanie tekstowe na start.
   area        String?

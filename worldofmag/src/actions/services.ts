@@ -107,8 +107,29 @@ export async function getMyProviderProfile() {
   });
 }
 
+// M19: slug z nazwy (ASCII, myślniki). Wynik unikalny dzięki sufiksowi liczbowemu.
+function slugify(s: string): string {
+  return s
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // diakrytyki
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48) || "wykonawca";
+}
+
+async function uniqueProviderSlug(base: string, ownProviderId: string | null): Promise<string> {
+  const root = slugify(base);
+  for (let i = 0; i < 50; i++) {
+    const candidate = i === 0 ? root : `${root}-${i + 1}`;
+    const existing = await prisma.serviceProvider.findUnique({ where: { slug: candidate }, select: { id: true } });
+    if (!existing || existing.id === ownProviderId) return candidate;
+  }
+  return `${root}-${Date.now().toString(36)}`;
+}
+
 export async function upsertServiceProvider(data: {
   displayName: string;
+  tagline?: string | null;
   bio?: string | null;
   area?: string | null;
   phone?: string | null;
@@ -119,13 +140,19 @@ export async function upsertServiceProvider(data: {
   const displayName = data.displayName.trim();
   if (!displayName) throw new Error("Nazwa wykonawcy jest wymagana");
 
+  const existing = await prisma.serviceProvider.findUnique({ where: { userId: user.id }, select: { id: true, slug: true } });
+  // Slug nadajemy raz (przy tworzeniu lub gdy go brak) — stabilny link do udostępniania.
+  const slug = existing?.slug ?? (await uniqueProviderSlug(displayName, existing?.id ?? null));
+
   const fields = {
     displayName,
+    tagline: data.tagline?.trim() || null,
     bio: data.bio?.trim() || null,
     area: data.area?.trim() || null,
     phone: data.phone?.trim() || null,
     nip: data.nip?.trim() || null,
     visible: data.visible ?? true,
+    slug,
   };
 
   await prisma.serviceProvider.upsert({
@@ -334,10 +361,11 @@ export async function getListing(id: string): Promise<ListingDTO | null> {
   return l ? toListingDTO(l) : null;
 }
 
-export async function getProviderPublic(providerId: string) {
+/** M19: akceptuje id LUB slug (czytelny link do udostępniania). */
+export async function getProviderPublic(idOrSlug: string) {
   const user = await requireAuth();
-  const provider = await prisma.serviceProvider.findUnique({
-    where: { id: providerId },
+  const provider = await prisma.serviceProvider.findFirst({
+    where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
     include: {
       listings: {
         where: { active: true },
@@ -354,7 +382,7 @@ export async function getProviderPublic(providerId: string) {
   });
   if (!provider) return null;
   const fav = await prisma.serviceFavorite.findUnique({
-    where: { userId_providerId: { userId: user.id, providerId } },
+    where: { userId_providerId: { userId: user.id, providerId: provider.id } },
     select: { id: true },
   });
   return { ...provider, isFavorite: !!fav };

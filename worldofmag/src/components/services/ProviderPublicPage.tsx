@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Star, MessageSquare } from "lucide-react";
+import { ArrowLeft, MapPin, Star, MessageSquare, Share2, Check } from "lucide-react";
 import { PageHeader, SectionHeading, pageContainerStyle, pageInnerStyle, cardStyle, cardHoverHandlers } from "@/components/ui/home";
 import { Heart } from "lucide-react";
 import { RatingStars, formatPrice, VerifiedBadge, secondaryButtonStyle } from "./serviceUi";
@@ -11,7 +11,9 @@ import type { PriceModel } from "@/lib/services";
 
 interface ProviderPublic {
   id: string;
+  slug: string | null;
   displayName: string;
+  tagline: string | null;
   bio: string | null;
   area: string | null;
   ratingAvg: number;
@@ -27,7 +29,13 @@ interface ProviderPublic {
 export function ProviderPublicPage({ provider, isAdmin = false }: { provider: ProviderPublic; isAdmin?: boolean }) {
   const [verified, setVerified] = useState(provider.verified);
   const [favored, setFavored] = useState(provider.isFavorite);
+  const [copied, setCopied] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  function share() {
+    const url = `${window.location.origin}/services/providers/${provider.slug ?? provider.id}`;
+    navigator.clipboard?.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {});
+  }
 
   function onToggleFav() {
     setFavored((v) => !v);
@@ -52,7 +60,12 @@ export function ProviderPublicPage({ provider, isAdmin = false }: { provider: Pr
         <PageHeader
           icon={<span style={{ fontSize: 22 }}>👤</span>}
           title={provider.displayName}
-          subtitle={provider.area ?? undefined}
+          subtitle={provider.tagline ?? provider.area ?? undefined}
+          action={
+            <button onClick={share} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: copied ? "var(--accent-green)" : "var(--text-secondary)", fontSize: 13, cursor: "pointer" }} title="Skopiuj link do profilu">
+              {copied ? <Check size={14} /> : <Share2 size={14} />} {copied ? "Skopiowano" : "Udostępnij"}
+            </button>
+          }
         />
 
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
