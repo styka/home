@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0156: odhaczenie A3 w master-planie (re-seed z md) + raport implementacyjny admina.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -624,3 +629,40 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Admin: A3 panel zdrowia)',
+  'omnia-implementacja-2026-06-10-admin-a3',
+  $omnia_impl_0156$# Omnia — Raport implementacji 2026-06-10 (Admin: A3 panel zdrowia)
+
+Trzydziesta piata porcja — Faza 2, operacje (Admin).
+
+## A3 — Panel zdrowia systemu /admin/health (OK)
+**Diagnoza:** par 4.16 — brak jednego miejsca pokazujacego, czy system dziala: czy DB odpowiada,
+czy LLM jest skonfigurowany, ktore integracje maja klucze, jaka wersja jest wdrozona. Operacyjna
+slepota przed skala.
+**Rozwiazanie:** akcja `src/actions/systemHealth.ts/getSystemHealth` (admin-only) zbiera:
+- DB: latencja prostego `SELECT 1`, liczba zastosowanych migracji + nazwa ostatniej (z
+  `_prisma_migrations`, w try/catch — bezpieczne gdy tabeli brak).
+- LLM: liczba dostawcow (aktywni/wszyscy), przypisania per typ operacji (`OPERATION_TYPES`) z flaga
+  OK (dostawca wlaczony + ma klucz), obecnosc legacy `groq_api_key`; `ready` = jest dzialajacy model.
+- Integracje: Brave Search i ORS — sama OBECNOSC klucza (Config lub env), bez wartosci.
+- Build: `NEXT_PUBLIC_BUILD_*` (galaz/commit/data/opis).
+- Liczby rekordow kluczowych encji (users/teams/notes/tasks/lists/recipes/notifications/trash) +
+  statystyki audytu (suma + ostatni wpis).
+UI `SystemHealthPage` (klient): karty Baza/LLM/Integracje/Build/Dane ze statusami zielony/czerwony
+(kropka + ikona CheckCircle/XCircle). Wejscie z konsoli admina (`/admin`).
+**Pliki:** `src/actions/systemHealth.ts`, `app/admin/health/page.tsx`,
+`components/admin/SystemHealthPage.tsx`, `app/admin/page.tsx`.
+
+## Weryfikacja
+- `next build` zielony; brak zmian w bazie (migracja re-seeduje raporty).
+
+## Podsumowanie
+**Bezpieczenstwo/Admin domkniete: A1 (audyt), A2 (szyfrowanie kluczy), A3 (zdrowie systemu).**
+Dalej: Etap C marketplace (M14/M16/M17/M19), Faza 4 (SC2-SC7, branze V1-V5), pomniejsze
+(H1 personalizacja dashboardu, P1-P4 Pets, X2/X3 propagacja design systemu).$omnia_impl_0156$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
