@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { getConfigValue } from "@/actions/config";
+import { getConfigMasked } from "@/actions/config";
 import { AdminConfigForm } from "./AdminConfigForm";
 import { ChevronLeft, Cpu, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -12,8 +12,9 @@ export default async function AdminConfigPage() {
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
-  const groqKey = await getConfigValue("groq_api_key");
-  const braveKey = await getConfigValue("brave_search_api_key");
+  // A2: do klienta trafia tylko maska + flaga, nigdy surowy klucz.
+  const groqKey = await getConfigMasked("groq_api_key");
+  const braveKey = await getConfigMasked("brave_search_api_key");
 
   return (
     <div

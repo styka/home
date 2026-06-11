@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/crypto/secrets";
 
 // Wyszukiwarka internetowa do budowania BAZOWEJ bazy wiedzy (RSS ma tylko świeże
 // pozycje — wyszukiwarka sięga do archiwum i szerszego internetu).
@@ -120,7 +121,7 @@ export async function webSearch(query: string, limit = 6): Promise<WebResult[]> 
     .findUnique({ where: { key: "brave_search_api_key" } })
     .catch(() => null);
   if (key?.value) {
-    const brave = await braveSearch(key.value, q, limit);
+    const brave = await braveSearch(decryptSecret(key.value), q, limit);
     if (brave.length > 0) return brave;
   }
   return duckDuckGo(q, limit);

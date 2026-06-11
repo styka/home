@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0153: odhaczenie A2 w master-planie (re-seed z md) + raport implementacyjny admina.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -600,3 +605,44 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Admin: A2 szyfrowanie kluczy)',
+  'omnia-implementacja-2026-06-10-admin-a2',
+  $omnia_impl_0153$# Omnia — Raport implementacji 2026-06-10 (Admin: A2 szyfrowanie kluczy)
+
+Trzydziesta trzecia porcja — Faza 2, bezpieczenstwo (Admin).
+
+## A2 — Szyfrowanie kluczy API w spoczynku + maskowanie (OK)
+**Diagnoza:** par 4.16 — klucze API (Groq, Brave, ORS, `LlmProvider.apiKey`) lezaly w bazie
+PLAINTEXTEM, a strona `/admin/config` wysylala surowy klucz do klienta (z opcja „pokaz"). Wyciek
+bazy lub HTML strony = wyciek wszystkich kluczy.
+**Rozwiazanie:** `src/lib/crypto/secrets.ts` — AES-256-GCM:
+- `encryptSecret`/`decryptSecret` (format `enc:v1:iv.tag.ct` base64), klucz 32B z SHA-256 sekretu env
+  (`CONFIG_SECRET` lub `AUTH_SECRET`). WSTECZNIE KOMPATYBILNE: wartosc bez prefiksu = plaintext,
+  zwracana bez zmian (stare klucze dzialaja do pierwszego ponownego zapisu). Zly klucz → "" (miekka
+  degradacja, bez wyjatku).
+- `maskSecret` (kropki + 4 ostatnie znaki), `isSecretConfigKey` (sufiksy `_api_key/_secret/_token/
+  _password`).
+Zapisy szyfruja: `setConfigValue` (klucze-sekrety), `createProvider`/`updateProvider`.
+Odczyty deszyfruja tylko do UZYCIA: `resolver` (provider.apiKey + groq_api_key), `webSearch`
+(brave_search_api_key), `ors` (ors_api_key). UI nie dostaje surowego klucza: nowy `getConfigMasked`
+zwraca `{hasValue, masked}`; strona `/admin/config` i `AdminConfigForm` pokazuja tylko maske (pole
+sluzy do wpisania NOWEGO klucza, usunieto reveal-raw); `getLlmProviders` maskuje po deszyfracji.
+**Operacyjnie (lekcja):** szyfrowanie wiaze dane z env-sekretem — `AUTH_SECRET` na Render musi byc
+staly; jego rotacja wymaga ponownego wpisania kluczy. Re-szyfrowanie istniejacych plaintextow
+nastepuje przy najblizszym zapisie (passthrough do tego czasu).
+**Pliki:** `src/lib/crypto/secrets.ts`, `src/actions/config.ts`, `src/actions/llmConfig.ts`,
+`src/lib/llm/resolver.ts`, `src/lib/news/webSearch.ts`, `src/lib/ors.ts`,
+`app/admin/config/page.tsx`, `app/admin/config/AdminConfigForm.tsx`.
+
+## Weryfikacja
+- `next build` zielony; brak zmian w bazie (migracja re-seeduje raporty).
+
+## Podsumowanie
+Bezpieczenstwo: zostalo A1 (audyt RBAC/config — `AuditLog`) i A3 (panel zdrowia systemu). Dalej:
+Etap C marketplace, Faza 4, pomniejsze (H1, P1-P4).$omnia_impl_0153$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

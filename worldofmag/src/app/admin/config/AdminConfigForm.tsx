@@ -4,9 +4,11 @@ import { useState, useTransition } from "react";
 import { Check, Eye, EyeOff } from "lucide-react";
 import { setConfigValue } from "@/actions/config";
 
+type MaskedKey = { hasValue: boolean; masked: string };
+
 interface AdminConfigFormProps {
-  groqKey: string | null;
-  braveKey: string | null;
+  groqKey: MaskedKey;
+  braveKey: MaskedKey;
 }
 
 export function AdminConfigForm({ groqKey, braveKey }: AdminConfigFormProps) {
@@ -16,7 +18,7 @@ export function AdminConfigForm({ groqKey, braveKey }: AdminConfigFormProps) {
         sectionTitle="Konfiguracja LLM (Groq)"
         label="Klucz API Groq"
         configKey="groq_api_key"
-        initial={groqKey}
+        current={groqKey}
         placeholder="gsk_..."
         help={
           <>
@@ -33,7 +35,7 @@ export function AdminConfigForm({ groqKey, braveKey }: AdminConfigFormProps) {
         sectionTitle="Wyszukiwarka internetowa (Asystent AI + Wiadomości)"
         label="Klucz API Brave Search"
         configKey="brave_search_api_key"
-        initial={braveKey}
+        current={braveKey}
         placeholder="BSA..."
         help={
           <>
@@ -81,33 +83,35 @@ function ApiKeyCard({
   sectionTitle,
   label,
   configKey,
-  initial,
+  current,
   placeholder,
   help,
 }: {
   sectionTitle: string;
   label: string;
   configKey: string;
-  initial: string | null;
+  current: { hasValue: boolean; masked: string };
   placeholder: string;
   help: React.ReactNode;
 }) {
-  const [key, setKey] = useState(initial ?? "");
+  // A2: nie mamy surowego klucza po stronie klienta — pole służy tylko do wpisania NOWEGO.
+  const [key, setKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savedHasValue, setSavedHasValue] = useState(current.hasValue);
   const [isPending, startTransition] = useTransition();
 
   function save() {
     startTransition(async () => {
       await setConfigValue(configKey, key.trim());
       setSaved(true);
+      setSavedHasValue(!!key.trim());
+      setKey("");
       setTimeout(() => setSaved(false), 2000);
     });
   }
 
-  const maskedDisplay = initial
-    ? `${"•".repeat(Math.max(0, initial.length - 4))}${initial.slice(-4)}`
-    : "Nie ustawiony";
+  const maskedDisplay = current.hasValue ? current.masked : "Nie ustawiony";
 
   return (
     <section>
@@ -140,7 +144,7 @@ function ApiKeyCard({
             {help}
           </p>
 
-          {initial && !showKey && (
+          {savedHasValue && (
             <div
               className="flex items-center gap-2 mb-3 px-3 py-2 rounded text-xs mono"
               style={{
@@ -148,11 +152,9 @@ function ApiKeyCard({
                 color: "var(--text-muted)",
                 border: "1px solid var(--border)",
               }}
+              title="Klucz jest zaszyfrowany — pokazujemy tylko maskę. Wpisz nowy, aby nadpisać."
             >
-              <span className="flex-1">{maskedDisplay}</span>
-              <button onClick={() => setShowKey(true)} className="focus:outline-none" style={{ color: "var(--text-muted)" }}>
-                <Eye size={13} />
-              </button>
+              <span className="flex-1">Ustawiony: {maskedDisplay}</span>
             </div>
           )}
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/crypto/secrets";
 import {
   GROQ_BASE_URL,
   OPERATION_TYPE_META,
@@ -39,7 +40,7 @@ export async function resolveLlm(op: OperationType): Promise<ResolvedLlm | null>
     return {
       kind: (p.kind as ProviderKind) ?? "openai_compat",
       baseUrl: p.baseUrl,
-      apiKey: p.apiKey,
+      apiKey: decryptSecret(p.apiKey), // A2: klucz zaszyfrowany w spoczynku
       model: assignment.model,
       temperature: assignment.temperature,
       maxTokens: assignment.maxTokens,
@@ -52,7 +53,7 @@ export async function resolveLlm(op: OperationType): Promise<ResolvedLlm | null>
     return {
       kind: "openai_compat",
       baseUrl: GROQ_BASE_URL,
-      apiKey: legacy.value,
+      apiKey: decryptSecret(legacy.value),
       model: OPERATION_TYPE_META[op].defaultModel,
     };
   }

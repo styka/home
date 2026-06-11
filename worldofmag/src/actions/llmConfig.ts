@@ -10,6 +10,7 @@ import {
   isOperationType,
   type OperationType,
 } from "@/lib/llm/operationTypes";
+import { encryptSecret, decryptSecret, maskSecret } from "@/lib/crypto/secrets";
 
 async function requireAdmin() {
   const session = await auth();
@@ -37,12 +38,6 @@ export interface AssignmentDTO {
   maxTokens: number | null;
 }
 
-function maskKey(key: string): string {
-  if (!key) return "";
-  if (key.length <= 4) return "••••";
-  return `${"•".repeat(Math.max(0, key.length - 4))}${key.slice(-4)}`;
-}
-
 export async function getLlmProviders(): Promise<ProviderDTO[]> {
   await requireAdmin();
   const rows = await prisma.llmProvider.findMany({ orderBy: { createdAt: "asc" } });
@@ -51,7 +46,8 @@ export async function getLlmProviders(): Promise<ProviderDTO[]> {
     label: p.label,
     kind: p.kind,
     baseUrl: p.baseUrl,
-    apiKeyMasked: maskKey(p.apiKey),
+    // A2: deszyfruj tylko po to, by pokazać maskę (4 ostatnie znaki realnego klucza).
+    apiKeyMasked: maskSecret(decryptSecret(p.apiKey)),
     hasKey: Boolean(p.apiKey),
     enabled: p.enabled,
   }));
@@ -69,7 +65,7 @@ export async function createProvider(data: {
   const kind = data.kind === "anthropic" ? "anthropic" : "openai_compat";
   if (!label || !baseUrl) throw new Error("Nazwa i adres bazowy są wymagane");
   await prisma.llmProvider.create({
-    data: { label, kind, baseUrl, apiKey: data.apiKey.trim(), enabled: true },
+    data: { label, kind, baseUrl, apiKey: encryptSecret(data.apiKey.trim()), enabled: true },
   });
   revalidatePath("/admin/llm");
 }
@@ -85,7 +81,7 @@ export async function updateProvider(
   if (data.kind !== undefined) patch.kind = data.kind === "anthropic" ? "anthropic" : "openai_compat";
   if (data.enabled !== undefined) patch.enabled = data.enabled;
   // Pusty klucz = nie nadpisuj (pozwala edytować inne pola bez ujawniania klucza).
-  if (data.apiKey !== undefined && data.apiKey.trim()) patch.apiKey = data.apiKey.trim();
+  if (data.apiKey !== undefined && data.apiKey.trim()) patch.apiKey = encryptSecret(data.apiKey.trim());
   await prisma.llmProvider.update({ where: { id }, data: patch });
   revalidatePath("/admin/llm");
 }

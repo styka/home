@@ -8,6 +8,7 @@
 // 2 directions calls per plan — do not loop these.
 
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/crypto/secrets";
 import type { PolygonCoords } from "@/lib/googleMaps";
 
 const ORS_BASE = "https://api.openrouteservice.org";
@@ -46,7 +47,8 @@ async function getOrsKey(): Promise<string> {
   const env = process.env.ORS_API_KEY?.trim();
   if (env) return env;
   const row = await prisma.config.findUnique({ where: { key: "ors_api_key" } });
-  if (row?.value?.trim()) return row.value.trim();
+  const dec = decryptSecret(row?.value).trim();
+  if (dec) return dec;
   throw new OrsError("NO_KEY", "OpenRouteService nie jest skonfigurowany (ustaw ORS_API_KEY).");
 }
 

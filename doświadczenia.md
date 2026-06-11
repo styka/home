@@ -810,3 +810,16 @@ a nie bezpośrednim Prisma po id. Bezpieczeństwo trzymaj w warstwie zapisu, nie
 **Problem:** `npm run build` (pełny, z `scripts/migrate.js`) zaczął padać `P1001: Can't reach database server at 127.0.0.1:5432` mimo że wcześniej w sesji działał. Kontener uśpił/zrestartował klaster Postgresa (był `down` wg `pg_lsclusters`), a do tego zostawił stale pid file.
 **Rozwiązanie:** `sudo pg_ctlcluster 16 main start` (sam komunikat „Removed stale pid file" jest nieszkodliwy) → klaster `online` → build przechodzi. `next build` (sam kompilator+typy) NIE potrzebuje DB i przechodzi nawet gdy Postgres leży — DB jest potrzebna dopiero w kroku `migrate deploy` pełnego `npm run build`.
 **Lekcja:** W zdalnym sandboxie lokalny Postgres do weryfikacji buildu nie jest trwały — jak `migrate.js` zacznie zgłaszać P1001, najpierw `pg_lsclusters` i ewentualnie `pg_ctlcluster 16 main start`, dopiero potem panikuj. Do szybkiej iteracji nad kodem wystarcza `npx next build` (bez DB); pełny `npm run build` rób przed mergem, gdy DB stoi.
+
+## 2026-06-10 — A2: szyfrowanie kluczy API zalezy od stalego AUTH_SECRET/CONFIG_SECRET
+**Problem:** Wdrazajac szyfrowanie sekretow w spoczynku (AES-256-GCM, klucz wyprowadzony z env
+`CONFIG_SECRET`||`AUTH_SECRET`), latwo przeoczyc, ze ZMIANA tego env-sekretu czyni wszystkie
+zaszyfrowane klucze nieodszyfrowywalnymi (deszyfracja zwraca pusty string → „LLM nie skonfigurowany").
+**Rozwiazanie:** `decryptSecret` jest wstecznie kompatybilne (wartosci bez prefiksu `enc:v1:` =
+plaintext, zwracane bez zmian), wiec stare klucze dzialaja do pierwszego ponownego zapisu (ktory je
+szyfruje). Przy zlym kluczu deszyfracja zwraca "" (nie rzuca), wiec system degraduje sie lagodnie, a
+nie crashuje. WAZNE operacyjnie: `AUTH_SECRET` na Render musi byc STALY — jego rotacja wymaga
+ponownego wpisania wszystkich kluczy API w panelu admina.
+**Lekcja:** Szyfrowanie „at rest" wiaze dane z kluczem z env — udokumentuj to i nigdy nie rotuj
+`AUTH_SECRET` bez planu ponownego wprowadzenia sekretow. Funkcje deszyfrujace rob tolerancyjne
+(plaintext-passthrough + brak wyjatku na zlym kluczu), by migracja byla bezszwowa, a awaria miekka.
