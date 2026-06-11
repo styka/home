@@ -1607,6 +1607,22 @@ model FinanceSettings {
   user User @relation("UserFinanceSettings", fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// A1: dziennik audytu zmian RBAC i konfiguracji (kto / co / kiedy). Bez FK do User —
+// e-mail aktora to migawka (zostaje czytelny nawet po usunięciu konta).
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorEmail String?
+  category   String // "rbac" | "config"
+  action     String // np. "role_permission.toggle"
+  target     String? // czego dotyczy (rola, slug, klucz, providerId)
+  detail     String? // czytelny opis
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([category, createdAt])
+}
+
 // H5: kosz / soft-delete. Zamiast twardo usuwać, zapisujemy migawkę (JSON) encji,
 // by można ją było przywrócić. Lista list nie filtruje deletedAt — wiersz jest realnie usuwany,
 // a przywracanie odtwarza go z migawki (z oryginalnym id).

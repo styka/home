@@ -228,6 +228,11 @@ export default async function AdminPage() {
               <span style={{ fontSize: 13 }}>Zarządzanie dostępem (role & uprawnienia)</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
+            <Link href="/admin/audit" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <Shield size={15} style={{ color: "var(--accent-amber)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Dziennik audytu (RBAC & konfiguracja)</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
             <Link href="/admin/playground" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Shield size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Component Playground</span>

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { encryptSecret, decryptSecret, maskSecret, isSecretConfigKey } from "@/lib/crypto/secrets";
+import { logAudit } from "@/lib/audit";
 
 async function requireAdmin() {
   const session = await auth();
@@ -36,4 +37,6 @@ export async function setConfigValue(key: string, value: string): Promise<void> 
     update: { value: stored, updatedAt: new Date() },
     create: { key, value: stored, updatedAt: new Date() },
   });
+  // Nie logujemy wartości sekretów — tylko fakt zmiany klucza konfiguracji.
+  await logAudit("config", "config.set", key, isSecretConfigKey(key) ? `Zmieniono sekret „${key}”` : `Ustawiono „${key}”`);
 }

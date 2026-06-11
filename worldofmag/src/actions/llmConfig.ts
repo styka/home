@@ -11,6 +11,7 @@ import {
   type OperationType,
 } from "@/lib/llm/operationTypes";
 import { encryptSecret, decryptSecret, maskSecret } from "@/lib/crypto/secrets";
+import { logAudit } from "@/lib/audit";
 
 async function requireAdmin() {
   const session = await auth();
@@ -67,6 +68,7 @@ export async function createProvider(data: {
   await prisma.llmProvider.create({
     data: { label, kind, baseUrl, apiKey: encryptSecret(data.apiKey.trim()), enabled: true },
   });
+  await logAudit("config", "llm_provider.create", label, `Dodano dostawcę LLM „${label}” (${kind})`);
   revalidatePath("/admin/llm");
 }
 
@@ -83,6 +85,7 @@ export async function updateProvider(
   // Pusty klucz = nie nadpisuj (pozwala edytować inne pola bez ujawniania klucza).
   if (data.apiKey !== undefined && data.apiKey.trim()) patch.apiKey = encryptSecret(data.apiKey.trim());
   await prisma.llmProvider.update({ where: { id }, data: patch });
+  await logAudit("config", "llm_provider.update", id, `Zmieniono dostawcę LLM${data.apiKey?.trim() ? " (w tym klucz)" : ""}`);
   revalidatePath("/admin/llm");
 }
 
@@ -92,7 +95,9 @@ export async function deleteProvider(id: string): Promise<void> {
   if (usedBy > 0) {
     throw new Error("Nie można usunąć — dostawca jest przypisany do typu operacji. Najpierw zmień przypisania.");
   }
+  const prov = await prisma.llmProvider.findUnique({ where: { id }, select: { label: true } });
   await prisma.llmProvider.delete({ where: { id } });
+  await logAudit("config", "llm_provider.delete", id, `Usunięto dostawcę LLM „${prov?.label ?? id}”`);
   revalidatePath("/admin/llm");
 }
 
@@ -143,5 +148,6 @@ export async function setAssignment(data: {
       maxTokens: data.maxTokens ?? null,
     },
   });
+  await logAudit("config", "llm_assignment.set", data.operationType, `Przypisano model „${model}” do operacji ${data.operationType}`);
   revalidatePath("/admin/llm");
 }

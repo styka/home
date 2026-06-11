@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0155: odhaczenie A1 w master-planie (re-seed z md) + raport implementacyjny admina.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -613,3 +618,40 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Admin: A1 dziennik audytu)',
+  'omnia-implementacja-2026-06-10-admin-a1',
+  $omnia_impl_0155$# Omnia — Raport implementacji 2026-06-10 (Admin: A1 dziennik audytu)
+
+Trzydziesta czwarta porcja — Faza 2, bezpieczenstwo (Admin).
+
+## A1 — Dziennik audytu RBAC i konfiguracji (OK)
+**Diagnoza:** par 4.16 — zmiany uprawnien (kto komu nadal/odebral role, kto zmienil konfiguracje/
+klucze) nie byly nigdzie rejestrowane. Przy zespolach to luka rozliczalnosci i bezpieczenstwa.
+**Rozwiazanie:** model `AuditLog { actorId, actorEmail(migawka), category(rbac|config), action,
+target, detail, createdAt }` (bez FK do User — e-mail aktora czytelny nawet po usunieciu konta).
+Helper `src/lib/audit.ts/logAudit(category, action, target?, detail?)` — server-side (NIE „use
+server"), sam pobiera aktora z sesji, best-effort (blad zapisu audytu NIE wywraca operacji
+biznesowej). Wpiety po wykonaniu mutacji w:
+- RBAC (`access.ts`): permission create/update/delete, role_permission grant/revoke (toggle),
+  user_role add/remove.
+- Konfiguracja: `config.ts/setConfigValue` (loguje fakt zmiany klucza, NIGDY wartosci sekretu),
+  `llmConfig.ts` provider create/update/delete + assignment.set.
+Odczyt: akcja `getAuditLog({category?})` (200 ostatnich, malejaco) + strona `/admin/audit`
+(`AuditLogPage` — zakladki Wszystko/RBAC/Konfiguracja, on-demand filtr) + wejscie z konsoli admina.
+**Pliki:** `prisma/schema.prisma`, `0154_audit_log`, `src/lib/audit.ts`, `src/actions/access.ts`,
+`src/actions/config.ts`, `src/actions/llmConfig.ts`, `app/admin/audit/page.tsx`,
+`components/admin/AuditLogPage.tsx`, `app/admin/page.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja `0154` zastosowana lokalnie.
+
+## Podsumowanie
+Bezpieczenstwo/Admin: A1 (audyt) i A2 (szyfrowanie kluczy) domkniete; zostal A3 (panel zdrowia
+systemu: status migracji/LLM/kosztow). Dalej: Etap C marketplace (M14/M16/M17/M19), Faza 4,
+pomniejsze (H1 personalizacja, P1-P4 Pets).$omnia_impl_0155$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

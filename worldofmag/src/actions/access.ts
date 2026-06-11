@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
+import { logAudit } from "@/lib/audit"
 
 async function requireAdmin() {
   const session = await auth()
@@ -72,12 +73,14 @@ export async function getPermissions(): Promise<PermissionData[]> {
 export async function createPermission(slug: string, name: string, description?: string): Promise<void> {
   await requireAdmin()
   await prisma.permission.create({ data: { slug: slug.trim(), name: name.trim(), description: description?.trim() || null } })
+  await logAudit("rbac", "permission.create", slug.trim(), `Utworzono uprawnienie „${name.trim()}”`)
   revalidatePath("/admin/access")
 }
 
 export async function updatePermission(id: string, name: string, description?: string): Promise<void> {
   await requireAdmin()
-  await prisma.permission.update({ where: { id }, data: { name: name.trim(), description: description?.trim() || null } })
+  const perm = await prisma.permission.update({ where: { id }, data: { name: name.trim(), description: description?.trim() || null } })
+  await logAudit("rbac", "permission.update", perm.slug, `Zmieniono uprawnienie „${name.trim()}”`)
   revalidatePath("/admin/access")
 }
 
@@ -90,6 +93,7 @@ export async function deletePermission(id: string): Promise<void> {
     )
   }
   await prisma.permission.delete({ where: { id } })
+  await logAudit("rbac", "permission.delete", perm?.slug ?? id, `Usunięto uprawnienie`)
   revalidatePath("/admin/access")
 }
 
@@ -138,8 +142,10 @@ export async function toggleRolePermission(role: string, permissionSlug: string)
       }
     }
     await prisma.rolePermission.delete({ where: { id: existing.id } })
+    await logAudit("rbac", "role_permission.revoke", role, `Odebrano „${permissionSlug}” roli ${role}`)
   } else {
     await prisma.rolePermission.create({ data: { role, permissionId: perm.id } })
+    await logAudit("rbac", "role_permission.grant", role, `Nadano „${permissionSlug}” roli ${role}`)
   }
   revalidatePath("/admin/access")
 }
@@ -170,6 +176,8 @@ export async function addUserRole(userId: string, role: string): Promise<void> {
     create: { userId, role },
     update: {},
   })
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
+  await logAudit("rbac", "user_role.add", userId, `Nadano rolę ${role} użytkownikowi ${u?.email ?? userId}`)
   revalidatePath("/admin/access")
 }
 
@@ -183,6 +191,8 @@ export async function removeUserRole(userId: string, role: string): Promise<void
     )
   }
   await prisma.userRole.delete({ where: { userId_role: { userId, role } } })
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
+  await logAudit("rbac", "user_role.remove", userId, `Odebrano rolę ${role} użytkownikowi ${u?.email ?? userId}`)
   revalidatePath("/admin/access")
 }
 
@@ -193,4 +203,34 @@ export async function getAvailableRoles(): Promise<string[]> {
   // Ensure built-in roles always appear in dropdowns even if nobody has them yet
   const builtin = ["ADMIN", "USER", "BETA_TESTER", "TESTER"]
   return Array.from(new Set([...dbRoles, ...builtin])).sort()
+}
+
+// --- A1: dziennik audytu ---
+
+export type AuditEntry = {
+  id: string
+  actorEmail: string | null
+  category: string
+  action: string
+  target: string | null
+  detail: string | null
+  createdAt: string
+}
+
+export async function getAuditLog(filter?: { category?: "rbac" | "config" }): Promise<AuditEntry[]> {
+  await requireAdmin()
+  const rows = await prisma.auditLog.findMany({
+    where: filter?.category ? { category: filter.category } : undefined,
+    orderBy: { createdAt: "desc" },
+    take: 200,
+  })
+  return rows.map((r) => ({
+    id: r.id,
+    actorEmail: r.actorEmail,
+    category: r.category,
+    action: r.action,
+    target: r.target,
+    detail: r.detail,
+    createdAt: r.createdAt.toISOString(),
+  }))
 }
