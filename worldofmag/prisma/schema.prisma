@@ -2051,9 +2051,30 @@ model ServiceRequest {
   messages ServiceMessage[]
   quotes   ServiceQuote[]
   payment  ServicePayment?
+  disputes ServiceDispute[]
 
   @@index([clientId, status])
   @@index([providerId, status])
+}
+
+// M17: spory/moderacja. Strona zlecenia (klient/wykonawca) zgłasza problem, moderator (admin)
+// rozstrzyga. status OPEN | RESOLVED | REJECTED.
+model ServiceDispute {
+  id          String    @id @default(cuid())
+  requestId   String
+  openedById  String // user, który zgłosił
+  reason      String // krótki tytuł/kategoria
+  description String?
+  status      String    @default("OPEN")
+  resolution  String? // notatka moderatora
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  request ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([requestId])
 }
 
 // Płatność za zlecenie (M9): kwota, metoda, status. Spięcie z Portfelem opt-in

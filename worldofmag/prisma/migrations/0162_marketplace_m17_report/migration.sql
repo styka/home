@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0162: odhaczenie M17 w master-planie (re-seed z md) + raport implementacyjny marketplace.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -660,3 +665,39 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Marketplace: M17 moderacja/spory)',
+  'omnia-implementacja-2026-06-10-marketplace-m17',
+  $omnia_impl_0162$# Omnia — Raport implementacji 2026-06-10 (Marketplace: M17 moderacja/spory)
+
+Trzydziesta osma porcja — Etap C marketplace.
+
+## M17 — Spory / moderacja (OK)
+**Diagnoza:** rozdz. 3.5 — brak mechanizmu rozstrzygania problemow miedzy klientem a wykonawca
+(usluga niewykonana, platnosc sporna). Bezpieczenstwo transakcji przy skali wymaga moderacji.
+**Rozwiazanie:** model `ServiceDispute` (`requestId`, `openedById`, `reason`, `description?`,
+`status` OPEN|RESOLVED|REJECTED, `resolution?`, `resolvedAt?`). Akcje w `services.ts`:
+- `openDispute(requestId, reason, desc?)` — strona zlecenia (klient/wykonawca) zglasza; jeden OPEN
+  na zlecenie; powiadamia druga strone (M6).
+- `getRequestDisputes(requestId)` — obie strony widza spory w watku (z flaga `mine`).
+- `getModerationDisputes({status?})` — ADMIN: lista (domyslnie OPEN) z danymi zlecenia/stron.
+- `resolveDispute(id, RESOLVED|REJECTED, note?)` — ADMIN: rozstrzyga + powiadamia obie strony.
+UI: `DisputeSection` w `RequestThread` (przycisk „Zglos problem do moderacji" + formularz powod/opis;
+lista zgloszen ze statusem i ewentualnym rozstrzygnieciem moderatora). Strona `/services/moderation`
+(`ModerationPage`, gate `module.admin`): zakladki Otwarte/Rozwiazane/Odrzucone, rozstrzyganie z
+notatka; wejscie z konsoli admina.
+**Pliki:** `prisma/schema.prisma`, `0161_service_dispute`, `src/lib/services.ts` (DTO),
+`src/actions/services.ts`, `src/components/services/RequestThread.tsx`,
+`src/components/services/ModerationPage.tsx`, `app/services/moderation/page.tsx`, `app/admin/page.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja `0161` zastosowana lokalnie.
+
+## Podsumowanie
+Etap C marketplace: zostalo M14 (firma+pracownicy z osobnymi kalendarzami) i M19 (profil publiczny/
+SEO). Dalej: Faza 4 (SC2-SC7, branze V1-V5), pomniejsze (P1-P4 Pets, X2/X3, X5 a11y).$omnia_impl_0162$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

@@ -823,3 +823,19 @@ ponownego wpisania wszystkich kluczy API w panelu admina.
 **Lekcja:** Szyfrowanie „at rest" wiaze dane z kluczem z env — udokumentuj to i nigdy nie rotuj
 `AUTH_SECRET` bez planu ponownego wprowadzenia sekretow. Funkcje deszyfrujace rob tolerancyjne
 (plaintext-passthrough + brak wyjatku na zlym kluczu), by migracja byla bezszwowa, a awaria miekka.
+
+## 2026-06-10 — Pusta migracja zapisana jako „applied" → potem nie da sie dodac tresci
+**Problem:** Przez reset cwd Basha `mkdir`+`cat > migration.sql` trafilo do ZLEJ sciezki (root repo),
+a w `worldofmag/prisma/migrations/0161.../migration.sql` powstal PUSTY plik. `prisma migrate deploy`
+zastosowal pusta migracje (no-op) i zapisal ja w `_prisma_migrations` jako applied. Gdy pozniej
+dopisalem prawidlowy SQL do tego pliku, kolejny `migrate deploy` (w `npm run build`) probowal go
+uruchomic → kolizja (CREATE TABLE na istniejacej tabeli / checksum mismatch) → FAILED record blokujacy
+build.
+**Rozwiazanie:** (1) tabele utworzylem recznie `psql -f migration.sql`; (2) pogodzilem stan migracji:
+`prisma migrate resolve --rolled-back 0161_...` a potem `--applied 0161_...` (skoro tabela juz
+istnieje, nie chcemy jej uruchamiac ponownie). Build przeszedl. Na prodzie migracja zastosuje sie
+swiezo z prawidlowa trescia — problem byl wylacznie lokalnym artefaktem.
+**Lekcja:** ZAWSZE twórz migracje z `cd .../worldofmag &&` w tej samej linii i OD RAZU wypełnij SQL —
+nigdy nie zostawiaj pustego `migration.sql`, bo Prisma zapisze go jako applied i nie pozwoli go pozniej
+„dopelnic". Jak juz sie stanie: `migrate resolve --rolled-back` → `--applied` (gdy schemat zgadza sie
+recznie) zamiast walczyc z `migrate deploy`.

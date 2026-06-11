@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Send, MessageSquare, Tag, Check, X, Wallet } from "lucide-react";
+import { Send, MessageSquare, Tag, Check, X, Wallet, AlertTriangle } from "lucide-react";
 import {
   getRequestThread,
   sendServiceMessage,
@@ -12,9 +12,11 @@ import {
   bookClientExpense,
   applyPromoCode,
   clearPromoCode,
+  getRequestDisputes,
+  openDispute,
 } from "@/actions/services";
 import { getWalletElements } from "@/actions/portfel";
-import type { RequestThreadDTO, ServiceQuoteDTO, ServicePaymentDTO, PaymentMethod } from "@/lib/services";
+import type { RequestThreadDTO, ServiceQuoteDTO, ServicePaymentDTO, PaymentMethod, ServiceDisputeDTO } from "@/lib/services";
 import { QUOTE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/services";
 import { fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 
@@ -62,6 +64,9 @@ export function RequestThread({ requestId }: { requestId: string }) {
 
       {/* Płatność (M9) */}
       <PaymentSection requestId={requestId} role={thread.role} payment={thread.payment} onChange={() => reload()} />
+
+      {/* Spory / moderacja (M17) */}
+      <DisputeSection requestId={requestId} />
 
       {/* Czat */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -312,6 +317,65 @@ function PromoCodeRow({ requestId, payment, onChange }: { requestId: string; pay
       <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === "Enter" && apply()} placeholder="Kod rabatowy" style={{ ...fieldInputStyle, width: 130, textTransform: "uppercase" }} />
       <button onClick={apply} disabled={busy || !code.trim()} style={secondaryButtonStyle}>Zastosuj</button>
       {err && <span style={{ color: "var(--accent-red)", fontSize: 11 }}>{err}</span>}
+    </div>
+  );
+}
+
+const DISPUTE_STATUS_LABELS: Record<string, string> = { OPEN: "Otwarte", RESOLVED: "Rozwiązane", REJECTED: "Odrzucone" };
+const DISPUTE_STATUS_COLORS: Record<string, string> = { OPEN: "var(--accent-amber)", RESOLVED: "var(--accent-green)", REJECTED: "var(--text-muted)" };
+
+function DisputeSection({ requestId }: { requestId: string }) {
+  const [disputes, setDisputes] = useState<ServiceDisputeDTO[] | null>(null);
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [desc, setDesc] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function reload() { setDisputes(await getRequestDisputes(requestId).catch(() => [])); }
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [requestId]);
+
+  const hasOpen = (disputes ?? []).some((d) => d.status === "OPEN");
+
+  async function submit() {
+    if (!reason.trim()) return;
+    setBusy(true); setErr(null);
+    try { await openDispute(requestId, reason.trim(), desc.trim() || null); setReason(""); setDesc(""); setOpen(false); await reload(); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Błąd"); } finally { setBusy(false); }
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
+        <AlertTriangle size={13} /> Problem ze zleceniem
+      </span>
+
+      {(disputes ?? []).map((d) => (
+        <div key={d.id} style={{ fontSize: 12, padding: "6px 8px", borderRadius: 6, background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+          <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{d.reason}</span>
+          <span style={{ marginLeft: 6, color: DISPUTE_STATUS_COLORS[d.status] }}>· {DISPUTE_STATUS_LABELS[d.status]}</span>
+          {d.mine && <span style={{ marginLeft: 6, color: "var(--text-muted)" }}>(Twoje zgłoszenie)</span>}
+          {d.description && <div style={{ color: "var(--text-muted)", marginTop: 2 }}>{d.description}</div>}
+          {d.resolution && <div style={{ color: "var(--accent-green)", marginTop: 2 }}>Moderator: {d.resolution}</div>}
+        </div>
+      ))}
+
+      {!hasOpen && !open && (
+        <button onClick={() => setOpen(true)} style={{ alignSelf: "flex-start", fontSize: 12, color: "var(--accent-red)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+          Zgłoś problem do moderacji
+        </button>
+      )}
+      {open && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Powód (np. usługa niewykonana)" style={fieldInputStyle} />
+          <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Opis (opcjonalnie)" rows={2} style={{ ...fieldInputStyle, resize: "vertical" }} />
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={submit} disabled={busy || !reason.trim()} style={{ ...primaryButtonStyle, background: "var(--accent-red)" }}>Wyślij zgłoszenie</button>
+            <button onClick={() => setOpen(false)} style={secondaryButtonStyle}>Anuluj</button>
+          </div>
+          {err && <span style={{ color: "var(--accent-red)", fontSize: 11 }}>{err}</span>}
+        </div>
+      )}
     </div>
   );
 }

@@ -81,6 +81,19 @@ export type ServicePaymentDTO = {
   paidAt: string | null;
 };
 
+// M17: spory/moderacja.
+export type DisputeStatus = "OPEN" | "RESOLVED" | "REJECTED";
+export type ServiceDisputeDTO = {
+  id: string;
+  reason: string;
+  description: string | null;
+  status: DisputeStatus;
+  resolution: string | null;
+  mine: boolean; // czy bieżący użytkownik zgłosił
+  createdAt: string;
+  resolvedAt: string | null;
+};
+
 // M16: kody rabatowe wykonawcy.
 export type PromoKind = "percent" | "amount";
 export type ServicePromoCodeDTO = {
