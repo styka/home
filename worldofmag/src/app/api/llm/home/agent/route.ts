@@ -5,6 +5,7 @@ import { PET_ACTIONS_PROMPT, PET_ACTION_EXAMPLES } from "@/lib/ai/petActions";
 import { READ_TOOLS_PROMPT, READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentTools";
 import { webSearch } from "@/lib/news/webSearch";
 import { chatComplete } from "@/lib/llm/chat";
+import { checkRateLimit, acquireSlot } from "@/lib/ai/rateLimit";
 import type { AIAction } from "@/lib/ai/aiAction";
 
 const MAX_ITERATIONS = 6;
@@ -541,6 +542,12 @@ export async function POST(req: NextRequest) {
   }
   const userId = session.user.id;
 
+  // H4: rate-limit per użytkownik (ochrona przed pętlą klienta i kosztami LLM).
+  const rl = checkRateLimit(userId);
+  if (!rl.ok) {
+    return NextResponse.json({ error: rl.message }, { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } });
+  }
+
   const body = (await req.json().catch(() => ({}))) as {
     text?: string;
     context?: string[];
@@ -649,6 +656,12 @@ export async function POST(req: NextRequest) {
   // System prompt (z katalogiem tylko wybranych modułów) na początek konwersacji.
   messages.unshift({ role: "system", content: buildSystemPrompt(selectedModules) });
 
+  // H4: strażnik współbieżności — nie pozwól odpalić zbyt wielu ciężkich operacji naraz.
+  const release = acquireSlot(userId);
+  if (!release) {
+    return NextResponse.json({ error: "Asystent przetwarza już Twoje poprzednie polecenie. Poczekaj na wynik." }, { status: 429 });
+  }
+
   // Tryb strumieniowy (SSE): emitujemy myśli agenta NA ŻYWO, a na końcu pełny wynik.
   if (body.stream === true) {
     const encoder = new TextEncoder();
@@ -667,6 +680,7 @@ export async function POST(req: NextRequest) {
         } catch (e) {
           send({ type: "final", status: 502, body: { error: e instanceof Error ? e.message : "Błąd asystenta" } });
         } finally {
+          release();
           controller.close();
         }
       },
@@ -676,10 +690,14 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const meta: AgentMeta = { tokens: 0 };
-  const result = await runAgentLoop(messages, userId, undefined, meta);
-  if (result.body && typeof result.body === "object" && !result.body.error) {
-    result.body.meta = { model: meta.model, tokens: meta.tokens };
+  try {
+    const meta: AgentMeta = { tokens: 0 };
+    const result = await runAgentLoop(messages, userId, undefined, meta);
+    if (result.body && typeof result.body === "object" && !result.body.error) {
+      result.body.meta = { model: meta.model, tokens: meta.tokens };
+    }
+    return NextResponse.json(result.body, result.status ? { status: result.status } : undefined);
+  } finally {
+    release();
   }
-  return NextResponse.json(result.body, result.status ? { status: result.status } : undefined);
 }

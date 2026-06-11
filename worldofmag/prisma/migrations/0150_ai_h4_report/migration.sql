@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0150: odhaczenie H4 w master-planie (re-seed z md) + raport implementacyjny AI.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -574,3 +579,41 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (AI pro: H4 niezawodnosc)',
+  'omnia-implementacja-2026-06-10-h4-niezawodnosc',
+  $omnia_impl_0150$# Omnia — Raport implementacji 2026-06-10 (AI pro: H4 niezawodnosc)
+
+Trzydziesta pierwsza porcja — Faza 2, Home/AI.
+
+## H4 — Niezawodnosc asystenta (rate-limit + wspolbieznosc + degradacja)
+**Diagnoza:** par 4.1 — agent nie mial zadnych limitow: zapetlony klient lub zlosliwe uzycie mogly
+generowac lawine wywolan LLM (koszt + ryzyko awarii). Brakowalo tez straznika rownoleglych ciezkich
+operacji i jasnej degradacji.
+**Rozwiazanie:** `src/lib/ai/rateLimit.ts` (in-memory, per instancja — free-tier Render = 1
+instancja):
+- `checkRateLimit(userId)` — sliding window: 20 zapytan/min + 250/godz; przekroczenie → przyjazny
+  komunikat + `retryAfterSec`.
+- `acquireSlot(userId)` — straznik wspolbieznosci (max 2 rownolegle operacje na uzytkownika); zwraca
+  funkcje zwalniajaca lub null gdy zajete.
+Trasa `api/llm/home/agent/route.ts`: limit sprawdzany tuz po auth (→ HTTP 429 + naglowek
+`Retry-After`); slot rezerwowany przed petla agenta (→ 429 „przetwarzam poprzednie polecenie"),
+zwalniany w `finally` obu trybow (SSE i JSON). Graceful degradation: brak skonfigurowanego LLM →
+503 z instrukcja (Admin→LLM) z `chatComplete`; limit/blad → czytelny `error`. Klient `AICommandSheet`
+renderuje te przypadki istniejacym fallbackiem nie-SSE (`!res.ok && !data.step → setError`).
+**Zakres/kompromis:** limiter jest in-memory (resetuje sie przy restarcie, per instancja) — wystarcza
+na free-tier; przy skali (wiele instancji) docelowo Redis/DB + prawdziwa kolejka async — pozycja SC2
+w Fazie 4. Pozostale ciezkie trasy (OCR, plan-week) moga przyjac te same helpery analogicznie.
+**Pliki:** `src/lib/ai/rateLimit.ts`, `src/app/api/llm/home/agent/route.ts`.
+
+## Weryfikacja
+- `next build` zielony; brak zmian w bazie (migracja re-seeduje raporty).
+
+## Podsumowanie
+**AI pro domkniete (H3 transparentnosc, H4 niezawodnosc, H5 kosz).** Dalej: Etap C marketplace
+(M14 firma+pracownicy, M16 promocje, M17 moderacja, M19 SEO), S6 (ceny zakupow), Faza 4.$omnia_impl_0150$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
