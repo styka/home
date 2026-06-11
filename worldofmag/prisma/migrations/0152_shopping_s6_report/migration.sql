@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0152: odhaczenie S6 w master-planie (re-seed z md) + raport implementacyjny zakupow.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -586,3 +591,39 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Zakupy: S6 ceny → Portfel)',
+  'omnia-implementacja-2026-06-10-zakupy-s6',
+  $omnia_impl_0152$# Omnia — Raport implementacji 2026-06-10 (Zakupy: S6 ceny → Portfel)
+
+Trzydziesta druga porcja — Faza 2, Zakupy × Portfel.
+
+## S6 — Ceny pozycji i ksiegowanie zakupow w Portfelu (OK)
+**Diagnoza:** par 4.2 — pozycje zakupowe nie mialy ceny, wiec realny koszt zakupow nie trafial do
+Portfela (silnik auto-wydatkow W4 dzialal tylko dla Floty). Brakowalo synergii Zakupy↔budzet.
+**Rozwiazanie:** `Item.price` (cena jednostkowa, nullable) + input „cena zl" w trybie edycji pozycji
+(`ItemRow`) i wyswietlanie ceny na liscie. Modal „Zakoncz zakupy" liczy SUME kupionych pozycji
+(cena×ilosc dla statusu DONE) i pokazuje „Wydano X zl". Nowa akcja `completeShopping(listId,
+{bookToPortfel})` (zastapila bezposrednie `archiveList`): archiwizuje liste i — gdy uzytkownik
+zaznaczy opcje — ksieguje sume jako wydatek w Portfelu przez silnik W4 (`bookAutoExpense`,
+kategoria „zakupy", `sourceModule="shopping"`, `sourceId=listId`). Checkbox w modalu pojawia sie
+tylko gdy konto Portfela jest skonfigurowane (`financeReady` liczone na serwerze z
+`FinanceSettings.autoExpenseElementId` i przekazane do `ShoppingPage`).
+**Zmiana w silniku W4:** `bookAutoExpense` dostalo opcje `force` — jawna akcja uzytkownika (modal)
+pomija globalny przelacznik `autoExpenseEnabled`, ale nadal wymaga ustawionego konta. Ksiegowane sa
+tylko listy prywatne (zespolowe pomijane — rozne konta).
+**Pliki:** `prisma/schema.prisma`, `0151_item_price`, `src/actions/items.ts` (updateItem +price),
+`src/actions/lists.ts` (completeShopping), `src/lib/portfel/autoExpense.ts` (force),
+`app/shopping/[listId]/page.tsx`, `ShoppingPage.tsx`, `ItemRow.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja `0151` zastosowana lokalnie.
+
+## Podsumowanie
+W4 (auto-wydatki) obejmuje teraz Flote i Zakupy. Dalej: Etap C marketplace (M14/M16/M17/M19),
+Faza 4 (SC2-SC7, branze V1-V5), pomniejsze (H1 personalizacja, A1/A2 bezpieczenstwo, P1-P4 Pets).$omnia_impl_0152$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

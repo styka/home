@@ -58,7 +58,7 @@ export async function updateItemStatus(id: string, status: ItemStatus): Promise<
 
 export async function updateItem(
   id: string,
-  patch: { name?: string; quantity?: number | null; unit?: string | null; notes?: string | null; priority?: number }
+  patch: { name?: string; quantity?: number | null; unit?: string | null; notes?: string | null; priority?: number; price?: number | null }
 ): Promise<Item> {
   const user = await requireAuth();
   const existing = await prisma.item.findUnique({ where: { id } });

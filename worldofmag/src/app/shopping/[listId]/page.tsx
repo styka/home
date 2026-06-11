@@ -24,7 +24,7 @@ export default async function ListPage({ params }: Props) {
     notFound();
   }
 
-  const [list, allLists, categoryEmojiMap, categoryNames, stores] = await Promise.all([
+  const [list, allLists, categoryEmojiMap, categoryNames, stores, finance] = await Promise.all([
     prisma.shoppingList.findUnique({
       where: { id: params.listId },
       include: { items: { orderBy: [{ priority: "desc" }, { createdAt: "asc" }] } },
@@ -33,9 +33,10 @@ export default async function ListPage({ params }: Props) {
     getCategoryEmojiMap(),
     getCategoryNames(),
     getStores(),
+    prisma.financeSettings.findUnique({ where: { userId: session.user.id }, select: { autoExpenseElementId: true } }),
   ]);
 
   if (!list) notFound();
 
-  return <ShoppingPage list={list as unknown as ShoppingListWithItems} allLists={allLists} categoryEmojiMap={categoryEmojiMap} categoryNames={categoryNames} stores={stores} />;
+  return <ShoppingPage list={list as unknown as ShoppingListWithItems} allLists={allLists} categoryEmojiMap={categoryEmojiMap} categoryNames={categoryNames} stores={stores} financeReady={!!finance?.autoExpenseElementId} />;
 }

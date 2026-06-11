@@ -14,7 +14,7 @@ import { QuickAddBar } from "./QuickAddBar";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
 import { updateItemStatus, deleteItem, clearDoneItems } from "@/actions/items";
-import { archiveList } from "@/actions/lists";
+import { completeShopping } from "@/actions/lists";
 import { computeOptimalCategoryOrder } from "@/lib/storeRoute";
 import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus, SortMode, StoreWithGraph } from "@/types";
 import { FILTER_TABS, STATUS_CYCLE } from "@/types";
@@ -27,6 +27,7 @@ interface ShoppingPageProps {
   categoryEmojiMap?: Record<string, string>;
   categoryNames?: string[];
   stores: StoreWithGraph[];
+  financeReady?: boolean; // S6: czy użytkownik ma skonfigurowane konto Portfela do księgowania
 }
 
 function loadSortMode(): SortMode {
@@ -44,7 +45,7 @@ function loadSortMode(): SortMode {
   return { type: "category" };
 }
 
-export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames = [], stores }: ShoppingPageProps) {
+export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames = [], stores, financeReady = false }: ShoppingPageProps) {
   const router = useRouter();
   const { toggle: togglePalette } = useCommandPalette();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
@@ -282,7 +283,8 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
           listName={list.name}
           items={list.items as Item[]}
           pending={isPending}
-          onConfirm={() => startTransition(async () => { await archiveList(list.id); router.push("/shopping"); })}
+          financeReady={financeReady}
+          onConfirm={(bookToPortfel) => startTransition(async () => { await completeShopping(list.id, { bookToPortfel }); router.push("/shopping"); })}
           onCancel={() => setCompleteOpen(false)}
         />
       )}
@@ -291,17 +293,24 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
   );
 }
 
-function CompleteShoppingModal({ listName, items, pending, onConfirm, onCancel }: {
+function CompleteShoppingModal({ listName, items, pending, financeReady, onConfirm, onCancel }: {
   listName: string;
   items: Item[];
   pending: boolean;
-  onConfirm: () => void;
+  financeReady: boolean;
+  onConfirm: (bookToPortfel: boolean) => void;
   onCancel: () => void;
 }) {
   const total = items.length;
   const done = items.filter((i) => i.status === "DONE").length;
   const missing = items.filter((i) => i.status === "MISSING").length;
   const left = items.filter((i) => i.status === "NEEDED" || i.status === "IN_CART").length;
+  // S6: suma wydatków = cena × ilość dla kupionych pozycji z ceną.
+  const spend = items
+    .filter((i) => i.status === "DONE" && i.price != null)
+    .reduce((s, i) => s + (i.price as number) * (i.quantity && i.quantity > 0 ? i.quantity : 1), 0);
+  const canBook = financeReady && spend > 0;
+  const [book, setBook] = useState(canBook);
   const rows: { label: string; value: number; color: string }[] = [
     { label: "Kupione", value: done, color: "var(--accent-green)" },
     { label: "Brakujące", value: missing, color: "var(--accent-amber)" },
@@ -328,15 +337,32 @@ function CompleteShoppingModal({ listName, items, pending, onConfirm, onCancel }
             <span style={{ color: "var(--text-secondary)" }}>Razem pozycji</span>
             <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{total}</span>
           </div>
+          {spend > 0 && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+              <span style={{ color: "var(--text-secondary)" }}>Wydano (kupione z ceną)</span>
+              <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{spend.toFixed(2)} zł</span>
+            </div>
+          )}
         </div>
         {left > 0 && (
           <p style={{ fontSize: 12, color: "var(--accent-amber)", margin: "0 0 12px" }}>
             Uwaga: {left} {left === 1 ? "pozycja jest nieukończona" : "pozycji jest nieukończonych"} — i tak trafią do archiwum.
           </p>
         )}
+        {canBook && (
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-secondary)", margin: "0 0 12px", cursor: "pointer" }}>
+            <input type="checkbox" checked={book} onChange={(e) => setBook(e.target.checked)} style={{ width: 16, height: 16 }} />
+            Zaksięguj {spend.toFixed(2)} zł jako wydatek w Portfelu
+          </label>
+        )}
+        {!financeReady && spend > 0 && (
+          <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 12px" }}>
+            Aby księgować zakupy w Portfelu, ustaw konto w Portfel → Ustawienia.
+          </p>
+        )}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <button onClick={onCancel} className="text-sm px-3 py-1.5 rounded" style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Anuluj</button>
-          <button onClick={onConfirm} disabled={pending} className="text-sm px-3 py-1.5 rounded" style={{ background: "var(--accent-green)", color: "var(--on-accent)", fontWeight: 600, border: "none", opacity: pending ? 0.6 : 1 }}>
+          <button onClick={() => onConfirm(canBook && book)} disabled={pending} className="text-sm px-3 py-1.5 rounded" style={{ background: "var(--accent-green)", color: "var(--on-accent)", fontWeight: 600, border: "none", opacity: pending ? 0.6 : 1 }}>
             Zarchiwizuj listę
           </button>
         </div>

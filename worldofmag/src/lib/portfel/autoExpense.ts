@@ -11,6 +11,8 @@ export type AutoExpenseInput = {
   category: string;
   note?: string | null;
   date?: Date | null;
+  /** Pomija globalny przełącznik auto-księgowania (jawna akcja użytkownika), ale nadal wymaga konta. */
+  force?: boolean;
 };
 
 /**
@@ -23,7 +25,8 @@ export async function bookAutoExpense(userId: string, opts: AutoExpenseInput): P
   if (!amount || isNaN(amount)) return;
 
   const settings = await prisma.financeSettings.findUnique({ where: { userId } });
-  if (!settings?.autoExpenseEnabled || !settings.autoExpenseElementId) return;
+  if (!settings?.autoExpenseElementId) return;
+  if (!settings.autoExpenseEnabled && !opts.force) return;
 
   const el = await prisma.walletElement.findUnique({ where: { id: settings.autoExpenseElementId } });
   // Tylko prywatne, aktywne konto użytkownika (nie księgujemy na cudze/zespołowe automatycznie).

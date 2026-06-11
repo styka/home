@@ -27,6 +27,7 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
   const [editQty, setEditQty] = useState(item.quantity?.toString() ?? "");
   const [editUnit, setEditUnit] = useState(item.unit ?? "");
   const [editNotes, setEditNotes] = useState(item.notes ?? "");
+  const [editPrice, setEditPrice] = useState(item.price?.toString() ?? "");
   const editNameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
       setEditQty(item.quantity?.toString() ?? "");
       setEditUnit(item.unit ?? "");
       setEditNotes(item.notes ?? "");
+      setEditPrice(item.price?.toString() ?? "");
       setTimeout(() => editNameRef.current?.focus(), 10);
     }
   }, [isEditing, item]);
@@ -74,6 +76,7 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
         quantity: editQty ? parseFloat(editQty) : null,
         unit: editUnit.trim() || null,
         notes: editNotes.trim() || null,
+        price: editPrice ? parseFloat(editPrice) : null,
       });
     });
     onStopEdit();
@@ -133,6 +136,17 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
             className="flex-1 bg-transparent text-xs focus:outline-none"
             style={{ color: "var(--text-muted)" }}
             placeholder="Notes... (Enter to save, Esc to cancel)"
+          />
+          <input
+            value={editPrice}
+            onChange={(e) => setEditPrice(e.target.value)}
+            onKeyDown={handleEditKeyDown}
+            className="w-20 bg-transparent text-xs text-right focus:outline-none"
+            style={{ color: "var(--text-secondary)" }}
+            placeholder="cena zł"
+            type="number"
+            step="0.01"
+            inputMode="decimal"
           />
           <button
             onClick={handleSaveEdit}
@@ -229,6 +243,13 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
           </div>
         )}
       </div>
+
+      {/* Price (S6) */}
+      {item.price != null && (
+        <span className="mono text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>
+          {item.price.toFixed(2)} zł
+        </span>
+      )}
 
       {/* Priority indicator */}
       {item.priority > 0 && (

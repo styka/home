@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { bookAutoExpense } from "@/lib/portfel/autoExpense";
 import type { ShoppingList } from "@/types";
 
 export interface ListSummary {
@@ -138,6 +139,49 @@ export async function archiveList(id: string): Promise<void> {
   });
   revalidatePath("/shopping");
   revalidatePath(`/shopping/${id}`);
+}
+
+/**
+ * S6: zakończenie zakupów — archiwizuje listę i opcjonalnie księguje sumę kupionych
+ * pozycji (cena × ilość dla statusu DONE) jako wydatek w Portfelu (silnik W4).
+ */
+export async function completeShopping(id: string, opts?: { bookToPortfel?: boolean }): Promise<{ total: number; booked: boolean }> {
+  const user = await requireAuth();
+  await assertListAccess(id, user.id);
+
+  const list = await prisma.shoppingList.findUnique({
+    where: { id },
+    include: { items: { select: { status: true, price: true, quantity: true } } },
+  });
+  if (!list) throw new Error("Lista nie istnieje");
+
+  const total = list.items
+    .filter((it) => it.status === "DONE" && it.price != null)
+    .reduce((s, it) => s + (it.price as number) * (it.quantity && it.quantity > 0 ? it.quantity : 1), 0);
+
+  await prisma.shoppingList.update({ where: { id }, data: { archived: true, archivedAt: new Date() } });
+
+  let booked = false;
+  if (opts?.bookToPortfel && total > 0) {
+    // Tylko prywatne listy księgujemy automatycznie (zespołowe pomijamy — różne konta).
+    if (list.ownerId === user.id) {
+      await bookAutoExpense(user.id, {
+        module: "shopping",
+        sourceId: id,
+        amount: total,
+        category: "zakupy",
+        note: `Zakupy: ${list.name}`,
+        date: new Date(),
+        force: true, // jawna decyzja użytkownika w modalu „Zakończ zakupy"
+      });
+      booked = true;
+    }
+  }
+
+  revalidatePath("/shopping");
+  revalidatePath(`/shopping/${id}`);
+  revalidatePath("/portfel");
+  return { total, booked };
 }
 
 export async function unarchiveList(id: string): Promise<void> {
