@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "@/actions/pets";
+import { notifyUser } from "@/actions/notifications";
+import { ENV_PARAMS, classifyValue, rangeLabel, type Range } from "@/lib/petEnvironment";
 import type { PetEnclosure, PetEnvironmentReading } from "@/types";
 
 async function assertEnclosureAccess(enclosureId: string, userId: string): Promise<void> {
@@ -139,9 +141,60 @@ export async function addEnvironmentReading(enclosureId: string, data: {
     },
   });
 
+  // P2: alert, gdy parametr poza zakresem bezpieczeństwa (silnik powiadomień NM3).
+  await alertOutOfRange(enclosureId, reading, user.id);
+
   void trackActivity("pets", "add_environment_reading", { enclosureId });
   revalidatePath("/pets");
   return reading as PetEnvironmentReading;
+}
+
+/** P2: klasyfikuje wartości odczytu względem zakresów zbiornika i powiadamia o przekroczeniach. */
+async function alertOutOfRange(
+  enclosureId: string,
+  reading: Record<string, unknown>,
+  userId: string,
+): Promise<void> {
+  const enc = await prisma.petEnclosure.findUnique({
+    where: { id: enclosureId },
+    select: { name: true, targetRanges: true },
+  });
+  if (!enc) return;
+
+  let custom: Record<string, Range> | null = null;
+  if (enc.targetRanges) {
+    try { custom = JSON.parse(enc.targetRanges) as Record<string, Range>; } catch { custom = null; }
+  }
+
+  const offenders: { label: string; text: string; danger: boolean }[] = [];
+  for (const p of ENV_PARAMS) {
+    const value = reading[p.key] as number | null | undefined;
+    if (value == null) continue;
+    const status = classifyValue(p.key, value, custom);
+    if (status === "ok") continue;
+    const val = `${value}${p.unit ? ` ${p.unit}` : ""}`;
+    const goal = rangeLabel(p.key, custom);
+    offenders.push({ label: p.label, text: `${p.label}: ${val}${goal ? ` (${goal})` : ""}`, danger: status === "danger" });
+  }
+  if (offenders.length === 0) return;
+
+  const anyDanger = offenders.some((o) => o.danger);
+  const icon = anyDanger ? "🔴" : "🟠";
+  const title = offenders.length === 1
+    ? `${icon} ${enc.name}: ${offenders[0].label} poza zakresem`
+    : `${icon} ${enc.name}: ${offenders.length} parametry poza zakresem`;
+  const body = offenders.map((o) => o.text).join(" · ");
+
+  // dedupeKey per zbiornik + dzień — jedno przypomnienie dziennie, body z aktualnymi przekroczeniami.
+  const day = new Date().toISOString().slice(0, 10);
+  await notifyUser({
+    userId,
+    module: "pets",
+    title,
+    body,
+    href: "/pets",
+    dedupeKey: `pet-env-${enclosureId}-${day}`,
+  });
 }
 
 export async function deleteEnvironmentReading(id: string): Promise<void> {

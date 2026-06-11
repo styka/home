@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0166: odhaczenie P2 w master-planie (re-seed z md) + raport implementacyjny zwierzat.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -695,3 +700,36 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Zwierzeta: P2 alerty terrariow)',
+  'omnia-implementacja-2026-06-10-pets-p2',
+  $omnia_impl_0166$# Omnia — Raport implementacji 2026-06-10 (Zwierzeta: P2 alerty terrariow)
+
+Czterdziesta pierwsza porcja — Faza 2, modul Zwierzeta x Powiadomienia.
+
+## P2 — Aktywne alarmy parametrow terrarium/akwarium (OK)
+**Diagnoza:** par 4.6 — zbiorniki maja zakresy docelowe (`targetRanges` / `DEFAULT_RANGES`) i UI
+pokazywalo badge poza-zakresem, ale nie bylo AKTYWNEGO alarmu, gdy odczyt wyjdzie poza norme.
+**Rozwiazanie:** `addEnvironmentReading` (`src/actions/petHusbandry.ts`) po zapisie odczytu wywoluje
+`alertOutOfRange`: pobiera `targetRanges` zbiornika (lub domyslne), iteruje `ENV_PARAMS`, klasyfikuje
+kazda podana wartosc przez `classifyValue` (`src/lib/petEnvironment.ts`) i zbiera przekroczenia
+(warn/danger). Gdy sa — wysyla powiadomienie przez silnik NM3 (`notifyUser`): tytul z liczba
+przekroczen i ikona (🔴 danger / 🟠 warn), body z lista „parametr: wartosc (cel: min-max)".
+`dedupeKey = pet-env-<enclosureId>-<YYYY-MM-DD>` → najwyzej jeden alert na zbiornik na dzien.
+Powiadamiany jest uzytkownik zapisujacy odczyt; dzwonek powiadomien (NM3) pokazuje alert z linkiem
+do /pets.
+**Reuse:** zero nowego modelu — uzywa istniejacych `classifyValue`/`rangeLabel`/`DEFAULT_RANGES`
+oraz silnika powiadomien NM3. Migracja tylko re-seeduje raport.
+**Pliki:** `src/actions/petHusbandry.ts`.
+
+## Weryfikacja
+- `next build` zielony; brak zmian w bazie.
+
+## Podsumowanie
+Pets: P1+P2 zrobione. Pozostale: P3 (eksport pomiarow PDF/wet.), P4 (spiecie /pets/calendar z NM1).
+Dalej: M14 (firma+pracownicy), Faza 4 (SC2-SC7, branze V1-V5), X2/X3, X5 a11y.$omnia_impl_0166$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
