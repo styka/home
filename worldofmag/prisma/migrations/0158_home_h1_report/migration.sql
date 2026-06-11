@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0158: odhaczenie H1 w master-planie (re-seed z md) + raport implementacyjny home.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -635,3 +640,37 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Home: H1 personalizacja pulpitu)',
+  'omnia-implementacja-2026-06-10-home-h1',
+  $omnia_impl_0158$# Omnia — Raport implementacji 2026-06-10 (Home: H1 personalizacja pulpitu)
+
+Trzydziesta szosta porcja — Faza 3, Home/AI.
+
+## H1 — Personalizacja pulpitu (kolejnosc + ukrywanie sekcji) (OK)
+**Diagnoza:** par 4.1 — strona glowna miala staly uklad sekcji; power-user nie mogl dostosowac
+pulpitu do swoich priorytetow (np. ukryc Sugestie, podniesc Dzis na gore).
+**Rozwiazanie:** model `DashboardPref { userId @unique, order, hidden }` (order/hidden jako JSON
+string[] kluczy sekcji). Akcje `src/actions/dashboardPrefs.ts`: `getDashboardPrefs`/`setDashboardPrefs`
+(walidacja, limit 40 kluczy). `HomePage` (klient) buduje sekcje raz do mapy `sectionNodes`
+(recently/briefing/modules/today/quickActions/suggestions) i renderuje je W KOLEJNOSCI uzytkownika;
+puste (brak danych) i ukryte sa pomijane poza trybem edycji. Przycisk „Dostosuj pulpit" wlacza tryb
+edycji: kazda sekcja dostaje pasek z ↑/↓ (zmiana kolejnosci) i 👁 (ukryj/pokaz); zmiana zapisuje sie
+od razu (`startTransition` → `setDashboardPrefs`, optimistic local state). Naglowek powitania,
+zaproszenia, widget admina i stopka pozostaja stale (nieprzestawialne). Prefs ladowane serwerowo na
+`/` i przekazane jako prop.
+**Reuse:** zero duplikacji — istniejace komponenty sekcji owiniete w mape; brak zmian w ich API.
+**Pliki:** `prisma/schema.prisma`, `0157_dashboard_pref`, `src/actions/dashboardPrefs.ts`,
+`src/app/page.tsx`, `src/components/home/HomePage.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja `0157` zastosowana lokalnie.
+
+## Podsumowanie
+Dalej: Etap C marketplace (M14/M16/M17/M19), Faza 4 (SC2-SC7, branze V1-V5), pomniejsze (P1-P4 Pets,
+X2/X3 propagacja design systemu + stany puste, X5 a11y).$omnia_impl_0158$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

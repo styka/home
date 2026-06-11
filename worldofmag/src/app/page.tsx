@@ -14,6 +14,7 @@ import { getWalletOverview } from "@/actions/portfel";
 import { getDecks } from "@/actions/languageDecks";
 import { getHealthEvents } from "@/actions/health";
 import { getLowStock, getExpiringStorage } from "@/actions/storage";
+import { getDashboardPrefs } from "@/actions/dashboardPrefs";
 import { HomePage } from "@/components/home/HomePage";
 import type { TaskPriority, CareAgendaItem } from "@/types";
 
@@ -282,8 +283,11 @@ export default async function HomePageRoute() {
     metadata: (a.metadata as Record<string, unknown> | null) ?? null,
   }));
 
+  const dashboardPrefs = await getDashboardPrefs();
+
   return (
     <HomePage
+      dashboardPrefs={dashboardPrefs}
       userName={session.user.name ?? null}
       userRoles={userRoles}
       userPermissions={userPermissions}

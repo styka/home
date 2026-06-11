@@ -68,6 +68,7 @@ model User {
   financeSettings        FinanceSettings?      @relation("UserFinanceSettings")
   exchangeRates          ExchangeRate[]        @relation("UserExchangeRates")
   trashItems             TrashItem[]           @relation("UserTrashItems")
+  dashboardPref          DashboardPref?        @relation("UserDashboardPref")
   languageDecks          LanguageDeck[]        @relation("OwnedLanguageDecks")
   healthEvents           HealthEvent[]         @relation("OwnedHealthEvents")
   medicationSchedules    MedicationSchedule[]  @relation("OwnedMedicationSchedules")
@@ -1605,6 +1606,18 @@ model FinanceSettings {
   updatedAt            DateTime @updatedAt
 
   user User @relation("UserFinanceSettings", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// H1: personalizacja pulpitu (kolejność i ukrywanie sekcji strony głównej, per-user).
+model DashboardPref {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  order     String   @default("[]") // JSON string[] kluczy sekcji w kolejności
+  hidden    String   @default("[]") // JSON string[] ukrytych kluczy sekcji
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation("UserDashboardPref", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // A1: dziennik audytu zmian RBAC i konfiguracji (kto / co / kiedy). Bez FK do User —

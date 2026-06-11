@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
+import { BookOpen, SlidersHorizontal, Eye, EyeOff, ChevronUp, ChevronDown, Check } from "lucide-react";
+import { setDashboardPrefs } from "@/actions/dashboardPrefs";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AISuggestions } from "@/components/home/AISuggestions";
 import { InvitationsBanner } from "@/components/home/InvitationsBanner";
@@ -94,6 +96,27 @@ interface HomePageProps {
   storageExpiring: number;
   recentActivity: ActivityItem[];
   adminStats: AdminStats | null;
+  dashboardPrefs?: { order: string[]; hidden: string[] };
+}
+
+// H1: sekcje pulpitu, które użytkownik może przestawiać/ukrywać.
+const SECTION_LABELS: Record<string, string> = {
+  recently: "Ostatnio używane",
+  briefing: "Briefing dnia",
+  modules: "Twoje moduły",
+  today: "Dziś i nadchodzące",
+  quickActions: "Szybkie akcje",
+  suggestions: "Sugestie",
+};
+const DEFAULT_SECTION_ORDER = ["recently", "briefing", "modules", "today", "quickActions", "suggestions"];
+
+function ctlBtn(disabled: boolean): React.CSSProperties {
+  return {
+    display: "inline-flex", alignItems: "center", justifyContent: "center", width: 24, height: 24,
+    borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-surface)",
+    color: disabled ? "var(--text-muted)" : "var(--text-secondary)", cursor: disabled ? "default" : "pointer",
+    opacity: disabled ? 0.5 : 1,
+  };
 }
 
 function getGreeting(name: string | null): string {
@@ -151,6 +174,7 @@ export function HomePage({
   storageExpiring,
   recentActivity,
   adminStats,
+  dashboardPrefs,
 }: HomePageProps) {
   const has = (slug: string) => userPermissions.includes(slug);
   const hasAnyModule =
@@ -173,6 +197,126 @@ export function HomePage({
     vehicleAlerts.length > 0 ||
     languageDecks.length > 0 ||
     healthUpcoming.length > 0;
+
+  // H1: personalizacja pulpitu — kolejność i ukrywanie sekcji.
+  const [editing, setEditing] = useState(false);
+  const [, startTransition] = useTransition();
+  const savedOrder = (dashboardPrefs?.order ?? []).filter((k) => DEFAULT_SECTION_ORDER.includes(k));
+  const effectiveOrder = [...savedOrder, ...DEFAULT_SECTION_ORDER.filter((k) => !savedOrder.includes(k))];
+  const [order, setOrder] = useState<string[]>(effectiveOrder);
+  const [hidden, setHidden] = useState<string[]>(dashboardPrefs?.hidden ?? []);
+
+  function persist(nextOrder: string[], nextHidden: string[]) {
+    startTransition(() => { setDashboardPrefs({ order: nextOrder, hidden: nextHidden }); });
+  }
+  function moveSection(key: string, dir: -1 | 1) {
+    const i = order.indexOf(key);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= order.length) return;
+    const next = [...order];
+    [next[i], next[j]] = [next[j], next[i]];
+    setOrder(next);
+    persist(next, hidden);
+  }
+  function toggleHidden(key: string) {
+    const next = hidden.includes(key) ? hidden.filter((k) => k !== key) : [...hidden, key];
+    setHidden(next);
+    persist(order, next);
+  }
+
+  // Węzły sekcji — budowane raz, renderowane wg kolejności użytkownika.
+  const sectionNodes: Record<string, React.ReactNode> = {
+    recently: <RecentlyUsed activities={recentActivity} permissions={userPermissions} />,
+    briefing: hasAnyModule ? <DailyBriefingCard /> : null,
+    modules: hasAnyModule ? (
+      <div>
+        <SectionHeading>Twoje moduły</SectionHeading>
+        <ModuleSnapshotGrid
+          permissions={userPermissions}
+          pendingItems={pendingItems}
+          todayTasks={todayTasks}
+          overdueTasks={overdueTasks}
+          pinnedNotes={pinnedNotes}
+          todayMeals={todayMeals.length}
+          expiringSoon={expiringSoon}
+          recentReports={recentReports}
+          petCareDue={petCareDue}
+          vehiclesCount={vehiclesCount}
+          vehicleAlerts={vehicleAlerts.length}
+          wallet={wallet}
+          languagesDue={languagesDue}
+          healthUpcoming={healthUpcomingCount}
+          storageLowStock={storageLowStock}
+          storageExpiring={storageExpiring}
+        />
+      </div>
+    ) : (
+      <div
+        style={{
+          padding: "20px 16px",
+          borderRadius: 10,
+          border: "1px dashed var(--border)",
+          background: "var(--bg-surface)",
+          textAlign: "center",
+          color: "var(--text-muted)",
+          fontSize: 13,
+        }}
+      >
+        Brak dostępnych modułów. Odwiedź{" "}
+        <Link href="/guide" style={{ color: "var(--accent-blue)" }}>
+          przewodnik
+        </Link>{" "}
+        lub poczekaj na zaproszenie.
+      </div>
+    ),
+    today: hasTodayContent ? (
+      <div>
+        <SectionHeading>Dziś i nadchodzące</SectionHeading>
+        <TodaySnapshot
+          tasks={todayTaskPreview}
+          meals={todayMeals}
+          petAgenda={petAgenda}
+          vehicleAlerts={vehicleAlerts}
+          languageDecks={languageDecks}
+          healthUpcoming={healthUpcoming}
+          hasTasksAccess={has("module.tasks")}
+          hasKitchenAccess={has("module.kitchen")}
+          hasPetsAccess={has("module.pets")}
+          hasFlotaAccess={has("module.flota")}
+          hasLanguagesAccess={has("module.languages")}
+          hasHealthAccess={has("module.health")}
+        />
+      </div>
+    ) : null,
+    quickActions: (
+      <div>
+        <SectionHeading>Szybkie akcje</SectionHeading>
+        <QuickActions permissions={userPermissions} />
+      </div>
+    ),
+    suggestions: (
+      <div>
+        <SectionHeading>Sugestie</SectionHeading>
+        <AISuggestions
+          recentActivity={recentActivity.map((a) => ({
+            module: a.module,
+            action: a.action,
+            createdAt: new Date(a.createdAt),
+          }))}
+          permissions={userPermissions}
+          overdueTasks={overdueTasks}
+          pendingItems={pendingItems}
+          petCareDue={petCareDue}
+          vehicleAlerts={vehicleAlerts}
+          expiringSoon={expiringSoon}
+          todayMeals={todayMeals.length}
+          wallet={wallet}
+          languagesDue={languagesDue}
+          healthUpcoming={healthUpcoming}
+        />
+      </div>
+    ),
+  };
 
   return (
     <div style={pageContainerStyle}>
@@ -218,103 +362,38 @@ export function HomePage({
         {/* Pending invitations banner */}
         <InvitationsBanner count={pendingInvitations} />
 
-        {/* Recently used — szybki powrót do ostatnich działów */}
-        <RecentlyUsed activities={recentActivity} permissions={userPermissions} />
-
-        {/* Briefing dnia — AI podsumowanie na żądanie */}
-        {hasAnyModule && <DailyBriefingCard />}
-
-        {/* Module snapshot */}
-        {hasAnyModule ? (
-          <div>
-            <SectionHeading>Twoje moduły</SectionHeading>
-            <ModuleSnapshotGrid
-              permissions={userPermissions}
-              pendingItems={pendingItems}
-              todayTasks={todayTasks}
-              overdueTasks={overdueTasks}
-              pinnedNotes={pinnedNotes}
-              todayMeals={todayMeals.length}
-              expiringSoon={expiringSoon}
-              recentReports={recentReports}
-              petCareDue={petCareDue}
-              vehiclesCount={vehiclesCount}
-              vehicleAlerts={vehicleAlerts.length}
-              wallet={wallet}
-              languagesDue={languagesDue}
-              healthUpcoming={healthUpcomingCount}
-              storageLowStock={storageLowStock}
-              storageExpiring={storageExpiring}
-            />
-          </div>
-        ) : (
-          <div
-            style={{
-              padding: "20px 16px",
-              borderRadius: 10,
-              border: "1px dashed var(--border)",
-              background: "var(--bg-surface)",
-              textAlign: "center",
-              color: "var(--text-muted)",
-              fontSize: 13,
-            }}
+        {/* H1: pasek personalizacji pulpitu */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -4 }}>
+          <button
+            onClick={() => setEditing((v) => !v)}
+            style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, padding: "4px 10px", borderRadius: 8, border: "1px solid var(--border)", background: editing ? "var(--bg-elevated)" : "transparent", color: editing ? "var(--accent-blue)" : "var(--text-muted)", cursor: "pointer" }}
+            title="Dostosuj układ pulpitu — kolejność i widoczność sekcji"
           >
-            Brak dostępnych modułów. Odwiedź{" "}
-            <Link href="/guide" style={{ color: "var(--accent-blue)" }}>
-              przewodnik
-            </Link>{" "}
-            lub poczekaj na zaproszenie.
-          </div>
-        )}
-
-        {/* Today & upcoming */}
-        {hasTodayContent && (
-          <div>
-            <SectionHeading>Dziś i nadchodzące</SectionHeading>
-            <TodaySnapshot
-              tasks={todayTaskPreview}
-              meals={todayMeals}
-              petAgenda={petAgenda}
-              vehicleAlerts={vehicleAlerts}
-              languageDecks={languageDecks}
-              healthUpcoming={healthUpcoming}
-              hasTasksAccess={has("module.tasks")}
-              hasKitchenAccess={has("module.kitchen")}
-              hasPetsAccess={has("module.pets")}
-              hasFlotaAccess={has("module.flota")}
-              hasLanguagesAccess={has("module.languages")}
-              hasHealthAccess={has("module.health")}
-            />
-          </div>
-        )}
-
-        {/* Quick actions */}
-        <div>
-          <SectionHeading>Szybkie akcje</SectionHeading>
-          <QuickActions permissions={userPermissions} />
+            {editing ? <Check size={13} /> : <SlidersHorizontal size={13} />}
+            {editing ? "Gotowe" : "Dostosuj pulpit"}
+          </button>
         </div>
 
-        {/* AI suggestions */}
-        <div>
-          <SectionHeading>Sugestie</SectionHeading>
-          <AISuggestions
-            recentActivity={recentActivity.map((a) => ({
-              module: a.module,
-              action: a.action,
-              createdAt: new Date(a.createdAt),
-            }))}
-            permissions={userPermissions}
-            overdueTasks={overdueTasks}
-            pendingItems={pendingItems}
-            petCareDue={petCareDue}
-            vehicleAlerts={vehicleAlerts}
-            expiringSoon={expiringSoon}
-            todayMeals={todayMeals.length}
-            wallet={wallet}
-            languagesDue={languagesDue}
-            healthUpcoming={healthUpcoming}
-          />
-        </div>
+        {/* H1: sekcje pulpitu w kolejności użytkownika (z ukrywaniem) */}
+        {order.map((key, idx) => {
+          const node = sectionNodes[key];
+          const isHidden = hidden.includes(key);
+          if (!node && !editing) return null;
+          if (isHidden && !editing) return null;
+          return (
+            <div key={key} style={{ position: "relative", opacity: isHidden && editing ? 0.45 : 1 }}>
+              {editing && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)", flex: 1 }}>{SECTION_LABELS[key] ?? key}</span>
+                  <button onClick={() => moveSection(key, -1)} disabled={idx === 0} title="W górę" style={ctlBtn(idx === 0)}><ChevronUp size={13} /></button>
+                  <button onClick={() => moveSection(key, 1)} disabled={idx === order.length - 1} title="W dół" style={ctlBtn(idx === order.length - 1)}><ChevronDown size={13} /></button>
+                  <button onClick={() => toggleHidden(key)} title={isHidden ? "Pokaż" : "Ukryj"} style={ctlBtn(false)}>{isHidden ? <EyeOff size={13} /> : <Eye size={13} />}</button>
+                </div>
+              )}
+              {node ?? (editing ? <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic", padding: "8px 0" }}>(sekcja pusta — brak danych)</div> : null)}
+            </div>
+          );
+        })}
 
         {/* Admin widget */}
         {isAdmin && adminStats && (
