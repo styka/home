@@ -1982,6 +1982,7 @@ model ServiceProvider {
   images   ServiceImage[]
   availability ServiceAvailability[]
   favorites    ServiceFavorite[]
+  promoCodes   ServicePromoCode[]
 
   @@index([visible])
 }
@@ -2060,10 +2061,12 @@ model ServiceRequest {
 model ServicePayment {
   id        String    @id @default(cuid())
   requestId String    @unique
-  amount    Int // grosze
+  amount    Int // grosze (brutto, przed rabatem)
   currency  String    @default("PLN")
   method    String    @default("cash") // cash|transfer|card|other
   status    String    @default("UNPAID") // UNPAID|PAID
+  promoCode String? // M16: zastosowany kod rabatowy
+  discount  Int       @default(0) // M16: rabat w groszach (kwota netto = amount - discount)
   invoiceNo String?
   paidAt    DateTime?
   createdAt DateTime  @default(now())
@@ -2402,6 +2405,26 @@ model ServiceImage {
   provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([providerId, order])
+}
+
+// M16: kody rabatowe wykonawcy. kind percent (value=1..100) | amount (value=grosze).
+model ServicePromoCode {
+  id         String    @id @default(cuid())
+  providerId String
+  code       String // unikalny per wykonawca (zapisywany wielkimi literami)
+  kind       String    @default("percent") // percent | amount
+  value      Int // procent (1-100) lub grosze
+  minAmount  Int? // minimalna kwota brutto (grosze), by kod zadziałał
+  maxUses    Int? // limit użyć (null = bez limitu)
+  usedCount  Int       @default(0)
+  active     Boolean   @default(true)
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, code])
+  @@index([providerId])
 }
 
 // ─── Kontakty / osobisty CRM (NM9) ─────────────────────────────────────────

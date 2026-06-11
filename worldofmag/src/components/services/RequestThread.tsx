@@ -10,6 +10,8 @@ import {
   setServicePayment,
   markPaymentPaid,
   bookClientExpense,
+  applyPromoCode,
+  clearPromoCode,
 } from "@/actions/services";
 import { getWalletElements } from "@/actions/portfel";
 import type { RequestThreadDTO, ServiceQuoteDTO, ServicePaymentDTO, PaymentMethod } from "@/lib/services";
@@ -221,11 +223,22 @@ function PaymentSection({ requestId, role, payment, onChange }: { requestId: str
         <Wallet size={13} /> Płatność
         {payment && (
           <span style={{ marginLeft: 6, fontSize: 12, fontWeight: 700, color: paid ? "var(--accent-green)" : "var(--accent-amber)" }}>
-            {money(payment.amount, payment.currency)} · {paid ? "Opłacone" : "Do zapłaty"} · {PAYMENT_METHOD_LABELS[payment.method]}
+            {payment.discount > 0 ? (
+              <>
+                <span style={{ textDecoration: "line-through", color: "var(--text-muted)", fontWeight: 500 }}>{money(payment.amount, payment.currency)}</span>
+                {" "}{money(payment.amount - payment.discount, payment.currency)}
+              </>
+            ) : money(payment.amount, payment.currency)}
+            {" · "}{paid ? "Opłacone" : "Do zapłaty"} · {PAYMENT_METHOD_LABELS[payment.method]}
             {payment.invoiceNo ? ` · ${payment.invoiceNo}` : ""}
           </span>
         )}
       </span>
+
+      {/* M16: kod rabatowy */}
+      {payment && !paid && (
+        <PromoCodeRow requestId={requestId} payment={payment} onChange={onChange} />
+      )}
 
       {role === "provider" && !paid && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
@@ -261,6 +274,44 @@ function PaymentSection({ requestId, role, payment, onChange }: { requestId: str
       {role === "client" && !payment && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Wykonawca nie wystawił jeszcze płatności.</span>}
       {error && <span style={{ fontSize: 11, color: "var(--accent-red)" }}>{error}</span>}
       {info && <span style={{ fontSize: 11, color: "var(--accent-green)" }}>{info}</span>}
+    </div>
+  );
+}
+
+function PromoCodeRow({ requestId, payment, onChange }: { requestId: string; payment: ServicePaymentDTO; onChange: () => void }) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function apply() {
+    if (!code.trim()) return;
+    setBusy(true); setErr(null);
+    try { await applyPromoCode(requestId, code.trim()); setCode(""); onChange(); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Błąd"); } finally { setBusy(false); }
+  }
+  async function clear() {
+    setBusy(true); setErr(null);
+    try { await clearPromoCode(requestId); onChange(); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Błąd"); } finally { setBusy(false); }
+  }
+
+  if (payment.promoCode) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-secondary)" }}>
+        <Tag size={12} style={{ color: "var(--accent-green)" }} />
+        Kod <strong style={{ color: "var(--text-primary)" }}>{payment.promoCode}</strong> — rabat {money(payment.discount, payment.currency)}
+        <button onClick={clear} disabled={busy} style={{ background: "none", border: "none", color: "var(--accent-red)", cursor: "pointer", fontSize: 11, padding: 0 }}>usuń</button>
+        {err && <span style={{ color: "var(--accent-red)", fontSize: 11 }}>{err}</span>}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      <Tag size={12} style={{ color: "var(--text-muted)" }} />
+      <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === "Enter" && apply()} placeholder="Kod rabatowy" style={{ ...fieldInputStyle, width: 130, textTransform: "uppercase" }} />
+      <button onClick={apply} disabled={busy || !code.trim()} style={secondaryButtonStyle}>Zastosuj</button>
+      {err && <span style={{ color: "var(--accent-red)", fontSize: 11 }}>{err}</span>}
     </div>
   );
 }

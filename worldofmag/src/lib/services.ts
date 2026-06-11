@@ -71,12 +71,28 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 };
 
 export type ServicePaymentDTO = {
-  amount: number; // grosze
+  amount: number; // grosze (brutto)
   currency: string;
   method: PaymentMethod;
   status: PaymentStatus;
+  promoCode: string | null; // M16
+  discount: number; // M16 — grosze; netto = amount - discount
   invoiceNo: string | null;
   paidAt: string | null;
+};
+
+// M16: kody rabatowe wykonawcy.
+export type PromoKind = "percent" | "amount";
+export type ServicePromoCodeDTO = {
+  id: string;
+  code: string;
+  kind: PromoKind;
+  value: number; // percent (1-100) lub grosze
+  minAmount: number | null;
+  maxUses: number | null;
+  usedCount: number;
+  active: boolean;
+  expiresAt: string | null;
 };
 
 export type RequestThreadDTO = {

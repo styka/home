@@ -25,6 +25,7 @@ import {
 import type { ProviderStats } from "@/actions/services";
 import { RatingStars, formatPrice, StatusBadge, VerifiedBadge, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 import { AvailabilityEditor } from "./AvailabilityEditor";
+import { PromoCodesManager } from "./PromoCodesManager";
 
 type ListingItem = {
   id: string;
@@ -134,6 +135,9 @@ export function ProviderPanelPage({ provider, categories, incomingRequests, stat
         {provider && (
           <PortfolioSection images={provider.images} onChange={() => router.refresh()} />
         )}
+
+        {/* Kody rabatowe (M16) */}
+        {provider && <PromoCodesManager />}
 
         {/* Lokalizacja (M5) */}
         {provider && <LocationControl hasLocation={provider.hasLocation} onChange={() => router.refresh()} />}

@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0160: odhaczenie M16 w master-planie (re-seed z md) + raport implementacyjny marketplace.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -648,3 +653,41 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Marketplace: M16 kody rabatowe)',
+  'omnia-implementacja-2026-06-10-marketplace-m16',
+  $omnia_impl_0160$# Omnia — Raport implementacji 2026-06-10 (Marketplace: M16 kody rabatowe)
+
+Trzydziesta siodma porcja — Etap C marketplace.
+
+## M16 — Promocje / kody rabatowe (OK)
+**Diagnoza:** rozdz. 3.5 — marketplace nie mial mechanizmu znizek; wykonawca nie mogl oferowac
+kodow promocyjnych (akwizycja/retencja klientow).
+**Rozwiazanie:** model `ServicePromoCode` (per-wykonawca): `code` (unikat per provider, uppercase),
+`kind` percent|amount, `value` (procent 1-100 lub grosze), `minAmount?` (min kwota brutto),
+`maxUses?`+`usedCount`, `active`, `expiresAt?`. `ServicePayment` rozszerzone o `promoCode` +
+`discount` (grosze; NETTO = amount − discount). Akcje w `services.ts`:
+- Wykonawca: `getMyPromoCodes`, `createPromoCode` (walidacja zakresow, PLN→grosze dla amount),
+  `togglePromoCode`, `deletePromoCode`.
+- Stosowanie: `applyPromoCode(requestId, code)` — walidacja (kod nalezy do wykonawcy zlecenia,
+  aktywny, niewygasly, < maxUses, kwota >= minAmount); rabat = procent lub kwota, capowany do kwoty;
+  inkrement `usedCount` (zmiana kodu cofa zuzycie poprzedniego); `clearPromoCode` (cofa rabat i
+  zuzycie). Ksiegowanie M9 (`markPaymentPaid` przychod, `bookClientExpense` wydatek) liczy NETTO.
+UI: `PromoCodesManager` w panelu wykonawcy (lista kodow ze statusem uzyc/wygasniecia + formularz +
+wlacz/wylacz/usun); `PromoCodeRow` w `PaymentSection` watku zlecenia (wpisanie kodu → przekreslona
+kwota brutto, kwota netto, etykieta rabatu, „usun").
+**Pliki:** `prisma/schema.prisma`, `0159_service_promo_code`, `src/lib/services.ts` (DTO),
+`src/actions/services.ts`, `src/components/services/PromoCodesManager.tsx`,
+`ProviderPanelPage.tsx`, `RequestThread.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja `0159` zastosowana lokalnie.
+
+## Podsumowanie
+Etap C marketplace: zostalo M14 (firma+pracownicy), M17 (moderacja/spory), M19 (profil/SEO).
+Dalej: Faza 4 (SC2-SC7, branze V1-V5), pomniejsze (P1-P4 Pets, X2/X3, X5 a11y).$omnia_impl_0160$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
