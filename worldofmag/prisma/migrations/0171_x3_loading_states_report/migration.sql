@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0171: notatka X3 (stany ladowania) w master-planie (re-seed z md) + raport implementacyjny.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -742,3 +747,36 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Cross-cutting: X3 stany ladowania)',
+  'omnia-implementacja-2026-06-10-x3-loading',
+  $omnia_impl_0171$# Omnia — Raport implementacji 2026-06-10 (Cross-cutting: X3 stany ladowania)
+
+Czterdziesta piata porcja — cross-cutting UX (X2/X3).
+
+## X3 — Spojne stany ladowania (route-level) (czesc X2/X3, OK)
+**Diagnoza:** par 4.17 — moduly mialy nierowna dojrzalosc UX; przy nawigacji do strony, ktora
+pobiera dane, uzytkownik widzial PUSTY ekran do czasu zaladowania (zamiast spojnego skeletonu).
+**Rozwiazanie:** wspolny komponent `src/components/ui/home/LoadingState.tsx` — page-level skeleton
+(naglowek + N kart) z delikatna animacja shimmer, zbudowany na `pageContainerStyle`/`pageInnerStyle`,
+wiec layout zgadza sie z docelowa strona. Dodano route-level `loading.tsx` (Next.js App Router
+Suspense fallback) w 21 dzialach: calendar, contacts, flota, habits, health, kitchen, languages,
+magazynowanie, notes, pets, pogoda, portfel, reports, services, shopping, tasks, trash, truck,
+warsztaty, wiadomosci, settings. Dzieki temu nawigacja do dowolnego z tych dzialow natychmiast
+pokazuje skeleton zamiast bieli.
+**Zakres:** to STANY LADOWANIA z X2/X3. Pelna propagacja design-systemu (eliminacja inline-style w
+modulach) oraz spojne stany BLEDOW pozostaja jako dalsza czesc X2/X3.
+**Pliki:** `src/components/ui/home/LoadingState.tsx`, `src/components/ui/home/index.ts`,
+21x `src/app/<dzial>/loading.tsx`.
+
+## Weryfikacja
+- `next build` zielony; brak zmian w bazie.
+
+## Podsumowanie
+X2/X3: stany ladowania zrobione. Dalej: propagacja design-systemu + stany bledow (reszta X2/X3),
+X5 a11y, X4 i18n, Faza 4 (SC2-SC7, branze V1-V5).$omnia_impl_0171$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
