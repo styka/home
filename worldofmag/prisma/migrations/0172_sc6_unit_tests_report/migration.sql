@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0172: notatka SC6 (testy jednostkowe) w master-planie (re-seed z md) + raport.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -755,3 +760,43 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Faza 4: SC6 testy jednostkowe — start)',
+  'omnia-implementacja-2026-06-10-sc6-testy',
+  $omnia_impl_0172$# Omnia — Raport implementacji 2026-06-10 (Faza 4: SC6 testy jednostkowe — start)
+
+Czterdziesta szosta porcja — Faza 4 (skala/jakosc), SC6.
+
+## SC6 — Testy jednostkowe krytycznej logiki (start, OK)
+**Diagnoza:** par 7.1 — krytyczna logika biznesowa (SRS, recurrence, generacja slotow rezerwacji,
+wikilinki) nie miala testow; regresje bylyby kosztowne i trudne do wykrycia.
+**Rozwiazanie:** zerowy narzut zaleznosci — wykorzystano WBUDOWANY runner `node:test` (Node 22) +
+`tsx` (juz w devDependencies). Nowy skrypt `npm run test:unit` =
+`node --import tsx --test "src/**/*.test.ts"`. Napisano 24 testy dla czystych funkcji:
+- `srs.ts` (SuperMemo-2): pierwszy sukces → interval 1 dzien; drugi → 6 dni; kolejny →
+  round(interval×ease); niepowodzenie (grade<3) → reset repetitions + interval 1 + lapse;
+  podloga easeFactor 1.3.
+- `recurrence.ts`: DAILY (interval), WEEKLY z `daysOfWeek` (nastepny dzien + zawijanie tygodnia),
+  MONTHLY/YEARLY, nieznany typ → null, `parseRecurringRule` (poprawny/pusty/smieci).
+- `serviceSlots.ts`: generacja slotow co czas trwania w oknie, filtr dnia tygodnia, wykluczanie
+  kolizji z rezerwacja, pomijanie slotow z przeszlosci (`nowMinIfToday`), walidacja `labelToMin`,
+  round-trip `minToLabel`, `minutesOfDay`.
+- `wikilinks.ts`: `extractWikilinks` (dedupe case-insensitive), `resolveByTitle`, `outgoingLinks`
+  (rozwiazane/nierozwiazane, brak self-linku), `backlinks`.
+Pliki `*.test.ts` (w `src/lib/__tests__/`) wykluczone z `next build` przez `tsconfig.exclude`
+(`src/**/*.test.ts`), wiec nie trafiaja do bundla ani nie psuja typecheck Next.
+**Pliki:** `package.json` (skrypt), `tsconfig.json` (exclude), `src/lib/__tests__/{srs,recurrence,
+serviceSlots,wikilinks}.test.ts`.
+
+## Weryfikacja
+- `npm run test:unit` → 24/24 pass. `npm run build` zielony (testy wykluczone).
+
+## Podsumowanie
+SC6 ruszylo (fundament + 4 zestawy). Dalej (SC6 c.d.): stats wykonawcy, parseQuantity,
+medicationSchedule, petEnvironment. Pozostala Faza 4: SC2 (limity/cache AI), SC3 (wydajnosc),
+SC4 (observability), SC7 (monetyzacja), branze V1-V5, nowe dzialy.$omnia_impl_0172$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
