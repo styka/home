@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Pencil, Trash2, PawPrint } from "lucide-react";
+import { ChevronLeft, Pencil, Trash2, PawPrint, Printer, Download } from "lucide-react";
 import { pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { speciesEmoji, speciesLabel, ageFromBirth, STATUS_LABELS, SEX_LABELS } from "@/lib/petSpecies";
 import { resolveFeatures, PET_FEATURE_PHASE, type PetFeatureKey } from "@/lib/petPresets";
+import { buildVetCardHtml, buildMeasurementsCsv } from "@/lib/petExport";
 import { deletePet } from "@/actions/pets";
 import { PetForm } from "./PetForm";
 import {
@@ -65,6 +66,28 @@ export function PetDetailPage({ pet, teams }: { pet: PetWithRelations; teams: Ar
       .catch((e) => showToast(e instanceof Error ? e.message : "Błąd", "error"));
   }
 
+  // P3: druk karty dla weterynarza (→ PDF z przeglądarki).
+  function printVetCard() {
+    const w = window.open("", "_blank", "width=820,height=900");
+    if (!w) { showToast("Zezwól na wyskakujące okna, aby wydrukować", "error"); return; }
+    w.document.write(buildVetCardHtml(pet));
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 250);
+  }
+
+  // P3: eksport pomiarów do CSV.
+  function exportCsv() {
+    if (pet.measurements.length === 0) { showToast("Brak pomiarów do eksportu", "info"); return; }
+    const blob = new Blob(["﻿" + buildMeasurementsCsv(pet)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${pet.name.replace(/[^a-z0-9ąęśźżćńółĄĘŚŹŻĆŃÓŁ]+/gi, "-").toLowerCase()}-pomiary.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function renderTab() {
     switch (tab) {
       case "profile": return <ProfileSection pet={pet} />;
@@ -117,6 +140,8 @@ export function PetDetailPage({ pet, teams }: { pet: PetWithRelations; teams: Ar
             </p>
           </div>
           <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+            <button onClick={printVetCard} title="Drukuj kartę dla weterynarza (PDF)" style={iconBtn}><Printer size={15} /></button>
+            <button onClick={exportCsv} title="Eksportuj pomiary (CSV)" style={iconBtn}><Download size={15} /></button>
             <button onClick={() => setEditing(true)} title="Edytuj" style={iconBtn}><Pencil size={15} /></button>
             <button onClick={handleDelete} title="Usuń" style={{ ...iconBtn, color: "var(--accent-red)" }}><Trash2 size={15} /></button>
           </div>

@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0168: odhaczenie P3 w master-planie (re-seed z md) + raport implementacyjny zwierzat.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -716,3 +721,36 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Zwierzeta: P3 eksport dla weterynarza)',
+  'omnia-implementacja-2026-06-10-pets-p3',
+  $omnia_impl_0168$# Omnia — Raport implementacji 2026-06-10 (Zwierzeta: P3 eksport dla weterynarza)
+
+Czterdziesta trzecia porcja — Faza 2, modul Zwierzeta.
+
+## P3 — Eksport pomiarow/danych dla weterynarza (OK)
+**Diagnoza:** par 4.6 — dane zwierzecia (pomiary, leki, wizyty, zdrowie) prosily sie o eksport dla
+weterynarza lub kupujacego; nie bylo zadnej sciezki wyjscia danych.
+**Rozwiazanie:** `src/lib/petExport.ts` — czyste buildery bez zaleznosci sieciowych:
+- `buildVetCardHtml(pet)`: kompletny dokument HTML „Karta zwierzecia dla weterynarza" (profil:
+  gatunek/rasa/plec/data ur./status/mikroczip/identyfikator/umaszczenie; tabele: pomiary [24 ost.],
+  leki+szczepienia, wizyty weterynaryjne, dziennik zdrowia, notatki) ze stylem `@media print` — druk
+  z przegladarki daje PDF, bez biblioteki PDF.
+- `buildMeasurementsCsv(pet)`: CSV pomiarow (data, waga[g], dlugosc[cm], BCS, notatka), z BOM dla
+  poprawnego otwarcia w Excelu; escaping cudzyslowow.
+UI: `PetDetailPage` — w naglowku dwa przyciski: „Drukuj karte" (otwiera nowe okno, wpisuje HTML,
+`window.print()`) oraz „Eksport pomiarow" (download Blob CSV). Wzorzec spojny z eksportami Notatek/
+Floty (data-URL/Blob, bez sieci).
+**Pliki:** `src/lib/petExport.ts`, `src/components/pets/PetDetailPage.tsx`.
+
+## Weryfikacja
+- `next build` zielony; brak zmian w bazie.
+
+## Podsumowanie
+**Modul Zwierzeta domkniety: P1 (progressive disclosure), P2 (alerty terrariow), P3 (eksport),
+P4 (kalendarz NM1).** Dalej: M14 (firma+pracownicy), Faza 4 (SC2-SC7, branze V1-V5), X2/X3, X5.$omnia_impl_0168$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
