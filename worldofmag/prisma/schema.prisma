@@ -1987,6 +1987,7 @@ model ServiceProvider {
   availability ServiceAvailability[]
   favorites    ServiceFavorite[]
   promoCodes   ServicePromoCode[]
+  staff        ServiceStaff[]
 
   @@index([visible])
 }
@@ -2048,9 +2049,12 @@ model ServiceRequest {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  staffId     String? // M14: przypisany pracownik (null = solo/cała firma)
+
   client   User            @relation("ClientServiceRequests", fields: [clientId], references: [id], onDelete: Cascade)
   provider ServiceProvider @relation("ProviderServiceRequests", fields: [providerId], references: [id], onDelete: Cascade)
   listing  ServiceListing? @relation("ListingServiceRequests", fields: [listingId], references: [id], onDelete: SetNull)
+  staff    ServiceStaff?   @relation(fields: [staffId], references: [id], onDelete: SetNull)
   review   ServiceReview?
   messages ServiceMessage[]
   quotes   ServiceQuote[]
@@ -2059,6 +2063,7 @@ model ServiceRequest {
 
   @@index([clientId, status])
   @@index([providerId, status])
+  @@index([staffId, status])
 }
 
 // M17: spory/moderacja. Strona zlecenia (klient/wykonawca) zgłasza problem, moderator (admin)
@@ -2407,15 +2412,35 @@ model ServiceQuote {
 
 // Dostępność wykonawcy (M2): reguły tygodniowe. weekday 0=niedz…6=sob; minuty od północy.
 model ServiceAvailability {
-  id         String @id @default(cuid())
+  id         String  @id @default(cuid())
   providerId String
+  staffId    String? // M14: harmonogram konkretnego pracownika (null = solo/cała firma)
   weekday    Int // 0..6
   startMin   Int // np. 540 = 09:00
   endMin     Int // np. 1020 = 17:00
 
   provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  staff    ServiceStaff?   @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
   @@index([providerId, weekday])
+  @@index([staffId, weekday])
+}
+
+// M14: pracownik/zasób firmy usługowej (salon/warsztat z wieloma osobami). Kazdy ma wlasny
+// harmonogram dostepnosci i wlasne rezerwacje (ServiceRequest.staffId).
+model ServiceStaff {
+  id         String   @id @default(cuid())
+  providerId String
+  name       String
+  role       String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  provider     ServiceProvider       @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  availability ServiceAvailability[]
+  requests     ServiceRequest[]
+
+  @@index([providerId])
 }
 
 // Portfolio wykonawcy (M4): zdjęcia realizacji. url = data-URL lub link (wzorzec RecipeImage).

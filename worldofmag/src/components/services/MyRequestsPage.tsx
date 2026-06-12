@@ -95,6 +95,7 @@ function RequestCard({ request, role, onChange }: { request: RequestDTO; role: T
       </div>
       <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
         {role === "client" ? `Wykonawca: ${request.providerName}` : `Klient: ${request.clientName}`}
+        {request.staffName ? ` · Pracownik: ${request.staffName}` : ""}
       </div>
       {request.description && <div style={{ fontSize: 13, color: "var(--text-secondary)", whiteSpace: "pre-wrap" }}>{request.description}</div>}
       {request.scheduledAt && (
@@ -155,7 +156,7 @@ function RescheduleControl({ request, onDone }: { request: RequestDTO; onDone: (
   useEffect(() => {
     if (!slotMode || !request.listingId) return;
     let active = true;
-    getAvailableSlots(request.listingId, date, request.id).then((s) => { if (active) setSlots(s); }).catch(() => {});
+    getAvailableSlots(request.listingId, date, { excludeRequestId: request.id, staffId: request.staffId }).then((s) => { if (active) setSlots(s); }).catch(() => {});
     return () => { active = false; };
   }, [slotMode, request.listingId, request.id, date]);
 

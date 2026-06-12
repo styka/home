@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0170: odhaczenie M14 w master-planie (re-seed z md) + raport implementacyjny marketplace.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -731,3 +736,45 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Marketplace: M14 firma+pracownicy)',
+  'omnia-implementacja-2026-06-10-marketplace-m14',
+  $omnia_impl_0170$# Omnia — Raport implementacji 2026-06-10 (Marketplace: M14 firma+pracownicy)
+
+Czterdziesta czwarta porcja — Etap C marketplace (ostatnia duza pozycja).
+
+## M14 — Firma z wieloma pracownikami (model salonu Booksy) (OK)
+**Diagnoza:** rozdz. 3.5 — dotad 1 provider = 1 user; salon/warsztat z wieloma osobami nie mial
+reprezentacji, a dostepnosc i rezerwacje byly tylko poziomu firmy. To kluczowy model biznesowy Booksy.
+**Rozwiazanie:** nowy model `ServiceStaff` (pracownik/zasob: providerId, name, role?, active) +
+kolumny `ServiceAvailability.staffId` (harmonogram per-pracownik; null = solo/cala firma) i
+`ServiceRequest.staffId` (przypisany pracownik). 
+- Akcje pracownikow: `getMyStaff`, `createStaff`, `updateStaff` (w tym active), `deleteStaff`.
+- Dostepnosc per-pracownik: `getMyAvailability(staffId?)` + `setAvailability(rules, staffId?)`
+  (delete+insert dla danego zakresu `{providerId, staffId}`).
+- Sloty/rezerwacje: `computeSlots` przyjmuje `{staffId, excludeRequestId}` — reguly i kolizje liczone
+  dla wskazanego pracownika (lub null=solo). `getAvailableSlots` i `bookSlot` przyjmuja staffId;
+  `bookSlot` WYMAGA wyboru pracownika, gdy firma ma aktywnych pracownikow (walidacja przynaleznosci).
+  Reschedule (`rescheduleRequest`) zachowuje pracownika zlecenia. `getListingStaff` zwraca aktywnych
+  pracownikow oferty do wyboru.
+UI: `StaffManager` w panelu wykonawcy (lista + dodawanie + wlacz/wylacz/usun), `AvailabilityEditor`
+z selektorem „Cala firma / pracownik" (laduje i zapisuje harmonogram wybranej osoby), `BookingWidget`
+z wyborem pracownika (sloty i rezerwacja per-osoba), pracownik widoczny na karcie zlecenia
+(`MyRequestsPage`). Solo-wykonawcy dzialaja bez zmian (staffId null).
+**Zakres/kompromis:** tryb „dowolny pracownik" (auto-przypisanie pierwszego wolnego) odlozony —
+klient wybiera konkretna osobe; union slotow wielu pracownikow to przyszle ulepszenie.
+**Pliki:** `prisma/schema.prisma`, `0169_service_staff`, `src/lib/services.ts` (RequestDTO),
+`src/actions/services.ts`, `StaffManager.tsx`, `AvailabilityEditor.tsx`, `ListingDetailPage.tsx`,
+`ProviderPanelPage.tsx`, `MyRequestsPage.tsx`.
+
+## Weryfikacja
+- `next build` zielony; migracja `0169` zastosowana lokalnie.
+
+## Podsumowanie
+**Etap C marketplace zamkniety** (M11/M13/M14/M16/M17/M19 ✅; M15 abonamenty = monetyzacja/F4).
+Dalej: Faza 4 (SC2-SC7, branze V1-V5), cross-cutting (X2/X3, X5 a11y, X4 i18n).$omnia_impl_0170$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;

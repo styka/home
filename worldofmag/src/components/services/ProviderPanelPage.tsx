@@ -26,6 +26,7 @@ import type { ProviderStats } from "@/actions/services";
 import { RatingStars, formatPrice, StatusBadge, VerifiedBadge, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 import { AvailabilityEditor } from "./AvailabilityEditor";
 import { PromoCodesManager } from "./PromoCodesManager";
+import { StaffManager } from "./StaffManager";
 
 type ListingItem = {
   id: string;
@@ -150,7 +151,10 @@ export function ProviderPanelPage({ provider, categories, incomingRequests, stat
         {/* Lokalizacja (M5) */}
         {provider && <LocationControl hasLocation={provider.hasLocation} onChange={() => router.refresh()} />}
 
-        {/* Dostępność do rezerwacji (M2) */}
+        {/* Pracownicy (M14) */}
+        {provider && <StaffManager onChange={() => router.refresh()} />}
+
+        {/* Dostępność do rezerwacji (M2 / M14 per-pracownik) */}
         {provider && <AvailabilityEditor />}
 
         {/* Przychodzące zlecenia */}

@@ -164,6 +164,8 @@ export type RequestDTO = {
   durationMin: number | null;
   clientName: string;
   providerName: string;
+  staffId: string | null; // M14
+  staffName: string | null; // M14
   hasReview: boolean;
   rating: number | null;
 };

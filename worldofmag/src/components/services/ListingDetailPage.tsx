@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Handshake, MapPin, Send, Check, CalendarClock, Clock } from "lucide-react";
 import { PageHeader, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
-import { createServiceRequest, getAvailableSlots, bookSlot } from "@/actions/services";
+import { createServiceRequest, getAvailableSlots, bookSlot, getListingStaff } from "@/actions/services";
 import type { ListingDTO } from "@/lib/services";
 import { RatingStars, formatPrice, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 
@@ -137,27 +137,40 @@ function BookingWidget({ listingId, durationMin }: { listingId: string; duration
   const [booking, setBooking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  // M14: pracownicy oferty (gdy firma wieloosobowa, klient wybiera pracownika).
+  const [staff, setStaff] = useState<{ id: string; name: string; role: string | null }[]>([]);
+  const [staffId, setStaffId] = useState<string>("");
+
+  useEffect(() => {
+    getListingStaff(listingId).then((s) => {
+      setStaff(s);
+      if (s.length > 0) setStaffId((cur) => cur || s[0].id);
+    }).catch(() => {});
+  }, [listingId]);
+
+  const needsStaff = staff.length > 0;
 
   useEffect(() => {
     let active = true;
+    if (needsStaff && !staffId) { setSlots([]); return; }
     setLoading(true); setError(null);
-    getAvailableSlots(listingId, date)
+    getAvailableSlots(listingId, date, { staffId: staffId || null })
       .then((s) => { if (active) setSlots(s); })
       .catch((e) => { if (active) setError(e instanceof Error ? e.message : "Błąd"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [listingId, date]);
+  }, [listingId, date, staffId, needsStaff]);
 
   async function book(iso: string) {
     setBooking(iso); setError(null);
     try {
-      await bookSlot(listingId, iso);
+      await bookSlot(listingId, iso, staffId || null);
       setDone(true);
       setTimeout(() => router.push("/services/requests"), 900);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Nie udało się zarezerwować");
       // odśwież sloty (mogło się zmienić)
-      getAvailableSlots(listingId, date).then(setSlots).catch(() => {});
+      getAvailableSlots(listingId, date, { staffId: staffId || null }).then(setSlots).catch(() => {});
     } finally {
       setBooking(null);
     }
@@ -179,6 +192,14 @@ function BookingWidget({ listingId, durationMin }: { listingId: string; duration
           <Clock size={12} /> {durationMin} min
         </span>
       </div>
+      {needsStaff && (
+        <div>
+          <label style={fieldLabelStyle}>Pracownik</label>
+          <select value={staffId} onChange={(e) => setStaffId(e.target.value)} style={{ ...fieldInputStyle, width: 220 }}>
+            {staff.map((s) => <option key={s.id} value={s.id}>{s.name}{s.role ? ` · ${s.role}` : ""}</option>)}
+          </select>
+        </div>
+      )}
       <div>
         <label style={fieldLabelStyle}>Dzień</label>
         <input type="date" value={date} min={todayISO()} onChange={(e) => setDate(e.target.value)} style={{ ...fieldInputStyle, width: 180 }} />
