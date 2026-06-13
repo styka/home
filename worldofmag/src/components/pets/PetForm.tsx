@@ -7,6 +7,7 @@ import { createPet, updatePet } from "@/actions/pets";
 import { SPECIES_OPTIONS } from "@/lib/petSpecies";
 import { PET_PRESETS, suggestedPresetForSpecies } from "@/lib/petPresets";
 import { useToast } from "@/components/ui/Toast";
+import { ImageUrlInput } from "@/components/ui/ImageUrlInput";
 import type { Pet, PetSpecies } from "@/types";
 
 interface PetFormProps {
@@ -123,7 +124,7 @@ export function PetForm({ pet, teams = [], onClose, onSaved }: PetFormProps) {
       </div>
 
       <Field label="URL zdjęcia">
-        <input style={inputStyle} value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} placeholder="https://… (wklej link do zdjęcia)" />
+        <ImageUrlInput value={photoUrl} onChange={setPhotoUrl} module="pets" inputStyle={inputStyle} placeholder="https://… (wklej link lub wgraj z Dysku)" />
       </Field>
 
       <Field label="Notatki">

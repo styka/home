@@ -9,9 +9,16 @@ import { ActivityFeed } from "@/components/home/ActivityFeed"
 import { MenuPrefsEditor } from "@/components/settings/MenuPrefsEditor"
 import { SkinPicker } from "@/components/settings/SkinPicker"
 import { listAvailableSkins, getActiveSkinId } from "@/actions/skins"
+import { DriveSettings } from "@/components/settings/DriveSettings"
+import { getDriveStatus } from "@/actions/drive"
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams?: { drive?: string }
+}) {
   const session = await auth()
+  const driveStatus = await getDriveStatus()
   const teams = await getMyTeams()
   const recentActivity = await getRecentActivity(30)
   const userPermissions: string[] = session?.user?.permissions ?? []
@@ -157,6 +164,14 @@ export default async function SettingsPage() {
           Menu
         </h2>
         <MenuPrefsEditor permissions={userPermissions} prefs={menuPrefs} />
+      </section>
+
+      {/* Dysk Google */}
+      <section>
+        <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+          Dysk Google
+        </h2>
+        <DriveSettings status={driveStatus} notice={searchParams?.drive} />
       </section>
 
       {/* Wygląd / Skórka */}

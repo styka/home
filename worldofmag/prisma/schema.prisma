@@ -23,6 +23,8 @@ model User {
 
   accounts               Account[]
   sessions               Session[]
+  driveConnection        DriveConnection?      @relation("UserDriveConnection")
+  driveFiles             DriveFile[]           @relation("UserDriveFiles")
   ownedTeams             Team[]                @relation("TeamOwner")
   teamMemberships        TeamMember[]
   sentInvitations        TeamInvitation[]      @relation("InvitedBy")
@@ -185,6 +187,42 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+}
+
+// ── Google Drive integration (per-user file store via OAuth drive.file scope) ──
+// User connects their own Google Drive in Settings; we only ever see/manage files
+// the app itself creates (drive.file scope). Tokens are stored per-user so the
+// server can upload/stream on their behalf.
+model DriveConnection {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  email                String? // the Google account the Drive belongs to
+  refreshToken         String? // long-lived; obtained with access_type=offline
+  accessToken          String?
+  accessTokenExpiresAt DateTime?
+  rootFolderId         String? // id of the "Omnia" root folder on the user's Drive
+  folderMap            String    @default("{}") // JSON: { [module]: folderId }
+  connectedAt          DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation("UserDriveConnection", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Registry of files the app uploaded to a user's Drive. Lets the proxy resolve
+// the owner/mime to stream a file, and gives a handle for management/deletion.
+model DriveFile {
+  id           String   @id @default(cuid())
+  userId       String
+  driveFileId  String   @unique
+  module       String // which module the file belongs to (string, no enums on SQLite)
+  originalName String
+  mimeType     String
+  size         Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  user User @relation("UserDriveFiles", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Session {

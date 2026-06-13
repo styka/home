@@ -93,8 +93,19 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
     if (!file) return;
     setUploadingPhoto(true);
     try {
-      const url = await fileToDownscaledDataUrl(file, { maxDim: 800, quality: 0.75 });
-      setPhotoUrl(url);
+      // Prefer storing on the user's Google Drive (keeps the DB small). If Drive
+      // isn't connected (409), fall back to the inline downscaled data URL.
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("module", "magazynowanie");
+      const res = await fetch("/api/drive/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        const data = (await res.json()) as { url: string };
+        setPhotoUrl(data.url);
+      } else {
+        const url = await fileToDownscaledDataUrl(file, { maxDim: 800, quality: 0.75 });
+        setPhotoUrl(url);
+      }
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Błąd zdjęcia", "error");
     } finally {
