@@ -9,6 +9,7 @@ import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
 import { DurationInput } from "@/components/kitchen/shared/DurationInput";
 import { RecipeImagesEditor } from "./RecipeImagesEditor";
 import { useToast } from "@/components/ui/Toast";
+import { ImageUrlInput } from "@/components/ui/ImageUrlInput";
 import { createRecipe, updateRecipe } from "@/actions/recipes";
 import type {
   RecipeFull,
@@ -310,13 +311,13 @@ export function RecipeEditor({ recipe, cookbooks, hasAI }: RecipeEditorProps) {
         </Field>
 
         <Field label="URL zdjęcia (opcjonalny)">
-          <input
-            type="url"
+          <ImageUrlInput
             value={coverImageUrl}
-            onChange={(e) => setCoverImageUrl(e.target.value)}
-            placeholder="https://…"
-            className="w-full px-3 py-2 rounded border text-sm"
-            style={inputStyle}
+            onChange={setCoverImageUrl}
+            module="kitchen"
+            placeholder="https://… (wklej link lub wgraj z Dysku)"
+            inputClassName="px-3 py-2 rounded border text-sm"
+            inputStyle={inputStyle}
           />
         </Field>
 
