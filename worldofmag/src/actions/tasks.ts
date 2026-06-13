@@ -313,7 +313,23 @@ export async function toggleTaskStatus(id: string): Promise<Task> {
   return updateTask(id, { status: next });
 }
 
-export async function completeRecurringTask(id: string): Promise<Task> {
+/** Opcje jednorazowego odstępstwa przy zamykaniu cyklicznego zadania.
+ * Wszystkie pola opcjonalne — bez nich zachowanie jest jak dotąd (wg reguły). */
+export interface CompleteRecurringOptions {
+  /** Nadpisz tryb liczenia następnego terminu TYLKO dla tego wykonania
+   * (reguła zapisana w nowym zadaniu pozostaje bez zmian). */
+  anchor?: "DUE" | "COMPLETION";
+  /** Data wykonania (ISO) — zapisana jako completedAt zamykanego zadania i baza
+   * dla trybu COMPLETION. Domyślnie „teraz". */
+  completionDate?: string;
+  /** Konkretny termin następnego wystąpienia (ISO) — pomija computeNextDue. */
+  nextDueOverride?: string;
+}
+
+export async function completeRecurringTask(
+  id: string,
+  opts: CompleteRecurringOptions = {},
+): Promise<Task> {
   const existing = await prisma.task.findUnique({
     where: { id },
     include: { tags: { select: { tagId: true } } },
@@ -321,15 +337,22 @@ export async function completeRecurringTask(id: string): Promise<Task> {
   if (!existing || !existing.recurring) throw new Error("Not a recurring task");
 
   const rule: RecurringRule = JSON.parse(existing.recurring);
-  const now = new Date();
+  const completedAt = opts.completionDate ? new Date(opts.completionDate) : new Date();
 
   // Oznacz bieżące jako zrobione (zostaje jako rekord historyczny).
+  // updateTask sam ustawia completedAt na „teraz" — nadpisujemy je osobno, gdy
+  // podano konkretną datę wykonania.
   await updateTask(id, { status: "DONE" });
+  if (opts.completionDate) {
+    await prisma.task.update({ where: { id }, data: { completedAt } });
+  }
 
-  // Baza kolejnego terminu: od daty wykonania (COMPLETION) albo od terminu
-  // zadania (DUE — domyślnie). Bez terminu fallback na „teraz".
-  const base = rule.anchor === "COMPLETION" ? now : (existing.dueDate ?? now);
-  const nextDue = computeNextDue(base, rule);
+  // Następny termin: konkretna data (override) albo wyliczony z bazy. Baza wg
+  // anchora — z odstępstwem (opts.anchor) lub regułą zadania; COMPLETION liczy
+  // od daty wykonania, DUE od terminu zadania (fallback: data wykonania).
+  const anchor = opts.anchor ?? rule.anchor;
+  const base = anchor === "COMPLETION" ? completedAt : (existing.dueDate ?? completedAt);
+  const nextDue = opts.nextDueOverride ? new Date(opts.nextDueOverride) : computeNextDue(base, rule);
   if (!nextDue) return toTask(existing);
 
   if (rule.endDate && nextDue > new Date(rule.endDate)) return toTask(existing);
