@@ -1,4 +1,9 @@
-# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
+-- 0173: notatka SC6 c.d. (testy) w master-planie (re-seed z md) + raport.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)',
+  'omnia-master-plan-domkniecie-2026-06-07',
+  $omnia_master_plan$# Omnia — Master plan domknięcia: stan vs wymagania (2026-06-07)
 
 > **Czym jest ten dokument.** Jedno, scalone źródło prawdy dla **kolejnej sesji Claude Code**.
 > Powstał, bo dwa zgłoszenia administratora („marketplace konkurujący z Fixly/Booksy" oraz
@@ -765,3 +770,36 @@
 - `omnia-handoff-prompt-2026-05-31` — pierwotna kolejka ~70 pozycji (Fazy 1–4) + niezmienniki.
 - `omnia-luki-wdrozeniowe-2026-06-01` (kategoria `backlog`, „🚧 BACKLOG LUK") — inwentaryzacja 2026-06-01.
 - **`omnia-master-plan-domkniecie-2026-06-07`** — TEN dokument; scala i aktualizuje wszystkie powyższe do stanu 2026-06-07. **Używaj tego jako głównego źródła.**
+$omnia_master_plan$, 'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
+
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Omnia — Raport implementacji 2026-06-10 (Faza 4: SC6 testy — c.d.)',
+  'omnia-implementacja-2026-06-10-sc6-testy-2',
+  $omnia_impl_0173$# Omnia — Raport implementacji 2026-06-10 (Faza 4: SC6 testy — c.d.)
+
+Czterdziesta siodma porcja — Faza 4, SC6 (rozszerzenie pokrycia).
+
+## SC6 — Kolejne testy jednostkowe (OK)
+**Diagnoza:** par 7.1 — po fundamencie (24 testy) pozostala krytyczna czysta logika bez pokrycia:
+smart-parsing zakupow, klasyfikacja parametrow terrarium, geolokalizacja marketplace.
+**Rozwiazanie:** +18 testow (lacznie 42), wszystkie na czystych funkcjach bez value-importow „@/":
+- `parseQuantity.ts`: „2 butelki mleka" (qty/unit/nazwa), „mleko 500ml", „mleko x2", „3 kg ziemniaki",
+  przecinek dziesietny „1,5 l", sam tekst bez liczby → name=calosc.
+- `petEnvironment.ts` (`classifyValue`): ok w zakresie, warn lekko poza, danger mocno poza (min*0.85 /
+  max*1.15), null/undefined → ok, nieznany parametr → ok, custom range nadpisuje domyslny, `rangeFor`.
+- `serviceGeo.ts`: `haversineKm` (ten sam punkt=0, Warszawa↔Krakow ~250km, symetria), `formatDistance`
+  (metry < 1km, kilometry powyzej).
+Uruchamianie bez zmian: `npm run test:unit` (`node --import tsx --test "src/**/*.test.ts"`).
+`currency.ts/toBase` pominieto (modul value-importuje prisma → alias „@/" nierozwiazywalny w tsx bez
+dodatkowej konfiguracji; logika trywialna mnozenia).
+**Pliki:** `src/lib/__tests__/{parseQuantity,petEnvironment,serviceGeo}.test.ts`.
+
+## Weryfikacja
+- `npm run test:unit` → 42/42 pass. `npm run build` zielony.
+
+## Podsumowanie
+SC6: 42 testy krytycznej logiki. Dalej: stats wykonawcy, medicationSchedule. Pozostala Faza 4:
+SC2 (limity/cache AI), SC3 (wydajnosc), SC4 (observability), SC7 (monetyzacja), branze V1-V5.$omnia_impl_0173$, 'general', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "content"=EXCLUDED."content","updatedAt"=CURRENT_TIMESTAMP;
