@@ -1,6 +1,3 @@
-import path from "path"
-import fs from "fs"
-
 export interface AudytChapter {
   slug: string
   title: string
@@ -63,8 +60,8 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
 ]
 
 /**
- * Wczytuje zawartość rozdziału z dysku.
- * Użyj tylko na Server Components.
+ * Wczytuje zawartość rozdziału z public/.
+ * Używa fetch zamiast fs — kompatybilne z Serverless (Render).
  */
 export async function loadAudytChapter(slug: string): Promise<string> {
   const chapter = AUDYT_CHAPTERS.find((c) => c.slug === slug)
@@ -72,16 +69,12 @@ export async function loadAudytChapter(slug: string): Promise<string> {
     throw new Error(`Audyt chapter not found: ${slug}`)
   }
 
-  const chapterPath = path.join(
-    process.cwd(),
-    "content",
-    "audyt-2026-06-14",
-    chapter.filePath
-  )
-
   try {
-    const content = fs.readFileSync(chapterPath, "utf8")
-    return content
+    const response = await fetch(`/public/audyt-2026-06-14/${chapter.filePath}`)
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} loading chapter ${slug}`)
+    }
+    return await response.text()
   } catch (error) {
     console.error(`Failed to load audyt chapter ${slug}:`, error)
     throw error
