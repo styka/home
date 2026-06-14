@@ -50,6 +50,12 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // (Dziś/Nadchodzące/Zaległe) nowe zadanie trafia do Skrzynki bez terminu, więc nie
   // wchodzi do przefiltrowanej `tasks`; trzymamy zwrócony obiekt, by panel i tak się otworzył.
   const [justCreated, setJustCreated] = useState<Task | null>(null);
+  // „Migawka" ostatniej znanej wersji otwartego zadania. Gdy zmiana statusu lub terminu
+  // wypchnie zadanie z bieżącego (przefiltrowanego serwerowo) widoku — np. ukończenie w
+  // widoku aktywnych albo zmiana terminu poza „Dziś"/„Nadchodzące" — zadania nie ma już w
+  // propie `tasks`, więc bez tej migawki panel szczegółów/edycji by się zamknął. Trzymamy
+  // panel otwarty na ostatniej znanej wersji; z listy zadanie i tak znika.
+  const [openTaskSnapshot, setOpenTaskSnapshot] = useState<Task | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   // Prezentacja listy: "default" = naturalne grupowanie widoku (dni/projekty), "priority" = po priorytetach.
   // Dotyczy widoków „Nadchodzące/Zaległe/Wszystkie" (Dziś i projekty są zawsze po priorytetach).
@@ -67,9 +73,14 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const isVirtualView = ["today", "upcoming", "overdue", "all", "multi"].includes(projectId);
   const addProjectId = isVirtualView ? inboxId : projectId;
 
-  // Preferuj świeżą wersję z listy; jeśli zadania tam (jeszcze) nie ma — użyj świeżo utworzonego.
-  const openTask = openTaskId
+  // Świeża wersja z listy; jeśli zadania tam (jeszcze/już) nie ma — użyj świeżo utworzonego.
+  const liveOpenTask = openTaskId
     ? tasks.find((t) => t.id === openTaskId) ?? (justCreated?.id === openTaskId ? justCreated : null)
+    : null;
+  // Panel pokazuje świeżą wersję, a gdy zadanie wypadło z widoku — ostatnią migawkę
+  // (tylko dla aktualnie otwartego id, żeby nie pokazać poprzedniego zadania).
+  const openTask = openTaskId
+    ? liveOpenTask ?? (openTaskSnapshot?.id === openTaskId ? openTaskSnapshot : null)
     : null;
 
   // Najnowsza lista zadań dla timera — bez tego interwał (zależności []) widziałby
@@ -107,8 +118,14 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // (zamiast opuszczać stronę), zwłaszcza na mobile.
   // Po zamknięciu panelu porzuć fallback świeżo utworzonego zadania (każda ścieżka zamknięcia).
   useEffect(() => {
-    if (!openTaskId) setJustCreated(null);
+    if (!openTaskId) { setJustCreated(null); setOpenTaskSnapshot(null); }
   }, [openTaskId]);
+
+  // Dopóki otwarte zadanie jest w widoku, odświeżamy jego migawkę. Gdy zniknie z listy
+  // (zmiana statusu/terminu), migawka zostaje ostatnią znaną wersją i panel nie zamyka się.
+  useEffect(() => {
+    if (liveOpenTask) setOpenTaskSnapshot(liveOpenTask);
+  }, [liveOpenTask]);
 
   useEffect(() => {
     if (!openTaskId) return;
