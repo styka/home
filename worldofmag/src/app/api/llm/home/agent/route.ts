@@ -235,6 +235,7 @@ ${includePets ? `\n${PET_ACTIONS_PROMPT}\n` : ""}
 ZASADY:
 - Najpierw "query" po dane, dopiero potem "answer" lub "plan" z konkretnymi id.
 - Akcje ZBIORCZE (np. "oznacz wszystkie zadania o remoncie jako zrobione"): pobierz zadania przez query, SAM zdecyduj które pasują na podstawie tytułów/treści, a potem zwróć WIELE akcji — każda z własnym id. Nie ma akcji masowej; symulujesz ją pętlą pojedynczych akcji.
+- BULK DODAWANIE ZADAŃ: gdy użytkownik wklei LISTĘ rzeczy do zrobienia (wiele linii, myślniki, numeracja, CSV, JSON) — potraktuj KAŻDĄ pozycję jako osobne zadanie i zwróć po jednej akcji create_task na pozycję (każda z własnym id). Sam zmapuj dane na pola (title/description/priority/dueDate), nawet gdy układ jest „rozjechany". Nie scalaj wszystkiego w jedno zadanie.
 - Dla PYTAŃ używaj "answer", nie twórz akcji. Dla POLECEŃ zmiany danych używaj "plan". Dla próśb „pokaż/otwórz/przejdź do …" z gotowym widokiem używaj "navigate".
 - Gdy czegoś brakuje lub jest niejednoznaczne — użyj "clarify" zanim zaproponujesz akcje.
 - INTERNET: gdy odpowiedź wymaga informacji spoza danych użytkownika (ceny, fakty, definicje, wydarzenia, rzeczy ze świata), użyj "query" z narzędziem web_search, a w odpowiedzi CYTUJ źródła linkami markdown. Najpierw sprawdź dane użytkownika, dopiero potem sięgaj do internetu.

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef, useTransition } from "react";
-import { Mic, MicOff, Loader2, Plus, CheckSquare, Square, Sparkles, X } from "lucide-react";
+import { Mic, MicOff, Loader2, Plus, CheckSquare, Square, Sparkles, X, Paperclip } from "lucide-react";
 import { createTask } from "@/actions/tasks";
 import { createTaskTag } from "@/actions/taskTags";
 import type { TaskPriority, TaskTagDef, RecurringRule } from "@/types";
 import { TASK_PRIORITY_LABELS } from "@/types";
+import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import { cn } from "@/lib/cn";
 
 interface ParsedTask {
@@ -50,6 +51,7 @@ export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
   const [transcript, setTranscript] = useState("");
   const [isPending, startTransition] = useTransition();
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const showResults = tasks.length > 0;
 
   function stopRecording() {
@@ -86,29 +88,55 @@ export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
     setError(null);
   }
 
-  async function processText() {
-    const input = text.trim();
-    if (!input) return;
+  // Wspólna ścieżka parsowania — przyjmuje tekst lub zdjęcie (data URL).
+  async function runParse(payload: { text?: string; image?: string }) {
     stopRecording();
     setLoading(true);
     setError(null);
     setTasks([]);
-
     try {
       const res = await fetch("/api/llm/tasks/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: input, today: new Date().toISOString() }),
+        body: JSON.stringify({ ...payload, today: new Date().toISOString() }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Błąd przetwarzania"); return; }
-
-      const parsed = (data.tasks as ParsedTask[]).map((t) => ({ ...t, selected: true }));
-      setTasks(parsed);
+      const list = (data.tasks as ParsedTask[]).map((t) => ({ ...t, selected: true }));
+      if (list.length === 0) { setError("Nie rozpoznano żadnych zadań."); return; }
+      setTasks(list);
     } catch {
       setError("Nie udało się połączyć z LLM");
     } finally {
       setLoading(false);
+    }
+  }
+
+  function processText() {
+    const input = text.trim();
+    if (!input) return;
+    void runParse({ text: input });
+  }
+
+  // Załącznik: obraz → OCR/vision; .csv/.json/.txt/.md → wczytaj treść jako tekst.
+  async function handleFile(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    setError(null);
+    try {
+      if (file.type.startsWith("image/")) {
+        const dataUrl = await fileToDownscaledDataUrl(file, { maxDim: 1600, quality: 0.8 });
+        await runParse({ image: dataUrl });
+      } else {
+        const content = await file.text();
+        if (!content.trim()) { setError("Plik jest pusty."); return; }
+        setText(content.slice(0, 20000));
+        await runParse({ text: content.slice(0, 20000) });
+      }
+    } catch {
+      setError("Nie udało się wczytać pliku.");
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
@@ -187,6 +215,24 @@ export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
             >
               {recording ? <MicOff size={13} /> : <Mic size={13} />}
               {recording ? "Stop" : "Mów"}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*,.csv,.json,.txt,.md,text/plain"
+              className="hidden"
+              style={{ display: "none" }}
+              onChange={(e) => handleFile(e.target.files)}
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={loading}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
+              style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
+              title="Wczytaj z pliku: zdjęcie listy, CSV, JSON lub TXT"
+            >
+              <Paperclip size={13} />
+              Załącznik
             </button>
             <button
               onClick={processText}
