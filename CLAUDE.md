@@ -39,8 +39,9 @@ management system for **Szymon Tyka** (tyka.szymon@gmail.com). The name means
 "World of the Mage" — Szymon's personal digital world. It has grown well beyond
 the original 3 modules into a ~20-module "operating system for life" (shopping,
 tasks, notes, kitchen, pets, health, habits, vehicles, finance, languages, news,
-weather, storage, workshop, a service marketplace, a unified calendar, …) unified
-by a shared ownership model, RBAC, notifications, and an AI assistant.
+weather, storage, workshop, a service marketplace, contacts/CRM, a unified
+calendar, …) unified by a shared ownership model, RBAC, notifications, a
+soft-delete trash, per-user Google Drive storage, and an AI assistant.
 
 ### UX Philosophy
 - Keyboard-first (vim-style shortcuts: j/k, x, e, d)
@@ -51,24 +52,25 @@ by a shared ownership model, RBAC, notifications, and an AI assistant.
 ### Module Status
 | Module | Route | Permission | Status |
 |--------|-------|------------|--------|
-| Home (AI dashboard) | `/` | `module.home` | Done — Sparkles AI assistant + on-demand morning briefing; Beta badge for `BETA_TESTER` |
+| Home (AI dashboard) | `/` | `module.home` | Done — Sparkles AI assistant + on-demand morning briefing; **personalizable dashboard** (section order/visibility, per-user `DashboardPref`); Beta badge for `BETA_TESTER` |
 | Shopping | `/shopping` | `module.shopping` | Done and deployed |
-| Tasks | `/tasks` | `module.tasks` | Done — custom per-list statuses, project groups, recurring tasks |
-| Notes | `/notes` | `module.notes` | Done and deployed |
-| Kitchen (recipes/meal plan/pantry) | `/kitchen` | `module.kitchen` (+ sub-perms) | Done and deployed |
-| Pets (care/husbandry/breeding) | `/pets` | `module.pets` | Done and deployed |
-| Health (visits/tests + meds) | `/health` | `module.health` | Done — visits/lab tests + **Leki i pielęgnacja** sub-section (`/health/leki`): medication dosing & recurring care tasks (dressing changes, nails…), "today" agenda with check-off, integrated with Calendar and the AI assistant |
-| Habits (tracker/heatmap) | `/habits` | `module.habits` | Done and deployed |
-| Flota (vehicles/fuel/service) | `/flota` | `module.flota` | Done and deployed |
-| Portfel (personal finance) | `/portfel` | `module.portfel` | Done and deployed |
-| Languages (SRS flashcards) | `/languages` | `module.languages` | Done and deployed (SuperMemo-2) |
+| Tasks | `/tasks` | `module.tasks` | Done — custom per-list statuses, project groups, recurring tasks, subtasks, bulk add, **timeline + kanban views** |
+| Notes | `/notes` | `module.notes` | Done — live markdown preview, **wikilinks `[[Title]]`** + weighted full-text search, attachments (`NoteAttachment`), version history (`NoteRevision`) |
+| Kitchen (recipes/meal plan/pantry) | `/kitchen` | `module.kitchen` (+ sub-perms) | Done — recipes/meal plan/pantry + per-recipe nutrition values |
+| Pets (care/husbandry/breeding) | `/pets` | `module.pets` | Done — care/husbandry/breeding + genetics, enclosure alarms, vet export (PDF card + CSV measurements), pet calendar |
+| Health (visits/tests + meds) | `/health` | `module.health` | Done — visits + **lab-test repository** (`HealthAttachment`, PDF/image) with trend analysis + **Leki i pielęgnacja** sub-section (`/health/leki`): medication dosing & recurring care tasks (dressing changes, nails…), "today" agenda with check-off, integrated with Calendar and the AI assistant |
+| Habits (tracker/heatmap) | `/habits` | `module.habits` | Done — heatmap/streaks + weekly goals + habit↔task integration |
+| Flota (vehicles/fuel/service) | `/flota` | `module.flota` | Done — vehicles/fuel/service + attachments (`VehicleAttachment`: invoices, registration, insurance) |
+| Portfel (personal finance) | `/portfel` | `module.portfel` | Done — wallet elements/entries + **budgets & savings goals** (`/portfel/budzety`), **monthly reports** (`/portfel/raporty`), **settings + multi-currency/exchange rates** (`/portfel/ustawienia`), and **auto-expense booking** from other modules (`WalletEntry.sourceModule/sourceId`) |
+| Languages (SRS flashcards) | `/languages` | `module.languages` | Done — SuperMemo-2 + TTS/pronunciation, writing mode, study series |
 | Wiadomości (news + knowledge base) | `/wiadomosci` | `module.news` | Done — RSS+LLM filtering, per-topic/per-source versioned knowledge base, web-search baseline bootstrap (Brave/DDG), hot topics, 24h freshness |
 | Pogoda (weather) | `/pogoda` | `module.weather` | Done — Open-Meteo, LLM day advice, preset + custom watchers |
 | Magazynowanie (storage/inventory) | `/magazynowanie` | `module.magazynowanie` | Done — **two modes (Dom/Pro, per-user `StorageSettings`)**. Shared: items by warehouse+location, SKU/EAN, min-stock replenishment→shopping, stocktake, AI photo inventory, movement log. **Dom:** "where is it?" (AI search), QR labels (print+scan), warranties/expiry, value+photos (CSV export). **Pro:** barcode in/out scan (`@zxing`), suppliers, PZ/WZ/invoice documents (OCR), purchase orders (LLM draft), analytics (value/ABC/dead-stock/trend + AI takeaways), batches/lots + FEFO. AI in assistant (`add_storage_item`/`adjust_storage` + read-tool `list_storage_items`) |
 | Warsztaty (workshop/studio) | `/warsztaty` | `module.warsztaty` | Done — **two modes (Dom/Pro, per-user `WarsztatSettings`)**. Any workshop type (woodworking/automotive/painting/electronics/metalworking/ceramics/sewing/jewelry/general). Equipment register (`WorkshopItem`: kind tool/machine/material/PPE, condition, qty+min-stock, service `nextServiceAt`), **static equipment-suggestion catalog by profile** (`src/lib/warsztat/catalog.ts`, basic/recommended/advanced tiers) as an "add to equipment" checklist. **Pro:** team ownership, tool assignment (who has / station), service + low-stock agenda (`/warsztaty/przeglady`), project journal (`WorkshopProject`). AI: read-tool `list_workshops` + actions `create_workshop`/`add_workshop_item` |
-| Usługi (service marketplace) | `/services` | `module.services` | Done — provider profiles (admin-set **verified** badge), listings (categories, advanced filters/sort), service requests with a status workflow, **in-app chat** (`ServiceMessage`), **quotes** (`ServiceQuote`), **portfolio** images (`ServiceImage`), **availability + slot booking** (`ServiceAvailability`, `lib/serviceSlots.ts`), ratings/reviews (`ServiceReview`) |
+| Usługi (service marketplace) | `/services` | `module.services` | Done — provider profiles (admin-set **verified** badge, public profile + slug/tagline at `/providers/[id]`), listings (categories, advanced filters/sort), service requests with a status workflow, **in-app chat** (`ServiceMessage`), **quotes** (`ServiceQuote`), **portfolio** images (`ServiceImage`), **availability + slot booking** (`ServiceAvailability`, `lib/serviceSlots.ts`, `lib/serviceGeo.ts`), ratings/reviews (`ServiceReview`), **payments/invoices** (`ServicePayment`, Portfel integration), **favorites** (`ServiceFavorite`), **promo codes** (`ServicePromoCode`), **multi-worker firms** (`ServiceStaff`), **disputes + admin moderation** (`ServiceDispute`, `/services/moderation`) |
 | Calendar | `/calendar` | `module.calendar` | Done — **unified agenda** aggregating tasks (due dates), kitchen meal plan, health meds & care, pet care, SRS language reviews and fleet service/inspection into a month grid (`actions/calendar.ts` `getCalendarEvents` + `lib/calendar.ts`) |
-| Reports (markdown docs) | `/reports` | authenticated | Done (system/user/team reports) |
+| Contacts (CRM) | `/contacts` | `module.contacts` | Done — lightweight personal CRM (contacts with tags); model `Contact`, `actions/contacts.ts` |
+| Reports (markdown docs) | `/reports` | authenticated | Done — system/user/team reports; **content stored in DB or per-user Google Drive** (`Report.storage` db\|drive, hydrated transparently) |
 | QA (test scenarios) | `/qa` | `module.qa` | Internal tooling (Epic → Story → Scenario) |
 | Truck (heavy-vehicle routing) | `/truck` | `module.truck` | Partial — ORS client ready, UI minimal |
 | Work / Praca | `/work` | — | Stub (sidebar entry only, "coming soon", disabled — no page) |
@@ -204,14 +206,16 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /health/                 # Medical visits + lab tests; + /health/leki (medication & care scheduling: dosing, times, recurrence, today-agenda)
 /habits/                 # Habit tracker (heatmap, streaks)
 /flota/ [vehicleId]      # Vehicles (fuel logs, service records)
-/portfel/ [elementId]    # Personal finance (wallet elements + entries)
+/portfel/ [elementId]    # Personal finance (wallet elements + entries); + /budzety (budgets & savings goals), /raporty (monthly reports), /ustawienia (multi-currency / exchange rates / settings)
 /languages/ [deckId]     # SRS vocabulary decks; + /[deckId]/study
 /wiadomosci/             # News: monitored topics (semantic filters), per-source versioned knowledge base, hot topics
 /pogoda/                 # Weather: Open-Meteo forecast + LLM "what to do" advice + watchers (presets + custom)
 /magazynowanie/          # Storage: items by warehouse+location (mode-aware sub-nav). Dom+Pro: /szukaj (AI "where is it?"), /etykiety (QR), /scan (AI photo), /stocktake, /ustawienia (Dom/Pro + currency). Pro: /przeplyw (in/out scan), /analityka, /dostawcy, /zamowienia, /dokumenty (OCR PZ/WZ/invoice)
 /warsztaty/ [workshopId] # Workshops: list + detail with tabs (Equipment / Suggestions-by-profile / Projects-Pro). Mode-aware sub-nav: /przeglady (Pro: service + low-stock agenda), /ustawienia (Dom/Pro)
-/services/ [listingId]   # Service marketplace: listings; + /requests (my requests, both sides), /provider (my provider profile + listings + availability), /providers/[providerId] (public profile)
+/services/ [listingId]   # Service marketplace: listings; + /requests (my requests, both sides), /provider (my provider profile + listings + availability), /providers/[providerId] (public profile), /moderation (admin-only dispute panel)
 /calendar/               # Unified agenda (month grid aggregating all modules)
+/contacts/               # Contacts / lightweight personal CRM (contacts with tags)
+/trash/                  # Unified soft-delete recovery (authenticated-only; restore items deleted across modules, retention-day countdown)
 /qa/ [module]            # QA test scenarios (Epic → Story → Scenario); + /scenariusz/[slug]
 /truck/                  # Heavy-vehicle routing (OpenRouteService)
 /reports/ [slug]         # Markdown reports (system/user/team), user-facing
@@ -220,7 +224,9 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /guide/                  # Help documentation
 /admin/                  # Admin console (module.admin)
 /admin/access/           # RBAC: permissions, role↔permission, user↔role (self-lockout guard)
-/admin/config/           # System key-value config (e.g. groq_api_key, brave_search_api_key — masked)
+/admin/audit/            # Audit log viewer (RBAC + config changes; `AuditLog`, `access.ts` getAuditLog)
+/admin/health/           # System health dashboard (DB/migrations/API diagnostics; `actions/systemHealth.ts`, computed live)
+/admin/config/           # System key-value config (e.g. groq_api_key, brave_search_api_key — masked, encrypted at rest)
 /admin/llm/              # LLM providers + model-per-operation-type assignment
 /admin/skins/            # System skins manager
 /admin/categories/       # Global system category management
@@ -237,9 +243,13 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 
 Organized by module: `shopping/`, `tasks/`, `notes/`, `kitchen/`, `pets/`,
 `health/`, `habits/`, `flota/`, `portfel/`, `languages/`, `news/`, `weather/`,
-`magazynowanie/`, `warsztaty/`, `services/`, `calendar/`, `qa/`, `truck/`,
-`reports/`, `home/`, `settings/`, `teams/`, `skins/`, `admin/`, `shell/`,
-`command-palette/`, `brand/`, `ui/` (+ a top-level `ServiceWorkerRegistration.tsx`).
+`magazynowanie/`, `warsztaty/`, `services/`, `calendar/`, `contacts/`, `trash/`,
+`qa/`, `truck/`, `reports/`, `home/`, `settings/`, `teams/`, `skins/`, `admin/`,
+`shell/`, `command-palette/`, `brand/`, `ui/` (+ a top-level
+`ServiceWorkerRegistration.tsx`). `admin/` now also holds `AuditLogPage.tsx`,
+`SystemHealthPage.tsx` and `FeedbackTriggerButton.tsx`; `shell/` holds
+`FeedbackInspector.tsx` (admin element-picker). The authoritative module registry
+(labels/icons/colors/permissions/order) is `src/lib/modules.tsx`.
 Each module typically has a `*Page.tsx` (client entry) and `*HomePage.tsx` (server
 wrapper). The `AppShell` (`shell/`) wraps all pages with `ModuleSidebar` (desktop),
 a mobile top bar + bottom tab bar, the notification bell, and the global AI assistant.
@@ -285,8 +295,8 @@ Never add manual cache invalidation elsewhere. Action files:
 - **Kitchen**: `recipes`, `cookbooks`, `mealPlans`, `pantry`
 - **Pets**: `pets`, `petCare`, `petHusbandry`, `petBreeding`
 - **Health**: `health`, `medications`
-- **Other modules**: `habits`, `flota`, `portfel`, `languageDecks`, `news`, `weather`, `qa`, `truck`, `storage` (Magazynowanie), `warsztat` (Warsztaty), `services` (marketplace), `calendar`
-- **Collaboration / system / UX**: `teams`, `invitations`, `access`, `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `aiConversations` (chat persistence), `notifications`, `menuPrefs` (sidebar customization), `skins`
+- **Other modules**: `habits`, `flota`, `portfel`, `portfelBudgets`, `portfelReports`, `portfelCurrency`, `portfelAuto` (Portfel: budgets/reports/multi-currency/auto-expense), `languageDecks`, `news`, `weather`, `qa`, `truck`, `storage` (Magazynowanie), `warsztat` (Warsztaty), `services` (marketplace; incl. `getModerationDisputes`), `calendar`, `contacts`
+- **Collaboration / system / UX**: `teams`, `invitations`, `access` (incl. `getAuditLog`), `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `aiConversations` (chat persistence), `notifications`, `menuPrefs` (sidebar customization), `dashboardPrefs` (home dashboard personalization), `skins`, `trash` (soft-delete recovery), `systemHealth`, `drive` (Google Drive)
 
 ### Authentication & Authorization
 
@@ -296,8 +306,8 @@ Never add manual cache invalidation elsewhere. Action files:
 - Check permissions via `src/lib/permissions.ts` (`PERMISSIONS` map, `hasPermission`, `permissionForPath`, `isPathLocked`).
 - Permission slugs (`module.*`): `home`, `shopping`, `tasks`, `notes`, `kitchen`,
   `pets`, `health`, `habits`, `flota`, `portfel`, `languages`, `services`,
-  `calendar`, `news`, `weather`, `magazynowanie`, `warsztaty`, `qa`, `truck`,
-  `invitations`, `settings`, `admin`. Kitchen sub-permissions:
+  `calendar`, `contacts`, `news`, `weather`, `magazynowanie`, `warsztaty`, `qa`,
+  `truck`, `invitations`, `settings`, `admin`. Kitchen sub-permissions:
   `kitchen.recipe.create|edit|delete`, `kitchen.mealplan.edit`,
   `kitchen.pantry.edit`, `kitchen.ai`. (Reports is authenticated-only — no slug.)
 - `ModuleSidebar` greys out + locks nav items the user lacks permission for (`isPathLocked`); admin nav appears only for admins.
@@ -313,11 +323,17 @@ UserRole, Permission, RolePermission          — RBAC
 Team, TeamMember, TeamInvitation              — Collaboration
 Skin, UserSkinPref                            — Skins/themes (system/user/team; tokens=JSON CSS-var map; isPublic to share; UserSkinPref = per-user choice)
 UserMenuPref                                  — Per-user sidebar/menu customization (order/disabled/tabBar = JSON string[] of module ids)
+DashboardPref                                 — Per-user Home dashboard personalization (section order/visibility = JSON string[])
 Notification                                  — Notification engine (per-user; bell in chrome; reminders synced from agenda/deadlines)
+AuditLog                                      — Audit trail for RBAC + config changes (category rbac|config; NO FK to User — snapshots actor email)
+TrashItem                                     — Soft-delete recovery (JSON entity snapshot + retention days; surfaced at /trash)
+DriveConnection, DriveFile                    — Google Drive integration (per-user OAuth drive.file tokens + uploaded-file registry; module folder map)
+Contact                                       — Contacts / personal CRM (per-user; tags = JSON)
 ShoppingList, Item, ItemHistory               — Shopping core
 Product, Category, Unit, CategoryIconVariant  — Shopping config
 Store, StoreNode, StoreEdge                   — Store maps (graph)
-Note, NoteGroup, Tag, NoteTag                 — Notes module
+Note, NoteGroup, Tag, NoteTag                 — Notes module (wikilinks [[Title]] + full-text search)
+NoteRevision, NoteAttachment                  — Notes version history + attachments/images
 TaskProject, TaskProjectMember, Task          — Tasks module
 TaskTagDef, TaskTaskTag, TaskComment, TaskShare — Tasks extras
 ProjectGroup (@@map "TaskView")               — Project groups (per-user; projectIds=JSON string[], many-to-many; optional color); folders in the project list + shared view /tasks/multi?group=<id>
@@ -327,10 +343,14 @@ Pet, PetShare, PetMeasurement, PetHealthRecord, PetVetVisit, PetTreatment — Pe
 PetCareTask, PetCareLog, PetEnclosure, PetEnvironmentReading — Pets husbandry
 PetBreedingPair, PetClutch, PetSale           — Pets breeding/sales
 HealthEvent                                   — Health module (visits/lab tests)
+HealthAttachment                              — Health lab-test attachments (PDF/image) for the test repository + trend analysis
 MedicationSchedule, MedicationLog             — Leki i pielęgnacja (med/care schedule + check-off log; kind MEDICATION|CARE, freqType DAILY|WEEKLY|HOURLY)
-Habit, HabitEntry                             — Habits module
+Habit, HabitEntry                             — Habits module (weekly goals; habit↔task integration)
 Vehicle, FuelLog, ServiceRecord, VehicleProfile — Flota / Truck (VehicleProfile = ORS routing profile)
-WalletElement, WalletEntry                    — Portfel (finance)
+VehicleAttachment                             — Flota attachments (invoices, registration, insurance docs)
+WalletElement, WalletEntry                    — Portfel (finance; WalletEntry has sourceModule/sourceId for auto-expense booking)
+Budget, FinanceGoal, FinanceSettings          — Portfel budgets + savings goals + per-user finance settings
+ExchangeRate                                  — Portfel multi-currency exchange rates (manual | nbp source)
 LanguageDeck, Vocabulary                      — Languages (SRS)
 NewsSource, NewsTopic, NewsKnowledge, NewsItem, NewsPref — Wiadomości (news + versioned knowledge base)
 WeatherLocation, WeatherWatcher               — Pogoda (locations + alert watchers)
@@ -340,9 +360,11 @@ StorageDocument, StorageDocumentLine          — Magazynowanie pro (PZ/WZ/invoi
 StoragePurchaseOrder, StoragePurchaseOrderLine — Magazynowanie pro (purchase orders to suppliers)
 WarsztatSettings                              — Warsztaty (Dom/Pro per-user)
 Workshop, WorkshopItem, WorkshopProject       — Warsztaty (workshop + equipment [kind/condition/min-stock/service] + Pro projects; suggestion catalog is static in src/lib/warsztat/catalog.ts)
-ServiceCategory, ServiceProvider, ServiceListing — Usługi marketplace (categories; provider profile w/ verified flag; listings)
+ServiceCategory, ServiceProvider, ServiceListing — Usługi marketplace (categories; provider profile w/ verified flag + slug/tagline; listings)
 ServiceRequest, ServiceReview, ServiceMessage — Usługi marketplace (requests w/ status workflow; reviews; in-app chat)
 ServiceQuote, ServiceAvailability, ServiceImage — Usługi marketplace (quotes; availability/slot booking; portfolio images)
+ServicePayment, ServiceDispute                — Usługi marketplace (payments/invoices → Portfel; disputes + admin moderation)
+ServiceStaff, ServiceFavorite, ServicePromoCode — Usługi marketplace (multi-worker firms; favorite providers; promo codes)
 QaEpic, QaUserStory, QaTestScenario           — QA module
 LlmProvider, LlmAssignment                    — LLM config (admin)
 AiConversation, AiMessage                     — AI assistant chat memory (per-user; message kind: text/plan/report/navigate/clarify/results)
@@ -436,15 +458,42 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
   can reorder modules, hide modules (collapsed under "Więcej…"/More, re-enableable),
   and customize the mobile bottom tab bar. `ModuleSidebar` renders only accessible +
   enabled modules in the user's order.
-- The **admin "point-at-element" feedback mode** is a floating, admin-only FAB that
-  is z-index-coordinated to sit *above* content modals (so you can report an element
-  inside a modal). See `doświadczenia.md` 2026-06-08 for the modal/FAB layering rules.
+- The **admin "point-at-element" feedback mode** is a floating, admin-only FAB
+  (`admin/FeedbackTriggerButton.tsx` + `shell/FeedbackInspector.tsx`, event bus
+  `lib/ai/feedbackBus.ts`; also Ctrl+Shift+B) that is z-index-coordinated to sit
+  *above* content modals (so you can report an element inside a modal). See
+  `doświadczenia.md` 2026-06-08 for the modal/FAB layering rules.
+
+### Cross-cutting systems
+
+- **Soft-delete / Trash** (`TrashItem`, `lib/trash.ts`, `actions/trash.ts`,
+  `/trash`): deletes across modules write a JSON snapshot to `TrashItem` with a
+  retention-day countdown; users restore from a unified `/trash` page
+  (authenticated-only, no permission slug).
+- **Audit log** (`AuditLog`, `lib/audit.ts`, `access.ts` `getAuditLog`,
+  `/admin/audit`): every RBAC/config change is logged with `category` `rbac|config`.
+  `AuditLog` has **no FK to User** — it snapshots the actor's email so history
+  survives user deletion.
+- **System health** (`actions/systemHealth.ts` `getSystemHealth`, `/admin/health`):
+  live DB/migrations/API diagnostics — there is **no** persisted model, it's computed.
+- **API-key encryption** (`lib/crypto/secrets.ts`): provider/API keys are encrypted
+  at rest and **masked** in `/admin/config` and `/admin/llm`.
+- **Google Drive integration** (`lib/drive/{client,oauth}.ts`, `actions/drive.ts`,
+  API `/api/drive/{connect,callback,upload,file/[fileId]}`): per-user OAuth
+  (`drive.file` scope) with an "Omnia" folder + per-module subfolders and a
+  `DriveFile` registry. **Reports** can store content on Drive
+  (`Report.storage` = `db|drive`, hydrated transparently on read); falls back to DB
+  when no Drive account is connected.
+- **Home dashboard personalization** (`DashboardPref`, `actions/dashboardPrefs.ts`):
+  per-user section order/visibility on the Home dashboard.
 
 ### Admin Panel (`/admin`, gated by `module.admin`)
 
 - **`/admin`** — console: build info (`NEXT_PUBLIC_BUILD_*`), active session, links to tools. (The Omnia→Claude Code clipboard export is an **admin-only per-list button** in the Tasks header — `TaskListClipboardButton`, prompt+copy logic in `src/lib/omniaClipboard.ts` — copying the prompt + JSON of *that list's* active tasks.)
 - **`/admin/access`** — RBAC manager (`PermissionManager`): permissions, role↔permission grid, user↔role; self-lockout guard.
-- **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, `brave_search_api_key`, masked).
+- **`/admin/audit`** — audit log viewer (RBAC + config changes; `AuditLog`).
+- **`/admin/health`** — system health dashboard (DB/migrations/API diagnostics; live, no model).
+- **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, `brave_search_api_key`, masked + encrypted at rest).
 - **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type).
 - **`/admin/skins`** — system skins manager.
 - **`/admin/categories`** — global system categories (name/color/icon).
@@ -496,6 +545,12 @@ defaults / tab bar if they belong there).
 **Smart parsing** (`parseQuantity.ts`): `"2 butelki mleka"` → `{qty:2, unit:"butelki", name:"mleka"}`, `"mleko 500ml"` → `{qty:500, unit:"ml", name:"mleko"}`, `"mleko x2"` → `{qty:2, name:"mleko"}`.
 
 **Recurrence** (`src/lib/recurrence.ts`): shared recurring-event logic for tasks, habits, pet treatments, and medication schedules. **SRS** (`src/lib/srs.ts`): SuperMemo-2 for language decks.
+
+**Other lib helpers**: `userTime.ts` (user-timezone day bounds via IANA `tz` cookie
+— set once in `AppShell`; use it for "today/overdue" math, not server-local dates),
+`calendar.ts` (agenda aggregation), `habitStats.ts` (streaks/heatmap), `wikilinks.ts`
+(note `[[Title]]` parsing), `tts.ts` (text-to-speech), `petExport.ts` (vet PDF/CSV),
+`portfel/{autoExpense,currency}.ts` (auto-expense + currency), `kitchen/recipeImportDraft.ts`.
 
 **Markdown rendering** (`src/lib/markdown.ts`, used by reports, recipes, tasks, QA,
 AI sheet): a small custom renderer (not a library). Supports `#`/`##`/`###`, tables
@@ -587,6 +642,11 @@ The flow is **`feature → develop → master`**:
 - [ ] Paid hosting migration if free-tier performance is insufficient ($7/mo on Render)
 
 _Recently shipped (no longer roadmap): Calendar (unified agenda), Service marketplace
-(Usługi), Notifications, Skins, Storage & Workshop (Dom/Pro), custom task statuses,
-project groups, recurring tasks, AI assistant streaming + cross-module CRUD,
-per-user menu customization, drag-and-drop (`@dnd-kit`)._
+(Usługi) incl. payments/disputes/moderation/staff/favorites/promo codes, Contacts
+(CRM), per-user Google Drive storage, soft-delete Trash, admin Audit log + System
+health, API-key encryption, Home dashboard personalization, Portfel budgets/reports/
+multi-currency/auto-expense, Notes wikilinks/versions/attachments, Health lab-test
+repository, Languages TTS/writing/series, Pets genetics/alarms/vet-export, Tasks
+timeline+kanban/subtasks/bulk-add, Notifications, Skins, Storage & Workshop (Dom/Pro),
+custom task statuses, project groups, recurring tasks, AI assistant streaming +
+cross-module CRUD, per-user menu customization, drag-and-drop (`@dnd-kit`)._
