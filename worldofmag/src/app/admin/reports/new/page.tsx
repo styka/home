@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Save, Columns, Eye, Edit3 } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Columns, Eye, Edit3, HardDrive, Database } from "lucide-react";
 import { createReport } from "@/actions/reports";
+import { getDriveStatus } from "@/actions/drive";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 
 const CATEGORIES = [
@@ -41,6 +42,19 @@ export default function NewReportPage() {
   const [previewMode, setPreviewMode] = useState<"edit" | "split" | "preview">("edit");
   const previewHtml = useMemo(() => markdownToHtml(content), [content]);
 
+  // Domyślnie raporty trafiają na Dysk Google (jeśli połączony). Status sprawdzamy
+  // po stronie serwera; do czasu odpowiedzi przełącznik jest nieaktywny.
+  const [driveConnected, setDriveConnected] = useState<boolean | null>(null);
+  const [toDrive, setToDrive] = useState(true);
+  useEffect(() => {
+    getDriveStatus()
+      .then((s) => {
+        setDriveConnected(s.connected);
+        setToDrive(s.connected);
+      })
+      .catch(() => setDriveConnected(false));
+  }, []);
+
   function handleTitleChange(v: string) {
     setTitle(v);
     if (!slugManuallyEdited) {
@@ -62,7 +76,13 @@ export default function NewReportPage() {
     setError(null);
     startTransition(async () => {
       try {
-        await createReport({ title: title.trim(), slug: slug.trim(), category, content: content.trim() });
+        await createReport({
+          title: title.trim(),
+          slug: slug.trim(),
+          category,
+          content: content.trim(),
+          storage: toDrive && driveConnected ? "drive" : "db",
+        });
         router.push("/admin/reports");
       } catch (e) {
         setError(e instanceof Error ? e.message : "Błąd zapisu");
@@ -134,6 +154,42 @@ export default function NewReportPage() {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Miejsce składowania treści */}
+          <div>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>
+              Przechowywanie
+            </label>
+            <label
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 13,
+                color: driveConnected ? "var(--text-primary)" : "var(--text-muted)",
+                cursor: driveConnected ? "pointer" : "not-allowed",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={toDrive && !!driveConnected}
+                disabled={!driveConnected}
+                onChange={(e) => setToDrive(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: "var(--accent-green)", cursor: driveConnected ? "pointer" : "not-allowed" }}
+              />
+              {toDrive && driveConnected ? <HardDrive size={14} style={{ color: "var(--accent-green)" }} /> : <Database size={14} style={{ color: "var(--text-muted)" }} />}
+              Przechowuj na Dysku Google
+            </label>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
+              {driveConnected === null
+                ? "Sprawdzam połączenie z Dyskiem…"
+                : driveConnected
+                ? toDrive
+                  ? "Treść raportu trafi jako plik .md do folderu „Omnia/Raporty” na Twoim Dysku. Metadane zostają w bazie."
+                  : "Treść raportu zostanie zapisana w bazie danych."
+                : <>Dysk Google nie jest połączony — raport zapisze się w bazie. Połącz w <Link href="/settings" style={{ color: "var(--accent-blue)" }}>Ustawienia → Dysk Google</Link>.</>}
+            </p>
           </div>
 
           <div>

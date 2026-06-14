@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
+import { userDayBounds } from "@/lib/userTime";
 import { assertProjectAccess } from "@/actions/taskProjects";
 import { trackActivity } from "@/actions/activity";
 import { recordTrash } from "@/lib/trash";
@@ -465,8 +466,7 @@ export async function reorderTask(taskId: string, newOrder: number): Promise<voi
 
 export async function getTodayTasks(): Promise<Task[]> {
   const user = await requireAuth();
-  const start = new Date(); start.setHours(0, 0, 0, 0);
-  const end = new Date(); end.setHours(23, 59, 59, 999);
+  const { start, end } = userDayBounds();
 
   const projects = await prisma.taskProject.findMany({
     where: { OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }] },
@@ -489,7 +489,7 @@ export async function getTodayTasks(): Promise<Task[]> {
 
 export async function getOverdueTasks(): Promise<Task[]> {
   const user = await requireAuth();
-  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const { start: now } = userDayBounds();
 
   const projects = await prisma.taskProject.findMany({
     where: { OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }] },

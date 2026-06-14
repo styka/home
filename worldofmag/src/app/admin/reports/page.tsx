@@ -3,7 +3,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { getReportsMeta } from "@/actions/reports";
-import { BookOpen, ChevronRight, ChevronLeft, Calendar, Plus, User } from "lucide-react";
+import { BookOpen, ChevronRight, ChevronLeft, Calendar, Plus, User, HardDrive, Database } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
   refactoring: { label: "Refaktoryzacja", color: "var(--accent-purple)" },
@@ -162,6 +162,17 @@ export default async function ReportsPage() {
                           <User size={11} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
                           <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
                             {report.authorName ?? "system"}
+                          </span>
+                        </div>
+                        <div
+                          style={{ display: "flex", alignItems: "center", gap: 5 }}
+                          title={report.storage === "drive" ? "Treść na Dysku Google" : "Treść w bazie danych"}
+                        >
+                          {report.storage === "drive"
+                            ? <HardDrive size={11} style={{ color: "var(--accent-green)", flexShrink: 0 }} />
+                            : <Database size={11} style={{ color: "var(--text-muted)", flexShrink: 0 }} />}
+                          <span style={{ fontSize: 11, color: report.storage === "drive" ? "var(--accent-green)" : "var(--text-muted)" }}>
+                            {report.storage === "drive" ? "Dysk" : "Baza"}
                           </span>
                         </div>
                       </div>

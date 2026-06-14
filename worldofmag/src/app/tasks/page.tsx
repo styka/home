@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getTaskProjects } from "@/actions/taskProjects";
+import { userDayBounds } from "@/lib/userTime";
 import { TasksHomePage } from "@/components/tasks/TasksHomePage";
 
 export const dynamic = "force-dynamic";
@@ -11,11 +12,7 @@ export default async function TasksIndexPage() {
   if (!session?.user?.id) redirect("/auth/signin");
 
   const userId = session.user.id;
-  const now = new Date();
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date(now);
-  todayEnd.setHours(23, 59, 59, 999);
+  const { start: todayStart, end: todayEnd } = userDayBounds();
 
   const [projects, todayCount, upcomingCount, overdueCount, todayTasks] = await Promise.all([
     getTaskProjects(),

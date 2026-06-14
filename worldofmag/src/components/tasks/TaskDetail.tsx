@@ -142,12 +142,14 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
 
   function handleDueDateChange(v: string) {
     setDueDate(v);
-    run(() => updateTask(task.id, { dueDate: v ? new Date(v) : null }));
+    // Lokalne południe — instant jednoznacznie należy do wybranego dnia w strefie
+    // użytkownika (spójnie z TaskRow; bez tego UTC-północ myliła widok „Dziś").
+    run(() => updateTask(task.id, { dueDate: v ? new Date(v + "T12:00:00") : null }));
   }
 
   function handleStartDateChange(v: string) {
     setStartDate(v);
-    run(() => updateTask(task.id, { startDate: v ? new Date(v) : null }));
+    run(() => updateTask(task.id, { startDate: v ? new Date(v + "T12:00:00") : null }));
   }
 
   function handleEstimatedChange(v: string) {

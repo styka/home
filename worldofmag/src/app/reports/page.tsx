@@ -23,6 +23,7 @@ export default async function UserReportsPage() {
     teamId: r.teamId,
     authorName: r.authorName ?? null,
     createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
+    storage: r.storage,
   }));
 
   const myCount = summaries.filter((r) => r.authorId === userId).length;

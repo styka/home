@@ -22,6 +22,7 @@ export const MODULE_FOLDERS: Record<string, string> = {
   warsztaty: "Warsztaty",
   health: "Zdrowie",
   flota: "Flota",
+  reports: "Raporty",
   other: "Inne",
 };
 
@@ -188,6 +189,32 @@ export async function streamFile(
   );
   if (!res.ok) return null;
   return { body: await res.arrayBuffer(), mime: record.mimeType };
+}
+
+/** Replace the bytes of an already-uploaded file in place (keeps the same
+ * driveFileId). Used to persist edits to text documents (e.g. reports) without
+ * orphaning the previous Drive file. */
+export async function updateFileContent(
+  userId: string,
+  driveFileId: string,
+  file: { buffer: Buffer; mime: string },
+): Promise<void> {
+  const valid = await getValidConnection(userId);
+  if (!valid) throw new Error("Drive not connected");
+  const res = await driveFetch(
+    valid.accessToken,
+    `${DRIVE_UPLOAD}/files/${driveFileId}?uploadType=media`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": file.mime },
+      body: new Uint8Array(file.buffer),
+    },
+  );
+  if (!res.ok) throw new Error(`Drive update failed: ${res.status} ${await res.text()}`);
+  await prisma.driveFile.updateMany({
+    where: { driveFileId, userId },
+    data: { size: file.buffer.length },
+  });
 }
 
 /** Delete a file from Drive and the registry. */

@@ -5,6 +5,7 @@ import { getTasks, getTodayTasks, getOverdueTasks, getAllUserTasks, getTasksForP
 import { getTaskProjects } from "@/actions/taskProjects";
 import { getTaskTags } from "@/actions/taskTags";
 import { getProjectGroup } from "@/actions/projectGroups";
+import { userTomorrowStart } from "@/lib/userTime";
 import { prisma } from "@/lib/prisma";
 import { TasksPage } from "@/components/tasks/TasksPage";
 import type { Task, ViewMode, TaskStatusFilter } from "@/types";
@@ -72,9 +73,7 @@ export default async function TaskProjectPage({ params, searchParams }: Props) {
     viewMode = "overdue";
     projectName = VIRTUAL_LABELS.overdue;
   } else if (projectId === "upcoming") {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
+    const tomorrow = userTomorrowStart();
     tasks = (await getAllUserTasks()).filter(
       (t) => t.dueDate && new Date(t.dueDate) >= tomorrow && t.status !== "DONE" && t.status !== "CANCELLED"
     );

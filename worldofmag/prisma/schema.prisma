@@ -724,8 +724,10 @@ model Report {
   id        String   @id @default(cuid())
   title     String
   slug      String   @unique
-  content   String // markdown content
+  content   String // markdown content (pusty gdy storage="drive" — treść żyje na Dysku)
   category  String   @default("general")
+  storage   String   @default("db") // "db" | "drive" — gdzie trzymana jest treść
+  driveFileId String? // id pliku .md na Dysku Google (gdy storage="drive")
   authorId  String?
   teamId    String?
   author    User?    @relation("AuthoredReports", fields: [authorId], references: [id], onDelete: SetNull)

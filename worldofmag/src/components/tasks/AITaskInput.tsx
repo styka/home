@@ -287,7 +287,7 @@ export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
                     <input
                       type="date"
                       value={task.dueDate ? task.dueDate.slice(0, 10) : ""}
-                      onChange={(e) => updateTask(i, { dueDate: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                      onChange={(e) => updateTask(i, { dueDate: e.target.value ? new Date(e.target.value + "T12:00:00").toISOString() : null })}
                       className="bg-transparent text-xs focus:outline-none border rounded px-1"
                       style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
                     />

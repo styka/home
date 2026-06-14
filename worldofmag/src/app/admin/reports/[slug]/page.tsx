@@ -2,9 +2,9 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { prisma } from "@/lib/prisma";
+import { getReport } from "@/actions/reports";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
-import { BookOpen, ArrowLeft, Calendar, Tag, Pencil } from "lucide-react";
+import { BookOpen, ArrowLeft, Calendar, Tag, Pencil, HardDrive, Database } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
   refactoring: { label: "Refaktoryzacja", color: "var(--accent-purple)" },
@@ -32,7 +32,7 @@ export default async function ReportPage({ params }: { params: { slug: string } 
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
-  const report = await prisma.report.findUnique({ where: { slug: params.slug } });
+  const report = await getReport(params.slug);
   if (!report) notFound();
 
   const cat = CATEGORY_LABELS[report.category] ?? CATEGORY_LABELS.general;
@@ -158,6 +158,20 @@ export default async function ReportPage({ params }: { params: { slug: string } 
                 · Zaktualizowano: {formatDateTimeFull(report.updatedAt)}
               </span>
             )}
+
+            <span
+              title={report.storage === "drive" ? "Treść przechowywana na Dysku Google" : "Treść przechowywana w bazie danych"}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 11,
+                color: report.storage === "drive" ? "var(--accent-green)" : "var(--text-muted)",
+              }}
+            >
+              {report.storage === "drive" ? <HardDrive size={11} /> : <Database size={11} />}
+              {report.storage === "drive" ? "Dysk Google" : "Baza"}
+            </span>
           </div>
         </div>
 

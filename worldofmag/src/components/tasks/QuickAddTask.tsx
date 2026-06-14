@@ -72,7 +72,7 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
             title,
             description,
             priority,
-            dueDate: dueDate ? new Date(dueDate) : null,
+            dueDate: dueDate ? new Date(dueDate + "T12:00:00") : null,
             projectId: ["today", "upcoming", "overdue", "all"].includes(projectId) ? null : projectId,
           });
           setValue("");

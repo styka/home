@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { BookOpen, ChevronRight, Calendar, User, Plus, Layers, Search } from "lucide-react";
+import { BookOpen, ChevronRight, Calendar, User, Plus, Layers, Search, HardDrive } from "lucide-react";
 import { PageHeader, StatTile, SectionHeading, ManagementGrid, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { getCategoryInfo } from "@/lib/reportCategories";
 import { searchReports } from "@/actions/reports";
@@ -16,6 +16,7 @@ export interface ReportSummary {
   teamId: string | null;
   authorName: string | null;
   createdAt: string;
+  storage?: string;
 }
 
 interface ReportsHomePageProps {
@@ -41,6 +42,7 @@ export function ReportsHomePage({ reports, myCount, teamCount, isAdmin }: Report
           id: r.id, title: r.title, slug: r.slug, category: r.category,
           authorId: r.authorId, teamId: r.teamId, authorName: r.authorName ?? null,
           createdAt: typeof r.createdAt === "string" ? r.createdAt : new Date(r.createdAt).toISOString(),
+          storage: r.storage,
         })));
       });
     }, 300);
@@ -302,6 +304,15 @@ function ReportRow({ report }: { report: ReportSummary }) {
             <span style={{ fontSize: 11, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
               <User size={10} />
               {report.authorName}
+            </span>
+          )}
+          {report.storage === "drive" && (
+            <span
+              title="Treść na Dysku Google"
+              style={{ fontSize: 11, color: "var(--accent-green)", display: "flex", alignItems: "center", gap: 4 }}
+            >
+              <HardDrive size={10} />
+              Dysk
             </span>
           )}
         </div>

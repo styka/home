@@ -62,6 +62,19 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
 
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
+  // Zapisz strefę czasową przeglądarki w ciasteczku, by serwer liczył granice doby
+  // (widoki „Dziś"/„Nadchodzące"/„Zaległe" w Zadaniach) w strefie użytkownika.
+  useEffect(() => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz && document.cookie.indexOf(`tz=${tz}`) === -1) {
+        document.cookie = `tz=${tz}; path=/; max-age=31536000; samesite=lax`;
+      }
+    } catch {
+      // brak Intl / TZ — serwer użyje domyślnej strefy
+    }
+  }, []);
+
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };

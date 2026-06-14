@@ -3,7 +3,7 @@
 import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Save, Trash2, Columns, Eye, Edit3 } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Trash2, Columns, Eye, Edit3, HardDrive, Database } from "lucide-react";
 import { updateReport, deleteReport } from "@/actions/reports";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 
@@ -30,7 +30,7 @@ const inputStyle = {
 };
 
 interface Props {
-  report: { title: string; slug: string; category: string; content: string };
+  report: { title: string; slug: string; category: string; content: string; storage: "db" | "drive" };
 }
 
 export function EditReportForm({ report }: Props) {
@@ -87,9 +87,27 @@ export function EditReportForm({ report }: Props) {
         </Link>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
-            Edytuj raport
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <h1 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
+              Edytuj raport
+            </h1>
+            <span
+              title={report.storage === "drive" ? "Treść przechowywana na Dysku Google" : "Treść przechowywana w bazie danych"}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 11,
+                padding: "3px 8px",
+                borderRadius: 999,
+                border: "1px solid var(--border)",
+                color: report.storage === "drive" ? "var(--accent-green)" : "var(--text-muted)",
+              }}
+            >
+              {report.storage === "drive" ? <HardDrive size={11} /> : <Database size={11} />}
+              {report.storage === "drive" ? "Dysk Google" : "Baza"}
+            </span>
+          </div>
           <button
             onClick={handleDelete}
             disabled={isPending || isDeleting}
