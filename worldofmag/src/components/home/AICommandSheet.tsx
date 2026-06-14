@@ -513,6 +513,30 @@ export function AICommandSheet() {
       try { const convo = await createAiConversation(userLabel); setConversationId(convo.id); convoIdRef.current = convo.id; } catch { /* ignore */ }
     }
     try {
+      // Intencja „zadania" (kontekst lub podpis) → parsuj zdjęcie na zadania.
+      const toTasks = context[0] === "tasks" || /zadani|task|to.?do|lista zada/i.test(caption);
+      if (toTasks) {
+        const res = await fetch("/api/llm/tasks/parse", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: dataUrl, today: new Date().toISOString() }),
+        });
+        const data = (await res.json()) as { tasks?: { title: string; description: string | null; priority: string; dueDate: string | null }[]; error?: string };
+        if (!res.ok) { setError(data.error ?? "Nie udało się przetworzyć zdjęcia"); return; }
+        const parsed = data.tasks ?? [];
+        if (!parsed.length) { setError("Nie rozpoznano zadań na zdjęciu. Spróbuj wyraźniejszego ujęcia."); return; }
+        const actions: AIAction[] = parsed.map((t, i) => {
+          const params: Record<string, unknown> = { title: t.title };
+          if (t.description) params.description = t.description;
+          if (t.priority) params.priority = t.priority;
+          if (t.dueDate) params.dueDate = t.dueDate;
+          return { id: `tsk${i}`, module: "tasks", type: "create_task", params, description: `Dodaj zadanie: ${t.title}` };
+        });
+        const content = `Rozpoznano ${actions.length} ${actions.length === 1 ? "zadanie" : "zadań"} ze zdjęcia`;
+        setTurns((t) => [...t, { id: newId(), role: "assistant", kind: "plan", content, actions }]);
+        void persist("assistant", content, "plan", { actions });
+        return;
+      }
       const res = await fetch("/api/llm/magazynowanie/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -57,6 +57,9 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
   const [recurringDays, setRecurringDays] = useState<number[]>([]);
   const [recurringEndDate, setRecurringEndDate] = useState("");
   const [recurringAnchor, setRecurringAnchor] = useState<"DUE" | "COMPLETION">("DUE");
+  const [recurringDayOfMonth, setRecurringDayOfMonth] = useState("");
+  const [showCompleteOpts, setShowCompleteOpts] = useState(false);
+  const [completeNextDate, setCompleteNextDate] = useState("");
   const [newSubtask, setNewSubtask] = useState("");
   const [shareEmail, setShareEmail] = useState("");
   const [shareError, setShareError] = useState("");
@@ -91,6 +94,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
         setRecurringDays(r.daysOfWeek ?? []);
         setRecurringEndDate(r.endDate ?? "");
         setRecurringAnchor(r.anchor ?? "DUE");
+        setRecurringDayOfMonth(r.dayOfMonth ? String(r.dayOfMonth) : "");
       } catch { /* ignore */ }
     }
   }, [task.id]);
@@ -109,6 +113,13 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
     } else {
       run(() => updateTask(task.id, { status: s }));
     }
+  }
+
+  // Zamknięcie cyklicznego zadania z jednorazowym odstępstwem od reguły.
+  function handleCompleteRecurring(opts: Parameters<typeof completeRecurringTask>[1]) {
+    setStatus("DONE");
+    setShowCompleteOpts(false);
+    run(() => completeRecurringTask(task.id, opts));
   }
 
   function handlePriorityChange(p: TaskPriority) {
@@ -171,10 +182,12 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
   }
 
   function handleRecurringSave() {
+    const dom = parseInt(recurringDayOfMonth, 10);
     const rule: RecurringRule = {
       type: recurringType,
       interval: recurringInterval,
       daysOfWeek: recurringType === "WEEKLY" ? recurringDays : undefined,
+      dayOfMonth: recurringType === "MONTHLY" && dom >= 1 && dom <= 31 ? dom : undefined,
       endDate: recurringEndDate || null,
       anchor: recurringAnchor,
     };
@@ -330,6 +343,57 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
             ))}
           </select>
         </div>
+
+        {/* Cykliczne: zamknij z odstępstwem od reguły (jednorazowo) */}
+        {task.recurring && status !== "DONE" && (
+          <div className="px-4 py-2 border-b" style={{ borderColor: "var(--border)" }}>
+            <button
+              onClick={() => setShowCompleteOpts((v) => !v)}
+              className="flex items-center gap-1.5 text-xs focus:outline-none"
+              style={{ color: "var(--text-muted)" }}
+              title="Oznacz zrobione, ale policz następne wystąpienie inaczej niż w ustawieniach"
+            >
+              <CheckCircle2 size={12} /> Zrobione z odstępstwem
+              <ChevronDown size={12} style={{ transform: showCompleteOpts ? "rotate(180deg)" : undefined }} />
+            </button>
+            {showCompleteOpts && (
+              <div className="mt-2 flex flex-col gap-1.5">
+                <button
+                  onClick={() => handleCompleteRecurring({ anchor: "DUE" })}
+                  className="text-left text-xs px-2 py-1.5 rounded focus:outline-none border"
+                  style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+                >
+                  Zrobione — następne licz <strong>od terminu</strong>
+                </button>
+                <button
+                  onClick={() => handleCompleteRecurring({ anchor: "COMPLETION" })}
+                  className="text-left text-xs px-2 py-1.5 rounded focus:outline-none border"
+                  style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+                >
+                  Zrobione — następne licz <strong>od dziś</strong>
+                </button>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="date"
+                    value={completeNextDate}
+                    onChange={(e) => setCompleteNextDate(e.target.value)}
+                    className="bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
+                    style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+                  />
+                  <button
+                    onClick={() => handleCompleteRecurring({ nextDueOverride: new Date(completeNextDate).toISOString() })}
+                    disabled={!completeNextDate}
+                    className="text-xs px-2 py-1.5 rounded focus:outline-none disabled:opacity-40"
+                    style={{ backgroundColor: "var(--accent-green)", color: "var(--on-accent)" }}
+                    title="Zrobione — następne wystąpienie w tej dacie"
+                  >
+                    Następne w tej dacie
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Weryfikacja — gdy zadanie czeka na zatwierdzenie */}
         {status === "IN_VERIFICATION" && (
@@ -564,6 +628,24 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
                       {day}
                     </button>
                   ))}
+                </div>
+              )}
+
+              {recurringType === "MONTHLY" && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>Dzień miesiąca:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={recurringDayOfMonth}
+                    onChange={(e) => setRecurringDayOfMonth(e.target.value)}
+                    placeholder="np. 15"
+                    className="w-16 bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
+                    style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+                    title="Kolejne wystąpienie zawsze tego dnia miesiąca (puste = ten sam dzień co termin)"
+                  />
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>(puste = jak termin)</span>
                 </div>
               )}
 

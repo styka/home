@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, Trash2 } from "lucide-react";
+import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, Trash2, CalendarCheck } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
@@ -56,6 +56,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // Prezentacja listy: "default" = naturalne grupowanie widoku (dni/projekty), "priority" = po priorytetach.
   // Dotyczy widoków „Nadchodzące/Zaległe/Wszystkie" (Dziś i projekty są zawsze po priorytetach).
   const [groupBy, setGroupBy] = useState<"default" | "priority">("default");
+  const [sortBy, setSortBy] = useState<"default" | "completedAt">("default");
   const [layout, setLayout] = useState<"list" | "kanban" | "timeline">("list");
   const canToggleGrouping = viewMode === "upcoming" || viewMode === "overdue" || viewMode === "all" || viewMode === "multi";
   const [, startTransition] = useTransition();
@@ -91,10 +92,15 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   useEffect(() => {
     const saved = localStorage.getItem("tasks.groupBy");
     if (saved === "priority" || saved === "default") setGroupBy(saved);
+    const savedSort = localStorage.getItem("tasks.sortBy");
+    if (savedSort === "completedAt" || savedSort === "default") setSortBy(savedSort);
   }, []);
   useEffect(() => {
     localStorage.setItem("tasks.groupBy", groupBy);
   }, [groupBy]);
+  useEffect(() => {
+    localStorage.setItem("tasks.sortBy", sortBy);
+  }, [sortBy]);
 
   // Cykliczne sprawdzanie terminów. Wcześniej `checkDueNotifications` odpalało się
   // tylko przy montażu i zmianie propu `tasks`, więc przypomnienie „10 min przed"
@@ -409,6 +415,16 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             </div>
           )}
 
+          {/* Sortuj sekcję „Zrobione" po dacie wykonania (przegląd „co kiedy zrobiłem") */}
+          <button
+            onClick={() => setSortBy((s) => (s === "completedAt" ? "default" : "completedAt"))}
+            className="p-1.5 rounded focus:outline-none"
+            style={{ color: sortBy === "completedAt" ? "var(--accent-blue)" : "var(--text-muted)" }}
+            title={sortBy === "completedAt" ? "Zrobione: sortowane po dacie wykonania (kliknij, by wyłączyć)" : "Sortuj zrobione po dacie wykonania"}
+          >
+            <CalendarCheck size={15} />
+          </button>
+
           <button
             onClick={() => { setIsSearchOpen((v) => !v); setTimeout(() => searchRef.current?.focus(), 10); }}
             className="p-1.5 rounded focus:outline-none"
@@ -595,6 +611,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             statusConfig={statusConfig}
             viewMode={viewMode}
             groupBy={canToggleGrouping ? groupBy : "default"}
+            sortBy={sortBy}
             selectedTagIds={selectedTagIds}
             focusedTaskId={focusedTaskId}
             onFocus={setFocusedTaskId}

@@ -25,7 +25,17 @@ export function computeNextDue(from: Date, rule: RecurringRule): Date | null {
       d.setDate(d.getDate() + 7 * rule.interval);
       return d;
     case "MONTHLY":
-      d.setMonth(d.getMonth() + rule.interval);
+      if (rule.dayOfMonth) {
+        // Fixed day-of-month: land on that day regardless of the base date's
+        // day. Set day to 1 BEFORE shifting months so a high base day (e.g. 31)
+        // can't roll the month over, then clamp to the target month length.
+        d.setDate(1);
+        d.setMonth(d.getMonth() + rule.interval);
+        const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        d.setDate(Math.min(rule.dayOfMonth, lastDay));
+      } else {
+        d.setMonth(d.getMonth() + rule.interval);
+      }
       return d;
     case "YEARLY":
       d.setFullYear(d.getFullYear() + rule.interval);

@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-export const dynamic = "force-static";
-
 const C = {
   bgBase: "#0d0d0d",
   bgSurface: "#1a1a1a",

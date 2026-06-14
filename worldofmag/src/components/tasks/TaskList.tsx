@@ -13,6 +13,8 @@ interface TaskListProps {
   viewMode: ViewMode;
   /** "default" = naturalne grupowanie widoku (po dniach/projektach); "priority" = grupowanie po priorytetach (jak w „Dziś"). */
   groupBy: "default" | "priority";
+  /** Sortowanie sekcji „Zrobione" — "completedAt" = po dacie wykonania. */
+  sortBy?: "default" | "completedAt";
   selectedTagIds: string[];
   focusedTaskId: string | null;
   onFocus: (id: string) => void;
@@ -44,7 +46,7 @@ function byDueDateAsc(a: Task, b: Task): number {
   return (a.order ?? 0) - (b.order ?? 0);
 }
 
-export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, focusedTaskId, onFocus, onOpen, rowRefs, statusConfig = DEFAULT_STATUS_CONFIG }: TaskListProps) {
+export function TaskList({ tasks, filter, viewMode, groupBy, sortBy = "default", selectedTagIds, focusedTaskId, onFocus, onOpen, rowRefs, statusConfig = DEFAULT_STATUS_CONFIG }: TaskListProps) {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const isTerminal = (status: string) => statusMetaFor(status, statusConfig).isTerminal;
@@ -169,7 +171,7 @@ export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, foc
             {[...groupTasks].sort(byDueDateAsc).map(renderTask)}
           </TaskGroup>
         ))}
-        <CompletedSection tasks={done} renderTask={renderTask} />
+        <CompletedSection tasks={done} renderTask={renderTask} sortBy={sortBy} />
       </div>
     );
   }
@@ -191,7 +193,7 @@ export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, foc
           </TaskGroup>
         );
       })}
-      <CompletedSection tasks={done} renderTask={renderTask} />
+      <CompletedSection tasks={done} renderTask={renderTask} sortBy={sortBy} />
     </div>
   );
 }
