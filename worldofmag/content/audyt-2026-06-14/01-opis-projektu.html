@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rozdział 1: Opis projektu</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.7;
+      color: #b0b0b0;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+    }
+    h1, h2, h3 { color: #ffffff; margin-top: 2em; margin-bottom: 0.5em; }
+    h1 { font-size: 1.8em; }
+    h2 { font-size: 1.4em; border-bottom: 1px solid #333333; padding-bottom: 0.5em; }
+    h3 { font-size: 1.1em; }
+    p { margin: 1em 0; }
+    strong { color: #ffffff; }
+    code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fbbf24; }
+    .stat { background: rgba(59,130,246,0.15); padding: 16px; border-left: 3px solid #3b82f6; margin: 1em 0; border-radius: 6px; }
+    .stat-value { font-size: 1.3em; color: #60a5fa; font-weight: 600; }
+    .stat-label { font-size: 0.9em; color: #9ca3af; }
+    table { width: 100%; border-collapse: collapse; margin: 1.5em 0; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333333; }
+    th { background: rgba(255,255,255,0.08); color: #ffffff; font-weight: 600; }
+    tr:hover { background: rgba(255,255,255,0.04); }
+    ul, ol { margin: 1em 0; padding-left: 2em; }
+    li { margin: 0.5em 0; }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<h1>1. Opis projektu — funkcjonalny i techniczny</h1>
+
+<h2>Wizja & Nazwa</h2>
+<p>
+  <strong>WorldOfMag</strong> (wewnętrzna nazwa: <strong>Omnia</strong>) to osobisty system zarządzania życiem i pracą dla Szymon Tyki.
+  Nazwa oznacza "Świat Maga" — jego cyfrowy wszechświat integrujący wszystkie aspekty życia: zakupy, zadania, notatki, kuchnię,
+  zwierzęta, zdrowie, nawyki, pojazdy, finanse, języki, wiadomości, pogodę, magazynowanie, warsztaty, a także usługi
+  (marketplace klient ↔ wykonawca).
+</p>
+<p>
+  Aplikacja wyrosła z prostego narzędzia na skalę trzech modułów do zaawansowanego systemu operacyjnego dla życia —
+  wszechstronnego, opartego na AI, wspieranego sztuczną inteligencją dla analizy i rekomendacji.
+</p>
+
+<h2>Strategia biznesowa: Droga do 100M użytkowników</h2>
+<p>
+  Faza 1 (obecnie): <strong>1–50 użytkowników</strong> — validation, MVP modules, free tier, focus na core UX.
+</p>
+<p>
+  Faza 2 (po 3–6 miesiącach): <strong>50–10k użytkowników</strong> — monetyzacja (ads + premium), marketplace integrations
+  (Gmail, Google Calendar, Slack), mobile app (PWA lub React Native).
+</p>
+<p>
+  Faza 3 (1–2 lata): <strong>10k–1M użytkowników</strong> — team collaboration, enterprise features, compliance (SOC 2, GDPR),
+  SaaS white-label dla branż.
+</p>
+<p>
+  Faza 4 (2–5 lat): <strong>1M–100M użytkowników</strong> — platforma dla małych biznesów (modułowe aplikacje na życzenie,
+  tanio dzięki AI), ecosystem integracji (API, webhooks), global payments.
+</p>
+
+<h2>Model monetyzacji</h2>
+<ul>
+  <li><strong>Free tier (Dom):</strong> Wszystkie moduły podstawowe — shopping, tasks, notes, kitchen, pets, health, habits, languages, news, weather, storage (mode Dom), workshops (mode Dom). Reklamach (Google AdSense lub właściwe).</li>
+  <li><strong>Premium (Pro):</strong> Advanced features — team collaboration, advanced storage (Pro mode: invoicing, suppliers), workshop management (Pro mode: projects), advanced analytics, no ads. ~$9–15/miesiąc.</li>
+  <li><strong>Marketplace:</strong> Wykonawcy usług (Pro subscription required) — float na prowizjach (5–10% per transakcję).</li>
+</ul>
+
+<h2>Stack technologiczny</h2>
+<p>Wybór stos nowoczesny, scalable, type-safe:</p>
+
+<div class="stat">
+  <div class="stat-label">Frontend</div>
+  <div class="stat-value">Next.js 14 (App Router) + React 18 + TypeScript 5 (strict)</div>
+</div>
+
+<div class="stat">
+  <div class="stat-label">Styling</div>
+  <div class="stat-value">Tailwind CSS 3.4 + CSS variables (dark theme)</div>
+</div>
+
+<div class="stat">
+  <div class="stat-label">ORM & Data</div>
+  <div class="stat-value">Prisma 5 + PostgreSQL (Neon, serverless) / SQLite (dev)</div>
+</div>
+
+<div class="stat">
+  <div class="stat-label">Auth</div>
+  <div class="stat-value">NextAuth v5 (beta) + Google OAuth</div>
+</div>
+
+<div class="stat">
+  <div class="stat-label">AI/LLM</div>
+  <div class="stat-value">Groq API (llama3, mixtral) — model routing per operation type</div>
+</div>
+
+<div class="stat">
+  <div class="stat-label">Hosting</div>
+  <div class="stat-value">Render.com (Frankfurt, free tier) — auto-deploy na push</div>
+</div>
+
+<h2>Metryki projektu (stan 2026-06-14)</h2>
+
+<table>
+  <tr>
+    <th>Kategoria</th>
+    <th>Wartość</th>
+    <th>Opis</th>
+  </tr>
+  <tr>
+    <td><strong>Moduły zrealizowane</strong></td>
+    <td>15</td>
+    <td>Shopping, Tasks, Notes, Kitchen, Pets, Health, Habits, Flota, Portfel, Languages, News, Weather, Storage, Workshops, Services (Marketplace v1)</td>
+  </tr>
+  <tr>
+    <td><strong>Moduły w trakcie</strong></td>
+    <td>2</td>
+    <td>Services (Marketplace Etap A), Truck (routing)</td>
+  </tr>
+  <tr>
+    <td><strong>Stubs (planowane)</strong></td>
+    <td>2</td>
+    <td>Calendar (scheduled), Work (planowany)</td>
+  </tr>
+  <tr>
+    <td><strong>Migracje Prisma</strong></td>
+    <td>121</td>
+    <td>Ewolucja schematu — od Auth do Storage Pro, systematyczne podejście</td>
+  </tr>
+  <tr>
+    <td><strong>Modele Prisma</strong></td>
+    <td>56+</td>
+    <td>User, Team, Shopping, Tasks, Notes, Kitchen, Pets, Health, Habits, Flota, Portfel, Languages, Services, Storage, Workshops, QA, LLM config, + system</td>
+  </tr>
+  <tr>
+    <td><strong>Server Actions</strong></td>
+    <td>48</td>
+    <td>Mutacje per moduł — type-safe, revalidatePath, activity tracking</td>
+  </tr>
+  <tr>
+    <td><strong>Routes główne</strong></td>
+    <td>25+</td>
+    <td>/ (home), /shopping, /tasks, /notes, /kitchen, ... /admin (10+ podstron)</td>
+  </tr>
+  <tr>
+    <td><strong>LLM endpoints</strong></td>
+    <td>15+</td>
+    <td>/api/llm/shopping, /api/llm/tasks, /api/llm/notes, /api/llm/home/agent, ... OCR, web-search</td>
+  </tr>
+  <tr>
+    <td><strong>Lines of Code</strong></td>
+    <td>~45k</td>
+    <td>TypeScript + TSX, strict mode, zero any</td>
+  </tr>
+</table>
+
+<h2>Architektura wysokiego poziomu</h2>
+
+<h3>Warstwy aplikacji</h3>
+<ol>
+  <li><strong>Warstwy prezentacji (React):</strong> Komponenty per moduł (shopping/, tasks/, notes/, ...). ModuleSidebar (desktop) + top bar (mobile) + bottom tab bar. Server Components na granicach. Client Components dla interaktywności (useState, useTransition).</li>
+  <li><strong>Warstwa biznesowa (Server Actions):</strong> ~48 plików, każdy = operacja (createItem, updateTask, deleteNote). Auth-first (requireAuth), access checks, Prisma mutations, revalidatePath.</li>
+  <li><strong>Warstwa LLM (API Routes):</strong> 15+ endpointów pod /api/llm/** — routing providera (Groq/Anthropic/OpenAI), parsing, normalizacja, Q&A, agent conversacyjny.</li>
+  <li><strong>Warstwa danych (Prisma ORM):</strong> 56+ modeli, relationships (1:N, N:N), constraints, indexes. Migracje = source of truth dla schematu.</li>
+  <li><strong>Warstwa auth (NextAuth):</strong> JWT cookie-based, Google OAuth, PrismaAdapter. Session w request context.</li>
+</ol>
+
+<h3>UX Philosophy</h3>
+<ul>
+  <li><strong>Keyboard-first:</strong> vim-style shortcuts (j/k, x, e, d, a/n, /f, 1–5, Ctrl+K, Esc). Zero unnecessary clicks.</li>
+  <li><strong>Dark theme:</strong> CSS variables (--bg-base, --text-primary, --accent-blue) — skalowalne skin system (user/team/system skins).</li>
+  <li><strong>Minimalist design:</strong> Linear, GitHub, VS Code aesthetic. Spaced out, breathing, readable.</li>
+  <li><strong>Mobile-first responsive:</strong> Sidebar hidden (md:hidden), top bar + bottom tab bar on mobile. Safe area insets, touch targets ≥44px.</li>
+</ul>
+
+<h2>AI & LLM Integration</h2>
+<p>
+  Aplikacja używa <strong>Groq API</strong> (llama3, mixtral) do:
+</p>
+<ul>
+  <li><strong>Parsing tekstu wolnego:</strong> "2 opakowania mleka" → qty=2, unit="opakowań", name="mleko" (Shopping, Tasks).</li>
+  <li><strong>Sugestie i rewrite:</strong> Sugestie tagów notatek, przeformułowanie, korekta grammatyczna (Notes).</li>
+  <li><strong>Semantyczne wyszukiwanie:</strong> "Gdzie przechowuję śrubki?" → Storage (semantic search).</li>
+  <li><strong>OCR &amp; Vision:</strong> Skan faktur, zdjęcia spisu magazynu (Storage Pro, Kitchen OCR).</li>
+  <li><strong>Agent conversacyjny:</strong> FAB "Sparkles" asystenta AI — robi plany, wyszukuje, wydaje komendy (Home module).</li>
+  <li><strong>Web-search:</strong> Brave API → DDG fallback (News module).</li>
+</ul>
+<p>
+  <strong>Model routing:</strong> Per operation type (reasoning, dispatch, thinking, images, generation) — konfiguracja w <code>/admin/llm</code>.
+</p>
+
+<h2>Zespół & Zasoby</h2>
+<ul>
+  <li><strong>Developer:</strong> Szymon Tyka (full-stack, architekt, DevOps).</li>
+  <li><strong>Hosting:</strong> Render.com free tier (15 min cold start).</li>
+  <li><strong>Baza danych:</strong> Neon PostgreSQL (free tier).</li>
+  <li><strong>Koszt operacyjny:</strong> ~0 PLN/miesiąc (free tier), skalacja w Q3 2026 (~$50–100/mo).</li>
+  <li><strong>Prognoza:</strong> Po 6 miesiącach marketingu — do 10k użytkowników, wtedy redesign Business Model + dedykowany team (frontend, backend, product, ops).</li>
+</ul>
+
+<h2>Główne osiągnięcia (do czerwca 2026)</h2>
+<ul>
+  <li>✅ 15 pełnoprawnych modułów (najpopularniejsze: Shopping, Tasks, Kitchen, Storage, Workshops).</li>
+  <li>✅ RBAC (role-based access control) + Teams collaboration — user/team ownership.</li>
+  <li>✅ Multi-provider LLM routing — Groq/Anthropic/OpenAI per operation.</li>
+  <li>✅ Marketplace Etap A (v1) — M6 + M7 + M10 zrobione, reszta backlog.</li>
+  <li>✅ Notyfikacje (bez crona) — free tier compatible.</li>
+  <li>✅ Kalendarz — agregacja ze WSZYSTKICH modułów.</li>
+  <li>✅ Skins system — user/team/system skins z CSS tokens.</li>
+  <li>✅ PWA + Service Worker — instalowalne na iPhone.</li>
+  <li>✅ E2E tests (Playwright) — QA framework gotowy.</li>
+</ul>
+
+<h2>Główne wyzwania na horyzoncie</h2>
+<ul>
+  <li><strong>Skalowanie bazy danych:</strong> Free tier Neon ma limity CPU/RAM — upgrade Q3 2026.</li>
+  <li><strong>Marketplace:</strong> Etap A (M1–M4) wymaga czatu, dostępności, wycen — 4 tygodnie pracy.</li>
+  <li><strong>Mobile app:</strong> PWA vs React Native — decyzja w Q2 2026.</li>
+  <li><strong>Team scaling:</strong> 1 developer → team (frontend, backend, product, design) — найм w Q3–Q4 2026.</li>
+  <li><strong>Compliance:</strong> GDPR, SOC 2 — planuje się na rok 2027 (gdy 100k+ users).</li>
+</ul>
+
+<h2>Podsumowanie rozdziału</h2>
+<p>
+  <strong>WorldOfMag (Omnia)</strong> to aplikacja class personal operating system — 15 modułów, AI-powered, keyboard-first, dark theme,
+  skalowalna dzięki AI do 100M użytkowników. Stack nowoczesny (Next.js, Prisma, PostgreSQL, Groq), model free+premium+marketplace,
+  hosting na Render. Do czerwca 2026 zrobiono solidne fundamenty — teraz czeka nas faza skalowania, monetyzacji i marketplace'u.
+</p>
+
+</body>
+</html>

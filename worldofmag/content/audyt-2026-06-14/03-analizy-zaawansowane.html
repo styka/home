@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rozdział 3: Analizy zaawansowane</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.7;
+      color: #b0b0b0;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+    }
+    h1, h2, h3 { color: #ffffff; margin-top: 2em; margin-bottom: 0.5em; }
+    h1 { font-size: 1.8em; }
+    h2 { font-size: 1.4em; border-bottom: 1px solid #333333; padding-bottom: 0.5em; }
+    h3 { font-size: 1.1em; }
+    p { margin: 1em 0; }
+    strong { color: #ffffff; }
+    code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fbbf24; }
+    .risk { background: rgba(239,68,68,0.15); padding: 16px; border-left: 3px solid #ef4444; margin: 1em 0; border-radius: 6px; }
+    .good { background: rgba(34,197,94,0.15); padding: 16px; border-left: 3px solid #22c55e; margin: 1em 0; border-radius: 6px; }
+    .info { background: rgba(59,130,246,0.15); padding: 16px; border-left: 3px solid #3b82f6; margin: 1em 0; border-radius: 6px; }
+    ul, ol { margin: 1em 0; padding-left: 2em; }
+    li { margin: 0.5em 0; }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<h1>3. Analizy zaawansowane: bezpieczeństwo, performance, konkurencja, biznes</h1>
+
+<h2>Analiza bezpieczeństwa (Security & OWASP Top 10)</h2>
+
+<h3>OWASP Top 10 2021 — Stan aplikacji</h3>
+
+<h4>1. Broken Access Control</h4>
+<div class="good">
+  <strong>✓ RBAC wdrożony (module.admin, module.shopping, ...):</strong> UserRole + Permission + RolePermission.
+  Każda page.tsx sprawdza <code>hasPermission(session, PERMISSIONS.MODULE)</code>. Self-lockout guard w access.ts.
+</div>
+<div class="risk">
+  <strong>⚠ Team ownership nie zawsze audytowany:</strong> Jeśli user edytuje /tasks/[projectId], czy sprawdzamy <code>assertProjectAccess(projectId, userId)</code>?
+  Odpowiedź: TAK (każdy action ma access check), ale manualnie — brak middleware do automatyzacji.
+</div>
+
+<h4>2. Cryptographic Failures</h4>
+<div class="good">
+  <strong>✓ Komunikacja HTTPS (Render auto-HTTPS):</strong> Database URL via DIRECT_URL (szyfrowany). NextAuth JWT cookie secure + httpOnly.
+</div>
+<div class="risk">
+  <strong>⚠ API keys przechowywane w Config DB (plaintext):</strong> groq_api_key, brave_search_api_key widoczne w /admin/config.
+  Rekomendacja: Szyfruj Config klucze via SecretBox (libsodium) lub HashiCorp Vault.
+</div>
+
+<h4>3. Injection</h4>
+<div class="good">
+  <strong>✓ SQL injection: NIE GROZI — Prisma ORM automatycznie parameteryzuje queries.</strong>
+</div>
+<div class="good">
+  <strong>✓ HTML injection (XSS): Markdown renderer própria escape &lt; i & globalnie.</strong>
+  Ale: <code>dangerouslySetInnerHTML</code> w renderach raportów — jeśli user poda Markdown z `<script>`, mogą to zaoszczędzić.
+  Rekomendacja: DOMPurify lub sanitize HTML przed osadzeniem.
+</div>
+
+<h4>4. Insecure Design</h4>
+<div class="risk">
+  <strong>⚠ Brak rate limiting na API endpoints.</strong> Groq API bezpośrednio dostępny z frontend → user mogą spam'ować /api/llm/* (DDoS siebie samych).
+  Rekomendacja: Rate limit per user per endpoint (Upstash Redis, Tinybird, lub custom middleware).
+</div>
+<div class="risk">
+  <strong>⚠ Brak 2FA (two-factor authentication).</strong> Jeśli Google OAuth account skompromitowany, attacker ma dostęp.
+  Rekomendacja: TOTP 2FA (optional, dla Pro users), WebAuthn (FIDO2).
+</div>
+
+<h4>5. Broken Authentication</h4>
+<div class="good">
+  <strong>✓ Google OAuth poprawnie wdrożony (NextAuth v5 beta).</strong> JWT strategy, secure cookie jar.
+</div>
+<div class="risk">
+  <strong>⚠ Brak session timeout.</strong> JWT token żyje dopóki nie wygaśnie (default NextAuth: 30 dni). Stara sesja = stała okazja do kradzieży.
+  Rekomendacja: Session timeout po 8 godzinach inactivity, refresh token rotation.
+</div>
+
+<h4>6. Software & Data Integrity Failures</h4>
+<div class="good">
+  <strong>✓ Dependencies pinned w package-lock.json</strong> — reproducible builds.
+</div>
+<div class="risk">
+  <strong>⚠ Brak automated security scanning (npm audit, Snyk, Dependabot).</strong>
+  Rekomendacja: GitHub Actions runner — weekly `npm audit` + auto-update patches.
+</div>
+
+<h4>7. Identification & Authentication Failures</h4>
+<div class="good">
+  <strong>✓ Dobry system dla 1 usera (tyka.szymon@gmail.com = ADMIN per email).</strong>
+</div>
+
+<h4>8. Software & Data Integrity Failures</h4>
+<p style="color: #9ca3af;">— pokryte powyżej</p>
+
+<h4>9. Logging & Monitoring</h4>
+<div class="risk">
+  <strong>⚠ UserActivity loguje akcje, ale brak alerting na suspicous behavior.</strong>
+  Rekomendacja: Set up monitoring — Sentry dla errors, CloudWatch / DataDog dla audit logs, alerts na mass deletes.
+</div>
+
+<h4>10. Server-Side Request Forgery (SSRF)</h4>
+<div class="risk">
+  <strong>⚠ Web-search endpoint (/api/llm/news/web-search) konstruuje Brave API URL z user input.</strong>
+  Jeśli nie validate'uje URL query — attacker mogą SSRF na internal services.
+  Rekomendacja: Whitelist search terms, regex validation.
+</div>
+
+<h3>Podsumowanie bezpieczeństwa</h3>
+<p><strong>Poziom: Średni (B+)</strong> — RBAC + HTTPS + no SQL injection, ALE brakuje: rate limiting, 2FA, key encryption, input validation, monitoring.</p>
+
+<h2>Analiza konkurencji</h2>
+
+<h3>Porównanie z Notion, Linear, Todoist, Obsidian</h3>
+
+<table style="width: 100%; margin: 1.5em 0; border-collapse: collapse;">
+  <tr style="background: rgba(255,255,255,0.08);">
+    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #333333; color: #ffffff; font-weight: 600;">Cecha</th>
+    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #333333; color: #ffffff; font-weight: 600;">WorldOfMag</th>
+    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #333333; color: #ffffff; font-weight: 600;">Notion</th>
+    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #333333; color: #ffffff; font-weight: 600;">Linear</th>
+    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #333333; color: #ffffff; font-weight: 600;">Todoist</th>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">Moduły (Shopping, Tasks, Notes, Kitchen, Pets, ...)</td>
+    <td style="padding: 12px;">✓ 15</td>
+    <td style="padding: 12px;">✓ All-in-one (universal database)</td>
+    <td style="padding: 12px;">✗ Tasks only</td>
+    <td style="padding: 12px;">✗ Tasks only</td>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">AI integration (LLM)</td>
+    <td style="padding: 12px;">✓ Native (Groq, routing)</td>
+    <td style="padding: 12px;">✓ AI (paid, limited)</td>
+    <td style="padding: 12px;">✓ AI (paid)</td>
+    <td style="padding: 12px;">✓ AI (paid, GPT-4)</td>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">Keyboard shortcuts (vim)</td>
+    <td style="padding: 12px;">✓ j/k/x/e/d</td>
+    <td style="✗">✗</td>
+    <td style="padding: 12px;">✓ Full vim mode</td>
+    <td style="padding: 12px;">✓ Partial</td>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">Dark theme</td>
+    <td style="padding: 12px;">✓ CSS variables, skins</td>
+    <td style="padding: 12px;">✓ Basic</td>
+    <td style="padding: 12px;">✓ Yes</td>
+    <td style="padding: 12px;">✓ Yes</td>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">Teams / Collaboration</td>
+    <td style="padding: 12px;">✓ Teams + ownership</td>
+    <td style="padding: 12px;">✓ Workspace + sharing</td>
+    <td style="padding: 12px;">✓ Teams</td>
+    <td style="padding: 12px;">✓ Teams (paid)</td>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">Price (free tier)</td>
+    <td style="padding: 12px;">✓ Wszystko</td>
+    <td style="padding: 12px;">✓ Limited databases</td>
+    <td style="padding: 12px;">✗ Team/Pro only</td>
+    <td style="padding: 12px;">✓ Basic</td>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">Open source</td>
+    <td style="padding: 12px;">✗ Closed</td>
+    <td style="padding: 12px;">✗ Closed</td>
+    <td style="padding: 12px;">✗ Closed</td>
+    <td style="padding: 12px;">✗ Closed</td>
+  </tr>
+</table>
+
+<h3>Unikalna pozycja WorldOfMag</h3>
+<div class="info">
+  <strong>Przewaga konkurencyjna:</strong>
+  <ul style="margin: 0; padding-left: 2em;">
+    <li><strong>15 modułów w 1 app:</strong> Notion ma wszystko, ale jako bloki (musisz zbudować). WorldOfMag ma pre-built (Shopping, Kitchen, Pets, Storage, Workshops).</li>
+    <li><strong>Keyboard-first:</strong> Linear ma vim mode, ale tylko dla Tasks. Tutaj na WSZYSTKICH modułach.</li>
+    <li><strong>Bezpłatnie:</strong> Wszystkie 15 modułów za darmo (z reklamami). Notion Free ma 5 blocks, Linear/Todoist mają limity.</li>
+    <li><strong>AI w cenie:</strong> Groq API zintegrowany native (nie dodatkowa opłata). Notion/Linear/Todoist: AI to premium feature.</li>
+  </ul>
+</div>
+
+<h3>Zagrożenia konkurencji</h3>
+<ul>
+  <li><strong>Notion:</strong> Uniwersalne, materia, $10/miesiąc za Team. Mogą dodać vim mode + lepszy AI. Grożą LARGE userbase (30M+).</li>
+  <li><strong>Microsoft 365 / Google Workspace:</strong> Duże korporacje już osadzą mail+calendar+docs. WorldOfMag musi być lepszy dla small biz / families.</li>
+  <li><strong>Open-source alternatywy:</strong> Plane (open-source Linear), Mathesar (open-source database builder). Jeśli WorldOfMag nie zostanie open-source, mogą forka'wać.</li>
+</ul>
+
+<h2>Analiza biznesowa: TMC (Total Addressable Market), finansowa prognozy</h2>
+
+<h3>TAM (Total Addressable Market)</h3>
+<div class="info">
+  <strong>Segment 1: Osoby (Home organization, families):</strong> ~4 miliardów ludzi z smartphone. Z nich: 10% tech-savvy + chcą organizować życie = 400M potentialny users. ICP: 18–45, developer/knowledge worker, willing to try new tools.
+</div>
+
+<div class="info">
+  <strong>Segment 2: Małe biznesy (SMB):</strong> ~330 milionów SMBs na świecie. Z nich: 10% chcą vertical app (np. workflow dla restauracji, agentury HR). = 33M potencjalny. ICP: Solopreneur, startup 5–50 osób, rozwijający się biznes.
+</div>
+
+<div class="info">
+  <strong>TAM szacunkowy (revenue potential):</strong> Segment 1 × $5/rok (freemium + ads) + Segment 2 × $100/rok (team subscriptions + marketplace) = 400M × $5 + 33M × $100 = $2B + $3.3B = <strong>$5.3B annual revenue potential na dojrzałości.</strong>
+</div>
+
+<h3>SAM (Serviceable Available Market) — Realistyczne dla WorldOfMag w 2–3 lata</h3>
+<ul>
+  <li>EU users: 450M (focus on Polish/EU tech-savvy = 50M, z nich 2% = 1M users potencjał).</li>
+  <li>SMB (EU): ~8M (z nich 1% = 80k users potencjał).</li>
+  <li><strong>SAM szacunkowy: 1M home + 80k SMB = 1.08M users, $10–50M annual revenue.</strong></li>
+</ul>
+
+<h3>SOM (Serviceable Obtainable Market) — Realny roczny plan</h3>
+<ul>
+  <li><strong>2026 (ROK 1):</strong> 1–50 users (validation), $0 revenue (learning).</li>
+  <li><strong>2027 (ROK 2):</strong> 10k–100k users (marketing launch), $50–500k revenue.</li>
+  <li><strong>2028 (ROK 3):</strong> 100k–1M users, $5–50M revenue.</li>
+</ul>
+
+<h3>Finansowa prognozy (Scenario analysis)</h3>
+
+<table style="width: 100%; margin: 1.5em 0; border-collapse: collapse;">
+  <tr style="background: rgba(255,255,255,0.08);">
+    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #333333; color: #ffffff; font-weight: 600;">Metryła</th>
+    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #333333; color: #ffffff; font-weight: 600;">2026 (teraz)</th>
+    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #333333; color: #ffffff; font-weight: 600;">2027</th>
+    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #333333; color: #ffffff; font-weight: 600;">2028</th>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">Users</td>
+    <td style="padding: 12px;">1–50</td>
+    <td style="padding: 12px;">10k–100k</td>
+    <td style="padding: 12px;">100k–1M</td>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">MRR Revenue</td>
+    <td style="padding: 12px;">$0</td>
+    <td style="padding: 12px;">$4–40k</td>
+    <td style="padding: 12px;">$400k–4M</td>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">Operating Costs (team + infra)</td>
+    <td style="padding: 12px;">~$300/mo (Render + Neon)</td>
+    <td style="padding: 12px;">~$10k/mo (1–3 devs + infra)</td>
+    <td style="padding: 12px;">~$100k/mo (team 10–15 osób + ops)</td>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">Runway (jeśli bez external funding)</td>
+    <td style="padding: 12px;">Indefinite (Szymon bootstrapping)</td>
+    <td style="padding: 12px;">~12 miesiące (jeśli 10k users 20% conversion to paid)</td>
+    <td style="padding: 12px;">Profitable (CAC payback &lt;6 miesiący)</td>
+  </tr>
+</table>
+
+<h3>Scenariusz optymistyczny vs pesymistyczny</h3>
+<div class="good">
+  <strong>Optymistyczny (Viral loop works):</strong> 2027: 500k users (10% conversion to paid = 50k paid), MRR $500k.
+  Hire team 5 osób, rework product. 2028: 5M users, $5M MRR, profitability.
+</div>
+
+<div class="risk">
+  <strong>Pesymistyczny (Slow traction):</strong> 2027: 5k users (2% conversion = 100 paid), MRR $5k.
+  Nie starcza na hire — Szymon solo, burnout. 2028: pivot lub shutdown.
+</div>
+
+<h2>Podsumowanie analiz zaawansowanych</h2>
+<p>
+  <strong>Bezpieczeństwo:</strong> Średnie (B+) — brakuje rate limiting, 2FA, key encryption, monitoring.
+  <strong>Konkurencja:</strong> Notion dominuje, ale WorldOfMag ma niszę (15 modułów + keyboard + free + AI native).
+  <strong>Biznes:</strong> TAM $5.3B, SAM $10–50M, SOM $50–500k w 2027. Profitabilność możliwa przy 10k+ users.
+</p>
+
+</body>
+</html>

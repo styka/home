@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rozdział 2: Analizy podstawowe</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.7;
+      color: #b0b0b0;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+    }
+    h1, h2, h3 { color: #ffffff; margin-top: 2em; margin-bottom: 0.5em; }
+    h1 { font-size: 1.8em; }
+    h2 { font-size: 1.4em; border-bottom: 1px solid #333333; padding-bottom: 0.5em; }
+    h3 { font-size: 1.1em; }
+    p { margin: 1em 0; }
+    strong { color: #ffffff; }
+    code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fbbf24; }
+    .note { background: rgba(251,191,36,0.15); padding: 16px; border-left: 3px solid #fbbf24; margin: 1em 0; border-radius: 6px; }
+    .warning { background: rgba(239,68,68,0.15); padding: 16px; border-left: 3px solid #ef4444; margin: 1em 0; border-radius: 6px; }
+    .good { background: rgba(34,197,94,0.15); padding: 16px; border-left: 3px solid #22c55e; margin: 1em 0; border-radius: 6px; }
+    ul, ol { margin: 1em 0; padding-left: 2em; }
+    li { margin: 0.5em 0; }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<h1>2. Analizy podstawowe: UX, baza danych, skalowanie</h1>
+
+<h2>Analiza UX: Keyboard-first, vim-style, dark theme</h2>
+
+<h3>Punkty silne</h3>
+<div class="good">
+  <strong>✓ Keyboard shortcuts (vim style):</strong> j/k (nawigacja), x/Space (toggle status), e (edit), d (delete), a/n (add).
+  Dla power users to ogromna produktywność — zero myszy, flow state. Consistency z VS Code, Linear, GitHub.
+</div>
+
+<div class="good">
+  <strong>✓ Dark theme z CSS variables:</strong> Ciemne kolory (--bg-base: #0d0d0d, --text-primary: #ffffff) zapewniają
+  czytelność i zmęczenia oczu. Skin system (user/team/system skins) pozwala personalizację bez hardcoded kolorów.
+</div>
+
+<div class="good">
+  <strong>✓ Minimalist design (Linear/GitHub aesthetic):</strong> Spacing, contrast, readable font stack (San Francisco / Segoe).
+  Brak zbędnych animacji, fokus na struktura i funkcjonalność.
+</div>
+
+<h3>Punkty słabe</h3>
+<div class="warning">
+  <strong>⚠ Onboarding:</strong> Brak tutorial flow — użytkownik ląduje w Dashboard AI (Home) bez wskazówek.
+  Novice users mogą nie wiedzieć gdzie kliknąć (mobile może być szczególnie trudne). Rekomendacja: interactive tutorial (skip-able).
+</div>
+
+<div class="warning">
+  <strong>⚠ Mobile responsiveness:</strong> Sidebar poza ekranem (md:hidden), bottom tab bar pojawia się.
+  Ale: niektóre moduły (Storage Pro, Workshops Pro) mają interface bliżej desktop-first. Mobile UX wymaga polishing.
+</div>
+
+<div class="warning">
+  <strong>⚠ Accessibility (a11y):</strong> Keyboard shortcuts świetne dla sighted users. Brak ARIA labels na bogatych widokach (drag-drop, grid).
+  Screen readers mogą mieć kłopoty na mobilnych interaktywnych widokach (Storage scan, Kitchen plan).
+</div>
+
+<h3>Rekomendacje (do dyskusji w debatach)</h3>
+<ul>
+  <li>Onboarding: First-time user tutorial (5 min, skip-able, contextual hints w każdym module).</li>
+  <li>Mobile: Audit każdego modułu na iPhone SE (mały ekran), zapewnić touch targets ≥48px.</li>
+  <li>a11y: ARIA labels, keyboard-only navigation, high contrast mode toggle.</li>
+</ul>
+
+<h2>Analiza bazy danych: Schemat, indeksy, skalowanie</h2>
+
+<h3>Stan bazy (Prisma 5 + PostgreSQL Neon free tier)</h3>
+<p>
+  <strong>Modele:</strong> 56+ (Auth, RBAC, Teams, Shopping, Tasks, Notes, Kitchen, Pets, Health, Habits, Flota, Portfel, Languages, Services, Storage, Workshops, QA, LLM, System).
+</p>
+<p>
+  <strong>Migracje:</strong> 121 (systematyczne podejście — każda migracja dokumentowana, reversible).
+</p>
+
+<h3>Punkty silne</h3>
+<div class="good">
+  <strong>✓ Schema-first z Prisma:</strong> Deklaratywny, type-safe, generuje TypeScript types.
+  Każdy Server Action zna kształt danych — zero runtime surprises.
+</div>
+
+<div class="good">
+  <strong>✓ Relationships dobrze zaprojektowane:</strong> User/Team ownership (ownerId / ownerTeamId), FK constraints,
+  ON CASCADE DELETE gdzie sensowne. RBAC przez UserRole + Permission + RolePermission.
+</div>
+
+<div class="good">
+  <strong>✓ Multi-tenancy (Teams):</strong> Wszystkie zasoby mogą być user- lub team-scoped.
+  Query pattern: <code>where: { OR: [{ ownerId }, { ownerTeamId }] }</code> — skalowalne.
+</div>
+
+<h3>Punkty słabe & wyzwania</h3>
+<div class="warning">
+  <strong>⚠ N+1 queries:</strong> Niektóre page.tsx wczytują liste (np. items) bez <code>include</code> / <code>select</code> dla related danych.
+  Np. Shopping list z 100 items × N category lookups = N+1. Z czasem (10k items) będzie wolne.
+</div>
+
+<div class="warning">
+  <strong>⚠ Brak indeksów composite na hot queries:</strong> Queries takie jak <code>findMany({ where: { ownerId, status } })</code>
+  mogą być slow bez indeksu na (ownerId, status). Neon free tier ma CPU limity.
+</div>
+
+<div class="warning">
+  <strong>⚠ Large JSON columns:</strong> Task.recurring (JSON), Item.metadata (JSON) — bez indeksów JSONB w Free tier Neon.
+  Jeśli Growing — slow queries (100k+ records).
+</div>
+
+<div class="warning">
+  <strong>⚠ Activity tracking (UserActivity):</strong> Każda akcja loguje rekord. Przy 10k users × 10 akcji/dzień = 100k rows/dzień.
+  Po roku: 36M rows. Query <code>findMany({ where: { createdAt: { gte: since7d } } })</code> będzie slow bez indeksu na createdAt.
+</div>
+
+<h3>Rekomendacje</h3>
+<ul>
+  <li><strong>Audyt N+1 queries:</strong> Przejrzeć każdy page.tsx — dodać <code>include: { related }</code> lub <code>select</code> gdzie brakuje.</li>
+  <li><strong>Composite indexes:</strong> Dodać w migracjach: <code>@@index([ownerId, status])</code> dla hot tables (Item, Task, Note).</li>
+  <li><strong>JSONB indexing:</strong> W Neon Pro dodać <code>@@index([jsonColumn])</code> dla Task.recurring.</li>
+  <li><strong>Archiwizacja ActivityLog:</strong> UserActivity starsze niż 90 dni → archive table (read-only). Przejść na event streaming (Kafka/PubSub) w Fazie 4.</li>
+  <li><strong>Read replicas:</strong> Neon Pro — enable read replicas dla analytics queries (nie blokuje writes).</li>
+</ul>
+
+<h2>Analiza skalowania: Free tier → Pro tier → Enterprise</h2>
+
+<h3>Free tier (obecnie — Render + Neon free)</h3>
+<table style="width: 100%; margin: 1.5em 0; border-collapse: collapse;">
+  <tr style="background: rgba(255,255,255,0.08);">
+    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #333333; color: #ffffff; font-weight: 600;">Zasób</th>
+    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #333333; color: #ffffff; font-weight: 600;">Limit</th>
+    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #333333; color: #ffffff; font-weight: 600;">Działanie dziś (1–50 users)</th>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">Render (Node.js)</td>
+    <td style="padding: 12px;">0.5 CPU, 512 MB RAM, spin-down po 15 min</td>
+    <td style="padding: 12px;">✓ OK (cold start ~10s, ale rare)</td>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">Neon PostgreSQL</td>
+    <td style="padding: 12px;">3 GB storage, shared CPU, IP allowlist</td>
+    <td style="padding: 12px;">✓ OK (1–50 users nie stresuje)</td>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">Bandwidth</td>
+    <td style="padding: 12px;">No limit</td>
+    <td style="padding: 12px;">✓ OK</td>
+  </tr>
+  <tr style="border-bottom: 1px solid #333333;">
+    <td style="padding: 12px;">Concurrent requests</td>
+    <td style="padding: 12px;">Limited by Node.js pool (~10–20 concurrent)</td>
+    <td style="padding: 12px;">⚠️ 50 users simultaneous = timeouts possible</td>
+  </tr>
+</table>
+
+<h3>Bottleneck identyfikowani</h3>
+<ul>
+  <li><strong>Render free tier:</strong> CPU spikes (build, image processing) → OOM kill. Solution: vertical scaling (Render Pro: 1 CPU, 4 GB RAM, $7/mo).</li>
+  <li><strong>Neon free tier:</strong> Query complexity limits. Solution: Neon Pro ($15–50/mo zależy od usage).</li>
+  <li><strong>LLM API calls:</strong> Groq free tier? Czy mamy rateLimit? Jeśli 50 users × 10 calls/day = 500 calls/day — powinno być OK.</li>
+</ul>
+
+<h3>Roadmap skalowania</h3>
+<div class="note">
+  <strong>Q2 2026 (teraz):</strong> Free tier OK dla 1–50 users (validation phase).<br/>
+  <strong>Q3 2026:</strong> Upgrade do Render Pro ($7/mo) + Neon Pro ($25/mo) przy ~1k users. Cost: ~$32/mo.<br/>
+  <strong>Q4 2026:</strong> Load testing — jeśli 10k users, consider:
+  <ul style="margin: 0; padding-left: 2em;">
+    <li>Redis cache layer (Upstash Redis: $1–50/mo) — session, queries cache.</li>
+    <li>CDN (Cloudflare: free tier wystarczy) — images, static assets.</li>
+    <li>Database scaling: Neon Pro → dedicated instance (~$100/mo) lub managed PostgreSQL (DigitalOcean, AWS RDS).</li>
+  </ul>
+  <strong>2027 (Faza 4):</strong> Multi-region (edge compute) — clients na EU, US, ASIA.
+</div>
+
+<h3>Performance benchmarks (target)</h3>
+<ul>
+  <li><strong>Lighthouse (Desktop):</strong> Performance ≥90, Accessibility ≥95.</li>
+  <li><strong>Core Web Vitals (CWV):</strong> LCP &lt;2.5s, FID &lt;100ms, CLS &lt;0.1.</li>
+  <li><strong>API response time:</strong> Server Action &lt;200ms (auth + Prisma query), LLM call &lt;3s (streaming enabled).</li>
+  <li><strong>Database query time:</strong> 95th percentile &lt;100ms (bez LLM calls).</li>
+</ul>
+
+<h2>Podsumowanie</h2>
+<p>
+  <strong>UX jest solidna dla power users (vim shortcuts, dark theme),</strong> ale wymaga polishing dla novice users (tutorial, mobile audit, a11y).
+</p>
+<p>
+  <strong>Baza danych jest dobrze zaprojektowana schema-wise, ale wymaga optimizacji N+1 queries, indexów composite, archiwizacji activity logs.</strong>
+</p>
+<p>
+  <strong>Skalowanie z free tier do 1–50 users jest OK dzisiaj; Q3 2026 upgrade Render Pro + Neon Pro (~$32/mo) dla 1k users; Q4 2026 — Redis + CDN.</strong>
+</p>
+
+</body>
+</html>

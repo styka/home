@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rozdział 6: Dodatek — Zalecenia i Plany Wdrażania</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      color: #b0b0b0;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+    }
+    h1, h2, h3, h4 { color: #ffffff; margin-top: 1.5em; margin-bottom: 0.5em; }
+    h1 { font-size: 1.8em; }
+    h2 { font-size: 1.4em; border-bottom: 1px solid #333333; padding-bottom: 0.5em; }
+    h3 { font-size: 1.1em; color: #fbbf24; }
+    h4 { font-size: 1em; }
+    p { margin: 0.7em 0; }
+    strong { color: #ffffff; }
+    code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fbbf24; font-size: 0.9em; }
+    pre { background: #0a0a0a; border: 1px solid #333333; padding: 12px; border-radius: 4px; overflow-x: auto; font-size: 0.85em; }
+    .rec-header { background: rgba(249,115,22,0.15); border-left: 4px solid #f97316; padding: 12px; margin: 1em 0; border-radius: 4px; }
+    .step { background: rgba(59,130,246,0.1); border-left: 4px solid #3b82f6; padding: 12px; margin: 0.8em 0; border-radius: 4px; }
+    .warning { background: rgba(239,68,68,0.1); border-left: 4px solid #ef4444; padding: 12px; margin: 0.8em 0; border-radius: 4px; }
+    ul { margin: 0.5em 0; padding-left: 2em; }
+    li { margin: 0.3em 0; }
+    table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 0.9em; }
+    th, td { padding: 8px; text-align: left; border-bottom: 1px solid #333333; }
+    th { background: rgba(255,255,255,0.08); color: #ffffff; font-weight: 600; }
+    .toc { background: rgba(255,255,255,0.05); border: 1px solid #333333; padding: 16px; border-radius: 6px; margin: 1.5em 0; }
+    .toc a { color: #60a5fa; text-decoration: none; display: block; padding: 3px 0; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<h1>6. Dodatek: Zalecenia i Plany Wdrażania</h1>
+
+<p><strong>Instrukcja użycia:</strong> Każde zalecenie pochodzi z debat zespołów (rozdział 4). Tutaj znajduje się: problem → decyzja → szczegółowy plan dla Claude Code.</p>
+
+<div class="toc">
+  <strong>Spis zaleceń (#1–10)</strong><br/>
+  <a href="#rec1">Zalecenie #1: Audyt N+1 queries + Redis cache</a><br/>
+  <a href="#rec2">Zalecenie #2: Premium tier design + monetyzacja</a><br/>
+  <a href="#rec3">Zalecenie #3: PWA optimization + React Native eval</a><br/>
+  <a href="#rec4">Zalecenie #4: Marketplace MVP (M1–M4)</a><br/>
+  <a href="#rec5">Zalecenie #5: Zapier + Google Calendar integracja</a><br/>
+  <a href="#rec6">Zalecenie #6: LLM multi-provider + own model eval</a><br/>
+  <a href="#rec7">Zalecenie #7: Security (2FA, GDPR, encryption, rate limiting)</a><br/>
+  <a href="#rec8">Zalecenie #8: Onboarding (contextual help + guides)</a><br/>
+  <a href="#rec9">Zalecenie #9: Team & hiring roadmap</a><br/>
+  <a href="#rec10">Zalecenie #10: Open source strategy</a><br/>
+</div>
+
+<hr style="margin: 2em 0; border: none; border-top: 1px solid #333333;" />
+
+<h2 id="rec1">Zalecenie #1: Audyt N+1 queries + Redis cache</h2>
+
+<div class="rec-header">
+  <strong>Priorytet:</strong> HIGH (performance affects scaling)<br/>
+  <strong>Timeline:</strong> Q2 2026 (2–3 tygodnie)<br/>
+  <strong>Effort:</strong> 30–40 engineer-godzin<br/>
+  <strong>Cost:</strong> $0 (dev time) + $5/mo (Redis)<br/>
+  <strong>ROI:</strong> 10x — latency -50%, scalability +3x users
+</div>
+
+<h3>Problem</h3>
+<p>
+  Page.tsx wczytują listy bez <code>include</code> / <code>select</code> dla related danych.
+  Np. Shopping list: 100 items × kategoria lookup = N+1 query. Przy 10k items będzie slow (100ms → 1000ms per page).
+</p>
+
+<h3>Plan dla Claude Code</h3>
+
+<div class="step">
+  <strong>Krok 1: Audit (2 dni)</strong>
+  <ul>
+    <li>Przejrzyj wszystkie page.tsx w src/app/ pod kątem <code>prisma.item.findMany()</code> bez <code>include</code>.</li>
+    <li>Uruchom Prisma Studio — slow query log (najwolniejsze queries).</li>
+    <li>Stwórz spreadsheet: query name, current latency (ms), missing include fields.</li>
+    <li>Przykład: Shopping:
+      <pre>// BEFORE (N+1)
+const items = await prisma.item.findMany({ where: { listId } })
+
+// AFTER (optimized)
+const items = await prisma.item.findMany({
+  where: { listId },
+  include: { category: true, unit: true }
+})</pre>
+    </li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 2: Fix queries (3–4 dni)</strong>
+  <ul>
+    <li>Top 10 slow queries → add <code>include</code> / <code>select</code>.</li>
+    <li>Dodaj composite indexes w prisma/schema.prisma:
+      <pre>model Item {
+  @@index([listId, status])
+  @@index([ownerId, status])
+}</pre>
+    </li>
+    <li>Run migration: <code>npm run db:push</code> (dev) / nowa migracja (prod).</li>
+    <li>Test: Lighthouse performance, check query times (target: <100ms 95th percentile).</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 3: Redis cache layer (2–3 dni)</strong>
+  <ul>
+    <li>Setup Upstash Redis (free tier, $5/mo for production).</li>
+    <li>Wrap hot queries w Caching layer:
+      <pre>// src/lib/cache.ts
+import { createClient } from 'redis'
+const redis = createClient({ url: process.env.REDIS_URL })
+
+export async function getCachedItems(listId: string) {
+  const cached = await redis.get(`items:${listId}`)
+  if (cached) return JSON.parse(cached)
+
+  const items = await prisma.item.findMany({...})
+  await redis.setex(`items:${listId}`, 3600, JSON.stringify(items)) // 1h ttl
+  return items
+}</pre>
+    </li>
+    <li>Invalidate cache na mutacjach: <code>redis.del(`items:${listId}`)</code> w createItem, updateItem, deleteItem actions.</li>
+    <li>Test: Performance pod load (k6 load test, 100 concurrent users).</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 4: Monitoring (bieżący)</strong>
+  <ul>
+    <li>Setup query performance monitoring (Datadog / Sentry). Alert na queries > 200ms.</li>
+    <li>Weekly review: Top 5 slow queries, optimize.</li>
+  </ul>
+</div>
+
+<h3>Expected outcome</h3>
+<table>
+  <tr>
+    <th>Metryка</th>
+    <th>Before</th>
+    <th>After</th>
+  </tr>
+  <tr>
+    <td>Avg query latency</td>
+    <td>150ms</td>
+    <td>30ms (with cache)</td>
+  </tr>
+  <tr>
+    <td>Page load time (50 items)</td>
+    <td>600ms</td>
+    <td>150ms</td>
+  </tr>
+  <tr>
+    <td>Max concurrent users (free tier)</td>
+    <td>50</td>
+    <td>200+</td>
+  </tr>
+  <tr>
+    <td>Cost</td>
+    <td>$0</td>
+    <td>+$5/mo (Redis)</td>
+  </tr>
+</table>
+
+<hr style="margin: 2em 0; border: none; border-top: 1px solid #333333;" />
+
+<h2 id="rec2">Zalecenie #2: Premium tier design + monetyzacja</h2>
+
+<div class="rec-header">
+  <strong>Priorytet:</strong> MEDIUM (business-critical, but not urgent)<br/>
+  <strong>Timeline:</strong> Design Q2 2026 (1 tygodnia), Implement Q1 2027<br/>
+  <strong>Effort:</strong> 40 engineer-godzin design + 50 godzin implementacji<br/>
+  <strong>Cost:</strong> $0 (dev) + Stripe setup ($29/mo)<br/>
+  <strong>ROI:</strong> Potential $20k+ MRR at 10k users
+</div>
+
+<h3>Problem</h3>
+<p>
+  Monetyzacja jest niejasna. Free tier jest bez limitów (wszystkie 15 modułów), no ads. Nie ma premium features.
+  Przy 10k users potrzebujemy $20–30k/mo revenue (skalowanie zespołu + infra). Premium tier = leverage.
+</p>
+
+<h3>Plan dla Claude Code</h3>
+
+<div class="step">
+  <strong>Krok 1: Premium feature definition (2–3 dni, Q2 2026)</strong>
+  <ul>
+    <li>Zdefiniuj features:
+      <table>
+        <tr>
+          <th>Feature</th>
+          <th>Free</th>
+          <th>Premium ($9.99/mo)</th>
+        </tr>
+        <tr>
+          <td>15 modules</td>
+          <td>✓ Wszystkie</td>
+          <td>✓ Wszystkie</td>
+        </tr>
+        <tr>
+          <td>Ads</td>
+          <td>✓ Yes</td>
+          <td>✗ No</td>
+        </tr>
+        <tr>
+          <td>Team collaboration (multiple users)</td>
+          <td>✗</td>
+          <td>✓ Up to 3 members free, then $5/member/mo</td>
+        </tr>
+        <tr>
+          <td>Storage Pro mode (invoicing, suppliers, analytics)</td>
+          <td>✗</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Marketplace commission split</td>
+          <td>✗ Viewer only</td>
+          <td>✓ List + earn commissions</td>
+        </tr>
+        <tr>
+          <td>Advanced AI (priority inference time)</td>
+          <td>✓ Standard</td>
+          <td>✓ Priority (faster)</td>
+        </tr>
+        <tr>
+          <td>Integrations (Zapier, Google Calendar, Slack)</td>
+          <td>✗</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Custom domains / white-label</td>
+          <td>✗</td>
+          <td>✗ (Enterprise only)</td>
+        </tr>
+      </table>
+    </li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 2: Pricing & packaging (1 dzień)</strong>
+  <ul>
+    <li><strong>Free tier:</strong> All modules, ads, community support.</li>
+    <li><strong>Premium:</strong> $9.99/mo per user, no ads, team (3 members), Storage Pro, Marketplace provider, integrations.</li>
+    <li><strong>Team add-on:</strong> +$5/mo per additional member (4th+).</li>
+    <li><strong>Enterprise:</strong> Custom pricing, white-label, dedicated support (not MVP).</li>
+    <li>Payment processor: Stripe (2% + $0.30 per transaction).</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 3: Database schema (1 dzień, Q2 2026)</strong>
+  <ul>
+    <li>Add to prisma/schema.prisma:
+      <pre>enum Subscription {
+  FREE
+  PREMIUM
+}
+
+model UserSubscription {
+  id String @id @default(cuid())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tier Subscription @default(FREE)
+  stripeCustomerId String?
+  stripeSubscriptionId String?
+  stripeCurrentPeriodEnd DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SubscriptionPlan {
+  id String @id @default(cuid())
+  name String
+  price Int (in cents)
+  stripePriceId String?
+  features String[] (JSON features)
+}
+</pre>
+    </li>
+    <li>Run migration: <code>npm run db:push</code>.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 4: Feature gating (2–3 dni, Q1 2027 ready)</strong>
+  <ul>
+    <li>Create helper: <code>src/lib/features.ts</code>
+      <pre>export async function hasFeature(userId: string, feature: 'team' | 'storage-pro' | 'marketplace' | 'integrations') {
+  const sub = await prisma.userSubscription.findUnique({ where: { userId } })
+  if (sub?.tier === 'PREMIUM') return true
+  if (feature === 'team' && sub?.tier === 'PREMIUM') return true
+  return false
+}</pre>
+    </li>
+    <li>Use in components/pages:
+      <pre>const canTeam = await hasFeature(userId, 'team')
+if (!canTeam) return <UpgradePrompt feature="team" /></pre>
+    </li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 5: Stripe integration (3–4 dni, Q1 2027)</strong>
+  <ul>
+    <li>Setup Stripe account, get keys.</li>
+    <li>Create /api/billing routes: checkout session, webhook (payment success).</li>
+    <li>On success: update UserSubscription.tier = 'PREMIUM', stripeCustomerId, etc.</li>
+    <li>Test: create test subscription, check feature access.</li>
+  </ul>
+</div>
+
+<h3>Expected outcome</h3>
+<p>
+  Premium tier ready for launch Q1 2027. At 1k users, 10% conversion → 100 paid × $9.99 = $1000/mo.
+  At 10k users, 20% conversion → 2000 paid × $9.99 = $20k/mo (+ team add-ons = $25k+).
+</p>
+
+<hr style="margin: 2em 0; border: none; border-top: 1px solid #333333;" />
+
+<h2 id="rec3">Zalecenie #3: PWA optimization + React Native evaluation</h2>
+
+<div class="rec-header">
+  <strong>Priorytet:</strong> MEDIUM (mobile matters)<br/>
+  <strong>Timeline:</strong> PWA Q2 2026 (2 tygodnie), RN eval Q4 2026<br/>
+  <strong>Effort:</strong> 20 godzin PWA, 40 godzin RN eval<br/>
+  <strong>Cost:</strong> $2k PWA + $5k RN eval<br/>
+  <strong>ROI:</strong> 2–3x users (mobile 40% by 2027)
+</div>
+
+<h3>Problem</h3>
+<p>
+  PWA jest instalowalne na home screen, ale offline mode + push notifications nie działają dobrze.
+  Na iOS: PWA nie ma native feel (no status bar, limited push). React Native czeka, ale kosztuje.
+</p>
+
+<h3>Plan dla Claude Code — PWA Optimization (Q2 2026)</h3>
+
+<div class="step">
+  <strong>Krok 1: Service Worker enhancement (3 dni)</strong>
+  <ul>
+    <li>Upgrade Service Worker (src/app/sw.ts) z network-first na intelligent caching:
+      <pre>// Cache strategies per route
+- /api/shopping/* → cache-first (1h ttl)
+- /api/llm/* → network-first (no cache, streams)
+- /static/* → cache-first (indefinite)
+</pre>
+    </li>
+    <li>Add IndexedDB for offline data storage:
+      <pre>// Sync items to IndexedDB on app load
+await idb.items.bulkAdd(items.map(i => ({ id, data })))
+
+// On offline, read from IndexedDB
+// On online, sync back to server (sync queue)
+</pre>
+    </li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 2: Push notifications (Web Push API, 2 dni)</strong>
+  <ul>
+    <li>Setup Web Push (Vapid keys, Firebase Cloud Messaging or Pushpad).</li>
+    <li>On first load: request permission → subscribe to push.</li>
+    <li>Server: send push on events (notification bell triggers, reminders).</li>
+    <li>Note: iOS Safari doesn't support Web Push yet (2026 limitation).</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 3: Mobile UX polish (3 dni)</strong>
+  <ul>
+    <li>Audit on iPhone SE (320px width):
+      <ul>
+        <li>Bottom tab bar size (48px touch targets).</li>
+        <li>Sidebar mobile nav (hamburger visibility).</li>
+        <li>Form inputs (tap zone 44px+).</li>
+        <li>Overflow text (readable at mobile scale).</li>
+      </ul>
+    </li>
+    <li>Fix responsive issues.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 4: Testing (1 dzień)</strong>
+  <ul>
+    <li>Install on iPhone → offline mode (turn off WiFi) → check app still responsive.</li>
+    <li>Send push notification → check arrives.</li>
+    <li>Lighthouse mobile audit (target: >90 Performance).</li>
+  </ul>
+</div>
+
+<h3>Plan dla Claude Code — React Native Evaluation (Q4 2026)</h3>
+
+<div class="step">
+  <strong>Krok 1: Feasibility study (1 tydzień, $2k)</strong>
+  <ul>
+    <li>Hire React Native contract dev (Upwork, $50–80/hr).</li>
+    <li>Build PoC: sign-in + list one module (e.g., Shopping) on iOS + Android.</li>
+    <li>Report: time estimate for full RN app, maintenance burden, code sharing (Expo).
+    </li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 2: Decision gate</strong>
+  <ul>
+    <li>If PoC success + mobile DAU > 30% by Q4 2026 → commit to RN (Q2 2027 launch).</li>
+    <li>If mobile DAU < 10% → defer RN (PWA sufficient).</li>
+  </ul>
+</div>
+
+<hr style="margin: 2em 0; border: none; border-top: 1px solid #333333;" />
+
+<h2 id="rec4">Zalecenie #4: Marketplace MVP (M1–M4)</h2>
+
+<div class="rec-header">
+  <strong>Priorytet:</strong> MEDIUM (differentiator)<br/>
+  <strong>Timeline:</strong> 3–4 tygodnie, Q3 2026<br/>
+  <strong>Effort:</strong> 100–120 engineer-godzin<br/>
+  <strong>Cost:</strong> $0 (dev) + Stripe + PCI DSS audit (~$500)<br/>
+  <strong>ROI:</strong> Sticky (5–10% users), differentiates vs Notion
+</div>
+
+<h3>MVP Scope: M1–M4 (Chat, Availability, Quotes, Portfolio)</h3>
+
+<p>
+  Minimalna wersja marketplace: user (client) hires freelancer (provider) dla home service (cleaning, babysitting, handyman).
+</p>
+
+<div class="step">
+  <strong>Krok 1: Schema design (1 dzień)</strong>
+  <ul>
+    <li>Models:
+      <pre>ServiceProvider {
+  id, userId, category, title, bio, hourlyRate, profileImg, reviews
+  isVerified, verificationDate
+}
+
+ServiceRequest {
+  id, clientId, providerId, title, description, budget, status (pending|accepted|completed)
+  createdAt, completedAt
+}
+
+ServiceQuote {
+  id, requestId, providerId, quote, daysToComplete, message
+  status (pending|accepted|rejected)
+}
+
+ServiceMessage {
+  id, requestId, senderId, message, createdAt (chat between client & provider)
+}
+
+ServiceReview {
+  id, requestId, fromUserId, toUserId, rating (1–5), comment
+}
+</pre>
+    </li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 2: Routes & pages (2–3 dni)</strong>
+  <ul>
+    <li>/services → ServicesCatalogPage (list providers, filter by category)</li>
+    <li>/services/[providerId] → ProviderDetailPage (profile, reviews, "request service" button)</li>
+    <li>/services/my-listings → ProviderDashboard (manage profile, active requests, earnings)</li>
+    <li>/services/my-requests → ClientRequestsPage (list my requests, chat, tracking)</li>
+    <li>/services/[requestId]/chat → ChatPage (real-time messages)</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 3: Server Actions (2 dni)</strong>
+  <ul>
+    <li><code>createServiceProvider</code> (user becomes provider)</li>
+    <li><code>createServiceRequest</code> (client requests service)</li>
+    <li><code>sendQuote</code> (provider quotes)</li>
+    <li><code>acceptQuote</code> (client accepts, triggers payment)</li>
+    <li><code>markComplete</code> (service done)</li>
+    <li><code>leaveReview</code> (post-completion)</li>
+    <li><code>sendMessage</code> (in-chat message)</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 4: Payments (Stripe Connect, 2 dni)</strong>
+  <ul>
+    <li>Setup Stripe Connect (seller accounts).</li>
+    <li>On quote accept: create payment intent (client card → Stripe → provider bank).</li>
+    <li>On completion: release funds to provider (minus commission 5%).</li>
+    <li>Webhook: payment.success → update ServiceRequest.status = completed.</li>
+    <li>⚠️ PCI DSS audit required (can delay, but get on roadmap Q4 2026).</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 5: Testing & beta (2 dni)</strong>
+  <ul>
+    <li>Create test provider & client accounts.</li>
+    <li>Full flow: request → quote → payment → review.</li>
+    <li>Launch on beta branch (invite-only, 20–50 early adopters).</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 6: Decision gate (after 4 weeks beta)</strong>
+  <ul>
+    <li>Metric: % users requesting service > 5%? → commit to M5–M10 (etap B).</li>
+    <li>If < 2%? → archive marketplace (focus on core modules).</li>
+  </ul>
+</div>
+
+<hr style="margin: 2em 0; border: none; border-top: 1px solid #333333;" />
+
+<h2 id="rec5">Zalecenie #5: Zapier + Google Calendar integracja</h2>
+
+<div class="rec-header">
+  <strong>Priorytet:</strong> MEDIUM-HIGH (power user requirement)<br/>
+  <strong>Timeline:</strong> Zapier Q4 2026, GCal Q1 2027<br/>
+  <strong>Effort:</strong> 15 godzin Zapier, 25 godzin GCal<br/>
+  <strong>Cost:</strong> $5k setup<br/>
+  <strong>ROI:</strong> 2x stickiness (integrations = retention)
+</div>
+
+<h3>Zapier Integration (Q4 2026 — 1 week)</h3>
+
+<div class="step">
+  <strong>Krok 1: Zapier app definition (2 dni)</strong>
+  <ul>
+    <li>Register WorldOfMag on Zapier CLI.</li>
+    <li>Define triggers:
+      <ul>
+        <li>New task created</li>
+        <li>New shopping item</li>
+        <li>New note</li>
+        <li>Health appointment upcoming</li>
+        <li>Reminder triggered</li>
+      </ul>
+    </li>
+    <li>Define actions:
+      <ul>
+        <li>Create task</li>
+        <li>Add shopping item</li>
+        <li>Create note</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 2: Test & publish (2 dni)</strong>
+  <ul>
+    <li>Create sample zaps (e.g., "if Gmail label, then create WorldOfMag task").</li>
+    <li>Submit to Zapier for approval.</li>
+  </ul>
+</div>
+
+<h3>Google Calendar Integration (Q1 2027 — 1.5 weeks)</h3>
+
+<div class="step">
+  <strong>Krok 1: OAuth flow (2 dni)</strong>
+  <ul>
+    <li>Setup Google API project, enable Calendar API.</li>
+    <li>Add Google OAuth scope: <code>calendar.events.create, calendar.events.read</code>.</li>
+    <li>User grants permission → store refresh token in DB.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 2: Sync logic (2 dni)</strong>
+  <ul>
+    <li>Every day (cron): <code>syncGoogleCalendarEvents(userId)</code>
+      <ul>
+        <li>Read Google Calendar events (filter: next 30 days).</li>
+        <li>Create WorldOfMag reminders / tasks (e.g., "Meeting with John @ 2 PM → create task).</li>
+      </ul>
+    </li>
+    <li>On task/reminder update: push to Google Calendar (bidirectional).</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 3: Testing (2 dni)</strong>
+  <ul>
+    <li>Create Google Calendar event → check appears in WorldOfMag reminder.</li>
+    <li>Create WorldOfMag task → check appears in Google Calendar.</li>
+  </ul>
+</div>
+
+<hr style="margin: 2em 0; border: none; border-top: 1px solid #333333;" />
+
+<h2 id="rec6">Zalecenie #6: LLM multi-provider + own model evaluation</h2>
+
+<div class="rec-header">
+  <strong>Priorytet:</strong> MEDIUM (cost optimization)<br/>
+  <strong>Timeline:</strong> Stay with multi-provider (current), Q1 2027 own model eval<br/>
+  <strong>Effort:</strong> 20 godzin eval<br/>
+  <strong>Cost:</strong> $0 (monitoring) → $100k+ if own model<br/>
+  <strong>ROI:</strong> Better margin at scale (>100M tokens/month)
+</div>
+
+<h3>Current setup (keep through 2026)</h3>
+<p>
+  Groq + routing per operation type (reasoning, dispatch, thinking, images, generation).
+  Fallback: Anthropic Claude, OpenAI GPT-4 (if Groq unavailable).
+</p>
+
+<div class="step">
+  <strong>Krok 1: LLM spend monitoring (ongoing)</strong>
+  <ul>
+    <li>Setup Stripe/LLM API cost alerts.</li>
+    <li>Target: $200/mo (1–50 users), $1000/mo (10k users).</li>
+    <li>If exceed alert → optimize prompts or limit LLM calls.</li>
+  </ul>
+</div>
+
+<h3>Own model evaluation (Q1 2027, if volume justifies)</h3>
+
+<div class="step">
+  <strong>Gate: Only if >100M tokens/month OR clear monetization case</strong>
+  <ul>
+    <li>Current: ~100 users × 10 calls/day × 1000 tokens avg = 1M tokens/day = 30M/month.<br/>
+      Cost: 30M × $0.0001 (Groq) = $3k/month. Not profitable to own.</li>
+    <li>At 1M users: 1B tokens/month. Cost: $100k/month LLM (unsustainable).<br/>
+      Own model + inference: $10–20k/month (profitable). ✓ Consider then.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 1: Evaluation (1 week, $5k)</strong>
+  <ul>
+    <li>Hire ML engineer (contract, 40 hrs @ $125/hr).</li>
+    <li>Fine-tune LLaMA 3 70B on WorldOfMag use cases (parsing, tagging, categorization).</li>
+    <li>Benchmark: latency, accuracy vs Groq, cost (inference + storage).</li>
+    <li>Report: Recommendation (own vs stay with API).</li>
+  </ul>
+</div>
+
+<hr style="margin: 2em 0; border: none; border-top: 1px solid #333333;" />
+
+<h2 id="rec7">Zalecenie #7: Security (2FA, GDPR, encryption, rate limiting)</h2>
+
+<div class="rec-header">
+  <strong>Priorytet:</strong> HIGH (compliance + trust)<br/>
+  <strong>Timeline:</strong> 2FA + rate limiting Q2 2026, encryption Q2 2026, GDPR Q4 2026<br/>
+  <strong>Effort:</strong> 50 engineer-godzin total<br/>
+  <strong>Cost:</strong> $0 (dev) + security audit (optional, $500)<br/>
+  <strong>ROI:</strong> Trust + compliance (required for enterprise)
+</div>
+
+<h3>2FA implementation (Q2 2026 — 1 week)</h3>
+
+<div class="step">
+  <strong>Krok 1: TOTP 2FA</strong>
+  <ul>
+    <li>Use <code>speakeasy</code> (TOTP library).</li>
+    <li>On settings page: "Enable 2FA" → generate QR code → user scans with authenticator app.</li>
+    <li>On login: ask for 2FA code (6 digits).</li>
+    <li>Store backup codes (10x single-use codes, in case user loses phone).</li>
+  </ul>
+</div>
+
+<h3>Rate limiting (Q2 2026 — 2 days)</h3>
+
+<div class="step">
+  <strong>Krok 1: Middleware rate limiter</strong>
+  <ul>
+    <li>Use Upstash Redis + <code>@upstash/ratelimit</code> library.</li>
+    <li>Limits:
+      <ul>
+        <li>/api/llm/* → 50 requests per day per user (prevent spam)</li>
+        <li>/api/auth/signin → 5 attempts per 15 min per IP (brute-force guard)</li>
+        <li>Server Actions → 100 per minute per user (DoS guard)</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<h3>Key encryption (Q2 2026 — 2 days)</h3>
+
+<div class="step">
+  <strong>Krok 1: Encrypt API keys in Config DB</strong>
+  <ul>
+    <li>Use <code>TweetNaCl.js</code> (SecretBox encryption).</li>
+    <li>Master key: <code>process.env.ENCRYPTION_KEY</code> (environment only, never in repo).</li>
+    <li>On setConfigValue: encrypt before saving to DB.</li>
+    <li>On getConfigValue: decrypt before using.</li>
+  </ul>
+</div>
+
+<h3>GDPR compliance (Q4 2026 — 2 weeks)</h3>
+
+<div class="step">
+  <strong>Krok 1: Data export</strong>
+  <ul>
+    <li>New page: /settings/data → "Download my data" button.</li>
+    <li>Action: exportUserData(userId) → ZIP with JSON (all user data: items, tasks, notes, etc.).</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 2: Delete account</strong>
+  <ul>
+    <li>Action: deleteUserAccount(userId) → soft-delete (flag user.deletedAt).</li>
+    <li>Hard-delete after 30 days (compliance period).</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 3: Privacy policy + Terms</strong>
+  <ul>
+    <li>Update /privacy, /terms with GDPR language.</li>
+  </ul>
+</div>
+
+<hr style="margin: 2em 0; border: none; border-top: 1px solid #333333;" />
+
+<h2 id="rec8">Zalecenie #8: Onboarding (contextual help + guides)</h2>
+
+<div class="rec-header">
+  <strong>Priorytet:</strong> MEDIUM (retention impact)<br/>
+  <strong>Timeline:</strong> Q2–Q3 2026 (incremental)<br/>
+  <strong>Effort:</strong> 25 engineer-godzin<br/>
+  <strong>Cost:</strong> $0 (dev)<br/>
+  <strong>ROI:</strong> +20% day-1 retention
+</div>
+
+<div class="step">
+  <strong>Krok 1: Contextual help (2 dni)</strong>
+  <ul>
+    <li>Add "?" tooltips on first login for key buttons (e.g., "Add item", "Create task").</li>
+    <li>Use <code>react-joyride</code> library (guided tours).</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 2: Written guide (2 dni)</strong>
+  <ul>
+    <li>Create /guide → markdown docs (one per module).</li>
+    <li>Short, visual (1–2 min read per module).</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 3: Video tutorials (optional, Q3 2026)</strong>
+  <ul>
+    <li>Record 2–3 min per module (1–2 modules/week).</li>
+    <li>Host on YouTube, embed in /guide.</li>
+  </ul>
+</div>
+
+<hr style="margin: 2em 0; border: none; border-top: 1px solid #333333;" />
+
+<h2 id="rec9">Zalecenie #9: Team & hiring roadmap</h2>
+
+<div class="rec-header">
+  <strong>Priorytet:</strong> STRATEGIC (scaling bottleneck)<br/>
+  <strong>Timeline:</strong> Contract Q4 2026, hire Q1 2027<br/>
+  <strong>Effort:</strong> Hiring time + onboarding<br/>
+  <strong>Cost:</strong> $2–3k/mo (contract) → $5k+/mo (full-time)<br/>
+  <strong>ROI:</strong> 3–5x productivity
+</div>
+
+<div class="step">
+  <strong>Krok 1: Contract dev (Q4 2026, if $5k+/mo revenue)</strong>
+  <ul>
+    <li>Hire 1x frontend dev (React/Next.js, 10–15 hrs/week, $50–80/hr).</li>
+    <li>Focus: mobile UX, component library, CSS polishing.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 2: Full hire (Q1 2027, if 10k+ users or $25k+/mo)</strong>
+  <ul>
+    <li>Hire 1x backend dev (Node/Prisma, full-time, $60–80k/yr).</li>
+    <li>Focus: infrastructure, integrations (Zapier, GCal), LLM optimizations.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 3: Scaling path (2027+)</strong>
+  <ul>
+    <li>At $50k/mo → hire product manager (contractor).</li>
+    <li>At $100k/mo → hire designer, QA, DevOps.</li>
+    <li>At $500k/mo → full product team (10–15 people).</li>
+  </ul>
+</div>
+
+<hr style="margin: 2em 0; border: none; border-top: 1px solid #333333;" />
+
+<h2 id="rec10">Zalecenie #10: Open source strategy</h2>
+
+<div class="rec-header">
+  <strong>Priorytet:</strong> LOW (long-term vision)<br/>
+  <strong>Timeline:</strong> Decision Q1 2028<br/>
+  <strong>Effort:</strong> None now (decision later)<br/>
+  <strong>Cost:</strong> TBD (depends on model)<br/>
+  <strong>ROI:</strong> Community + ecosystem (2–3x users long-term)
+</div>
+
+<div class="step">
+  <strong>Krok 1: Closed source (2026–2027)</strong>
+  <ul>
+    <li>Focus: prove business model, revenue.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 2: Evaluate (Q1 2028)</strong>
+  <ul>
+    <li>If 100k+ users + $500k+/mo → consider source-available license (Elastic, SSPL, or BUSL1.1).</li>
+    <li>Rationale: community contributions + trust + ecosystem, BUT keep monetization (licensing).</li>
+  </ul>
+</div>
+
+<div class="step">
+  <strong>Krok 3: Full open source (only if strong community demand)</strong>
+  <ul>
+    <li>Pros: ecosystem, forks, adoption.</li>
+    <li>Cons: no moat, competitors copy features.</li>
+    <li>Hybrid model (Gitlab, Supabase): OSS core, proprietary managed service.</li>
+  </ul>
+</div>
+
+<hr style="margin: 2em 0; border: none; border-top: 1px solid #333333;" />
+
+<h2>Podsumowanie dodatku</h2>
+<p>
+  10 zaleceń mapuje się do konkretnych planów implementacyjnych dla Claude Code.
+  Każdy plan ma: problem → kroki → expected outcome → metryki.
+  Wykonuj je etapami (Q2 2026 → Q4 2026 → Q1 2027+), zgodnie z priorytami i dostępnym budżetem.
+</p>
+<p>
+  <strong>Kluczowe założenia:</strong>
+  <ul>
+    <li>Skaluj gdy metrics justify (users, revenue), nie wcześniej.</li>
+    <li>Hire na podstawie revenue (nie założeń).</li>
+    <li>Security + compliance teraz (trust = foundation).</li>
+    <li>Marketplace to differentiator (zróbmy MVP, evaluate adoption).</li>
+    <li>Móbile: PWA first (cheap), RN later (tylko jeśli high adoption).</li>
+    <li>Monetyzacja: Free + Premium (Q1 2027), Marketplace commission (Q2 2027).</li>
+  </ul>
+</p>
+
+</body>
+</html>

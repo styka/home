@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rozdział 5: Marketing — GTM, budżet, growth</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.7;
+      color: #b0b0b0;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+    }
+    h1, h2, h3 { color: #ffffff; margin-top: 2em; margin-bottom: 0.5em; }
+    h1 { font-size: 1.8em; }
+    h2 { font-size: 1.4em; border-bottom: 1px solid #333333; padding-bottom: 0.5em; }
+    h3 { font-size: 1.1em; }
+    p { margin: 1em 0; }
+    strong { color: #ffffff; }
+    code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fbbf24; }
+    .pitch { background: rgba(168,85,247,0.15); border-left: 3px solid #a855f7; padding: 16px; margin: 1em 0; border-radius: 6px; }
+    .gtm { background: rgba(59,130,246,0.15); border-left: 3px solid #3b82f6; padding: 16px; margin: 1em 0; border-radius: 6px; }
+    .budget { background: rgba(34,197,94,0.15); border-left: 3px solid #22c55e; padding: 16px; margin: 1em 0; border-radius: 6px; }
+    ul, ol { margin: 1em 0; padding-left: 2em; }
+    li { margin: 0.5em 0; }
+    table { width: 100%; border-collapse: collapse; margin: 1.5em 0; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333333; }
+    th { background: rgba(255,255,255,0.08); color: #ffffff; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<h1>5. Marketing — Go-to-Market, budżet, growth loops</h1>
+
+<h2>Problem-Solution-Vision (PSV) — 30 second pitch</h2>
+
+<div class="pitch">
+  <h3>Problem</h3>
+  <p>
+    Masz 15 odrębnych aplikacji: mail (Gmail), kalendarzu (Google Calendar), notatkami (Notion), zadaniami (Todoist),
+    zakupami (Bring), zwierzętami (app proprietarne), zdrowiem (papierem), finansami (Excel), językami (Duolingo)...
+    Switching context = tracisz czasu. Brakuje jednego spójnego systemu.
+  </p>
+
+  <h3>Solution</h3>
+  <p>
+    <strong>WorldOfMag:</strong> Jedno narzędzie do całej organizacji życia — 15 modułów (Shopping, Tasks, Notes, Kitchen,
+    Pets, Health, Habits, Storage, Workshops, itp.), wszystkie w ciemnym dark theme, keyboard-first (vim shortcuts),
+    napędzane AI do sugestii i automatyzacji. Free tier dla home use, Premium dla power users. Bez reklam na Free (nie spam).
+  </p>
+
+  <h3>Vision</h3>
+  <p>
+    Stanie się "system operacyjny dla życia" — tak jak Windows/macOS dla computers, WorldOfMag dla twoich danych.
+    Integracje z Gmail, Google Calendar, Slack (later). Marketplace: zatrudnij kogoś do sprzątania bezpośrednio z Home module.
+    Dla 100 milionów ludzi, którzy chcą organizować się lepiej.
+  </p>
+</div>
+
+<h2>Go-to-Market (GTM) Strategy — 2026–2027</h2>
+
+<div class="gtm">
+  <h3>Phase 1 (Q2–Q3 2026): Stealth + Community Building</h3>
+  <ul>
+    <li><strong>Target ICP:</strong> Developers (HN, Product Hunt), productivity enthusiasts (Twitter, Reddit), Polish entrepreneurs (Spoj.me, LinkedIn).</li>
+    <li><strong>Channel:</strong> (1) Private launch on HackerNews (5–50 early adopters), (2) ProductHunt (#1 goal if ready), (3) Twitter thread + tweet threads by Szymon (personal brand).</li>
+    <li><strong>Content:</strong> Blog posts (why 15 modules beat switching, why dark theme matters, vim shortcuts for speed), YouTube shorts (1 min demos per module).</li>
+    <li><strong>CAC (Customer Acquisition Cost):</strong> ~$0 (organic). If paid: Google Ads $50 day, expect 2–3 signups/day.</li>
+    <li><strong>Conversion Goal:</strong> 50–100 signups, 20–50 power users.</li>
+    <li><strong>Budget:</strong> $0 (bootstrapped, minimal ads $1k if testing).</li>
+  </ul>
+
+  <h3>Phase 2 (Q4 2026–Q1 2027): Growth + Product-Market Fit</h3>
+  <ul>
+    <li><strong>Target ICP:</strong> Expand to small business owners (agencies, sole traders, 5–50 person teams).</li>
+    <li><strong>Channel:</strong> (1) SEO (blog, "best task manager for developers", "all-in-one life OS"), (2) Affiliate (ProductHunt partner, referral program), (3) Paid ads (Google Ads, Reddit, Twitter).</li>
+    <li><strong>Content:</strong> Case studies (user stories), comparison posts (vs Notion, Linear, Todoist), tutorials (how to set up shopping with AI).</li>
+    <li><strong>CAC:</strong> $10–30 per signup (organic + some paid).</li>
+    <li><strong>Conversion Goal:</strong> 1k–10k signups, 200–1k power users, 10–50 paid (Premium).</li>
+    <li><strong>Budget:</strong> $3k–5k (ads + content).</li>
+  </ul>
+
+  <h3>Phase 3 (Q2 2027+): Viral + Ecosystem</h3>
+  <ul>
+    <li><strong>Target ICP:</strong> Mainstream (non-technical) + SMBs.</li>
+    <li><strong>Channel:</strong> (1) Viral loops (refer a friend), (2) Integrations (Zapier directory, API partners), (3) PR (tech press: TechCrunch, Forbes), (4) Paid ads (Facebook, LinkedIn).</li>
+    <li><strong>Content:</strong> Podcast interviews, industry reports (state of personal productivity), webinars (with partners).</li>
+    <li><strong>CAC:</strong> $5–20 (high volume, viral).</li>
+    <li><strong>Conversion Goal:</strong> 100k+ signups, 5–10% paid conversion = $250k–1M MRR.</li>
+    <li><strong>Budget:</strong> $10k–50k (ads + team).</li>
+  </ul>
+</div>
+
+<h2>Growth Loops — The Engine</h2>
+
+<h3>Loop 1: Viral Referral (Freemium power users → new users)</h3>
+<ol>
+  <li><strong>Action:</strong> Share grocery list with friend (invite link).</li>
+  <li><strong>Friction:</strong> Friend needs to sign up (1 click, Google OAuth, auto-import shared list).</li>
+  <li><strong>Reward:</strong> Both get +1 month free Premium (if convert to paid).</li>
+  <li><strong>Loop time:</strong> ~1 week (friend decides to sign up or not).</li>
+  <li><strong>Expected velocity:</strong> 10% users → invite 1 person/month → 10% growth/month (compounding = exponential).</li>
+</ol>
+
+<h3>Loop 2: Feature Stickiness (App engagement → retention → viral word-of-mouth)</h3>
+<ol>
+  <li><strong>Action:</strong> User invites Kitchen module → meal planning → grocery list auto-populate (Shopping module).</li>
+  <li><strong>Friction:</strong> None (modules inter-connect).</li>
+  <li><strong>Reward:</strong> Time saved, "wow, this just works" moment → tells friends.</li>
+  <li><strong>Loop time:</strong> ~1 month (weekly meal planning).</li>
+  <li><strong>Expected velocity:</strong> 30% users using 2+ modules → 20% probability of word-of-mouth/month.</li>
+</ol>
+
+<h3>Loop 3: Community-Generated Content (User tutorials → organic discovery)</h3>
+<ol>
+  <li><strong>Action:</strong> User writes "how I organize my Pets in WorldOfMag" on Medium/Twitter.</li>
+  <li><strong>Friction:</strong> Minimal (incentivize with "featured" badge or small reward).</li>
+  <li><strong>Reward:</strong> Visibility, backlink, SEO boost for WorldOfMag.</li>
+  <li><strong>Loop time:</strong> ~2 weeks (content discovery).</li>
+  <li><strong>Expected velocity:</strong> 2–5 posts/month → 50–100 organic clicks/post → 5–10 signups/month.</li>
+</ol>
+
+<h3>Loop 4: Marketplace Network Effects (More providers → more traction)</h3>
+<ol>
+  <li><strong>Action:</strong> User hires freelancer for cleaning via Marketplace.</li>
+  <li><strong>Friction:</strong> Payment setup (Stripe/PayPal).</li>
+  <li><strong>Reward:</strong> Service provider paid, user's home scheduled → happy → repeats.</li>
+  <li><strong>Loop time:</strong> ~2 weeks (booking → service → re-booking).</li>
+  <li><strong>Expected velocity:</strong> 5% users try marketplace → 2x provider sign-ups → 10x user adoption → compounding.</li>
+</ol>
+
+<h2>Budget Allocation — Year 1 ($10k bootstrap)</h2>
+
+<div class="budget">
+  <table>
+    <tr>
+      <th>Kategoria</th>
+      <th>Q2 2026</th>
+      <th>Q3 2026</th>
+      <th>Q4 2026</th>
+      <th>Q1 2027</th>
+      <th>Razem</th>
+    </tr>
+    <tr>
+      <td><strong>Paid Ads (Google, Reddit, Twitter)</strong></td>
+      <td>$0</td>
+      <td>$500</td>
+      <td>$1000</td>
+      <td>$1500</td>
+      <td>$3000</td>
+    </tr>
+    <tr>
+      <td><strong>Content (blog, video, case studies)</strong></td>
+      <td>$0 (DIY)</td>
+      <td>$500 (freelance writer)</td>
+      <td>$500</td>
+      <td>$500</td>
+      <td>$1500</td>
+    </tr>
+    <tr>
+      <td><strong>Tools (analytics, email, scheduling)</strong></td>
+      <td>$100</td>
+      <td>$100</td>
+      <td>$100</td>
+      <td>$100</td>
+      <td>$400</td>
+    </tr>
+    <tr>
+      <td><strong>PR / Influencer outreach</strong></td>
+      <td>$0</td>
+      <td>$0</td>
+      <td>$500</td>
+      <td>$500</td>
+      <td>$1000</td>
+    </tr>
+    <tr>
+      <td><strong>Referral / Rewards program</strong></td>
+      <td>$0</td>
+      <td>$0</td>
+      <td>$1000</td>
+      <td>$1500</td>
+      <td>$2500</td>
+    </tr>
+    <tr>
+      <td><strong>Experimentation / Growth testing</strong></td>
+      <td>$0</td>
+      <td>$200</td>
+      <td>$300</td>
+      <td>$200</td>
+      <td>$700</td>
+    </tr>
+    <tr style="background: rgba(255,255,255,0.08);">
+      <td><strong>TOTAL</strong></td>
+      <td><strong>$100</strong></td>
+      <td><strong>$1300</strong></td>
+      <td><strong>$3400</strong></td>
+      <td><strong>$4300</strong></td>
+      <td><strong>$9100</strong></td>
+    </tr>
+  </table>
+
+  <p>
+    <strong>Fallback (jeśli revenue wzrośnie szybko):</strong> Zwiększ paid ads budget (Q1 2027: +$2k → Google Ads, +$1k → Product Hunt sponsorship).
+  </p>
+</div>
+
+<h2>Metrics & Dashboards (KPIs to track)</h2>
+
+<table>
+  <tr>
+    <th>Metryka</th>
+    <th>Target Q2 2026</th>
+    <th>Target Q1 2027</th>
+    <th>Tool</th>
+  </tr>
+  <tr>
+    <td><strong>Signups</strong></td>
+    <td>50–100</td>
+    <td>1k–10k</td>
+    <td>Mixpanel / Amplitude</td>
+  </tr>
+  <tr>
+    <td><strong>DAU (Daily Active Users)</strong></td>
+    <td>20–30</td>
+    <td>200–500</td>
+    <td>Mixpanel</td>
+  </tr>
+  <tr>
+    <td><strong>Day-1 / Day-7 / Day-30 Retention</strong></td>
+    <td>40% / 20% / 10%</td>
+    <td>50% / 30% / 15%</td>
+    <td>Cohort analysis</td>
+  </tr>
+  <tr>
+    <td><strong>Modules per user (avg)</strong></td>
+    <td>1.5</td>
+    <td>3–4</td>
+    <td>Custom tracking</td>
+  </tr>
+  <tr>
+    <td><strong>CAC (Customer Acquisition Cost)</strong></td>
+    <td>$0 (organic)</td>
+    <td>$10–20</td>
+    <td>Spreadsheet (Google Ads + signups)</td>
+  </tr>
+  <tr>
+    <td><strong>Paid conversion rate (%)</strong></td>
+    <td>0%</td>
+    <td>1–2%</td>
+    <td>Stripe analytics</td>
+  </tr>
+  <tr>
+    <td><strong>MRR (Monthly Recurring Revenue)</strong></td>
+    <td>$0</td>
+    <td>$500–5k</td>
+    <td>Stripe</td>
+  </tr>
+  <tr>
+    <td><strong>Viral coefficient (referral multiplier)</strong></td>
+    <td>0.5</td>
+    <td>1.0+</td>
+    <td>Custom formula</td>
+  </tr>
+</table>
+
+<h2>Competitive messaging — How we beat Notion, Linear, etc.</h2>
+
+<h3>vs Notion</h3>
+<ul>
+  <li><strong>Notion:</strong> "All-in-one, but you build it (takes 40 hours)". <strong>WorldOfMag:</strong> "Pre-built modules, works out of box (takes 5 min)".</li>
+  <li><strong>Notion:</strong> "$10/mo per user (adds up for teams)". <strong>WorldOfMag:</strong> "$9.99/mo per user, or free (ads)".</li>
+  <li><strong>Notion:</strong> "Mouse-heavy, clicky". <strong>WorldOfMag:</strong> "Keyboard-first (vim), speed player".</li>
+</ul>
+
+<h3>vs Linear (Tasks)</h3>
+<ul>
+  <li><strong>Linear:</strong> "Beautiful task tracker, but only tasks". <strong>WorldOfMag:</strong> "15 modules, tasks included".</li>
+  <li><strong>Linear:</strong> "Vim mode (team only, paid)". <strong>WorldOfMag:</strong> "Vim mode everywhere (free)".</li>
+</ul>
+
+<h3>vs Todoist (Tasks)</h3>
+<ul>
+  <li><strong>Todoist:</strong> "Task master, no storage/kitchen/pets". <strong>WorldOfMag:</strong> "Life OS, all integrated".</li>
+  <li><strong>Todoist:</strong> "AI premium ($2/mo extra)". <strong>WorldOfMag:</strong> "AI included, native, better (Groq, routing)".</li>
+</ul>
+
+<h2>90-day go-live plan (for marketing launch)</h2>
+
+<ol>
+  <li><strong>Week 1–2:</strong> Polish app (bug fixes, mobile responsive, performance). Prepare launch materials (landing page, Twitter thread, HN post).</li>
+  <li><strong>Week 3:</strong> Soft launch (private invite, 50 users). Gather feedback. Record video demos.</li>
+  <li><strong>Week 4–5:</strong> Refine based on feedback. Write blog post (why 15 modules matter). Reach out to influencers.</li>
+  <li><strong>Week 6:</strong> ProductHunt launch. HackerNews post. Twitter thread. Expect 100–500 signups week 1.</li>
+  <li><strong>Week 7–8:</strong> Measure retention. If day-7 retention > 30%, commit to paid ads ($500/mo). If low, pivot features.</li>
+  <li><strong>Week 9–12:</strong> Iterate features based on power users. Build referral loop (giveaway or rewards). Plan next marketing channel.</li>
+</ol>
+
+<h2>Messaging framework (1-pager for PR, investor pitches)</h2>
+
+<p style="background: rgba(249,115,22,0.1); padding: 16px; border-radius: 6px; border-left: 3px solid #f97316; margin: 1em 0;">
+  <strong>"WorldOfMag is the personal operating system for life."</strong><br/>
+  <br/>
+  It's 15 integrated modules (Shopping, Tasks, Notes, Kitchen, Pets, Health, Habits, Flota, Portfel, Languages, Storage, Workshops, News, Weather, + Marketplace)
+  in one dark-theme, keyboard-first app powered by AI. No more switching between Gmail, Google Calendar, Notion, Todoist, and Bring.
+  <br/>
+  <br/>
+  <strong>For home users:</strong> Free (with ads), all 15 modules. Organize your entire life in one place, faster with vim shortcuts and AI.<br/>
+  <strong>For small business:</strong> Premium ($9.99/mo, no ads, team collab, advanced features). Or use Marketplace to find talent.
+  <br/>
+  <br/>
+  <strong>Why now?</strong> Consumer productivity tools are fragmented (30+ apps). AI makes integration possible (semantic search, auto-tagging, insights).
+  Single-player software (like Notion, Linear) won't win — network effects (Marketplace, integrations) will.
+  <br/>
+  <br/>
+  <strong>Vision:</strong> Become the "Windows 11 for personal life" — standard OS for 100M+ people, $5B+ market.
+</p>
+
+<h2>Podsumowanie marketingu</h2>
+<p>
+  Strategia: <strong>Lean + viral.</strong> $10k budget, organic-first (HN, ProductHunt, Twitter), potem paid.
+  Growth loops: referral, feature stickiness, community content, marketplace network effects.
+  Messaging: "Personal OS" (vs fragmented tools), keyboard-first, AI-native, all 15 modules, free + premium.
+  Metrics: DAU, retention, CAC, MRR. Goal Q1 2027: 10k users, $5k MRR, 1+ viral coefficient.
+</p>
+
+</body>
+</html>
