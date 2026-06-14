@@ -144,8 +144,16 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
   Neon DB. For a docs-only change you don't need a build at all.
 - **Reports** are seeded via idempotent, dollar-quoted SQL migrations:
   `INSERT INTO "Report" (…) VALUES (gen_random_uuid()::text, …, $tag$…markdown…$tag$, 'category', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT ("slug") DO NOTHING;`
-  (PostgreSQL-only, idempotent). Module permissions are likewise seeded in SQL
-  migrations (`gen_random_uuid()::text`).
+  (PostgreSQL-only, idempotent). The `slug` must be **globally unique** — `ON CONFLICT
+  DO NOTHING` silently skips a duplicate, so a report with a reused slug never lands.
+  Module permissions are likewise seeded in SQL migrations (`gen_random_uuid()::text`).
+- **Migration numbering**: every new migration dir needs a **unique, sequential**
+  4-digit prefix. Get the next free number with `npm run next:migration`; `npm run
+  check:migrations` (also wired into `build`) fails on a *new* collision. The 12
+  legacy duplicate prefixes (parallel `claude/*` branches) are grandfathered in
+  `scripts/check-migrations.js` — **never renumber an already-applied migration**:
+  `migrate deploy` keys on the full dir name, so a rename re-runs it (CREATE/ALTER →
+  deploy breaks). Duplicate prefixes are harmless to leave; only fix them going forward.
 
 ### E2E tests (klikacze)
 
@@ -499,11 +507,13 @@ survives) — do **not** move escaping into `inlineFormat` (it opened an XSS hol
 the table/paragraph merge).
 
 **Build pipeline**: `npm run build` runs
-`node scripts/copy-docs.js && node scripts/check-action-coverage.js && prisma generate && next build && node scripts/migrate.js`.
+`node scripts/copy-docs.js && node scripts/check-action-coverage.js && node scripts/check-migrations.js && prisma generate && next build && node scripts/migrate.js`.
 - `copy-docs.js` bundles `docs/` for `/admin/docs`.
 - `check-action-coverage.js` (also `npm run check:actions`) verifies **every AI
   `AIAction` has an executor** in `/api/llm/home/execute` — the build **fails**
   otherwise, so when you add an `AIAction` variant, wire up its handler.
+- `check-migrations.js` (also `npm run check:migrations`) **fails** on a *new*
+  duplicate migration-number prefix (legacy duplicates grandfathered).
 - `migrate.js` runs `prisma migrate deploy` (with retries for Neon cold-start) then
   seeds permissions/LLM defaults/QA — **it touches the prod DB; do not run
   `npm run build` locally against a prod `DATABASE_URL`** (see "Database & migrations").
