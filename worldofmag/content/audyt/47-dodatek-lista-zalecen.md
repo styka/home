@@ -12,10 +12,10 @@ Dodatku A (A.2–A.12), pogrupowanych obszarami.
 
 | Priorytet | Liczba | Znaczenie |
 |---|:---:|---|
-| **P0 — krytyczne** | 16 | bezpieczeństwo, dane, wymogi prawne, blokada skali/rentowności |
-| **P1 — ważne** | 70 | jakość, UX, wydajność odczuwalna, fundament wzrostu |
-| **P2 — wartościowe** | 39 | usprawnienia, można odłożyć |
-| **Razem** | **125** | (rośnie wraz z rozdziałami modułowymi 16–41) |
+| **P0 — krytyczne** | 22 | bezpieczeństwo, dane, wymogi prawne, blokada skali/rentowności |
+| **P1 — ważne** | 129 | jakość, UX, wydajność odczuwalna, fundament wzrostu |
+| **P2 — wartościowe** | 95 | usprawnienia, można odłożyć |
+| **Razem** | **246** | (komplet 60 rozdziałów; przekrojowe + per moduł + biznes) |
 
 ## Krytyczne (P0) — zrób najpierw
 
@@ -35,6 +35,12 @@ Dodatku A (A.2–A.12), pogrupowanych obszarami.
 | **Z-172** | M | Testy izolacji danych między użytkownikami (BOLA/IDOR) | 14 |
 | **Z-173** | M | Testy ścieżki płatności i sporów (Usługi) | 14 |
 | **Z-190** | M | Audyt izolacji tenantów (każde zapytanie filtruje po właścicielu/zespole) | 15 |
+| **Z-210** | S | Zabezpieczenie agenta AI przed prompt-injection | 16 |
+| **Z-211** | S | Gwarantowane zwolnienie slotu współbieżności AI | 16 |
+| **Z-270** | M | Wzmożona ochrona danych zdrowotnych (szyfrowanie, zero reklam, AI opt-in) | 22 |
+| **Z-341** | S | Indeksy + paginacja ruchu/pozycji magazynu (skala analityki) | 29 |
+| **Z-360** | M | Testy ścieżki płatności, wycen i sporów (Marketplace) | 31 |
+| **Z-430** | S | E2E smoke w CI (bramka regresji ścieżek krytycznych) | 38 |
 | **Z-510** | S | Pomiar jednostkowej ekonomiki (koszt/MAU, ARPU, konwersja, CAC, LTV) | 44 |
 | **Z-511** | M | Twarde limity i cache AI dla darmowych jako warunek rentowności | 44 |
 
@@ -74,6 +80,8 @@ Dodatku A (A.2–A.12), pogrupowanych obszarami.
    pierwsza branża (Z-490).
 5. **Jakość i głębia (P1/P2):** UX/a11y/i18n, testy rozszerzone, kolejne branże, usprawnienia modułowe.
 
-> **Uwaga dla wykonawcy:** ta lista jest **żywa**. Po dopisaniu rozdziałów modułowych (16–41) i planów
-> (A.2–A.12) zaktualizuj liczby i zakresy. Identyfikatory `Z-NNN` są stałe — nie przenumerowuj już
-> istniejących (tak jak migracji), tylko dodawaj nowe w wolnych zakresach.
+> **Uwaga dla wykonawcy:** ta lista jest **żywa**. Komplet 60 rozdziałów (przekrojowe + per moduł +
+> biznes) jest napisany; powyższa tabela P0 obejmuje też krytyczne zalecenia modułowe (Z-210/211, Z-270,
+> Z-341, Z-360, Z-430). Pozostałe P0/P1/P2 (łącznie 246) mają definicje w macierzystych rozdziałach i
+> plany w A.2–A.12. Identyfikatory `Z-NNN` są stałe — nie przenumerowuj już istniejących (jak migracji),
+> tylko dodawaj nowe w wolnych zakresach. Po realizacji w kolejnej sesji (Dodatek B) zaktualizuj statusy.
