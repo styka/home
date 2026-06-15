@@ -232,6 +232,7 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /admin/categories/       # Global system category management
 /admin/reports/          # Markdown reports CRUD (+ /new, /[slug], /[slug]/edit)
 /admin/docs/             # In-app docs browser (docs/ copied in at build by scripts/copy-docs.js)
+/admin/audyt/            # Analiza/Audyt stanu projektu + wskazania (admin-only "book" reader; source = content/audyt/*.md baked by scripts/copy-audyt.js → src/generated/audyt-book.ts)
 /admin/playground/       # Component playground
 /admin/architecture/     # App structure overview (currently minimal)
 /admin/e2e/              # E2E click-tests guide (how to run Playwright)
@@ -499,6 +500,7 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 - **`/admin/categories`** — global system categories (name/color/icon).
 - **`/admin/reports`** — markdown reports CRUD.
 - **`/admin/docs`** — in-app docs browser; `scripts/copy-docs.js` copies `docs/` into the bundle at build.
+- **`/admin/audyt`** — **Analiza/Audyt stanu projektu + wskazania**: admin-only multi-chapter "book" (deep project audit as a two-team debate + numbered `Z-NNN` recommendations + per-area implementation plans + a ready Claude-Code prompt). Source = `content/audyt/*.md` + `manifest.json`, baked by `scripts/copy-audyt.js` → `src/generated/audyt-book.ts` (wired into `build`), rendered via `markdownToHtml` in `AudytBookReader` (TOC, prev/next, progress, dark/light/sepia). Chapter status is derived from file presence (add a `.md` → it shows as done). Extend it across sessions; never store this in the DB.
 - **`/admin/playground`** — interactive UI component sandbox.
 - **`/admin/architecture`** — app-structure overview (currently minimal; the full architecture lives in a system report).
 - **`/admin/e2e`** + **`/admin/qa`** — Playwright run guide; QA scenario authoring.
@@ -553,10 +555,11 @@ defaults / tab bar if they belong there).
 `portfel/{autoExpense,currency}.ts` (auto-expense + currency), `kitchen/recipeImportDraft.ts`.
 
 **Markdown rendering** (`src/lib/markdown.ts`, used by reports, recipes, tasks, QA,
-AI sheet): a small custom renderer (not a library). Supports `#`/`##`/`###`, tables
-(with `|---|` separator), fenced + inline code, bullet lists (`-`/`*`), ordered
-lists (`1.`), blockquotes (`> `), `**bold**`/`*italic*`/`[link]()`, `---`. **Not**
-supported: nested lists, `####`+, raw HTML (escaped). Security: `&` and `<` are
+AI sheet): a small custom renderer (not a library). Supports `#`–`######` headings,
+tables (with `|---|` separator), fenced + inline code, bullet lists (`-`/`*`, nested
+via 2-space indent), ordered lists (`1.`), blockquotes (`> `), `**bold**`/`*italic*`,
+`[link]()`, `![img]()` (http(s) only), `---`. **Not** supported: raw HTML (escaped).
+Security: `&` and `<` are
 escaped globally up-front (a lone `>` is left intact so the blockquote marker
 survives) — do **not** move escaping into `inlineFormat` (it opened an XSS hole via
 the table/paragraph merge).
