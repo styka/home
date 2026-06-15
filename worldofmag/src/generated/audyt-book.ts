@@ -587,10 +587,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Dodatek A — Zalecenia i plany wdrożenia",
     "title": "Plany: DevOps i observability",
     "summary": "Plany wdrożenia dla CI/CD, monitoringu, backupu/DR.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Dodatek A.5 — Plany wdrożenia: DevOps i observability\n\nPlany realizujące zalecenia z Rozdz. 10.\n\n---\n\n## Plan Z-090 (P0) — Error-tracking + uptime + alert 5xx\n\n**Cel:** przestać być „ślepym” na produkcji.\n**Kroki:**\n1. Wpiąć Sentry (Next SDK) — `sentry.client/server.config.ts`, DSN w env (szyfrowane/secret hostingu);\n   capture wyjątków + Server Actions.\n2. Uptime-monitor (np. zewnętrzny ping na `/` i `/admin/health`) + alert (e-mail/webhook) na 5xx i down.\n3. Zintegrować z `error.tsx` (plan Z-111) — błąd UI raportuje do Sentry.\n**Pliki:** konfiguracja Sentry, env, ewentualnie `instrumentation.ts`.\n**Kryteria:** wyjątek na produkcji pojawia się w Sentry; alert przy down/5xx.\n**Uwaga:** DSN/konto = drobna decyzja właściciela (darmowy tier wystarcza na start).\n\n---\n\n## Plan Z-091 (P1) — CI na PR (GitHub Actions)\n\n**Cel:** bramka jakości zanim kod trafi na `develop`.\n**Kroki:** workflow `.github/workflows/ci.yml`: `npm ci` → `lint` → `typecheck` → `test:unit` →\n`check:actions` → `check:migrations` → `next build` (bez `migrate.js`). Na PR i push do `develop`.\nPostgres jako usługa, jeśli testy DB (plan Z-174).\n**Kryteria:** PR z błędem lintu/typu/testu jest czerwony; zielony przepuszcza.\n\n---\n\n## Plan Z-092 (P1) — Rozdzielić build od migracji + rollback\n\n**Cel:** odsprzęgnąć artefakt od `migrate deploy`; umożliwić rollback.\n**Kroki:** wydzielić `migrate deploy` z `build` do osobnego kroku deployu (Render: release command);\nudokumentować procedurę rollbacku (rewert migracji/PITR). Build (`next build`) bez DB.\n**Kryteria:** build artefaktu nie wymaga DB; migracja to osobny, jawny krok.\n\n---\n\n## Pozostałe (skrót)\n\n- **Z-093 (P1)** — backup/DR: włączyć/zweryfikować PITR Neona, **przetestować** odtworzenie, zapisać\n  RPO/RTO w runbooku.\n- **Z-095 (P2)** — smoke test po deployu (`/admin/health` + kluczowe trasy) z alertem.\n- **Z-096 (P2)** — logi strukturalne + podstawowe metryki (czas akcji, błędy/moduł, koszt LLM).\n- **Z-097 (P1)** — monitoring kosztów (infra + tokeny) z alertem progowym (spójne z A.7/A.10).\n\n**Kolejność:** Z-090 → Z-091 → Z-097 → Z-092 → Z-093 → reszta.\n",
+    "words": 296,
+    "updatedAt": "2026-06-15T14:48:57.833Z"
   },
   {
     "slug": "52-plany-ux-a11y-i18n",
@@ -598,10 +598,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Dodatek A — Zalecenia i plany wdrożenia",
     "title": "Plany: UX, a11y, i18n",
     "summary": "Plany wdrożenia dla design-systemu, dostępności i lokalizacji.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Dodatek A.6 — Plany wdrożenia: UX, a11y, i18n\n\nPlany realizujące zalecenia z Rozdz. 11.\n\n---\n\n## Plan Z-111 (P0) — Globalny `error.tsx` + `ErrorBoundary`\n\n**Cel:** sensowny stan błędu zamiast białego ekranu.\n**Kroki:** dodać `src/app/error.tsx` (route-level) + `global-error.tsx`; komponent `ErrorState`\n(ikona/komunikat/„spróbuj ponownie”/zgłoś); spiąć z Sentry (plan Z-090). Rozważyć `error.tsx` per\ncięższy moduł.\n**Pliki:** `src/app/error.tsx`, `src/app/global-error.tsx`, `src/components/ui/ErrorState.tsx`.\n**Kryteria:** wyjątek w komponencie pokazuje stan błędu, nie wywala całej strony; zdarzenie w Sentry.\n\n---\n\n## Plan Z-110 (P1) — Brakujące prymitywy UI\n\n**Cel:** wyeliminować powielanie i rozjazdy.\n**Kroki:** dodać do `src/components/ui/`: `Modal/Dialog`, `Tabs`, `Tooltip`, opakowania\n`Input/Select/Textarea`, `Pagination` (na Radix, który jest już w zależnościach); migrować najczęstsze\nmiejsca przyrostowo.\n**Kryteria:** nowe ekrany używają prymitywów; spada liczba ad-hoc modali/tabów.\n\n---\n\n## Plan Z-112 / Z-113 (P1) — Tokeny odstępów/typografii + jeden `EmptyState`\n\n**Cel:** spójna gęstość i mniej inline-styli.\n**Kroki:** dodać skalę spacing/rozmiarów (tokeny CSS/obiekty w `ui/home/styles.ts`); ujednolicić\n`EmptyState` do jednej implementacji; migrować najczęstsze wzorce.\n**Kryteria:** jeden `EmptyState`; nowe UI używa tokenów odstępów.\n\n---\n\n## Plan Z-114 (P1) — Audyt i poprawki a11y\n\n**Cel:** dostępność (WCAG/EAA) i brak barier.\n**Kroki:** `alt` dla wszystkich `<img>`; nie sygnalizować statusu samym kolorem (ikona/tekst);\n`role`/`aria` w prymitywach; pułapka focusu + obsługa klawiatury w `Modal`; helper `sr-only`; przegląd\nkontrastu. Wykonalne offline.\n**Kryteria:** obrazy mają `alt`; modale obsługiwane klawiaturą; statusy nie tylko kolorem.\n\n---\n\n## Plan Z-115 (P1) — Warstwa i18n + formaty `Intl`\n\n**Cel:** umożliwić wielojęzyczność i poprawne formaty.\n**Kroki:** wprowadzić lekką warstwę słownika (np. własny `t()` lub `next-intl`); **od zaraz owijać nowe\nteksty** (PL jako domyślny); formaty dat/liczb/waluty przez `Intl.*` (zastąpić ręczny `formatMoney`).\nPełne tłumaczenia, gdy pojawi się rynek nie-PL.\n**Kryteria:** nowe teksty przez warstwę; waluty/daty przez `Intl`.\n**Ryzyka:** duży zakres — robić przyrostowo, nie „big bang”.\n\n---\n\n## Pozostałe (skrót)\n\n- **Z-116 (P2)** — responsywna typografia/odstępy + cele dotykowe ≥44 px.\n- **Z-117 (P2)** — rozbudować skórki (gotowe motywy, jasny/sepia/system) jako atut.\n- **Z-118 (P2)** — reguła „prymityw przed inline” w przeglądach.\n\n**Kolejność:** Z-111 → Z-110 → Z-114 → Z-112/Z-113 → Z-115 → reszta.\n",
+    "words": 325,
+    "updatedAt": "2026-06-15T14:49:21.137Z"
   },
   {
     "slug": "53-plany-ai-llm",
@@ -609,10 +609,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Dodatek A — Zalecenia i plany wdrożenia",
     "title": "Plany: AI / LLM",
     "summary": "Plany wdrożenia dla kolejek, cache, kosztów i fallbacku modeli.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Dodatek A.7 — Plany wdrożenia: AI / LLM\n\nPlany realizujące zalecenia z Rozdz. 12. Kluczowe dla rentowności (koszt AI to główna zmienna modelu).\n\n---\n\n## Plan Z-130 (P0) — Trwały rate-limit i budżet tokenów per użytkownik/plan\n\n**Cel:** kontrola kosztów i ochrona przed nadużyciem przy wielu instancjach.\n**Kroki:**\n1. Przenieść licznik z in-memory (`src/lib/ai/rateLimit.ts`) do **trwałego store’u** (Redis/KV lub\n   tabela `AiUsage { ownerId, window, count, tokens }`).\n2. Limity zależne od planu (darmowy: dzienny budżet tokenów + tańszy model; premium: większy).\n3. Trasa agenta sprawdza budżet przed wywołaniem; 429 + czytelny komunikat przy przekroczeniu.\n**Pliki:** `src/lib/ai/rateLimit.ts`, model/KV, `/api/llm/home/agent`.\n**Kryteria:** limit działa globalnie (niezależnie od instancji); darmowy ma egzekwowany dzienny budżet.\n**Zależność:** plan/billing (A.10) dla rozróżnienia poziomów.\n\n---\n\n## Plan Z-131 (P1) — Trwała kolejka zadań ciężkich\n\nPatrz **plan Z-074 (A.4)** — wspólny model `Job` obsługuje OCR, plan tygodnia, analizy oraz eksport RODO.\n\n---\n\n## Plan Z-132 (P1) — Cache odpowiedzi LLM\n\n**Cel:** nie płacić wielokrotnie za te same tokeny.\n**Kroki:** dla operacji **deterministycznych/nie-wrażliwych** (kategoryzacja, parsowanie, powtarzalne\npytania) cache po haszu wejścia (KV/tabela) z TTL; **nie** cache’ować treści wrażliwych między userami.\n**Kryteria:** powtórne identyczne zapytanie nie woła modelu; brak wycieku między userami.\n\n---\n\n## Plan Z-133 (P1) — Fallback modeli/providerów\n\n**Cel:** niezawodność, gdy podstawowy provider limituje/pada.\n**Kroki:** w `src/lib/llm/resolver.ts` dodać listę fallback per typ operacji; przy błędzie/429 przełączyć\nna zapas; logować przełączenia.\n**Kryteria:** awaria Groqa nie wywala funkcji AI (degradacja na model zapasowy).\n\n---\n\n## Plan Z-134 (P1) — Tańszy model dla `dispatch`\n\n**Cel:** obniżyć koszt klasyfikacji/parsowania bez utraty jakości tam, gdzie się liczy.\n**Kroki:** w `/admin/llm` przypisać tańszy model do `dispatch`, droższy tylko do `reasoning`;\nzweryfikować jakość na zestawie (plan Z-136).\n**Kryteria:** koszt operacji `dispatch` spada; jakość `reasoning` bez regresji.\n\n---\n\n## Plan Z-135 / Z-097 (P1) — Monitoring kosztów AI\n\n**Cel:** widzieć i alarmować koszt.\n**Kroki:** zapisywać `usage` (tokeny/koszt) per user/operacja (agent już zwraca `meta`); panel w\n`/admin/health` lub osobny; alert progowy.\n**Kryteria:** widać koszt per user/operacja; alert przy przekroczeniu progu.\n\n---\n\n## Plan Z-136 (P1) — Zestaw ewaluacyjny agenta\n\n**Cel:** bezpieczeństwo i jakość akcji AI przy rozwoju.\n**Kroki:** zbiór przypadków (wejście → oczekiwana/zabroniona akcja: „nie kasuj wbrew intencji”,\npoprawność `AIAction`); uruchamiać w CI (plan Z-181 też tu pasuje).\n**Kryteria:** regresja jakości/bezpieczeństwa agenta jest łapana w CI.\n\n---\n\n## Pozostałe\n\n- **Z-137 (P1)** — minimalizacja danych w promptach — patrz plan A.3 (Z-055).\n- **Z-138 (P2)** — rozbić egzekutor — patrz plan A.2 (Z-010).\n\n**Kolejność:** Z-130 → Z-134 → Z-132 → Z-133 → Z-135 → Z-136 → reszta.\n",
+    "words": 409,
+    "updatedAt": "2026-06-15T14:49:48.321Z"
   },
   {
     "slug": "54-plany-integracje",
@@ -620,10 +620,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Dodatek A — Zalecenia i plany wdrożenia",
     "title": "Plany: integracje",
     "summary": "Plany wdrożenia dla Gmail, Google Calendar, push, webhooks, API.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Dodatek A.8 — Plany wdrożenia: integracje\n\nPlany realizujące zalecenia z Rozdz. 13.\n\n---\n\n## Plan Z-150 (P1) — Eksport agendy jako feed iCal\n\n**Cel:** kalendarz Omnia w telefonie/Google/Apple, bez weryfikacji Google.\n**Kroki:** endpoint `/api/calendar/ical?token=…` (token per user, odwoływalny) zwracający `.ics` z\nagregatu (`src/lib/calendar.ts`); generować VEVENT z zadań/posiłków/leków/serwisu; UI z linkiem subskrypcji\nw `/calendar`/`/settings`.\n**Pliki:** `src/app/api/calendar/ical/route.ts`, helper iCal, UI.\n**Kryteria:** subskrypcja w Google/Apple pokazuje wydarzenia; token można odwołać.\n**Ryzyka:** token w URL = traktować jak sekret (długi, odwoływalny).\n\n---\n\n## Plan Z-151 (P1) — Odczyt Google Calendar do agendy\n\n**Cel:** wydarzenia Google obok danych Omnia w `/calendar`.\n**Kroki:** rozszerzyć OAuth o scope `calendar.readonly` (jak Drive — szyfrowane tokeny); klient\npobierający wydarzenia w zakresie miesiąca; scalić w agregacie kalendarza; cache (plan Z-072).\n**Kryteria:** wydarzenia Google widoczne w agendzie; odświeżanie tokenów działa.\n**Uwaga:** scope wrażliwy — **wymaga konfiguracji ekranu zgody Google**; oznaczyć zależność.\n\n---\n\n## Plan Z-153 (P1) — Import wyciągów bankowych z CSV\n\n**Cel:** wydatki w Portfelu bez open bankingu.\n**Kroki:** UI uploadu CSV w `/portfel`; parser + **mapowanie kolumn** (data/kwota/opis) z podglądem;\nzapis do `WalletEntry` (idempotencja po hashu wiersza, jak auto-wydatki `sourceModule/sourceId`).\n**Kryteria:** import CSV tworzy wpisy; brak duplikatów przy ponownym imporcie.\n\n---\n\n## Pozostałe (skrót)\n\n- **Z-152 (P2·L)** — zapis dwukierunkowy Google Calendar (scope `calendar.events`) z konfliktami — po\n  weryfikacji aplikacji przez Google.\n- **Z-154 (P2)** — webhooks wychodzące (nowe zlecenie/płatność/przypomnienie) + Zapier/Make.\n- **Z-155 (P2·L)** — publiczne API (REST) z kluczami, rate-limitem, podpisami.\n- **Z-156 (P1)** — Gmail tylko pod konkretny przypadek (mail→zadanie/notatka), scope minimalny.\n- **Z-157 (P1)** — ujednolicić warstwę integracji (timeout/retry/degradacja/szyfrowane tokeny).\n- **Z-158 (P2)** — web-push na żywo (uzupełnienie powiadomień, A.12/Rozdz. 34).\n\n**Kolejność:** Z-150 → Z-153 → Z-151 → Z-157 → reszta. (Wszystko z OAuth Google = zależne od konfiguracji\nekranu zgody — oznaczać.)\n",
+    "words": 289,
+    "updatedAt": "2026-06-15T14:50:09.905Z"
   },
   {
     "slug": "55-plany-testy-jakosc",
@@ -631,10 +631,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Dodatek A — Zalecenia i plany wdrożenia",
     "title": "Plany: testy i jakość",
     "summary": "Plany rozszerzenia testów jednostkowych, E2E i QA.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Dodatek A.9 — Plany wdrożenia: testy i jakość\n\nPlany realizujące zalecenia z Rozdz. 14.\n\n---\n\n## Plan Z-170 (P0) — Testy w bramce CI\n\n**Cel:** testy faktycznie chronią `develop`/`master`.\n**Kroki:** workflow GitHub Actions (spójny z planem Z-091): `test:unit` + strażniki + (docelowo) E2E\nsmoke na każdym PR/merge do `develop`. Czerwony = blokada.\n**Kryteria:** PR łamiący testy nie przechodzi.\n\n---\n\n## Plan Z-171 (P0) — Alias `@/` w runnerze testów\n\n**Cel:** odblokować testy modułów importujących przez `@/` (dziś problem w `currency.ts`/tsx).\n**Kroki:** dodać do runnera (`node --import tsx`) obsługę ścieżek (`tsconfig-paths`/loader) lub wydzielić\nczyste funkcje bez importu prisma; ujednolicić.\n**Kryteria:** test importujący `@/lib/...` działa; `npm run test:unit` zielony.\n\n---\n\n## Plan Z-172 (P0) — Testy izolacji danych (BOLA/IDOR)\n\n**Cel:** udowodnić, że user A nie sięgnie danych usera/zespołu B.\n**Kroki:** dla reprezentatywnych akcji (tasks, notes, portfel, pets, services) test: user A próbuje\nodczytać/zmienić zasób B po ID → odmowa. Wymaga efemerycznego Postgresa (plan Z-174). Spójne z audytem\nZ-052/Z-190.\n**Kryteria:** próby cross-tenant kończą się odmową; testy w CI.\n\n---\n\n## Plan Z-173 (P0) — Testy ścieżki płatności i sporów (Usługi)\n\n**Cel:** brak podwójnego księgowania, poprawne statusy, spójność z Portfelem.\n**Kroki:** testy `services` (płatność, prowizja, kod rabatowy, spór/moderacja) + księgowanie w Portfelu;\nprzypadki brzegowe (zwrot, anulowanie).\n**Kryteria:** scenariusze płatności/sporów pokryte; brak podwójnych wpisów.\n\n---\n\n## Plan Z-174 (P1) — Efemeryczny Postgres dla testów akcji\n\n**Cel:** testować Server Actions na realnej bazie.\n**Kroki:** `test:unit:db` uruchamiający Postgres (usługa CI/lokalny kontener), `migrate deploy`, seed\nminimalny, izolacja per test (transakcja/rollback lub czyszczenie).\n**Kryteria:** testy akcji działają na świeżej bazie w CI.\n\n---\n\n## Pozostałe (skrót — z Rozdz. 14)\n\n- **Z-175 (P1)** — smoke E2E w CI (10 ścieżek krytycznych: logowanie, CRUD per kluczowy moduł, płatność).\n- **Z-176 (P1)** — testy guardów RBAC + samo-wykluczenia admina.\n- **Z-177 (P1)** — pomiar coverage (informacyjnie, nie próg).\n- **Z-178 (P1)** — rozszerzyć testy czystych helperów (stats wykonawcy, `medicationSchedule`, sloty).\n- **Z-179 (P1)** — testy regresji bezpieczeństwa renderera markdown (XSS) — chroni m.in. ten audyt.\n- **Z-181 (P2)** — testy kontraktowe read-toolów agenta (spójne z Z-136).\n- **Z-185 (P2)** — testy migracji „w obie strony” dla nowych zmian schematu.\n\n**Kolejność:** Z-171 → Z-170 → Z-174 → Z-172 → Z-173 → Z-176 → Z-179 → reszta.\n",
+    "words": 365,
+    "updatedAt": "2026-06-15T14:50:34.889Z"
   },
   {
     "slug": "56-plany-monetyzacja-billing",
@@ -682,4 +682,4 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
   }
 ]
 
-export const AUDYT_GENERATED_AT = "2026-06-15T14:48:37.114Z"
+export const AUDYT_GENERATED_AT = "2026-06-15T14:50:46.854Z"
