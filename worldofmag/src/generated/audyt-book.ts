@@ -389,10 +389,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Kalendarz (Calendar)",
     "summary": "Zunifikowana agenda agregująca wszystkie moduły.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 33 — Kalendarz (Calendar)\n\n## Kontekst / stan z kodu\n\n- **Rdzeń:** `src/actions/calendar.ts` (`getCalendarEvents`) + `src/lib/calendar.ts` — **read-only\n  agregator** odpytujący równolegle wiele modułów: zadania (terminy), posiłki, leki+opieka zdrowotna,\n  opieka nad zwierzętami, powtórki SRS, serwis floty.\n- **UI:** siatka miesiąca `/calendar` z **filtrem modułu** (klikalna legenda + `?module=`).\n\n## Mocne strony\n\n- **Zunifikowana agenda** z całego systemu w jednym widoku — realizacja obietnicy „wszystko w jednym”.\n- **Agregator równoległy** (`Promise.all`) — czysty wzorzec, świadoma decyzja architektoniczna (brak\n  osobnego modelu zdarzeń).\n\n## Głos Zespołu A — Strażnicy\n\n**Marek (DBA):** „Agregator skanuje **pełne zbiory per moduł** na każde otwarcie miesiąca — N zapytań,\npotencjalne N+1. Przy skali: indeksy po datach (Z-031), cache (Z-072), eliminacja N+1 (Z-073).”\n\n**Joanna (UX):** „Brak **tworzenia zdarzeń** w kalendarzu — jest tylko odczyt z modułów. Dla wielu\nużytkowników kalendarz to miejsce, gdzie się *dodaje* terminy. To luka oczekiwań.”\n\n## Głos Zespołu B — Pionierzy\n\n**Marek (użytkownik, 29):** „Najważniejsze: **dwukierunkowy Google Calendar** (Rozdz. 13) i **eksport\niCal**. Bez tego trzymam terminy w Google, nie u was.”\n\n**Ola (UX):** „Widoki tydzień/dzień + przeciąganie zdarzeń — to by zrównało nas z dedykowanymi\nkalendarzami.”\n\n## Punkty sporne\n\n- **Kalendarz: agregator vs pełny kalendarz.** **Konsensus:** zostaje agregatorem (siła „wszystko w\n  jednym”), ale dodać **iCal/Google** (Z-150/Z-151) i ewentualnie szybkie dodawanie zdarzenia ad-hoc.\n\n## Głos użytkowników\n\n**Agnieszka (38):** „Terminy rodziny w jednym kalendarzu widocznym w telefonie.” → iCal/Google.\n\n## Konsensus i zalecenia\n\n- **Z-380** *(P1 · S)* — **Eksport iCal** (Z-150) — kalendarz Omnia w telefonie/Google/Apple.\n- **Z-381** *(P1 · M)* — **Odczyt Google Calendar do agendy** (Z-151) — wydarzenia Google obok danych Omnia.\n- **Z-382** *(P1 · S)* — **Cache + indeksy dat + eliminacja N+1** w agregatorze (Z-072/Z-031/Z-073).\n- **Z-383** *(P2 · M)* — **Szybkie dodawanie zdarzenia ad-hoc** + widoki tydzień/dzień.\n\n## Dobre vs złe praktyki\n\n**Dobre:** zunifikowana agenda, agregator równoległy, filtr modułu.\n**Złe / do poprawy:** skanowanie pełnych zbiorów bez cache; brak tworzenia zdarzeń i integracji Google/iCal.\n",
+    "words": 316,
+    "updatedAt": "2026-06-15T19:22:17.912Z"
   },
   {
     "slug": "34-powiadomienia",
@@ -400,10 +400,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Powiadomienia (Notifications)",
     "summary": "Silnik bez crona, syncReminders, dzwonek, źródła.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 34 — Powiadomienia (Notifications)\n\n## Kontekst / stan z kodu\n\n- **Rdzeń:** `src/actions/notifications.ts`, `src/lib/notifications.ts`; model `Notification`\n  (per-user, idempotentny po `dedupeKey`).\n- **Mechanizm bez crona:** `syncReminders` skanuje terminy/agendę **przy logowaniu/otwarciu dzwonka**;\n  `notifyUser` tworzy powiadomienie; dzwonek (`NotificationBell`) w chrome (sidebar + mobile top bar).\n- **Świadomy wybór:** brak crona/web-push (free tier) — przypomnienia „dociągane” przy aktywności usera.\n\n## Mocne strony\n\n- **Działa bez crona** — sprytne obejście ograniczeń free tier (idempotencja po `dedupeKey`).\n- Jeden silnik dla wielu źródeł (zadania, zdrowie, flota, zwierzęta, spiżarnia, SRS, usługi).\n\n## Głos Zespołu A — Strażnicy\n\n**Piotr (SRE):** „»Bez crona« ma haczyk: jeśli user się nie zaloguje, **przypomnienie nie powstaje** —\na o to właśnie chodzi w przypomnieniu (»nie zapomnij, choć nie wchodzisz«). To **fundamentalne\nograniczenie**: bez schedulera i web-push to są raczej »powiadomienia przy wejściu«, nie przypomnienia.”\n\n**Basia (PO):** „Niepełne źródła: część terminów (T3 zadania, Z4 wizyty, F2 OC, K4 spiżarnia, L5 SRS)\nma silnik, ale **brakuje podpięć**. To rozproszone, ale wysokie ROI.”\n\n## Głos Zespołu B — Pionierzy\n\n**Kamil (DevOps):** „Dołóżmy **scheduled job** hostingu (Render Cron) + **web-push** (Z-158) — wtedy\nprzypomnienia działają »na zewnątrz« aplikacji. To zamienia gadżet w realną wartość retencyjną.”\n\n**Ola (UX):** „Preferencje per typ (co i kiedy chcę dostawać) + grupowanie — żeby nie zasypać usera.”\n\n## Punkty sporne\n\n- **Web-push/cron: teraz vs free tier.** **Konsensus:** dodać **scheduled job + web-push** jako warunek,\n  by „przypomnienia” były przypomnieniami; to też decyzja kosztowa (poza free tier).\n\n## Głos użytkowników\n\n**Helena (68):** „Przypomnienie o lekach musi przyjść, nawet jak nie wejdę do apki.” → web-push/cron.\n\n## Konsensus i zalecenia\n\n- **Z-390** *(P1 · M)* — **Scheduled job (cron hostingu) + web-push** (Z-158) — przypomnienia działające\n  poza aplikacją (warunek sensu funkcji).\n- **Z-391** *(P1 · S)* — **Dopiąć brakujące źródła** (T3/Z4/F2/K4/L5) do `syncReminders`; zweryfikować, co\n  już skanuje.\n- **Z-392** *(P1 · S)* — **Preferencje per typ powiadomienia** + grupowanie (nie zasypywać usera).\n- **Z-393** *(P2 · S)* — **Centrum powiadomień** (historia, oznacz wszystkie, filtry) — dziś podstawowe.\n\n## Dobre vs złe praktyki\n\n**Dobre:** idempotencja po `dedupeKey`, jeden silnik wielu źródeł, obejście braku crona na start.\n**Złe / do poprawy:** brak crona/web-push czyni z „przypomnień” powiadomienia-przy-wejściu; niepełne źródła.\n",
+    "words": 355,
+    "updatedAt": "2026-06-15T19:22:49.888Z"
   },
   {
     "slug": "35-kosz-undo",
@@ -411,10 +411,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Kosz / Soft-delete + Undo",
     "summary": "TrashItem, retencja, restoratory per-moduł, odwracalność AI.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 35 — Kosz / Soft-delete + Undo\n\n## Kontekst / stan z kodu\n\n- **Rdzeń:** model `TrashItem` (zrzut JSON encji + dni retencji), `src/lib/trash.ts` (`recordTrash`),\n  `src/actions/trash.ts`, strona `/trash` (authenticated-only, bez slug uprawnienia).\n- **Mechanizm:** usunięcia w modułach zapisują migawkę JSON do `TrashItem`; user przywraca z `/trash`\n  (odliczanie retencji). **Podpięte m.in. do `deleteNote`/`deleteTask`** — w tym usunięcia przez AI są\n  odwracalne.\n\n## Mocne strony\n\n- **Zunifikowany soft-delete** z migawką JSON i retencją — bezpieczeństwo danych i spokój użytkownika.\n- **Odwracalność akcji AI** — kluczowy element zaufania do asystenta (kasuje, ale można cofnąć).\n\n## Głos Zespołu A — Strażnicy\n\n**dr inż. Tomasz (architekt):** „Wzorzec jest dobry, ale pytanie: **czy WSZYSTKIE moduły** piszą do\nkosza przy usuwaniu? Jeśli część kasuje twardo, mamy niespójność (»w notatkach cofnę, w fakturach nie«).\nPotrzebny audyt pokrycia — kosz powinien być **domyślną ścieżką usuwania**.”\n\n**Anna (security):** „Retencja vs RODO: przy **twardym usunięciu konta** (Z-051) kosz też musi być\nczyszczony. I migawka JSON może zawierać dane wrażliwe — objąć ją szyfrowaniem/usuwaniem.”\n\n## Głos Zespołu B — Pionierzy\n\n**Damian (senior dev):** „Uogólnijmy: **jeden helper `recordTrash` dla każdego `delete*`** w aktualnych\ni przyszłych modułach — tani, spójny wzorzec. Plus »cofnij« (toast z Undo) zaraz po akcji, nie tylko\nprzez `/trash`.”\n\n## Punkty sporne\n\n- **Twardy delete vs zawsze kosz.** **Konsensus:** kosz jako **domyślny** dla danych użytkownika; twarde\n  usunięcie tylko dla wygaszonej retencji i usunięcia konta.\n\n## Głos użytkowników\n\n**Helena (68):** „Boję się, że coś skasuję — to dobrze, że jest kosz.” → kosz obniża lęk = wyższe zaufanie.\n\n## Konsensus i zalecenia\n\n- **Z-400** *(P1 · M)* — **Audyt pokrycia soft-delete:** każdy `delete*` przechodzi przez `recordTrash`\n  (lub jawnie udokumentowany wyjątek). Kosz jako domyślna ścieżka.\n- **Z-401** *(P1 · S)* — **Czyszczenie kosza przy usunięciu konta + retencji** (spójne z Z-051/Z-059);\n  szyfrowanie/usuwanie migawek wrażliwych.\n- **Z-402** *(P2 · S)* — **„Cofnij” (toast z Undo)** zaraz po usunięciu, nie tylko przez `/trash`.\n\n## Dobre vs złe praktyki\n\n**Dobre:** zunifikowany soft-delete z retencją, odwracalność AI, migawka JSON.\n**Złe / do poprawy:** niepewne pełne pokrycie modułów; retencja vs RODO (czyszczenie kosza) do domknięcia.\n",
+    "words": 340,
+    "updatedAt": "2026-06-15T19:23:12.104Z"
   },
   {
     "slug": "36-skorki",
@@ -422,10 +422,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Skórki / Motywy (Skins)",
     "summary": "Tokeny CSS, walidacja, skórki systemowe/użytkownika.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 36 — Skórki / Motywy (Skins)\n\n## Kontekst / stan z kodu\n\n- **Rdzeń:** `src/lib/skins.ts` (152 linie), `src/actions/skins.ts`; modele `Skin` (system/user/team,\n  `isPublic`), `UserSkinPref`.\n- **Mechanizm:** skórka = **częściowa mapa zmiennych CSS** (`Skin.tokens` JSON) aplikowana inline na\n  `<html>` w `layout.tsx` (`readActiveSkin` → `tokensToStyle`), bez FOUC; pominięte zmienne dziedziczą\n  domyślne (Dark = `{}`). **Walidacja `sanitizeTokenValue`** (whitelist + regex, blokada wstrzyknięć CSS).\n- 21 sterowalnych tokenów; 5 skórek systemowych (Dark/Light/Casual/Blue/Pink) seedowanych migracją.\n\n## Mocne strony\n\n- **Bezpieczna personalizacja wyglądu** z twardą walidacją (anty-CSS-injection) — rzadko spotykana dbałość.\n- **Tokeny ponad kolory** (`--radius`, `--font-size-base`, `--color-scheme`, `--on-accent`) — gęstość,\n  zaokrąglenia, tryb jasny/ciemny natywnych kontrolek.\n- **System/user/team + `isPublic`** — współdzielenie motywów.\n\n## Głos Zespołu A — Strażnicy\n\n**Rafał (grafik):** „Świetny system, ale brak **gotowych, dopracowanych motywów** (poza systemowymi) i\n**trybu wg OS** (light/system). To, co mamy, to silnik — brakuje »gotowych ubrań«.”\n\n**Anna (security):** „Walidacja jest solidna — utrzymać ją przy każdym rozszerzeniu tokenów; **testy\nregresji** sanitizacji (jak dla markdown, Z-179).”\n\n## Głos Zespołu B — Pionierzy\n\n**Kuba (UI):** „Skórki to **atut marketingowy i retencyjny**: »zrób apkę swoją«. Galeria motywów\nspołeczności (`isPublic`), motywy sezonowe, **edytor wizualny** z podglądem na żywo. To buduje\nprzywiązanie i viralowość (»zobacz mój motyw«).”\n\n## Punkty sporne\n\n- **Ile motywów na start.** **Konsensus:** dołożyć kilka dopracowanych + tryb system/jasny; galeria\n  społeczności później.\n\n## Głos użytkowników\n\n**Marek (29):** „Uwielbiam personalizację — dajcie galerię i edytor na żywo.”\n**Zofia (16):** „Motywy = powód, żeby pokazać apkę znajomym.”\n\n## Konsensus i zalecenia\n\n- **Z-410** *(P2 · S)* — **Kilka dopracowanych motywów + tryb jasny/system** (wykorzystać `--color-scheme`).\n- **Z-411** *(P1 · S)* — **Testy regresji sanitizacji tokenów** (anty-CSS-injection) — utrzymać bezpieczeństwo.\n- **Z-412** *(P2 · M)* — **Galeria motywów społeczności** (`isPublic`) + edytor z podglądem na żywo — atut\n  viralowy.\n\n## Dobre vs złe praktyki\n\n**Dobre:** bezpieczna personalizacja (walidacja), tokeny ponad kolory, system/user/team + publiczne.\n**Złe / do poprawy:** brak gotowych motywów/trybu OS; niewykorzystany potencjał galerii społeczności.\n",
+    "words": 314,
+    "updatedAt": "2026-06-15T19:23:36.260Z"
   },
   {
     "slug": "37-raporty",
@@ -433,10 +433,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Raporty (Reports)",
     "summary": "Markdown w DB/Drive, raporty systemowe/użytkownika.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 37 — Raporty (Reports)\n\n## Kontekst / stan z kodu\n\n- **Rdzeń:** `src/actions/reports.ts` (w tym `createUserReport` — raporty per-user dla sesji AI); model\n  `Report` (`storage` = `db|drive`, hydracja transparentna na odczycie).\n- **Treść:** markdown renderowany `markdownToHtml`; przechowywana w DB **lub** na Google Drive\n  użytkownika (fallback do DB gdy brak Drive).\n- **Zakres:** raporty systemowe/użytkownika/zespołu; CRUD admina (`/admin/reports`), widok `/reports`.\n- **Ten audyt** to pokrewny wzorzec (markdown w repo), ale **świadomie poza** modułem Reports (w plikach,\n  nie w DB).\n\n## Mocne strony\n\n- **Dwa magazyny treści (DB/Drive)** z transparentną hydracją — elastyczność i własność danych usera.\n- **Raporty per-user dla AI** (`createUserReport`) — asystent może utrwalić analizę bez uprawnień admina.\n- Wspólny, bezpieczny renderer markdown.\n\n## Głos Zespołu A — Strażnicy\n\n**Grzegorz (delivery):** „Brakuje **eksportu PDF** (R3) — wzorzec gotowy (print-to-PDF jak `petExport`).\nRaport, którego nie da się wysłać/wydrukować, ma ograniczoną wartość biznesową.”\n\n**Anna (security):** „Raporty na Drive = tokeny OAuth usera; potwierdzić autoryzację odczytu (anty-IDOR)\ni obsługę braku/wygaśnięcia tokenu (graceful).”\n\n## Głos Zespołu B — Pionierzy\n\n**Hubert (AI/ML):** „Raporty to **naturalny produkt AI**: asystent generuje raport (mamy `createUserReport`),\nuser go edytuje/eksportuje/udostępnia. Dołóżmy **szablony** (miesięczne podsumowanie finansów, zdrowia,\nprojektu) generowane automatycznie.”\n\n## Punkty sporne\n\n- **Reports vs ten audyt (DB vs pliki).** **Konsensus:** dane dynamiczne/per-user → Reports (DB/Drive);\n  dokumenty „kodu/projektu” (jak audyt) → pliki w repo. Dwa różne cele, oba zasadne.\n\n## Głos użytkowników\n\n**Tadeusz (60):** „Raport miesięczny do PDF dla księgowej — to bym chciał.”\n\n## Konsensus i zalecenia\n\n- **Z-420** *(P2 · S)* — **Eksport PDF raportów** (R3): print-to-PDF (wzorzec `petExport`/`buildVetCardHtml`).\n- **Z-421** *(P1 · S)* — **Autoryzacja + graceful dla raportów na Drive** (anty-IDOR, brak/wygaśnięcie tokenu).\n- **Z-422** *(P2 · M)* — **Szablony raportów AI** (miesięczne: finanse/zdrowie/projekt) generowane automatycznie.\n- **Z-423** *(P2 · S)* — **Udostępnianie raportu** (link/zespół) z kontrolą dostępu.\n\n## Dobre vs złe praktyki\n\n**Dobre:** dwa magazyny (DB/Drive) z hydracją, raporty AI per-user, bezpieczny renderer.\n**Złe / do poprawy:** brak eksportu PDF; autoryzacja Drive do potwierdzenia; brak szablonów automatycznych.\n",
+    "words": 325,
+    "updatedAt": "2026-06-15T19:23:59.060Z"
   },
   {
     "slug": "38-qa-e2e",
@@ -444,10 +444,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "QA + E2E",
     "summary": "Epic→Story→Scenario, Playwright, klikacze.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 38 — QA + E2E\n\n## Kontekst / stan z kodu\n\n- **Moduł QA:** `src/actions/qa.ts`; modele `QaEpic`, `QaUserStory`, `QaTestScenario` (Epic → Story →\n  Scenario); autoring w `/admin/qa`, przegląd `/qa`.\n- **E2E:** Playwright (`e2e/`), runbook `/admin/e2e`, skrypt `scripts/e2e-web.sh` (preinstalowany\n  Chromium + lokalny Postgres, bez Dockera — dla sandboxa). **Login E2E offline-only** (`E2E_TEST_MODE=1`,\n  nigdy na prod).\n- **Strażniki buildu** (`check-action-coverage`, `check-migrations`) pełnią rolę „testów” spójności.\n\n## Mocne strony\n\n- **Strukturalne scenariusze QA** (Epic/Story/Scenario) jako narzędzie wewnętrzne.\n- **E2E przygotowane pod sandbox** (offline login, preinstalowany Chromium) — przemyślane ograniczenia sieci.\n- Strażniki buildu jako tania, automatyczna kontrola spójności.\n\n## Głos Zespołu A — Strażnicy\n\n**Ewa (QA):** „Mamy scenariusze QA **i** E2E, ale **nie są połączone** (Q1) ani **bramkujące w CI**\n(Z-170). Scenariusz w bazie + test Playwrighta żyją osobno — powinno być: scenariusz → generowany/wiązany\ntest → wynik w CI. Inaczej QA to dokumentacja, nie kontrola jakości.”\n\n**Michał (senior dev):** „Brak testów Server Actions na bazie (Z-174) i ścieżek krytycznych (auth,\npłatności, izolacja) — to największa luka jakości (patrz Rozdz. 14).”\n\n## Głos Zespołu B — Pionierzy\n\n**Bartosz (QA, B):** „Zautomatyzujmy: **smoke E2E w CI** (Z-175, 10 ścieżek), a scenariusze QA niech\n**generują szkielety testów** (Z-183). AI może pomóc pisać scenariusze i `data-testid` (Z-182).”\n\n## Punkty sporne\n\n- **QA w bazie vs w repo.** **Konsensus:** scenariusze mogą zostać w DB (autoring), ale **wynik wiązać z\n  E2E w CI** — inaczej to dwa światy.\n\n## Głos użytkowników\n\n— (moduł wewnętrzny; użytkownik korzysta pośrednio przez stabilność produktu.)\n\n## Konsensus i zalecenia\n\n- **Z-430** *(P0 · S)* — **E2E smoke w CI** (Z-175) — bramka regresji ścieżek krytycznych.\n- **Z-431** *(P1 · M)* — **Powiązać scenariusze QA z testami E2E** (Q1) — wynik scenariusza z realnego testu.\n- **Z-432** *(P1 · S)* — **`data-testid` na elementach krytycznych** (Z-182) przed i18n — stabilne selektory.\n- **Z-433** *(P2 · L)* — **Generowanie szkieletów testów ze scenariuszy QA** (Z-183), wspierane AI.\n\n## Dobre vs złe praktyki\n\n**Dobre:** strukturalne QA, E2E pod sandbox (offline login), strażniki buildu.\n**Złe / do poprawy:** QA i E2E rozłączne, brak bramki CI, brak testów akcji/ścieżek krytycznych.\n",
+    "words": 344,
+    "updatedAt": "2026-06-15T19:24:21.456Z"
   },
   {
     "slug": "39-truck",
@@ -455,10 +455,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Truck (routing ciężarowy)",
     "summary": "Klient ORS gotowy, UI szkieletowy.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 39 — Truck (routing ciężarowy)\n\n## Kontekst / stan z kodu\n\n- **Rdzeń:** `src/lib/ors.ts` (klient OpenRouteService — gotowy), `src/app/truck/` (UI **minimalny**);\n  `VehicleProfile` (profil pojazdu do trasowania) współdzielony z Flotą.\n- **Status (z macierzy, Rozdz. 3):** **dojrzałość 1** — klient gotowy, UI szkieletowy. Najmniej dojrzały\n  „realny” moduł.\n\n## Mocne strony\n\n- **Klient ORS gotowy** — najtrudniejsza, integracyjna część już istnieje.\n- **Wspólny `VehicleProfile`** z Flotą — fundament pod spięcie.\n\n## Głos Zespołu A — Strażnicy\n\n**Grzegorz (delivery):** „To **niedokończony moduł** — albo go domykamy, albo jawnie oznaczamy jako\n»eksperymentalny«. Półprodukt w produkcji to dług wizerunkowy (»klikam, nic nie ma«). Decyzja\npriorytetowa: dokończyć (TR1) czy ukryć do czasu.”\n\n## Głos Zespołu B — Pionierzy\n\n**Wojtek (PO):** „Truck nabiera sensu **dopiero z Flotą B2B** (V3, Rozdz. 43): trasowanie wielu\npojazdów, kierowcy, ograniczenia (masa/wysokość/ADR). Samodzielnie to nisza. Dokończmy go **jako część\nbranży Flota B2B**, nie osobno.”\n\n**Damian (senior dev):** „Skoro klient gotowy, **MVP UI** (punkt A→B, profil ciężarowy, podgląd trasy)\nto kilka dni — warto, by moduł przestał być pusty (TR1) i spiąć z Flotą (TR2).”\n\n## Punkty sporne\n\n- **Dokończyć teraz vs ukryć.** **Konsensus:** dać **minimalne, działające UI** (A→B + profil) albo\n  oznaczyć „wkrótce” i ukryć — nie zostawiać pustego wejścia. Pełny rozwój = w ramach Floty B2B.\n\n## Głos użytkowników\n\n**Krzysztof (52):** „Trasy dla dostawczaka z ograniczeniami — tak, ale tylko jak realnie działa.”\n\n## Konsensus i zalecenia\n\n- **Z-440** *(P2 · M)* — **MVP UI trasowania** (TR1): punkt A→B, profil ciężarowy, podgląd trasy (klient\n  ORS gotowy).\n- **Z-441** *(P2 · S)* — **Spiąć Truck z Flotą** (TR2): profil pojazdu z Floty do trasowania.\n- **Z-442** *(P1 · S)* — **Jawnie oznaczyć status** (eksperymentalny/„wkrótce”) do czasu MVP — nie pusty ekran.\n- **Z-443** *(P2 · L)* — **Pełny rozwój w ramach Floty B2B** (V3) — wiele pojazdów, kierowcy, ograniczenia.\n\n## Dobre vs złe praktyki\n\n**Dobre:** najtrudniejsza część (klient ORS) gotowa; wspólny profil pojazdu z Flotą.\n**Złe / do poprawy:** pusty/szkieletowy UI w produkcji (dług wizerunkowy); brak spięcia z Flotą.\n",
+    "words": 329,
+    "updatedAt": "2026-06-15T19:24:43.756Z"
   },
   {
     "slug": "40-praca-wizja",
@@ -466,10 +466,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Praca / Work (wizja)",
     "summary": "Dziś stub; wizja modułu pracy/czasu/dokumentów.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 40 — Praca / Work (wizja)\n\n## Kontekst / stan z kodu\n\n- **Status:** **stub** — wpis w sidebarze („wkrótce”, wyłączony), brak strony. Pozycja roadmapy\n  („Build out the Work / Praca module”).\n- Ten rozdział to **debata o wizji**: czym moduł Praca powinien się stać, skoro dziś go nie ma.\n\n## Mocne strony (potencjał)\n\n- **Rdzeń już istnieje** w innych modułach: Zadania (projekty, Kanban, cykliczność), Notatki, Kalendarz,\n  Kontakty, Raporty, Portfel. Praca to w dużej mierze **kompozycja** istniejących klocków + nakładka „tryb\n  zawodowy”.\n\n## Głos Zespołu A — Strażnicy\n\n**Basia (PO):** „Nie róbmy »Jira killera«. Praca powinna być **cienką nakładką** na Zadania/Czas/\nDokumenty, a nie nowym wielkim modułem. Zdefiniujmy wąsko: **projekty zawodowe, czas pracy, dokumenty,\nfaktury** — i to spięte z tym, co mamy.”\n\n**Anna (security):** „Praca = dane firmowe i potencjalnie dane klientów → RODO, role granularne (Z-194),\nizolacja (Z-190). To wejście w teren B2B z jego wymogami.”\n\n## Głos Zespołu B — Pionierzy\n\n**Wojtek (PO):** „Praca to **brama do monetyzacji B2B**: time-tracking + projekty + faktury (z Portfela)\n+ dokumenty (NM4) + zależności zadań (Z-233). To naturalne miejsce na **płatne funkcje zaawansowane**\n(zgodnie z wizją właściciela: »płatne w działach pracy/biznesu«).”\n\n**Hubert (AI/ML):** „AI: »ile czasu zeszło na projekt X«, generowanie raportu/faktury, podsumowanie\ntygodnia pracy. Tania wartość, która uzasadnia plan premium.”\n\n## Punkty sporne\n\n- **Nowy moduł vs nakładka na Zadania.** **Konsensus:** **nakładka** (tryb „Praca” na projektach zadań +\n  warstwa czasu/dokumentów/faktur), nie osobny silnik. Reużycie > duplikacja.\n\n## Głos użytkowników\n\n**Marek (29, freelancer):** „Time-tracking + projekty + faktury w jednym, spięte z resztą — biorę.”\n**Tadeusz (60):** „Dla firmy: projekty, koszty, dokumenty i raport do księgowej.”\n\n## Konsensus i zalecenia\n\n- **Z-450** *(P2 · L)* — **Praca jako nakładka na Zadania** (tryb zawodowy: projekty + czas + dokumenty +\n  faktury), nie nowy silnik. Reużyć Zadania/Kalendarz/Portfel/Kontakty/Raporty.\n- **Z-451** *(P1 · M)* — **Time-tracking** (start/stop, raport czasu per projekt) — rdzeń wartości B2B.\n- **Z-452** *(P2 · M)* — **Faktury z czasu/projektu** (spięcie z Portfelem) — płatna funkcja B2B.\n- **Z-453** *(P1 · S)* — **Wspólna warstwa dokumentów** (NM4) — konsoliduje załączniki (umowy/faktury).\n- **Z-454** *(P2 · S)* — **Do czasu MVP — jasny stan „wkrótce”** zamiast martwego wpisu.\n\n## Dobre vs złe praktyki\n\n**Dobre (potencjał):** rdzeń (zadania/czas/dokumenty/faktury) już rozproszony w systemie — Praca to kompozycja.\n**Złe / do poprawy:** dziś martwy stub; ryzyko przerostu (nie budować „Jiry”), trzymać się cienkiej nakładki.\n",
+    "words": 392,
+    "updatedAt": "2026-06-15T19:25:10.720Z"
   },
   {
     "slug": "41-panel-admina",
@@ -477,10 +477,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Panel Admina",
     "summary": "RBAC, audyt, config, LLM, zdrowie systemu, docs.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 41 — Panel Admina\n\n## Kontekst / stan z kodu\n\nBogaty zestaw narzędzi administracyjnych (`src/app/admin/*`, bramka `module.admin`):\n\n- **`/admin`** — konsola (build info, sesja, metryki, linki).\n- **`/admin/access`** — RBAC (`PermissionManager`): uprawnienia, grid rola↔uprawnienie, user↔rola;\n  **strażnik samo-wykluczenia** (`access.ts` `countAdminAccessHolders`).\n- **`/admin/audit`** — dziennik audytu (`AuditLog`, bez FK do User).\n- **`/admin/health`** — zdrowie systemu (DB/migracje/LLM/build, liczone na żywo).\n- **`/admin/config`** — `Config` (klucze API, **szyfrowane + maskowane**).\n- **`/admin/llm`** — `LlmProvider` + `LlmAssignment` (model per typ operacji).\n- **`/admin/skins`, `/admin/categories`, `/admin/reports`, `/admin/docs`, `/admin/qa`,\n  `/admin/playground`, `/admin/architecture`, `/admin/e2e`** — oraz **`/admin/audyt`** (ten dokument).\n\n## Mocne strony\n\n- **Pełen, dojrzały panel** (RBAC, audyt, config, LLM, health, docs) — poziom dojrzałego produktu.\n- **Bezpieczeństwo wbudowane:** szyfrowanie kluczy, maskowanie, strażnik samo-wykluczenia, audyt zmian.\n- **Zdrowie systemu na żywo** + dziennik audytu — początek observability (uzupełnić Sentry, Z-090).\n\n## Głos Zespołu A — Strażnicy\n\n**Anna (security):** „Panel admina to **najwyższy poziom uprawnień** — każda akcja admina musi być w\n`AuditLog` (jest dla RBAC/config; potwierdzić pokrycie). I **zasada najmniejszego przywileju**: czy\nwszystko musi wymagać pełnego `module.admin`, czy część można rozdzielić (np. moderacja vs RBAC)?”\n\n**Piotr (SRE):** „`/admin/health` to dobry start, ale przy skali potrzebujemy **alertów** (nie tylko\npodglądu na żądanie) — spiąć z observability (Z-090/Z-096).”\n\n## Głos Zespołu B — Pionierzy\n\n**Wojtek (PO):** „Panel jest mocny — rozwińmy go o **wgląd biznesowy**: metryki MAU/konwersja/koszt AI\n(Z-510/Z-135) w jednym miejscu. Admin powinien widzieć »jak idzie biznes«, nie tylko »czy DB żyje«.”\n\n**Kamil (DevOps):** „**Feature flags z panelu** (włączanie funkcji/branż per user/zespół) — to przyspiesza\neksperymenty i etapowe wdrożenia (spójne z presetami nakładek, Z-491).”\n\n## Punkty sporne\n\n- **Granularność uprawnień admina.** **Konsensus:** rozważyć pod-uprawnienia (moderacja, finanse,\n  RBAC) zamiast jednego `module.admin` — pod rosnący zespół (obsada cyklu życia, Rozdz. 4).\n\n## Głos użytkowników\n\n— (panel wewnętrzny; „użytkownikiem” jest właściciel/zespół operacyjny.)\n\n## Konsensus i zalecenia\n\n- **Z-460** *(P1 · S)* — **Potwierdzić pełne pokrycie `AuditLog`** dla akcji admina (nie tylko RBAC/config).\n- **Z-461** *(P1 · M)* — **Panel metryk biznesowych** (MAU, konwersja, koszt AI — Z-510/Z-135) obok zdrowia DB.\n- **Z-462** *(P2 · M)* — **Pod-uprawnienia admina** (moderacja/finanse/RBAC) — najmniejszy przywilej pod zespół.\n- **Z-463** *(P2 · M)* — **Feature flags z panelu** (per user/zespół) — etapowe wdrożenia i branże (Z-491).\n- **Z-464** *(P1 · S)* — **Alerty z `/admin/health`** (spiąć z Sentry/observability, Z-090).\n\n## Dobre vs złe praktyki\n\n**Dobre:** pełny panel (RBAC/audyt/config/LLM/health), szyfrowanie+maskowanie, strażnik samo-wykluczenia,\naudyt zmian.\n**Złe / do poprawy:** jeden poziom `module.admin` (brak granularności); health bez alertów; brak metryk\nbiznesowych w panelu.\n",
+    "words": 406,
+    "updatedAt": "2026-06-15T19:25:38.940Z"
   },
   {
     "slug": "42-model-biznesowy",
@@ -682,4 +682,4 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
   }
 ]
 
-export const AUDYT_GENERATED_AT = "2026-06-15T19:21:49.879Z"
+export const AUDYT_GENERATED_AT = "2026-06-15T19:25:47.125Z"
