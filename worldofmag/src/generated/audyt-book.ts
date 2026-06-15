@@ -642,10 +642,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Dodatek A — Zalecenia i plany wdrożenia",
     "title": "Plany: monetyzacja i billing",
     "summary": "Plany wdrożenia warstwy płatności, reklam i planów premium.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Dodatek A.10 — Plany wdrożenia: monetyzacja i billing\n\nPlany realizujące zalecenia z Rozdz. 42 i 44.\n\n---\n\n## Plan Z-471 (P1) — Warstwa `Plan`/`Subscription` + bramkowanie funkcji\n\n**Cel:** zamienić „Pro” techniczne w plan handlowy, na bazie istniejącego RBAC.\n**Kroki:**\n1. Modele: `Plan { key, name, limits(JSON) }`, `Subscription { ownerId|ownerTeamId, planKey, status,\n   currentPeriodEnd }` (+ migracja). Domyślnie plan `free`.\n2. Helper `hasFeature(session, feature)` / `withinLimit(...)` (rozszerzenie `permissions.ts`/ownership) —\n   bramkuje funkcje premium/B2B i limity (AI: plan Z-130).\n3. UI „Twój plan” w `/settings`; oznaczenia funkcji premium.\n**Pliki:** `prisma/schema.prisma` + migracja, `src/lib/permissions.ts`/nowy `src/lib/plans.ts`, akcje,\nUI ustawień.\n**Kryteria:** funkcje premium/limity respektują plan; darmowy ma egzekwowane limity.\n**Zależność:** linia free/premium (Z-470 — decyzja właściciela).\n\n---\n\n## Plan Z-473 (P1·L) — Bramka płatności + faktury/VAT\n\n**Cel:** pobierać opłaty zgodnie z prawem.\n**Kroki:** integracja bramki (Stripe/Przelewy24 — **decyzja właściciela**); webhooki statusów →\n`Subscription`; faktury/VAT (lub przez dostawcę); spięcie z Portfelem (przychody); obsługa zwrotów/anulacji.\nReżim PCI po stronie bramki (nie przechowujemy kart).\n**Kryteria:** opłacenie planu aktywuje go; faktura wystawiana; webhooki spójne ze stanem.\n**Uwaga:** wybór bramki + dane firmy = **decyzja właściciela**; oznaczyć zależność.\n\n---\n\n## Plan Z-472 / Z-511 (P0/P1) — Budżet AI per plan\n\nPatrz **plan Z-130 (A.7)**: limity tokenów zależne od `Plan` — to jednocześnie oś monetyzacji i warunek\nrentowności (darmowy = dzienny budżet + tańszy model).\n\n---\n\n## Plan Z-510 (P0) — Pomiar jednostkowej ekonomiki\n\n**Cel:** nie skalować w ciemno.\n**Kroki:** zbierać metryki: koszt AI/infra per MAU, ARPU, konwersja free→premium/B2B, churn, CAC, LTV;\npanel (admin) + eksport do arkusza (model Z-514). Część danych z monitoringu kosztów (Z-135).\n**Kryteria:** widać unit economics i trend; decyzje marketingowe oparte na CAC<LTV (Z-512).\n\n---\n\n## Pozostałe (skrót)\n\n- **Z-474 (P2)** — reklamy kontekstowe (opcja „wyłącz”), tylko lifestyle, nigdy zdrowie/finanse; po\n  freemium/B2B.\n- **Z-476 (P1)** — model marketplace (prowizja/abonament wykonawcy) — osobny od planów osobistych.\n- **Z-512/Z-513/Z-515 (P1)** — reguła CAC<LTV, priorytet B2B nad reklamami, etapowanie budżetu 10 tys. zł.\n\n**Kolejność:** Z-510 → Z-471 → Z-472 → Z-473 → Z-476 → reszta.\n**Twarda zależność:** RODO/płatności (A.3) przed jakąkolwiek opłatą.\n",
+    "words": 332,
+    "updatedAt": "2026-06-15T14:51:16.625Z"
   },
   {
     "slug": "57-plany-podaplikacje-branzowe",
@@ -653,10 +653,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Dodatek A — Zalecenia i plany wdrożenia",
     "title": "Plany: podaplikacje branżowe",
     "summary": "Plany wdrożenia pierwszych verticali (Hodowca, Gastronomia…).",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Dodatek A.11 — Plany wdrożenia: podaplikacje branżowe\n\nPlany realizujące zalecenia z Rozdz. 43.\n\n---\n\n## Plan Z-490 (P1·L) — V1 Hodowca (pierwsza branża, z modułu Pets)\n\n**Cel:** dowód modelu „expand” — płatna głębia branżowa na bazie istniejącego modułu.\n**Kroki:**\n1. Wykorzystać istniejące `Pet.presetKey`/`featureFlags` + breeding/genetykę; włączyć preset\n   `breeder` rozszerzający funkcje: rodowody (drzewo), zarządzanie lęgami (`PetClutch`), sprzedaż\n   (`PetSale`), certyfikaty, **koszty/ROI hodowli** (spięcie z Portfelem przez auto-wydatki).\n2. Bramkować funkcje zaawansowane planem (A.10).\n3. Onboarding branżowy (Z-494) — konfiguracja pod gatunek/typ hodowli.\n**Pliki:** `src/actions/petBreeding.ts`, `src/components/pets/*`, presety `src/lib/pets/*`, plan.\n**Kryteria:** hodowca prowadzi rodowody/lęgi/sprzedaż/koszty w jednym; funkcje pro za planem.\n**Uwaga:** zakres = duży; realizować etapami (rodowody → lęgi → sprzedaż → koszty).\n\n---\n\n## Plan Z-492 (P1) — Komercjalizacja istniejących trybów Pro (Warsztat, Magazyn)\n\n**Cel:** najszybsi pierwsi płacący — moduły już mają tryb Pro.\n**Kroki:** domknąć funkcje premium Warsztat Pro (przeglądy, projekty) i Magazyn Pro (dokumenty, FEFO,\nanalityka); bramkować planem (A.10); pakiet „Pro” w cenniku.\n**Kryteria:** tryb Pro dostępny w planie płatnym; wartość uzasadnia cenę.\n\n---\n\n## Plan Z-491 (P2·L) — „Silnik nakładek” (po drugiej branży)\n\n**Cel:** kolejne branże = konfiguracja, nie nowy kod.\n**Kroki:** **po** Hodowcy wyabstrahować wzorzec: preset = (moduły + pola + słowniki + AI-prompty +\nszablony + bramkowanie). Uogólnić mechanizm presetów Pets na dowolny moduł.\n**Kryteria:** nowa branża definiowana deklaratywnie; brak duplikacji kodu per branża.\n**Ryzyka:** przedwczesna abstrakcja — robić dopiero, gdy widać, co się powtarza.\n\n---\n\n## Pozostałe\n\n- **Z-493 (P2·L)** — V2 Gastronomia (food cost, kalkulacja menu, alergeny, zamówienia) — z Kitchen.\n- **Z-494 (P2)** — onboarding branżowy z AI („powiedz, czym się zajmujesz” → konfiguracja nakładki).\n- **Z-495 (P2·L)** — V3 Flota B2B (wiele pojazdów, kierowcy, ORS, przeglądy regulacyjne).\n\n**Kolejność:** Z-492 (szybkie) ‖ Z-490 (flagowa branża) → Z-491 (silnik) → Z-493/Z-495.\n**Zasada:** jedna branża na raz do dojrzałości i pierwszych płacących.\n",
+    "words": 296,
+    "updatedAt": "2026-06-15T14:51:38.145Z"
   },
   {
     "slug": "58-plany-wspoldzielenie-rodziny",
@@ -664,10 +664,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Dodatek A — Zalecenia i plany wdrożenia",
     "title": "Plany: współdzielenie i rodziny",
     "summary": "Plany wdrożenia organizacji rodzin/grup i ról w grupach.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Dodatek A.12 — Plany wdrożenia: współdzielenie i rodziny\n\nPlany realizujące zalecenia z Rozdz. 15.\n\n---\n\n## Plan Z-190 (P0) — Audyt izolacji tenantów\n\n**Cel:** żadne zapytanie nie przecieka danych między userami/zespołami.\n**Kroki:**\n1. Przejść akcje odczytu/listowania; potwierdzić filtr `OR(ownerId, ownerTeamId ∈ teamIds)` z\n   `getUserTeamIds`.\n2. Uzupełnić braki; spójne z audytem autoryzacji (Z-052).\n3. Testy izolacji (plan Z-172) jako dowód.\n**Kryteria:** brak zapytań bez filtra własności; testy cross-tenant zielone.\n**Priorytet:** P0 — warunek skali i zaufania (rodzina/firma).\n\n---\n\n## Plan Z-192 (P1) — Preset „Gospodarstwo domowe” (rodzina)\n\n**Cel:** killer feature wzrostu — wspólny dom w jednym miejscu.\n**Kroki:**\n1. `Team.kind = \"household\"` (+ migracja); domyślne współdzielenia przy tworzeniu: lista zakupów,\n   kalendarz, zadania, budżet domowy.\n2. Role rodzic/dziecko (uprawnienia w grupie) — minimalnie na start.\n3. UI „Załóż rodzinę” + zaproszenia (reużyć `invitations`); onboarding (Z-195).\n**Pliki:** `prisma` (+migracja), `src/actions/teams.ts`, UI ustawień/rodziny.\n**Kryteria:** rodzic zakłada „rodzinę”, zaprasza, współdzieli zakupy/kalendarz/zadania/budżet.\n**Zależność:** domknięta team-awareness modułów (Z-191).\n\n---\n\n## Plan Z-191 (P1) — Domknąć team-awareness\n\n**Cel:** spójność współdzielenia między modułami.\n**Kroki:** przegląd modułów pod kątem `ownerTeamId`; dodać tam, gdzie brak a powinno być; jawnie\noznaczyć moduły celowo user-only. Indeksy zespołowe (Z-197).\n**Kryteria:** moduły istotne dla rodziny/zespołu są team-aware lub jawnie oznaczone jako user-only.\n\n---\n\n## Plan Z-193 (P1) — Ujednolicić język i wejście do współdzielenia\n\n**Cel:** koniec zamętu trzech mechanizmów (zespół / sharing per-encja / członkostwo projektu).\n**Kroki:** jeden komponent „Udostępnij” (kto, jaka rola); spójne nazewnictwo (rodzina/zespół/\nudostępnianie) w UI; pod spodem istniejące mechanizmy.\n**Kryteria:** użytkownik udostępnia z jednego miejsca; spójny język.\n\n---\n\n## Pozostałe (skrót)\n\n- **Z-194 (P1)** — granularne role w grupie (uprawnienia per moduł) pod B2B.\n- **Z-195 (P1)** — onboarding zespołu/rodziny (zaproszenie → role → pierwsze współdzielenia).\n- **Z-196 (P2)** — wspólny budżet domowy jako pierwszoklasowy widok Portfela.\n- **Z-197 (P1)** — indeksy/limity zapytań zespołowych (spójne z Z-031).\n- **Z-198 (P2·L)** — ochrona małoletnich (role dziecka, zgoda rodzica) — z prawnikiem.\n\n**Kolejność:** Z-190 → Z-191 → Z-192 → Z-193 → Z-195 → reszta.\n",
+    "words": 322,
+    "updatedAt": "2026-06-15T14:52:01.513Z"
   },
   {
     "slug": "59-prompt-claude",
@@ -682,4 +682,4 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
   }
 ]
 
-export const AUDYT_GENERATED_AT = "2026-06-15T14:50:46.854Z"
+export const AUDYT_GENERATED_AT = "2026-06-15T14:52:32.967Z"
