@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
-import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes, Palette } from "lucide-react"
+import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes, Palette, ClipboardList } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { FeedbackTriggerButton } from "@/components/admin/FeedbackTriggerButton"
@@ -256,6 +256,11 @@ export default async function AdminPage() {
             <Link href="/admin/docs" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <FileText size={15} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Dokumentacja projektu (CLAUDE.md, doświadczenia.md)</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
+            <Link href="/admin/audyt" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <ClipboardList size={15} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Analiza / Audyt stanu projektu + wskazania</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/admin/categories" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
