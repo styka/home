@@ -290,10 +290,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Flota (Vehicles)",
     "summary": "Pojazdy, paliwo, serwis, załączniki, TCO.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 24 — Flota (Vehicles)\n\n## Kontekst / stan z kodu\n\n- **Rdzeń:** `src/actions/flota.ts`; modele `Vehicle`, `FuelLog`, `ServiceRecord`, `VehicleProfile`\n  (profil ORS do trasowania), **`VehicleAttachment`** (faktury, OC, dowód).\n- **Funkcje:** rejestr pojazdów, logi paliwa (spalanie), serwis, załączniki; auto-wydatki paliwa/serwisu\n  księgowane w Portfelu (`sourceModule/sourceId`).\n\n## Mocne strony\n\n- **Spięcie z Portfelem** (paliwo/serwis → wydatki) i z Truckiem (`VehicleProfile`).\n- Załączniki dokumentów (OC/dowód) — praktyczne „wszystko o aucie w jednym”.\n\n## Głos Zespołu A — Strażnicy\n\n**Grzegorz (delivery):** „Brakuje **TCO** (F1) — całkowity koszt posiadania (paliwo+serwis+\nubezpieczenia+amortyzacja). Silnik auto-wydatków już księguje koszty; TCO to agregacja + widok. To\ndomknięcie wartości, nie nowy moduł.”\n\n**Anna (security):** „Załączniki = dowód/OC = dane wrażliwe (numery, PESEL na dokumentach). Autoryzacja\ndostępu (Z-052) i ewentualne maskowanie.”\n\n## Głos Zespołu B — Pionierzy\n\n**Wojtek (PO):** „**Przypomnienia o przeglądzie/OC** (F2) — silnik powiadomień jest, brakuje podpięcia.\nTo realna wartość (kara za brak OC!) i zalążek **Floty B2B** (Rozdz. 43, V3): wiele pojazdów, kierowcy,\nprzeglądy regulacyjne.”\n\n## Punkty sporne\n\n- **B2B teraz vs później.** **Konsensus:** najpierw domknąć osobistą Flotę (TCO + przypomnienia), B2B\n  (V3) jako późniejsza branża łącząca z Truckiem.\n\n## Głos użytkowników\n\n**Krzysztof (52):** „Przypomnienie o przeglądzie i OC + koszt utrzymania auta — to bym chciał.”\n\n## Konsensus i zalecenia\n\n- **Z-290** *(P1 · S)* — **Przypomnienia przegląd/OC/serwis** (F2): podpiąć terminy do powiadomień (Rozdz. 34).\n- **Z-291** *(P1 · M)* — **TCO pojazdu** (F1): agregacja paliwo+serwis+ubezpieczenia + widok; spięcie z budżetem.\n- **Z-292** *(P2 · S)* — **Autoryzacja/maskowanie wrażliwych załączników** (OC/dowód) — spójne z Z-052.\n- **Z-293** *(P2 · L)* — **Flota B2B** (V3): wiele pojazdów, kierowcy, przeglądy regulacyjne (z Truckiem).\n\n## Dobre vs złe praktyki\n\n**Dobre:** spięcie z Portfelem i Truckiem, załączniki dokumentów.\n**Złe / do poprawy:** brak TCO i przypomnień terminów (gotowe klocki, niewykorzystane).\n",
+    "words": 288,
+    "updatedAt": "2026-06-15T19:18:18.676Z"
   },
   {
     "slug": "25-portfel",
@@ -301,10 +301,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Portfel (Finanse)",
     "summary": "Budżety, cele, raporty, wielowalutowość, auto-wydatki.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 25 — Portfel (Finanse)\n\n## Kontekst / stan z kodu\n\nJeden z najbardziej rozbudowanych modułów.\n\n- **Rdzeń:** `src/actions/portfel.ts`, `portfelBudgets.ts`, `portfelReports.ts`, `portfelCurrency.ts`,\n  `portfelAuto.ts`; modele `WalletElement`, `WalletEntry` (z `sourceModule/sourceId`), `Budget`,\n  `FinanceGoal`, `FinanceSettings`, `ExchangeRate`.\n- **Funkcje:** budżety + cele oszczędnościowe, **raporty miesięczne**, **wielowalutowość** (kursy, NBP\n  `refreshRatesFromNBP`), **auto-wydatki** księgowane z innych modułów (`src/lib/portfel/autoExpense.ts`).\n\n## Mocne strony\n\n- **Auto-wydatki** (paliwo, serwis, zakupy → wpis) — automatyzacja, której nie ma w prostych aplikacjach.\n- **Wielowalutowość + raporty + cele** — poziom dedykowanej aplikacji finansowej.\n- Idempotencja auto-wydatków po `sourceModule/sourceId` — czysty wzorzec.\n\n## Głos Zespołu A — Strażnicy\n\n**Anna (security):** „Dane finansowe = wrażliwe. **Zero reklam** w tym module (Z-474), eksport/usunięcie\n(RODO), autoryzacja (Z-052). I uwaga: `currency.ts/toBase` value-importuje prisma → problem aliasu w\ntestach (Z-171).”\n\n**Marek (DBA):** „`refreshRatesFromNBP` zależy od sieci — na produkcji OK, w sandboxie degraduje. Trzeba\npilnować `missingRates` i nie blokować UI brakiem kursu.”\n\n## Głos Zespołu B — Pionierzy\n\n**Wojtek (PO):** „Dwie rzeczy: **import CSV z banku** (Z-153 — widzę wydatki bez ręcznego wpisywania) i\n**wspólny budżet domowy** (Z-196) dla rodziny. To spina Portfel z personą rodzinną i podnosi retencję.”\n\n**Hubert (AI/ML):** „AI: »na co najwięcej wydaję«, »czy zmieszczę się w budżecie«, kategoryzacja\ntransakcji z importu. Tania wartość doradcza.”\n\n## Punkty sporne\n\n- **Open banking vs CSV.** **Konsensus:** **CSV teraz** (offline, Z-153), API banków (drogie/regulowane)\n  dopiero przy realnym popycie.\n\n## Głos użytkowników\n\n**Agnieszka (38):** „Wspólny budżet domowy + import z banku = mam finanse rodziny ogarnięte.”\n**Tadeusz (60):** „Dla firmy chcę raporty i eksport — i pewność, że dane są bezpieczne.”\n\n## Konsensus i zalecenia\n\n- **Z-300** *(P1 · M)* — **Import CSV z banku** (Z-153): parser + mapowanie kolumn → `WalletEntry`,\n  idempotencja.\n- **Z-301** *(P1 · S)* — **Zero reklam + RODO + autoryzacja** w module finansowym (Z-474/Z-050/Z-052).\n- **Z-302** *(P2 · M)* — **Wspólny budżet domowy** (Z-196) — pierwszoklasowy widok dla rodziny.\n- **Z-303** *(P1 · S)* — **Naprawić alias w testach `currency.ts`** (Z-171) + testy `toBase`/kursów.\n- **Z-304** *(P2 · M)* — **AI-doradca wydatków** (analiza, kategoryzacja importu) — opcjonalnie.\n\n## Dobre vs złe praktyki\n\n**Dobre:** auto-wydatki (idempotentne), wielowalutowość, raporty, cele.\n**Złe / do poprawy:** brak importu z banku; problem aliasu w testach; brak wspólnego budżetu rodzinnego.\n",
+    "words": 359,
+    "updatedAt": "2026-06-15T19:18:42.244Z"
   },
   {
     "slug": "26-jezyki",
@@ -312,10 +312,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Języki (Languages)",
     "summary": "SRS SuperMemo-2, TTS, tryb pisania, serie nauki.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 26 — Języki (Languages)\n\n## Kontekst / stan z kodu\n\n- **Rdzeń:** `src/actions/languageDecks.ts`; modele `LanguageDeck`, `Vocabulary`.\n- **Algorytm:** **SRS SuperMemo-2** (`src/lib/srs.ts`, testowany) — fiszki z interwałami powtórek.\n- **Funkcje:** TTS/wymowa (`src/lib/tts.ts`, Web Speech), tryb pisania, serie nauki; powtórki wpięte w\n  kalendarz (`Vocabulary.dueAt`).\n\n## Mocne strony\n\n- **SuperMemo-2 + TTS + tryb pisania** — kompletny, samowystarczalny moduł nauki (poziom Anki).\n- **Logika SRS pokryta testami** — solidna podstawa.\n- Integracja z kalendarzem (powtórki jako wydarzenia).\n\n## Głos Zespołu A — Strażnicy\n\n**Ewa (QA):** „SRS jest testowany — dobrze. Warto dodać przypadki brzegowe (reset serii, długie przerwy)\ni **przypomnienia o powtórkach** (L5) — silnik jest, brakuje podpięcia.”\n\n## Głos Zespołu B — Pionierzy\n\n**Hubert (AI/ML):** „To **żyła złota dla AI**: generowanie fiszek z tekstu/obrazu (mamy `extract`),\nprzykładowe zdania, korekta wymowy, »rozmowa« z AI w obcym języku. Tania głębia — i naturalna oś premium\n(więcej generacji = plan płatny).”\n\n**Nina (growth):** „Nauka języków ma **ogromny rynek i społeczności** — to potencjalny samodzielny\nkanał akwizycji (treści SEO »fiszki do…«).”\n\n## Punkty sporne\n\n- **Konkurencja z Duolingo/Anki.** **Konsensus:** nie konkurować frontalnie — **przewaga = część\n  ekosystemu »wszystko w jednym« + AI-generowanie**; nie budować osobnej gry.\n\n## Głos użytkowników\n\n**Zofia (16):** „Generowanie fiszek z AI i rozmowa po angielsku — to bym używała codziennie.”\n\n## Konsensus i zalecenia\n\n- **Z-310** *(P1 · S)* — **Przypomnienia o powtórkach SRS** (L5): podpiąć `Vocabulary.dueAt` do\n  powiadomień (Rozdz. 34).\n- **Z-311** *(P2 · M)* — **AI: generowanie fiszek + przykłady + »rozmowa«** — głębia i oś premium (limit AI).\n- **Z-312** *(P1 · S)* — **Testy brzegowe SRS** (reset serii, długie przerwy).\n- **Z-313** *(P2 · M)* — **Treści SEO »fiszki do…«** jako kanał akwizycji (pętla treści, Z-531).\n\n## Dobre vs złe praktyki\n\n**Dobre:** SuperMemo-2 testowany, TTS, tryb pisania, integracja z kalendarzem.\n**Złe / do poprawy:** brak przypomnień o powtórkach; niewykorzystany potencjał AI-generowania i SEO.\n",
+    "words": 307,
+    "updatedAt": "2026-06-15T19:19:02.360Z"
   },
   {
     "slug": "27-wiadomosci",
@@ -323,10 +323,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Wiadomości (News)",
     "summary": "RSS+LLM, baza wiedzy wersjonowana, web-search, hot topics.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 27 — Wiadomości (News + baza wiedzy)\n\n## Kontekst / stan z kodu\n\n- **Rdzeń:** `src/actions/news.ts` (854 linie); modele `NewsSource`, `NewsTopic`, `NewsKnowledge`\n  (wersjonowana baza wiedzy `@@unique[topicId, sourceId, version]`), `NewsItem` (dedup po URL), `NewsPref`.\n- **Funkcje:** RSS + **filtrowanie LLM** (semantyczne tematy), per-temat/per-źródło **wersjonowana baza\n  wiedzy**, web-search baseline (`src/lib/news/webSearch.ts`, Brave→DDG), hot topics, świeżość 24 h.\n\n## Mocne strony\n\n- **Wersjonowana baza wiedzy** — nie tylko czytnik RSS, ale narastający, wersjonowany zasób.\n- **Filtrowanie LLM + web-search** z fallbackiem (Brave→DDG) i graceful degradation.\n\n## Głos Zespołu A — Strażnicy\n\n**dr Natalia (AI/ML):** „To moduł **sieciowo- i tokenowo-ciężki**: RSS, web-search, filtrowanie LLM.\nKoszt rośnie z liczbą tematów/userów. Bez **cache** (Z-132) i limitów to droga pozycja w rachunku AI.\nPlus zależność od sieci (Brave/DDG) — pilnować degradacji.”\n\n**Anna (security):** „Treści zewnętrzne (RSS/web) renderowane userowi — przez bezpieczny renderer (OK),\nale pilnować linków/obrazów z niezaufanych źródeł.”\n\n## Głos Zespołu B — Pionierzy\n\n**Wojtek (PO):** „**Baza wiedzy to paliwo SEO** (Z-531): wersjonowane, narastające treści per temat to\ngotowy content marketing. Plus AI: »streść mi dzień«, »co nowego w temacie X« — briefing tematyczny.”\n\n## Punkty sporne\n\n- **Ile automatycznego pobierania.** **Konsensus:** ograniczać częstotliwość/liczbę tematów dla\n  darmowych (koszt), więcej w premium; cache agresywnie.\n\n## Głos użytkowników\n\n**Marek (29):** „Briefing tematyczny »co nowego w AI« codziennie rano — tak.”\n\n## Konsensus i zalecenia\n\n- **Z-320** *(P1 · M)* — **Cache + limity pobierania/LLM** dla tematów (Z-132/Z-130) — kontrola kosztu sieci/tokenów.\n- **Z-321** *(P1 · S)* — **Twarda degradacja przy braku sieci** (Brave/DDG/RSS) — czytelny stan, nie błąd.\n- **Z-322** *(P2 · M)* — **Baza wiedzy → treści SEO** (Z-531) — wykorzystać narastający content do akwizycji.\n- **Z-323** *(P2 · S)* — **Briefing tematyczny AI** („co nowego w temacie X”).\n\n## Dobre vs złe praktyki\n\n**Dobre:** wersjonowana baza wiedzy, filtrowanie LLM, web-search z fallbackiem.\n**Złe / do poprawy:** wysoki koszt sieci/tokenów bez agresywnego cache i limitów; niewykorzystany content do SEO.\n",
+    "words": 313,
+    "updatedAt": "2026-06-15T19:19:27.564Z"
   },
   {
     "slug": "28-pogoda",
@@ -334,10 +334,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Pogoda (Weather)",
     "summary": "Open-Meteo, porady LLM, watchery.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 28 — Pogoda (Weather)\n\n## Kontekst / stan z kodu\n\n- **Rdzeń:** `src/actions/weather.ts`; modele `WeatherLocation`, `WeatherWatcher`.\n- **Źródło:** `src/lib/weather/openMeteo.ts` (Open-Meteo, **bez klucza, darmowe**).\n- **Funkcje:** prognoza, **porady „co robić” od LLM**, watchery (presety + własne progi alarmowe).\n\n## Mocne strony\n\n- **Tanie i niezależne** (Open-Meteo bez klucza) — niski koszt utrzymania.\n- **Porady LLM + watchery** — wartość ponad surową prognozą.\n\n## Głos Zespołu A — Strażnicy\n\n**Piotr (SRE):** „Zależność od jednego dostawcy (Open-Meteo) — mieć fallback/cache, by awaria nie psuła\nmodułu. Porady LLM — cache’ować per lokalizacja/dzień (ten sam dzień = ta sama porada, zero powtórnych tokenów).”\n\n## Głos Zespołu B — Pionierzy\n\n**Hubert (AI/ML):** „Pogoda to **świetny kontekst dla całego systemu**: »zaplanuj tydzień pod pogodę«\n(spięcie z zadaniami/kalendarzem), »czy podlać ogród« (przyszłe rolnictwo, V5), »zabierz parasol«.\nNiech pogoda zasila inne moduły, nie żyje osobno.”\n\n**Ola (UX):** „Widżet pogody na pulpicie z poradą jednolinijkową — miły, lekki akcent.”\n\n## Punkty sporne\n\n- **Samodzielny moduł vs warstwa kontekstu.** **Konsensus:** zostaje modułem, ale **udostępnić pogodę\n  jako kontekst** dla zadań/kalendarza/rolnictwa.\n\n## Głos użytkowników\n\n**Krzysztof (52):** „Alarm o mrozie/burzy przed pracą w terenie — przydatne.”\n\n## Konsensus i zalecenia\n\n- **Z-330** *(P2 · S)* — **Cache porad LLM per lokalizacja/dzień** — zero powtórnych tokenów.\n- **Z-331** *(P2 · S)* — **Fallback/cache źródła pogody** — odporność na awarię dostawcy.\n- **Z-332** *(P2 · M)* — **Pogoda jako kontekst** dla zadań/kalendarza (i przyszłego rolnictwa V5).\n- **Z-333** *(P2 · S)* — **Web-push dla watcherów** (alarmy pogodowe) — spójne z Rozdz. 34.\n\n## Dobre vs złe praktyki\n\n**Dobre:** tanie, niezależne źródło; porady LLM; watchery.\n**Złe / do poprawy:** brak cache porad (powtarzalny koszt LLM); pogoda żyje osobno zamiast zasilać moduły.\n",
+    "words": 276,
+    "updatedAt": "2026-06-15T19:19:46.628Z"
   },
   {
     "slug": "29-magazynowanie",
@@ -345,10 +345,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Magazynowanie (Storage)",
     "summary": "Tryby Dom/Pro, skan, dokumenty, FEFO, analityka.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 29 — Magazynowanie (Storage)\n\n## Kontekst / stan z kodu\n\n- **Rdzeń:** `src/actions/storage.ts` (1011 linii); modele `StorageItem`, `StorageMovement`,\n  `StorageSettings`, `StorageSupplier`, `StorageBatch`, `StorageDocument(+Line)`, `StoragePurchaseOrder(+Line)`.\n- **Dwa tryby (per-user `StorageSettings`):**\n  - **Dom:** „gdzie to jest?” (AI-search), etykiety QR (druk+skan), gwarancje/ważność, wartość+zdjęcia.\n  - **Pro:** skan kodów in/out (`@zxing`), dostawcy, dokumenty PZ/WZ/faktury (OCR), zamówienia (LLM\n    draft), analityka (ABC/dead-stock/trend + AI), partie/loty **FEFO**.\n\n## Mocne strony\n\n- **Dwa tryby (Dom/Pro)** — gotowy wzorzec „darmowe podstawy → płatna głębia B2B” (Rozdz. 42/43).\n- **OCR dokumentów, FEFO, analityka ABC** — funkcje klasy WMS, rzadkie poza drogim oprogramowaniem.\n\n## Głos Zespołu A — Strażnicy\n\n**dr Natalia (AI/ML):** „Pro to **ciężkie AI** (OCR dokumentów, draft zamówień, analityka) — kolejka\n(Z-074) i limity obowiązkowe. To też **najlepszy kandydat na płatny moduł** (wartość B2B uzasadnia cenę).”\n\n**Marek (DBA):** „Skala: ruch magazynowy (`StorageMovement`) rośnie szybko — indeksy i paginacja (Z-030/\nZ-070) tu krytyczne; analityka nie może skanować całości.”\n\n## Głos Zespołu B — Pionierzy\n\n**Tadeusz (użytkownik, 60):** „To realne narzędzie dla małej firmy. Dokumenty PZ/WZ, dostawcy, FEFO —\nza to bym zapłacił. **Skomercjalizujcie tryb Pro** (Z-492).”\n\n**Wojtek (PO):** „Magazyn Pro + Warsztat Pro to **najszybsza droga do pierwszych płacących** — funkcje\njuż są, brakuje bramki planu i pakietu.”\n\n## Punkty sporne\n\n- **Pro jako paywall.** Dziś „Pro” to tryb techniczny. **Konsensus:** zachować darmowe podstawy (Dom),\n  bramkować planem funkcje Pro (dokumenty/analityka/zamówienia) — Z-471.\n\n## Głos użytkowników\n\n**Tadeusz (60):** „Dokumenty i FEFO taniej niż dedykowany WMS — biorę.”\n\n## Konsensus i zalecenia\n\n- **Z-340** *(P1 · S)* — **Ciężkie AI Pro (OCR/zamówienia/analityka) do kolejki + limity per plan** (Z-074/Z-130).\n- **Z-341** *(P0 · S)* — **Indeksy + paginacja ruchu/pozycji** (Z-030/Z-070) — analityka i listy przy skali.\n- **Z-342** *(P1 · M)* — **Skomercjalizować tryb Pro** (Z-492): bramka planu (Z-471) + pakiet B2B.\n- **Z-343** *(P2 · M)* — **Magazyn Pro jako baza branż** (handel/produkcja) — kolejne nakładki.\n\n## Dobre vs złe praktyki\n\n**Dobre:** dwa tryby (gotowy model free/B2B), OCR/FEFO/analityka, skan kodów.\n**Złe / do poprawy:** ciężkie AI bez kolejki/limitów; ryzyko skali w analityce/ruchu; Pro niezmonetyzowane.\n",
+    "words": 333,
+    "updatedAt": "2026-06-15T19:20:13.112Z"
   },
   {
     "slug": "30-warsztaty",
@@ -356,10 +356,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Warsztaty (Workshops)",
     "summary": "Tryby Dom/Pro, sprzęt, katalog sugestii, projekty.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 30 — Warsztaty (Workshops)\n\n## Kontekst / stan z kodu\n\n- **Rdzeń:** `src/actions/warsztat.ts`; modele `WarsztatSettings`, `Workshop`, `WorkshopItem`,\n  `WorkshopProject`; statyczny katalog sugestii `src/lib/warsztat/catalog.ts` (profile basic/recommended/\n  advanced).\n- **Dwa tryby (per-user):**\n  - **Dom:** rejestr sprzętu (narzędzia/maszyny/materiały/PPE, kondycja, ilość+min-stock, serwis\n    `nextServiceAt`), katalog sugestii „dodaj do wyposażenia”.\n  - **Pro:** własność zespołowa, przypisanie narzędzi (kto ma / stanowisko), agenda serwisu+braków\n    (`/warsztaty/przeglady`), dziennik projektów.\n\n## Mocne strony\n\n- **Dwa tryby (Dom/Pro)** — jak Magazyn, gotowy wzorzec free→B2B.\n- **Katalog sugestii wg profilu** — onboarding „od czego zacząć wyposażenie warsztatu”.\n- Agenda serwisu + braków (Pro) — realna wartość operacyjna.\n\n## Głos Zespołu A — Strażnicy\n\n**Grzegorz (delivery):** „Katalog jest **statyczny** (`catalog.ts`) — OK na start, ale przy wielu typach\nwarsztatów (automotive/stolarka/elektronika…) urośnie. Rozważyć dane/konfigurowalność zamiast kodu.”\n\n## Głos Zespołu B — Pionierzy\n\n**Krzysztof (użytkownik, 52, warsztat):** „Pro z przeglądami narzędzi i magazynem części — to bym kupił.\nDołóżmy **zlecenia/klienci** (kto przyniósł, co naprawić, koszt) — wtedy to pełne narzędzie dla małego\nwarsztatu.”\n\n**Wojtek (PO):** „Warsztat Pro to **szybka komercjalizacja** (Z-492) i pomost do branży motoryzacyjnej\n(spięcie z Flotą).”\n\n## Punkty sporne\n\n- **Zlecenia/klienci: tu vs w Usługach.** **Konsensus:** lekka obsługa zleceń w Warsztacie Pro; pełny\n  marketplace zleceń to moduł Usługi (Rozdz. 31) — nie dublować.\n\n## Głos użytkowników\n\n**Krzysztof (52):** „Przeglądy narzędzi + części + proste zlecenia = narzędzie dla mojej firmy.”\n\n## Konsensus i zalecenia\n\n- **Z-350** *(P1 · M)* — **Skomercjalizować Warsztat Pro** (Z-492): bramka planu + pakiet.\n- **Z-351** *(P2 · M)* — **Lekkie zlecenia/klienci w Pro** (kto/co/koszt) — bez dublowania marketplace.\n- **Z-352** *(P2 · M)* — **Katalog sugestii z danych/konfigurowalny** zamiast statycznego kodu (skala typów).\n- **Z-353** *(P2 · S)* — **Spięcie z Magazynem** (części) i Flotą (motoryzacja) — ekosystem B2B.\n\n## Dobre vs złe praktyki\n\n**Dobre:** dwa tryby, katalog sugestii, agenda serwisu/braków.\n**Złe / do poprawy:** statyczny katalog (skala typów); brak obsługi zleceń/klientów; Pro niezmonetyzowane.\n",
+    "words": 307,
+    "updatedAt": "2026-06-15T19:20:36.704Z"
   },
   {
     "slug": "31-uslugi-marketplace",
@@ -367,10 +367,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Usługi (Marketplace)",
     "summary": "Profile, oferty, zlecenia, czat, wyceny, rezerwacje, płatności, spory.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 31 — Usługi (Marketplace)\n\n> **Największy i najbardziej złożony moduł** (`src/actions/services.ts` — 1409 linii). Realnie osobny\n> produkt w produkcie (model Fixly + Booksy).\n\n## Kontekst / stan z kodu\n\n- **Modele:** `ServiceProvider` (badge `verified`, slug/tagline), `ServiceListing`, `ServiceRequest`\n  (workflow statusów), `ServiceMessage` (czat), `ServiceQuote` (wyceny), `ServiceImage` (portfolio),\n  `ServiceAvailability` (sloty), `ServiceReview`, **`ServicePayment`** (faktury → Portfel),\n  `ServiceFavorite`, `ServicePromoCode`, `ServiceStaff` (firmy wieloosobowe), **`ServiceDispute`**\n  (spory + moderacja `/services/moderation`).\n- **Helpery:** `src/lib/serviceSlots.ts`, `serviceGeo.ts` (haversine, filtr w promieniu).\n\n## Mocne strony\n\n- **Kompletny marketplace** (zlecenia, czat, wyceny, rezerwacje, płatności, oceny, spory, moderacja,\n  firmy wieloosobowe) — ogromna powierzchnia funkcji.\n- **Płatności spięte z Portfelem**, kody rabatowe, weryfikacja wykonawcy.\n\n## Głos Zespołu A — Strażnicy\n\n**Anna (security):** „Marketplace = **najwyższe ryzyko**: płatności, spory, dane obu stron, oszustwa.\n**Testy ścieżki płatności i sporów to P0** (Z-173). Brak podwójnego księgowania, poprawne statusy,\nochrona przed manipulacją wyceną/oceną.”\n\n**Grzegorz (delivery):** „`services.ts` (1409 linii) to **drugi największy plik** w repo — kruchy.\nRozbić wg domen (zlecenia/płatności/czat/spory). I marketplace to **własna gra skali** (dwustronny rynek,\npłynność podaży/popytu) — to nie »jeszcze jeden moduł«.”\n\n**Katarzyna (analityk):** „Marketplace ma **własny model przychodu** (prowizja/abonament wykonawcy,\nZ-476) niezależny od planów osobistych — to potencjalnie najszybszy realny przychód.”\n\n## Głos Zespołu B — Pionierzy\n\n**Wojtek (PO):** „To **gotowy strumień pieniędzy**: prowizja od transakcji. Konkurujemy z Fixly/Booksy\nprzewagą »część większego ekosystemu + tani AI« (AI pisze opis usługi, dobiera termin, odpowiada\nklientom). Dołóżmy **mapę-kafelki** i tryb »dowolny pracownik«.”\n\n## Punkty sporne\n\n- **Marketplace jako rdzeń vs dodatek.** Strażnicy: to osobny produkt, wymaga własnej strategii płynności\n  i moderacji. Pionierzy: ale gotowy do zarobku. **Konsensus:** traktować jako **osobną linię** z własnym\n  modelem (prowizja) i własnym priorytetem testów/bezpieczeństwa.\n\n## Głos użytkowników\n\n**Tadeusz (60):** „Jak wykonawca — chcę kalendarz, płatności i oceny w jednym, tanio.”\n**Marek (29):** „Jako klient — czat, wycena, rezerwacja online. To działa.”\n\n## Konsensus i zalecenia\n\n- **Z-360** *(P0 · M)* — **Testy ścieżki płatności, wycen i sporów** (Z-173) — najwyższy priorytet\n  bezpieczeństwa modułu.\n- **Z-361** *(P1 · M)* — **Rozbić `services.ts`** (1409 linii) wg domen (zlecenia/płatności/czat/spory).\n- **Z-362** *(P1 · M)* — **Model przychodu marketplace** (prowizja/abonament wykonawcy, Z-476) — osobny\n  od planów osobistych; potencjalnie najszybszy przychód.\n- **Z-363** *(P1 · M)* — **AI dla wykonawcy** (opis usługi, dobór terminu, odpowiedzi klientom) — przewaga\n  „tanio dzięki AI”.\n- **Z-364** *(P2 · L)* — **Mapa-kafelki + tryb „dowolny pracownik”** (zaległości z backlogu marketplace).\n- **Z-365** *(P1 · S)* — **Strategia płynności i moderacji** (dwustronny rynek) — plan pozyskania podaży/popytu.\n\n## Dobre vs złe praktyki\n\n**Dobre:** kompletny marketplace (płatności/czat/rezerwacje/spory/moderacja), spięcie z Portfelem.\n**Złe / do poprawy:** plik-gigant `services.ts`; testy płatności/sporów (P0) niezrobione; brak własnego\nmodelu przychodu i strategii płynności.\n",
+    "words": 428,
+    "updatedAt": "2026-06-15T19:21:11.068Z"
   },
   {
     "slug": "32-kontakty-crm",
@@ -378,10 +378,10 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
     "part": "Część III — Audyt modułów",
     "title": "Kontakty / CRM",
     "summary": "Lekki personalny CRM z tagami.",
-    "status": "planned",
-    "markdown": "",
-    "words": 0,
-    "updatedAt": null
+    "status": "done",
+    "markdown": "# Rozdział 32 — Kontakty / CRM\n\n## Kontekst / stan z kodu\n\n- **Rdzeń:** `src/actions/contacts.ts`; model `Contact` (per-user, tagi jako JSON, własność 3-poziomowa).\n- **Zakres:** świadomie **lekki, minimalny** CRM (kontakty z tagami) — `dojrzałość 2` w macierzy (Rozdz. 3).\n\n## Mocne strony\n\n- **Prostota** — nie próbuje być Salesforce; spełnia rolę „książki adresowej z tagami”.\n- Własność 3-poziomowa (gotowość do współdzielenia w zespole/rodzinie).\n\n## Głos Zespołu A — Strażnicy\n\n**Basia (PO):** „Świadomy minimalizm jest OK — **nie rozbudowujmy na siłę**. CRM rozbudowuje się\n*pod konkretną potrzebę* (np. marketplace, branża usługowa), nie »bo wypada«.”\n\n**Anna (security):** „Kontakty = dane osobowe osób trzecich. Eksport/usunięcie (RODO) musi je obejmować;\ntagi jako JSON — pilnować, by nie trzymać tam wrażliwych danych bez podstawy.”\n\n## Głos Zespołu B — Pionierzy\n\n**Wojtek (PO):** „Kontakty to **warstwa spajająca**: klient w Usługach, kupujący w sprzedaży zwierząt,\ndostawca w Magazynie — to wszystko »kontakty«. Połączmy je: jeden kontakt, wiele ról/relacji. Wtedy CRM\nstaje się **kręgosłupem B2B**, a nie wyspą.”\n\n**Hubert (AI/ML):** „AI: »ostatnio rozmawiałeś z X miesiąc temu«, wzbogacanie kontaktu, podsumowanie\nhistorii interakcji (z czatu Usług). Tania wartość relacyjna.”\n\n## Punkty sporne\n\n- **Rozbudowa: teraz vs pod potrzebę.** **Konsensus:** rozbudowywać **pod konkretny przypadek** (najpierw\n  spięcie z Usługami/sprzedażą), nie spekulacyjnie.\n\n## Głos użytkowników\n\n**Tadeusz (60):** „Jako firma chcę widzieć klientów i historię — najlepiej spiętą z usługami.”\n\n## Konsensus i zalecenia\n\n- **Z-370** *(P1 · S)* — **Objąć Kontakty eksportem/usunięciem RODO** (Z-050/Z-051) — dane osób trzecich.\n- **Z-371** *(P2 · M)* — **Spiąć Kontakty z Usługami/sprzedażą** (jeden kontakt, wiele ról) — kręgosłup B2B.\n- **Z-372** *(P2 · M)* — **AI relacyjne** (historia interakcji, przypomnienia kontaktu) — pod potrzebę.\n- **Z-373** *(P2 · S)* — **Współdzielenie kontaktów w zespole/rodzinie** (wykorzystać własność 3-poziomową).\n\n## Dobre vs złe praktyki\n\n**Dobre:** świadomy minimalizm, własność 3-poziomowa.\n**Złe / do poprawy:** wyspowość (niespięty z Usługami/sprzedażą); RODO osób trzecich do potwierdzenia.\n",
+    "words": 305,
+    "updatedAt": "2026-06-15T19:21:38.868Z"
   },
   {
     "slug": "33-kalendarz",
@@ -682,4 +682,4 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
   }
 ]
 
-export const AUDYT_GENERATED_AT = "2026-06-15T19:17:52.270Z"
+export const AUDYT_GENERATED_AT = "2026-06-15T19:21:49.879Z"
