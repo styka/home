@@ -7,11 +7,16 @@
 > zajrzyj do jej planu (Dodatek A.2–A.12) i rozdziału źródłowego, rób dalej tą samą pętlą.
 >
 > **Legenda:** ✅ ZROBIONE · 🟡 W TOKU · ⏸️ ODŁOŻONE (powód) · ⬜ TODO
+>
+> **Polityka weryfikacji partii:** zmiany dotykające `src/app/**` (trasy), komponentów,
+> `next.config`/migracji → pełny `./node_modules/.bin/next build`. Zmiany czysto logiczne
+> (`src/actions/**`, `src/lib/**`, testy) → `tsc --noEmit` (to krok typów z buildu) + `npm run test:unit`.
+> Zawsze: `check:actions` + `check:migrations`. Testy DB‑gated odpalają się z `DATABASE_URL` (lokalnie + CI z Postgresem).
 
 ## Postęp ogólny
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
-| P0 | 22 | 4 | 0 | 0 | 18 |
+| P0 | 22 | 6 | 0 | 0 | 16 |
 | P1 | 129 | 0 | 0 | 0 | 129 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
@@ -26,7 +31,7 @@
 | Z-190 | M | ✅ | 2026-06-16 | `src/actions/tasks.ts` | Spot‑check stron odczytu pieniądze/PII/cross‑user (portfel/health/notes/tasks/usługi): izolacja OK (`ownershipFilter`/`ownedByWhere` na liście, `assert*Access(parentId)` na dzieciach). Dziura Tasks (wspólna z Z‑052) domknięta. |
 | Z-050 | M | ✅ | 2026-06-16 | `src/actions/privacy.ts`, `src/components/settings/PrivacySettings.tsx`, `src/app/settings/page.tsx` | `exportMyData()` zbiera komplet danych usera ze wszystkich modułów (+ kluczowe dzieci), bez danych zespołów i bez tokenów auth; sekcja „Prywatność i dane" w /settings → pobranie JSON. |
 | Z-051 | M | ✅ | 2026-06-16 | `src/lib/privacy/purge.ts`, `src/actions/privacy.ts`, `src/components/settings/PrivacySettings.tsx` | `purgeUserData` (transakcja sterowana realnymi regułami FK: RESTRICT→usuń, SET-NULL→skasuj jawnie po właścicielu, reszta CASCADE) + `deleteMyAccount` (potwierdzenie e-mailem, blokada gdy właściciel zespołu, signOut/JWT). Zweryfikowane lokalnym testem (izolacja zachowana). Decyzja przekazania zespołów = przyszłe P1. |
-| Z-172 | M | ⬜ | | | Testy izolacji BOLA/IDOR |
+| Z-172 | M | ✅ | 2026-06-16 | `src/__tests__/isolation.test.ts`, `src/lib/tasks/access.ts` | Testy BOLA/IDOR: guardy `assertListAccess/ProjectAccess/RecipeAccess/PetAccess`, `assertTaskAccess` (w tym osobiste `projectId=null`) i `ownedByWhere` odrzucają obcego właściciela. DB‑gated (skip bez `DATABASE_URL` → `test:unit` zielony bez bazy; CI z Postgresem je odpala). `mock.module` niedostępne, więc test na poziomie guardów (nie mock auth). |
 | Z-173 | M | ⬜ | | | Testy ścieżki płatności i sporów (Usługi) |
 | Z-053 | S | ⬜ | | | Polityka prywatności + regulamin + zgody + rejestr (mechanika; treść prawna ⏸️) |
 
@@ -38,7 +43,7 @@
 | Z-070 | M | ⬜ | | | Paginacja keyset dla list ładujących całość |
 | Z-111 | S | ⬜ | | | Globalny error.tsx + ErrorBoundary + global-error.tsx |
 | Z-090 | S | ⬜ | | | Sentry + uptime + alert 5xx (SDK gated; DSN/uptime ⏸️) |
-| Z-171 | S | ⬜ | | | Alias @/ w runnerze testów (prereq dla testów) |
+| Z-171 | S | ✅ | 2026-06-16 | `src/__tests__/isolation.test.ts` | Alias `@/` działa w runnerze (tsx ^4.19 czyta tsconfig paths) — zweryfikowane; nowe testy importują przez `@/…`, więc regresja aliasu wywali suite. |
 | Z-170 | S | ⬜ | | | Testy w bramce CI (GitHub Actions) |
 | Z-430 | S | ⬜ | | | E2E smoke w CI (run przeglądarki ⏸️ w sandboxie) |
 
@@ -83,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 — Z-051 ✅ (twarde usunięcie konta RODO art. 17)._
+_Ostatnia aktualizacja: 2026-06-16 — Z-171 + Z-172 ✅ (alias @/ w testach + testy izolacji BOLA/IDOR)._

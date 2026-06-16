@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
 import { userDayBounds } from "@/lib/userTime";
 import { assertProjectAccess } from "@/actions/taskProjects";
+import { assertTaskAccess } from "@/lib/tasks/access";
 import { trackActivity } from "@/actions/activity";
 import { recordTrash } from "@/lib/trash";
 import { computeNextDue } from "@/lib/recurrence";
@@ -106,24 +107,6 @@ export async function getAllUserTasks(): Promise<Task[]> {
   });
 
   return tasks.map(toTask);
-}
-
-/**
- * Z-052/Z-190: dostęp do pojedynczego zadania. Zadania w projekcie chroni dostęp
- * do projektu; zadania bez projektu (osobiste, `projectId=null`) — własność przez
- * twórcę lub przypisanie, spójnie z `getAllUserTasks`. Domyka IDOR na zadaniach
- * `projectId=null`, które wcześniej omijały guard `if (task.projectId)`.
- */
-async function assertTaskAccess(
-  task: { projectId: string | null; createdById: string | null; assigneeId: string | null },
-  userId: string,
-): Promise<void> {
-  if (task.projectId) {
-    await assertProjectAccess(task.projectId, userId);
-    return;
-  }
-  if (task.createdById === userId || task.assigneeId === userId) return;
-  throw new Error("Access denied");
 }
 
 export async function getTask(id: string): Promise<TaskWithRelations | null> {
