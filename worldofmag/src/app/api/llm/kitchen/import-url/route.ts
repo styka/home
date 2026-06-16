@@ -172,6 +172,7 @@ Nazwy składników i kroki po polsku. Jeśli tekst nie wygląda jak przepis, zwr
       { role: "user", content: `URL: ${sourceUrl}\n\nText:\n${text}` },
     ],
     temperature: 0.1,
+    cache: true, // Z-511: import tego samego URL daje ten sam wynik — cache oszczędza powtórny parsing
     maxTokens: 3000,
   });
 

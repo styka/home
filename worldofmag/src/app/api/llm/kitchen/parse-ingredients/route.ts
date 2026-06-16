@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
       { role: "user", content: String(text).slice(0, 4000) },
     ],
     temperature: 0.1,
+    cache: true, // Z-511: parsowanie składników deterministyczne — cache identycznych wejść
     maxTokens: 2048,
   });
 
