@@ -145,7 +145,12 @@ export default async function SettingsPage({
                 }}
               >
                 <div>
-                  <div style={{ color: "var(--text-primary)", fontWeight: 500 }}>{team.name}</div>
+                  <div style={{ color: "var(--text-primary)", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
+                    {team.name}
+                    {team.kind === "household" && (
+                      <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 999, background: "var(--bg-elevated)", color: "var(--accent-green)", border: "1px solid var(--border)" }}>Rodzina</span>
+                    )}
+                  </div>
                   {team.description && (
                     <div style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 2 }}>
                       {team.description}

@@ -308,6 +308,7 @@ model Team {
   name         String
   description  String?
   avatarUrl    String?
+  kind         String   @default("team") // "team" | "household" (Z-192 preset rodziny)
   ownerId      String
   parentTeamId String?
   createdAt    DateTime @default(now())

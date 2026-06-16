@@ -22,17 +22,23 @@ async function requireTeamRole(
 
 // ─── CRUD ──────────────────────────────────────────────────────────────────
 
-export async function createTeam(name: string, description?: string) {
+export async function createTeam(name: string, description?: string, kind: "team" | "household" = "team") {
   const user = await requireAuth()
   const team = await prisma.team.create({
     data: {
       name,
       description,
+      kind: kind === "household" ? "household" : "team",
       ownerId: user.id,
       members: { create: { userId: user.id, role: "OWNER" } },
     },
     include: { members: true },
   })
+  // Z-192: „Gospodarstwo domowe" dostaje od razu wspólną listę zakupów — pierwsze
+  // współdzielenie bez ręcznej konfiguracji (kalendarz/zadania/budżet są już team-aware).
+  if (kind === "household") {
+    await prisma.shoppingList.create({ data: { name: "Zakupy domowe", ownerTeamId: team.id } })
+  }
   revalidatePath("/settings")
   return team
 }

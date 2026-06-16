@@ -11,19 +11,37 @@ export default function NewTeamPage() {
         Ustawienia
       </Link>
       <h1 style={{ color: "var(--text-primary)", fontSize: 20, fontWeight: 600, marginBottom: 24 }}>
-        Nowy team
+        Nowy zespół / rodzina
       </h1>
       <form
         action={async (formData: FormData) => {
           "use server"
           const name = formData.get("name") as string
           const description = formData.get("description") as string
+          const kind = (formData.get("kind") as string) === "household" ? "household" : "team"
           if (!name?.trim()) return
-          const team = await createTeam(name.trim(), description?.trim() || undefined)
+          const team = await createTeam(name.trim(), description?.trim() || undefined, kind)
           redirect(`/settings/team/${team.id}`)
         }}
         style={{ display: "flex", flexDirection: "column", gap: 16 }}
       >
+        <div>
+          <label style={{ color: "var(--text-secondary)", fontSize: 13, display: "block", marginBottom: 6 }}>
+            Rodzaj
+          </label>
+          <select
+            name="kind"
+            defaultValue="team"
+            style={{
+              width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border)",
+              borderRadius: 6, color: "var(--text-primary)", fontSize: 14, padding: "10px 12px",
+              outline: "none", boxSizing: "border-box",
+            }}
+          >
+            <option value="team">Zespół (współpraca)</option>
+            <option value="household">Gospodarstwo domowe (rodzina) — od razu wspólna lista zakupów</option>
+          </select>
+        </div>
         <div>
           <label style={{ color: "var(--text-secondary)", fontSize: 13, display: "block", marginBottom: 6 }}>
             Nazwa *
