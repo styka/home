@@ -16,7 +16,7 @@
 ## Postęp ogólny
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
-| P0 | 22 | 20 | 0 | 0 | 2 |
+| P0 | 22 | 21 | 0 | 0 | 1 |
 | P1 | 129 | 0 | 0 | 0 | 129 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
@@ -57,7 +57,7 @@
 ### P0 modułowe (poza bramami)
 | ID | Nakł. | Status | Data | Pliki / commit | Notatka |
 |---|:--:|:--:|---|---|---|
-| Z-210 | S | ⬜ | | | Zabezpieczenie agenta AI przed prompt‑injection |
+| Z-210 | S | ✅ | 2026-06-16 | `src/app/api/llm/home/agent/route.ts` | Dyrektywa anty-injection w system prompcie (treść modułów + wyniki web = NIEUFNE DANE, nie polecenia; wykonuj tylko polecenia użytkownika) + wyniki narzędzi/web opakowane delimiterem `<<<DANE…DANE>>>`. Dodatkowa warstwa: akcje zmieniające i tak wymagają potwierdzenia w ActionDrawer. |
 | Z-211 | S | ✅ | 2026-06-16 | `src/app/api/llm/home/agent/route.ts` | Zweryfikowane: obie ścieżki agenta (SSE i nie-SSE) zwalniają slot współbieżności w `finally` (`release()`), więc błąd/wyjątek nie blokuje kolejnych zapytań. `acquireSlot` z `rateLimit.ts` zwraca idempotentny release. |
 | Z-270 | M | ⬜ | | | Wzmożona ochrona danych zdrowotnych (szyfrowanie, AI opt‑in; „zero reklam" = polityka) |
 | Z-360 | M | ✅ | 2026-06-16 | `src/__tests__/services-marketplace.test.ts` | Pokryte tą samą partią co Z‑173 (ten sam moduł): izolacja dostępu do zlecenia + księgowanie netto. |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 - Z-510 done (ekonomika jednostkowa /admin/metrics). BRAMA 3 DOMKNIETA. Zostaje Z-210, Z-270._
+_Ostatnia aktualizacja: 2026-06-16 - Z-210 done (anti prompt-injection). Zostaje TYLKO Z-270 (dane zdrowotne)._
