@@ -11,7 +11,7 @@
 ## Postęp ogólny
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
-| P0 | 22 | 2 | 0 | 0 | 20 |
+| P0 | 22 | 3 | 0 | 0 | 19 |
 | P1 | 129 | 0 | 0 | 0 | 129 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
@@ -24,7 +24,7 @@
 |---|:--:|:--:|---|---|---|
 | Z-052 | M | ✅ | 2026-06-16 | `src/actions/tasks.ts` | Audyt 57 plików akcji (skan plik+funkcja). 9/10 podejrzanych = false‑positive (auth+`userId`, `hasPermission(ADMIN)`, `assertCanEditSkin`). Realna luka: zadania `projectId=null` omijały guard → helper `assertTaskAccess` (projekt LUB twórca/przypisany) + naprawiony `reorderTask`. Build‑guard statyczny odrzucony (za dużo FP) — regresję pilnują testy Z‑172. |
 | Z-190 | M | ✅ | 2026-06-16 | `src/actions/tasks.ts` | Spot‑check stron odczytu pieniądze/PII/cross‑user (portfel/health/notes/tasks/usługi): izolacja OK (`ownershipFilter`/`ownedByWhere` na liście, `assert*Access(parentId)` na dzieciach). Dziura Tasks (wspólna z Z‑052) domknięta. |
-| Z-050 | M | ⬜ | | | Eksport danych użytkownika (RODO 15/20) |
+| Z-050 | M | ✅ | 2026-06-16 | `src/actions/privacy.ts`, `src/components/settings/PrivacySettings.tsx`, `src/app/settings/page.tsx` | `exportMyData()` zbiera komplet danych usera ze wszystkich modułów (+ kluczowe dzieci), bez danych zespołów i bez tokenów auth; sekcja „Prywatność i dane" w /settings → pobranie JSON. |
 | Z-051 | M | ⬜ | | | Twarde usunięcie konta (RODO 17) |
 | Z-172 | M | ⬜ | | | Testy izolacji BOLA/IDOR |
 | Z-173 | M | ⬜ | | | Testy ścieżki płatności i sporów (Usługi) |
@@ -83,4 +83,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 — Z-052 + Z-190 ✅ (audyt autoryzacji/izolacji + fix IDOR Tasks)._
+_Ostatnia aktualizacja: 2026-06-16 — Z-050 ✅ (eksport danych RODO art. 15/20)._

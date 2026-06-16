@@ -11,6 +11,7 @@ import { SkinPicker } from "@/components/settings/SkinPicker"
 import { listAvailableSkins, getActiveSkinId } from "@/actions/skins"
 import { DriveSettings } from "@/components/settings/DriveSettings"
 import { getDriveStatus } from "@/actions/drive"
+import { PrivacySettings } from "@/components/settings/PrivacySettings"
 
 export default async function SettingsPage({
   searchParams,
@@ -180,6 +181,14 @@ export default async function SettingsPage({
           Wygląd — skórka
         </h2>
         <SkinPicker skins={skins} activeId={activeSkinId} teams={teamOpts} />
+      </section>
+
+      {/* Prywatność i dane (RODO) */}
+      <section>
+        <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+          Prywatność i dane
+        </h2>
+        <PrivacySettings />
       </section>
 
       {/* Activity */}
