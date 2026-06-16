@@ -108,6 +108,24 @@ export async function getAllUserTasks(): Promise<Task[]> {
   return tasks.map(toTask);
 }
 
+/**
+ * Z-052/Z-190: dostęp do pojedynczego zadania. Zadania w projekcie chroni dostęp
+ * do projektu; zadania bez projektu (osobiste, `projectId=null`) — własność przez
+ * twórcę lub przypisanie, spójnie z `getAllUserTasks`. Domyka IDOR na zadaniach
+ * `projectId=null`, które wcześniej omijały guard `if (task.projectId)`.
+ */
+async function assertTaskAccess(
+  task: { projectId: string | null; createdById: string | null; assigneeId: string | null },
+  userId: string,
+): Promise<void> {
+  if (task.projectId) {
+    await assertProjectAccess(task.projectId, userId);
+    return;
+  }
+  if (task.createdById === userId || task.assigneeId === userId) return;
+  throw new Error("Access denied");
+}
+
 export async function getTask(id: string): Promise<TaskWithRelations | null> {
   const user = await requireAuth();
 
@@ -117,7 +135,7 @@ export async function getTask(id: string): Promise<TaskWithRelations | null> {
   });
 
   if (!task) return null;
-  if (task.projectId) await assertProjectAccess(task.projectId, user.id);
+  await assertTaskAccess(task, user.id);
 
   return toTask(task) as TaskWithRelations;
 }
@@ -203,7 +221,7 @@ export async function updateTask(
   const user = await requireAuth();
   const existing = await prisma.task.findUnique({ where: { id } });
   if (!existing) throw new Error("Task not found");
-  if (existing.projectId) await assertProjectAccess(existing.projectId, user.id);
+  await assertTaskAccess(existing, user.id);
   // Przeniesienie zadania do innego projektu — wymaga dostępu także do celu.
   if (patch.projectId) await assertProjectAccess(patch.projectId, user.id);
 
@@ -252,7 +270,7 @@ export async function updateTaskTags(taskId: string, tagIds: string[]): Promise<
   const user = await requireAuth();
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) throw new Error("Task not found");
-  if (task.projectId) await assertProjectAccess(task.projectId, user.id);
+  await assertTaskAccess(task, user.id);
 
   await prisma.taskTaskTag.deleteMany({ where: { taskId } });
   if (tagIds.length > 0) {
@@ -267,7 +285,7 @@ export async function deleteTask(id: string): Promise<void> {
   const user = await requireAuth();
   const task = await prisma.task.findUnique({ where: { id }, include: { tags: { select: { tagId: true } } } });
   if (!task) return;
-  if (task.projectId) await assertProjectAccess(task.projectId, user.id);
+  await assertTaskAccess(task, user.id);
 
   // H5: migawka do kosza (pola skalarne + tagi; podzadania/komentarze nie są odtwarzane).
   await recordTrash(user.id, {
@@ -296,7 +314,7 @@ export async function toggleTaskStatus(id: string): Promise<Task> {
     include: { project: { select: { statusConfig: true } } },
   });
   if (!task) throw new Error("Task not found");
-  if (task.projectId) await assertProjectAccess(task.projectId, user.id);
+  await assertTaskAccess(task, user.id);
 
   // Cykl po skonfigurowanej ścieżce projektu (przód). Domyślnie TODO→IN_PROGRESS→DONE.
   const { chain } = parseStatusConfig(task.project?.statusConfig ?? null);
@@ -331,11 +349,14 @@ export async function completeRecurringTask(
   id: string,
   opts: CompleteRecurringOptions = {},
 ): Promise<Task> {
+  const user = await requireAuth();
   const existing = await prisma.task.findUnique({
     where: { id },
     include: { tags: { select: { tagId: true } } },
   });
-  if (!existing || !existing.recurring) throw new Error("Not a recurring task");
+  if (!existing) throw new Error("Task not found");
+  await assertTaskAccess(existing, user.id);
+  if (!existing.recurring) throw new Error("Not a recurring task");
 
   const rule: RecurringRule = JSON.parse(existing.recurring);
   const completedAt = opts.completionDate ? new Date(opts.completionDate) : new Date();
@@ -396,7 +417,7 @@ export async function addTaskComment(taskId: string, content: string): Promise<v
   const user = await requireAuth();
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) throw new Error("Task not found");
-  if (task.projectId) await assertProjectAccess(task.projectId, user.id);
+  await assertTaskAccess(task, user.id);
 
   await prisma.taskComment.create({ data: { taskId, userId: user.id, content: content.trim() } });
   revalidatePath("/tasks");
@@ -417,7 +438,7 @@ export async function shareTask(taskId: string, target: { userId?: string; teamI
   const user = await requireAuth();
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) throw new Error("Task not found");
-  if (task.projectId) await assertProjectAccess(task.projectId, user.id);
+  await assertTaskAccess(task, user.id);
 
   await prisma.taskShare.create({ data: { taskId, userId: target.userId ?? null, teamId: target.teamId ?? null, role } });
   if (task.projectId) revalidatePath(`/tasks/${task.projectId}`);
@@ -427,7 +448,7 @@ export async function removeTaskShare(shareId: string): Promise<void> {
   const user = await requireAuth();
   const share = await prisma.taskShare.findUnique({ where: { id: shareId }, include: { task: true } });
   if (!share) return;
-  if (share.task.projectId) await assertProjectAccess(share.task.projectId, user.id);
+  await assertTaskAccess(share.task, user.id);
 
   await prisma.taskShare.delete({ where: { id: shareId } });
   if (share.task.projectId) revalidatePath(`/tasks/${share.task.projectId}`);
@@ -438,7 +459,7 @@ export async function shareTaskByEmail(taskId: string, email: string, role: "VIE
     const user = await requireAuth();
     const task = await prisma.task.findUnique({ where: { id: taskId } });
     if (!task) return { error: "Zadanie nie znalezione" };
-    if (task.projectId) await assertProjectAccess(task.projectId, user.id);
+    await assertTaskAccess(task, user.id);
 
     const targetUser = await prisma.user.findFirst({ where: { email } });
     if (!targetUser) return { error: "Użytkownik nie znaleziony" };
@@ -459,7 +480,13 @@ export async function shareTaskByEmail(taskId: string, email: string, role: "VIE
 }
 
 export async function reorderTask(taskId: string, newOrder: number): Promise<void> {
-  await requireAuth();
+  const user = await requireAuth();
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    select: { projectId: true, createdById: true, assigneeId: true },
+  });
+  if (!task) throw new Error("Task not found");
+  await assertTaskAccess(task, user.id);
   await prisma.task.update({ where: { id: taskId }, data: { order: newOrder } });
   revalidatePath("/tasks");
 }

@@ -11,7 +11,7 @@
 ## Postęp ogólny
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
-| P0 | 22 | 0 | 0 | 0 | 22 |
+| P0 | 22 | 2 | 0 | 0 | 20 |
 | P1 | 129 | 0 | 0 | 0 | 129 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
@@ -22,8 +22,8 @@
 ### Brama 1 — prawno‑bezpieczeństwowa
 | ID | Nakł. | Status | Data | Pliki / commit | Notatka |
 |---|:--:|:--:|---|---|---|
-| Z-052 | M | ⬜ | | | Audyt autoryzacji w Server Actions (anty‑IDOR) |
-| Z-190 | M | ⬜ | | | Audyt izolacji tenantów (filtr owner/team w każdym list/read) |
+| Z-052 | M | ✅ | 2026-06-16 | `src/actions/tasks.ts` | Audyt 57 plików akcji (skan plik+funkcja). 9/10 podejrzanych = false‑positive (auth+`userId`, `hasPermission(ADMIN)`, `assertCanEditSkin`). Realna luka: zadania `projectId=null` omijały guard → helper `assertTaskAccess` (projekt LUB twórca/przypisany) + naprawiony `reorderTask`. Build‑guard statyczny odrzucony (za dużo FP) — regresję pilnują testy Z‑172. |
+| Z-190 | M | ✅ | 2026-06-16 | `src/actions/tasks.ts` | Spot‑check stron odczytu pieniądze/PII/cross‑user (portfel/health/notes/tasks/usługi): izolacja OK (`ownershipFilter`/`ownedByWhere` na liście, `assert*Access(parentId)` na dzieciach). Dziura Tasks (wspólna z Z‑052) domknięta. |
 | Z-050 | M | ⬜ | | | Eksport danych użytkownika (RODO 15/20) |
 | Z-051 | M | ⬜ | | | Twarde usunięcie konta (RODO 17) |
 | Z-172 | M | ⬜ | | | Testy izolacji BOLA/IDOR |
@@ -83,4 +83,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 — inicjalizacja trackera (szkielet wznawialności)._
+_Ostatnia aktualizacja: 2026-06-16 — Z-052 + Z-190 ✅ (audyt autoryzacji/izolacji + fix IDOR Tasks)._
