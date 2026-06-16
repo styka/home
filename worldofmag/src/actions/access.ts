@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
 import { logAudit } from "@/lib/audit"
+import { keysetQuery, keysetResult, type KeysetPage } from "@/lib/pagination"
 
 async function requireAdmin() {
   const session = await auth()
@@ -217,14 +218,17 @@ export type AuditEntry = {
   createdAt: string
 }
 
-export async function getAuditLog(filter?: { category?: "rbac" | "config" }): Promise<AuditEntry[]> {
+export async function getAuditLog(
+  opts?: { category?: "rbac" | "config"; cursor?: string | null; limit?: number },
+): Promise<KeysetPage<AuditEntry>> {
   await requireAdmin()
+  // Z-070: paginacja keyset zamiast stałego `take: 200` — log audytu rośnie bez końca.
   const rows = await prisma.auditLog.findMany({
-    where: filter?.category ? { category: filter.category } : undefined,
-    orderBy: { createdAt: "desc" },
-    take: 200,
+    where: opts?.category ? { category: opts.category } : undefined,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    ...keysetQuery({ cursor: opts?.cursor, limit: opts?.limit }),
   })
-  return rows.map((r) => ({
+  const mapped: AuditEntry[] = rows.map((r) => ({
     id: r.id,
     actorEmail: r.actorEmail,
     category: r.category,
@@ -233,4 +237,5 @@ export async function getAuditLog(filter?: { category?: "rbac" | "config" }): Pr
     detail: r.detail,
     createdAt: r.createdAt.toISOString(),
   }))
+  return keysetResult(mapped, opts?.limit)
 }
