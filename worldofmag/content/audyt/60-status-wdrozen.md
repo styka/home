@@ -16,7 +16,7 @@
 ## Postęp ogólny
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
-| P0 | 22 | 9 | 0 | 0 | 13 |
+| P0 | 22 | 10 | 1 | 0 | 11 |
 | P1 | 129 | 0 | 0 | 0 | 129 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
@@ -38,8 +38,8 @@
 ### Brama 2 — operacyjna
 | ID | Nakł. | Status | Data | Pliki / commit | Notatka |
 |---|:--:|:--:|---|---|---|
-| Z-030 | S | ⬜ | | | Indeksy @@index(ownerId)/(ownerTeamId) w modelach multi‑tenant |
-| Z-341 | S | ⬜ | | | Indeksy + paginacja ruchu/pozycji magazynu |
+| Z-030 | S | ✅ | 2026-06-16 | `prisma/schema.prisma`, migracja `0186_owner_indexes` | Dodano brakujące `@@index(ownerId/ownerTeamId)` (Team, ShoppingList, Note, TaskProject, Store, PetSale). Migracja idempotentna (`IF NOT EXISTS`) — naprawiła też dryf schema↔DB (Note miał indeks w bazie bez `@@index`). 9/9 zweryfikowane. Reszta modeli już miała indeksy. |
+| Z-341 | S | 🟡 | 2026-06-16 | `prisma/schema.prisma` | Indeksy magazynu JUŻ są (`StorageItem`: owner/team/warehouse/sku/barcode/supplier; `StorageMovement`: `[itemId,createdAt]`) — zweryfikowane. Paginacja ruchu/pozycji = razem z Z‑070 (keyset). |
 | Z-070 | M | ⬜ | | | Paginacja keyset dla list ładujących całość |
 | Z-111 | S | ⬜ | | | Globalny error.tsx + ErrorBoundary + global-error.tsx |
 | Z-090 | S | ⬜ | | | Sentry + uptime + alert 5xx (SDK gated; DSN/uptime ⏸️) |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 — Z-053 ✅ (mechanika zgód RODO; Brama 1 domknięta). Treść prawna ⏸️ (prawnik)._
+_Ostatnia aktualizacja: 2026-06-16 — Z-030 ✅ (indeksy owner/team) + Z-341 🟡 (indeksy magazynu zweryfikowane)._

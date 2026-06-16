@@ -307,6 +307,8 @@ model Team {
   serviceCategories    ServiceCategory[]     @relation("TeamServiceCategories")
   skins                Skin[]                @relation("SkinTeam")
   workshops            Workshop[]            @relation("TeamWorkshops")
+
+  @@index([ownerId])
 }
 
 model TeamMember {
@@ -352,6 +354,9 @@ model ShoppingList {
   owner     User?  @relation(fields: [ownerId], references: [id])
   ownerTeam Team?  @relation("TeamLists", fields: [ownerTeamId], references: [id])
   items     Item[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
 }
 
 model Item {
@@ -517,6 +522,9 @@ model Note {
   tags        NoteTag[]
   attachments NoteAttachment[]
   revisions   NoteRevision[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
 }
 
 // N4: historia/wersjonowanie notatki — migawka treści sprzed zmiany.
@@ -574,6 +582,9 @@ model TaskProject {
   ownerTeam Team?               @relation("TeamTaskProjects", fields: [ownerTeamId], references: [id])
   tasks     Task[]
   members   TaskProjectMember[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
 }
 
 model TaskProjectMember {
@@ -708,6 +719,8 @@ model Store {
   updatedAt DateTime    @updatedAt
 
   owner User? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
 }
 
 model StoreNode {
@@ -1533,6 +1546,7 @@ model PetSale {
 
   @@index([petId])
   @@index([ownerId])
+  @@index([ownerTeamId])
 }
 
 // ─── Flota (pojazdy: serwisy, opony, tankowania) ──────────────────────────
