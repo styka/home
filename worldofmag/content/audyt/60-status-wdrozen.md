@@ -16,7 +16,7 @@
 ## Postęp ogólny
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
-| P0 | 22 | 13 | 1 | 0 | 8 |
+| P0 | 22 | 14 | 1 | 0 | 7 |
 | P1 | 129 | 0 | 0 | 0 | 129 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
@@ -42,7 +42,7 @@
 | Z-341 | S | 🟡 | 2026-06-16 | `prisma/schema.prisma` | Indeksy magazynu JUŻ są (`StorageItem`: owner/team/warehouse/sku/barcode/supplier; `StorageMovement`: `[itemId,createdAt]`) — zweryfikowane. Paginacja ruchu/pozycji = razem z Z‑070 (keyset). |
 | Z-070 | M | ⬜ | | | Paginacja keyset dla list ładujących całość |
 | Z-111 | S | ✅ | 2026-06-16 | `src/app/error.tsx`, `src/app/global-error.tsx`, `src/app/not-found.tsx`, `src/components/ui/ErrorState.tsx`, `src/lib/observability/report.ts` | Granice błędu: segmentowa (`error.tsx`+reset), globalna (`global-error.tsx` z własnym html/body), spójny `ErrorState`, strona 404. Błędy → `reportClientError` (seam pod Sentry/Z-090). |
-| Z-090 | S | ⬜ | | | Sentry + uptime + alert 5xx (SDK gated; DSN/uptime ⏸️) |
+| Z-090 | S | ✅ | 2026-06-16 | `src/app/api/health/route.ts`, `src/middleware.ts`, `src/instrumentation.ts`, `next.config.mjs`, `src/lib/observability/report.ts` | Część kodowa: publiczny `/api/health` (200/503 + ping DB, zweryfikowany), `instrumentation.ts` (unhandledRejection→seam, punkt initu Sentry), seam `reportClient/ServerError` Sentry‑ready. ⏸️ DSN Sentry + zewn. uptime-monitor + alert 5xx = konfiguracja właściciela (instrukcja w instrumentation.ts). |
 | Z-171 | S | ✅ | 2026-06-16 | `src/__tests__/isolation.test.ts` | Alias `@/` działa w runnerze (tsx ^4.19 czyta tsconfig paths) — zweryfikowane; nowe testy importują przez `@/…`, więc regresja aliasu wywali suite. |
 | Z-170 | S | ✅ | 2026-06-16 | `.github/workflows/ci.yml`, `package.json` (skrypt `typecheck`) | Job `verify`: npm ci → migrate deploy (Postgres service) → check:actions → check:migrations → typecheck → test:unit (DB-gated odpalają się) → next build (bez migrate.js). Bramka na PR/push do develop/master. |
 | Z-430 | S | ✅ | 2026-06-16 | `.github/workflows/ci.yml` | Job `e2e-smoke`: Postgres + seed + `playwright install chromium` + `playwright test e2e/specs/smoke.spec.ts` (auto-start aplikacji przez webServer, E2E_TEST_MODE=1) + artefakt raportu. Run przeglądarki niewykonalny w sandboxie → walidacja na pierwszym uruchomieniu CI na GitHub. |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 — Z-170 + Z-430 ✅ (CI GitHub Actions: verify + e2e-smoke)._
+_Ostatnia aktualizacja: 2026-06-16 — Z-090 ✅ (health endpoint + instrumentation + seam; Sentry DSN/uptime ⏸️). Brama 2 prawie domknięta (zostaje Z-070)._

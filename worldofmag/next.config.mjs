@@ -28,6 +28,9 @@ const nextConfig = {
     NEXT_PUBLIC_BUILD_COMMIT_MSG:  git.commitMsg,
   },
   experimental: {
+    // Z-090: instrumentation.ts (register()) — raportowanie błędów serwera + punkt
+    // initu zewnętrznego error-trackingu (Sentry) gdy DSN jest ustawiony.
+    instrumentationHook: true,
     serverActions: {
       allowedOrigins: ["localhost:3000", "worldofmag.onrender.com", "omnia-prod.onrender.com"],
     },
