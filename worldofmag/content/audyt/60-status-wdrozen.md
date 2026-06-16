@@ -16,7 +16,7 @@
 ## Postęp ogólny
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
-| P0 | 22 | 10 | 1 | 0 | 11 |
+| P0 | 22 | 11 | 1 | 0 | 10 |
 | P1 | 129 | 0 | 0 | 0 | 129 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
@@ -41,7 +41,7 @@
 | Z-030 | S | ✅ | 2026-06-16 | `prisma/schema.prisma`, migracja `0186_owner_indexes` | Dodano brakujące `@@index(ownerId/ownerTeamId)` (Team, ShoppingList, Note, TaskProject, Store, PetSale). Migracja idempotentna (`IF NOT EXISTS`) — naprawiła też dryf schema↔DB (Note miał indeks w bazie bez `@@index`). 9/9 zweryfikowane. Reszta modeli już miała indeksy. |
 | Z-341 | S | 🟡 | 2026-06-16 | `prisma/schema.prisma` | Indeksy magazynu JUŻ są (`StorageItem`: owner/team/warehouse/sku/barcode/supplier; `StorageMovement`: `[itemId,createdAt]`) — zweryfikowane. Paginacja ruchu/pozycji = razem z Z‑070 (keyset). |
 | Z-070 | M | ⬜ | | | Paginacja keyset dla list ładujących całość |
-| Z-111 | S | ⬜ | | | Globalny error.tsx + ErrorBoundary + global-error.tsx |
+| Z-111 | S | ✅ | 2026-06-16 | `src/app/error.tsx`, `src/app/global-error.tsx`, `src/app/not-found.tsx`, `src/components/ui/ErrorState.tsx`, `src/lib/observability/report.ts` | Granice błędu: segmentowa (`error.tsx`+reset), globalna (`global-error.tsx` z własnym html/body), spójny `ErrorState`, strona 404. Błędy → `reportClientError` (seam pod Sentry/Z-090). |
 | Z-090 | S | ⬜ | | | Sentry + uptime + alert 5xx (SDK gated; DSN/uptime ⏸️) |
 | Z-171 | S | ✅ | 2026-06-16 | `src/__tests__/isolation.test.ts` | Alias `@/` działa w runnerze (tsx ^4.19 czyta tsconfig paths) — zweryfikowane; nowe testy importują przez `@/…`, więc regresja aliasu wywali suite. |
 | Z-170 | S | ⬜ | | | Testy w bramce CI (GitHub Actions) |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 — Z-030 ✅ (indeksy owner/team) + Z-341 🟡 (indeksy magazynu zweryfikowane)._
+_Ostatnia aktualizacja: 2026-06-16 — Z-111 ✅ (granice błędu error.tsx/global-error.tsx + 404 + ErrorState)._
