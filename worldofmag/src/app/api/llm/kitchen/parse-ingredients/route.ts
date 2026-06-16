@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
 
   const result = await chatComplete({
     op: "dispatch",
+    userId: session.user?.id, // Z-130: budżet + tokeny
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: String(text).slice(0, 4000) },
