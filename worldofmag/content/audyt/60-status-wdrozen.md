@@ -44,8 +44,8 @@
 | Z-111 | S | ✅ | 2026-06-16 | `src/app/error.tsx`, `src/app/global-error.tsx`, `src/app/not-found.tsx`, `src/components/ui/ErrorState.tsx`, `src/lib/observability/report.ts` | Granice błędu: segmentowa (`error.tsx`+reset), globalna (`global-error.tsx` z własnym html/body), spójny `ErrorState`, strona 404. Błędy → `reportClientError` (seam pod Sentry/Z-090). |
 | Z-090 | S | ✅ | 2026-06-16 | `src/app/api/health/route.ts`, `src/middleware.ts`, `src/instrumentation.ts`, `next.config.mjs`, `src/lib/observability/report.ts` | Część kodowa: publiczny `/api/health` (200/503 + ping DB, zweryfikowany), `instrumentation.ts` (unhandledRejection→seam, punkt initu Sentry), seam `reportClient/ServerError` Sentry‑ready. ⏸️ DSN Sentry + zewn. uptime-monitor + alert 5xx = konfiguracja właściciela (instrukcja w instrumentation.ts). |
 | Z-171 | S | ✅ | 2026-06-16 | `src/__tests__/isolation.test.ts` | Alias `@/` działa w runnerze (tsx ^4.19 czyta tsconfig paths) — zweryfikowane; nowe testy importują przez `@/…`, więc regresja aliasu wywali suite. |
-| Z-170 | S | ✅ | 2026-06-16 | `.github/workflows/ci.yml`, `package.json` (skrypt `typecheck`) | Job `verify`: npm ci → migrate deploy (Postgres service) → check:actions → check:migrations → typecheck → test:unit (DB-gated odpalają się) → next build (bez migrate.js). Bramka na PR/push do develop/master. |
-| Z-430 | S | ✅ | 2026-06-16 | `.github/workflows/ci.yml` | Job `e2e-smoke`: Postgres + seed + `playwright install chromium` + `playwright test e2e/specs/smoke.spec.ts` (auto-start aplikacji przez webServer, E2E_TEST_MODE=1) + artefakt raportu. Run przeglądarki niewykonalny w sandboxie → walidacja na pierwszym uruchomieniu CI na GitHub. |
+| Z-170 | S | ✅ | 2026-06-16 | `.github/workflows/ci.yml`, `package.json` (skrypt `typecheck`) | Job `verify`: npm ci → migrate deploy (Postgres service) → check:actions → check:migrations → typecheck → test:unit (DB-gated odpalają się) → next build (bez migrate.js). Bramka na PR/push do develop/master. Node 22 (glob `node --test` wymaga ≥22). Run #1 złapał błąd Node 20 → naprawione. |
+| Z-430 | S | ✅ | 2026-06-16 | `.github/workflows/ci.yml` | Job `e2e-smoke`: Postgres + seed + `playwright install chromium` + `playwright test e2e/specs/smoke.spec.ts` (auto-start aplikacji przez webServer, E2E_TEST_MODE=1) + artefakt raportu. Run przeglądarki niewykonalny w sandboxie. Job `continue-on-error` (nieblokujący) do pierwszej walidacji smoke na runnerze. |
 
 ### Brama 3 — kosztowa AI
 | ID | Nakł. | Status | Data | Pliki / commit | Notatka |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 — Z-090 ✅ (health endpoint + instrumentation + seam; Sentry DSN/uptime ⏸️). Brama 2 prawie domknięta (zostaje Z-070)._
+_Ostatnia aktualizacja: 2026-06-16 — fix CI (Node 22; e2e nieblokujący). Walidacja gate verify w toku._
