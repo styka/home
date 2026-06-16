@@ -16,7 +16,7 @@
 ## Postęp ogólny
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
-| P0 | 22 | 6 | 0 | 0 | 16 |
+| P0 | 22 | 8 | 0 | 0 | 14 |
 | P1 | 129 | 0 | 0 | 0 | 129 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
@@ -32,7 +32,7 @@
 | Z-050 | M | ✅ | 2026-06-16 | `src/actions/privacy.ts`, `src/components/settings/PrivacySettings.tsx`, `src/app/settings/page.tsx` | `exportMyData()` zbiera komplet danych usera ze wszystkich modułów (+ kluczowe dzieci), bez danych zespołów i bez tokenów auth; sekcja „Prywatność i dane" w /settings → pobranie JSON. |
 | Z-051 | M | ✅ | 2026-06-16 | `src/lib/privacy/purge.ts`, `src/actions/privacy.ts`, `src/components/settings/PrivacySettings.tsx` | `purgeUserData` (transakcja sterowana realnymi regułami FK: RESTRICT→usuń, SET-NULL→skasuj jawnie po właścicielu, reszta CASCADE) + `deleteMyAccount` (potwierdzenie e-mailem, blokada gdy właściciel zespołu, signOut/JWT). Zweryfikowane lokalnym testem (izolacja zachowana). Decyzja przekazania zespołów = przyszłe P1. |
 | Z-172 | M | ✅ | 2026-06-16 | `src/__tests__/isolation.test.ts`, `src/lib/tasks/access.ts` | Testy BOLA/IDOR: guardy `assertListAccess/ProjectAccess/RecipeAccess/PetAccess`, `assertTaskAccess` (w tym osobiste `projectId=null`) i `ownedByWhere` odrzucają obcego właściciela. DB‑gated (skip bez `DATABASE_URL` → `test:unit` zielony bez bazy; CI z Postgresem je odpala). `mock.module` niedostępne, więc test na poziomie guardów (nie mock auth). |
-| Z-173 | M | ⬜ | | | Testy ścieżki płatności i sporów (Usługi) |
+| Z-173 | M | ✅ | 2026-06-16 | `src/__tests__/services-marketplace.test.ts`, `src/lib/services/access.ts`, `src/lib/services/payment.ts` | `loadRequestAccess` (izolacja klient/wykonawca/odrzuć) + `netAmount` wyciągnięte do lib i przetestowane (DB‑gated + pure). Guard, na którym stoją markPaymentPaid/bookClientExpense/sendQuote/respondToQuote/openDispute. Idempotencja PAID i admin‑gate resolveDispute — przegląd kodu. |
 | Z-053 | S | ⬜ | | | Polityka prywatności + regulamin + zgody + rejestr (mechanika; treść prawna ⏸️) |
 
 ### Brama 2 — operacyjna
@@ -60,7 +60,7 @@
 | Z-210 | S | ⬜ | | | Zabezpieczenie agenta AI przed prompt‑injection |
 | Z-211 | S | ⬜ | | | Gwarantowane zwolnienie slotu współbieżności AI (finally) |
 | Z-270 | M | ⬜ | | | Wzmożona ochrona danych zdrowotnych (szyfrowanie, AI opt‑in; „zero reklam" = polityka) |
-| Z-360 | M | ⬜ | | | Testy płatności/wycen/sporów (Marketplace) |
+| Z-360 | M | ✅ | 2026-06-16 | `src/__tests__/services-marketplace.test.ts` | Pokryte tą samą partią co Z‑173 (ten sam moduł): izolacja dostępu do zlecenia + księgowanie netto. |
 
 ---
 
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 — Z-171 + Z-172 ✅ (alias @/ w testach + testy izolacji BOLA/IDOR)._
+_Ostatnia aktualizacja: 2026-06-16 — Z-173 + Z-360 ✅ (testy płatności/wycen/sporów Marketplace)._

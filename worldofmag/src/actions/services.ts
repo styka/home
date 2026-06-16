@@ -7,6 +7,8 @@ import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { notifyUser } from "@/actions/notifications";
 import { addEntry } from "@/actions/portfel";
+import { loadRequestAccess } from "@/lib/services/access";
+import { netAmount } from "@/lib/services/payment";
 import { generateDaySlots, minutesOfDay, type AvailabilityRule, type BookedInterval } from "@/lib/serviceSlots";
 import { haversineKm } from "@/lib/serviceGeo";
 import { REQUEST_STATUS_LABELS } from "@/lib/services";
@@ -583,18 +585,7 @@ export async function addReview(requestId: string, rating: number, comment?: str
 
 // ─── M1 czat + M3 wyceny (wątek zlecenia) ──────────────────────────────────
 
-/** Ładuje zlecenie i ustala rolę bieżącego użytkownika (klient lub wykonawca). */
-async function loadRequestAccess(requestId: string, userId: string) {
-  const req = await prisma.serviceRequest.findUnique({
-    where: { id: requestId },
-    select: { id: true, title: true, status: true, clientId: true, providerId: true, provider: { select: { userId: true } } },
-  });
-  if (!req) throw new Error("Zlecenie nie istnieje");
-  const isClient = req.clientId === userId;
-  const isProvider = req.provider.userId === userId;
-  if (!isClient && !isProvider) throw new Error("Brak dostępu do zlecenia");
-  return { req, role: (isClient ? "client" : "provider") as "client" | "provider" };
-}
+// loadRequestAccess przeniesione do `@/lib/services/access` (testowalne, Z-173/Z-360).
 
 /** Pełny wątek zlecenia: wiadomości + wyceny + rola. Oznacza wiadomości drugiej strony jako przeczytane. */
 export async function getRequestThread(requestId: string): Promise<RequestThreadDTO> {
@@ -1063,7 +1054,7 @@ export async function markPaymentPaid(requestId: string, walletElementId?: strin
     // Księgowanie przychodu wykonawcy — kwota NETTO (po rabacie M16). addEntry waliduje własność elementu.
     await addEntry(walletElementId, {
       kind: "income",
-      amount: (payment.amount - payment.discount) / 100,
+      amount: netAmount(payment),
       category: "Usługi",
       note: `Płatność: ${req.title}`,
     });
