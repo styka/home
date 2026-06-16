@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "typecheck": "tsc --noEmit",
     "test:unit": "node --import tsx --test \"src/**/*.test.ts\"",
     "check:actions": "node scripts/check-action-coverage.js",
     "check:migrations": "node scripts/check-migrations.js",

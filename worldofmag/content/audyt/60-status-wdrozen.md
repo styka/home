@@ -16,7 +16,7 @@
 ## Postęp ogólny
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
-| P0 | 22 | 11 | 1 | 0 | 10 |
+| P0 | 22 | 13 | 1 | 0 | 8 |
 | P1 | 129 | 0 | 0 | 0 | 129 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
@@ -44,8 +44,8 @@
 | Z-111 | S | ✅ | 2026-06-16 | `src/app/error.tsx`, `src/app/global-error.tsx`, `src/app/not-found.tsx`, `src/components/ui/ErrorState.tsx`, `src/lib/observability/report.ts` | Granice błędu: segmentowa (`error.tsx`+reset), globalna (`global-error.tsx` z własnym html/body), spójny `ErrorState`, strona 404. Błędy → `reportClientError` (seam pod Sentry/Z-090). |
 | Z-090 | S | ⬜ | | | Sentry + uptime + alert 5xx (SDK gated; DSN/uptime ⏸️) |
 | Z-171 | S | ✅ | 2026-06-16 | `src/__tests__/isolation.test.ts` | Alias `@/` działa w runnerze (tsx ^4.19 czyta tsconfig paths) — zweryfikowane; nowe testy importują przez `@/…`, więc regresja aliasu wywali suite. |
-| Z-170 | S | ⬜ | | | Testy w bramce CI (GitHub Actions) |
-| Z-430 | S | ⬜ | | | E2E smoke w CI (run przeglądarki ⏸️ w sandboxie) |
+| Z-170 | S | ✅ | 2026-06-16 | `.github/workflows/ci.yml`, `package.json` (skrypt `typecheck`) | Job `verify`: npm ci → migrate deploy (Postgres service) → check:actions → check:migrations → typecheck → test:unit (DB-gated odpalają się) → next build (bez migrate.js). Bramka na PR/push do develop/master. |
+| Z-430 | S | ✅ | 2026-06-16 | `.github/workflows/ci.yml` | Job `e2e-smoke`: Postgres + seed + `playwright install chromium` + `playwright test e2e/specs/smoke.spec.ts` (auto-start aplikacji przez webServer, E2E_TEST_MODE=1) + artefakt raportu. Run przeglądarki niewykonalny w sandboxie → walidacja na pierwszym uruchomieniu CI na GitHub. |
 
 ### Brama 3 — kosztowa AI
 | ID | Nakł. | Status | Data | Pliki / commit | Notatka |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 — Z-111 ✅ (granice błędu error.tsx/global-error.tsx + 404 + ErrorState)._
+_Ostatnia aktualizacja: 2026-06-16 — Z-170 + Z-430 ✅ (CI GitHub Actions: verify + e2e-smoke)._
