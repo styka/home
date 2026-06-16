@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/ownership";
+import { purgeUserData } from "@/lib/privacy/purge";
+import { signOut } from "@/lib/auth";
 
 /**
  * Z-050 (RODO art. 15/20) — eksport danych użytkownika.
@@ -225,4 +227,35 @@ export async function exportMyData(): Promise<UserDataExport> {
     ai: { conversations: aiConversations },
     system: { notifications, trashItems, dashboardPref, menuPref, skinPref, ownedSkins, recentActivity: userActivity },
   };
+}
+
+/**
+ * Z-051 (RODO art. 17) — twarde usunięcie konta.
+ *
+ * Potwierdzenie: użytkownik musi wpisać swój adres e-mail. Konta będące
+ * właścicielem zespołów są blokowane (dane współdzielone wymagają przekazania
+ * własności — decyzja użytkownika, wzorzec graceful degradation). Po usunięciu
+ * danych wylogowujemy (strategia sesji = JWT, więc trzeba wyczyścić cookie).
+ */
+export async function deleteMyAccount(confirmation: string): Promise<void> {
+  const userId = await requireUserId();
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+  if (!user) throw new Error("Nie znaleziono konta.");
+
+  const expected = (user.email ?? "").trim().toLowerCase();
+  if (!expected || confirmation.trim().toLowerCase() !== expected) {
+    throw new Error("Potwierdzenie nie pasuje do adresu e-mail konta.");
+  }
+
+  const ownedTeams = await prisma.team.count({ where: { ownerId: userId } });
+  if (ownedTeams > 0) {
+    throw new Error(
+      "To konto jest właścicielem zespołu/zespołów. Najpierw przekaż własność lub usuń swoje zespoły (Ustawienia → Zespoły) — chronimy w ten sposób dane współdzielone z innymi członkami.",
+    );
+  }
+
+  await purgeUserData(userId);
+
+  // JWT: usunięcie rekordu User nie unieważnia ciasteczka — wymuszamy wylogowanie.
+  await signOut({ redirectTo: "/auth/signin?deleted=1" });
 }
