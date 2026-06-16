@@ -94,6 +94,17 @@ model User {
   serviceMessages        ServiceMessage[]      @relation("SentServiceMessages")
   consents               UserConsent[]         @relation("UserConsents")
   aiUsage                AiUsage[]             @relation("UserAiUsage")
+  healthSettings         HealthSettings?       @relation("UserHealthSettings")
+}
+
+// Z-270 (ochrona danych zdrowotnych): per-user ustawienia modułu Zdrowie.
+// `aiOptIn` DOMYŚLNIE false — asystent AI NIE widzi danych zdrowotnych, dopóki
+// użytkownik świadomie nie włączy (privacy-by-default dla danych wrażliwych).
+model HealthSettings {
+  userId    String   @id
+  aiOptIn   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  user      User     @relation("UserHealthSettings", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Z-053 (RODO): zgody użytkownika na dokumenty prawne (polityka prywatności,

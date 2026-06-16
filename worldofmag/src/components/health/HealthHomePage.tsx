@@ -6,6 +6,7 @@ import { HeartPulse, Plus, Stethoscope, FlaskConical, Trash2, Pencil, Check, X, 
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
 import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent, getHealthAttachments, addHealthAttachment, deleteHealthAttachment, type TestTrend, type HealthAttachmentDTO } from "@/actions/health";
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
+import { HealthAiOptInToggle } from "@/components/health/HealthAiOptInToggle";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -271,6 +272,8 @@ export function HealthHomePage({ events, trends = [] }: { events: HealthEvent[];
             </button>
           }
         />
+
+        <HealthAiOptInToggle />
 
         <div style={{ display: "flex", gap: 6 }}>
           {TABS.map((t) => (

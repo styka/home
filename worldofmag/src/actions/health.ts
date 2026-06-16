@@ -11,6 +11,30 @@ function safeDate(d: Date | string | null | undefined): Date | null {
   return isNaN(dt.getTime()) ? null : dt;
 }
 
+// Z-270: ustawienia prywatności Zdrowia. aiOptIn domyślnie false — asystent AI
+// nie widzi danych zdrowotnych, dopóki użytkownik świadomie nie włączy.
+export async function getHealthSettings(): Promise<{ aiOptIn: boolean }> {
+  const user = await requireAuth();
+  const s = await prisma.healthSettings.findUnique({ where: { userId: user.id } });
+  return { aiOptIn: s?.aiOptIn ?? false };
+}
+
+export async function setHealthAiOptIn(aiOptIn: boolean): Promise<void> {
+  const user = await requireAuth();
+  await prisma.healthSettings.upsert({
+    where: { userId: user.id },
+    create: { userId: user.id, aiOptIn },
+    update: { aiOptIn },
+  });
+  revalidatePath("/health");
+}
+
+/** Z-270: czy asystent AI może czytać dane zdrowotne danego użytkownika. */
+export async function healthAiAllowed(userId: string): Promise<boolean> {
+  const s = await prisma.healthSettings.findUnique({ where: { userId }, select: { aiOptIn: true } });
+  return s?.aiOptIn ?? false;
+}
+
 async function assertEventAccess(id: string, userId: string): Promise<void> {
   const teamIds = await getUserTeamIds(userId);
   const ev = await prisma.healthEvent.findUnique({
