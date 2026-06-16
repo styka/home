@@ -16,7 +16,7 @@
 ## Postęp ogólny
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
-| P0 | 22 | 8 | 0 | 0 | 14 |
+| P0 | 22 | 9 | 0 | 0 | 13 |
 | P1 | 129 | 0 | 0 | 0 | 129 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
@@ -33,7 +33,7 @@
 | Z-051 | M | ✅ | 2026-06-16 | `src/lib/privacy/purge.ts`, `src/actions/privacy.ts`, `src/components/settings/PrivacySettings.tsx` | `purgeUserData` (transakcja sterowana realnymi regułami FK: RESTRICT→usuń, SET-NULL→skasuj jawnie po właścicielu, reszta CASCADE) + `deleteMyAccount` (potwierdzenie e-mailem, blokada gdy właściciel zespołu, signOut/JWT). Zweryfikowane lokalnym testem (izolacja zachowana). Decyzja przekazania zespołów = przyszłe P1. |
 | Z-172 | M | ✅ | 2026-06-16 | `src/__tests__/isolation.test.ts`, `src/lib/tasks/access.ts` | Testy BOLA/IDOR: guardy `assertListAccess/ProjectAccess/RecipeAccess/PetAccess`, `assertTaskAccess` (w tym osobiste `projectId=null`) i `ownedByWhere` odrzucają obcego właściciela. DB‑gated (skip bez `DATABASE_URL` → `test:unit` zielony bez bazy; CI z Postgresem je odpala). `mock.module` niedostępne, więc test na poziomie guardów (nie mock auth). |
 | Z-173 | M | ✅ | 2026-06-16 | `src/__tests__/services-marketplace.test.ts`, `src/lib/services/access.ts`, `src/lib/services/payment.ts` | `loadRequestAccess` (izolacja klient/wykonawca/odrzuć) + `netAmount` wyciągnięte do lib i przetestowane (DB‑gated + pure). Guard, na którym stoją markPaymentPaid/bookClientExpense/sendQuote/respondToQuote/openDispute. Idempotencja PAID i admin‑gate resolveDispute — przegląd kodu. |
-| Z-053 | S | ⬜ | | | Polityka prywatności + regulamin + zgody + rejestr (mechanika; treść prawna ⏸️) |
+| Z-053 | S | ✅ | 2026-06-16 | migracja `0185_user_consent`, `src/lib/legal/documents.ts`, `src/actions/legal.ts`, `src/app/legal/*`, `src/components/legal/ConsentBanner.tsx`, AppShell | Mechanika zgód gotowa: model `UserConsent` (wersjonowane), akcje accept/outstanding, strony `/legal/[key]`, rejestr podprocesorów (faktyczny: Google/Groq/Neon/Render), baner zgód w AppShell, link w Ustawieniach. ⏸️ TREŚĆ PRAWNA polityki/regulaminu = wersja robocza, wymaga prawnika/DPO. |
 
 ### Brama 2 — operacyjna
 | ID | Nakł. | Status | Data | Pliki / commit | Notatka |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 — Z-173 + Z-360 ✅ (testy płatności/wycen/sporów Marketplace)._
+_Ostatnia aktualizacja: 2026-06-16 — Z-053 ✅ (mechanika zgód RODO; Brama 1 domknięta). Treść prawna ⏸️ (prawnik)._

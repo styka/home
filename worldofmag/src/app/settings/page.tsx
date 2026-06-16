@@ -189,6 +189,9 @@ export default async function SettingsPage({
           Prywatność i dane
         </h2>
         <PrivacySettings />
+        <Link href="/legal" style={{ display: "inline-block", marginTop: 10, fontSize: 13, color: "var(--accent-blue)", textDecoration: "none" }}>
+          Dokumenty prawne (polityka prywatności, regulamin, podprocesorzy) →
+        </Link>
       </section>
 
       {/* Activity */}

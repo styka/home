@@ -92,6 +92,22 @@ model User {
   ownedWorkshops         Workshop[]            @relation("OwnedWorkshops")
   notifications          Notification[]        @relation("UserNotifications")
   serviceMessages        ServiceMessage[]      @relation("SentServiceMessages")
+  consents               UserConsent[]         @relation("UserConsents")
+}
+
+// Z-053 (RODO): zgody użytkownika na dokumenty prawne (polityka prywatności,
+// regulamin). Wersjonowane — wpisujemy zaakceptowaną wersję; ponowna akceptacja
+// nadpisuje. Brak akceptacji bieżącej wersji → baner zgód.
+model UserConsent {
+  id          String   @id @default(cuid())
+  userId      String
+  documentKey String   // "privacy" | "terms" (klucz dokumentu z lib/legal/documents)
+  version     String   // wersja zaakceptowanego dokumentu
+  acceptedAt  DateTime @default(now())
+  user        User     @relation("UserConsents", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentKey])
+  @@index([userId])
 }
 
 // Preferencje paska bocznego/menu per użytkownik: kolejność i wyłączone moduły.

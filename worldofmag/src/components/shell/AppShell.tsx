@@ -10,6 +10,7 @@ import { AppName } from "@/components/brand/AppName";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { DataFreshness } from "./DataFreshness";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
+import { ConsentBanner } from "@/components/legal/ConsentBanner";
 import { FeedbackInspector } from "./FeedbackInspector";
 import { NotificationBell } from "./NotificationBell";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -261,6 +262,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
       )}
 
       <AICommandSheet />
+      <ConsentBanner />
       {isAdmin && <FeedbackInspector />}
     </div>
     </ToastProvider>
