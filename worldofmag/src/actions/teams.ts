@@ -38,6 +38,7 @@ export async function createTeam(name: string, description?: string, kind: "team
   // współdzielenie bez ręcznej konfiguracji (kalendarz/zadania/budżet są już team-aware).
   if (kind === "household") {
     await prisma.shoppingList.create({ data: { name: "Zakupy domowe", ownerTeamId: team.id } })
+    await prisma.taskProject.create({ data: { name: "Zadania domowe", ownerTeamId: team.id } })
   }
   revalidatePath("/settings")
   return team
