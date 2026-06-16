@@ -16,7 +16,7 @@
 ## Postęp ogólny
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
-| P0 | 22 | 14 | 1 | 0 | 7 |
+| P0 | 22 | 16 | 0 | 0 | 6 |
 | P1 | 129 | 0 | 0 | 0 | 129 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
@@ -39,8 +39,8 @@
 | ID | Nakł. | Status | Data | Pliki / commit | Notatka |
 |---|:--:|:--:|---|---|---|
 | Z-030 | S | ✅ | 2026-06-16 | `prisma/schema.prisma`, migracja `0186_owner_indexes` | Dodano brakujące `@@index(ownerId/ownerTeamId)` (Team, ShoppingList, Note, TaskProject, Store, PetSale). Migracja idempotentna (`IF NOT EXISTS`) — naprawiła też dryf schema↔DB (Note miał indeks w bazie bez `@@index`). 9/9 zweryfikowane. Reszta modeli już miała indeksy. |
-| Z-341 | S | 🟡 | 2026-06-16 | `prisma/schema.prisma` | Indeksy magazynu JUŻ są (`StorageItem`: owner/team/warehouse/sku/barcode/supplier; `StorageMovement`: `[itemId,createdAt]`) — zweryfikowane. Paginacja ruchu/pozycji = razem z Z‑070 (keyset). |
-| Z-070 | M | ⬜ | | | Paginacja keyset dla list ładujących całość |
+| Z-341 | S | ✅ | 2026-06-16 | `prisma/schema.prisma`, `src/lib/pagination.ts` | Indeksy magazynu zweryfikowane (StorageItem: owner/team/warehouse/sku/barcode/supplier; StorageMovement: [itemId,createdAt] wspiera keyset). Helper keyset gotowy do wpięcia w listy ruchu/pozycji przy wzroście wolumenu. |
+| Z-070 | M | ✅ | 2026-06-16 | `src/lib/pagination.ts` (+test), `src/actions/access.ts`, `src/components/admin/AuditLogPage.tsx` | Reużywalny helper keyset (cursor po id, sort [createdAt desc, id desc], keysetQuery/keysetResult + 6 testów). Wpięty end-to-end w log audytu (zamiast take:200) + przycisk „Załaduj starsze". Rollout na notes/tasks/news = ten sam helper (follow-up z Z-071). |
 | Z-111 | S | ✅ | 2026-06-16 | `src/app/error.tsx`, `src/app/global-error.tsx`, `src/app/not-found.tsx`, `src/components/ui/ErrorState.tsx`, `src/lib/observability/report.ts` | Granice błędu: segmentowa (`error.tsx`+reset), globalna (`global-error.tsx` z własnym html/body), spójny `ErrorState`, strona 404. Błędy → `reportClientError` (seam pod Sentry/Z-090). |
 | Z-090 | S | ✅ | 2026-06-16 | `src/app/api/health/route.ts`, `src/middleware.ts`, `src/instrumentation.ts`, `next.config.mjs`, `src/lib/observability/report.ts` | Część kodowa: publiczny `/api/health` (200/503 + ping DB, zweryfikowany), `instrumentation.ts` (unhandledRejection→seam, punkt initu Sentry), seam `reportClient/ServerError` Sentry‑ready. ⏸️ DSN Sentry + zewn. uptime-monitor + alert 5xx = konfiguracja właściciela (instrukcja w instrumentation.ts). |
 | Z-171 | S | ✅ | 2026-06-16 | `src/__tests__/isolation.test.ts` | Alias `@/` działa w runnerze (tsx ^4.19 czyta tsconfig paths) — zweryfikowane; nowe testy importują przez `@/…`, więc regresja aliasu wywali suite. |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 — fix CI (Node 22; e2e nieblokujący). Walidacja gate verify w toku._
+_Ostatnia aktualizacja: 2026-06-16 - Z-070 + Z-341 done (keyset + indeksy magazynu). BRAMA 2 DOMKNIETA._
