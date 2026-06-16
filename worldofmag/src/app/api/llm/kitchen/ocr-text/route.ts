@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
 
   const groq = await chatComplete({
     op: "vision",
+    userId: session.user?.id, // Z-130: budżet + zliczenie tokenów
     messages: [
       {
         role: "user",

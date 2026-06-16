@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
   // --- Krok 1: transkrypcja obrazu (model wizyjny) ---
   const vision = await chatComplete({
     op: "vision",
+    userId: session.user?.id, // Z-130: budżet + zliczenie tokenów (vision = drogie)
     messages: [
       {
         role: "user",

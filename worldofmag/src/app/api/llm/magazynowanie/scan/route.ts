@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
   // --- Krok 1: rozpoznanie przedmiotów (model wizyjny) ---
   const vision = await chatComplete({
     op: "vision",
+    userId: session.user?.id, // Z-130: budżet + zliczenie tokenów
     messages: [
       {
         role: "user",

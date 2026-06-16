@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
 
   const vision = await chatComplete({
     op: "vision",
+    userId: session.user?.id, // Z-130: budżet + zliczenie tokenów
     messages: [
       { role: "user", content: [{ type: "text", text: VISION_PROMPT }, { type: "image_url", image_url: { url: image } }] },
     ],

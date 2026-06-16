@@ -1,6 +1,7 @@
 import { resolveLlm, type ResolvedLlm } from "./resolver";
 import type { OperationType } from "./operationTypes";
 import { cacheKeyFor, getCached, setCached } from "@/lib/ai/cache";
+import { checkAiBudget, recordAiUsage } from "@/lib/ai/usage";
 
 // Wspólny interfejs do rozmów z LLM. Trasy budują wiadomości w stylu OpenAI,
 // a dispatcher tłumaczy je na format konkretnego dostawcy (OpenAI-compatible
@@ -27,6 +28,9 @@ export interface ChatOptions {
   json?: boolean;
   /** Z-511: cache odpowiedzi dla identycznego wejścia (operacje deterministyczne). */
   cache?: boolean;
+  /** Z-130: gdy podane — egzekwuj dzienny budżet AND zalicz tokeny do `AiUsage`.
+   * Cache-hit nie kosztuje tokenów, więc nie jest blokowany budżetem. */
+  userId?: string;
 }
 
 export type TokenUsage = { prompt: number; completion: number; total: number };
@@ -66,10 +70,16 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
     : null;
   if (cacheKey) {
     const hit = getCached(cacheKey);
-    if (hit) return { ok: true, content: hit.value, model: hit.model };
+    if (hit) return { ok: true, content: hit.value, model: hit.model }; // free — bez budżetu
+  }
+  // Z-130: egzekwuj dzienny budżet AI (po cache-hit, przed realnym wywołaniem LLM).
+  if (opts.userId) {
+    const budget = await checkAiBudget(opts.userId);
+    if (!budget.ok) return { ok: false, status: 429, message: budget.message };
   }
   const res = cfg.kind === "anthropic" ? await anthropicComplete(cfg, opts) : await openAiComplete(cfg, opts);
   if (cacheKey && res.ok) setCached(cacheKey, res.content, res.model);
+  if (opts.userId && res.ok) void recordAiUsage(opts.userId, res.usage?.total ?? 0).catch(() => {});
   return res;
 }
 
