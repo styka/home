@@ -50,7 +50,7 @@
 ### Brama 3 — kosztowa AI
 | ID | Nakł. | Status | Data | Pliki / commit | Notatka |
 |---|:--:|:--:|---|---|---|
-| Z-130 | M | ✅ | 2026-06-16 | migracja `0187_ai_usage`, `src/lib/ai/usage.ts`, `src/app/api/llm/home/agent/route.ts` | Trwały dzienny budżet AI per user w tabeli `AiUsage` (zapytania+tokeny; wspólna baza→działa między instancjami). `checkAiBudget` przed runem (429 z Retry-After do północy UTC), `recordAiUsage(meta.tokens)` w `finally`. In-memory limiter zostaje jako bezpiecznik anty-burst. |
+| Z-130 | M | ✅ | 2026-06-16 | migracja `0187_ai_usage`, `src/lib/ai/usage.ts`, `src/app/api/llm/home/agent/route.ts` | Trwały dzienny budżet AI per user w tabeli `AiUsage` (zapytania+tokeny; wspólna baza→działa między instancjami). `checkAiBudget` przed runem (429 z Retry-After do północy UTC), `recordAiUsage(meta.tokens)` w `finally`. In-memory limiter zostaje jako bezpiecznik anty-burst. Budżet wpięty też w trasę briefingu (drugi koszt LLM); typed feature-routes = follow-up. |
 | Z-511 | M | ✅ | 2026-06-16 | `src/lib/ai/usage.ts` (PLAN_LIMITS), `src/lib/ai/cache.ts`, `src/lib/llm/chat.ts` | Twarde limity per plan (free: 100 req/200k tok dziennie; premium: 10×; plan=ADMIN→premium do czasu billingu). Cache odpowiedzi LLM (in-memory TTL/LRU) wpięty opt-in w `chatComplete` (`cache:true`) — identyczne wejście nie płaci ponownie. |
 | Z-510 | S | ✅ | 2026-06-16 | `src/actions/metrics.ts`, `src/app/admin/metrics/page.tsx`, `src/app/admin/page.tsx` | `getUnitEconomics` liczy realny koszt AI z `AiUsage` (tokeny × cena z Config `ai_cost_per_1m_tokens`), MAU (proxy: aktywni AI), koszt/MAU, trend dzienny. Widok `/admin/metrics`. ARPU/CAC/LTV = null z adnotacją (wymaga danych billingu/marketingu — P1). |
 
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 - testy storeLayout (uklad mapy sklepu, Z-174). Suite 110. P1 w toku._
+_Ostatnia aktualizacja: 2026-06-16 - budzet AI wpiety tez w briefing (domkniecie Z-130). Suite 110. P1 w toku._
