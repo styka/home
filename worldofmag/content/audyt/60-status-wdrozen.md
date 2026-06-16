@@ -78,7 +78,7 @@
 | UX / design system / a11y / i18n | Z-110 – Z-118 | 11 | A.6 | ⬜ (Z-111 w P0) |
 | AI / LLM | Z-131 – Z-138 | 12 | A.7 | ⬜ (Z-130 w P0) |
 | Integracje | Z-150 – Z-158 | 13 | A.8 | ⬜ |
-| Testowanie / jakość | Z-174 – Z-188 | 14 | A.9 | 🟡 — testy DB-gated (izolacja/marketplace) + 7 markdown(XSS) + 9 skórek(CSS-inj) + 6 paginacji + 5 userTime(strefa/doba — **wykryły i naprawiły bug ~1 s w `end` doby**); suite 83 testów, CI je odpala. Z-170/171/172/173 w P0. |
+| Testowanie / jakość | Z-174 – Z-188 | 14 | A.9 | 🟡 — testy DB-gated (izolacja/marketplace) + 7 markdown(XSS) + 9 skórek(CSS-inj) + 6 paginacji + 5 userTime(strefa/doba — **wykryły i naprawiły bug ~1 s w `end` doby**); + 6 currency(przeliczanie walut Portfela); suite 89 testów, CI je odpala. Z-170/171/172/173 w P0. |
 | Współdzielenie / rodziny | Z-191 – Z-198 | 15 | A.12 | 🟡 — Z-190 ✅ (P0); Z-191 ✅ (team-awareness zweryfikowane: Shopping/Tasks/Notes/Kitchen/Pets/Health/Habits/Flota/Portfel/Languages/Storage/Workshop/Contacts mają `ownerTeamId`; Store/News/Weather/ProjectGroup celowo user-only); Z-192 🟡 (fundament „household": `Team.kind`, tworzenie rodziny + domyślna wspólna lista zakupów + badge; role rodzic/dziecko Z-194, onboarding Z-195, pełne auto-share = follow-up) |
 | Audyt modułów | Z-210 – Z-419 | 16–41 | wg obszaru | ⬜ (P0: Z-210/211/270/341/360/430) |
 | Model biznesowy / monetyzacja | Z-470 – Z-476 | 42 | A.10 | 🟡 — Z-471 ✅ (`Subscription` + `lib/plans.ts` getActivePlan/hasFeature + sekcja „Twój plan"; AI-budżet czyta plan); Z-472=Z-130 ✅; Z-510 ✅. ⏸️ Z-473 bramka płatności + Z-470 linia free/premium = decyzja właściciela; Z-474 reklamy=P2; Z-476 prowizja marketplace=TODO |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 - testy userTime wykryly+naprawily bug ~1s w granicy doby. Suite 83. P1 w toku._
+_Ostatnia aktualizacja: 2026-06-16 - testy przeliczania walut Portfela (Z-174). Suite 89. P1 w toku._
