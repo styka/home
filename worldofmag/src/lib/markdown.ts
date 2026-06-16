@@ -100,7 +100,14 @@ function inlineFormat(text: string): string {
         ? `<img class="md-img" src="${url.replace(/"/g, "%22")}" alt="${alt.replace(/"/g, "&quot;")}" loading="lazy" referrerpolicy="no-referrer" />`
         : m
     )
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a class="md-link" href="$2">$1</a>');
+    // Linki: tylko bezpieczne schematy (http(s) / relatywne „/" / kotwica „#" / mailto).
+    // Blokuje javascript:/data: itp. (XSS po kliknięciu). Escapujemy " w href, by nie
+    // dało się wyjść z atrybutu. Tekst etykiety jest już zescapowany wcześniej.
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label: string, url: string) =>
+      /^(https?:\/\/|\/|#|mailto:)/i.test(url.trim())
+        ? `<a class="md-link" href="${url.trim().replace(/"/g, "%22")}">${label}</a>`
+        : m
+    );
 }
 
 function escapeHtml(text: string): string {

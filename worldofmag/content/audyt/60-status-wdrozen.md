@@ -17,7 +17,7 @@
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
 | P0 | 22 | 22 | 0 | 0 | 0 |
-| P1 | 129 | 2 | 1 | 0 | 126 |
+| P1 | 129 | 3 | 1 | 0 | 125 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
 ---
@@ -72,13 +72,13 @@
 |---|---|:--:|:--:|---|
 | Architektura i kod | Z-010 – Z-015 | 6 | A.2 | ⬜ |
 | Dane / Prisma / skala bazy | Z-031 – Z-037 | 7 | A.2 | ⬜ (Z-030 w P0) |
-| Bezpieczeństwo / RBAC / RODO | Z-054 – Z-059 | 8 | A.3 | ⬜ (Z-050/051/052/053 w P0) |
+| Bezpieczeństwo / RBAC / RODO | Z-054 – Z-059 | 8 | A.3 | 🟡 — Z-057 ✅ (testy bezpieczeństwa krytycznego renderera markdown + naprawiony XSS: linki `javascript:`/`data:` zablokowane, allowlista schematów, escape `"` w href). Z-050/051/052/053 w P0. Reszta (retencja Z-059, 2FA Z-058…) = TODO |
 | Wydajność / skalowalność | Z-071 – Z-083 | 9 | A.4 | ⬜ (Z-070 w P0) |
 | DevOps / CI/CD / koszty | Z-091 – Z-097 | 10 | A.5 | ⬜ (Z-090 w P0) |
 | UX / design system / a11y / i18n | Z-110 – Z-118 | 11 | A.6 | ⬜ (Z-111 w P0) |
 | AI / LLM | Z-131 – Z-138 | 12 | A.7 | ⬜ (Z-130 w P0) |
 | Integracje | Z-150 – Z-158 | 13 | A.8 | ⬜ |
-| Testowanie / jakość | Z-174 – Z-188 | 14 | A.9 | ⬜ (Z-170/171/172/173 w P0) |
+| Testowanie / jakość | Z-174 – Z-188 | 14 | A.9 | 🟡 — testy DB-gated (izolacja/marketplace) + 7 testów bezpieczeństwa markdown + 6 paginacji; CI je odpala. Z-170/171/172/173 w P0. Ephemeral-pg dla testów akcji (Z-174) realizowane przez DB-gating. |
 | Współdzielenie / rodziny | Z-191 – Z-198 | 15 | A.12 | 🟡 — Z-190 ✅ (P0); Z-191 ✅ (team-awareness zweryfikowane: Shopping/Tasks/Notes/Kitchen/Pets/Health/Habits/Flota/Portfel/Languages/Storage/Workshop/Contacts mają `ownerTeamId`; Store/News/Weather/ProjectGroup celowo user-only); Z-192 🟡 (fundament „household": `Team.kind`, tworzenie rodziny + domyślna wspólna lista zakupów + badge; role rodzic/dziecko Z-194, onboarding Z-195, pełne auto-share = follow-up) |
 | Audyt modułów | Z-210 – Z-419 | 16–41 | wg obszaru | ⬜ (P0: Z-210/211/270/341/360/430) |
 | Model biznesowy / monetyzacja | Z-470 – Z-476 | 42 | A.10 | 🟡 — Z-471 ✅ (`Subscription` + `lib/plans.ts` getActivePlan/hasFeature + sekcja „Twój plan"; AI-budżet czyta plan); Z-472=Z-130 ✅; Z-510 ✅. ⏸️ Z-473 bramka płatności + Z-470 linia free/premium = decyzja właściciela; Z-474 reklamy=P2; Z-476 prowizja marketplace=TODO |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 - Z-191 done + Z-192 fundament (preset rodziny/household). P1 w toku._
+_Ostatnia aktualizacja: 2026-06-16 - Z-057 done: naprawiony XSS w rendererze markdown + testy bezpieczenstwa. P1 w toku._
