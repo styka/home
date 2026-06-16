@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
 
   const result = await chatComplete({
     op: "generation",
+    userId: session.user?.id, // Z-130: budżet + zliczenie tokenów (generacja = drogie)
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: trimmed },
