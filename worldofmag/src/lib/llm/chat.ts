@@ -1,5 +1,6 @@
 import { resolveLlm, type ResolvedLlm } from "./resolver";
 import type { OperationType } from "./operationTypes";
+import { cacheKeyFor, getCached, setCached } from "@/lib/ai/cache";
 
 // Wspólny interfejs do rozmów z LLM. Trasy budują wiadomości w stylu OpenAI,
 // a dispatcher tłumaczy je na format konkretnego dostawcy (OpenAI-compatible
@@ -24,6 +25,8 @@ export interface ChatOptions {
   maxTokens?: number;
   /** Wymuś odpowiedź w formacie JSON (tylko OpenAI-compatible; Anthropic polega na prompcie). */
   json?: boolean;
+  /** Z-511: cache odpowiedzi dla identycznego wejścia (operacje deterministyczne). */
+  cache?: boolean;
 }
 
 export type TokenUsage = { prompt: number; completion: number; total: number };
@@ -57,7 +60,17 @@ function parseDataUrl(url: string): { mediaType: string; data: string } | null {
 export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
   const cfg = await resolveLlm(opts.op);
   if (!cfg) return UNCONFIGURED;
-  return cfg.kind === "anthropic" ? anthropicComplete(cfg, opts) : openAiComplete(cfg, opts);
+  // Z-511: opcjonalny cache (identyczne wejście → identyczne wyjście).
+  const cacheKey = opts.cache
+    ? cacheKeyFor({ op: opts.op, messages: opts.messages, temperature: opts.temperature, maxTokens: opts.maxTokens, json: opts.json })
+    : null;
+  if (cacheKey) {
+    const hit = getCached(cacheKey);
+    if (hit) return { ok: true, content: hit.value, model: hit.model };
+  }
+  const res = cfg.kind === "anthropic" ? await anthropicComplete(cfg, opts) : await openAiComplete(cfg, opts);
+  if (cacheKey && res.ok) setCached(cacheKey, res.content, res.model);
+  return res;
 }
 
 async function openAiComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<ChatResult> {

@@ -6,6 +6,7 @@ import { READ_TOOLS_PROMPT, READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentT
 import { webSearch } from "@/lib/news/webSearch";
 import { chatComplete } from "@/lib/llm/chat";
 import { checkRateLimit, acquireSlot } from "@/lib/ai/rateLimit";
+import { checkAiBudget, recordAiUsage } from "@/lib/ai/usage";
 import type { AIAction } from "@/lib/ai/aiAction";
 
 const MAX_ITERATIONS = 6;
@@ -549,6 +550,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: rl.message }, { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } });
   }
 
+  // Z-130/Z-511: trwały dzienny budżet AI per plan (kontrola kosztów między instancjami).
+  const budget = await checkAiBudget(userId);
+  if (!budget.ok) {
+    return NextResponse.json({ error: budget.message }, { status: 429, headers: { "Retry-After": String(budget.retryAfterSec) } });
+  }
+
   const body = (await req.json().catch(() => ({}))) as {
     text?: string;
     context?: string[];
@@ -671,8 +678,8 @@ export async function POST(req: NextRequest) {
         const send = (obj: unknown) => {
           try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`)); } catch { /* zamknięte */ }
         };
+        const meta: AgentMeta = { tokens: 0 };
         try {
-          const meta: AgentMeta = { tokens: 0 };
           const result = await runAgentLoop(messages, userId, (t) => send({ type: "thought", text: t }), meta);
           if (result.body && typeof result.body === "object" && !result.body.error) {
             result.body.meta = { model: meta.model, tokens: meta.tokens };
@@ -682,6 +689,7 @@ export async function POST(req: NextRequest) {
           send({ type: "final", status: 502, body: { error: e instanceof Error ? e.message : "Błąd asystenta" } });
         } finally {
           release();
+          void recordAiUsage(userId, meta.tokens).catch(() => {});
           controller.close();
         }
       },
@@ -691,8 +699,8 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  const meta: AgentMeta = { tokens: 0 };
   try {
-    const meta: AgentMeta = { tokens: 0 };
     const result = await runAgentLoop(messages, userId, undefined, meta);
     if (result.body && typeof result.body === "object" && !result.body.error) {
       result.body.meta = { model: meta.model, tokens: meta.tokens };
@@ -700,5 +708,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result.body, result.status ? { status: result.status } : undefined);
   } finally {
     release();
+    void recordAiUsage(userId, meta.tokens).catch(() => {});
   }
 }

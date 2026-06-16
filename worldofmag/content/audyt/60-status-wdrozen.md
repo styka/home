@@ -16,7 +16,7 @@
 ## Postęp ogólny
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
-| P0 | 22 | 16 | 0 | 0 | 6 |
+| P0 | 22 | 19 | 0 | 0 | 3 |
 | P1 | 129 | 0 | 0 | 0 | 129 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
@@ -50,15 +50,15 @@
 ### Brama 3 — kosztowa AI
 | ID | Nakł. | Status | Data | Pliki / commit | Notatka |
 |---|:--:|:--:|---|---|---|
-| Z-130 | M | ⬜ | | | Trwały rate‑limit + budżet tokenów AI per user/plan (tabela AiUsage) |
-| Z-511 | M | ⬜ | | | Twarde limity + cache AI dla darmowych |
+| Z-130 | M | ✅ | 2026-06-16 | migracja `0187_ai_usage`, `src/lib/ai/usage.ts`, `src/app/api/llm/home/agent/route.ts` | Trwały dzienny budżet AI per user w tabeli `AiUsage` (zapytania+tokeny; wspólna baza→działa między instancjami). `checkAiBudget` przed runem (429 z Retry-After do północy UTC), `recordAiUsage(meta.tokens)` w `finally`. In-memory limiter zostaje jako bezpiecznik anty-burst. |
+| Z-511 | M | ✅ | 2026-06-16 | `src/lib/ai/usage.ts` (PLAN_LIMITS), `src/lib/ai/cache.ts`, `src/lib/llm/chat.ts` | Twarde limity per plan (free: 100 req/200k tok dziennie; premium: 10×; plan=ADMIN→premium do czasu billingu). Cache odpowiedzi LLM (in-memory TTL/LRU) wpięty opt-in w `chatComplete` (`cache:true`) — identyczne wejście nie płaci ponownie. |
 | Z-510 | S | ⬜ | | | Pomiar ekonomiki jednostkowej (koszt/MAU, ARPU, CAC, LTV) |
 
 ### P0 modułowe (poza bramami)
 | ID | Nakł. | Status | Data | Pliki / commit | Notatka |
 |---|:--:|:--:|---|---|---|
 | Z-210 | S | ⬜ | | | Zabezpieczenie agenta AI przed prompt‑injection |
-| Z-211 | S | ⬜ | | | Gwarantowane zwolnienie slotu współbieżności AI (finally) |
+| Z-211 | S | ✅ | 2026-06-16 | `src/app/api/llm/home/agent/route.ts` | Zweryfikowane: obie ścieżki agenta (SSE i nie-SSE) zwalniają slot współbieżności w `finally` (`release()`), więc błąd/wyjątek nie blokuje kolejnych zapytań. `acquireSlot` z `rateLimit.ts` zwraca idempotentny release. |
 | Z-270 | M | ⬜ | | | Wzmożona ochrona danych zdrowotnych (szyfrowanie, AI opt‑in; „zero reklam" = polityka) |
 | Z-360 | M | ✅ | 2026-06-16 | `src/__tests__/services-marketplace.test.ts` | Pokryte tą samą partią co Z‑173 (ten sam moduł): izolacja dostępu do zlecenia + księgowanie netto. |
 
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 - Z-070 + Z-341 done (keyset + indeksy magazynu). BRAMA 2 DOMKNIETA._
+_Ostatnia aktualizacja: 2026-06-16 - Z-130 + Z-511 + Z-211 done (budzet/plany/cache AI + slot finally). BRAMA 3 prawie domknieta (zostaje Z-510)._

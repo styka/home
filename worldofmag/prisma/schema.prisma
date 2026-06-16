@@ -93,6 +93,7 @@ model User {
   notifications          Notification[]        @relation("UserNotifications")
   serviceMessages        ServiceMessage[]      @relation("SentServiceMessages")
   consents               UserConsent[]         @relation("UserConsents")
+  aiUsage                AiUsage[]             @relation("UserAiUsage")
 }
 
 // Z-053 (RODO): zgody użytkownika na dokumenty prawne (polityka prywatności,
@@ -107,6 +108,22 @@ model UserConsent {
   user        User     @relation("UserConsents", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, documentKey])
+  @@index([userId])
+}
+
+// Z-130/Z-511 (kontrola kosztów AI): trwałe, dzienne zużycie AI per użytkownik —
+// liczba zapytań i przybliżone tokeny. Działa między instancjami (wspólna baza),
+// w przeciwieństwie do liczników in-memory. Budżet zależny od planu (lib/ai/usage).
+model AiUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  day       String   // YYYY-MM-DD (UTC) — okno dzienne
+  requests  Int      @default(0)
+  tokens    Int      @default(0)
+  updatedAt DateTime @updatedAt
+  user      User     @relation("UserAiUsage", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day])
   @@index([userId])
 }
 
