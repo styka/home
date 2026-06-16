@@ -17,7 +17,7 @@
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
 | P0 | 22 | 22 | 0 | 0 | 0 |
-| P1 | 129 | 0 | 0 | 0 | 129 |
+| P1 | 129 | 1 | 0 | 0 | 128 |
 | P2 | 95 | 0 | 0 | 0 | 95 |
 
 ---
@@ -81,11 +81,11 @@
 | Testowanie / jakość | Z-174 – Z-188 | 14 | A.9 | ⬜ (Z-170/171/172/173 w P0) |
 | Współdzielenie / rodziny | Z-191 – Z-198 | 15 | A.12 | ⬜ (Z-190 w P0) |
 | Audyt modułów | Z-210 – Z-419 | 16–41 | wg obszaru | ⬜ (P0: Z-210/211/270/341/360/430) |
-| Model biznesowy / monetyzacja | Z-470 – Z-476 | 42 | A.10 | ⬜ |
+| Model biznesowy / monetyzacja | Z-470 – Z-476 | 42 | A.10 | 🟡 — Z-471 ✅ (`Subscription` + `lib/plans.ts` getActivePlan/hasFeature + sekcja „Twój plan"; AI-budżet czyta plan); Z-472=Z-130 ✅; Z-510 ✅. ⏸️ Z-473 bramka płatności + Z-470 linia free/premium = decyzja właściciela; Z-474 reklamy=P2; Z-476 prowizja marketplace=TODO |
 | Strategia podaplikacji | Z-490 – Z-495 | 43 | A.11 | ⬜ |
 | Model ilościowy | Z-512 – Z-515 | 44 | A.10 | ⬜ (Z-510/511 w P0) |
 | Marketing | Z-530 – Z-535 | 45 | — | ⬜ |
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 - Z-270 done. *** WSZYSTKIE 22/22 P0 ZROBIONE *** Dalej: P1 wg rekomendowanej kolejnosci._
+_Ostatnia aktualizacja: 2026-06-16 - P0 100% + raport 1:1 + Z-471 (warstwa planow/Subscription). P1 w toku._

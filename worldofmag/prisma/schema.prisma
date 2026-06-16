@@ -95,6 +95,22 @@ model User {
   consents               UserConsent[]         @relation("UserConsents")
   aiUsage                AiUsage[]             @relation("UserAiUsage")
   healthSettings         HealthSettings?       @relation("UserHealthSettings")
+  subscription           Subscription?         @relation("UserSubscription")
+}
+
+// Z-471 (monetyzacja): plan handlowy użytkownika. Definicje planów (limity/funkcje)
+// żyją w kodzie (`src/lib/plans.ts`) — rzadko się zmieniają; tabela trzyma tylko
+// przypisanie + status. Brak wiersza = plan `free`. Bramka płatności (Z-473) ustawi
+// `planKey`/`status`/`currentPeriodEnd` przez webhooki (gdy właściciel wybierze dostawcę).
+model Subscription {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  planKey          String    @default("free") // "free" | "premium"
+  status           String    @default("active") // "active" | "canceled" | "past_due"
+  currentPeriodEnd DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation("UserSubscription", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Z-270 (ochrona danych zdrowotnych): per-user ustawienia modułu Zdrowie.

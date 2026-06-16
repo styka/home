@@ -12,6 +12,7 @@ import { listAvailableSkins, getActiveSkinId } from "@/actions/skins"
 import { DriveSettings } from "@/components/settings/DriveSettings"
 import { getDriveStatus } from "@/actions/drive"
 import { PrivacySettings } from "@/components/settings/PrivacySettings"
+import { getActivePlan } from "@/lib/plans"
 
 export default async function SettingsPage({
   searchParams,
@@ -27,6 +28,7 @@ export default async function SettingsPage({
   const skins = await listAvailableSkins()
   const activeSkinId = await getActiveSkinId()
   const teamOpts = teams.map((t) => ({ id: t.id, name: t.name }))
+  const plan = session?.user?.id ? await getActivePlan(session.user.id) : null
   const activityForUI = recentActivity.map((a) => ({
     module: a.module,
     action: a.action,
@@ -182,6 +184,26 @@ export default async function SettingsPage({
         </h2>
         <SkinPicker skins={skins} activeId={activeSkinId} teams={teamOpts} />
       </section>
+
+      {/* Twój plan (Z-471) */}
+      {plan && (
+        <section>
+          <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+            Twój plan
+          </h2>
+          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 8, padding: "16px 20px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{plan.name}</span>
+              <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 999, background: "var(--bg-elevated)", color: "var(--text-muted)" }}>{plan.key}</span>
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, lineHeight: 1.6 }}>
+              Dzienny limit asystenta AI: <strong>{plan.aiDailyRequests}</strong> zapytań / <strong>{plan.aiDailyTokens.toLocaleString("pl-PL")}</strong> tokenów.
+              <br />
+              Zmiana planu będzie dostępna po uruchomieniu płatności.
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Prywatność i dane (RODO) */}
       <section>

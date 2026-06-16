@@ -1,36 +1,15 @@
 import { prisma } from "@/lib/prisma";
+import { getActivePlan } from "@/lib/plans";
 
 /**
  * Z-130/Z-511: trwały budżet AI per użytkownik/plan (kontrola kosztów).
  *
  * Dzienne liczniki w tabeli `AiUsage` (wspólna baza → działa między instancjami,
  * w przeciwieństwie do liczników in-memory z `rateLimit.ts`, które zostają jako
- * szybki bezpiecznik anty-burst). Limit zależny od planu — twardy dla darmowego.
+ * szybki bezpiecznik anty-burst). Limity planów są w `lib/plans.ts` (Z-471).
  */
-export type AiPlan = "free" | "premium";
-
-export interface PlanLimit {
-  dailyRequests: number;
-  dailyTokens: number;
-}
-
-export const PLAN_LIMITS: Record<AiPlan, PlanLimit> = {
-  // Hojne dla power-usera, ale ograniczają koszt przy pętli/nadużyciu.
-  free: { dailyRequests: 100, dailyTokens: 200_000 },
-  premium: { dailyRequests: 1000, dailyTokens: 2_000_000 },
-};
-
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-/**
- * Plan użytkownika. Do czasu warstwy płatności (P1 monetyzacja): ADMIN = premium,
- * pozostali = free. Później wystarczy podmienić to źródło (np. pole subskrypcji).
- */
-export async function getUserPlan(userId: string): Promise<AiPlan> {
-  const admin = await prisma.userRole.findFirst({ where: { userId, role: "ADMIN" }, select: { userId: true } });
-  return admin ? "premium" : "free";
 }
 
 export type BudgetCheck = { ok: true } | { ok: false; message: string; retryAfterSec: number };
@@ -44,15 +23,14 @@ function secsToMidnightUtc(): number {
 /** Sprawdza dzienny budżet (zapytania + tokeny) wg planu. */
 export async function checkAiBudget(userId: string): Promise<BudgetCheck> {
   const [plan, usage] = await Promise.all([
-    getUserPlan(userId),
+    getActivePlan(userId),
     prisma.aiUsage.findUnique({ where: { userId_day: { userId, day: todayUtc() } } }),
   ]);
-  const limit = PLAN_LIMITS[plan];
-  const suffix = plan === "free" ? " (plan darmowy — limit dzienny)" : "";
-  if (usage && usage.requests >= limit.dailyRequests) {
+  const suffix = plan.key === "free" ? " (plan darmowy — limit dzienny)" : "";
+  if (usage && usage.requests >= plan.aiDailyRequests) {
     return { ok: false, retryAfterSec: secsToMidnightUtc(), message: `Wykorzystano dzienny limit zapytań do asystenta AI.${suffix} Spróbuj jutro.` };
   }
-  if (usage && usage.tokens >= limit.dailyTokens) {
+  if (usage && usage.tokens >= plan.aiDailyTokens) {
     return { ok: false, retryAfterSec: secsToMidnightUtc(), message: `Wykorzystano dzienny budżet AI.${suffix} Spróbuj jutro.` };
   }
   return { ok: true };
