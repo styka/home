@@ -76,7 +76,7 @@
 | Wydajność / skalowalność | Z-071 – Z-083 | 9 | A.4 | 🟡 — Z-070 ✅ (P0, keyset); **Z-073 ✅** (eliminacja N+1: `getTasksForProjects` — N× `assertProjectAccess` → 1 zapytanie filtrujące po tej samej regule dostępu; `bulkSetStorageQuantities` (spis magazynu) — N× `findUnique` → 1 `findMany`+mapa. Kalendarz już zoptymalizowany — `Promise.all` + nested `select`). Z-072 (cache `unstable_cache`)=follow-up; Z-071 (wirtualizacja, `@tanstack/virtual`)=nowa zależność; Z-075/094 (płatny tier)=decyzja kosztowa; Z-082/083=plan/P2. |
 | DevOps / CI/CD / koszty | Z-091 – Z-097 | 10 | A.5 | ⬜ (Z-090 w P0) |
 | UX / design system / a11y / i18n | Z-110 – Z-118 | 11 | A.6 | ⬜ (Z-111 w P0) |
-| AI / LLM | Z-131 – Z-138 | 12 | A.7 | ⬜ (Z-130 w P0) |
+| AI / LLM | Z-131 – Z-138 | 12 | A.7 | 🟡 — Z-130 ✅ (P0); **Z-132 ✅** (cache odpowiedzi LLM `chatComplete({cache:true})` wpięty w 3 operacje deterministyczne: normalize, parse-ingredients, import-url; in-memory LRU+TTL); **Z-133 ✅** (`resolveLlmChain` [model admina → fallback Groq, deduplikacja] + `chatComplete`/`chatStream` przechodzą łańcuch, przełączając się przy 429/5xx/sieci; completery zwracają realny status + łapią błąd sieci → 503; `isRetryableLlmStatus` z testem). Z-134 (tańszy `dispatch`)=konfig admina; Z-131/074 (kolejka Job)=większy follow-up; Z-135/136 (monitoring/eval)=follow-up. |
 | Integracje | Z-150 – Z-158 | 13 | A.8 | ⬜ |
 | Testowanie / jakość | Z-174 – Z-188 | 14 | A.9 | 🟡 — testy DB-gated (izolacja/marketplace) + 7 markdown(XSS) + 9 skórek(CSS-inj) + 6 paginacji + 5 userTime(strefa/doba — **wykryły i naprawiły bug ~1 s w `end` doby**); + 6 currency(waluty) + 6 habitStats(serie) + 5 storeRoute(TSP) + 6 recurrence-edges + 4 storeLayout + 6 categorize + 6 ai-budget + 3 purge + 6 autoExpense + 4 keyset-integration + 3 permissions(RBAC) + 6 medicationSchedule + 7 petGenetics + 3 cache + 3 rateLimit + 4 petWelfare(alarmy terrariów); suite 161 testów, CI je odpala. Z-170/171/172/173 w P0. |
 | Współdzielenie / rodziny | Z-191 – Z-198 | 15 | A.12 | 🟡 — Z-190 ✅ (P0); Z-191 ✅ (team-awareness zweryfikowane: Shopping/Tasks/Notes/Kitchen/Pets/Health/Habits/Flota/Portfel/Languages/Storage/Workshop/Contacts mają `ownerTeamId`; Store/News/Weather/ProjectGroup celowo user-only); Z-192 🟡 (fundament „household": `Team.kind`, tworzenie rodziny + domyślne wspólne: lista zakupów + projekt zadań + badge; role rodzic/dziecko Z-194, onboarding Z-195, pełne auto-share = follow-up) |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-17 - Z-073: eliminacja N+1 (getTasksForProjects, bulkSetStorageQuantities). P1 10/129. Suite 161._
+_Ostatnia aktualizacja: 2026-06-17 - Z-132/Z-133: cache LLM (wpięty) + fallback modeli/dostawców (resolveLlmChain). P1 12/129. Suite 162._

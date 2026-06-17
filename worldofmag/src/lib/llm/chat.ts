@@ -1,7 +1,16 @@
-import { resolveLlm, type ResolvedLlm } from "./resolver";
+import { resolveLlmChain, type ResolvedLlm } from "./resolver";
 import type { OperationType } from "./operationTypes";
 import { cacheKeyFor, getCached, setCached } from "@/lib/ai/cache";
 import { checkAiBudget, recordAiUsage } from "@/lib/ai/usage";
+
+/**
+ * Z-133: czy błąd jest przejściowy (warto spróbować fallbacku na inny model/dostawcę).
+ * 429 (limit) i 5xx/sieć (503) — tak; 4xx (np. zły request, brak autoryzacji) — nie,
+ * bo ten sam request u zapasowego dostawcy też zawiedzie.
+ */
+export function isRetryableLlmStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
 
 // Wspólny interfejs do rozmów z LLM. Trasy budują wiadomości w stylu OpenAI,
 // a dispatcher tłumaczy je na format konkretnego dostawcy (OpenAI-compatible
@@ -62,8 +71,9 @@ function parseDataUrl(url: string): { mediaType: string; data: string } | null {
 
 /** Jednorazowa odpowiedź (bez streamingu). */
 export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
-  const cfg = await resolveLlm(opts.op);
-  if (!cfg) return UNCONFIGURED;
+  // Z-133: łańcuch [model admina → fallback Groq]. Próbujemy po kolei.
+  const chain = await resolveLlmChain(opts.op);
+  if (chain.length === 0) return UNCONFIGURED;
   // Z-511: opcjonalny cache (identyczne wejście → identyczne wyjście).
   const cacheKey = opts.cache
     ? cacheKeyFor({ op: opts.op, messages: opts.messages, temperature: opts.temperature, maxTokens: opts.maxTokens, json: opts.json })
@@ -77,27 +87,47 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
     const budget = await checkAiBudget(opts.userId);
     if (!budget.ok) return { ok: false, status: 429, message: budget.message };
   }
-  const res = cfg.kind === "anthropic" ? await anthropicComplete(cfg, opts) : await openAiComplete(cfg, opts);
-  if (cacheKey && res.ok) setCached(cacheKey, res.content, res.model);
-  if (opts.userId && res.ok) void recordAiUsage(opts.userId, res.usage?.total ?? 0).catch(() => {});
-  return res;
+
+  let last: Extract<ChatResult, { ok: false }> = { ok: false, status: 502, message: "LLM request failed" };
+  for (let i = 0; i < chain.length; i++) {
+    const cfg = chain[i];
+    const res = cfg.kind === "anthropic" ? await anthropicComplete(cfg, opts) : await openAiComplete(cfg, opts);
+    if (res.ok) {
+      if (cacheKey) setCached(cacheKey, res.content, res.model);
+      if (opts.userId) void recordAiUsage(opts.userId, res.usage?.total ?? 0).catch(() => {});
+      return res;
+    }
+    last = res;
+    // Błąd nieprzejściowy (4xx poza 429) → fallback nie pomoże, przerywamy.
+    if (!isRetryableLlmStatus(res.status)) break;
+    if (i < chain.length - 1) {
+      console.warn(`[llm] ${opts.op}: model ${cfg.model} niedostępny (status ${res.status}) — próbuję fallback`);
+    }
+  }
+  return last;
 }
 
 async function openAiComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<ChatResult> {
-  const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.apiKey}` },
-    body: JSON.stringify({
-      model: cfg.model,
-      messages: opts.messages,
-      temperature: opts.temperature ?? cfg.temperature ?? undefined,
-      max_tokens: opts.maxTokens ?? cfg.maxTokens ?? undefined,
-      ...(opts.json ? { response_format: { type: "json_object" } } : {}),
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${cfg.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.apiKey}` },
+      body: JSON.stringify({
+        model: cfg.model,
+        messages: opts.messages,
+        temperature: opts.temperature ?? cfg.temperature ?? undefined,
+        max_tokens: opts.maxTokens ?? cfg.maxTokens ?? undefined,
+        ...(opts.json ? { response_format: { type: "json_object" } } : {}),
+      }),
+    });
+  } catch (e) {
+    // Z-133: błąd sieci → status przejściowy (503), by zadziałał fallback.
+    return { ok: false, status: 503, message: `Błąd sieci LLM: ${(e as Error).message}`.slice(0, 200) };
+  }
   if (!res.ok) {
     const err = await res.text().catch(() => "unknown");
-    return { ok: false, status: 502, message: parseErr(err).slice(0, 200) };
+    return { ok: false, status: res.status, message: parseErr(err).slice(0, 200) };
   }
   const data = (await res.json().catch(() => null)) as
     | { choices?: Array<{ message?: { content?: string } }>; usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } }
@@ -153,24 +183,29 @@ function toAnthropic(messages: ChatMessage[]): {
 
 async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<ChatResult> {
   const { system, messages } = toAnthropic(opts.messages);
-  const res = await fetch(`${cfg.baseUrl}/messages`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": cfg.apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: cfg.model,
-      max_tokens: opts.maxTokens ?? cfg.maxTokens ?? 1024,
-      temperature: opts.temperature ?? cfg.temperature ?? undefined,
-      ...(system ? { system } : {}),
-      messages,
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${cfg.baseUrl}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": cfg.apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: cfg.model,
+        max_tokens: opts.maxTokens ?? cfg.maxTokens ?? 1024,
+        temperature: opts.temperature ?? cfg.temperature ?? undefined,
+        ...(system ? { system } : {}),
+        messages,
+      }),
+    });
+  } catch (e) {
+    return { ok: false, status: 503, message: `Błąd sieci LLM: ${(e as Error).message}`.slice(0, 200) };
+  }
   if (!res.ok) {
     const err = await res.text().catch(() => "unknown");
-    return { ok: false, status: 502, message: parseErr(err).slice(0, 200) };
+    return { ok: false, status: res.status, message: parseErr(err).slice(0, 200) };
   }
   const data = (await res.json().catch(() => null)) as
     | { content?: Array<{ type: string; text?: string }>; usage?: { input_tokens?: number; output_tokens?: number } }
@@ -198,55 +233,87 @@ const SSE_HEADERS = {
   Connection: "keep-alive",
 };
 
+/** Wynik próby otwarcia strumienia od jednego dostawcy (Z-133 fallback). */
+type StreamAttempt =
+  | { ok: true; response: Response }
+  | { ok: false; status: number; message: string };
+
 export async function chatStream(opts: ChatOptions): Promise<Response> {
-  const cfg = await resolveLlm(opts.op);
-  if (!cfg) return new Response(UNCONFIGURED.message, { status: 503 });
+  // Z-133: ten sam łańcuch fallbacku co w chatComplete — przy błędzie przejściowym
+  // (429/5xx/sieć) próbujemy kolejnego modelu, ZANIM strumień ruszy do klienta.
+  const chain = await resolveLlmChain(opts.op);
+  if (chain.length === 0) return new Response(UNCONFIGURED.message, { status: 503 });
 
-  if (cfg.kind === "anthropic") return anthropicStream(cfg, opts);
+  let lastStatus = 502;
+  let lastMsg = "LLM request failed";
+  for (let i = 0; i < chain.length; i++) {
+    const cfg = chain[i];
+    const attempt = cfg.kind === "anthropic" ? await anthropicStream(cfg, opts) : await openAiStream(cfg, opts);
+    if (attempt.ok) return attempt.response;
+    lastStatus = attempt.status;
+    lastMsg = attempt.message;
+    if (!isRetryableLlmStatus(attempt.status)) break;
+    if (i < chain.length - 1) {
+      console.warn(`[llm] stream ${opts.op}: model ${cfg.model} niedostępny (status ${attempt.status}) — próbuję fallback`);
+    }
+  }
+  return new Response(lastMsg, { status: lastStatus });
+}
 
-  const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.apiKey}` },
-    body: JSON.stringify({
-      model: cfg.model,
-      messages: opts.messages,
-      temperature: opts.temperature ?? cfg.temperature ?? undefined,
-      max_tokens: opts.maxTokens ?? cfg.maxTokens ?? undefined,
-      stream: true,
-    }),
-  });
+async function openAiStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<StreamAttempt> {
+  let res: Response;
+  try {
+    res = await fetch(`${cfg.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.apiKey}` },
+      body: JSON.stringify({
+        model: cfg.model,
+        messages: opts.messages,
+        temperature: opts.temperature ?? cfg.temperature ?? undefined,
+        max_tokens: opts.maxTokens ?? cfg.maxTokens ?? undefined,
+        stream: true,
+      }),
+    });
+  } catch (e) {
+    return { ok: false, status: 503, message: `Błąd sieci LLM: ${(e as Error).message}`.slice(0, 200) };
+  }
   if (!res.ok || !res.body) {
     const err = await res.text().catch(() => "LLM request failed");
-    return new Response(parseErr(err).slice(0, 200), { status: 502 });
+    return { ok: false, status: res.ok ? 502 : res.status, message: parseErr(err).slice(0, 200) };
   }
-  return new Response(res.body, { headers: SSE_HEADERS });
+  return { ok: true, response: new Response(res.body, { headers: SSE_HEADERS }) };
 }
 
 function openAiDelta(text: string): string {
   return `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`;
 }
 
-async function anthropicStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<Response> {
+async function anthropicStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<StreamAttempt> {
   const { system, messages } = toAnthropic(opts.messages);
-  const upstream = await fetch(`${cfg.baseUrl}/messages`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": cfg.apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: cfg.model,
-      max_tokens: opts.maxTokens ?? cfg.maxTokens ?? 1024,
-      temperature: opts.temperature ?? cfg.temperature ?? undefined,
-      ...(system ? { system } : {}),
-      messages,
-      stream: true,
-    }),
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(`${cfg.baseUrl}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": cfg.apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: cfg.model,
+        max_tokens: opts.maxTokens ?? cfg.maxTokens ?? 1024,
+        temperature: opts.temperature ?? cfg.temperature ?? undefined,
+        ...(system ? { system } : {}),
+        messages,
+        stream: true,
+      }),
+    });
+  } catch (e) {
+    return { ok: false, status: 503, message: `Błąd sieci LLM: ${(e as Error).message}`.slice(0, 200) };
+  }
   if (!upstream.ok || !upstream.body) {
     const err = await upstream.text().catch(() => "LLM request failed");
-    return new Response(parseErr(err).slice(0, 200), { status: 502 });
+    return { ok: false, status: upstream.ok ? 502 : upstream.status, message: parseErr(err).slice(0, 200) };
   }
 
   const reader = upstream.body.getReader();
@@ -288,5 +355,5 @@ async function anthropicStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<Res
     },
   });
 
-  return new Response(stream, { headers: SSE_HEADERS });
+  return { ok: true, response: new Response(stream, { headers: SSE_HEADERS }) };
 }
