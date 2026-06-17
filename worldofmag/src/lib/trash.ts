@@ -23,8 +23,26 @@ export async function recordTrash(
     },
   });
   // Sprzątanie: usuń przeterminowane wpisy tego użytkownika (free-tier: bez crona).
-  const cutoff = new Date(Date.now() - RETENTION_DAYS * 86_400_000);
-  await prisma.trashItem.deleteMany({ where: { userId, deletedAt: { lt: cutoff } } });
+  await prisma.trashItem.deleteMany({ where: { userId, deletedAt: { lt: trashCutoff() } } });
 }
 
 export const TRASH_RETENTION_DAYS = RETENTION_DAYS;
+
+/**
+ * Z-059: data graniczna retencji kosza — wpisy usunięte przed nią są do twardego
+ * usunięcia. Czysta funkcja (testowalna), wspólna dla inline-cleanup i globalnego sweepu.
+ */
+export function trashCutoff(now: Date = new Date(), retentionDays: number = RETENTION_DAYS): Date {
+  return new Date(now.getTime() - retentionDays * 86_400_000);
+}
+
+/**
+ * Z-059: globalne czyszczenie przeterminowanego kosza (WSZYSCY użytkownicy).
+ * Inline-cleanup w `recordTrash` dotyka tylko aktywnego usera — konta nieaktywne
+ * nigdy nie zwolniłyby swoich wpisów. Wołane z zewnętrznego wyzwalacza
+ * (`/api/cron/retention`), bo free tier nie ma natywnego crona. Zwraca liczbę usuniętych.
+ */
+export async function purgeExpiredTrash(now: Date = new Date()): Promise<number> {
+  const res = await prisma.trashItem.deleteMany({ where: { deletedAt: { lt: trashCutoff(now) } } });
+  return res.count;
+}
