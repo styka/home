@@ -71,7 +71,7 @@
 | Obszar | Zakres ID | Rozdz. | Plan | Status obszaru |
 |---|---|:--:|:--:|---|
 | Architektura i kod | Z-010 – Z-015 | 6 | A.2 | 🟡 — typecheck (`tsc`) w CI (Z-011/015 część). Pomiar ESLint: 74 problemy (gł. kosmetyka) → pełne wdrożenie do pliku decyzji #11; naprawiony realny bug `rules-of-hooks` w WeatherPage (mylący prefiks `use`→`requestGeolocation`). |
-| Dane / Prisma / skala bazy | Z-031 – Z-037 | 7 | A.2 | ⬜ (Z-030 w P0) |
+| Dane / Prisma / skala bazy | Z-031 – Z-037 | 7 | A.2 | 🟡 — Z-030 ✅ (P0); **Z-031 ✅** (migracja `0192_query_indexes`: `Task` i `Item` nie miały ŻADNEGO indeksu → dodane `Task(projectId,parentTaskId)`/`(parentTaskId)`/`(createdById)`/`(assigneeId)`, `TaskComment(taskId)`/`(userId)`, `TaskShare(taskId)`/`(userId)`, `Item(listId,status)`; drift-check czysty, build+161 testów zielone). Z-032 (pooler Neon)=infra/decyzja; Z-033/036 (jawne onDelete na ~108 FK)=duża migracja FK, follow-up; Z-034/035/037=P2. |
 | Bezpieczeństwo / RBAC / RODO | Z-054 – Z-059 | 8 | A.3 | 🟡 — Z-057 ✅ (testy bezpieczeństwa krytycznego renderera markdown + naprawiony XSS: linki `javascript:`/`data:` zablokowane, allowlista schematów, escape `"` w href). Z-050/051/052/053 w P0. Reszta (retencja Z-059, 2FA Z-058…) = TODO |
 | Wydajność / skalowalność | Z-071 – Z-083 | 9 | A.4 | ⬜ (Z-070 w P0) |
 | DevOps / CI/CD / koszty | Z-091 – Z-097 | 10 | A.5 | ⬜ (Z-090 w P0) |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-17 - Z-370 (Kontakty w RODO): naprawiony brak kasowania Contact/ServiceFavorite przy usuwaniu konta (kolumny bez FK). P1 8/129. Suite 161._
+_Ostatnia aktualizacja: 2026-06-17 - Z-031: indeksy zapytań (Task/Item/TaskComment/TaskShare miały zero indeksów). P1 9/129. Suite 161._

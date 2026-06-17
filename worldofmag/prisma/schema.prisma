@@ -420,6 +420,10 @@ model Item {
 
   list         ShoppingList      @relation(fields: [listId], references: [id], onDelete: Cascade)
   recipeOrigin ItemRecipeOrigin?
+
+  // Z-031: pozycje ładowane/filtrowane po (listId, status) — np. NEEDED do widoku,
+  // DONE do czyszczenia. Model nie miał żadnego indeksu (pełny skan przy każdej liście).
+  @@index([listId, status])
 }
 
 model ItemHistory {
@@ -701,6 +705,14 @@ model Task {
   tags      TaskTaskTag[]
   comments  TaskComment[]
   shares    TaskShare[]
+
+  // Z-031: indeksy pod realne zapytania list zadań (model nie miał żadnych).
+  // (projectId, parentTaskId) pokrywa główny widok listy (WHERE projectId=… AND
+  // parentTaskId IS NULL) i — jako prefiks — filtr po samym projectId.
+  @@index([projectId, parentTaskId])
+  @@index([parentTaskId])
+  @@index([createdById])
+  @@index([assigneeId])
 }
 
 model TaskTaskTag {
@@ -723,6 +735,10 @@ model TaskComment {
 
   task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User? @relation("TaskComments", fields: [userId], references: [id])
+
+  // Z-031: komentarze ładowane/kasowane po taskId; userId pod purge konta (RODO).
+  @@index([taskId])
+  @@index([userId])
 }
 
 model TaskShare {
@@ -736,6 +752,10 @@ model TaskShare {
   task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User? @relation("TaskShares", fields: [userId], references: [id])
   team Team? @relation("TeamTaskShares", fields: [teamId], references: [id])
+
+  // Z-031: udostępnienia ładowane po taskId; userId pod listę „udostępnione mi" + purge.
+  @@index([taskId])
+  @@index([userId])
 }
 
 // ─── Activity Tracking ────────────────────────────────────────────────────
