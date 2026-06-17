@@ -69,6 +69,27 @@ Migracje są **forward-only** w `migrate deploy` (Prisma nie ma `down`). Dlatego
   - ⏸️ **Wymaga decyzji/infrastruktury:** wybór planu Neona z odpowiednim oknem PITR + **jednorazowe
     przećwiczenie restore** i wpisanie zmierzonych RPO/RTO tutaj.
 
+## 4a. Sekrety i szyfrowanie kluczy (Z-054)
+
+Klucze API (Groq, Brave, ORS…) są **szyfrowane w spoczynku** (`src/lib/crypto/secrets.ts`,
+AES-256-GCM, prefiks `enc:v1:`). Klucz szyfrujący jest wyprowadzany z env
+**`CONFIG_SECRET`** (a gdy brak — z **`AUTH_SECRET`**).
+
+**Zasady:**
+- **Sekret musi być STAŁY** i trzymany w **menedżerze sekretów Render** (env), **nigdy w repo**.
+- **Rotacja `CONFIG_SECRET`/`AUTH_SECRET` bez re-szyfrowania = utrata wszystkich kluczy** —
+  `decryptSecret` zwróci wtedy `""` (zły klucz), więc integracje przestaną działać.
+- Bez ustawionego sekretu używany jest **deterministyczny, niebezpieczny fallback**
+  (`omnia-insecure-fallback`) — `/admin/health` pokazuje wtedy check
+  „Szyfrowanie sekretów" jako **czerwony** (`isSecretConfigured() === false`). Na prod **musi być
+  zielony**.
+
+**Procedura rotacji (gdy konieczna):** dopóki sekret jest stały — nie ruszać. Jeśli trzeba zmienić:
+1. Skrypt: odczytaj wszystkie sekrety (`Config`, `LlmProvider.apiKey`), `decryptSecret` starym kluczem.
+2. Ustaw nowy `CONFIG_SECRET`.
+3. `encryptSecret` nowym kluczem i zapisz. Dopiero potem usuń stary.
+(Wartości plaintext bez prefiksu `enc:v1:` są wstecznie kompatybilne — zaszyfrują się przy pierwszym zapisie.)
+
 ## 5. Checklist przed ryzykownym deployem
 - [ ] CI zielone (verify).
 - [ ] Migracja idempotentna (`IF [NOT] EXISTS`, dollar-quoting przy seedach SQL).

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { OPERATION_TYPES, OPERATION_TYPE_META } from "@/lib/llm/operationTypes";
+import { isSecretConfigured } from "@/lib/crypto/secrets";
 
 async function requireAdmin() {
   const session = await auth();
@@ -64,6 +65,8 @@ export async function getSystemHealth(): Promise<SystemHealth> {
   const integrations: HealthCheck[] = [
     { label: "Brave Search (web_search)", ok: await cfg("brave_search_api_key") || !!process.env.BRAVE_SEARCH_API_KEY, detail: "wyszukiwarka asystenta/Wiadomości" },
     { label: "OpenRouteService (Truck)", ok: await cfg("ors_api_key") || !!process.env.ORS_API_KEY, detail: "trasowanie ciężarówek" },
+    // Z-054: czy klucz szyfrujący sekrety jest ustawiony (inaczej niebezpieczny fallback).
+    { label: "Szyfrowanie sekretów (CONFIG_SECRET/AUTH_SECRET)", ok: isSecretConfigured(), detail: isSecretConfigured() ? "klucz ustawiony" : "BRAK — używany niebezpieczny fallback! Ustaw sekret w env." },
   ];
 
   // Liczby rekordów kluczowych encji.

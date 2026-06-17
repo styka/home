@@ -60,10 +60,12 @@ Legenda statusu: 🔓 czeka na decyzję · ✅ zdecydowane/wdrożone.
 - **Brakuje:** reguła automatyczna (jeśli pożądana).
 
 ## 9. Bezpieczeństwo konta: 2FA / sesje / sekrety (Z-058 / Z-054) 🔓
-- **Decyzja:** czy wdrażać 2FA + zarządzanie sesjami/urządzeniami (po fundamencie); potwierdzenie procedury
-  stałego `AUTH_SECRET`/`CONFIG_SECRET` (menedżer sekretów Render, bez rotacji bez re-szyfrowania).
-- **Gotowe:** logowanie Google, szyfrowanie kluczy at-rest (`secrets.ts`).
-- **Brakuje:** decyzja o 2FA; spisanie procedury sekretów.
+- **Decyzja:** czy wdrażać 2FA + zarządzanie sesjami/urządzeniami (po fundamencie).
+- **Gotowe:** logowanie Google, szyfrowanie kluczy at-rest (`secrets.ts`). **Z-054 ZROBIONE:** procedura
+  stałego `CONFIG_SECRET`/`AUTH_SECRET` spisana w `docs/devops/runbook-deploy-rollback.md` (§4a — sekret w
+  env Render, rotacja wymaga re-szyfrowania, inaczej utrata kluczy); diagnostyka `isSecretConfigured()`
+  pokazywana w `/admin/health` (czerwony gdy niebezpieczny fallback).
+- **Brakuje (decyzja):** tylko **Z-058** — czy/kiedy 2FA + zarządzanie sesjami (po fundamencie RODO).
 
 ## 11. ESLint pełny + sprzątanie (Z-011 / Z-015) 🔓
 - **Decyzja:** czy wdrażamy ESLint jako bramkę (wymaga apetytu na cleanup). Pomiar: na obecnym kodzie
