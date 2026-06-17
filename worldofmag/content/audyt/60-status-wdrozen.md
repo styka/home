@@ -73,7 +73,7 @@
 | Architektura i kod | Z-010 – Z-015 | 6 | A.2 | 🟡 — typecheck (`tsc`) w CI (Z-011/015 część). Pomiar ESLint: 74 problemy (gł. kosmetyka) → pełne wdrożenie do pliku decyzji #11; naprawiony realny bug `rules-of-hooks` w WeatherPage (mylący prefiks `use`→`requestGeolocation`). |
 | Dane / Prisma / skala bazy | Z-031 – Z-037 | 7 | A.2 | 🟡 — Z-030 ✅ (P0); **Z-031 ✅** (migracja `0192_query_indexes`: `Task` i `Item` nie miały ŻADNEGO indeksu → dodane `Task(projectId,parentTaskId)`/`(parentTaskId)`/`(createdById)`/`(assigneeId)`, `TaskComment(taskId)`/`(userId)`, `TaskShare(taskId)`/`(userId)`, `Item(listId,status)`; drift-check czysty, build+161 testów zielone). Z-032 (pooler Neon)=infra/decyzja; Z-033/036 (jawne onDelete na ~108 FK)=duża migracja FK, follow-up; Z-034/035/037=P2. |
 | Bezpieczeństwo / RBAC / RODO | Z-054 – Z-059 | 8 | A.3 | 🟡 — Z-057 ✅ (testy bezpieczeństwa krytycznego renderera markdown + naprawiony XSS: linki `javascript:`/`data:` zablokowane, allowlista schematów, escape `"` w href). Z-050/051/052/053 w P0. Reszta (retencja Z-059, 2FA Z-058…) = TODO |
-| Wydajność / skalowalność | Z-071 – Z-083 | 9 | A.4 | ⬜ (Z-070 w P0) |
+| Wydajność / skalowalność | Z-071 – Z-083 | 9 | A.4 | 🟡 — Z-070 ✅ (P0, keyset); **Z-073 ✅** (eliminacja N+1: `getTasksForProjects` — N× `assertProjectAccess` → 1 zapytanie filtrujące po tej samej regule dostępu; `bulkSetStorageQuantities` (spis magazynu) — N× `findUnique` → 1 `findMany`+mapa. Kalendarz już zoptymalizowany — `Promise.all` + nested `select`). Z-072 (cache `unstable_cache`)=follow-up; Z-071 (wirtualizacja, `@tanstack/virtual`)=nowa zależność; Z-075/094 (płatny tier)=decyzja kosztowa; Z-082/083=plan/P2. |
 | DevOps / CI/CD / koszty | Z-091 – Z-097 | 10 | A.5 | ⬜ (Z-090 w P0) |
 | UX / design system / a11y / i18n | Z-110 – Z-118 | 11 | A.6 | ⬜ (Z-111 w P0) |
 | AI / LLM | Z-131 – Z-138 | 12 | A.7 | ⬜ (Z-130 w P0) |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-17 - Z-031: indeksy zapytań (Task/Item/TaskComment/TaskShare miały zero indeksów). P1 9/129. Suite 161._
+_Ostatnia aktualizacja: 2026-06-17 - Z-073: eliminacja N+1 (getTasksForProjects, bulkSetStorageQuantities). P1 10/129. Suite 161._

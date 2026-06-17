@@ -242,11 +242,16 @@ export async function bulkSetStorageQuantities(
   const teamIds = await getUserTeamIds(user.id);
 
   await prisma.$transaction(async (tx) => {
+    // Z-073: jeden odczyt pozycji zamiast findUnique per wiersz (N+1) — przy spisie
+    // całego magazynu to dziesiątki/setki zapytań mniej.
+    const items = await tx.storageItem.findMany({
+      where: { id: { in: updates.map((u) => u.id) } },
+      select: { id: true, ownerId: true, ownerTeamId: true, quantity: true },
+    });
+    const byId = new Map(items.map((it) => [it.id, it]));
+
     for (const u of updates) {
-      const item = await tx.storageItem.findUnique({
-        where: { id: u.id },
-        select: { ownerId: true, ownerTeamId: true, quantity: true },
-      });
+      const item = byId.get(u.id);
       if (!item) continue;
       if (item.ownerId !== user.id && (!item.ownerTeamId || !teamIds.includes(item.ownerTeamId))) {
         throw new Error("Brak dostępu do pozycji");

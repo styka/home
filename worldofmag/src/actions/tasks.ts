@@ -58,15 +58,17 @@ export async function getTasks(projectId: string): Promise<Task[]> {
 export async function getTasksForProjects(projectIds: string[]): Promise<Task[]> {
   const user = await requireAuth();
 
-  const allowed: string[] = [];
-  for (const id of projectIds) {
-    try {
-      await assertProjectAccess(id, user.id);
-      allowed.push(id);
-    } catch {
-      /* brak dostępu lub nieistniejący projekt — pomijamy */
-    }
-  }
+  // Z-073: zamiast assertProjectAccess() per projekt (N+1 zapytań) — jedno
+  // zapytanie filtrujące po tej samej regule dostępu co guard (właściciel LUB
+  // członek). Wynik = dostępne ID; brak dostępu/nieistniejące po prostu odpadają.
+  const allowedRows = await prisma.taskProject.findMany({
+    where: {
+      id: { in: projectIds },
+      OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }],
+    },
+    select: { id: true },
+  });
+  const allowed = allowedRows.map((p) => p.id);
   if (allowed.length === 0) return [];
 
   const tasks = await prisma.task.findMany({
