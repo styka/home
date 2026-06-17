@@ -126,7 +126,7 @@ export function WeatherPage({
     loadAdvice();
   }, [loadAdvice]);
 
-  function useGeolocation() {
+  function requestGeolocation() {
     if (!navigator.geolocation) {
       showToast("Geolokalizacja niedostępna", "error");
       return;
@@ -237,7 +237,7 @@ export function WeatherPage({
           locations={locations}
           onClose={() => setShowLocations(false)}
           onUseGeo={() => {
-            useGeolocation();
+            requestGeolocation();
             setShowLocations(false);
           }}
           onPick={(l) => {

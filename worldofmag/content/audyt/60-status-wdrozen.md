@@ -70,7 +70,7 @@
 
 | Obszar | Zakres ID | Rozdz. | Plan | Status obszaru |
 |---|---|:--:|:--:|---|
-| Architektura i kod | Z-010 – Z-015 | 6 | A.2 | ⬜ |
+| Architektura i kod | Z-010 – Z-015 | 6 | A.2 | 🟡 — typecheck (`tsc`) w CI (Z-011/015 część). Pomiar ESLint: 74 problemy (gł. kosmetyka) → pełne wdrożenie do pliku decyzji #11; naprawiony realny bug `rules-of-hooks` w WeatherPage (mylący prefiks `use`→`requestGeolocation`). |
 | Dane / Prisma / skala bazy | Z-031 – Z-037 | 7 | A.2 | ⬜ (Z-030 w P0) |
 | Bezpieczeństwo / RBAC / RODO | Z-054 – Z-059 | 8 | A.3 | 🟡 — Z-057 ✅ (testy bezpieczeństwa krytycznego renderera markdown + naprawiony XSS: linki `javascript:`/`data:` zablokowane, allowlista schematów, escape `"` w href). Z-050/051/052/053 w P0. Reszta (retencja Z-059, 2FA Z-058…) = TODO |
 | Wydajność / skalowalność | Z-071 – Z-083 | 9 | A.4 | ⬜ (Z-070 w P0) |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 - testy alarmow srodowiskowych terrariow (Z-174). Suite 161. Pokryta cala istotna logika czysta._
+_Ostatnia aktualizacja: 2026-06-16 - branch v2 (merge zamiast develop); fix hooka WeatherPage; ESLint zmierzony->decyzje. Suite 161._

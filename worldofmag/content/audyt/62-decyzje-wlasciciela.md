@@ -65,6 +65,16 @@ Legenda statusu: 🔓 czeka na decyzję · ✅ zdecydowane/wdrożone.
 - **Gotowe:** logowanie Google, szyfrowanie kluczy at-rest (`secrets.ts`).
 - **Brakuje:** decyzja o 2FA; spisanie procedury sekretów.
 
+## 11. ESLint pełny + sprzątanie (Z-011 / Z-015) 🔓
+- **Decyzja:** czy wdrażamy ESLint jako bramkę (wymaga apetytu na cleanup). Pomiar: na obecnym kodzie
+  `next lint` daje **74 problemy** — większość kosmetyczna (`react/no-unescaped-entities` — literalny `"`
+  w JSX; `react-hooks/exhaustive-deps` — często celowe) + kwestia konfiguracji pluginu `@typescript-eslint`.
+- **Gotowe:** typecheck (`tsc --noEmit`) już jest bramką w CI (połowa Z-011/Z-015). Realny bug znaleziony
+  przy pomiarze (hook-w-callbacku w WeatherPage) — **naprawiony**.
+- **Brakuje:** decyzja, czy poświęcić czas na konfigurację reguł + przejście 74 pozycji, zanim ESLint
+  stanie się blokujący (inaczej będzie szum). Rekomendacja: włączyć z wyłączoną kosmetyką + naprawić tylko
+  realne błędy (rules-of-hooks, no-assign-module-variable), reszta jako warning.
+
 ## 10. Model reklam (Z-474, P2) 🔓
 - **Decyzja:** czy/jak reklamy kontekstowe (bez profilowania), z opcją „wyłącz" — dopiero po freemium/B2B.
 - **Brakuje:** decyzja kierunkowa.
