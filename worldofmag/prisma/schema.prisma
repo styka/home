@@ -1737,6 +1737,7 @@ model FinanceSettings {
   autoExpenseEnabled   Boolean  @default(false)
   autoExpenseElementId String? // docelowy element portfela dla auto-wydatków
   baseCurrency         String   @default("PLN") // W5: waluta sprawozdawcza (przeliczanie majątku)
+  aiAccessEnabled      Boolean  @default(true) // Z-055: czy asystent AI może czytać dane finansowe (opt-out, domyślnie wł.)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 

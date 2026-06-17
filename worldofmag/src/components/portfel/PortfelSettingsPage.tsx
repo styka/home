@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Settings, ChevronLeft, Loader2, Check, Coins, Trash2, RefreshCw, Plus } from "lucide-react";
 import { PageHeader, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { setFinanceSettings, type FinanceSettingsDTO } from "@/actions/portfelAuto";
+import { FinanceAiAccessToggle } from "./FinanceAiAccessToggle";
 import {
   setBaseCurrency, setExchangeRate, deleteExchangeRate, refreshRatesFromNBP,
   type ExchangeRateDTO,
@@ -89,6 +90,11 @@ export function PortfelSettingsPage({ accounts, settings, currency }: Props) {
             {pending && <><Loader2 size={13} className="animate-spin" style={{ color: "var(--text-muted)" }} /> <span style={{ color: "var(--text-muted)" }}>Zapisuję…</span></>}
             {!pending && saved && <><Check size={13} style={{ color: "var(--accent-green)" }} /> <span style={{ color: "var(--accent-green)" }}>Zapisano</span></>}
           </div>
+        </div>
+
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 8px" }}>Prywatność i AI</h2>
+          <FinanceAiAccessToggle />
         </div>
 
         <CurrencySection baseCurrency={currency.baseCurrency} rates={currency.rates} />

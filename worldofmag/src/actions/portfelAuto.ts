@@ -7,6 +7,7 @@ import { requireAuth } from "@/lib/server-utils";
 export type FinanceSettingsDTO = {
   autoExpenseEnabled: boolean;
   autoExpenseElementId: string | null;
+  aiAccessEnabled: boolean;
 };
 
 export async function getFinanceSettings(): Promise<FinanceSettingsDTO> {
@@ -15,12 +16,14 @@ export async function getFinanceSettings(): Promise<FinanceSettingsDTO> {
   return {
     autoExpenseEnabled: s?.autoExpenseEnabled ?? false,
     autoExpenseElementId: s?.autoExpenseElementId ?? null,
+    aiAccessEnabled: s?.aiAccessEnabled ?? true, // Z-055: domyślnie wł. (opt-out)
   };
 }
 
 export async function setFinanceSettings(patch: {
   autoExpenseEnabled?: boolean;
   autoExpenseElementId?: string | null;
+  aiAccessEnabled?: boolean;
 }): Promise<void> {
   const user = await requireAuth();
 
@@ -32,9 +35,10 @@ export async function setFinanceSettings(patch: {
   }
   if (elementId === undefined) elementId = undefined; // nie zmieniaj, gdy nie podano
 
-  const data: { autoExpenseEnabled?: boolean; autoExpenseElementId?: string | null } = {};
+  const data: { autoExpenseEnabled?: boolean; autoExpenseElementId?: string | null; aiAccessEnabled?: boolean } = {};
   if (patch.autoExpenseEnabled !== undefined) data.autoExpenseEnabled = patch.autoExpenseEnabled;
   if (patch.autoExpenseElementId !== undefined) data.autoExpenseElementId = patch.autoExpenseElementId || null;
+  if (patch.aiAccessEnabled !== undefined) data.aiAccessEnabled = patch.aiAccessEnabled;
 
   await prisma.financeSettings.upsert({
     where: { userId: user.id },
@@ -42,6 +46,7 @@ export async function setFinanceSettings(patch: {
       userId: user.id,
       autoExpenseEnabled: data.autoExpenseEnabled ?? false,
       autoExpenseElementId: data.autoExpenseElementId ?? null,
+      aiAccessEnabled: data.aiAccessEnabled ?? true,
     },
     update: data,
   });

@@ -461,6 +461,12 @@ export async function runReadTool(
     }
 
     case "list_wallet": {
+      // Z-055: dane finansowe (salda/długi) trafiają do AI tylko, gdy użytkownik
+      // nie wyłączył dostępu (opt-out, domyślnie włączony — brak rekordu = dozwolone).
+      const fs = await prisma.financeSettings.findUnique({ where: { userId }, select: { aiAccessEnabled: true } });
+      if (fs && fs.aiAccessEnabled === false) {
+        return [{ note: "Dostęp AI do danych finansowych jest wyłączony. Włącz go w Portfel → Ustawienia, jeśli chcesz, by asystent z nich korzystał." }];
+      }
       const elements = await prisma.walletElement.findMany({
         where: { archived: false, ...(await ownerScope(userId)) },
         select: { id: true, name: true, kind: true, balance: true },
