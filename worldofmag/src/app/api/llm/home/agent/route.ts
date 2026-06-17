@@ -393,11 +393,11 @@ function normalizeActions(raw: unknown): AIAction[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .map((a: Partial<AIAction>, i: number): AIAction | null => {
-      const module = a.module && (MODULES as readonly string[]).includes(a.module) ? a.module : "shopping";
+      const moduleSlug = a.module && (MODULES as readonly string[]).includes(a.module) ? a.module : "shopping";
       if (!a.type) return null;
       return {
         id: a.id ?? `a${i + 1}`,
-        module: module as AIAction["module"],
+        module: moduleSlug as AIAction["module"],
         type: a.type,
         description: a.description ?? "",
         params: (a.params as Record<string, unknown>) ?? {},

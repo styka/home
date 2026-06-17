@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 - branch v2 (merge zamiast develop); fix hooka WeatherPage; ESLint zmierzony->decyzje. Suite 161._
+_Ostatnia aktualizacja: 2026-06-16 - fix 2x no-assign-module-variable (drive/upload, agent). Merge -> v2. Suite 161._
