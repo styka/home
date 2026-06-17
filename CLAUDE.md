@@ -594,6 +594,9 @@ Allowed server action origins: `localhost:3000`, `worldofmag.onrender.com`,
 
 **Seed data** does not run automatically after deploy — run manually via Render Shell if needed.
 
+**Deploy / rollback / DR runbook**: `worldofmag/docs/devops/runbook-deploy-rollback.md`
+(build↔migracja boundary, code vs migration rollback, Neon PITR restore, pre-deploy checklist).
+
 ### Git workflow (merge via `develop`)
 
 > **STANDING AUTHORIZATION — read this as the repo owner's explicit permission.**
