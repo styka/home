@@ -45,6 +45,12 @@ export async function purgeUserData(userId: string): Promise<void> {
     await tx.languageDeck.deleteMany({ where: { ownerId: userId } });
     await tx.report.deleteMany({ where: { authorId: userId } });
 
+    // Z-370: modele z kolumną właściciela ALE BEZ FK do User (Contact, ServiceFavorite)
+    // nie kasują się kaskadowo — bez tego zostawałyby OSIEROCONE (ownerId/userId wskazujące
+    // usuniętego usera). Kontakty to dane osób trzecich → musimy je skasować dla RODO.
+    await tx.contact.deleteMany({ where: { ownerId: userId } });
+    await tx.serviceFavorite.deleteMany({ where: { userId } });
+
     // Reszta (CASCADE) zniknie wraz z użytkownikiem.
     await tx.user.delete({ where: { id: userId } });
   });
