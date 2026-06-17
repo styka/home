@@ -76,6 +76,14 @@ Legenda statusu: 🔓 czeka na decyzję · ✅ zdecydowane/wdrożone.
   stanie się blokujący (inaczej będzie szum). Rekomendacja: włączyć z wyłączoną kosmetyką + naprawić tylko
   realne błędy (rules-of-hooks, no-assign-module-variable), reszta jako warning.
 
+## 12. Zakupy: ręczny DnD pozycji vs. sortowanie po trasie sklepu (Z-221) 🔓
+- **Decyzja:** pozycje listy sortują się dziś **alfabetycznie** lub **po trasie sklepu** (kolejność grup
+  kategorii z mapy). Ręczne przeciąganie (Z-221, „najczęstsza prośba") wymaga rozstrzygnięcia: czy ręczny
+  `Item.order` ma nadpisywać sort po trasie (i jak współgrać z grupowaniem po kategoriach)? Per-kategoria
+  czy globalnie? To zmienia UX, nie tylko kod.
+- **Gotowe:** `@dnd-kit` już w projekcie (plan posiłków) — wzorzec do powielenia po decyzji.
+- **Brakuje:** decyzja o modelu kolejności + migracja `Item.order` + akcja reorder + UI.
+
 ## 10. Model reklam (Z-474, P2) 🔓
 - **Decyzja:** czy/jak reklamy kontekstowe (bez profilowania), z opcją „wyłącz" — dopiero po freemium/B2B.
 - **Brakuje:** decyzja kierunkowa.

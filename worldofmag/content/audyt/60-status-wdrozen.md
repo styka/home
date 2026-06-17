@@ -80,7 +80,7 @@
 | Integracje | Z-150 – Z-158 | 13 | A.8 | ⬜ |
 | Testowanie / jakość | Z-174 – Z-188 | 14 | A.9 | 🟡 — testy DB-gated (izolacja/marketplace) + 7 markdown(XSS) + 9 skórek(CSS-inj) + 6 paginacji + 5 userTime(strefa/doba — **wykryły i naprawiły bug ~1 s w `end` doby**); + 6 currency(waluty) + 6 habitStats(serie) + 5 storeRoute(TSP) + 6 recurrence-edges + 4 storeLayout + 6 categorize + 6 ai-budget + 3 purge + 6 autoExpense + 4 keyset-integration + 3 permissions(RBAC) + 6 medicationSchedule + 7 petGenetics + 3 cache + 3 rateLimit + 4 petWelfare(alarmy terrariów); suite 161 testów, CI je odpala. Z-170/171/172/173 w P0. |
 | Współdzielenie / rodziny | Z-191 – Z-198 | 15 | A.12 | 🟡 — Z-190 ✅ (P0); Z-191 ✅ (team-awareness zweryfikowane: Shopping/Tasks/Notes/Kitchen/Pets/Health/Habits/Flota/Portfel/Languages/Storage/Workshop/Contacts mają `ownerTeamId`; Store/News/Weather/ProjectGroup celowo user-only); Z-192 🟡 (fundament „household": `Team.kind`, tworzenie rodziny + domyślne wspólne: lista zakupów + projekt zadań + badge; role rodzic/dziecko Z-194, onboarding Z-195, pełne auto-share = follow-up) |
-| Audyt modułów | Z-210 – Z-419 | 16–41 | wg obszaru | ⬜ (P0: Z-210/211/270/341/360/430) |
+| Audyt modułów | Z-210 – Z-419 | 16–41 | wg obszaru | 🟡 (P0: Z-210/211/270/341/360/430 ✅). **Zakupy** zweryfikowane: Z-220 (modal tworzenia listy) ✅ już jest, Z-224 (archiwizacja/„zakończ zakupy") ✅ już jest; Z-221 (DnD pozycji) → decyzja #12 (kolizja z sortem po trasie); Z-222/223/225 = P2/M. Reszta modułów do weryfikacji per chapter. |
 | Model biznesowy / monetyzacja | Z-470 – Z-476 | 42 | A.10 | 🟡 — Z-471 ✅ (`Subscription` + `lib/plans.ts` getActivePlan/hasFeature + sekcja „Twój plan"; AI-budżet czyta plan); Z-472=Z-130 ✅; Z-510 ✅. ⏸️ Z-473 bramka płatności + Z-470 linia free/premium = decyzja właściciela; Z-474 reklamy=P2; Z-476 prowizja marketplace=TODO |
 | Strategia podaplikacji | Z-490 – Z-495 | 43 | A.11 | ⬜ |
 | Model ilościowy | Z-512 – Z-515 | 44 | A.10 | ⬜ (Z-510/511 w P0) |
@@ -88,4 +88,4 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-16 - fix 2x no-assign-module-variable (drive/upload, agent). Merge -> v2. Suite 161._
+_Ostatnia aktualizacja: 2026-06-16 - weryfikacja modulu Zakupy (Z-220/224 juz zrobione; Z-221 -> decyzja #12). Suite 161._
