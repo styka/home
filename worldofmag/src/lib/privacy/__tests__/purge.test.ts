@@ -22,6 +22,9 @@ test("Z-051 purgeUserData: kasuje dane usera (w tym SET-NULL), izolacja innych z
   await prisma.recipe.create({ data: { title: "r", slug: `r-${rnd()}`, ownerId: A.id } });
   // Z-370: Contact ma ownerId BEZ FK — bez jawnego delete zostałby osierocony.
   await prisma.contact.create({ data: { name: "Jan Kowalski", ownerId: A.id } });
+  // Z-050/Z-051: zgody RODO + ustawienia zdrowia (FK CASCADE → znikają z userem).
+  await prisma.userConsent.create({ data: { userId: A.id, documentKey: "privacy", version: "1" } });
+  await prisma.healthSettings.create({ data: { userId: A.id, aiOptIn: true } });
   // Dane B — kontrola izolacji
   await prisma.note.create({ data: { title: "B-note", ownerId: B.id } });
   await prisma.contact.create({ data: { name: "B-contact", ownerId: B.id } });
@@ -37,6 +40,8 @@ test("Z-051 purgeUserData: kasuje dane usera (w tym SET-NULL), izolacja innych z
       assert.equal(await prisma.taskProject.count({ where: { ownerId: A.id } }), 0);
       assert.equal(await prisma.task.count({ where: { createdById: A.id } }), 0);
       assert.equal(await prisma.contact.count({ where: { ownerId: A.id } }), 0, "Z-370: kontakty (bez FK) skasowane, nie osierocone");
+      assert.equal(await prisma.userConsent.count({ where: { userId: A.id } }), 0, "zgody RODO skasowane (CASCADE)");
+      assert.equal(await prisma.healthSettings.count({ where: { userId: A.id } }), 0, "ustawienia zdrowia skasowane (CASCADE)");
     });
 
     await t.test("dane usera B nietknięte (izolacja)", async () => {

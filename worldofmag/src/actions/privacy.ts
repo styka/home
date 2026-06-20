@@ -111,6 +111,9 @@ export async function exportMyData(): Promise<UserDataExport> {
     skinPref,
     ownedSkins,
     userActivity,
+    // Z-050 (uzupełnienie): ustawienia zdrowia (aiOptIn) + rejestr zgód RODO.
+    healthSettings,
+    userConsents,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -194,6 +197,8 @@ export async function exportMyData(): Promise<UserDataExport> {
     prisma.userSkinPref.findUnique({ where: { userId } }),
     prisma.skin.findMany({ where: own }),
     prisma.userActivity.findMany({ where: byUser, take: 1000, orderBy: { createdAt: "desc" } }),
+    prisma.healthSettings.findUnique({ where: { userId } }),
+    prisma.userConsent.findMany({ where: { userId } }),
   ]);
 
   return {
@@ -213,7 +218,7 @@ export async function exportMyData(): Promise<UserDataExport> {
     notes: { notes, groups: noteGroups },
     kitchen: { recipes, cookbooks, mealPlans, pantryItems, recipeRatings },
     pets: { pets, enclosures: petEnclosures, breedingPairs: petBreedingPairs, sales: petSales },
-    health: { events: healthEvents, medicationSchedules },
+    health: { events: healthEvents, medicationSchedules, settings: healthSettings },
     habits,
     flota: { vehicles, vehicleProfile },
     portfel: { walletElements, budgets, financeGoals, financeSettings, exchangeRates },
@@ -225,6 +230,7 @@ export async function exportMyData(): Promise<UserDataExport> {
     services: { provider: serviceProvider, categories: serviceCategories, requestsAsClient: serviceRequests, reviews: serviceReviews, favorites: serviceFavorites, sentMessages: sentServiceMessages },
     contacts,
     ai: { conversations: aiConversations },
+    consents: userConsents, // Z-050: rejestr zgód RODO (regulamin/polityka prywatności)
     system: { notifications, trashItems, dashboardPref, menuPref, skinPref, ownedSkins, recentActivity: userActivity },
   };
 }
