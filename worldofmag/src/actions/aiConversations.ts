@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
 import type { Prisma } from "@prisma/client";
+import { MESSAGE_WINDOW, boundMessageData } from "@/lib/ai/conversationLimits";
 
 // Pamięć rozmów asystenta AID ("magiczna ikona"). Wszystko per-user (ownerId === userId);
 // rozmowy zespołowe nie istnieją — to prywatny asystent użytkownika.
@@ -46,13 +47,17 @@ export async function getAiConversation(
       id: true,
       title: true,
       messages: {
-        orderBy: { createdAt: "asc" },
+        // Z-215: ładuj tylko najnowsze MESSAGE_WINDOW (zejście od najnowszych),
+        // potem odwróć do porządku chronologicznego do wyświetlenia.
+        orderBy: { createdAt: "desc" },
+        take: MESSAGE_WINDOW,
         select: { id: true, role: true, content: true, kind: true, data: true, createdAt: true },
       },
     },
   });
   if (!convo) return null;
-  return { id: convo.id, title: convo.title, messages: convo.messages as StoredMessage[] };
+  const messages = (convo.messages as StoredMessage[]).slice().reverse();
+  return { id: convo.id, title: convo.title, messages };
 }
 
 function deriveTitle(firstText: string): string {
@@ -91,7 +96,8 @@ export async function appendAiMessage(
       role: msg.role === "assistant" ? "assistant" : "user",
       content: msg.content,
       kind: msg.kind ?? "text",
-      data: (msg.data ?? undefined) as Prisma.InputJsonValue | undefined,
+      // Z-215: ogranicz rozmiar sidecara `data` (plan/wyniki) — chroni przed wielkim wierszem.
+      data: boundMessageData(msg.data) as Prisma.InputJsonValue | undefined,
     },
     select: { id: true, role: true, content: true, kind: true, data: true, createdAt: true },
   });
