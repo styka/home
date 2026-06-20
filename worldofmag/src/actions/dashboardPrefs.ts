@@ -3,13 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
+import { sanitizeSectionKeys } from "@/lib/home/dashboardSections";
 
 export type DashboardPrefsDTO = { order: string[]; hidden: string[] };
 
 function parseArr(s: string | null | undefined): string[] {
   try {
     const v = JSON.parse(s ?? "[]");
-    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+    // Z-218: tylko znane klucze sekcji (literówki nie tworzą martwych pozycji).
+    return sanitizeSectionKeys(v);
   } catch {
     return [];
   }
@@ -23,8 +25,9 @@ export async function getDashboardPrefs(): Promise<DashboardPrefsDTO> {
 
 export async function setDashboardPrefs(prefs: DashboardPrefsDTO): Promise<void> {
   const user = await requireAuth();
-  const order = JSON.stringify((prefs.order ?? []).slice(0, 40));
-  const hidden = JSON.stringify((prefs.hidden ?? []).slice(0, 40));
+  // Z-218: waliduj klucze przed zapisem (whitelist + dedup).
+  const order = JSON.stringify(sanitizeSectionKeys(prefs.order));
+  const hidden = JSON.stringify(sanitizeSectionKeys(prefs.hidden));
   await prisma.dashboardPref.upsert({
     where: { userId: user.id },
     create: { userId: user.id, order, hidden },
