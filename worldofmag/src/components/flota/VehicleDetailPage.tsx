@@ -11,7 +11,7 @@ import {
   addVehicleAttachment, deleteVehicleAttachment,
   type VehicleWithStats,
 } from "@/actions/flota";
-import { FUEL_LABELS, SERVICE_LABELS, deadlineStatus, computeConsumption } from "@/lib/flota";
+import { FUEL_LABELS, SERVICE_LABELS, deadlineStatus, computeConsumption, computeVehicleTCO } from "@/lib/flota";
 import { pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 
 export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
@@ -19,6 +19,7 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
   const [isPending, startTransition] = useTransition();
 
   const cons = computeConsumption(vehicle.fuelLogs);
+  const tco = computeVehicleTCO(vehicle.fuelLogs, vehicle.services); // Z-291
   const insp = deadlineStatus(vehicle.inspectionDue);
   const ins = deadlineStatus(vehicle.insuranceDue);
 
@@ -87,6 +88,14 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
               <input type="date" defaultValue={vehicle.insuranceDue ? new Date(vehicle.insuranceDue).toISOString().slice(0, 10) : ""} onChange={(e) => saveDeadline("insuranceDue", e.target.value)} style={dateInput} />
             </label>
           </div>
+          {/* Z-291: TCO — koszt posiadania (paliwo + serwis) + koszt/km */}
+          {tco.total > 0 && (
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)", fontSize: 13 }}>
+              <span style={{ color: "var(--text-secondary)" }}>Koszt łączny: <strong style={{ color: "var(--text-primary)" }}>{tco.total.toFixed(0)} zł</strong></span>
+              {tco.costPerKm !== null && <span style={{ color: "var(--text-secondary)" }}>{tco.costPerKm.toFixed(2)} zł/km</span>}
+              <span style={{ color: "var(--text-muted)" }}>paliwo {tco.fuelCost.toFixed(0)} · serwis {tco.serviceCost.toFixed(0)}{tco.insuranceCost > 0 ? ` (w tym OC/AC ${tco.insuranceCost.toFixed(0)})` : ""} zł</span>
+            </div>
+          )}
         </div>
 
         {/* Tankowania + zużycie */}
