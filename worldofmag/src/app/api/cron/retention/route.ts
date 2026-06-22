@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { purgeExpiredTrash } from "@/lib/trash";
+import { logEvent } from "@/lib/observability/log";
 
 export const dynamic = "force-dynamic";
 
@@ -27,5 +28,6 @@ export async function POST(req: NextRequest) {
   }
 
   const trashPurged = await purgeExpiredTrash();
+  logEvent("info", "retention.purge", { trashPurged }); // Z-096
   return NextResponse.json({ ok: true, trashPurged });
 }
