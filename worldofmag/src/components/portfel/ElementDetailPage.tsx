@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Wallet, ArrowLeft, Plus, Loader2, Trash2, ArrowUpCircle, ArrowDownCircle, Pencil } from "lucide-react";
+import { Wallet, ArrowLeft, Plus, Loader2, Trash2, ArrowUpCircle, ArrowDownCircle, Pencil, Upload } from "lucide-react";
 import { LineChart } from "@/components/ui/LineChart";
-import { addEntry, setBalance, deleteElement, type ElementWithEntries } from "@/actions/portfel";
+import { addEntry, setBalance, deleteElement, importBankCsv, type ElementWithEntries } from "@/actions/portfel";
 import { ELEMENT_KIND_LABELS, ENTRY_KIND_LABELS, formatMoney } from "@/lib/portfel";
 import { pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 
@@ -17,6 +17,26 @@ export function ElementDetailPage({ element }: { element: ElementWithEntries }) 
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [note, setNote] = useState("");
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+
+  // Z-300: import wyciągu CSV (czyta plik po stronie klienta, księguje serwerowo).
+  function onCsvFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // pozwól wybrać ten sam plik ponownie
+    if (!file) return;
+    setImportMsg(null);
+    file.text().then((text) => {
+      startTransition(async () => {
+        try {
+          const r = await importBankCsv(element.id, text);
+          setImportMsg(`Zaimportowano ${r.imported}, duplikatów ${r.duplicates}, pominięto ${r.skipped}.`);
+          router.refresh();
+        } catch (err) {
+          setImportMsg(err instanceof Error ? err.message : "Błąd importu");
+        }
+      });
+    });
+  }
 
   // Szereg czasowy salda (rosnąco po dacie).
   const asc = [...element.entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -81,6 +101,14 @@ export function ElementDetailPage({ element }: { element: ElementWithEntries }) 
             <button onClick={submit} disabled={isPending} style={{ display: "flex", alignItems: "center", gap: 4, padding: "7px 14px", borderRadius: 7, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               {isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} Zapisz
             </button>
+          </div>
+          {/* Z-300: import wyciągu bankowego CSV */}
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-secondary)", cursor: "pointer" }}>
+              <Upload size={13} /> Import CSV z banku
+              <input type="file" accept=".csv,text/csv,text/plain" onChange={onCsvFile} disabled={isPending} style={{ display: "none" }} />
+            </label>
+            {importMsg && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{importMsg}</span>}
           </div>
         </div>
 
