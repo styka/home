@@ -469,6 +469,9 @@ export type PetBreedingPairWithRelations = PetBreedingPair & {
   male: PetRef | null;
   female: PetRef | null;
   clutches: PetClutch[];
+  // Z-262: przychód ze sprzedaży potomstwa tej pary (suma cen) + liczba sprzedaży.
+  revenue?: number;
+  soldCount?: number;
 };
 
 /** Dane zakładek Hodowla / Genetyka (ładowane osobno, by nie obciążać getPet). */

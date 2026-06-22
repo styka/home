@@ -68,12 +68,53 @@ export async function getPetBreeding(petId: string): Promise<PetBreedingData> {
   const offspringMap = new Map<string, { id: string; name: string; species: string; sex: string | null; status: string }>();
   for (const o of [...pet.offspringAsSire, ...pet.offspringAsDam]) offspringMap.set(o.id, o);
 
+  // Z-262: przychód ze sprzedaży potomstwa per para (2 zapytania, bez N+1).
+  // Potomstwo pary = zwierzęta z sireId=maleId AND damId=femaleId (w zakresie właściciela).
+  const ownerScope = [
+    { ownerId: user.id },
+    ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+  ];
+  const keyedPairs = pairs.filter((p) => p.maleId && p.femaleId);
+  const revByKey = new Map<string, { revenue: number; soldCount: number }>();
+  if (keyedPairs.length > 0) {
+    const offspring = await prisma.pet.findMany({
+      where: {
+        AND: [
+          { OR: keyedPairs.map((p) => ({ sireId: p.maleId, damId: p.femaleId })) },
+          { OR: ownerScope },
+        ],
+      },
+      select: { id: true, sireId: true, damId: true },
+    });
+    const offSales = offspring.length
+      ? await prisma.petSale.findMany({ where: { petId: { in: offspring.map((o) => o.id) } }, select: { petId: true, price: true } })
+      : [];
+    const revByPet = new Map<string, { revenue: number; soldCount: number }>();
+    for (const s of offSales) {
+      const cur = revByPet.get(s.petId) ?? { revenue: 0, soldCount: 0 };
+      cur.revenue += s.price ?? 0;
+      cur.soldCount += 1;
+      revByPet.set(s.petId, cur);
+    }
+    for (const o of offspring) {
+      const key = `${o.sireId}|${o.damId}`;
+      const acc = revByKey.get(key) ?? { revenue: 0, soldCount: 0 };
+      const pet = revByPet.get(o.id);
+      if (pet) { acc.revenue += pet.revenue; acc.soldCount += pet.soldCount; }
+      revByKey.set(key, acc);
+    }
+  }
+  const pairsEnriched = pairs.map((p) => {
+    const stat = p.maleId && p.femaleId ? revByKey.get(`${p.maleId}|${p.femaleId}`) : undefined;
+    return { ...p, revenue: stat?.revenue ?? 0, soldCount: stat?.soldCount ?? 0 };
+  });
+
   return {
     genetics: pet.genetics,
     sire: pet.sire,
     dam: pet.dam,
     offspring: Array.from(offspringMap.values()),
-    pairs: pairs as PetBreedingData["pairs"],
+    pairs: pairsEnriched as PetBreedingData["pairs"],
     sales: sales as PetSale[],
     candidates: candidatesRaw,
   };
