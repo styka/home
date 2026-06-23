@@ -92,4 +92,6 @@
 
 **Z-010 (w toku, slice 1/N):** rozbicie egzekutora AI (`execute/route.ts`, było 1467 linii). Enabler: `check-action-coverage.js` skanuje teraz też `src/lib/ai/executors/*.ts` (check podąża za przeniesionymi `type === "..."`). Slice 1: handler Petów → `src/lib/ai/executors/petExecutor.ts` (route 1467→1228, −239 linii). Check zielony (95 akcji, w tym pety z nowego pliku). Kolejne slice'y: storage/health/kitchen/flota/portfel/languages/news/weather.
 
-_Ostatnia aktualizacja: 2026-06-17 - Z-010 slice 1/N: petExecutor wyodrębniony (route 1467→1228), check-action-coverage skanuje executors/*. P1 30/129 + P2. Suite 221 + e2e._
+**Z-010 slice 2/N:** wspólna infrastruktura egzekutora (typy `ActionResult`/`ExecOutcome` + helpery `asStr`/`undoAction`/resolvery rekordów) → `src/lib/ai/executors/shared.ts`. Route `execute/route.ts` **1228→962 linii** (slice 1+2: 1467→962, −505). Klienci (`ActionDrawer`, `AICommandSheet`) importują `ActionResult` z shared. Czyste przeniesienie (tsc/check/build zielone; baseline testów bez zmian — 184 pass/7 env-skip). Kolejne slice'y: przenoszenie domen (languages/news/weather/storage/health/kitchen/flota/portfel) — bloki rozproszone w `executeAction`, wymagają konsolidacji.
+
+_Ostatnia aktualizacja: 2026-06-17 - Z-010 slice 2/N: executors/shared.ts (typy+resolvery), route 1228→962 (slice 1+2: 1467→962). P1 30/129 + P2. Suite 184 pass/7 env-skip + e2e._

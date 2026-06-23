@@ -15,7 +15,7 @@ import {
 } from "@/actions/aiConversations";
 import { createUserReport } from "@/actions/reports";
 import type { AIAction } from "@/lib/ai/aiAction";
-import type { ActionResult } from "@/app/api/llm/home/execute/route";
+import type { ActionResult } from "@/lib/ai/executors/shared";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
 import { useOverlayState } from "@/hooks/useOverlayState";
 
