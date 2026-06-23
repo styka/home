@@ -12,6 +12,11 @@ import { netAmount } from "@/lib/services/payment";
 import { generateDaySlots, minutesOfDay, type AvailabilityRule, type BookedInterval } from "@/lib/serviceSlots";
 import { haversineKm } from "@/lib/serviceGeo";
 import { REQUEST_STATUS_LABELS } from "@/lib/services";
+import {
+  PROVIDER_TRANSITIONS, PROVIDER_CARD_SELECT,
+  toListingDTO, uniqueProviderSlug, requireOwnProvider,
+  requireMyProvider, mapRequest, computeSlots,
+} from "@/lib/services/helpers";
 import type {
   RequestStatus,
   PriceModel,
@@ -26,46 +31,12 @@ import type {
   ServicePromoCodeDTO,
   ServiceDisputeDTO,
   DisputeStatus,
+  ListingSort,
+  ProviderStats,
+  ModerationDisputeDTO,
 } from "@/lib/services";
 
-// ─── Helpery ───────────────────────────────────────────────────────────────
-
-/** Dozwolone przejścia statusu po stronie wykonawcy/klienta. */
-const PROVIDER_TRANSITIONS: Partial<Record<RequestStatus, RequestStatus[]>> = {
-  REQUESTED: ["ACCEPTED", "DECLINED"],
-  ACCEPTED: ["SCHEDULED", "IN_PROGRESS", "CANCELLED"],
-  SCHEDULED: ["IN_PROGRESS", "CANCELLED"],
-  IN_PROGRESS: ["COMPLETED", "CANCELLED"],
-};
-
-function toListingDTO(l: {
-  id: string;
-  title: string;
-  description: string | null;
-  priceModel: string;
-  priceAmount: number | null;
-  currency: string;
-  active: boolean;
-  durationMin: number | null;
-  bookingEnabled: boolean;
-  category: { id: string; name: string; icon: string; color: string } | null;
-  provider: { id: string; displayName: string; area: string | null; ratingAvg: number; ratingCount: number; verified: boolean; lat: number | null; lon: number | null };
-}, distanceKm: number | null = null): ListingDTO {
-  return {
-    id: l.id,
-    title: l.title,
-    description: l.description,
-    priceModel: (l.priceModel as PriceModel) ?? "quote",
-    priceAmount: l.priceAmount,
-    currency: l.currency,
-    active: l.active,
-    durationMin: l.durationMin,
-    bookingEnabled: l.bookingEnabled,
-    category: l.category,
-    distanceKm,
-    provider: l.provider,
-  };
-}
+// ─── Helpery: przeniesione do @/lib/services/helpers.ts (Z-213/361) ──────────
 
 // ─── Kategorie ─────────────────────────────────────────────────────────────
 
@@ -110,25 +81,6 @@ export async function getMyProviderProfile() {
 }
 
 // M19: slug z nazwy (ASCII, myślniki). Wynik unikalny dzięki sufiksowi liczbowemu.
-function slugify(s: string): string {
-  return s
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // diakrytyki
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 48) || "wykonawca";
-}
-
-async function uniqueProviderSlug(base: string, ownProviderId: string | null): Promise<string> {
-  const root = slugify(base);
-  for (let i = 0; i < 50; i++) {
-    const candidate = i === 0 ? root : `${root}-${i + 1}`;
-    const existing = await prisma.serviceProvider.findUnique({ where: { slug: candidate }, select: { id: true } });
-    if (!existing || existing.id === ownProviderId) return candidate;
-  }
-  return `${root}-${Date.now().toString(36)}`;
-}
-
 export async function upsertServiceProvider(data: {
   displayName: string;
   tagline?: string | null;
@@ -178,12 +130,6 @@ export async function setProviderLocation(lat: number | null, lon: number | null
 }
 
 // ─── Oferty ────────────────────────────────────────────────────────────────
-
-async function requireOwnProvider(userId: string) {
-  const provider = await prisma.serviceProvider.findUnique({ where: { userId } });
-  if (!provider) throw new Error("Najpierw załóż profil wykonawcy");
-  return provider;
-}
 
 export async function createListing(data: {
   title: string;
@@ -276,9 +222,6 @@ export async function deleteListing(id: string): Promise<void> {
 
 // ─── Katalog (przeglądanie ofert) ──────────────────────────────────────────
 
-export type ListingSort = "rating" | "priceAsc" | "priceDesc" | "newest" | "distance";
-
-const PROVIDER_CARD_SELECT = { id: true, displayName: true, area: true, ratingAvg: true, ratingCount: true, verified: true, lat: true, lon: true } as const;
 
 export async function getListings(filters?: {
   categoryId?: string;
@@ -479,42 +422,6 @@ export async function cancelMyRequest(id: string): Promise<void> {
   revalidatePath("/services/requests");
 }
 
-function mapRequest(r: {
-  id: string;
-  title: string;
-  description: string | null;
-  status: string;
-  preferredAt: Date | null;
-  scheduledAt: Date | null;
-  createdAt: Date;
-  listingId: string | null;
-  staffId?: string | null;
-  listing: { title: string; bookingEnabled: boolean; durationMin: number | null } | null;
-  client: { name: string | null };
-  provider: { displayName: string };
-  staff?: { name: string } | null;
-  review: { rating: number } | null;
-}): RequestDTO {
-  return {
-    id: r.id,
-    title: r.title,
-    description: r.description,
-    status: r.status as RequestStatus,
-    preferredAt: r.preferredAt ? r.preferredAt.toISOString() : null,
-    scheduledAt: r.scheduledAt ? r.scheduledAt.toISOString() : null,
-    createdAt: r.createdAt.toISOString(),
-    listingTitle: r.listing?.title ?? null,
-    listingId: r.listingId,
-    bookingEnabled: r.listing?.bookingEnabled ?? false,
-    durationMin: r.listing?.durationMin ?? null,
-    clientName: r.client.name ?? "Klient",
-    providerName: r.provider.displayName,
-    staffId: r.staffId ?? null,
-    staffName: r.staff?.name ?? null,
-    hasReview: r.review != null,
-    rating: r.review?.rating ?? null,
-  };
-}
 
 export async function getMyRequests(): Promise<{ asClient: RequestDTO[]; asProvider: RequestDTO[] }> {
   const user = await requireAuth();
@@ -765,8 +672,6 @@ export async function deleteServiceImage(id: string): Promise<void> {
 
 // ─── M2 dostępność + rezerwacja slotów (Booksy) ─────────────────────────────
 
-const BOOKED_STATUSES = ["SCHEDULED", "ACCEPTED", "IN_PROGRESS"];
-
 /** Reguły dostępności bieżącego wykonawcy. */
 export async function getMyAvailability(staffId?: string | null): Promise<AvailabilityRule[]> {
   const user = await requireAuth();
@@ -837,52 +742,6 @@ export async function deleteStaff(id: string): Promise<void> {
   const provider = await requireOwnProvider(user.id);
   await prisma.serviceStaff.deleteMany({ where: { id, providerId: provider.id } });
   revalidatePath("/services/provider");
-}
-
-async function computeSlots(listingId: string, dateISO: string, opts?: { excludeRequestId?: string; staffId?: string | null }): Promise<{ listingTitle: string; providerUserId: string; slots: string[] }> {
-  const excludeRequestId = opts?.excludeRequestId;
-  const staffId = opts?.staffId ?? null;
-  const listing = await prisma.serviceListing.findUnique({
-    where: { id: listingId },
-    select: { id: true, title: true, durationMin: true, bookingEnabled: true, providerId: true, provider: { select: { userId: true } } },
-  });
-  if (!listing) throw new Error("Oferta nie istnieje");
-  if (!listing.bookingEnabled || !listing.durationMin) {
-    return { listingTitle: listing.title, providerUserId: listing.provider.userId, slots: [] };
-  }
-  const [y, m, d] = dateISO.split("-").map(Number);
-  if (!y || !m || !d) throw new Error("Nieprawidłowa data");
-  const dayStart = new Date(y, m - 1, d, 0, 0, 0, 0);
-  const dayEnd = new Date(y, m - 1, d + 1, 0, 0, 0, 0);
-  const weekday = dayStart.getDay();
-
-  // M14: gdy wybrano pracownika — jego harmonogram i jego rezerwacje; inaczej poziom firmy (staffId null).
-  const [rules, bookedRows] = await Promise.all([
-    prisma.serviceAvailability.findMany({ where: { providerId: listing.providerId, staffId, weekday }, select: { weekday: true, startMin: true, endMin: true } }),
-    prisma.serviceRequest.findMany({
-      where: {
-        providerId: listing.providerId,
-        staffId,
-        status: { in: BOOKED_STATUSES },
-        scheduledAt: { gte: dayStart, lt: dayEnd },
-        ...(excludeRequestId ? { id: { not: excludeRequestId } } : {}),
-      },
-      select: { scheduledAt: true, listing: { select: { durationMin: true } } },
-    }),
-  ]);
-
-  const booked: BookedInterval[] = bookedRows
-    .filter((b) => b.scheduledAt)
-    .map((b) => {
-      const startMin = minutesOfDay(b.scheduledAt as Date);
-      return { startMin, endMin: startMin + (b.listing?.durationMin ?? listing.durationMin!) };
-    });
-
-  const now = new Date();
-  const isToday = now.getFullYear() === y && now.getMonth() === m - 1 && now.getDate() === d;
-  const slotMins = generateDaySlots(rules, weekday, listing.durationMin, booked, isToday ? minutesOfDay(now) : null);
-  const slots = slotMins.map((min) => new Date(y, m - 1, d, Math.floor(min / 60), min % 60, 0, 0).toISOString());
-  return { listingTitle: listing.title, providerUserId: listing.provider.userId, slots };
 }
 
 /** Wolne sloty (ISO) danej oferty na wskazany dzień ("YYYY-MM-DD"). M14: opcjonalnie per-pracownik. */
@@ -1119,17 +978,6 @@ export async function getMyFavoriteProviders(): Promise<{ id: string; displayNam
 
 // ─── M13 statystyki wykonawcy ───────────────────────────────────────────────
 
-export type ProviderStats = {
-  total: number;
-  completed: number;
-  active: number;
-  cancelled: number;
-  conversionPct: number; // completed / (total - active)
-  revenue: number; // grosze (suma opłaconych płatności)
-  ratingAvg: number;
-  ratingCount: number;
-};
-
 export async function getProviderStats(): Promise<ProviderStats | null> {
   const user = await requireAuth();
   const provider = await prisma.serviceProvider.findUnique({
@@ -1166,12 +1014,6 @@ export async function getProviderStats(): Promise<ProviderStats | null> {
 }
 
 // ─── M16 kody rabatowe wykonawcy ────────────────────────────────────────────
-
-async function requireMyProvider(userId: string): Promise<{ id: string }> {
-  const provider = await prisma.serviceProvider.findUnique({ where: { userId }, select: { id: true } });
-  if (!provider) throw new Error("Najpierw utwórz profil wykonawcy");
-  return provider;
-}
 
 export async function getMyPromoCodes(): Promise<ServicePromoCodeDTO[]> {
   const user = await requireAuth();
@@ -1334,19 +1176,6 @@ export async function getRequestDisputes(requestId: string): Promise<ServiceDisp
     createdAt: d.createdAt.toISOString(), resolvedAt: d.resolvedAt?.toISOString() ?? null,
   }));
 }
-
-export type ModerationDisputeDTO = {
-  id: string;
-  reason: string;
-  description: string | null;
-  status: DisputeStatus;
-  resolution: string | null;
-  requestId: string;
-  requestTitle: string;
-  clientName: string | null;
-  providerName: string;
-  createdAt: string;
-};
 
 /** Moderacja (admin): lista sporów. Domyślnie otwarte. */
 export async function getModerationDisputes(filter?: { status?: DisputeStatus }): Promise<ModerationDisputeDTO[]> {

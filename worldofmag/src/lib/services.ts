@@ -169,3 +169,30 @@ export type RequestDTO = {
   hasReview: boolean;
   rating: number | null;
 };
+
+// Z-213/361: typy przeniesione z actions/services.ts (naturalny dom DTO modułu).
+export type ListingSort = "rating" | "priceAsc" | "priceDesc" | "newest" | "distance";
+
+export type ProviderStats = {
+  total: number;
+  completed: number;
+  active: number;
+  cancelled: number;
+  conversionPct: number; // completed / (total - active)
+  revenue: number; // grosze (suma opłaconych płatności)
+  ratingAvg: number;
+  ratingCount: number;
+};
+
+export type ModerationDisputeDTO = {
+  id: string;
+  reason: string;
+  description: string | null;
+  status: DisputeStatus;
+  resolution: string | null;
+  requestId: string;
+  requestTitle: string;
+  clientName: string | null;
+  providerName: string;
+  createdAt: string;
+};

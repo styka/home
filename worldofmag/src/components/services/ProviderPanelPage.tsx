@@ -22,7 +22,7 @@ import {
   type RequestDTO,
   type RequestStatus,
 } from "@/lib/services";
-import type { ProviderStats } from "@/actions/services";
+import type { ProviderStats } from "@/lib/services";
 import { RatingStars, formatPrice, StatusBadge, VerifiedBadge, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 import { AvailabilityEditor } from "./AvailabilityEditor";
 import { PromoCodesManager } from "./PromoCodesManager";
