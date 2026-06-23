@@ -102,4 +102,6 @@
 
 **Z-010 slice 6/N:** **notes** (5 akcji: CRUD + toggle_pin) + **shopping** (10 akcji: pozycje + listy) → `notesExecutor.ts`/`shoppingExecutor.ts`. Route **723→579**. Łącznie slice 1-6: 1467→579 (−888, ~60%). 9 executorów + shared. Zostaje: tasks (2 grupy), habits/portfel/kitchen/flota (3 grupy), magazynowanie (2).
 
-_Ostatnia aktualizacja: 2026-06-17 - Z-010 slice 6/N: notes/shopping executors, route 723→579 (slice 1-6: 1467→579, -60%). P1 30/129 + P2. Suite 184 pass/7 env-skip + e2e._
+**Z-010 slice 7/N:** **tasks** (9 akcji: zadania + projekty) → `tasksExecutor.ts` (bierze currentProjectId). Route **579→454**. Łącznie slice 1-7: 1467→454 (−1013, ~69%). 10 executorów + shared. Zostaje: habits/portfel/kitchen/flota (3 grupy, używają `teamOr`), magazynowanie (2).
+
+_Ostatnia aktualizacja: 2026-06-17 - Z-010 slice 7/N: tasksExecutor, route 579→454 (slice 1-7: 1467→454, -69%). P1 30/129 + P2. Suite 184 pass/7 env-skip + e2e._
