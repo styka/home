@@ -90,4 +90,6 @@
 
 **Bug-fix (Kitchen plan):** nawigacja tygodni planu posiłków była klient-side (`setAnchorDate` bez zmiany URL) → inne tygodnie puste, posiłki dodane poza bieżącym tygodniem znikały po rewalidacji. Naprawione na URL-driven (`router.push ?week=`, serwer przeładowuje wpisy+koszt; `useEffect` resync kotwicy). Test e2e `scenario-kitchen-plan-week-nav` (URL zmienia `?week=`). Patrz doświadczenia.md.
 
-_Ostatnia aktualizacja: 2026-06-17 - Bug-fix: nawigacja tygodni planu posiłków URL-driven (router.push ?week=) + test e2e; wcześniej klient-side → inne tygodnie puste. P1 30/129 + P2. Suite 221 + e2e._
+**Z-010 (w toku, slice 1/N):** rozbicie egzekutora AI (`execute/route.ts`, było 1467 linii). Enabler: `check-action-coverage.js` skanuje teraz też `src/lib/ai/executors/*.ts` (check podąża za przeniesionymi `type === "..."`). Slice 1: handler Petów → `src/lib/ai/executors/petExecutor.ts` (route 1467→1228, −239 linii). Check zielony (95 akcji, w tym pety z nowego pliku). Kolejne slice'y: storage/health/kitchen/flota/portfel/languages/news/weather.
+
+_Ostatnia aktualizacja: 2026-06-17 - Z-010 slice 1/N: petExecutor wyodrębniony (route 1467→1228), check-action-coverage skanuje executors/*. P1 30/129 + P2. Suite 221 + e2e._

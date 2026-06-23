@@ -20,7 +20,17 @@ const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
 
 const agentSrc = read("src/app/api/llm/home/agent/route.ts");
 const petSrc = read("src/lib/ai/petActions.ts");
-const execSrc = read("src/app/api/llm/home/execute/route.ts");
+
+// Powierzchnia executora = route + wszystkie wyodrębnione handlery per-domena
+// (src/lib/ai/executors/*.ts). Z-010 rozbija monolit execute/route.ts na moduły;
+// check musi podążać za przeniesionymi `type === "..."`, więc skanujemy oba.
+let execSrc = read("src/app/api/llm/home/execute/route.ts");
+const execDir = path.join(root, "src/lib/ai/executors");
+if (fs.existsSync(execDir)) {
+  for (const f of fs.readdirSync(execDir)) {
+    if (f.endsWith(".ts")) execSrc += "\n" + read(`src/lib/ai/executors/${f}`);
+  }
+}
 
 // Katalog akcji: tylko segment ACTION_CATALOG (między deklaracją a NAVIGATION_CATALOG)
 // + pełny katalog akcji zwierząt (petActions.ts).
