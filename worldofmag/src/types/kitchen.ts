@@ -90,6 +90,7 @@ export interface IngredientInput {
   productId?: string | null;
   quantity?: number | null;
   unit?: string | null;
+  unitPrice?: number | null; // Z-252: cena za jednostkę (koszt przepisu / porcji)
   groupName?: string | null;
   note?: string | null;
   isOptional?: boolean;

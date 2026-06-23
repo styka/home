@@ -78,6 +78,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
       productId: ing.productId,
       quantity: ing.quantity,
       unit: ing.unit,
+      unitPrice: ing.unitPrice,
       groupName: ing.groupName,
       note: ing.note,
       isOptional: ing.isOptional,
@@ -253,6 +254,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
           productId: ing.productId ?? null,
           quantity: ing.quantity ?? null,
           unit: ing.unit ?? null,
+          unitPrice: ing.unitPrice ?? null,
           groupName: ing.groupName ?? null,
           note: ing.note ?? null,
           isOptional: ing.isOptional ?? false,
@@ -539,6 +541,21 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
                   onChange={(e) => updateIngredientLocal(ing._key, { unit: e.target.value || null })}
                   placeholder="jedn."
                   className="w-16 px-1.5 py-1 rounded border text-xs"
+                  style={inputStyle}
+                />
+                <input
+                  type="number"
+                  step="any"
+                  min="0"
+                  value={ing.unitPrice ?? ""}
+                  onChange={(e) =>
+                    updateIngredientLocal(ing._key, {
+                      unitPrice: e.target.value === "" ? null : Number(e.target.value),
+                    })
+                  }
+                  placeholder="zł/jedn."
+                  title="Cena za jednostkę (do kosztu przepisu)"
+                  className="w-20 px-1.5 py-1 rounded border text-xs"
                   style={inputStyle}
                 />
                 <input

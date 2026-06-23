@@ -9,6 +9,7 @@ import { ShopForRecipeDialog } from "./ShopForRecipeDialog";
 import { useToast } from "@/components/ui/Toast";
 import { markRecipeCooked, deleteRecipe } from "@/actions/recipes";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
+import { computeRecipeCost } from "@/lib/kitchen/recipeCost";
 import type { RecipeFull } from "@/types/kitchen";
 import { DIFFICULTY_LABELS, MEAL_TYPE_LABELS } from "@/types/kitchen";
 
@@ -34,6 +35,12 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
   const scale = useMemo(
     () => (recipe.servings > 0 ? servings / recipe.servings : 1),
     [servings, recipe.servings]
+  );
+
+  // Z-252: koszt przepisu/porcji z cen jednostkowych składników (per-porcja niezależny od skali).
+  const cost = useMemo(
+    () => computeRecipeCost(recipe.ingredients, recipe.servings),
+    [recipe.ingredients, recipe.servings]
   );
 
   const totalMins = (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0);
@@ -198,6 +205,14 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
           <h2 className="text-sm font-semibold mb-2 uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
             Składniki
           </h2>
+          {cost.pricedCount > 0 && (
+            <p className="text-xs mb-2" style={{ color: "var(--accent-green)" }}>
+              ~{cost.perServing.toFixed(2)} zł/porcja · {(cost.perServing * servings).toFixed(2)} zł / {servings} porc.
+              {!cost.complete && (
+                <span style={{ color: "var(--text-muted)" }}> (częściowy: {cost.pricedCount}/{cost.totalCount} wycenione)</span>
+              )}
+            </p>
+          )}
           {recipe.ingredients.length === 0 ? (
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
               Brak składników.
