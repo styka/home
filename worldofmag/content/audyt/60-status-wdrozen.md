@@ -88,4 +88,6 @@
 
 ---
 
-_Ostatnia aktualizacja: 2026-06-17 - Z-252 + rozszerzenie: koszt przepisu/porcji (migracja 0194) oraz koszt tygodnia planu posiłków (getMealPlanCost, badge w nagłówku). P1 30/129 + P2. Suite 221._
+**Bug-fix (Kitchen plan):** nawigacja tygodni planu posiłków była klient-side (`setAnchorDate` bez zmiany URL) → inne tygodnie puste, posiłki dodane poza bieżącym tygodniem znikały po rewalidacji. Naprawione na URL-driven (`router.push ?week=`, serwer przeładowuje wpisy+koszt; `useEffect` resync kotwicy). Test e2e `scenario-kitchen-plan-week-nav` (URL zmienia `?week=`). Patrz doświadczenia.md.
+
+_Ostatnia aktualizacja: 2026-06-17 - Bug-fix: nawigacja tygodni planu posiłków URL-driven (router.push ?week=) + test e2e; wcześniej klient-side → inne tygodnie puste. P1 30/129 + P2. Suite 221 + e2e._

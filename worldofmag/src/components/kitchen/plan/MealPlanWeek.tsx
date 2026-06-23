@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, ShoppingCart, Plus, CheckCircle2, PanelRightOpen, PanelRightClose, Sparkles } from "lucide-react";
 import {
   DndContext,
@@ -69,6 +70,7 @@ function entryLabel(e: MealPlanEntryWithRecipe): string {
 const DRAWER_KEY = "kitchen.plan.drawerOpen";
 
 export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI, weekCost }: MealPlanWeekProps) {
+  const router = useRouter();
   const [anchorDate, setAnchorDate] = useState<Date>(() => new Date(`${initialWeek}T12:00:00`));
   const [editing, setEditing] = useState<{ date: Date; slot: MealSlot; entry?: MealPlanEntryWithRecipe | null } | null>(null);
   const [shoppingOpen, setShoppingOpen] = useState(false);
@@ -146,15 +148,27 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI, week
     });
   }
 
+  // Nawigacja STERowana URL-em: zmiana `?week=` przeładowuje wpisy + koszt z
+  // serwera dla oglądanego tygodnia (bez tego inne tygodnie były puste, a
+  // posiłki dodane poza bieżącym tygodniem znikały po rewalidacji).
+  function navigateToWeek(newAnchor: Date) {
+    setAnchorDate(newAnchor); // natychmiastowa zmiana siatki; useEffect zsynchronizuje z URL
+    router.push(`/kitchen/plan?week=${dateKey(newAnchor)}`);
+  }
   function goPrev() {
-    setAnchorDate((d) => subDays(d, 7));
+    navigateToWeek(subDays(anchorDate, 7));
   }
   function goNext() {
-    setAnchorDate((d) => addDays(d, 7));
+    navigateToWeek(addDays(anchorDate, 7));
   }
   function goToday() {
-    setAnchorDate(new Date());
+    navigateToWeek(new Date());
   }
+
+  // Po serwerowym przeładowaniu zsynchronizuj kotwicę z URL (initialWeek).
+  useEffect(() => {
+    setAnchorDate(new Date(`${initialWeek}T12:00:00`));
+  }, [initialWeek]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
