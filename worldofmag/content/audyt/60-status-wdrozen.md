@@ -94,4 +94,6 @@
 
 **Z-010 slice 2/N:** wspólna infrastruktura egzekutora (typy `ActionResult`/`ExecOutcome` + helpery `asStr`/`undoAction`/resolvery rekordów) → `src/lib/ai/executors/shared.ts`. Route `execute/route.ts` **1228→962 linii** (slice 1+2: 1467→962, −505). Klienci (`ActionDrawer`, `AICommandSheet`) importują `ActionResult` z shared. Czyste przeniesienie (tsc/check/build zielone; baseline testów bez zmian — 184 pass/7 env-skip). Kolejne slice'y: przenoszenie domen (languages/news/weather/storage/health/kitchen/flota/portfel) — bloki rozproszone w `executeAction`, wymagają konsolidacji.
 
-_Ostatnia aktualizacja: 2026-06-17 - Z-010 slice 2/N: executors/shared.ts (typy+resolvery), route 1228→962 (slice 1+2: 1467→962). P1 30/129 + P2. Suite 184 pass/7 env-skip + e2e._
+**Z-010 slice 3/N:** handler modułu Zdrowie (wizyty/badania + leki/pielęgnacja, 7 akcji — blok jednomiejscowy, samodzielny) → `executors/healthExecutor.ts`. Route **962→890**. Slice 1+3 razem: 1467→890 (−577, ~39%). Usunięte z route'a importy zdrowia/leków + resolvery (`resolveHealthEventId`/`resolveMedicationId` używane już tylko przez healthExecutor) + typy `HealthKind`/`HealthStatus`. check:actions zielony (akcje zdrowia wykryte z nowego pliku), baseline testów bez zmian.
+
+_Ostatnia aktualizacja: 2026-06-17 - Z-010 slice 3/N: healthExecutor.ts (7 akcji), route 962→890 (slice 1+3: 1467→890). P1 30/129 + P2. Suite 184 pass/7 env-skip + e2e._
