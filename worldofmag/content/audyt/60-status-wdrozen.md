@@ -96,4 +96,6 @@
 
 **Z-010 slice 3/N:** handler modułu Zdrowie (wizyty/badania + leki/pielęgnacja, 7 akcji — blok jednomiejscowy, samodzielny) → `executors/healthExecutor.ts`. Route **962→890**. Slice 1+3 razem: 1467→890 (−577, ~39%). Usunięte z route'a importy zdrowia/leków + resolvery (`resolveHealthEventId`/`resolveMedicationId` używane już tylko przez healthExecutor) + typy `HealthKind`/`HealthStatus`. check:actions zielony (akcje zdrowia wykryte z nowego pliku), baseline testów bez zmian.
 
-_Ostatnia aktualizacja: 2026-06-17 - Z-010 slice 3/N: healthExecutor.ts (7 akcji), route 962→890 (slice 1+3: 1467→890). P1 30/129 + P2. Suite 184 pass/7 env-skip + e2e._
+**Z-010 slice 4/N:** domeny rozproszone (po 2 grupy `module === "..."` scalone w jeden executor; drugą grupę kasujemy — `check:actions` pilnuje pokrycia): **languages** (6 akcji), **news** (4), **weather** (5) → `languageExecutor.ts`/`newsExecutor.ts`/`weatherExecutor.ts`. Route **890→759**. Łącznie slice 1-4: 1467→759 (−708, ~48%). 5 executorów + shared.
+
+_Ostatnia aktualizacja: 2026-06-17 - Z-010 slice 4/N: language/news/weather executors (scalone rozproszone grupy), route 890→759 (slice 1-4: 1467→759, -48%). P1 30/129 + P2. Suite 184 pass/7 env-skip + e2e._

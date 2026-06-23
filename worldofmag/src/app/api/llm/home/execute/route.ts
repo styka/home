@@ -15,22 +15,22 @@ import { addStorageItem, adjustStorageQuantity, updateStorageItem, deleteStorage
 import { createWorkshop, addWorkshopItem } from "@/actions/warsztat";
 import { createHabit, updateHabit, setHabitArchived, deleteHabit } from "@/actions/habits";
 import { createElement, updateElement, setBalance, archiveElement, deleteElement } from "@/actions/portfel";
-import { createDeck, updateDeck, deleteDeck, addWord, updateWord, deleteWord } from "@/actions/languageDecks";
 import { addPantryItem, updatePantryItem, consumePantryItem, deletePantryItem } from "@/actions/pantry";
 import { createRecipe, deleteRecipe } from "@/actions/recipes";
 import { markMealCooked, deleteMealPlanEntry } from "@/actions/mealPlans";
-import { createTopic, updateTopic, deleteTopic, refreshTopic } from "@/actions/news";
-import { addLocationByName, deleteLocation, setDefaultLocation, addPresetWatcher, deleteWatcher } from "@/actions/weather";
 import { createUserReport } from "@/actions/reports";
 import { executePetAction } from "@/lib/ai/executors/petExecutor";
 import { executeHealthAction } from "@/lib/ai/executors/healthExecutor";
+import { executeLanguageAction } from "@/lib/ai/executors/languageExecutor";
+import { executeNewsAction } from "@/lib/ai/executors/newsExecutor";
+import { executeWeatherAction } from "@/lib/ai/executors/weatherExecutor";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { TaskStatus, TaskPriority, ItemStatus } from "@/types";
 import { isoDate } from "@/lib/habitStats";
 import {
   addDays, shiftPriority, asStr, undoAction,
   resolveOrCreateList, resolveListId, resolveItemId, resolveTaskId,
-  resolveProjectIdForCreate, resolveNoteId, resolveDeckId, ownerOrArr, resolveByName,
+  resolveProjectIdForCreate, resolveNoteId, ownerOrArr, resolveByName,
 } from "@/lib/ai/executors/shared";
 import type { ExecOutcome, ActionResult } from "@/lib/ai/executors/shared";
 
@@ -484,80 +484,17 @@ async function executeAction(
 
   // ── Języki (fiszki) ──────────────────────────────────────────────────────────
   if (module === "languages") {
-    if (type === "create_deck") {
-      const name = asStr(params.name);
-      if (!name) throw new Error("Podaj nazwę talii");
-      const deck = await createDeck({
-        name,
-        nativeLang: asStr(params.nativeLang) ?? "polski",
-        targetLang: asStr(params.targetLang) ?? "angielski",
-      });
-      return `Utworzono talię „${deck.name}"`;
-    }
-    if (type === "add_word") {
-      const term = asStr(params.term);
-      const translation = asStr(params.translation);
-      if (!term || !translation) throw new Error("Podaj słówko i tłumaczenie");
-      const deckId = await resolveDeckId(userId, params, asStr(params.deckName));
-      const card = await addWord(deckId, { term, translation, example: asStr(params.example) ?? null });
-      return `Dodano fiszkę „${card.term}" → „${card.translation}"`;
-    }
-    if (type === "delete_word") {
-      const id = asStr(params.wordId);
-      if (!id) throw new Error("Wskaż fiszkę do usunięcia");
-      await deleteWord(id);
-      return `Usunięto fiszkę`;
-    }
+    return executeLanguageAction(action, userId);
   }
 
-  // ── Wiadomości (tematy) ──────────────────────────────────────────────────────
+  // ── Wiadomości (tematy / odświeżanie) ─────────────────────────────────────────
   if (module === "news") {
-    if (type === "create_news_topic") {
-      const title = asStr(params.title);
-      if (!title) throw new Error("Podaj tytuł tematu");
-      const topic = await createTopic({ title, semanticFilter: asStr(params.semanticFilter) ?? title });
-      const msg = `Utworzono temat wiadomości „${title}"`;
-      if (params.openAfter === true) return { message: msg, navigateTo: `/wiadomosci`, navigateLabel: "Otwórz Wiadomości" };
-      return msg;
-    }
-    if (type === "delete_news_topic") {
-      const id = asStr(params.topicId);
-      let topicId = id;
-      if (!topicId && searchQuery) {
-        const t = await prisma.newsTopic.findFirst({
-          where: { ownerId: userId, title: { contains: searchQuery, mode: "insensitive" } },
-        });
-        topicId = t?.id;
-      }
-      if (!topicId) throw new Error(`Nie znaleziono tematu: "${searchQuery}"`);
-      await deleteTopic(topicId);
-      return `Usunięto temat wiadomości`;
-    }
+    return executeNewsAction(action, userId);
   }
 
-  // ── Pogoda (lokalizacje) ──────────────────────────────────────────────────────
+  // ── Pogoda (lokalizacje / obserwatorzy) ───────────────────────────────────────
   if (module === "weather") {
-    if (type === "add_weather_location") {
-      const name = asStr(params.name);
-      if (!name) throw new Error("Podaj nazwę miejscowości");
-      const loc = await addLocationByName(name);
-      const msg = `Dodano lokalizację pogodową „${loc.label ?? name}"`;
-      if (params.openAfter === true) return { message: msg, navigateTo: `/pogoda`, navigateLabel: "Otwórz Pogodę" };
-      return msg;
-    }
-    if (type === "delete_weather_location") {
-      const id = asStr(params.locationId);
-      let locId = id;
-      if (!locId && searchQuery) {
-        const l = await prisma.weatherLocation.findFirst({
-          where: { ownerId: userId, label: { contains: searchQuery, mode: "insensitive" } },
-        });
-        locId = l?.id;
-      }
-      if (!locId) throw new Error(`Nie znaleziono lokalizacji: "${searchQuery}"`);
-      await deleteLocation(locId);
-      return `Usunięto lokalizację pogodową`;
-    }
+    return executeWeatherAction(action, userId);
   }
 
   // ── Raporty (zapis wyniku / sesji) ────────────────────────────────────────────
@@ -750,74 +687,6 @@ async function executeAction(
       const id = await resolveVeh();
       await deleteVehicle(id);
       return `Usunięto pojazd`;
-    }
-  }
-
-  // ── Języki (edycja talii/fiszek) ──────────────────────────────────────────────
-  if (module === "languages") {
-    if (type === "update_deck") {
-      const id = await resolveDeckId(userId, params, asStr(params.deckName) ?? searchQuery);
-      await updateDeck(id, { name: asStr(params.name), nativeLang: asStr(params.nativeLang), targetLang: asStr(params.targetLang) });
-      return `Zaktualizowano talię`;
-    }
-    if (type === "delete_deck") {
-      const id = await resolveDeckId(userId, params, asStr(params.deckName) ?? searchQuery);
-      await deleteDeck(id);
-      return `Usunięto talię`;
-    }
-    if (type === "update_word") {
-      let id = asStr(params.wordId);
-      if (!id) {
-        const q = searchQuery ?? asStr(params.term) ?? "";
-        const card = await prisma.vocabulary.findFirst({ where: { term: { contains: q, mode: "insensitive" }, deck: { OR: teamOr } }, select: { id: true } });
-        if (!card) throw new Error(`Nie znaleziono fiszki: "${q}"`);
-        id = card.id;
-      }
-      await updateWord(id, { term: asStr(params.term), translation: asStr(params.translation), example: asStr(params.example) });
-      return `Zaktualizowano fiszkę`;
-    }
-  }
-
-  // ── Wiadomości (edycja/odświeżanie tematu) ────────────────────────────────────
-  if (module === "news") {
-    const resolveTopic = async () => {
-      const id = asStr(params.topicId);
-      if (id) { const t = await prisma.newsTopic.findFirst({ where: { ownerId: userId, id } }); if (t) return t.id; }
-      const t = await prisma.newsTopic.findFirst({ where: { ownerId: userId, title: { contains: searchQuery ?? asStr(params.title) ?? "", mode: "insensitive" } } });
-      if (!t) throw new Error(`Nie znaleziono tematu: "${searchQuery}"`);
-      return t.id;
-    };
-    if (type === "update_news_topic") {
-      const id = await resolveTopic();
-      await updateTopic(id, { title: asStr(params.title), semanticFilter: asStr(params.semanticFilter) });
-      return `Zaktualizowano temat wiadomości`;
-    }
-    if (type === "refresh_news_topic") {
-      const id = await resolveTopic();
-      const r = await refreshTopic(id);
-      return `Odświeżono temat — nowych pozycji: ${r.added}`;
-    }
-  }
-
-  // ── Pogoda (domyślna lokalizacja / obserwatorzy) ─────────────────────────────
-  if (module === "weather") {
-    if (type === "set_default_weather_location") {
-      const id = asStr(params.locationId) ?? (await prisma.weatherLocation.findFirst({ where: { ownerId: userId, label: { contains: searchQuery ?? "", mode: "insensitive" } } }))?.id;
-      if (!id) throw new Error(`Nie znaleziono lokalizacji: "${searchQuery}"`);
-      await setDefaultLocation(id);
-      return `Ustawiono domyślną lokalizację pogodową`;
-    }
-    if (type === "add_weather_watcher") {
-      const preset = asStr(params.presetKey);
-      if (!preset) throw new Error("Podaj preset obserwatora");
-      await addPresetWatcher(preset);
-      return `Dodano obserwatora pogody`;
-    }
-    if (type === "delete_weather_watcher") {
-      const id = asStr(params.watcherId) ?? (await prisma.weatherWatcher.findFirst({ where: { ownerId: userId, title: { contains: searchQuery ?? "", mode: "insensitive" } } }))?.id;
-      if (!id) throw new Error(`Nie znaleziono obserwatora: "${searchQuery}"`);
-      await deleteWatcher(id);
-      return `Usunięto obserwatora pogody`;
     }
   }
 
