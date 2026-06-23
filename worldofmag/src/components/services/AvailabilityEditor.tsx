@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { SectionHeading } from "@/components/ui/home";
-import { getMyAvailability, setAvailability, getMyStaff } from "@/actions/services";
+import { getMyAvailability, setAvailability, getMyStaff } from "@/actions/services/scheduling";
 import { WEEKDAY_LABELS, minToLabel, labelToMin } from "@/lib/serviceSlots";
 import { fieldInputStyle, primaryButtonStyle } from "./serviceUi";
 

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Handshake, MapPin, Send, Check, CalendarClock, Clock } from "lucide-react";
 import { PageHeader, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
-import { createServiceRequest, getAvailableSlots, bookSlot, getListingStaff } from "@/actions/services";
+import { createServiceRequest } from "@/actions/services";
+import { getAvailableSlots, bookSlot, getListingStaff } from "@/actions/services/scheduling";
 import type { ListingDTO } from "@/lib/services";
 import { RatingStars, formatPrice, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 

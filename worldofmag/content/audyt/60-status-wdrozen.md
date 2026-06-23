@@ -112,4 +112,6 @@
 
 **Z-213/361 slice 3/N:** kolejne 5 obszarów → osobne pliki `actions/services/`: **promo** (6), **payments** (3), **favorites** (2), **stats** (1), **images** (2). Importery zaktualizowane (RequestThread, ProviderPanelPage, ProviderPublicPage, services/page, provider/page). services.ts **1138→845**. tsc/build/testy zielone. Zostaje: providers/categories, listings, requests, reviews/messaging/quotes, scheduling/staff/slots.
 
-_Ostatnia aktualizacja: 2026-06-17 - Z-213/361 slice 3/N: promo/payments/favorites/stats/images → actions/services/*, services.ts 1138→845 (z 1400). P1 31/129 + P2. Suite 184 pass/7 env-skip + e2e._
+**Z-213/361 slice 4/N:** **scheduling** (dostępność + pracownicy M14 + sloty/rezerwacja, 9 akcji) → `actions/services/scheduling.ts`. Importery: AvailabilityEditor, StaffManager, MyRequestsPage, ListingDetailPage. Usunięty osierocony import `@/lib/serviceSlots` z services.ts. services.ts **845→706**. Zostaje: providers/categories, listings, requests/reviews/messaging/quotes.
+
+_Ostatnia aktualizacja: 2026-06-17 - Z-213/361 slice 4/N: scheduling (9) → actions/services/scheduling.ts, services.ts 845→706 (z 1400). P1 31/129 + P2. Suite 184 pass/7 env-skip + e2e._
