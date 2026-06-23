@@ -102,6 +102,8 @@
 
 **Z-010 slice 6/N:** **notes** (5 akcji: CRUD + toggle_pin) + **shopping** (10 akcji: pozycje + listy) → `notesExecutor.ts`/`shoppingExecutor.ts`. Route **723→579**. Łącznie slice 1-6: 1467→579 (−888, ~60%). 9 executorów + shared. Zostaje: tasks (2 grupy), habits/portfel/kitchen/flota (3 grupy), magazynowanie (2).
 
-**Z-010 slice 7/N:** **tasks** (9 akcji: zadania + projekty) → `tasksExecutor.ts` (bierze currentProjectId). Route **579→454**. Łącznie slice 1-7: 1467→454 (−1013, ~69%). 10 executorów + shared. Zostaje: habits/portfel/kitchen/flota (3 grupy, używają `teamOr`), magazynowanie (2).
+**Z-010 slice 7/N:** **tasks** (9 akcji: zadania + projekty) → `tasksExecutor.ts` (bierze currentProjectId). Route **579→454**.
 
-_Ostatnia aktualizacja: 2026-06-17 - Z-010 slice 7/N: tasksExecutor, route 579→454 (slice 1-7: 1467→454, -69%). P1 30/129 + P2. Suite 184 pass/7 env-skip + e2e._
+**Z-010 ZAKOŃCZONE (slice 8/8):** ostatnie domeny team-scope (3 grupy każda) → executory: **habits** (5), **portfel** (7), **flota** (5), **kitchen** (9), **magazynowanie** (5). Usunięty wspólny `teamOr` (każdy executor liczy własny przez `ownerOrArr`) i wszystkie zbędne importy akcji/resolverów z route'a. **`executeAction` to teraz czysty dispatcher** (`if (module === "X") return executeXAction(...)`) + final throw + POST. Route **1467 → 148 linii (−90%)**. 15 executorów per-domena + `shared.ts`, wszystko pilnowane przez `check-action-coverage.js` (skanuje `executors/*`). tsc/check/build zielone, baseline testów niezmieniony.
+
+_Ostatnia aktualizacja: 2026-06-17 - Z-010 ZAKOŃCZONE: execute/route.ts 1467→148 (-90%), 15 executorów per-domena + shared (pet/health/language/news/weather/warsztat/report/notes/shopping/tasks/habits/portfel/flota/kitchen/storage). P1 31/129 + P2. Suite 184 pass/7 env-skip + e2e._
