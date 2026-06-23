@@ -4,9 +4,6 @@ import { auth } from "@/lib/auth";
 import { getUserTeamIds } from "@/lib/server-utils";
 import { createTask, updateTask, deleteTask } from "@/actions/tasks";
 import { createTaskProject, updateTaskProject, deleteTaskProject } from "@/actions/taskProjects";
-import { addItem, updateItem, updateItemStatus, deleteItem, clearDoneItems, markAllInCart } from "@/actions/items";
-import { createList, renameList, archiveList, deleteList } from "@/actions/lists";
-import { createNote, updateNote, deleteNote, toggleNotePin } from "@/actions/notes";
 import { toggleHabitDay } from "@/actions/habits";
 import { addEntry, getWalletElements } from "@/actions/portfel";
 import { setMealPlanEntry } from "@/actions/mealPlans";
@@ -24,13 +21,14 @@ import { executeNewsAction } from "@/lib/ai/executors/newsExecutor";
 import { executeWeatherAction } from "@/lib/ai/executors/weatherExecutor";
 import { executeWarsztatAction } from "@/lib/ai/executors/warsztatExecutor";
 import { executeReportAction } from "@/lib/ai/executors/reportExecutor";
+import { executeNotesAction } from "@/lib/ai/executors/notesExecutor";
+import { executeShoppingAction } from "@/lib/ai/executors/shoppingExecutor";
 import type { AIAction } from "@/lib/ai/aiAction";
-import type { TaskStatus, TaskPriority, ItemStatus } from "@/types";
+import type { TaskStatus, TaskPriority } from "@/types";
 import { isoDate } from "@/lib/habitStats";
 import {
   addDays, shiftPriority, asStr, undoAction,
-  resolveOrCreateList, resolveListId, resolveItemId, resolveTaskId,
-  resolveProjectIdForCreate, resolveNoteId, ownerOrArr, resolveByName,
+  resolveTaskId, resolveProjectIdForCreate, ownerOrArr, resolveByName,
 } from "@/lib/ai/executors/shared";
 import type { ExecOutcome, ActionResult } from "@/lib/ai/executors/shared";
 
@@ -44,80 +42,7 @@ async function executeAction(
   const { module, type, params, searchQuery } = action;
 
   if (module === "shopping") {
-    if (type === "add_item") {
-      const rawText = (params.rawText as string) ?? "";
-      const list = await resolveOrCreateList(userId, {
-        listId: asStr(params.listId),
-        listName: asStr(params.listName),
-        activeListId,
-      });
-      const item = await addItem(list.id, rawText.trim() || "Produkt");
-      const msg = `Dodano "${item.name}" do listy "${list.name}"`;
-      const undo = undoAction("shopping", "delete_item", { itemId: item.id }, `Usuń "${item.name}" z listy "${list.name}"`);
-      if (params.openAfter === true) {
-        return { message: msg, undo, navigateTo: `/shopping/${list.id}`, navigateLabel: `Otwórz „${list.name}”` };
-      }
-      return { message: msg, undo };
-    }
-
-    if (type === "update_item_status") {
-      const status = (asStr(params.status) ?? "DONE") as ItemStatus;
-      const id = await resolveItemId(userId, params, searchQuery);
-      const before = await prisma.item.findUnique({ where: { id }, select: { status: true } });
-      const item = await updateItemStatus(id, status);
-      const undo = before
-        ? { ...undoAction("shopping", "update_item_status", { itemId: id, status: before.status }, `Przywróć status "${item.name}" → ${before.status}`), searchQuery: item.name }
-        : undefined;
-      return { message: `Zaktualizowano status "${item.name}" → ${status}`, undo };
-    }
-
-    if (type === "update_item") {
-      const id = await resolveItemId(userId, params, searchQuery);
-      const patch: Parameters<typeof updateItem>[1] = {};
-      if (params.name !== undefined) patch.name = String(params.name);
-      if (params.quantity !== undefined) {
-        const q = asStr(params.quantity) ?? (params.quantity as number | null | undefined);
-        patch.quantity = q == null || q === "" ? null : Number(q);
-      }
-      if (params.unit !== undefined) patch.unit = asStr(params.unit) ?? null;
-      const item = await updateItem(id, patch);
-      return `Zaktualizowano "${item.name}"`;
-    }
-
-    if (type === "delete_item") {
-      const id = await resolveItemId(userId, params, searchQuery);
-      const existing = await prisma.item.findUnique({ where: { id }, select: { name: true } });
-      await deleteItem(id);
-      return `Usunięto "${existing?.name ?? "produkt"}" z listy zakupów`;
-    }
-
-    if (type === "create_list") {
-      const name = asStr(params.name) ?? "Nowa lista";
-      const list = await createList(name);
-      const msg = `Utworzono listę "${list.name}"`;
-      const undo = undoAction("shopping", "delete_list", { listId: list.id }, `Usuń listę "${list.name}"`);
-      if (params.openAfter === true) {
-        return { message: msg, undo, navigateTo: `/shopping/${list.id}`, navigateLabel: `Otwórz „${list.name}”` };
-      }
-      return { message: msg, undo };
-    }
-
-    if (type === "rename_list") {
-      const id = await resolveListId(userId, params, searchQuery, activeListId);
-      const name = asStr(params.name) ?? "Lista";
-      const before = await prisma.shoppingList.findUnique({ where: { id }, select: { name: true } });
-      const list = await renameList(id, name);
-      const undo = before
-        ? { ...undoAction("shopping", "rename_list", { listId: id, name: before.name }, `Przywróć nazwę listy → "${before.name}"`), searchQuery: name }
-        : undefined;
-      return { message: `Zmieniono nazwę listy na "${list.name}"`, undo };
-    }
-
-    if (type === "archive_list") {
-      const id = await resolveListId(userId, params, searchQuery, activeListId);
-      await archiveList(id);
-      return `Zarchiwizowano listę`;
-    }
+    return executeShoppingAction(action, userId, activeListId);
   }
 
   if (module === "tasks") {
@@ -218,45 +143,7 @@ async function executeAction(
   }
 
   if (module === "notes") {
-    if (type === "create_note") {
-      const note = await createNote({ title: asStr(params.title) ?? "Nowa notatka", content: asStr(params.content) ?? "" });
-      const msg = `Utworzono notatkę "${note.title}"`;
-      const undo = undoAction("notes", "delete_note", { noteId: note.id }, `Usuń notatkę "${note.title}"`);
-      if (params.openAfter === true) {
-        return { message: msg, undo, navigateTo: `/notes?focus=${note.id}`, navigateLabel: `Otwórz „${note.title}”` };
-      }
-      return { message: msg, undo };
-    }
-
-    if (type === "append_to_note") {
-      const id = await resolveNoteId(userId, params, searchQuery);
-      const existing = await prisma.note.findUnique({ where: { id }, select: { content: true } });
-      const addition = asStr(params.content) ?? "";
-      const newContent = existing?.content ? `${existing.content}\n\n${addition}` : addition;
-      const note = await updateNote(id, { content: newContent });
-      return `Dopisano do notatki "${note.title}"`;
-    }
-
-    if (type === "update_note") {
-      const id = await resolveNoteId(userId, params, searchQuery);
-      const before = await prisma.note.findUnique({ where: { id }, select: { title: true, content: true } });
-      const patch: Parameters<typeof updateNote>[1] = {};
-      const undoParams: Record<string, unknown> = { noteId: id };
-      if (params.title !== undefined) { patch.title = String(params.title); undoParams.title = before?.title ?? ""; }
-      if (params.content !== undefined) { patch.content = String(params.content); undoParams.content = before?.content ?? ""; }
-      const note = await updateNote(id, patch);
-      const undo = before
-        ? { ...undoAction("notes", "update_note", undoParams, `Cofnij zmiany w notatce "${note.title}"`), searchQuery: note.title }
-        : undefined;
-      return { message: `Zaktualizowano notatkę "${note.title}"`, undo };
-    }
-
-    if (type === "delete_note") {
-      const id = await resolveNoteId(userId, params, searchQuery);
-      const existing = await prisma.note.findUnique({ where: { id }, select: { title: true } });
-      await deleteNote(id);
-      return `Usunięto notatkę "${existing?.title ?? ""}"`;
-    }
+    return executeNotesAction(action, userId);
   }
 
   if (module === "pets") {
@@ -477,30 +364,6 @@ async function executeAction(
   // ════════════════════════════════════════════════════════════════════════════
   const teamOr = await ownerOrArr(userId);
 
-  // ── Zakupy (rozszerzenie) ─────────────────────────────────────────────────────
-  if (module === "shopping") {
-    if (type === "delete_list") {
-      const id = await resolveListId(userId, params, searchQuery, activeListId);
-      const meta = await prisma.shoppingList.findUnique({ where: { id }, select: { name: true, _count: { select: { items: true } } } });
-      await deleteList(id);
-      const n = meta?._count.items ?? 0;
-      // Ostrzeżenie post-hoc: jawnie mówimy, ile pozycji zniknęło wraz z listą.
-      return n > 0
-        ? `Usunięto listę "${meta?.name ?? ""}" wraz z ${n} ${n === 1 ? "pozycją" : "pozycjami"}`
-        : `Usunięto pustą listę "${meta?.name ?? ""}"`;
-    }
-    if (type === "clear_done_items") {
-      const id = await resolveListId(userId, params, searchQuery, activeListId);
-      await clearDoneItems(id);
-      return `Wyczyszczono kupione pozycje z listy`;
-    }
-    if (type === "mark_all_in_cart") {
-      const id = await resolveListId(userId, params, searchQuery, activeListId);
-      await markAllInCart(id);
-      return `Oznaczono wszystkie pozycje jako w koszyku`;
-    }
-  }
-
   // ── Zadania (projekty) ────────────────────────────────────────────────────────
   if (module === "tasks") {
     const resolveProject = async () => {
@@ -526,13 +389,6 @@ async function executeAction(
         ? `Usunięto projekt "${meta?.name ?? ""}" wraz z ${n} ${n === 1 ? "zadaniem" : "zadaniami"}`
         : `Usunięto pusty projekt "${meta?.name ?? ""}"`;
     }
-  }
-
-  // ── Notatki (przypięcie) ──────────────────────────────────────────────────────
-  if (module === "notes" && type === "toggle_pin") {
-    const id = await resolveNoteId(userId, params, searchQuery);
-    const note = await toggleNotePin(id);
-    return note.pinned ? `Przypięto notatkę „${note.title}"` : `Odpięto notatkę „${note.title}"`;
   }
 
   // ── Nawyki (edycja/archiwum/usuwanie) ─────────────────────────────────────────
