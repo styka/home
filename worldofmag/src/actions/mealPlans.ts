@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { categorize } from "@/lib/categorize";
+import { computeRecipeCost } from "@/lib/kitchen/recipeCost";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/actions/lists";
 import type { MealSlot, MealStatus } from "@/types/kitchen";
@@ -90,6 +91,55 @@ export async function getMealPlan(
   });
 
   return entries;
+}
+
+export interface MealPlanCost {
+  total: number; // szacunkowy koszt posiłków w zakresie (suma koszt/porcja × porcje wpisu)
+  pricedEntries: number; // wpisy z choć częściowo wycenionym przepisem
+  totalEntries: number; // wpisy z przepisem w zakresie
+}
+
+/**
+ * Z-252 (rozszerzenie) — szacunkowy koszt planu posiłków w zakresie dat.
+ * Osobne, lekkie zapytanie (tylko ceny składników) — NIE obciąża `getMealPlan`
+ * ani `getTodaysMeals` (ścieżki gorące: home/kalendarz). Koszt wpisu liczony
+ * z `koszt/porcja` przepisu × planowane porcje wpisu.
+ */
+export async function getMealPlanCost(range: { from: Date; to: Date }, teamId?: string): Promise<MealPlanCost> {
+  const user = await requireAuth();
+  const teamIds = await getUserTeamIds(user.id);
+  const ownershipFilter = teamId
+    ? teamIds.includes(teamId)
+      ? [{ ownerTeamId: teamId }]
+      : []
+    : [{ ownerId: user.id }, ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : [])];
+  if (ownershipFilter.length === 0) return { total: 0, pricedEntries: 0, totalEntries: 0 };
+
+  const entries = await prisma.mealPlanEntry.findMany({
+    where: {
+      AND: [
+        { OR: ownershipFilter },
+        { date: { gte: range.from, lte: range.to } },
+        { recipeId: { not: null } },
+      ],
+    },
+    select: {
+      servings: true,
+      recipe: { select: { servings: true, ingredients: { select: { quantity: true, unitPrice: true, isOptional: true } } } },
+    },
+  });
+
+  let total = 0;
+  let pricedEntries = 0;
+  for (const e of entries) {
+    if (!e.recipe) continue;
+    const c = computeRecipeCost(e.recipe.ingredients, e.recipe.servings);
+    if (c.pricedCount > 0) {
+      total += c.perServing * (e.servings ?? e.recipe.servings);
+      pricedEntries++;
+    }
+  }
+  return { total: Math.round(total * 100) / 100, pricedEntries, totalEntries: entries.length };
 }
 
 export async function getTodaysMeals(): Promise<MealPlanEntryWithRecipe[]> {

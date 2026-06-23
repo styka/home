@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getMealPlan } from "@/actions/mealPlans";
+import { getMealPlan, getMealPlanCost } from "@/actions/mealPlans";
 import { getRecipes } from "@/actions/recipes";
 import { getLists } from "@/actions/lists";
 import { getWeekStart, getWeekEnd, dateKey } from "@/lib/kitchenDate";
@@ -20,16 +20,18 @@ export default async function KitchenPlanPage({ searchParams }: PageProps) {
   const from = getWeekStart(anchor);
   const to = getWeekEnd(anchor);
 
-  const [entries, recipes, lists] = await Promise.all([
+  const [entries, recipes, lists, weekCost] = await Promise.all([
     getMealPlan({ from, to }),
     getRecipes(),
     getLists(),
+    getMealPlanCost({ from, to }),
   ]);
   const hasAI = session.user.permissions?.includes("kitchen.ai") ?? false;
 
   return (
     <MealPlanWeek
       initialWeek={dateKey(anchor)}
+      weekCost={weekCost}
       entries={entries.map((e) => ({
         ...e,
         date: new Date(e.date),

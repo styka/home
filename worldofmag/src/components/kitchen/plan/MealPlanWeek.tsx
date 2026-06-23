@@ -19,7 +19,7 @@ import { SlotEditorSheet, type RecipePickerItem } from "./SlotEditorSheet";
 import { ShoppingFromPlanDialog } from "./ShoppingFromPlanDialog";
 import { RecipeDrawer } from "./RecipeDrawer";
 import { PlanWeekDialog } from "./PlanWeekDialog";
-import type { MealPlanEntryWithRecipe } from "@/actions/mealPlans";
+import type { MealPlanEntryWithRecipe, MealPlanCost } from "@/actions/mealPlans";
 import type { MealSlot } from "@/types/kitchen";
 import { MEAL_SLOTS, MEAL_SLOT_LABELS } from "@/types/kitchen";
 import {
@@ -38,6 +38,7 @@ interface MealPlanWeekProps {
   recipes: RecipePickerItem[];
   lists: Array<{ id: string; name: string }>;
   hasAI?: boolean;
+  weekCost?: MealPlanCost; // Z-252: szacunkowy koszt tygodnia
 }
 
 const SLOT_EMOJI: Record<MealSlot, string> = {
@@ -67,7 +68,7 @@ function entryLabel(e: MealPlanEntryWithRecipe): string {
 
 const DRAWER_KEY = "kitchen.plan.drawerOpen";
 
-export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI }: MealPlanWeekProps) {
+export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI, weekCost }: MealPlanWeekProps) {
   const [anchorDate, setAnchorDate] = useState<Date>(() => new Date(`${initialWeek}T12:00:00`));
   const [editing, setEditing] = useState<{ date: Date; slot: MealSlot; entry?: MealPlanEntryWithRecipe | null } | null>(null);
   const [shoppingOpen, setShoppingOpen] = useState(false);
@@ -95,6 +96,13 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI }: Me
 
   const weekDays = useMemo(() => getWeekDays(anchorDate), [anchorDate]);
   const matrix = useMemo(() => buildMatrix(entries), [entries]);
+
+  // weekCost dotyczy tygodnia załadowanego serwerowo (jak `entries`); nawigacja
+  // tygodni jest klient-side, więc pokazujemy koszt tylko na tym tygodniu.
+  const onLoadedWeek = useMemo(
+    () => getWeekStart(anchorDate).getTime() === getWeekStart(new Date(`${initialWeek}T12:00:00`)).getTime(),
+    [anchorDate, initialWeek]
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -206,6 +214,15 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI }: Me
           <span className="ml-2 text-sm font-medium" style={{ color: "var(--text-primary)" }}>
             {formatWeekRange(anchorDate)}
           </span>
+          {weekCost && weekCost.pricedEntries > 0 && onLoadedWeek && (
+            <span
+              className="ml-2 text-xs"
+              style={{ color: "var(--accent-green)" }}
+              title={`Szacunkowy koszt tygodnia z ${weekCost.pricedEntries}/${weekCost.totalEntries} wycenionych posiłków (przepisy z cenami składników)`}
+            >
+              ~{weekCost.total.toFixed(2)} zł / tydz.
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
