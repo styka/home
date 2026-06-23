@@ -12,18 +12,18 @@ import { addEntry, getWalletElements } from "@/actions/portfel";
 import { setMealPlanEntry } from "@/actions/mealPlans";
 import { addFuelLog, addServiceRecord, createVehicle, updateVehicle, deleteVehicle } from "@/actions/flota";
 import { addStorageItem, adjustStorageQuantity, updateStorageItem, deleteStorageItem, transferStock } from "@/actions/storage";
-import { createWorkshop, addWorkshopItem } from "@/actions/warsztat";
 import { createHabit, updateHabit, setHabitArchived, deleteHabit } from "@/actions/habits";
 import { createElement, updateElement, setBalance, archiveElement, deleteElement } from "@/actions/portfel";
 import { addPantryItem, updatePantryItem, consumePantryItem, deletePantryItem } from "@/actions/pantry";
 import { createRecipe, deleteRecipe } from "@/actions/recipes";
 import { markMealCooked, deleteMealPlanEntry } from "@/actions/mealPlans";
-import { createUserReport } from "@/actions/reports";
 import { executePetAction } from "@/lib/ai/executors/petExecutor";
 import { executeHealthAction } from "@/lib/ai/executors/healthExecutor";
 import { executeLanguageAction } from "@/lib/ai/executors/languageExecutor";
 import { executeNewsAction } from "@/lib/ai/executors/newsExecutor";
 import { executeWeatherAction } from "@/lib/ai/executors/weatherExecutor";
+import { executeWarsztatAction } from "@/lib/ai/executors/warsztatExecutor";
+import { executeReportAction } from "@/lib/ai/executors/reportExecutor";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { TaskStatus, TaskPriority, ItemStatus } from "@/types";
 import { isoDate } from "@/lib/habitStats";
@@ -384,39 +384,7 @@ async function executeAction(
 
   // ── Warsztaty ─────────────────────────────────────────────────────────────
   if (module === "warsztaty") {
-    if (type === "create_workshop") {
-      const name = asStr(params.name);
-      if (!name) throw new Error("Podaj nazwę warsztatu");
-      const ws = await createWorkshop({
-        name,
-        type: asStr(params.type) ?? null,
-        location: asStr(params.location) ?? null,
-      });
-      return `Utworzono warsztat „${ws.name}"`;
-    }
-
-    if (type === "add_workshop_item") {
-      const name = asStr(params.name);
-      if (!name) throw new Error("Podaj nazwę pozycji");
-      const wsName = asStr(params.workshopName) ?? action.searchQuery?.trim();
-      const teamIds = await getUserTeamIds(userId);
-      const ownerOr = [{ ownerId: userId }, teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" }];
-      const workshop = wsName
-        ? await prisma.workshop.findFirst({
-            where: { OR: ownerOr, name: { contains: wsName, mode: "insensitive" } },
-            orderBy: { updatedAt: "desc" },
-          })
-        : await prisma.workshop.findFirst({ where: { OR: ownerOr }, orderBy: { updatedAt: "desc" } });
-      if (!workshop) throw new Error(wsName ? `Nie znaleziono warsztatu „${wsName}"` : "Brak warsztatu — najpierw utwórz warsztat");
-      const item = await addWorkshopItem(workshop.id, {
-        name,
-        kind: asStr(params.kind) ?? null,
-        category: asStr(params.category) ?? null,
-        quantity: params.quantity != null ? Number(params.quantity) : null,
-        unit: asStr(params.unit) ?? null,
-      });
-      return `Dodano do warsztatu „${workshop.name}": ${item.name}`;
-    }
+    return executeWarsztatAction(action, userId);
   }
 
   // ── Nawyki (tworzenie) ──────────────────────────────────────────────────────
@@ -498,12 +466,8 @@ async function executeAction(
   }
 
   // ── Raporty (zapis wyniku / sesji) ────────────────────────────────────────────
-  if (module === "reports" && type === "save_report") {
-    const title = asStr(params.title) ?? "Raport z asystenta";
-    const content = asStr(params.content) ?? String(params.content ?? "");
-    if (!content.trim()) throw new Error("Pusta treść raportu");
-    const report = await createUserReport({ title, content });
-    return { message: `Zapisano raport „${title}"`, navigateTo: `/reports/${report.slug}`, navigateLabel: "Otwórz raport" };
+  if (module === "reports") {
+    return executeReportAction(action);
   }
 
   // ════════════════════════════════════════════════════════════════════════════

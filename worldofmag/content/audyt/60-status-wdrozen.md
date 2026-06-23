@@ -98,4 +98,6 @@
 
 **Z-010 slice 4/N:** domeny rozproszone (po 2 grupy `module === "..."` scalone w jeden executor; drugą grupę kasujemy — `check:actions` pilnuje pokrycia): **languages** (6 akcji), **news** (4), **weather** (5) → `languageExecutor.ts`/`newsExecutor.ts`/`weatherExecutor.ts`. Route **890→759**. Łącznie slice 1-4: 1467→759 (−708, ~48%). 5 executorów + shared.
 
-_Ostatnia aktualizacja: 2026-06-17 - Z-010 slice 4/N: language/news/weather executors (scalone rozproszone grupy), route 890→759 (slice 1-4: 1467→759, -48%). P1 30/129 + P2. Suite 184 pass/7 env-skip + e2e._
+**Z-010 slice 5/N:** **warsztaty** (2 akcje) + **reports** (save_report) → `warsztatExecutor.ts`/`reportExecutor.ts`. Route **759→723**. Łącznie slice 1-5: 1467→723 (−744, ~51%). 7 executorów + shared. Zostaje: shopping/tasks/notes (2 grupy), habits/portfel/kitchen/flota (3 grupy), magazynowanie (2).
+
+_Ostatnia aktualizacja: 2026-06-17 - Z-010 slice 5/N: warsztat/report executors, route 759→723 (slice 1-5: 1467→723, -51%). P1 30/129 + P2. Suite 184 pass/7 env-skip + e2e._
