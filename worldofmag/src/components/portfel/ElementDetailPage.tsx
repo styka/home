@@ -4,7 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Wallet, ArrowLeft, Plus, Loader2, Trash2, ArrowUpCircle, ArrowDownCircle, Pencil, Upload } from "lucide-react";
 import { LineChart } from "@/components/ui/LineChart";
+import { Modal } from "@/components/ui/Modal";
 import { addEntry, setBalance, deleteElement, importBankCsv, type ElementWithEntries } from "@/actions/portfel";
+import { parseBankCsv, type ParsedTransaction } from "@/lib/portfel/bankCsv";
 import { ELEMENT_KIND_LABELS, ENTRY_KIND_LABELS, formatMoney } from "@/lib/portfel";
 import { pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 
@@ -18,23 +20,36 @@ export function ElementDetailPage({ element }: { element: ElementWithEntries }) 
   const [category, setCategory] = useState("");
   const [note, setNote] = useState("");
   const [importMsg, setImportMsg] = useState<string | null>(null);
+  // Z-300: podgląd przed zaksięgowaniem (parsujemy klienta-side, księgujemy serwerowo).
+  const [preview, setPreview] = useState<{ text: string; transactions: ParsedTransaction[]; skipped: number } | null>(null);
 
-  // Z-300: import wyciągu CSV (czyta plik po stronie klienta, księguje serwerowo).
   function onCsvFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ""; // pozwól wybrać ten sam plik ponownie
     if (!file) return;
     setImportMsg(null);
     file.text().then((text) => {
-      startTransition(async () => {
-        try {
-          const r = await importBankCsv(element.id, text);
-          setImportMsg(`Zaimportowano ${r.imported}, duplikatów ${r.duplicates}, pominięto ${r.skipped}.`);
-          router.refresh();
-        } catch (err) {
-          setImportMsg(err instanceof Error ? err.message : "Błąd importu");
-        }
-      });
+      const r = parseBankCsv(text);
+      if (r.transactions.length === 0) {
+        setImportMsg("Nie rozpoznano żadnej transakcji w pliku.");
+        return;
+      }
+      setPreview({ text, transactions: r.transactions, skipped: r.skipped });
+    });
+  }
+
+  function confirmImport() {
+    if (!preview) return;
+    const text = preview.text;
+    setPreview(null);
+    startTransition(async () => {
+      try {
+        const r = await importBankCsv(element.id, text);
+        setImportMsg(`Zaimportowano ${r.imported}, duplikatów ${r.duplicates}, pominięto ${r.skipped}.`);
+        router.refresh();
+      } catch (err) {
+        setImportMsg(err instanceof Error ? err.message : "Błąd importu");
+      }
     });
   }
 
@@ -130,6 +145,36 @@ export function ElementDetailPage({ element }: { element: ElementWithEntries }) 
           </div>
         </div>
       </div>
+
+      {preview && (
+        <Modal
+          open
+          onClose={() => setPreview(null)}
+          title="Podgląd importu CSV"
+          footer={
+            <>
+              <button onClick={() => setPreview(null)} style={{ padding: "7px 14px", borderRadius: 7, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Anuluj</button>
+              <button onClick={confirmImport} style={{ padding: "7px 14px", borderRadius: 7, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Zaksięguj {preview.transactions.length}</button>
+            </>
+          }
+        >
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 10px" }}>
+            Rozpoznano {preview.transactions.length} transakcji{preview.skipped > 0 ? `, pominięto ${preview.skipped} wierszy (nagłówki/śmieci)` : ""}. Duplikaty (już zaksięgowane) zostaną pominięte automatycznie.
+          </p>
+          <div style={{ maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
+            {preview.transactions.slice(0, 50).map((t, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, fontSize: 12, padding: "5px 8px", borderRadius: 6, background: "var(--bg-elevated)" }}>
+                <span style={{ flexShrink: 0, color: "var(--text-muted)", width: 84 }}>{t.date}</span>
+                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-secondary)" }}>{t.description || "—"}</span>
+                <span style={{ flexShrink: 0, fontWeight: 600, color: t.amount >= 0 ? "var(--accent-green)" : "var(--accent-red)" }}>{t.amount >= 0 ? "+" : ""}{t.amount.toFixed(2)}</span>
+              </div>
+            ))}
+            {preview.transactions.length > 50 && (
+              <span style={{ fontSize: 11, color: "var(--text-muted)", padding: "4px 8px" }}>…i {preview.transactions.length - 50} więcej</span>
+            )}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
