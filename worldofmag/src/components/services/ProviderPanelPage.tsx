@@ -11,10 +11,9 @@ import {
   updateListing,
   deleteListing,
   advanceRequestStatus,
-  addServiceImage,
-  deleteServiceImage,
   setProviderLocation,
 } from "@/actions/services";
+import { addServiceImage, deleteServiceImage } from "@/actions/services/images";
 import {
   PRICE_MODEL_LABELS,
   type ServiceCategoryDTO,

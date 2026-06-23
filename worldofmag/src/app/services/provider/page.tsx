@@ -3,7 +3,8 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { getMyProviderProfile, getServiceCategories, getMyRequests, getProviderStats } from "@/actions/services";
+import { getMyProviderProfile, getServiceCategories, getMyRequests } from "@/actions/services";
+import { getProviderStats } from "@/actions/services/stats";
 import { ProviderPanelPage } from "@/components/services/ProviderPanelPage";
 
 export default async function ServicesProviderPage() {
