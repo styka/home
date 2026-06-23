@@ -114,4 +114,6 @@
 
 **Z-213/361 slice 4/N:** **scheduling** (dostępność + pracownicy M14 + sloty/rezerwacja, 9 akcji) → `actions/services/scheduling.ts`. Importery: AvailabilityEditor, StaffManager, MyRequestsPage, ListingDetailPage. Usunięty osierocony import `@/lib/serviceSlots` z services.ts. services.ts **845→706**. Zostaje: providers/categories, listings, requests/reviews/messaging/quotes.
 
-_Ostatnia aktualizacja: 2026-06-17 - Z-213/361 slice 4/N: scheduling (9) → actions/services/scheduling.ts, services.ts 845→706 (z 1400). P1 31/129 + P2. Suite 184 pass/7 env-skip + e2e._
+**Z-213/361 ZAKOŃCZONE (slice 5/5):** ostatnie 4 obszary → `actions/services/`: **providers** (kategorie+profil+weryfikacja, 6), **listings** (5), **requests** (5), **messaging** (oceny+wątek+wyceny, 5). `actions/services.ts` przekształcony w **20-linijkowy barrel** (`export * from "./services/*"`, BEZ `"use server"`) re-eksportujący wszystkie 11 plików obszarów — publiczny import `@/actions/services` zachowany dla pozostałych konsumentów (zero ich dotykania). **services.ts 1400 → 20 linii.** 11 plików akcji per-obszar + `lib/services/helpers.ts` + typy w `lib/services.ts`. tsc/build/testy zielone (barrel `export *` nad plikami `"use server"` przechodzi build).
+
+_Ostatnia aktualizacja: 2026-06-17 - Z-213/361 ZAKOŃCZONE: actions/services.ts 1400→20 (barrel), 11 plików akcji per-obszar + helpers + typy. Z-010 też zakończone. P1 33/129 + P2. Suite 184 pass/7 env-skip + e2e._
