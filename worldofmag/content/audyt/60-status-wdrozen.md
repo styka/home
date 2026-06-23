@@ -108,4 +108,6 @@
 
 **Z-213/361 (w toku, slice 1/N):** rozbicie `actions/services.ts` (było 1400 linii). Slice 1 (bezpieczny, bez dotykania granicy Server Action): plumbing (mappery DTO `toListingDTO`/`mapRequest`, `slugify`/`uniqueProviderSlug`, guardy `requireOwnProvider`/`requireMyProvider`, `computeSlots`, stałe) → `src/lib/services/helpers.ts`; typy `ListingSort`/`ProviderStats`/`ModerationDisputeDTO` → `src/lib/services.ts` (3 importery komponentów zaktualizowane). services.ts **1400→1229**. tsc/build/testy zielone. Brak e2e dla usług — split akcji per-obszar (slice 2+) weryfikowalny tylko build+typy (uwaga: moduł wdrożony).
 
-_Ostatnia aktualizacja: 2026-06-17 - Z-213/361 slice 1/N: helpery+typy services → lib/services(/helpers), services.ts 1400→1229. Z-010 zakończone (1467→148). P1 31/129 + P2. Suite 184 pass/7 env-skip + e2e._
+**Z-213/361 slice 2/N:** akcje **spory/moderacja** → `src/actions/services/disputes.ts` (standalone `"use server"`). Ustalony wzorzec: `"use server"` NIE pozwala re-eksportować (build: „Only async functions… in use server file"), więc każdy obszar to samodzielny plik `"use server"`, a importery danego obszaru wskazują nowy path (`@/actions/services/disputes`). 3 importery zaktualizowane. services.ts **1229→1138**.
+
+_Ostatnia aktualizacja: 2026-06-17 - Z-213/361 slice 2/N: disputes → actions/services/disputes.ts (standalone use-server; barrel re-export NIEMOŻLIWY w use-server), services.ts 1229→1138. P1 31/129 + P2. Suite 184 pass/7 env-skip + e2e._

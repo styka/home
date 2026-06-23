@@ -12,9 +12,8 @@ import {
   bookClientExpense,
   applyPromoCode,
   clearPromoCode,
-  getRequestDisputes,
-  openDispute,
 } from "@/actions/services";
+import { getRequestDisputes, openDispute } from "@/actions/services/disputes";
 import { getWalletElements } from "@/actions/portfel";
 import type { RequestThreadDTO, ServiceQuoteDTO, ServicePaymentDTO, PaymentMethod, ServiceDisputeDTO } from "@/lib/services";
 import { QUOTE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/services";

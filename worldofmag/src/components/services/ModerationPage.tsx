@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronLeft, ShieldAlert, Check, X, Loader2 } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
-import { getModerationDisputes, resolveDispute } from "@/actions/services";
+import { getModerationDisputes, resolveDispute } from "@/actions/services/disputes";
 import type { ModerationDisputeDTO } from "@/lib/services";
 
 type Tab = "OPEN" | "RESOLVED" | "REJECTED";
