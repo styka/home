@@ -1,6 +1,7 @@
 // Tolerancyjny parser RSS 2.0 / Atom bez zewnętrznych zależności.
 // Wyciąga pozycje z <item> (RSS) albo <entry> (Atom). Daty normalizujemy do Date;
 // pozycje bez wiarygodnej daty publikacji odrzucamy później (twardy limit 24h).
+import { resilientFetch } from "@/lib/integrations/resilientFetch"; // Z-157
 
 export interface RssItem {
   title: string;
@@ -83,10 +84,10 @@ const UA =
 /** Pobiera i parsuje feed RSS. Zwraca [] przy błędzie sieci/parsowania. */
 export async function fetchRss(url: string): Promise<RssItem[]> {
   try {
-    const res = await fetch(url, {
+    const res = await resilientFetch(url, {
       headers: { "User-Agent": UA, Accept: "application/rss+xml, application/xml, text/xml, */*" },
       cache: "no-store",
-      signal: AbortSignal.timeout(12_000),
+      timeoutMs: 12_000,
     });
     if (!res.ok) return [];
     const xml = await res.text();

@@ -2,6 +2,7 @@
 // którzy przeszli wstępne dopasowanie). Zwracamy oczyszczony tekst + og:image.
 // Brak biblioteki — prosta ekstrakcja: usuwamy skrypty/style/nawigację, zostawiamy
 // tekst. To wystarcza LLM-owi do oceny trafności/nowości i streszczenia.
+import { resilientFetch } from "@/lib/integrations/resilientFetch"; // Z-157
 
 const UA =
   "Mozilla/5.0 (compatible; OmniaNewsBot/1.0; +https://worldofmag.onrender.com)";
@@ -74,10 +75,10 @@ function extractText(html: string): string {
 /** Pobiera artykuł. Przy błędzie zwraca pusty tekst (caller użyje opisu z RSS). */
 export async function fetchArticle(url: string): Promise<FetchedArticle> {
   try {
-    const res = await fetch(url, {
+    const res = await resilientFetch(url, {
       headers: { "User-Agent": UA, Accept: "text/html,*/*" },
       cache: "no-store",
-      signal: AbortSignal.timeout(12_000),
+      timeoutMs: 12_000,
     });
     if (!res.ok) return { text: "", imageUrl: null, publishedAt: null };
     const html = await res.text();
