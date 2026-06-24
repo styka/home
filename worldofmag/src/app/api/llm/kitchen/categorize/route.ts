@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
     ],
     temperature: 0.2,
     maxTokens: 400,
+    cache: true, // Z-132: ta sama treść przepisu → ta sama kategoria (deterministyczne) — bez powtórnych tokenów
   });
 
   if (!result.ok) {

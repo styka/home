@@ -68,6 +68,7 @@ async function structureTasks(text: string, today: string) {
     ],
     temperature: 0.1,
     maxTokens: 2048,
+    cache: true, // Z-132: data dnia jest w promptcie → klucz cache zmienia się co dzień (poprawne dla „jutro"); ten sam tekst w tym samym dniu nie płaci ponownie
   });
 }
 
