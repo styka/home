@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo, useRef } from "react";
 import { Plus, Truck, Trash2, Pencil, Mail, Phone, X } from "lucide-react";
 import { addSupplier, updateSupplier, deleteSupplier } from "@/actions/storage";
 import { useToast } from "@/components/ui/Toast";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { StorageSupplier } from "@prisma/client";
 
 const inputStyle: React.CSSProperties = {
@@ -15,6 +16,54 @@ const inputStyle: React.CSSProperties = {
 export function SuppliersPage({ suppliers }: { suppliers: StorageSupplier[] }) {
   const { showToast } = useToast();
   const [editing, setEditing] = useState<StorageSupplier | "new" | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+  const rowRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+
+  // Skróty klawiszowe (Z-232). Gdy edytor (modal) otwarty — skróty tła nieaktywne;
+  // Esc zamyka edytor (modal nie miał własnej obsługi Esc). Brak toggle/search/
+  // filterTab/palette dzięki opcjonalnemu kontraktowi huba.
+  const handlers = useMemo(() => {
+    const move = (dir: 1 | -1) => {
+      if (suppliers.length === 0) return;
+      setSelectedId((cur) => {
+        const idx = cur ? suppliers.findIndex((s) => s.id === cur) : -1;
+        const nextIdx =
+          idx < 0 ? (dir === 1 ? 0 : suppliers.length - 1) : Math.min(Math.max(idx + dir, 0), suppliers.length - 1);
+        const next = suppliers[nextIdx];
+        if (next) rowRefs.current.get(next.id)?.scrollIntoView({ block: "nearest" });
+        return next?.id ?? cur;
+      });
+    };
+    return {
+      onNavigateDown: () => { if (!editing) move(1); },
+      onNavigateUp: () => { if (!editing) move(-1); },
+      onQuickAdd: () => { if (!editing) setEditing("new"); },
+      onEdit: () => {
+        if (editing) return;
+        const s = suppliers.find((x) => x.id === selectedId);
+        if (s) setEditing(s);
+      },
+      onDelete: () => {
+        if (editing) return;
+        const s = suppliers.find((x) => x.id === selectedId);
+        if (!s || !confirm("Usunąć dostawcę?")) return;
+        const idx = suppliers.findIndex((x) => x.id === s.id);
+        const next = suppliers[idx + 1] ?? suppliers[idx - 1];
+        setSelectedId(next?.id ?? null);
+        startTransition(async () => {
+          try { await deleteSupplier(s.id); showToast("Usunięto", "success"); }
+          catch (e) { showToast(e instanceof Error ? e.message : "Błąd", "error"); }
+        });
+      },
+      onEscape: () => {
+        if (editing) { setEditing(null); return; }
+        setSelectedId(null);
+      },
+    };
+  }, [suppliers, selectedId, editing, showToast]);
+
+  useKeyboardShortcuts(handlers);
 
   return (
     <div className="px-4 md:px-6 py-4 max-w-2xl mx-auto flex flex-col gap-4">
@@ -34,7 +83,13 @@ export function SuppliersPage({ suppliers }: { suppliers: StorageSupplier[] }) {
       ) : (
         <ul className="flex flex-col gap-1.5">
           {suppliers.map((s) => (
-            <li key={s.id} className="flex items-center gap-3 px-3 py-2.5 rounded border" style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}>
+            <li
+              key={s.id}
+              ref={(el) => { if (el) rowRefs.current.set(s.id, el); else rowRefs.current.delete(s.id); }}
+              onClick={() => setSelectedId(s.id)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded border"
+              style={{ backgroundColor: "var(--bg-surface)", borderColor: selectedId === s.id ? "var(--accent-blue)" : "var(--border)" }}
+            >
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{s.name}</div>
                 <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-secondary)" }}>
