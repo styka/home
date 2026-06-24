@@ -15,7 +15,7 @@ export interface FetchedArticle {
 
 // Data publikacji ze standardowych miejsc: meta article:published_time,
 // JSON-LD datePublished, albo <time datetime="…">. Best-effort.
-function extractPublishedAt(html: string): Date | null {
+export function extractPublishedAt(html: string): Date | null {
   const candidates = [
     metaContent(html, "article:published_time"),
     metaContent(html, "og:article:published_time"),
@@ -31,7 +31,7 @@ function extractPublishedAt(html: string): Date | null {
   return null;
 }
 
-function metaContent(html: string, prop: string): string | null {
+export function metaContent(html: string, prop: string): string | null {
   const re = new RegExp(
     `<meta[^>]+(?:property|name)=["']${prop}["'][^>]*content=["']([^"']+)["']`,
     "i"
@@ -46,7 +46,7 @@ function metaContent(html: string, prop: string): string | null {
   return re2.exec(html)?.[1] ?? null;
 }
 
-function extractText(html: string): string {
+export function extractText(html: string): string {
   let h = html;
   // wytnij sekcje bez treści
   h = h.replace(/<script[\s\S]*?<\/script>/gi, " ");
