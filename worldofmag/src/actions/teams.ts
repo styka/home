@@ -46,6 +46,37 @@ export async function createTeam(name: string, description?: string, kind: "team
   return team
 }
 
+/**
+ * Z-195: dane onboardingu „rodziny" (household) — checklist po założeniu:
+ * ilu domowników zaproszono + deep-linki do domyślnych wspólnych zasobów
+ * (zakupy/zadania/budżet) utworzonych przy zakładaniu. Tylko dla członka zespołu.
+ */
+export async function getHouseholdOnboarding(teamId: string) {
+  const user = await requireAuth()
+  const team = await prisma.team.findUnique({ where: { id: teamId }, select: { id: true, kind: true } })
+  if (!team) throw new Error("Team not found")
+  const [membership, memberCount] = await Promise.all([
+    prisma.teamMember.findFirst({ where: { teamId, userId: user.id }, select: { userId: true } }),
+    prisma.teamMember.count({ where: { teamId } }),
+  ])
+  if (!membership && user.role !== "ADMIN") throw new Error("Access denied")
+
+  const [list, project, wallet] = await Promise.all([
+    prisma.shoppingList.findFirst({ where: { ownerTeamId: teamId }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
+    prisma.taskProject.findFirst({ where: { ownerTeamId: teamId }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
+    prisma.walletElement.findFirst({ where: { ownerTeamId: teamId }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
+  ])
+
+  return {
+    isHousehold: team.kind === "household",
+    memberCount,
+    hasInvitedOthers: memberCount > 1,
+    sharedList: list,
+    sharedProject: project,
+    sharedWallet: wallet,
+  }
+}
+
 export async function getMyTeams() {
   const user = await requireAuth()
   return prisma.team.findMany({
