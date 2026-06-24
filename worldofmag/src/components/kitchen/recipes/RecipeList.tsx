@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Search, ChefHat, Globe, ChevronDown, Camera, Sparkles } from "lucide-react";
@@ -12,6 +12,7 @@ import { ImportFromAIDialog } from "./ImportFromAIDialog";
 import { PantrySuggestionsPanel } from "./PantrySuggestionsPanel";
 import type { RecipeListItem } from "@/types/kitchen";
 import type { Tag } from "@prisma/client";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface RecipeListProps {
   recipes: RecipeListItem[];
@@ -38,24 +39,18 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI }: RecipeListProps)
   const [aiImportOpen, setAiImportOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
-        return;
-      }
-      if (importOpen || imageImportOpen || aiImportOpen) return;
-      if (e.key === "/") {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      } else if (e.key === "n" || e.key === "N") {
-        e.preventDefault();
-        router.push("/kitchen/recipes/new");
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [router, importOpen, imageImportOpen, aiImportOpen]);
+  // Z-232: wspólny hub zamiast własnego listenera. Karty są nawigacyjne (link do
+  // detalu), więc tylko / = szukaj i a/n = nowy; skróty nieaktywne, gdy otwarty
+  // któryś z dialogów importu (jak w oryginale).
+  const dialogOpen = importOpen || imageImportOpen || aiImportOpen;
+  const shortcutHandlers = useMemo(
+    () => ({
+      onSearch: () => { if (!dialogOpen) searchInputRef.current?.focus(); },
+      onQuickAdd: () => { if (!dialogOpen) router.push("/kitchen/recipes/new"); },
+    }),
+    [dialogOpen, router]
+  );
+  useKeyboardShortcuts(shortcutHandlers);
 
   const cuisines = useMemo(() => {
     const set = new Set<string>();
