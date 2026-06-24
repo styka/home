@@ -1,5 +1,6 @@
 // Klient Open-Meteo (darmowy, bez klucza API). Pobiera prognozę godzinową i dzienną
 // oraz geokoduje nazwy miejscowości. Mapowanie kodów pogody WMO → polski opis + emoji.
+import { resilientFetch } from "@/lib/integrations/resilientFetch"; // Z-157: timeout+retry+degradacja
 
 export interface HourPoint {
   time: string; // ISO local
@@ -73,7 +74,7 @@ export async function geocode(name: string): Promise<GeoResult | null> {
     const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
       name
     )}&count=1&language=pl&format=json`;
-    const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
+    const res = await resilientFetch(url, { cache: "no-store", timeoutMs: 10_000 });
     if (!res.ok) return null;
     const data = (await res.json()) as {
       results?: Array<{
@@ -112,9 +113,9 @@ export async function fetchForecast(lat: number, lon: number): Promise<Forecast 
       forecast_days: "7",
       wind_speed_unit: "kmh",
     });
-    const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, {
+    const res = await resilientFetch(`https://api.open-meteo.com/v1/forecast?${params}`, {
       cache: "no-store",
-      signal: AbortSignal.timeout(12_000),
+      timeoutMs: 12_000,
     });
     if (!res.ok) return null;
     const d = (await res.json()) as any;
