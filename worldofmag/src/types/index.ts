@@ -680,15 +680,22 @@ export type HabitWithStats = Habit & {
 
 // ─── Shared ───────────────────────────────────────────────────────────────
 
+/**
+ * Wszystkie handlery są opcjonalne (Z-232): moduł wpina się tylko w te skróty,
+ * które ma sens obsłużyć (np. Kontakty nie mają „toggle status" ani zakładek
+ * filtrów). `useKeyboardShortcuts` woła handler tylko gdy jest podany i dopiero
+ * wtedy blokuje domyślną akcję klawisza — brak handlera = klawisz przechodzi
+ * dalej (np. Ctrl+K do globalnej palety, strzałki do scrolla).
+ */
 export interface ShortcutHandlers {
-  onQuickAdd: () => void;
-  onNavigateDown: () => void;
-  onNavigateUp: () => void;
-  onToggleStatus: () => void;
-  onDelete: () => void;
-  onEdit: () => void;
-  onSearch: () => void;
-  onFilterTab: (index: number) => void;
-  onCommandPalette: () => void;
-  onEscape: () => void;
+  onQuickAdd?: () => void;
+  onNavigateDown?: () => void;
+  onNavigateUp?: () => void;
+  onToggleStatus?: () => void;
+  onDelete?: () => void;
+  onEdit?: () => void;
+  onSearch?: () => void;
+  onFilterTab?: (index: number) => void;
+  onCommandPalette?: () => void;
+  onEscape?: () => void;
 }

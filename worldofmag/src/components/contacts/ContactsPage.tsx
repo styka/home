@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo, useRef } from "react";
 import { Users, Search, Plus, Pencil, Trash2, Check, X, Phone, Mail, Building2 } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
 import { getContacts, createContact, updateContact, deleteContact, type ContactDTO } from "@/actions/contacts";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 const inputStyle: React.CSSProperties = {
   width: "100%", background: "var(--bg-base)", border: "1px solid var(--border)",
@@ -18,9 +19,54 @@ export function ContactsPage({ initialContacts }: { initialContacts: ContactDTO[
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const reload = (q = query) => startTransition(async () => setContacts(await getContacts(q.trim() || undefined)));
+
+  // Skróty klawiszowe (Z-232) — Kontakty wpinają tylko sensowne akcje; brak
+  // onToggleStatus / onFilterTab / onCommandPalette dzięki opcjonalnemu kontraktowi.
+  const handlers = useMemo(() => {
+    const move = (dir: 1 | -1) => {
+      if (contacts.length === 0) return;
+      setSelectedId((cur) => {
+        const idx = cur ? contacts.findIndex((c) => c.id === cur) : -1;
+        const nextIdx =
+          idx < 0 ? (dir === 1 ? 0 : contacts.length - 1) : Math.min(Math.max(idx + dir, 0), contacts.length - 1);
+        const next = contacts[nextIdx];
+        if (next) rowRefs.current.get(next.id)?.scrollIntoView({ block: "nearest" });
+        return next?.id ?? cur;
+      });
+    };
+    return {
+      onQuickAdd: () => { setAdding(true); setEditId(null); },
+      onNavigateDown: () => move(1),
+      onNavigateUp: () => move(-1),
+      onEdit: () => { if (selectedId) { setEditId(selectedId); setAdding(false); } },
+      onDelete: () => {
+        if (!selectedId) return;
+        const c = contacts.find((x) => x.id === selectedId);
+        if (!c || !confirm(`Usunąć kontakt „${c.name}"?`)) return;
+        const idx = contacts.findIndex((x) => x.id === selectedId);
+        const next = contacts[idx + 1] ?? contacts[idx - 1];
+        setSelectedId(next?.id ?? null);
+        startTransition(async () => {
+          await deleteContact(c.id);
+          setContacts(await getContacts(query.trim() || undefined));
+        });
+      },
+      onSearch: () => searchRef.current?.focus(),
+      onEscape: () => {
+        if (editId) { setEditId(null); return; }
+        if (adding) { setAdding(false); return; }
+        setSelectedId(null);
+      },
+    };
+  }, [contacts, selectedId, editId, adding, query]);
+
+  useKeyboardShortcuts(handlers);
 
   return (
     <div style={pageContainerStyle}>
@@ -40,7 +86,7 @@ export function ContactsPage({ initialContacts }: { initialContacts: ContactDTO[
         <form onSubmit={(e) => { e.preventDefault(); reload(); }} style={{ display: "flex", gap: 8 }}>
           <div style={{ position: "relative", flex: 1 }}>
             <Search size={15} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Szukaj po nazwie, telefonie, e-mailu, tagu…" style={{ ...inputStyle, paddingLeft: 32 }} />
+            <input ref={searchRef} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Szukaj po nazwie, telefonie, e-mailu, tagu…" style={{ ...inputStyle, paddingLeft: 32 }} />
           </div>
           <button type="submit" style={primaryBtn} disabled={pending}>Szukaj</button>
         </form>
@@ -60,7 +106,15 @@ export function ContactsPage({ initialContacts }: { initialContacts: ContactDTO[
               editId === c.id ? (
                 <ContactForm key={c.id} contact={c} onDone={() => { setEditId(null); reload(); }} onCancel={() => setEditId(null)} />
               ) : (
-                <ContactRow key={c.id} contact={c} onEdit={() => { setEditId(c.id); setAdding(false); }} onDeleted={() => reload()} />
+                <ContactRow
+                  key={c.id}
+                  contact={c}
+                  selected={selectedId === c.id}
+                  onSelect={() => setSelectedId(c.id)}
+                  innerRef={(el) => { if (el) rowRefs.current.set(c.id, el); else rowRefs.current.delete(c.id); }}
+                  onEdit={() => { setEditId(c.id); setAdding(false); }}
+                  onDeleted={() => reload()}
+                />
               )
             )}
           </div>
@@ -70,9 +124,27 @@ export function ContactsPage({ initialContacts }: { initialContacts: ContactDTO[
   );
 }
 
-function ContactRow({ contact, onEdit, onDeleted }: { contact: ContactDTO; onEdit: () => void; onDeleted: () => void }) {
+function ContactRow({ contact, onEdit, onDeleted, selected, onSelect, innerRef }: {
+  contact: ContactDTO;
+  onEdit: () => void;
+  onDeleted: () => void;
+  selected?: boolean;
+  onSelect?: () => void;
+  innerRef?: (el: HTMLDivElement | null) => void;
+}) {
   return (
-    <div style={{ ...cardStyle, cursor: "default", alignItems: "flex-start", gap: 10 }}>
+    <div
+      ref={innerRef}
+      onClick={onSelect}
+      style={{
+        ...cardStyle,
+        cursor: "default",
+        alignItems: "flex-start",
+        gap: 10,
+        outline: selected ? "2px solid var(--accent-blue)" : "none",
+        outlineOffset: -1,
+      }}
+    >
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{contact.name}</span>
