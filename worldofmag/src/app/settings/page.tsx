@@ -10,6 +10,7 @@ import { MenuPrefsEditor } from "@/components/settings/MenuPrefsEditor"
 import { SkinPicker } from "@/components/settings/SkinPicker"
 import { listAvailableSkins, getActiveSkinId } from "@/actions/skins"
 import { DriveSettings } from "@/components/settings/DriveSettings"
+import { IcalFeedCard } from "@/components/calendar/IcalFeedCard"
 import { getDriveStatus } from "@/actions/drive"
 import { PrivacySettings } from "@/components/settings/PrivacySettings"
 import { getActivePlan } from "@/lib/plans"
@@ -180,6 +181,14 @@ export default async function SettingsPage({
           Dysk Google
         </h2>
         <DriveSettings status={driveStatus} notice={searchParams?.drive} />
+      </section>
+
+      {/* Kalendarz — subskrypcja iCal (Z-150) */}
+      <section>
+        <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+          Kalendarz — subskrypcja
+        </h2>
+        <IcalFeedCard />
       </section>
 
       {/* Wygląd / Skórka */}

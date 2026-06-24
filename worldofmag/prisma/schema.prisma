@@ -18,6 +18,7 @@ model User {
   image         String?
   avatarUrl     String?
   role          String    @default("USER") // "USER" | "ADMIN"
+  icalToken     String?   @unique // Z-150: odwoływalny token feedu iCal (subskrypcja agendy)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
