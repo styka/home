@@ -39,7 +39,7 @@ export default function NewTeamPage() {
             }}
           >
             <option value="team">Zespół (współpraca)</option>
-            <option value="household">Gospodarstwo domowe (rodzina) — od razu wspólna lista zakupów</option>
+            <option value="household">Gospodarstwo domowe (rodzina) — od razu wspólne: zakupy, zadania, budżet</option>
           </select>
         </div>
         <div>

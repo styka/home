@@ -34,11 +34,13 @@ export async function createTeam(name: string, description?: string, kind: "team
     },
     include: { members: true },
   })
-  // Z-192: „Gospodarstwo domowe" dostaje od razu wspólną listę zakupów — pierwsze
-  // współdzielenie bez ręcznej konfiguracji (kalendarz/zadania/budżet są już team-aware).
+  // Z-192: „Gospodarstwo domowe" dostaje od razu wspólne pierwsze współdzielenia
+  // (bez ręcznej konfiguracji): lista zakupów, projekt zadań i budżet domowy.
+  // Kalendarz jest agregatem — pokazuje wpisy zespołu automatycznie (moduły team-aware).
   if (kind === "household") {
     await prisma.shoppingList.create({ data: { name: "Zakupy domowe", ownerTeamId: team.id } })
     await prisma.taskProject.create({ data: { name: "Zadania domowe", ownerTeamId: team.id } })
+    await prisma.walletElement.create({ data: { name: "Budżet domowy", kind: "account", ownerTeamId: team.id } })
   }
   revalidatePath("/settings")
   return team
