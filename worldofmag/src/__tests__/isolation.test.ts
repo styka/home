@@ -19,6 +19,7 @@ test("Z-172 izolacja danych (IDOR/BOLA) — guardy odrzucają obcego właścicie
   const { assertProjectAccess } = await import("@/actions/taskProjects");
   const { assertRecipeAccess } = await import("@/actions/recipes");
   const { assertPetAccess } = await import("@/actions/pets");
+  const { assertCookbookAccess } = await import("@/actions/cookbooks");
   const { assertTaskAccess } = await import("@/lib/tasks/access");
   const { ownedByWhere } = await import("@/lib/ownership");
 
@@ -30,6 +31,7 @@ test("Z-172 izolacja danych (IDOR/BOLA) — guardy odrzucają obcego właścicie
     const project = await prisma.taskProject.create({ data: { name: "P", ownerId: A.id } });
     const recipe = await prisma.recipe.create({ data: { title: "R", slug: `r-${rnd()}`, ownerId: A.id } });
     const pet = await prisma.pet.create({ data: { name: "Pet", ownerId: A.id } });
+    const cookbook = await prisma.cookbook.create({ data: { name: "CB", ownerId: A.id } });
     const taskInProject = await prisma.task.create({ data: { title: "t", projectId: project.id, createdById: A.id } });
     await prisma.note.create({ data: { title: "noteA", ownerId: A.id } });
     await prisma.note.create({ data: { title: "noteB", ownerId: B.id } });
@@ -50,6 +52,10 @@ test("Z-172 izolacja danych (IDOR/BOLA) — guardy odrzucają obcego właścicie
     await t.test("pets: właściciel ma dostęp, obcy odrzucony", async () => {
       await assertPetAccess(pet.id, A.id);
       await assert.rejects(() => assertPetAccess(pet.id, B.id));
+    });
+    await t.test("kitchen (książka kucharska): właściciel ma dostęp, obcy odrzucony", async () => {
+      await assertCookbookAccess(cookbook.id, A.id);
+      await assert.rejects(() => assertCookbookAccess(cookbook.id, B.id));
     });
     await t.test("tasks (zadanie w projekcie): obcy odrzucony przez assertTaskAccess", async () => {
       await assertTaskAccess(taskInProject, A.id);
@@ -74,6 +80,7 @@ test("Z-172 izolacja danych (IDOR/BOLA) — guardy odrzucają obcego właścicie
     await prisma.shoppingList.deleteMany({ where: { ownerId: A.id } });
     await prisma.recipe.deleteMany({ where: { ownerId: A.id } });
     await prisma.pet.deleteMany({ where: { ownerId: A.id } });
+    await prisma.cookbook.deleteMany({ where: { ownerId: A.id } });
     await prisma.user.delete({ where: { id: A.id } }).catch(() => {});
     await prisma.user.delete({ where: { id: B.id } }).catch(() => {});
   }
