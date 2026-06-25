@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GraduationCap, Plus, Sparkles, Loader2, ArrowRight, BookOpen, Flame } from "lucide-react";
@@ -9,6 +9,7 @@ import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle, 
 import { createDeck, bulkAddWords } from "@/actions/languageDecks";
 import { llm } from "@/lib/llm-client";
 import type { LanguageDeck } from "@/types";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -32,6 +33,20 @@ export function LanguagesHomePage({ decks, streak }: { decks: LanguageDeck[]; st
   const [sourceText, setSourceText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [focused, setFocused] = useState<number>(-1);
+
+  // Z-232: lista nawigacyjna — j/k przesuwa fokus, Enter otwiera talię, a/n dodaje.
+  const shortcutHandlers = useMemo(
+    () => ({
+      onNavigateDown: () => { if (!showForm) setFocused((i) => Math.min(decks.length - 1, i + 1)); },
+      onNavigateUp: () => { if (!showForm) setFocused((i) => Math.max(0, i - 1)); },
+      onEnter: () => { if (!showForm && focused >= 0 && decks[focused]) router.push(`/languages/${decks[focused].id}`); },
+      onQuickAdd: () => { if (!showForm) setShowForm(true); },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [decks, focused, showForm]
+  );
+  useKeyboardShortcuts(shortcutHandlers);
 
   async function submit() {
     if (!name.trim()) return;
@@ -144,8 +159,8 @@ export function LanguagesHomePage({ decks, streak }: { decks: LanguageDeck[]; st
           />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {decks.map((d) => (
-              <Link key={d.id} href={`/languages/${d.id}`} style={cardStyle} {...cardHoverHandlers}>
+            {decks.map((d, i) => (
+              <Link key={d.id} href={`/languages/${d.id}`} onMouseEnter={() => setFocused(i)} style={{ ...cardStyle, borderColor: focused === i ? "var(--border-focus)" : "var(--border)", background: focused === i ? "var(--bg-elevated)" : "var(--bg-surface)" }}>
                 <GraduationCap size={18} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 500 }}>{d.name}</div>

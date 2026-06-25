@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Wrench, X, Users } from "lucide-react";
@@ -10,6 +10,7 @@ import {
   getWorkshopType,
   getSuggestions,
 } from "@/lib/warsztat/catalog";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface Props {
   workshops: WorkshopWithCounts[];
@@ -25,6 +26,20 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
   const [type, setType] = useState("ogolny");
   const [location, setLocation] = useState("");
   const [teamId, setTeamId] = useState<string>("");
+  const [focused, setFocused] = useState<number>(-1);
+
+  // Z-232: lista nawigacyjna — j/k przesuwa fokus, Enter otwiera warsztat, a/n dodaje.
+  const shortcutHandlers = useMemo(
+    () => ({
+      onNavigateDown: () => { if (!open) setFocused((i) => Math.min(workshops.length - 1, i + 1)); },
+      onNavigateUp: () => { if (!open) setFocused((i) => Math.max(0, i - 1)); },
+      onEnter: () => { if (!open && focused >= 0 && workshops[focused]) router.push(`/warsztaty/${workshops[focused].id}`); },
+      onQuickAdd: () => { if (!open) setOpen(true); },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [workshops, focused, open]
+  );
+  useKeyboardShortcuts(shortcutHandlers);
 
   function submit() {
     if (!name.trim()) return;
@@ -74,15 +89,16 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {workshops.map((w) => {
+          {workshops.map((w, i) => {
             const wt = getWorkshopType(w.type);
             const essentials = getSuggestions(w.type).filter((s) => s.tier === "essential").length;
             return (
               <Link
                 key={w.id}
                 href={`/warsztaty/${w.id}`}
+                onMouseEnter={() => setFocused(i)}
                 className="rounded-lg border p-4 flex flex-col gap-2 transition-colors"
-                style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
+                style={{ borderColor: focused === i ? "var(--border-focus)" : "var(--border)", backgroundColor: focused === i ? "var(--bg-elevated)" : "var(--bg-surface)" }}
               >
                 <div className="flex items-start justify-between">
                   <span className="text-2xl" aria-hidden>{wt.emoji}</span>

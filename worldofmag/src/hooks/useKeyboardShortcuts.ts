@@ -61,6 +61,15 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
         case "e":
           if (handlers.onEdit) { e.preventDefault(); handlers.onEdit(); }
           break;
+        case "Enter": {
+          // Enter = „otwórz" zogniskowany element listy nawigacyjnej. Nie przejmuj,
+          // gdy fokus jest na realnej kontrolce (przycisk/link/select) — niech zadziała natywnie.
+          const ae = document.activeElement;
+          const aeTag = ae?.tagName.toLowerCase();
+          const interactive = aeTag === "button" || aeTag === "a" || aeTag === "select" || ae?.getAttribute("role") === "button";
+          if (handlers.onEnter && !interactive) { e.preventDefault(); handlers.onEnter(); }
+          break;
+        }
         case "/":
         case "f":
           if (handlers.onSearch) { e.preventDefault(); handlers.onSearch(); }

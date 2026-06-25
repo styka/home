@@ -694,6 +694,7 @@ export interface ShortcutHandlers {
   onToggleStatus?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
+  onEnter?: () => void;
   onSearch?: () => void;
   onFilterTab?: (index: number) => void;
   onCommandPalette?: () => void;

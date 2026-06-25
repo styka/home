@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PawPrint, Plus, AlertCircle, Clock, CalendarDays, Sparkles } from "lucide-react";
 import { PageHeader, StatTile, SectionHeading, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { PetCard } from "./PetCard";
@@ -8,6 +9,7 @@ import { PetForm } from "./PetForm";
 import { CareAgenda } from "./CareAgenda";
 import { WelfareSuggestions } from "./WelfareSuggestions";
 import type { Pet, CareAgendaItem, WelfareSuggestion } from "@/types";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface Props {
   pets: Pet[];
@@ -17,7 +19,22 @@ interface Props {
 }
 
 export function PetsHomePage({ pets, agenda, suggestions, teams }: Props) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
+  const [focused, setFocused] = useState<number>(-1);
+
+  // Z-232: lista nawigacyjna — j/k przesuwa fokus, Enter otwiera profil, a/n dodaje.
+  const shortcutHandlers = useMemo(
+    () => ({
+      onNavigateDown: () => { if (!showForm) setFocused((i) => Math.min(pets.length - 1, i + 1)); },
+      onNavigateUp: () => { if (!showForm) setFocused((i) => Math.max(0, i - 1)); },
+      onEnter: () => { if (!showForm && focused >= 0 && pets[focused]) router.push(`/pets/${pets[focused].id}`); },
+      onQuickAdd: () => { if (!showForm) setShowForm(true); },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pets, focused, showForm]
+  );
+  useKeyboardShortcuts(shortcutHandlers);
 
   const overdue = agenda.filter((a) => a.bucket === "OVERDUE").length;
   const today = agenda.filter((a) => a.bucket === "TODAY").length;
@@ -83,7 +100,7 @@ export function PetsHomePage({ pets, agenda, suggestions, teams }: Props) {
             <div>
               <SectionHeading>Moje zwierzęta</SectionHeading>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 8 }}>
-                {pets.map((pet) => <PetCard key={pet.id} pet={pet} />)}
+                {pets.map((pet, i) => <PetCard key={pet.id} pet={pet} focused={focused === i} onFocus={() => setFocused(i)} />)}
               </div>
             </div>
           </>
