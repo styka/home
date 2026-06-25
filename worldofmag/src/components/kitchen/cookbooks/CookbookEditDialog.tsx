@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { X, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { createCookbook, updateCookbook, deleteCookbook } from "@/actions/cookbooks";
 import type { Cookbook } from "@/types/kitchen";
@@ -42,8 +43,6 @@ export function CookbookEditDialog({ open, onClose, cookbook }: CookbookEditDial
       setColor(cookbook?.color ?? null);
     }
   }, [open, cookbook]);
-
-  if (!open) return null;
 
   function handleSave() {
     if (!name.trim()) {
@@ -94,104 +93,12 @@ export function CookbookEditDialog({ open, onClose, cookbook }: CookbookEditDial
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full md:w-[460px] md:rounded border max-h-[90vh] overflow-y-auto"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border)",
-          borderTopLeftRadius: 12,
-          borderTopRightRadius: 12,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-            {cookbook ? "Edycja książki" : "Nowa książka"}
-          </h3>
-          <button onClick={onClose} aria-label="Zamknij" style={{ color: "var(--text-muted)" }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="px-4 py-3 flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Nazwa</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="np. Włoska klasyka"
-              autoFocus
-              className="w-full px-3 py-2 rounded border text-sm"
-              style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
-            />
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Opis (opcjonalny)</span>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className="w-full px-3 py-2 rounded border text-sm resize-y"
-              style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
-            />
-          </label>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Emoji</span>
-            <div className="flex flex-wrap gap-1">
-              {EMOJI_PRESETS.map((e) => (
-                <button
-                  key={e}
-                  type="button"
-                  onClick={() => setEmoji(e)}
-                  className="w-9 h-9 rounded flex items-center justify-center text-lg"
-                  style={{
-                    backgroundColor: emoji === e ? "var(--accent-orange)" : "var(--bg-elevated)",
-                    border: emoji === e ? "1px solid var(--accent-orange)" : "1px solid var(--border)",
-                  }}
-                >
-                  {e}
-                </button>
-              ))}
-              <input
-                type="text"
-                value={emoji}
-                onChange={(e) => setEmoji(e.target.value.slice(0, 2))}
-                className="w-12 h-9 px-1 rounded border text-center text-lg"
-                style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
-                aria-label="Własne emoji"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Kolor</span>
-            <div className="flex flex-wrap gap-1.5">
-              {COLOR_PRESETS.map((c) => (
-                <button
-                  key={c.label}
-                  type="button"
-                  onClick={() => setColor(c.value)}
-                  className="w-7 h-7 rounded"
-                  title={c.label}
-                  style={{
-                    backgroundColor: c.value ?? "var(--bg-elevated)",
-                    border: color === c.value ? "2px solid var(--text-primary)" : "1px solid var(--border)",
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-2 px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={cookbook ? "Edycja książki" : "Nowa książka"}
+      footer={
+        <div className="flex items-center justify-between" style={{ width: "100%" }}>
           {cookbook ? (
             <button
               type="button"
@@ -223,7 +130,78 @@ export function CookbookEditDialog({ open, onClose, cookbook }: CookbookEditDial
             </button>
           </div>
         </div>
+      }
+    >
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Nazwa</span>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="np. Włoska klasyka"
+          autoFocus
+          className="w-full px-3 py-2 rounded border text-sm"
+          style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+        />
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Opis (opcjonalny)</span>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+          className="w-full px-3 py-2 rounded border text-sm resize-y"
+          style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+        />
+      </label>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Emoji</span>
+        <div className="flex flex-wrap gap-1">
+          {EMOJI_PRESETS.map((e) => (
+            <button
+              key={e}
+              type="button"
+              onClick={() => setEmoji(e)}
+              className="w-9 h-9 rounded flex items-center justify-center text-lg"
+              style={{
+                backgroundColor: emoji === e ? "var(--accent-orange)" : "var(--bg-elevated)",
+                border: emoji === e ? "1px solid var(--accent-orange)" : "1px solid var(--border)",
+              }}
+            >
+              {e}
+            </button>
+          ))}
+          <input
+            type="text"
+            value={emoji}
+            onChange={(e) => setEmoji(e.target.value.slice(0, 2))}
+            className="w-12 h-9 px-1 rounded border text-center text-lg"
+            style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+            aria-label="Własne emoji"
+          />
+        </div>
       </div>
-    </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Kolor</span>
+        <div className="flex flex-wrap gap-1.5">
+          {COLOR_PRESETS.map((c) => (
+            <button
+              key={c.label}
+              type="button"
+              onClick={() => setColor(c.value)}
+              className="w-7 h-7 rounded"
+              title={c.label}
+              style={{
+                backgroundColor: c.value ?? "var(--bg-elevated)",
+                border: color === c.value ? "2px solid var(--text-primary)" : "1px solid var(--border)",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </Modal>
   );
 }
