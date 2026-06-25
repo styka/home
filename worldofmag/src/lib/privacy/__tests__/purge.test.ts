@@ -82,3 +82,32 @@ test("Z-264 RODO: usunięcie konta kasuje PetSale wraz z PII kupującego (CASCAD
     await prisma.user.deleteMany({ where: { id: U.id } });
   }
 });
+
+// Z-301 (RODO finansów): dane majątkowe (salda, wydatki, cele, kursy) to PII.
+// Wszystkie modele Portfela mają FK onDelete:Cascade do User → usunięcie konta MUSI
+// je skasować. Test pilnuje kaskady (gdyby ktoś zmienił FK na SetNull, dane zostałyby).
+test("Z-301 RODO: usunięcie konta kasuje dane finansowe Portfela (CASCADE)", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
+  const { prisma } = await import("@/lib/prisma");
+  const { purgeUserData } = await import("@/lib/privacy/purge");
+
+  const U = await prisma.user.create({ data: { email: `fin-${rnd()}@test.local` } });
+  const el = await prisma.walletElement.create({ data: { name: "Konto ROR", ownerId: U.id, balance: 1000 } });
+  await prisma.walletEntry.create({ data: { elementId: el.id, balanceAfter: 1000, delta: 1000, note: "wpłata" } });
+  await prisma.budget.create({ data: { category: "Jedzenie", limitAmount: 800, ownerId: U.id } });
+  await prisma.financeGoal.create({ data: { name: "Wakacje", targetAmount: 5000, ownerId: U.id } });
+  await prisma.financeSettings.create({ data: { userId: U.id } });
+  await prisma.exchangeRate.create({ data: { userId: U.id, currency: "EUR", rate: 4.3 } });
+
+  try {
+    await purgeUserData(U.id);
+    assert.equal(await prisma.user.count({ where: { id: U.id } }), 0);
+    assert.equal(await prisma.walletElement.count({ where: { ownerId: U.id } }), 0, "elementy portfela");
+    assert.equal(await prisma.walletEntry.count({ where: { elementId: el.id } }), 0, "wpisy (kaskada przez element)");
+    assert.equal(await prisma.budget.count({ where: { ownerId: U.id } }), 0, "budżety");
+    assert.equal(await prisma.financeGoal.count({ where: { ownerId: U.id } }), 0, "cele oszczędnościowe");
+    assert.equal(await prisma.financeSettings.count({ where: { userId: U.id } }), 0, "ustawienia finansowe");
+    assert.equal(await prisma.exchangeRate.count({ where: { userId: U.id } }), 0, "kursy walut");
+  } finally {
+    await prisma.user.deleteMany({ where: { id: U.id } });
+  }
+});
