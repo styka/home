@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Plus, Search, Warehouse, AlertTriangle, ClipboardList, Camera, ShoppingCart, CalendarClock, ShieldCheck } from "lucide-react";
 import { StorageEditSheet } from "./StorageEditSheet";
@@ -8,6 +8,7 @@ import { addLowStockToShoppingList, type ExpiringEntry } from "@/actions/storage
 import { useToast } from "@/components/ui/Toast";
 import type { StorageItemWithMovements } from "@/actions/storage";
 import type { StorageSupplier } from "@prisma/client";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface StorageListProps {
   items: StorageItemWithMovements[];
@@ -28,6 +29,8 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
   const [editing, setEditing] = useState<{ item: StorageItemWithMovements | null; warehouse?: string } | null>(null);
   const [replenishList, setReplenishList] = useState<string>(shoppingLists[0]?.id ?? "");
   const [pending, startTransition] = useTransition();
+  const [focused, setFocused] = useState<number>(-1);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const warehouses = useMemo(() => {
     const set = new Set<string>();
@@ -50,6 +53,27 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
     }
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [items, search, activeWarehouse]);
+
+  // Z-232: częściowy keyset — j/k fokus po głównej liście (pozycje w kolejności
+  // wyświetlania, sekcje magazynów spłaszczone), Enter/e = otwórz arkusz edycji,
+  // a = dodaj, / = szukaj. Usuń/zmiana ilości są w arkuszu (StorageEditSheet);
+  // sekcje „do uzupełnienia"/„terminy" zostają pod myszą.
+  const orderedItems = useMemo(() => grouped.flatMap(([, list]) => list), [grouped]);
+  const indexOf = useMemo(() => new Map(orderedItems.map((it, idx) => [it.id, idx])), [orderedItems]);
+
+  const shortcutHandlers = useMemo(
+    () => ({
+      onNavigateDown: () => { if (!editing) setFocused((i) => Math.min(orderedItems.length - 1, i + 1)); },
+      onNavigateUp: () => { if (!editing) setFocused((i) => Math.max(0, i - 1)); },
+      onEnter: () => { if (!editing && focused >= 0 && orderedItems[focused]) setEditing({ item: orderedItems[focused] }); },
+      onEdit: () => { if (!editing && focused >= 0 && orderedItems[focused]) setEditing({ item: orderedItems[focused] }); },
+      onQuickAdd: () => { if (!editing) setEditing({ item: null, warehouse: activeWarehouse && activeWarehouse !== NO_WAREHOUSE ? activeWarehouse : undefined }); },
+      onSearch: () => { searchRef.current?.focus(); },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [orderedItems, focused, editing, activeWarehouse]
+  );
+  useKeyboardShortcuts(shortcutHandlers);
 
   function handleReplenish() {
     if (!replenishList) {
@@ -107,6 +131,7 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
         >
           <Search size={14} style={{ color: "var(--text-muted)" }} />
           <input
+            ref={searchRef}
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -280,13 +305,15 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
             <ul className="flex flex-col gap-0.5">
               {list.map((i) => {
                 const belowMin = i.minQuantity != null && (i.quantity ?? 0) < i.minQuantity;
+                const fidx = indexOf.get(i.id) ?? -1;
                 return (
                   <li key={i.id}>
                     <button
                       type="button"
                       onClick={() => setEditing({ item: i })}
+                      onMouseEnter={() => setFocused(fidx)}
                       className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded text-sm text-left"
-                      style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-primary)" }}
+                      style={{ backgroundColor: focused === fidx ? "var(--bg-elevated)" : "var(--bg-surface)", color: "var(--text-primary)", outline: focused === fidx ? "1px solid var(--border-focus)" : "none" }}
                     >
                       <span className="flex-1 min-w-0 truncate">
                         {i.name}
