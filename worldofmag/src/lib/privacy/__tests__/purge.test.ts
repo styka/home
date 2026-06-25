@@ -111,3 +111,33 @@ test("Z-301 RODO: usunięcie konta kasuje dane finansowe Portfela (CASCADE)", { 
     await prisma.user.deleteMany({ where: { id: U.id } });
   }
 });
+
+// Audyt RODO (systematyczny przegląd FK SetNull/no-FK): purge.ts kasuje wszystkie
+// OSOBISTE rekordy SET-NULL (ownerId=user). QaTestScenario to jednak WSPÓŁDZIELONE
+// narzędzie (Epic→Story→Scenario; brak ownerId, authorId=tylko atrybucja), więc
+// usunięcie konta autora MUSI je ZACHOWAĆ, anonimizując authorId (SET NULL). Test
+// pilnuje intencji: zmiana FK na Cascade = utrata scenariuszy QA; dodanie do purge
+// = niepotrzebne kasowanie współdzielonej dokumentacji. (Potwierdza: brak luki RODO.)
+test("RODO/QA: usunięcie konta autora ANONIMIZUJE QaTestScenario (authorId→null), nie kasuje", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
+  const { prisma } = await import("@/lib/prisma");
+  const { purgeUserData } = await import("@/lib/privacy/purge");
+
+  const U = await prisma.user.create({ data: { email: `qa-${rnd()}@test.local` } });
+  const tag = rnd();
+  const epic = await prisma.qaEpic.create({ data: { slug: `e-${tag}`, title: "Epic", module: "qa" } });
+  const story = await prisma.qaUserStory.create({ data: { slug: `s-${tag}`, title: "Story", epicId: epic.id } });
+  const scenario = await prisma.qaTestScenario.create({
+    data: { slug: `sc-${tag}`, title: "Scenariusz", content: "# krok", storyId: story.id, authorId: U.id },
+  });
+
+  try {
+    await purgeUserData(U.id);
+    assert.equal(await prisma.user.count({ where: { id: U.id } }), 0, "konto skasowane");
+    const after = await prisma.qaTestScenario.findUnique({ where: { id: scenario.id }, select: { authorId: true } });
+    assert.ok(after, "scenariusz QA NIE jest kasowany (współdzielone narzędzie, nie dane osobiste)");
+    assert.equal(after?.authorId, null, "authorId zanonimizowany (SET NULL)");
+  } finally {
+    await prisma.qaEpic.delete({ where: { id: epic.id } }).catch(() => {}); // cascade → story → scenario
+    await prisma.user.deleteMany({ where: { id: U.id } });
+  }
+});
