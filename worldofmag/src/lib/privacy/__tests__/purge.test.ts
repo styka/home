@@ -55,3 +55,30 @@ test("Z-051 purgeUserData: kasuje dane usera (w tym SET-NULL), izolacja innych z
     await prisma.user.deleteMany({ where: { id: { in: [A.id, B.id] } } });
   }
 });
+
+// Z-264 (RODO sprzedaży zwierząt): PetSale przechowuje PII OSOBY TRZECIEJ
+// (buyerName/buyerContact). Ma FK ownerId→User i petId→Pet, oba onDelete:Cascade,
+// więc usunięcie konta sprzedawcy MUSI skasować też dane kupującego (nie osierocić).
+// Test pilnuje tej kaskady — gdyby ktoś zmienił FK na SetNull, PII wyciekłoby.
+test("Z-264 RODO: usunięcie konta kasuje PetSale wraz z PII kupującego (CASCADE)", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
+  const { prisma } = await import("@/lib/prisma");
+  const { purgeUserData } = await import("@/lib/privacy/purge");
+
+  const U = await prisma.user.create({ data: { email: `petsale-${rnd()}@test.local` } });
+  const pet = await prisma.pet.create({ data: { name: "Rex", ownerId: U.id } });
+  const buyerTag = `buyer-${rnd()}`;
+  await prisma.petSale.create({
+    data: { petId: pet.id, ownerId: U.id, buyerName: "Anna Nowak", buyerContact: buyerTag, price: 100 },
+  });
+
+  try {
+    await purgeUserData(U.id);
+    assert.equal(await prisma.user.count({ where: { id: U.id } }), 0);
+    assert.equal(await prisma.petSale.count({ where: { ownerId: U.id } }), 0, "PetSale skasowane (CASCADE po ownerId)");
+    assert.equal(await prisma.petSale.count({ where: { buyerContact: buyerTag } }), 0, "PII kupującego nie zostaje osierocone");
+    assert.equal(await prisma.pet.count({ where: { ownerId: U.id } }), 0, "Pet skasowany (CASCADE)");
+  } finally {
+    await prisma.petSale.deleteMany({ where: { buyerContact: buyerTag } });
+    await prisma.user.deleteMany({ where: { id: U.id } });
+  }
+});
