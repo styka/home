@@ -3,8 +3,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { X, Sparkles, Loader2, Wand2, ChefHat } from "lucide-react";
+import { Sparkles, Loader2, Wand2, ChefHat } from "lucide-react";
 import { llm } from "@/lib/llm-client";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { bulkSetMealPlan } from "@/actions/mealPlans";
 import type { MealSlot } from "@/types/kitchen";
@@ -55,8 +56,6 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
-
-  if (!open) return null;
 
   function toggleSlot(slot: MealSlot) {
     setSelectedSlots((prev) => {
@@ -146,33 +145,57 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
   for (const s of suggestions) matrix.set(`${s.date}::${s.slot}`, s);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-      onClick={handleClose}
-    >
-      <div
-        className="w-full md:w-[640px] md:rounded border max-h-[92vh] overflow-y-auto"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border)",
-          borderTopLeftRadius: 12,
-          borderTopRightRadius: 12,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10"
-          style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
-        >
-          <h3 className="text-base font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-            <Sparkles size={16} style={{ color: "var(--accent-purple)" }} />
-            AI: Plan tygodnia
-          </h3>
-          <button onClick={handleClose} aria-label="Zamknij" style={{ color: "var(--text-muted)" }}>
-            <X size={18} />
-          </button>
+    <Modal
+      open={open}
+      onClose={handleClose}
+      wide
+      title={
+        <span className="flex items-center gap-2">
+          <Sparkles size={16} style={{ color: "var(--accent-purple)" }} />
+          AI: Plan tygodnia
+        </span>
+      }
+      footer={
+        <div className="flex items-center justify-between" style={{ width: "100%" }}>
+          {step === "review" ? (
+            <button
+              type="button"
+              onClick={() => setStep("prefs")}
+              className="px-3 py-1.5 rounded text-sm"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              ← Wstecz
+            </button>
+          ) : <span />}
+          <div className="flex items-center gap-2 ml-auto">
+            <button onClick={handleClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
+              Anuluj
+            </button>
+            {step === "prefs" ? (
+              <button
+                onClick={handleGenerate}
+                disabled={selectedSlots.size === 0 || recipeCount === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm disabled:opacity-50"
+                style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}
+              >
+                <Wand2 size={14} /> Generuj plan
+              </button>
+            ) : null}
+            {step === "review" ? (
+              <button
+                onClick={handleApply}
+                disabled={pending}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm disabled:opacity-50"
+                style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+              >
+                {pending ? "Zapisuję…" : `Zaakceptuj ${suggestions.length - excluded.size}`}
+              </button>
+            ) : null}
+          </div>
         </div>
+      }
+    >
+      <>
 
         {step === "prefs" && recipeCount === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-10 text-center gap-3">
@@ -195,7 +218,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
         ) : null}
 
         {step === "prefs" && recipeCount > 0 ? (
-          <div className="px-4 py-3 flex flex-col gap-3">
+          <div className="flex flex-col gap-3">
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               AI wybierze przepisy z Twojej biblioteki dla każdego slotu w tygodniu na podstawie preferencji.
             </p>
@@ -311,7 +334,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
         ) : null}
 
         {step === "review" ? (
-          <div className="px-4 py-3 flex flex-col gap-3">
+          <div className="flex flex-col gap-3">
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               AI zaproponowało {suggestions.length} {polishPlural(suggestions.length, ["posiłek", "posiłki", "posiłków"])}. Odznacz te których nie chcesz.
             </p>
@@ -380,47 +403,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
           </div>
         ) : null}
 
-        <div
-          className="flex justify-between gap-2 px-4 py-3 border-t sticky bottom-0"
-          style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
-        >
-          {step === "review" ? (
-            <button
-              type="button"
-              onClick={() => setStep("prefs")}
-              className="px-3 py-1.5 rounded text-sm"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              ← Wstecz
-            </button>
-          ) : <span />}
-          <div className="flex items-center gap-2 ml-auto">
-            <button onClick={handleClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
-              Anuluj
-            </button>
-            {step === "prefs" ? (
-              <button
-                onClick={handleGenerate}
-                disabled={selectedSlots.size === 0 || recipeCount === 0}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm disabled:opacity-50"
-                style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}
-              >
-                <Wand2 size={14} /> Generuj plan
-              </button>
-            ) : null}
-            {step === "review" ? (
-              <button
-                onClick={handleApply}
-                disabled={pending}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm disabled:opacity-50"
-                style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
-              >
-                {pending ? "Zapisuję…" : `Zaakceptuj ${suggestions.length - excluded.size}`}
-              </button>
-            ) : null}
-          </div>
-        </div>
-      </div>
-    </div>
+      </>
+    </Modal>
   );
 }
