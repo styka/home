@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { X, ShoppingCart } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { shopForRecipe } from "@/actions/recipes";
+import { Modal } from "@/components/ui/Modal";
 import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
 import { useToast } from "@/components/ui/Toast";
 import { polishPlural } from "@/lib/polishPlural";
@@ -52,8 +53,6 @@ export function ShopForRecipeDialog({
     }).length;
   }, [recipe.ingredients, excluded, skipOptional]);
 
-  if (!open) return null;
-
   function toggleExclude(id: string) {
     setExcluded((prev) => {
       const next = new Set(prev);
@@ -95,33 +94,36 @@ export function ShopForRecipeDialog({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full md:w-[500px] md:rounded border max-h-[90vh] overflow-y-auto"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border)",
-          borderTopLeftRadius: 12,
-          borderTopRightRadius: 12,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <h3 className="text-base font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-            <ShoppingCart size={16} style={{ color: "var(--accent-orange)" }} />
-            Dodaj do listy zakupów
-          </h3>
-          <button onClick={onClose} aria-label="Zamknij" style={{ color: "var(--text-muted)" }}>
-            <X size={18} />
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={
+        <span className="flex items-center gap-2">
+          <ShoppingCart size={16} style={{ color: "var(--accent-orange)" }} />
+          Dodaj do listy zakupów
+        </span>
+      }
+      footer={
+        <>
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 rounded text-sm"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Anuluj
           </button>
-        </div>
-
-        <div className="px-4 py-3 flex flex-col gap-3">
-          {lists.length === 0 ? (
+          <button
+            onClick={handleConfirm}
+            disabled={submitting || lists.length === 0 || includedCount === 0}
+            className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
+            style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+          >
+            {submitting ? "Dodaję…" : `Dodaj ${includedCount} ${polishPlural(includedCount, ["pozycję", "pozycje", "pozycji"])}`}
+          </button>
+        </>
+      }
+    >
+      {lists.length === 0 ? (
             <p className="text-sm" style={{ color: "var(--accent-amber)" }}>
               Nie masz żadnej listy zakupów. Utwórz najpierw listę w module Zakupy.
             </p>
@@ -191,26 +193,6 @@ export function ShopForRecipeDialog({
               })}
             </ul>
           </div>
-        </div>
-
-        <div className="flex justify-end gap-2 px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
-          <button
-            onClick={onClose}
-            className="px-3 py-1.5 rounded text-sm"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            Anuluj
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={submitting || lists.length === 0 || includedCount === 0}
-            className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
-            style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
-          >
-            {submitting ? "Dodaję…" : `Dodaj ${includedCount} ${polishPlural(includedCount, ["pozycję", "pozycje", "pozycji"])}`}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

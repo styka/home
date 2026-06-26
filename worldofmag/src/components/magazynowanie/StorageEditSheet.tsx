@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { X, Trash2, Plus, Minus, ImagePlus, Loader2, ArrowLeftRight } from "lucide-react";
+import { Trash2, Plus, Minus, ImagePlus, Loader2, ArrowLeftRight } from "lucide-react";
 import {
   addStorageItem,
   updateStorageItem,
@@ -9,6 +9,7 @@ import {
   adjustStorageQuantity,
   transferStock,
 } from "@/actions/storage";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import { BatchesManager } from "./BatchesManager";
@@ -85,8 +86,6 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
       setTransferQty("");
     }
   }, [open, item, defaultWarehouse]);
-
-  if (!open) return null;
 
   async function handlePhoto(files: FileList | null) {
     const file = files?.[0];
@@ -197,31 +196,41 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full md:w-[480px] md:rounded border max-h-[90vh] overflow-y-auto"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border)",
-          borderTopLeftRadius: 12,
-          borderTopRightRadius: 12,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-            {item ? "Edytuj pozycję" : "Nowa pozycja"}
-          </h3>
-          <button onClick={onClose} aria-label="Zamknij" style={{ color: "var(--text-muted)" }}>
-            <X size={18} />
-          </button>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={item ? "Edytuj pozycję" : "Nowa pozycja"}
+      footer={
+        <div className="flex items-center justify-between" style={{ width: "100%" }}>
+          <div>
+            {item ? (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={pending}
+                className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs disabled:opacity-50"
+                style={{ color: "var(--accent-red)" }}
+              >
+                <Trash2 size={14} /> Usuń
+              </button>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
+              Anuluj
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={pending}
+              className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
+              style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}
+            >
+              {pending ? "Zapisuję…" : "Zapisz"}
+            </button>
+          </div>
         </div>
-
-        <div className="px-4 py-3 flex flex-col gap-3">
+      }
+    >
           <Field label="Nazwa">
             <input
               type="text"
@@ -521,38 +530,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
               </ul>
             </div>
           ) : null}
-        </div>
-
-        <div className="flex items-center justify-between gap-2 px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
-          <div>
-            {item ? (
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={pending}
-                className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs disabled:opacity-50"
-                style={{ color: "var(--accent-red)" }}
-              >
-                <Trash2 size={14} /> Usuń
-              </button>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
-              Anuluj
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={pending}
-              className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
-              style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}
-            >
-              {pending ? "Zapisuję…" : "Zapisz"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

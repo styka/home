@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Plus, Trash2, Loader2, RefreshCw, X } from "lucide-react";
+import { Bell, Plus, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { WEATHER_PRESETS, HORIZON_META, type Horizon } from "@/lib/weather/presets";
@@ -196,22 +197,33 @@ function AddWatcherModal({
   const has = new Set(existingPresets);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--bg-base)] p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-semibold text-[var(--text-primary)]">Dodaj obserwator pogody</h3>
-          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-            <X size={18} />
-          </button>
-        </div>
-
+    <Modal
+      onClose={onClose}
+      title="Dodaj obserwator pogody"
+      wide
+      footer={
+        <>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Anuluj
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              if (!title.trim() || !query.trim()) return;
+              onAddCustom({ title, query, horizon });
+              onClose();
+            }}
+          >
+            Dodaj własny
+          </Button>
+        </>
+      }
+    >
+      <div>
         <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
           Gotowe presety
         </h4>
-        <div className="mb-5 flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
           {WEATHER_PRESETS.map((p) => (
             <button
               key={p.key}
@@ -231,7 +243,9 @@ function AddWatcherModal({
             </button>
           ))}
         </div>
+      </div>
 
+      <div>
         <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
           Własny obserwator (opisany naturalnym językiem)
         </h4>
@@ -248,7 +262,7 @@ function AddWatcherModal({
           placeholder="Co obserwować? np. weekend dobry na wspinaczkę: sucho, bez burz, słaby wiatr"
           className="mb-2 w-full rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
         />
-        <div className="mb-4 flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <label className="text-xs text-[var(--text-secondary)]">Horyzont:</label>
           <select
             value={horizon}
@@ -262,22 +276,7 @@ function AddWatcherModal({
             ))}
           </select>
         </div>
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            Anuluj
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              if (!title.trim() || !query.trim()) return;
-              onAddCustom({ title, query, horizon });
-              onClose();
-            }}
-          >
-            Dodaj własny
-          </Button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

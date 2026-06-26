@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition, useMemo, useRef } from "react";
-import { Plus, Truck, Trash2, Pencil, Mail, Phone, X } from "lucide-react";
+import { Plus, Truck, Trash2, Pencil, Mail, Phone } from "lucide-react";
 import { addSupplier, updateSupplier, deleteSupplier } from "@/actions/storage";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { StorageSupplier } from "@prisma/client";
@@ -163,20 +164,11 @@ function SupplierEditor({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.6)" }} onClick={onClose}>
-      <div className="w-full md:w-[440px] md:rounded border p-4 flex flex-col gap-3" style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderTopLeftRadius: 12, borderTopRightRadius: 12 }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>{supplier ? "Edytuj dostawcę" : "Nowy dostawca"}</h3>
-          <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X size={18} /></button>
-        </div>
-        <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Nazwa" className="px-3 py-2 rounded border text-sm" style={inputStyle} />
-        <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Osoba kontaktowa" className="px-3 py-2 rounded border text-sm" style={inputStyle} />
-        <div className="grid grid-cols-2 gap-2">
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" className="px-3 py-2 rounded border text-sm" style={inputStyle} />
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefon" className="px-3 py-2 rounded border text-sm" style={inputStyle} />
-        </div>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notatki" rows={2} className="px-3 py-2 rounded border text-sm resize-none" style={inputStyle} />
-        <div className="flex items-center justify-between">
+    <Modal
+      onClose={onClose}
+      title={supplier ? "Edytuj dostawcę" : "Nowy dostawca"}
+      footer={
+        <div className="flex items-center justify-between" style={{ width: "100%" }}>
           {supplier ? (
             <button type="button" onClick={remove} disabled={pending} className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--accent-red)" }}><Trash2 size={14} /> Usuń</button>
           ) : <span />}
@@ -185,7 +177,15 @@ function SupplierEditor({
             <button onClick={save} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}>Zapisz</button>
           </div>
         </div>
+      }
+    >
+      <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Nazwa" className="px-3 py-2 rounded border text-sm" style={inputStyle} />
+      <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Osoba kontaktowa" className="px-3 py-2 rounded border text-sm" style={inputStyle} />
+      <div className="grid grid-cols-2 gap-2">
+        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" className="px-3 py-2 rounded border text-sm" style={inputStyle} />
+        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefon" className="px-3 py-2 rounded border text-sm" style={inputStyle} />
       </div>
-    </div>
+      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notatki" rows={2} className="px-3 py-2 rounded border text-sm resize-none" style={inputStyle} />
+    </Modal>
   );
 }
