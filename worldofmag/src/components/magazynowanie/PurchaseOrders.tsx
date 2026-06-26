@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, ShoppingBag, Sparkles, Loader2, Copy, Mail, Trash2, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, ShoppingBag, Sparkles, Loader2, Copy, Mail, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import {
   createPurchaseOrder,
   updatePurchaseOrder,
@@ -9,6 +9,7 @@ import {
   type PurchaseOrderWithLines,
 } from "@/actions/storage";
 import { llm } from "@/lib/llm-client";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import type { StorageSupplier } from "@prisma/client";
 
@@ -220,40 +221,37 @@ function OrderCreator({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.6)" }} onClick={onClose}>
-      <div className="w-full md:w-[480px] md:rounded border p-4 flex flex-col gap-3 max-h-[90vh] overflow-y-auto" style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderTopLeftRadius: 12, borderTopRightRadius: 12 }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>Nowe zamówienie</h3>
-          <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X size={18} /></button>
-        </div>
-
-        <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="px-3 py-2 rounded border text-sm" style={inputStyle}>
-          <option value="">— dostawca (opcjonalnie) —</option>
-          {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-
-        <button type="button" onClick={seedFromLowStock} className="self-start text-xs px-2 py-1 rounded border" style={{ borderColor: "var(--accent-amber)", color: "var(--accent-amber)" }}>
-          Zasiej brakami ({lowStock.length})
-        </button>
-
-        <div className="flex flex-col gap-1.5">
-          {lines.map((l, i) => (
-            <div key={i} className="flex items-center gap-1.5">
-              <input value={l.name} onChange={(e) => setLine(i, { name: e.target.value })} placeholder="Nazwa" className="flex-1 px-2 py-1.5 rounded border text-sm" style={inputStyle} />
-              <input value={l.quantity} onChange={(e) => setLine(i, { quantity: e.target.value })} type="number" step="any" className="w-16 px-2 py-1.5 rounded border text-sm text-right tabular-nums" style={inputStyle} />
-              <input value={l.unit} onChange={(e) => setLine(i, { unit: e.target.value })} placeholder="szt" className="w-14 px-2 py-1.5 rounded border text-sm" style={inputStyle} />
-            </div>
-          ))}
-          <button type="button" onClick={() => setLines((ls) => [...ls, { name: "", quantity: "1", unit: "" }])} className="self-start inline-flex items-center gap-1 text-xs" style={{ color: "var(--accent-blue)" }}>
-            <Plus size={13} /> Dodaj pozycję
-          </button>
-        </div>
-
-        <div className="flex items-center justify-end gap-2">
+    <Modal
+      onClose={onClose}
+      title="Nowe zamówienie"
+      footer={
+        <>
           <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>Anuluj</button>
           <button onClick={save} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}>Utwórz</button>
-        </div>
+        </>
+      }
+    >
+      <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="px-3 py-2 rounded border text-sm" style={inputStyle}>
+        <option value="">— dostawca (opcjonalnie) —</option>
+        {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+      </select>
+
+      <button type="button" onClick={seedFromLowStock} className="self-start text-xs px-2 py-1 rounded border" style={{ borderColor: "var(--accent-amber)", color: "var(--accent-amber)" }}>
+        Zasiej brakami ({lowStock.length})
+      </button>
+
+      <div className="flex flex-col gap-1.5">
+        {lines.map((l, i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            <input value={l.name} onChange={(e) => setLine(i, { name: e.target.value })} placeholder="Nazwa" className="flex-1 px-2 py-1.5 rounded border text-sm" style={inputStyle} />
+            <input value={l.quantity} onChange={(e) => setLine(i, { quantity: e.target.value })} type="number" step="any" className="w-16 px-2 py-1.5 rounded border text-sm text-right tabular-nums" style={inputStyle} />
+            <input value={l.unit} onChange={(e) => setLine(i, { unit: e.target.value })} placeholder="szt" className="w-14 px-2 py-1.5 rounded border text-sm" style={inputStyle} />
+          </div>
+        ))}
+        <button type="button" onClick={() => setLines((ls) => [...ls, { name: "", quantity: "1", unit: "" }])} className="self-start inline-flex items-center gap-1 text-xs" style={{ color: "var(--accent-blue)" }}>
+          <Plus size={13} /> Dodaj pozycję
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }

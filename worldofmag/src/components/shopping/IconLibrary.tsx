@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Trash2, Plus, RefreshCw, X, FolderOpen, FolderSymlink, Sparkles } from "lucide-react";
+import { Trash2, Plus, RefreshCw, FolderOpen, FolderSymlink, Sparkles } from "lucide-react";
 import Link from "next/link";
 import type { CategoryIconVariantData } from "@/actions/categoryIcons";
 import { deleteCategoryIconVariant, saveToLibrary, assignIconToCategory } from "@/actions/categoryIcons";
+import { Modal } from "@/components/ui/Modal";
 import { IconDisplay } from "@/components/shopping/IconDisplay";
 
 interface IconLibraryProps {
@@ -234,105 +235,97 @@ function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData)
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.75)" }}>
-          <div
-            className="relative w-[calc(100vw-32px)] max-w-[480px] rounded-2xl shadow-2xl"
-            style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", maxHeight: "min(90vh, 680px)", display: "flex", flexDirection: "column" }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
-              <div>
-                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Generuj ikony</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Kliknij wygenerowaną ikonę by zapisać do biblioteki</p>
-              </div>
-              <button onClick={handleClose} className="rounded-lg p-1.5" style={{ color: "var(--text-muted)" }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}>
-                <X size={14} />
+        <Modal
+          open={open}
+          onClose={handleClose}
+          wide
+          title={
+            <span className="flex flex-col">
+              <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Generuj ikony</span>
+              <span className="text-xs mt-0.5 font-normal" style={{ color: "var(--text-muted)" }}>Kliknij wygenerowaną ikonę by zapisać do biblioteki</span>
+            </span>
+          }
+        >
+          {/* Controls */}
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <input
+                value={theme}
+                onChange={(e) => setTheme(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && generate()}
+                placeholder="Temat / kategoria (opcjonalnie)"
+                className="flex-1 text-sm focus:outline-none rounded-xl px-3 py-2"
+                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
+              />
+              <button
+                onClick={generate}
+                disabled={loading}
+                className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-40 active:scale-[0.98]"
+                style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
+                onMouseEnter={(e) => { if (!loading) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
+              >
+                <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+                Generuj
               </button>
             </div>
-
-            {/* Controls */}
-            <div className="px-5 pb-3 space-y-2 shrink-0">
-              <div className="flex gap-2">
-                <input
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && generate()}
-                  placeholder="Temat / kategoria (opcjonalnie)"
-                  className="flex-1 text-sm focus:outline-none rounded-xl px-3 py-2"
-                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
-                />
-                <button
-                  onClick={generate}
-                  disabled={loading}
-                  className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-40 active:scale-[0.98]"
-                  style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
-                  onMouseEnter={(e) => { if (!loading) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
-                >
-                  <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-                  Generuj
-                </button>
-              </div>
-              <div className="flex gap-1.5">
-                <input
-                  value={additionalText}
-                  onChange={(e) => setAdditionalText(e.target.value)}
-                  placeholder="Dodatkowe wskazówki (opcjonalnie)…"
-                  className="flex-1 text-xs focus:outline-none rounded-lg px-2.5 py-1.5"
-                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
-                />
-                <button
-                  onClick={fetchHints}
-                  disabled={loadingHints || !theme.trim()}
-                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs disabled:opacity-40 shrink-0"
-                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
-                  onMouseEnter={(e) => { if (!loadingHints) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
-                  title="Wygeneruj podpowiedzi na podstawie tematu"
-                >
-                  <Sparkles size={11} className={loadingHints ? "animate-pulse" : ""} />
-                  Sugeruj
-                </button>
-              </div>
-            </div>
-
-            {/* Results */}
-            <div className="flex-1 overflow-y-auto px-5 pb-5">
-              {error && <p className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>{error}</p>}
-              {loading && generated.length === 0 ? (
-                <div className="grid grid-cols-3 gap-2">{Array.from({ length: 6 }).map((_, i) => <SkeletonTile key={i} />)}</div>
-              ) : generated.length > 0 ? (
-                <div ref={newRef}>
-                  <div className="grid grid-cols-3 gap-2">
-                    {generated.map((svg, i) => {
-                      const isSaving = saving === svg;
-                      return (
-                        <button
-                          key={i}
-                          onClick={() => handleSave(svg)}
-                          disabled={isSaving}
-                          className="aspect-square rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
-                          style={{ backgroundColor: "var(--bg-surface)", border: "1.5px solid var(--border)" }}
-                          onMouseEnter={(e) => { if (!isSaving) { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.borderColor = "var(--text-secondary)"; } }}
-                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; e.currentTarget.style.borderColor = "var(--border)"; }}
-                        >
-                          <IconDisplay content={svg} size={52} />
-                        </button>
-                      );
-                    })}
-                    {loading && Array.from({ length: 3 }).map((_, i) => <SkeletonTile key={`sk-${i}`} />)}
-                  </div>
-                </div>
-              ) : !loading && !error ? (
-                <p className="text-xs text-center py-6" style={{ color: "var(--text-muted)" }}>
-                  Wpisz temat lub wskazówki i kliknij „Generuj"
-                </p>
-              ) : null}
+            <div className="flex gap-1.5">
+              <input
+                value={additionalText}
+                onChange={(e) => setAdditionalText(e.target.value)}
+                placeholder="Dodatkowe wskazówki (opcjonalnie)…"
+                className="flex-1 text-xs focus:outline-none rounded-lg px-2.5 py-1.5"
+                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
+              />
+              <button
+                onClick={fetchHints}
+                disabled={loadingHints || !theme.trim()}
+                className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs disabled:opacity-40 shrink-0"
+                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
+                onMouseEnter={(e) => { if (!loadingHints) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
+                title="Wygeneruj podpowiedzi na podstawie tematu"
+              >
+                <Sparkles size={11} className={loadingHints ? "animate-pulse" : ""} />
+                Sugeruj
+              </button>
             </div>
           </div>
-        </div>
+
+          {/* Results */}
+          <div>
+            {error && <p className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>{error}</p>}
+            {loading && generated.length === 0 ? (
+              <div className="grid grid-cols-3 gap-2">{Array.from({ length: 6 }).map((_, i) => <SkeletonTile key={i} />)}</div>
+            ) : generated.length > 0 ? (
+              <div ref={newRef}>
+                <div className="grid grid-cols-3 gap-2">
+                  {generated.map((svg, i) => {
+                    const isSaving = saving === svg;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => handleSave(svg)}
+                        disabled={isSaving}
+                        className="aspect-square rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
+                        style={{ backgroundColor: "var(--bg-surface)", border: "1.5px solid var(--border)" }}
+                        onMouseEnter={(e) => { if (!isSaving) { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.borderColor = "var(--text-secondary)"; } }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; e.currentTarget.style.borderColor = "var(--border)"; }}
+                      >
+                        <IconDisplay content={svg} size={52} />
+                      </button>
+                    );
+                  })}
+                  {loading && Array.from({ length: 3 }).map((_, i) => <SkeletonTile key={`sk-${i}`} />)}
+                </div>
+              </div>
+            ) : !loading && !error ? (
+              <p className="text-xs text-center py-6" style={{ color: "var(--text-muted)" }}>
+                Wpisz temat lub wskazówki i kliknij „Generuj"
+              </p>
+            ) : null}
+          </div>
+        </Modal>
       )}
     </>
   );

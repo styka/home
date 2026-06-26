@@ -1,10 +1,11 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { FileText, Camera, Plus, Loader2, Trash2, X, FileScan } from "lucide-react";
+import { FileText, Camera, Plus, Loader2, Trash2, FileScan } from "lucide-react";
 import { createDocument, deleteDocument, type StorageDocumentWithLines } from "@/actions/storage";
 import { llm } from "@/lib/llm-client";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import type { StorageSupplier } from "@prisma/client";
 
@@ -148,59 +149,57 @@ export function DocumentsPage({
       )}
 
       {editorOpen ? (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.6)" }} onClick={() => setEditorOpen(false)}>
-          <div className="w-full md:w-[520px] md:rounded border p-4 flex flex-col gap-3 max-h-[90vh] overflow-y-auto" style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderTopLeftRadius: 12, borderTopRightRadius: 12 }} onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>Dokument magazynowy</h3>
-              <button onClick={() => setEditorOpen(false)} style={{ color: "var(--text-muted)" }}><X size={18} /></button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              {(["PZ", "faktura", "WZ"] as const).map((t) => (
-                <button key={t} type="button" onClick={() => setType(t)} className="px-2 py-1.5 rounded text-sm border" style={{ borderColor: type === t ? "var(--accent-blue)" : "var(--border)", color: type === t ? "var(--accent-blue)" : "var(--text-secondary)" }}>
-                  {t === "PZ" ? "Przyjęcie (PZ)" : t === "WZ" ? "Wydanie (WZ)" : "Faktura"}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <input value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Numer dokumentu" className="px-3 py-2 rounded border text-sm" style={inputStyle} />
-              <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="px-3 py-2 rounded border text-sm" style={inputStyle}>
-                <option value="">— dostawca —</option>
-                {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <div className="grid grid-cols-[1fr_3.5rem_3rem_4rem] gap-1.5 text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                <span>Nazwa</span><span className="text-right">Ilość</span><span>Jedn.</span><span className="text-right">Cena</span>
-              </div>
-              {lines.map((l, i) => (
-                <div key={i} className="grid grid-cols-[1fr_3.5rem_3rem_4rem] gap-1.5">
-                  <input value={l.name} onChange={(e) => setLine(i, { name: e.target.value })} placeholder="Nazwa" className="px-2 py-1.5 rounded border text-sm" style={inputStyle} />
-                  <input value={l.quantity} onChange={(e) => setLine(i, { quantity: e.target.value })} type="number" step="any" className="px-1.5 py-1.5 rounded border text-sm text-right tabular-nums" style={inputStyle} />
-                  <input value={l.unit} onChange={(e) => setLine(i, { unit: e.target.value })} placeholder="szt" className="px-1.5 py-1.5 rounded border text-sm" style={inputStyle} />
-                  <input value={l.unitPrice} onChange={(e) => setLine(i, { unitPrice: e.target.value })} type="number" step="any" placeholder="0" className="px-1.5 py-1.5 rounded border text-sm text-right tabular-nums" style={inputStyle} />
-                </div>
-              ))}
-              <button type="button" onClick={() => setLines((ls) => [...ls, { name: "", quantity: "1", unit: "", unitPrice: "" }])} className="self-start inline-flex items-center gap-1 text-xs" style={{ color: "var(--accent-blue)" }}>
-                <Plus size={13} /> Pozycja
-              </button>
-            </div>
-
-            <label className="flex items-center gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
-              <input type="checkbox" checked={applyToStock} onChange={(e) => setApplyToStock(e.target.checked)} className="w-4 h-4" />
-              Zaksięguj na stan ({type === "WZ" ? "zdejmij" : "dodaj"} ilości)
-            </label>
-
-            <div className="flex items-center justify-end gap-2">
+        <Modal
+          wide
+          onClose={() => setEditorOpen(false)}
+          title="Dokument magazynowy"
+          footer={
+            <>
               <button onClick={() => setEditorOpen(false)} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>Anuluj</button>
               <button onClick={save} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}>
                 {pending ? "Zapisuję…" : "Zapisz"}
               </button>
-            </div>
+            </>
+          }
+        >
+          <div className="grid grid-cols-3 gap-2">
+            {(["PZ", "faktura", "WZ"] as const).map((t) => (
+              <button key={t} type="button" onClick={() => setType(t)} className="px-2 py-1.5 rounded text-sm border" style={{ borderColor: type === t ? "var(--accent-blue)" : "var(--border)", color: type === t ? "var(--accent-blue)" : "var(--text-secondary)" }}>
+                {t === "PZ" ? "Przyjęcie (PZ)" : t === "WZ" ? "Wydanie (WZ)" : "Faktura"}
+              </button>
+            ))}
           </div>
-        </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <input value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Numer dokumentu" className="px-3 py-2 rounded border text-sm" style={inputStyle} />
+            <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="px-3 py-2 rounded border text-sm" style={inputStyle}>
+              <option value="">— dostawca —</option>
+              {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="grid grid-cols-[1fr_3.5rem_3rem_4rem] gap-1.5 text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+              <span>Nazwa</span><span className="text-right">Ilość</span><span>Jedn.</span><span className="text-right">Cena</span>
+            </div>
+            {lines.map((l, i) => (
+              <div key={i} className="grid grid-cols-[1fr_3.5rem_3rem_4rem] gap-1.5">
+                <input value={l.name} onChange={(e) => setLine(i, { name: e.target.value })} placeholder="Nazwa" className="px-2 py-1.5 rounded border text-sm" style={inputStyle} />
+                <input value={l.quantity} onChange={(e) => setLine(i, { quantity: e.target.value })} type="number" step="any" className="px-1.5 py-1.5 rounded border text-sm text-right tabular-nums" style={inputStyle} />
+                <input value={l.unit} onChange={(e) => setLine(i, { unit: e.target.value })} placeholder="szt" className="px-1.5 py-1.5 rounded border text-sm" style={inputStyle} />
+                <input value={l.unitPrice} onChange={(e) => setLine(i, { unitPrice: e.target.value })} type="number" step="any" placeholder="0" className="px-1.5 py-1.5 rounded border text-sm text-right tabular-nums" style={inputStyle} />
+              </div>
+            ))}
+            <button type="button" onClick={() => setLines((ls) => [...ls, { name: "", quantity: "1", unit: "", unitPrice: "" }])} className="self-start inline-flex items-center gap-1 text-xs" style={{ color: "var(--accent-blue)" }}>
+              <Plus size={13} /> Pozycja
+            </button>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+            <input type="checkbox" checked={applyToStock} onChange={(e) => setApplyToStock(e.target.checked)} className="w-4 h-4" />
+            Zaksięguj na stan ({type === "WZ" ? "zdejmij" : "dodaj"} ilości)
+          </label>
+        </Modal>
       ) : null}
     </div>
   );
