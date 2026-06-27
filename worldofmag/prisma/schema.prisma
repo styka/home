@@ -20,7 +20,7 @@ model User {
   role          String    @default("USER") // "USER" | "ADMIN"
   icalToken     String?   @unique // Z-150: odwoływalny token feedu iCal (subskrypcja agendy)
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  updatedAt     DateTime  @default(now()) @updatedAt
 
   accounts               Account[]
   sessions               Session[]
@@ -313,7 +313,7 @@ model Team {
   ownerId      String
   parentTeamId String?
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime @default(now()) @updatedAt
 
   owner                User                  @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   parentTeam           Team?                 @relation("SubTeams", fields: [parentTeamId], references: [id], onDelete: SetNull)
@@ -376,7 +376,7 @@ model TeamInvitation {
   invitedUserId String
   status        String   @default("PENDING") // "PENDING" | "ACCEPTED" | "REJECTED"
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime @default(now()) @updatedAt
 
   team        Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
   invitedBy   User @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Restrict)
@@ -662,7 +662,7 @@ model ProjectGroup {
   ownerId    String
   order      Int      @default(0)
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  updatedAt  DateTime @default(now()) @updatedAt
 
   owner User @relation("OwnedProjectGroups", fields: [ownerId], references: [id], onDelete: Cascade)
 
@@ -844,7 +844,7 @@ model AiConversation {
   // (higiena kontekstu w długich rozmowach).
   summary   String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
   user      User        @relation("AiConversations", fields: [userId], references: [id], onDelete: Cascade)
   messages  AiMessage[]
 
@@ -1996,7 +1996,7 @@ model MedicationSchedule {
   ownerId      String?
   ownerTeamId  String?
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  updatedAt    DateTime  @default(now()) @updatedAt
 
   owner     User?           @relation("OwnedMedicationSchedules", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerTeam Team?           @relation("TeamMedicationSchedules", fields: [ownerTeamId], references: [id], onDelete: Cascade)
@@ -2409,7 +2409,7 @@ model WeatherWatcher {
 model WarsztatSettings {
   userId    String   @id
   mode      String   @default("home") // "home" | "pro"
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -2425,7 +2425,7 @@ model Workshop {
   ownerId     String?
   ownerTeamId String?
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
 
   owner     User?             @relation("OwnedWorkshops", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerTeam Team?             @relation("TeamWorkshops", fields: [ownerTeamId], references: [id], onDelete: Cascade)
@@ -2461,7 +2461,7 @@ model WorkshopItem {
   photoUrl      String?
   notes         String?
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  updatedAt     DateTime  @default(now()) @updatedAt
 
   workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
 
@@ -2481,7 +2481,7 @@ model WorkshopProject {
   dueAt       DateTime?
   doneAt      DateTime?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  updatedAt   DateTime  @default(now()) @updatedAt
 
   workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
 
