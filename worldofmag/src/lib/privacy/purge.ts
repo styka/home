@@ -6,12 +6,15 @@ import { prisma } from "@/lib/prisma";
  * Wydzielone z `actions/privacy.ts` jako czysta funkcja (bez auth/redirect), żeby
  * dało się ją zweryfikować na lokalnej bazie.
  *
- * Strategia (oparta na realnych regułach FK → patrz audyt Z-051):
+ * Strategia (oparta na realnych regułach FK → patrz audyt Z-051/Z-033):
  * - większość rekordów ma FK `ON DELETE CASCADE` do User → znika wraz z `user.delete()`;
- * - rekordy z `ON DELETE SET NULL` (Note, Recipe, ShoppingList, Habit, HealthEvent,
- *   MedicationSchedule, LanguageDeck, Cookbook, MealPlanEntry, TaskProject, Task,
- *   Report) zostałyby OSIEROCONE (ownerId=null) zamiast usunięte — dla RODO kasujemy
- *   je JAWNIE (tylko rekordy osobiste: `ownerId=user`; dane zespołów mają `ownerId=null`);
+ * - PO Z-033 także relacje WŁASNOŚCI (Note, Recipe, ShoppingList, Habit, HealthEvent,
+ *   MedicationSchedule, LanguageDeck, Cookbook, MealPlanEntry, TaskProject) są `Cascade`
+ *   — poniższe jawne `deleteMany` dla nich to już tylko zabezpieczenie (defense-in-depth);
+ * - relacje AKTORA wciąż `SET NULL` (Task.createdBy, Report.authorId) — rekord zostałby
+ *   z ownerem=null, więc rekordy OSOBISTE usera kasujemy JAWNIE (dane zespołów zostają);
+ * - modele z kolumną właściciela ALE BEZ FK (Contact, ServiceFavorite — Z-370) NIE
+ *   kaskadują — muszą być skasowane jawnie, inaczej zostają osierocone;
  * - rekordy z `ON DELETE RESTRICT` (TeamInvitation) usuwamy przed `user.delete()`;
  * - `Team.ownerId` (RESTRICT) jest blokadą — własność zespołu wymaga decyzji
  *   użytkownika i jest sprawdzana wcześniej w `deleteMyAccount` (nie tutaj).

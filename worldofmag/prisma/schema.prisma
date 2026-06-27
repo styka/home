@@ -315,8 +315,8 @@ model Team {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  owner                User                  @relation("TeamOwner", fields: [ownerId], references: [id])
-  parentTeam           Team?                 @relation("SubTeams", fields: [parentTeamId], references: [id])
+  owner                User                  @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  parentTeam           Team?                 @relation("SubTeams", fields: [parentTeamId], references: [id], onDelete: SetNull)
   subTeams             Team[]                @relation("SubTeams")
   members              TeamMember[]
   invitations          TeamInvitation[]
@@ -379,8 +379,8 @@ model TeamInvitation {
   updatedAt     DateTime @updatedAt
 
   team        Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  invitedBy   User @relation("InvitedBy", fields: [invitedById], references: [id])
-  invitedUser User @relation("InvitedUser", fields: [invitedUserId], references: [id])
+  invitedBy   User @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Restrict)
+  invitedUser User @relation("InvitedUser", fields: [invitedUserId], references: [id], onDelete: Restrict)
 
   @@unique([teamId, invitedUserId])
 }
@@ -397,8 +397,8 @@ model ShoppingList {
   archived    Boolean   @default(false)
   archivedAt  DateTime?
 
-  owner     User?  @relation(fields: [ownerId], references: [id])
-  ownerTeam Team?  @relation("TeamLists", fields: [ownerTeamId], references: [id])
+  owner     User?  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?  @relation("TeamLists", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   items     Item[]
 
   @@index([ownerId])
@@ -565,8 +565,8 @@ model Note {
   ownerId     String?
   ownerTeamId String?
   group       NoteGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  owner       User?      @relation("OwnedNotes", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam   Team?      @relation("TeamNotes", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner       User?      @relation("OwnedNotes", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam   Team?      @relation("TeamNotes", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   tags        NoteTag[]
@@ -628,8 +628,8 @@ model TaskProject {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner     User?               @relation("OwnedTaskProjects", fields: [ownerId], references: [id])
-  ownerTeam Team?               @relation("TeamTaskProjects", fields: [ownerTeamId], references: [id])
+  owner     User?               @relation("OwnedTaskProjects", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?               @relation("TeamTaskProjects", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   tasks     Task[]
   members   TaskProjectMember[]
 
@@ -701,8 +701,8 @@ model Task {
   project   TaskProject?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   parent    Task?         @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
   subtasks  Task[]        @relation("TaskSubtasks")
-  createdBy User?         @relation("TasksCreatedBy", fields: [createdById], references: [id])
-  assignee  User?         @relation("TasksAssignedTo", fields: [assigneeId], references: [id])
+  createdBy User?         @relation("TasksCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  assignee  User?         @relation("TasksAssignedTo", fields: [assigneeId], references: [id], onDelete: SetNull)
   tags      TaskTaskTag[]
   comments  TaskComment[]
   shares    TaskShare[]
@@ -735,7 +735,7 @@ model TaskComment {
   updatedAt DateTime @updatedAt
 
   task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user User? @relation("TaskComments", fields: [userId], references: [id])
+  user User? @relation("TaskComments", fields: [userId], references: [id], onDelete: SetNull)
 
   // Z-031: komentarze ładowane/kasowane po taskId; userId pod purge konta (RODO).
   @@index([taskId])
@@ -751,8 +751,8 @@ model TaskShare {
   createdAt DateTime @default(now())
 
   task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user User? @relation("TaskShares", fields: [userId], references: [id])
-  team Team? @relation("TeamTaskShares", fields: [teamId], references: [id])
+  user User? @relation("TaskShares", fields: [userId], references: [id], onDelete: SetNull)
+  team Team? @relation("TeamTaskShares", fields: [teamId], references: [id], onDelete: SetNull)
 
   // Z-031: udostępnienia ładowane po taskId; userId pod listę „udostępnione mi" + purge.
   @@index([taskId])
@@ -899,8 +899,8 @@ model Recipe {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  owner          User?              @relation("OwnedRecipes", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam      Team?              @relation("TeamRecipes", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner          User?              @relation("OwnedRecipes", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam      Team?              @relation("TeamRecipes", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   cookbook       Cookbook?          @relation(fields: [cookbookId], references: [id], onDelete: SetNull)
   ingredients    RecipeIngredient[]
   steps          RecipeStep[]
@@ -1000,8 +1000,8 @@ model Cookbook {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner     User?    @relation("OwnedCookbooks", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam Team?    @relation("TeamCookbooks", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner     User?    @relation("OwnedCookbooks", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?    @relation("TeamCookbooks", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   recipes   Recipe[]
 
   @@index([ownerId])
@@ -1024,8 +1024,8 @@ model MealPlanEntry {
   updatedAt   DateTime  @updatedAt
 
   recipe    Recipe? @relation(fields: [recipeId], references: [id], onDelete: SetNull)
-  owner     User?   @relation("OwnedMealPlans", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam Team?   @relation("TeamMealPlans", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner     User?   @relation("OwnedMealPlans", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?   @relation("TeamMealPlans", fields: [ownerTeamId], references: [id], onDelete: Cascade)
 
   @@index([ownerId, date])
   @@index([ownerTeamId, date])
@@ -1891,8 +1891,8 @@ model LanguageDeck {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner     User?        @relation("OwnedLanguageDecks", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam Team?        @relation("TeamLanguageDecks", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner     User?        @relation("OwnedLanguageDecks", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?        @relation("TeamLanguageDecks", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   cards     Vocabulary[]
 
   @@index([ownerId])
@@ -1948,8 +1948,8 @@ model HealthEvent {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  owner     User? @relation("OwnedHealthEvents", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam Team? @relation("TeamHealthEvents", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner     User? @relation("OwnedHealthEvents", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team? @relation("TeamHealthEvents", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   attachments HealthAttachment[]
 
   @@index([ownerId, scheduledAt])
@@ -1998,8 +1998,8 @@ model MedicationSchedule {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  owner     User?           @relation("OwnedMedicationSchedules", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam Team?           @relation("TeamMedicationSchedules", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner     User?           @relation("OwnedMedicationSchedules", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?           @relation("TeamMedicationSchedules", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   logs      MedicationLog[]
 
   @@index([ownerId])
@@ -2043,8 +2043,8 @@ model Habit {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner     User? @relation("OwnedHabits", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam Team? @relation("TeamHabits", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner     User? @relation("OwnedHabits", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team? @relation("TeamHabits", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   entries   HabitEntry[]
 
   @@index([ownerId, archived])
