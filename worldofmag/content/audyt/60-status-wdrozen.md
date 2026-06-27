@@ -1,5 +1,9 @@
 # Dodatek A.13 — Status wdrożeń (żywy)
 
+> **➡️ Plan dalszej pracy, kolejność „od najprostszych" i wszystkie decyzje właściciela → rozdział
+> A.16 (TRACKER ROBOCZY). Migawka „zrobione / zostało" → A.15. Ten rozdział pozostaje szczegółowym
+> dziennikiem `Z-NNN` (historia „co zrobione").**
+
 > **Plik aktualizowany per‑zalecenie, PRZED każdym commitem.** Jedno źródło prawdy do wznawiania sesji
 > po przerwie (np. brak tokenów) i do końcowego Raportu 1:1.
 >

@@ -69,7 +69,10 @@
     { "slug": "57-plany-podaplikacje-branzowe", "number": "A11", "part": "Dodatek A — Zalecenia i plany wdrożenia", "title": "Plany: podaplikacje branżowe", "summary": "Plany wdrożenia pierwszych verticali (Hodowca, Gastronomia…)." },
     { "slug": "58-plany-wspoldzielenie-rodziny", "number": "A12", "part": "Dodatek A — Zalecenia i plany wdrożenia", "title": "Plany: współdzielenie i rodziny", "summary": "Plany wdrożenia organizacji rodzin/grup i ról w grupach." },
     { "slug": "60-status-wdrozen", "number": "A13", "part": "Dodatek A — Zalecenia i plany wdrożenia", "title": "Status wdrożeń (żywy)", "summary": "Żywy tracker realizacji zaleceń Z-NNN: status per pozycja, źródło 1:1 do raportu i wznawiania sesji." },
-    { "slug": "62-decyzje-wlasciciela", "number": "A14", "part": "Dodatek A — Zalecenia i plany wdrożenia", "title": "Decyzje właściciela (do podjęcia)", "summary": "Rzeczy nierozwiązywalne kodem — wymagają decyzji biznesowej/prawnej, konta zewnętrznego lub konfiguracji. Do omówienia na koniec." },
+    { "slug": "62-decyzje-wlasciciela", "number": "A14", "part": "Dodatek A — Zalecenia i plany wdrożenia", "title": "Decyzje właściciela (przeniesione → A.16)", "summary": "PRZENIESIONE w całości do A.16 (Plan/Tracker). Rozdział nieaktualizowany — pracujemy z A.16." },
+
+    { "slug": "63-raport-stanu", "number": "A15", "part": "Dodatek A — Zalecenia i plany wdrożenia", "title": "Raport stanu projektu (zrobione / do zrobienia)", "summary": "Migawka: Część I — co już zrobione (z żywego trackera A.13); Część II — co zostało i jakich akcji wymaga właściciel." },
+    { "slug": "64-plan-tracker", "number": "A16", "part": "Dodatek A — Zalecenia i plany wdrożenia", "title": "Plan realizacji (TRACKER ROBOCZY)", "summary": "Główny żywy tracker dalszej pracy: zadania T-NN od najprostszych do najtrudniejszych, ze statusami do odhaczania; zawiera wszystkie decyzje właściciela (dawne A.14)." },
 
     { "slug": "59-prompt-claude", "number": "B", "part": "Dodatek B — Prompt dla Claude Code", "title": "Prompt startowy dla kolejnej sesji", "summary": "Instrukcja, by Claude Code wczytał ten dokument i zrealizował zalecenia z raportem 1:1." }
   ]
