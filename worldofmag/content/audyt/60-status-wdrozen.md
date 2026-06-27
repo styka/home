@@ -17,7 +17,7 @@
 | Priorytet | Razem | ✅ | 🟡 | ⏸️ | ⬜ |
 |---|:---:|:---:|:---:|:---:|:---:|
 | P0 | 22 | 22 | 0 | 0 | 0 |
-| P1 | 129 | ~33 | ~6 | — | ~90 |
+| P1 | 129 | ~35 | ~6 | — | ~88 |
 | P2 | 95 | ~6 | 0 | — | ~89 |
 
 > **Uwaga (2026-06-23):** ta tabela zbiorcza dryfowała (utknęła na P1=7) — przez kilka sesji
@@ -25,7 +25,7 @@
 > wiersze obszarowe poniżej + sekcja „slice'ów"**. ✅ P1 obejmuje m.in. dwa duże refaktory rdzenia
 > (Z-010 egzekutor AI, Z-213/361 `services.ts`). ⏸️ decyzje właściciela są zliczane osobno w
 > `62-decyzje-wlasciciela.md` (12 pozycji 🔓). P2 ✅ = kilka domknięte „przy okazji" testami
-> (Z-272/281/303/411/312). **Zostaje ~90 P1 + ~89 P2 + integracje/strategia/marketing (całe obszary ⬜).**
+> (Z-272/281/303/411/312). **Zostaje ~88 P1 + ~89 P2 + integracje/strategia/marketing (całe obszary ⬜).**
 
 ---
 
