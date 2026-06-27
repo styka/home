@@ -52,6 +52,7 @@ export function slugify(s: string): string {
   return s
     .normalize("NFD").replace(/[̀-ͯ]/g, "") // diakrytyki
     .toLowerCase()
+    .replace(/ł/g, "l") // polskie ł nie rozkłada się w NFD — zmapuj ręcznie, inaczej staje się separatorem
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 48) || "wykonawca";
