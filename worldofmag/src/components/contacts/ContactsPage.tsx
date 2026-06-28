@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition, useMemo, useRef } from "react";
+import { useState, useTransition, useMemo, useRef, useLayoutEffect } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Users, Search, Plus, Pencil, Trash2, Check, X, Phone, Mail, Building2 } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
 import { getContacts, createContact, updateContact, deleteContact, type ContactDTO } from "@/actions/contacts";
@@ -21,8 +22,43 @@ export function ContactsPage({ initialContacts }: { initialContacts: ContactDTO[
   const [editId, setEditId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const searchRef = useRef<HTMLInputElement>(null);
+
+  // ── Wirtualizacja długiej listy (Z-071/T-11) ────────────────────────────────
+  // Kontakty ładują się w całości i są filtrowane po stronie klienta — idealny cel
+  // okienkowania: renderujemy tylko widoczne wiersze (+ overscan), nie wszystkie naraz.
+  // WZORZEC DO POWIELENIA na innych długich, płaskich listach (load-all + client-filter):
+  //   1) `scrollRef` = istniejący kontener przewijania strony (pageContainerStyle),
+  //   2) `listRef` = wrapper listy; `scrollMargin` = jego offset pod nagłówkiem/szukajką
+  //      (nad listą jest treść w tym samym scrollu),
+  //   3) dynamiczny pomiar wysokości (`measureElement`) — wiersze mają różną wysokość
+  //      (tagi/notatki/firma + tryb edycji zamienia wiersz na wyższy formularz),
+  //   4) nawigacja klawiaturą woła `virtualizer.scrollToIndex` (wiersze poza ekranem nie
+  //      istnieją w DOM, więc `scrollIntoView` po refie by nie zadziałał).
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [scrollMargin, setScrollMargin] = useState(0);
+
+  // scrollMargin = odległość od góry kontenera przewijania do początku listy.
+  // Zmienia się, gdy nad listą pojawi się formularz dodawania → przeliczamy też na `adding`.
+  useLayoutEffect(() => {
+    const sc = scrollRef.current, list = listRef.current;
+    if (!sc || !list) return;
+    const update = () =>
+      setScrollMargin(list.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [adding, contacts.length]);
+
+  const virtualizer = useVirtualizer({
+    count: contacts.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 92, // punkt startowy; realna wysokość mierzona dynamicznie
+    overscan: 8,
+    scrollMargin,
+    getItemKey: (i) => contacts[i]?.id ?? i,
+  });
 
   const reload = (q = query) => startTransition(async () => setContacts(await getContacts(q.trim() || undefined)));
 
@@ -36,7 +72,8 @@ export function ContactsPage({ initialContacts }: { initialContacts: ContactDTO[
         const nextIdx =
           idx < 0 ? (dir === 1 ? 0 : contacts.length - 1) : Math.min(Math.max(idx + dir, 0), contacts.length - 1);
         const next = contacts[nextIdx];
-        if (next) rowRefs.current.get(next.id)?.scrollIntoView({ block: "nearest" });
+        // Lista jest wirtualizowana — wiersz może nie istnieć w DOM; przewijamy indeksem.
+        if (next) virtualizer.scrollToIndex(nextIdx, { align: "auto" });
         return next?.id ?? cur;
       });
     };
@@ -64,12 +101,12 @@ export function ContactsPage({ initialContacts }: { initialContacts: ContactDTO[
         setSelectedId(null);
       },
     };
-  }, [contacts, selectedId, editId, adding, query]);
+  }, [contacts, selectedId, editId, adding, query, virtualizer]);
 
   useKeyboardShortcuts(handlers);
 
   return (
-    <div style={pageContainerStyle}>
+    <div ref={scrollRef} style={pageContainerStyle}>
       <div style={pageInnerStyle}>
         <PageHeader
           icon={<Users size={22} />}
@@ -101,22 +138,37 @@ export function ContactsPage({ initialContacts }: { initialContacts: ContactDTO[
         {contacts.length === 0 ? (
           <EmptyState icon={<Users size={28} />} message="Brak kontaktów" hint="Dodaj pierwszy kontakt, by zbudować swoją bazę relacji." />
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: pending ? 0.6 : 1 }}>
-            {contacts.map((c) =>
-              editId === c.id ? (
-                <ContactForm key={c.id} contact={c} onDone={() => { setEditId(null); reload(); }} onCancel={() => setEditId(null)} />
-              ) : (
-                <ContactRow
-                  key={c.id}
-                  contact={c}
-                  selected={selectedId === c.id}
-                  onSelect={() => setSelectedId(c.id)}
-                  innerRef={(el) => { if (el) rowRefs.current.set(c.id, el); else rowRefs.current.delete(c.id); }}
-                  onEdit={() => { setEditId(c.id); setAdding(false); }}
-                  onDeleted={() => reload()}
-                />
-              )
-            )}
+          // Wrapper o wysokości całej listy (getTotalSize) z absolutnie pozycjonowanymi,
+          // dynamicznie mierzonymi wierszami — renderujemy tylko okno widoczne (+overscan).
+          <div ref={listRef} style={{ position: "relative", height: virtualizer.getTotalSize(), opacity: pending ? 0.6 : 1 }}>
+            {virtualizer.getVirtualItems().map((vi) => {
+              const c = contacts[vi.index];
+              if (!c) return null;
+              return (
+                <div
+                  key={vi.key}
+                  data-index={vi.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: "absolute", top: 0, left: 0, width: "100%",
+                    transform: `translateY(${vi.start - virtualizer.options.scrollMargin}px)`,
+                    paddingBottom: 8, // odstęp między wierszami wliczony w pomiar
+                  }}
+                >
+                  {editId === c.id ? (
+                    <ContactForm contact={c} onDone={() => { setEditId(null); reload(); }} onCancel={() => setEditId(null)} />
+                  ) : (
+                    <ContactRow
+                      contact={c}
+                      selected={selectedId === c.id}
+                      onSelect={() => setSelectedId(c.id)}
+                      onEdit={() => { setEditId(c.id); setAdding(false); }}
+                      onDeleted={() => reload()}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -124,17 +176,15 @@ export function ContactsPage({ initialContacts }: { initialContacts: ContactDTO[
   );
 }
 
-function ContactRow({ contact, onEdit, onDeleted, selected, onSelect, innerRef }: {
+function ContactRow({ contact, onEdit, onDeleted, selected, onSelect }: {
   contact: ContactDTO;
   onEdit: () => void;
   onDeleted: () => void;
   selected?: boolean;
   onSelect?: () => void;
-  innerRef?: (el: HTMLDivElement | null) => void;
 }) {
   return (
     <div
-      ref={innerRef}
       onClick={onSelect}
       style={{
         ...cardStyle,

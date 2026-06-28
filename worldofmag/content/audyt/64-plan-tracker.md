@@ -26,7 +26,7 @@
   ujednolicony, slugify wykonawców naprawiony (ł→l), migracja `0196` (onDelete) gotowa.
 - **Twoja akcja (👤):** po deployu na `develop` — kliknąć kilka modali (np. dodawanie do listy zakupów,
   edycja spiżarni, import przepisu), sprawdzić puste stany i polskie slugi (`/providers/…`); potwierdzić,
-  że nic nie jest rozjechane. **+ `/admin/health` → nowa karta „Diagnostyka zapytań" (T-06) renderuje się. + Kalendarz/Home ładuje się, dane świeże po ≤60 s (cache T-09).**
+  że nic nie jest rozjechane. **+ `/admin/health` → nowa karta „Diagnostyka zapytań" (T-06) renderuje się. + Kalendarz/Home ładuje się, dane świeże po ≤60 s (cache T-09). + Kontakty (T-11): lista płynnie się przewija, j/k przeskakuje zaznaczenie i doscrollowuje, edycja wiersza nie rozjeżdża layoutu.**
 - **Po potwierdzeniu:** status → ✅.
 
 ---
@@ -102,8 +102,17 @@
   zastępujący 3 rozjechane wejścia (TaskShare w `TaskDetail`, PetShare w `PetSections`, wybór zespołu)
   jednym spójnym. Czyste UI → weryfikacja wzrokowa po deployu.
 
-### T-11 · ⬜ · 🤝 · Wirtualizacja długich list — *Z-071*
-- `@tanstack/virtual` na najdłuższych listach (nowa zależność). Perf UI — weryfikacja po deployu.
+### T-11 · 🟡 · 🤝 · Wirtualizacja długich list — *Z-071*
+- **Zrobione (2026-06-28):** dodano `@tanstack/react-virtual@3.14.4` i owinięto najdłuższą płaską
+  listę (**Kontakty**, `ContactsPage`) w wirtualizer: renderuje tylko widoczne wiersze (+overscan 8),
+  dynamiczny pomiar wysokości (`measureElement` — wiersze różnej wysokości: tagi/notatki + tryb edycji),
+  `scrollMargin` liczony od kontenera strony (nagłówek+szukajka w tym samym scrollu), a nawigacja
+  klawiaturą woła `virtualizer.scrollToIndex` (zamiast `scrollIntoView` po refie — wiersze poza ekranem
+  nie istnieją w DOM). **Wzorzec do powielenia** udokumentowany w komentarzu (load-all + client-filter).
+  tsc czysto; suite 349/349.
+- **Zostaje (po deployu / rollout):** wzrokowa weryfikacja płynności i nawigacji j/k na Kontaktach
+  (po deployu → T-01); powielenie wzorca na kolejne długie listy gdy realnie urosną (np. magazyn — ale
+  to lista grupowana w sekcjach, wymaga spłaszczenia indeksu jak w Z-232).
 
 ### T-12 · 🟡 · 🤝 · Role rodzic/dziecko w rodzinie — *Z-194*
 - **Rdzeń zrobiony (2026-06-28):** kolumna `TeamMember.moduleAccess` (TEXT JSON `string[]`|NULL,
@@ -198,5 +207,9 @@
 _**Postęp ETAP 2 — UKOŃCZONY (2026-06-27):** T-06 ✅ (Z-037 diagnostyka EXPLAIN), T-07 ✅ (Z-134 już
 spełnione architekturą operationType), T-08 ✅ (testy spójności katalogu warsztatów). Suite 332/332.
 **Następne: ETAP 3 (T-09…T-12) — deploy-zależne, podejmę na „rób dalej"; ETAP 1 (T-02…T-05) czeka na Twoje decyzje.**_
+_**Postęp ETAP 3 (2026-06-28):** T-09 ✅, T-10 🟡 (rdzeń), **T-11 🟡** (rdzeń: Kontakty zwirtualizowane
+`@tanstack/react-virtual`, wzorzec do powielenia), **T-12 🟡** (rdzeń: `canMemberAccessModule` +
+migracja `0197` + 12 testów). Suite 349/349; tsc czysto. Zostaje wzrokowa weryfikacja po deployu (→T-01)
++ rollout egzekwowania/UI (T-12) i wzorca na kolejne listy (T-11)._
 _Tracker roboczy — aktualizowany po każdym zadaniu (status ⬜/🟡/🔓/⏸️ → ✅). Utworzony 2026-06-27 z
 przeniesieniem rozdziału A.14 („Decyzje właściciela") w całości tutaj. Postęp historyczny `Z-NNN`: A.13._
