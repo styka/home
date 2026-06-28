@@ -26,7 +26,7 @@
   ujednolicony, slugify wykonawców naprawiony (ł→l), migracja `0196` (onDelete) gotowa.
 - **Twoja akcja (👤):** po deployu na `develop` — kliknąć kilka modali (np. dodawanie do listy zakupów,
   edycja spiżarni, import przepisu), sprawdzić puste stany i polskie slugi (`/providers/…`); potwierdzić,
-  że nic nie jest rozjechane.
+  że nic nie jest rozjechane. **+ `/admin/health` → nowa karta „Diagnostyka zapytań" (T-06) renderuje się.**
 - **Po potwierdzeniu:** status → ✅.
 
 ---
@@ -59,11 +59,21 @@
 
 ## ETAP 2 — Łatwe autonomiczne (kod, weryfikowalne lokalnie) — 🧑‍💻
 
-### T-06 · ⬜ · 🧑‍💻 · Skrypt diagnostyczny wolnych zapytań (EXPLAIN ANALYZE) — *Z-037 (P2)*
-- Skrypt + (opcjonalnie) widok w `/admin/health` z EXPLAIN typowych list. Weryfikacja lokalnie na Postgresie.
+### T-06 · ✅ · 🧑‍💻 · Diagnostyka wolnych zapytań (EXPLAIN) w `/admin/health` — *Z-037 (P2)*
+- **Zrobione (2026-06-27):** `src/lib/health/queryDiag.ts` (czysty parser `summarizeExplainPlan` + 4
+  reprezentatywne zapytania list) + sekcja `queryDiagnostics` w `src/actions/systemHealth.ts`
+  (`EXPLAIN (FORMAT JSON)` **bez ANALYZE** = plan bez wykonania, bezpieczne na prod) + karta „Diagnostyka
+  zapytań" w `SystemHealthPage` (badge index/seq + szac. koszt + indeksy). Monitor regresów: Seq Scan na
+  DUŻej gorącej liście = sygnał (na małej bazie Seq jest normalny).
+- **Weryfikacja:** 7 testów parsera (`queryDiag.test`); 4/4 EXPLAIN poprawne na lokalnym Postgresie; tsc
+  czysto; suite **326/326**. **Render karty do obejrzenia po deployu → dopisane do T-01.**
 
-### T-07 · ⬜ · 🧑‍💻 · Tańszy model dla `dispatch` — *Z-134*
-- Przypięcie tańszego/szybszego modelu do operacji typu `dispatch` w `/admin/llm` + domyślny mapping.
+### T-07 · ✅ · 🧑‍💻 · Tańszy model dla `dispatch` — *Z-134*
+- **Już spełnione architekturą operationType** (bez zmian kodu, weryfikacja 2026-06-27): `lib/llm/resolver.ts`
+  mapuje `dispatch` → `OPERATION_TYPE_META.dispatch.defaultModel` = **`llama-3.1-8b-instant`** (tani/szybki),
+  a `reasoning`/`generation` → `llama-3.3-70b-versatile`. Wszystkie trasy klasy dispatch (normalize,
+  parse-ingredients, categorize, notes/tags, tasks/parse, import-url, magazyn/*, klasyfikacja agenta…)
+  wołają z `op:"dispatch"`. Admin może nadpisać w `/admin/llm`. To dokładnie Z-134.
 
 ### T-08 · ⬜ · 🧑‍💻 · Drobne P2 modułowe + dalsze testy czystej logiki
 - Pojedyncze poprawki/walidacje i testy nieprzetestowanych helperów (kandydaci: Z-034/035, Z-116/117/118
@@ -167,5 +177,7 @@
 
 ---
 
+_**Postęp ETAP 2 (2026-06-27):** T-07 ✅ (Z-134 — już spełnione architekturą operationType), T-06 ✅
+(Z-037 — diagnostyka EXPLAIN w /admin/health). Następne: T-08 (drobne P2/testy), potem ETAP 3._
 _Tracker roboczy — aktualizowany po każdym zadaniu (status ⬜/🟡/🔓/⏸️ → ✅). Utworzony 2026-06-27 z
 przeniesieniem rozdziału A.14 („Decyzje właściciela") w całości tutaj. Postęp historyczny `Z-NNN`: A.13._

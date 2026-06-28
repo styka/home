@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { OPERATION_TYPES, OPERATION_TYPE_META } from "@/lib/llm/operationTypes";
 import { isSecretConfigured } from "@/lib/crypto/secrets";
+import { summarizeExplainPlan, REPRESENTATIVE_QUERIES, type ScanType } from "@/lib/health/queryDiag";
 
 async function requireAdmin() {
   const session = await auth();
@@ -20,6 +21,7 @@ export type SystemHealth = {
   integrations: HealthCheck[];
   counts: { label: string; value: number }[];
   audit: { total: number; last: string | null };
+  queryDiagnostics: { label: string; scanType: ScanType; estCost: number; planRows: number; indexes: string[] }[];
 };
 
 export async function getSystemHealth(): Promise<SystemHealth> {
@@ -94,6 +96,25 @@ export async function getSystemHealth(): Promise<SystemHealth> {
   const auditTotal = await prisma.auditLog.count().catch(() => 0);
   const auditLast = await prisma.auditLog.findFirst({ orderBy: { createdAt: "desc" }, select: { createdAt: true } }).catch(() => null);
 
+  // Z-037: diagnostyka „wolnych zapytań" — EXPLAIN (bez ANALYZE → plan bez wykonania) na typowych listach.
+  // Monitor regresów: Seq Scan na DUŻej liście = sygnał; na małej bazie Seq Scan jest normalny i OK.
+  const sampleOwner = await prisma.user
+    .findFirst({ orderBy: { createdAt: "asc" }, select: { id: true } })
+    .catch(() => null);
+  const queryDiagnostics: SystemHealth["queryDiagnostics"] = [];
+  for (const q of REPRESENTATIVE_QUERIES) {
+    if (q.needsOwner && !sampleOwner) continue; // brak danych do próbki
+    try {
+      const rows = q.needsOwner
+        ? await prisma.$queryRawUnsafe<{ "QUERY PLAN": unknown }[]>(`EXPLAIN (FORMAT JSON) ${q.sql}`, sampleOwner!.id)
+        : await prisma.$queryRawUnsafe<{ "QUERY PLAN": unknown }[]>(`EXPLAIN (FORMAT JSON) ${q.sql}`);
+      const s = summarizeExplainPlan(rows[0]?.["QUERY PLAN"]);
+      queryDiagnostics.push({ label: q.label, scanType: s.scanType, estCost: s.estCost, planRows: s.planRows, indexes: s.indexes });
+    } catch {
+      /* EXPLAIN nieosiągalny (np. brak tabeli/kolumny) — pomiń pozycję */
+    }
+  }
+
   return {
     build: {
       commit: process.env.NEXT_PUBLIC_BUILD_COMMIT ?? "?",
@@ -106,5 +127,6 @@ export async function getSystemHealth(): Promise<SystemHealth> {
     integrations,
     counts,
     audit: { total: auditTotal, last: auditLast?.createdAt.toISOString() ?? null },
+    queryDiagnostics,
   };
 }

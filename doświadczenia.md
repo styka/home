@@ -4,6 +4,11 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-06-27 — Zalecenia audytu bywają JUŻ spełnione architekturą — weryfikuj przed implementacją
+**Problem:** Realizując tracker po kolei trafiłem na Z-134 („tańszy model dla `dispatch`") i Z-135 („monitoring kosztów AI") jako rzekomo „do zrobienia". W rzeczywistości OBA były już spełnione istniejącą architekturą: Z-134 przez warstwę operationType (`lib/llm/resolver.ts` mapuje `dispatch`→`llama-3.1-8b-instant`, `reasoning`→70B; wszystkie trasy dispatch wołają `op:"dispatch"`), Z-135 przez `getUnitEconomics` (`actions/metrics.ts` — koszt AI/MAU z `AiUsage`). Wcześniej analogicznie Z-073/Z-176/Z-031/Z-220 (agent Explore podawał je błędnie jako niezrobione).
+**Rozwiązanie:** Przed implementacją KAŻDEGO zalecenia — grep realnego kodu pod mechanizm (np. `grep '"dispatch"'`, `getUnitEconomics`), nie ufać ani trackerowi (bywa nieaktualny), ani świeżemu agentowi (nie krzyżuje z kodem). Jeśli spełnione → oznaczyć ✅ z notą „już spełnione przez X", zero nowego kodu.
+**Lekcja:** Tracker/agent to wskazówki, nie wyrocznia. Pętla per-zalecenie zaczyna się od „udowodnij, że NIE jest zrobione" (grep kodu), dopiero potem implementacja. Bonus (diagnostyka EXPLAIN, Z-037): `EXPLAIN (FORMAT JSON)` BEZ `ANALYZE` waliduje plan + nazwy tabel/kolumn bez WYKONANIA zapytania → dummy id wystarcza do sanity-checku SQL nawet na pustej bazie (i jest bezpieczne na prod).
+
 ## 2026-06-27 — slugify: polskie „ł" nie rozkłada się w NFD
 **Problem:** `slugify` wykonawcy usług (`lib/services/helpers.ts`) robił `normalize("NFD")` + strip combining marks, ale `ł/Ł` (U+0142/0141) to OSOBNE litery, nie „l + znak diakrytyczny" — NFD ich NIE rozkłada. Efekt: po `[^a-z0-9]→-` „Łódź" → „odz", „Wałbrzych" → „wa-brzych" (ł zjadane jako separator). Cicho psuło polskie slugi w publicznych URL-ach `/providers/[slug]`.
 **Rozwiązanie:** Po `toLowerCase()` dołożyć jawny `.replace(/ł/g, "l")` PRZED filtrem `[^a-z0-9]`. Testy `serviceHelpers.test` lockują „Łódź"→„lodz" oraz rozkładalne (ą/ę/ó/ś/ż/ź/ć/ń)→bazowe litery. Zero wpływu na istniejące slugi (są zapisane; slugify biegnie tylko przy tworzeniu/zmianie nazwy).

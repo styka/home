@@ -7,6 +7,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 >
 > For accumulated bug/fix lessons (debugging shortcuts you should not relearn), read:
 > `doświadczenia.md` (repo root).
+>
+> For the **working roadmap of remaining work** — an ordered task tracker (`T-NN`, easiest→hardest,
+> with statuses we flip ⬜/🟡/🔓/⏸️ → ✅ as tasks complete; owner-decision items live here too), read:
+> `worldofmag/content/audyt/64-plan-tracker.md` (Dodatek **A.16 — TRACKER ROBOCZY**). This is the
+> guidepost: when continuing audit work, pick the next task from here and update its status.
+> Companions: `63-raport-stanu.md` (A.15 — done/remaining snapshot) and `60-status-wdrozen.md`
+> (A.13 — detailed per-`Z-NNN` ledger).
 
 ---
 
