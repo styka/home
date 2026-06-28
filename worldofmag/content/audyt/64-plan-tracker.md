@@ -94,8 +94,13 @@
   agregat wielomodułowy (zadania/posiłki/zdrowie/leki/flota/zwierzęta/SRS) — kalendarz, briefing, Home.
 - **Weryfikacja:** tsc czysto; suite 332/332. **Zachowanie (cache'owanie, świeżość ≤60 s) — po deployu → T-01.**
 
-### T-10 · ⬜ · 🤝 · Ujednolicony „Udostępnij" — *Z-193*
-- Jeden punkt wejścia do współdzielenia we wszystkich modułach (whitelist modułów). UI — weryfikacja po deployu.
+### T-10 · 🟡 · 🤝 · Ujednolicony „Udostępnij" — *Z-193*
+- **Rdzeń zrobiony (2026-06-27):** `src/lib/sharing/capabilities.ts` — JEDNA mapa „jak każdy moduł się
+  dzieli" (`team`/`entity`/`projectMembers`) + helpery `getShareCapability`/`canShare`/`isShareable` +
+  etykiety mechanizmów. 5 testów (m.in. „entity tylko tasks/pets", user-only→null). tsc czysto.
+- **Zostaje (UI — po deployu / przy zdrowym tooling):** reużywalny komponent „Udostępnij" czytający mapę i
+  zastępujący 3 rozjechane wejścia (TaskShare w `TaskDetail`, PetShare w `PetSections`, wybór zespołu)
+  jednym spójnym. Czyste UI → weryfikacja wzrokowa po deployu.
 
 ### T-11 · ⬜ · 🤝 · Wirtualizacja długich list — *Z-071*
 - `@tanstack/virtual` na najdłuższych listach (nowa zależność). Perf UI — weryfikacja po deployu.
