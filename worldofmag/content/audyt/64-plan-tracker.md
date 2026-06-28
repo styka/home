@@ -26,7 +26,7 @@
   ujednolicony, slugify wykonawców naprawiony (ł→l), migracja `0196` (onDelete) gotowa.
 - **Twoja akcja (👤):** po deployu na `develop` — kliknąć kilka modali (np. dodawanie do listy zakupów,
   edycja spiżarni, import przepisu), sprawdzić puste stany i polskie slugi (`/providers/…`); potwierdzić,
-  że nic nie jest rozjechane. **+ `/admin/health` → nowa karta „Diagnostyka zapytań" (T-06) renderuje się.**
+  że nic nie jest rozjechane. **+ `/admin/health` → nowa karta „Diagnostyka zapytań" (T-06) renderuje się. + Kalendarz/Home ładuje się, dane świeże po ≤60 s (cache T-09).**
 - **Po potwierdzeniu:** status → ✅.
 
 ---
@@ -86,9 +86,13 @@
 
 ## ETAP 3 — Średnie autonomiczne (kod robię ja, zachowanie weryfikujesz po deployu) — 🤝
 
-### T-09 · ⬜ · 🤝 · Cache najgorętszych odczytów (Home / agregat) — *Z-072*
-- `unstable_cache` z inwalidacją (`revalidateTag`) przy mutacjach. **Czemu nie teraz „na ślepo":**
-  poprawność inwalidacji trzeba potwierdzić na żywym środowisku — robimy, gdy deploy będzie dostępny.
+### T-09 · ✅ · 🤝 · Cache najgorętszych odczytów (agregat kalendarza) — *Z-072*
+- **Zrobione (2026-06-27):** `getCalendarEvents` (`src/actions/calendar.ts`) owinięte w `unstable_cache`
+  z **kluczem PER-USER + 60 s TTL** (`collectCalendarEvents` jest cookie-free → bezpieczne w cache).
+  Świeżość gwarantuje TTL — **bez ręcznej inwalidacji** (świadomie: zero footguna „zapomniany
+  revalidateTag" w dziesiątkach mutacji); `user.id` w kluczu = brak przecieku między userami. Gorący
+  agregat wielomodułowy (zadania/posiłki/zdrowie/leki/flota/zwierzęta/SRS) — kalendarz, briefing, Home.
+- **Weryfikacja:** tsc czysto; suite 332/332. **Zachowanie (cache'owanie, świeżość ≤60 s) — po deployu → T-01.**
 
 ### T-10 · ⬜ · 🤝 · Ujednolicony „Udostępnij" — *Z-193*
 - Jeden punkt wejścia do współdzielenia we wszystkich modułach (whitelist modułów). UI — weryfikacja po deployu.
