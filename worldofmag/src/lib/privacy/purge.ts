@@ -1,4 +1,40 @@
 import { prisma } from "@/lib/prisma";
+import { pickTeamSuccessor } from "@/lib/teams/ownership";
+
+type PurgeTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+/**
+ * Z-051/Z-194 (T-04) — rozwiązanie zespołów, których usuwany user jest WŁAŚCICIELEM.
+ * `Team.ownerId` ma FK RESTRICT, więc przed `user.delete()` musimy albo przekazać
+ * własność, albo usunąć zespół:
+ * - są inni członkowie → własność na następcę (najstarszy ADMIN, fallback najstarszy
+ *   członek — `pickTeamSuccessor`); zasoby zespołu (ownerTeamId) zostają z zespołem;
+ * - zespół „solo" (właściciel jest jedynym członkiem) → `team.delete()` kaskadowo usuwa
+ *   wszystkie zasoby team-owned (ownerTeam = Cascade) i członkostwa.
+ * Subzespoły (`parentTeamId` = SetNull) i zespoły, w których user jest tylko członkiem,
+ * nie wymagają akcji — odpowiednio osierocają się na top-level / kaskadują z TeamMember.
+ */
+async function resolveOwnedTeams(tx: PurgeTx, userId: string): Promise<void> {
+  const teams = await tx.team.findMany({
+    where: { ownerId: userId },
+    include: { members: { select: { userId: true, role: true, joinedAt: true } } },
+  });
+  for (const team of teams) {
+    const successor = pickTeamSuccessor(team.members, userId);
+    if (successor === null) {
+      // Solo — usuń zespół; ownerTeam=Cascade sprząta zasoby i członkostwa.
+      await tx.team.delete({ where: { id: team.id } });
+    } else {
+      // Przekaż własność: następca = OWNER, Team.ownerId → następca. Membership
+      // odchodzącego usera i tak kaskaduje przy user.delete().
+      await tx.teamMember.update({
+        where: { teamId_userId: { teamId: team.id, userId: successor } },
+        data: { role: "OWNER" },
+      });
+      await tx.team.update({ where: { id: team.id }, data: { ownerId: successor } });
+    }
+  }
+}
 
 /**
  * Z-051 (RODO art. 17) — twarde usunięcie wszystkich danych użytkownika.
@@ -16,13 +52,16 @@ import { prisma } from "@/lib/prisma";
  * - modele z kolumną właściciela ALE BEZ FK (Contact, ServiceFavorite — Z-370) NIE
  *   kaskadują — muszą być skasowane jawnie, inaczej zostają osierocone;
  * - rekordy z `ON DELETE RESTRICT` (TeamInvitation) usuwamy przed `user.delete()`;
- * - `Team.ownerId` (RESTRICT) jest blokadą — własność zespołu wymaga decyzji
- *   użytkownika i jest sprawdzana wcześniej w `deleteMyAccount` (nie tutaj).
+ * - `Team.ownerId` (RESTRICT) — własność zespołów rozwiązuje `resolveOwnedTeams`
+ *   (Z-194/T-04): auto-transfer na następcę albo usunięcie zespołu solo.
  *
  * `AuditLog` nie ma FK do User (zrzut e-maila) — historia audytu celowo zostaje.
  */
 export async function purgeUserData(userId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
+    // Z-194 (T-04): najpierw rozwiąż własność zespołów (Team.ownerId = RESTRICT).
+    await resolveOwnedTeams(tx, userId);
+
     // RESTRICT: zaproszenia wysłane i otrzymane.
     await tx.teamInvitation.deleteMany({
       where: { OR: [{ invitedById: userId }, { invitedUserId: userId }] },

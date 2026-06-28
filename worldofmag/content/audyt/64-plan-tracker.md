@@ -60,14 +60,21 @@
 - **Zostaje (po deployu):** wzrokowo sprawdzić DnD na telefonie (long-press) i desktopie; reorder w widoku
   z filtrem dotyczy tylko widocznych pozycji (świadome ograniczenie — pełne ułożenie w widoku „Wszystkie").
 
-### T-04 · 🔓 · 👤 · Reguła przy usuwaniu konta właściciela zespołu — *Z-051 część*
-- **Gotowe:** blokada usunięcia + akcja `transferTeamOwnership`.
-- **Brakuje (decyzja):** co z zasobami zespołu, gdy właściciel kasuje konto — auto-transfer (do kogo?)
-  czy auto-usunięcie solo-zespołów? Dziś: blokada + ręczny transfer.
+### T-04 · ✅ · 🧑‍💻 · Reguła przy usuwaniu konta właściciela zespołu — *Z-051 część*
+- **Decyzja właściciela (2026-06-28):** auto-transfer na najstarszego ADMIN-a (fallback najstarszy
+  członek); zespół solo kasowany wraz z zasobami.
+- **Zrobione (2026-06-28):** zdjęta twarda blokada w `deleteMyAccount`; `purgeUserData` najpierw
+  rozwiązuje zespoły usera-właściciela (`resolveOwnedTeams`): są inni członkowie → własność na następcę
+  wg czystego `pickTeamSuccessor` (`src/lib/teams/ownership.ts`: najstarszy ADMIN → najstarszy członek),
+  następca dostaje rolę OWNER, zasoby zespołu zostają; zespół solo → `team.delete()` (ownerTeam=Cascade
+  sprząta zasoby+członkostwa). Respektuje `Team.ownerId` = RESTRICT (transfer/usun PRZED `user.delete`).
+  6 testów jednostkowych reguły + 2 DB-gated (transfer zachowuje zasoby/preferuje ADMIN-a; solo kasuje
+  kaskadowo). tsc + lint czysto; suite 364/364. UI bez zmian (nie pre-sprawdzała własności).
 
-### T-05 · 🔓 · 👤 · Model reklam — kierunek — *Z-474 (P2)*
-- **Brakuje (decyzja):** czy/jak reklamy kontekstowe (bez profilowania) z opcją „wyłącz" — dopiero po
-  freemium/B2B. Decyzja kierunkowa.
+### T-05 · ⏸️ · 👤 · Model reklam — kierunek — *Z-474 (P2)*
+- **Decyzja właściciela (2026-06-28):** reklamy kontekstowe **bez profilowania**, z opcją „wyłącz",
+  ale **dopiero po wdrożeniu freemium/B2B** (zależne od T-20). Świadomie ODŁOŻONE — zero kodu teraz;
+  wraca jako temat po uruchomieniu płatności i linii podziału free/premium.
 
 ---
 
@@ -225,5 +232,10 @@ _**Postęp ETAP 3 (2026-06-28):** T-09 ✅, T-10 🟡 (rdzeń), **T-11 🟡** (r
 `@tanstack/react-virtual`, wzorzec do powielenia), **T-12 🟡** (rdzeń: `canMemberAccessModule` +
 migracja `0197` + 12 testów). Suite 349/349; tsc czysto. Zostaje wzrokowa weryfikacja po deployu (→T-01)
 + rollout egzekwowania/UI (T-12) i wzorca na kolejne listy (T-11)._
+_**Postęp ETAP 1 (2026-06-28, decyzje właściciela „wszystkie wg rekomendacji"):** **T-02 ✅** (ESLint
+bramka), **T-03 🟡** (DnD kolejności zakupów, migr. 0198 — zostaje wizualna weryfikacja po deployu),
+**T-04 ✅** (auto-transfer/usuń zespół solo przy kasowaniu konta), **T-05 ⏸️** (reklamy odłożone do
+freemium). Suite 364/364; tsc + lint czysto. Pozostają decyzje właściciela: ETAP 4 (T-13/14/15 — konta/
+klucze zewn.) i ETAP 6 (biznes/prawo)._
 _Tracker roboczy — aktualizowany po każdym zadaniu (status ⬜/🟡/🔓/⏸️ → ✅). Utworzony 2026-06-27 z
 przeniesieniem rozdziału A.14 („Decyzje właściciela") w całości tutaj. Postęp historyczny `Z-NNN`: A.13._

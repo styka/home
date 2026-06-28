@@ -238,9 +238,11 @@ export async function exportMyData(): Promise<UserDataExport> {
 /**
  * Z-051 (RODO art. 17) — twarde usunięcie konta.
  *
- * Potwierdzenie: użytkownik musi wpisać swój adres e-mail. Konta będące
- * właścicielem zespołów są blokowane (dane współdzielone wymagają przekazania
- * własności — decyzja użytkownika, wzorzec graceful degradation). Po usunięciu
+ * Potwierdzenie: użytkownik musi wpisać swój adres e-mail. Własność zespołów jest
+ * rozwiązywana automatycznie (Z-194/T-04, w `purgeUserData`→`resolveOwnedTeams`):
+ * jeśli zespół ma innych członków, własność przechodzi na następcę (najstarszy ADMIN,
+ * fallback najstarszy członek); zespół „solo" jest usuwany wraz z zasobami. Dzięki temu
+ * usunięcie konta nie jest blokowane, a dane współdzielone nie osierocają się. Po usunięciu
  * danych wylogowujemy (strategia sesji = JWT, więc trzeba wyczyścić cookie).
  */
 export async function deleteMyAccount(confirmation: string): Promise<void> {
@@ -251,13 +253,6 @@ export async function deleteMyAccount(confirmation: string): Promise<void> {
   const expected = (user.email ?? "").trim().toLowerCase();
   if (!expected || confirmation.trim().toLowerCase() !== expected) {
     throw new Error("Potwierdzenie nie pasuje do adresu e-mail konta.");
-  }
-
-  const ownedTeams = await prisma.team.count({ where: { ownerId: userId } });
-  if (ownedTeams > 0) {
-    throw new Error(
-      "To konto jest właścicielem zespołu/zespołów. Najpierw przekaż własność lub usuń swoje zespoły (Ustawienia → Zespoły) — chronimy w ten sposób dane współdzielone z innymi członkami.",
-    );
   }
 
   await purgeUserData(userId);
