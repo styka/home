@@ -361,6 +361,10 @@ model TeamMember {
   teamId   String
   userId   String
   role     String   @default("MEMBER") // "MEMBER" | "ADMIN" | "OWNER"
+  // Z-194 (T-12): granularne role rodzic/dziecko. JSON string[] dozwolonych modułów
+  // do WSPÓŁDZIELONYCH zasobów zespołu, albo NULL = brak ograniczeń (pełny dostęp).
+  // "[]" = brak dostępu do żadnego współdzielonego modułu. OWNER/ADMIN ignorują to pole.
+  moduleAccess String?
   joinedAt DateTime @default(now())
 
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)

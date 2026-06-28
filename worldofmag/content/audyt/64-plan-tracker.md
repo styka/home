@@ -105,9 +105,15 @@
 ### T-11 · ⬜ · 🤝 · Wirtualizacja długich list — *Z-071*
 - `@tanstack/virtual` na najdłuższych listach (nowa zależność). Perf UI — weryfikacja po deployu.
 
-### T-12 · ⬜ · 🤝 · Role rodzic/dziecko w rodzinie — *Z-194*
-- Model roli na `TeamMember` + egzekwowanie w akcjach + UI przypisania. Rdzeń reguł testowalny lokalnie,
-  egzekwowanie/UI — po deployu.
+### T-12 · 🟡 · 🤝 · Role rodzic/dziecko w rodzinie — *Z-194*
+- **Rdzeń zrobiony (2026-06-28):** kolumna `TeamMember.moduleAccess` (TEXT JSON `string[]`|NULL,
+  migracja `0197`) + czysty helper `src/lib/teams/memberAccess.ts` (`canMemberAccessModule`,
+  `parseModuleAccess`/`serializeModuleAccess`, `RESTRICTABLE_MODULES` derywowane z mapy współdzielenia
+  Z-193). Reguła: „rodzice" OWNER/ADMIN = pełny dostęp; „dziecko" `null` = pełny (wstecznie zgodne);
+  `[]` = brak; lista = tylko wymienione; moduł nie-team zawsze dostępny. 12 testów; tsc czysto.
+  Seam egzekwowania: `getAccessibleTeamIds(userId, moduleId)` w `server-utils` (gotowy do wpięcia).
+- **Zostaje (po deployu / rollout):** wpiąć `getAccessibleTeamIds` w odczyty modułów team-aware
+  zamiast `getUserTeamIds` + UI „dostęp domownika" (przypisanie modułów dziecku w `/settings/team/[id]`).
 
 ---
 
