@@ -75,9 +75,12 @@
   parse-ingredients, categorize, notes/tags, tasks/parse, import-url, magazyn/*, klasyfikacja agenta…)
   wołają z `op:"dispatch"`. Admin może nadpisać w `/admin/llm`. To dokładnie Z-134.
 
-### T-08 · ⬜ · 🧑‍💻 · Drobne P2 modułowe + dalsze testy czystej logiki
-- Pojedyncze poprawki/walidacje i testy nieprzetestowanych helperów (kandydaci: Z-034/035, Z-116/117/118
-  oraz pozostałe moduły do przeglądu per rozdział). Bezpieczne, bez deployu.
+### T-08 · ✅ · 🧑‍💻 · Drobne P2 modułowe + dalsze testy czystej logiki
+- **Zrobione (2026-06-27):** testy spójności katalogu warsztatów (`src/lib/warsztat/catalog.ts`, 6 testów):
+  fallbacki `getWorkshopType`/`getSuggestions`, każdy typ ma niepustą listę, **unikalność `key` w obrębie
+  typu** (łączy się z `WorkshopItem.suggestionKey`), komplet pól + poprawny kind/tier. Strażnik przed cichym
+  błędem przy rozbudowie statycznego katalogu. tsc czysto; suite **332/332**.
+- Pozostali kandydaci na przyszłość (gdy wrócimy do P2): Z-034/035, Z-116/117/118 + przegląd modułów per rozdział.
 
 ---
 
@@ -177,7 +180,8 @@
 
 ---
 
-_**Postęp ETAP 2 (2026-06-27):** T-07 ✅ (Z-134 — już spełnione architekturą operationType), T-06 ✅
-(Z-037 — diagnostyka EXPLAIN w /admin/health). Następne: T-08 (drobne P2/testy), potem ETAP 3._
+_**Postęp ETAP 2 — UKOŃCZONY (2026-06-27):** T-06 ✅ (Z-037 diagnostyka EXPLAIN), T-07 ✅ (Z-134 już
+spełnione architekturą operationType), T-08 ✅ (testy spójności katalogu warsztatów). Suite 332/332.
+**Następne: ETAP 3 (T-09…T-12) — deploy-zależne, podejmę na „rób dalej"; ETAP 1 (T-02…T-05) czeka na Twoje decyzje.**_
 _Tracker roboczy — aktualizowany po każdym zadaniu (status ⬜/🟡/🔓/⏸️ → ✅). Utworzony 2026-06-27 z
 przeniesieniem rozdziału A.14 („Decyzje właściciela") w całości tutaj. Postęp historyczny `Z-NNN`: A.13._
