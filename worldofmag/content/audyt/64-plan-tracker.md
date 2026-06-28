@@ -33,13 +33,17 @@
 
 ## ETAP 1 — Tanie decyzje (1 zdanie z Twojej strony odblokowuje) — 👤
 
-### T-02 · 🔓 · 👤 · ESLint jako bramka — kierunek — *Z-011 / Z-015*
-- **Gotowe:** typecheck (`tsc`) już jest bramką w CI (połowa zalecenia). Realne błędy z pomiaru już
-  naprawione (hook-w-callbacku WeatherPage, 2× `no-assign-module-variable`).
-- **Brakuje (decyzja):** `next lint` daje **74 problemy** — głównie kosmetyka (`no-unescaped-entities`,
-  `exhaustive-deps`). Czy włączamy ESLint jako bramkę? **Rekomendacja:** włączyć z wyłączoną kosmetyką
-  (realne błędy = error, reszta = warning), bez przepisywania 74 pozycji.
-- **Twoja akcja:** „tak, włącz wg rekomendacji" / „nie teraz".
+### T-02 · ✅ · 🧑‍💻 · ESLint jako bramka — *Z-011 / Z-015*
+- **Decyzja właściciela (2026-06-28):** „włącz wg rekomendacji".
+- **Zrobione (2026-06-28):** dodano `eslint@8.57.1` + `eslint-config-next@14.2.29` (devDeps);
+  `.eslintrc.json` rozszerza `next/core-web-vitals`, rejestruje plugin `@typescript-eslint` (inaczej
+  osierocone dyrektywy `eslint-disable @typescript-eslint/*` rzucały „rule not found" = 9 fałszywych
+  errorów), a kosmetykę degraduje do **warning** (`no-unescaped-entities`, `exhaustive-deps`,
+  `no-img-element`, `alt-text`); `rules-of-hooks` = **error**. Jawna bramka: krok `next lint --dir src`
+  w `build` (przed `next build`) + `eslint.ignoreDuringBuilds:true` w `next.config` (jedno miejsce, bez
+  dublowania) + skrypty `lint`/`check:lint`. Stan: **0 errorów, 64 warningi** → bramka zielona; realny
+  błąd (np. hook warunkowy) ją wywala (zweryfikowane sondą). tsc czysto.
+- **Opcjonalnie (przyszłość):** stopniowo zbijać 64 warningi (głównie polskie cudzysłowy w JSX i deps).
 
 ### T-03 · 🔓 · 👤 · Zakupy: ręczny DnD pozycji vs sort po trasie — *Z-221*
 - **Gotowe:** `@dnd-kit` już w projekcie (plan posiłków) — wzorzec do powielenia.
