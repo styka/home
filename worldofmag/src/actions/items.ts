@@ -15,6 +15,13 @@ function toItem(p: PrismaItem): Item {
   return p as unknown as Item;
 }
 
+// Z-221 (T-03): nowe pozycje dopisywane na KONIEC swojej kategorii (max order + 1),
+// by nie rozbijały ręcznie ułożonej kolejności. Brak pozycji w kategorii → 0.
+async function nextCategoryOrder(listId: string, category: string): Promise<number> {
+  const agg = await prisma.item.aggregate({ where: { listId, category }, _max: { order: true } });
+  return (agg._max.order ?? -1) + 1;
+}
+
 export async function addItem(listId: string, rawText: string): Promise<Item> {
   const user = await requireAuth();
   await assertListAccess(listId, user.id);
@@ -23,7 +30,7 @@ export async function addItem(listId: string, rawText: string): Promise<Item> {
   const category = categorize(name);
 
   const item = await prisma.item.create({
-    data: { listId, name, quantity, unit, category },
+    data: { listId, name, quantity, unit, category, order: await nextCategoryOrder(listId, category) },
   });
 
   await prisma.itemHistory.upsert({
@@ -127,7 +134,7 @@ export async function addItemStructured(
   const resolvedCategory = category?.trim() || categorize(trimmedName);
 
   const item = await prisma.item.create({
-    data: { listId, name: trimmedName, quantity, unit, category: resolvedCategory },
+    data: { listId, name: trimmedName, quantity, unit, category: resolvedCategory, order: await nextCategoryOrder(listId, resolvedCategory) },
   });
 
   // Update legacy ItemHistory
@@ -142,6 +149,31 @@ export async function addItemStructured(
 
   revalidatePath(`/shopping/${listId}`);
   return toItem(item);
+}
+
+/**
+ * Z-221 (T-03): zapis ręcznej kolejności pozycji w obrębie JEDNEJ kategorii.
+ * `orderedIds` to pełna, docelowa kolejność widocznych pozycji danej kategorii — zapisujemy
+ * `order = index`. Filtrujemy do pozycji faktycznie należących do (listId, category), więc obce
+ * id są ignorowane. Pozycje spoza przekazanej listy (np. ukryte filtrem) zachowują swój order.
+ */
+export async function reorderItems(listId: string, category: string, orderedIds: string[]): Promise<void> {
+  const user = await requireAuth();
+  await assertListAccess(listId, user.id);
+
+  const valid = await prisma.item.findMany({
+    where: { id: { in: orderedIds }, listId, category },
+    select: { id: true },
+  });
+  const validSet = new Set(valid.map((i) => i.id));
+  const ops = orderedIds
+    .filter((id) => validSet.has(id))
+    .map((id, index) => prisma.item.update({ where: { id }, data: { order: index } }));
+  if (ops.length === 0) return;
+
+  await prisma.$transaction(ops);
+  void trackActivity("shopping", "reorder_items", { listId, category, count: ops.length });
+  revalidatePath(`/shopping/${listId}`);
 }
 
 export async function getSuggestionsForPrefix(prefix: string): Promise<ItemHistory[]> {

@@ -26,7 +26,7 @@
   ujednolicony, slugify wykonawców naprawiony (ł→l), migracja `0196` (onDelete) gotowa.
 - **Twoja akcja (👤):** po deployu na `develop` — kliknąć kilka modali (np. dodawanie do listy zakupów,
   edycja spiżarni, import przepisu), sprawdzić puste stany i polskie slugi (`/providers/…`); potwierdzić,
-  że nic nie jest rozjechane. **+ `/admin/health` → nowa karta „Diagnostyka zapytań" (T-06) renderuje się. + Kalendarz/Home ładuje się, dane świeże po ≤60 s (cache T-09). + Kontakty (T-11): lista płynnie się przewija, j/k przeskakuje zaznaczenie i doscrollowuje, edycja wiersza nie rozjeżdża layoutu.**
+  że nic nie jest rozjechane. **+ `/admin/health` → nowa karta „Diagnostyka zapytań" (T-06) renderuje się. + Kalendarz/Home ładuje się, dane świeże po ≤60 s (cache T-09). + Kontakty (T-11): lista płynnie się przewija, j/k przeskakuje zaznaczenie i doscrollowuje, edycja wiersza nie rozjeżdża layoutu. + Zakupy (T-03): uchwyt DnD przy najechaniu/dotyku, przeciąganie zmienia kolejność w obrębie kategorii (long-press na telefonie), kolejność trzyma się po odświeżeniu i nie psuje sortu po trasie.**
 - **Po potwierdzeniu:** status → ✅.
 
 ---
@@ -45,10 +45,20 @@
   błąd (np. hook warunkowy) ją wywala (zweryfikowane sondą). tsc czysto.
 - **Opcjonalnie (przyszłość):** stopniowo zbijać 64 warningi (głównie polskie cudzysłowy w JSX i deps).
 
-### T-03 · 🔓 · 👤 · Zakupy: ręczny DnD pozycji vs sort po trasie — *Z-221*
-- **Gotowe:** `@dnd-kit` już w projekcie (plan posiłków) — wzorzec do powielenia.
-- **Brakuje (decyzja):** czy ręczny `Item.order` ma nadpisywać sort po trasie sklepu? Per-kategoria czy
-  globalnie? To zmienia UX, nie tylko kod. Po decyzji: migracja `Item.order` + akcja reorder + UI.
+### T-03 · 🟡 · 🤝 · Zakupy: ręczny DnD pozycji vs sort po trasie — *Z-221*
+- **Decyzja właściciela (2026-06-28):** „ręczna kolejność nadpisuje trasę, per-kategoria".
+- **Zrobione (2026-06-28):** kolumna `Item.order` (migracja `0198`, default 0 = brak ułożenia →
+  fallback na priority/createdAt; **100% wstecznie zgodne**); loader strony sortuje
+  `[order ASC, priority DESC, createdAt ASC]`; akcja `reorderItems(listId, category, orderedIds)`
+  (zapis `order=index` w obrębie jednej kategorii, walidacja przynależności do listy+kategorii);
+  nowe pozycje (interaktywny add) dopisywane na KONIEC kategorii (`nextCategoryOrder`). UI: `@dnd-kit/sortable`
+  w `CategoryGroup` — przeciąganie ZA UCHWYT (GripVertical, hover/focus), reszta wiersza dalej
+  interaktywna; optymistyczna kolejność (lista ID, resync tylko przy add/del); w trybie edycji DnD off;
+  sensory Pointer/Touch(delay 200)/Keyboard (a11y). Ręczna kolejność per-kategoria nadpisuje trasę
+  (trasa porządkuje tylko nagłówki kategorii). tsc + lint czysto; test kontraktu sortowania (4 asercje,
+  DB) → suite 353/353.
+- **Zostaje (po deployu):** wzrokowo sprawdzić DnD na telefonie (long-press) i desktopie; reorder w widoku
+  z filtrem dotyczy tylko widocznych pozycji (świadome ograniczenie — pełne ułożenie w widoku „Wszystkie").
 
 ### T-04 · 🔓 · 👤 · Reguła przy usuwaniu konta właściciela zespołu — *Z-051 część*
 - **Gotowe:** blokada usunięcia + akcja `transferTeamOwnership`.

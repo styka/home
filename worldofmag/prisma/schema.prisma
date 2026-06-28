@@ -419,6 +419,9 @@ model Item {
   notes     String?
   price     Float? // S6: cena jednostkowa (do sumy zakupów → Portfel)
   priority  Int      @default(0)
+  // Z-221 (T-03): ręczna kolejność DnD per-kategoria. Default 0 = brak ręcznego ułożenia
+  // (sort fallbackuje na priority/createdAt). Nadpisuje sort po trasie sklepu.
+  order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   listId    String

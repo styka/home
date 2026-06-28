@@ -261,6 +261,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
 
       <ItemList
         items={filteredItems}
+        listId={list.id}
         focusedItemId={focusedItemId}
         editingItemId={editingItemId}
         onItemFocus={setFocusedItemId}
