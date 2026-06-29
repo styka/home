@@ -26,7 +26,7 @@
   ujednolicony, slugify wykonawców naprawiony (ł→l), migracja `0196` (onDelete) gotowa.
 - **Twoja akcja (👤):** po deployu na `develop` — kliknąć kilka modali (np. dodawanie do listy zakupów,
   edycja spiżarni, import przepisu), sprawdzić puste stany i polskie slugi (`/providers/…`); potwierdzić,
-  że nic nie jest rozjechane. **+ `/admin/health` → nowa karta „Diagnostyka zapytań" (T-06) renderuje się. + Kalendarz/Home ładuje się, dane świeże po ≤60 s (cache T-09). + Kontakty (T-11): lista płynnie się przewija, j/k przeskakuje zaznaczenie i doscrollowuje, edycja wiersza nie rozjeżdża layoutu. + Zakupy (T-03): uchwyt DnD przy najechaniu/dotyku, przeciąganie zmienia kolejność w obrębie kategorii (long-press na telefonie), kolejność trzyma się po odświeżeniu i nie psuje sortu po trasie. + Zespół (T-12): w `/settings/team/[id]` przycisk „Dostęp" przy domowniku otwiera checkboxy modułów; po odznaczeniu modułu i zapisie domownik przestaje widzieć współdzielone zasoby tego modułu (a wciąż widzi dozwolone).**
+  że nic nie jest rozjechane. **+ `/admin/health` → nowa karta „Diagnostyka zapytań" (T-06) renderuje się. + Kalendarz/Home ładuje się, dane świeże po ≤60 s (cache T-09). + Kontakty (T-11): lista płynnie się przewija, j/k przeskakuje zaznaczenie i doscrollowuje, edycja wiersza nie rozjeżdża layoutu. + Zakupy (T-03): uchwyt DnD przy najechaniu/dotyku, przeciąganie zmienia kolejność w obrębie kategorii (long-press na telefonie), kolejność trzyma się po odświeżeniu i nie psuje sortu po trasie. + Zespół (T-12): w `/settings/team/[id]` przycisk „Dostęp" przy domowniku otwiera checkboxy modułów; po odznaczeniu modułu i zapisie domownik przestaje widzieć współdzielone zasoby tego modułu (a wciąż widzi dozwolone). + Zadania (T-10): sekcja „Udostępnianie" w szczególe zadania działa jak wcześniej (dodaj po e-mailu z rolą Widz/Edytor, usuń), teraz z reużywalnego `ShareControl`.**
 - **Po potwierdzeniu:** status → ✅.
 
 ---
@@ -116,12 +116,17 @@
 - **Weryfikacja:** tsc czysto; suite 332/332. **Zachowanie (cache'owanie, świeżość ≤60 s) — po deployu → T-01.**
 
 ### T-10 · 🟡 · 🤝 · Ujednolicony „Udostępnij" — *Z-193*
-- **Rdzeń zrobiony (2026-06-27):** `src/lib/sharing/capabilities.ts` — JEDNA mapa „jak każdy moduł się
-  dzieli" (`team`/`entity`/`projectMembers`) + helpery `getShareCapability`/`canShare`/`isShareable` +
-  etykiety mechanizmów. 5 testów (m.in. „entity tylko tasks/pets", user-only→null). tsc czysto.
-- **Zostaje (UI — po deployu / przy zdrowym tooling):** reużywalny komponent „Udostępnij" czytający mapę i
-  zastępujący 3 rozjechane wejścia (TaskShare w `TaskDetail`, PetShare w `PetSections`, wybór zespołu)
-  jednym spójnym. Czyste UI → weryfikacja wzrokowa po deployu.
+- **Rdzeń (2026-06-27):** `src/lib/sharing/capabilities.ts` — JEDNA mapa „jak każdy moduł się dzieli"
+  (`team`/`entity`/`projectMembers`) + helpery + etykiety. 5 testów.
+- **Komponent + 1. integracja (2026-06-28):** reużywalny, prezentacyjny `ShareControl`
+  (`src/components/sharing/ShareControl.tsx`) czytający mapę zdolności — lista udostępnień + dodawanie
+  po e-mailu (mechanizm „entity") + podpowiedź o pozostałych mechanizmach (zespół/projekt). Logika
+  dostępu zostaje w Server Actions (callbacki) — zero zmian semantyki. Wpięty w **Zadania**
+  (`TaskDetail` — zastąpił bespoke UI udostępniania; usunięty zdublowany stan/handler + martwe ikony).
+  tsc+lint czysto; suite 369/369. **Wzorzec do powielenia.**
+- **Zostaje (rollout — po deployu):** wpiąć `ShareControl` w `PetSections` (inny system wizualny —
+  potrzebny wariant bez własnego nagłówka pod `SectionShell`) i w wybór właściciela-zespołu przy
+  tworzeniu/edycji zasobów. Weryfikacja wzrokowa po deployu.
 
 ### T-11 · 🟡 · 🤝 · Wirtualizacja długich list — *Z-071*
 - **Zrobione (2026-06-28):** dodano `@tanstack/react-virtual@3.14.4` i owinięto najdłuższą płaską
