@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import type { Note } from "@/types";
 import { trackActivity } from "@/actions/activity";
 import { recordTrash } from "@/lib/trash";
@@ -27,7 +27,7 @@ export async function getNotes(filters?: {
   ownerTeamId?: string;
 }): Promise<Note[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "notes");
 
   const where: Record<string, unknown> = {
     OR: [
@@ -87,7 +87,7 @@ export async function createNote(data: {
   const user = await requireAuth();
 
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "notes");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Nie jesteś członkiem tego teamu");
   }
 

@@ -31,6 +31,28 @@ export function isRestrictableModule(moduleId: string): boolean {
   return RESTRICTABLE_MODULES.includes(moduleId);
 }
 
+/** Polskie etykiety ograniczalnych modułów (do UI „dostęp domownika"). */
+export const RESTRICTABLE_MODULE_LABELS: Record<string, string> = {
+  shopping: "Zakupy",
+  tasks: "Zadania",
+  notes: "Notatki",
+  kitchen: "Kuchnia",
+  pets: "Zwierzęta",
+  health: "Zdrowie",
+  habits: "Nawyki",
+  flota: "Flota",
+  portfel: "Portfel",
+  languages: "Języki",
+  magazynowanie: "Magazynowanie",
+  warsztaty: "Warsztaty",
+  contacts: "Kontakty",
+};
+
+/** Etykieta modułu albo samo id (fallback). */
+export function moduleLabel(moduleId: string): string {
+  return RESTRICTABLE_MODULE_LABELS[moduleId] ?? moduleId;
+}
+
 export interface MemberAccessInput {
   /** Rola w zespole: MEMBER | ADMIN | OWNER. */
   role: string;

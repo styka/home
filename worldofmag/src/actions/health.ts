@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
 
 function safeDate(d: Date | string | null | undefined): Date | null {
@@ -52,7 +52,7 @@ export async function getHealthEvents(filter?: {
   scope?: "upcoming" | "past" | "all";
 }): Promise<HealthEvent[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "health");
 
   const where: Record<string, unknown> = {
     OR: [{ ownerId: user.id }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])],
@@ -104,7 +104,7 @@ export async function createHealthEvent(data: {
 
   let ownerTeamId: string | null = null;
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "health");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Brak dostępu do zespołu");
     ownerTeamId = data.ownerTeamId;
   }
@@ -200,7 +200,7 @@ export type TestTrend = {
 /** Z2: trendy badań — grupuje badania (TEST) z wartością liczbową po nazwie, rosnąco wg daty. */
 export async function getTestTrends(): Promise<TestTrend[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "health");
   const rows = await prisma.healthEvent.findMany({
     where: {
       kind: "TEST",

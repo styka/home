@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { isoDate } from "@/lib/habitStats";
 import { buildDayAgenda } from "@/lib/medicationSchedule";
 import type {
@@ -60,8 +60,9 @@ async function assertScheduleAccess(id: string, userId: string): Promise<void> {
   throw new Error("Brak dostępu do harmonogramu");
 }
 
+// Z-194 (T-12): widoczność leków/pielęgnacji respektuje dostęp domownika do „health".
 async function scopeWhere(userId: string) {
-  const teamIds = await getUserTeamIds(userId);
+  const teamIds = await getAccessibleTeamIds(userId, "health");
   return { OR: [{ ownerId: userId }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])] };
 }
 

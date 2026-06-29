@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { requireAuth } from "@/lib/server-utils"
+import { serializeModuleAccess } from "@/lib/teams/memberAccess"
 
 async function requireTeamRole(
   teamId: string,
@@ -150,6 +151,32 @@ export async function changeMemberRole(
   await prisma.teamMember.update({
     where: { teamId_userId: { teamId, userId: targetUserId } },
     data: { role: newRole },
+  })
+  revalidatePath(`/settings/team/${teamId}`)
+}
+
+/**
+ * Z-194 (T-12): ustaw granularny dostęp domownika („dziecka") do współdzielonych
+ * modułów zespołu. Tylko ADMIN/OWNER (rodzic). `modules=null` → pełny dostęp (czyści
+ * ograniczenie); `[]` → brak dostępu; lista → tylko wymienione moduły. Nie dotyczy
+ * właściciela ani roli OWNER (rodzic ma zawsze pełny dostęp).
+ */
+export async function setMemberModuleAccess(
+  teamId: string,
+  targetUserId: string,
+  modules: string[] | null
+) {
+  const user = await requireAuth()
+  await requireTeamRole(teamId, user.id, "ADMIN")
+  const target = await prisma.teamMember.findUnique({
+    where: { teamId_userId: { teamId, userId: targetUserId } },
+  })
+  if (!target) throw new Error("Member not found")
+  if (target.role === "OWNER") throw new Error("Owner always has full access")
+
+  await prisma.teamMember.update({
+    where: { teamId_userId: { teamId, userId: targetUserId } },
+    data: { moduleAccess: serializeModuleAccess(modules) },
   })
   revalidatePath(`/settings/team/${teamId}`)
 }

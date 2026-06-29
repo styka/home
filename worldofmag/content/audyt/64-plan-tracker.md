@@ -26,7 +26,7 @@
   ujednolicony, slugify wykonawców naprawiony (ł→l), migracja `0196` (onDelete) gotowa.
 - **Twoja akcja (👤):** po deployu na `develop` — kliknąć kilka modali (np. dodawanie do listy zakupów,
   edycja spiżarni, import przepisu), sprawdzić puste stany i polskie slugi (`/providers/…`); potwierdzić,
-  że nic nie jest rozjechane. **+ `/admin/health` → nowa karta „Diagnostyka zapytań" (T-06) renderuje się. + Kalendarz/Home ładuje się, dane świeże po ≤60 s (cache T-09). + Kontakty (T-11): lista płynnie się przewija, j/k przeskakuje zaznaczenie i doscrollowuje, edycja wiersza nie rozjeżdża layoutu. + Zakupy (T-03): uchwyt DnD przy najechaniu/dotyku, przeciąganie zmienia kolejność w obrębie kategorii (long-press na telefonie), kolejność trzyma się po odświeżeniu i nie psuje sortu po trasie.**
+  że nic nie jest rozjechane. **+ `/admin/health` → nowa karta „Diagnostyka zapytań" (T-06) renderuje się. + Kalendarz/Home ładuje się, dane świeże po ≤60 s (cache T-09). + Kontakty (T-11): lista płynnie się przewija, j/k przeskakuje zaznaczenie i doscrollowuje, edycja wiersza nie rozjeżdża layoutu. + Zakupy (T-03): uchwyt DnD przy najechaniu/dotyku, przeciąganie zmienia kolejność w obrębie kategorii (long-press na telefonie), kolejność trzyma się po odświeżeniu i nie psuje sortu po trasie. + Zespół (T-12): w `/settings/team/[id]` przycisk „Dostęp" przy domowniku otwiera checkboxy modułów; po odznaczeniu modułu i zapisie domownik przestaje widzieć współdzielone zasoby tego modułu (a wciąż widzi dozwolone).**
 - **Po potwierdzeniu:** status → ✅.
 
 ---
@@ -135,15 +135,22 @@
   (po deployu → T-01); powielenie wzorca na kolejne długie listy gdy realnie urosną (np. magazyn — ale
   to lista grupowana w sekcjach, wymaga spłaszczenia indeksu jak w Z-232).
 
-### T-12 · 🟡 · 🤝 · Role rodzic/dziecko w rodzinie — *Z-194*
-- **Rdzeń zrobiony (2026-06-28):** kolumna `TeamMember.moduleAccess` (TEXT JSON `string[]`|NULL,
-  migracja `0197`) + czysty helper `src/lib/teams/memberAccess.ts` (`canMemberAccessModule`,
-  `parseModuleAccess`/`serializeModuleAccess`, `RESTRICTABLE_MODULES` derywowane z mapy współdzielenia
-  Z-193). Reguła: „rodzice" OWNER/ADMIN = pełny dostęp; „dziecko" `null` = pełny (wstecznie zgodne);
-  `[]` = brak; lista = tylko wymienione; moduł nie-team zawsze dostępny. 12 testów; tsc czysto.
-  Seam egzekwowania: `getAccessibleTeamIds(userId, moduleId)` w `server-utils` (gotowy do wpięcia).
-- **Zostaje (po deployu / rollout):** wpiąć `getAccessibleTeamIds` w odczyty modułów team-aware
-  zamiast `getUserTeamIds` + UI „dostęp domownika" (przypisanie modułów dziecku w `/settings/team/[id]`).
+### T-12 · ✅ · 🤝 · Role rodzic/dziecko w rodzinie — *Z-194*
+- **Rdzeń (2026-06-28):** kolumna `TeamMember.moduleAccess` (TEXT JSON `string[]`|NULL, migr. `0197`)
+  + czysty helper `src/lib/teams/memberAccess.ts` (`canMemberAccessModule`, parse/serialize,
+  `RESTRICTABLE_MODULES`+etykiety z mapy Z-193). Reguła: rodzice OWNER/ADMIN = pełny dostęp; dziecko
+  `null` = pełny (wstecznie zgodne); `[]` = brak; lista = tylko wymienione. 13 testów jednostkowych.
+- **Dokończone (2026-06-28):** akcja `setMemberModuleAccess` (ADMIN/OWNER, nie dla OWNER/siebie) +
+  UI „Dostęp" per-domownik w `MemberList` (`/settings/team/[id]`: checkboxy modułów, wszystkie
+  zaznaczone = `null` = pełny dostęp). **Egzekwowanie:** `getAccessibleTeamIds(userId, moduleId)`
+  wpięte w gettery-odczyty 11 modułów team-owned (shopping, notes, kitchen [recipes/cookbooks/
+  mealplans/pantry], health [+medications], habits, flota, portfel [+budgets/reports], languages,
+  magazynowanie, warsztaty, pets [+husbandry/breeding]) — zamiast `getUserTeamIds` w gałęzi
+  `user.id` (gardy-zapisy `userId` nietknięte). **100% wstecznie zgodne** (default null = bez zmian).
+  Test DB egzekwowania (dziecko z ograniczeniem nie widzi zespołu dla zablokowanego modułu). tsc+lint;
+  suite 369/369.
+- **Poza zakresem (inny model współdzielenia):** `tasks` (projectMembers/entity — nie `ownerTeamId`+
+  `getUserTeamIds`) i `contacts` (user-only) — egzekwowanie tam wymaga osobnego podejścia (follow-up).
 
 ---
 
@@ -229,9 +236,9 @@ _**Postęp ETAP 2 — UKOŃCZONY (2026-06-27):** T-06 ✅ (Z-037 diagnostyka EXP
 spełnione architekturą operationType), T-08 ✅ (testy spójności katalogu warsztatów). Suite 332/332.
 **Następne: ETAP 3 (T-09…T-12) — deploy-zależne, podejmę na „rób dalej"; ETAP 1 (T-02…T-05) czeka na Twoje decyzje.**_
 _**Postęp ETAP 3 (2026-06-28):** T-09 ✅, T-10 🟡 (rdzeń), **T-11 🟡** (rdzeń: Kontakty zwirtualizowane
-`@tanstack/react-virtual`, wzorzec do powielenia), **T-12 🟡** (rdzeń: `canMemberAccessModule` +
-migracja `0197` + 12 testów). Suite 349/349; tsc czysto. Zostaje wzrokowa weryfikacja po deployu (→T-01)
-+ rollout egzekwowania/UI (T-12) i wzorca na kolejne listy (T-11)._
+`@tanstack/react-virtual`, wzorzec do powielenia), **T-12 ✅** (rdzeń + egzekwowanie w 11
+modułach + UI „Dostęp" domownika). Suite 369/369; tsc+lint czysto. Zostaje wzrokowa weryfikacja po
+deployu (→T-01) + wzorzec wirtualizacji na kolejne listy (T-11) + ujednolicony „Udostępnij" (T-10 UI)._
 _**Postęp ETAP 1 (2026-06-28, decyzje właściciela „wszystkie wg rekomendacji"):** **T-02 ✅** (ESLint
 bramka), **T-03 🟡** (DnD kolejności zakupów, migr. 0198 — zostaje wizualna weryfikacja po deployu),
 **T-04 ✅** (auto-transfer/usuń zespół solo przy kasowaniu konta), **T-05 ⏸️** (reklamy odłożone do

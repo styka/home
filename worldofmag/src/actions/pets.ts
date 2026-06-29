@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
 import { DEFAULT_PRESET_KEY } from "@/lib/petPresets";
 import type { Pet, PetWithRelations, PetShare, PetStatus, ShareRole } from "@/types";
@@ -42,7 +42,7 @@ export async function assertPetAccess(petId: string, userId: string, needEdit = 
 
 export async function getPets(opts?: { includeInactive?: boolean }): Promise<Pet[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "pets");
 
   const accessOr = [
     { ownerId: user.id },
@@ -109,7 +109,7 @@ export async function createPet(data: {
   const user = await requireAuth();
 
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "pets");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Nie jesteś członkiem tego zespołu");
   }
 

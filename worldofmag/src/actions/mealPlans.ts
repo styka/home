@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { categorize } from "@/lib/categorize";
 import { computeRecipeCost } from "@/lib/kitchen/recipeCost";
 import { trackActivity } from "@/actions/activity";
@@ -54,7 +54,7 @@ export async function getMealPlan(
   teamId?: string
 ): Promise<MealPlanEntryWithRecipe[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
   const ownershipFilter = teamId
     ? teamIds.includes(teamId)
@@ -107,7 +107,7 @@ export interface MealPlanCost {
  */
 export async function getMealPlanCost(range: { from: Date; to: Date }, teamId?: string): Promise<MealPlanCost> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
   const ownershipFilter = teamId
     ? teamIds.includes(teamId)
       ? [{ ownerTeamId: teamId }]
@@ -167,7 +167,7 @@ export async function setMealPlanEntry(data: MealPlanEntryInput): Promise<MealPl
   const user = await requireAuth();
 
   if (data.teamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
     if (!teamIds.includes(data.teamId)) throw new Error("Nie jesteś członkiem tego teamu");
   }
 
@@ -284,7 +284,7 @@ export async function bulkSetMealPlan(input: BulkSetInput): Promise<BulkSetResul
   const user = await requireAuth();
 
   if (input.teamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
     if (!teamIds.includes(input.teamId)) throw new Error("Nie jesteś członkiem tego teamu");
   }
 
@@ -426,7 +426,7 @@ export async function previewShoppingListFromPlan(
   input: PreviewShoppingListInput
 ): Promise<ShoppingListPreviewResult> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
   const ownership = [
     { ownerId: user.id },
@@ -533,7 +533,7 @@ export async function generateShoppingListFromPlan(
 ): Promise<GenerateShoppingListResult> {
   const user = await requireAuth();
   await assertListAccess(input.listId, user.id);
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
   const ownership = [
     { ownerId: user.id },

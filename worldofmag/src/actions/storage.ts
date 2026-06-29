@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { categorize } from "@/lib/categorize";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/actions/lists";
@@ -54,7 +54,7 @@ async function assertStorageItemAccess(storageItemId: string, userId: string): P
 
 export async function getStorageItems(teamId?: string): Promise<StorageItemWithMovements[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
 
   const ownership = teamId
     ? teamIds.includes(teamId)
@@ -79,7 +79,7 @@ export async function getStorageItems(teamId?: string): Promise<StorageItemWithM
 /** Pozycje poniżej stanu minimalnego — kandydaci do uzupełnienia. */
 export async function getLowStock(): Promise<StorageItemWithMovements[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
 
   const items = await prisma.storageItem.findMany({
     where: {
@@ -129,7 +129,7 @@ export async function addStorageItem(data: StorageItemInput): Promise<StorageIte
   const user = await requireAuth();
 
   if (data.teamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
     if (!teamIds.includes(data.teamId)) throw new Error("Nie jesteś członkiem tego teamu");
   }
 
@@ -239,7 +239,7 @@ export async function bulkSetStorageQuantities(
   updates: Array<{ id: string; quantity: number | null }>
 ): Promise<void> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
 
   await prisma.$transaction(async (tx) => {
     // Z-073: jeden odczyt pozycji zamiast findUnique per wiersz (N+1) — przy spisie
@@ -279,7 +279,7 @@ export async function bulkAddStorageItems(
   const user = await requireAuth();
 
   if (target?.teamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
     if (!teamIds.includes(target.teamId)) throw new Error("Nie jesteś członkiem tego teamu");
   }
 
@@ -393,7 +393,7 @@ export async function getStorageItem(id: string): Promise<StorageItemDetail | nu
 /** Znajduje pozycję po kodzie (barcode → sku → dokładna nazwa). Do skanowania we/wy. */
 export async function findStorageItemByCode(code: string): Promise<StorageItem | null> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   const c = code.trim();
   if (!c) return null;
   return prisma.storageItem.findFirst({
@@ -496,7 +496,7 @@ export interface SupplierInput {
 
 export async function getSuppliers(): Promise<StorageSupplier[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   return prisma.storageSupplier.findMany({
     where: { OR: ownershipOr(user.id, teamIds) },
     orderBy: { name: "asc" },
@@ -515,7 +515,7 @@ async function assertSupplierAccess(id: string, userId: string): Promise<void> {
 export async function addSupplier(data: SupplierInput): Promise<StorageSupplier> {
   const user = await requireAuth();
   if (data.teamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
     if (!teamIds.includes(data.teamId)) throw new Error("Nie jesteś członkiem tego teamu");
   }
   const created = await prisma.storageSupplier.create({
@@ -644,7 +644,7 @@ export interface ExpiringEntry {
 
 export async function getExpiringStorage(withinDays = 30): Promise<ExpiringEntry[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   const now = new Date();
   const items = await prisma.storageItem.findMany({
     where: {
@@ -684,7 +684,7 @@ export interface StorageAnalytics {
 
 export async function getStorageAnalytics(deadDays = 90): Promise<StorageAnalytics> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   const settings = await getStorageSettings();
 
   const items = await prisma.storageItem.findMany({
@@ -804,7 +804,7 @@ export interface DocumentInput {
 
 export async function getDocuments(): Promise<StorageDocumentWithLines[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   return prisma.storageDocument.findMany({
     where: { OR: ownershipOr(user.id, teamIds) },
     include: { lines: true, supplier: true },
@@ -814,7 +814,7 @@ export async function getDocuments(): Promise<StorageDocumentWithLines[]> {
 
 export async function getDocument(id: string): Promise<StorageDocumentWithLines | null> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   const doc = await prisma.storageDocument.findUnique({
     where: { id },
     include: { lines: true, supplier: true },
@@ -828,7 +828,7 @@ export async function getDocument(id: string): Promise<StorageDocumentWithLines 
 
 export async function createDocument(data: DocumentInput): Promise<StorageDocument> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   if (data.teamId && !teamIds.includes(data.teamId)) throw new Error("Nie jesteś członkiem tego teamu");
 
   const lines = data.lines.map((l) => ({ ...l, name: l.name.trim() })).filter((l) => l.name);
@@ -909,7 +909,7 @@ export async function createDocument(data: DocumentInput): Promise<StorageDocume
 
 export async function deleteDocument(id: string): Promise<void> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   const doc = await prisma.storageDocument.findUnique({ where: { id }, select: { ownerId: true, ownerTeamId: true } });
   if (!doc) return;
   if (doc.ownerId !== user.id && (!doc.ownerTeamId || !teamIds.includes(doc.ownerTeamId))) {
@@ -935,7 +935,7 @@ export interface PurchaseOrderInput {
 
 export async function getPurchaseOrders(): Promise<PurchaseOrderWithLines[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   return prisma.storagePurchaseOrder.findMany({
     where: { OR: ownershipOr(user.id, teamIds) },
     include: { lines: true, supplier: true },
@@ -945,7 +945,7 @@ export async function getPurchaseOrders(): Promise<PurchaseOrderWithLines[]> {
 
 export async function getPurchaseOrder(id: string): Promise<PurchaseOrderWithLines | null> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   const po = await prisma.storagePurchaseOrder.findUnique({
     where: { id },
     include: { lines: true, supplier: true },
@@ -959,7 +959,7 @@ export async function getPurchaseOrder(id: string): Promise<PurchaseOrderWithLin
 
 export async function createPurchaseOrder(data: PurchaseOrderInput): Promise<StoragePurchaseOrder> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   if (data.teamId && !teamIds.includes(data.teamId)) throw new Error("Nie jesteś członkiem tego teamu");
   const lines = data.lines.map((l) => ({ ...l, name: l.name.trim() })).filter((l) => l.name);
 
@@ -988,7 +988,7 @@ export async function updatePurchaseOrder(
   patch: { status?: "draft" | "sent" | "received"; draftText?: string | null; notes?: string | null }
 ): Promise<void> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   const po = await prisma.storagePurchaseOrder.findUnique({ where: { id }, select: { ownerId: true, ownerTeamId: true } });
   if (!po) throw new Error("Zamówienie nie istnieje");
   if (po.ownerId !== user.id && (!po.ownerTeamId || !teamIds.includes(po.ownerTeamId))) {
@@ -1005,7 +1005,7 @@ export async function updatePurchaseOrder(
 
 export async function deletePurchaseOrder(id: string): Promise<void> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   const po = await prisma.storagePurchaseOrder.findUnique({ where: { id }, select: { ownerId: true, ownerTeamId: true } });
   if (!po) return;
   if (po.ownerId !== user.id && (!po.ownerTeamId || !teamIds.includes(po.ownerTeamId))) {

@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import {
   PARENT_ROLES,
   RESTRICTABLE_MODULES,
+  RESTRICTABLE_MODULE_LABELS,
   isRestrictableModule,
+  moduleLabel,
   parseModuleAccess,
   serializeModuleAccess,
   canMemberAccessModule,
@@ -96,4 +98,12 @@ test("canMemberAccessModule: moduł nieograniczalny zawsze dostępny (nawet dzie
   // weather/news/stores nie są współdzielone w zespole → restrykcja ich nie dotyczy
   assert.equal(canMemberAccessModule({ role: "MEMBER", moduleAccess: "[]" }, "weather"), true);
   assert.equal(canMemberAccessModule({ role: "MEMBER", moduleAccess: '["tasks"]' }, "news"), true);
+});
+
+test("RESTRICTABLE_MODULE_LABELS: etykieta dla KAŻDEGO ograniczalnego modułu; moduleLabel fallback", () => {
+  for (const id of RESTRICTABLE_MODULES) {
+    assert.ok(RESTRICTABLE_MODULE_LABELS[id], `brak etykiety dla ${id}`);
+    assert.equal(moduleLabel(id), RESTRICTABLE_MODULE_LABELS[id]);
+  }
+  assert.equal(moduleLabel("nieznany"), "nieznany"); // fallback na id
 });

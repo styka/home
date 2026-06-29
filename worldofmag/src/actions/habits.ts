@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import type { Habit, HabitWithStats } from "@/types";
 import {
   todayISO,
@@ -30,7 +30,7 @@ async function assertHabitAccess(id: string, userId: string): Promise<void> {
 /** Lista nawyków w zasięgu użytkownika/zespołu, wzbogacona o statystyki. */
 export async function getHabits(opts?: { includeArchived?: boolean }): Promise<HabitWithStats[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "habits");
 
   // Wpisy z ostatniego roku — wystarczą do heatmapy i streaków.
   const yearAgo = new Date();
@@ -135,7 +135,7 @@ export async function createHabit(data: {
 
   let ownerTeamId: string | null = null;
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "habits");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Brak dostępu do zespołu");
     ownerTeamId = data.ownerTeamId;
   }

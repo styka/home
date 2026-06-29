@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getAccessibleTeamIds } from "@/lib/server-utils";
 import { bookAutoExpense } from "@/lib/portfel/autoExpense";
 import type { ShoppingList } from "@/types";
 
@@ -17,7 +17,7 @@ export interface ListSummary {
 
 export async function getListSummaries(includeArchived = false): Promise<ListSummary[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "shopping");
 
   const lists = await prisma.shoppingList.findMany({
     where: {
@@ -57,7 +57,7 @@ export async function getListSummaries(includeArchived = false): Promise<ListSum
 export async function getLists(): Promise<ShoppingList[]> {
   const user = await requireAuth();
 
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "shopping");
 
   return prisma.shoppingList.findMany({
     where: {
@@ -74,7 +74,7 @@ export async function getLists(): Promise<ShoppingList[]> {
 
 export async function getArchivedLists(): Promise<ShoppingList[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "shopping");
 
   return prisma.shoppingList.findMany({
     where: {

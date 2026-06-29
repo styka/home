@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { categorize } from "@/lib/categorize";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/actions/lists";
@@ -74,7 +74,7 @@ export async function getRecipes(opts?: {
   ownedOnly?: boolean;
 }): Promise<RecipeListItem[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
   const ownership = opts?.ownedOnly
     ? [{ ownerId: user.id }]
@@ -148,7 +148,7 @@ export async function getRecipes(opts?: {
 
 export async function getRecipe(slugOrId: string): Promise<RecipeFull | null> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
   const recipe = await prisma.recipe.findFirst({
     where: {
@@ -180,7 +180,7 @@ export async function createRecipe(data: CreateRecipeInput): Promise<Recipe> {
   const user = await requireAuth();
 
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Nie jesteś członkiem tego teamu");
   }
 
@@ -610,7 +610,7 @@ export async function shopForRecipe(input: ShopForRecipeInput): Promise<ShopForR
     (input.ingredientOverrides ?? []).map((o) => [o.ingredientId, o])
   );
 
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
   const pantry = input.skipPantry
     ? await prisma.pantryItem.findMany({
         where: {

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
 import type { Budget, FinanceGoal } from "@prisma/client";
 
@@ -79,7 +79,7 @@ export async function createBudget(data: {
 
   let ownerTeamId: string | null = null;
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "portfel");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Brak dostępu do zespołu");
     ownerTeamId = data.ownerTeamId;
   }
@@ -164,7 +164,7 @@ export async function createGoal(data: {
 
   let ownerTeamId: string | null = null;
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "portfel");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Brak dostępu do zespołu");
     ownerTeamId = data.ownerTeamId;
   }

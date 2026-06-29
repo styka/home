@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
 import { loadRates, toBase } from "@/lib/portfel/currency";
 import { parseBankCsv, type ParsedTransaction } from "@/lib/portfel/bankCsv";
@@ -16,8 +16,9 @@ function signedBalance(el: { kind: string; balance: number }): number {
   return el.kind === "debt" ? -el.balance : el.balance;
 }
 
+// Z-194 (T-12): widoczność elementów portfela respektuje dostęp domownika do „portfel".
 async function ownershipFilter(userId: string) {
-  const teamIds = await getUserTeamIds(userId);
+  const teamIds = await getAccessibleTeamIds(userId, "portfel");
   return { OR: [{ ownerId: userId }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])] };
 }
 

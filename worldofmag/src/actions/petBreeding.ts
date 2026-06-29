@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "@/actions/pets";
 import type { PetBreedingData, PetBreedingPair, PetClutch, PetSale, PetStatus } from "@/types";
@@ -29,7 +29,7 @@ function revalidatePet(petId: string) {
 export async function getPetBreeding(petId: string): Promise<PetBreedingData> {
   const user = await requireAuth();
   await assertPetAccess(petId, user.id);
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "pets");
 
   const pet = await prisma.pet.findUnique({
     where: { id: petId },
@@ -146,7 +146,7 @@ export async function createBreedingPair(data: {
 }): Promise<PetBreedingPair> {
   const user = await requireAuth();
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "pets");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Nie jesteś członkiem tego zespołu");
   }
   if (data.maleId) await assertPetAccess(data.maleId, user.id);
@@ -243,7 +243,7 @@ export async function createOffspring(data: {
 }): Promise<{ id: string }> {
   const user = await requireAuth();
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "pets");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Nie jesteś członkiem tego zespołu");
   }
   if (data.sireId) await assertPetAccess(data.sireId, user.id);
