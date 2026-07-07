@@ -141,7 +141,9 @@ function extractFromJsonLd(html: string): ParsedRecipe | null {
   return null;
 }
 
-async function extractWithLLM(html: string, sourceUrl: string): Promise<ParsedRecipe | null> {
+type LlmExtractResult = { recipe: ParsedRecipe | null; llmError?: { status: number; message: string } };
+
+async function extractWithLLM(html: string, sourceUrl: string): Promise<LlmExtractResult> {
   // Strip tags to keep token budget lean
   const text = html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -176,27 +178,32 @@ Nazwy składników i kroki po polsku. Jeśli tekst nie wygląda jak przepis, zwr
     maxTokens: 3000,
   });
 
-  if (!result.ok) return null;
+  // Rozróżniaj „LLM niedostępny/niekonfigurowany" (503/429 — do zasygnalizowania userowi)
+  // od „strona nie jest przepisem" (ok, ale brak treści) — inaczej wszystko mapowało się na
+  // generyczny 422 i nie dało się poznać, że wystarczy skonfigurować model w Admin → LLM.
+  if (!result.ok) return { recipe: null, llmError: { status: result.status, message: result.message } };
   const content: string = result.content || "{}";
   try {
     const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "");
     const parsed = JSON.parse(cleaned);
-    if (parsed.error) return null;
+    if (parsed.error) return { recipe: null };
     return {
-      title: String(parsed.title ?? "Bez nazwy"),
-      description: parsed.description ?? null,
-      servings: parsed.servings ?? null,
-      prepMinutes: parsed.prepMinutes ?? null,
-      cookMinutes: parsed.cookMinutes ?? null,
-      cuisine: parsed.cuisine ?? null,
-      mealType: parsed.mealType ?? null,
-      coverImageUrl: null,
-      notes: null,
-      ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : [],
-      steps: Array.isArray(parsed.steps) ? parsed.steps : [],
+      recipe: {
+        title: String(parsed.title ?? "Bez nazwy"),
+        description: parsed.description ?? null,
+        servings: parsed.servings ?? null,
+        prepMinutes: parsed.prepMinutes ?? null,
+        cookMinutes: parsed.cookMinutes ?? null,
+        cuisine: parsed.cuisine ?? null,
+        mealType: parsed.mealType ?? null,
+        coverImageUrl: null,
+        notes: null,
+        ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : [],
+        steps: Array.isArray(parsed.steps) ? parsed.steps : [],
+      },
     };
   } catch {
-    return null;
+    return { recipe: null };
   }
 }
 
@@ -232,12 +239,26 @@ export async function POST(req: NextRequest) {
   }
 
   let recipe = extractFromJsonLd(html);
+  let llmError: { status: number; message: string } | undefined;
   if (!recipe || recipe.ingredients.length === 0) {
-    recipe = await extractWithLLM(html, parsed.toString());
+    const r = await extractWithLLM(html, parsed.toString());
+    if (r.recipe) recipe = r.recipe;
+    llmError = r.llmError;
   }
   if (!recipe) {
+    // Gdy strona nie miała JSON-LD i LLM był niedostępny — powiedz to wprost (a nie „nie
+    // rozpoznano przepisu"), żeby user wiedział, że wystarczy skonfigurować model.
+    if (llmError) {
+      const msg =
+        llmError.status === 503
+          ? "Import z AI jest niedostępny (model LLM nieskonfigurowany albo chwilowy błąd sieci). Ustaw dostawcę i model w Admin → LLM, albo spróbuj ponownie za chwilę."
+          : llmError.status === 429
+            ? "Wyczerpano dzienny budżet AI dla importu. Spróbuj później."
+            : `Import z AI nie powiódł się: ${llmError.message}`;
+      return NextResponse.json({ error: msg }, { status: llmError.status });
+    }
     return NextResponse.json(
-      { error: "Nie udało się rozpoznać przepisu. Spróbuj inny URL lub wpisz ręcznie." },
+      { error: "Nie udało się rozpoznać przepisu na tej stronie (brak danych przepisu w treści). Spróbuj inny URL lub wpisz ręcznie." },
       { status: 422 }
     );
   }

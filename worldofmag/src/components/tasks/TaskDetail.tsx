@@ -13,6 +13,7 @@ import { TaskTagBadge } from "./TaskTagBadge";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import type { Task, TaskPriority, TaskTagDef, RecurringRule, ProjectStatusConfig, TaskProject } from "@/types";
 import { TASK_PRIORITY_COLORS, statusMetaFor, DEFAULT_STATUS_CONFIG, parseStatusConfig } from "@/types";
+import { toDateTimeLocalValue, toDateValue, parseDateInput } from "@/lib/dateInput";
 
 interface TaskDetailProps {
   task: Task;
@@ -45,8 +46,8 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
   const [editingDesc, setEditingDesc] = useState(false);
   const [status, setStatus] = useState<string>(task.status);
   const [priority, setPriority] = useState<TaskPriority>(task.priority);
-  const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : "");
-  const [startDate, setStartDate] = useState(task.startDate ? new Date(task.startDate).toISOString().slice(0, 10) : "");
+  const [dueDate, setDueDate] = useState(toDateTimeLocalValue(task.dueDate));
+  const [startDate, setStartDate] = useState(toDateValue(task.startDate));
   const [estimatedMins, setEstimatedMins] = useState(task.estimatedMins?.toString() ?? "");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>((task.tags ?? []).map((t) => t.tag.id));
   const [newTagName, setNewTagName] = useState("");
@@ -78,8 +79,8 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
     setDescription(task.description ?? "");
     setStatus(task.status);
     setPriority(task.priority);
-    setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : "");
-    setStartDate(task.startDate ? new Date(task.startDate).toISOString().slice(0, 10) : "");
+    setDueDate(toDateTimeLocalValue(task.dueDate));
+    setStartDate(toDateValue(task.startDate));
     setEstimatedMins(task.estimatedMins?.toString() ?? "");
     setSelectedTagIds((task.tags ?? []).map((t) => t.tag.id));
     setEditingDesc(false);
@@ -140,14 +141,15 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
 
   function handleDueDateChange(v: string) {
     setDueDate(v);
-    // Lokalne południe — instant jednoznacznie należy do wybranego dnia w strefie
-    // użytkownika (spójnie z TaskRow; bez tego UTC-północ myliła widok „Dziś").
-    run(() => updateTask(task.id, { dueDate: v ? new Date(v + "T12:00:00") : null }));
+    // Pole „Termin" to `datetime-local` → parsujemy jako lokalny czas (bez doklejania
+    // południa, które dawało Invalid Date i gubiło zmianę terminu).
+    run(() => updateTask(task.id, { dueDate: parseDateInput(v) }));
   }
 
   function handleStartDateChange(v: string) {
     setStartDate(v);
-    run(() => updateTask(task.id, { startDate: v ? new Date(v + "T12:00:00") : null }));
+    // Pole „Start" to `type="date"` (tylko dzień) → lokalne południe.
+    run(() => updateTask(task.id, { startDate: parseDateInput(v, { dayOnly: true }) }));
   }
 
   function handleEstimatedChange(v: string) {

@@ -1,4 +1,10 @@
-# Przewodnik właściciela — krok po kroku (WorldOfMag / Omnia)
+-- 0200: odświeżenie raportu 'przewodnik-wlasciciela' (korekta: dodawanie pozycji zakupów
+-- jest inline, nie modal; wskazane realne modale do weryfikacji). Idempotentny re-upsert.
+INSERT INTO "Report" ("id","title","slug","content","category","authorId","createdAt","updatedAt")
+VALUES (gen_random_uuid()::text,
+  'Przewodnik właściciela — kroki manualne i decyzje',
+  'przewodnik-wlasciciela',
+  $przewodnik_wlasciciela$# Przewodnik właściciela — krok po kroku (WorldOfMag / Omnia)
 
 > **Po co ten plik.** To kompletna, „za rączkę" instrukcja wszystkich kroków, które czekają
 > **na Twoją akcję** (konta, klucze, konfiguracja, decyzje, weryfikacja wizualna). Gdy je wykonasz
@@ -310,3 +316,6 @@ FTS notatek: rób (zgoda na dryf) / wstrzymaj
 
 Cokolwiek zostawisz „pomijam/później" — pominę i pójdę dalej z resztą. **Nie musisz robić wszystkiego
 naraz** — odhacz choćby CZĘŚĆ 0, a ja ruszam.
+$przewodnik_wlasciciela$,
+  'backlog', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT ("slug") DO UPDATE SET "title"=EXCLUDED."title","content"=EXCLUDED."content","category"=EXCLUDED."category","updatedAt"=CURRENT_TIMESTAMP;
