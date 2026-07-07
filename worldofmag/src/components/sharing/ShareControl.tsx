@@ -28,6 +28,8 @@ export interface ShareControlProps {
   /** Usuń udostępnienie. */
   onRemoveShare: (id: string) => void;
   busy?: boolean;
+  /** Ukryj własny nagłówek „Udostępnianie" (gdy komponent żyje pod cudzym nagłówkiem sekcji). */
+  hideHeader?: boolean;
 }
 
 const DEFAULT_ROLES = [
@@ -36,7 +38,7 @@ const DEFAULT_ROLES = [
 ];
 
 /** Spójny widżet „Udostępnianie" sterowany mapą zdolności modułu. */
-export function ShareControl({ module, shares, roleOptions = DEFAULT_ROLES, onShareByEmail, onRemoveShare, busy }: ShareControlProps) {
+export function ShareControl({ module, shares, roleOptions = DEFAULT_ROLES, onShareByEmail, onRemoveShare, busy, hideHeader }: ShareControlProps) {
   const cap = getShareCapability(module);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState(roleOptions[0]?.value ?? "VIEWER");
@@ -64,10 +66,12 @@ export function ShareControl({ module, shares, roleOptions = DEFAULT_ROLES, onSh
 
   return (
     <div>
-      <div className="flex items-center gap-1.5 mb-2">
-        <Share2 size={13} style={{ color: "var(--text-muted)" }} />
-        <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Udostępnianie</span>
-      </div>
+      {!hideHeader && (
+        <div className="flex items-center gap-1.5 mb-2">
+          <Share2 size={13} style={{ color: "var(--text-muted)" }} />
+          <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Udostępnianie</span>
+        </div>
+      )}
 
       {/* Istniejące udostępnienia */}
       {shares.length > 0 && (

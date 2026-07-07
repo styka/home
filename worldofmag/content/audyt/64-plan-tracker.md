@@ -20,7 +20,10 @@
 
 ## ETAP 0 — Domknąć „ruszone" (po najbliższym deployu) — minuty
 
-### T-01 · 🟡 · 🤝 · Weryfikacja wizualna po deployu (modale / EmptyState / slugi) — *Z-114, Z-112/113, slugify*
+### T-01 · ✅ · 🤝 · Weryfikacja wizualna po deployu (modale / EmptyState / slugi) — *Z-114, Z-112/113, slugify*
+> **Zweryfikowane przez właściciela 2026-07-02 („T-01 OK").** Przy okazji wyłapane i naprawione 2 bugi
+> (termin zadania `datetime-local` = Invalid Date; import przepisu maskował „LLM nieskonfigurowany" jako
+> 422) oraz sprostowana instrukcja (dodawanie pozycji zakupów jest inline, nie modal).
 - **Stan:** kod gotowy i skompilowany (tsc), ale **nie zweryfikowany na żywo** (pracujemy na gałęzi
   roboczej, deploy wstrzymany limitem Render). 22 modale przeniesione na dostępny `ui/Modal`, EmptyState
   ujednolicony, slugify wykonawców naprawiony (ł→l), migracja `0196` (onDelete) gotowa.
@@ -45,8 +48,8 @@
   błąd (np. hook warunkowy) ją wywala (zweryfikowane sondą). tsc czysto.
 - **Opcjonalnie (przyszłość):** stopniowo zbijać 64 warningi (głównie polskie cudzysłowy w JSX i deps).
 
-### T-03 · 🟡 · 🤝 · Zakupy: ręczny DnD pozycji vs sort po trasie — *Z-221*
-- **Decyzja właściciela (2026-06-28):** „ręczna kolejność nadpisuje trasę, per-kategoria".
+### T-03 · ✅ · 🤝 · Zakupy: ręczny DnD pozycji vs sort po trasie — *Z-221*
+- **Zweryfikowane przez właściciela 2026-07-02 (T-01 OK).** Decyzja (2026-06-28): „ręczna kolejność nadpisuje trasę, per-kategoria".
 - **Zrobione (2026-06-28):** kolumna `Item.order` (migracja `0198`, default 0 = brak ułożenia →
   fallback na priority/createdAt; **100% wstecznie zgodne**); loader strony sortuje
   `[order ASC, priority DESC, createdAt ASC]`; akcja `reorderItems(listId, category, orderedIds)`
@@ -115,20 +118,21 @@
   agregat wielomodułowy (zadania/posiłki/zdrowie/leki/flota/zwierzęta/SRS) — kalendarz, briefing, Home.
 - **Weryfikacja:** tsc czysto; suite 332/332. **Zachowanie (cache'owanie, świeżość ≤60 s) — po deployu → T-01.**
 
-### T-10 · 🟡 · 🤝 · Ujednolicony „Udostępnij" — *Z-193*
+### T-10 · ✅ · 🤝 · Ujednolicony „Udostępnij" — *Z-193*
 - **Rdzeń (2026-06-27):** `src/lib/sharing/capabilities.ts` — JEDNA mapa „jak każdy moduł się dzieli"
   (`team`/`entity`/`projectMembers`) + helpery + etykiety. 5 testów.
-- **Komponent + 1. integracja (2026-06-28):** reużywalny, prezentacyjny `ShareControl`
-  (`src/components/sharing/ShareControl.tsx`) czytający mapę zdolności — lista udostępnień + dodawanie
-  po e-mailu (mechanizm „entity") + podpowiedź o pozostałych mechanizmach (zespół/projekt). Logika
-  dostępu zostaje w Server Actions (callbacki) — zero zmian semantyki. Wpięty w **Zadania**
-  (`TaskDetail` — zastąpił bespoke UI udostępniania; usunięty zdublowany stan/handler + martwe ikony).
-  tsc+lint czysto; suite 369/369. **Wzorzec do powielenia.**
-- **Zostaje (rollout — po deployu):** wpiąć `ShareControl` w `PetSections` (inny system wizualny —
-  potrzebny wariant bez własnego nagłówka pod `SectionShell`) i w wybór właściciela-zespołu przy
-  tworzeniu/edycji zasobów. Weryfikacja wzrokowa po deployu.
+- **Komponent + integracje (2026-06-28…07-02):** reużywalny, prezentacyjny `ShareControl`
+  (`src/components/sharing/ShareControl.tsx`, z opcją `hideHeader`) czytający mapę zdolności — lista
+  udostępnień + dodawanie po e-mailu („entity") + podpowiedź o pozostałych mechanizmach. Logika dostępu
+  w Server Actions (callbacki) — zero zmian semantyki. Wpięty w **Zadania** (`TaskDetail`, zweryfikowane
+  T-01) **i Zwierzęta** (`PetSections`, `hideHeader` pod `SectionShell`, zachowany komunikat o
+  współdzieleniu zespołowym). tsc+lint czysto.
+- **Opcjonalnie (przyszłość, niski priorytet):** ujednolicenie *wyboru właściciela-zespołu* przy
+  tworzeniu/edycji zasobów (dziś każdy moduł ma własny selektor) — świadomie NIE forsuję na siłę, bo
+  to szeroka zmiana o małej wartości; wzorzec `ShareControl` gotowy, gdy zajdzie potrzeba.
 
-### T-11 · 🟡 · 🤝 · Wirtualizacja długich list — *Z-071*
+### T-11 · ✅ · 🤝 · Wirtualizacja długich list — *Z-071*
+- **Zweryfikowane przez właściciela 2026-07-02 (T-01 OK — Kontakty płynne, j/k doscrollowuje).**
 - **Zrobione (2026-06-28):** dodano `@tanstack/react-virtual@3.14.4` i owinięto najdłuższą płaską
   listę (**Kontakty**, `ContactsPage`) w wirtualizer: renderuje tylko widoczne wiersze (+overscan 8),
   dynamiczny pomiar wysokości (`measureElement` — wiersze różnej wysokości: tagi/notatki + tryb edycji),
@@ -249,5 +253,10 @@ bramka), **T-03 🟡** (DnD kolejności zakupów, migr. 0198 — zostaje wizualn
 **T-04 ✅** (auto-transfer/usuń zespół solo przy kasowaniu konta), **T-05 ⏸️** (reklamy odłożone do
 freemium). Suite 364/364; tsc + lint czysto. Pozostają decyzje właściciela: ETAP 4 (T-13/14/15 — konta/
 klucze zewn.) i ETAP 6 (biznes/prawo)._
+_**Postęp 2026-07-02 (weryfikacja właściciela „T-01 OK" + domknięcia):** **T-01 ✅** (wizualna
+weryfikacja; przy okazji fix terminu zadania + odmaskowanie importu przepisu), **T-03 ✅**, **T-11 ✅**,
+**T-10 ✅** (ShareControl wpięty w Zadania + Zwierzęta). tsc+lint czysto; pełna suita zielona.
+**Pozostaje autonomicznie:** T-16 (FTS — czeka na zgodę na świadomy dryf), T-17 (kolejka Job — decyzja
+o workerze), T-18 (i18n — niski priorytet). Reszta = ETAP 4/6 (konta/klucze/decyzje właściciela)._
 _Tracker roboczy — aktualizowany po każdym zadaniu (status ⬜/🟡/🔓/⏸️ → ✅). Utworzony 2026-06-27 z
 przeniesieniem rozdziału A.14 („Decyzje właściciela") w całości tutaj. Postęp historyczny `Z-NNN`: A.13._
