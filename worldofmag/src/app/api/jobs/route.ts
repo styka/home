@@ -6,10 +6,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { enqueue } from "@/lib/jobs/queue";
 import { ENQUEUABLE_TYPES } from "@/lib/jobs/handlers";
+import { startJobWorker } from "@/lib/jobs/worker";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Start workera in-process przy pierwszym użyciu (idempotentnie). Trasa API = runtime
+  // Node, więc łańcuch handlerów (crypto) jest tu OK (w przeciwieństwie do instrumentation).
+  startJobWorker();
 
   const body = (await req.json().catch(() => ({}))) as { type?: string; payload?: unknown; dedupeKey?: string };
   const type = body?.type;

@@ -17,14 +17,10 @@ export async function register() {
     reportServerError(reason, { kind: "unhandledRejection" });
   });
 
-  // Z-131 (T-17): worker kolejki zadań w tle (OCR/analizy AI). In-process; na prod
-  // (płatny tier) chodzi ciągle. Wyłączalny `JOBS_WORKER_DISABLED=1` (testy/e2e/build).
-  try {
-    const { startJobWorker } = await import("@/lib/jobs/worker");
-    startJobWorker();
-  } catch (e) {
-    reportServerError(e, { kind: "jobWorkerStart" });
-  }
+  // Z-131 (T-17): worker kolejki NIE jest startowany tutaj. `instrumentation.ts` jest
+  // bundlowany także dla runtime EDGE, a łańcuch workera (chat→secrets/cache) używa
+  // node:crypto → build padał „Can't resolve 'crypto'". Worker startujemy leniwie z tras
+  // API (`/api/jobs`, runtime Node) przez `ensureJobWorker()` — idempotentnie.
 
   // Z-090 (gdy DSN gotowy): odkomentuj po dodaniu zależności @sentry/node:
   // if (process.env.SENTRY_DSN) {

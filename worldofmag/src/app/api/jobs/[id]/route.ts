@@ -4,10 +4,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getJob } from "@/lib/jobs/queue";
+import { startJobWorker } from "@/lib/jobs/worker";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Polling też pilnuje, że worker chodzi (np. po restarcie serwera dla zaległych zadań).
+  startJobWorker();
 
   const job = await getJob(params.id, session.user.id);
   if (!job) return NextResponse.json({ error: "Nie znaleziono zadania" }, { status: 404 });
