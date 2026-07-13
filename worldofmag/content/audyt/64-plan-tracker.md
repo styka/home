@@ -202,9 +202,22 @@
   (nie w `schema.prisma`) → `migrate diff` pokaże dryf. Bezpieczne przy `migrate deploy`; **nie**
   uruchamiać `migrate dev`/auto-fix na prodzie (mógłby usunąć indeksy). Udokumentowane w migracji.
 
-### T-17 · ⬜ · 🧑‍💻 · Kolejka Job dla ciężkich operacji AI — *Z-131*
-- Model `Job` (status/retry) + worker/polling; wpięcie OCR / plan tygodnia / analizy jako async-status
-  zamiast blokujących żądań. Wymaga runtime workera.
+### T-17 · 🟡 · 🧑‍💻 · Kolejka Job dla ciężkich operacji AI — *Z-131*
+- **Decyzja właściciela (2026-07-02):** Faza 1, worker in-process (prod płatny = nie usypia); projekt
+  wieloworkerowy pod przyszłą skalę; awans do osobnego workera Render „gdy ruch zażąda" (bez zmiany kodu).
+- **Faza 1 — rdzeń gotowy (2026-07-02):** model `Job` (migr. `0202`; status/attempts/backoff/runAfter/
+  lockedAt/ownerId/dedupeKey; brak FK — sprzątany w `purgeUserData`, RODO). Kolejka
+  `src/lib/jobs/queue.ts`: `enqueue` (idempotencja dedupeKey), **`claimNext` = `SELECT … FOR UPDATE
+  SKIP LOCKED`** (wieloworkerowo bez podwójnego wzięcia), `complete`/`fail`+wykładniczy backoff,
+  `failJobPermanent`, odzysk po crashu (visibility timeout), `cleanupOldJobs`. Worker in-process
+  (`worker.ts`, singleton, `JOBS_WORKER_DISABLED` do testów) wpięty w `instrumentation.ts`. API
+  `POST /api/jobs` (allowlista typów) + `GET /api/jobs/[id]` (scoped do właściciela). Klient `runJob`
+  (enqueue+polling→wynik/rzut — near-drop-in dla UI). **10 testów DB** (m.in. dwa równoległe claimy =
+  dokładnie jeden bierze; retry/backoff; odzysk RUNNING; dedupe). tsc+lint; suita 398/398.
+- **Wpięte async (wzorzec):** kitchen **OCR ze zdjęcia** (`kitchen.ocrImage`) — `ImportFromImageDialog`
+  woła `runJob` (feedback „w kolejce/rozpoznaję"); stara trasa cienka, deleguje do handlera.
+- **Zostaje (kolejne partie, ten sam wzorzec):** OCR: `ocr-text`, magazyn `scan`/`document`; reasoning/
+  generation: plan-tygodnia, magazyn `insights`/`order-draft`, `generate-recipe`, pets/stores insights.
 
 ### T-18 · ⬜ · 🧑‍💻 · Warstwa i18n `t()` (przyrostowo) — *Z-115*
 - Scaffolding `t()` + ekstrakcja stringów. `formatMoney` już na `Intl.NumberFormat`. Duże, przyrostowe.

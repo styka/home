@@ -1,123 +1,22 @@
+// Import przepisu ze zdjęcia (OCR wizyjny). Logika żyje w handlerze zadania
+// (`@/lib/jobs/handlers/kitchenOcrImage`) — TU zostaje cienka, synchroniczna trasa dla
+// wstecznej zgodności. Domyślnie klient używa kolejki (Z-131/T-17): runJob("kitchen.ocrImage").
+
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { chatComplete } from "@/lib/llm/chat";
-import { stripJsonFence } from "@/lib/groqVision";
-
-// Import przepisu ze zdjęcia — DWUETAPOWO (rozdzielone „czytanie" od „układania"):
-//   1) model wizyjny wiernie przepisuje cały tekst ze zdjęcia (transkrypcja),
-//   2) model tekstowy układa transkrypcję w ustrukturyzowany przepis (JSON).
-// Wcześniej robiliśmy to jednym strzałem (zdjęcie → sztywny JSON), przez co model
-// wizyjny często „poddawał się" i zwracał {"error":"not-a-recipe"} → błąd 422,
-// nawet dla czytelnych kartek z przepisem. Dwa kroki są znacznie pewniejsze.
-
-const TRANSCRIBE_PROMPT = `Jesteś precyzyjnym OCR-em. Przepisz CAŁY czytelny tekst ze zdjęcia
-(kartka, strona książki kucharskiej, notatka albo ekran z przepisem). Zachowaj składniki i kroki
-tak jak są. Nie tłumacz, nie streszczaj, nie dodawaj niczego od siebie. Zwróć wyłącznie przepisany
-tekst (może być w Markdown). Jeśli na zdjęciu nie ma żadnego czytelnego tekstu — zwróć dokładnie: BRAK.`;
-
-const STRUCTURE_PROMPT = `Otrzymasz transkrypcję przepisu kulinarnego (tekst odczytany ze zdjęcia).
-Ułóż go w obiekt JSON (zwróć WYŁĄCZNIE JSON, bez markdown, bez komentarza) w schemacie:
-{
-  "title": string,
-  "description": string|null,
-  "servings": number|null,
-  "prepMinutes": number|null,
-  "cookMinutes": number|null,
-  "cuisine": string|null,
-  "mealType": "breakfast"|"lunch"|"dinner"|"snack"|"dessert"|null,
-  "ingredients": [{"name":string,"quantity":number|null,"unit":string|null,"note":string|null,"isOptional":boolean}],
-  "steps": [{"text":string}]
-}
-Wszystko po polsku, pole name małymi literami. Nie wymyślaj składników ani kroków, których nie ma
-w transkrypcji. Jeśli czegoś nie podano — użyj null (lub pustej listy). Gdy brak tytułu — utwórz krótki
-na podstawie głównego składnika.`;
-
-const MAX_BYTES = 8 * 1024 * 1024;
-
-function isValidDataUrl(s: string): boolean {
-  return /^data:image\/(jpeg|jpg|png|webp|gif);base64,/.test(s);
-}
-
-function approxBase64Bytes(s: string): number {
-  const idx = s.indexOf(",");
-  if (idx < 0) return 0;
-  return Math.floor(((s.length - idx - 1) * 3) / 4);
-}
+import { kitchenOcrImageHandler } from "@/lib/jobs/handlers/kitchenOcrImage";
+import { JobError } from "@/lib/jobs/types";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { image } = (await req.json().catch(() => ({}))) as { image?: string };
-  if (!image || typeof image !== "string") {
-    return NextResponse.json({ error: "Brak obrazu" }, { status: 400 });
-  }
-  if (!isValidDataUrl(image)) {
-    return NextResponse.json({ error: "Niepoprawny format obrazu (oczekiwany data:image/...;base64,...)" }, { status: 400 });
-  }
-  if (approxBase64Bytes(image) > MAX_BYTES) {
-    return NextResponse.json({ error: "Obraz za duży (max 8 MB)" }, { status: 413 });
-  }
-
-  // --- Krok 1: transkrypcja obrazu (model wizyjny) ---
-  const vision = await chatComplete({
-    op: "vision",
-    userId: session.user?.id, // Z-130: budżet + zliczenie tokenów (vision = drogie)
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "text", text: TRANSCRIBE_PROMPT },
-          { type: "image_url", image_url: { url: image } },
-        ],
-      },
-    ],
-    temperature: 0.1,
-    maxTokens: 3000,
-  });
-  if (!vision.ok) {
-    return NextResponse.json({ error: vision.message }, { status: vision.status });
-  }
-
-  const transcript = vision.content.trim();
-  if (!transcript || /^brak\.?$/i.test(transcript) || transcript.length < 12) {
-    return NextResponse.json(
-      { error: "Na zdjęciu nie udało się odczytać tekstu przepisu. Spróbuj wyraźniejszego/jaśniejszego zdjęcia." },
-      { status: 422 }
-    );
-  }
-
-  // --- Krok 2: strukturyzacja transkrypcji w przepis (model tekstowy, tryb JSON) ---
-  const structured = await chatComplete({
-    op: "generation",
-    messages: [
-      { role: "system", content: STRUCTURE_PROMPT },
-      { role: "user", content: transcript },
-    ],
-    temperature: 0.1,
-    maxTokens: 3000,
-    json: true,
-  });
-  if (!structured.ok) {
-    return NextResponse.json({ error: structured.message }, { status: structured.status });
-  }
-
+  const body = (await req.json().catch(() => ({}))) as { image?: string };
   try {
-    const parsed = JSON.parse(stripJsonFence(structured.content));
-    return NextResponse.json({
-      recipe: {
-        title: String(parsed.title ?? "Bez nazwy"),
-        description: parsed.description ?? null,
-        servings: parsed.servings ?? null,
-        prepMinutes: parsed.prepMinutes ?? null,
-        cookMinutes: parsed.cookMinutes ?? null,
-        cuisine: parsed.cuisine ?? null,
-        mealType: parsed.mealType ?? null,
-        ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : [],
-        steps: Array.isArray(parsed.steps) ? parsed.steps : [],
-      },
-    });
-  } catch {
-    return NextResponse.json({ error: "LLM zwrócił nieprawidłowy format" }, { status: 502 });
+    const result = await kitchenOcrImageHandler({ image: body.image }, { ownerId: session.user.id, jobId: "sync" });
+    return NextResponse.json(result);
+  } catch (e) {
+    if (e instanceof JobError) return NextResponse.json({ error: e.message }, { status: e.status });
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Błąd" }, { status: 500 });
   }
 }

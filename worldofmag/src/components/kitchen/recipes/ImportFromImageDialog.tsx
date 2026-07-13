@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Camera, Upload, Loader2 } from "lucide-react";
-import { llm } from "@/lib/llm-client";
+import { runJob } from "@/lib/jobs/client";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { stashImportDraft } from "@/lib/kitchen/recipeImportDraft";
@@ -22,6 +22,7 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [statusText, setStatusText] = useState("");
   const { showToast } = useToast();
 
   function readFile(file: File) {
@@ -61,10 +62,22 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
       return;
     }
     setPending(true);
+    setStatusText("W kolejce…");
     try {
-      const res = await llm.kitchen.ocrImage(preview);
-      if (res.error || !res.recipe) {
-        showToast(res.error ?? "Nie udało się rozpoznać", "error");
+      // Z-131 (T-17): OCR przez kolejkę zadań w tle — bez timeoutów żądania.
+      // runJob zwraca wynik albo rzuca (łapie catch niżej). onStatus daje feedback.
+      type OcrRecipe = {
+        title: string; description: string | null; servings: number | null;
+        prepMinutes: number | null; cookMinutes: number | null; cuisine: string | null;
+        mealType: string | null;
+        ingredients: { name: string; quantity: number | null; unit: string | null; note: string | null; isOptional?: boolean }[];
+        steps: { text: string }[];
+      };
+      const res = await runJob<{ recipe: OcrRecipe }>("kitchen.ocrImage", { image: preview }, {
+        onStatus: (s) => setStatusText(s === "RUNNING" ? "Rozpoznaję zdjęcie…" : "W kolejce…"),
+      });
+      if (!res?.recipe) {
+        showToast("Nie udało się rozpoznać", "error");
         return;
       }
       const r = res.recipe;
@@ -97,6 +110,7 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
       showToast(e instanceof Error ? e.message : "Błąd importu", "error");
     } finally {
       setPending(false);
+      setStatusText("");
     }
   }
 
@@ -122,7 +136,7 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
             style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}
           >
             {pending ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-            {pending ? "Rozpoznaję…" : "Rozpoznaj i importuj"}
+            {pending ? (statusText || "Rozpoznaję…") : "Rozpoznaj i importuj"}
           </button>
         </>
       }

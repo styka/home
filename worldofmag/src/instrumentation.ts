@@ -17,6 +17,15 @@ export async function register() {
     reportServerError(reason, { kind: "unhandledRejection" });
   });
 
+  // Z-131 (T-17): worker kolejki zadań w tle (OCR/analizy AI). In-process; na prod
+  // (płatny tier) chodzi ciągle. Wyłączalny `JOBS_WORKER_DISABLED=1` (testy/e2e/build).
+  try {
+    const { startJobWorker } = await import("@/lib/jobs/worker");
+    startJobWorker();
+  } catch (e) {
+    reportServerError(e, { kind: "jobWorkerStart" });
+  }
+
   // Z-090 (gdy DSN gotowy): odkomentuj po dodaniu zależności @sentry/node:
   // if (process.env.SENTRY_DSN) {
   //   const Sentry = await import("@sentry/node");

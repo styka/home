@@ -842,6 +842,31 @@ model Report {
   @@index([teamId])
 }
 
+// Z-131 (T-17): kolejka zadań w tle dla ciężkich operacji AI (OCR/analizy/generacje).
+// Wieloworkerowa od startu (pobieranie przez SELECT ... FOR UPDATE SKIP LOCKED w kodzie).
+// Statusy jako String+unia TS (nie enum): QUEUED|RUNNING|DONE|FAILED|CANCELLED.
+// Brak FK do User (ownerId = snapshot; sprzątane w purgeUserData) — jak AuditLog/Contact.
+model Job {
+  id          String    @id @default(cuid())
+  type        String // np. "kitchen.ocrImage"
+  status      String    @default("QUEUED")
+  payload     String    @default("{}") // JSON wejścia
+  result      String? // JSON wyniku (gdy DONE)
+  error       String? // komunikat (gdy FAILED)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  runAfter    DateTime  @default(now()) // backoff / harmonogram
+  lockedAt    DateTime? // znacznik przejęcia przez workera
+  ownerId     String? // per-user (polling, sprzątanie, RODO)
+  dedupeKey   String? // idempotencja enqueue
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, runAfter])
+  @@index([ownerId, createdAt])
+  @@index([dedupeKey])
+}
+
 // Asystent AI ("magiczna ikona") — trwała pamięć rozmów per-user.
 model AiConversation {
   id        String   @id @default(cuid())

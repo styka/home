@@ -87,6 +87,10 @@ export async function purgeUserData(userId: string): Promise<void> {
     await tx.languageDeck.deleteMany({ where: { ownerId: userId } });
     await tx.report.deleteMany({ where: { authorId: userId } });
 
+    // Z-131 (T-17): zadania w tle (Job) mają ownerId bez FK — kasujemy jawnie (payload
+    // może zawierać dane usera, np. obraz do OCR). RODO.
+    await tx.job.deleteMany({ where: { ownerId: userId } });
+
     // Z-370: modele z kolumną właściciela ALE BEZ FK do User (Contact, ServiceFavorite)
     // nie kasują się kaskadowo — bez tego zostawałyby OSIEROCONE (ownerId/userId wskazujące
     // usuniętego usera). Kontakty to dane osób trzecich → musimy je skasować dla RODO.
