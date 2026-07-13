@@ -188,10 +188,19 @@
 
 ## ETAP 5 — Trudne / architektoniczne (większy nakład) — 🧑‍💻
 
-### T-16 · ⬜ · 🧑‍💻 · Wyszukiwanie pełnotekstowe notatek (FTS) — *Z-240*
-- tsvector+GIN (lub trigram) zamiast `ILIKE` skanującego. **Uwaga techniczna:** surowy indeks/extension
-  reintrodukuje dryf w Prisma (właśnie wyzerowany) albo wymaga preview-features `postgresqlExtensions` —
-  do zrobienia świadomie, nie „przy okazji".
+### T-16 · ✅ · 🧑‍💻 · Wyszukiwanie pełnotekstowe notatek (FTS) — *Z-240*
+- **Decyzja właściciela (2026-07-02):** „rób FTS, zgoda na dryf".
+- **Zrobione (2026-07-02):** wariant **trigramowy** (najbezpieczniejszy — bez przepisywania logiki
+  dostępu na surowy SQL): migracja `0201` = `CREATE EXTENSION pg_trgm` + indeksy GIN `gin_trgm_ops`
+  na `Note.title`/`Note.content`. Przyspieszają istniejące `col ILIKE '%q%'` (zero zmian zapytania/
+  zachowania/wyników, filtr zostaje w Prisma) — potwierdzone `EXPLAIN`: `Bitmap Index Scan on
+  Note_title_trgm_idx`. Do tego **ranking trafności app-level** (`src/lib/notes/searchRank.ts`:
+  tytuł waży ~3×, całe pole/prefiks/początek słowa > środek, liczba trafień) wpięty w `getNotes` tylko
+  przy `search` (bez `search` kolejność bez zmian). 12 testów (9 rankingu + 3 DB: rozszerzenie/indeksy
+  istnieją, filtr poprawny, planer używa indeksu). tsc+lint czysto.
+- **ŚWIADOMY DRYF (zaakceptowany):** rozszerzenie + indeksy wyrażeniowe żyją tylko w migracji `0201`
+  (nie w `schema.prisma`) → `migrate diff` pokaże dryf. Bezpieczne przy `migrate deploy`; **nie**
+  uruchamiać `migrate dev`/auto-fix na prodzie (mógłby usunąć indeksy). Udokumentowane w migracji.
 
 ### T-17 · ⬜ · 🧑‍💻 · Kolejka Job dla ciężkich operacji AI — *Z-131*
 - Model `Job` (status/retry) + worker/polling; wpięcie OCR / plan tygodnia / analizy jako async-status
