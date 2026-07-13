@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { FileText, Camera, Plus, Loader2, Trash2, FileScan } from "lucide-react";
 import { createDocument, deleteDocument, type StorageDocumentWithLines } from "@/actions/storage";
-import { llm } from "@/lib/llm-client";
+import { runJob } from "@/lib/jobs/client";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -50,11 +50,10 @@ export function DocumentsPage({
     setScanning(true);
     try {
       const dataUrl = await fileToDownscaledDataUrl(file);
-      const res = await llm.magazynowanie.document(dataUrl);
-      if (res.error) {
-        showToast(res.error, "error");
-        return;
-      }
+      // Z-131 (T-17): OCR dokumentu przez kolejkę zadań. Błędy rzuca → catch niżej.
+      const res = await runJob<{ number: string | null; supplier: string | null; lines: Array<{ name: string; quantity: number; unit: string | null; unitPrice: number | null }> }>(
+        "magazyn.document", { image: dataUrl }
+      );
       setType("faktura");
       setNumber(res.number ?? "");
       const matched = res.supplier ? suppliers.find((s) => s.name.toLowerCase() === res.supplier!.toLowerCase()) : null;

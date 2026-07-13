@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Trash2, ScanText, Loader2, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
-import { llm } from "@/lib/llm-client";
+import { runJob } from "@/lib/jobs/client";
 import { addRecipeImage, updateRecipeImage, deleteRecipeImage } from "@/actions/recipes";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import type { RecipeImage } from "@/types/kitchen";
@@ -61,11 +61,8 @@ export function RecipeImagesEditor({ recipeId, images, hasAI }: RecipeImagesEdit
     if (!item) return;
     setOcrBusyId(id);
     try {
-      const res = await llm.kitchen.ocrText(item.url);
-      if (res.error) {
-        showToast(res.error, "error");
-        return;
-      }
+      // Z-131 (T-17): OCR przez kolejkę (bez timeoutów żądania). Błędy rzuca → catch niżej.
+      const res = await runJob<{ hasText: boolean; markdown: string }>("kitchen.ocrText", { image: item.url });
       const markdown = res.hasText && res.markdown ? res.markdown : "";
       const updated = await updateRecipeImage(id, { ocrMarkdown: markdown });
       setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
