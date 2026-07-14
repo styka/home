@@ -8,9 +8,16 @@
 > potem napisać*. Nigdzie nie wklejaj sekretów do tego pliku ani do czatu w pełnej postaci, jeśli nie
 > chcesz — wystarczy, że napiszesz „ustawione".
 >
-> **Stan na 2026-06-28.** Źródło prawdy: `worldofmag/content/audyt/64-plan-tracker.md` (A.16).
+> **Stan na 2026-07-14.** Źródło prawdy: `worldofmag/content/audyt/64-plan-tracker.md` (A.16).
 > Statusy: ✅ zrobione · 🟡 zrobione, czeka na Twoją weryfikację · 🔓 czeka na Twoją akcję/decyzję ·
 > ⏸️ świadomie odłożone.
+>
+> **Co się zmieniło od 2026-06-28:** **T-01 zweryfikowane („T-01 OK", 2026-07-02)** — CZĘŚĆ 0 poniżej
+> jest już w większości **historyczna** (zostaje tylko opcjonalna „promocja na master"). Domknąłem też
+> autonomicznie **T-16** (wyszukiwanie pełnotekstowe notatek) i **T-17** (kolejka zadań AI w tle +
+> panel admina `/admin/jobs` + limit uczciwości per-user). **T-18 (i18n) świadomie odłożone** do
+> ~100 użytkowników na produkcji. **Moja autonomiczna kolejka jest wyczerpana** — wszystko poniżej
+> (CZĘŚĆ 1 i 2) czeka na **Twoje** konta/klucze/decyzje.
 
 ## Spis treści
 - [CZĘŚĆ 0 — Deploy testowy i weryfikacja wizualna (NAJPIERW)](#część-0--deploy-testowy-i-weryfikacja-wizualna-najpierw)
@@ -32,9 +39,15 @@
 
 ## CZĘŚĆ 0 — Deploy testowy i weryfikacja wizualna (NAJPIERW)
 
-To jest **najważniejszy i odblokowujący** krok. Cały kod ostatnich zadań (T-02..T-04, T-09..T-12,
-T-10) jest już scalony na gałęzi **`develop`**, ale nie był jeszcze obejrzany na żywo. Twoja
-weryfikacja zamienia statusy 🟡 → ✅ i odblokowuje moje rollouty (T-10 pets, T-11).
+> **✅ ZROBIONE (2026-07-02 „T-01 OK").** Tę część już przeszliśmy — kod T-02..T-04, T-09..T-12
+> został obejrzany na żywo i statusy przełączone 🟡 → ✅. Zostawiam checklistę poniżej jako
+> **referencję** (gdybyś chciał ją powtórzyć po większym deployu). Jedyny wciąż „żywy" krok to
+> **opcjonalna promocja `develop` → `master`** (sekcja 0.4). Jeśli nic nie promujesz — **przeskocz od
+> razu do CZĘŚCI 1**.
+
+To był **najważniejszy i odblokowujący** krok. Cały kod ostatnich zadań (T-02..T-04, T-09..T-12,
+T-10) jest scalony na gałęzi **`develop`**. Twoja weryfikacja zamieniła statusy 🟡 → ✅ i odblokowała
+rollouty (T-10 pets, T-11).
 
 ### 0.1 — Uruchom / potwierdź deploy testowy
 - ☐ Wejdź na **Render → Dashboard** (https://dashboard.render.com), usługa **`worldofmag`**.
@@ -272,19 +285,26 @@ Gotowe: modularna architektura + RBAC + warstwa planów pod pakiety branżowe.
 
 ## CZĘŚĆ 3 — Co zrobię autonomicznie po Twoich akcjach
 
-Gdy tylko odhaczysz **CZĘŚĆ 0** (i ewentualnie dorzucisz klucze/decyzje), wracam do roboty bez
-proszenia o nic więcej. Kolejka mojej autonomicznej pracy:
+**Stan na 2026-07-14: cała moja czysto-autonomiczna kolejka jest ZROBIONA.** To, co zostało, wymaga
+**Twoich** kluczy/decyzji (CZĘŚĆ 1 i 2). Podsumowanie:
 
-1. **Po „T-01 OK":** dokończę **rollout T-10** (wpięcie `ShareControl` w `PetSections` — z wariantem
-   bez nagłówka — oraz w wybór właściciela-zespołu) i oznaczę 🟡→✅ tam, gdzie potwierdzisz.
-2. **T-11 rollout** — wirtualizacja kolejnych długich list, jeśli realnie urosną.
-3. **T-16 (FTS notatek)** — **tylko gdy dasz zielone światło na świadomy „dryf" Prisma** (indeks
-   tsvector/trigram poza schematem). Napisz „rób FTS, zgoda na dryf" → zrobię z testami i opisem.
-4. **T-17 (kolejka Job AI)** — gdy zdecydujesz o modelu workera (Render free vs. inny runtime).
-5. **T-18 (i18n)** — niski priorytet (apka PL dla jednej osoby); zrobię, jeśli zechcesz drugą wersję
-   językową.
-6. **Kod części T-13/T-14/T-15/T-20** — gdy dostarczysz klucze/decyzje (Sentry init, release-command,
-   klient Kalendarza, integracja bramki płatności).
+**✅ Zrobione autonomicznie (nie wymaga już nic z Twojej strony):**
+- **T-01** zweryfikowane (2026-07-02) — statusy 🟡→✅.
+- **T-10** rollout — `ShareControl` wpięty w Zadania i Zwierzęta.
+- **T-11** — wirtualizacja Kontaktów (wzorzec do powielenia, gdy inne listy urosną).
+- **T-16 (FTS notatek)** — indeksy trigramowe pg_trgm + ranking trafności (świadomy dryf udokumentowany).
+- **T-17 (kolejka Job AI)** — worker in-process (lazy-start z tras API), **komplet 10 ciężkich operacji
+  AI** przeniesionych w tło (OCR, generowanie przepisu, plan tygodnia, wnioski magazynowe/hodowlane,
+  draft zamówień, generator map sklepów), **panel admina `/admin/jobs`** (podgląd/retry/anuluj) i
+  **limit uczciwości** aktywnych zadań na użytkownika (ochrona kolejki pod skalę wielu userów).
+
+**⏸️ Świadomie odłożone:**
+- **T-18 (i18n)** — apka jest po polsku i służy na razie tylko Tobie. Wracamy do tłumaczeń dopiero przy
+  **~100 użytkownikach na produkcji** po oficjalnym wydaniu wersji PL.
+
+**⏳ Czeka na Ciebie (kod dorobię po dostarczeniu kluczy/decyzji):**
+- **T-13/T-14/T-15** — Sentry init, release-command Render, klient Kalendarza Google (CZĘŚĆ 1).
+- **T-20** i pochodne — integracja bramki płatności po wyborze bramki + linii podziału free/premium (CZĘŚĆ 2).
 
 ---
 
@@ -305,7 +325,6 @@ płatności: bramka = Stripe/Przelewy24; podział free/premium = <zmiany w tabel
 field-encryption zdrowie: tak/nie ; zero reklam (zdrowie+finanse): tak/nie
 2FA: teraz/później/pomiń
 vertical #1: <Hodowca/Gastronomia/Flota B2B/Rolnictwo>, MVP = <zakres>
-FTS notatek: rób (zgoda na dryf) / wstrzymaj
 ```
 
 Cokolwiek zostawisz „pomijam/później" — pominę i pójdę dalej z resztą. **Nie musisz robić wszystkiego
