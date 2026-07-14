@@ -80,7 +80,6 @@ soft-delete trash, per-user Google Drive storage, and an AI assistant.
 | Reports (markdown docs) | `/reports` | authenticated | Done — system/user/team reports; **content stored in DB or per-user Google Drive** (`Report.storage` db\|drive, hydrated transparently) |
 | QA (test scenarios) | `/qa` | `module.qa` | Internal tooling (Epic → Story → Scenario) |
 | Truck (heavy-vehicle routing) | `/truck` | `module.truck` | Done (experimental) — vehicle profile (weight/height/length/width/axle load), ORS truck routing origin→destination, distance/duration + roadworks-in-corridor, "open in Google Maps" deep-link |
-| Work / Praca | `/work` | — | Stub (sidebar entry only, "coming soon", disabled — no page) |
 
 > **Keep this table honest.** When you add/finish/stub a module, update this table, the Route Structure block, the permission list, the Server Actions list, and the Database Schema section below.
 
@@ -648,7 +647,6 @@ The flow is **`feature → develop → master`**:
 
 ## Short-Term Roadmap
 
-- [ ] Build out the Work / Praca module (currently a disabled stub — scope TBD with owner)
 - [ ] Paid hosting migration if free-tier performance is insufficient ($7/mo on Render)
 - [ ] (optional) Chip away the ~64 cosmetic ESLint warnings (Polish JSX quotes + exhaustive-deps)
 
