@@ -1,0 +1,120 @@
+name: CI
+
+# Z-170 / Z-091: bramka CI na PR i push do gałęzi integracyjnych. Job `verify`
+# to twardy gate (typy + testy + strażniki + build). Job `e2e-smoke` (Z-430)
+# uruchamia smoke ścieżek krytycznych w przeglądarce.
+
+on:
+  push:
+    branches: [develop, master, v2]
+  pull_request:
+    branches: [develop, master, v2]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: worldofmag
+
+jobs:
+  verify:
+    name: Typy, testy, strażniki, build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: omnia
+          POSTGRES_PASSWORD: omnia
+          POSTGRES_DB: omnia_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U omnia"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://omnia:omnia@localhost:5432/omnia_test
+      DIRECT_URL: postgresql://omnia:omnia@localhost:5432/omnia_test
+      AUTH_SECRET: ci-secret-not-for-prod
+      AUTH_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: worldofmag/package-lock.json
+      - name: Instalacja zależności
+        run: npm ci
+      - name: Migracje (DB testowa)
+        run: npx prisma migrate deploy
+      - name: Strażnik akcji AI
+        run: npm run check:actions
+      - name: Strażnik numeracji migracji
+        run: npm run check:migrations
+      - name: Typy (tsc --noEmit)
+        run: npm run typecheck
+      - name: Testy jednostkowe + izolacji (DB-gated)
+        run: npm run test:unit
+      - name: Build (next, bez migrate.js)
+        run: |
+          node scripts/copy-docs.js
+          node scripts/copy-audyt.js
+          npx prisma generate
+          npx next build
+
+  e2e-smoke:
+    name: E2E smoke (ścieżki krytyczne)
+    runs-on: ubuntu-latest
+    # Z-430: nieblokujący do czasu pierwszej walidacji smoke na realnym runnerze
+    # (sandbox nie uruchamia przeglądarki). Daje sygnał, nie wywala całego CI.
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: omnia
+          POSTGRES_PASSWORD: omnia
+          POSTGRES_DB: omnia_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U omnia"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://omnia:omnia@localhost:5432/omnia_e2e
+      DIRECT_URL: postgresql://omnia:omnia@localhost:5432/omnia_e2e
+      AUTH_SECRET: ci-secret-not-for-prod
+      AUTH_URL: http://localhost:3000
+      E2E_TEST_MODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: worldofmag/package-lock.json
+      - name: Instalacja zależności
+        run: npm ci
+      - name: Migracje (DB E2E)
+        # Userów E2E seeduje projekt setup:db (e2e/setup/seed.setup.ts) przez
+        # zależności projektów Playwright — osobny db:seed jest zbędny.
+        run: npx prisma migrate deploy
+      - name: Przeglądarka Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Smoke (playwright auto-startuje aplikację)
+        run: npx playwright test e2e/specs/smoke.spec.ts
+      - name: Raport Playwright (artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: worldofmag/playwright-report
+          retention-days: 7
+          if-no-files-found: ignore

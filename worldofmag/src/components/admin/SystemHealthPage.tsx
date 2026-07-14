@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronLeft, Activity, CheckCircle2, XCircle, Database, Cpu, Plug } from "lucide-react";
+import { ChevronLeft, Activity, CheckCircle2, XCircle, Database, Cpu, Plug, Gauge } from "lucide-react";
 import type { SystemHealth, HealthCheck } from "@/actions/systemHealth";
 
 export function SystemHealthPage({ health }: { health: SystemHealth }) {
-  const { build, db, llm, integrations, counts, audit } = health;
+  const { build, db, llm, integrations, counts, audit, queryDiagnostics } = health;
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)", padding: "32px 24px" }}>
@@ -60,6 +60,28 @@ export function SystemHealthPage({ health }: { health: SystemHealth }) {
           </div>
           <Row label="Wpisy audytu" value={`${audit.total}${audit.last ? ` · ostatni ${new Date(audit.last).toLocaleString("pl-PL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}`} />
         </Card>
+
+        {/* Diagnostyka zapytań (Z-037) — EXPLAIN typowych list, monitor regresów wydajności bazy. */}
+        <Card title="Diagnostyka zapytań (EXPLAIN)" icon={<Gauge size={15} style={{ color: "var(--accent-blue)" }} />}>
+          {queryDiagnostics.length === 0 ? (
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Brak danych do próbki (pusta baza).</span>
+          ) : (
+            <>
+              {queryDiagnostics.map((q) => (
+                <div key={q.label} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, padding: "2px 0" }}>
+                  <ScanBadge scanType={q.scanType} />
+                  <span style={{ color: "var(--text-primary)", flex: 1 }}>{q.label}</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                    koszt ~{Math.round(q.estCost)}{q.indexes.length ? ` · ${q.indexes.join(", ")}` : ""}
+                  </span>
+                </div>
+              ))}
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+                Monitor regresów. „Seq” na małych tabelach jest normalny; sygnałem jest Seq Scan na dużej, gorącej liście (utracony indeks).
+              </div>
+            </>
+          )}
+        </Card>
       </div>
     </div>
   );
@@ -101,6 +123,20 @@ function StatusDot({ ok, text }: { ok: boolean; text: string }) {
     <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: ok ? "var(--accent-green)" : "var(--accent-red)" }}>
       <span style={{ width: 8, height: 8, borderRadius: "50%", background: "currentColor" }} />
       {text}
+    </span>
+  );
+}
+
+function ScanBadge({ scanType }: { scanType: string }) {
+  const map: Record<string, { label: string; color: string }> = {
+    index: { label: "index", color: "var(--accent-green)" },
+    seq: { label: "seq", color: "var(--accent-amber)" },
+    other: { label: "—", color: "var(--text-muted)" },
+  };
+  const s = map[scanType] ?? map.other;
+  return (
+    <span style={{ fontSize: 10, fontWeight: 600, color: s.color, border: `1px solid ${s.color}`, borderRadius: 4, padding: "1px 5px", flexShrink: 0, minWidth: 40, textAlign: "center" }}>
+      {s.label}
     </span>
   );
 }

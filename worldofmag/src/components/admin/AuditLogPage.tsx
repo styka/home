@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronLeft, Shield, KeyRound, Loader2 } from "lucide-react";
 import { getAuditLog, type AuditEntry } from "@/actions/access";
+import type { KeysetPage } from "@/lib/pagination";
 
 const CAT_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   rbac: { label: "RBAC", icon: <Shield size={13} />, color: "var(--accent-purple)" },
@@ -12,15 +13,29 @@ const CAT_META: Record<string, { label: string; icon: React.ReactNode; color: st
 
 type Tab = "all" | "rbac" | "config";
 
-export function AuditLogPage({ entries: initial }: { entries: AuditEntry[] }) {
-  const [entries, setEntries] = useState(initial);
+export function AuditLogPage({ page: initial }: { page: KeysetPage<AuditEntry> }) {
+  const [entries, setEntries] = useState(initial.items);
+  const [cursor, setCursor] = useState(initial.nextCursor);
+  const [hasMore, setHasMore] = useState(initial.hasMore);
   const [tab, setTab] = useState<Tab>("all");
   const [pending, startTransition] = useTransition();
 
   function switchTab(next: Tab) {
     setTab(next);
     startTransition(async () => {
-      setEntries(await getAuditLog(next === "all" ? undefined : { category: next }));
+      const p = await getAuditLog(next === "all" ? undefined : { category: next });
+      setEntries(p.items);
+      setCursor(p.nextCursor);
+      setHasMore(p.hasMore);
+    });
+  }
+
+  function loadMore() {
+    startTransition(async () => {
+      const p = await getAuditLog({ category: tab === "all" ? undefined : tab, cursor });
+      setEntries((prev) => [...prev, ...p.items]);
+      setCursor(p.nextCursor);
+      setHasMore(p.hasMore);
     });
   }
 
@@ -35,7 +50,7 @@ export function AuditLogPage({ entries: initial }: { entries: AuditEntry[] }) {
           <h1 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Dziennik audytu</h1>
         </div>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>
-          Zmiany uprawnień (RBAC) i konfiguracji systemu — kto, co i kiedy. Ostatnie 200 wpisów.
+          Zmiany uprawnień (RBAC) i konfiguracji systemu — kto, co i kiedy.
         </p>
 
         <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
@@ -77,6 +92,22 @@ export function AuditLogPage({ entries: initial }: { entries: AuditEntry[] }) {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {hasMore && (
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 14 }}>
+            <button
+              onClick={loadMore}
+              disabled={pending}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 16px",
+                borderRadius: 8, fontSize: 12, cursor: pending ? "default" : "pointer",
+                border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-secondary)",
+              }}
+            >
+              {pending ? <Loader2 size={13} className="animate-spin" /> : null} Załaduj starsze
+            </button>
           </div>
         )}
       </div>

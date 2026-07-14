@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
-  const module = (form?.get("module") as string | null)?.trim() || "other";
+  const moduleName = (form?.get("module") as string | null)?.trim() || "other";
 
   if (!file || !(file instanceof File)) {
     return NextResponse.json({ error: "Brak pliku" }, { status: 400 });
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await uploadFile(session.user.id, module, {
+    const result = await uploadFile(session.user.id, moduleName, {
       buffer,
       name: file.name || `obraz-${Date.now()}`,
       mime: file.type,

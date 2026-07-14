@@ -11,9 +11,9 @@ import {
   Loader2,
   Trash2,
   Pencil,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { LEANING_META } from "@/lib/news/sources";
@@ -180,7 +180,7 @@ export function NewsPage({
           <div>
             {!selectedTopic ? (
               <div className="rounded-lg border border-dashed border-[var(--border)] p-8 text-center text-[var(--text-muted)]">
-                Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy".
+                Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.
               </div>
             ) : (
               <>
@@ -230,7 +230,7 @@ export function NewsPage({
                       </h3>
                       {filteredItems.length === 0 ? (
                         <p className="rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--text-muted)]">
-                          Brak nowych, istotnych wiadomości. Kliknij „Odśwież teraz", aby pobrać
+                          Brak nowych, istotnych wiadomości. Kliknij „Odśwież teraz”, aby pobrać
                           najświeższe materiały (tylko z ostatnich 24 godzin).
                         </p>
                       ) : (
@@ -413,26 +413,31 @@ function TopicModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div
-        className="w-full max-w-lg rounded-lg border border-[var(--border)] bg-[var(--bg-base)] p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-semibold text-[var(--text-primary)]">
-            {topic ? "Edytuj temat" : "Nowy temat do monitorowania"}
-          </h3>
-          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-            <X size={18} />
-          </button>
-        </div>
+    <Modal
+      onClose={onClose}
+      title={topic ? "Edytuj temat" : "Nowy temat do monitorowania"}
+      wide
+      footer={
+        <>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Anuluj
+          </Button>
+          <Button size="sm" onClick={save}>
+            {topic ? "Zapisz" : "Dodaj temat"}
+          </Button>
+        </>
+      }
+    >
+      <div>
         <label className="mb-1 block text-xs text-[var(--text-secondary)]">Tytuł tematu</label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="np. Sprawa Zbigniewa Ziobry"
-          className="mb-3 w-full rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
+          className="w-full rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
         />
+      </div>
+      <div>
         <label className="mb-1 block text-xs text-[var(--text-secondary)]">
           Filtr semantyczny (opisz dokładnie, co Cię interesuje)
         </label>
@@ -441,17 +446,9 @@ function TopicModal({
           onChange={(e) => setFilter(e.target.value)}
           rows={3}
           placeholder="np. perypetie Zbigniewa Ziobry w sprawie zarzutów prokuratorskich i postępowań sądowych"
-          className="mb-4 w-full rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
+          className="w-full rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
         />
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            Anuluj
-          </Button>
-          <Button size="sm" onClick={save}>
-            {topic ? "Zapisz" : "Dodaj temat"}
-          </Button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

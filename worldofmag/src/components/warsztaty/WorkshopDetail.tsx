@@ -151,7 +151,7 @@ function EquipmentTab({ workshop, pro }: { workshop: WorkshopDetailType; pro: bo
 
       {workshop.items.length === 0 && !adding ? (
         <p className="text-sm py-6 text-center" style={{ color: "var(--text-muted)" }}>
-          Brak wyposażenia. Dodaj ręcznie lub skorzystaj z zakładki „Podpowiedzi".
+          Brak wyposażenia. Dodaj ręcznie lub skorzystaj z zakładki „Podpowiedzi”.
         </p>
       ) : null}
 

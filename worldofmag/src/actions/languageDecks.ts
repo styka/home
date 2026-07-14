@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { reviewCard, type ReviewGrade } from "@/lib/srs";
 import type { LanguageDeck, Vocabulary } from "@/types";
 
@@ -27,7 +27,7 @@ async function assertCardAccess(cardId: string, userId: string): Promise<string>
 
 export async function getDecks(): Promise<LanguageDeck[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "languages");
   const now = new Date();
 
   const decks = await prisma.languageDeck.findMany({
@@ -93,7 +93,7 @@ export async function createDeck(data: {
   // Jeśli wskazano zespół, użytkownik musi być jego członkiem.
   let ownerTeamId: string | null = null;
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "languages");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Brak dostępu do zespołu");
     ownerTeamId = data.ownerTeamId;
   }
@@ -254,7 +254,7 @@ export async function submitReview(cardId: string, grade: ReviewGrade): Promise<
 /** L3: seria nauki — liczba kolejnych dni (do dziś/wczoraj) z co najmniej jedną powtórką. */
 export async function getStudyStreak(): Promise<{ streak: number; reviewedToday: number }> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "languages");
   const ownScope = [{ ownerId: user.id }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])];
 
   const rows = await prisma.vocabulary.findMany({

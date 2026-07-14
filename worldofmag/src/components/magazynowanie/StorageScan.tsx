@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Camera, Loader2, Plus, Trash2, Save } from "lucide-react";
-import { llm } from "@/lib/llm-client";
+import { runJob } from "@/lib/jobs/client";
 import { bulkAddStorageItems } from "@/actions/storage";
 import { useToast } from "@/components/ui/Toast";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
@@ -37,11 +37,10 @@ export function StorageScan() {
     setScanning(true);
     try {
       const dataUrl = await fileToDownscaledDataUrl(file);
-      const res = await llm.magazynowanie.scan(dataUrl);
-      if (res.error) {
-        showToast(res.error, "error");
-        return;
-      }
+      // Z-131 (T-17): skan przez kolejkę zadań (bez timeoutów). Błędy rzuca → catch niżej.
+      const res = await runJob<{ items: Array<{ name: string; quantity: number | null; unit: string | null; category: string | null }> }>(
+        "magazyn.scan", { image: dataUrl }
+      );
       const items = res.items ?? [];
       if (items.length === 0) {
         showToast("Nie rozpoznano żadnych przedmiotów", "info");

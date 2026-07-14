@@ -9,6 +9,7 @@ import { todayISO, computeStreaks, weekProgress, weekDoneCount, completionRate }
 import { showLocalNotification, notificationsGranted, requestNotificationPermission } from "@/lib/notifications";
 import { HabitFormModal, emptyHabitForm, type HabitFormValue } from "./HabitFormModal";
 import { HabitHeatmap } from "./HabitHeatmap";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { HabitWithStats } from "@/types";
 
 function streakLabel(n: number): string {
@@ -146,21 +147,22 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
 
   // ── Klawiatura (vim-style, jak reszta aplikacji) ───────────────────────────
   const ordered = useMemo(() => [...scheduled, ...others], [scheduled, others]);
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (modal) return;
-      const el = document.activeElement;
-      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || (el as HTMLElement).isContentEditable)) return;
-      if (e.key === "j") { e.preventDefault(); setFocused((i) => Math.min(ordered.length - 1, i + 1)); }
-      else if (e.key === "k") { e.preventDefault(); setFocused((i) => Math.max(0, i - 1)); }
-      else if (e.key === "n" || e.key === "a") { e.preventDefault(); setModal({ mode: "create" }); }
-      else if ((e.key === " " || e.key === "x") && focused >= 0 && ordered[focused]) { e.preventDefault(); toggle(ordered[focused].id); }
-      else if (e.key === "e" && focused >= 0 && ordered[focused]) { e.preventDefault(); setModal({ mode: "edit", habit: ordered[focused] }); }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+  // Z-232: wspólny hub skrótów zamiast własnego listenera. Gdy modal otwarty —
+  // skróty tła nieaktywne (jak w oryginale). Opcjonalny kontrakt pozwala pominąć
+  // search/filterTab/palette; dochodzi `d` = usuń (spójnie z resztą aplikacji).
+  const shortcutHandlers = useMemo(
+    () => ({
+      onNavigateDown: () => { if (!modal) setFocused((i) => Math.min(ordered.length - 1, i + 1)); },
+      onNavigateUp: () => { if (!modal) setFocused((i) => Math.max(0, i - 1)); },
+      onQuickAdd: () => { if (!modal) setModal({ mode: "create" }); },
+      onToggleStatus: () => { if (!modal && focused >= 0 && ordered[focused]) toggle(ordered[focused].id); },
+      onEdit: () => { if (!modal && focused >= 0 && ordered[focused]) setModal({ mode: "edit", habit: ordered[focused] }); },
+      onDelete: () => { if (!modal && focused >= 0 && ordered[focused]) handleDelete(ordered[focused].id); },
+    }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ordered, focused, modal]);
+    [ordered, focused, modal]
+  );
+  useKeyboardShortcuts(shortcutHandlers);
 
   const renderCard = (h: HabitWithStats, index: number) => (
     <HabitCard

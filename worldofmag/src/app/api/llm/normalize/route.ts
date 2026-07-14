@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
       { role: "user", content: text.trim() },
     ],
     temperature: 0.1,
+    cache: true, // Z-511: normalizacja deterministyczna — identyczne wejście nie płaci ponownie
     maxTokens: 1024,
   });
 

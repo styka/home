@@ -4,14 +4,16 @@ import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import {
   X, Trash2, CheckCircle2, Circle, Clock, AlertCircle, MinusCircle, Loader2,
   RefreshCw, Tag, Calendar, Timer, ChevronDown, ChevronLeft, Plus, Send, Sparkles,
-  MessageSquare, Share2, UserMinus, Eye, Undo2, FolderInput,
+  MessageSquare, Eye, Undo2, FolderInput,
 } from "lucide-react";
 import { updateTask, deleteTask, updateTaskTags, addTaskComment, createTask, completeRecurringTask, shareTaskByEmail, removeTaskShare } from "@/actions/tasks";
+import { ShareControl } from "@/components/sharing/ShareControl";
 import { createTaskTag } from "@/actions/taskTags";
 import { TaskTagBadge } from "./TaskTagBadge";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import type { Task, TaskPriority, TaskTagDef, RecurringRule, ProjectStatusConfig, TaskProject } from "@/types";
 import { TASK_PRIORITY_COLORS, statusMetaFor, DEFAULT_STATUS_CONFIG, parseStatusConfig } from "@/types";
+import { toDateTimeLocalValue, toDateValue, parseDateInput } from "@/lib/dateInput";
 
 interface TaskDetailProps {
   task: Task;
@@ -44,8 +46,8 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
   const [editingDesc, setEditingDesc] = useState(false);
   const [status, setStatus] = useState<string>(task.status);
   const [priority, setPriority] = useState<TaskPriority>(task.priority);
-  const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : "");
-  const [startDate, setStartDate] = useState(task.startDate ? new Date(task.startDate).toISOString().slice(0, 10) : "");
+  const [dueDate, setDueDate] = useState(toDateTimeLocalValue(task.dueDate));
+  const [startDate, setStartDate] = useState(toDateValue(task.startDate));
   const [estimatedMins, setEstimatedMins] = useState(task.estimatedMins?.toString() ?? "");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>((task.tags ?? []).map((t) => t.tag.id));
   const [newTagName, setNewTagName] = useState("");
@@ -61,9 +63,6 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
   const [showCompleteOpts, setShowCompleteOpts] = useState(false);
   const [completeNextDate, setCompleteNextDate] = useState("");
   const [newSubtask, setNewSubtask] = useState("");
-  const [shareEmail, setShareEmail] = useState("");
-  const [shareError, setShareError] = useState("");
-  const [shareRole, setShareRole] = useState<"VIEWER" | "EDITOR">("VIEWER");
   const [aiLoading, setAiLoading] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -80,8 +79,8 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
     setDescription(task.description ?? "");
     setStatus(task.status);
     setPriority(task.priority);
-    setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : "");
-    setStartDate(task.startDate ? new Date(task.startDate).toISOString().slice(0, 10) : "");
+    setDueDate(toDateTimeLocalValue(task.dueDate));
+    setStartDate(toDateValue(task.startDate));
     setEstimatedMins(task.estimatedMins?.toString() ?? "");
     setSelectedTagIds((task.tags ?? []).map((t) => t.tag.id));
     setEditingDesc(false);
@@ -142,14 +141,15 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
 
   function handleDueDateChange(v: string) {
     setDueDate(v);
-    // Lokalne południe — instant jednoznacznie należy do wybranego dnia w strefie
-    // użytkownika (spójnie z TaskRow; bez tego UTC-północ myliła widok „Dziś").
-    run(() => updateTask(task.id, { dueDate: v ? new Date(v + "T12:00:00") : null }));
+    // Pole „Termin" to `datetime-local` → parsujemy jako lokalny czas (bez doklejania
+    // południa, które dawało Invalid Date i gubiło zmianę terminu).
+    run(() => updateTask(task.id, { dueDate: parseDateInput(v) }));
   }
 
   function handleStartDateChange(v: string) {
     setStartDate(v);
-    run(() => updateTask(task.id, { startDate: v ? new Date(v + "T12:00:00") : null }));
+    // Pole „Start" to `type="date"` (tylko dzień) → lokalne południe.
+    run(() => updateTask(task.id, { startDate: parseDateInput(v, { dayOnly: true }) }));
   }
 
   function handleEstimatedChange(v: string) {
@@ -223,17 +223,6 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
       await deleteTask(task.id);
       onDelete();
     });
-  }
-
-  async function handleShare() {
-    if (!shareEmail.trim()) return;
-    setShareError("");
-    const res = await shareTaskByEmail(task.id, shareEmail.trim(), shareRole);
-    if (res.error) {
-      setShareError(res.error);
-    } else {
-      setShareEmail("");
-    }
   }
 
   async function handleAISuggestSubtasks() {
@@ -761,68 +750,18 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
           </div>
         </div>
 
-        {/* Sharing */}
+        {/* Sharing — ujednolicony komponent „Udostępnij" (Z-193/T-10) */}
         <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <div className="flex items-center gap-1.5 mb-2">
-            <Share2 size={13} style={{ color: "var(--text-muted)" }} />
-            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Udostępnianie</span>
-          </div>
-
-          {/* Existing shares */}
-          {(task.shares ?? []).length > 0 && (
-            <div className="space-y-1 mb-2">
-              {(task.shares ?? []).map((s) => (
-                <div key={s.id} className="flex items-center gap-2">
-                  <span className="text-xs flex-1" style={{ color: "var(--text-secondary)" }}>
-                    {s.user?.name ?? s.user?.email ?? s.team?.name ?? "Nieznany"}
-                    <span className="ml-1" style={{ color: "var(--text-muted)" }}>
-                      ({s.role === "EDITOR" ? "Edytor" : "Widz"})
-                    </span>
-                  </span>
-                  <button
-                    onClick={() => run(() => removeTaskShare(s.id))}
-                    className="focus:outline-none hover:opacity-70"
-                    style={{ color: "var(--text-muted)" }}
-                    title="Usuń dostęp"
-                  >
-                    <UserMinus size={12} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Add share by email */}
-          <div className="flex items-center gap-1.5">
-            <input
-              value={shareEmail}
-              onChange={(e) => { setShareEmail(e.target.value); setShareError(""); }}
-              onKeyDown={(e) => { if (e.key === "Enter") handleShare(); }}
-              placeholder="Email użytkownika…"
-              className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
-              style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
-            />
-            <select
-              value={shareRole}
-              onChange={(e) => setShareRole(e.target.value as "VIEWER" | "EDITOR")}
-              className="bg-transparent text-xs focus:outline-none border rounded px-1 py-1"
-              style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-            >
-              <option value="VIEWER">Widz</option>
-              <option value="EDITOR">Edytor</option>
-            </select>
-            <button
-              onClick={handleShare}
-              disabled={!shareEmail.trim()}
-              className="text-xs px-2 py-1 rounded focus:outline-none disabled:opacity-30"
-              style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
-            >
-              +
-            </button>
-          </div>
-          {shareError && (
-            <p className="text-xs mt-1" style={{ color: "var(--accent-red)" }}>{shareError}</p>
-          )}
+          <ShareControl
+            module="tasks"
+            shares={(task.shares ?? []).map((s) => ({
+              id: s.id,
+              label: s.user?.name ?? s.user?.email ?? s.team?.name ?? "Nieznany",
+              role: s.role,
+            }))}
+            onShareByEmail={(email, role) => shareTaskByEmail(task.id, email, role as "VIEWER" | "EDITOR")}
+            onRemoveShare={(id) => run(() => removeTaskShare(id))}
+          />
         </div>
 
         {/* Comments */}

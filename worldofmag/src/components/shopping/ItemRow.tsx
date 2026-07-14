@@ -18,9 +18,11 @@ interface ItemRowProps {
   rowRef: (el: HTMLDivElement | null) => void;
   /** Inne listy zakupowe, na które można przenieść produkt. */
   otherLists?: { id: string; name: string }[];
+  /** Z-221 (T-03): uchwyt DnD wstrzykiwany przez SortableItemRow (widok pogrupowany). */
+  dragHandle?: React.ReactNode;
 }
 
-export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, rowRef, otherLists = [] }: ItemRowProps) {
+export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, rowRef, otherLists = [], dragHandle }: ItemRowProps) {
   const [isPending, startTransition] = useTransition();
   const [localStatus, setLocalStatus] = useState<ItemStatus>(item.status as ItemStatus);
   const [editName, setEditName] = useState(item.name);
@@ -188,6 +190,7 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
         if (!isFocused) e.currentTarget.style.backgroundColor = "";
       }}
     >
+      {dragHandle}
       {/* Status toggle button */}
       <button
         onClick={(e) => { e.stopPropagation(); cycleStatus(); }}

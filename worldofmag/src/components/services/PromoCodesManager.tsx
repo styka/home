@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { Tag, Plus, Trash2, Loader2 } from "lucide-react";
 import { SectionHeading } from "@/components/ui/home";
-import { getMyPromoCodes, createPromoCode, togglePromoCode, deletePromoCode } from "@/actions/services";
+import { getMyPromoCodes, createPromoCode, togglePromoCode, deletePromoCode } from "@/actions/services/promo";
 import type { ServicePromoCodeDTO, PromoKind } from "@/lib/services";
 import { fieldInputStyle, primaryButtonStyle } from "./serviceUi";
 

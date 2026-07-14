@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Globe } from "lucide-react";
+import { Globe } from "lucide-react";
 import { llm } from "@/lib/llm-client";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { stashImportDraft } from "@/lib/kitchen/recipeImportDraft";
 import type { CreateRecipeInput, MealType, Difficulty } from "@/types/kitchen";
@@ -20,8 +21,6 @@ export function ImportFromUrlDialog({ open, onClose }: ImportFromUrlDialogProps)
   const [url, setUrl] = useState("");
   const [pending, setPending] = useState(false);
   const { showToast } = useToast();
-
-  if (!open) return null;
 
   async function handleImport() {
     if (!url.trim()) {
@@ -70,54 +69,17 @@ export function ImportFromUrlDialog({ open, onClose }: ImportFromUrlDialogProps)
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full md:w-[480px] md:rounded border"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border)",
-          borderTopLeftRadius: 12,
-          borderTopRightRadius: 12,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <h3 className="text-base font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-            <Globe size={16} style={{ color: "var(--accent-purple)" }} />
-            Import z URL
-          </h3>
-          <button onClick={onClose} aria-label="Zamknij" style={{ color: "var(--text-muted)" }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="px-4 py-3 flex flex-col gap-3">
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            Wklej link do przepisu. AI pobierze stronę i wyciągnie składniki + kroki (najpierw spróbuje schema.org JSON-LD, potem LLM).
-          </p>
-          <input
-            type="url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://…"
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleImport();
-            }}
-            className="w-full px-3 py-2 rounded border text-sm"
-            style={{
-              backgroundColor: "var(--bg-elevated)",
-              borderColor: "var(--border)",
-              color: "var(--text-primary)",
-            }}
-          />
-        </div>
-
-        <div className="flex justify-end gap-2 px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={
+        <span className="flex items-center gap-2">
+          <Globe size={16} style={{ color: "var(--accent-purple)" }} />
+          Import z URL
+        </span>
+      }
+      footer={
+        <>
           <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
             Anuluj
           </button>
@@ -129,8 +91,28 @@ export function ImportFromUrlDialog({ open, onClose }: ImportFromUrlDialogProps)
           >
             {pending ? "Importuję…" : "Importuj"}
           </button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        Wklej link do przepisu. AI pobierze stronę i wyciągnie składniki + kroki (najpierw spróbuje schema.org JSON-LD, potem LLM).
+      </p>
+      <input
+        type="url"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        placeholder="https://…"
+        autoFocus
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleImport();
+        }}
+        className="w-full px-3 py-2 rounded border text-sm"
+        style={{
+          backgroundColor: "var(--bg-elevated)",
+          borderColor: "var(--border)",
+          color: "var(--text-primary)",
+        }}
+      />
+    </Modal>
   );
 }

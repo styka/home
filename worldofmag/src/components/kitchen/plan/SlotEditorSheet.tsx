@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { X, Search, Trash2, CheckCircle2 } from "lucide-react";
+import { Search, Trash2, CheckCircle2 } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
 import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -64,8 +65,6 @@ export function SlotEditorSheet({
       .filter((r) => r.title.toLowerCase().includes(q))
       .slice(0, 30);
   }, [recipes, query]);
-
-  if (!open) return null;
 
   function handleSelectRecipe(id: string, defaultServings: number) {
     setSelectedRecipeId(id);
@@ -132,37 +131,42 @@ export function SlotEditorSheet({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full md:w-[500px] md:rounded border max-h-[90vh] overflow-y-auto"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border)",
-          borderTopLeftRadius: 12,
-          borderTopRightRadius: 12,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          className="flex items-center justify-between px-4 py-3 border-b"
-          style={{ borderColor: "var(--border)" }}
-        >
-          <div>
-            <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-              {MEAL_SLOT_LABELS[slot]}
-            </h3>
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{formatDayLong(date)}</p>
+    <Modal
+      open={open}
+      onClose={onClose}
+      wide
+      title={
+        <span className="flex flex-col">
+          <span>{MEAL_SLOT_LABELS[slot]}</span>
+          <span className="text-xs font-normal" style={{ color: "var(--text-muted)" }}>{formatDayLong(date)}</span>
+        </span>
+      }
+      footer={
+        <div className="flex items-center justify-between" style={{ width: "100%" }}>
+          <div className="flex items-center gap-1">
+            {entry ? (
+              <>
+                <button type="button" onClick={handleCooked} disabled={pending || entry.status === "COOKED"} className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs disabled:opacity-50" style={{ color: "var(--accent-green)" }}>
+                  <CheckCircle2 size={14} /> Ugotowane
+                </button>
+                <button type="button" onClick={handleDelete} disabled={pending} className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs disabled:opacity-50" style={{ color: "var(--accent-red)" }}>
+                  <Trash2 size={14} /> Usuń
+                </button>
+              </>
+            ) : null}
           </div>
-          <button onClick={onClose} aria-label="Zamknij" style={{ color: "var(--text-muted)" }}>
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
+              Anuluj
+            </button>
+            <button onClick={handleSave} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}>
+              {pending ? "Zapisuję…" : "Zapisz"}
+            </button>
+          </div>
         </div>
-
-        <div className="px-4 py-3 flex flex-col gap-3">
+      }
+    >
+        <>
           <div
             className="flex items-center gap-2 px-3 py-2 rounded border"
             style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elevated)" }}
@@ -231,51 +235,7 @@ export function SlotEditorSheet({
             <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Porcje</span>
             <ServingSelector value={servings} onChange={setServings} />
           </div>
-        </div>
-
-        <div
-          className="flex items-center justify-between gap-2 px-4 py-3 border-t"
-          style={{ borderColor: "var(--border)" }}
-        >
-          <div className="flex items-center gap-1">
-            {entry ? (
-              <>
-                <button
-                  type="button"
-                  onClick={handleCooked}
-                  disabled={pending || entry.status === "COOKED"}
-                  className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs disabled:opacity-50"
-                  style={{ color: "var(--accent-green)" }}
-                >
-                  <CheckCircle2 size={14} /> Ugotowane
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={pending}
-                  className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs disabled:opacity-50"
-                  style={{ color: "var(--accent-red)" }}
-                >
-                  <Trash2 size={14} /> Usuń
-                </button>
-              </>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
-              Anuluj
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={pending}
-              className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
-              style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
-            >
-              {pending ? "Zapisuję…" : "Zapisz"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+        </>
+    </Modal>
   );
 }

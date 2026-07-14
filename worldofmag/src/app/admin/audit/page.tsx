@@ -10,6 +10,6 @@ export default async function AdminAuditPage() {
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
-  const entries = await getAuditLog();
-  return <AuditLogPage entries={entries} />;
+  const page = await getAuditLog();
+  return <AuditLogPage page={page} />;
 }

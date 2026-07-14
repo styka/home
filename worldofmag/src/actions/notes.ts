@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import type { Note } from "@/types";
 import { trackActivity } from "@/actions/activity";
 import { recordTrash } from "@/lib/trash";
+import { rankNotesBySearch } from "@/lib/notes/searchRank";
 
 async function assertNoteAccess(noteId: string, userId: string): Promise<void> {
   const teamIds = await getUserTeamIds(userId);
@@ -27,7 +28,7 @@ export async function getNotes(filters?: {
   ownerTeamId?: string;
 }): Promise<Note[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "notes");
 
   const where: Record<string, unknown> = {
     OR: [
@@ -73,6 +74,13 @@ export async function getNotes(filters?: {
     orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
   });
 
+  // Z-240 (T-16): przy wyszukiwaniu przesuwamy najtrafniejsze na górę (ranking app-level;
+  // sam filtr korzysta z indeksu trigramowego pg_trgm — migracja 0201). Bez `search`
+  // kolejność zostaje domyślna [pinned, updatedAt] — zero zmian zachowania.
+  if (filters?.search) {
+    return rankNotesBySearch(notes as Note[], filters.search);
+  }
+
   return notes as Note[];
 }
 
@@ -87,7 +95,7 @@ export async function createNote(data: {
   const user = await requireAuth();
 
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "notes");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Nie jesteś członkiem tego teamu");
   }
 

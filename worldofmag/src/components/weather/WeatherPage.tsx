@@ -12,9 +12,9 @@ import {
   LocateFixed,
   Star,
   Trash2,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
@@ -126,7 +126,7 @@ export function WeatherPage({
     loadAdvice();
   }, [loadAdvice]);
 
-  function useGeolocation() {
+  function requestGeolocation() {
     if (!navigator.geolocation) {
       showToast("Geolokalizacja niedostępna", "error");
       return;
@@ -237,7 +237,7 @@ export function WeatherPage({
           locations={locations}
           onClose={() => setShowLocations(false)}
           onUseGeo={() => {
-            useGeolocation();
+            requestGeolocation();
             setShowLocations(false);
           }}
           onPick={(l) => {
@@ -321,73 +321,61 @@ function LocationsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div
-        className="w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--bg-base)] p-5"
-        onClick={(e) => e.stopPropagation()}
+    <Modal onClose={onClose} title="Lokalizacje">
+      <button
+        onClick={onUseGeo}
+        className="flex w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-semibold text-[var(--text-primary)]">Lokalizacje</h3>
-          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-            <X size={18} />
-          </button>
-        </div>
+        <LocateFixed size={15} className="text-[var(--accent-blue)]" /> Użyj mojej lokalizacji (GPS)
+      </button>
 
-        <button
-          onClick={onUseGeo}
-          className="mb-3 flex w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
-        >
-          <LocateFixed size={15} className="text-[var(--accent-blue)]" /> Użyj mojej lokalizacji (GPS)
-        </button>
-
-        <div className="mb-3 space-y-1">
-          {locations.map((l) => (
-            <div
-              key={l.id}
-              className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-[var(--bg-hover)]"
-            >
-              <button onClick={() => onPick(l)} className="flex flex-1 items-center gap-2 text-left">
-                <MapPin size={14} className="text-[var(--text-muted)]" />
-                <span className="text-sm text-[var(--text-primary)]">{l.label}</span>
-                {l.isDefault && <Star size={12} className="text-[var(--accent-amber)]" />}
-              </button>
-              {!l.isDefault && (
-                <button
-                  onClick={() => run(() => setDefaultLocation(l.id), "Ustawiono domyślną")}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-amber)]"
-                  title="Ustaw jako domyślną"
-                >
-                  <Star size={13} />
-                </button>
-              )}
+      <div className="space-y-1">
+        {locations.map((l) => (
+          <div
+            key={l.id}
+            className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-[var(--bg-hover)]"
+          >
+            <button onClick={() => onPick(l)} className="flex flex-1 items-center gap-2 text-left">
+              <MapPin size={14} className="text-[var(--text-muted)]" />
+              <span className="text-sm text-[var(--text-primary)]">{l.label}</span>
+              {l.isDefault && <Star size={12} className="text-[var(--accent-amber)]" />}
+            </button>
+            {!l.isDefault && (
               <button
-                onClick={() => run(() => deleteLocation(l.id))}
-                className="text-[var(--text-muted)] hover:text-[var(--accent-red)]"
+                onClick={() => run(() => setDefaultLocation(l.id), "Ustawiono domyślną")}
+                className="text-[var(--text-muted)] hover:text-[var(--accent-amber)]"
+                title="Ustaw jako domyślną"
               >
-                <Trash2 size={13} />
+                <Star size={13} />
               </button>
-            </div>
-          ))}
-          {locations.length === 0 && (
-            <p className="px-2 py-2 text-xs text-[var(--text-muted)]">
-              Brak zapisanych lokalizacji. Dodaj miasto poniżej lub użyj GPS.
-            </p>
-          )}
-        </div>
-
-        <div className="flex gap-2">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && add()}
-            placeholder="Dodaj miasto (np. Kraków)"
-            className="flex-1 rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
-          />
-          <Button size="sm" onClick={add} disabled={busy}>
-            {busy ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-          </Button>
-        </div>
+            )}
+            <button
+              onClick={() => run(() => deleteLocation(l.id))}
+              className="text-[var(--text-muted)] hover:text-[var(--accent-red)]"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        ))}
+        {locations.length === 0 && (
+          <p className="px-2 py-2 text-xs text-[var(--text-muted)]">
+            Brak zapisanych lokalizacji. Dodaj miasto poniżej lub użyj GPS.
+          </p>
+        )}
       </div>
-    </div>
+
+      <div className="flex gap-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && add()}
+          placeholder="Dodaj miasto (np. Kraków)"
+          className="flex-1 rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
+        />
+        <Button size="sm" onClick={add} disabled={busy}>
+          {busy ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+        </Button>
+      </div>
+    </Modal>
   );
 }

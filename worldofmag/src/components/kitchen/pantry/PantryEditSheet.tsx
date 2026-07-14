@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { X, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { addPantryItem, updatePantryItem, deletePantryItem } from "@/actions/pantry";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import type { PantryItemWithProduct } from "@/actions/pantry";
 
@@ -47,8 +48,6 @@ export function PantryEditSheet({ open, onClose, item, defaultLocation }: Pantry
     }
   }, [open, item, defaultLocation]);
 
-  if (!open) return null;
-
   function handleSave() {
     if (!name.trim()) {
       showToast("Nazwa jest wymagana", "error");
@@ -90,108 +89,12 @@ export function PantryEditSheet({ open, onClose, item, defaultLocation }: Pantry
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full md:w-[480px] md:rounded border max-h-[90vh] overflow-y-auto"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border)",
-          borderTopLeftRadius: 12,
-          borderTopRightRadius: 12,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-            {item ? "Edytuj pozycję" : "Nowa pozycja"}
-          </h3>
-          <button onClick={onClose} aria-label="Zamknij" style={{ color: "var(--text-muted)" }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="px-4 py-3 flex flex-col gap-3">
-          <Field label="Nazwa">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoFocus
-              className="w-full px-3 py-2 rounded border text-sm"
-              style={inputStyle}
-            />
-          </Field>
-          <div className="grid grid-cols-2 gap-2">
-            <Field label="Ilość">
-              <input
-                type="number"
-                step="any"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                className="w-full px-2 py-1.5 rounded border text-sm"
-                style={inputStyle}
-              />
-            </Field>
-            <Field label="Jednostka">
-              <input
-                type="text"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                placeholder="szt, g, ml…"
-                className="w-full px-2 py-1.5 rounded border text-sm"
-                style={inputStyle}
-              />
-            </Field>
-          </div>
-          <Field label="Lokalizacja">
-            <select
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="w-full px-2 py-1.5 rounded border text-sm"
-              style={inputStyle}
-            >
-              {LOCATION_OPTIONS.map((l) => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Termin ważności">
-            <input
-              type="date"
-              value={expiresAt}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              className="w-full px-2 py-1.5 rounded border text-sm"
-              style={inputStyle}
-            />
-          </Field>
-          <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
-            <Field label="Minimum (auto-uzupełnianie)">
-              <input
-                type="number"
-                step="any"
-                value={minQuantity}
-                onChange={(e) => setMinQuantity(e.target.value)}
-                placeholder="np. 0.5"
-                className="w-full px-2 py-1.5 rounded border text-sm"
-                style={inputStyle}
-              />
-            </Field>
-            <label className="flex items-center gap-1.5 text-xs px-1 py-1.5" style={{ color: "var(--text-secondary)" }}>
-              <input
-                type="checkbox"
-                checked={autoShop}
-                onChange={(e) => setAutoShop(e.target.checked)}
-              />
-              Auto-uzupełnij
-            </label>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-2 px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={item ? "Edytuj pozycję" : "Nowa pozycja"}
+      footer={
+        <div className="flex items-center justify-between" style={{ width: "100%" }}>
           <div>
             {item ? (
               <button
@@ -203,7 +106,7 @@ export function PantryEditSheet({ open, onClose, item, defaultLocation }: Pantry
               >
                 <Trash2 size={14} /> Usuń
               </button>
-            ) : null}
+            ) : <span />}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
@@ -219,8 +122,83 @@ export function PantryEditSheet({ open, onClose, item, defaultLocation }: Pantry
             </button>
           </div>
         </div>
+      }
+    >
+      <Field label="Nazwa">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          autoFocus
+          className="w-full px-3 py-2 rounded border text-sm"
+          style={inputStyle}
+        />
+      </Field>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Ilość">
+          <input
+            type="number"
+            step="any"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            className="w-full px-2 py-1.5 rounded border text-sm"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Jednostka">
+          <input
+            type="text"
+            value={unit}
+            onChange={(e) => setUnit(e.target.value)}
+            placeholder="szt, g, ml…"
+            className="w-full px-2 py-1.5 rounded border text-sm"
+            style={inputStyle}
+          />
+        </Field>
       </div>
-    </div>
+      <Field label="Lokalizacja">
+        <select
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          className="w-full px-2 py-1.5 rounded border text-sm"
+          style={inputStyle}
+        >
+          {LOCATION_OPTIONS.map((l) => (
+            <option key={l} value={l}>{l}</option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Termin ważności">
+        <input
+          type="date"
+          value={expiresAt}
+          onChange={(e) => setExpiresAt(e.target.value)}
+          className="w-full px-2 py-1.5 rounded border text-sm"
+          style={inputStyle}
+        />
+      </Field>
+      <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+        <Field label="Minimum (auto-uzupełnianie)">
+          <input
+            type="number"
+            step="any"
+            value={minQuantity}
+            onChange={(e) => setMinQuantity(e.target.value)}
+            placeholder="np. 0.5"
+            className="w-full px-2 py-1.5 rounded border text-sm"
+            style={inputStyle}
+          />
+        </Field>
+        <label className="flex items-center gap-1.5 text-xs px-1 py-1.5" style={{ color: "var(--text-secondary)" }}>
+          <input
+            type="checkbox"
+            checked={autoShop}
+            onChange={(e) => setAutoShop(e.target.checked)}
+          />
+          Auto-uzupełnij
+        </label>
+      </div>
+    </Modal>
   );
 }
 

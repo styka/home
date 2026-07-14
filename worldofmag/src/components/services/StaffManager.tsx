@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { Users, Plus, Trash2, Loader2 } from "lucide-react";
 import { SectionHeading } from "@/components/ui/home";
-import { getMyStaff, createStaff, updateStaff, deleteStaff } from "@/actions/services";
+import { getMyStaff, createStaff, updateStaff, deleteStaff } from "@/actions/services/scheduling";
 import { fieldInputStyle, primaryButtonStyle } from "./serviceUi";
 
 type Staff = { id: string; name: string; role: string | null; active: boolean };
@@ -37,7 +37,7 @@ export function StaffManager({ onChange }: { onChange?: () => void }) {
         </button>
       </div>
       <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 8px" }}>
-        Dodaj pracowników, by klienci rezerwowali wizyty u konkretnej osoby. Każdy pracownik ma własny harmonogram dostępności (ustaw go w sekcji „Dostępność").
+        Dodaj pracowników, by klienci rezerwowali wizyty u konkretnej osoby. Każdy pracownik ma własny harmonogram dostępności (ustaw go w sekcji „Dostępność”).
       </p>
 
       {open && (

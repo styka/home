@@ -167,7 +167,6 @@ await assertListAccess(listId, user.id);`} />
               { route: "/reports", module: "Raporty — Markdown, kategorie, wyszukiwanie", perm: "authenticated", status: "✅ Gotowy" },
               { route: "/qa", module: "QA — Epic→Story→Scenario, powiązanie E2E", perm: "module.qa", status: "🔧 Wewnętrzny" },
               { route: "/truck", module: "Trasy TIR — ORS routing ciężarówek", perm: "module.truck", status: "🚧 Szkielet" },
-              { route: "/work", module: "Praca — (planowany)", perm: "—", status: "📋 Coming soon" },
             ].map((m, i, arr) => (
               <div key={m.route} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 14px", borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : undefined, flexWrap: "wrap" }}>
                 <code style={{ fontSize: 11, color: "var(--accent-blue)", minWidth: 160, flexShrink: 0 }}>{m.route}</code>

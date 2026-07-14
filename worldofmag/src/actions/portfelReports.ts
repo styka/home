@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getAccessibleTeamIds } from "@/lib/server-utils";
 
 export type CategorySlice = { category: string; amount: number; pct: number };
 
@@ -29,7 +29,7 @@ function monthRange(offset: number): { start: Date; end: Date } {
 /** Raport miesięczny „gdzie poszły pieniądze". monthOffset 0 = bieżący, 1 = poprzedni, … */
 export async function getMonthlyReport(monthOffset = 0): Promise<MonthlyReport> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "portfel");
 
   const elements = await prisma.walletElement.findMany({
     where: { OR: [{ ownerId: user.id }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])] },

@@ -44,11 +44,13 @@ export async function POST(req: NextRequest) {
 
   const result = await chatComplete({
     op: "dispatch",
+    userId: session.user?.id, // Z-130: budżet + tokeny
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: String(text).slice(0, 4000) },
     ],
     temperature: 0.1,
+    cache: true, // Z-511: parsowanie składników deterministyczne — cache identycznych wejść
     maxTokens: 2048,
   });
 

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto/secrets";
+import { resilientFetch } from "@/lib/integrations/resilientFetch"; // Z-157
 
 // Wyszukiwarka internetowa do budowania BAZOWEJ bazy wiedzy (RSS ma tylko świeże
 // pozycje — wyszukiwarka sięga do archiwum i szerszego internetu).
@@ -37,10 +38,10 @@ async function braveSearch(key: string, query: string, limit: number): Promise<W
     const url =
       `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}` +
       `&count=${limit}&country=pl&search_lang=pl`;
-    const res = await fetch(url, {
+    const res = await resilientFetch(url, {
       headers: { Accept: "application/json", "X-Subscription-Token": key },
       cache: "no-store",
-      signal: AbortSignal.timeout(10_000),
+      timeoutMs: 10_000,
     });
     if (!res.ok) return [];
     const data = (await res.json()) as {
@@ -75,7 +76,7 @@ function decodeDdgHref(href: string): string | null {
 
 async function duckDuckGo(query: string, limit: number): Promise<WebResult[]> {
   try {
-    const res = await fetch("https://lite.duckduckgo.com/lite/", {
+    const res = await resilientFetch("https://lite.duckduckgo.com/lite/", {
       method: "POST",
       headers: {
         "User-Agent": UA,
@@ -84,7 +85,7 @@ async function duckDuckGo(query: string, limit: number): Promise<WebResult[]> {
       },
       body: `q=${encodeURIComponent(query)}`,
       cache: "no-store",
-      signal: AbortSignal.timeout(10_000),
+      timeoutMs: 10_000,
     });
     if (!res.ok) return [];
     const html = await res.text();

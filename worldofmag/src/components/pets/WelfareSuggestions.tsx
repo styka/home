@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Sparkles, Info, AlertTriangle, ShieldAlert, Loader2 } from "lucide-react";
-import { llm } from "@/lib/llm-client";
+import { runJob } from "@/lib/jobs/client";
 import type { WelfareSuggestion, CareAgendaItem } from "@/types";
 
 const SEVERITY_META = {
@@ -25,12 +25,12 @@ export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
     if (pets.length === 0) return;
     let cancelled = false;
     setLoadingTips(true);
-    llm.pets
-      .insights({
-        pets,
-        agenda: agenda.map((a) => ({ petName: a.petName, title: a.title, bucket: a.bucket, dueAt: a.dueAt })),
-        ruleSuggestions: suggestions.map((s) => ({ title: s.title, detail: s.detail })),
-      })
+    // Z-131 (T-17): porady przez kolejkę zadań (degradacja łagodna — brak AI → [] tips).
+    runJob<{ tips: string[] }>("pets.insights", {
+      pets,
+      agenda: agenda.map((a) => ({ petName: a.petName, title: a.title, bucket: a.bucket, dueAt: a.dueAt })),
+      ruleSuggestions: suggestions.map((s) => ({ title: s.title, detail: s.detail })),
+    })
       .then((res) => { if (!cancelled) setTips(res.tips ?? []); })
       .catch(() => { if (!cancelled) setTips([]); })
       .finally(() => { if (!cancelled) setLoadingTips(false); });

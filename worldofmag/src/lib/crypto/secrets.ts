@@ -57,3 +57,13 @@ export function maskSecret(plain: string | null | undefined): string {
 export function isSecretConfigKey(key: string): boolean {
   return /(_api_key|_secret|_token|_password)$/i.test(key);
 }
+
+/**
+ * Z-054: czy klucz szyfrujący jest realnie skonfigurowany (env `CONFIG_SECRET`
+ * lub `AUTH_SECRET`). Gdy `false`, używany jest deterministyczny, NIEbezpieczny
+ * fallback — sekrety w bazie są wtedy „szyfrowane" kluczem znanym z kodu.
+ * Surfacowane w `/admin/health`, żeby brak sekretu na prod był widoczny.
+ */
+export function isSecretConfigured(): boolean {
+  return !!(process.env.CONFIG_SECRET || process.env.AUTH_SECRET);
+}

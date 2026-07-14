@@ -1,0 +1,19 @@
+{
+  "extends": "next/core-web-vitals",
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    "react/no-unescaped-entities": "warn",
+    "react-hooks/exhaustive-deps": "warn",
+    "@next/next/no-img-element": "warn",
+    "jsx-a11y/alt-text": "warn",
+    "react-hooks/rules-of-hooks": "error"
+  },
+  "ignorePatterns": [
+    "src/generated/**",
+    ".next/**",
+    "node_modules/**",
+    "scripts/**",
+    "prisma/**",
+    "public/**"
+  ]
+}

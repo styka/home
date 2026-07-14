@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, ShoppingCart, Plus, CheckCircle2, PanelRightOpen, PanelRightClose, Sparkles } from "lucide-react";
 import {
   DndContext,
@@ -19,7 +20,7 @@ import { SlotEditorSheet, type RecipePickerItem } from "./SlotEditorSheet";
 import { ShoppingFromPlanDialog } from "./ShoppingFromPlanDialog";
 import { RecipeDrawer } from "./RecipeDrawer";
 import { PlanWeekDialog } from "./PlanWeekDialog";
-import type { MealPlanEntryWithRecipe } from "@/actions/mealPlans";
+import type { MealPlanEntryWithRecipe, MealPlanCost } from "@/actions/mealPlans";
 import type { MealSlot } from "@/types/kitchen";
 import { MEAL_SLOTS, MEAL_SLOT_LABELS } from "@/types/kitchen";
 import {
@@ -38,6 +39,7 @@ interface MealPlanWeekProps {
   recipes: RecipePickerItem[];
   lists: Array<{ id: string; name: string }>;
   hasAI?: boolean;
+  weekCost?: MealPlanCost; // Z-252: szacunkowy koszt tygodnia
 }
 
 const SLOT_EMOJI: Record<MealSlot, string> = {
@@ -67,7 +69,8 @@ function entryLabel(e: MealPlanEntryWithRecipe): string {
 
 const DRAWER_KEY = "kitchen.plan.drawerOpen";
 
-export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI }: MealPlanWeekProps) {
+export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI, weekCost }: MealPlanWeekProps) {
+  const router = useRouter();
   const [anchorDate, setAnchorDate] = useState<Date>(() => new Date(`${initialWeek}T12:00:00`));
   const [editing, setEditing] = useState<{ date: Date; slot: MealSlot; entry?: MealPlanEntryWithRecipe | null } | null>(null);
   const [shoppingOpen, setShoppingOpen] = useState(false);
@@ -95,6 +98,13 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI }: Me
 
   const weekDays = useMemo(() => getWeekDays(anchorDate), [anchorDate]);
   const matrix = useMemo(() => buildMatrix(entries), [entries]);
+
+  // weekCost dotyczy tygodnia załadowanego serwerowo (jak `entries`); nawigacja
+  // tygodni jest klient-side, więc pokazujemy koszt tylko na tym tygodniu.
+  const onLoadedWeek = useMemo(
+    () => getWeekStart(anchorDate).getTime() === getWeekStart(new Date(`${initialWeek}T12:00:00`)).getTime(),
+    [anchorDate, initialWeek]
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -138,15 +148,27 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI }: Me
     });
   }
 
+  // Nawigacja STERowana URL-em: zmiana `?week=` przeładowuje wpisy + koszt z
+  // serwera dla oglądanego tygodnia (bez tego inne tygodnie były puste, a
+  // posiłki dodane poza bieżącym tygodniem znikały po rewalidacji).
+  function navigateToWeek(newAnchor: Date) {
+    setAnchorDate(newAnchor); // natychmiastowa zmiana siatki; useEffect zsynchronizuje z URL
+    router.push(`/kitchen/plan?week=${dateKey(newAnchor)}`);
+  }
   function goPrev() {
-    setAnchorDate((d) => subDays(d, 7));
+    navigateToWeek(subDays(anchorDate, 7));
   }
   function goNext() {
-    setAnchorDate((d) => addDays(d, 7));
+    navigateToWeek(addDays(anchorDate, 7));
   }
   function goToday() {
-    setAnchorDate(new Date());
+    navigateToWeek(new Date());
   }
+
+  // Po serwerowym przeładowaniu zsynchronizuj kotwicę z URL (initialWeek).
+  useEffect(() => {
+    setAnchorDate(new Date(`${initialWeek}T12:00:00`));
+  }, [initialWeek]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -206,6 +228,15 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI }: Me
           <span className="ml-2 text-sm font-medium" style={{ color: "var(--text-primary)" }}>
             {formatWeekRange(anchorDate)}
           </span>
+          {weekCost && weekCost.pricedEntries > 0 && onLoadedWeek && (
+            <span
+              className="ml-2 text-xs"
+              style={{ color: "var(--accent-green)" }}
+              title={`Szacunkowy koszt tygodnia z ${weekCost.pricedEntries}/${weekCost.totalEntries} wycenionych posiłków (przepisy z cenami składników)`}
+            >
+              ~{weekCost.total.toFixed(2)} zł / tydz.
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button

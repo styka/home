@@ -9,5 +9,5 @@ export const contentType = "image/png";
 export default function Icon() {
   const svg = brandLogoSvgString(IS_PROD);
   const src = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
-  return new ImageResponse(<img width={size.width} height={size.height} src={src} />, { ...size });
+  return new ImageResponse(<img width={size.width} height={size.height} src={src} alt="" />, { ...size });
 }

@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { X, ChevronUp, ChevronDown, Loader2, Plus, Pencil, Trash2, Check } from "lucide-react";
+import { ChevronUp, ChevronDown, Loader2, Plus, Pencil, Trash2, Check } from "lucide-react";
 import { updateTaskProjectStatusConfig } from "@/actions/taskProjects";
+import { Modal } from "@/components/ui/Modal";
 import type { ProjectStatusConfig, CustomTaskStatus } from "@/types";
 import { resolveStatuses } from "@/types";
 import { StatusIcon, STATUS_ICON_OPTIONS } from "./StatusIcon";
@@ -153,25 +154,28 @@ export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-      onClick={onClose}
-    >
-      <div
-        className="flex flex-col w-full max-w-md rounded-lg border overflow-hidden"
-        style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", maxHeight: "90vh" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 h-12 border-b flex-shrink-0" style={{ borderColor: "var(--border)" }}>
-          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Statusy listy</span>
-          <button onClick={onClose} className="p-1.5 rounded focus:outline-none" style={{ color: "var(--text-muted)" }}>
-            <X size={16} />
+    <Modal
+      onClose={onClose}
+      title="Statusy listy"
+      footer={
+        <>
+          <button onClick={onClose} className="text-xs px-3 py-1.5 rounded focus:outline-none" style={{ color: "var(--text-secondary)" }}>
+            Anuluj
           </button>
-        </div>
-
-        <div className="px-4 py-3 overflow-y-auto">
-          <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+          <button
+            onClick={handleSave}
+            disabled={isPending}
+            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded focus:outline-none disabled:opacity-50"
+            style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
+          >
+            {isPending && <Loader2 size={12} className="animate-spin" />}
+            Zapisz
+          </button>
+        </>
+      }
+    >
+      <div>
+        <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
             <strong style={{ color: "var(--text-secondary)" }}>Włączony</strong> — status widoczny jako zakładka i cel zmiany.{" "}
             <strong style={{ color: "var(--text-secondary)" }}>W ścieżce</strong> — bierze udział w przechodzeniu przód/tył (klik checkboxa, klawisz x). Kolejność wyznacza zakładki i kierunek ścieżki. Statusy systemowe można tylko włączać/wyłączać; własne można edytować i usuwać.
           </p>
@@ -262,7 +266,7 @@ export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
               </div>
               <label className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: "var(--text-secondary)" }}>
                 <input type="checkbox" checked={form.isTerminal} onChange={(e) => setForm((f) => ({ ...f, isTerminal: e.target.checked }))} style={{ accentColor: "var(--accent-green)" }} />
-                Status „zamykający" (chowany w widoku aktywnych, jak Zrobione)
+                Status „zamykający” (chowany w widoku aktywnych, jak Zrobione)
               </label>
               <div className="flex items-center justify-end gap-2 mt-1">
                 <button onClick={() => setFormOpen(false)} className="text-xs px-2.5 py-1 rounded focus:outline-none" style={{ color: "var(--text-secondary)" }}>
@@ -283,24 +287,8 @@ export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
             </button>
           )}
 
-          {error && <p className="text-xs mt-2" style={{ color: "var(--accent-red)" }}>{error}</p>}
-        </div>
-
-        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t flex-shrink-0" style={{ borderColor: "var(--border)" }}>
-          <button onClick={onClose} className="text-xs px-3 py-1.5 rounded focus:outline-none" style={{ color: "var(--text-secondary)" }}>
-            Anuluj
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isPending}
-            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded focus:outline-none disabled:opacity-50"
-            style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
-          >
-            {isPending && <Loader2 size={12} className="animate-spin" />}
-            Zapisz
-          </button>
-        </div>
+        {error && <p className="text-xs mt-2" style={{ color: "var(--accent-red)" }}>{error}</p>}
       </div>
-    </div>
+    </Modal>
   );
 }

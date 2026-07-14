@@ -89,3 +89,47 @@ export function computeConsumption(logsInput: FuelLogLike[]): ConsumptionResult 
   const avg = points.length > 0 ? Math.round((points.reduce((s, p) => s + p.y, 0) / points.length) * 10) / 10 : null;
   return { avg, points, totalCost, totalLiters };
 }
+
+export interface ServiceRecordLike {
+  type: string;
+  cost?: number | null;
+  odometer?: number | null;
+}
+
+export interface VehicleTCO {
+  fuelCost: number;
+  serviceCost: number;
+  insuranceCost: number; // podzbiór serviceCost (type === "insurance")
+  total: number; // TCO = paliwo + serwis (w tym ubezpieczenia)
+  distanceKm: number | null; // z odometrów (paliwo + serwis), null gdy < 2 punktów
+  costPerKm: number | null; // total / distanceKm
+  byServiceType: Record<string, number>;
+}
+
+/**
+ * Z-291 — TCO pojazdu: zagregowany koszt posiadania (paliwo + serwis, w tym
+ * ubezpieczenia) oraz koszt na kilometr (z rozpiętości odometrów). Czysta funkcja
+ * (testowalna), spinana z widokiem floty i budżetem.
+ */
+export function computeVehicleTCO(fuelLogs: FuelLogLike[], services: ServiceRecordLike[]): VehicleTCO {
+  const fuelCost = fuelLogs.reduce((s, l) => s + (l.totalCost ?? 0), 0);
+  let serviceCost = 0;
+  let insuranceCost = 0;
+  const byServiceType: Record<string, number> = {};
+  for (const s of services) {
+    const c = s.cost ?? 0;
+    serviceCost += c;
+    byServiceType[s.type] = (byServiceType[s.type] ?? 0) + c;
+    if (s.type === "insurance") insuranceCost += c;
+  }
+  const total = fuelCost + serviceCost;
+
+  const odos = [
+    ...fuelLogs.map((l) => l.odometer),
+    ...services.map((s) => s.odometer),
+  ].filter((o): o is number => typeof o === "number" && o > 0);
+  const distanceKm = odos.length >= 2 ? Math.max(...odos) - Math.min(...odos) : null;
+  const costPerKm = distanceKm && distanceKm > 0 ? Math.round((total / distanceKm) * 100) / 100 : null;
+
+  return { fuelCost, serviceCost, insuranceCost, total, distanceKm, costPerKm, byServiceType };
+}

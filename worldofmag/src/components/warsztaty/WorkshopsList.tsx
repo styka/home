@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Wrench, X, Users } from "lucide-react";
+import { Plus, Wrench, Users } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
 import { createWorkshop, type WorkshopWithCounts, type WarsztatMode } from "@/actions/warsztat";
 import {
   WORKSHOP_TYPES,
   getWorkshopType,
   getSuggestions,
 } from "@/lib/warsztat/catalog";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface Props {
   workshops: WorkshopWithCounts[];
@@ -25,6 +27,20 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
   const [type, setType] = useState("ogolny");
   const [location, setLocation] = useState("");
   const [teamId, setTeamId] = useState<string>("");
+  const [focused, setFocused] = useState<number>(-1);
+
+  // Z-232: lista nawigacyjna — j/k przesuwa fokus, Enter otwiera warsztat, a/n dodaje.
+  const shortcutHandlers = useMemo(
+    () => ({
+      onNavigateDown: () => { if (!open) setFocused((i) => Math.min(workshops.length - 1, i + 1)); },
+      onNavigateUp: () => { if (!open) setFocused((i) => Math.max(0, i - 1)); },
+      onEnter: () => { if (!open && focused >= 0 && workshops[focused]) router.push(`/warsztaty/${workshops[focused].id}`); },
+      onQuickAdd: () => { if (!open) setOpen(true); },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [workshops, focused, open]
+  );
+  useKeyboardShortcuts(shortcutHandlers);
 
   function submit() {
     if (!name.trim()) return;
@@ -74,15 +90,16 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {workshops.map((w) => {
+          {workshops.map((w, i) => {
             const wt = getWorkshopType(w.type);
             const essentials = getSuggestions(w.type).filter((s) => s.tier === "essential").length;
             return (
               <Link
                 key={w.id}
                 href={`/warsztaty/${w.id}`}
+                onMouseEnter={() => setFocused(i)}
                 className="rounded-lg border p-4 flex flex-col gap-2 transition-colors"
-                style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
+                style={{ borderColor: focused === i ? "var(--border-focus)" : "var(--border)", backgroundColor: focused === i ? "var(--bg-elevated)" : "var(--bg-surface)" }}
               >
                 <div className="flex items-start justify-between">
                   <span className="text-2xl" aria-hidden>{wt.emoji}</span>
@@ -107,98 +124,84 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
         </div>
       )}
 
-      {open ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-lg border p-5"
-            style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}
-            onClick={(e) => e.stopPropagation()}
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Nowy warsztat"
+        footer={
+          <button
+            type="button"
+            onClick={submit}
+            disabled={pending || !name.trim()}
+            className="w-full py-2 rounded text-sm font-medium disabled:opacity-50"
+            style={{ backgroundColor: "var(--accent-amber)", color: "var(--on-accent)" }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold" style={{ color: "var(--text-primary)" }}>
-                Nowy warsztat
-              </h2>
-              <button type="button" onClick={() => setOpen(false)} style={{ color: "var(--text-muted)" }}>
-                <X size={18} />
-              </button>
-            </div>
+            Utwórz warsztat
+          </button>
+        }
+      >
+        <div>
+          <label className="block text-xs mb-1" style={{ color: "var(--text-muted)" }}>Nazwa</label>
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+            placeholder="np. Garaż, Pracownia malarska"
+            className="w-full mb-3 px-3 py-2 rounded text-sm border outline-none"
+            style={{ backgroundColor: "var(--bg-base)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+          />
 
-            <label className="block text-xs mb-1" style={{ color: "var(--text-muted)" }}>Nazwa</label>
-            <input
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && submit()}
-              placeholder="np. Garaż, Pracownia malarska"
-              className="w-full mb-3 px-3 py-2 rounded text-sm border outline-none"
-              style={{ backgroundColor: "var(--bg-base)", borderColor: "var(--border)", color: "var(--text-primary)" }}
-            />
-
-            <label className="block text-xs mb-1" style={{ color: "var(--text-muted)" }}>Profil warsztatu</label>
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              {WORKSHOP_TYPES.map((t) => {
-                const active = type === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setType(t.id)}
-                    className="text-left px-2.5 py-2 rounded border text-xs flex items-center gap-2"
-                    style={{
-                      borderColor: active ? "var(--accent-amber)" : "var(--border)",
-                      backgroundColor: active ? "var(--bg-elevated)" : "var(--bg-base)",
-                      color: active ? "var(--text-primary)" : "var(--text-secondary)",
-                    }}
-                  >
-                    <span aria-hidden>{t.emoji}</span>
-                    {t.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <label className="block text-xs mb-1" style={{ color: "var(--text-muted)" }}>Lokalizacja (opcjonalnie)</label>
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="np. garaż, piwnica, pokój 2"
-              className="w-full mb-3 px-3 py-2 rounded text-sm border outline-none"
-              style={{ backgroundColor: "var(--bg-base)", borderColor: "var(--border)", color: "var(--text-primary)" }}
-            />
-
-            {mode === "pro" && teams.length > 0 ? (
-              <>
-                <label className="block text-xs mb-1" style={{ color: "var(--text-muted)" }}>Właściciel</label>
-                <select
-                  value={teamId}
-                  onChange={(e) => setTeamId(e.target.value)}
-                  className="w-full mb-4 px-3 py-2 rounded text-sm border outline-none"
-                  style={{ backgroundColor: "var(--bg-base)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+          <label className="block text-xs mb-1" style={{ color: "var(--text-muted)" }}>Profil warsztatu</label>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {WORKSHOP_TYPES.map((t) => {
+              const active = type === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setType(t.id)}
+                  className="text-left px-2.5 py-2 rounded border text-xs flex items-center gap-2"
+                  style={{
+                    borderColor: active ? "var(--accent-amber)" : "var(--border)",
+                    backgroundColor: active ? "var(--bg-elevated)" : "var(--bg-base)",
+                    color: active ? "var(--text-primary)" : "var(--text-secondary)",
+                  }}
                 >
-                  <option value="">Ja (prywatny)</option>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>Zespół: {t.name}</option>
-                  ))}
-                </select>
-              </>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={submit}
-              disabled={pending || !name.trim()}
-              className="w-full py-2 rounded text-sm font-medium disabled:opacity-50"
-              style={{ backgroundColor: "var(--accent-amber)", color: "var(--on-accent)" }}
-            >
-              Utwórz warsztat
-            </button>
+                  <span aria-hidden>{t.emoji}</span>
+                  {t.label}
+                </button>
+              );
+            })}
           </div>
+
+          <label className="block text-xs mb-1" style={{ color: "var(--text-muted)" }}>Lokalizacja (opcjonalnie)</label>
+          <input
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="np. garaż, piwnica, pokój 2"
+            className="w-full mb-3 px-3 py-2 rounded text-sm border outline-none"
+            style={{ backgroundColor: "var(--bg-base)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+          />
+
+          {mode === "pro" && teams.length > 0 ? (
+            <>
+              <label className="block text-xs mb-1" style={{ color: "var(--text-muted)" }}>Właściciel</label>
+              <select
+                value={teamId}
+                onChange={(e) => setTeamId(e.target.value)}
+                className="w-full px-3 py-2 rounded text-sm border outline-none"
+                style={{ backgroundColor: "var(--bg-base)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+              >
+                <option value="">Ja (prywatny)</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>Zespół: {t.name}</option>
+                ))}
+              </select>
+            </>
+          ) : null}
         </div>
-      ) : null}
+      </Modal>
     </div>
   );
 }

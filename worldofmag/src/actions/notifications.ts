@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { isoDay } from "@/lib/calendar";
+import { isScheduledOn, weekDoneCount } from "@/lib/habitStats";
 
 export type NotificationDTO = {
   id: string;
@@ -104,7 +105,8 @@ export async function syncReminders(): Promise<number> {
   const in7 = new Date(now.getTime() + 7 * MS_DAY);
   const in14 = new Date(now.getTime() + 14 * MS_DAY);
 
-  const [tasks, health, vehicles, petCare, petTreatments, pantry, dueCards, svcRequests] = await Promise.all([
+  const weekLookbackISO = isoDay(new Date(now.getTime() - 8 * MS_DAY));
+  const [tasks, health, vehicles, petCare, petTreatments, pantry, dueCards, svcRequests, habits] = await Promise.all([
     prisma.task.findMany({
       where: {
         dueDate: { lt: in3 },
@@ -141,6 +143,11 @@ export async function syncReminders(): Promise<number> {
     prisma.serviceRequest.findMany({
       where: { status: "REQUESTED", provider: { is: { userId: user.id } } },
       select: { id: true, title: true },
+    }),
+    // Z-280: nawyki zaplanowane na dziś, jeszcze nieodhaczone (entries z bieżącego tygodnia).
+    prisma.habit.findMany({
+      where: { archived: false, OR: ownScope },
+      select: { id: true, name: true, daysOfWeek: true, weeklyGoal: true, entries: { where: { date: { gte: weekLookbackISO } }, select: { date: true } } },
     }),
   ]);
 
@@ -206,6 +213,20 @@ export async function syncReminders(): Promise<number> {
       userId: user.id, module: "services", title: `Nowe zlecenie: ${r.title}`,
       href: "/services/requests", dedupeKey: `svc-req-${r.id}`,
     }));
+  }
+  // Z-280: przypomnienia o nawykach zaplanowanych na dziś i jeszcze nieodhaczonych.
+  // Tryb celu tygodniowego → przypominaj póki tydzień niedomknięty; tryb dni → wg daysOfWeek.
+  const todayIso = isoDay(now);
+  for (const h of habits) {
+    const entryDates = h.entries.map((e) => e.date);
+    const goal = h.weeklyGoal && h.weeklyGoal > 0 ? h.weeklyGoal : null;
+    const scheduledToday = goal ? weekDoneCount(entryDates) < goal : isScheduledOn(h.daysOfWeek, now);
+    if (scheduledToday && !entryDates.includes(todayIso)) {
+      jobs.push(notifyUser({
+        userId: user.id, module: "habits", title: `Nawyk na dziś: ${h.name}`,
+        dueAt: now, href: "/habits", dedupeKey: `habit-${h.id}-${todayIso}`,
+      }));
+    }
   }
 
   await Promise.all(jobs);

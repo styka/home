@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
-import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes, Palette, ClipboardList } from "lucide-react"
+import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes, Palette, ClipboardList, LineChart } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { FeedbackTriggerButton } from "@/components/admin/FeedbackTriggerButton"
@@ -238,6 +238,16 @@ export default async function AdminPage() {
               <span style={{ fontSize: 13 }}>Zdrowie systemu (DB / LLM / build)</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
+            <Link href="/admin/metrics" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <LineChart size={15} style={{ color: "var(--accent-green)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Ekonomika jednostkowa (koszt AI / MAU)</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
+            <Link href="/admin/jobs" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <ListChecks size={15} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Kolejka zadań (OCR / AI w tle)</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
             <Link href="/services/moderation" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Shield size={15} style={{ color: "var(--accent-red)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Moderacja sporów (Usługi)</span>
@@ -261,6 +271,11 @@ export default async function AdminPage() {
             <Link href="/admin/audyt" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <ClipboardList size={15} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Analiza / Audyt stanu projektu + wskazania</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
+            <Link href="/admin/audyt-podsumowanie" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <ClipboardList size={15} style={{ color: "var(--accent-green)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Audyt — podsumowanie zmian (wykonane / pozostałe)</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/admin/categories" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>

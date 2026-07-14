@@ -51,12 +51,14 @@ export async function POST(req: NextRequest) {
 
   const result = await chatComplete({
     op: "dispatch",
+    userId: session.user?.id, // Z-130: licz do budżetu zapytań
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: userContent.slice(0, 4000) },
     ],
     temperature: 0.2,
     maxTokens: 400,
+    cache: true, // Z-132: ta sama treść przepisu → ta sama kategoria (deterministyczne) — bez powtórnych tokenów
   });
 
   if (!result.ok) {

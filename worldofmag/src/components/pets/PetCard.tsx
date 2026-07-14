@@ -4,7 +4,7 @@ import Link from "next/link";
 import { speciesEmoji, speciesLabel, ageFromBirth, STATUS_LABELS } from "@/lib/petSpecies";
 import type { Pet } from "@/types";
 
-export function PetCard({ pet }: { pet: Pet }) {
+export function PetCard({ pet, focused = false, onFocus }: { pet: Pet; focused?: boolean; onFocus?: () => void }) {
   const age = ageFromBirth(pet.birthDate);
   const isInactive = pet.status !== "ACTIVE";
 
@@ -17,14 +17,13 @@ export function PetCard({ pet }: { pet: Pet }) {
         gap: 12,
         padding: "12px 14px",
         borderRadius: 10,
-        border: "1px solid var(--border)",
-        background: "var(--bg-surface)",
+        border: `1px solid ${focused ? "var(--border-focus)" : "var(--border)"}`,
+        background: focused ? "var(--bg-elevated)" : "var(--bg-surface)",
         textDecoration: "none",
         opacity: isInactive ? 0.6 : 1,
         transition: "background 0.1s, border-color 0.1s",
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.borderColor = "var(--border-focus)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.borderColor = "var(--border)"; }}
+      onMouseEnter={onFocus}
     >
       <div
         style={{

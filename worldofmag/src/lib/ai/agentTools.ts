@@ -409,6 +409,11 @@ export async function runReadTool(
     }
 
     case "list_health_events": {
+      // Z-270: dane zdrowotne dostępne dla AI tylko po opt-in użytkownika.
+      const hs = await prisma.healthSettings.findUnique({ where: { userId }, select: { aiOptIn: true } });
+      if (!hs?.aiOptIn) {
+        return [{ note: "Dostęp AI do danych zdrowotnych jest wyłączony. Włącz go w module Zdrowie → ustawienia, jeśli chcesz, by asystent z nich korzystał." }];
+      }
       const kind = asStr(args.kind);
       const search = asStr(args.search);
       const events = await prisma.healthEvent.findMany({
@@ -431,6 +436,11 @@ export async function runReadTool(
     }
 
     case "list_medications": {
+      // Z-270: leki/pielęgnacja dostępne dla AI tylko po opt-in użytkownika.
+      const hsMed = await prisma.healthSettings.findUnique({ where: { userId }, select: { aiOptIn: true } });
+      if (!hsMed?.aiOptIn) {
+        return [{ note: "Dostęp AI do danych zdrowotnych jest wyłączony. Włącz go w module Zdrowie → ustawienia, jeśli chcesz, by asystent z nich korzystał." }];
+      }
       const search = asStr(args.search);
       const schedules = await prisma.medicationSchedule.findMany({
         where: {
@@ -451,6 +461,12 @@ export async function runReadTool(
     }
 
     case "list_wallet": {
+      // Z-055: dane finansowe (salda/długi) trafiają do AI tylko, gdy użytkownik
+      // nie wyłączył dostępu (opt-out, domyślnie włączony — brak rekordu = dozwolone).
+      const fs = await prisma.financeSettings.findUnique({ where: { userId }, select: { aiAccessEnabled: true } });
+      if (fs && fs.aiAccessEnabled === false) {
+        return [{ note: "Dostęp AI do danych finansowych jest wyłączony. Włącz go w Portfel → Ustawienia, jeśli chcesz, by asystent z nich korzystał." }];
+      }
       const elements = await prisma.walletElement.findMany({
         where: { archived: false, ...(await ownerScope(userId)) },
         select: { id: true, name: true, kind: true, balance: true },

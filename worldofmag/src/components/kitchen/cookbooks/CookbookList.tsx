@@ -37,7 +37,7 @@ export function CookbookList({ cookbooks }: CookbookListProps) {
             Brak książek kucharskich
           </h2>
           <p className="mt-2 max-w-md text-sm" style={{ color: "var(--text-secondary)" }}>
-            Twórz kolekcje przepisów według tematu — np. „Mama", „Włoska klasyka", „Desery".
+            Twórz kolekcje przepisów według tematu — np. „Mama”, „Włoska klasyka”, „Desery”.
           </p>
           <button
             type="button"

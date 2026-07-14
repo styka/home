@@ -10,7 +10,10 @@ import { MenuPrefsEditor } from "@/components/settings/MenuPrefsEditor"
 import { SkinPicker } from "@/components/settings/SkinPicker"
 import { listAvailableSkins, getActiveSkinId } from "@/actions/skins"
 import { DriveSettings } from "@/components/settings/DriveSettings"
+import { IcalFeedCard } from "@/components/calendar/IcalFeedCard"
 import { getDriveStatus } from "@/actions/drive"
+import { PrivacySettings } from "@/components/settings/PrivacySettings"
+import { getActivePlan } from "@/lib/plans"
 
 export default async function SettingsPage({
   searchParams,
@@ -26,6 +29,7 @@ export default async function SettingsPage({
   const skins = await listAvailableSkins()
   const activeSkinId = await getActiveSkinId()
   const teamOpts = teams.map((t) => ({ id: t.id, name: t.name }))
+  const plan = session?.user?.id ? await getActivePlan(session.user.id) : null
   const activityForUI = recentActivity.map((a) => ({
     module: a.module,
     action: a.action,
@@ -142,7 +146,12 @@ export default async function SettingsPage({
                 }}
               >
                 <div>
-                  <div style={{ color: "var(--text-primary)", fontWeight: 500 }}>{team.name}</div>
+                  <div style={{ color: "var(--text-primary)", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
+                    {team.name}
+                    {team.kind === "household" && (
+                      <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 999, background: "var(--bg-elevated)", color: "var(--accent-green)", border: "1px solid var(--border)" }}>Rodzina</span>
+                    )}
+                  </div>
                   {team.description && (
                     <div style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 2 }}>
                       {team.description}
@@ -174,12 +183,51 @@ export default async function SettingsPage({
         <DriveSettings status={driveStatus} notice={searchParams?.drive} />
       </section>
 
+      {/* Kalendarz — subskrypcja iCal (Z-150) */}
+      <section>
+        <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+          Kalendarz — subskrypcja
+        </h2>
+        <IcalFeedCard />
+      </section>
+
       {/* Wygląd / Skórka */}
       <section>
         <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
           Wygląd — skórka
         </h2>
         <SkinPicker skins={skins} activeId={activeSkinId} teams={teamOpts} />
+      </section>
+
+      {/* Twój plan (Z-471) */}
+      {plan && (
+        <section>
+          <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+            Twój plan
+          </h2>
+          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 8, padding: "16px 20px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{plan.name}</span>
+              <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 999, background: "var(--bg-elevated)", color: "var(--text-muted)" }}>{plan.key}</span>
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, lineHeight: 1.6 }}>
+              Dzienny limit asystenta AI: <strong>{plan.aiDailyRequests}</strong> zapytań / <strong>{plan.aiDailyTokens.toLocaleString("pl-PL")}</strong> tokenów.
+              <br />
+              Zmiana planu będzie dostępna po uruchomieniu płatności.
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Prywatność i dane (RODO) */}
+      <section>
+        <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+          Prywatność i dane
+        </h2>
+        <PrivacySettings />
+        <Link href="/legal" style={{ display: "inline-block", marginTop: 10, fontSize: 13, color: "var(--accent-blue)", textDecoration: "none" }}>
+          Dokumenty prawne (polityka prywatności, regulamin, podprocesorzy) →
+        </Link>
       </section>
 
       {/* Activity */}

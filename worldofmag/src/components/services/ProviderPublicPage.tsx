@@ -6,7 +6,8 @@ import { ArrowLeft, MapPin, Star, MessageSquare, Share2, Check } from "lucide-re
 import { PageHeader, SectionHeading, pageContainerStyle, pageInnerStyle, cardStyle, cardHoverHandlers } from "@/components/ui/home";
 import { Heart } from "lucide-react";
 import { RatingStars, formatPrice, VerifiedBadge, secondaryButtonStyle } from "./serviceUi";
-import { setProviderVerified, toggleFavorite } from "@/actions/services";
+import { setProviderVerified } from "@/actions/services";
+import { toggleFavorite } from "@/actions/services/favorites";
 import type { PriceModel } from "@/lib/services";
 
 interface ProviderPublic {

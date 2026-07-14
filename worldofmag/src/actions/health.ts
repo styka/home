@@ -2,13 +2,37 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
 
 function safeDate(d: Date | string | null | undefined): Date | null {
   if (!d) return null;
   const dt = d instanceof Date ? d : new Date(d);
   return isNaN(dt.getTime()) ? null : dt;
+}
+
+// Z-270: ustawienia prywatności Zdrowia. aiOptIn domyślnie false — asystent AI
+// nie widzi danych zdrowotnych, dopóki użytkownik świadomie nie włączy.
+export async function getHealthSettings(): Promise<{ aiOptIn: boolean }> {
+  const user = await requireAuth();
+  const s = await prisma.healthSettings.findUnique({ where: { userId: user.id } });
+  return { aiOptIn: s?.aiOptIn ?? false };
+}
+
+export async function setHealthAiOptIn(aiOptIn: boolean): Promise<void> {
+  const user = await requireAuth();
+  await prisma.healthSettings.upsert({
+    where: { userId: user.id },
+    create: { userId: user.id, aiOptIn },
+    update: { aiOptIn },
+  });
+  revalidatePath("/health");
+}
+
+/** Z-270: czy asystent AI może czytać dane zdrowotne danego użytkownika. */
+export async function healthAiAllowed(userId: string): Promise<boolean> {
+  const s = await prisma.healthSettings.findUnique({ where: { userId }, select: { aiOptIn: true } });
+  return s?.aiOptIn ?? false;
 }
 
 async function assertEventAccess(id: string, userId: string): Promise<void> {
@@ -28,7 +52,7 @@ export async function getHealthEvents(filter?: {
   scope?: "upcoming" | "past" | "all";
 }): Promise<HealthEvent[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "health");
 
   const where: Record<string, unknown> = {
     OR: [{ ownerId: user.id }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])],
@@ -80,7 +104,7 @@ export async function createHealthEvent(data: {
 
   let ownerTeamId: string | null = null;
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "health");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Brak dostępu do zespołu");
     ownerTeamId = data.ownerTeamId;
   }
@@ -176,7 +200,7 @@ export type TestTrend = {
 /** Z2: trendy badań — grupuje badania (TEST) z wartością liczbową po nazwie, rosnąco wg daty. */
 export async function getTestTrends(): Promise<TestTrend[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "health");
   const rows = await prisma.healthEvent.findMany({
     where: {
       kind: "TEST",

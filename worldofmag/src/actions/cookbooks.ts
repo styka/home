@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
 import type { Cookbook } from "@/types/kitchen";
 
@@ -22,7 +22,7 @@ export async function assertCookbookAccess(cookbookId: string, userId: string): 
 
 export async function getCookbook(id: string): Promise<Cookbook | null> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
   const cb = await prisma.cookbook.findUnique({ where: { id } });
   if (!cb) return null;
@@ -33,7 +33,7 @@ export async function getCookbook(id: string): Promise<Cookbook | null> {
 
 export async function getCookbooks(): Promise<CookbookWithCount[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
   const cookbooks = await prisma.cookbook.findMany({
     where: {
@@ -62,7 +62,7 @@ export async function createCookbook(data: {
   const user = await requireAuth();
 
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Nie jesteś członkiem tego teamu");
   }
 

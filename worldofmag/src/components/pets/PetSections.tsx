@@ -15,6 +15,7 @@ import {
   createCareTask, completeCareTask, deleteCareTask, logFeeding,
 } from "@/actions/petCare";
 import { updatePet, setPetStatus, updatePetFeatures, sharePetByEmail, removePetShare } from "@/actions/pets";
+import { ShareControl } from "@/components/sharing/ShareControl";
 import {
   formatDate, formatWeight, TREATMENT_KIND_LABELS, CARE_CATEGORY_LABELS, HEALTH_TYPE_LABELS, STATUS_LABELS,
 } from "@/lib/petSpecies";
@@ -669,58 +670,34 @@ export function SharingSection({ pet, teams }: { pet: PetWithRelations; teams: A
   const { showToast } = useToast();
   const refresh = useRefresh();
   const [isPending, startTransition] = useTransition();
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"VIEWER" | "EDITOR">("VIEWER");
 
-  function shareByEmail() {
-    if (!email.trim()) return;
-    startTransition(async () => {
-      const res = await sharePetByEmail(pet.id, email.trim(), role);
-      if (res.error) { showToast(res.error, "error"); return; }
-      setEmail(""); refresh(); showToast("Udostępniono", "success");
-    });
-  }
   function remove(id: string) { startTransition(async () => { await removePetShare(id); refresh(); }); }
 
   return (
     <SectionShell title="Udostępnianie">
-      <div style={{ padding: "12px 14px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", display: "flex", flexDirection: "column", gap: 8 }}>
-        <Field label="Udostępnij osobie (e-mail)">
-          <div style={{ display: "flex", gap: 8 }}>
-            <input style={inputStyle} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="osoba@example.com" />
-            <select style={{ ...inputStyle, width: 120 }} value={role} onChange={(e) => setRole(e.target.value as "VIEWER" | "EDITOR")}>
-              <option value="VIEWER">Podgląd</option>
-              <option value="EDITOR">Edycja</option>
-            </select>
-            <button onClick={shareByEmail} disabled={isPending} style={{ ...smallBtn("#fff"), width: 36, background: "var(--accent-orange)", border: "none" }}>
-              {isPending ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
-            </button>
-          </div>
-        </Field>
-      </div>
-
-      <div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>Współdzielone z</div>
-        {pet.shares.length === 0 ? <Empty text="To zwierzę nie jest jeszcze z nikim współdzielone." /> : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {pet.shares.map((s) => (
-              <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
-                {s.team ? <Users size={14} style={{ color: "var(--accent-purple)" }} /> : <Mail size={14} style={{ color: "var(--accent-blue)" }} />}
-                <span style={{ flex: 1, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {s.team ? s.team.name : (s.user?.email ?? s.user?.name ?? "Użytkownik")}
-                </span>
-                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{s.role === "EDITOR" ? "edycja" : "podgląd"}</span>
-                <button onClick={() => remove(s.id)} style={smallBtn("var(--accent-red)")}><X size={13} /></button>
-              </div>
-            ))}
-          </div>
-        )}
-        {teams.length > 0 && (
-          <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8 }}>
-            Aby udostępnić całemu zespołowi, utwórz zwierzę jako własność zespołu lub poproś administratora zespołu.
-          </p>
-        )}
-      </div>
+      {/* Z-193 (T-10): ujednolicony ShareControl pod nagłówkiem sekcji (hideHeader). */}
+      <ShareControl
+        module="pets"
+        hideHeader
+        busy={isPending}
+        roleOptions={[{ value: "VIEWER", label: "Podgląd" }, { value: "EDITOR", label: "Edycja" }]}
+        shares={pet.shares.map((s) => ({
+          id: s.id,
+          label: s.team ? s.team.name : (s.user?.email ?? s.user?.name ?? "Użytkownik"),
+          role: s.role,
+        }))}
+        onShareByEmail={async (email, role) => {
+          const res = await sharePetByEmail(pet.id, email, role as "VIEWER" | "EDITOR");
+          if (!res.error) { refresh(); showToast("Udostępniono", "success"); }
+          return res;
+        }}
+        onRemoveShare={remove}
+      />
+      {teams.length > 0 && (
+        <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8 }}>
+          Aby udostępnić całemu zespołowi, utwórz zwierzę jako własność zespołu lub poproś administratora zespołu.
+        </p>
+      )}
     </SectionShell>
   );
 }

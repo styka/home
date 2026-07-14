@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
 import { loadRates, toBase } from "@/lib/portfel/currency";
+import { parseBankCsv, type ParsedTransaction } from "@/lib/portfel/bankCsv";
+import { createHash } from "crypto";
 import type { WalletElement, WalletEntry } from "@prisma/client";
 
 export type ElementWithEntries = WalletElement & { entries: WalletEntry[] };
@@ -14,8 +16,9 @@ function signedBalance(el: { kind: string; balance: number }): number {
   return el.kind === "debt" ? -el.balance : el.balance;
 }
 
+// Z-194 (T-12): widoczność elementów portfela respektuje dostęp domownika do „portfel".
 async function ownershipFilter(userId: string) {
-  const teamIds = await getUserTeamIds(userId);
+  const teamIds = await getAccessibleTeamIds(userId, "portfel");
   return { OR: [{ ownerId: userId }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])] };
 }
 
@@ -187,6 +190,75 @@ export async function addEntry(
   revalidatePath("/portfel");
   revalidatePath(`/portfel/${elementId}`);
   return entry;
+}
+
+/** Stabilny identyfikator transakcji z wyciągu (idempotencja importu między plikami). */
+function csvTxnSourceId(t: ParsedTransaction): string {
+  return "csv:" + createHash("sha1").update(`${t.date}|${t.amount}|${t.description}`).digest("hex").slice(0, 24);
+}
+
+export interface BankImportResult {
+  imported: number;
+  duplicates: number; // już zaimportowane wcześniej (ten sam sourceId)
+  skipped: number; // wiersze nieparsowalne (nagłówki/śmieci)
+}
+
+/**
+ * Z-300 — import wyciągu bankowego CSV jako wpisy `WalletEntry`. Idempotentny:
+ * każda transakcja dostaje `sourceModule="import"` + `sourceId` z hasza treści,
+ * więc ponowny import tego samego pliku nie dubluje wpisów. Saldo liczone
+ * narastająco po dacie; pojedyncze, identyczne wiersze w jednym pliku łączą się
+ * (ten sam hash) — kompromis na rzecz idempotencji między importami.
+ */
+export async function importBankCsv(elementId: string, csvText: string): Promise<BankImportResult> {
+  const user = await requireAuth();
+  const el = await assertElementAccess(elementId, user.id);
+  const { transactions, skipped } = parseBankCsv(csvText);
+  if (transactions.length === 0) return { imported: 0, duplicates: 0, skipped };
+
+  const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
+  const sourceIds = sorted.map(csvTxnSourceId);
+  const existing = await prisma.walletEntry.findMany({
+    where: { elementId, sourceModule: "import", sourceId: { in: sourceIds } },
+    select: { sourceId: true },
+  });
+  const seen = new Set(existing.map((e) => e.sourceId));
+
+  let balance = el.balance;
+  let imported = 0;
+  let duplicates = 0;
+  const creates: Array<{
+    elementId: string; date: Date; balanceAfter: number; delta: number;
+    kind: string; note: string | null; sourceModule: string; sourceId: string;
+  }> = [];
+  for (const t of sorted) {
+    const sid = csvTxnSourceId(t);
+    if (seen.has(sid)) { duplicates++; continue; }
+    seen.add(sid);
+    balance += t.amount;
+    creates.push({
+      elementId,
+      date: new Date(t.date),
+      balanceAfter: balance,
+      delta: t.amount,
+      kind: t.amount >= 0 ? "income" : "expense",
+      note: t.description || null,
+      sourceModule: "import",
+      sourceId: sid,
+    });
+    imported++;
+  }
+
+  if (creates.length > 0) {
+    await prisma.$transaction([
+      prisma.walletEntry.createMany({ data: creates }),
+      prisma.walletElement.update({ where: { id: elementId }, data: { balance } }),
+    ]);
+  }
+  void trackActivity("portfel", "import_csv", { elementId, imported, duplicates });
+  revalidatePath("/portfel");
+  revalidatePath(`/portfel/${elementId}`);
+  return { imported, duplicates, skipped };
 }
 
 /** Korekta: ustawia saldo na wartość docelową, zapisując deltę jako wpis. */

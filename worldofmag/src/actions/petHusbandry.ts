@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "@/actions/pets";
 import { notifyUser } from "@/actions/notifications";
@@ -23,7 +23,7 @@ async function assertEnclosureAccess(enclosureId: string, userId: string): Promi
 
 export async function getEnclosures(): Promise<PetEnclosure[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "pets");
   const list = await prisma.petEnclosure.findMany({
     where: {
       OR: [
@@ -52,7 +52,7 @@ export async function createEnclosure(data: {
 }): Promise<PetEnclosure> {
   const user = await requireAuth();
   if (data.ownerTeamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "pets");
     if (!teamIds.includes(data.ownerTeamId)) throw new Error("Nie jesteś członkiem tego zespołu");
   }
 

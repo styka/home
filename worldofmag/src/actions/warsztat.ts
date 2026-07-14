@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
 import { getSuggestions } from "@/lib/warsztat/catalog";
 import type { Workshop, WorkshopItem, WorkshopProject } from "@prisma/client";
@@ -75,7 +75,7 @@ export async function setWarsztatMode(mode: WarsztatMode): Promise<void> {
 
 export async function getWorkshops(): Promise<WorkshopWithCounts[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "warsztaty");
   return prisma.workshop.findMany({
     where: { OR: ownershipOr(user.id, teamIds) },
     include: { _count: { select: { items: true, projects: true } } },
@@ -107,7 +107,7 @@ export async function createWorkshop(data: WorkshopInput): Promise<Workshop> {
   const user = await requireAuth();
   if (!data.name?.trim()) throw new Error("Podaj nazwę warsztatu");
   if (data.teamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "warsztaty");
     if (!teamIds.includes(data.teamId)) throw new Error("Nie jesteś członkiem tego zespołu");
   }
   const created = await prisma.workshop.create({
@@ -298,7 +298,7 @@ export interface MaintenanceOverview {
 
 export async function getMaintenanceOverview(): Promise<MaintenanceOverview> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "warsztaty");
   const workshops = await prisma.workshop.findMany({
     where: { OR: ownershipOr(user.id, teamIds) },
     select: { id: true, name: true },

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { categorize } from "@/lib/categorize";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/actions/lists";
@@ -33,7 +33,7 @@ async function assertPantryItemAccess(pantryItemId: string, userId: string): Pro
 
 export async function getPantry(teamId?: string): Promise<PantryItemWithProduct[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
   const ownership = teamId
     ? teamIds.includes(teamId)
@@ -59,7 +59,7 @@ export async function getPantry(teamId?: string): Promise<PantryItemWithProduct[
 
 export async function getExpiringSoon(days: number): Promise<PantryItemWithProduct[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
   const threshold = new Date();
   threshold.setDate(threshold.getDate() + days);
@@ -81,7 +81,7 @@ export async function getExpiringSoon(days: number): Promise<PantryItemWithProdu
 
 export async function getAutoReplenishCandidates(): Promise<PantryItemWithProduct[]> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
+  const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
   const items = await prisma.pantryItem.findMany({
     where: {
@@ -119,7 +119,7 @@ export async function addPantryItem(data: PantryItemInput): Promise<PantryItem> 
   const user = await requireAuth();
 
   if (data.teamId) {
-    const teamIds = await getUserTeamIds(user.id);
+    const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
     if (!teamIds.includes(data.teamId)) throw new Error("Nie jesteś członkiem tego teamu");
   }
 
@@ -215,7 +215,7 @@ export async function bulkSetPantryQuantities(
       });
       if (!item) continue;
       if (item.ownerId !== user.id) {
-        const teamIds = await getUserTeamIds(user.id);
+        const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
         if (!item.ownerTeamId || !teamIds.includes(item.ownerTeamId)) {
           throw new Error("Brak dostępu do pozycji");
         }

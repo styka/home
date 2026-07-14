@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { getUserTeamIds } from "@/lib/server-utils";
 import { getCalendarEvents } from "@/actions/calendar";
 import { chatComplete } from "@/lib/llm/chat";
+import { checkAiBudget, recordAiUsage } from "@/lib/ai/usage";
 
 // Poranny briefing — krótkie, ciepłe podsumowanie dnia generowane na żądanie
 // (przycisk na stronie głównej, klient cache'uje per-dzień). Reużywa agregatu
@@ -12,6 +13,12 @@ export async function POST() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const userId = session.user.id;
+
+  // Z-130: briefing też kosztuje tokeny — egzekwuj dzienny budżet AI.
+  const budget = await checkAiBudget(userId);
+  if (!budget.ok) {
+    return NextResponse.json({ error: budget.message }, { status: 429, headers: { "Retry-After": String(budget.retryAfterSec) } });
+  }
 
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -94,5 +101,6 @@ export async function POST() {
   });
 
   if (!result.ok) return NextResponse.json({ error: result.message }, { status: result.status });
+  void recordAiUsage(userId, result.usage?.total ?? 0).catch(() => {});
   return NextResponse.json({ briefing: result.content || "## Dzień dobry!\n\nMiłego dnia!" });
 }

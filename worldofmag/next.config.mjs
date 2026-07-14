@@ -27,7 +27,17 @@ const nextConfig = {
     NEXT_PUBLIC_BUILD_COMMIT_DATE: git.commitDate,
     NEXT_PUBLIC_BUILD_COMMIT_MSG:  git.commitMsg,
   },
+  eslint: {
+    // Z-011/015 (T-02): ESLint jest JAWNĄ bramką buildu (krok `next lint --dir src`
+    // przed `next build`), więc wyłączamy auto-lint wbudowany w `next build` — jedno,
+    // celowe miejsce (bez dublowania). Realne błędy = error (build pada), kosmetyka = warning.
+    ignoreDuringBuilds: true,
+    dirs: ["src"],
+  },
   experimental: {
+    // Z-090: instrumentation.ts (register()) — raportowanie błędów serwera + punkt
+    // initu zewnętrznego error-trackingu (Sentry) gdy DSN jest ustawiony.
+    instrumentationHook: true,
     serverActions: {
       allowedOrigins: ["localhost:3000", "worldofmag.onrender.com", "omnia-prod.onrender.com"],
     },

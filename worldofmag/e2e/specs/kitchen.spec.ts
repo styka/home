@@ -22,6 +22,16 @@ test.describe("Kuchnia — nawigacja", () => {
     await expect(page.getByText(/Śniadanie|Obiad|Kolacja|Przekąska/).first()).toBeVisible();
   });
 
+  // Regresja: nawigacja tygodni MUSI zmieniać URL (?week=) → serwer przeładowuje
+  // wpisy/koszt dla oglądanego tygodnia. Wcześniej była tylko klient-side i inne
+  // tygodnie były puste (a posiłki dodane poza bieżącym tygodniem znikały).
+  test("[scenario-kitchen-plan-week-nav] nawigacja tygodni przełącza ?week= w URL", async ({ page, kitchen }) => {
+    await kitchen.openPlan();
+    await page.getByRole("button", { name: "Następny tydzień" }).click();
+    await expect(page).toHaveURL(/[?&]week=\d{4}-\d{2}-\d{2}/);
+    await expect(page).not.toHaveURL(/auth\/signin/);
+  });
+
   test("[scenario-kitchen-pantry-expiring] spiżarnia — wyszukiwarka/stan", async ({ page, kitchen }) => {
     await kitchen.openPantry();
     await expect(

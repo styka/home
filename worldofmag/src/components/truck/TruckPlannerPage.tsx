@@ -110,6 +110,13 @@ export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleIn
           subtitle="Trasa dla ciężarówki omijająca ograniczenia wagi/wysokości i aktualne roboty drogowe, gotowa do otwarcia w Google Maps."
         />
 
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px", borderRadius: 8, border: "1px solid var(--accent-amber)", background: "rgba(245,158,11,0.08)" }}>
+          <AlertTriangle size={15} style={{ color: "var(--accent-amber)", flexShrink: 0, marginTop: 1 }} />
+          <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+            <strong style={{ color: "var(--text-primary)" }}>Funkcja eksperymentalna.</strong> Trasy TIR są we wczesnej fazie — wynik z OpenRouteService bywa przybliżony i nie uwzględnia wszystkich ograniczeń. Zawsze zweryfikuj trasę przed wyjazdem.
+          </span>
+        </div>
+
         {/* Vehicle profile */}
         <div>
           <SectionHeading>Profil pojazdu</SectionHeading>

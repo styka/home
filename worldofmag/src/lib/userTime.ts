@@ -34,7 +34,10 @@ function tzOffsetMs(tz: string, at: Date): number {
     if (part.type !== "literal") p[part.type] = Number(part.value);
   }
   const hour = p.hour === 24 ? 0 : p.hour; // niektóre środowiska zwracają "24"
-  const asUTC = Date.UTC(p.year, p.month - 1, p.day, hour, p.minute, p.second);
+  // formatToParts nie zwraca milisekund, a offsety stref to pełne minuty — dolicz
+  // ms instantu, inaczej offset gubi ułamek sekundy i np. koniec doby (…:59.999)
+  // wychodził o ~1 s za późno (00:00:00.998 następnego dnia).
+  const asUTC = Date.UTC(p.year, p.month - 1, p.day, hour, p.minute, p.second, at.getUTCMilliseconds());
   return asUTC - at.getTime();
 }
 

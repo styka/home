@@ -281,6 +281,13 @@ function PairCard({ pair, pet, onChange }: { pair: PetBreedingData["pairs"][numb
         ♂ {pair.male?.name ?? "—"} × ♀ {pair.female?.name ?? "—"}
       </div>
 
+      {/* Z-262: przychód ze sprzedaży potomstwa tej pary */}
+      {(pair.revenue ?? 0) > 0 && (
+        <div style={{ fontSize: 11, color: "var(--accent-green)", marginBottom: 6, fontWeight: 600 }}>
+          Przychód: {(pair.revenue ?? 0).toFixed(0)} zł{(pair.soldCount ?? 0) > 0 ? ` · ${pair.soldCount} sprzedanych` : ""}
+        </div>
+      )}
+
       {pair.clutches.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
           {pair.clutches.map((c) => (

@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { requireAuth } from "@/lib/server-utils"
+import { serializeModuleAccess } from "@/lib/teams/memberAccess"
 
 async function requireTeamRole(
   teamId: string,
@@ -22,19 +23,59 @@ async function requireTeamRole(
 
 // ─── CRUD ──────────────────────────────────────────────────────────────────
 
-export async function createTeam(name: string, description?: string) {
+export async function createTeam(name: string, description?: string, kind: "team" | "household" = "team") {
   const user = await requireAuth()
   const team = await prisma.team.create({
     data: {
       name,
       description,
+      kind: kind === "household" ? "household" : "team",
       ownerId: user.id,
       members: { create: { userId: user.id, role: "OWNER" } },
     },
     include: { members: true },
   })
+  // Z-192: „Gospodarstwo domowe" dostaje od razu wspólne pierwsze współdzielenia
+  // (bez ręcznej konfiguracji): lista zakupów, projekt zadań i budżet domowy.
+  // Kalendarz jest agregatem — pokazuje wpisy zespołu automatycznie (moduły team-aware).
+  if (kind === "household") {
+    await prisma.shoppingList.create({ data: { name: "Zakupy domowe", ownerTeamId: team.id } })
+    await prisma.taskProject.create({ data: { name: "Zadania domowe", ownerTeamId: team.id } })
+    await prisma.walletElement.create({ data: { name: "Budżet domowy", kind: "account", ownerTeamId: team.id } })
+  }
   revalidatePath("/settings")
   return team
+}
+
+/**
+ * Z-195: dane onboardingu „rodziny" (household) — checklist po założeniu:
+ * ilu domowników zaproszono + deep-linki do domyślnych wspólnych zasobów
+ * (zakupy/zadania/budżet) utworzonych przy zakładaniu. Tylko dla członka zespołu.
+ */
+export async function getHouseholdOnboarding(teamId: string) {
+  const user = await requireAuth()
+  const team = await prisma.team.findUnique({ where: { id: teamId }, select: { id: true, kind: true } })
+  if (!team) throw new Error("Team not found")
+  const [membership, memberCount] = await Promise.all([
+    prisma.teamMember.findFirst({ where: { teamId, userId: user.id }, select: { userId: true } }),
+    prisma.teamMember.count({ where: { teamId } }),
+  ])
+  if (!membership && user.role !== "ADMIN") throw new Error("Access denied")
+
+  const [list, project, wallet] = await Promise.all([
+    prisma.shoppingList.findFirst({ where: { ownerTeamId: teamId }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
+    prisma.taskProject.findFirst({ where: { ownerTeamId: teamId }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
+    prisma.walletElement.findFirst({ where: { ownerTeamId: teamId }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
+  ])
+
+  return {
+    isHousehold: team.kind === "household",
+    memberCount,
+    hasInvitedOthers: memberCount > 1,
+    sharedList: list,
+    sharedProject: project,
+    sharedWallet: wallet,
+  }
 }
 
 export async function getMyTeams() {
@@ -110,6 +151,32 @@ export async function changeMemberRole(
   await prisma.teamMember.update({
     where: { teamId_userId: { teamId, userId: targetUserId } },
     data: { role: newRole },
+  })
+  revalidatePath(`/settings/team/${teamId}`)
+}
+
+/**
+ * Z-194 (T-12): ustaw granularny dostęp domownika („dziecka") do współdzielonych
+ * modułów zespołu. Tylko ADMIN/OWNER (rodzic). `modules=null` → pełny dostęp (czyści
+ * ograniczenie); `[]` → brak dostępu; lista → tylko wymienione moduły. Nie dotyczy
+ * właściciela ani roli OWNER (rodzic ma zawsze pełny dostęp).
+ */
+export async function setMemberModuleAccess(
+  teamId: string,
+  targetUserId: string,
+  modules: string[] | null
+) {
+  const user = await requireAuth()
+  await requireTeamRole(teamId, user.id, "ADMIN")
+  const target = await prisma.teamMember.findUnique({
+    where: { teamId_userId: { teamId, userId: targetUserId } },
+  })
+  if (!target) throw new Error("Member not found")
+  if (target.role === "OWNER") throw new Error("Owner always has full access")
+
+  await prisma.teamMember.update({
+    where: { teamId_userId: { teamId, userId: targetUserId } },
+    data: { moduleAccess: serializeModuleAccess(modules) },
   })
   revalidatePath(`/settings/team/${teamId}`)
 }

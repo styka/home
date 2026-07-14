@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Calendar, Briefcase, Settings, Mail, Shield, FolderOpen, Tag, Lock, BookOpen, Package, BookMarked, CalendarDays, MoreHorizontal, Plus } from "lucide-react";
+import { Calendar, Settings, Mail, Shield, FolderOpen, Tag, Lock, BookOpen, Package, BookMarked, CalendarDays, MoreHorizontal, Plus } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { NotificationBell } from "./NotificationBell";
@@ -280,20 +280,6 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
           </>
         )}
 
-        {/* Inactive modules (coming soon — nie zależą od uprawnień) */}
-        {[
-          { label: "Work", icon: <Briefcase size={18} />, href: "/work" },
-        ].map((mod) => (
-          <div
-            key={mod.href}
-            title={`${mod.label} (coming soon)`}
-            className="flex items-center gap-3 px-4 py-2 mx-2 rounded cursor-not-allowed"
-            style={{ opacity: 0.35, color: "var(--text-secondary)" }}
-          >
-            {mod.icon}
-            <span className="text-sm">{mod.label}</span>
-          </div>
-        ))}
       </nav>
 
       {/* Bottom: Powiadomienia + Invitations + Settings + Admin */}

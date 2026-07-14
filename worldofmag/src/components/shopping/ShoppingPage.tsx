@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Trash2, CheckCircle2 } from "lucide-react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
+import { Modal } from "@/components/ui/Modal";
 import { FilterTabs } from "./FilterTabs";
 import { ItemList } from "./ItemList";
 import { SearchBar } from "./SearchBar";
@@ -260,6 +261,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
 
       <ItemList
         items={filteredItems}
+        listId={list.id}
         focusedItemId={focusedItemId}
         editingItemId={editingItemId}
         onItemFocus={setFocusedItemId}
@@ -318,55 +320,58 @@ function CompleteShoppingModal({ listName, items, pending, financeReady, onConfi
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.6)" }} onClick={onCancel}>
-      <div onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Podsumowanie zakupów"
-        style={{ width: "min(360px, calc(100vw - 32px))", background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg, 12px)", padding: 18 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+    <Modal
+      onClose={onCancel}
+      title={
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <CheckCircle2 size={18} style={{ color: "var(--accent-green)" }} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>Zakończ zakupy</span>
-        </div>
-        <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: "0 0 12px" }}>Podsumowanie listy „{listName}":</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
-          {rows.map((r) => (
-            <div key={r.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
-              <span style={{ color: "var(--text-secondary)" }}>{r.label}</span>
-              <span style={{ fontWeight: 700, color: r.color }}>{r.value}</span>
-            </div>
-          ))}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13, borderTop: "1px solid var(--border)", paddingTop: 6 }}>
-            <span style={{ color: "var(--text-secondary)" }}>Razem pozycji</span>
-            <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{total}</span>
-          </div>
-          {spend > 0 && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
-              <span style={{ color: "var(--text-secondary)" }}>Wydano (kupione z ceną)</span>
-              <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{spend.toFixed(2)} zł</span>
-            </div>
-          )}
-        </div>
-        {left > 0 && (
-          <p style={{ fontSize: 12, color: "var(--accent-amber)", margin: "0 0 12px" }}>
-            Uwaga: {left} {left === 1 ? "pozycja jest nieukończona" : "pozycji jest nieukończonych"} — i tak trafią do archiwum.
-          </p>
-        )}
-        {canBook && (
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-secondary)", margin: "0 0 12px", cursor: "pointer" }}>
-            <input type="checkbox" checked={book} onChange={(e) => setBook(e.target.checked)} style={{ width: 16, height: 16 }} />
-            Zaksięguj {spend.toFixed(2)} zł jako wydatek w Portfelu
-          </label>
-        )}
-        {!financeReady && spend > 0 && (
-          <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 12px" }}>
-            Aby księgować zakupy w Portfelu, ustaw konto w Portfel → Ustawienia.
-          </p>
-        )}
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          Zakończ zakupy
+        </span>
+      }
+      footer={
+        <>
           <button onClick={onCancel} className="text-sm px-3 py-1.5 rounded" style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Anuluj</button>
           <button onClick={() => onConfirm(canBook && book)} disabled={pending} className="text-sm px-3 py-1.5 rounded" style={{ background: "var(--accent-green)", color: "var(--on-accent)", fontWeight: 600, border: "none", opacity: pending ? 0.6 : 1 }}>
             Zarchiwizuj listę
           </button>
+        </>
+      }
+    >
+      <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>Podsumowanie listy „{listName}”:</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {rows.map((r) => (
+          <div key={r.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+            <span style={{ color: "var(--text-secondary)" }}>{r.label}</span>
+            <span style={{ fontWeight: 700, color: r.color }}>{r.value}</span>
+          </div>
+        ))}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13, borderTop: "1px solid var(--border)", paddingTop: 6 }}>
+          <span style={{ color: "var(--text-secondary)" }}>Razem pozycji</span>
+          <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{total}</span>
         </div>
+        {spend > 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+            <span style={{ color: "var(--text-secondary)" }}>Wydano (kupione z ceną)</span>
+            <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{spend.toFixed(2)} zł</span>
+          </div>
+        )}
       </div>
-    </div>
+      {left > 0 && (
+        <p style={{ fontSize: 12, color: "var(--accent-amber)", margin: 0 }}>
+          Uwaga: {left} {left === 1 ? "pozycja jest nieukończona" : "pozycji jest nieukończonych"} — i tak trafią do archiwum.
+        </p>
+      )}
+      {canBook && (
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-secondary)", margin: 0, cursor: "pointer" }}>
+          <input type="checkbox" checked={book} onChange={(e) => setBook(e.target.checked)} style={{ width: 16, height: 16 }} />
+          Zaksięguj {spend.toFixed(2)} zł jako wydatek w Portfelu
+        </label>
+      )}
+      {!financeReady && spend > 0 && (
+        <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
+          Aby księgować zakupy w Portfelu, ustaw konto w Portfel → Ustawienia.
+        </p>
+      )}
+    </Modal>
   );
 }

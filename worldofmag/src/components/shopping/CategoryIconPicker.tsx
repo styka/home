@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import * as Dialog from "@radix-ui/react-dialog";
-import { RefreshCw, X, RotateCcw, Trash2, ChevronDown, Sparkles } from "lucide-react";
+import { RefreshCw, RotateCcw, Trash2, ChevronDown, Sparkles } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
 import type { CategoryIconVariantData } from "@/actions/categoryIcons";
 import {
   getAllUserIconVariantsFlat,
@@ -232,177 +232,159 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 backdrop-blur-sm" style={{ backgroundColor: "rgba(0,0,0,0.75)" }} />
-        <Dialog.Content
-          className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-32px)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl outline-none"
-          style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", maxHeight: "min(92vh, 720px)", display: "flex", flexDirection: "column" }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
-            <Dialog.Title className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              Ikona kategorii
-            </Dialog.Title>
-            <div className="flex items-center gap-2">
-              <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-muted)" }}>
-                {category}
-              </span>
-              <Dialog.Close asChild>
-                <button className="rounded-lg p-1.5 transition-colors" style={{ color: "var(--text-muted)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}>
-                  <X size={14} />
+    <Modal
+      open={open}
+      onClose={onClose}
+      wide
+      title={
+        <span className="flex items-center gap-2">
+          Ikona kategorii
+          <span className="text-xs px-2 py-0.5 rounded-full font-normal" style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-muted)" }}>
+            {category}
+          </span>
+        </span>
+      }
+      footer={
+        <div className="space-y-3" style={{ width: "100%" }}>
+          {/* Additional text hint */}
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>
+              Dodatkowe wskazówki dla generatora (opcjonalnie)
+            </label>
+            <div className="flex gap-1.5">
+              <input
+                value={additionalText}
+                onChange={(e) => setAdditionalText(e.target.value)}
+                placeholder="np. owoce tropikalne, intensywne kolory…"
+                className="flex-1 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none"
+                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
+              />
+              {category && (
+                <button
+                  onClick={fetchHints}
+                  disabled={loadingHints}
+                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs disabled:opacity-40 shrink-0"
+                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
+                  onMouseEnter={(e) => { if (!loadingHints) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
+                  title="Wygeneruj podpowiedzi"
+                >
+                  <Sparkles size={11} className={loadingHints ? "animate-pulse" : ""} />
+                  Sugeruj
                 </button>
-              </Dialog.Close>
-            </div>
-          </div>
-
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto px-5 pb-2 space-y-5">
-            {/* Section 1: Emoji */}
-            <div>
-              <SectionLabel label="Systemowe" />
-              <div style={{ borderRadius: 12, overflow: "hidden" }}>
-                <EmojiPicker
-                  onEmojiClick={(emojiData) => void handleSelectEmoji(emojiData.emoji)}
-                  theme={Theme.DARK}
-                  searchPlaceholder="Szukaj emoji…"
-                  width="100%"
-                  height={300}
-                  previewConfig={{ showPreview: false }}
-                  lazyLoadEmojis
-                  style={{ "--epr-bg-color": "var(--bg-surface)", "--epr-category-label-bg-color": "var(--bg-surface)", "--epr-search-border-color": "var(--border)" } as React.CSSProperties}
-                />
-              </div>
-            </div>
-
-            {/* Section 2: User icons */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <SectionLabel label={`Moje ikony${categoryIcons.length > 0 ? ` (${categoryIcons.length})` : ""}`} />
-                {otherIcons.length > 0 && (
-                  <button
-                    onClick={() => setShowAllMine((v) => !v)}
-                    className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-lg"
-                    style={{ backgroundColor: showAllMine ? "var(--bg-hover)" : "transparent", border: "1px solid var(--border)", color: showAllMine ? "var(--text-primary)" : "var(--text-muted)" }}
-                  >
-                    <ChevronDown size={10} style={{ transform: showAllMine ? "rotate(180deg)" : undefined }} />
-                    {showAllMine ? "Tylko ta kategoria" : `Wszystkie (${allUserIcons.length})`}
-                  </button>
-                )}
-              </div>
-              {loadingSaved ? (
-                <div className="grid grid-cols-4 gap-2">{Array.from({ length: 4 }).map((_, i) => <SkeletonTile key={i} />)}</div>
-              ) : displayedSaved.length === 0 ? (
-                <p className="text-xs py-2" style={{ color: "var(--text-muted)" }}>
-                  {allUserIcons.length === 0 ? "Brak zapisanych ikon — wygeneruj pierwszą poniżej." : "Brak ikon dla tej kategorii."}
-                </p>
-              ) : (
-                <div className="grid grid-cols-4 gap-2">
-                  {displayedSaved.map((variant) => (
-                    <SvgTile
-                      key={variant.id}
-                      svgContent={variant.svgContent}
-                      isActive={variant.isActive && variant.categoryName === category}
-                      label={showAllMine ? variant.categoryName : undefined}
-                      onClick={() => handleSelectSaved(variant)}
-                      onDelete={() => handleDelete(variant)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Section 3: Generated */}
-            <div ref={newIconsRef}>
-              <SectionLabel label="Nowe propozycje" />
-              {error ? (
-                <div className="flex flex-col items-center py-4 gap-2">
-                  <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>{error}</p>
-                  <button onClick={generateNew} className="text-xs px-3 py-1.5 rounded-lg"
-                    style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
-                    Spróbuj ponownie
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-3 gap-2">
-                  {loadingNew && newlyGenerated.length === 0
-                    ? Array.from({ length: 6 }).map((_, i) => <SkeletonTile key={i} />)
-                    : newlyGenerated.map((svg, i) => (
-                        <SvgTile key={i} svgContent={svg} onClick={() => handleSelectNew(svg)} />
-                      ))}
-                  {loadingNew && newlyGenerated.length > 0 && Array.from({ length: 3 }).map((_, i) => <SkeletonTile key={`sk-${i}`} />)}
-                  {!loadingNew && newlyGenerated.length === 0 && !error && (
-                    <p className="col-span-3 text-xs py-3 text-center" style={{ color: "var(--text-muted)" }}>
-                      Kliknij „Losuj więcej" by wygenerować ikony
-                    </p>
-                  )}
-                </div>
               )}
             </div>
           </div>
 
-          {/* Footer: controls + buttons */}
-          <div className="px-5 py-4 shrink-0 space-y-3" style={{ borderTop: "1px solid var(--border)" }}>
-            {/* Additional text hint */}
-            <div>
-              <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>
-                Dodatkowe wskazówki dla generatora (opcjonalnie)
-              </label>
-              <div className="flex gap-1.5">
-                <input
-                  value={additionalText}
-                  onChange={(e) => setAdditionalText(e.target.value)}
-                  placeholder="np. owoce tropikalne, intensywne kolory…"
-                  className="flex-1 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none"
-                  style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
-                />
-                {category && (
-                  <button
-                    onClick={fetchHints}
-                    disabled={loadingHints}
-                    className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs disabled:opacity-40 shrink-0"
-                    style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
-                    onMouseEnter={(e) => { if (!loadingHints) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
-                    title="Wygeneruj podpowiedzi"
-                  >
-                    <Sparkles size={11} className={loadingHints ? "animate-pulse" : ""} />
-                    Sugeruj
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex gap-2">
-              <button
-                onClick={generateNew}
-                disabled={loadingNew}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all disabled:opacity-40 active:scale-[0.98]"
-                style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
-                onMouseEnter={(e) => { if (!loadingNew) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
-              >
-                <RefreshCw size={14} className={loadingNew ? "animate-spin" : ""} />
-                Losuj więcej
-              </button>
-              <button
-                onClick={handleReset}
-                className="flex items-center gap-1.5 rounded-xl py-2.5 px-3.5 text-sm transition-all active:scale-[0.98]"
-                style={{ color: "var(--text-muted)" }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
-                title="Przywróć domyślną ikonę"
-              >
-                <RotateCcw size={14} />
-                <span className="hidden sm:inline text-xs">Reset</span>
-              </button>
-            </div>
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={generateNew}
+              disabled={loadingNew}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all disabled:opacity-40 active:scale-[0.98]"
+              style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
+              onMouseEnter={(e) => { if (!loadingNew) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
+            >
+              <RefreshCw size={14} className={loadingNew ? "animate-spin" : ""} />
+              Losuj więcej
+            </button>
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-1.5 rounded-xl py-2.5 px-3.5 text-sm transition-all active:scale-[0.98]"
+              style={{ color: "var(--text-muted)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
+              title="Przywróć domyślną ikonę"
+            >
+              <RotateCcw size={14} />
+              <span className="hidden sm:inline text-xs">Reset</span>
+            </button>
           </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </div>
+      }
+    >
+      {/* Section 1: Emoji */}
+      <div>
+        <SectionLabel label="Systemowe" />
+        <div style={{ borderRadius: 12, overflow: "hidden" }}>
+          <EmojiPicker
+            onEmojiClick={(emojiData) => void handleSelectEmoji(emojiData.emoji)}
+            theme={Theme.DARK}
+            searchPlaceholder="Szukaj emoji…"
+            width="100%"
+            height={300}
+            previewConfig={{ showPreview: false }}
+            lazyLoadEmojis
+            style={{ "--epr-bg-color": "var(--bg-surface)", "--epr-category-label-bg-color": "var(--bg-surface)", "--epr-search-border-color": "var(--border)" } as React.CSSProperties}
+          />
+        </div>
+      </div>
+
+      {/* Section 2: User icons */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <SectionLabel label={`Moje ikony${categoryIcons.length > 0 ? ` (${categoryIcons.length})` : ""}`} />
+          {otherIcons.length > 0 && (
+            <button
+              onClick={() => setShowAllMine((v) => !v)}
+              className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-lg"
+              style={{ backgroundColor: showAllMine ? "var(--bg-hover)" : "transparent", border: "1px solid var(--border)", color: showAllMine ? "var(--text-primary)" : "var(--text-muted)" }}
+            >
+              <ChevronDown size={10} style={{ transform: showAllMine ? "rotate(180deg)" : undefined }} />
+              {showAllMine ? "Tylko ta kategoria" : `Wszystkie (${allUserIcons.length})`}
+            </button>
+          )}
+        </div>
+        {loadingSaved ? (
+          <div className="grid grid-cols-4 gap-2">{Array.from({ length: 4 }).map((_, i) => <SkeletonTile key={i} />)}</div>
+        ) : displayedSaved.length === 0 ? (
+          <p className="text-xs py-2" style={{ color: "var(--text-muted)" }}>
+            {allUserIcons.length === 0 ? "Brak zapisanych ikon — wygeneruj pierwszą poniżej." : "Brak ikon dla tej kategorii."}
+          </p>
+        ) : (
+          <div className="grid grid-cols-4 gap-2">
+            {displayedSaved.map((variant) => (
+              <SvgTile
+                key={variant.id}
+                svgContent={variant.svgContent}
+                isActive={variant.isActive && variant.categoryName === category}
+                label={showAllMine ? variant.categoryName : undefined}
+                onClick={() => handleSelectSaved(variant)}
+                onDelete={() => handleDelete(variant)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Section 3: Generated */}
+      <div ref={newIconsRef}>
+        <SectionLabel label="Nowe propozycje" />
+        {error ? (
+          <div className="flex flex-col items-center py-4 gap-2">
+            <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>{error}</p>
+            <button onClick={generateNew} className="text-xs px-3 py-1.5 rounded-lg"
+              style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
+              Spróbuj ponownie
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2">
+            {loadingNew && newlyGenerated.length === 0
+              ? Array.from({ length: 6 }).map((_, i) => <SkeletonTile key={i} />)
+              : newlyGenerated.map((svg, i) => (
+                  <SvgTile key={i} svgContent={svg} onClick={() => handleSelectNew(svg)} />
+                ))}
+            {loadingNew && newlyGenerated.length > 0 && Array.from({ length: 3 }).map((_, i) => <SkeletonTile key={`sk-${i}`} />)}
+            {!loadingNew && newlyGenerated.length === 0 && !error && (
+              <p className="col-span-3 text-xs py-3 text-center" style={{ color: "var(--text-muted)" }}>
+                Kliknij „Losuj więcej” by wygenerować ikony
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </Modal>
   );
 }

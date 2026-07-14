@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
 
   const result = await chatComplete({
     op: "dispatch",
+    userId: session.user?.id, // Z-130: licz do budżetu zapytań
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: `Kod: ${barcode || "—"}\nNazwa: ${name || "—"}` },

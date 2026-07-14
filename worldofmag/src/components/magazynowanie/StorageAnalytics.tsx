@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Loader2, Download, TrendingUp, PackageX, Boxes, Wallet, AlertTriangle } from "lucide-react";
-import { llm } from "@/lib/llm-client";
+import { runJob } from "@/lib/jobs/client";
 import type { StorageAnalytics as Analytics } from "@/actions/storage";
 
 interface Props {
@@ -22,7 +22,8 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
   async function loadTips() {
     setLoadingTips(true);
     try {
-      const res = await llm.magazynowanie.insights({
+      // Z-131 (T-17): wnioski przez kolejkę zadań (degradacja łagodna).
+      const res = await runJob<{ tips: string[] }>("magazyn.insights", {
         currency: a.currency,
         totalValue: a.totalValue,
         itemCount: a.itemCount,

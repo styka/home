@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Sparkles, ArrowRight, RotateCcw, Check, Loader2 } from "lucide-react";
 import { saveStoreGraph } from "@/actions/stores";
 import { computeLayout } from "@/lib/storeLayout";
-import { llm } from "@/lib/llm-client";
+import { runJob } from "@/lib/jobs/client";
 import { StoreGraphView } from "./StoreGraphView";
 import type { StoreWithGraph, StoreNodeData, StoreEdgeData } from "@/types";
 
@@ -391,7 +391,11 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
     setPhase("ai-loading");
     setAiError(null);
     try {
-      const result = await llm.stores.generate(aiStoreName.trim());
+      // Z-131 (T-17): generacja mapy przez kolejkę zadań. Błędy rzuca → catch niżej.
+      const result = await runJob<{
+        nodes: Array<{ id: string; label: string; type: string; category: string | null }>;
+        edges: Array<{ fromId: string; toId: string; weight: number }>;
+      }>("stores.generate", { storeName: aiStoreName.trim() });
       // Build preview with layout
       const nodeArr: StoreNodeData[] = result.nodes.map((n) => ({
         id: n.id, storeId, label: n.label, type: n.type, category: n.category, x: 0, y: 0,

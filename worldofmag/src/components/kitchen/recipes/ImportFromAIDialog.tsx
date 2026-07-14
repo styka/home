@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Sparkles } from "lucide-react";
-import { llm } from "@/lib/llm-client";
+import { Sparkles } from "lucide-react";
+import { runJob } from "@/lib/jobs/client";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { stashImportDraft } from "@/lib/kitchen/recipeImportDraft";
 import type { CreateRecipeInput, MealType, Difficulty } from "@/types/kitchen";
@@ -21,8 +22,6 @@ export function ImportFromAIDialog({ open, onClose }: ImportFromAIDialogProps) {
   const [pending, setPending] = useState(false);
   const { showToast } = useToast();
 
-  if (!open) return null;
-
   async function handleGenerate() {
     const trimmed = prompt.trim();
     if (!trimmed) {
@@ -31,9 +30,17 @@ export function ImportFromAIDialog({ open, onClose }: ImportFromAIDialogProps) {
     }
     setPending(true);
     try {
-      const res = await llm.kitchen.generateRecipe(trimmed);
-      if (res.error || !res.recipe) {
-        showToast(res.error ?? "Nie udało się wygenerować", "error");
+      // Z-131 (T-17): generacja przepisu przez kolejkę zadań. Błędy rzuca → catch niżej.
+      type GenRecipe = {
+        title: string; description: string | null; servings: number | null;
+        prepMinutes: number | null; cookMinutes: number | null; cuisine: string | null;
+        mealType: string | null;
+        ingredients: { name: string; quantity: number | null; unit: string | null; note: string | null; isOptional?: boolean }[];
+        steps: { text: string }[];
+      };
+      const res = await runJob<{ recipe: GenRecipe }>("kitchen.generateRecipe", { prompt: trimmed });
+      if (!res?.recipe) {
+        showToast("Nie udało się wygenerować", "error");
         return;
       }
       const r = res.recipe;
@@ -70,58 +77,17 @@ export function ImportFromAIDialog({ open, onClose }: ImportFromAIDialogProps) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full md:w-[480px] md:rounded border"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border)",
-          borderTopLeftRadius: 12,
-          borderTopRightRadius: 12,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <h3 className="text-base font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-            <Sparkles size={16} style={{ color: "var(--accent-purple)" }} />
-            Wygeneruj przepis z AI
-          </h3>
-          <button onClick={onClose} aria-label="Zamknij" style={{ color: "var(--text-muted)" }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="px-4 py-3 flex flex-col gap-3">
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            Opisz danie jednym zdaniem — AI ułoży pełen przepis (składniki + kroki).
-          </p>
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            rows={3}
-            maxLength={500}
-            placeholder="np. pierogi ruskie dla 4 osób; szybki obiad z kurczakiem na 30 min; wegański deser bez piekarnika"
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerate();
-            }}
-            className="w-full px-3 py-2 rounded border text-sm resize-y"
-            style={{
-              backgroundColor: "var(--bg-elevated)",
-              borderColor: "var(--border)",
-              color: "var(--text-primary)",
-            }}
-          />
-          <p className="text-[10px] text-right" style={{ color: "var(--text-muted)" }}>
-            {prompt.length}/500
-          </p>
-        </div>
-
-        <div className="flex justify-end gap-2 px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={
+        <span className="flex items-center gap-2">
+          <Sparkles size={16} style={{ color: "var(--accent-purple)" }} />
+          Wygeneruj przepis z AI
+        </span>
+      }
+      footer={
+        <>
           <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
             Anuluj
           </button>
@@ -133,8 +99,32 @@ export function ImportFromAIDialog({ open, onClose }: ImportFromAIDialogProps) {
           >
             <Sparkles size={14} /> {pending ? "Generuję…" : "Wygeneruj"}
           </button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        Opisz danie jednym zdaniem — AI ułoży pełen przepis (składniki + kroki).
+      </p>
+      <textarea
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        rows={3}
+        maxLength={500}
+        placeholder="np. pierogi ruskie dla 4 osób; szybki obiad z kurczakiem na 30 min; wegański deser bez piekarnika"
+        autoFocus
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerate();
+        }}
+        className="w-full px-3 py-2 rounded border text-sm resize-y"
+        style={{
+          backgroundColor: "var(--bg-elevated)",
+          borderColor: "var(--border)",
+          color: "var(--text-primary)",
+        }}
+      />
+      <p className="text-[10px] text-right" style={{ color: "var(--text-muted)" }}>
+        {prompt.length}/500
+      </p>
+    </Modal>
   );
 }

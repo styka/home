@@ -1,8 +1,9 @@
 import { auth } from "@/lib/auth"
-import { getTeam, deleteTeam } from "@/actions/teams"
+import { getTeam, deleteTeam, getHouseholdOnboarding } from "@/actions/teams"
 import { getPendingInvitations } from "@/actions/invitations"
 import MemberList from "@/components/teams/MemberList"
 import InviteMemberForm from "@/components/teams/InviteMemberForm"
+import HouseholdOnboarding from "@/components/teams/HouseholdOnboarding"
 import Link from "next/link"
 import { redirect, notFound } from "next/navigation"
 
@@ -25,6 +26,9 @@ export default async function TeamSettingsPage({
   const myRole = myMembership?.role ?? "MEMBER"
   const isOwner = myRole === "OWNER"
   const isAdmin = myRole === "ADMIN" || isOwner
+
+  // Z-195: onboarding rodziny (tylko dla household).
+  const onboarding = team.kind === "household" ? await getHouseholdOnboarding(team.id) : null
 
   return (
     <div style={{ padding: "32px", maxWidth: 720 }}>
@@ -52,6 +56,16 @@ export default async function TeamSettingsPage({
             {team.parentTeam.name}
           </Link>
         </div>
+      )}
+
+      {/* Z-195: onboarding rodziny */}
+      {onboarding && (
+        <HouseholdOnboarding
+          hasInvitedOthers={onboarding.hasInvitedOthers}
+          sharedList={onboarding.sharedList}
+          sharedProject={onboarding.sharedProject}
+          sharedWallet={onboarding.sharedWallet}
+        />
       )}
 
       {/* Members */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pill, HeartPulse, Plus, Trash2, Pencil, Check, X, Clock, Bandage, CalendarClock } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
@@ -13,6 +13,7 @@ import {
 } from "@/actions/medications";
 import { describeFrequency, parseTimes } from "@/lib/medicationSchedule";
 import type { DoseSlot, MedicationFreqType, MedicationKind, MedicationSchedule } from "@/types";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -340,22 +341,11 @@ function DoseRow({ date, dose, onChanged }: { date: string; dose: DoseSlot; onCh
   );
 }
 
-function ScheduleCard({ s, onEdit }: { s: MedicationSchedule; onEdit: () => void }) {
-  const router = useRouter();
+function ScheduleCard({ s, focused, onEdit, onDelete, onToggleActive, onFocus }: { s: MedicationSchedule; focused: boolean; onEdit: () => void; onDelete: () => void; onToggleActive: () => void; onFocus: () => void }) {
   const meta = kindMeta(s.kind);
 
-  async function remove() {
-    if (!confirm("Usunąć harmonogram?")) return;
-    await deleteMedicationSchedule(s.id);
-    router.refresh();
-  }
-  async function toggleActive() {
-    await updateMedicationSchedule(s.id, { active: !s.active });
-    router.refresh();
-  }
-
   return (
-    <div style={{ ...cardStyle, alignItems: "flex-start", cursor: "default", gap: 12, opacity: s.active ? 1 : 0.55 }}>
+    <div onMouseEnter={onFocus} style={{ ...cardStyle, alignItems: "flex-start", cursor: "default", gap: 12, opacity: s.active ? 1 : 0.55, borderColor: focused ? "var(--border-focus)" : "var(--border)" }}>
       <span style={{ color: meta.color, flexShrink: 0, marginTop: 2 }}><meta.Icon size={18} /></span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 500 }}>
@@ -373,12 +363,12 @@ function ScheduleCard({ s, onEdit }: { s: MedicationSchedule; onEdit: () => void
         )}
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-        <button onClick={toggleActive} className="text-xs px-2 py-1 rounded" style={{ color: s.active ? "var(--accent-green)" : "var(--text-muted)", border: `1px solid ${s.active ? "var(--accent-green)" : "var(--border)"}`, background: "transparent" }}>
+        <button onClick={onToggleActive} className="text-xs px-2 py-1 rounded" style={{ color: s.active ? "var(--accent-green)" : "var(--text-muted)", border: `1px solid ${s.active ? "var(--accent-green)" : "var(--border)"}`, background: "transparent" }}>
           {s.active ? "Aktywny" : "Wstrzymany"}
         </button>
         <div style={{ display: "flex", gap: 4 }}>
           <button onClick={onEdit} className="p-1 rounded" style={{ color: "var(--text-muted)", background: "none", border: "none" }}><Pencil size={14} /></button>
-          <button onClick={remove} className="p-1 rounded" style={{ color: "var(--accent-red)", background: "none", border: "none" }}><Trash2 size={14} /></button>
+          <button onClick={onDelete} className="p-1 rounded" style={{ color: "var(--accent-red)", background: "none", border: "none" }}><Trash2 size={14} /></button>
         </div>
       </div>
     </div>
@@ -389,8 +379,36 @@ export function MedicationsPage({ schedules, today }: { schedules: MedicationSch
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<MedicationSchedule | null>(null);
+  const [focused, setFocused] = useState<number>(-1);
 
   const doneCount = today.slots.filter((s) => s.done).length;
+
+  async function removeSchedule(s: MedicationSchedule) {
+    if (!confirm("Usunąć harmonogram?")) return;
+    await deleteMedicationSchedule(s.id);
+    router.refresh();
+  }
+  async function toggleScheduleActive(s: MedicationSchedule) {
+    await updateMedicationSchedule(s.id, { active: !s.active });
+    router.refresh();
+  }
+
+  // Z-232: klawiatura przez wspólny hub. j/k nawiguje po HARMONOGRAMACH (trwałe
+  // encje); x = aktywny/wstrzymany, e = edycja, d = usuń, a = dodaj. Odhaczanie
+  // dawek „na dziś" zostaje pod myszą/dotykiem (osobna, szybka lista).
+  const shortcutHandlers = useMemo(
+    () => ({
+      onNavigateDown: () => { if (!adding && !editing) setFocused((i) => Math.min(schedules.length - 1, i + 1)); },
+      onNavigateUp: () => { if (!adding && !editing) setFocused((i) => Math.max(0, i - 1)); },
+      onQuickAdd: () => { if (!adding && !editing) { setAdding(true); setEditing(null); } },
+      onToggleStatus: () => { if (!adding && !editing && focused >= 0 && schedules[focused]) toggleScheduleActive(schedules[focused]); },
+      onEdit: () => { if (!adding && !editing && focused >= 0 && schedules[focused]) { setEditing(schedules[focused]); setAdding(false); } },
+      onDelete: () => { if (!adding && !editing && focused >= 0 && schedules[focused]) removeSchedule(schedules[focused]); },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schedules, focused, adding, editing]
+  );
+  useKeyboardShortcuts(shortcutHandlers);
 
   function toInput(f: FormState) {
     return {
@@ -474,8 +492,8 @@ export function MedicationsPage({ schedules, today }: { schedules: MedicationSch
             />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {schedules.map((s) => (
-                <ScheduleCard key={s.id} s={s} onEdit={() => { setEditing(s); setAdding(false); }} />
+              {schedules.map((s, i) => (
+                <ScheduleCard key={s.id} s={s} focused={focused === i} onFocus={() => setFocused(i)} onEdit={() => { setEditing(s); setAdding(false); }} onDelete={() => removeSchedule(s)} onToggleActive={() => toggleScheduleActive(s)} />
               ))}
             </div>
           )}

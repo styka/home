@@ -3,7 +3,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Camera, Upload, Loader2 } from "lucide-react";
-import { llm } from "@/lib/llm-client";
+import { runJob } from "@/lib/jobs/client";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { stashImportDraft } from "@/lib/kitchen/recipeImportDraft";
 import type { CreateRecipeInput, MealType, Difficulty } from "@/types/kitchen";
@@ -21,9 +22,8 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [statusText, setStatusText] = useState("");
   const { showToast } = useToast();
-
-  if (!open) return null;
 
   function readFile(file: File) {
     if (file.size > MAX_BYTES) {
@@ -62,10 +62,22 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
       return;
     }
     setPending(true);
+    setStatusText("W kolejce…");
     try {
-      const res = await llm.kitchen.ocrImage(preview);
-      if (res.error || !res.recipe) {
-        showToast(res.error ?? "Nie udało się rozpoznać", "error");
+      // Z-131 (T-17): OCR przez kolejkę zadań w tle — bez timeoutów żądania.
+      // runJob zwraca wynik albo rzuca (łapie catch niżej). onStatus daje feedback.
+      type OcrRecipe = {
+        title: string; description: string | null; servings: number | null;
+        prepMinutes: number | null; cookMinutes: number | null; cuisine: string | null;
+        mealType: string | null;
+        ingredients: { name: string; quantity: number | null; unit: string | null; note: string | null; isOptional?: boolean }[];
+        steps: { text: string }[];
+      };
+      const res = await runJob<{ recipe: OcrRecipe }>("kitchen.ocrImage", { image: preview }, {
+        onStatus: (s) => setStatusText(s === "RUNNING" ? "Rozpoznaję zdjęcie…" : "W kolejce…"),
+      });
+      if (!res?.recipe) {
+        showToast("Nie udało się rozpoznać", "error");
         return;
       }
       const r = res.recipe;
@@ -98,89 +110,22 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
       showToast(e instanceof Error ? e.message : "Błąd importu", "error");
     } finally {
       setPending(false);
+      setStatusText("");
     }
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full md:w-[520px] md:rounded border max-h-[92vh] overflow-y-auto"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border)",
-          borderTopLeftRadius: 12,
-          borderTopRightRadius: 12,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <h3 className="text-base font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-            <Camera size={16} style={{ color: "var(--accent-purple)" }} />
-            Import ze zdjęcia (OCR)
-          </h3>
-          <button onClick={onClose} aria-label="Zamknij" style={{ color: "var(--text-muted)" }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="px-4 py-3 flex flex-col gap-3">
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            Zrób zdjęcie strony z książki kucharskiej, kartki z notatkami lub ekranu z przepisem.
-            AI rozpozna składniki i kroki.
-          </p>
-
-          {!preview ? (
-            <label
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleDrop}
-              className="flex flex-col items-center justify-center gap-2 py-10 rounded border-2 border-dashed cursor-pointer"
-              style={{
-                borderColor: "var(--border)",
-                backgroundColor: "var(--bg-elevated)",
-                color: "var(--text-secondary)",
-              }}
-            >
-              <Upload size={28} style={{ color: "var(--text-muted)" }} />
-              <span className="text-sm">Kliknij lub upuść plik</span>
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                JPG, PNG, WebP · max 8 MB
-              </span>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </label>
-          ) : (
-            <div className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={preview}
-                alt="Podgląd"
-                className="w-full rounded border"
-                style={{ borderColor: "var(--border)", maxHeight: 320, objectFit: "contain" }}
-              />
-              <button
-                type="button"
-                onClick={handleClear}
-                className="absolute top-2 right-2 rounded-full p-1"
-                style={{ backgroundColor: "rgba(0,0,0,0.6)", color: "var(--on-accent)" }}
-                aria-label="Usuń zdjęcie"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-end gap-2 px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={
+        <span className="flex items-center gap-2">
+          <Camera size={16} style={{ color: "var(--accent-purple)" }} />
+          Import ze zdjęcia (OCR)
+        </span>
+      }
+      footer={
+        <>
           <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
             Anuluj
           </button>
@@ -191,10 +136,61 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
             style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}
           >
             {pending ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-            {pending ? "Rozpoznaję…" : "Rozpoznaj i importuj"}
+            {pending ? (statusText || "Rozpoznaję…") : "Rozpoznaj i importuj"}
+          </button>
+        </>
+      }
+    >
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        Zrób zdjęcie strony z książki kucharskiej, kartki z notatkami lub ekranu z przepisem.
+        AI rozpozna składniki i kroki.
+      </p>
+
+      {!preview ? (
+        <label
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDrop}
+          className="flex flex-col items-center justify-center gap-2 py-10 rounded border-2 border-dashed cursor-pointer"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "var(--bg-elevated)",
+            color: "var(--text-secondary)",
+          }}
+        >
+          <Upload size={28} style={{ color: "var(--text-muted)" }} />
+          <span className="text-sm">Kliknij lub upuść plik</span>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            JPG, PNG, WebP · max 8 MB
+          </span>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </label>
+      ) : (
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={preview}
+            alt="Podgląd"
+            className="w-full rounded border"
+            style={{ borderColor: "var(--border)", maxHeight: 320, objectFit: "contain" }}
+          />
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute top-2 right-2 rounded-full p-1"
+            style={{ backgroundColor: "rgba(0,0,0,0.6)", color: "var(--on-accent)" }}
+            aria-label="Usuń zdjęcie"
+          >
+            <X size={14} />
           </button>
         </div>
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 }

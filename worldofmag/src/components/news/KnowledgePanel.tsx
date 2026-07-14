@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { History, BookOpen, X, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { History, BookOpen, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { LEANING_META } from "@/lib/news/sources";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { getKnowledgeHistory, type KnowledgeDTO } from "@/actions/news";
 import { useToast } from "@/components/ui/Toast";
+import { Modal } from "@/components/ui/Modal";
 
 type ViewMode = "full" | "changes";
 
@@ -128,8 +129,8 @@ export function KnowledgePanel({
     return (
       <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-surface)] p-4 text-sm text-[var(--text-muted)]">
         <BookOpen size={16} className="mb-1 inline" /> Baza wiedzy jest pusta. Przyjmij pierwsze
-        wiadomości „do wiedzy", aby zbudować aktualny stan tematu (osobno dla każdego źródła). Jeśli z
-        ostatnich 24h nic nie ma, „Odśwież teraz" zbuduje bazową bazę wiedzy z dostępnych materiałów.
+        wiadomości „do wiedzy”, aby zbudować aktualny stan tematu (osobno dla każdego źródła). Jeśli z
+        ostatnich 24h nic nie ma, „Odśwież teraz” zbuduje bazową bazę wiedzy z dostępnych materiałów.
       </div>
     );
   }
@@ -150,95 +151,79 @@ export function KnowledgePanel({
       </div>
 
       {history !== null && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          onClick={() => setHistory(null)}
+        <Modal
+          onClose={() => setHistory(null)}
+          title={`Historia stanu wiedzy — ${historySource}`}
+          wide
         >
-          <div
-            className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg border border-[var(--border)] bg-[var(--bg-base)] p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold text-[var(--text-primary)]">
-                Historia stanu wiedzy — {historySource}
-              </h3>
-              <button
-                onClick={() => setHistory(null)}
-                className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-              >
-                <X size={18} />
-              </button>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="animate-spin text-[var(--text-muted)]" />
             </div>
-
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="animate-spin text-[var(--text-muted)]" />
+          ) : !current ? (
+            <p className="py-8 text-center text-sm text-[var(--text-muted)]">Brak historii.</p>
+          ) : (
+            <>
+              {/* Nawigacja w czasie: ◀ wersja k/N ▶ + tryb */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIdx((i) => Math.min(history!.length - 1, i + 1))}
+                    disabled={idx >= history!.length - 1}
+                    className="rounded-md border border-[var(--border)] p-1 text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-40"
+                    title="Starsza wersja"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="text-sm text-[var(--text-primary)]">
+                    Wersja {current.version}
+                    <span className="text-[var(--text-muted)]"> / {history!.length}</span>
+                  </span>
+                  <button
+                    onClick={() => setIdx((i) => Math.max(0, i - 1))}
+                    disabled={idx <= 0}
+                    className="rounded-md border border-[var(--border)] p-1 text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-40"
+                    title="Nowsza wersja"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                  <span className="text-xs text-[var(--text-muted)]">
+                    {new Date(current.createdAt).toLocaleString("pl-PL")}
+                  </span>
+                </div>
+                <ModeToggle mode={histMode} onChange={setHistMode} />
               </div>
-            ) : !current ? (
-              <p className="py-8 text-center text-sm text-[var(--text-muted)]">Brak historii.</p>
-            ) : (
-              <>
-                {/* Nawigacja w czasie: ◀ wersja k/N ▶ + tryb */}
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setIdx((i) => Math.min(history!.length - 1, i + 1))}
-                      disabled={idx >= history!.length - 1}
-                      className="rounded-md border border-[var(--border)] p-1 text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-40"
-                      title="Starsza wersja"
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
-                    <span className="text-sm text-[var(--text-primary)]">
-                      Wersja {current.version}
-                      <span className="text-[var(--text-muted)]"> / {history!.length}</span>
-                    </span>
-                    <button
-                      onClick={() => setIdx((i) => Math.max(0, i - 1))}
-                      disabled={idx <= 0}
-                      className="rounded-md border border-[var(--border)] p-1 text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-40"
-                      title="Nowsza wersja"
-                    >
-                      <ChevronRight size={16} />
-                    </button>
-                    <span className="text-xs text-[var(--text-muted)]">
-                      {new Date(current.createdAt).toLocaleString("pl-PL")}
-                    </span>
-                  </div>
-                  <ModeToggle mode={histMode} onChange={setHistMode} />
-                </div>
 
-                {/* Oś wersji do szybkiego skoku */}
-                <div className="mb-3 flex flex-wrap gap-1">
-                  {history!.map((h, i) => (
-                    <button
-                      key={h.version}
-                      onClick={() => setIdx(i)}
-                      className={cn(
-                        "h-6 min-w-6 rounded px-1.5 text-xs",
-                        i === idx
-                          ? "bg-[var(--accent-blue)] text-white"
-                          : "bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                      )}
-                      title={`Wersja ${h.version}`}
-                    >
-                      v{h.version}
-                    </button>
-                  ))}
-                </div>
+              {/* Oś wersji do szybkiego skoku */}
+              <div className="flex flex-wrap gap-1">
+                {history!.map((h, i) => (
+                  <button
+                    key={h.version}
+                    onClick={() => setIdx(i)}
+                    className={cn(
+                      "h-6 min-w-6 rounded px-1.5 text-xs",
+                      i === idx
+                        ? "bg-[var(--accent-blue)] text-white"
+                        : "bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                    )}
+                    title={`Wersja ${h.version}`}
+                  >
+                    v{h.version}
+                  </button>
+                ))}
+              </div>
 
-                <div className="overflow-y-auto border-t border-[var(--border)] pt-3">
-                  {current.headline && histMode === "full" && (
-                    <p className="mb-2 text-sm font-medium text-[var(--text-primary)]">
-                      {current.headline}
-                    </p>
-                  )}
-                  <KnowledgeBody k={current} mode={histMode} />
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+              <div className="border-t border-[var(--border)] pt-3">
+                {current.headline && histMode === "full" && (
+                  <p className="mb-2 text-sm font-medium text-[var(--text-primary)]">
+                    {current.headline}
+                  </p>
+                )}
+                <KnowledgeBody k={current} mode={histMode} />
+              </div>
+            </>
+          )}
+        </Modal>
       )}
     </>
   );

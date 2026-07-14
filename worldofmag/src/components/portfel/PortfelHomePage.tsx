@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Wallet, Plus, Loader2, ChevronRight, TrendingUp, TrendingDown, Users, PiggyBank, Target, BarChart3 } from "lucide-react";
 import { PageHeader, SectionHeading, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { LineChart } from "@/components/ui/LineChart";
 import { createElement, type WalletOverview } from "@/actions/portfel";
 import { ELEMENT_KIND_LABELS, formatMoney } from "@/lib/portfel";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface Props {
   overview: WalletOverview;
@@ -21,8 +23,23 @@ export function PortfelHomePage({ overview, teams }: Props) {
   const [initial, setInitial] = useState("");
   const [ownerTeamId, setOwnerTeamId] = useState("");
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+  const [focused, setFocused] = useState<number>(-1);
 
   const active = elements.filter((e) => !e.archived);
+
+  // Z-232: lista nawigacyjna — j/k przesuwa fokus, Enter otwiera element, a/n dodaje.
+  const shortcutHandlers = useMemo(
+    () => ({
+      onNavigateDown: () => { if (!adding) setFocused((i) => Math.min(active.length - 1, i + 1)); },
+      onNavigateUp: () => { if (!adding) setFocused((i) => Math.max(0, i - 1)); },
+      onEnter: () => { if (!adding && focused >= 0 && active[focused]) router.push(`/portfel/${active[focused].id}`); },
+      onQuickAdd: () => { if (!adding) setAdding(true); },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [active, focused, adding]
+  );
+  useKeyboardShortcuts(shortcutHandlers);
 
   function handleCreate() {
     if (!name.trim()) return;
@@ -124,10 +141,10 @@ export function PortfelHomePage({ overview, teams }: Props) {
             <EmptyState icon={<Wallet size={28} />} message="Brak elementów" hint="Dodaj konto, oszczędności, inwestycję lub dług — każda zmiana salda jest zapisywana w historii" cta={{ label: "+ Nowy element", onClick: () => setAdding(true), color: "var(--accent-green)" }} />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {active.map((el) => {
+              {active.map((el, i) => {
                 const isDebt = el.kind === "debt";
                 return (
-                  <Link key={el.id} href={`/portfel/${el.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)", textDecoration: "none" }}>
+                  <Link key={el.id} href={`/portfel/${el.id}`} onMouseEnter={() => setFocused(i)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 10, border: `1px solid ${focused === i ? "var(--border-focus)" : "var(--border)"}`, background: focused === i ? "var(--bg-elevated)" : "var(--bg-surface)", textDecoration: "none" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{el.name}</span>

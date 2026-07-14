@@ -27,7 +27,9 @@ export default async function ListPage({ params }: Props) {
   const [list, allLists, categoryEmojiMap, categoryNames, stores, finance] = await Promise.all([
     prisma.shoppingList.findUnique({
       where: { id: params.listId },
-      include: { items: { orderBy: [{ priority: "desc" }, { createdAt: "asc" }] } },
+      // Z-221 (T-03): ręczna kolejność (order ASC) ma pierwszeństwo; przy braku ręcznego
+      // ułożenia (wszystko order=0) fallback na priority/createdAt = dotychczasowe zachowanie.
+      include: { items: { orderBy: [{ order: "asc" }, { priority: "desc" }, { createdAt: "asc" }] } },
     }),
     getLists(),
     getCategoryEmojiMap(),

@@ -58,19 +58,19 @@ export function AdminConfigForm({ groqKey, braveKey }: AdminConfigFormProps) {
                 >
                   brave.com/search/api
                 </a>{" "}
-                i kliknij „Get started".
+                i kliknij „Get started”.
               </li>
               <li>Załóż konto (Brave Search API) i potwierdź e-mail.</li>
               <li>
-                W panelu wybierz plan <strong>„Free"</strong> (Data for Search / Free) — do ~2&nbsp;000
+                W panelu wybierz plan <strong>„Free”</strong> (Data for Search / Free) — do ~2&nbsp;000
                 zapytań miesięcznie, 1&nbsp;zapytanie/s. Brave może poprosić o kartę do weryfikacji,
                 ale plan Free pozostaje bezpłatny.
               </li>
               <li>
-                Przejdź do <strong>API Keys</strong> → „Add API key", skopiuj token (zaczyna się od{" "}
+                Przejdź do <strong>API Keys</strong> → „Add API key”, skopiuj token (zaczyna się od{" "}
                 <code>BSA…</code>).
               </li>
-              <li>Wklej token poniżej i kliknij „Zapisz".</li>
+              <li>Wklej token poniżej i kliknij „Zapisz”.</li>
             </ol>
           </>
         }

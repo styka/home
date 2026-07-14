@@ -15,7 +15,7 @@ import {
 } from "@/actions/aiConversations";
 import { createUserReport } from "@/actions/reports";
 import type { AIAction } from "@/lib/ai/aiAction";
-import type { ActionResult } from "@/app/api/llm/home/execute/route";
+import type { ActionResult } from "@/lib/ai/executors/shared";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
 import { useOverlayState } from "@/hooks/useOverlayState";
 
@@ -960,7 +960,7 @@ export function AICommandSheet() {
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={attachedImage} alt="załącznik" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border)" }} />
-                    <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>Zdjęcie gotowe — opisz (np. „do zakupów") i wyślij, by rozpoznać przedmioty.</span>
+                    <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>Zdjęcie gotowe — opisz (np. „do zakupów”) i wyślij, by rozpoznać przedmioty.</span>
                     <button onClick={() => setAttachedImage(null)} title="Usuń zdjęcie" style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex" }}>
                       <X size={14} />
                     </button>

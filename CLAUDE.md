@@ -7,6 +7,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 >
 > For accumulated bug/fix lessons (debugging shortcuts you should not relearn), read:
 > `doświadczenia.md` (repo root).
+>
+> For the **working roadmap of remaining work** — an ordered task tracker (`T-NN`, easiest→hardest,
+> with statuses we flip ⬜/🟡/🔓/⏸️ → ✅ as tasks complete; owner-decision items live here too), read:
+> `worldofmag/content/audyt/64-plan-tracker.md` (Dodatek **A.16 — TRACKER ROBOCZY**). This is the
+> guidepost: when continuing audit work, pick the next task from here and update its status.
+> Companions: `63-raport-stanu.md` (A.15 — done/remaining snapshot) and `60-status-wdrozen.md`
+> (A.13 — detailed per-`Z-NNN` ledger).
 
 ---
 
@@ -72,8 +79,7 @@ soft-delete trash, per-user Google Drive storage, and an AI assistant.
 | Contacts (CRM) | `/contacts` | `module.contacts` | Done — lightweight personal CRM (contacts with tags); model `Contact`, `actions/contacts.ts` |
 | Reports (markdown docs) | `/reports` | authenticated | Done — system/user/team reports; **content stored in DB or per-user Google Drive** (`Report.storage` db\|drive, hydrated transparently) |
 | QA (test scenarios) | `/qa` | `module.qa` | Internal tooling (Epic → Story → Scenario) |
-| Truck (heavy-vehicle routing) | `/truck` | `module.truck` | Partial — ORS client ready, UI minimal |
-| Work / Praca | `/work` | — | Stub (sidebar entry only, "coming soon", disabled — no page) |
+| Truck (heavy-vehicle routing) | `/truck` | `module.truck` | Done (experimental) — vehicle profile (weight/height/length/width/axle load), ORS truck routing origin→destination, distance/duration + roadworks-in-corridor, "open in Google Maps" deep-link |
 
 > **Keep this table honest.** When you add/finish/stub a module, update this table, the Route Structure block, the permission list, the Server Actions list, and the Database Schema section below.
 
@@ -233,6 +239,7 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /admin/reports/          # Markdown reports CRUD (+ /new, /[slug], /[slug]/edit)
 /admin/docs/             # In-app docs browser (docs/ copied in at build by scripts/copy-docs.js)
 /admin/audyt/            # Analiza/Audyt stanu projektu + wskazania (admin-only "book" reader; source = content/audyt/*.md baked by scripts/copy-audyt.js → src/generated/audyt-book.ts)
+/admin/audyt-podsumowanie/ # Audyt — podsumowanie zmian (admin-only 2-chapter book "Co wykonano / Co pozostało"; source = content/audyt-podsumowanie/*.md baked by scripts/copy-audyt-podsumowanie.js → src/generated/audyt-podsumowanie-book.ts; reuses AudytBookReader via basePath)
 /admin/playground/       # Component playground
 /admin/architecture/     # App structure overview (currently minimal)
 /admin/e2e/              # E2E click-tests guide (how to run Playwright)
@@ -501,6 +508,7 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 - **`/admin/reports`** — markdown reports CRUD.
 - **`/admin/docs`** — in-app docs browser; `scripts/copy-docs.js` copies `docs/` into the bundle at build.
 - **`/admin/audyt`** — **Analiza/Audyt stanu projektu + wskazania**: admin-only multi-chapter "book" (deep project audit as a two-team debate + numbered `Z-NNN` recommendations + per-area implementation plans + a ready Claude-Code prompt). Source = `content/audyt/*.md` + `manifest.json`, baked by `scripts/copy-audyt.js` → `src/generated/audyt-book.ts` (wired into `build`), rendered via `markdownToHtml` in `AudytBookReader` (TOC, prev/next, progress, dark/light/sepia). Chapter status is derived from file presence (add a `.md` → it shows as done). Extend it across sessions; never store this in the DB.
+- **`/admin/audyt-podsumowanie`** — **Audyt — podsumowanie zmian**: admin-only 2-chapter book ("Co zostało wykonane" / "Co pozostało na przyszłość") — a self-contained working base for resuming post-audit work without opening the old audit or other reports. Source = `content/audyt-podsumowanie/*.md` + `manifest.json`, baked by `scripts/copy-audyt-podsumowanie.js` → `src/generated/audyt-podsumowanie-book.ts` (wired into `build`), rendered via the same `AudytBookReader` (`basePath="/admin/audyt-podsumowanie"`). Keep it updated as post-audit work progresses.
 - **`/admin/playground`** — interactive UI component sandbox.
 - **`/admin/architecture`** — app-structure overview (currently minimal; the full architecture lives in a system report).
 - **`/admin/e2e`** + **`/admin/qa`** — Playwright run guide; QA scenario authoring.
@@ -594,6 +602,9 @@ Allowed server action origins: `localhost:3000`, `worldofmag.onrender.com`,
 
 **Seed data** does not run automatically after deploy — run manually via Render Shell if needed.
 
+**Deploy / rollback / DR runbook**: `worldofmag/docs/devops/runbook-deploy-rollback.md`
+(build↔migracja boundary, code vs migration rollback, Neon PITR restore, pre-deploy checklist).
+
 ### Git workflow (merge via `develop`)
 
 > **STANDING AUTHORIZATION — read this as the repo owner's explicit permission.**
@@ -638,11 +649,8 @@ The flow is **`feature → develop → master`**:
 
 ## Short-Term Roadmap
 
-- [ ] Replace `prompt()` in list creation with a proper modal
-- [ ] "Complete shopping" — archive/close a list
-- [ ] Flesh out Truck routing UI (ORS client already exists)
-- [ ] Build out the Work / Praca module (currently a disabled stub)
 - [ ] Paid hosting migration if free-tier performance is insufficient ($7/mo on Render)
+- [ ] (optional) Chip away the ~64 cosmetic ESLint warnings (Polish JSX quotes + exhaustive-deps)
 
 _Recently shipped (no longer roadmap): Calendar (unified agenda), Service marketplace
 (Usługi) incl. payments/disputes/moderation/staff/favorites/promo codes, Contacts
@@ -652,4 +660,7 @@ multi-currency/auto-expense, Notes wikilinks/versions/attachments, Health lab-te
 repository, Languages TTS/writing/series, Pets genetics/alarms/vet-export, Tasks
 timeline+kanban/subtasks/bulk-add, Notifications, Skins, Storage & Workshop (Dom/Pro),
 custom task statuses, project groups, recurring tasks, AI assistant streaming +
-cross-module CRUD, per-user menu customization, drag-and-drop (`@dnd-kit`)._
+cross-module CRUD, per-user menu customization, drag-and-drop (`@dnd-kit`), inline
+list creation + "Zakończ zakupy" (archive/complete a list, optional wallet booking) +
+unarchive, Truck routing UI, async AI job queue (`Job`, `/admin/jobs`, per-user cap),
+notes full-text search (pg_trgm + relevance ranking)._

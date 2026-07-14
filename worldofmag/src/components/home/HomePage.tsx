@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { BookOpen, SlidersHorizontal, Eye, EyeOff, ChevronUp, ChevronDown, Check } from "lucide-react";
 import { setDashboardPrefs } from "@/actions/dashboardPrefs";
+import { DASHBOARD_SECTIONS } from "@/lib/home/dashboardSections";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AISuggestions } from "@/components/home/AISuggestions";
 import { InvitationsBanner } from "@/components/home/InvitationsBanner";
@@ -108,7 +109,8 @@ const SECTION_LABELS: Record<string, string> = {
   quickActions: "Szybkie akcje",
   suggestions: "Sugestie",
 };
-const DEFAULT_SECTION_ORDER = ["recently", "briefing", "modules", "today", "quickActions", "suggestions"];
+// Z-218: wspólny whitelist sekcji (źródło prawdy w lib, używane też przez Server Action).
+const DEFAULT_SECTION_ORDER: string[] = [...DASHBOARD_SECTIONS];
 
 function ctlBtn(disabled: boolean): React.CSSProperties {
   return {

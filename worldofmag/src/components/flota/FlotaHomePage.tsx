@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Car, Plus, Loader2, ChevronRight, Gauge, CalendarClock, ShieldCheck, AlertTriangle, Users } from "lucide-react";
 import { PageHeader, SectionHeading, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { createVehicle, type VehicleWithStats } from "@/actions/flota";
 import { FUEL_LABELS, deadlineStatus } from "@/lib/flota";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface Props {
   vehicles: VehicleWithStats[];
@@ -19,6 +21,21 @@ export function FlotaHomePage({ vehicles, teams }: Props) {
   const [fuelType, setFuelType] = useState("petrol");
   const [ownerTeamId, setOwnerTeamId] = useState("");
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+  const [focused, setFocused] = useState<number>(-1);
+
+  // Z-232: lista nawigacyjna — j/k przesuwa fokus, Enter otwiera pojazd, a/n dodaje.
+  const shortcutHandlers = useMemo(
+    () => ({
+      onNavigateDown: () => { if (!adding) setFocused((i) => Math.min(vehicles.length - 1, i + 1)); },
+      onNavigateUp: () => { if (!adding) setFocused((i) => Math.max(0, i - 1)); },
+      onEnter: () => { if (!adding && focused >= 0 && vehicles[focused]) router.push(`/flota/${vehicles[focused].id}`); },
+      onQuickAdd: () => { if (!adding) setAdding(true); },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [vehicles, focused, adding]
+  );
+  useKeyboardShortcuts(shortcutHandlers);
 
   function handleCreate() {
     if (!name.trim()) return;
@@ -73,7 +90,7 @@ export function FlotaHomePage({ vehicles, teams }: Props) {
             <EmptyState icon={<Car size={28} />} message="Brak pojazdów" hint="Dodaj pojazd, by śledzić przeglądy, OC, serwisy i zużycie paliwa" cta={{ label: "+ Nowy pojazd", onClick: () => setAdding(true), color: "var(--accent-blue)" }} />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {vehicles.map((v) => <VehicleCard key={v.id} v={v} />)}
+              {vehicles.map((v, i) => <VehicleCard key={v.id} v={v} focused={focused === i} onFocus={() => setFocused(i)} />)}
             </div>
           )}
         </div>
@@ -82,11 +99,11 @@ export function FlotaHomePage({ vehicles, teams }: Props) {
   );
 }
 
-function VehicleCard({ v }: { v: VehicleWithStats }) {
+function VehicleCard({ v, focused, onFocus }: { v: VehicleWithStats; focused: boolean; onFocus: () => void }) {
   const insp = deadlineStatus(v.inspectionDue);
   const ins = deadlineStatus(v.insuranceDue);
   return (
-    <Link href={`/flota/${v.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)", textDecoration: "none" }}>
+    <Link href={`/flota/${v.id}`} onMouseEnter={onFocus} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 10, border: `1px solid ${focused ? "var(--border-focus)" : "var(--border)"}`, background: focused ? "var(--bg-elevated)" : "var(--bg-surface)", textDecoration: "none" }}>
       <Car size={18} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

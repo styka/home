@@ -214,6 +214,9 @@ export async function describeDay(
     op: "generation",
     temperature: variation ? 0.95 : 0.5,
     maxTokens: 350,
+    // Z-330: porada deterministyczna per lokalizacja/dzień/pora/prognoza (prompt je
+    // zawiera) — cache eliminuje powtórny koszt tokenów. Wariant ma być świeży → bez cache.
+    cache: !variation,
     messages: [
       { role: "system", content: system },
       { role: "user", content: userPrompt },
@@ -354,6 +357,9 @@ export async function evaluateWatchers(
     json: true,
     temperature: 0.3,
     maxTokens: 1500,
+    // Z-330: ocena watcherów deterministyczna per lokalizacja/prognoza/lista watcherów
+    // (prompt je zawiera) — cache eliminuje powtórny koszt przy ponownych wejściach.
+    cache: true,
     messages: [
       { role: "system", content: system },
       { role: "user", content: userPrompt },

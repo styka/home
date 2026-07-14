@@ -4,6 +4,7 @@ import { ItemRow } from "./ItemRow";
 
 interface ItemListProps {
   items: Item[];
+  listId: string;
   focusedItemId: string | null;
   editingItemId: string | null;
   onItemFocus: (id: string) => void;
@@ -18,6 +19,7 @@ interface ItemListProps {
 
 export function ItemList({
   items,
+  listId,
   focusedItemId,
   editingItemId,
   onItemFocus,
@@ -89,6 +91,7 @@ export function ItemList({
           key={category}
           category={category}
           items={groupItems}
+          listId={listId}
           focusedItemId={focusedItemId}
           editingItemId={editingItemId}
           onItemFocus={onItemFocus}

@@ -3,13 +3,14 @@
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, Calendar, Briefcase, Settings, Mail, Shield, Map, Image, Lock, MoreHorizontal, Plus } from "lucide-react";
+import { Menu, X, Calendar, Settings, Mail, Shield, Map, Image as ImageIcon, Lock, MoreHorizontal, Plus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { DataFreshness } from "./DataFreshness";
 import { AICommandSheet } from "@/components/home/AICommandSheet";
+import { ConsentBanner } from "@/components/legal/ConsentBanner";
 import { FeedbackInspector } from "./FeedbackInspector";
 import { NotificationBell } from "./NotificationBell";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -198,12 +199,6 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
                 </>
               )}
 
-              {/* Coming soon (nie zależą od uprawnień) */}
-              {[{ label: "Work", icon: <Briefcase size={20} />, href: "/work" }].map((mod) => (
-                <div key={mod.href} className="flex items-center gap-3 px-4 py-3 mx-2 rounded" style={{ opacity: 0.35, color: "var(--text-secondary)", cursor: "not-allowed" }} title={`${mod.label} (coming soon)`}>
-                  {mod.icon}<span className="text-sm">{mod.label}</span>
-                </div>
-              ))}
             </nav>
 
             <div className="py-2 border-t" style={{ borderColor: "var(--border)", paddingBottom: "calc(8px + env(safe-area-inset-bottom))" }}>
@@ -261,6 +256,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
       )}
 
       <AICommandSheet />
+      <ConsentBanner />
       {isAdmin && <FeedbackInspector />}
     </div>
     </ToastProvider>
@@ -273,7 +269,7 @@ function MobileModuleSubNav({ id, pathname }: { id: string; pathname: string }) 
     return (
       <>
         <MobileSub href="/shopping/stores" pathname={pathname}><Map size={13} />Mapy sklepów</MobileSub>
-        <MobileSub href="/shopping/icons" pathname={pathname}><Image size={13} />Biblioteka ikon</MobileSub>
+        <MobileSub href="/shopping/icons" pathname={pathname}><ImageIcon size={13} />Biblioteka ikon</MobileSub>
         <MobileSub href="/shopping/icons/categories" pathname={pathname}>Przypisania ikon</MobileSub>
       </>
     );

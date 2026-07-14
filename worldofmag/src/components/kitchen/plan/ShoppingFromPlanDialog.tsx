@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { X, ShoppingCart, Loader2 } from "lucide-react";
+import { ShoppingCart, Loader2 } from "lucide-react";
 import { addDays, format } from "date-fns";
 import {
   generateShoppingListFromPlan,
   previewShoppingListFromPlan,
   type ShoppingListPreviewItem,
 } from "@/actions/mealPlans";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { polishPlural } from "@/lib/polishPlural";
 
@@ -98,8 +99,6 @@ export function ShoppingFromPlanDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, rangeMode, customFrom, customTo, skipPantry, consolidate, skipOptional]);
 
-  if (!open) return null;
-
   function handleConfirm() {
     if (!listId) {
       showToast("Wybierz listę docelową", "error");
@@ -132,35 +131,33 @@ export function ShoppingFromPlanDialog({
   const toAdd = previewItems.filter((i) => !i.fromPantry);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full md:w-[520px] md:rounded border max-h-[92vh] overflow-y-auto"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border)",
-          borderTopLeftRadius: 12,
-          borderTopRightRadius: 12,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10"
-          style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
-        >
-          <h3 className="text-base font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-            <ShoppingCart size={16} style={{ color: "var(--accent-orange)" }} />
-            Lista zakupów z planu
-          </h3>
-          <button onClick={onClose} aria-label="Zamknij" style={{ color: "var(--text-muted)" }}>
-            <X size={18} />
+    <Modal
+      open={open}
+      onClose={onClose}
+      wide
+      title={
+        <span className="flex items-center gap-2">
+          <ShoppingCart size={16} style={{ color: "var(--accent-orange)" }} />
+          Lista zakupów z planu
+        </span>
+      }
+      footer={
+        <>
+          <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
+            Anuluj
           </button>
-        </div>
-
-        <div className="px-4 py-3 flex flex-col gap-3">
+          <button
+            onClick={handleConfirm}
+            disabled={pending || lists.length === 0 || toAdd.length === 0}
+            className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
+            style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+          >
+            {pending ? "Generuję…" : `Dodaj ${toAdd.length}`}
+          </button>
+        </>
+      }
+    >
+        <>
           <fieldset className="flex flex-col gap-1">
             <legend className="text-xs uppercase tracking-wide mb-1" style={{ color: "var(--text-muted)" }}>
               Zakres
@@ -308,25 +305,7 @@ export function ShoppingFromPlanDialog({
               ))}
             </ul>
           </section>
-        </div>
-
-        <div
-          className="flex justify-end gap-2 px-4 py-3 border-t sticky bottom-0"
-          style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
-        >
-          <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
-            Anuluj
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={pending || lists.length === 0 || toAdd.length === 0}
-            className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
-            style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
-          >
-            {pending ? "Generuję…" : `Dodaj ${toAdd.length}`}
-          </button>
-        </div>
-      </div>
-    </div>
+        </>
+    </Modal>
   );
 }

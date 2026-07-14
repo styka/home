@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { X, ShoppingCart, CheckSquare, FileText, PawPrint, Boxes, Wallet, Fuel, ChefHat, Repeat, Wand2, CheckCircle, XCircle, Loader2, Square, CheckSquare2, ChevronDown, ChevronUp, HeartPulse, Languages, Newspaper, CloudSun } from "lucide-react";
 import type { AIAction } from "@/lib/ai/aiAction";
-import type { ActionResult } from "@/app/api/llm/home/execute/route";
+import type { ActionResult } from "@/lib/ai/executors/shared";
 
 interface ActionDrawerProps {
   actions: AIAction[];
@@ -439,7 +439,7 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
         {!showResults && onRefine && (
           <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)", flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
             <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
-              Edytuj szczegóły w „Parametry", albo opisz poniżej, co poprawić — AI ułoży plan na nowo:
+              Edytuj szczegóły w „Parametry”, albo opisz poniżej, co poprawić — AI ułoży plan na nowo:
             </p>
             <div style={{ display: "flex", gap: 8 }}>
               <input

@@ -16,14 +16,19 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
     function onKeyDown(e: KeyboardEvent) {
       const typing = isTypingTarget(document.activeElement);
 
-      // Always-active shortcuts
+      // Always-active shortcuts. Każdy handler jest opcjonalny — gdy go nie ma,
+      // klawisz NIE jest blokowany (przechodzi do innych listenerów / domyślnej
+      // akcji), więc nie „połykamy" np. Ctrl+K, gdy moduł nie ma własnej palety.
       if (e.key === "Escape") {
-        handlers.onEscape();
+        handlers.onEscape?.();
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
-        handlers.onCommandPalette();
+        // Zawsze return: Ctrl+K nie może wpaść w case "k" (= nawigacja w górę).
+        if (handlers.onCommandPalette) {
+          e.preventDefault();
+          handlers.onCommandPalette();
+        }
         return;
       }
 
@@ -33,46 +38,47 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       switch (e.key) {
         case "a":
         case "n":
-          e.preventDefault();
-          handlers.onQuickAdd();
+          if (handlers.onQuickAdd) { e.preventDefault(); handlers.onQuickAdd(); }
           break;
         case "j":
         case "ArrowDown":
-          e.preventDefault();
-          handlers.onNavigateDown();
+          if (handlers.onNavigateDown) { e.preventDefault(); handlers.onNavigateDown(); }
           break;
         case "k":
         case "ArrowUp":
-          e.preventDefault();
-          handlers.onNavigateUp();
+          if (handlers.onNavigateUp) { e.preventDefault(); handlers.onNavigateUp(); }
           break;
         case " ":
         case "x":
-          e.preventDefault();
-          handlers.onToggleStatus();
+          if (handlers.onToggleStatus) { e.preventDefault(); handlers.onToggleStatus(); }
           break;
         case "d":
         case "Delete":
         case "Backspace":
-          if (e.key !== "Backspace" || !typing) {
-            e.preventDefault();
-            handlers.onDelete();
-          }
+          // Backspace poza polem tekstowym (typing już odsiane wyżej) = usuń.
+          if (handlers.onDelete) { e.preventDefault(); handlers.onDelete(); }
           break;
         case "e":
-          e.preventDefault();
-          handlers.onEdit();
+          if (handlers.onEdit) { e.preventDefault(); handlers.onEdit(); }
           break;
+        case "Enter": {
+          // Enter = „otwórz" zogniskowany element listy nawigacyjnej. Nie przejmuj,
+          // gdy fokus jest na realnej kontrolce (przycisk/link/select) — niech zadziała natywnie.
+          const ae = document.activeElement;
+          const aeTag = ae?.tagName.toLowerCase();
+          const interactive = aeTag === "button" || aeTag === "a" || aeTag === "select" || ae?.getAttribute("role") === "button";
+          if (handlers.onEnter && !interactive) { e.preventDefault(); handlers.onEnter(); }
+          break;
+        }
         case "/":
         case "f":
-          e.preventDefault();
-          handlers.onSearch();
+          if (handlers.onSearch) { e.preventDefault(); handlers.onSearch(); }
           break;
-        case "1": handlers.onFilterTab(0); break;
-        case "2": handlers.onFilterTab(1); break;
-        case "3": handlers.onFilterTab(2); break;
-        case "4": handlers.onFilterTab(3); break;
-        case "5": handlers.onFilterTab(4); break;
+        case "1": handlers.onFilterTab?.(0); break;
+        case "2": handlers.onFilterTab?.(1); break;
+        case "3": handlers.onFilterTab?.(2); break;
+        case "4": handlers.onFilterTab?.(3); break;
+        case "5": handlers.onFilterTab?.(4); break;
       }
     }
 

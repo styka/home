@@ -71,7 +71,7 @@ export function WarsztatSettingsForm({ mode }: { mode: WarsztatMode }) {
           })}
         </div>
         <p className="mt-3 text-xs" style={{ color: "var(--text-muted)" }}>
-          Tryb Pro odblokowuje zakładkę „Przeglądy", przypisywanie narzędzi do osób/stanowisk i dziennik projektów.
+          Tryb Pro odblokowuje zakładkę „Przeglądy”, przypisywanie narzędzi do osób/stanowisk i dziennik projektów.
         </p>
       </section>
     </div>

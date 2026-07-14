@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HeartPulse, Plus, Stethoscope, FlaskConical, Trash2, Pencil, Check, X, MapPin, CalendarClock, Paperclip } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
 import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent, getHealthAttachments, addHealthAttachment, deleteHealthAttachment, type TestTrend, type HealthAttachmentDTO } from "@/actions/health";
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
+import { HealthAiOptInToggle } from "@/components/health/HealthAiOptInToggle";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -160,24 +162,12 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormState; onSave: 
   );
 }
 
-function EventCard({ ev, onEdit }: { ev: HealthEvent; onEdit: () => void }) {
-  const router = useRouter();
+function EventCard({ ev, focused, onEdit, onCycleStatus, onDelete, onFocus }: { ev: HealthEvent; focused: boolean; onEdit: () => void; onCycleStatus: () => void; onDelete: () => void; onFocus: () => void }) {
   const status = STATUS_META[ev.status];
   const isTest = ev.kind === "TEST";
 
-  async function cycleStatus() {
-    const next: HealthStatus = ev.status === "PLANNED" ? "DONE" : ev.status === "DONE" ? "CANCELLED" : "PLANNED";
-    await setHealthStatus(ev.id, next);
-    router.refresh();
-  }
-  async function remove() {
-    if (!confirm("Usunąć wpis?")) return;
-    await deleteHealthEvent(ev.id);
-    router.refresh();
-  }
-
   return (
-    <div style={{ ...cardStyle, alignItems: "flex-start", cursor: "default", gap: 12 }}>
+    <div onMouseEnter={onFocus} style={{ ...cardStyle, alignItems: "flex-start", cursor: "default", gap: 12, borderColor: focused ? "var(--border-focus)" : "var(--border)" }}>
       <span style={{ color: isTest ? "var(--accent-amber)" : "var(--accent-green)", flexShrink: 0, marginTop: 2 }}>
         {isTest ? <FlaskConical size={18} /> : <Stethoscope size={18} />}
       </span>
@@ -194,12 +184,12 @@ function EventCard({ ev, onEdit }: { ev: HealthEvent; onEdit: () => void }) {
         <HealthAttachments eventId={ev.id} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-        <button onClick={cycleStatus} className="text-xs px-2 py-1 rounded" style={{ color: status.color, border: `1px solid ${status.color}`, background: "transparent" }} title="Zmień status">
+        <button onClick={onCycleStatus} className="text-xs px-2 py-1 rounded" style={{ color: status.color, border: `1px solid ${status.color}`, background: "transparent" }} title="Zmień status">
           {status.label}
         </button>
         <div style={{ display: "flex", gap: 4 }}>
           <button onClick={onEdit} className="p-1 rounded" style={{ color: "var(--text-muted)", background: "none", border: "none" }}><Pencil size={14} /></button>
-          <button onClick={remove} className="p-1 rounded" style={{ color: "var(--accent-red)", background: "none", border: "none" }}><Trash2 size={14} /></button>
+          <button onClick={onDelete} className="p-1 rounded" style={{ color: "var(--accent-red)", background: "none", border: "none" }}><Trash2 size={14} /></button>
         </div>
       </div>
     </div>
@@ -213,11 +203,13 @@ export function HealthHomePage({ events, trends = [] }: { events: HealthEvent[];
   const [tab, setTab] = useState<Tab>("ALL");
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<HealthEvent | null>(null);
+  const [focused, setFocused] = useState<number>(-1);
 
   const filtered = events.filter((e) => tab === "ALL" || e.kind === tab);
   const now = Date.now();
   const upcoming = filtered.filter((e) => new Date(e.scheduledAt).getTime() >= now && e.status !== "CANCELLED");
   const past = filtered.filter((e) => new Date(e.scheduledAt).getTime() < now || e.status === "CANCELLED");
+  const ordered = useMemo(() => [...upcoming, ...past], [upcoming, past]);
 
   const parseNum = (s: string) => { const n = parseFloat(s.replace(",", ".")); return Number.isFinite(n) ? n : null; };
 
@@ -244,6 +236,17 @@ export function HealthHomePage({ events, trends = [] }: { events: HealthEvent[];
     router.refresh();
   }
 
+  async function cycleStatus(ev: HealthEvent) {
+    const next: HealthStatus = ev.status === "PLANNED" ? "DONE" : ev.status === "DONE" ? "CANCELLED" : "PLANNED";
+    await setHealthStatus(ev.id, next);
+    router.refresh();
+  }
+  async function removeEvent(ev: HealthEvent) {
+    if (!confirm("Usunąć wpis?")) return;
+    await deleteHealthEvent(ev.id);
+    router.refresh();
+  }
+
   const formFromEvent = (ev: HealthEvent): FormState => ({
     kind: ev.kind, title: ev.title, scheduledAt: toLocalInput(ev.scheduledAt),
     doctorName: ev.doctorName ?? "", specialty: ev.specialty ?? "", facility: ev.facility ?? "",
@@ -256,6 +259,24 @@ export function HealthHomePage({ events, trends = [] }: { events: HealthEvent[];
     { id: "VISIT", label: "Wizyty" },
     { id: "TEST", label: "Badania" },
   ];
+
+  // Z-232: klawiatura przez wspólny hub. Skróty tła nieaktywne, gdy otwarty formularz.
+  // j/k = nawigacja po liście (nadchodzące + minione), x = cykl statusu, e = edycja,
+  // d = usuń, a = dodaj, 1–3 = zakładki. focus po stronie rodzica (ordered[focused]).
+  const shortcutHandlers = useMemo(
+    () => ({
+      onNavigateDown: () => { if (!adding && !editing) setFocused((i) => Math.min(ordered.length - 1, i + 1)); },
+      onNavigateUp: () => { if (!adding && !editing) setFocused((i) => Math.max(0, i - 1)); },
+      onQuickAdd: () => { if (!adding && !editing) { setAdding(true); setEditing(null); } },
+      onToggleStatus: () => { if (!adding && !editing && focused >= 0 && ordered[focused]) cycleStatus(ordered[focused]); },
+      onEdit: () => { if (!adding && !editing && focused >= 0 && ordered[focused]) { setEditing(ordered[focused]); setAdding(false); } },
+      onDelete: () => { if (!adding && !editing && focused >= 0 && ordered[focused]) removeEvent(ordered[focused]); },
+      onFilterTab: (i: number) => { const id = TABS[i]?.id; if (id) { setTab(id); setFocused(-1); } },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ordered, focused, adding, editing]
+  );
+  useKeyboardShortcuts(shortcutHandlers);
 
   return (
     <div style={pageContainerStyle}>
@@ -271,6 +292,8 @@ export function HealthHomePage({ events, trends = [] }: { events: HealthEvent[];
             </button>
           }
         />
+
+        <HealthAiOptInToggle />
 
         <div style={{ display: "flex", gap: 6 }}>
           {TABS.map((t) => (
@@ -315,7 +338,7 @@ export function HealthHomePage({ events, trends = [] }: { events: HealthEvent[];
               <section>
                 <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Nadchodzące</h2>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {upcoming.map((e) => <EventCard key={e.id} ev={e} onEdit={() => { setEditing(e); setAdding(false); }} />)}
+                  {upcoming.map((e, i) => <EventCard key={e.id} ev={e} focused={focused === i} onFocus={() => setFocused(i)} onEdit={() => { setEditing(e); setAdding(false); }} onCycleStatus={() => cycleStatus(e)} onDelete={() => removeEvent(e)} />)}
                 </div>
               </section>
             )}
@@ -323,7 +346,7 @@ export function HealthHomePage({ events, trends = [] }: { events: HealthEvent[];
               <section>
                 <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Minione</h2>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {past.map((e) => <EventCard key={e.id} ev={e} onEdit={() => { setEditing(e); setAdding(false); }} />)}
+                  {past.map((e, j) => { const idx = upcoming.length + j; return <EventCard key={e.id} ev={e} focused={focused === idx} onFocus={() => setFocused(idx)} onEdit={() => { setEditing(e); setAdding(false); }} onCycleStatus={() => cycleStatus(e)} onDelete={() => removeEvent(e)} />; })}
                 </div>
               </section>
             )}

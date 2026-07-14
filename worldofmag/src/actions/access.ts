@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
 import { logAudit } from "@/lib/audit"
+import { keysetQuery, keysetResult, type KeysetPage } from "@/lib/pagination"
+import { countDistinctAdminHolders } from "@/lib/access/adminLockout"
 
 async function requireAdmin() {
   const session = await auth()
@@ -31,28 +33,17 @@ async function countAdminAccessHolders(opts?: {
   const perm = await prisma.permission.findUnique({ where: { slug: ADMIN_PERM_SLUG }, select: { id: true } })
   if (!perm) return 0
 
-  let adminRoles = (
+  const adminRoles = (
     await prisma.rolePermission.findMany({ where: { permissionId: perm.id }, select: { role: true } })
   ).map((g) => g.role)
-  if (opts?.excludeRoleGrant) adminRoles = adminRoles.filter((r) => r !== opts.excludeRoleGrant)
   if (adminRoles.length === 0) return 0
 
   const userRoles = await prisma.userRole.findMany({
     where: { role: { in: adminRoles } },
     select: { userId: true, role: true },
   })
-  const holders = new Set<string>()
-  for (const ur of userRoles) {
-    if (
-      opts?.removeUserRole &&
-      ur.userId === opts.removeUserRole.userId &&
-      ur.role === opts.removeUserRole.role
-    ) {
-      continue
-    }
-    holders.add(ur.userId)
-  }
-  return holders.size
+  // Z-176: czysta (testowalna) logika liczenia/symulacji posiadaczy admina.
+  return countDistinctAdminHolders(adminRoles, userRoles, opts)
 }
 
 // --- Permissions ---
@@ -217,14 +208,17 @@ export type AuditEntry = {
   createdAt: string
 }
 
-export async function getAuditLog(filter?: { category?: "rbac" | "config" }): Promise<AuditEntry[]> {
+export async function getAuditLog(
+  opts?: { category?: "rbac" | "config"; cursor?: string | null; limit?: number },
+): Promise<KeysetPage<AuditEntry>> {
   await requireAdmin()
+  // Z-070: paginacja keyset zamiast stałego `take: 200` — log audytu rośnie bez końca.
   const rows = await prisma.auditLog.findMany({
-    where: filter?.category ? { category: filter.category } : undefined,
-    orderBy: { createdAt: "desc" },
-    take: 200,
+    where: opts?.category ? { category: opts.category } : undefined,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    ...keysetQuery({ cursor: opts?.cursor, limit: opts?.limit }),
   })
-  return rows.map((r) => ({
+  const mapped: AuditEntry[] = rows.map((r) => ({
     id: r.id,
     actorEmail: r.actorEmail,
     category: r.category,
@@ -233,4 +227,5 @@ export async function getAuditLog(filter?: { category?: "rbac" | "config" }): Pr
     detail: r.detail,
     createdAt: r.createdAt.toISOString(),
   }))
+  return keysetResult(mapped, opts?.limit)
 }

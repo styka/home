@@ -7,14 +7,10 @@ import {
   sendServiceMessage,
   sendQuote,
   respondToQuote,
-  setServicePayment,
-  markPaymentPaid,
-  bookClientExpense,
-  applyPromoCode,
-  clearPromoCode,
-  getRequestDisputes,
-  openDispute,
 } from "@/actions/services";
+import { setServicePayment, markPaymentPaid, bookClientExpense } from "@/actions/services/payments";
+import { applyPromoCode, clearPromoCode } from "@/actions/services/promo";
+import { getRequestDisputes, openDispute } from "@/actions/services/disputes";
 import { getWalletElements } from "@/actions/portfel";
 import type { RequestThreadDTO, ServiceQuoteDTO, ServicePaymentDTO, PaymentMethod, ServiceDisputeDTO } from "@/lib/services";
 import { QUOTE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/services";

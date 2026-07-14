@@ -1,110 +1,17 @@
+// Wygeneruj mapę (graf) sklepu. Logika w handlerze; cienka trasa sync. Klient: runJob("stores.generate").
 import { NextRequest, NextResponse } from "next/server";
-import { chatComplete } from "@/lib/llm/chat";
-
-const CATEGORIES = [
-  "Warzywa i owoce", "Nabiał i jaja", "Mięso i ryby", "Piekarnia",
-  "Suche produkty", "Napoje", "Mrożone", "Przekąski i słodycze",
-  "Przyprawy i oleje", "Zioła i przyprawy", "Chemia i higiena",
-  "Konserwy i przetwory", "Inne",
-];
-
-const SYSTEM_PROMPT = `Jesteś ekspertem od layoutów polskich supermarketów.
-Generujesz graf reprezentujący układ kategorii produktów w sklepie.
-
-Dozwolone kategorie: ${CATEGORIES.join(", ")}
-
-Węzły grafu:
-- START (id: "start", type: "START", label: "Wejście")
-- STOP (id: "stop", type: "STOP", label: "Kasy")
-- Węzły kategorii (type: "CATEGORY", category: jedna z dozwolonych kategorii)
-
-Krawędzie: { fromId, toId, weight } gdzie weight to odległość (1-10, mniejsza = bliżej).
-
-Przykładowe układy polskich sieci:
-
-Biedronka (typowy mały/średni sklep):
-- Wejście → warzywa/owoce (1), kwiaty/sezonowe (1)
-- Warzywa → nabiał (2), mięso (2)
-- Nabiał → piekarnia (2)
-- Mięso → mrożonki (3), deli (2)
-- Piekarnia → przekąski (2), suche/makarony (3)
-- Suche → chemia/higiena (4), przetwory (3)
-- Chemia → kasy (2)
-
-Lidl (typowy układ):
-- Wejście → piekarnia (1), warzywa (2)
-- Piekarnia → przekąski (2)
-- Warzywa → nabiał (2), owoce (1)
-- Nabiał → mięso (2), mrożonki (3)
-- Mięso → ryby (2)
-- Suche/makarony → przetwory (2), sosy/oleje (2)
-- Chemia osobno (4-5 od wejścia) → kasy
-
-Żabka (mały sklep convenience):
-- Wejście → napoje (1), przekąski (1)
-- Napoje → nabiał (2), alkohol (2)
-- Przekąski → słodycze (1)
-- Nabiał → kanapki/deli (1)
-- Kasy blisko wejścia (3-4)
-
-Auchan/Carrefour (hipermarket):
-- Wejście → warzywa/owoce (1)
-- Warzywa → nabiał (3), piekarnia (2)
-- Nabiał → mięso (3), ryby (3)
-- Mięso → mrożonki (4)
-- Alkohole daleko (6-7)
-- Chemia/higiena osobne alejki (5-6)
-- Kasy po prawej stronie (8-10)
-
-Zwróć JSON w dokładnie tym formacie:
-{
-  "nodes": [
-    { "id": "start", "type": "START", "category": null, "label": "Wejście" },
-    { "id": "cat_produce", "type": "CATEGORY", "category": "Warzywa i owoce", "label": "Warzywa i owoce" },
-    ...
-    { "id": "stop", "type": "STOP", "category": null, "label": "Kasy" }
-  ],
-  "edges": [
-    { "fromId": "start", "toId": "cat_produce", "weight": 1 },
-    ...
-  ],
-  "confidence": "high",
-  "note": "Typowy układ Biedronki"
-}
-
-Zasady:
-- Zawsze uwzględnij START i STOP
-- Dołącz tylko kategorie faktycznie obecne w tym sklepie (nie wszystkie 13)
-- Wagi od 1 (sąsiednie) do 10 (druga strona sklepu)
-- confidence: "high" jeśli znasz ten sklep, "medium" jeśli podobny, "low" jeśli zgadujesz
-- Zwróć TYLKO JSON, bez dodatkowego tekstu`;
+import { auth } from "@/lib/auth";
+import { storesGenerateHandler } from "@/lib/jobs/handlers/storesGenerate";
+import { JobError } from "@/lib/jobs/types";
 
 export async function POST(req: NextRequest) {
-  const { storeName } = await req.json().catch(() => ({ storeName: "" }));
-  if (!storeName?.trim()) return NextResponse.json({ error: "Empty store name" }, { status: 400 });
-
-  const result = await chatComplete({
-    op: "reasoning",
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: `Wygeneruj mapę sklepu: "${storeName.trim()}"` },
-    ],
-    temperature: 0.2,
-    maxTokens: 2048,
-  });
-
-  if (!result.ok) {
-    return NextResponse.json({ error: result.message }, { status: result.status });
-  }
-
-  const content: string = result.content || "{}";
-
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const body = (await req.json().catch(() => ({}))) as { storeName?: string };
   try {
-    const cleaned = content.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
-    const parsed = JSON.parse(cleaned);
-    if (!parsed.nodes || !parsed.edges) throw new Error("missing fields");
-    return NextResponse.json(parsed);
-  } catch {
-    return NextResponse.json({ error: "LLM zwrócił nieprawidłowy format" }, { status: 502 });
+    return NextResponse.json(await storesGenerateHandler({ storeName: body.storeName }, { ownerId: session.user.id, jobId: "sync" }));
+  } catch (e) {
+    if (e instanceof JobError) return NextResponse.json({ error: e.message }, { status: e.status });
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Błąd" }, { status: 500 });
   }
 }

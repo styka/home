@@ -36,6 +36,7 @@ Maksymalnie ${limit} słówek. „term" w języku ${target}, „translation" w j
 
   const result = await chatComplete({
     op: "generation",
+    userId: session.user?.id, // Z-130: budżet + tokeny
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userMessage },

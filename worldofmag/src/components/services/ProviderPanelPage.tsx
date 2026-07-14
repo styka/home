@@ -11,10 +11,9 @@ import {
   updateListing,
   deleteListing,
   advanceRequestStatus,
-  addServiceImage,
-  deleteServiceImage,
   setProviderLocation,
 } from "@/actions/services";
+import { addServiceImage, deleteServiceImage } from "@/actions/services/images";
 import {
   PRICE_MODEL_LABELS,
   type ServiceCategoryDTO,
@@ -22,7 +21,7 @@ import {
   type RequestDTO,
   type RequestStatus,
 } from "@/lib/services";
-import type { ProviderStats } from "@/actions/services";
+import type { ProviderStats } from "@/lib/services";
 import { RatingStars, formatPrice, StatusBadge, VerifiedBadge, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 import { AvailabilityEditor } from "./AvailabilityEditor";
 import { PromoCodesManager } from "./PromoCodesManager";

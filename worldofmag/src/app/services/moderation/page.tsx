@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { getModerationDisputes } from "@/actions/services";
+import { getModerationDisputes } from "@/actions/services/disputes";
 import { ModerationPage } from "@/components/services/ModerationPage";
 
 export default async function ServicesModerationPage() {

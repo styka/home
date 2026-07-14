@@ -18,8 +18,9 @@ model User {
   image         String?
   avatarUrl     String?
   role          String    @default("USER") // "USER" | "ADMIN"
+  icalToken     String?   @unique // Z-150: odwoływalny token feedu iCal (subskrypcja agendy)
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  updatedAt     DateTime  @default(now()) @updatedAt
 
   accounts               Account[]
   sessions               Session[]
@@ -92,6 +93,66 @@ model User {
   ownedWorkshops         Workshop[]            @relation("OwnedWorkshops")
   notifications          Notification[]        @relation("UserNotifications")
   serviceMessages        ServiceMessage[]      @relation("SentServiceMessages")
+  consents               UserConsent[]         @relation("UserConsents")
+  aiUsage                AiUsage[]             @relation("UserAiUsage")
+  healthSettings         HealthSettings?       @relation("UserHealthSettings")
+  subscription           Subscription?         @relation("UserSubscription")
+}
+
+// Z-471 (monetyzacja): plan handlowy użytkownika. Definicje planów (limity/funkcje)
+// żyją w kodzie (`src/lib/plans.ts`) — rzadko się zmieniają; tabela trzyma tylko
+// przypisanie + status. Brak wiersza = plan `free`. Bramka płatności (Z-473) ustawi
+// `planKey`/`status`/`currentPeriodEnd` przez webhooki (gdy właściciel wybierze dostawcę).
+model Subscription {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  planKey          String    @default("free") // "free" | "premium"
+  status           String    @default("active") // "active" | "canceled" | "past_due"
+  currentPeriodEnd DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation("UserSubscription", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Z-270 (ochrona danych zdrowotnych): per-user ustawienia modułu Zdrowie.
+// `aiOptIn` DOMYŚLNIE false — asystent AI NIE widzi danych zdrowotnych, dopóki
+// użytkownik świadomie nie włączy (privacy-by-default dla danych wrażliwych).
+model HealthSettings {
+  userId    String   @id
+  aiOptIn   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  user      User     @relation("UserHealthSettings", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Z-053 (RODO): zgody użytkownika na dokumenty prawne (polityka prywatności,
+// regulamin). Wersjonowane — wpisujemy zaakceptowaną wersję; ponowna akceptacja
+// nadpisuje. Brak akceptacji bieżącej wersji → baner zgód.
+model UserConsent {
+  id          String   @id @default(cuid())
+  userId      String
+  documentKey String   // "privacy" | "terms" (klucz dokumentu z lib/legal/documents)
+  version     String   // wersja zaakceptowanego dokumentu
+  acceptedAt  DateTime @default(now())
+  user        User     @relation("UserConsents", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentKey])
+  @@index([userId])
+}
+
+// Z-130/Z-511 (kontrola kosztów AI): trwałe, dzienne zużycie AI per użytkownik —
+// liczba zapytań i przybliżone tokeny. Działa między instancjami (wspólna baza),
+// w przeciwieństwie do liczników in-memory. Budżet zależny od planu (lib/ai/usage).
+model AiUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  day       String   // YYYY-MM-DD (UTC) — okno dzienne
+  requests  Int      @default(0)
+  tokens    Int      @default(0)
+  updatedAt DateTime @updatedAt
+  user      User     @relation("UserAiUsage", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day])
+  @@index([userId])
 }
 
 // Preferencje paska bocznego/menu per użytkownik: kolejność i wyłączone moduły.
@@ -248,13 +309,14 @@ model Team {
   name         String
   description  String?
   avatarUrl    String?
+  kind         String   @default("team") // "team" | "household" (Z-192 preset rodziny)
   ownerId      String
   parentTeamId String?
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime @default(now()) @updatedAt
 
-  owner                User                  @relation("TeamOwner", fields: [ownerId], references: [id])
-  parentTeam           Team?                 @relation("SubTeams", fields: [parentTeamId], references: [id])
+  owner                User                  @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  parentTeam           Team?                 @relation("SubTeams", fields: [parentTeamId], references: [id], onDelete: SetNull)
   subTeams             Team[]                @relation("SubTeams")
   members              TeamMember[]
   invitations          TeamInvitation[]
@@ -291,12 +353,18 @@ model Team {
   serviceCategories    ServiceCategory[]     @relation("TeamServiceCategories")
   skins                Skin[]                @relation("SkinTeam")
   workshops            Workshop[]            @relation("TeamWorkshops")
+
+  @@index([ownerId])
 }
 
 model TeamMember {
   teamId   String
   userId   String
   role     String   @default("MEMBER") // "MEMBER" | "ADMIN" | "OWNER"
+  // Z-194 (T-12): granularne role rodzic/dziecko. JSON string[] dozwolonych modułów
+  // do WSPÓŁDZIELONYCH zasobów zespołu, albo NULL = brak ograniczeń (pełny dostęp).
+  // "[]" = brak dostępu do żadnego współdzielonego modułu. OWNER/ADMIN ignorują to pole.
+  moduleAccess String?
   joinedAt DateTime @default(now())
 
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
@@ -312,11 +380,11 @@ model TeamInvitation {
   invitedUserId String
   status        String   @default("PENDING") // "PENDING" | "ACCEPTED" | "REJECTED"
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime @default(now()) @updatedAt
 
   team        Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  invitedBy   User @relation("InvitedBy", fields: [invitedById], references: [id])
-  invitedUser User @relation("InvitedUser", fields: [invitedUserId], references: [id])
+  invitedBy   User @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Restrict)
+  invitedUser User @relation("InvitedUser", fields: [invitedUserId], references: [id], onDelete: Restrict)
 
   @@unique([teamId, invitedUserId])
 }
@@ -333,9 +401,12 @@ model ShoppingList {
   archived    Boolean   @default(false)
   archivedAt  DateTime?
 
-  owner     User?  @relation(fields: [ownerId], references: [id])
-  ownerTeam Team?  @relation("TeamLists", fields: [ownerTeamId], references: [id])
+  owner     User?  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?  @relation("TeamLists", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   items     Item[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
 }
 
 model Item {
@@ -348,12 +419,19 @@ model Item {
   notes     String?
   price     Float? // S6: cena jednostkowa (do sumy zakupów → Portfel)
   priority  Int      @default(0)
+  // Z-221 (T-03): ręczna kolejność DnD per-kategoria. Default 0 = brak ręcznego ułożenia
+  // (sort fallbackuje na priority/createdAt). Nadpisuje sort po trasie sklepu.
+  order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   listId    String
 
   list         ShoppingList      @relation(fields: [listId], references: [id], onDelete: Cascade)
   recipeOrigin ItemRecipeOrigin?
+
+  // Z-031: pozycje ładowane/filtrowane po (listId, status) — np. NEEDED do widoku,
+  // DONE do czyszczenia. Model nie miał żadnego indeksu (pełny skan przy każdej liście).
+  @@index([listId, status])
 }
 
 model ItemHistory {
@@ -494,13 +572,16 @@ model Note {
   ownerId     String?
   ownerTeamId String?
   group       NoteGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  owner       User?      @relation("OwnedNotes", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam   Team?      @relation("TeamNotes", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner       User?      @relation("OwnedNotes", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam   Team?      @relation("TeamNotes", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   tags        NoteTag[]
   attachments NoteAttachment[]
   revisions   NoteRevision[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
 }
 
 // N4: historia/wersjonowanie notatki — migawka treści sprzed zmiany.
@@ -554,10 +635,13 @@ model TaskProject {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner     User?               @relation("OwnedTaskProjects", fields: [ownerId], references: [id])
-  ownerTeam Team?               @relation("TeamTaskProjects", fields: [ownerTeamId], references: [id])
+  owner     User?               @relation("OwnedTaskProjects", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?               @relation("TeamTaskProjects", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   tasks     Task[]
   members   TaskProjectMember[]
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
 }
 
 model TaskProjectMember {
@@ -585,7 +669,7 @@ model ProjectGroup {
   ownerId    String
   order      Int      @default(0)
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  updatedAt  DateTime @default(now()) @updatedAt
 
   owner User @relation("OwnedProjectGroups", fields: [ownerId], references: [id], onDelete: Cascade)
 
@@ -624,11 +708,19 @@ model Task {
   project   TaskProject?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   parent    Task?         @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
   subtasks  Task[]        @relation("TaskSubtasks")
-  createdBy User?         @relation("TasksCreatedBy", fields: [createdById], references: [id])
-  assignee  User?         @relation("TasksAssignedTo", fields: [assigneeId], references: [id])
+  createdBy User?         @relation("TasksCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  assignee  User?         @relation("TasksAssignedTo", fields: [assigneeId], references: [id], onDelete: SetNull)
   tags      TaskTaskTag[]
   comments  TaskComment[]
   shares    TaskShare[]
+
+  // Z-031: indeksy pod realne zapytania list zadań (model nie miał żadnych).
+  // (projectId, parentTaskId) pokrywa główny widok listy (WHERE projectId=… AND
+  // parentTaskId IS NULL) i — jako prefiks — filtr po samym projectId.
+  @@index([projectId, parentTaskId])
+  @@index([parentTaskId])
+  @@index([createdById])
+  @@index([assigneeId])
 }
 
 model TaskTaskTag {
@@ -650,7 +742,11 @@ model TaskComment {
   updatedAt DateTime @updatedAt
 
   task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user User? @relation("TaskComments", fields: [userId], references: [id])
+  user User? @relation("TaskComments", fields: [userId], references: [id], onDelete: SetNull)
+
+  // Z-031: komentarze ładowane/kasowane po taskId; userId pod purge konta (RODO).
+  @@index([taskId])
+  @@index([userId])
 }
 
 model TaskShare {
@@ -662,8 +758,12 @@ model TaskShare {
   createdAt DateTime @default(now())
 
   task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user User? @relation("TaskShares", fields: [userId], references: [id])
-  team Team? @relation("TeamTaskShares", fields: [teamId], references: [id])
+  user User? @relation("TaskShares", fields: [userId], references: [id], onDelete: SetNull)
+  team Team? @relation("TeamTaskShares", fields: [teamId], references: [id], onDelete: SetNull)
+
+  // Z-031: udostępnienia ładowane po taskId; userId pod listę „udostępnione mi" + purge.
+  @@index([taskId])
+  @@index([userId])
 }
 
 // ─── Activity Tracking ────────────────────────────────────────────────────
@@ -692,6 +792,8 @@ model Store {
   updatedAt DateTime    @updatedAt
 
   owner User? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
 }
 
 model StoreNode {
@@ -740,6 +842,31 @@ model Report {
   @@index([teamId])
 }
 
+// Z-131 (T-17): kolejka zadań w tle dla ciężkich operacji AI (OCR/analizy/generacje).
+// Wieloworkerowa od startu (pobieranie przez SELECT ... FOR UPDATE SKIP LOCKED w kodzie).
+// Statusy jako String+unia TS (nie enum): QUEUED|RUNNING|DONE|FAILED|CANCELLED.
+// Brak FK do User (ownerId = snapshot; sprzątane w purgeUserData) — jak AuditLog/Contact.
+model Job {
+  id          String    @id @default(cuid())
+  type        String // np. "kitchen.ocrImage"
+  status      String    @default("QUEUED")
+  payload     String    @default("{}") // JSON wejścia
+  result      String? // JSON wyniku (gdy DONE)
+  error       String? // komunikat (gdy FAILED)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  runAfter    DateTime  @default(now()) // backoff / harmonogram
+  lockedAt    DateTime? // znacznik przejęcia przez workera
+  ownerId     String? // per-user (polling, sprzątanie, RODO)
+  dedupeKey   String? // idempotencja enqueue
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, runAfter])
+  @@index([ownerId, createdAt])
+  @@index([dedupeKey])
+}
+
 // Asystent AI ("magiczna ikona") — trwała pamięć rozmów per-user.
 model AiConversation {
   id        String   @id @default(cuid())
@@ -749,7 +876,7 @@ model AiConversation {
   // (higiena kontekstu w długich rozmowach).
   summary   String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
   user      User        @relation("AiConversations", fields: [userId], references: [id], onDelete: Cascade)
   messages  AiMessage[]
 
@@ -804,8 +931,8 @@ model Recipe {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  owner          User?              @relation("OwnedRecipes", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam      Team?              @relation("TeamRecipes", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner          User?              @relation("OwnedRecipes", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam      Team?              @relation("TeamRecipes", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   cookbook       Cookbook?          @relation(fields: [cookbookId], references: [id], onDelete: SetNull)
   ingredients    RecipeIngredient[]
   steps          RecipeStep[]
@@ -828,6 +955,7 @@ model RecipeIngredient {
   name       String
   quantity   Float?
   unit       String?
+  unitPrice  Float?  // Z-252: cena za jednostkę składnika (do kosztu przepisu / porcji)
   groupName  String?
   order      Int     @default(0)
   note       String?
@@ -904,8 +1032,8 @@ model Cookbook {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner     User?    @relation("OwnedCookbooks", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam Team?    @relation("TeamCookbooks", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner     User?    @relation("OwnedCookbooks", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?    @relation("TeamCookbooks", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   recipes   Recipe[]
 
   @@index([ownerId])
@@ -928,8 +1056,8 @@ model MealPlanEntry {
   updatedAt   DateTime  @updatedAt
 
   recipe    Recipe? @relation(fields: [recipeId], references: [id], onDelete: SetNull)
-  owner     User?   @relation("OwnedMealPlans", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam Team?   @relation("TeamMealPlans", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner     User?   @relation("OwnedMealPlans", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?   @relation("TeamMealPlans", fields: [ownerTeamId], references: [id], onDelete: Cascade)
 
   @@index([ownerId, date])
   @@index([ownerTeamId, date])
@@ -1517,6 +1645,7 @@ model PetSale {
 
   @@index([petId])
   @@index([ownerId])
+  @@index([ownerTeamId])
 }
 
 // ─── Flota (pojazdy: serwisy, opony, tankowania) ──────────────────────────
@@ -1642,6 +1771,7 @@ model FinanceSettings {
   autoExpenseEnabled   Boolean  @default(false)
   autoExpenseElementId String? // docelowy element portfela dla auto-wydatków
   baseCurrency         String   @default("PLN") // W5: waluta sprawozdawcza (przeliczanie majątku)
+  aiAccessEnabled      Boolean  @default(true) // Z-055: czy asystent AI może czytać dane finansowe (opt-out, domyślnie wł.)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -1793,8 +1923,8 @@ model LanguageDeck {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner     User?        @relation("OwnedLanguageDecks", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam Team?        @relation("TeamLanguageDecks", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner     User?        @relation("OwnedLanguageDecks", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?        @relation("TeamLanguageDecks", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   cards     Vocabulary[]
 
   @@index([ownerId])
@@ -1850,8 +1980,8 @@ model HealthEvent {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  owner     User? @relation("OwnedHealthEvents", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam Team? @relation("TeamHealthEvents", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner     User? @relation("OwnedHealthEvents", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team? @relation("TeamHealthEvents", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   attachments HealthAttachment[]
 
   @@index([ownerId, scheduledAt])
@@ -1898,10 +2028,10 @@ model MedicationSchedule {
   ownerId      String?
   ownerTeamId  String?
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  updatedAt    DateTime  @default(now()) @updatedAt
 
-  owner     User?           @relation("OwnedMedicationSchedules", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam Team?           @relation("TeamMedicationSchedules", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner     User?           @relation("OwnedMedicationSchedules", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?           @relation("TeamMedicationSchedules", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   logs      MedicationLog[]
 
   @@index([ownerId])
@@ -1945,8 +2075,8 @@ model Habit {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner     User? @relation("OwnedHabits", fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerTeam Team? @relation("TeamHabits", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+  owner     User? @relation("OwnedHabits", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team? @relation("TeamHabits", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   entries   HabitEntry[]
 
   @@index([ownerId, archived])
@@ -2311,7 +2441,7 @@ model WeatherWatcher {
 model WarsztatSettings {
   userId    String   @id
   mode      String   @default("home") // "home" | "pro"
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -2327,7 +2457,7 @@ model Workshop {
   ownerId     String?
   ownerTeamId String?
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
 
   owner     User?             @relation("OwnedWorkshops", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerTeam Team?             @relation("TeamWorkshops", fields: [ownerTeamId], references: [id], onDelete: Cascade)
@@ -2363,7 +2493,7 @@ model WorkshopItem {
   photoUrl      String?
   notes         String?
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  updatedAt     DateTime  @default(now()) @updatedAt
 
   workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
 
@@ -2383,7 +2513,7 @@ model WorkshopProject {
   dueAt       DateTime?
   doneAt      DateTime?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  updatedAt   DateTime  @default(now()) @updatedAt
 
   workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
 
