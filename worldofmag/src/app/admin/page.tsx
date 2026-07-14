@@ -273,6 +273,11 @@ export default async function AdminPage() {
               <span style={{ fontSize: 13 }}>Analiza / Audyt stanu projektu + wskazania</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
+            <Link href="/admin/audyt-podsumowanie" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <ClipboardList size={15} style={{ color: "var(--accent-green)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Audyt — podsumowanie zmian (wykonane / pozostałe)</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
             <Link href="/admin/categories" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Tag size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Kategorie systemowe</span>
