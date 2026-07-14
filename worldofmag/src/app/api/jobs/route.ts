@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { enqueue } from "@/lib/jobs/queue";
+import { enqueue, QuotaError, MAX_ACTIVE_JOBS_PER_OWNER } from "@/lib/jobs/queue";
 import { ENQUEUABLE_TYPES } from "@/lib/jobs/handlers";
 import { startJobWorker } from "@/lib/jobs/worker";
 
@@ -22,9 +22,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Nieobsługiwany typ zadania" }, { status: 400 });
   }
 
-  const job = await enqueue(type, body.payload ?? {}, {
-    ownerId: session.user.id,
-    dedupeKey: typeof body.dedupeKey === "string" ? body.dedupeKey : null,
-  });
-  return NextResponse.json({ jobId: job.id, status: job.status });
+  try {
+    const job = await enqueue(type, body.payload ?? {}, {
+      ownerId: session.user.id,
+      dedupeKey: typeof body.dedupeKey === "string" ? body.dedupeKey : null,
+      maxActivePerOwner: MAX_ACTIVE_JOBS_PER_OWNER, // fairness: limit aktywnych zadań na usera
+    });
+    return NextResponse.json({ jobId: job.id, status: job.status });
+  } catch (e) {
+    if (e instanceof QuotaError) return NextResponse.json({ error: e.message }, { status: 429 });
+    throw e;
+  }
 }
