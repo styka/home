@@ -68,6 +68,8 @@ export function AudytBookReader({
   activeHtml,
   activeStatus,
   generatedAt,
+  basePath = "/admin/audyt",
+  sourceLabel = "content/audyt/*.md",
 }: {
   meta: Meta;
   toc: TocItem[];
@@ -75,6 +77,10 @@ export function AudytBookReader({
   activeHtml: string;
   activeStatus: Status;
   generatedAt: string;
+  /** Bazowa trasa dla linków TOC / prev-next (druga „książka" żyje pod innym adresem). */
+  basePath?: string;
+  /** Etykieta źródła w stopce (skąd pochodzi treść). */
+  sourceLabel?: string;
 }) {
   const [theme, setTheme] = useState<ReadingTheme>("dark");
   const [tocOpen, setTocOpen] = useState(false); // mobile drawer
@@ -157,7 +163,7 @@ export function AudytBookReader({
             return (
               <Link
                 key={item.slug}
-                href={`/admin/audyt?r=${item.slug}`}
+                href={`${basePath}?r=${item.slug}`}
                 className="audyt-toc-link"
                 style={{
                   display: "flex",
@@ -419,7 +425,7 @@ export function AudytBookReader({
             >
               {prev ? (
                 <Link
-                  href={`/admin/audyt?r=${prev.slug}`}
+                  href={`${basePath}?r=${prev.slug}`}
                   style={{ ...navBtnStyle, justifyContent: "flex-start" }}
                 >
                   <ChevronLeft size={15} style={{ flexShrink: 0 }} />
@@ -433,7 +439,7 @@ export function AudytBookReader({
               )}
               {next ? (
                 <Link
-                  href={`/admin/audyt?r=${next.slug}`}
+                  href={`${basePath}?r=${next.slug}`}
                   style={{ ...navBtnStyle, justifyContent: "flex-end", textAlign: "right" }}
                 >
                   <span style={{ minWidth: 0 }}>
@@ -448,7 +454,7 @@ export function AudytBookReader({
             </div>
 
             <p style={{ marginTop: 24, fontSize: 11, color: "var(--text-muted)", textAlign: "center" }}>
-              Dokument wersjonowany w repo (<code style={{ fontFamily: "monospace" }}>content/audyt/*.md</code>) ·
+              Dokument wersjonowany w repo (<code style={{ fontFamily: "monospace" }}>{sourceLabel}</code>) ·
               upieczono przy buildzie: {fmtDate(generatedAt)}
             </p>
           </article>

@@ -11,7 +11,7 @@
     "check:actions": "node scripts/check-action-coverage.js",
     "check:migrations": "node scripts/check-migrations.js",
     "next:migration": "node scripts/check-migrations.js --next",
-    "build": "node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/check-action-coverage.js && node scripts/check-migrations.js && next lint --dir src && prisma generate && next build && node scripts/migrate.js",
+    "build": "node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/check-action-coverage.js && node scripts/check-migrations.js && next lint --dir src && prisma generate && next build && node scripts/migrate.js",
     "start": "next start -H 0.0.0.0",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",

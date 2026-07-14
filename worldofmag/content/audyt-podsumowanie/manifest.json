@@ -1,0 +1,9 @@
+{
+  "title": "Analiza / Audyt stanu projektu Omnia — podsumowanie zmian",
+  "subtitle": "Co wdrożyliśmy po audycie i co zostało na przyszłość — samodzielna baza do kolejnego etapu prac poaudytowych",
+  "auditDate": "2026-07-14",
+  "chapters": [
+    { "slug": "01-wykonane", "number": "1", "part": "Podsumowanie zmian poaudytowych", "title": "Co zostało wykonane", "summary": "Wszystkie wdrożone zmiany poaudytowe (ETAP 0–3 + T-16/T-17) plus prace tej sesji: kolejka zadań, panel /admin/jobs, FTS notatek, kosmetyka ESLint, raporty admina." },
+    { "slug": "02-pozostalo", "number": "2", "part": "Podsumowanie zmian poaudytowych", "title": "Co pozostało na przyszłość", "summary": "Co czeka: kroki właściciela (Sentry/PITR/Google, prawne, płatności), świadomie odłożone (i18n), opcjonalny dług techniczny i porzucony moduł Praca. Punkt startu do kolejnego etapu." }
+  ]
+}
