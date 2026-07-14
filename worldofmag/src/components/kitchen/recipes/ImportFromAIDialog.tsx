@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
-import { llm } from "@/lib/llm-client";
+import { runJob } from "@/lib/jobs/client";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { stashImportDraft } from "@/lib/kitchen/recipeImportDraft";
@@ -30,9 +30,17 @@ export function ImportFromAIDialog({ open, onClose }: ImportFromAIDialogProps) {
     }
     setPending(true);
     try {
-      const res = await llm.kitchen.generateRecipe(trimmed);
-      if (res.error || !res.recipe) {
-        showToast(res.error ?? "Nie udało się wygenerować", "error");
+      // Z-131 (T-17): generacja przepisu przez kolejkę zadań. Błędy rzuca → catch niżej.
+      type GenRecipe = {
+        title: string; description: string | null; servings: number | null;
+        prepMinutes: number | null; cookMinutes: number | null; cuisine: string | null;
+        mealType: string | null;
+        ingredients: { name: string; quantity: number | null; unit: string | null; note: string | null; isOptional?: boolean }[];
+        steps: { text: string }[];
+      };
+      const res = await runJob<{ recipe: GenRecipe }>("kitchen.generateRecipe", { prompt: trimmed });
+      if (!res?.recipe) {
+        showToast("Nie udało się wygenerować", "error");
         return;
       }
       const r = res.recipe;

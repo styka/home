@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sparkles, Loader2, Wand2, ChefHat } from "lucide-react";
-import { llm } from "@/lib/llm-client";
+import { runJob } from "@/lib/jobs/client";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { bulkSetMealPlan } from "@/actions/mealPlans";
@@ -77,7 +77,8 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
     }
     setStep("loading");
     try {
-      const res = await llm.kitchen.planWeek({
+      // Z-131 (T-17): plan tygodnia przez kolejkę zadań. Błędy rzuca → catch niżej.
+      const res = await runJob<{ suggestions: Suggestion[] }>("kitchen.planWeek", {
         weekStart: dateKey(weekStart),
         slots: Array.from(selectedSlots),
         people,
@@ -87,8 +88,8 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
         mustUsePantry,
         noRepeats,
       });
-      if (res.error || !res.suggestions) {
-        showToast(res.error ?? "Brak odpowiedzi AI", "error");
+      if (!res?.suggestions) {
+        showToast("Brak odpowiedzi AI", "error");
         setStep("prefs");
         return;
       }

@@ -8,7 +8,7 @@ import {
   deletePurchaseOrder,
   type PurchaseOrderWithLines,
 } from "@/actions/storage";
-import { llm } from "@/lib/llm-client";
+import { runJob } from "@/lib/jobs/client";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import type { StorageSupplier } from "@prisma/client";
@@ -78,7 +78,8 @@ function OrderRow({
   async function generate() {
     setDrafting(true);
     try {
-      const res = await llm.magazynowanie.orderDraft({
+      // Z-131 (T-17): redakcja zamówienia przez kolejkę zadań (degradacja łagodna).
+      const res = await runJob<{ text?: string; unavailable?: boolean }>("magazyn.orderDraft", {
         supplier: order.supplier?.name,
         lines: order.lines.map((l) => ({ name: l.name, quantity: l.quantity, unit: l.unit })),
       });

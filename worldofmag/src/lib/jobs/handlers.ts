@@ -7,6 +7,12 @@ import { kitchenOcrImageHandler } from "@/lib/jobs/handlers/kitchenOcrImage";
 import { kitchenOcrTextHandler } from "@/lib/jobs/handlers/kitchenOcrText";
 import { magazynScanHandler } from "@/lib/jobs/handlers/magazynScan";
 import { magazynDocumentHandler } from "@/lib/jobs/handlers/magazynDocument";
+import { kitchenGenerateRecipeHandler } from "@/lib/jobs/handlers/kitchenGenerateRecipe";
+import { kitchenPlanWeekHandler } from "@/lib/jobs/handlers/kitchenPlanWeek";
+import { magazynInsightsHandler } from "@/lib/jobs/handlers/magazynInsights";
+import { magazynOrderDraftHandler } from "@/lib/jobs/handlers/magazynOrderDraft";
+import { petsInsightsHandler } from "@/lib/jobs/handlers/petsInsights";
+import { storesGenerateHandler } from "@/lib/jobs/handlers/storesGenerate";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const JOB_HANDLERS: Record<string, JobHandler<any, any>> = {
@@ -14,6 +20,12 @@ export const JOB_HANDLERS: Record<string, JobHandler<any, any>> = {
   "kitchen.ocrText": kitchenOcrTextHandler,
   "magazyn.scan": magazynScanHandler,
   "magazyn.document": magazynDocumentHandler,
+  "kitchen.generateRecipe": kitchenGenerateRecipeHandler,
+  "kitchen.planWeek": kitchenPlanWeekHandler,
+  "magazyn.insights": magazynInsightsHandler,
+  "magazyn.orderDraft": magazynOrderDraftHandler,
+  "pets.insights": petsInsightsHandler,
+  "stores.generate": storesGenerateHandler,
 };
 
 /** Typy, które wolno zakolejkować z klienta (przez POST /api/jobs). */

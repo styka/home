@@ -202,7 +202,7 @@
   (nie w `schema.prisma`) → `migrate diff` pokaże dryf. Bezpieczne przy `migrate deploy`; **nie**
   uruchamiać `migrate dev`/auto-fix na prodzie (mógłby usunąć indeksy). Udokumentowane w migracji.
 
-### T-17 · 🟡 · 🧑‍💻 · Kolejka Job dla ciężkich operacji AI — *Z-131*
+### T-17 · ✅ · 🧑‍💻 · Kolejka Job dla ciężkich operacji AI — *Z-131*
 - **Decyzja właściciela (2026-07-02):** Faza 1, worker in-process (prod płatny = nie usypia); projekt
   wieloworkerowy pod przyszłą skalę; awans do osobnego workera Render „gdy ruch zażąda" (bez zmiany kodu).
 - **Faza 1 — rdzeń gotowy (2026-07-02):** model `Job` (migr. `0202`; status/attempts/backoff/runAfter/
@@ -214,10 +214,20 @@
   `POST /api/jobs` (allowlista typów) + `GET /api/jobs/[id]` (scoped do właściciela). Klient `runJob`
   (enqueue+polling→wynik/rzut — near-drop-in dla UI). **10 testów DB** (m.in. dwa równoległe claimy =
   dokładnie jeden bierze; retry/backoff; odzysk RUNNING; dedupe). tsc+lint; suita 398/398.
-- **Wpięte async (wzorzec):** kitchen **OCR ze zdjęcia** (`kitchen.ocrImage`) — `ImportFromImageDialog`
-  woła `runJob` (feedback „w kolejce/rozpoznaję"); stara trasa cienka, deleguje do handlera.
-- **Zostaje (kolejne partie, ten sam wzorzec):** OCR: `ocr-text`, magazyn `scan`/`document`; reasoning/
-  generation: plan-tygodnia, magazyn `insights`/`order-draft`, `generate-recipe`, pets/stores insights.
+- **Wpięte async — KOMPLET 10 operacji (2026-07-02):**
+  - **Vision/OCR:** `kitchen.ocrImage` (ImportFromImageDialog), `kitchen.ocrText` (RecipeImagesEditor),
+    `magazyn.scan` (StorageScan), `magazyn.document` (DocumentsPage).
+  - **Reasoning/generation:** `kitchen.generateRecipe` (ImportFromAIDialog), `kitchen.planWeek`
+    (PlanWeekDialog — handler czyta przepisy/spiżarnię po `ownerId`), `magazyn.insights`
+    (StorageAnalytics), `magazyn.orderDraft` (PurchaseOrders), `pets.insights` (WelfareSuggestions),
+    `stores.generate` (StoreWizard).
+  - Każda: handler w `src/lib/jobs/handlers/*`, rejestr + allowlista, stara trasa cienka (deleguje),
+    klient woła `runJob` (near-drop-in). „Twarde" ops rzucają `JobError`; „miękkie" (insights/tips/
+    order-draft) degradują łagodnie (`unavailable`). Zweryfikowane `next build` (exit 0) + suita 398/398.
+  - **Świadomie SYNC:** skan w asystencie AI (`AICommandSheet`, interaktywny czat), briefing, oraz
+    szybki dispatch (parse/normalize/categorize/tags/title/search/enrich, notes qa/rewrite).
+- **Faza 2 (przyszłość, gdy ruch zażąda):** wynieść workera do osobnej usługi Render (ten sam kod
+  kolejki — `SKIP LOCKED` już wieloworkerowy); knobki współbieżności/per-user.
 
 ### T-18 · ⬜ · 🧑‍💻 · Warstwa i18n `t()` (przyrostowo) — *Z-115*
 - Scaffolding `t()` + ekstrakcja stringów. `formatMoney` już na `Intl.NumberFormat`. Duże, przyrostowe.
