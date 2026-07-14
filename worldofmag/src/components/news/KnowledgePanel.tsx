@@ -129,8 +129,8 @@ export function KnowledgePanel({
     return (
       <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-surface)] p-4 text-sm text-[var(--text-muted)]">
         <BookOpen size={16} className="mb-1 inline" /> Baza wiedzy jest pusta. Przyjmij pierwsze
-        wiadomości „do wiedzy", aby zbudować aktualny stan tematu (osobno dla każdego źródła). Jeśli z
-        ostatnich 24h nic nie ma, „Odśwież teraz" zbuduje bazową bazę wiedzy z dostępnych materiałów.
+        wiadomości „do wiedzy”, aby zbudować aktualny stan tematu (osobno dla każdego źródła). Jeśli z
+        ostatnich 24h nic nie ma, „Odśwież teraz” zbuduje bazową bazę wiedzy z dostępnych materiałów.
       </div>
     );
   }

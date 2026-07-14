@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ShoppingCart, Plus, Loader2, Pencil, Check, X, Trash2,
-  LayoutList, Map, Image, Users,
+  LayoutList, Map, Image as ImageIcon, Users,
 } from "lucide-react";
 import { getListSummaries, createList, renameList, deleteList, type ListSummary } from "@/actions/lists";
 
@@ -221,7 +221,7 @@ export function ShoppingSideNav() {
         className="flex items-center gap-2 mx-2 rounded text-xs"
         style={itemStyle(isSubActive("/shopping/icons"), hovered === "__icons__")}
       >
-        <Image size={12} />
+        <ImageIcon size={12} />
         Biblioteka ikon
       </Link>
     </div>

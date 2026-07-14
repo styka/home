@@ -98,7 +98,7 @@ export function WatchersPanel({
 
       {watchers.length === 0 ? (
         <p className="text-sm text-[var(--text-muted)]">
-          Brak obserwatorów. Dodaj gotowy preset (np. „Weekend bez deszczu", „Bieganie") albo własny
+          Brak obserwatorów. Dodaj gotowy preset (np. „Weekend bez deszczu”, „Bieganie”) albo własny
           opisany naturalnym językiem — AI oceni je względem prognozy.
         </p>
       ) : loading && verdicts === null ? (

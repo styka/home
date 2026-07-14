@@ -77,7 +77,7 @@ export function CookbookView({ cookbook, recipes, canEdit }: CookbookViewProps) 
             W tej książce nie ma jeszcze przepisów.
           </p>
           <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-            Dodaj przepis lub edytuj istniejący — w polu „Książka kucharska" wybierz „{cookbook.name}".
+            Dodaj przepis lub edytuj istniejący — w polu „Książka kucharska” wybierz „{cookbook.name}”.
           </p>
           <Link
             href="/kitchen/recipes/new"

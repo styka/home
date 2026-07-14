@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { Plus, Pencil, Trash2, Check, X, Loader2, Image, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, Loader2, Image as ImageIcon, Users } from "lucide-react";
 import type { CategoryWithUsage } from "@/actions/categories";
 import { createCategory, updateCategory, deleteCategory } from "@/actions/categories";
 import { CategoryIconPicker } from "@/components/shopping/CategoryIconPicker";
@@ -150,7 +150,7 @@ export function CategoryManager({ categories, activeIconMap = {}, userTeams = []
                 onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
                 title="Zarządzaj ikonami SVG"
               >
-                <Image size={12} />
+                <ImageIcon size={12} />
               </button>
               {showEdit && c.id && (
                 <>
@@ -225,7 +225,7 @@ export function CategoryManager({ categories, activeIconMap = {}, userTeams = []
       <div className="mb-8" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
         {own.length === 0 ? (
           <p className="px-4 py-3 text-sm" style={{ color: "var(--text-muted)" }}>
-            Brak własnych kategorii. Kliknij „Nowa kategoria" by dodać.
+            Brak własnych kategorii. Kliknij „Nowa kategoria” by dodać.
           </p>
         ) : own.map((c, i) => (
           <div key={c.id ?? c.name} style={rowStyle(i, own.length)}>

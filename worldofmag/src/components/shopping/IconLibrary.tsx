@@ -321,7 +321,7 @@ function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData)
               </div>
             ) : !loading && !error ? (
               <p className="text-xs text-center py-6" style={{ color: "var(--text-muted)" }}>
-                Wpisz temat lub wskazówki i kliknij „Generuj"
+                Wpisz temat lub wskazówki i kliknij „Generuj”
               </p>
             ) : null}
           </div>
@@ -374,7 +374,7 @@ export function IconLibrary({ initialIcons, allCategories }: IconLibraryProps) {
       {icons.length === 0 ? (
         <div className="text-center py-16" style={{ color: "var(--text-muted)" }}>
           <p className="text-sm mb-1">Brak ikon w bibliotece</p>
-          <p className="text-xs">Kliknij „Generuj nowe" by dodać pierwsze ikony</p>
+          <p className="text-xs">Kliknij „Generuj nowe” by dodać pierwsze ikony</p>
         </div>
       ) : (
         <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8">

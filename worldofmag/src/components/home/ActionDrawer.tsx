@@ -439,7 +439,7 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
         {!showResults && onRefine && (
           <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)", flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
             <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
-              Edytuj szczegóły w „Parametry", albo opisz poniżej, co poprawić — AI ułoży plan na nowo:
+              Edytuj szczegóły w „Parametry”, albo opisz poniżej, co poprawić — AI ułoży plan na nowo:
             </p>
             <div style={{ display: "flex", gap: 8 }}>
               <input

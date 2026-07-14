@@ -77,7 +77,7 @@ export function SystemHealthPage({ health }: { health: SystemHealth }) {
                 </div>
               ))}
               <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-                Monitor regresów. „Seq" na małych tabelach jest normalny; sygnałem jest Seq Scan na dużej, gorącej liście (utracony indeks).
+                Monitor regresów. „Seq” na małych tabelach jest normalny; sygnałem jest Seq Scan na dużej, gorącej liście (utracony indeks).
               </div>
             </>
           )}

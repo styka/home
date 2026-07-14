@@ -356,7 +356,7 @@ function RecurringSVG() {
           </g>
         ))}
         <text x="330" y="188" fill="#555" fontSize="8" fontFamily="system-ui">Każdy typ ma opcję</text>
-        <text x="330" y="200" fill="#555" fontSize="8" fontFamily="system-ui">"Koniec powtarzania" (data)</text>
+        <text x="330" y="200" fill="#555" fontSize="8" fontFamily="system-ui">„Koniec powtarzania” (data)</text>
       </svg>
     </div>
   );
@@ -376,7 +376,7 @@ function AIFlowSVG() {
         <text x="28" y="50" fill="#3b82f6" fontSize="22" fontFamily="system-ui">✍</text>
         <text x="56" y="50" fill="#b0b0b0" fontSize="10" fontFamily="system-ui" fontWeight="600">Opis tekstem</text>
         <text x="56" y="64" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">„Zrób raport</text>
-        <text x="56" y="74" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">do piątku pilne"</text>
+        <text x="56" y="74" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">do piątku pilne”</text>
 
         {/* Input B: Voice */}
         <rect x="18" y="100" width="115" height="54" rx="8" fill="#1c0808" stroke="#ef4444" strokeWidth="1.5"/>
@@ -733,7 +733,7 @@ export function TasksGuide() {
             <P>
               Opisz jedno lub więcej zadań naturalnym językiem, np.:
               <em style={{ color: "var(--text-muted)", display: "block", marginTop: 6, paddingLeft: 12, borderLeft: "3px solid var(--border)" }}>
-                „Przygotuj prezentację na piątek, priorytet wysoki. Kup mleko i chleb jutro. Zadzwoń do klienta Kowalski — pilne."
+                „Przygotuj prezentację na piątek, priorytet wysoki. Kup mleko i chleb jutro. Zadzwoń do klienta Kowalski — pilne.”
               </em>
             </P>
             <P>
@@ -822,7 +822,7 @@ export function TasksGuide() {
             </P>
             <H3>Powtarzanie</H3>
             <P>
-              Kliknij „Ustaw powtarzanie" w panelu szczegółów. Dostępne typy:
+              Kliknij „Ustaw powtarzanie” w panelu szczegółów. Dostępne typy:
             </P>
             <RecurringSVG />
             <Ul items={[
@@ -838,8 +838,8 @@ export function TasksGuide() {
               zgodnym z regułą powtarzania.
             </P>
             <Note>
-              Kliknij „Zapisz" po skonfigurowaniu reguły — zmiany nie zapisują się automatycznie dla
-              sekcji powtarzania. Kliknij „Usuń powtarzanie", aby wyłączyć cykl.
+              Kliknij „Zapisz” po skonfigurowaniu reguły — zmiany nie zapisują się automatycznie dla
+              sekcji powtarzania. Kliknij „Usuń powtarzanie”, aby wyłączyć cykl.
             </Note>
           </Block>
 
@@ -913,8 +913,8 @@ export function TasksGuide() {
               Po wpisaniu frazy naciśnij <Kbd>Enter</Kbd> lub kliknij przycisk
               <strong style={{ color: "var(--accent-purple)" }}> ✦ AI</strong>. Model językowy
               przeszuka do 100 zadań i zwróci wyniki dopasowane znaczeniowo — nawet jeśli słowa
-              się nie pokrywają. Np. zapytanie „zadania związane z klientami" znajdzie
-              „Raport kwartalny", „Prezentacja dla Kowalskiego" itp.
+              się nie pokrywają. Np. zapytanie „zadania związane z klientami” znajdzie
+              „Raport kwartalny”, „Prezentacja dla Kowalskiego” itp.
             </P>
             <P>
               Aktywne wyniki AI oznaczone są banerem w kolorze fioletowym. Kliknij <strong>×</strong>

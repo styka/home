@@ -180,7 +180,7 @@ export function NewsPage({
           <div>
             {!selectedTopic ? (
               <div className="rounded-lg border border-dashed border-[var(--border)] p-8 text-center text-[var(--text-muted)]">
-                Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy".
+                Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.
               </div>
             ) : (
               <>
@@ -230,7 +230,7 @@ export function NewsPage({
                       </h3>
                       {filteredItems.length === 0 ? (
                         <p className="rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--text-muted)]">
-                          Brak nowych, istotnych wiadomości. Kliknij „Odśwież teraz", aby pobrać
+                          Brak nowych, istotnych wiadomości. Kliknij „Odśwież teraz”, aby pobrać
                           najświeższe materiały (tylko z ostatnich 24 godzin).
                         </p>
                       ) : (

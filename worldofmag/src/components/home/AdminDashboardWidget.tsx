@@ -101,7 +101,7 @@ export function AdminDashboardWidget({ userCount, teamCount, reportCount }: Admi
               </code>
               {buildMsg && (
                 <span style={{ marginLeft: 6, opacity: 0.7 }}>
-                  „{truncate(buildMsg, 60)}"
+                  „{truncate(buildMsg, 60)}”
                 </span>
               )}
             </span>

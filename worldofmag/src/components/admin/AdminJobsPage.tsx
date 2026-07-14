@@ -107,7 +107,7 @@ export function AdminJobsPage({ initial }: { initial: JobsOverview }) {
           </div>
         </div>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 18 }}>
-          Zadania w tle (OCR, generowanie, wnioski AI). Zawieszone „W toku" po ~2 min są automatycznie odzyskiwane; tu możesz też ręcznie ponowić błędne.
+          Zadania w tle (OCR, generowanie, wnioski AI). Zawieszone „W toku” po ~2 min są automatycznie odzyskiwane; tu możesz też ręcznie ponowić błędne.
         </p>
 
         {/* Liczniki wg statusu */}
