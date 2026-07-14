@@ -337,7 +337,7 @@ function CompleteShoppingModal({ listName, items, pending, financeReady, onConfi
         </>
       }
     >
-      <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>Podsumowanie listy „{listName}":</p>
+      <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>Podsumowanie listy „{listName}”:</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {rows.map((r) => (
           <div key={r.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>

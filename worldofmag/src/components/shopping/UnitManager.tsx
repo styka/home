@@ -87,7 +87,7 @@ export function UnitManager({ units }: UnitManagerProps) {
       <div className="mb-8" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
         {custom.length === 0 && !adding ? (
           <p className="px-4 py-3 text-sm" style={{ color: "var(--text-muted)" }}>
-            Brak własnych jednostek. Kliknij „Nowa jednostka" by dodać.
+            Brak własnych jednostek. Kliknij „Nowa jednostka” by dodać.
           </p>
         ) : (
           custom.map((u, i) => (

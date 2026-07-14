@@ -110,7 +110,7 @@ npm run test:e2e:local:down`} />
             />
           </div>
           <Callout color="var(--accent-amber)" icon={<AlertTriangle size={14} />}>
-            Jeśli kiedyś zechcesz „smoke" wprost na produkcji — zrób to ręcznie (zaloguj się Google i przeklikaj
+            Jeśli kiedyś zechcesz „smoke” wprost na produkcji — zrób to ręcznie (zaloguj się Google i przeklikaj
             krytyczne ścieżki). Automatu nie kierujemy na prod, żeby nie ruszać realnych danych.
           </Callout>
         </Section>

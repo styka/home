@@ -37,7 +37,7 @@ export function StaffManager({ onChange }: { onChange?: () => void }) {
         </button>
       </div>
       <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 8px" }}>
-        Dodaj pracowników, by klienci rezerwowali wizyty u konkretnej osoby. Każdy pracownik ma własny harmonogram dostępności (ustaw go w sekcji „Dostępność").
+        Dodaj pracowników, by klienci rezerwowali wizyty u konkretnej osoby. Każdy pracownik ma własny harmonogram dostępności (ustaw go w sekcji „Dostępność”).
       </p>
 
       {open && (

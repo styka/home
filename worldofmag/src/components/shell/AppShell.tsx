@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, Calendar, Settings, Mail, Shield, Map, Image, Lock, MoreHorizontal, Plus } from "lucide-react";
+import { Menu, X, Calendar, Settings, Mail, Shield, Map, Image as ImageIcon, Lock, MoreHorizontal, Plus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
@@ -269,7 +269,7 @@ function MobileModuleSubNav({ id, pathname }: { id: string; pathname: string }) 
     return (
       <>
         <MobileSub href="/shopping/stores" pathname={pathname}><Map size={13} />Mapy sklepów</MobileSub>
-        <MobileSub href="/shopping/icons" pathname={pathname}><Image size={13} />Biblioteka ikon</MobileSub>
+        <MobileSub href="/shopping/icons" pathname={pathname}><ImageIcon size={13} />Biblioteka ikon</MobileSub>
         <MobileSub href="/shopping/icons/categories" pathname={pathname}>Przypisania ikon</MobileSub>
       </>
     );

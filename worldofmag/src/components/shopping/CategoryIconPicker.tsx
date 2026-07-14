@@ -379,7 +379,7 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
             {loadingNew && newlyGenerated.length > 0 && Array.from({ length: 3 }).map((_, i) => <SkeletonTile key={`sk-${i}`} />)}
             {!loadingNew && newlyGenerated.length === 0 && !error && (
               <p className="col-span-3 text-xs py-3 text-center" style={{ color: "var(--text-muted)" }}>
-                Kliknij „Losuj więcej" by wygenerować ikony
+                Kliknij „Losuj więcej” by wygenerować ikony
               </p>
             )}
           </div>

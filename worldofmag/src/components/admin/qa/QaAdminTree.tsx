@@ -134,7 +134,7 @@ function ModuleSection({ module, epics }: { module: string; epics: AdminEpic[] }
         <div style={{ padding: "8px 12px 12px" }}>
           {epics.length === 0 ? (
             <p style={{ fontSize: 12, color: "var(--text-muted)", padding: "8px 4px", margin: 0 }}>
-              Brak epików — kliknij „+ Epic" by dodać.
+              Brak epików — kliknij „+ Epic” by dodać.
             </p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

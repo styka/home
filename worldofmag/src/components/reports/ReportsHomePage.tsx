@@ -154,7 +154,7 @@ export function ReportsHomePage({ reports, myCount, teamCount, isAdmin }: Report
           ) : query.trim() && pending && results === null ? (
             <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "12px 0" }}>Szukam…</p>
           ) : filtered.length === 0 ? (
-            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "12px 0" }}>Brak wyników dla „{query}" (przeszukano też treść)</p>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "12px 0" }}>Brak wyników dla „{query}” (przeszukano też treść)</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {filtered.map((r) => (

@@ -266,7 +266,7 @@ export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
               </div>
               <label className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: "var(--text-secondary)" }}>
                 <input type="checkbox" checked={form.isTerminal} onChange={(e) => setForm((f) => ({ ...f, isTerminal: e.target.checked }))} style={{ accentColor: "var(--accent-green)" }} />
-                Status „zamykający" (chowany w widoku aktywnych, jak Zrobione)
+                Status „zamykający” (chowany w widoku aktywnych, jak Zrobione)
               </label>
               <div className="flex items-center justify-end gap-2 mt-1">
                 <button onClick={() => setFormOpen(false)} className="text-xs px-2.5 py-1 rounded focus:outline-none" style={{ color: "var(--text-secondary)" }}>

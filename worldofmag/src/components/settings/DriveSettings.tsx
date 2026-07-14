@@ -68,7 +68,7 @@ export function DriveSettings({ status, notice }: { status: DriveStatus; notice?
 
       <p style={{ color: "var(--text-muted)", fontSize: 12, margin: 0, lineHeight: 1.5 }}>
         Aplikacja używa uprawnienia <code>drive.file</code> — widzi i zarządza wyłącznie plikami,
-        które sama utworzy w folderze <strong>„Omnia"</strong> na Twoim Dysku. Nie ma dostępu do
+        które sama utworzy w folderze <strong>„Omnia”</strong> na Twoim Dysku. Nie ma dostępu do
         reszty Twoich plików.
       </p>
 

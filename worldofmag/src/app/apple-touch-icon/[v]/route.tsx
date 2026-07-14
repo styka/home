@@ -9,5 +9,5 @@ import { brandLogoSvgString } from "@/lib/brandLogo";
 export function GET() {
   const svg = brandLogoSvgString(IS_PROD);
   const src = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
-  return new ImageResponse(<img width={180} height={180} src={src} />, { width: 180, height: 180 });
+  return new ImageResponse(<img width={180} height={180} src={src} alt="" />, { width: 180, height: 180 });
 }
