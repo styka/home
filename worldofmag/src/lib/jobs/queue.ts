@@ -32,26 +32,57 @@ export interface EnqueueOptions {
   maxAttempts?: number;
   /** Opóźnij wykonanie (ms od teraz). */
   delayMs?: number;
+  /**
+   * Limit uczciwości: jeśli właściciel ma już tyle AKTYWNYCH (QUEUED/RUNNING) zadań —
+   * rzuć `QuotaError` zamiast dodawać kolejne. Chroni kolejkę przed zapchaniem przez
+   * jednego użytkownika przy wielu userach. Trafienie w dedupeKey NIE liczy się do limitu
+   * (to to samo zadanie). Pomiń (undefined) = bez limitu (np. zadania systemowe).
+   */
+  maxActivePerOwner?: number;
+}
+
+/** Przekroczono limit aktywnych zadań właściciela (mapowane na HTTP 429 w trasie API). */
+export class QuotaError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "QuotaError";
+  }
 }
 
 /** Zadanie „utknęło" jako RUNNING dłużej niż tyle → uznajemy workera za martwego i odzyskujemy. */
 export const DEFAULT_VISIBILITY_TIMEOUT_MS = 2 * 60 * 1000; // 2 min
 const BASE_BACKOFF_MS = 5000;
 
-/** Dodaje zadanie do kolejki (z opcjonalną idempotencją po dedupeKey). */
+/** Domyślny limit aktywnych zadań na użytkownika (fairness przy wielu userach). */
+export const MAX_ACTIVE_JOBS_PER_OWNER = 20;
+
+/** Ile aktywnych (QUEUED/RUNNING) zadań ma dany właściciel. */
+export async function countActiveJobsForOwner(ownerId: string): Promise<number> {
+  return prisma.job.count({ where: { ownerId, status: { in: ["QUEUED", "RUNNING"] } } });
+}
+
+/** Dodaje zadanie do kolejki (z opcjonalną idempotencją po dedupeKey i limitem uczciwości). */
 export async function enqueue(
   type: string,
   payload: unknown,
   opts: EnqueueOptions = {}
 ): Promise<JobRecord> {
-  const { ownerId = null, dedupeKey = null, maxAttempts = 3, delayMs = 0 } = opts;
+  const { ownerId = null, dedupeKey = null, maxAttempts = 3, delayMs = 0, maxActivePerOwner } = opts;
 
   if (dedupeKey) {
     const existing = await prisma.job.findFirst({
       where: { dedupeKey, status: { in: ["QUEUED", "RUNNING"] } },
       orderBy: { createdAt: "desc" },
     });
-    if (existing) return existing as JobRecord;
+    if (existing) return existing as JobRecord; // dedupe wygrywa z limitem — to to samo zadanie
+  }
+
+  // Limit uczciwości — dopiero PO dedupe (żeby ponowny polling nie był blokowany limitem).
+  if (maxActivePerOwner != null && ownerId) {
+    const active = await countActiveJobsForOwner(ownerId);
+    if (active >= maxActivePerOwner) {
+      throw new QuotaError(`Za dużo zadań w toku (${active}/${maxActivePerOwner}). Poczekaj, aż część się zakończy.`);
+    }
   }
 
   const job = await prisma.job.create({
@@ -133,6 +164,32 @@ export async function getJob(id: string, ownerId?: string | null): Promise<JobRe
   if (!job) return null;
   if (ownerId !== undefined && ownerId !== null && job.ownerId !== ownerId) return null;
   return job as JobRecord;
+}
+
+/**
+ * Ręczne ponowienie zadania przez admina: wraca do QUEUED z wyzerowanym licznikiem prób
+ * (świeży budżet maxAttempts), natychmiastowym runAfter i zdjętym lockiem. Zwraca false,
+ * jeśli zadania nie ma. Dozwolone tylko dla zakończonych/porzuconych (FAILED/CANCELLED/DONE)
+ * — RUNNING/QUEUED zostawiamy w spokoju, by nie kolidować z workerem.
+ */
+export async function requeueJob(id: string): Promise<boolean> {
+  const job = await prisma.job.findUnique({ where: { id } });
+  if (!job) return false;
+  if (job.status === "RUNNING" || job.status === "QUEUED") return false;
+  await prisma.job.update({
+    where: { id },
+    data: { status: "QUEUED", attempts: 0, error: null, lockedAt: null, runAfter: new Date() },
+  });
+  return true;
+}
+
+/** Ręczne anulowanie zadania przez admina (tylko QUEUED/FAILED → CANCELLED). Zwraca false, gdy się nie da. */
+export async function cancelJob(id: string): Promise<boolean> {
+  const job = await prisma.job.findUnique({ where: { id } });
+  if (!job) return false;
+  if (job.status !== "QUEUED" && job.status !== "FAILED") return false;
+  await prisma.job.update({ where: { id }, data: { status: "CANCELLED", lockedAt: null } });
+  return true;
 }
 
 /** Sprząta stare, zakończone zadania (DONE/FAILED/CANCELLED) starsze niż podany wiek. */

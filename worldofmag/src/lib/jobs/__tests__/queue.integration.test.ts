@@ -123,6 +123,58 @@ test("enqueue dedupeKey: nie tworzy duplikatu aktywnego zadania", { skip: !HAS_D
   }
 });
 
+test("maxActivePerOwner: limit aktywnych zadań właściciela → QuotaError; dedupe pomija limit", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
+  const { prisma } = await import("@/lib/prisma");
+  const { enqueue, QuotaError } = await import("@/lib/jobs/queue");
+  const type = `test.quota.${rnd()}`;
+  const owner = `owner-${rnd()}`;
+  try {
+    // Limit 2: dwa przechodzą, trzeci rzuca.
+    await enqueue(type, { i: 1 }, { ownerId: owner, maxActivePerOwner: 2 });
+    await enqueue(type, { i: 2 }, { ownerId: owner, maxActivePerOwner: 2 });
+    await assert.rejects(
+      () => enqueue(type, { i: 3 }, { ownerId: owner, maxActivePerOwner: 2 }),
+      (e: unknown) => e instanceof QuotaError,
+      "trzeci enqueue ponad limit → QuotaError"
+    );
+    // Trafienie w dedupeKey NIE podlega limitowi (to samo zadanie). Świeży właściciel:
+    // pierwsze zadanie mieści się w limicie=1, drugie z tym samym kluczem trafia w dedupe
+    // (mimo że limit jest już osiągnięty) i zwraca to samo zadanie zamiast rzucić.
+    const owner2 = `owner-${rnd()}`;
+    const key = `dk-${rnd()}`;
+    const a = await enqueue(type, { i: 4 }, { ownerId: owner2, dedupeKey: key, maxActivePerOwner: 1 });
+    const b = await enqueue(type, { i: 4 }, { ownerId: owner2, dedupeKey: key, maxActivePerOwner: 1 });
+    assert.equal(a.id, b.id, "dedupe zwrócił to samo zadanie mimo limitu=1");
+  } finally {
+    await prisma.job.deleteMany({ where: { type } });
+  }
+});
+
+test("requeueJob/cancelJob: admin ponawia FAILED (reset prób) i anuluje QUEUED", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
+  const { prisma } = await import("@/lib/prisma");
+  const { enqueue, claimNext, failJob, requeueJob, cancelJob, getJob } = await import("@/lib/jobs/queue");
+  const type = `test.admin.${rnd()}`;
+  const job = await enqueue(type, {}, { maxAttempts: 1 });
+  try {
+    await claimNext(); // attempts=1
+    await failJob(job.id, "boom"); // maxAttempts=1 → FAILED
+    assert.equal((await getJob(job.id))!.status, "FAILED");
+
+    assert.equal(await requeueJob(job.id), true, "retry FAILED się udaje");
+    const requeued = await getJob(job.id);
+    assert.equal(requeued!.status, "QUEUED");
+    assert.equal(requeued!.attempts, 0, "retry zeruje licznik prób");
+    assert.equal(requeued!.error, null);
+
+    // QUEUED → cancel działa; ponowny retry QUEUED się nie da.
+    assert.equal(await requeueJob(job.id), false, "nie ponawiamy zadania w QUEUED");
+    assert.equal(await cancelJob(job.id), true, "anulowanie QUEUED się udaje");
+    assert.equal((await getJob(job.id))!.status, "CANCELLED");
+  } finally {
+    await prisma.job.deleteMany({ where: { type } });
+  }
+});
+
 // ── Worker end-to-end (scalony tu, by claimNext nie kolidował z równoległym plikiem) ──
 test("runTick: sukces → DONE z wynikiem; wyjątek → retry/FAILED; brak handlera → FAILED", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
   const { prisma } = await import("@/lib/prisma");
