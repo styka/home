@@ -4,6 +4,28 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-14 — Spec-driven pipeline: gdzie żyją komendy/agenty i jak podać przewodnik do panelu admina
+**Problem:** Zadanie: zbudować spec-driven pipeline (`/specify /plan /tasks /implement /verify /review`)
+dla Claude Code + przewodnik w panelu admina. Dwie pułapki: (1) `/verify` i `/review` **kolidują
+nazwami** z wbudowanymi skillami harnessu; (2) deployowany (standalone) serwer Next **nie czyta
+dowolnych plików repo** w runtime, a przewodnik-źródło leży w `.claude/spec-pipeline/` w **katalogu
+głównym repo**, o poziom wyżej niż `worldofmag/` — więc nie da się go po prostu `fs.readFileSync` ze
+strony.
+**Rozwiązanie:** Komendy jako `.claude/commands/*.md`, agenty jako `.claude/agents/*.md`, twarde
+reguły w `.claude/spec-pipeline/constitution.md` (numerowane `C-NN`, wyciągnięte z `CLAUDE.md`),
+artefakty w `specs/<NNN-slug>/`. Kolizję nazw świadomie akceptujemy — w tym repo `/verify` i `/review`
+mają być etapami pipeline'u Omnii (komendy projektowe współistnieją z wbudowanymi). Przewodnik do
+panelu admina podany **tym samym wzorcem co `/admin/docs`**: skrypt `scripts/copy-spec-pipeline.js`
+czyta `../.claude/spec-pipeline/{README,constitution}.md` (ścieżka **`..`** bo build leci z
+`worldofmag/`) i piecze do `src/generated/spec-pipeline.ts` (wpięte w `build`, commitowane by `dev`
+działał na świeżym klonie); strona `/admin/spec-pipeline` **reużywa `AdminDocsViewer`** (ten sam
+kształt `AdminDoc[]`).
+**Lekcja:** Cokolwiek w panelu admina ma pokazać plik z repo — nie czytaj FS w runtime, tylko upiecz
+go generatorem do `src/generated/*.ts` w kroku `build` (jak `copy-docs`/`copy-audyt`) i reużyj
+istniejącego viewera. Pamiętaj o `..` w ścieżce generatora (build startuje w `worldofmag/`, a `.claude`
+jest o poziom wyżej). Nowy generator MUSI trafić do `build` w `package.json`, inaczej prod pokaże
+starą treść.
+
 ## 2026-07-14 — `jsx-a11y/alt-text` fałszywie flaguje ikonę `Image` z lucide-react (nie tylko `<img>`)
 **Problem:** Reguła `jsx-a11y/alt-text` zgłaszała „Image elements must have an alt prop" na `<Image size={12} />`, gdzie `Image` to **ikona z `lucide-react`**, a nie element `<img>` ani `next/image`. Reguła patrzy na *nazwę* elementu JSX (`Image`), więc każdy komponent nazwany `Image` dostaje ostrzeżenie — mimo że alt nie ma tu sensu. Osobno: te same pliki miały prawdziwe `<img>` w `ImageResponse` (generatory ikon PWA/OG) bez `alt`.
 **Rozwiązanie:** Dla ikony lucide — **alias importu** `import { Image as ImageIcon } from "lucide-react"` + zamiana użyć na `<ImageIcon />` (usuwa fałszywe trafienie u źródła, bez `eslint-disable`). Dla realnych `<img>` w `ImageResponse` — dodać `alt=""` (dekoracyjne). Przy okazji: warningi `react/no-unescaped-entities` (proste `"` zamykające polski cudzysłów) naprawione **chirurgicznie po dokładnym `line:col` z lintera** (codemod podmieniający pojedynczy znak → typograficzny „ / "), a NIE globalnym replace `"`→`"` (globalny trafiłby też w atrybuty JSX i by je zepsuł). Single-char→single-char = kolumny kolejnych trafień w tej samej linii pozostają stabilne.
