@@ -79,7 +79,7 @@ soft-delete trash, per-user Google Drive storage, and an AI assistant.
 | Contacts (CRM) | `/contacts` | `module.contacts` | Done — lightweight personal CRM (contacts with tags); model `Contact`, `actions/contacts.ts` |
 | Reports (markdown docs) | `/reports` | authenticated | Done — system/user/team reports; **content stored in DB or per-user Google Drive** (`Report.storage` db\|drive, hydrated transparently) |
 | QA (test scenarios) | `/qa` | `module.qa` | Internal tooling (Epic → Story → Scenario) |
-| Truck (heavy-vehicle routing) | `/truck` | `module.truck` | Partial — ORS client ready, UI minimal |
+| Truck (heavy-vehicle routing) | `/truck` | `module.truck` | Done (experimental) — vehicle profile (weight/height/length/width/axle load), ORS truck routing origin→destination, distance/duration + roadworks-in-corridor, "open in Google Maps" deep-link |
 | Work / Praca | `/work` | — | Stub (sidebar entry only, "coming soon", disabled — no page) |
 
 > **Keep this table honest.** When you add/finish/stub a module, update this table, the Route Structure block, the permission list, the Server Actions list, and the Database Schema section below.
@@ -648,11 +648,9 @@ The flow is **`feature → develop → master`**:
 
 ## Short-Term Roadmap
 
-- [ ] Replace `prompt()` in list creation with a proper modal
-- [ ] "Complete shopping" — archive/close a list
-- [ ] Flesh out Truck routing UI (ORS client already exists)
-- [ ] Build out the Work / Praca module (currently a disabled stub)
+- [ ] Build out the Work / Praca module (currently a disabled stub — scope TBD with owner)
 - [ ] Paid hosting migration if free-tier performance is insufficient ($7/mo on Render)
+- [ ] (optional) Chip away the ~64 cosmetic ESLint warnings (Polish JSX quotes + exhaustive-deps)
 
 _Recently shipped (no longer roadmap): Calendar (unified agenda), Service marketplace
 (Usługi) incl. payments/disputes/moderation/staff/favorites/promo codes, Contacts
@@ -662,4 +660,7 @@ multi-currency/auto-expense, Notes wikilinks/versions/attachments, Health lab-te
 repository, Languages TTS/writing/series, Pets genetics/alarms/vet-export, Tasks
 timeline+kanban/subtasks/bulk-add, Notifications, Skins, Storage & Workshop (Dom/Pro),
 custom task statuses, project groups, recurring tasks, AI assistant streaming +
-cross-module CRUD, per-user menu customization, drag-and-drop (`@dnd-kit`)._
+cross-module CRUD, per-user menu customization, drag-and-drop (`@dnd-kit`), inline
+list creation + "Zakończ zakupy" (archive/complete a list, optional wallet booking) +
+unarchive, Truck routing UI, async AI job queue (`Job`, `/admin/jobs`, per-user cap),
+notes full-text search (pg_trgm + relevance ranking)._
