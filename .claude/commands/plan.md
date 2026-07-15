@@ -1,10 +1,18 @@
 ---
-description: Etap 2 SDD — zamień spec w plan techniczny (specs/NNN-slug/plan.md)
+description: Etap 2 SDD — zamień spec w plan techniczny i przejdź automatycznie dalej (specs/NNN-slug/plan.md)
 argument-hint: <specs/NNN-slug | slug>
 ---
 
 Jesteś na **etapie 2 (PLAN)** spec-driven pipeline'u Omnia. Zamieniasz zatwierdzony spec w
-**plan techniczny** — to jest **JAK**, ściśle pod istniejący kod i konwencje Omnia.
+**plan techniczny** — to jest **JAK**, ściśle pod istniejący kod i konwencje Omnia. Pracujesz
+**autonomicznie** i po skończeniu **sam przechodzisz do `/tasks`**.
+
+## Model interakcji
+Wszystkie decyzje właściciela zebrano już na etapie `/specify`. **Nie zadawaj pytań (`AskUserQuestion`).**
+Jeśli natrafisz na wybór — przyjmij rozwiązanie **rekomendowane/domyślne** (najbliższe wzorca
+sąsiedniego modułu i minimalizmu C-53), **odnotuj** je w planie i jedź dalej. Zatrzymaj się i zapytaj
+**wyłącznie** wtedy, gdy dalsze działanie groziłoby nieodwracalną szkodą (utrata/uszkodzenie danych,
+ruszenie prod DB) — inaczej kontynuuj.
 
 ## Wejście
 Feature: **$ARGUMENTS** (ścieżka `specs/NNN-slug` albo sam slug — jeśli podano tylko slug, znajdź katalog).
@@ -33,11 +41,13 @@ Jeśli argument pusty — weź najnowszy katalog w `specs/` bez `plan.md`.
 ## Zasady
 - Plan ma być na tyle konkretny, że `/tasks` rozbije go na kroki bez dopytywania.
 - Preferuj minimalizm (C-53): najmniejszy zestaw zmian realizujący spec. Zero nowych zależności bez uzasadnienia.
-- Jeśli podczas planowania wyjdzie, że spec ma lukę/sprzeczność — **zatrzymaj się**, dopisz to do sekcji
-  otwartych pytań w `spec.md` i zasygnalizuj właścicielowi zamiast zgadywać.
+- Jeśli podczas planowania wyjdzie, że spec ma **twardą** lukę/sprzeczność, której nie da się domknąć
+  rozsądnym domyślnym — dopisz to do sekcji otwartych pytań w `spec.md`, zaznacz w planie jako
+  ryzyko i **kontynuuj** z najlepszym możliwym założeniem (nie przerywaj pipeline'u pytaniem).
 - Możesz zlecić głębszy rekonesans architektury subagentowi **omnia-planner** (Agent tool), jeśli feature
   jest złożony i dotyka wielu modułów.
 
-## Na koniec
-Wypisz ścieżkę `plan.md`, najważniejsze decyzje techniczne (3–6 punktów), ryzyka i zdanie:
-**„Następny krok: `/tasks specs/NNN-slug`"**. Nie zaczynaj implementacji.
+## Na koniec — automatyczne przejście dalej
+Wypisz ścieżkę `plan.md` i najważniejsze decyzje techniczne (3–6 punktów). Następnie **nie czekaj na
+użytkownika** — od razu przejdź do etapu 3, wywołując skill **`tasks`** (narzędzie Skill) z argumentem
+`specs/NNN-slug`.

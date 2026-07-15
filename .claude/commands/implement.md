@@ -1,10 +1,18 @@
 ---
-description: Etap 4 SDD — wykonaj zadania z tasks.md zgodnie z konstytucją, odhaczając postęp
+description: Etap 4 SDD — wykonaj zadania z tasks.md i przejdź automatycznie do weryfikacji
 argument-hint: <specs/NNN-slug | slug | konkretne T-n>
 ---
 
 Jesteś na **etapie 4 (IMPLEMENT)** spec-driven pipeline'u Omnia. Realizujesz zadania z `tasks.md` —
-kod, migracje, testy — **ściśle wg planu i konstytucji**, odhaczając postęp na bieżąco.
+kod, migracje, testy — **ściśle wg planu i konstytucji**, odhaczając postęp na bieżąco. Pracujesz
+**autonomicznie** i po domknięciu wszystkich zadań **sam uruchamiasz `/verify`**.
+
+## Model interakcji
+Wszystkie decyzje właściciela zebrano na etapie `/specify`. **Nie zadawaj pytań (`AskUserQuestion`).**
+Gdy w trakcie kodowania trafisz na wybór nieprzewidziany w planie — wybierz opcję **rekomendowaną**
+(zgodną z wzorcem sąsiedniego modułu i minimalizmem C-53), dopisz krótką notkę w `tasks.md`/`plan.md`
+i **kontynuuj**. Zatrzymaj się i zapytaj tylko przy realnym ryzyku nieodwracalnej szkody (utrata
+danych, prod DB).
 
 ## Wejście
 Feature: **$ARGUMENTS**. Jeśli pusty — najnowszy katalog w `specs/` z `tasks.md`. Jeśli podano
@@ -35,10 +43,8 @@ konkretne `T-n`, zrób tylko je; inaczej jedź od pierwszego nieodhaczonego.
   Postgresowi. Napraw wszystko na czerwono zanim uznasz zadanie za zrobione.
 - Jeśli po drodze rozwiążesz nieoczywisty problem → wpis do `doświadczenia.md` (C-51) razem z fixem.
 
-## Kiedy się zatrzymać i zapytać
-- Gdy zadanie wymaga decyzji nieprzewidzianej w planie, albo plan okazuje się błędny — **zatrzymaj się**,
-  zaktualizuj `plan.md`/`tasks.md` i zapytaj właściciela (`AskUserQuestion`) zamiast improwizować.
-
-## Na koniec
-Podsumuj: które `T-n` zrobione, stan bramek (lint/build), pozostałe zadania i zdanie:
-**„Następny krok: `/verify specs/NNN-slug`"**.
+## Na koniec — automatyczne przejście dalej
+Podsumuj: które `T-n` zrobione i stan bramek (lint/build). Następnie **nie czekaj na użytkownika** —
+od razu przejdź do etapu 5, wywołując skill **`verify`** (narzędzie Skill) z argumentem
+`specs/NNN-slug`. (Jeśli świadomie robisz tylko wyodrębnione `T-n`, a lista nie jest domknięta —
+napisz to i dopiero wtedy nie przechodź dalej.)
