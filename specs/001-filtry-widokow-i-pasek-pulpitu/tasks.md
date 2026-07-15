@@ -45,7 +45,7 @@
   zawężają oś czasu; Lista działa jak dotąd; w Kanbanie nie ma wiersza zakładek statusu.
 
 ### Poprawka B — kompaktowy pasek „Dostosuj pulpit” (moduł Home)
-- [ ] **T-3** `[P]` — **`HomePage.tsx`: usuń pełnowierszowy pasek, dodaj ikonkę-przełącznik w wierszu
+- [x] **T-3** `[P]` — **`HomePage.tsx`: usuń pełnowierszowy pasek, dodaj ikonkę-przełącznik w wierszu
   powitania.** Wg planu §5B:
   - usuń `<div style={{ justifyContent:"flex-end", marginTop:-4 }}>…</div>` (obecny pasek);
   - w wierszu powitania (logo + `h1` + Beta) dodaj przycisk `marginLeft:"auto"`, ikona
