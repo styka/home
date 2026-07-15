@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { getActivePlan } from "@/lib/plans";
+import { estimateCostUsd } from "@/lib/llm/pricing";
+import { PERMISSIONS } from "@/lib/permissions";
+import { notifyUser } from "@/actions/notifications";
 
 /**
  * Z-130/Z-511: trwały budżet AI per użytkownik/plan (kontrola kosztów).
@@ -75,4 +78,117 @@ export async function getAiUsageStats(days = 30): Promise<{
     activeUsers: users.size,
     perDay: Array.from(perDayMap.entries()).map(([day, v]) => ({ day, requests: v.requests, tokens: v.tokens })),
   };
+}
+
+// ─── 002-ai-architecture: log per-wywołanie LLM + koszt + alert ──────────────
+
+const COST_ALERT_CONFIG_KEY = "ai_cost_daily_alert_usd";
+
+export interface AiCallEntry {
+  userId?: string | null;
+  operationType: string; // dispatch | reasoning | vision | generation
+  providerKind: string; // openai_compat | anthropic
+  model: string;
+  usage?: { prompt: number; completion: number; total: number; cacheRead?: number; cacheWrite?: number };
+  latencyMs: number;
+  ok: boolean;
+  source?: string;
+}
+
+/**
+ * Zapisuje jedno wywołanie LLM do `AiCall` (koszt SZACOWANY z cennika) i — jeśli
+ * ustawiono próg — sprawdza dzienny alert kosztowy. Fire-and-forget: nie blokuje
+ * odpowiedzi asystenta, błędy zapisu są łykane przez wołającego (`.catch`).
+ */
+export async function recordAiCall(entry: AiCallEntry): Promise<void> {
+  const u = entry.usage;
+  const costUsd = u
+    ? estimateCostUsd(
+        {
+          promptTokens: u.prompt,
+          completionTokens: u.completion,
+          cacheReadTokens: u.cacheRead ?? 0,
+          cacheWriteTokens: u.cacheWrite ?? 0,
+        },
+        entry.model
+      )
+    : 0;
+  await prisma.aiCall.create({
+    data: {
+      userId: entry.userId ?? null,
+      operationType: entry.operationType,
+      providerKind: entry.providerKind,
+      model: entry.model,
+      promptTokens: u?.prompt ?? 0,
+      completionTokens: u?.completion ?? 0,
+      cacheReadTokens: u?.cacheRead ?? 0,
+      cacheWriteTokens: u?.cacheWrite ?? 0,
+      totalTokens: u?.total ?? 0,
+      costUsd,
+      latencyMs: Math.max(0, Math.round(entry.latencyMs || 0)),
+      ok: entry.ok,
+      source: entry.source ?? null,
+    },
+  });
+  // Alert kosztowy — tylko gdy próg skonfigurowany (>0). Idempotentny per dzień.
+  await maybeFireCostAlert().catch(() => {});
+}
+
+/** Suma szacowanego kosztu (USD) z `AiCall` za dany dzień UTC (domyślnie dziś). */
+export async function getDailyCostUsd(day = todayUtc()): Promise<number> {
+  const start = new Date(`${day}T00:00:00.000Z`);
+  const end = new Date(start.getTime() + 86_400_000);
+  const agg = await prisma.aiCall.aggregate({
+    where: { createdAt: { gte: start, lt: end } },
+    _sum: { costUsd: true },
+  });
+  return agg._sum.costUsd ?? 0;
+}
+
+async function readCostThreshold(): Promise<number> {
+  const row = await prisma.config.findUnique({ where: { key: COST_ALERT_CONFIG_KEY } });
+  const n = row?.value ? Number(row.value) : 0;
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+// Powiadamia adminów, gdy dzienny szacowany koszt przekroczy próg. Nie blokuje
+// asystenta. dedupeKey per dzień → jedno powiadomienie na dobę.
+async function maybeFireCostAlert(): Promise<void> {
+  const threshold = await readCostThreshold();
+  if (threshold <= 0) return;
+  const day = todayUtc();
+  const total = await getDailyCostUsd(day);
+  if (total < threshold) return;
+  const admins = await getAdminUserIds();
+  await Promise.all(
+    admins.map((userId) =>
+      notifyUser({
+        userId,
+        module: "admin",
+        title: "Przekroczono dzienny próg kosztów AI",
+        body: `Szacowany koszt AI na dziś (${day}) to $${total.toFixed(2)} — próg $${threshold.toFixed(2)}.`,
+        href: "/admin/llm",
+        dedupeKey: `ai-cost-alert-${day}`,
+      })
+    )
+  );
+}
+
+// Użytkownicy z dostępem do panelu admina (rola przyznająca `module.admin`).
+async function getAdminUserIds(): Promise<string[]> {
+  const perm = await prisma.permission.findUnique({
+    where: { slug: PERMISSIONS.ADMIN },
+    select: { id: true },
+  });
+  if (!perm) return [];
+  const adminRoles = (
+    await prisma.rolePermission.findMany({ where: { permissionId: perm.id }, select: { role: true } })
+  ).map((g) => g.role);
+  if (adminRoles.length === 0) return [];
+  const rows = await prisma.userRole.findMany({
+    where: { role: { in: adminRoles } },
+    select: { userId: true },
+    distinct: ["userId"],
+  });
+  return rows.map((r) => r.userId);
 }
