@@ -33,10 +33,16 @@ widoczności nietknięta. Brak wpięć w `permissions.ts` / `modules.tsx` / `Mod
 ## 5. UI (C-30, C-31, C-32)
 Jedyna warstwa zmian. Plik: `src/components/tasks/TasksPage.tsx`, nagłówek działu.
 
-- **Kontener akcji** (`<div className="flex items-center gap-2">`, ~linia 408) → dodać
-  `min-w-0 overflow-x-auto` (oraz zapewnić, że rząd nie zawija — `flex-nowrap` jest domyślne).
+- **Kontener akcji** (`<div className="flex items-center gap-2">`, ~linia 408) → **rozdzielić na dwa**:
+  zewnętrzny `flex items-center gap-2 min-w-0` i wewnętrzny **przewijany** `flex items-center gap-2
+  min-w-0 overflow-x-auto [&>*]:flex-shrink-0` obejmujący ikony (kosz…przełącznik widoku, klipboard).
   Dzięki `overflow-hidden` na rodzicu przewijanie jest odizolowane do tego kontenera, więc **cała
   strona nie przewija się poziomo** (AC-3).
+- **Popovery poza strefą scrolla (ważne):** kontener z `overflow-x-auto` liczy `overflow-y` jako `auto`
+  (reguła CSS: gdy jedna oś ≠ `visible`, druga `visible` staje się `auto`), więc **przycina** wewnętrzne
+  rozwijane menu. `ProjectActionsMenu` renderuje `absolute` dropdown (rename/usuń projektu) → **musi
+  zostać POZA** przewijanym kontenerem, jako sibling w zewnętrznym wrapperze (`flex-shrink-0`, przypięty
+  po prawej, zawsze widoczny). Inaczej menu byłoby ucięte także na desktopie.
 - **Dzieci-akcje nie mogą się kurczyć** — w scroll-kontenerze flex domyślnie dzieci mogą się zwężać;
   chcemy, by ikony i pogrupowane przełączniki (bordered: grupowanie, Lista/Kanban/Timeline) zachowały
   rozmiar i żeby rząd się **przewijał**, a nie ściskał. Realizacja minimalna: na kontenerze akcji

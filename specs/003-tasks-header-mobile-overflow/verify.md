@@ -21,7 +21,9 @@ Dowód: `src/components/tasks/TasksPage.tsx:409` — kontener akcji nagłówka m
   kontenerze akcji sprawiają, że rząd przewija się w poziomie zamiast być przycięty przez
   `overflow-hidden` rodzica; żadna akcja nie jest trwale poza kadrem.
 - **AC-2** (admin „Kopiuj prompt dla Claude Code" osiągalny) — ✅ **spełnione.** Przycisk
-  (`:513`, warunek `isAdmin` nietknięty) jest dzieckiem przewijanego kontenera → osiągalny przez scroll.
+  (warunek `isAdmin` nietknięty) jest dzieckiem przewijanego kontenera → osiągalny przez scroll.
+  **Uwaga (poprawka z /review):** `ProjectActionsMenu` przeniesiony POZA strefę scrolla, bo
+  `overflow-x-auto` przycinałby jego rozwijane menu — patrz sekcja Regresje.
 - **AC-3** (brak poziomego scrolla całej strony; wysokość nagłówka bez rozjazdu) — ✅ **spełnione.**
   Scroll odizolowany do kontenera akcji (`min-w-0 overflow-x-auto`); nagłówek pozostaje jednym rzędem
   `h-12` (brak `flex-wrap`), więc wysokość i layout bez zmian.
