@@ -32,7 +32,7 @@ const STAGES: {
   { cmd: "/tasks", label: "Zadania", desc: "Plan → lista kroków (łatwe → trudne)", icon: <ListChecks size={16} />, color: "var(--accent-blue)" },
   { cmd: "/implement", label: "Implementacja", desc: "Wykonanie zadań + commity", icon: <Hammer size={16} />, color: "var(--accent-amber)" },
   { cmd: "/verify", label: "Weryfikacja", desc: "Zachowanie vs kryteria + bramki", icon: <CheckCircle2 size={16} />, color: "var(--accent-green)" },
-  { cmd: "/review", label: "Recenzja", desc: "Poprawność + konwencje → werdykt", icon: <Eye size={16} />, color: "var(--accent-green)" },
+  { cmd: "/review", label: "Recenzja", desc: "Werdykt bez approve → merge do develop → pyta o master", icon: <Eye size={16} />, color: "var(--accent-green)" },
 ];
 
 export default async function AdminSpecPipelinePage() {
@@ -65,11 +65,15 @@ export default async function AdminSpecPipelinePage() {
           <strong style={{ color: "var(--text-primary)" }}>co do zasady raz</strong> (na starcie, z
           wyraźnie oznaczoną odpowiedzią rekomendowaną — z wąską furtką na później, gdy wypłynie
           naprawdę ważna, nieprzewidziana decyzja), a kolejne etapy{" "}
-          <strong style={{ color: "var(--text-primary)" }}>przechodzą automatycznie</strong> aż do merge
-          do <code style={{ fontFamily: "monospace" }}>develop</code> — a gdy któryś etap wykryje błąd
-          we wcześniejszym artefakcie,{" "}
+          <strong style={{ color: "var(--text-primary)" }}>przechodzą automatycznie</strong> (łącznie z
+          recenzją — <strong style={{ color: "var(--text-primary)" }}>bez ręcznego approve</strong>) aż
+          do merge do <code style={{ fontFamily: "monospace" }}>develop</code> — a gdy któryś etap
+          wykryje błąd we wcześniejszym artefakcie,{" "}
           <strong style={{ color: "var(--text-primary)" }}>zawraca i poprawia właściwy plik</strong>{" "}
-          (spójność spec ↔ plan ↔ zadania ↔ kod). Komendy i agenty żyją w katalogu{" "}
+          (spójność spec ↔ plan ↔ zadania ↔ kod). Na końcu pada jedno pytanie domykające —{" "}
+          <em style={{ color: "var(--text-primary)" }}>{"„Mistrzu Magu, czy zrobić merge develop do master?”"}</em>{" "}
+          — bo <code style={{ fontFamily: "monospace" }}>master</code> to produkcja i promujemy go tylko
+          na wyraźne {"„Tak”"}. Komendy i agenty żyją w katalogu{" "}
           <code style={{ fontFamily: "monospace" }}>.claude/</code>; artefakty każdej zmiany lądują w{" "}
           <code style={{ fontFamily: "monospace" }}>specs/&lt;NNN-slug&gt;/</code>.
         </p>

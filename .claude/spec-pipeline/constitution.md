@@ -90,7 +90,10 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   główny repo, po polsku, format: `## YYYY-MM-DD — tytuł` / `**Problem:**` / `**Rozwiązanie:**` /
   `**Lekcja:**`). Nie pytaj o zgodę — dopisz i zacommituj razem z fixem.
 - **C-52 — Merge do `develop` po skończonym zadaniu** (gdy `build` zielony), zgodnie ze STANDING
-  AUTHORIZATION w `CLAUDE.md`. `master` (produkcja) tylko na wyraźne żądanie właściciela.
+  AUTHORIZATION w `CLAUDE.md` — automatycznie, bez pytania. `master` (produkcja) **tylko na wyraźne
+  „Tak"** właściciela. Dlatego pipeline **zawsze kończy się jednym pytaniem domykającym**
+  („Mistrzu Magu, czy zrobić merge develop do master?", opcja `Nie/zostaw na develop` jako rekomendowana
+  pierwsza); merge `develop → master` (i push) robimy **wyłącznie** po odpowiedzi „Tak".
 - **C-53 — Minimalizm.** Rozwiązanie najmniejsze z możliwych: bez nadmiarowych abstrakcji, nowych
   zależności i „przy okazji" refaktorów. Zgodność ze stylem otoczenia > osobiste preferencje.
 
@@ -118,7 +121,9 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   artefaktów, kodu ani konwencji. Wtedy **pytaj, nie zgaduj** (`AskUserQuestion`, rekomendowana
   pierwsza + `(zalecane)`), po odpowiedzi zaktualizuj artefakty wg C-54 i jedź dalej. Cel: właściciel
   wołany **jak najrzadziej**, ale **nigdy nie zgadujemy** przy naprawdę ważnej, niejednoznacznej
-  decyzji. Wszystko poza tą furtką rozstrzygasz sam.
+  decyzji. Wszystko poza tą furtką rozstrzygasz sam. **Wyjątek sankcjonowany:** obowiązkowe pytanie
+  domykające o promocję `develop → master` (C-52) jest zadawane **zawsze** na końcu i nie jest liczone
+  jako złamanie „jednego momentu pytań" — to świadoma bramka produkcyjna właściciela.
 
 ---
 

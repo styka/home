@@ -28,7 +28,10 @@ doprecyzowania wymagań (w Spec Kit osobny `/clarify`) **zwijamy do jednego mome
    ale **nigdy nie zgadywać** przy ważnej, niejednoznacznej decyzji (reguła `C-55`).
 2. **Automatyczne przejścia + zawracanie.** Nie wpisujesz kolejnych komend. Po `/specify` pipeline
    **sam** przetacza się przez plan → zadania → implementację → weryfikację → recenzję, aż do merge do
-   `develop`. Gdy `/verify` albo `/review` znajdzie brak — **sam zawraca do `/implement`** i poprawia.
+   `develop`. `/review` **nie czeka na twój approve** — sam wystawia werdykt. Gdy `/verify` albo
+   `/review` znajdzie brak — **sam zawraca do `/implement`** i poprawia. Na samym końcu, po merge do
+   `develop`, pada **jedno** pytanie domykające: „Mistrzu Magu, czy zrobić merge develop do master?"
+   (produkcja tylko na twoje „Tak"; domyślnie zostajemy na `develop`).
 3. **Artefakty zawsze spójne (`C-54`).** Gdy któryś etap odkryje, że wcześniejszy artefakt jest błędny
    (implementacja pokazuje, że plan się nie broni; plan wykrywa lukę w specu; twoja odpowiedź zmienia
    zakres) — pipeline **wraca i poprawia właściwy plik** (`spec.md`/`plan.md`/`tasks.md`), a potem
@@ -43,11 +46,15 @@ doprecyzowania wymagań (w Spec Kit osobny `/clarify`) **zwijamy do jednego mome
 | 3. Zadania | `/tasks <slug>` | `plan.md` | `tasks.md` | Uporządkowana lista kroków (łatwe→trudne, wg zależności) z wpiętymi bramkami. |
 | 4. Implementacja | `/implement <slug>` | `tasks.md` | kod + commity | Wykonanie zadań po kolei, odhaczanie postępu, commit po każdym. |
 | 5. Weryfikacja | `/verify <slug>` | kod | `verify.md` | Sprawdzenie **zachowania** względem kryteriów akceptacji + bramki (lint/build). |
-| 6. Recenzja | `/review <slug>` | diff | `review.md` | Świeże oko: poprawność + konwencje Omnia. Werdykt przed merge do `develop`. |
+| 6. Recenzja | `/review <slug>` | diff | `review.md` | Świeże oko: poprawność + konwencje Omnia. Sam wystawia werdykt (bez twojego approve), po APPROVE robi merge do `develop` i pyta o promocję do `master`. |
 
 Przepływ jest liniowy, ale **pętli się wstecz**: jeśli `/verify` znajdzie brak → pipeline sam wraca do
 `/implement`; jeśli `/plan` wykryje lukę w specu → dopisuje ją do `spec.md` i jedzie z najlepszym
 domyślnym. Wszystkie sześć etapów odpala się **jedną komendą** `/specify` — reszta dzieje się sama.
+`/review` **nie czeka na twój approve** — sam wystawia werdykt i po APPROVE merguje do `develop`.
+Na **samym końcu** pipeline zadaje **jedno** pytanie: „Mistrzu Magu, czy zrobić merge develop do
+master?" — bo `master` to produkcja i promujemy go tylko na Twoje wyraźne „Tak" (domyślnie: zostań na
+`develop` i sprawdź na środowisku testowym).
 
 ## Artefakty — układ katalogów
 ```
@@ -84,11 +91,15 @@ z wąską furtką). Każdy etap sprawdza zgodność — złamanie którejś to b
 2. Wpisz **jedną** komendę, np.:
    `/specify dodaj do modułu Portfel eksport wpisów do CSV`.
 3. Jeśli coś wymaga decyzji — dostaniesz **jeden** ekran wyboru. Kliknij rekomendowaną opcję
-   (oznaczoną `(zalecane)`) albo wybierz inną. To **jedyny** moment, w którym pipeline cię zaczepia.
+   (oznaczoną `(zalecane)`) albo wybierz inną. To (poza pytaniem domykającym z pkt. 5) **jedyny**
+   moment, w którym pipeline cię zaczepia.
 4. Dalej **nic nie robisz** — pipeline sam: pisze `spec.md`, planuje (`plan.md`), rozbija na zadania
-   (`tasks.md`), implementuje z commitami, weryfikuje (`verify.md`), recenzuje (`review.md`) i po
-   APPROVE robi merge do `develop` (deploy na środowisko testowe).
-5. Efekt oglądasz w `specs/001-portfel-csv-export/` (komplet artefaktów) i na `worldofmag.onrender.com`.
+   (`tasks.md`), implementuje z commitami, weryfikuje (`verify.md`), recenzuje (`review.md` — **bez
+   twojego approve**) i po APPROVE robi merge do `develop` (deploy na środowisko testowe).
+5. Na końcu pada **jedno** pytanie: „Mistrzu Magu, czy zrobić merge develop do master?". „Nie"
+   (domyślne) → zmiana zostaje na `develop` do sprawdzenia; „Tak" → pipeline promuje `develop → master`
+   (produkcja).
+6. Efekt oglądasz w `specs/001-portfel-csv-export/` (komplet artefaktów) i na `worldofmag.onrender.com`.
 
 > Możesz też odpalić dowolny etap osobno (`/plan <slug>`, `/verify <slug>` …) — każdy i tak pociągnie
 > resztę automatycznie. Zwykle jednak wystarczy samo `/specify`.
