@@ -118,6 +118,7 @@ export async function runReadTool(
         where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
         include: { _count: { select: { tasks: true } } },
         orderBy: [{ isInbox: "desc" }, { createdAt: "asc" }],
+        take: HARD_MAX,
       });
       return projects.map((p) => ({
         id: p.id,
@@ -216,6 +217,7 @@ export async function runReadTool(
       const lists = await prisma.shoppingList.findMany({
         where: { archived: includeArchived, ...(await accessibleListWhere(userId)) },
         orderBy: includeArchived ? { archivedAt: "desc" } : { createdAt: "asc" },
+        take: HARD_MAX,
       });
       return Promise.all(
         lists.map(async (l) => {
@@ -242,6 +244,7 @@ export async function runReadTool(
           ...(listName ? { name: { contains: listName, mode: "insensitive" } } : {}),
         },
         select: { id: true, name: true },
+        take: HARD_MAX,
       });
       const listMap = new Map(lists.map((l) => [l.id, l.name]));
       const listIds = lists.map((l) => l.id);
