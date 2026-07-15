@@ -4,12 +4,13 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings, Volume2,
+  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings, Volume2, Mic, MicOff,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported } from "@/lib/tts";
+import { createSpeechListener, speechRecognitionSupported, type SpeechListener } from "@/lib/speechRecognition";
 import {
   listAiConversations, getAiConversation, createAiConversation, appendAiMessage,
   deleteAiConversation, renameAiConversation, type ConversationMeta,
@@ -73,6 +74,9 @@ type Turn =
   | { id: string; role: "assistant"; kind: "plan"; content: string; actions: AIAction[]; messages?: ChatMessage[]; log?: LogEntry[]; done?: boolean; meta?: AgentMeta }
   | { id: string; role: "assistant"; kind: "report"; content: string; title: string; savedSlug?: string; log?: LogEntry[]; meta?: AgentMeta }
   | { id: string; role: "assistant"; kind: "results"; content: string; results: ActionResult[]; undone?: boolean };
+
+// Tryb rozmowy głosowej (magiczna ikona → hands-free). String-union, nie enum (C-12).
+type VoiceState = "off" | "listening" | "thinking" | "speaking" | "review";
 
 const LIST_SUB_PAGES = ["products", "units", "categories", "icons", "stores"];
 
@@ -198,6 +202,20 @@ export function AICommandSheet() {
   // Odczyt postów Asystenta na głos — id posta aktualnie czytanego (jeden głos naraz).
   const [speakingId, setSpeakingId] = useState<string | null>(null);
 
+  // Tryb rozmowy głosowej (hands-free): słucham → myślę → mówię → (podgląd planu) → słucham.
+  const [voiceState, setVoiceState] = useState<VoiceState>("off");
+  const [interimText, setInterimText] = useState(""); // częściowy transkrypt na żywo
+  const [voiceSupported] = useState(() => ttsSupported() && speechRecognitionSupported());
+  const voiceStateRef = useRef<VoiceState>("off");
+  voiceStateRef.current = voiceState;
+  const listenerRef = useRef<SpeechListener | null>(null);
+  const spokenIdRef = useRef<string | null>(null); // id ostatnio wypowiedzianej tury (anty-dubel)
+  const pendingClarifyRef = useRef<Extract<Turn, { kind: "clarify" }> | null>(null);
+  // Refy na najświeższe wersje funkcji pętli — omija stale-closure w callbackach listenera/lektora.
+  const startListeningRef = useRef<() => void>(() => {});
+  const handleSendRef = useRef<(t?: string) => void | Promise<void>>(() => {});
+  const submitClarifyRef = useRef<(turn: Extract<Turn, { kind: "clarify" }>, value: string) => void>(() => {});
+
   // Przegląd planu (ActionDrawer)
   const [planTurnId, setPlanTurnId] = useState<string | null>(null);
   const [planVersion, setPlanVersion] = useState(0);
@@ -249,14 +267,129 @@ export function AICommandSheet() {
     setSpeakingId(id);
   }, [speakingId]);
 
-  // Sprzątanie: zatrzymaj lektora przy zamknięciu arkusza, zmianie konwersacji i odmontowaniu.
+  // ── Tryb rozmowy głosowej (hands-free) ─────────────────────────────────────
+  // Treść tury do wypowiedzenia (jak SpeakButton). Plan/results/tury użytkownika → nie czytamy.
+  function voiceSpeakText(turn: Turn): string {
+    if (turn.role !== "assistant") return "";
+    if (turn.kind === "report") return speechTextFromMarkdown(`${turn.title}. ${turn.content}`);
+    if (turn.kind === "answer" || turn.kind === "clarify" || turn.kind === "navigate") return speechTextFromMarkdown(turn.content);
+    return "";
+  }
+
+  // Twarde wyłączenie trybu: zwolnij mikrofon i zatrzymaj lektora.
+  function stopVoice() {
+    listenerRef.current?.abort();
+    listenerRef.current = null;
+    stopSpeaking();
+    pendingClarifyRef.current = null;
+    setInterimText("");
+    voiceStateRef.current = "off";
+    setVoiceState("off");
+  }
+
+  // Rozpocznij nasłuch pojedynczej wypowiedzi. Startuje TYLKO gdy tryb jest włączony (anty-echo:
+  // nigdy nie słuchamy w trakcie mowy — lektor jest już zatrzymany zanim tu wejdziemy).
+  function startListening() {
+    if (voiceStateRef.current === "off") return;
+    stopSpeaking();
+    listenerRef.current?.abort();
+    listenerRef.current = null;
+    setInterimText("");
+    voiceStateRef.current = "listening";
+    setVoiceState("listening");
+    const listener = createSpeechListener({
+      lang: "pl-PL",
+      onInterim: (t) => setInterimText(t),
+      onFinal: (text) => {
+        setInterimText("");
+        listenerRef.current = null;
+        if (voiceStateRef.current === "off") return;
+        const trimmed = text.trim();
+        if (!trimmed) { startListeningRef.current(); return; } // nic nie powiedziano → słuchaj dalej
+        voiceStateRef.current = "thinking";
+        setVoiceState("thinking");
+        const clarify = pendingClarifyRef.current;
+        if (clarify) { pendingClarifyRef.current = null; submitClarifyRef.current(clarify, trimmed); }
+        else { void handleSendRef.current(trimmed); }
+      },
+      onError: (err) => {
+        listenerRef.current = null;
+        setError(`Mikrofon: ${err}`);
+        stopVoice();
+      },
+    });
+    listenerRef.current = listener;
+    listener.start();
+  }
+  startListeningRef.current = startListening;
+  handleSendRef.current = handleSend;
+  submitClarifyRef.current = submitClarify;
+
+  // Przełącznik trybu. Włączając, zapamiętaj ostatnią turę jako „już wypowiedzianą",
+  // by pętla nie odczytała jej ponownie na starcie.
+  function toggleVoice() {
+    if (voiceStateRef.current !== "off") { stopVoice(); return; }
+    if (!voiceSupported) return;
+    spokenIdRef.current = turns.length ? turns[turns.length - 1].id : null;
+    voiceStateRef.current = "listening";
+    startListening();
+  }
+
+  // Zamknięcie podglądu planu (anuluj) w trybie głosowym → wróć do nasłuchu.
+  function handlePlanClose() {
+    setPlanTurnId(null);
+    if (voiceStateRef.current === "review") startListeningRef.current();
+  }
+
+  // Sterownik pętli: po odpowiedzi agenta wypowiedz ją i wróć do nasłuchu (lub otwórz podgląd planu).
   useEffect(() => {
-    if (!isOpen) { stopSpeaking(); setSpeakingId(null); }
+    if (voiceState === "off" || busy) return;
+    const last = turns[turns.length - 1];
+    // Brak (jeszcze) odpowiedzi asystenta — nie ruszaj pętli (np. luka async przy tworzeniu
+    // rozmowy). Powrót po błędzie/anulowaniu obsługują osobne efekty niżej.
+    if (!last || last.role !== "assistant") return;
+    if (spokenIdRef.current === last.id) return;
+    if (last.kind === "results") { spokenIdRef.current = last.id; return; } // powrót obsłużony w execute/close
+    if (last.kind === "plan") {
+      spokenIdRef.current = last.id;
+      voiceStateRef.current = "review";
+      setVoiceState("review");
+      setPlanTurnId(last.id);
+      setPlanVersion((v) => v + 1);
+      return;
+    }
+    spokenIdRef.current = last.id;
+    const text = voiceSpeakText(last);
+    if (!text) { startListeningRef.current(); return; }
+    voiceStateRef.current = "speaking";
+    setVoiceState("speaking");
+    const clarifyTurn = last.kind === "clarify" ? last : null;
+    speak(text, "pl", {
+      onEnd: () => {
+        if (voiceStateRef.current === "off") return;
+        if (clarifyTurn) pendingClarifyRef.current = clarifyTurn;
+        startListeningRef.current();
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turns, busy, voiceState]);
+
+  // Tryb głosowy: gdy agent zwróci błąd w trakcie „myślę", wróć do nasłuchu (rozmowa się nie wiesza).
+  useEffect(() => {
+    if (error && voiceStateRef.current === "thinking") startListeningRef.current();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
+
+  // Sprzątanie: zatrzymaj lektora + tryb głosowy przy zamknięciu arkusza, zmianie konwersacji i odmontowaniu.
+  useEffect(() => {
+    if (!isOpen) { stopSpeaking(); setSpeakingId(null); stopVoice(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
   useEffect(() => {
-    stopSpeaking(); setSpeakingId(null);
+    stopSpeaking(); setSpeakingId(null); stopVoice();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
-  useEffect(() => () => { stopSpeaking(); }, []);
+  useEffect(() => () => { stopSpeaking(); listenerRef.current?.abort(); }, []);
 
   // Esc zamyka sheet (gdy nie piszemy w polu — pozwalamy textarea obsłużyć własny Esc).
   useEffect(() => {
@@ -494,6 +627,8 @@ export function AICommandSheet() {
     abortRef.current?.abort();
     abortRef.current = null;
     setBusy(false);
+    // Tryb głosowy: anulowanie generowania → wróć do nasłuchu zamiast utknąć na „myślę".
+    if (voiceStateRef.current === "thinking") startListeningRef.current();
   }
 
   // Generuj ponownie: usuń ostatnią odpowiedź asystenta i powtórz ostatnie zapytanie.
@@ -710,6 +845,8 @@ export function AICommandSheet() {
       void persist("assistant", "Wykonano akcje", "results", { results });
       setPlanTurnId(null);
       router.refresh();
+      // Tryb głosowy: po zatwierdzeniu planu wróć do nasłuchu.
+      if (voiceStateRef.current === "review") startListeningRef.current();
     } catch {
       setError("Nie udało się wykonać akcji");
     } finally {
@@ -984,6 +1121,33 @@ export function AICommandSheet() {
             {/* Composer */}
             {!showHistory && (
               <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
+                {/* Pasek stanu rozmowy głosowej (słucham / myślę / mówię / do zatwierdzenia) */}
+                {voiceState !== "off" && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
+                    <span aria-live="polite" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, minWidth: 0, color: voiceState === "listening" ? "var(--accent-blue)" : voiceState === "speaking" ? "var(--accent-green)" : voiceState === "review" ? "var(--accent-amber)" : "var(--text-secondary)" }}>
+                      {voiceState === "listening" && <Mic size={13} style={{ flexShrink: 0 }} />}
+                      {voiceState === "thinking" && <Loader2 size={13} className="animate-spin" style={{ flexShrink: 0 }} />}
+                      {voiceState === "speaking" && <Volume2 size={13} style={{ flexShrink: 0 }} />}
+                      {voiceState === "review" && <ListChecks size={13} style={{ flexShrink: 0 }} />}
+                      <span style={{ whiteSpace: "nowrap" }}>
+                        {voiceState === "listening" ? "Słucham…" : voiceState === "thinking" ? "Myślę…" : voiceState === "speaking" ? "Mówię…" : "Do zatwierdzenia"}
+                      </span>
+                      {voiceState === "listening" && interimText && (
+                        <span style={{ color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>„{interimText}"</span>
+                      )}
+                    </span>
+                    <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexShrink: 0 }}>
+                      {voiceState === "speaking" && (
+                        <button onClick={() => startListening()} title="Przerwij i mów" style={voicePillBtn}>
+                          <Square size={11} /> Przerwij
+                        </button>
+                      )}
+                      <button onClick={stopVoice} title="Zakończ rozmowę głosową" style={voicePillBtn}>
+                        <MicOff size={11} /> Zakończ
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {attachedImage && (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -996,6 +1160,17 @@ export function AICommandSheet() {
                 )}
                 <input ref={fileRef} type="file" accept="image/*" onChange={onPickImage} style={{ display: "none" }} />
                 <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                  {voiceSupported && (
+                    <button
+                      onClick={toggleVoice}
+                      disabled={busy && voiceState === "off"}
+                      title={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa (mów zamiast pisać)"}
+                      aria-label={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa"}
+                      style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: `1px solid ${voiceState !== "off" ? "var(--accent-blue)" : "var(--border)"}`, background: voiceState !== "off" ? "var(--accent-blue)" : "transparent", color: voiceState !== "off" ? "var(--on-accent)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: (busy && voiceState === "off") ? "default" : "pointer" }}
+                    >
+                      {voiceState !== "off" ? <MicOff size={17} /> : <Mic size={17} />}
+                    </button>
+                  )}
                   <button
                     onClick={() => fileRef.current?.click()}
                     disabled={busy}
@@ -1040,7 +1215,7 @@ export function AICommandSheet() {
           onConfirm={(confirmed) => handleExecute(planTurn, confirmed)}
           onRefine={planTurn.messages ? (fb) => handleRefine(planTurn, fb) : undefined}
           isRefining={isRefining}
-          onClose={() => setPlanTurnId(null)}
+          onClose={handlePlanClose}
           isExecuting={isExecuting}
         />
       )}
@@ -1051,6 +1226,7 @@ export function AICommandSheet() {
 const iconBtn: React.CSSProperties = { padding: 6, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", borderRadius: 6 };
 const rowBtn: React.CSSProperties = { display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", borderRadius: 8, border: "none", background: "var(--bg-elevated)", cursor: "pointer", textAlign: "left", width: "100%" };
 const chipBtn: React.CSSProperties = { fontSize: 12.5, padding: "8px 12px", borderRadius: 18, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", cursor: "pointer", textAlign: "left" };
+const voicePillBtn: React.CSSProperties = { display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-secondary)", background: "var(--bg-base)", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" };
 
 // ── Widok pojedynczej tury ──────────────────────────────────────────────────
 function CopyButton({ text }: { text: string }) {
