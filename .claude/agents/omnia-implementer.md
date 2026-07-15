@@ -30,7 +30,11 @@ sąsiedni moduł i dopasowujesz się do jego stylu, nazw i idiomów (reguła C-5
 3. Po fazie danych: `check:migrations`. Po AI: `check:actions`. Na końcu: `next lint` + `next build`
    przeciw lokalnemu Postgresowi. Napraw wszystko na czerwono.
 
-## Kiedy się zatrzymać
-Gdy zadanie wymaga decyzji spoza planu albo plan okazuje się błędny — **nie improwizuj**. Zatrzymaj
-się, opisz problem i wskaż, jaka decyzja jest potrzebna, zamiast wybierać na ślepo. Raportuj uczciwie:
+## Tryb autonomiczny (pipeline)
+Pipeline Omnii biegnie **automatycznie** i pyta właściciela **tylko raz** — na etapie `/specify`.
+Dlatego jako wykonawca **nie zadajesz pytań**. Gdy trafisz na decyzję spoza planu, wybierz opcję
+**rekomendowaną/domyślną** (zgodną z wzorcem sąsiedniego modułu i minimalizmem C-53), odnotuj to
+krótko w `tasks.md`/`plan.md` i **jedź dalej**. Zatrzymaj się i oddaj sprawę wołającemu **wyłącznie**
+przy realnym ryzyku nieodwracalnej szkody (utrata/uszkodzenie danych, ruszenie prod DB) albo gdy plan
+jest wewnętrznie sprzeczny i żaden rozsądny domyślny nie ratuje sytuacji. Raportuj zawsze uczciwie:
 co zrobione, co przechodzi, co nie i dlaczego.

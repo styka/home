@@ -1,10 +1,16 @@
 ---
-description: Etap 6 SDD — recenzja kodu diffa pod kątem poprawności i konwencji Omnia (specs/NNN-slug/review.md)
+description: Etap 6 SDD — recenzja diffa, werdykt i (po APPROVE) merge do develop (specs/NNN-slug/review.md)
 argument-hint: <specs/NNN-slug | slug>
 ---
 
 Jesteś na **etapie 6 (REVIEW)** spec-driven pipeline'u Omnia — ostatnia bramka przed merge do `develop`.
 Robisz **recenzję kodu** zmian feature'a: świeżym okiem, pod kątem poprawności i zgodności z konwencjami.
+To **koniec** automatycznego przebiegu — po APPROVE domykasz zadanie zgodnie ze standing authorization.
+
+## Model interakcji
+**Nie zadawaj pytań właścicielowi.** Drobne, bezpieczne poprawki nanieś sam; przy poważnych ustaleniach
+zawróć pipeline do `/implement` (patrz „Na koniec"). To ostatni etap — nie wywołuj już kolejnego skilla
+pipeline'u.
 
 ## Wejście
 Feature: **$ARGUMENTS**. Jeśli pusty — najnowszy katalog w `specs/` z `verify.md`.
@@ -37,8 +43,13 @@ sugerowana poprawka. Na końcu **werdykt**: APPROVE / APPROVE Z UWAGAMI / ZMIANY
 - Dla złożonego/wielomodułowego diffa możesz zlecić recenzję świeżym okiem subagentowi
   **omnia-reviewer** (Agent tool) i zebrać jego ustalenia tutaj.
 - Możesz od razu nanieść **drobne, bezpieczne** poprawki (literówki, brakujący `revalidatePath`) i
-  odnotować je; większe zmiany zostaw jako rekomendacje do decyzji.
+  odnotować je.
 
-## Na koniec
-Wypisz werdykt i — jeśli APPROVE — przypomnij o standingowej ścieżce: commit → merge do `develop` →
-push (po zielonym buildzie), zgodnie z CLAUDE.md.
+## Na koniec — domknięcie
+- Jeśli werdykt to **ZMIANY WYMAGANE**: wypisz konkretne poprawki, dopisz je jako zadania do
+  `tasks.md` i **od razu** wróć do etapu 4, wywołując skill **`implement`** (narzędzie Skill) z
+  argumentem `specs/NNN-slug`. Nie czekaj na użytkownika.
+- Jeśli werdykt to **APPROVE / APPROVE Z UWAGAMI**: domknij zadanie zgodnie ze **STANDING
+  AUTHORIZATION** z `CLAUDE.md` — commit → merge brancha roboczego (`claude/*`) do `develop` → push
+  `develop` (po zielonym buildzie; C-50/C-52). Nie pytaj o zgodę — to jest ta zgoda. Na końcu wypisz
+  jednym akapitem podsumowanie całego przebiegu (spec → review) i co trafiło na środowisko testowe.

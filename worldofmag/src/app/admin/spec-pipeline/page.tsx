@@ -58,9 +58,16 @@ export default async function AdminSpecPipelinePage() {
           Powtarzalny sposób budowania kolejnych modyfikacji Omnii z Claude Code: najpierw{" "}
           <strong style={{ color: "var(--text-primary)" }}>co i po co</strong>, potem{" "}
           <strong style={{ color: "var(--text-primary)" }}>jak</strong>, potem kroki — a na końcu{" "}
-          <strong style={{ color: "var(--text-primary)" }}>weryfikacja i recenzja</strong>. Komendy i
-          agenty żyją w katalogu <code style={{ fontFamily: "monospace" }}>.claude/</code>; artefakty
-          każdej zmiany lądują w <code style={{ fontFamily: "monospace" }}>specs/&lt;NNN-slug&gt;/</code>.
+          <strong style={{ color: "var(--text-primary)" }}>weryfikacja i recenzja</strong>. Wzorowany na{" "}
+          <strong style={{ color: "var(--text-primary)" }}>GitHub Spec Kit</strong>, dostosowany do Omnii.
+          Uruchamiasz go <strong style={{ color: "var(--text-primary)" }}>jedną komendą</strong>{" "}
+          <code style={{ fontFamily: "monospace" }}>/specify</code>: pytania pojawiają się tylko{" "}
+          <strong style={{ color: "var(--text-primary)" }}>raz</strong> (na starcie, z wyraźnie
+          oznaczoną odpowiedzią rekomendowaną), a kolejne etapy{" "}
+          <strong style={{ color: "var(--text-primary)" }}>przechodzą automatycznie</strong> aż do merge
+          do <code style={{ fontFamily: "monospace" }}>develop</code>. Komendy i agenty żyją w katalogu{" "}
+          <code style={{ fontFamily: "monospace" }}>.claude/</code>; artefakty każdej zmiany lądują w{" "}
+          <code style={{ fontFamily: "monospace" }}>specs/&lt;NNN-slug&gt;/</code>.
         </p>
 
         {/* Flow strip */}

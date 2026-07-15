@@ -1088,3 +1088,29 @@ recznie) zamiast walczyc z `migrate deploy`.
 **Problem:** Zadanie przesunięte o JEDEN dzień w przyszłość nadal pokazywało się na liście „Dziś" (przesunięte o kilka dni — znikało poprawnie). `getTodayTasks`/`getOverdueTasks` oraz liczniki na `/tasks` liczyły granice doby przez `new Date(); setHours(0/23…)`, czyli w strefie **serwera** (Render = UTC). Tymczasem daty `dueDate` zapisywane były jako instanty UTC niespójnie: `TaskRow` używał lokalnego południa (`+"T12:00:00"`), ale `TaskDetail`/`QuickAddTask`/`AITaskInput` robiły `new Date("YYYY-MM-DD")` = **UTC-północ**. Dla użytkownika w UTC+2 instant „jutra" potrafił wpaść w UTC-owe okno „dziś", a tylko granica +1 dnia jest na to wrażliwa (kilka dni = daleko od granicy).
 **Rozwiązanie:** Granice doby liczone w strefie **użytkownika**: helper `src/lib/userTime.ts` (`userDayBounds`/`userTomorrowStart`) zwraca instanty UTC odpowiadające lokalnej północy/23:59:59.999, na podstawie ciasteczka `tz` (IANA z `Intl.DateTimeFormat().resolvedOptions().timeZone`, ustawiane raz w `AppShell`; fallback `Europe/Warsaw`). Offset strefy z `Intl.DateTimeFormat(..., {timeZone}).formatToParts` (poprawnie wokół DST). Dodatkowo znormalizowano zapis wybranego dnia do lokalnego południa wszędzie (jak w `TaskRow`), by instant jednoznacznie należał do doby użytkownika.
 **Lekcja:** Nigdy nie mieszaj „dnia liczonego w strefie serwera" z instantami UTC zapisywanymi w strefie klienta — `setHours` na serwerze (UTC) to cicha pułapka dla widoków „dziś/jutro". Albo licz granice doby w strefie użytkownika (cookie `tz` + `Intl`), albo trzymaj daty „dniowe" jako stały punkt (np. lokalne południe) i porównuj po dniu. Objaw „błąd tylko przy przesunięciu o 1 dzień, przy kilku dniach OK" to klasyczny sygnał problemu z granicą doby/strefą, nie z logiką filtra.
+
+---
+
+## 2026-07-15 — Spec-driven pipeline: jeden moment pytań + automatyczne przechodzenie między etapami
+**Problem:** Pipeline (`/specify /plan /tasks /implement /verify /review`) wymagał od właściciela ręcznego
+wpisywania kolejnych komend, a pytania (`AskUserQuestion`) mogły paść na każdym etapie — rozproszone,
+uciążliwe. Dodatkowo przycisk „kopiuj prompt dla Claude Code" w Zadaniach kopiował **stary** prompt
+(analizuj+implementuj+raport, z nieaktualnym `db:push (dev SQLite)`), zamiast uruchamiać pipeline.
+**Rozwiązanie:** (1) Konfrontacja z oficjalnymi źródłami — struktura komend/agentów (`.claude/commands/*.md`
+z frontmatterem `description`/`argument-hint`, `.claude/agents/*.md` z `name`/`description`/`tools`) jest
+zgodna z dokumentacją Claude Code; metodyka wzorowana na **GitHub Spec Kit** (`/specify→/plan→/tasks→
+/implement`), a nasze `/verify` i `/review` to dodatkowe bramki, zaś Spec-Kitowy `/clarify` **zwinęliśmy do
+jednego momentu pytań w `/specify`**. (2) `/specify` zbiera **wszystkie** decyzje w JEDNYM `AskUserQuestion`
+(opcja rekomendowana zawsze **pierwsza** + etykieta `(zalecane)`), po czym **sam** woła kolejny etap przez
+narzędzie **Skill** (`plan`→`tasks`→`implement`→`verify`→`review`); każdy etap kończy się auto-przejściem,
+a `/verify`/`/review` przy brakach zawracają do `/implement`. Etapy pośrednie mają zakaz zadawania pytań —
+wybierają rekomendowany domyślny i jadą dalej, zatrzymanie tylko przy realnym ryzyku nieodwracalnej szkody.
+(3) `OMNIA_LLM_PROMPT` w `src/lib/omniaClipboard.ts` przepisany: wklejony do Claude Code instruuje
+uruchomienie `/specify` z tytułami/opisami zadań jako zakresem funkcji. Przewodnik (`.claude/spec-pipeline/
+README.md`) + strona `/admin/spec-pipeline` opisują nowy model; po edycji README trzeba **przegenerować**
+`src/generated/spec-pipeline.ts` (`node scripts/copy-spec-pipeline.js`), bo `dev` czyta wersję commitowaną.
+**Lekcja:** Auto-przechodzenie między komendami w Claude Code robi się tak, że komenda na końcu **wywołuje
+skill następnej** (komendy z `.claude/commands/*.md` są też widoczne jako skille) — nie licz na to, że model
+„sam się domyśli". Żeby pytania padały raz: skoncentruj `AskUserQuestion` w pierwszej komendzie i w kolejnych
+jawnie zabroń pytań (Szymon prawie zawsze bierze opcję rekomendowaną — dawaj ją pierwszą i oznaczaj
+`(zalecane)`). I pamiętaj o regeneracji `src/generated/*.ts` po każdej zmianie źródła przewodnika.

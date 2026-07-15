@@ -3,60 +3,22 @@
 // w Claude Code. Trzymane w lib (a nie w komponencie), bo korzysta z tego więcej
 // niż jeden przycisk i chcemy jeden, spójny tekst promptu.
 
-export const OMNIA_LLM_PROMPT = `Jesteś Claude Code — zaawansowanym agentem AI z dostępem do kodu aplikacji WorldOfMag (Omnia), osobistego systemu zarządzania życiem i pracą developera.
+export const OMNIA_LLM_PROMPT = `Jesteś Claude Code z dostępem do kodu aplikacji WorldOfMag (Omnia). Poniżej dostajesz listę zadań zgłoszonych przez administratora Omnii (tytuł + opis) w bloku JSON.
 
-Poniżej znajduje się lista zadań zgłoszonych przez administratora projektu Omnia. Zadania mogą dotyczyć: napraw błędów, nowych funkcjonalności, poprawek UX, prac utrzymaniowych i refaktoryzacji.
+## Co masz zrobić
 
-## Twoje zadanie
+Zrealizuj te zadania przez **spec-driven pipeline** Omnii — czyli uruchom komendę \`/specify\`, przekazując jej te zadania jako zakres funkcji do zbudowania. Nie zaczynaj od pisania kodu „na już": najpierw powstaje specyfikacja (co i po co), a pipeline sam przetoczy się przez plan → zadania → implementację → weryfikację → recenzję aż do merge do \`develop\`.
 
-Przeanalizuj każde zgłoszenie, zaplanuj i zaimplementuj rozwiązanie, a następnie wygeneruj raport i zapisz go w aplikacji.
+Konkretnie:
+1. **Wywołaj \`/specify\`** z opisem obejmującym wszystkie poniższe zadania (ich tytuły i opisy). Jeśli zadania tworzą jedną spójną funkcję — potraktuj je jako jeden feature; jeśli są rozłączne — pogrupuj sensownie albo zrób spec pierwszego spójnego zestawu, a resztę zaznacz jako „poza zakresem". Nie gub żadnego zadania.
+2. Jeśli pipeline zada pytania — zrobi to **tylko raz**, na starcie. Odpowiedz (albo pozwól przyjąć rekomendowane domyślne) i dalej **nie ingeruj** — etapy przechodzą automatycznie.
+3. Trzymaj się konstytucji i konwencji repo (opisane w \`.claude/spec-pipeline/\` oraz \`CLAUDE.md\`): praca w \`worldofmag/\`, migracje jako ręczne pliki (bez enumów Prisma), Server Actions z \`revalidatePath\`, motyw przez zmienne CSS, teksty po polsku, żadnego builda/migracji przeciw prod DB.
 
-### Krok 1 — Analiza i implementacja
-
-Dla każdego zadania:
-1. Przeczytaj tytuł i opis — zrozum problem lub wymaganie
-2. Znajdź odpowiednie pliki w kodzie (src/, prisma/, public/)
-3. Zaplanuj minimalne rozwiązanie (bez nadmiarowych zmian i abstrakcji)
-4. Zaimplementuj — przestrzegaj stylu kodu: TypeScript strict, Server Actions, Tailwind CSS, ciemny motyw z CSS variables
-5. Sprawdź build: \`cd worldofmag && npm run build\`
-6. Commituj z opisowym komunikatem po każdym zadaniu
-
-### Krok 2 — Raport
-
-Po zakończeniu wszystkich zadań utwórz raport techniczny, wywołując Server Action \`createReport\` z \`@/actions/reports.ts\` (lub bezpośrednio przez Prisma w skrypcie Node.js). Parametry:
-- **title**: "Omnia — Raport implementacji [dzisiejsza data YYYY-MM-DD]"
-- **slug**: "omnia-implementacja-[dzisiejsza data YYYY-MM-DD]"
-- **category**: "general"
-- **content**: dokument Markdown z sekcjami dla każdego zadania w formacie:
-
-\`\`\`
-# Omnia — Raport implementacji [data]
-
-## [Tytuł zadania 1]
-**Diagnoza:** co było problemem / co było wymagane
-**Rozwiązanie:** co zostało zrobione i dlaczego tak (nie co — to widać w kodzie)
-**Zmienione pliki:** lista plików z krótkim opisem zmiany
-
-## [Tytuł zadania 2]
-...
-
-## Podsumowanie
-Całościowy opis sesji implementacyjnej — ile zadań, główne obszary zmian, uwagi.
-\`\`\`
-
-### Wskazówki techniczne
-
-- Główny katalog aplikacji: \`worldofmag/\` (nie dotykaj \`src/\`, \`_old/\`, \`pom.xml\` poza \`worldofmag/\`)
-- Alias importów: \`@/*\` → \`./src/*\`
-- Stack: Next.js 14 App Router, TypeScript strict, Prisma 5, Tailwind CSS + CSS variables
-- Zmiany schematu DB: \`npm run db:push\` (dev SQLite) lub nowa migracja w \`prisma/migrations/\` (prod)
-- Ciemny motyw: używaj zmiennych CSS (\`var(--bg-base)\`, \`var(--text-primary)\` itp.) — nie hardcoduj kolorów
-- Mutacje danych: zawsze Server Actions z \`revalidatePath()\` na końcu
-- Deploy: push do brancha \`develop\` → auto-deploy na środowisko testowe (worldofmag.onrender.com)
+Pełny opis pipeline'u: \`.claude/spec-pipeline/README.md\` (i w aplikacji: \`/admin/spec-pipeline\`).
 
 ---
 
-## Zadania do realizacji`;
+## Zadania do realizacji (wejście dla \`/specify\`)`;
 
 // Sentinel wyrzucany przez producenta tekstu, gdy nie ma żadnych zadań do skopiowania.
 export const OMNIA_CLIPBOARD_EMPTY = "EMPTY";
