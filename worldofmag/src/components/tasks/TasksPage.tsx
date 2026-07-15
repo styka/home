@@ -260,6 +260,24 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     );
   }, [displayedTasks, activeFilter, selectedTagIds, statusConfig]);
 
+  // Kanban: kolumny = wszystkie włączone statusy (także terminalne, by kolumna „Zrobione” się
+  // wypełniała) — nie zawężamy po zakładce statusu (w Kanbanie ukryta), filtrujemy tylko po tagach
+  // (wyszukiwanie już zawarte w `displayedTasks`). Wcześniej Kanban dostawał surowe `displayedTasks`,
+  // więc tagi go nie filtrowały.
+  const kanbanTasks = useMemo(() => {
+    if (selectedTagIds.length === 0) return displayedTasks;
+    return displayedTasks.filter((t) => selectedTagIds.every((tid) => t.tags?.some((tt) => tt.tag.id === tid)));
+  }, [displayedTasks, selectedTagIds]);
+
+  // Timeline: zakładka statusu działa („Wszystkie” = wszystkie statusy, jak dotąd; konkretny status
+  // zawęża) + filtr tagów (AND). Wcześniej Timeline dostawał surowe `displayedTasks`, więc ani zakładki
+  // ani tagi nie miały efektu.
+  const timelineTasks = useMemo(() => {
+    const byStatus = activeFilter === "ALL" ? displayedTasks : displayedTasks.filter((t) => t.status === activeFilter);
+    if (selectedTagIds.length === 0) return byStatus;
+    return byStatus.filter((t) => selectedTagIds.every((tid) => t.tags?.some((tt) => tt.tag.id === tid)));
+  }, [displayedTasks, activeFilter, selectedTagIds]);
+
   const filteredForNav = displayedTasks;
 
   function navigateDown() {
@@ -602,6 +620,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         onTagToggle={(id) => setSelectedTagIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
         filters={statusFilters}
         labels={filterLabels}
+        showStatusTabs={layout !== "kanban"}
       />
 
       {aiSearchResults !== null && (
@@ -618,9 +637,9 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {layout === "kanban" ? (
-          <KanbanBoard tasks={displayedTasks} statusConfig={statusConfig} onOpen={(id) => setOpenTaskId(id)} />
+          <KanbanBoard tasks={kanbanTasks} statusConfig={statusConfig} onOpen={(id) => setOpenTaskId(id)} />
         ) : layout === "timeline" ? (
-          <TimelineView tasks={displayedTasks} statusConfig={statusConfig} onOpen={(id) => setOpenTaskId(id)} />
+          <TimelineView tasks={timelineTasks} statusConfig={statusConfig} onOpen={(id) => setOpenTaskId(id)} />
         ) : (
           <TaskList
             tasks={displayedTasks}

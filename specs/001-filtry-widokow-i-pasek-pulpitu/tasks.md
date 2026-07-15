@@ -30,7 +30,7 @@
   **Gotowe, gdy:** komponent kompiluje się; wywołania bez nowego propu działają jak wcześniej; z
   `showStatusTabs={false}` znika wyłącznie wiersz zakładek.
 
-- [ ] **T-2** — **`TasksPage.tsx`: przekazanie filtrowanych zbiorów do Kanbana/Timeline + ukrycie
+- [x] **T-2** — **`TasksPage.tsx`: przekazanie filtrowanych zbiorów do Kanbana/Timeline + ukrycie
   zakładek w Kanbanie.** (zależy od T-1 — używa nowego propu). Wg planu §5A:
   - dodaj helper `applyTags(list)` (AND po `selectedTagIds`, 1:1 z `TaskList.applyTagFilter`);
   - `kanbanTasks = useMemo(() => applyTags(displayedTasks), [displayedTasks, selectedTagIds])`
