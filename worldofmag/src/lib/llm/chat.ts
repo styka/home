@@ -1,7 +1,7 @@
 import { resolveLlmChain, type ResolvedLlm } from "./resolver";
 import type { OperationType } from "./operationTypes";
 import { cacheKeyFor, getCached, setCached } from "@/lib/ai/cache";
-import { checkAiBudget, recordAiUsage } from "@/lib/ai/usage";
+import { checkAiBudget, recordAiUsage, recordAiCall } from "@/lib/ai/usage";
 
 /**
  * Z-133: czy błąd jest przejściowy (warto spróbować fallbacku na inny model/dostawcę).
@@ -40,9 +40,19 @@ export interface ChatOptions {
   /** Z-130: gdy podane — egzekwuj dzienny budżet AND zalicz tokeny do `AiUsage`.
    * Cache-hit nie kosztuje tokenów, więc nie jest blokowany budżetem. */
   userId?: string;
+  /** 002-ai-architecture: etykieta źródła wywołania do logu `AiCall` (np. "home_agent", "fast_path"). */
+  source?: string;
 }
 
-export type TokenUsage = { prompt: number; completion: number; total: number };
+export type TokenUsage = {
+  prompt: number;
+  completion: number;
+  total: number;
+  /** Tokeny odczytane z cache promptu (Anthropic prompt caching); 0/undefined dla innych. */
+  cacheRead?: number;
+  /** Tokeny zapisane do cache promptu (Anthropic); 0/undefined dla innych. */
+  cacheWrite?: number;
+};
 
 export type ChatResult =
   | { ok: true; content: string; model?: string; usage?: TokenUsage }
@@ -91,10 +101,23 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
   let last: Extract<ChatResult, { ok: false }> = { ok: false, status: 502, message: "LLM request failed" };
   for (let i = 0; i < chain.length; i++) {
     const cfg = chain[i];
+    const started = Date.now();
     const res = cfg.kind === "anthropic" ? await anthropicComplete(cfg, opts) : await openAiComplete(cfg, opts);
+    const latencyMs = Date.now() - started;
     if (res.ok) {
       if (cacheKey) setCached(cacheKey, res.content, res.model);
       if (opts.userId) void recordAiUsage(opts.userId, res.usage?.total ?? 0).catch(() => {});
+      // 002-ai-architecture: log per-wywołanie (koszt/tokeny/czas). Fire-and-forget.
+      void recordAiCall({
+        userId: opts.userId ?? null,
+        operationType: opts.op,
+        providerKind: cfg.kind,
+        model: res.model ?? cfg.model,
+        usage: res.usage,
+        latencyMs,
+        ok: true,
+        source: opts.source,
+      }).catch(() => {});
       return res;
     }
     last = res;
@@ -149,6 +172,19 @@ interface AnthropicContent {
   source?: { type: "base64" | "url"; media_type?: string; data?: string; url?: string };
 }
 
+// Buduje pole `system` dla Anthropic Messages API. Gdy jest treść — zwraca ją
+// jako pojedynczy blok tekstu z `cache_control: ephemeral`, żeby stały prefiks
+// promptu (instrukcja systemowa + katalog narzędzi) był cache'owany (niższy koszt
+// i szybsza odpowiedź). To GA — bez beta-headera; działa na `anthropic-version`.
+// Dla poprawnego trafienia w cache prefiks musi być stabilny między wywołaniami —
+// trasy wstrzykują zmienne (data/kontekst) do wiadomości user, nie do `system`.
+function toAnthropicSystem(
+  system: string | undefined
+): Array<{ type: "text"; text: string; cache_control: { type: "ephemeral" } }> | undefined {
+  if (!system) return undefined;
+  return [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
+}
+
 function toAnthropic(messages: ChatMessage[]): {
   system: string | undefined;
   messages: Array<{ role: "user" | "assistant"; content: AnthropicContent[] | string }>;
@@ -196,7 +232,7 @@ async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<C
         model: cfg.model,
         max_tokens: opts.maxTokens ?? cfg.maxTokens ?? 1024,
         temperature: opts.temperature ?? cfg.temperature ?? undefined,
-        ...(system ? { system } : {}),
+        ...(system ? { system: toAnthropicSystem(system) } : {}),
         messages,
       }),
     });
@@ -208,7 +244,15 @@ async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<C
     return { ok: false, status: res.status, message: parseErr(err).slice(0, 200) };
   }
   const data = (await res.json().catch(() => null)) as
-    | { content?: Array<{ type: string; text?: string }>; usage?: { input_tokens?: number; output_tokens?: number } }
+    | {
+        content?: Array<{ type: string; text?: string }>;
+        usage?: {
+          input_tokens?: number;
+          output_tokens?: number;
+          cache_read_input_tokens?: number;
+          cache_creation_input_tokens?: number;
+        };
+      }
     | null;
   const text = (data?.content ?? [])
     .filter((b) => b.type === "text")
@@ -219,7 +263,15 @@ async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<C
     ok: true,
     content: text,
     model: cfg.model,
-    usage: u ? { prompt: u.input_tokens ?? 0, completion: u.output_tokens ?? 0, total: (u.input_tokens ?? 0) + (u.output_tokens ?? 0) } : undefined,
+    usage: u
+      ? {
+          prompt: u.input_tokens ?? 0,
+          completion: u.output_tokens ?? 0,
+          total: (u.input_tokens ?? 0) + (u.output_tokens ?? 0),
+          cacheRead: u.cache_read_input_tokens ?? 0,
+          cacheWrite: u.cache_creation_input_tokens ?? 0,
+        }
+      : undefined,
   };
 }
 
@@ -303,7 +355,7 @@ async function anthropicStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<Str
         model: cfg.model,
         max_tokens: opts.maxTokens ?? cfg.maxTokens ?? 1024,
         temperature: opts.temperature ?? cfg.temperature ?? undefined,
-        ...(system ? { system } : {}),
+        ...(system ? { system: toAnthropicSystem(system) } : {}),
         messages,
         stream: true,
       }),

@@ -4,6 +4,57 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-15 — Nagłówek Zadań ucinał akcje na iPhone (overflow-hidden rodzica)
+**Problem:** W dziale Zadania na wąskim ekranie (iPhone) prawy pasek akcji nagłówka pakuje 8+ ikon
+(kosz, grupowanie, sortowanie, szukaj, powiadomienia, statusy, przełącznik Lista/Kanban/Timeline,
+admin „Kopiuj prompt dla Claude Code", akcje projektu). Nagłówek to jeden rząd o stałej wysokości
+(`flex items-center justify-between h-12`) bez zawijania, a rodzic ma `overflow-hidden` — więc nadmiar
+był **przycinany**, a trailing akcje (m.in. „Kopiuj prompt") wypadały poza kadr i były nieklikalne.
+**Rozwiązanie:** Odizolować poziomy scroll do samego kontenera akcji: `min-w-0 overflow-x-auto
+[&>*]:flex-shrink-0` na `<div className="flex items-center gap-2">`. `min-w-0` pozwala kontenerowi
+ustąpić szerokości, `overflow-x-auto` daje przewijanie (cienki globalny scrollbar 6px), a
+`[&>*]:flex-shrink-0` trzyma ikony i pogrupowane przełączniki w intrinsic rozmiarze (rząd się przewija,
+nie ściska). Na desktopie klasa jest inertna (treść się mieści) → zero regresu. Wzorzec był już w tym
+samym pliku: pasek „wiele projektów" używa `overflow-x-auto`.
+**Lekcja:** Gdy pasek akcji o stałej wysokości siedzi w kontenerze z `overflow-hidden`, nadmiar znika
+bez śladu (żadnego scrolla). Na mobile rządom akcji dawaj `min-w-0 overflow-x-auto` + `flex-shrink-0`
+na dzieciach, zamiast liczyć, że wszystko się zmieści.
+
+## 2026-07-15 — Weryfikacja builda: świeży klon + globalna Prisma 7 kontra schema Prisma 5
+**Problem:** Przy lokalnej weryfikacji (`prisma migrate deploy`) leciał błąd P1012: „datasource property
+`url`/`directUrl` is no longer supported" — bo `npx prisma` sięgnął po **globalnie** zainstalowaną
+Prisma **7.8.0**, a repo pinuje Prisma **5.22** (schema używa składni `url = env(...)` z datasource,
+usuniętej w 7). Dodatkowo świeży klon **nie miał `node_modules`** (`npm install` nie był uruchomiony w
+sesji), więc lokalnego `node_modules/.bin/prisma` też nie było.
+**Rozwiązanie:** Najpierw `npm install`, potem wywoływać **lokalny** binarny Prisma z projektu:
+`node_modules/.bin/prisma migrate deploy` / `generate` (v5.22, akceptuje `url` w datasource). Zmienne
+`DATABASE_URL`/`DIRECT_URL` **wyeksportować do shella** (migrate/skrypty nie czytają `.env.local`).
+Build weryfikować do kroku `node_modules/.bin/next build` (nie pełny `npm run build`, bo ten na końcu
+odpala `migrate.js` — patrz C-13).
+**Lekcja:** W sandboxie/świeżym klonie nie ufaj `npx prisma` — może trafić na globalną, nowszą wersję
+niezgodną ze schematem. Zawsze `npm install` + `node_modules/.bin/prisma`. Postgres lokalny:
+`pg_ctlcluster 16 main start`, rola+baza `omnia/omnia_dev`, eksport env do shella.
+
+---
+
+## 2026-07-15 — Filtry działały tylko w jednym z trzech układów tego samego zbioru zadań
+**Problem:** W dziale Zadania pasek filtrów (zakładki statusów + tagi) działał wyłącznie w widoku
+Lista. W Kanbanie i na Timeline zaznaczenie tagu nic nie robiło, a przełączanie zakładek „nic nie
+zmieniało”. Przyczyna: `TasksPage` filtrował status+tagi **wewnątrz** `TaskList`, a do `KanbanBoard`
+i `TimelineView` wpuszczał surowe `displayedTasks` (tylko wynik wyszukiwania). Kontrolki były
+widoczne, ale martwe.
+**Rozwiązanie:** Filtrowanie przeniesione **przed** rozgałęzienie na układy — w `TasksPage`
+policzone `kanbanTasks` (filtr tagów; wszystkie kolumny statusów, także terminalne, by kolumna
+„Zrobione” się wypełniała — dlatego bez zawężania po zakładce) i `timelineTasks` (zakładka statusu +
+tagi), przekazane do widoków. W Kanbanie zakładki statusu ukryte nowym propem `TaskFilters
+showStatusTabs=false` (kolumny i tak reprezentują statusy). `KanbanBoard`/`TimelineView` bez zmian.
+**Lekcja:** Gdy ten sam zbiór ma kilka układów (lista/kanban/timeline), filtruj **u źródła** (w
+kontenerze, przed wyborem widoku), a nie w jednym z widoków — inaczej pozostałe dostają niefiltrowane
+dane i kontrolki filtrów kłamią. Uważaj na semantykę „ALL”: lista wyklucza statusy terminalne, ale
+Kanban ich potrzebuje (kolumny), więc nie da się bezmyślnie współdzielić jednego zbioru.
+
+---
+
 ## 2026-07-14 — Spec-driven pipeline: gdzie żyją komendy/agenty i jak podać przewodnik do panelu admina
 **Problem:** Zadanie: zbudować spec-driven pipeline (`/specify /plan /tasks /implement /verify /review`)
 dla Claude Code + przewodnik w panelu admina. Dwie pułapki: (1) `/verify` i `/review` **kolidują
@@ -1070,3 +1121,74 @@ recznie) zamiast walczyc z `migrate deploy`.
 **Problem:** Zadanie przesunięte o JEDEN dzień w przyszłość nadal pokazywało się na liście „Dziś" (przesunięte o kilka dni — znikało poprawnie). `getTodayTasks`/`getOverdueTasks` oraz liczniki na `/tasks` liczyły granice doby przez `new Date(); setHours(0/23…)`, czyli w strefie **serwera** (Render = UTC). Tymczasem daty `dueDate` zapisywane były jako instanty UTC niespójnie: `TaskRow` używał lokalnego południa (`+"T12:00:00"`), ale `TaskDetail`/`QuickAddTask`/`AITaskInput` robiły `new Date("YYYY-MM-DD")` = **UTC-północ**. Dla użytkownika w UTC+2 instant „jutra" potrafił wpaść w UTC-owe okno „dziś", a tylko granica +1 dnia jest na to wrażliwa (kilka dni = daleko od granicy).
 **Rozwiązanie:** Granice doby liczone w strefie **użytkownika**: helper `src/lib/userTime.ts` (`userDayBounds`/`userTomorrowStart`) zwraca instanty UTC odpowiadające lokalnej północy/23:59:59.999, na podstawie ciasteczka `tz` (IANA z `Intl.DateTimeFormat().resolvedOptions().timeZone`, ustawiane raz w `AppShell`; fallback `Europe/Warsaw`). Offset strefy z `Intl.DateTimeFormat(..., {timeZone}).formatToParts` (poprawnie wokół DST). Dodatkowo znormalizowano zapis wybranego dnia do lokalnego południa wszędzie (jak w `TaskRow`), by instant jednoznacznie należał do doby użytkownika.
 **Lekcja:** Nigdy nie mieszaj „dnia liczonego w strefie serwera" z instantami UTC zapisywanymi w strefie klienta — `setHours` na serwerze (UTC) to cicha pułapka dla widoków „dziś/jutro". Albo licz granice doby w strefie użytkownika (cookie `tz` + `Intl`), albo trzymaj daty „dniowe" jako stały punkt (np. lokalne południe) i porównuj po dniu. Objaw „błąd tylko przy przesunięciu o 1 dzień, przy kilku dniach OK" to klasyczny sygnał problemu z granicą doby/strefą, nie z logiką filtra.
+
+---
+
+## 2026-07-15 — Spec-driven pipeline: jeden moment pytań + automatyczne przechodzenie między etapami
+**Problem:** Pipeline (`/specify /plan /tasks /implement /verify /review`) wymagał od właściciela ręcznego
+wpisywania kolejnych komend, a pytania (`AskUserQuestion`) mogły paść na każdym etapie — rozproszone,
+uciążliwe. Dodatkowo przycisk „kopiuj prompt dla Claude Code" w Zadaniach kopiował **stary** prompt
+(analizuj+implementuj+raport, z nieaktualnym `db:push (dev SQLite)`), zamiast uruchamiać pipeline.
+**Rozwiązanie:** (1) Konfrontacja z oficjalnymi źródłami — struktura komend/agentów (`.claude/commands/*.md`
+z frontmatterem `description`/`argument-hint`, `.claude/agents/*.md` z `name`/`description`/`tools`) jest
+zgodna z dokumentacją Claude Code; metodyka wzorowana na **GitHub Spec Kit** (`/specify→/plan→/tasks→
+/implement`), a nasze `/verify` i `/review` to dodatkowe bramki, zaś Spec-Kitowy `/clarify` **zwinęliśmy do
+jednego momentu pytań w `/specify`**. (2) `/specify` zbiera **wszystkie** decyzje w JEDNYM `AskUserQuestion`
+(opcja rekomendowana zawsze **pierwsza** + etykieta `(zalecane)`), po czym **sam** woła kolejny etap przez
+narzędzie **Skill** (`plan`→`tasks`→`implement`→`verify`→`review`); każdy etap kończy się auto-przejściem,
+a `/verify`/`/review` przy brakach zawracają do `/implement`. Etapy pośrednie mają zakaz zadawania pytań —
+wybierają rekomendowany domyślny i jadą dalej, zatrzymanie tylko przy realnym ryzyku nieodwracalnej szkody.
+(3) `OMNIA_LLM_PROMPT` w `src/lib/omniaClipboard.ts` przepisany: wklejony do Claude Code instruuje
+uruchomienie `/specify` z tytułami/opisami zadań jako zakresem funkcji. Przewodnik (`.claude/spec-pipeline/
+README.md`) + strona `/admin/spec-pipeline` opisują nowy model; po edycji README trzeba **przegenerować**
+`src/generated/spec-pipeline.ts` (`node scripts/copy-spec-pipeline.js`), bo `dev` czyta wersję commitowaną.
+**Lekcja:** Auto-przechodzenie między komendami w Claude Code robi się tak, że komenda na końcu **wywołuje
+skill następnej** (komendy z `.claude/commands/*.md` są też widoczne jako skille) — nie licz na to, że model
+„sam się domyśli". Żeby pytania padały raz: skoncentruj `AskUserQuestion` w pierwszej komendzie i w kolejnych
+jawnie zabroń pytań (Szymon prawie zawsze bierze opcję rekomendowaną — dawaj ją pierwszą i oznaczaj
+`(zalecane)`). I pamiętaj o regeneracji `src/generated/*.ts` po każdej zmianie źródła przewodnika.
+
+---
+
+## 2026-07-15 — Spec-driven pipeline: spójność artefaktów (C-54) + furtka pytań (C-55)
+**Problem:** Po pierwszej iteracji pipeline miał dwie luki: (1) etapy pośrednie miały **twardy zakaz
+pytań** (wyjątek tylko „utrata danych"), więc przy naprawdę ważnej, nieprzewidzianej decyzji na późnym
+etapie pipeline **zgadywał** zamiast spytać; (2) „zawracanie" przy nowych ustaleniach nie było
+jednolitą regułą — nie było jasne, że gdy implementacja/plan wykryje błąd we wcześniejszym artefakcie,
+trzeba **poprawić ten artefakt** (spec/plan), a nie obejść problem w kodzie.
+**Rozwiązanie:** Dodano dwie reguły do `constitution.md` (sekcja G): **C-54 — spójność artefaktów i
+zawracanie** (`spec.md → plan.md → tasks.md → kod` to łańcuch prawdy; etap, który wykryje błąd wyżej,
+aktualizuje ten plik i przelicza w dół; pętle `/verify`→`/implement`, `/review`→`/implement` wbudowane)
+oraz **C-55 — jeden moment pytań z wąską furtką** (pytania skoncentrowane w `/specify`; dalej autonomia,
+ale wolno zadać JEDNO zbiorcze pytanie, gdy decyzja jest jednocześnie: istotna, nieprzewidziana na
+starcie, kosztowna przy złym wyborze i nierozstrzygalna z artefaktów/kodu). Każda komenda odwołuje się
+do C-54/C-55 zamiast powtarzać prozę; przewodnik (README) i strona `/admin/spec-pipeline` opisują
+„trzy zasady UX" (jeden moment pytań z furtką / auto-przejścia z zawracaniem / spójność artefaktów).
+Subagent `omnia-implementer` (nie ma jak wołać `AskUserQuestion`) **oddaje** furtkową decyzję wołającemu.
+**Lekcja:** W autonomicznym pipeline nie stawiaj „nigdy nie pytaj" — to zmusza model do zgadywania.
+Lepszy jest **wysoki próg z furtką**: domyślnie autonomia + rekomendowany domyślny, ale jawnie
+dozwolone jedno zbiorcze pytanie przy naprawdę ważnej, niejednoznacznej decyzji. I zawsze trzymaj
+**spójność artefaktów** — nowe ustalenie na późnym etapie ma wracać do właściwego pliku (spec/plan),
+inaczej zostaje rozjazd „kod robi X, spec mówi Y". Reguły przebiegu warto trzymać w konstytucji
+(numerowane), by komendy tylko się do nich odwoływały. Po edycji README pamiętaj o
+`node scripts/copy-spec-pipeline.js` (regeneracja `src/generated/spec-pipeline.ts`).
+
+---
+
+## 2026-07-15 — Spec pipeline: /review bez ręcznego approve + obowiązkowe pytanie o merge do master
+**Problem:** Właściciel chciał, by `/review` przechodził automatycznie (sam wystawiał werdykt, bez jego
+approve — jak reszta etapów), a cały pipeline **zawsze** kończył się jednym pytaniem
+„Mistrzu Magu, czy zrobić merge develop do master?" (promocja na produkcję).
+**Rozwiązanie:** `/review` wystawia werdykt sam; po APPROVE robi merge do `develop` (standing
+authorization, bez pytania), a na sam koniec zadaje **jedno** `AskUserQuestion` o promocję `develop →
+master` z opcją „Nie — zostaw na develop" jako rekomendowaną pierwszą (`master` = produkcja, C-52). Na
+„Tak" pipeline robi `checkout master` → `merge --no-ff develop` → `push` (jedyny moment dotknięcia
+`master`). W konstytucji: C-52 rozszerzone o obowiązkowe pytanie domykające, a C-55 dostał „wyjątek
+sankcjonowany" — to pytanie jest zawsze zadawane i nie łamie zasady „jednego momentu pytań".
+Przy okazji: dodane w JSX zdanie w cudzysłowach drukarskich („…") łapało warning
+`react/no-unescaped-entities` — rozwiązane przez wrzucenie tekstu w wyrażenie-string `{"…"}` (nie dokłada
+do puli ~64 kosmetycznych warningów, które i tak są na roadmapie do sprzątnięcia).
+**Lekcja:** W autonomicznym pipeline „approve" na końcu ma wystawiać sam recenzent — approve właściciela
+to tylko **bramka produkcyjna** (`develop → master`), i tę robimy jednym, zawsze-zadawanym pytaniem z
+bezpiecznym domyślnym „Nie". Cudzysłowy drukarskie w tekście JSX pakuj w `{"…"}`, żeby nie budzić
+`react/no-unescaped-entities`.

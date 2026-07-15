@@ -1,14 +1,17 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Plus, Trash2, Cpu } from "lucide-react";
+import { Check, Plus, Trash2, Cpu, Sparkles, DollarSign } from "lucide-react";
 import {
   createProvider,
   updateProvider,
   deleteProvider,
   setAssignment,
+  applyAnthropicProfile,
+  setCostAlertThreshold,
   type ProviderDTO,
   type AssignmentDTO,
+  type AiCostBreakdown,
 } from "@/actions/llmConfig";
 
 const KIND_LABELS: Record<string, string> = {
@@ -277,18 +280,209 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
   );
 }
 
+// Jednoklikowy profil rekomendowany: Anthropic Sonnet (rozumowanie/generowanie/
+// wizja) + Haiku (klasyfikacja). Groq zostaje jako fallback.
+function AnthropicProfileCard() {
+  const [isPending, startTransition] = useTransition();
+  const [apiKey, setApiKey] = useState("");
+  const [done, setDone] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  function apply() {
+    if (!apiKey.trim()) return;
+    setErr(null);
+    startTransition(async () => {
+      try {
+        await applyAnthropicProfile({ apiKey });
+        setApiKey("");
+        setDone(true);
+        setTimeout(() => setDone(false), 2500);
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : "Nie udało się zastosować profilu");
+      }
+    });
+  }
+
+  return (
+    <section style={{ marginBottom: 32 }}>
+      <SectionTitle>Rekomendowany profil Anthropic</SectionTitle>
+      <div
+        style={{
+          padding: 16,
+          border: "1px solid var(--border)",
+          borderRadius: 10,
+          background: "var(--bg-surface)",
+          display: "grid",
+          gap: 12,
+        }}
+      >
+        <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>
+          Ustaw jednym kliknięciem zestaw modeli z rekomendacji architektury:{" "}
+          <strong>Claude Sonnet</strong> do rozumowania/generowania/wizji i{" "}
+          <strong>Claude Haiku</strong> do szybkiej klasyfikacji (dispatch). Domyślny dostawca (Groq)
+          pozostaje jako zapas — środowisko bez klucza Anthropic działa dalej. Modele możesz potem
+          zmienić w tabeli przypisań poniżej.
+        </p>
+        <div>
+          <label style={labelStyle}>Klucz API Anthropic</label>
+          <input
+            style={inputStyle}
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") apply(); }}
+            placeholder="sk-ant-…"
+          />
+        </div>
+        {err && <div style={{ fontSize: 12, color: "var(--accent-red)" }}>{err}</div>}
+        <div>
+          <button
+            onClick={apply}
+            disabled={isPending || !apiKey.trim()}
+            className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium disabled:opacity-40"
+            style={{ background: done ? "var(--accent-green)" : "var(--accent-purple)", color: "var(--on-accent)" }}
+          >
+            {done ? <Check size={14} /> : <Sparkles size={14} />}
+            {done ? "Zastosowano" : "Zastosuj profil Anthropic (Sonnet + Haiku)"}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function fmtUsd(n: number): string {
+  return `$${n.toFixed(n < 1 ? 4 : 2)}`;
+}
+
+const tdStyle: React.CSSProperties = { padding: "8px 10px", fontSize: 12, color: "var(--text-secondary)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" };
+const thStyle: React.CSSProperties = { padding: "8px 10px", fontSize: 11, color: "var(--text-muted)", textAlign: "left", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" };
+
+function CostSection({ cost, threshold }: { cost: AiCostBreakdown; threshold: number }) {
+  const [isPending, startTransition] = useTransition();
+  const [value, setValue] = useState(String(threshold || ""));
+  const [saved, setSaved] = useState(false);
+
+  function saveThreshold() {
+    startTransition(async () => {
+      await setCostAlertThreshold(Number(value) || 0);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    });
+  }
+
+  return (
+    <section style={{ marginBottom: 32 }}>
+      <SectionTitle>Zużycie i koszty (ostatnie {cost.days} dni)</SectionTitle>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 12, fontSize: 13, color: "var(--text-secondary)" }}>
+        <span>Wywołań: <strong style={{ color: "var(--text-primary)" }}>{cost.totalCalls}</strong></span>
+        <span>Koszt (szac.): <strong style={{ color: "var(--text-primary)" }}>{fmtUsd(cost.totalCostUsd)}</strong></span>
+        <span>Dziś: <strong style={{ color: "var(--text-primary)" }}>{fmtUsd(cost.todayCostUsd)}</strong></span>
+      </div>
+
+      <div
+        style={{
+          border: "1px solid var(--border)",
+          borderRadius: 10,
+          background: "var(--bg-surface)",
+          overflowX: "auto",
+          marginBottom: 16,
+        }}
+      >
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Model</th>
+              <th style={thStyle}>Operacja</th>
+              <th style={thStyle}>Wywołań</th>
+              <th style={thStyle}>Tokeny (we/wy)</th>
+              <th style={thStyle}>Cache (odczyt)</th>
+              <th style={thStyle}>Koszt (szac.)</th>
+              <th style={thStyle}>Śr. czas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cost.rows.length === 0 ? (
+              <tr>
+                <td style={tdStyle} colSpan={7}>Brak zarejestrowanych wywołań w tym okresie.</td>
+              </tr>
+            ) : (
+              cost.rows.map((r, i) => (
+                <tr key={`${r.model}-${r.operationType}-${i}`}>
+                  <td style={{ ...tdStyle, color: "var(--text-primary)" }}>{r.model}</td>
+                  <td style={tdStyle}>{r.operationType}</td>
+                  <td style={tdStyle}>{r.calls}</td>
+                  <td style={tdStyle}>{r.promptTokens} / {r.completionTokens}</td>
+                  <td style={tdStyle}>{r.cacheReadTokens}</td>
+                  <td style={{ ...tdStyle, color: "var(--text-primary)" }}>{fmtUsd(r.costUsd)}</td>
+                  <td style={tdStyle}>{r.avgLatencyMs} ms</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        style={{
+          padding: 16,
+          border: "1px solid var(--border)",
+          borderRadius: 10,
+          background: "var(--bg-surface)",
+        }}
+      >
+        <label style={labelStyle}>Dzienny próg alertu kosztowego (USD, 0 = wyłączony)</label>
+        <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 10px" }}>
+          Po przekroczeniu szacowanego dziennego kosztu administratorzy dostają powiadomienie (raz na dobę).
+          Alert nie blokuje asystenta.
+        </p>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", maxWidth: 320 }}>
+          <div style={{ position: "relative", flex: 1 }}>
+            <DollarSign size={14} style={{ position: "absolute", left: 10, top: 10, color: "var(--text-muted)" }} />
+            <input
+              style={{ ...inputStyle, paddingLeft: 28 }}
+              type="number"
+              min={0}
+              step="0.5"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <button
+            onClick={saveThreshold}
+            disabled={isPending}
+            className="flex items-center gap-1 px-3 py-2 rounded text-sm font-medium disabled:opacity-40"
+            style={{ background: saved ? "var(--accent-green)" : "var(--accent-blue)", color: "var(--on-accent)" }}
+          >
+            {saved ? <Check size={14} /> : null}
+            {saved ? "Zapisano" : "Zapisz"}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function LlmConfigPanel({
   providers,
   assignments,
+  cost,
+  costThreshold,
 }: {
   providers: ProviderDTO[];
   assignments: AssignmentDTO[];
+  cost: AiCostBreakdown;
+  costThreshold: number;
 }) {
   return (
     <div>
+      <AnthropicProfileCard />
+
       <ProviderEditor providers={providers} />
 
-      <section>
+      <section style={{ marginBottom: 32 }}>
         <SectionTitle>Przypisanie modeli do typów operacji</SectionTitle>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {assignments.map((a) => (
@@ -296,6 +490,8 @@ export function LlmConfigPanel({
           ))}
         </div>
       </section>
+
+      <CostSection cost={cost} threshold={costThreshold} />
     </div>
   );
 }

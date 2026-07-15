@@ -39,8 +39,8 @@ export function TaskListClipboardButton({ tasks }: { tasks: Task[] }) {
   }
 
   const title: Record<State, string> = {
-    idle: "Kopiuj prompt dla Claude Code (zadania z bieżącej zakładki)",
-    copied: "Skopiowano prompt + JSON zadań do schowka",
+    idle: "Kopiuj prompt dla Claude Code — uruchamia /specify (spec-driven pipeline) z zadaniami z bieżącej zakładki",
+    copied: "Skopiowano prompt uruchamiający /specify + JSON zadań",
     empty: "Brak zadań w bieżącej zakładce",
     error: "Błąd kopiowania — spróbuj ponownie",
   };

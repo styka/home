@@ -90,14 +90,48 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   główny repo, po polsku, format: `## YYYY-MM-DD — tytuł` / `**Problem:**` / `**Rozwiązanie:**` /
   `**Lekcja:**`). Nie pytaj o zgodę — dopisz i zacommituj razem z fixem.
 - **C-52 — Merge do `develop` po skończonym zadaniu** (gdy `build` zielony), zgodnie ze STANDING
-  AUTHORIZATION w `CLAUDE.md`. `master` (produkcja) tylko na wyraźne żądanie właściciela.
+  AUTHORIZATION w `CLAUDE.md` — automatycznie, bez pytania. `master` (produkcja) **tylko na wyraźne
+  „Tak"** właściciela. Dlatego pipeline **zawsze kończy się jednym pytaniem domykającym**
+  („Mistrzu Magu, czy zrobić merge develop do master?", opcja `Nie/zostaw na develop` jako rekomendowana
+  pierwsza); merge `develop → master` (i push) robimy **wyłącznie** po odpowiedzi „Tak".
 - **C-53 — Minimalizm.** Rozwiązanie najmniejsze z możliwych: bez nadmiarowych abstrakcji, nowych
   zależności i „przy okazji" refaktorów. Zgodność ze stylem otoczenia > osobiste preferencje.
+
+## G. Przebieg pipeline'u (autonomia i spójność)
+
+- **C-54 — Spójność artefaktów i zawracanie.** Artefakty są źródłem prawdy i tworzą łańcuch
+  `spec.md → plan.md → tasks.md → kod` — muszą pozostać **spójne**. Gdy dowolny etap odkryje fakt,
+  który zmienia **wcześniejszy** artefakt (implementacja pokazuje, że plan jest błędny; plan wykrywa
+  lukę w specu; nowa odpowiedź właściciela zmienia zakres), masz obowiązek:
+  1. **zaktualizować dotknięty wcześniejszy artefakt** (`spec.md`/`plan.md`/`tasks.md`) — a nie tylko
+     „obejść" problem w kodzie,
+  2. **przeliczyć w dół to, co z niego wynika** (zmiana speca → popraw plan i zadania; zmiana planu →
+     popraw zadania) **zanim** ruszysz dalej,
+  3. zostawić krótki ślad zmiany (co i dlaczego), żeby historia decyzji się zgadzała.
+  Nigdy nie zostawiaj rozjazdu „kod robi X, ale spec mówi Y". Pętle wstecz są **wbudowane**: `/verify`
+  i `/review` przy brakach **zawracają do `/implement`**, dopisując konkretne braki do `tasks.md`;
+  gdy brak wynika z błędnego planu/speca — najpierw popraw plan/spec (pkt 1–2), potem wróć do implementacji.
+- **C-55 — Jeden moment pytań, z wąską furtką.** Pytania do właściciela są **skoncentrowane w
+  `/specify`**: jedno wywołanie `AskUserQuestion`, opcja **rekomendowana pierwsza** + etykieta
+  `(zalecane)`. Dalsze etapy działają **autonomicznie** — rozstrzygają rozsądnym domyślnym (wzorzec
+  sąsiedniego modułu, minimalizm C-53) i idą dalej. **Furtka (wyjątek):** na późniejszym etapie
+  wolno zadać **jedno, zbiorcze** pytanie **tylko** gdy decyzja spełnia **wszystkie** warunki:
+  (a) jest istotna dla właściciela (a nie techniczny drobiazg), (b) była nie do przewidzenia na
+  `/specify`, (c) zły wybór jest kosztowny lub trudny do cofnięcia, (d) nie da się jej rozstrzygnąć z
+  artefaktów, kodu ani konwencji. Wtedy **pytaj, nie zgaduj** (`AskUserQuestion`, rekomendowana
+  pierwsza + `(zalecane)`), po odpowiedzi zaktualizuj artefakty wg C-54 i jedź dalej. Cel: właściciel
+  wołany **jak najrzadziej**, ale **nigdy nie zgadujemy** przy naprawdę ważnej, niejednoznacznej
+  decyzji. Wszystko poza tą furtką rozstrzygasz sam. **Wyjątek sankcjonowany:** obowiązkowe pytanie
+  domykające o promocję `develop → master` (C-52) jest zadawane **zawsze** na końcu i nie jest liczone
+  jako złamanie „jednego momentu pytań" — to świadoma bramka produkcyjna właściciela.
 
 ---
 
 ### Jak używać w pipeline
-- `/specify` — sekcja *Zgodność z konstytucją* w spec musi wskazać, które reguły dotyczą feature'a.
+- `/specify` — sekcja *Zgodność z konstytucją* w spec musi wskazać, które reguły dotyczą feature'a;
+  to główny (i domyślnie jedyny) moment pytań (C-55).
 - `/plan` — plan musi jawnie zaadresować C-10..C-14 (migracje), C-20..C-25 (warstwa app), C-30..C-32 (UX).
 - `/tasks` — bramki C-50 wpięte jako kroki (`check:migrations`, `check:actions`, `build`).
-- `/verify` i `/review` — weryfikują zgodność z tą konstytucją punkt po punkcie i raportują naruszenia.
+- `/verify` i `/review` — weryfikują zgodność z tą konstytucją punkt po punkcie i raportują naruszenia;
+  przy brakach zawracają do `/implement` (C-54).
+- Każdy etap — trzyma spójność artefaktów (C-54) i pyta tylko przez wąską furtkę (C-55).

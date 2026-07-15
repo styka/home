@@ -16,6 +16,11 @@ test("buildOmniaPrompt: prompt bazowy + blok JSON z zadaniami (tytuł/opis)", ()
   assert.deepEqual(extractJson(out), [{ tytuł: "Napraw X", opis: "opis X" }]);
 });
 
+test("OMNIA_LLM_PROMPT: uruchamia spec-driven pipeline przez /specify", () => {
+  assert.ok(OMNIA_LLM_PROMPT.includes("/specify"), "prompt odwołuje się do komendy /specify");
+  assert.ok(/spec-driven/i.test(OMNIA_LLM_PROMPT), "prompt wskazuje spec-driven pipeline");
+});
+
 test("buildOmniaPrompt: null description → pusty opis; pusta lista → []", () => {
   assert.deepEqual(extractJson(buildOmniaPrompt([{ title: "T", description: null }])), [{ tytuł: "T", opis: "" }]);
   assert.deepEqual(extractJson(buildOmniaPrompt([])), []);

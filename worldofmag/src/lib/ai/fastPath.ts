@@ -1,0 +1,131 @@
+// 002-ai-architecture — deterministyczny fast-path dla PROSTYCH poleceń.
+//
+// Zasada „LLM to mózg, nie silnik": trywialne polecenia typu „dodaj/utwórz/zapisz"
+// klasyfikujemy JEDNYM tanim wywołaniem (op:"dispatch" → np. Haiku/8B) i budujemy z
+// nich gotową AIAction — BEZ uruchamiania dużego modelu rozumującego (op:"reasoning").
+// Wszystko, co wymaga namierzenia istniejącego rekordu, jest zbiorcze, analityczne
+// albo jest pytaniem → zwracamy `complex` i oddajemy sterowanie pełnej pętli agenta.
+//
+// Fast-path NIE wykonuje zapisu — produkuje AIAction do panelu potwierdzenia
+// (ActionDrawer), tak samo jak krok "plan" agenta (destructive opt-in bez zmian).
+
+import { chatComplete } from "@/lib/llm/chat";
+import type { AIAction, AIActionModule } from "@/lib/ai/aiAction";
+
+export type FastPathResult =
+  | { kind: "simple"; action: AIAction }
+  | { kind: "complex" };
+
+// Biała lista prostych intencji „bezstanowych" (tworzenie/dopisanie), mapowana na
+// ISTNIEJĄCE typy AIAction (bez nowych egzekutorów). Klucz = `${module}:${type}`.
+const WHITELIST: Record<string, { module: AIActionModule; type: string }> = {
+  "shopping:add_item": { module: "shopping", type: "add_item" },
+  "tasks:create_task": { module: "tasks", type: "create_task" },
+  "notes:create_note": { module: "notes", type: "create_note" },
+  "portfel:add_expense": { module: "portfel", type: "add_expense" },
+  "portfel:add_income": { module: "portfel", type: "add_income" },
+  "habits:toggle_habit": { module: "habits", type: "toggle_habit" },
+  "kitchen:add_pantry_item": { module: "kitchen", type: "add_pantry_item" },
+  "kitchen:plan_meal": { module: "kitchen", type: "plan_meal" },
+  "flota:add_fuel_log": { module: "flota", type: "add_fuel_log" },
+};
+
+const SYSTEM_PROMPT = `Jesteś szybkim klasyfikatorem intencji asystenta WorldOfMag. Twoim zadaniem jest rozpoznać, czy polecenie użytkownika to POJEDYNCZA, PROSTA operacja dodania/utworzenia/zapisania, którą można wykonać deterministycznie bez głębszego rozumowania.
+
+Zwróć WYŁĄCZNIE jeden obiekt JSON (bez markdown, bez komentarzy).
+
+Jeśli polecenie pasuje DOKŁADNIE do jednej z poniższych prostych intencji — zwróć:
+{ "kind":"simple", "module":"<moduł>", "type":"<typ>", "description":"<krótki opis po polsku>", "params":{...}, "searchQuery":"<opcjonalnie>" }
+
+Dostępne proste intencje (i pola params):
+- shopping / add_item — { rawText } — rawText to sama nazwa i ilość produktu ("2 kg jabłek"), bez nazwy listy. (np. "dodaj mleko do zakupów")
+- tasks / create_task — { title, description?, priority?("NONE"|"LOW"|"MEDIUM"|"HIGH"|"URGENT"), dueDate?(ISO) } — proste "dodaj zadanie X".
+- notes / create_note — { title, content? } — proste "zanotuj/utwórz notatkę X".
+- portfel / add_expense — { amount(number, PLN), category?, note? } — "wydałem 20 zł na ...".
+- portfel / add_income — { amount(number, PLN), category?, note? } — "przychód 100 zł ...".
+- habits / toggle_habit — {} + searchQuery=nazwa nawyku — "odhacz nawyk X".
+- kitchen / add_pantry_item — { name, quantity?, unit?, expiresAt?(ISO) } — "dodaj X do spiżarni".
+- kitchen / plan_meal — { customTitle, date?(ISO; pomiń jeśli dziś), slot?("breakfast"|"lunch"|"dinner"|"snack") } — "zaplanuj na obiad X".
+- flota / add_fuel_log — { liters(number), totalCost?, odometer?, vehicleName? } — "zatankowałem X litrów".
+
+W KAŻDYM innym przypadku zwróć: { "kind":"complex" }
+
+Zwróć "complex" gdy polecenie: jest pytaniem; wymaga znalezienia/zmiany/usunięcia ISTNIEJĄCEGO rekordu (oznacz/zmień/przesuń/usuń); jest zbiorcze (wiele rzeczy naraz, wklejona lista); wymaga analizy/planowania/wyszukania; jest niejednoznaczne; albo dotyczy modułu spoza listy wyżej. W razie WĄTPLIWOŚCI zwróć "complex".`;
+
+interface RawParsed {
+  kind?: string;
+  module?: string;
+  type?: string;
+  description?: string;
+  params?: Record<string, unknown>;
+  searchQuery?: string;
+}
+
+function extractJson(content: string): RawParsed | null {
+  try {
+    const cleaned = content
+      .trim()
+      .replace(/^```json\n?/i, "")
+      .replace(/^```\n?/, "")
+      .replace(/\n?```$/, "")
+      .trim();
+    const j = JSON.parse(cleaned);
+    return j && typeof j === "object" && !Array.isArray(j) ? (j as RawParsed) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Klasyfikuje polecenie. `activeModules` = moduły dostępne/aktywne dla użytkownika —
+ * akcję zbudujemy tylko dla modułu z tej listy. Każda niepewność (błąd LLM, brak
+ * dopasowania do białej listy, moduł nieaktywny) → `complex` (bezpieczny fallback).
+ */
+export async function classifyIntent(
+  text: string,
+  activeModules: string[],
+  userId: string
+): Promise<FastPathResult> {
+  const trimmed = text.trim();
+  if (!trimmed) return { kind: "complex" };
+
+  const result = await chatComplete({
+    op: "dispatch",
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: trimmed.slice(0, 600) },
+    ],
+    temperature: 0,
+    maxTokens: 300,
+    json: true,
+    userId,
+    source: "fast_path",
+  });
+  if (!result.ok || !result.content) return { kind: "complex" };
+
+  const parsed = extractJson(result.content);
+  if (!parsed || parsed.kind !== "simple" || !parsed.module || !parsed.type) {
+    return { kind: "complex" };
+  }
+
+  const key = `${parsed.module}:${parsed.type}`;
+  const wl = WHITELIST[key];
+  if (!wl) return { kind: "complex" };
+  // Moduł musi być aktywny dla użytkownika.
+  if (!activeModules.includes(wl.module)) return { kind: "complex" };
+
+  const params = parsed.params && typeof parsed.params === "object" ? parsed.params : {};
+  const action: AIAction = {
+    id: "a1",
+    module: wl.module,
+    type: wl.type,
+    description: typeof parsed.description === "string" && parsed.description.trim()
+      ? parsed.description.trim()
+      : trimmed.slice(0, 120),
+    params,
+    ...(typeof parsed.searchQuery === "string" && parsed.searchQuery.trim()
+      ? { searchQuery: parsed.searchQuery.trim() }
+      : {}),
+  };
+  return { kind: "simple", action };
+}
