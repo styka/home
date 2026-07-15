@@ -1121,3 +1121,23 @@ dozwolone jedno zbiorcze pytanie przy naprawdę ważnej, niejednoznacznej decyzj
 inaczej zostaje rozjazd „kod robi X, spec mówi Y". Reguły przebiegu warto trzymać w konstytucji
 (numerowane), by komendy tylko się do nich odwoływały. Po edycji README pamiętaj o
 `node scripts/copy-spec-pipeline.js` (regeneracja `src/generated/spec-pipeline.ts`).
+
+---
+
+## 2026-07-15 — Spec pipeline: /review bez ręcznego approve + obowiązkowe pytanie o merge do master
+**Problem:** Właściciel chciał, by `/review` przechodził automatycznie (sam wystawiał werdykt, bez jego
+approve — jak reszta etapów), a cały pipeline **zawsze** kończył się jednym pytaniem
+„Mistrzu Magu, czy zrobić merge develop do master?" (promocja na produkcję).
+**Rozwiązanie:** `/review` wystawia werdykt sam; po APPROVE robi merge do `develop` (standing
+authorization, bez pytania), a na sam koniec zadaje **jedno** `AskUserQuestion` o promocję `develop →
+master` z opcją „Nie — zostaw na develop" jako rekomendowaną pierwszą (`master` = produkcja, C-52). Na
+„Tak" pipeline robi `checkout master` → `merge --no-ff develop` → `push` (jedyny moment dotknięcia
+`master`). W konstytucji: C-52 rozszerzone o obowiązkowe pytanie domykające, a C-55 dostał „wyjątek
+sankcjonowany" — to pytanie jest zawsze zadawane i nie łamie zasady „jednego momentu pytań".
+Przy okazji: dodane w JSX zdanie w cudzysłowach drukarskich („…") łapało warning
+`react/no-unescaped-entities` — rozwiązane przez wrzucenie tekstu w wyrażenie-string `{"…"}` (nie dokłada
+do puli ~64 kosmetycznych warningów, które i tak są na roadmapie do sprzątnięcia).
+**Lekcja:** W autonomicznym pipeline „approve" na końcu ma wystawiać sam recenzent — approve właściciela
+to tylko **bramka produkcyjna** (`develop → master`), i tę robimy jednym, zawsze-zadawanym pytaniem z
+bezpiecznym domyślnym „Nie". Cudzysłowy drukarskie w tekście JSX pakuj w `{"…"}`, żeby nie budzić
+`react/no-unescaped-entities`.
