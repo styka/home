@@ -1,10 +1,21 @@
 ---
-description: Etap 6 SDD — recenzja kodu diffa pod kątem poprawności i konwencji Omnia (specs/NNN-slug/review.md)
+description: Etap 6 SDD — recenzja diffa, werdykt, auto-merge do develop i pytanie o promocję do master (specs/NNN-slug/review.md)
 argument-hint: <specs/NNN-slug | slug>
 ---
 
 Jesteś na **etapie 6 (REVIEW)** spec-driven pipeline'u Omnia — ostatnia bramka przed merge do `develop`.
 Robisz **recenzję kodu** zmian feature'a: świeżym okiem, pod kątem poprawności i zgodności z konwencjami.
+To **koniec** automatycznego przebiegu — sam wystawiasz werdykt i po APPROVE domykasz zadanie zgodnie ze
+standing authorization, **bez czekania na approve właściciela**.
+
+## Model interakcji (C-55, C-54)
+**Werdykt wystawiasz sam — nie prosisz właściciela o approve.** Drobne, bezpieczne poprawki nanieś sam;
+przy poważnych ustaleniach zawróć pipeline do `/implement` (patrz „Na koniec"), a jeśli defekt wynika z
+błędnego speca/planu — powrót ma najpierw poprawić `spec.md`/`plan.md` (C-54). Furtka C-55 (jedno
+zbiorcze pytanie) obowiązuje też tu, gdy trafisz na istotną, niejednoznaczną decyzję właściciela.
+**Jedyne pytanie na tym etapie to obowiązkowe pytanie domykające o promocję `develop → master`** (patrz
+„Na koniec") — zadaj je zawsze po udanym merge do `develop`. To ostatni etap — nie wywołujesz już
+kolejnego skilla pipeline'u.
 
 ## Wejście
 Feature: **$ARGUMENTS**. Jeśli pusty — najnowszy katalog w `specs/` z `verify.md`.
@@ -37,8 +48,28 @@ sugerowana poprawka. Na końcu **werdykt**: APPROVE / APPROVE Z UWAGAMI / ZMIANY
 - Dla złożonego/wielomodułowego diffa możesz zlecić recenzję świeżym okiem subagentowi
   **omnia-reviewer** (Agent tool) i zebrać jego ustalenia tutaj.
 - Możesz od razu nanieść **drobne, bezpieczne** poprawki (literówki, brakujący `revalidatePath`) i
-  odnotować je; większe zmiany zostaw jako rekomendacje do decyzji.
+  odnotować je.
 
-## Na koniec
-Wypisz werdykt i — jeśli APPROVE — przypomnij o standingowej ścieżce: commit → merge do `develop` →
-push (po zielonym buildzie), zgodnie z CLAUDE.md.
+## Na koniec — domknięcie
+- Jeśli werdykt to **ZMIANY WYMAGANE**: wypisz konkretne poprawki, dopisz je jako zadania do
+  `tasks.md` (a jeśli źródłem jest błędny spec/plan — najpierw popraw `spec.md`/`plan.md`, C-54) i
+  **od razu** wróć do etapu 4, wywołując skill **`implement`** (narzędzie Skill) z argumentem
+  `specs/NNN-slug`. Nie czekaj na użytkownika.
+- Jeśli werdykt to **APPROVE / APPROVE Z UWAGAMI**:
+  1. Domknij zadanie zgodnie ze **STANDING AUTHORIZATION** z `CLAUDE.md` — commit → merge brancha
+     roboczego (`claude/*`) do `develop` → push `develop` (po zielonym buildzie; C-50/C-52). Nie pytaj
+     o zgodę na to — to jest ta zgoda.
+  2. Wypisz jednym akapitem podsumowanie całego przebiegu (spec → review) i co trafiło na środowisko
+     testowe (`develop` → `worldofmag.onrender.com`).
+  3. **Pytanie domykające (obowiązkowe, zawsze — C-52/C-55):** na sam koniec zadaj właścicielowi
+     **jedno** pytanie `AskUserQuestion` o promocję na produkcję. Pytanie brzmi **dokładnie**:
+     „Mistrzu Magu, czy zrobić merge develop do master?". Opcje (rekomendowana **pierwsza**, z etykietą
+     `(zalecane)`):
+     - **„Nie — zostaw na develop (zalecane)"** — najpierw sprawdź zmianę na środowisku testowym;
+       `master` to produkcja (Render auto-deploy), promujemy dopiero po weryfikacji.
+     - **„Tak — merge develop → master (produkcja)"** — od razu promuj na produkcję.
+  4. Reakcja na odpowiedź:
+     - **„Nie"** → koniec. Nic więcej nie pushujesz; napisz, że zmiana czeka na `develop`.
+     - **„Tak"** → `git checkout master` → `git merge --no-ff develop` → `git push origin master`
+       (z retry/backoff wg `CLAUDE.md`). To **jedyny** moment, w którym pipeline dotyka `master`, i
+       tylko na wyraźne „Tak" (C-52). Potwierdź, że produkcja została zaktualizowana.

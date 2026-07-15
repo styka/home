@@ -346,6 +346,25 @@ export function HomePage({
                 Beta
               </span>
             )}
+            {/* UX: wejście w personalizację pulpitu jako kompaktowa ikonka w wierszu powitania
+                (zamiast osobnego, pełnego wiersza — oszczędza przestrzeń pionową nad fałdą). */}
+            <button
+              onClick={() => setEditing((v) => !v)}
+              aria-label={editing ? "Zakończ dostosowywanie pulpitu" : "Dostosuj pulpit"}
+              title={editing ? "Zakończ dostosowywanie — kolejność i widoczność sekcji" : "Dostosuj pulpit — kolejność i widoczność sekcji"}
+              style={{
+                marginLeft: "auto",
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5,
+                minWidth: 32, minHeight: 32, padding: editing ? "0 10px" : 0,
+                fontSize: 12, borderRadius: 8, border: "1px solid var(--border)",
+                background: editing ? "var(--bg-elevated)" : "transparent",
+                color: editing ? "var(--accent-blue)" : "var(--text-muted)",
+                cursor: "pointer",
+              }}
+            >
+              {editing ? <Check size={14} /> : <SlidersHorizontal size={14} />}
+              {editing && "Gotowe"}
+            </button>
           </div>
           <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0, paddingLeft: 30 }}>
             {getSubtitle({
@@ -363,18 +382,6 @@ export function HomePage({
 
         {/* Pending invitations banner */}
         <InvitationsBanner count={pendingInvitations} />
-
-        {/* H1: pasek personalizacji pulpitu */}
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -4 }}>
-          <button
-            onClick={() => setEditing((v) => !v)}
-            style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, padding: "4px 10px", borderRadius: 8, border: "1px solid var(--border)", background: editing ? "var(--bg-elevated)" : "transparent", color: editing ? "var(--accent-blue)" : "var(--text-muted)", cursor: "pointer" }}
-            title="Dostosuj układ pulpitu — kolejność i widoczność sekcji"
-          >
-            {editing ? <Check size={13} /> : <SlidersHorizontal size={13} />}
-            {editing ? "Gotowe" : "Dostosuj pulpit"}
-          </button>
-        </div>
 
         {/* H1: sekcje pulpitu w kolejności użytkownika (z ukrywaniem) */}
         {order.map((key, idx) => {

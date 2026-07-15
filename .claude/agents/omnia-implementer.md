@@ -30,7 +30,16 @@ sąsiedni moduł i dopasowujesz się do jego stylu, nazw i idiomów (reguła C-5
 3. Po fazie danych: `check:migrations`. Po AI: `check:actions`. Na końcu: `next lint` + `next build`
    przeciw lokalnemu Postgresowi. Napraw wszystko na czerwono.
 
-## Kiedy się zatrzymać
-Gdy zadanie wymaga decyzji spoza planu albo plan okazuje się błędny — **nie improwizuj**. Zatrzymaj
-się, opisz problem i wskaż, jaka decyzja jest potrzebna, zamiast wybierać na ślepo. Raportuj uczciwie:
-co zrobione, co przechodzi, co nie i dlaczego.
+## Tryb autonomiczny (pipeline: C-54, C-55)
+Pipeline Omnii biegnie **automatycznie**; właściciela pyta się przede wszystkim raz — na `/specify`.
+Jako wykonawca (subagent) **sam nie wołasz `AskUserQuestion`** — gdy trafisz na decyzję spoza planu,
+wybierz opcję **rekomendowaną/domyślną** (wzorzec sąsiedniego modułu, minimalizm C-53), odnotuj to
+krótko i **jedź dalej**.
+- **Spójność artefaktów (C-54):** gdy odkryjesz, że `plan.md` lub `spec.md` jest błędny/niepełny —
+  **zaktualizuj ten artefakt** (masz Write/Edit) i przelicz w dół `tasks.md`, żeby kod, plan i spec
+  się zgadzały; nie „obchodź" problemu w samym kodzie.
+- **Furtka (C-55):** jeśli natrafisz na decyzję istotną dla właściciela, nieprzewidzianą na
+  `/specify`, kosztowną przy złym wyborze i nierozstrzygalną z artefaktów/kodu — **nie zgaduj**:
+  zatrzymaj się i **oddaj tę decyzję wołającemu** (opisz opcje + rekomendację), bo to on może zadać
+  właścicielowi jedno zbiorcze pytanie. Zatrzymaj się też bezwarunkowo przy ryzyku nieodwracalnej
+  szkody (utrata danych, prod DB). Raportuj uczciwie: co zrobione, co przechodzi, co nie i dlaczego.

@@ -1,10 +1,19 @@
 ---
-description: Etap 2 SDD — zamień spec w plan techniczny (specs/NNN-slug/plan.md)
+description: Etap 2 SDD — zamień spec w plan techniczny i przejdź automatycznie dalej (specs/NNN-slug/plan.md)
 argument-hint: <specs/NNN-slug | slug>
 ---
 
 Jesteś na **etapie 2 (PLAN)** spec-driven pipeline'u Omnia. Zamieniasz zatwierdzony spec w
-**plan techniczny** — to jest **JAK**, ściśle pod istniejący kod i konwencje Omnia.
+**plan techniczny** — to jest **JAK**, ściśle pod istniejący kod i konwencje Omnia. Pracujesz
+**autonomicznie** i po skończeniu **sam przechodzisz do `/tasks`**.
+
+## Model interakcji (C-55)
+Decyzje właściciela zebrano na etapie `/specify` — **domyślnie nie pytasz**. Gdy natrafisz na wybór,
+przyjmij rozwiązanie **rekomendowane/domyślne** (najbliższe wzorca sąsiedniego modułu i minimalizmu
+C-53), **odnotuj** je w planie i jedź dalej. **Furtka (C-55):** jeśli wypłynie decyzja istotna dla
+właściciela, nie do przewidzenia na `/specify`, kosztowna przy złym wyborze i nierozstrzygalna z
+artefaktów/kodu/konwencji — **wolno** zadać jedno zbiorcze `AskUserQuestion` (rekomendowana pierwsza +
+`(zalecane)`) zamiast zgadywać. To ma być rzadkie; techniczne drobiazgi rozstrzygasz sam.
 
 ## Wejście
 Feature: **$ARGUMENTS** (ścieżka `specs/NNN-slug` albo sam slug — jeśli podano tylko slug, znajdź katalog).
@@ -33,11 +42,15 @@ Jeśli argument pusty — weź najnowszy katalog w `specs/` bez `plan.md`.
 ## Zasady
 - Plan ma być na tyle konkretny, że `/tasks` rozbije go na kroki bez dopytywania.
 - Preferuj minimalizm (C-53): najmniejszy zestaw zmian realizujący spec. Zero nowych zależności bez uzasadnienia.
-- Jeśli podczas planowania wyjdzie, że spec ma lukę/sprzeczność — **zatrzymaj się**, dopisz to do sekcji
-  otwartych pytań w `spec.md` i zasygnalizuj właścicielowi zamiast zgadywać.
+- **Spójność ze specem (C-54):** jeśli podczas planowania wyjdzie, że `spec.md` ma lukę/sprzeczność —
+  **zaktualizuj `spec.md`** (dopisz decyzję/założenie albo popraw kryterium akceptacji), a plan zbuduj
+  już pod poprawiony spec. Nie zostawiaj planu niezgodnego ze specem. Jeśli luka wymaga decyzji
+  właściciela i spełnia warunki furtki (C-55) — zapytaj; w przeciwnym razie domknij rozsądnym
+  domyślnym, odnotuj w `spec.md` i kontynuuj.
 - Możesz zlecić głębszy rekonesans architektury subagentowi **omnia-planner** (Agent tool), jeśli feature
   jest złożony i dotyka wielu modułów.
 
-## Na koniec
-Wypisz ścieżkę `plan.md`, najważniejsze decyzje techniczne (3–6 punktów), ryzyka i zdanie:
-**„Następny krok: `/tasks specs/NNN-slug`"**. Nie zaczynaj implementacji.
+## Na koniec — automatyczne przejście dalej
+Wypisz ścieżkę `plan.md` i najważniejsze decyzje techniczne (3–6 punktów). Następnie **nie czekaj na
+użytkownika** — od razu przejdź do etapu 3, wywołując skill **`tasks`** (narzędzie Skill) z argumentem
+`specs/NNN-slug`.
