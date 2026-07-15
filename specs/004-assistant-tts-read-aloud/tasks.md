@@ -29,24 +29,25 @@
   *Gotowe, gdy:* przykładowy markdown (nagłówek + link + lista) zwraca tekst bez symboli.
 
 ## Faza 3 — UI (AICommandSheet)
-- [ ] **T-4** — `AICommandSheet.tsx`: lokalny komponent `SpeakButton({ text, speaking, onToggle })` wg
+- [x] **T-4** — `AICommandSheet.tsx`: lokalny komponent `SpeakButton({ text, speaking, onToggle })` wg
   wzorca `CopyButton` — ikona `Volume2` (idle) ↔ `Square` (odczyt), kolory z tokenów CSS
   (`--text-muted`/`--accent-blue`), `title`/`aria-label` PL („Odczytaj na głos"/„Zatrzymaj odczyt"),
   brak renderu gdy `!ttsSupported()` (lazy init stanu, bez SSR-mismatch). *(pokrywa AC-1, AC-5)*
-- [ ] **T-5** — `AICommandSheet.tsx`: stan `speakingId` + `toggleSpeak(id, text)` w body sheeta —
+- [x] **T-5** — `AICommandSheet.tsx`: stan `speakingId` + `toggleSpeak(id, text)` w body sheeta —
   ten sam id → `stopSpeaking()`+reset (AC-3); inny → `stopSpeaking()` przed `speak(speechTextFromMarkdown(text),"pl",{onEnd:reset})` (AC-2, AC-4, AC-6).
   Przekazać `speakingId`/`onToggleSpeak` do `ChatTurn` (jak `onRegenerate`).
-- [ ] **T-6** — `AICommandSheet.tsx`: wpiąć `SpeakButton` w bąbelki Asystenta — `answer` i `report`
+- [x] **T-6** — `AICommandSheet.tsx`: wpiąć `SpeakButton` w bąbelki Asystenta — `answer` i `report`
   (rząd akcji obok `CopyButton`), `navigate`/`plan`/`clarify` (przy treści `turn.content`); pominąć
   `results` i posty użytkownika. *(pokrywa AC-1, AC-7; AC-5 dla `results`)*
-- [ ] **T-7** `[P]` — `AICommandSheet.tsx`: sprzątanie odczytu — `useEffect` stopuje mowę przy zamknięciu
+- [x] **T-7** `[P]` — `AICommandSheet.tsx`: sprzątanie odczytu — `useEffect` stopuje mowę przy zamknięciu
   arkusza (`open===false`), zmianie konwersacji i unmount (`stopSpeaking()`+`setSpeakingId(null)`). *(ryzyko §9)*
 
 ## Faza 4 — Bramki i domknięcie
-- [ ] **T-8** — `cd worldofmag && npx next lint` + `npx next build` (bez `migrate.js` — C-13; brak migracji
-  → lokalny Postgres niepotrzebny). Zielone; brak błędów TS (typy propsów/sygnatury `tts`).
-- [ ] **T-9** — Mapowanie AC → wynik (input do `/verify`): AC-1..AC-7 wg planu §8.
-- [ ] **T-10** — Wpis do `doświadczenia.md`, jeśli po drodze wystąpił nieoczywisty problem (C-51).
+- [x] **T-8** — `next lint` czysty dla zmienionych plików + `npx tsc --noEmit` (exit 0) + `npx next build`
+  (exit 0, bez `migrate.js` — C-13). Zielone.
+- [x] **T-9** — Mapowanie AC → wynik gotowe (patrz plan §8; wejście do `/verify`).
+- [x] **T-10** — Brak nieoczywistego problemu po drodze (build/typecheck od razu zielone) → wpis do
+  `doświadczenia.md` niepotrzebny (C-51 dotyczy naprawionych bugów).
 
 ## Mapowanie AC → zadania
 | AC | Zadania |
