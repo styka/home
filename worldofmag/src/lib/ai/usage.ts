@@ -82,7 +82,7 @@ export async function getAiUsageStats(days = 30): Promise<{
 
 // ─── 002-ai-architecture: log per-wywołanie LLM + koszt + alert ──────────────
 
-const COST_ALERT_CONFIG_KEY = "ai_cost_daily_alert_usd";
+export const COST_ALERT_CONFIG_KEY = "ai_cost_daily_alert_usd";
 
 export interface AiCallEntry {
   userId?: string | null;

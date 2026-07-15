@@ -4,6 +4,23 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-15 — Weryfikacja builda: świeży klon + globalna Prisma 7 kontra schema Prisma 5
+**Problem:** Przy lokalnej weryfikacji (`prisma migrate deploy`) leciał błąd P1012: „datasource property
+`url`/`directUrl` is no longer supported" — bo `npx prisma` sięgnął po **globalnie** zainstalowaną
+Prisma **7.8.0**, a repo pinuje Prisma **5.22** (schema używa składni `url = env(...)` z datasource,
+usuniętej w 7). Dodatkowo świeży klon **nie miał `node_modules`** (`npm install` nie był uruchomiony w
+sesji), więc lokalnego `node_modules/.bin/prisma` też nie było.
+**Rozwiązanie:** Najpierw `npm install`, potem wywoływać **lokalny** binarny Prisma z projektu:
+`node_modules/.bin/prisma migrate deploy` / `generate` (v5.22, akceptuje `url` w datasource). Zmienne
+`DATABASE_URL`/`DIRECT_URL` **wyeksportować do shella** (migrate/skrypty nie czytają `.env.local`).
+Build weryfikować do kroku `node_modules/.bin/next build` (nie pełny `npm run build`, bo ten na końcu
+odpala `migrate.js` — patrz C-13).
+**Lekcja:** W sandboxie/świeżym klonie nie ufaj `npx prisma` — może trafić na globalną, nowszą wersję
+niezgodną ze schematem. Zawsze `npm install` + `node_modules/.bin/prisma`. Postgres lokalny:
+`pg_ctlcluster 16 main start`, rola+baza `omnia/omnia_dev`, eksport env do shella.
+
+---
+
 ## 2026-07-15 — Filtry działały tylko w jednym z trzech układów tego samego zbioru zadań
 **Problem:** W dziale Zadania pasek filtrów (zakładki statusów + tagi) działał wyłącznie w widoku
 Lista. W Kanbanie i na Timeline zaznaczenie tagu nic nie robiło, a przełączanie zakładek „nic nie
