@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-15 — Nagłówek Zadań ucinał akcje na iPhone (overflow-hidden rodzica)
+**Problem:** W dziale Zadania na wąskim ekranie (iPhone) prawy pasek akcji nagłówka pakuje 8+ ikon
+(kosz, grupowanie, sortowanie, szukaj, powiadomienia, statusy, przełącznik Lista/Kanban/Timeline,
+admin „Kopiuj prompt dla Claude Code", akcje projektu). Nagłówek to jeden rząd o stałej wysokości
+(`flex items-center justify-between h-12`) bez zawijania, a rodzic ma `overflow-hidden` — więc nadmiar
+był **przycinany**, a trailing akcje (m.in. „Kopiuj prompt") wypadały poza kadr i były nieklikalne.
+**Rozwiązanie:** Odizolować poziomy scroll do samego kontenera akcji: `min-w-0 overflow-x-auto
+[&>*]:flex-shrink-0` na `<div className="flex items-center gap-2">`. `min-w-0` pozwala kontenerowi
+ustąpić szerokości, `overflow-x-auto` daje przewijanie (cienki globalny scrollbar 6px), a
+`[&>*]:flex-shrink-0` trzyma ikony i pogrupowane przełączniki w intrinsic rozmiarze (rząd się przewija,
+nie ściska). Na desktopie klasa jest inertna (treść się mieści) → zero regresu. Wzorzec był już w tym
+samym pliku: pasek „wiele projektów" używa `overflow-x-auto`.
+**Lekcja:** Gdy pasek akcji o stałej wysokości siedzi w kontenerze z `overflow-hidden`, nadmiar znika
+bez śladu (żadnego scrolla). Na mobile rządom akcji dawaj `min-w-0 overflow-x-auto` + `flex-shrink-0`
+na dzieciach, zamiast liczyć, że wszystko się zmieści.
+
 ## 2026-07-15 — Weryfikacja builda: świeży klon + globalna Prisma 7 kontra schema Prisma 5
 **Problem:** Przy lokalnej weryfikacji (`prisma migrate deploy`) leciał błąd P1012: „datasource property
 `url`/`directUrl` is no longer supported" — bo `npx prisma` sięgnął po **globalnie** zainstalowaną
