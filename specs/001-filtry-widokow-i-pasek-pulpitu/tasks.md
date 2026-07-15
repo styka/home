@@ -23,7 +23,7 @@
 ## Faza 2 — UI
 
 ### Poprawka A — filtry w Kanban i Timeline (moduł Tasks)
-- [ ] **T-1** `[P]` — **`TaskFilters.tsx`: prop `showStatusTabs?: boolean` (default `true`).**
+- [x] **T-1** `[P]` — **`TaskFilters.tsx`: prop `showStatusTabs?: boolean` (default `true`).**
   Gdy `false` — nie renderuj kontenera zakładek statusu (wiersz `filters.map`); wiersz tagów bez
   zmian. Gdy `!showStatusTabs && allTags.length === 0` → `return null` (bez pustego paska 38px).
   Domyślne zachowanie (Lista/Timeline) identyczne jak dziś. Tylko zmienne CSS, teksty PL (C-30, C-32).

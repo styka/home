@@ -16,14 +16,19 @@ interface TaskFiltersProps {
   filters?: string[];
   // Etykiety zakładek (zawiera też nazwy własnych statusów). Fallback: klucz statusu.
   labels?: Record<string, string>;
+  // Czy pokazać wiersz zakładek statusu. W Kanbanie ukrywamy (kolumny = statusy). Domyślnie true.
+  showStatusTabs?: boolean;
 }
 
-export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds, onTagToggle, filters = TASK_STATUS_FILTERS, labels }: TaskFiltersProps) {
+export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds, onTagToggle, filters = TASK_STATUS_FILTERS, labels, showStatusTabs = true }: TaskFiltersProps) {
+  // Bez zakładek i bez tagów nie ma czego pokazywać (Kanban bez tagów) — nie renderuj pustego paska.
+  if (!showStatusTabs && allTags.length === 0) return null;
   return (
     <div
       className="flex-shrink-0 border-b"
       style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
     >
+      {showStatusTabs && (
       <div className="flex items-center gap-0 overflow-x-auto px-2" style={{ minHeight: 38 }}>
         {filters.map((f) => {
           const isActive = active === f;
@@ -58,6 +63,7 @@ export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds,
           );
         })}
       </div>
+      )}
 
       {allTags.length > 0 && (
         <div className="flex items-center gap-1.5 px-3 py-1.5 overflow-x-auto">
