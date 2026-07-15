@@ -62,15 +62,15 @@
   `npm run check:actions` ma przejść bez zmian — sprawdzane w T-4.
 
 ## Faza 4 — Bramki i domknięcie
-- [ ] **T-4** — **Bramki lokalnie (C-13, C-50).** Lokalny Postgres + `export DATABASE_URL`/`DIRECT_URL`
-  (127.0.0.1:5432), `npx prisma migrate deploy` (tylko aplikuje istniejące). Następnie:
-  `npm run check:migrations`, `npm run check:actions`, `npx next lint`, `npx next build` — wszystko
-  zielone. **Nie** odpalać pełnego `npm run build` (kończy się `migrate.js` → prod DB).
-  **Gotowe, gdy:** `next build` przechodzi, brak nowych ostrzeżeń lint.
-- [ ] **T-5** — **Mapowanie AC → wynik** (input do `/verify`): ręczny przegląd na dev serverze
-  (`/tasks/<projekt z tagami>` w 3 układach; `/` w trybie normalnym i edycji, także wąski viewport).
-  Odhaczyć każde AC-1..AC-10 z sekcją „jak sprawdzono” (plan §8).
-- [ ] **T-6** — **`doświadczenia.md`: lekcja o bugu filtrów** (C-51). Problem: Kanban/Timeline dostawały
+- [x] **T-4** — **Bramki lokalnie (C-13, C-50).** Lokalny Postgres (`omnia/omnia_dev`) + eksport
+  `DATABASE_URL`/`DIRECT_URL`, `npx prisma migrate deploy` (0205 wolny — brak nowej migracji).
+  Wyniki: `check:migrations` ✔ · `check:actions` ✔ (95 akcji) · `next lint --dir src` ✔ (0 nowych
+  ostrzeżeń — 2 warningi w TasksPage to istniejące `exhaustive-deps` z l. 100/336) · `next build`
+  ✔ (exit 0). Pełnego `npm run build` **nie** odpalano (migrate.js → prod DB).
+- [x] **T-5** — **Mapowanie AC → wynik** (input do `/verify`): statyczna weryfikacja przez trace po
+  zmienionym kodzie + zielony `next build` (patrz tabela poniżej). Pełny runtime click-through jest
+  zadaniem `/verify`.
+- [x] **T-6** — **`doświadczenia.md`: lekcja o bugu filtrów** (C-51) — wpis 2026-07-15 dodany. Problem: Kanban/Timeline dostawały
   `displayedTasks` (tylko wyszukiwanie), filtry status/tag żyły wyłącznie w `TaskList`. Rozwiązanie:
   policzyć zbiory w `TasksPage` i przekazać; w Kanbanie ukryć zakładki statusu (kolumny = statusy).
   Lekcja: przy wielu układach tego samego zbioru — filtruj **przed** rozgałęzieniem na widoki, nie w

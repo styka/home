@@ -4,6 +4,24 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-15 — Filtry działały tylko w jednym z trzech układów tego samego zbioru zadań
+**Problem:** W dziale Zadania pasek filtrów (zakładki statusów + tagi) działał wyłącznie w widoku
+Lista. W Kanbanie i na Timeline zaznaczenie tagu nic nie robiło, a przełączanie zakładek „nic nie
+zmieniało”. Przyczyna: `TasksPage` filtrował status+tagi **wewnątrz** `TaskList`, a do `KanbanBoard`
+i `TimelineView` wpuszczał surowe `displayedTasks` (tylko wynik wyszukiwania). Kontrolki były
+widoczne, ale martwe.
+**Rozwiązanie:** Filtrowanie przeniesione **przed** rozgałęzienie na układy — w `TasksPage`
+policzone `kanbanTasks` (filtr tagów; wszystkie kolumny statusów, także terminalne, by kolumna
+„Zrobione” się wypełniała — dlatego bez zawężania po zakładce) i `timelineTasks` (zakładka statusu +
+tagi), przekazane do widoków. W Kanbanie zakładki statusu ukryte nowym propem `TaskFilters
+showStatusTabs=false` (kolumny i tak reprezentują statusy). `KanbanBoard`/`TimelineView` bez zmian.
+**Lekcja:** Gdy ten sam zbiór ma kilka układów (lista/kanban/timeline), filtruj **u źródła** (w
+kontenerze, przed wyborem widoku), a nie w jednym z widoków — inaczej pozostałe dostają niefiltrowane
+dane i kontrolki filtrów kłamią. Uważaj na semantykę „ALL”: lista wyklucza statusy terminalne, ale
+Kanban ich potrzebuje (kolumny), więc nie da się bezmyślnie współdzielić jednego zbioru.
+
+---
+
 ## 2026-07-14 — Spec-driven pipeline: gdzie żyją komendy/agenty i jak podać przewodnik do panelu admina
 **Problem:** Zadanie: zbudować spec-driven pipeline (`/specify /plan /tasks /implement /verify /review`)
 dla Claude Code + przewodnik w panelu admina. Dwie pułapki: (1) `/verify` i `/review` **kolidują
