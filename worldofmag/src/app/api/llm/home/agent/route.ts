@@ -7,6 +7,7 @@ import { webSearch } from "@/lib/news/webSearch";
 import { chatComplete } from "@/lib/llm/chat";
 import { checkRateLimit, acquireSlot } from "@/lib/ai/rateLimit";
 import { checkAiBudget, recordAiUsage } from "@/lib/ai/usage";
+import { classifyIntent } from "@/lib/ai/fastPath";
 import type { AIAction } from "@/lib/ai/aiAction";
 
 const MAX_ITERATIONS = 6;
@@ -302,6 +303,7 @@ async function callAgent(messages: ChatMessage[], meta?: AgentMeta): Promise<str
     temperature: 0.1,
     maxTokens: 2800, // zapas na pełny raport (step "report") — przy 1500 markdown bywał ucinany w połowie JSON
     json: true,
+    source: "home_agent",
   });
   if (!result.ok) {
     const err = new Error(result.message) as Error & { status?: number };
@@ -376,6 +378,7 @@ async function routeModules(text: string, activeModules: string[], primary: stri
       temperature: 0,
       maxTokens: 120,
       json: true,
+      source: "dispatch_route",
     });
     if (!result.ok || !result.content) return allowed;
     const parsed = JSON.parse(result.content.trim().replace(/^```json\n?/i, "").replace(/```$/, "")) as { modules?: unknown };
@@ -635,6 +638,24 @@ export async function POST(req: NextRequest) {
     const today = body.today ?? new Date().toISOString();
     const context = body.context?.length ? body.context : [...MODULES];
     const primary = context[0] ?? "shopping";
+
+    // 002-ai-architecture — FAST-PATH: proste polecenie ("dodaj mleko", "zanotuj X")
+    // rozstrzygamy tanim klasyfikatorem (op:"dispatch") i budujemy gotową AIAction
+    // BEZ uruchamiania dużego modelu (op:"reasoning"). Zwracamy krok "plan" w tym
+    // samym kształcie co pętla agenta → panel potwierdzenia (ActionDrawer) bez zmian.
+    // Każda niepewność → complex → dotychczasowa pełna pętla poniżej.
+    const fast = await classifyIntent(text, context, userId);
+    if (fast.kind === "simple") {
+      const thought = fast.action.description || "Przygotowano akcję.";
+      return NextResponse.json({
+        step: "plan",
+        actions: [fast.action],
+        thought,
+        log: [{ iter: 0, step: "plan", thought, actionsCount: 1 }],
+        messages: [{ role: "user", content: text }],
+        meta: { source: "fast_path", tokens: 0 },
+      });
+    }
 
     // KROK 1 (router): zawęź katalog akcji do modułów istotnych dla polecenia.
     selectedModules = await routeModules(text, context, primary);
