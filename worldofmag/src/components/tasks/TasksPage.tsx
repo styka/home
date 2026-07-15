@@ -404,8 +404,9 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           {projectName}
         </Link>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
+        {/* Actions — na wąskich ekranach (iPhone) rząd akcji przewija się w poziomie
+            zamiast wypadać poza kadr; scroll odizolowany do tego kontenera, dzieci nie kurczą się. */}
+        <div className="flex items-center gap-2 min-w-0 overflow-x-auto [&>*]:flex-shrink-0">
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {counts.ALL > 0 && `${counts.ALL} aktywne`}
           </span>
