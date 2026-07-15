@@ -4,11 +4,12 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings,
+  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings, Volume2,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
+import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported } from "@/lib/tts";
 import {
   listAiConversations, getAiConversation, createAiConversation, appendAiMessage,
   deleteAiConversation, renameAiConversation, type ConversationMeta,
@@ -194,6 +195,8 @@ export function AICommandSheet() {
   const [liveThoughts, setLiveThoughts] = useState<string[]>([]); // myśli agenta na żywo (streaming)
   const [error, setError] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  // Odczyt postów Asystenta na głos — id posta aktualnie czytanego (jeden głos naraz).
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
 
   // Przegląd planu (ActionDrawer)
   const [planTurnId, setPlanTurnId] = useState<string | null>(null);
@@ -231,6 +234,29 @@ export function AICommandSheet() {
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [turns, busy]);
+
+  // Odczyt na głos: klik na czytanym poście → stop; klik na innym → przerwij poprzedni i czytaj nowy.
+  const toggleSpeak = useCallback((id: string, text: string) => {
+    if (speakingId === id) {
+      stopSpeaking();
+      setSpeakingId(null);
+      return;
+    }
+    stopSpeaking();
+    const clean = speechTextFromMarkdown(text);
+    if (!clean) return;
+    speak(clean, "pl", { onEnd: () => setSpeakingId((cur) => (cur === id ? null : cur)) });
+    setSpeakingId(id);
+  }, [speakingId]);
+
+  // Sprzątanie: zatrzymaj lektora przy zamknięciu arkusza, zmianie konwersacji i odmontowaniu.
+  useEffect(() => {
+    if (!isOpen) { stopSpeaking(); setSpeakingId(null); }
+  }, [isOpen]);
+  useEffect(() => {
+    stopSpeaking(); setSpeakingId(null);
+  }, [conversationId]);
+  useEffect(() => () => { stopSpeaking(); }, []);
 
   // Esc zamyka sheet (gdy nie piszemy w polu — pozwalamy textarea obsłużyć własny Esc).
   useEffect(() => {
@@ -913,6 +939,8 @@ export function AICommandSheet() {
                     onFollowup={(txt) => handleSend(txt)}
                     onFixFailed={fixFailedActions}
                     onUndo={undoActions}
+                    speakingId={speakingId}
+                    onToggleSpeak={toggleSpeak}
                   />
                 ))}
 
@@ -1038,8 +1066,25 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
+// Przycisk odczytu posta Asystenta na głos (start ↔ stop). Chowa się, gdy przeglądarka nie wspiera syntezy.
+function SpeakButton({ speaking, onToggle }: { speaking: boolean; onToggle: () => void }) {
+  const [supported] = useState(() => ttsSupported());
+  if (!supported) return null;
+  return (
+    <button
+      onClick={onToggle}
+      title={speaking ? "Zatrzymaj odczyt" : "Odczytaj na głos"}
+      aria-label={speaking ? "Zatrzymaj odczyt" : "Odczytaj na głos"}
+      style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: speaking ? "var(--accent-blue)" : "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+    >
+      {speaking ? <Square size={12} /> : <Volume2 size={12} />} {speaking ? "Zatrzymaj" : "Odczytaj"}
+    </button>
+  );
+}
+
 function TurnView({
   turn, isLast, onBubbleClick, onClarifySubmit, onOpenPlan, onNavigate, onSaveReport, onRegenerate, onFollowup, onFixFailed, onUndo,
+  speakingId, onToggleSpeak,
 }: {
   turn: Turn;
   isLast: boolean;
@@ -1052,8 +1097,11 @@ function TurnView({
   onFollowup?: (text: string) => void;
   onFixFailed?: (results: ActionResult[]) => void;
   onUndo?: (turn: Extract<Turn, { kind: "results" }>) => void;
+  speakingId?: string | null;
+  onToggleSpeak?: (id: string, text: string) => void;
 }) {
   const [clarifyInput, setClarifyInput] = useState("");
+  const speaking = speakingId === turn.id;
 
   if (turn.role === "user") {
     return (
@@ -1083,6 +1131,7 @@ function TurnView({
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 6 }}>
           <CopyButton text={turn.content} />
+          {onToggleSpeak && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
           {isLast && onRegenerate && (
             <button onClick={onRegenerate} title="Generuj ponownie" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
               <RefreshCw size={12} /> Ponów
@@ -1111,6 +1160,9 @@ function TurnView({
             </div>
           </>
         )}
+        {onToggleSpeak && turn.content && (
+          <div style={{ marginTop: 8 }}><SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} /></div>
+        )}
         <ReasoningLog log={turn.log} />
         <MetaFooter meta={turn.meta} />
       </div>
@@ -1124,6 +1176,9 @@ function TurnView({
         <button onClick={() => onNavigate(turn.url)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           <ArrowRight size={15} /> {turn.label}
         </button>
+        {onToggleSpeak && turn.content && (
+          <div style={{ marginTop: 8 }}><SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} /></div>
+        )}
         <ReasoningLog log={turn.log} />
         <MetaFooter meta={turn.meta} />
       </div>
@@ -1148,6 +1203,9 @@ function TurnView({
             Przejrzyj i wykonaj
           </button>
         )}
+        {onToggleSpeak && turn.content && (
+          <div style={{ marginTop: 8 }}><SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} /></div>
+        )}
         <ReasoningLog log={turn.log} />
         <MetaFooter meta={turn.meta} />
       </div>
@@ -1162,7 +1220,10 @@ function TurnView({
           <span style={{ fontWeight: 600 }}>{turn.title}</span>
         </div>
         <div onClick={onBubbleClick} style={{ maxHeight: 280, overflowY: "auto", borderTop: "1px solid var(--border)", paddingTop: 8 }} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
-        <div style={{ marginTop: 6 }}><CopyButton text={turn.content} /></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 6 }}>
+          <CopyButton text={turn.content} />
+          {onToggleSpeak && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, `${turn.title}. ${turn.content}`)} />}
+        </div>
         {turn.savedSlug ? (
           <button onClick={() => onNavigate(`/reports/${turn.savedSlug}`)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             <ArrowRight size={15} /> Otwórz raport
