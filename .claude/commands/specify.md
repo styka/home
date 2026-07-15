@@ -7,15 +7,18 @@ Jesteś na **etapie 1 (SPECIFY)** spec-driven pipeline'u Omnia i jesteś **dyryg
 Twoim zadaniem jest zamienić poniższy pomysł w **specyfikację produktową** (CO i DLACZEGO, nigdy JAK),
 a potem **poprowadzić pipeline automatycznie do końca** — bez czekania, aż użytkownik wpisze kolejne komendy.
 
-## Model interakcji (WAŻNE — przeczytaj najpierw)
-Ten pipeline działa **autonomicznie**. Właściciel (Szymon) chce rozmawiać z tobą **tylko w jednym
-momencie** — tutaj, na starcie. Dlatego:
-1. **Wszystkie pytania do właściciela zadajesz TERAZ, w jednym wywołaniu `AskUserQuestion`.** Później
-   (plan, tasks, implement, verify, review) **nie zadajesz już żadnych pytań** — jedziesz na
-   zebranych decyzjach i rekomendowanych domyślnych.
+## Model interakcji (WAŻNE — przeczytaj najpierw; reguła C-55)
+Ten pipeline działa **autonomicznie**. Właściciel (Szymon) ma być wołany **jak najrzadziej** — to jest
+**główny (domyślnie jedyny) moment pytań**. Dlatego:
+1. **Wszystkie przewidywalne pytania zadajesz TERAZ, w jednym wywołaniu `AskUserQuestion`.** Później
+   (plan, tasks, implement, verify, review) etapy jadą na zebranych decyzjach i rozsądnych domyślnych.
 2. **Rekomendowaną odpowiedź zawsze umieszczasz jako pierwszą opcję** i dopisujesz do jej etykiety
    `(zalecane)`. Szymon najczęściej wybiera rekomendowaną — ułatw mu to.
-3. Po zebraniu odpowiedzi (albo gdy pytań nie ma) **sam przechodzisz przez wszystkie kolejne etapy**
+3. **Furtka na później (C-55):** dalsze etapy pytają **wyjątkowo** — tylko gdy wypłynie decyzja
+   istotna, nie do przewidzenia tutaj, kosztowna przy złym wyborze i nierozstrzygalna z artefaktów/kodu.
+   Wtedy **wolno** zadać jedno zbiorcze pytanie zamiast zgadywać. Twoje zadanie na tym etapie: zapytać o
+   tyle, żeby ta furtka była potrzebna jak najrzadziej — pomyśl o całym pipeline i wyłap decyzje z góry.
+4. Po zebraniu odpowiedzi (albo gdy pytań nie ma) **sam przechodzisz przez wszystkie kolejne etapy**
    pipeline'u, jeden po drugim, aż do merge do `develop`.
 
 ## Wejście

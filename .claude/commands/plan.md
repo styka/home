@@ -7,12 +7,13 @@ Jesteś na **etapie 2 (PLAN)** spec-driven pipeline'u Omnia. Zamieniasz zatwierd
 **plan techniczny** — to jest **JAK**, ściśle pod istniejący kod i konwencje Omnia. Pracujesz
 **autonomicznie** i po skończeniu **sam przechodzisz do `/tasks`**.
 
-## Model interakcji
-Wszystkie decyzje właściciela zebrano już na etapie `/specify`. **Nie zadawaj pytań (`AskUserQuestion`).**
-Jeśli natrafisz na wybór — przyjmij rozwiązanie **rekomendowane/domyślne** (najbliższe wzorca
-sąsiedniego modułu i minimalizmu C-53), **odnotuj** je w planie i jedź dalej. Zatrzymaj się i zapytaj
-**wyłącznie** wtedy, gdy dalsze działanie groziłoby nieodwracalną szkodą (utrata/uszkodzenie danych,
-ruszenie prod DB) — inaczej kontynuuj.
+## Model interakcji (C-55)
+Decyzje właściciela zebrano na etapie `/specify` — **domyślnie nie pytasz**. Gdy natrafisz na wybór,
+przyjmij rozwiązanie **rekomendowane/domyślne** (najbliższe wzorca sąsiedniego modułu i minimalizmu
+C-53), **odnotuj** je w planie i jedź dalej. **Furtka (C-55):** jeśli wypłynie decyzja istotna dla
+właściciela, nie do przewidzenia na `/specify`, kosztowna przy złym wyborze i nierozstrzygalna z
+artefaktów/kodu/konwencji — **wolno** zadać jedno zbiorcze `AskUserQuestion` (rekomendowana pierwsza +
+`(zalecane)`) zamiast zgadywać. To ma być rzadkie; techniczne drobiazgi rozstrzygasz sam.
 
 ## Wejście
 Feature: **$ARGUMENTS** (ścieżka `specs/NNN-slug` albo sam slug — jeśli podano tylko slug, znajdź katalog).
@@ -41,9 +42,11 @@ Jeśli argument pusty — weź najnowszy katalog w `specs/` bez `plan.md`.
 ## Zasady
 - Plan ma być na tyle konkretny, że `/tasks` rozbije go na kroki bez dopytywania.
 - Preferuj minimalizm (C-53): najmniejszy zestaw zmian realizujący spec. Zero nowych zależności bez uzasadnienia.
-- Jeśli podczas planowania wyjdzie, że spec ma **twardą** lukę/sprzeczność, której nie da się domknąć
-  rozsądnym domyślnym — dopisz to do sekcji otwartych pytań w `spec.md`, zaznacz w planie jako
-  ryzyko i **kontynuuj** z najlepszym możliwym założeniem (nie przerywaj pipeline'u pytaniem).
+- **Spójność ze specem (C-54):** jeśli podczas planowania wyjdzie, że `spec.md` ma lukę/sprzeczność —
+  **zaktualizuj `spec.md`** (dopisz decyzję/założenie albo popraw kryterium akceptacji), a plan zbuduj
+  już pod poprawiony spec. Nie zostawiaj planu niezgodnego ze specem. Jeśli luka wymaga decyzji
+  właściciela i spełnia warunki furtki (C-55) — zapytaj; w przeciwnym razie domknij rozsądnym
+  domyślnym, odnotuj w `spec.md` i kontynuuj.
 - Możesz zlecić głębszy rekonesans architektury subagentowi **omnia-planner** (Agent tool), jeśli feature
   jest złożony i dotyka wielu modułów.
 

@@ -7,12 +7,21 @@ Jesteś na **etapie 4 (IMPLEMENT)** spec-driven pipeline'u Omnia. Realizujesz za
 kod, migracje, testy — **ściśle wg planu i konstytucji**, odhaczając postęp na bieżąco. Pracujesz
 **autonomicznie** i po domknięciu wszystkich zadań **sam uruchamiasz `/verify`**.
 
-## Model interakcji
-Wszystkie decyzje właściciela zebrano na etapie `/specify`. **Nie zadawaj pytań (`AskUserQuestion`).**
-Gdy w trakcie kodowania trafisz na wybór nieprzewidziany w planie — wybierz opcję **rekomendowaną**
-(zgodną z wzorcem sąsiedniego modułu i minimalizmem C-53), dopisz krótką notkę w `tasks.md`/`plan.md`
-i **kontynuuj**. Zatrzymaj się i zapytaj tylko przy realnym ryzyku nieodwracalnej szkody (utrata
-danych, prod DB).
+## Model interakcji (C-55) i spójność artefaktów (C-54)
+Decyzje właściciela zebrano na etapie `/specify` — **domyślnie nie pytasz**. Gdy w trakcie kodowania
+trafisz na wybór nieprzewidziany w planie, wybierz opcję **rekomendowaną** (wzorzec sąsiedniego modułu,
+minimalizm C-53) i **kontynuuj**.
+
+**Gdy odkryjesz, że wcześniejszy artefakt jest błędny/niepełny (C-54):** nie „obchodź" tego w kodzie.
+Zaktualizuj **dotknięty artefakt** — `plan.md` (gdy plan się nie broni) i/lub `spec.md` (gdy zmienia
+się zakres lub kryterium akceptacji) — a potem **przelicz w dół** zadania w `tasks.md`, żeby kod, plan
+i spec się zgadzały. Zostaw krótki ślad zmiany.
+
+**Furtka (C-55):** jeśli wypłynie decyzja istotna dla właściciela, nie do przewidzenia na `/specify`,
+kosztowna przy złym wyborze i nierozstrzygalna z artefaktów/kodu/konwencji — **wolno** zadać jedno
+zbiorcze `AskUserQuestion` (rekomendowana pierwsza + `(zalecane)`) zamiast zgadywać, zaktualizować
+artefakty po odpowiedzi (C-54) i jechać dalej. Zatrzymaj się bezwarunkowo tylko przy realnym ryzyku
+nieodwracalnej szkody (utrata danych, prod DB).
 
 ## Wejście
 Feature: **$ARGUMENTS**. Jeśli pusty — najnowszy katalog w `specs/` z `tasks.md`. Jeśli podano

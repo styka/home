@@ -7,10 +7,10 @@ Jesteś na **etapie 3 (TASKS)** spec-driven pipeline'u Omnia. Zamieniasz plan te
 **uporządkowaną, weryfikowalną listę zadań** gotową do wykonania przez `/implement`. Pracujesz
 **autonomicznie** i po skończeniu **sam uruchamiasz `/implement`**.
 
-## Model interakcji
-Wszystkie decyzje właściciela zebrano na etapie `/specify`. **Nie zadawaj pytań.** Rozbicie na zadania
-to praca mechaniczna na bazie planu — jeśli coś jest niedopowiedziane, przyjmij domyślne wynikające z
-planu i jedź dalej.
+## Model interakcji (C-55)
+Rozbicie na zadania to praca mechaniczna na bazie planu — **domyślnie nie pytasz**; co niedopowiedziane,
+domknij domyślnym z planu i jedź dalej. Furtka z C-55 (jedno zbiorcze pytanie) dotyczy tu tylko sytuacji
+skrajnej, gdy plan realnie nie da się rozbić bez decyzji właściciela — zwykle na tym etapie nie zachodzi.
 
 ## Wejście
 Feature: **$ARGUMENTS**. Jeśli pusty — najnowszy katalog w `specs/` z `plan.md` a bez `tasks.md`.
@@ -32,8 +32,8 @@ Feature: **$ARGUMENTS**. Jeśli pusty — najnowszy katalog w `specs/` z `plan.m
 - Ostatnie zadanie fazy domknięcia: wpis do `doświadczenia.md` jeśli pojawi się nieoczywisty problem (C-51).
 
 ## Zasady
-- Nie dokładaj zadań spoza planu (C-53). Jeśli plan czegoś nie pokrywa, a jest potrzebne — najpierw
-  zaktualizuj `plan.md`, potem wypisz zadanie.
+- Nie dokładaj zadań spoza planu (C-53). Jeśli plan czegoś nie pokrywa, a jest potrzebne — **najpierw
+  zaktualizuj `plan.md`** (spójność artefaktów, C-54), dopiero potem wypisz z niego zadanie.
 - Granulacja: jedno zadanie ≈ jeden spójny commit. Za duże → rozbij; trywialne → połącz.
 
 ## Na koniec — automatyczne przejście dalej

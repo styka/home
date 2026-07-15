@@ -1096,3 +1096,28 @@ skill następnej** (komendy z `.claude/commands/*.md` są też widoczne jako ski
 „sam się domyśli". Żeby pytania padały raz: skoncentruj `AskUserQuestion` w pierwszej komendzie i w kolejnych
 jawnie zabroń pytań (Szymon prawie zawsze bierze opcję rekomendowaną — dawaj ją pierwszą i oznaczaj
 `(zalecane)`). I pamiętaj o regeneracji `src/generated/*.ts` po każdej zmianie źródła przewodnika.
+
+---
+
+## 2026-07-15 — Spec-driven pipeline: spójność artefaktów (C-54) + furtka pytań (C-55)
+**Problem:** Po pierwszej iteracji pipeline miał dwie luki: (1) etapy pośrednie miały **twardy zakaz
+pytań** (wyjątek tylko „utrata danych"), więc przy naprawdę ważnej, nieprzewidzianej decyzji na późnym
+etapie pipeline **zgadywał** zamiast spytać; (2) „zawracanie" przy nowych ustaleniach nie było
+jednolitą regułą — nie było jasne, że gdy implementacja/plan wykryje błąd we wcześniejszym artefakcie,
+trzeba **poprawić ten artefakt** (spec/plan), a nie obejść problem w kodzie.
+**Rozwiązanie:** Dodano dwie reguły do `constitution.md` (sekcja G): **C-54 — spójność artefaktów i
+zawracanie** (`spec.md → plan.md → tasks.md → kod` to łańcuch prawdy; etap, który wykryje błąd wyżej,
+aktualizuje ten plik i przelicza w dół; pętle `/verify`→`/implement`, `/review`→`/implement` wbudowane)
+oraz **C-55 — jeden moment pytań z wąską furtką** (pytania skoncentrowane w `/specify`; dalej autonomia,
+ale wolno zadać JEDNO zbiorcze pytanie, gdy decyzja jest jednocześnie: istotna, nieprzewidziana na
+starcie, kosztowna przy złym wyborze i nierozstrzygalna z artefaktów/kodu). Każda komenda odwołuje się
+do C-54/C-55 zamiast powtarzać prozę; przewodnik (README) i strona `/admin/spec-pipeline` opisują
+„trzy zasady UX" (jeden moment pytań z furtką / auto-przejścia z zawracaniem / spójność artefaktów).
+Subagent `omnia-implementer` (nie ma jak wołać `AskUserQuestion`) **oddaje** furtkową decyzję wołającemu.
+**Lekcja:** W autonomicznym pipeline nie stawiaj „nigdy nie pytaj" — to zmusza model do zgadywania.
+Lepszy jest **wysoki próg z furtką**: domyślnie autonomia + rekomendowany domyślny, ale jawnie
+dozwolone jedno zbiorcze pytanie przy naprawdę ważnej, niejednoznacznej decyzji. I zawsze trzymaj
+**spójność artefaktów** — nowe ustalenie na późnym etapie ma wracać do właściwego pliku (spec/plan),
+inaczej zostaje rozjazd „kod robi X, spec mówi Y". Reguły przebiegu warto trzymać w konstytucji
+(numerowane), by komendy tylko się do nich odwoływały. Po edycji README pamiętaj o
+`node scripts/copy-spec-pipeline.js` (regeneracja `src/generated/spec-pipeline.ts`).

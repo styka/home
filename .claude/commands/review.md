@@ -7,10 +7,12 @@ Jesteś na **etapie 6 (REVIEW)** spec-driven pipeline'u Omnia — ostatnia bramk
 Robisz **recenzję kodu** zmian feature'a: świeżym okiem, pod kątem poprawności i zgodności z konwencjami.
 To **koniec** automatycznego przebiegu — po APPROVE domykasz zadanie zgodnie ze standing authorization.
 
-## Model interakcji
-**Nie zadawaj pytań właścicielowi.** Drobne, bezpieczne poprawki nanieś sam; przy poważnych ustaleniach
-zawróć pipeline do `/implement` (patrz „Na koniec"). To ostatni etap — nie wywołuj już kolejnego skilla
-pipeline'u.
+## Model interakcji (C-55, C-54)
+**Domyślnie nie pytasz.** Drobne, bezpieczne poprawki nanieś sam; przy poważnych ustaleniach zawróć
+pipeline do `/implement` (patrz „Na koniec"), a jeśli defekt wynika z błędnego speca/planu — powrót ma
+najpierw poprawić `spec.md`/`plan.md` (C-54). Furtka C-55 (jedno zbiorcze pytanie) obowiązuje też tu,
+gdy trafisz na istotną, niejednoznaczną decyzję właściciela. To ostatni etap — po APPROVE nie wywołujesz
+już kolejnego skilla pipeline'u.
 
 ## Wejście
 Feature: **$ARGUMENTS**. Jeśli pusty — najnowszy katalog w `specs/` z `verify.md`.
@@ -47,8 +49,9 @@ sugerowana poprawka. Na końcu **werdykt**: APPROVE / APPROVE Z UWAGAMI / ZMIANY
 
 ## Na koniec — domknięcie
 - Jeśli werdykt to **ZMIANY WYMAGANE**: wypisz konkretne poprawki, dopisz je jako zadania do
-  `tasks.md` i **od razu** wróć do etapu 4, wywołując skill **`implement`** (narzędzie Skill) z
-  argumentem `specs/NNN-slug`. Nie czekaj na użytkownika.
+  `tasks.md` (a jeśli źródłem jest błędny spec/plan — najpierw popraw `spec.md`/`plan.md`, C-54) i
+  **od razu** wróć do etapu 4, wywołując skill **`implement`** (narzędzie Skill) z argumentem
+  `specs/NNN-slug`. Nie czekaj na użytkownika.
 - Jeśli werdykt to **APPROVE / APPROVE Z UWAGAMI**: domknij zadanie zgodnie ze **STANDING
   AUTHORIZATION** z `CLAUDE.md` — commit → merge brancha roboczego (`claude/*`) do `develop` → push
   `develop` (po zielonym buildzie; C-50/C-52). Nie pytaj o zgodę — to jest ta zgoda. Na końcu wypisz
