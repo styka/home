@@ -404,8 +404,12 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           {projectName}
         </Link>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
+        {/* Actions — na wąskich ekranach (iPhone) rząd ikon przewija się w poziomie zamiast
+            wypadać poza kadr. Uwaga: kontener z overflow przycina wewnętrzne popovery (overflow-y
+            liczy się jako auto), więc akcje z rozwijanym menu (ProjectActionsMenu) trzymamy POZA
+            strefą scrolla — przypięte po prawej, zawsze widoczne i nieobcięte. */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 overflow-x-auto [&>*]:flex-shrink-0">
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {counts.ALL > 0 && `${counts.ALL} aktywne`}
           </span>
@@ -511,11 +515,15 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
 
           {/* Admin: skopiuj prompt dla Claude Code z zadaniami widocznymi w tej zakładce */}
           {isAdmin && <TaskListClipboardButton tasks={visibleTasks} />}
+          </div>
 
-          {/* Akcje projektu (zmień nazwę / usuń) — dostępne na dotyku i myszą */}
+          {/* Akcje projektu (zmień nazwę / usuń) — POZA strefą scrolla, żeby rozwijane menu
+              nie było przycinane przez overflow; przypięte po prawej, zawsze widoczne. */}
           {viewMode === "project" && (() => {
             const current = allProjects.find((p) => p.id === projectId);
-            return current && !current.isInbox ? <ProjectActionsMenu project={current} /> : null;
+            return current && !current.isInbox
+              ? <div className="flex-shrink-0"><ProjectActionsMenu project={current} /></div>
+              : null;
           })()}
         </div>
       </div>
