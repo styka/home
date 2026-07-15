@@ -1133,7 +1133,7 @@ export function AICommandSheet() {
                         {voiceState === "listening" ? "Słucham…" : voiceState === "thinking" ? "Myślę…" : voiceState === "speaking" ? "Mówię…" : "Do zatwierdzenia"}
                       </span>
                       {voiceState === "listening" && interimText && (
-                        <span style={{ color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>„{interimText}"</span>
+                        <span style={{ color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>„{interimText}”</span>
                       )}
                     </span>
                     <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexShrink: 0 }}>
