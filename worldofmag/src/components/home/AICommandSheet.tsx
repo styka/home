@@ -210,6 +210,7 @@ export function AICommandSheet() {
   voiceStateRef.current = voiceState;
   const listenerRef = useRef<SpeechListener | null>(null);
   const spokenIdRef = useRef<string | null>(null); // id ostatnio wypowiedzianej tury (anty-dubel)
+  const prevConvoIdRef = useRef<string | null>(null); // do rozróżnienia „utworzenie" vs „przełączenie" rozmowy
   const pendingClarifyRef = useRef<Extract<Turn, { kind: "clarify" }> | null>(null);
   // Refy na najświeższe wersje funkcji pętli — omija stale-closure w callbackach listenera/lektora.
   const startListeningRef = useRef<() => void>(() => {});
@@ -386,7 +387,13 @@ export function AICommandSheet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
   useEffect(() => {
-    stopSpeaking(); setSpeakingId(null); stopVoice();
+    const prev = prevConvoIdRef.current;
+    prevConvoIdRef.current = conversationId;
+    stopSpeaking(); setSpeakingId(null);
+    // Zatrzymaj tryb głosowy przy PRZEŁĄCZENIU/zresetowaniu rozmowy (prev było niepuste), ale NIE
+    // przy pierwszym utworzeniu rozmowy w trakcie trwającej rozmowy głosowej (null → id) — wtedy
+    // pętla ma płynnie trwać (pierwsza wypowiedź tworzy AiConversation i zmienia conversationId).
+    if (prev !== null) stopVoice();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
   useEffect(() => () => { stopSpeaking(); listenerRef.current?.abort(); }, []);
