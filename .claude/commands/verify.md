@@ -8,10 +8,11 @@ spełnia** kryteria akceptacji ze speca i przechodzi bramki jakości. To weryfik
 tylko „czy się kompiluje". Pracujesz **autonomicznie** i sam decydujesz, czy przejść do `/review`, czy
 zawrócić do `/implement`.
 
-## Model interakcji
-**Nie zadawaj pytań właścicielowi.** Jeśli AC jest niespełnione — nie pytaj, tylko zawróć pipeline do
-`/implement` (patrz „Na koniec"). Raportuj natomiast bezwzględnie uczciwie: co przechodzi, co nie i
-czego nie dało się sprawdzić.
+## Model interakcji (C-55, C-54)
+**Domyślnie nie pytasz.** Jeśli AC jest niespełnione — nie pytaj, tylko **zawróć pipeline do
+`/implement`** (patrz „Na koniec"). Raportuj bezwzględnie uczciwie: co przechodzi, co nie i czego nie
+dało się sprawdzić. Jeśli brak wynika z błędnego **speca/planu** (a nie samego kodu) — zaznacz to, żeby
+powrót do implementacji **poprawił najpierw `spec.md`/`plan.md`** (C-54), a nie tylko dokładał kod.
 
 ## Wejście
 Feature: **$ARGUMENTS**. Jeśli pusty — najnowszy katalog w `specs/` z odhaczonym `tasks.md`.
@@ -43,8 +44,10 @@ konstytucją*, *Regresje*, *Werdykt końcowy* (GOTOWE / GOTOWE Z UWAGAMI / DO PO
 
 ## Na koniec — automatyczne przejście dalej
 - Jeśli werdykt to **DO POPRAWY**: wypisz braki jako konkretne zadania, **dopisz je do `tasks.md`**
-  (odznaczone) i **od razu** wróć do etapu 4, wywołując skill **`implement`** (narzędzie Skill) z
-  argumentem `specs/NNN-slug`. Nie czekaj na użytkownika. (Uważaj na zapętlenie: jeśli po ~2–3
-  nawrotach ten sam brak dalej nie schodzi, zatrzymaj się i opisz, gdzie utknąłeś.)
+  (odznaczone); jeśli źródłem braku jest błędny spec/plan — **najpierw popraw `spec.md`/`plan.md`**
+  (C-54). Następnie **od razu** wróć do etapu 4, wywołując skill **`implement`** (narzędzie Skill) z
+  argumentem `specs/NNN-slug`. Nie czekaj na użytkownika. **Guard pętli:** jeśli po ~2–3 nawrotach ten
+  sam brak nie schodzi, zatrzymaj się i opisz, gdzie utknąłeś — a jeśli powód to niejednoznaczna,
+  istotna decyzja właściciela, to jest właśnie przypadek furtki C-55: zadaj jedno zbiorcze pytanie.
 - Jeśli werdykt to **GOTOWE / GOTOWE Z UWAGAMI**: **od razu** przejdź do etapu 6, wywołując skill
   **`review`** (narzędzie Skill) z argumentem `specs/NNN-slug`.

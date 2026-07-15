@@ -61,11 +61,15 @@ export default async function AdminSpecPipelinePage() {
           <strong style={{ color: "var(--text-primary)" }}>weryfikacja i recenzja</strong>. Wzorowany na{" "}
           <strong style={{ color: "var(--text-primary)" }}>GitHub Spec Kit</strong>, dostosowany do Omnii.
           Uruchamiasz go <strong style={{ color: "var(--text-primary)" }}>jedną komendą</strong>{" "}
-          <code style={{ fontFamily: "monospace" }}>/specify</code>: pytania pojawiają się tylko{" "}
-          <strong style={{ color: "var(--text-primary)" }}>raz</strong> (na starcie, z wyraźnie
-          oznaczoną odpowiedzią rekomendowaną), a kolejne etapy{" "}
+          <code style={{ fontFamily: "monospace" }}>/specify</code>: pytania pojawiają się{" "}
+          <strong style={{ color: "var(--text-primary)" }}>co do zasady raz</strong> (na starcie, z
+          wyraźnie oznaczoną odpowiedzią rekomendowaną — z wąską furtką na później, gdy wypłynie
+          naprawdę ważna, nieprzewidziana decyzja), a kolejne etapy{" "}
           <strong style={{ color: "var(--text-primary)" }}>przechodzą automatycznie</strong> aż do merge
-          do <code style={{ fontFamily: "monospace" }}>develop</code>. Komendy i agenty żyją w katalogu{" "}
+          do <code style={{ fontFamily: "monospace" }}>develop</code> — a gdy któryś etap wykryje błąd
+          we wcześniejszym artefakcie,{" "}
+          <strong style={{ color: "var(--text-primary)" }}>zawraca i poprawia właściwy plik</strong>{" "}
+          (spójność spec ↔ plan ↔ zadania ↔ kod). Komendy i agenty żyją w katalogu{" "}
           <code style={{ fontFamily: "monospace" }}>.claude/</code>; artefakty każdej zmiany lądują w{" "}
           <code style={{ fontFamily: "monospace" }}>specs/&lt;NNN-slug&gt;/</code>.
         </p>
