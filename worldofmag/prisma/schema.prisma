@@ -867,6 +867,32 @@ model Job {
   @@index([dedupeKey])
 }
 
+// Log pojedynczego wywołania LLM — obserwowalność jednostkowa (koszt/tokeny/czas
+// per model i typ operacji). Log systemowy: BEZ FK do User (snapshot userId jako
+// zwykły String?), by przeżył usunięcie usera — wzorem AuditLog. Statusy/typy jako
+// String (bez enumów Prisma). Rozbicie per model/operationType przez indeksy.
+model AiCall {
+  id               String   @id @default(cuid())
+  userId           String? // aktor (snapshot, bez relacji/FK); null dla wywołań systemowych
+  operationType    String // "dispatch" | "reasoning" | "vision" | "generation"
+  providerKind     String // "openai_compat" | "anthropic"
+  model            String
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  cacheReadTokens  Int      @default(0) // tokeny odczytane z cache promptu (Anthropic)
+  cacheWriteTokens Int      @default(0) // tokeny zapisane do cache promptu (Anthropic)
+  totalTokens      Int      @default(0)
+  costUsd          Float    @default(0) // koszt SZACOWANY wg cennika (lib/llm/pricing.ts)
+  latencyMs        Int      @default(0)
+  ok               Boolean  @default(true)
+  source           String? // np. "home_agent" | "fast_path" | "dispatch_route" | ...
+  createdAt        DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([model])
+  @@index([operationType])
+}
+
 // Asystent AI ("magiczna ikona") — trwała pamięć rozmów per-user.
 model AiConversation {
   id        String   @id @default(cuid())
