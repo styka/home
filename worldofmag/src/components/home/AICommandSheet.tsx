@@ -399,7 +399,9 @@ export function AICommandSheet() {
     voiceStateRef.current = "speaking";
     setVoiceState("speaking");
     speak(speechTextFromMarkdown(text), "pl", {
-      onEnd: () => { if (voiceStateRef.current !== "off") startListeningRef.current(); },
+      // Wróć do nasłuchu TYLKO gdy nadal „mówię" — jeśli użytkownik przerwał (barge-in „Przerwij"),
+      // nasłuch już wystartował synchronicznie i nie chcemy go ubić opóźnionym restartem.
+      onEnd: () => { if (voiceStateRef.current === "speaking") startListeningRef.current(); },
     });
   }
 
@@ -452,8 +454,9 @@ export function AICommandSheet() {
     speak(text, "pl", {
       onEnd: () => {
         if (voiceStateRef.current === "off") return;
-        if (clarifyTurn) pendingClarifyRef.current = clarifyTurn;
-        startListeningRef.current();
+        if (clarifyTurn) pendingClarifyRef.current = clarifyTurn; // kontekst clarify zachowaj także po barge-in
+        // Wróć do nasłuchu TYLKO gdy nadal „mówię" — po barge-in nasłuch już wystartował synchronicznie.
+        if (voiceStateRef.current === "speaking") startListeningRef.current();
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
