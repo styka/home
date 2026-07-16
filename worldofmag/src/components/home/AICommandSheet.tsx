@@ -421,6 +421,10 @@ export function AICommandSheet() {
     if (last.kind === "results") { spokenIdRef.current = last.id; return; } // powrót po execute obsłużony osobno
     if (last.kind === "plan") {
       spokenIdRef.current = last.id;
+      // Korekta głosem tworzy nową kartę — poprzednią, niepotwierdzoną, uznaj za zastąpioną,
+      // by w wątku nie zostały dwie „żywe" karty do potwierdzenia.
+      const prevId = pendingPlanIdRef.current;
+      if (prevId && prevId !== last.id) dismissPlanTurn(prevId);
       pendingPlanIdRef.current = last.id;
       const n = last.actions.length;
       voiceAnnounce(`Przygotowałem ${n} ${n === 1 ? "akcję" : "akcji"} — ${n === 1 ? "jest" : "są"} w czacie. Powiedz „zatwierdź", „odrzuć" albo podaj poprawkę.`);
