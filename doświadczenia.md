@@ -4,6 +4,24 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-15 — Kolizja `declare global { Window }` dla SpeechRecognition (build TS)
+**Problem:** Nowy helper `src/lib/speechRecognition.ts` (tryb rozmowy głosowej Asystenta) miał własny
+blok `declare global { interface Window { SpeechRecognition?: ISpeechRecognitionCtor; … } }`. Taki
+sam blok deklarują już `SmartTextarea.tsx` i `AITaskInput.tsx`. Dopóki wszystkie trzy `ISpeechRecognition`
+były **strukturalnie identyczne**, TypeScript łączył je bez problemu. Mój interfejs dodał metodę
+`abort()` → typ `ISpeechRecognitionCtor` przestał być strukturalnie równy tamtym, a globalne złączenie
+pola `Window.SpeechRecognition` wysypało build: „Subsequent property declarations must have the same
+type" (błąd raportowany w `AITaskInput.tsx`, choć źródłem był nowy plik).
+**Rozwiązanie:** Nie augmentować globalnego `Window` w helperze. Konstruktor czytamy lokalnym rzutem:
+`const w = window as unknown as { SpeechRecognition?: …; webkitSpeechRecognition?: … }` w funkcji
+`getRecognitionCtor()`. Dzięki temu szerszy typ (z `abort()`) żyje lokalnie i nie zderza się z węższymi
+deklaracjami w innych plikach.
+**Lekcja:** `declare global { interface Window { … } }` **łączy się globalnie po wszystkich plikach**.
+Gdy kilka modułów deklaruje to samo pole `window.*` z lokalnym interfejsem, każda **strukturalna**
+różnica (dodana metoda/pole) łamie build w losowym z tych plików. Dla API przeglądarki nieobecnych w
+`lib.dom` (np. `SpeechRecognition`) czytaj je **lokalnym rzutem `as unknown as {...}`**, nie globalną
+augmentacją — zwłaszcza gdy istnieją już inne deklaracje tego samego pola.
+
 ## 2026-07-15 — Nagłówek Zadań ucinał akcje na iPhone (overflow-hidden rodzica)
 **Problem:** W dziale Zadania na wąskim ekranie (iPhone) prawy pasek akcji nagłówka pakuje 8+ ikon
 (kosz, grupowanie, sortowanie, szukaj, powiadomienia, statusy, przełącznik Lista/Kanban/Timeline,
