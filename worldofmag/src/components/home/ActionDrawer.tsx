@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, ShoppingCart, CheckSquare, FileText, PawPrint, Boxes, Wallet, Fuel, ChefHat, Repeat, Wand2, CheckCircle, XCircle, Loader2, Square, CheckSquare2, ChevronDown, ChevronUp, HeartPulse, Languages, Newspaper, CloudSun } from "lucide-react";
 import type { AIAction } from "@/lib/ai/aiAction";
+import { DESTRUCTIVE_ACTION_TYPES } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executors/shared";
 
 interface ActionDrawerProps {
@@ -17,30 +18,8 @@ interface ActionDrawerProps {
 }
 
 // Akcje destrukcyjne — domyślnie ODZNACZONE i oznaczone na czerwono (świadomy opt-in).
-const DESTRUCTIVE_TYPES = new Set([
-  "delete_item",
-  "delete_task",
-  "delete_note",
-  "archive_list",
-  "delete_health_event",
-  "delete_word",
-  "delete_news_topic",
-  "delete_weather_location",
-  // Domknięcie pokrycia zapisu — wszystkie operacje usuwające/archiwizujące są opt-in.
-  "delete_list",
-  "delete_project",
-  "delete_habit",
-  "delete_wallet_element",
-  "delete_recipe",
-  "delete_meal_plan",
-  "delete_pantry_item",
-  "delete_vehicle",
-  "delete_deck",
-  "delete_weather_watcher",
-  "delete_storage_item",
-  "delete_pet",
-  "delete_medication",
-]);
+// Zbiór współdzielony z AICommandSheet — źródło: `@/lib/ai/aiAction`.
+const DESTRUCTIVE_TYPES = DESTRUCTIVE_ACTION_TYPES;
 // Surowe identyfikatory rekordów (taskId/listId/itemId/noteId…) nic nie mówią
 // użytkownikowi, więc NIE pokazujemy ich w edytorze parametrów — i tak przechodzą
 // dalej do backendu, który celuje po nich w konkretny rekord. Użytkownik recenzuje
