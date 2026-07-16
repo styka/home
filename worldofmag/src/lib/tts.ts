@@ -33,6 +33,41 @@ export function ttsSupported(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
+// Głosy na iOS/Safari ładują się ASYNCHRONICZNIE — pierwszy `getVoices()` bywa pusty, dopóki nie
+// wypełni ich zdarzenie `voiceschanged`. Rozgrzewamy je raz, żeby `speak()` nie startował „w próżni".
+let voicesWarmed = false;
+function warmVoices(): void {
+  if (voicesWarmed || !ttsSupported()) return;
+  voicesWarmed = true;
+  try {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.addEventListener?.("voiceschanged", () => {
+      try { window.speechSynthesis.getVoices(); } catch { /* ignore */ }
+    });
+  } catch {
+    /* środowisko bez TTS — ignorujemy */
+  }
+}
+
+/**
+ * „Odblokowuje" syntezę mowy na iOS/Safari. **Musi być wywołana w geście użytkownika** (klik/dotknięcie),
+ * bo WebKit po cichu odrzuca `speak()` wywołane poza gestem. Wypowiada cichą (volume=0) wypowiedź, żeby
+ * dalsze programowe `speak()` (np. w pętli rozmowy) były już słyszalne. Idempotentna, bezpieczna bez
+ * wsparcia. Wywołaj przy włączaniu trybu rozmowy głosowej.
+ */
+export function primeSpeech(): void {
+  if (!ttsSupported()) return;
+  try {
+    warmVoices();
+    window.speechSynthesis.resume();
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+  } catch {
+    /* środowisko bez TTS — ignorujemy */
+  }
+}
+
 /** Opcje wypowiedzi. `onEnd` odpala się po naturalnym zakończeniu lub błędzie syntezy. */
 export type SpeakOptions = { onEnd?: () => void };
 
@@ -40,6 +75,7 @@ export type SpeakOptions = { onEnd?: () => void };
 export function speak(text: string, lang?: string | null, opts?: SpeakOptions): void {
   if (!ttsSupported() || !text.trim()) return;
   try {
+    warmVoices();
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     const code = langToBcp47(lang);
@@ -50,6 +86,8 @@ export function speak(text: string, lang?: string | null, opts?: SpeakOptions): 
       u.onerror = () => opts.onEnd!();
     }
     window.speechSynthesis.speak(u);
+    // iOS/Safari (i Chrome) potrafią wejść w stan „paused" — resume() gwarantuje, że mowa ruszy.
+    window.speechSynthesis.resume();
   } catch {
     /* środowisko bez TTS — ignorujemy */
   }
