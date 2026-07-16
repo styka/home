@@ -9,7 +9,7 @@ import {
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
-import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported } from "@/lib/tts";
+import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported, primeSpeech } from "@/lib/tts";
 import { createSpeechListener, speechRecognitionSupported, type SpeechListener } from "@/lib/speechRecognition";
 import {
   listAiConversations, getAiConversation, createAiConversation, appendAiMessage,
@@ -358,7 +358,17 @@ export function AICommandSheet() {
     listenerRef.current = listener;
     listener.start();
   }
-  startListeningRef.current = startListening;
+
+  // Restart nasłuchu z drobnym opóźnieniem — iOS/Safari bywa wrażliwy na natychmiastowy ponowny
+  // `recognition.start()` po zakończeniu poprzedniej tury (zacięcie / „already started"). Na Chrome
+  // opóźnienie jest niewyczuwalne. UŻYWAMY tego dla programowych restartów (po mowie/pustej turze);
+  // pierwszy start i barge-in idą synchronicznie w geście użytkownika (wymóg iOS na mikrofon).
+  function scheduleListen() {
+    if (voiceStateRef.current === "off") return;
+    window.setTimeout(() => { if (voiceStateRef.current !== "off") startListening(); }, 250);
+  }
+  // Programowe restarty (onEnd mowy, pusta wypowiedź, powrót po akcji/błędzie) → z opóźnieniem.
+  startListeningRef.current = scheduleListen;
   handleSendRef.current = handleSend;
   submitClarifyRef.current = submitClarify;
   quickConfirmPlanRef.current = quickConfirmPlan;
@@ -369,6 +379,9 @@ export function AICommandSheet() {
   function toggleVoice() {
     if (voiceStateRef.current !== "off") { stopVoice(); return; }
     if (!voiceSupported) return;
+    // KRYTYCZNE dla iOS/Safari: „odblokuj" syntezę mowy TERAZ, w geście dotknięcia — inaczej WebKit
+    // wycisza późniejsze (programowe) wypowiedzi Asystenta. Pierwszy nasłuch też startuje w geście.
+    primeSpeech();
     spokenIdRef.current = turns.length ? turns[turns.length - 1].id : null;
     voiceStateRef.current = "listening";
     startListening();
@@ -386,7 +399,9 @@ export function AICommandSheet() {
     voiceStateRef.current = "speaking";
     setVoiceState("speaking");
     speak(speechTextFromMarkdown(text), "pl", {
-      onEnd: () => { if (voiceStateRef.current !== "off") startListeningRef.current(); },
+      // Wróć do nasłuchu TYLKO gdy nadal „mówię" — jeśli użytkownik przerwał (barge-in „Przerwij"),
+      // nasłuch już wystartował synchronicznie i nie chcemy go ubić opóźnionym restartem.
+      onEnd: () => { if (voiceStateRef.current === "speaking") startListeningRef.current(); },
     });
   }
 
@@ -439,8 +454,9 @@ export function AICommandSheet() {
     speak(text, "pl", {
       onEnd: () => {
         if (voiceStateRef.current === "off") return;
-        if (clarifyTurn) pendingClarifyRef.current = clarifyTurn;
-        startListeningRef.current();
+        if (clarifyTurn) pendingClarifyRef.current = clarifyTurn; // kontekst clarify zachowaj także po barge-in
+        // Wróć do nasłuchu TYLKO gdy nadal „mówię" — po barge-in nasłuch już wystartował synchronicznie.
+        if (voiceStateRef.current === "speaking") startListeningRef.current();
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

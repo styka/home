@@ -4,6 +4,29 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-16 — Rozmowa głosowa Asystenta milczała/zacinała się na iPhone (iOS Safari, Web Speech)
+**Problem:** Tryb rozmowy głosowej (spec 005/006) działał na Chrome, ale na iPhone (Safari/WebKit —
+silnik KAŻDEJ przeglądarki na iOS) Asystent **milczał** i pętla **zacinała się** po pierwszej turze,
+choć przycisk się pokazywał. Błędnie zakładaliśmy, że hands-free jest wykonalny „tylko na Chrome".
+Faktyczne przyczyny to wąskie ograniczenia iOS Safari, których nie obsługiwaliśmy: (a) `speechSynthesis.
+speak()` wywołane **poza gestem** użytkownika jest przez WebKit **po cichu wyciszane** — nasza pierwsza
+wypowiedź padała dopiero po asynchronicznej odpowiedzi agenta (bez gestu) → cisza; (b) tryb
+`continuous` rozpoznawania jest na iOS zawodny, a **natychmiastowy** restart `recognition.start()` po
+zakończeniu tury bywa blokowany/rzuca „already started"; (c) głosy syntezy ładują się asynchronicznie
+(`voiceschanged`).
+**Rozwiązanie:** (1) `primeSpeech()` w `@/lib/tts` — „odblokowanie" syntezy **w geście** włączenia
+trybu (cicha wypowiedź `volume=0` + `getVoices()` + `resume()`); wołane z `toggleVoice` (handler
+kliknięcia). (2) Rozgrzewka głosów przez `voiceschanged`. (3) `resume()` po każdym `speak()` (iOS/Safari
+wpada w stan „paused"). (4) Restart nasłuchu przez `scheduleListen()` = `setTimeout(startListening,
+250ms)` — bufor, którego iOS wymaga między turami; **pierwszy** start i barge-in zostają **synchroniczne
+w geście** (zgoda na mikrofon na iOS). Wykrywanie wsparcia zostaje **po istnieniu API**, nie po nazwie
+przeglądarki (żadnego UA-sniffingu).
+**Lekcja:** Web Speech na iOS Safari **jest** dostępne, ale gestozależne: `speak()` trzeba odblokować w
+geście (potem gra programowo), a `recognition.start()` — pierwszy w geście, kolejne z małym opóźnieniem
+i świeżym egzemplarzem (`continuous=false`). Nie zakładaj „to działa tylko w Chrome" — to zwykle **brak
+priming/handlingu iOS**, nie brak platformy. Weryfikacja mowy wymaga **realnego iPhone** (Web Speech nie
+działa w headless CI).
+
 ## 2026-07-15 — Kolizja `declare global { Window }` dla SpeechRecognition (build TS)
 **Problem:** Nowy helper `src/lib/speechRecognition.ts` (tryb rozmowy głosowej Asystenta) miał własny
 blok `declare global { interface Window { SpeechRecognition?: ISpeechRecognitionCtor; … } }`. Taki
