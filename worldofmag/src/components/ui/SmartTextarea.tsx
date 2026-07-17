@@ -36,6 +36,12 @@ export interface SmartTextareaProps {
   onSubmit?: () => void;
   disabled?: boolean;
   className?: string;
+  /**
+   * Wariant „bare": bez własnej ramki/tła/podpowiedzi — pole wtapia się w kontener nadrzędny
+   * (np. „pigułkę" composera Asystenta). Domyślnie false → wygląd bez zmian dla pozostałych
+   * konsumentów (tasks/notes/…). Wbudowane dyktowanie (mikrofon) i różdżka pozostają.
+   */
+  bare?: boolean;
 }
 
 export function SmartTextarea({
@@ -45,6 +51,7 @@ export function SmartTextarea({
   rows = 4,
   onSubmit,
   disabled = false,
+  bare = false,
 }: SmartTextareaProps) {
   const [state, setState] = useState<TextareaState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -185,13 +192,13 @@ export function SmartTextarea({
         placeholder={placeholder}
         style={{
           width: "100%",
-          resize: "vertical",
-          background: "var(--bg-surface)",
+          resize: bare ? "none" : "vertical",
+          background: bare ? "transparent" : "var(--bg-surface)",
           color: "var(--text-primary)",
-          border: `1px solid ${state !== "idle" ? "var(--border-focus)" : "var(--border)"}`,
-          borderRadius: 10,
-          padding: "12px 14px",
-          paddingBottom: 44,
+          border: bare ? "none" : `1px solid ${state !== "idle" ? "var(--border-focus)" : "var(--border)"}`,
+          borderRadius: bare ? 0 : 10,
+          padding: bare ? "8px 6px" : "12px 14px",
+          paddingBottom: 44, // miejsce na pasek dyktowania/różdżki (także w bare)
           fontSize: 14,
           lineHeight: 1.6,
           outline: "none",
@@ -341,7 +348,7 @@ export function SmartTextarea({
           pointerEvents: "none",
         }}
       >
-        {state === "idle" && (
+        {state === "idle" && !bare && (
           <span style={{ color: "var(--text-muted)" }}>Ctrl+Enter aby wysłać</span>
         )}
         {state === "recording" && (
