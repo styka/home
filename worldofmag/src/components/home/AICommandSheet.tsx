@@ -4,12 +4,13 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings, Volume2, Mic, MicOff,
+  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings, Volume2, Mic, MicOff, AudioLines,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
+import { useDictation } from "@/hooks/useDictation";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
-import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported, primeSpeech } from "@/lib/tts";
+import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported, primeSpeech, getAvailableVoices, onVoicesChanged, setPreferredVoiceURI, getPreferredVoiceURI } from "@/lib/tts";
 import { createSpeechListener, speechRecognitionSupported, type SpeechListener } from "@/lib/speechRecognition";
 import {
   listAiConversations, getAiConversation, createAiConversation, appendAiMessage,
@@ -200,6 +201,9 @@ export function AICommandSheet() {
   // dialogu na dialog i nie odciągamy uwagi od skupionego zadania w modalu.
   const { modalOpen } = useOverlayState();
   const [inputText, setInputText] = useState("");
+  // Composer: pole tekstowe (auto-rozrost) + dyktowanie mowy (mikrofon w pigułce, jak w ChatGPT).
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const dictation = useDictation((t) => setInputText((prev) => (prev.trim() ? prev.trimEnd() + " " : "") + t));
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
   const [liveThoughts, setLiveThoughts] = useState<string[]>([]); // myśli agenta na żywo (streaming)
@@ -256,6 +260,9 @@ export function AICommandSheet() {
   const prefsRef = useRef("");
   prefsRef.current = prefs;
   const [showPrefs, setShowPrefs] = useState(false);
+  // Wybór głosu lektora (per-urządzenie). Głosy iOS/Safari ładują się asynchronicznie — subskrybujemy.
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [voiceURI, setVoiceURIState] = useState<string>("");
   // Tryb zgłoszenia (admin): kontekst wskazanego miejsca; gdy ustawiony, kolejna
   // wiadomość admina staje się opisem zadania w projekcie „Omnia". Ref — bo
   // listener zdarzenia i handleSend muszą widzieć aktualną wartość bez re-bind.
@@ -442,7 +449,8 @@ export function AICommandSheet() {
       if (prevId && prevId !== last.id) dismissPlanTurn(prevId);
       pendingPlanIdRef.current = last.id;
       const n = last.actions.length;
-      voiceAnnounce(`Przygotowałem ${n} ${n === 1 ? "akcję" : "akcji"} — ${n === 1 ? "jest" : "są"} w czacie. Powiedz „zatwierdź", „odrzuć" albo podaj poprawkę.`);
+      // Krótko — bez recytowania obsługi karty (przyciski/instrukcje są widoczne w czacie).
+      voiceAnnounce(`Przygotowałem ${n} ${n === 1 ? "akcję" : "akcji"}.`);
       return;
     }
     spokenIdRef.current = last.id;
@@ -509,6 +517,23 @@ export function AICommandSheet() {
       if (raw) setPrefs(raw);
     } catch { /* ignore */ }
   }, []);
+
+  // Wczytaj listę głosów lektora + zapamiętany wybór; subskrybuj „voiceschanged" (async na iOS/Safari).
+  useEffect(() => {
+    if (!ttsSupported()) return;
+    const refresh = () => setVoices(getAvailableVoices());
+    refresh();
+    setVoiceURIState(getPreferredVoiceURI() ?? "");
+    return onVoicesChanged(refresh);
+  }, []);
+
+  // Auto-rozrost pola composera — rośnie z treścią do maksimum, potem przewija (jak w ChatGPT).
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+  }, [inputText]);
 
   // Globalny skrót Ctrl/Cmd+J — otwórz asystenta (działa też gdy jest zamknięty).
   useEffect(() => {
@@ -1099,7 +1124,7 @@ export function AICommandSheet() {
               </div>
             </div>
 
-            {/* Panel stałych preferencji (custom instructions) */}
+            {/* Panel ustawień asystenta (custom instructions + głos lektora) */}
             {showPrefs && (
               <div className="px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-base)" }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
@@ -1113,6 +1138,39 @@ export function AICommandSheet() {
                   style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none", resize: "vertical" }}
                 />
                 <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>Zapisywane na tym urządzeniu. Zmiany zapisują się automatycznie.</p>
+
+                {/* Wybór głosu lektora (odczyt na głos) */}
+                {ttsSupported() && (
+                  <div style={{ marginTop: 12 }}>
+                    <label htmlFor="ai-voice-select" style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
+                      Głos lektora (odczyt na głos)
+                    </label>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <select
+                        id="ai-voice-select"
+                        value={voiceURI}
+                        onChange={(e) => { setVoiceURIState(e.target.value); setPreferredVoiceURI(e.target.value || null); }}
+                        style={{ flex: 1, minWidth: 0, fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none" }}
+                      >
+                        <option value="">(domyślny przeglądarki)</option>
+                        {voices.map((v) => (
+                          <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => speak("Testowy głos asystenta.", "pl")}
+                        title="Przetestuj głos"
+                        aria-label="Przetestuj głos"
+                        style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-secondary)", cursor: "pointer" }}
+                      >
+                        <Volume2 size={14} /> Test
+                      </button>
+                    </div>
+                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>
+                      {voices.length === 0 ? "Głosy ładują się… (na iPhonie mogą pojawić się po chwili)." : "Zapisywane na tym urządzeniu."}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1261,65 +1319,88 @@ export function AICommandSheet() {
                   </div>
                 )}
                 <input ref={fileRef} type="file" accept="image/*" onChange={onPickImage} style={{ display: "none" }} />
-                {/* Composer: [+ menu] · [pole flex-1] · [rozmowa głosowa] · [wyślij] — mobile-first */}
-                <div style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
-                  {/* „+" — drugorzędne akcje (zdjęcie, preferencje) zgrupowane, by pole tekstowe było szersze */}
+                {/* Composer „pigułka" (styl ChatGPT): [+] · [pole flex-1] · [mikrofon dyktowania] · [kółko rozmowy głosowej / wyślij] */}
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 2, padding: "4px 6px", border: "1px solid var(--border)", background: "var(--bg-elevated)", borderRadius: 26 }}>
+                  {/* „+" — drugorzędne akcje (zdjęcie, ustawienia) */}
                   <div style={{ position: "relative", flexShrink: 0 }}>
                     <button
                       onClick={() => setShowPlus((v) => !v)}
                       disabled={busy}
-                      title="Więcej (zdjęcie, preferencje)"
+                      title="Więcej (zdjęcie, ustawienia)"
                       aria-label="Więcej akcji"
                       aria-expanded={showPlus}
-                      style={{ width: 40, height: 40, borderRadius: 10, border: "1px solid var(--border)", background: showPlus || attachedImage || prefs.trim() ? "var(--bg-elevated)" : "transparent", color: attachedImage || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: busy ? "default" : "pointer" }}
+                      style={{ width: 38, height: 38, borderRadius: "50%", border: "none", background: showPlus ? "var(--bg-hover)" : "transparent", color: attachedImage || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: busy ? "default" : "pointer" }}
                     >
-                      <Plus size={18} style={{ transform: showPlus ? "rotate(45deg)" : "none", transition: "transform 0.15s" }} />
+                      <Plus size={22} style={{ transform: showPlus ? "rotate(45deg)" : "none", transition: "transform 0.15s" }} />
                     </button>
                     {showPlus && (
                       <>
                         <div onClick={() => setShowPlus(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
-                        <div style={{ position: "absolute", bottom: 48, left: 0, zIndex: 41, minWidth: 190, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 6, boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
+                        <div style={{ position: "absolute", bottom: 46, left: 0, zIndex: 41, minWidth: 190, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 6, boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
                           <button onClick={() => { setShowPlus(false); fileRef.current?.click(); }} style={{ ...rowBtn, background: "none" }}>
                             <ImagePlus size={16} style={{ color: "var(--text-muted)" }} /> <span style={{ fontSize: 13 }}>Zdjęcie</span>
                           </button>
                           <button onClick={() => { setShowPlus(false); setShowPrefs((v) => !v); }} style={{ ...rowBtn, background: "none" }}>
-                            <Settings size={16} style={{ color: prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }} /> <span style={{ fontSize: 13 }}>Stałe preferencje</span>
+                            <Settings size={16} style={{ color: prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }} /> <span style={{ fontSize: 13 }}>Ustawienia asystenta</span>
                           </button>
                         </div>
                       </>
                     )}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <SmartTextarea value={inputText} onChange={setInputText} placeholder={attachedImage ? 'Opcjonalny opis, np. „do zakupów"' : placeholder} rows={2} onSubmit={() => handleSend()} disabled={busy} />
-                  </div>
-                  {voiceSupported && !busy && (
+                  {/* Pole tekstowe — wtopione w pigułkę, auto-rozrost */}
+                  <textarea
+                    ref={composerRef}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); dictation.stop(); handleSend(); } }}
+                    placeholder={attachedImage ? 'Opcjonalny opis, np. „do zakupów"' : placeholder}
+                    rows={1}
+                    disabled={busy}
+                    aria-label="Wiadomość do asystenta"
+                    style={{ flex: 1, minWidth: 0, resize: "none", background: "transparent", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 15, lineHeight: 1.4, padding: "9px 6px", height: 38, maxHeight: 140, overflowY: "auto", caretColor: "var(--accent-blue)" }}
+                  />
+                  {/* Mikrofon dyktowania — dopisuje mowę do pola (oddzielny od trybu rozmowy głosowej) */}
+                  {dictation.supported && !busy && (
                     <button
-                      onClick={toggleVoice}
-                      title={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa (mów zamiast pisać)"}
-                      aria-label={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa"}
-                      style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 10, border: `1px solid ${voiceState !== "off" ? "var(--accent-blue)" : "var(--border)"}`, background: voiceState !== "off" ? "var(--accent-blue)" : "transparent", color: voiceState !== "off" ? "var(--on-accent)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                      onClick={dictation.toggle}
+                      title={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj (mowa → tekst)"}
+                      aria-label={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj"}
+                      className={dictation.recording ? "animate-pulse" : undefined}
+                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: dictation.recording ? "var(--accent-red)" : "transparent", color: dictation.recording ? "var(--on-accent)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     >
-                      {voiceState !== "off" ? <MicOff size={17} /> : <Mic size={17} />}
+                      {dictation.recording ? <MicOff size={19} /> : <Mic size={19} />}
                     </button>
                   )}
+                  {/* Prawy klaster: Stop (generowanie) · Wyślij (jest treść) · kółko rozmowy głosowej (puste) */}
                   {busy ? (
                     <button
                       onClick={stopGeneration}
                       title="Zatrzymaj"
-                      style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 10, border: "none", background: "var(--accent-red)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                      aria-label="Zatrzymaj"
+                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-red)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     >
                       <Square size={15} />
                     </button>
-                  ) : (
+                  ) : (inputText.trim() || attachedImage) ? (
                     <button
-                      onClick={() => handleSend()}
-                      disabled={!inputText.trim() && !attachedImage}
+                      onClick={() => { dictation.stop(); handleSend(); }}
                       title="Wyślij"
-                      style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 10, border: "none", background: (!inputText.trim() && !attachedImage) ? "var(--bg-elevated)" : "var(--accent-blue)", color: (!inputText.trim() && !attachedImage) ? "var(--text-muted)" : "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: (!inputText.trim() && !attachedImage) ? "not-allowed" : "pointer" }}
+                      aria-label="Wyślij"
+                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     >
                       <Send size={16} />
                     </button>
-                  )}
+                  ) : voiceSupported ? (
+                    <button
+                      onClick={() => { dictation.stop(); toggleVoice(); }}
+                      title={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa (mów zamiast pisać)"}
+                      aria-label={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa"}
+                      className={voiceState !== "off" ? "animate-pulse" : undefined}
+                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    >
+                      {voiceState !== "off" ? <Square size={15} /> : <AudioLines size={18} />}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             )}

@@ -50,7 +50,7 @@ Dostępne proste intencje (i pola params):
 
 W KAŻDYM innym przypadku zwróć: { "kind":"complex" }
 
-Zwróć "complex" gdy polecenie: jest pytaniem; jest zwykłą ROZMOWĄ / prośbą o radę / wypowiedzią towarzyską lub emocjonalną (to nie jest polecenie zmiany); wymaga znalezienia/zmiany/usunięcia ISTNIEJĄCEGO rekordu (oznacz/zmień/przesuń/usuń); jest zbiorcze (wiele rzeczy naraz, wklejona lista); wymaga analizy/planowania/wyszukania; jest niejednoznaczne; albo dotyczy modułu spoza listy wyżej.
+Zwróć "complex" gdy polecenie: jest pytaniem; jest zwykłą ROZMOWĄ / prośbą o radę / wypowiedzią towarzyską lub emocjonalną (to nie jest polecenie zmiany); jest prośbą o WYSZUKANIE/POKAZANIE/PODANIE/ZAPROPONOWANIE danych ("podaj mi zadanie", "pokaż moje notatki", "ile mam …", "znajdź …", "zaproponuj coś do zrobienia") — to ODCZYT, nie tworzenie; wymaga znalezienia/zmiany/usunięcia ISTNIEJĄCEGO rekordu (oznacz/zmień/przesuń/usuń); jest zbiorcze (wiele rzeczy naraz, wklejona lista); wymaga analizy/planowania/wyszukania; jest niejednoznaczne; albo dotyczy modułu spoza listy wyżej.
 
 WAŻNE — cel niejednoznaczny: dla tasks/create_task zwróć "simple" TYLKO gdy użytkownik jawnie nazwał projekt/listę zadań (np. „dodaj zadanie X do projektu Dom"). Jeśli projekt/lista NIE jest nazwany — zwróć "complex" (oddaj sterowanie agentowi, który dopyta lub użyje kontekstu). Analogicznie, gdy z treści wynika konkretna, lecz nienazwana lista/projekt — zwróć "complex".
 
@@ -80,6 +80,47 @@ function extractJson(content: string): RawParsed | null {
   }
 }
 
+// Deterministyczny strażnik: polecenia „znajdź/pokaż/podaj/ile/zaproponuj …" to PROŚBY O ODCZYT,
+// nie tworzenie. Kotwiczymy na POCZĄTKU wypowiedzi (prośby o wyszukanie zwykle tak się zaczynają),
+// żeby nie łapać zdań typu „dodaj X i pokaż Y". Trafienie → oddajemy pełnemu agentowi (query+answer).
+// Fałszywe trafienie jest tanie (agent i tak poprawnie obsłuży tworzenie) — nadmiar „complex" jest OK.
+const READ_INTENT_RE =
+  /^\s*(podaj|pokaż|pokaz|wyświetl|wyswietl|wylistuj|wypisz|listuj|znajdź|znajdz|wyszukaj|poszukaj|ile\b|jak(ie|i|a|ich)\b|któr\w+|co (mam|mogę|moge|powinien|powinienem|jest|robić|zrobić|warto)|masz|czy (mam|jest|są|sa|mogę|moge)|zaproponuj|zasugeruj|doradź|doradz|poradź|poradz|przypomnij|kiedy|gdzie|sprawdź|sprawdz)\b/i;
+
+// Wskazanie nazwanej listy zakupów (np. „do listy Apteka", „na listę Tygodniowe") — fast-path
+// add_item gubi nazwę listy (buduje tylko rawText), więc oddajemy takie polecenie agentowi, który
+// wypełni listName (executor go respektuje). Sygnałem jest rdzeń słowa „lista".
+const SHOPPING_NAMED_LIST_RE = /\blist[aąeęiy]\w*/i;
+
+function isBlank(v: unknown): boolean {
+  return typeof v !== "string" || !v.trim();
+}
+
+// Odrzuć „pustą" prostą akcję (np. dodanie NICZEGO do listy) — brak kluczowej treści → complex.
+function hasEmptyPayload(type: string, params: Record<string, unknown>, searchQuery?: string): boolean {
+  switch (type) {
+    case "add_item":
+      return isBlank(params.rawText);
+    case "create_task":
+      return isBlank(params.title);
+    case "create_note":
+      return isBlank(params.title) && isBlank(params.content);
+    case "add_pantry_item":
+      return isBlank(params.name);
+    case "plan_meal":
+      return isBlank(params.customTitle);
+    case "add_expense":
+    case "add_income": {
+      const amt = typeof params.amount === "number" ? params.amount : Number(params.amount);
+      return !Number.isFinite(amt) || amt <= 0;
+    }
+    case "toggle_habit":
+      return isBlank(searchQuery);
+    default:
+      return false;
+  }
+}
+
 /**
  * Klasyfikuje polecenie. `activeModules` = moduły dostępne/aktywne dla użytkownika —
  * akcję zbudujemy tylko dla modułu z tej listy. Każda niepewność (błąd LLM, brak
@@ -92,6 +133,9 @@ export async function classifyIntent(
 ): Promise<FastPathResult> {
   const trimmed = text.trim();
   if (!trimmed) return { kind: "complex" };
+
+  // Strażnik intencji odczytu (bez wołania LLM) — „podaj/pokaż/znajdź/ile/zaproponuj …" → pełny agent.
+  if (READ_INTENT_RE.test(trimmed)) return { kind: "complex" };
 
   const result = await chatComplete({
     op: "dispatch",
@@ -119,6 +163,16 @@ export async function classifyIntent(
   if (!activeModules.includes(wl.module)) return { kind: "complex" };
 
   const params = parsed.params && typeof parsed.params === "object" ? parsed.params : {};
+  const searchQuery =
+    typeof parsed.searchQuery === "string" && parsed.searchQuery.trim() ? parsed.searchQuery.trim() : undefined;
+
+  // Strażnik pustego payloadu — nie dodawaj „niczego" (np. pusta pozycja do listy zakupów).
+  if (hasEmptyPayload(wl.type, params, searchQuery)) return { kind: "complex" };
+
+  // Nazwana lista przy add_item → oddaj agentowi (fast-path zgubiłby listName). Realizuje „szanuj
+  // wskazaną listę" (spec 008 AC-5) na szybkiej ścieżce.
+  if (wl.type === "add_item" && SHOPPING_NAMED_LIST_RE.test(trimmed)) return { kind: "complex" };
+
   const action: AIAction = {
     id: "a1",
     module: wl.module,
@@ -127,9 +181,7 @@ export async function classifyIntent(
       ? parsed.description.trim()
       : trimmed.slice(0, 120),
     params,
-    ...(typeof parsed.searchQuery === "string" && parsed.searchQuery.trim()
-      ? { searchQuery: parsed.searchQuery.trim() }
-      : {}),
+    ...(searchQuery ? { searchQuery } : {}),
   };
   return { kind: "simple", action };
 }

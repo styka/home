@@ -4,6 +4,29 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-17 — Asystent klasyfikował prośby o ODCZYT jako akcje tworzące (fast-path)
+**Problem:** „Podaj mi zadanie, jakie mógłbym zrobić" kończyło się propozycją dodania (pustej) pozycji
+do listy zakupów, zamiast przeszukania zadań i podania konkretnej propozycji. Winny był
+`fastPath.classifyIntent`: tani klasyfikator (op:"dispatch") czasem błędnie mapował prośbę o
+wyszukanie na prostą akcję create (`add_item`/`create_task`), a bywało, że z pustym payloadem
+(„dodaj nic"). Dodatkowo fast-path dla `add_item` z założenia budował tylko `rawText` (bez `listName`)
+— więc gdy user wskazał listę po nazwie, wskazanie ginęło.
+**Rozwiązanie:** trzy deterministyczne strażniki w `fastPath.ts` (bez dodatkowego kosztu LLM):
+(1) **strażnik intencji odczytu** — regex kotwiczony na początku wypowiedzi
+(`podaj|pokaż|znajdź|ile|jakie|zaproponuj|…`) → od razu `complex` (pełny agent robi query+answer);
+(2) **strażnik pustego payloadu** — prosta akcja bez kluczowej treści (`rawText`/`title`/`name`/
+`amount`…) → `complex`; (3) **nazwana lista przy `add_item`** (`\blist[aąeęiy]\w*`) → `complex`, żeby
+agent wypełnił `listName` (executor `resolveOrCreateList` już go priorytetyzuje). Do tego reguły w
+`buildSystemPrompt` agenta: „QUERY-FIRST" (prośby o wyszukanie realizuj filtrowanym query, nigdy akcją
+tworzącą; filtruj po stronie narzędzia, nie „mieli" całości) i „SZANUJ WSKAZANY KONTENER".
+**Lekcja:** Fast-path (mały model dispatch) NIE jest wiarygodny przy rozróżnianiu „odczyt vs zmiana"
+ani przy pustych payloadach — postaw przed nim **tanie, deterministyczne strażniki** (regex intencji +
+walidacja payloadu). Nadmiarowe zepchnięcie do `complex` jest bezpieczne (pełny agent i tak poprawnie
+obsłuży tworzenie) — koszt to tylko latencja, nie błędne działanie. Gdy szybka ścieżka gubi parametr
+(np. `listName`), lepiej oddać ją agentowi niż „po cichu" wykonać niepełną akcję.
+
+---
+
 ## 2026-07-16 — iOS Safari: rozpoznawanie mowy nie kończy tury po ciszy (mikrofon otwarty, brak odpowiedzi)
 **Problem:** Po naprawie 007 na iPhone dalej: „mówię pierwszą rzecz, a nie przestaje nasłuchiwać i nie
 odpowiada". Nasz `createSpeechListener` dostarczał transkrypt dopiero w `onend`, licząc, że
