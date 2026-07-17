@@ -77,6 +77,15 @@ dodajemy migracji ani `AIAction`).
 ## 5. UI (C-30, C-31, C-32) — `src/components/home/AICommandSheet.tsx` + `SmartTextarea.tsx` + `tts.ts`
 
 ### 5a. Composer „pigułka" (AC-6, AC-7)
+> **Rewizja (2026-07-17, po ponownym obejrzeniu zdjęcia referencyjnego):** wariant `bare` w
+> `SmartTextarea` okazał się za ciężki (własny pasek mikrofon+różdżka + wysoki padding → pigułka
+> była „gruba", niepodobna do referencji). Ostatecznie: **`SmartTextarea` wraca nietknięte**
+> (używa go dalej pole „clarify" i inne moduły), a pigułka dostaje **własne, lekkie pole**
+> (`<textarea>` auto-rosnące, bez ramki) + **nowy hook `src/hooks/useDictation.ts`**
+> (mowa→tekst, ciągłe dyktowanie, lokalny rzut okna jak w `lib/speechRecognition.ts`) pod
+> osobny, cienki przycisk mikrofonu w pigułce — dokładnie jak w ChatGPT. Prawy skraj: przy pustym
+> polu **kółko rozmowy głosowej** (wypełnione, `AudioLines`); przy treści **Wyślij**; przy
+> generowaniu **Stop**.
 - Owinąć zawartość composera (dziś flex-row 4 osobnych „pudełek") w **jeden kontener-pigułkę**:
   `display:flex; align-items:flex-end; gap; padding:6px; border:1px solid var(--border);
   background:var(--bg-elevated); borderRadius:24px` (róg z `var(--radius-lg)` gdy sensowny; kolory

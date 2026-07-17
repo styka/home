@@ -4,9 +4,10 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings, Volume2, MicOff, AudioLines,
+  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings, Volume2, Mic, MicOff, AudioLines,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
+import { useDictation } from "@/hooks/useDictation";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported, primeSpeech, getAvailableVoices, onVoicesChanged, setPreferredVoiceURI, getPreferredVoiceURI } from "@/lib/tts";
@@ -200,6 +201,9 @@ export function AICommandSheet() {
   // dialogu na dialog i nie odciągamy uwagi od skupionego zadania w modalu.
   const { modalOpen } = useOverlayState();
   const [inputText, setInputText] = useState("");
+  // Composer: pole tekstowe (auto-rozrost) + dyktowanie mowy (mikrofon w pigułce, jak w ChatGPT).
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const dictation = useDictation((t) => setInputText((prev) => (prev.trim() ? prev.trimEnd() + " " : "") + t));
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
   const [liveThoughts, setLiveThoughts] = useState<string[]>([]); // myśli agenta na żywo (streaming)
@@ -522,6 +526,14 @@ export function AICommandSheet() {
     setVoiceURIState(getPreferredVoiceURI() ?? "");
     return onVoicesChanged(refresh);
   }, []);
+
+  // Auto-rozrost pola composera — rośnie z treścią do maksimum, potem przewija (jak w ChatGPT).
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+  }, [inputText]);
 
   // Globalny skrót Ctrl/Cmd+J — otwórz asystenta (działa też gdy jest zamknięty).
   useEffect(() => {
@@ -1307,19 +1319,19 @@ export function AICommandSheet() {
                   </div>
                 )}
                 <input ref={fileRef} type="file" accept="image/*" onChange={onPickImage} style={{ display: "none" }} />
-                {/* Composer „pigułka" (styl ChatGPT): [+] · [pole flex-1 z dyktowaniem] · [kółko rozmowy głosowej] · [wyślij] */}
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 4, padding: 5, border: "1px solid var(--border)", background: "var(--bg-elevated)", borderRadius: 24 }}>
-                  {/* „+" — drugorzędne akcje (zdjęcie, preferencje) */}
+                {/* Composer „pigułka" (styl ChatGPT): [+] · [pole flex-1] · [mikrofon dyktowania] · [kółko rozmowy głosowej / wyślij] */}
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 2, padding: "4px 6px", border: "1px solid var(--border)", background: "var(--bg-elevated)", borderRadius: 26 }}>
+                  {/* „+" — drugorzędne akcje (zdjęcie, ustawienia) */}
                   <div style={{ position: "relative", flexShrink: 0 }}>
                     <button
                       onClick={() => setShowPlus((v) => !v)}
                       disabled={busy}
-                      title="Więcej (zdjęcie, preferencje)"
+                      title="Więcej (zdjęcie, ustawienia)"
                       aria-label="Więcej akcji"
                       aria-expanded={showPlus}
                       style={{ width: 38, height: 38, borderRadius: "50%", border: "none", background: showPlus ? "var(--bg-hover)" : "transparent", color: attachedImage || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: busy ? "default" : "pointer" }}
                     >
-                      <Plus size={20} style={{ transform: showPlus ? "rotate(45deg)" : "none", transition: "transform 0.15s" }} />
+                      <Plus size={22} style={{ transform: showPlus ? "rotate(45deg)" : "none", transition: "transform 0.15s" }} />
                     </button>
                     {showPlus && (
                       <>
@@ -1335,39 +1347,58 @@ export function AICommandSheet() {
                       </>
                     )}
                   </div>
-                  {/* Pole tekstowe — wtopione w pigułkę (bare), z wbudowanym dyktowaniem (mikrofon) */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <SmartTextarea bare value={inputText} onChange={setInputText} placeholder={attachedImage ? 'Opcjonalny opis, np. „do zakupów"' : placeholder} rows={1} onSubmit={() => handleSend()} disabled={busy} />
-                  </div>
-                  {/* Kółko trybu rozmowy głosowej — wypełnione, z ikoną fali dźwięku */}
-                  {voiceSupported && !busy && (
+                  {/* Pole tekstowe — wtopione w pigułkę, auto-rozrost */}
+                  <textarea
+                    ref={composerRef}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); dictation.stop(); handleSend(); } }}
+                    placeholder={attachedImage ? 'Opcjonalny opis, np. „do zakupów"' : placeholder}
+                    rows={1}
+                    disabled={busy}
+                    aria-label="Wiadomość do asystenta"
+                    style={{ flex: 1, minWidth: 0, resize: "none", background: "transparent", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 15, lineHeight: 1.4, padding: "9px 6px", height: 38, maxHeight: 140, overflowY: "auto", caretColor: "var(--accent-blue)" }}
+                  />
+                  {/* Mikrofon dyktowania — dopisuje mowę do pola (oddzielny od trybu rozmowy głosowej) */}
+                  {dictation.supported && !busy && (
                     <button
-                      onClick={toggleVoice}
-                      title={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa (mów zamiast pisać)"}
-                      aria-label={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa"}
-                      className={voiceState !== "off" ? "animate-pulse" : undefined}
-                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                      onClick={dictation.toggle}
+                      title={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj (mowa → tekst)"}
+                      aria-label={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj"}
+                      className={dictation.recording ? "animate-pulse" : undefined}
+                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: dictation.recording ? "var(--accent-red)" : "transparent", color: dictation.recording ? "var(--on-accent)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     >
-                      {voiceState !== "off" ? <Square size={15} /> : <AudioLines size={18} />}
+                      {dictation.recording ? <MicOff size={19} /> : <Mic size={19} />}
                     </button>
                   )}
-                  {/* Wyślij / Stop — Stop przy generowaniu; Wyślij pojawia się, gdy jest treść */}
+                  {/* Prawy klaster: Stop (generowanie) · Wyślij (jest treść) · kółko rozmowy głosowej (puste) */}
                   {busy ? (
                     <button
                       onClick={stopGeneration}
                       title="Zatrzymaj"
+                      aria-label="Zatrzymaj"
                       style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-red)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     >
                       <Square size={15} />
                     </button>
                   ) : (inputText.trim() || attachedImage) ? (
                     <button
-                      onClick={() => handleSend()}
+                      onClick={() => { dictation.stop(); handleSend(); }}
                       title="Wyślij"
                       aria-label="Wyślij"
                       style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     >
                       <Send size={16} />
+                    </button>
+                  ) : voiceSupported ? (
+                    <button
+                      onClick={() => { dictation.stop(); toggleVoice(); }}
+                      title={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa (mów zamiast pisać)"}
+                      aria-label={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa"}
+                      className={voiceState !== "off" ? "animate-pulse" : undefined}
+                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    >
+                      {voiceState !== "off" ? <Square size={15} /> : <AudioLines size={18} />}
                     </button>
                   ) : null}
                 </div>

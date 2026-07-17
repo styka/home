@@ -109,3 +109,9 @@
 ## Notatki / blokady
 - AC-1/AC-2/AC-5/AC-11 zależą od LLM/przeglądarki → ostateczne potwierdzenie na test env (`develop`),
   nie tylko `next build`.
+- **Rewizja T-2/T-5 (2026-07-17, po zdjęciu referencyjnym):** prop `bare` w `SmartTextarea`
+  **wycofany** (komponent wraca 1:1; wciąż używany przez pole clarify i inne moduły). Composer używa
+  własnego lekkiego `<textarea>` (auto-rozrost do 140px) + nowego hooka `src/hooks/useDictation.ts`
+  (osobny cienki mikrofon dyktowania w pigułce, jak w ChatGPT). Prawy skraj pigułki: kółko rozmowy
+  głosowej przy pustym polu / Wyślij przy treści / Stop przy generowaniu. Bramki po rewizji: lint ✔,
+  `next build` ✔ („Compiled successfully").
