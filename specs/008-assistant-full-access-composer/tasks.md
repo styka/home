@@ -70,14 +70,19 @@
   dopełnia się async, wybór trwały po reloadzie i użyty przy odczycie. (AC-9, AC-10)
 
 ## Faza 3 — Bramki i domknięcie
-- [ ] **T-8** — **Bramki (C-50, C-13):** `npm run check:migrations` (0 nowych — zielone) →
-  `npm run check:actions` (0 nowych `AIAction` — zielone) → `npx next lint --dir src` →
-  `npx next build` (lokalny Postgres; nigdy prod DB). *Gotowe, gdy:* wszystkie zielone.
-- [ ] **T-9** — **Mapowanie AC → wynik** (input do `/verify`): przejdź AC-1…AC-11, zaznacz, które
-  zweryfikowane statycznie (kod/lint/build), a które wymagają testu live na `develop` (AC-1/2/5 —
-  klasyfikacja LLM; AC-11 — pętla głosowa Chrome/iOS).
-- [ ] **T-10** — **`doświadczenia.md`** (C-51): dopisz lekcję, jeśli po drodze wystąpił nieoczywisty
-  problem (np. iOS async voices, kolizja `bare`/SmartTextarea). Jeśli nic — pomiń.
+- [x] **T-8** — **Bramki (C-50, C-13):** `check:migrations` ✔ (następny wolny 0206, 0 nowych) ·
+  `check:actions` ✔ (95 akcji, wszystkie z executorem) · `next lint --dir src` ✔ (tylko istniejące
+  warningi, nic w plikach 008) · `next build` ✔ (lokalny Postgres `127.0.0.1/omnia_dev`, nie prod;
+  kompilacja + typy OK, pełna tabela tras). *Gotowe.*
+- [x] **T-9** — **Mapowanie AC → wynik** (input do `/verify`):
+  - Statycznie (kod/lint/build): AC-3, AC-4 (inspekcja: `READ_TOOLS_PROMPT` zawsze wstrzykiwany),
+    AC-6, AC-7, AC-8, AC-9, AC-10.
+  - Logika deterministyczna (kod, do potwierdzenia manualnie/live): AC-1, AC-2, AC-5 — strażniki
+    `fastPath` + reguły promptu; ostateczne potwierdzenie na `develop` (zależność od LLM).
+  - Live/manualnie: AC-11 (pętla głosowa Chrome + iOS/Safari) — brak zmian w rdzeniu pętli, ryzyko
+    niskie; do potwierdzenia na urządzeniu.
+- [x] **T-10** — **`doświadczenia.md`** (C-51): dopisano lekcję „Asystent klasyfikował prośby o ODCZYT
+  jako akcje tworzące (fast-path)" — strażniki deterministyczne + query-first.
 
 ## Mapowanie kryteriów akceptacji → zadania
 | AC | Zadanie(a) |
