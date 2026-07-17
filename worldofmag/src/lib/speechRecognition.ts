@@ -72,10 +72,26 @@ export function createSpeechListener(opts: SpeechListenerOptions): SpeechListene
 
   let rec: ISpeechRecognition | null = null;
   let finalText = "";
+  let lastInterim = "";
   let aborted = false;
   let delivered = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
 
+  // KLUCZOWE dla iOS Safari: `continuous=false` NIE zatrzymuje niezawodnie rozpoznawania po ciszy
+  // (mikrofon zostaje otwarty, `onend` nie odpala, `isFinal` bywa nigdy nieustawione). Dlatego sami
+  // wykrywamy koniec tury: po pauzie (SILENCE) domykamy turę i dostarczamy tekst (final ALBO interim).
+  const SILENCE_MS = 1500;   // brak nowej mowy przez tyle → koniec wypowiedzi
+  const NO_SPEECH_MS = 8000; // nic nie powiedziano → oddaj pustą turę (pętla ponowi nasłuch)
+
+  function clearTimer() {
+    if (timer) { clearTimeout(timer); timer = null; }
+  }
+  function armTimer(ms: number) {
+    clearTimer();
+    timer = setTimeout(finishBySilence, ms);
+  }
   function cleanup() {
+    clearTimer();
     if (rec) {
       rec.onresult = null;
       rec.onerror = null;
@@ -83,12 +99,28 @@ export function createSpeechListener(opts: SpeechListenerOptions): SpeechListene
       rec = null;
     }
   }
+  // Domknięcie tury z najlepszym dostępnym tekstem (final, a gdy iOS nie oznaczył — ostatni interim).
+  function deliver() {
+    if (aborted || delivered) return;
+    delivered = true;
+    const text = (finalText.trim() || lastInterim.trim());
+    clearTimer();
+    opts.onFinal(text);
+  }
+  function finishBySilence() {
+    if (aborted || delivered) return;
+    const r = rec;
+    cleanup();
+    try { r?.stop(); } catch { /* ignore */ } // zwolnij mikrofon; onend (jeśli odpali) już bez efektu
+    deliver();
+  }
 
   return {
     start() {
       // Nie nakładaj dwóch nasłuchów naraz.
       if (rec) return;
       finalText = "";
+      lastInterim = "";
       aborted = false;
       delivered = false;
       const r = new SR();
@@ -102,21 +134,25 @@ export function createSpeechListener(opts: SpeechListenerOptions): SpeechListene
           if (e.results[i].isFinal) finalText += chunk + " ";
           else interim += chunk;
         }
+        if (interim) lastInterim = interim;
         opts.onInterim?.(interim);
+        // Każdy wynik = użytkownik mówi → reset licznika ciszy (domknij dopiero po pauzie).
+        armTimer(SILENCE_MS);
       };
       r.onerror = (e) => {
         // „no-speech"/„aborted" to normalne zakończenia bez treści — nie hałasuj.
         if (e.error !== "no-speech" && e.error !== "aborted") opts.onError?.(e.error);
       };
       r.onend = () => {
+        // Chrome zwykle domyka tu sam po ciszy; iOS bywa, że nie — mamy wtedy timer ciszy.
         cleanup();
-        if (aborted || delivered) return;
-        delivered = true;
-        opts.onFinal(finalText.trim());
+        deliver();
       };
       rec = r;
       try {
         r.start();
+        // Zabezpieczenie: jeśli nic nie zostanie wypowiedziane, nie trzymaj mikrofonu w nieskończoność.
+        armTimer(NO_SPEECH_MS);
       } catch {
         // np. start() wywołany zbyt szybko po poprzednim — traktuj jak brak wyniku.
         cleanup();
@@ -128,6 +164,7 @@ export function createSpeechListener(opts: SpeechListenerOptions): SpeechListene
     },
     abort() {
       aborted = true;
+      clearTimer();
       const r = rec;
       cleanup();
       r?.abort();

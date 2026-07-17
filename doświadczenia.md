@@ -4,6 +4,23 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-16 — iOS Safari: rozpoznawanie mowy nie kończy tury po ciszy (mikrofon otwarty, brak odpowiedzi)
+**Problem:** Po naprawie 007 na iPhone dalej: „mówię pierwszą rzecz, a nie przestaje nasłuchiwać i nie
+odpowiada". Nasz `createSpeechListener` dostarczał transkrypt dopiero w `onend`, licząc, że
+`continuous=false` sam zatrzyma rozpoznawanie po ciszy (jak na Chrome). Na iOS Safari `continuous=false`
+**nie domyka niezawodnie** — mikrofon zostaje otwarty, `onend` nie odpala, a bywa też, że `isFinal`
+nigdy nie jest ustawione (mamy tylko `interim`). Efekt: wskaźnik utyka na „Słucham…", nic nie leci do
+agenta.
+**Rozwiązanie:** własne wykrywanie końca tury **timerem ciszy** w `createSpeechListener`: każdy
+`onresult` resetuje licznik `SILENCE_MS` (1500 ms); po pauzie sami domykamy turę — `stop()` (zwolnij
+mikrofon) + `onFinal(finalText || lastInterim)`. Dodatkowo `NO_SPEECH_MS` (8000 ms) od startu, by nie
+trzymać mikrofonu bez końca, gdy nic nie powiedziano. `onend` (Chrome) zostaje jako druga ścieżka —
+`delivered`/`aborted` chroni przed podwójnym dostarczeniem. Kluczowe: dostarczamy **final ALBO ostatni
+interim**, bo iOS często nie oznacza `isFinal`.
+**Lekcja:** Na iOS Safari NIE polegaj na `onend`/`isFinal` do zamknięcia tury rozpoznawania — steruj
+**własnym timerem ciszy** i dostarczaj najlepszy dostępny tekst (final || interim). `continuous=false`
+na iOS ≠ „auto-stop po ciszy" jak na Chrome.
+
 ## 2026-07-16 — Rozmowa głosowa Asystenta milczała/zacinała się na iPhone (iOS Safari, Web Speech)
 **Problem:** Tryb rozmowy głosowej (spec 005/006) działał na Chrome, ale na iPhone (Safari/WebKit —
 silnik KAŻDEJ przeglądarki na iOS) Asystent **milczał** i pętla **zacinała się** po pierwszej turze,
