@@ -50,7 +50,11 @@ Dostępne proste intencje (i pola params):
 
 W KAŻDYM innym przypadku zwróć: { "kind":"complex" }
 
-Zwróć "complex" gdy polecenie: jest pytaniem; wymaga znalezienia/zmiany/usunięcia ISTNIEJĄCEGO rekordu (oznacz/zmień/przesuń/usuń); jest zbiorcze (wiele rzeczy naraz, wklejona lista); wymaga analizy/planowania/wyszukania; jest niejednoznaczne; albo dotyczy modułu spoza listy wyżej. W razie WĄTPLIWOŚCI zwróć "complex".`;
+Zwróć "complex" gdy polecenie: jest pytaniem; jest zwykłą ROZMOWĄ / prośbą o radę / wypowiedzią towarzyską lub emocjonalną (to nie jest polecenie zmiany); wymaga znalezienia/zmiany/usunięcia ISTNIEJĄCEGO rekordu (oznacz/zmień/przesuń/usuń); jest zbiorcze (wiele rzeczy naraz, wklejona lista); wymaga analizy/planowania/wyszukania; jest niejednoznaczne; albo dotyczy modułu spoza listy wyżej.
+
+WAŻNE — cel niejednoznaczny: dla tasks/create_task zwróć "simple" TYLKO gdy użytkownik jawnie nazwał projekt/listę zadań (np. „dodaj zadanie X do projektu Dom"). Jeśli projekt/lista NIE jest nazwany — zwróć "complex" (oddaj sterowanie agentowi, który dopyta lub użyje kontekstu). Analogicznie, gdy z treści wynika konkretna, lecz nienazwana lista/projekt — zwróć "complex".
+
+W razie WĄTPLIWOŚCI zwróć "complex".`;
 
 interface RawParsed {
   kind?: string;
