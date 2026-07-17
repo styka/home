@@ -25,7 +25,7 @@
   gdy:* `bare` wtapia pole (bez ramki/stopki), pozostali konsumenci niezmienieni. (fundament AC-6/AC-7)
 
 ## Faza 1 — Zachowanie agenta (AI)
-- [ ] **T-3** — **`src/lib/ai/fastPath.ts`: strażniki klasyfikacji.**
+- [x] **T-3** — **`src/lib/ai/fastPath.ts`: strażniki klasyfikacji.**
   (a) deterministyczny **strażnik intencji odczytu** na wejściu `classifyIntent` — regex
   `podaj|pokaż|wyświetl|znajdź|wyszukaj|poszukaj|ile|jak(ie|i|a)|któr\w+|co (mam|mogę|powinienem)|masz|
   sprawdź|zaproponuj|doradź|przypomnij|kiedy|gdzie` → `{kind:"complex"}` (bez wołania LLM);
@@ -37,7 +37,7 @@
   (d) wzmocnij `SYSTEM_PROMPT`: prośby o wyszukanie/„podaj mi …"/„zaproponuj …" to **zawsze**
   `complex`. *Gotowe, gdy:* strażniki działają logicznie (fraza „podaj mi zadanie…" → `complex`),
   puste payloady i nazwany-kontener nie idą fast-path'em; `next lint` czysto. (AC-1, AC-2, AC-5)
-- [ ] **T-4** — **`src/app/api/llm/home/agent/route.ts`: reguły promptu** w `buildSystemPrompt`
+- [x] **T-4** — **`src/app/api/llm/home/agent/route.ts`: reguły promptu** w `buildSystemPrompt`
   (sekcja ZASADY): dodaj **QUERY-FIRST/WYSZUKIWANIE** (prośby „podaj/pokaż/znajdź/ile/jakie/zaproponuj
   mi …" → `query` z parametrami `status/search/limit/priority` → `answer` z konkretnym wynikiem; nigdy
   akcja tworząca; filtruj po stronie narzędzia, nie „mieli" całości) i **SZANUJ NAZWANY KONTENER**
