@@ -47,7 +47,7 @@
   `READ_TOOLS_PROMPT` zawsze wstrzykiwany, brak zmian potrzebnych)
 
 ## Faza 2 — UI Asystenta
-- [ ] **T-5** — **Composer „pigułka"** w `src/components/home/AICommandSheet.tsx`: owiń zawartość w
+- [x] **T-5** — **Composer „pigułka"** w `src/components/home/AICommandSheet.tsx`: owiń zawartość w
   jeden kontener (`var(--bg-elevated)`, `1px var(--border)`, `borderRadius` ~24, flex, `items-end`,
   padding). Układ: `+` flush-left (okrągły, bez ramki) · **bare `SmartTextarea`** (`flex-1 min-w-0`) ·
   **mikrofon dyktowania** (z SmartTextarea) · **okrągłe kółko trybu głosowego** (wypełnione
@@ -57,12 +57,12 @@
   preferencje), dyktowanie, tryb głosowy. Zero hardcodowanych hexów (C-30), mobile-first (pole szerokie,
   cele ≥40px, brak poziomego przewijania na iPhone). *Gotowe, gdy:* widok = spójna pigułka jak w
   referencji, wszystkie funkcje działają. (AC-6, AC-7)
-- [ ] **T-6** `[P]` — **Skrócenie mowy karty akcji** (`AICommandSheet.tsx`, sterownik pętli, gałąź
+- [x] **T-6** `[P]` — **Skrócenie mowy karty akcji** (`AICommandSheet.tsx`, sterownik pętli, gałąź
   `last.kind === "plan"`): zamień długi `voiceAnnounce("Przygotowałem N … Powiedz „zatwierdź"…")` na
   krótkie `Przygotowałem ${n} ${n===1?"akcję":"akcji"}.` (bez instrukcji obsługi). Wizualne
   przyciski/instrukcje na karcie zostają. *Gotowe, gdy:* w trybie głosowym po utworzeniu karty lektor
   nie recytuje obsługi. (AC-8)
-- [ ] **T-7** — **Selektor głosu w ustawieniach czatu** (`AICommandSheet.tsx`, panel `showPrefs`):
+- [x] **T-7** — **Selektor głosu w ustawieniach czatu** (`AICommandSheet.tsx`, panel `showPrefs`):
   dodaj `<select>` „Głos lektora" (pozycja zerowa „(domyślny przeglądarki)") zasilany
   `getAvailableVoices()`, subskrybujący `onVoicesChanged` (odświeżenie przy async ładowaniu iOS). Wybór
   → `setPreferredVoiceURI(voiceURI)`. Teksty PL (C-32), stylizacja zmiennymi CSS. (opcjonalnie mały
