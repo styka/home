@@ -80,11 +80,6 @@ function extractJson(content: string): RawParsed | null {
   }
 }
 
-/**
- * Klasyfikuje polecenie. `activeModules` = moduły dostępne/aktywne dla użytkownika —
- * akcję zbudujemy tylko dla modułu z tej listy. Każda niepewność (błąd LLM, brak
- * dopasowania do białej listy, moduł nieaktywny) → `complex` (bezpieczny fallback).
- */
 // Deterministyczny strażnik: polecenia „znajdź/pokaż/podaj/ile/zaproponuj …" to PROŚBY O ODCZYT,
 // nie tworzenie. Kotwiczymy na POCZĄTKU wypowiedzi (prośby o wyszukanie zwykle tak się zaczynają),
 // żeby nie łapać zdań typu „dodaj X i pokaż Y". Trafienie → oddajemy pełnemu agentowi (query+answer).
@@ -126,6 +121,11 @@ function hasEmptyPayload(type: string, params: Record<string, unknown>, searchQu
   }
 }
 
+/**
+ * Klasyfikuje polecenie. `activeModules` = moduły dostępne/aktywne dla użytkownika —
+ * akcję zbudujemy tylko dla modułu z tej listy. Każda niepewność (błąd LLM, brak
+ * dopasowania do białej listy, moduł nieaktywny) → `complex` (bezpieczny fallback).
+ */
 export async function classifyIntent(
   text: string,
   activeModules: string[],
