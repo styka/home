@@ -1,4 +1,4 @@
-const CACHE = "worldofmag-v4";
+const CACHE = "worldofmag-v5";
 // Tylko istniejące trasy (wcześniej były tu martwe /icons/*.png → cache.addAll odrzucał się
 // atomowo i CAŁA instalacja SW padała, więc offline nie działało wcale). Ikony cache'ują się
 // leniwie przy pierwszym pobraniu.
@@ -101,14 +101,16 @@ self.addEventListener("fetch", (e) => {
         return res;
       })
       .catch(async () => {
-        const cached = await caches.match(request);
+        // ignoreVary: dokument HTML strony jest cache'owany bez wariantów RSC, a Next dodaje
+        // `Vary: RSC,…`; bez ignoreVary match po nawigacji mógłby nie trafić w zbuforowany dokument.
+        const cached = await caches.match(request, { ignoreVary: true });
         if (cached) return cached;
         // Offline nawigacja do trasy, której nie ma w cache → wpuść do aplikacji przez shell,
         // zamiast pokazywać błąd przeglądarki. Klient (Zakupy) dalej działa na lokalnym snapshotcie.
         if (request.mode === "navigate") {
           return (
-            (await caches.match("/shopping")) ||
-            (await caches.match("/")) ||
+            (await caches.match("/shopping", { ignoreVary: true })) ||
+            (await caches.match("/", { ignoreVary: true })) ||
             Response.error()
           );
         }

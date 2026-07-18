@@ -32,6 +32,12 @@ export function OfflineSyncManager() {
     try {
       const lists = await getActiveListsForOffline();
       saveSnapshot(lists);
+      // Prefetch DOKUMENTU HTML każdej aktywnej listy, żeby service worker go zbuforował.
+      // Bez tego strona /shopping/[id] nie jest w cache (nawigacja SPA pobiera tylko RSC),
+      // więc offline twarda nawigacja w listę nie miałaby czego zserwować.
+      lists.forEach((l) => {
+        void fetch(`/shopping/${l.id}`, { credentials: "same-origin" }).catch(() => {});
+      });
     } catch {
       // brak sieci / błąd — zostaje poprzedni snapshot
     }

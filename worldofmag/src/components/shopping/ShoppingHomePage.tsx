@@ -5,7 +5,31 @@ import Link from "next/link";
 import { ShoppingCart, Plus, ChevronRight, Loader2, Package, Ruler, Tag, Map, Image as ImageIcon, Archive, RotateCcw, Users, Clock } from "lucide-react";
 import { createList, unarchiveList } from "@/actions/lists";
 import { useToast } from "@/components/ui/Toast";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { PageHeader, StatTile, SectionHeading, ManagementGrid, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
+
+// 009-shopping-offline-sync: offline wchodzimy w listę TWARDĄ nawigacją (<a>) zamiast SPA (<Link>),
+// bo nawigacja SPA offline pobiera payload RSC z sieci i się wywala. Twarda nawigacja pozwala
+// service workerowi zserwować zbuforowany dokument HTML listy (prefetchowany podczas warm-upu).
+function CardLink({
+  href,
+  online,
+  children,
+  ...rest
+}: { href: string; online: boolean } & React.AnchorHTMLAttributes<HTMLAnchorElement>) {
+  if (online) {
+    return (
+      <Link href={href} {...rest}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  );
+}
 
 interface ListSummary {
   id: string;
@@ -38,6 +62,7 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
   const [showArchived, setShowArchived] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { showToast } = useToast();
+  const online = useOnlineStatus();
 
   const teamListsCount = lists.filter((l) => l.teamName).length;
   const subtitle =
@@ -175,7 +200,7 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {lists.map((list) => (
-                <ListCard key={list.id} list={list} />
+                <ListCard key={list.id} list={list} online={online} />
               ))}
             </div>
           )}
@@ -187,9 +212,10 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
             <SectionHeading>Ostatnio dodane</SectionHeading>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {recentItems.map((item) => (
-                <Link
+                <CardLink
                   key={item.id}
                   href={`/shopping/${item.listId}`}
+                  online={online}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -219,7 +245,7 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
                     {item.listName}
                   </span>
                   <ChevronRight size={12} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-                </Link>
+                </CardLink>
               ))}
             </div>
           </div>
@@ -314,10 +340,11 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
   );
 }
 
-function ListCard({ list }: { list: ListSummary }) {
+function ListCard({ list, online }: { list: ListSummary; online: boolean }) {
   return (
-    <Link
+    <CardLink
       href={`/shopping/${list.id}`}
+      online={online}
       style={{
         display: "flex",
         alignItems: "center",
@@ -385,7 +412,7 @@ function ListCard({ list }: { list: ListSummary }) {
         </span>
       )}
       <ChevronRight size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-    </Link>
+    </CardLink>
   );
 }
 
