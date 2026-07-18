@@ -14,9 +14,12 @@ import { SortControl } from "./SortControl";
 import { QuickAddBar } from "./QuickAddBar";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
-import { updateItemStatus, deleteItem, clearDoneItems } from "@/actions/items";
+import { clearDoneItems } from "@/actions/items";
 import { completeShopping } from "@/actions/lists";
 import { computeOptimalCategoryOrder } from "@/lib/storeRoute";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { getSnapshot, upsertListSnapshot, onOfflineChanged } from "@/lib/shopping/offlineStore";
+import { mutSetStatus, mutRemove } from "@/lib/shopping/offlineMutations";
 import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus, SortMode, StoreWithGraph } from "@/types";
 import { FILTER_TABS, STATUS_CYCLE } from "@/types";
 
@@ -49,6 +52,7 @@ function loadSortMode(): SortMode {
 export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames = [], stores, financeReady = false }: ShoppingPageProps) {
   const router = useRouter();
   const { toggle: togglePalette } = useCommandPalette();
+  const online = useOnlineStatus();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -58,9 +62,44 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
   const [completeOpen, setCompleteOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  // 009-shopping-offline-sync: źródłem pozycji jest stan kliencki — online z propsów serwera
+  // (po revalidate), offline z lokalnego snapshotu. `activeListId` pozwala offline przełączać
+  // listy bez nawigacji sieciowej (AC-8).
+  const [activeListId, setActiveListId] = useState(list.id);
+  const [items, setItems] = useState<Item[]>(list.items as Item[]);
+  const [snapshotLists, setSnapshotLists] = useState<ShoppingListWithItems[]>([]);
+
   useEffect(() => {
     setSortMode(loadSortMode());
   }, []);
+
+  // Online: propsy serwera to źródło prawdy — odśwież pozycje i zapisz świeżą kopię listy do snapshotu.
+  useEffect(() => {
+    if (!online) return;
+    setActiveListId(list.id);
+    setItems(list.items as Item[]);
+    upsertListSnapshot(list);
+  }, [online, list]);
+
+  // Offline: renderuj z lokalnego snapshotu; reaguj na zmiany kolejki/snapshotu.
+  useEffect(() => {
+    if (online) return;
+    const load = () => {
+      const snap = getSnapshot();
+      setSnapshotLists(snap?.lists ?? []);
+      const current = snap?.lists.find((l) => l.id === activeListId);
+      if (current) setItems(current.items as Item[]);
+    };
+    load();
+    return onOfflineChanged(load);
+  }, [online, activeListId]);
+
+  // Wartości efektywne — offline biorą nazwę/właściciela z aktualnie wybranej listy w snapshotcie.
+  const offlineCurrent = !online ? snapshotLists.find((l) => l.id === activeListId) : undefined;
+  const effListId = online ? list.id : activeListId;
+  const effName = online ? list.name : (offlineCurrent?.name ?? list.name);
+  const effOwnerTeam = online ? list.ownerTeam : (offlineCurrent?.ownerTeam ?? null);
+  const switcherLists: ShoppingList[] = online ? allLists : (snapshotLists as unknown as ShoppingList[]);
 
   function handleSortChange(mode: SortMode) {
     setSortMode(mode);
@@ -72,31 +111,31 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
   }
 
   const filteredItems = useMemo(() => {
-    let items = list.items as Item[];
+    let result = items;
     if (activeFilter !== "ALL") {
-      items = items.filter((i) => i.status === activeFilter);
+      result = result.filter((i) => i.status === activeFilter);
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      items = items.filter(
+      result = result.filter(
         (i) =>
           i.name.toLowerCase().includes(q) ||
           i.category.toLowerCase().includes(q) ||
           i.notes?.toLowerCase().includes(q)
       );
     }
-    return items;
-  }, [list.items, activeFilter, searchQuery]);
+    return result;
+  }, [items, activeFilter, searchQuery]);
 
   const counts = useMemo(() => {
     const result = {} as Record<FilterTab, number>;
     for (const tab of FILTER_TABS) {
       result[tab] = tab === "ALL"
-        ? list.items.length
-        : list.items.filter((i) => i.status === tab).length;
+        ? items.length
+        : items.filter((i) => i.status === tab).length;
     }
     return result;
-  }, [list.items]);
+  }, [items]);
 
   const categoryOrder = useMemo(() => {
     if (sortMode.type !== "store") return undefined;
@@ -126,14 +165,14 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
           idx === -1 || idx === STATUS_CYCLE.length - 1
             ? STATUS_CYCLE[0]
             : STATUS_CYCLE[idx + 1];
-        startTransition(() => { updateItemStatus(focusedItemId, next); });
+        startTransition(() => { mutSetStatus(effListId, focusedItemId, next); });
       },
       onDelete: () => {
         if (!focusedItemId) return;
         const idx = filteredItems.findIndex((i) => i.id === focusedItemId);
         const nextItem = filteredItems[idx + 1] ?? filteredItems[idx - 1];
         setFocusedItemId(nextItem?.id ?? null);
-        startTransition(() => { deleteItem(focusedItemId); });
+        startTransition(() => { mutRemove(effListId, focusedItemId); });
       },
       onEdit: () => {
         if (!focusedItemId) return;
@@ -148,7 +187,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
         setFocusedItemId(null);
       },
     }),
-    [focusedItemId, filteredItems, navigateDown, navigateUp, togglePalette, isSearchOpen, editingItemId]
+    [focusedItemId, filteredItems, navigateDown, navigateUp, togglePalette, isSearchOpen, editingItemId, effListId]
   );
 
   useKeyboardShortcuts(handlers);
@@ -169,25 +208,26 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
         className="flex items-center gap-2 px-4 h-12 border-b flex-shrink-0"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
       >
-        {/* Mobile: native <select> as list switcher */}
+        {/* Mobile: native <select> as list switcher (offline: przełącza z lokalnego snapshotu) */}
         <div className="md:hidden flex-1 min-w-0">
           <select
-            value={list.id}
+            value={effListId}
             onChange={(e) => {
               const v = e.target.value;
-              if (v === "__catalog__") router.push("/shopping");
-              else router.push(`/shopping/${v}`);
+              if (v === "__catalog__") { router.push("/shopping"); return; }
+              if (online) router.push(`/shopping/${v}`);
+              else setActiveListId(v);
             }}
             className="bg-transparent text-sm font-semibold focus:outline-none w-full truncate"
             style={{ color: "var(--text-primary)" }}
             aria-label="Wybierz listę zakupów"
           >
-            {allLists.map((l) => (
+            {switcherLists.map((l) => (
               <option key={l.id} value={l.id}>
                 🛒 {l.name}{l.ownerTeam ? ` · ${l.ownerTeam.name}` : ""}
               </option>
             ))}
-            <option value="__catalog__">+ Zarządzaj listami…</option>
+            {online && <option value="__catalog__">+ Zarządzaj listami…</option>}
           </select>
         </div>
 
@@ -197,9 +237,9 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
           style={{ color: "var(--text-primary)" }}
         >
           <Link href="/shopping" className="truncate" style={{ color: "inherit", textDecoration: "none" }} title="Zakupy — strona główna działu">
-            {list.name}
+            {effName}
           </Link>
-          {list.ownerTeam && (
+          {effOwnerTeam && (
             <span
               className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
               style={{
@@ -208,18 +248,20 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
                 border: "1px solid rgba(168,85,247,0.2)",
               }}
             >
-              {list.ownerTeam.name}
+              {effOwnerTeam.name}
             </span>
           )}
         </h1>
 
         <div className="flex-1" />
+        {/* Operacje na LIŚCIE są online-only (spec 009): offline wyłączone z tooltipem. */}
         {counts.DONE > 0 && (
           <button
-            onClick={() => startTransition(() => clearDoneItems(list.id))}
-            className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
+            onClick={() => { if (online) startTransition(() => clearDoneItems(effListId)); }}
+            disabled={!online}
+            className="flex items-center gap-1.5 text-xs px-2 py-1 rounded disabled:opacity-40"
             style={{ color: "var(--accent-red)", backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}
-            title="Wyczyść zakończone elementy"
+            title={online ? "Wyczyść zakończone elementy" : "Niedostępne offline"}
           >
             <Trash2 size={11} />
             <span className="hidden sm:inline">Wyczyść ({counts.DONE})</span>
@@ -229,9 +271,10 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
         {counts.NEEDED === 0 && counts.IN_CART === 0 && (counts.DONE + counts.MISSING) > 0 && (
           <button
             onClick={() => setCompleteOpen(true)}
-            className="flex items-center gap-1.5 text-xs px-2 py-1 rounded"
+            disabled={!online}
+            className="flex items-center gap-1.5 text-xs px-2 py-1 rounded disabled:opacity-40"
             style={{ color: "var(--accent-green)", backgroundColor: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", fontWeight: 600 }}
-            title="Zakończ zakupy — podsumowanie i archiwizacja listy"
+            title={online ? "Zakończ zakupy — podsumowanie i archiwizacja listy" : "Niedostępne offline"}
           >
             <CheckCircle2 size={11} />
             <span>Zakończ zakupy</span>
@@ -251,7 +294,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
         />
       )}
 
-      <QuickAddBar listId={list.id} categoryNames={categoryNames} />
+      <QuickAddBar listId={effListId} categoryNames={categoryNames} />
 
       <FilterTabs
         active={activeFilter}
@@ -261,7 +304,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
 
       <ItemList
         items={filteredItems}
-        listId={list.id}
+        listId={effListId}
         focusedItemId={focusedItemId}
         editingItemId={editingItemId}
         onItemFocus={setFocusedItemId}
@@ -271,22 +314,22 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
         categoryEmojiMap={categoryEmojiMap}
         categoryOrder={categoryOrder}
         sortBy={sortBy}
-        otherLists={allLists.filter((l) => l.id !== list.id).map((l) => ({ id: l.id, name: l.name }))}
+        otherLists={switcherLists.filter((l) => l.id !== effListId).map((l) => ({ id: l.id, name: l.name }))}
       />
 
       <CommandPalette
-        listId={list.id}
-        allLists={allLists}
+        listId={effListId}
+        allLists={switcherLists}
         onFocusQuickAdd={() => {}}
       />
 
       {completeOpen && (
         <CompleteShoppingModal
-          listName={list.name}
-          items={list.items as Item[]}
+          listName={effName}
+          items={items}
           pending={isPending}
           financeReady={financeReady}
-          onConfirm={(bookToPortfel) => startTransition(async () => { await completeShopping(list.id, { bookToPortfel }); router.push("/shopping"); })}
+          onConfirm={(bookToPortfel) => startTransition(async () => { await completeShopping(effListId, { bookToPortfel }); router.push("/shopping"); })}
           onCancel={() => setCompleteOpen(false)}
         />
       )}

@@ -4,6 +4,26 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-18 — Zakupy offline: service worker nie cache'ował `/_next/`, a LWW psuł własne kolejne zmiany
+**Problem:** Przy dodawaniu trybu offline do Zakupów (feature 009-shopping-offline-sync) wyszły dwie
+nieoczywiste pułapki. (1) Istniejący `public/sw.js` w handlerze `fetch` **wychodził wcześnie dla
+każdego `/_next/`** (`return;`), więc bez sieci nie ładowały się hashowane bundle JS/CSS — aplikacja
+w ogóle **nie wstawała offline**, mimo że strona `/shopping` była w SHELL. (2) Reguła „ostatni zapis
+wygrywa" liczona jako `item.updatedAt > op.ts` **gubiła kolejne własne zmiany offline** tej samej
+pozycji: pierwszy zaaplikowany `op` podbijał `updatedAt` do `now()` serwera, więc następny `op`
+(z wcześniejszym `ts` klienta) był błędnie uznawany za „serwer nowszy" i pomijany — np. sekwencja
+NEEDED→IN_CART→DONE lądowała na IN_CART, a offline add→edit tracił edycję.
+**Rozwiązanie:** (1) W `sw.js`: `/_next/static/*` (immutable, content-hashed) serwujemy **cache-first**
+(i dopisujemy do cache przy pierwszym pobraniu), pozostałe `/_next/` → sieć; żądania RSC (`headers RSC=1`)
+i `/api/` nadal pomijane; bump `CACHE` do `worldofmag-v3`. (2) LWW liczymy **tylko przy pierwszym
+dotknięciu** danej pozycji w batchu synchronizacji: trzymamy `Map<itemId, "applied"|"conflict">` — nasze
+kolejne operacje na tej samej pozycji wygrywają bez porównania z `updatedAt` (bo to my ją przed chwilą
+zmieniliśmy), a konflikt z innym klientem wykrywamy tylko względem stanu serwera **sprzed** batcha.
+**Lekcja:** Offline-first PWA nie zadziała, jeśli service worker nie cache'uje **statycznych bundli
+`/_next/static`** — sam HTML strony to za mało. A przy „last-write-wins" po `updatedAt` pamiętaj, że
+**własne, kolejno odtwarzane operacje same podbijają znacznik czasu** — konflikt licz względem stanu
+sprzed synchronizacji (pierwsze dotknięcie), inaczej klient „konfliktuje sam ze sobą" i gubi ostatnią zmianę.
+
 ## 2026-07-17 — Asystent klasyfikował prośby o ODCZYT jako akcje tworzące (fast-path)
 **Problem:** „Podaj mi zadanie, jakie mógłbym zrobić" kończyło się propozycją dodania (pustej) pozycji
 do listy zakupów, zamiast przeszukania zadań i podania konkretnej propozycji. Winny był
