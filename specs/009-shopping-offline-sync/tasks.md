@@ -33,7 +33,7 @@
 - [x] **T-5** `[P]` — `src/hooks/useOnlineStatus.ts` — `useSyncExternalStore` na `online`/`offline`,
   SSR-safe (domyślnie online), współdzielony (bez mnożenia listenerów per wiersz).
 - [x] **T-6** — `src/lib/shopping/offlineStore.ts` — localStorage snapshot + kolejka; API `saveSnapshot`,
-  `getSnapshot`, `getListSnapshot`, `upsertListSnapshot`, `enqueue`, `getQueue`, `removeOps`,
+  `getSnapshot`, `upsertListSnapshot`, `enqueue`, `getQueue`, `removeOps`,
   `applyOpToSnapshot`, `pendingCount`; event `wom:shopping-offline-changed` (`onOfflineChanged`).
 - [x] **T-7** — `src/lib/shopping/offlineMutations.ts`: `mutSetStatus/mutAdd/mutUpdate/mutRemove`;
   **online** → akcje z `items.ts`, **offline** → `enqueue` (+ fallback gdy sieć padnie w trakcie).

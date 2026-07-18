@@ -61,13 +61,6 @@ export function getSnapshot(): OfflineSnapshot | null {
   return readJSON<OfflineSnapshot | null>(SNAPSHOT_KEY, null);
 }
 
-/** Zwraca zapisaną offline listę o danym id (albo null). */
-export function getListSnapshot(listId: string): ShoppingListWithItems | null {
-  const snap = getSnapshot();
-  if (!snap) return null;
-  return snap.lists.find((l) => l.id === listId) ?? null;
-}
-
 /**
  * Nadpisuje pojedynczą listę w snapshotcie (np. bieżąco otwartą, świeżo pobraną online),
  * nie ruszając pozostałych. Gdy snapshot nie istnieje — tworzy go z tą jedną listą.

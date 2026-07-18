@@ -17,7 +17,7 @@
 ## 2. Kryteria akceptacji
 | AC | Werdykt | Dowód (trace w kodzie) |
 |----|---------|------------------------|
-| **AC-1** offline odczyt aktywnej listy | ✅ | `sw.js:55` cache-first dla `/_next/static/*` (app bootuje offline) + `sw.js` network-first z fallbackiem na cache dla stron; `ShoppingPage.tsx:85-95` offline effect ładuje pozycje z `getSnapshot()`; `offlineStore.ts` `getListSnapshot`. |
+| **AC-1** offline odczyt aktywnej listy | ✅ | `sw.js:55` cache-first dla `/_next/static/*` (app bootuje offline) + `sw.js` network-first z fallbackiem na cache dla stron; `ShoppingPage.tsx:85-95` offline effect ładuje pozycje z `getSnapshot()` po `activeListId`. |
 | **AC-2** offline zmiana statusu | ✅ | `ItemRow.tsx:59,64` `cycleStatus`/`markMissing` → `mutSetStatus(item.listId,…)`; `offlineMutations.ts` offline → `enqueue` + `applyOpToSnapshot` (status ustawiany optymistycznie); `localStatus` daje natychmiastowy UI. Brak wywołania sieci offline (gałąź `!isOnline()`). |
 | **AC-3** offline add/edit/delete + „oczekujące" | ✅ | add: `QuickAddBar.tsx` → `mutAdd` (offline generuje `itemId` = `crypto.randomUUID()`); edit: `ItemRow.tsx:80` → `mutUpdate`; delete: `ItemRow.tsx:68` → `mutRemove`. Każda offline: `enqueue` → licznik `pendingCount()` → `OfflineIndicator` „X zmian czeka". |
 | **AC-4** auto-sync po powrocie sieci | ✅ | `OfflineSyncManager.tsx:66-69` effect na `[online]` → `flush()`; `flush` (l.40-63) woła `syncShoppingMutations(getQueue())`, `removeOps(applied+skipped)`, `router.refresh()`. Bez akcji użytkownika. `visibilitychange` (l.72-78) jako drugi wyzwalacz. |

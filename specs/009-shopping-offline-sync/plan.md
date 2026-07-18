@@ -78,7 +78,7 @@ Nowy katalog logiki: **`src/lib/shopping/`** + komponenty w **`src/components/sh
 1. **`src/lib/shopping/offlineStore.ts`** — localStorage (zero zależności; wzorzec try/catch jak w repo):
    - snapshot: `wom_shopping_offline_lists` → `{ savedAt, lists: ListWithItems[] }`.
    - kolejka: `wom_shopping_offline_queue` → `OfflineOp[]`.
-   - API: `saveSnapshot(lists)`, `getSnapshot()`, `getListSnapshot(listId)`, `enqueue(op)`,
+   - API: `saveSnapshot(lists)`, `getSnapshot()`, `upsertListSnapshot(list)`, `enqueue(op)`,
      `getQueue()`, `removeOps(opIds)`, `applyOpToSnapshot(op)` (optymistyczna mutacja lokalnej kopii),
      `pendingCount()`. Emituje `window` event `wom:shopping-offline-changed` po każdej zmianie, żeby UI
      (wskaźnik + widok listy) reagowało.
@@ -92,7 +92,7 @@ Nowy katalog logiki: **`src/lib/shopping/`** + komponenty w **`src/components/sh
      dla `add`, wygenerowanym `itemId`).
 4. **Refaktor `ShoppingPage.tsx`**: źródłem `items` staje się stan kliencki:
    - online: inicjalizacja z propsów serwera; `useEffect` synchronizuje z `list.items` po revalidate.
-   - offline: inicjalizacja/override z `getListSnapshot(listId)` (bo SW mógł podać nieświeży HTML);
+   - offline: inicjalizacja/override z `getSnapshot()` po `activeListId` (bo SW mógł podać nieświeży HTML);
      nasłuch `wom:shopping-offline-changed` odświeża widok. `ItemRow`/`QuickAddBar` wołają nowe
      `useItemMutations` zamiast bezpośrednio Server Actions. Zachowujemy `localStatus` optymizm.
    - operacje na **liście** (Wyczyść, „Zakończ zakupy", przełącznik list) są **wyłączane/oznaczane**
