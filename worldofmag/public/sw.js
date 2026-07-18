@@ -1,10 +1,17 @@
-const CACHE = "worldofmag-v3";
-const SHELL = ["/", "/shopping", "/icons/icon-192.png", "/icons/apple-touch-icon.png"];
+const CACHE = "worldofmag-v4";
+// Tylko istniejące trasy (wcześniej były tu martwe /icons/*.png → cache.addAll odrzucał się
+// atomowo i CAŁA instalacja SW padała, więc offline nie działało wcale). Ikony cache'ują się
+// leniwie przy pierwszym pobraniu.
+const SHELL = ["/", "/shopping"];
 
-// Install: cache the app shell
+// Install: precache app shell — ODPORNIE (per-URL, z pominięciem błędów), żeby jeden
+// niedostępny zasób nigdy nie wywrócił instalacji SW.
 self.addEventListener("install", (e) => {
   e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())
+    caches
+      .open(CACHE)
+      .then((c) => Promise.allSettled(SHELL.map((u) => c.add(u))))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -37,7 +44,8 @@ self.addEventListener("notificationclick", (e) => {
 //  - server actions / API / RSC data → never intercept (network only)
 //  - /_next/static/* (hashowane, immutable) → cache-first  ⇐ konieczne, by aplikacja WSTAŁA offline
 //  - ikony / manifest → cache-first
-//  - pozostałe strony (GET) → network-first z fallbackiem na cache (świeże dane, offline = ostatnia kopia)
+//  - strony (GET) → network-first z fallbackiem na cache; dla NAWIGACJI dodatkowy fallback na
+//    shell (/shopping → /), żeby offline aplikacja zawsze wstała, a nie pokazała błędu przeglądarki
 self.addEventListener("fetch", (e) => {
   const { request } = e;
   const url = new URL(request.url);
@@ -72,15 +80,19 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Cache-first for icons and static files
-  if (url.pathname.startsWith("/icons/") || url.pathname.startsWith("/manifest")) {
-    e.respondWith(
-      caches.match(request).then((cached) => cached || fetch(request))
-    );
+  // Ikony (generowane trasy) i manifest — cache-first (rzadko się zmieniają).
+  if (
+    url.pathname.startsWith("/pwa-icon/") ||
+    url.pathname.startsWith("/apple-touch-icon/") ||
+    url.pathname === "/icon" ||
+    url.pathname === "/apple-icon" ||
+    url.pathname.startsWith("/manifest")
+  ) {
+    e.respondWith(caches.match(request).then((cached) => cached || fetch(request)));
     return;
   }
 
-  // Network-first for pages (always fresh data; offline → last cached copy)
+  // Strony: network-first (świeże dane), offline → cache; dla nawigacji fallback na shell.
   e.respondWith(
     fetch(request)
       .then((res) => {
@@ -88,6 +100,19 @@ self.addEventListener("fetch", (e) => {
         caches.open(CACHE).then((c) => c.put(request, clone));
         return res;
       })
-      .catch(() => caches.match(request))
+      .catch(async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        // Offline nawigacja do trasy, której nie ma w cache → wpuść do aplikacji przez shell,
+        // zamiast pokazywać błąd przeglądarki. Klient (Zakupy) dalej działa na lokalnym snapshotcie.
+        if (request.mode === "navigate") {
+          return (
+            (await caches.match("/shopping")) ||
+            (await caches.match("/")) ||
+            Response.error()
+          );
+        }
+        return Response.error();
+      })
   );
 });
