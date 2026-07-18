@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-18 — Service worker w ogóle się nie instalował (martwe URL-e w `cache.addAll`)
+**Problem:** Po dodaniu trybu offline Zakupów okazało się, że aplikacja i tak **nie wstawała offline**.
+Przyczyna zastana: `public/sw.js` w `install` robił `cache.addAll(SHELL)`, a `SHELL` zawierał
+**nieistniejące** ścieżki `/icons/icon-192.png` i `/icons/apple-touch-icon.png` (realne ikony są pod
+`/pwa-icon/*` i `/apple-touch-icon/*`). `cache.addAll` jest **atomowy** — jeden 404 odrzuca całą obietnicę,
+więc `event.waitUntil` w `install` padał, a wtedy **service worker w ogóle się nie aktywuje**. Efekt: nic
+się nie cache'owało (nawet poprawny `/_next/static`), więc offline nie działało wcale.
+**Rozwiązanie:** (1) `SHELL` zawężony do **istniejących** tras `["/", "/shopping"]`; (2) precache zrobiony
+**odpornie** — `Promise.allSettled(SHELL.map((u) => cache.add(u)))` zamiast `addAll`, więc pojedynczy
+błędny URL nigdy nie wywróci instalacji; (3) dodany fallback nawigacyjny (offline nawigacja bez trafienia
+w cache → cached `/shopping`→`/`), by aplikacja zawsze wstała; (4) bump `CACHE` do `worldofmag-v4`.
+**Lekcja:** `cache.addAll` to „wszystko albo nic" — **jeden martwy URL w precache = cały SW nie wstaje**.
+Do precache używaj `Promise.allSettled` z `cache.add` per-URL i wpisuj tam **tylko** trasy, które na pewno
+istnieją. Gdy „offline nie działa", najpierw sprawdź, czy SW w ogóle się **zainstalował/aktywował**
+(DevTools → Application → Service Workers), a nie dopiero logikę fetch.
+
 ## 2026-07-18 — Zakupy offline: service worker nie cache'ował `/_next/`, a LWW psuł własne kolejne zmiany
 **Problem:** Przy dodawaniu trybu offline do Zakupów (feature 009-shopping-offline-sync) wyszły dwie
 nieoczywiste pułapki. (1) Istniejący `public/sw.js` w handlerze `fetch` **wychodził wcześnie dla
