@@ -1,4 +1,4 @@
-const CACHE = "worldofmag-v2";
+const CACHE = "worldofmag-v3";
 const SHELL = ["/", "/shopping", "/icons/icon-192.png", "/icons/apple-touch-icon.png"];
 
 // Install: cache the app shell
@@ -33,17 +33,42 @@ self.addEventListener("notificationclick", (e) => {
   );
 });
 
-// Fetch: network-first for API/server actions, cache-first for static assets
+// Fetch strategy (009-shopping-offline-sync):
+//  - server actions / API / RSC data → never intercept (network only)
+//  - /_next/static/* (hashowane, immutable) → cache-first  ⇐ konieczne, by aplikacja WSTAŁA offline
+//  - ikony / manifest → cache-first
+//  - pozostałe strony (GET) → network-first z fallbackiem na cache (świeże dane, offline = ostatnia kopia)
 self.addEventListener("fetch", (e) => {
   const { request } = e;
   const url = new URL(request.url);
 
-  // Never intercept server actions or API calls
+  // Nigdy nie przechwytuj mutacji, API ani żądań RSC (nagłówek RSC ustawiany przez Next przy nawigacji).
   if (
     request.method !== "GET" ||
-    url.pathname.startsWith("/_next/") ||
-    url.pathname.startsWith("/api/")
+    url.pathname.startsWith("/api/") ||
+    request.headers.get("RSC") === "1"
   ) {
+    return;
+  }
+
+  // Immutable, content-hashed static assets — cache-first (bez nich offline nie załaduje JS/CSS).
+  if (url.pathname.startsWith("/_next/static/")) {
+    e.respondWith(
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((res) => {
+            const clone = res.clone();
+            caches.open(CACHE).then((c) => c.put(request, clone));
+            return res;
+          })
+      )
+    );
+    return;
+  }
+
+  // Inne zasoby /_next/ (np. /_next/image, dane) — sieć, bez cache.
+  if (url.pathname.startsWith("/_next/")) {
     return;
   }
 
@@ -55,7 +80,7 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Network-first for pages (always fresh data)
+  // Network-first for pages (always fresh data; offline → last cached copy)
   e.respondWith(
     fetch(request)
       .then((res) => {

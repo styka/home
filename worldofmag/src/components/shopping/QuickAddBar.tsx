@@ -4,9 +4,9 @@ import { useRef, useState, useEffect, useTransition, forwardRef, useImperativeHa
 import { Plus, Loader2, PenLine } from "lucide-react";
 import type { Product } from "@/types";
 import { UNITS } from "@/types";
-import { addItemStructured } from "@/actions/items";
 import { getProductSuggestions } from "@/actions/products";
 import { categorize } from "@/lib/categorize";
+import { mutAdd } from "@/lib/shopping/offlineMutations";
 
 interface QuickAddBarProps {
   listId: string;
@@ -46,9 +46,14 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
       clearTimeout(debounceRef.current);
       if (!name.trim()) { setSuggestions([]); return; }
       debounceRef.current = setTimeout(async () => {
-        const results = await getProductSuggestions(name.trim());
-        setSuggestions(results);
-        setSuggestionIndex(-1);
+        try {
+          // Podpowiedzi wymagają sieci — offline po prostu ich nie ma (degradacja łagodna).
+          const results = await getProductSuggestions(name.trim());
+          setSuggestions(results);
+          setSuggestionIndex(-1);
+        } catch {
+          setSuggestions([]);
+        }
       }, 150);
       return () => clearTimeout(debounceRef.current);
     }, [name]);
@@ -69,7 +74,7 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
       const parsedUnit = unit.trim() || null;
       const parsedCategory = category.trim() || undefined;
       startTransition(() => {
-        addItemStructured(listId, name.trim(), parsedQty, parsedUnit, parsedCategory);
+        mutAdd(listId, name.trim(), parsedQty, parsedUnit, parsedCategory);
       });
       setName("");
       setQty("");
