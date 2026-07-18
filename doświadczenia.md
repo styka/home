@@ -4,6 +4,23 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-18 — Offline: katalog list widać, ale nie da się wejść w listę (nawigacja SPA = RSC z sieci)
+**Problem:** Po naprawie instalacji SW aplikacja wstawała offline i katalog `/shopping` był widoczny, ale
+kliknięcie w konkretną listę nic nie dawało. Przyczyna: w App Routerze wejście w `/shopping/[id]` przez
+`<Link>` to nawigacja **SPA**, która pobiera payload **RSC** z sieci — offline to pada. Do tego dokument
+HTML tej listy zwykle **nie był w cache**, bo online wchodziło się w listę klikając (SPA pobiera tylko RSC,
+nie cały dokument), więc nawet twarda nawigacja nie miała czego zserwować (fallback pokazywał znów katalog).
+**Rozwiązanie:** (1) **warm-up** w `OfflineSyncManager` dodatkowo `fetch('/shopping/'+id)` dla każdej
+aktywnej listy → SW buforuje **dokument HTML** każdej listy (zwykły fetch bez nagłówka RSC = pełny HTML);
+(2) w katalogu (`ShoppingHomePage`) linki do list offline renderujemy jako **twardą nawigację `<a>`** zamiast
+`<Link>` (helper `CardLink`), więc przeglądarka robi pełne przejście → SW serwuje zbuforowany dokument →
+`ShoppingPage` wstaje i przełącznik czyta ze snapshotu; (3) `caches.match(..., { ignoreVary: true })` w
+fallbacku SW, bo Next dodaje `Vary: RSC,…` i bez tego match po nawigacji mógłby nie trafić w dokument.
+**Lekcja:** Offline w Next App Router **nawigacja SPA nie zadziała** (RSC leci po sieci). Żeby offline wejść
+w dynamiczną trasę: (a) **zbuforuj jej dokument HTML** proaktywnie (`fetch(url)` przy okazji warm-upu — samo
+odwiedzenie przez SPA online NIE cache'uje dokumentu), i (b) offline nawiguj **twardo** (`<a>`, nie `<Link>`),
+żeby SW mógł ten dokument zserwować. Pamiętaj o `ignoreVary` przy match, bo Next varii po nagłówkach RSC.
+
 ## 2026-07-18 — Service worker w ogóle się nie instalował (martwe URL-e w `cache.addAll`)
 **Problem:** Po dodaniu trybu offline Zakupów okazało się, że aplikacja i tak **nie wstawała offline**.
 Przyczyna zastana: `public/sw.js` w `install` robił `cache.addAll(SHELL)`, a `SHELL` zawierał
