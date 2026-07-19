@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings, Volume2, Mic, MicOff, AudioLines,
+  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings, Volume2, Mic, MicOff, AudioLines, Bug,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { useDictation } from "@/hooks/useDictation";
@@ -17,6 +17,8 @@ import {
   deleteAiConversation, renameAiConversation, type ConversationMeta,
 } from "@/actions/aiConversations";
 import { createUserReport } from "@/actions/reports";
+import { ensureOmniaProject } from "@/actions/taskProjects";
+import { createTask } from "@/actions/tasks";
 import type { AIAction } from "@/lib/ai/aiAction";
 import { isDestructiveAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executors/shared";
@@ -130,6 +132,70 @@ function deriveContextFromPath(pathname: string): RouteContext {
   return { context: ctx("shopping"), placeholder: "Zapytaj o cokolwiek lub wydaj polecenie…", routeHint: "Strona główna aplikacji" };
 }
 
+// Składa czytelny markdown-owy raport z bieżącej rozmowy asystenta do zadania w projekcie „Omnia":
+// opcjonalny opis problemu, ostatni błąd z backendu, pełny zrzut rozmowy oraz logi połączeń
+// (kroki agenta: iter/step/thought/narzędzia/wyniki + model i tokeny). Admin zgłasza tym problem z czatem.
+function buildChatProblemReport(opts: {
+  turns: Turn[];
+  error: string | null;
+  description: string;
+  route: string;
+  conversationId: string | null;
+}): string {
+  const { turns, error, description, route, conversationId } = opts;
+  const roleLabel = (r: "user" | "assistant") => (r === "user" ? "Użytkownik" : "Asystent");
+  const trunc = (s: string, max = 4000) => (s.length > max ? s.slice(0, max) + "\n…(ucięto)" : s);
+  const json = (v: unknown) => {
+    try { return trunc(JSON.stringify(v, null, 2)); } catch { return String(v); }
+  };
+  const out: string[] = [];
+
+  out.push("## Opis problemu");
+  out.push(description.trim() ? description.trim() : "_(brak opisu)_");
+
+  if (error) {
+    out.push("\n## Ostatni błąd (backend)");
+    out.push("```\n" + trunc(error) + "\n```");
+  }
+
+  out.push("\n## Zrzut rozmowy");
+  if (turns.length === 0) {
+    out.push("_(rozmowa pusta)_");
+  } else {
+    turns.forEach((t, i) => {
+      out.push(`\n### ${i + 1}. ${roleLabel(t.role)} (${t.kind})`);
+      out.push(trunc(t.content || "_(brak treści)_"));
+    });
+  }
+
+  out.push("\n## Logi połączeń z backendem");
+  const hasAnyLog = turns.some((t) => t.role === "assistant" && (("log" in t && (t.log?.length ?? 0) > 0) || ("meta" in t && !!t.meta)));
+  if (!hasAnyLog) {
+    out.push("_(brak logów agenta dla tej rozmowy)_");
+  } else {
+    turns.forEach((t, i) => {
+      if (t.role !== "assistant") return;
+      const log = "log" in t ? t.log : undefined;
+      const meta = "meta" in t ? t.meta : undefined;
+      if (!(log?.length) && !meta) return;
+      const metaStr = meta ? ` — model: ${meta.model ?? "?"}, tokeny: ${meta.tokens ?? "?"}` : "";
+      out.push(`\n#### Tura ${i + 1}${metaStr}`);
+      (log ?? []).forEach((l) => {
+        out.push(`- **[iter ${l.iter} · ${l.step}]** ${l.thought ?? ""}`.trim());
+        if (l.tools?.length) out.push("  - narzędzia:\n```json\n" + json(l.tools) + "\n```");
+        if (l.results !== undefined) out.push("  - wyniki:\n```json\n" + json(l.results) + "\n```");
+      });
+    });
+  }
+
+  out.push("\n---");
+  out.push(`- **route:** \`${route}\``);
+  out.push(`- **conversationId:** \`${conversationId ?? "(brak)"}\``);
+  out.push(`- **czas zgłoszenia:** ${new Date().toISOString()}`);
+
+  return out.join("\n");
+}
+
 const STARTER_CHIPS = [
   "Co mam dziś najważniejszego do zrobienia?",
   "Podsumuj mój tydzień",
@@ -191,7 +257,7 @@ function newId(): string {
   return `t${Date.now()}_${TURN_SEQ}`;
 }
 
-export function AICommandSheet() {
+export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { context, placeholder, routeHint, activeListId, activeProjectId } = deriveContextFromPath(pathname);
@@ -260,6 +326,11 @@ export function AICommandSheet() {
   const prefsRef = useRef("");
   prefsRef.current = prefs;
   const [showPrefs, setShowPrefs] = useState(false);
+  // Zgłaszanie problemu z czatem (admin-only): panel z opcjonalnym opisem → zadanie w projekcie „Omnia".
+  const [showReport, setShowReport] = useState(false);
+  const [reportDesc, setReportDesc] = useState("");
+  const [reportBusy, setReportBusy] = useState(false);
+  const [reportDone, setReportDone] = useState<{ projectId: string } | null>(null);
   // Wybór głosu lektora (per-urządzenie). Głosy iOS/Safari ładują się asynchronicznie — subskrybujemy.
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceURI, setVoiceURIState] = useState<string>("");
@@ -609,6 +680,28 @@ export function AICommandSheet() {
   function handleClose() {
     setIsOpen(false);
     setShowHistory(false);
+  }
+
+  // Zgłoszenie problemu z czatem (admin): składa raport (opis + zrzut rozmowy + logi + błąd) i tworzy
+  // z niego zadanie w projekcie „Omnia" — jak główne zgłaszanie błędów, ale bezpośrednio (nie przez agenta).
+  const canReport = turns.length > 0 || !!error || reportDesc.trim().length > 0;
+  async function submitProblemReport() {
+    if (!canReport || reportBusy) return;
+    setReportBusy(true);
+    try {
+      const description = buildChatProblemReport({ turns, error, description: reportDesc, route: pathname, conversationId });
+      const stamp = new Date().toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+      const firstLine = reportDesc.trim().split("\n")[0]?.slice(0, 80);
+      const title = `🐛 Problem w czacie asystenta AI — ${stamp}${firstLine ? ` — ${firstLine}` : ""}`;
+      const project = await ensureOmniaProject();
+      await createTask({ title, projectId: project.id, description });
+      setReportDone({ projectId: project.id });
+      setReportDesc("");
+    } catch {
+      setError("Nie udało się utworzyć zgłoszenia.");
+    } finally {
+      setReportBusy(false);
+    }
   }
 
   function goTo(url: string) {
@@ -1119,11 +1212,57 @@ export function AICommandSheet() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
-                <button onClick={() => setShowPrefs((v) => !v)} title="Ustawienia asystenta" aria-label="Ustawienia asystenta" aria-expanded={showPrefs} style={{ ...iconBtn, color: showPrefs || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }}><Settings size={16} /></button>
+                {isAdmin && (
+                  <button onClick={() => { setShowReport((v) => !v); setReportDone(null); }} title="Zgłoś problem z czatem" aria-label="Zgłoś problem z czatem" aria-expanded={showReport} style={{ ...iconBtn, color: showReport ? "var(--accent-purple)" : "var(--text-muted)" }}><Bug size={16} /></button>
+                )}
                 <button onClick={openHistory} title="Historia rozmów" aria-label="Historia rozmów" style={iconBtn}><History size={16} /></button>
                 <button onClick={handleClose} title="Zamknij" aria-label="Zamknij asystenta" style={iconBtn}><X size={16} /></button>
               </div>
             </div>
+
+            {/* Panel zgłaszania problemu z czatem (admin-only) — tworzy zadanie w projekcie „Omnia" */}
+            {isAdmin && showReport && (
+              <div className="px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-base)" }}>
+                {reportDone ? (
+                  <div style={{ fontSize: 13, color: "var(--text-primary)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <CheckCircle size={15} style={{ color: "var(--accent-green)" }} /> Utworzono zadanie w projekcie „Omnia".
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => goTo(`/tasks/${reportDone.projectId}`)} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-blue)", cursor: "pointer" }}>Otwórz w zadaniach</button>
+                      <button onClick={() => { setShowReport(false); setReportDone(null); }} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Zamknij</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
+                      Zgłoś problem z czatem (opis opcjonalny)
+                    </label>
+                    <textarea
+                      value={reportDesc}
+                      onChange={(e) => setReportDesc(e.target.value)}
+                      rows={2}
+                      placeholder={'Np. „spodziewałem się odpowiedzi: …" (możesz zostawić puste — dołączymy sam błąd i zrzut rozmowy)'}
+                      style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none", resize: "vertical" }}
+                    />
+                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 8px" }}>
+                      Do zadania dołączymy pełny zrzut tej rozmowy i logi połączeń z backendem.
+                    </p>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <button
+                        onClick={submitProblemReport}
+                        disabled={!canReport || reportBusy}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, padding: "7px 12px", borderRadius: 8, border: "none", background: "var(--accent-purple)", color: "var(--on-accent)", cursor: !canReport || reportBusy ? "default" : "pointer", opacity: !canReport || reportBusy ? 0.6 : 1 }}
+                      >
+                        {reportBusy ? <Loader2 size={14} className="animate-spin" /> : <Bug size={14} />} Zgłoś problem
+                      </button>
+                      <button onClick={() => { setShowReport(false); setReportDesc(""); }} style={{ fontSize: 12.5, padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Anuluj</button>
+                      {!canReport && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Brak treści do zgłoszenia.</span>}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Panel ustawień asystenta (custom instructions + głos lektora) */}
             {showPrefs && (
