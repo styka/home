@@ -217,10 +217,12 @@
     "action": "update_contact"
   },
   "cookbooks:createCookbook": {
-    "status": "pending"
+    "status": "ai",
+    "action": "create_cookbook"
   },
   "cookbooks:deleteCookbook": {
-    "status": "pending"
+    "status": "ai",
+    "action": "delete_cookbook"
   },
   "cookbooks:getCookbook": {
     "kind": "read",
@@ -228,10 +230,12 @@
   },
   "cookbooks:getCookbooks": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_cookbooks"
   },
   "cookbooks:updateCookbook": {
-    "status": "pending"
+    "status": "ai",
+    "action": "update_cookbook"
   },
   "dashboardPrefs:getDashboardPrefs": {
     "kind": "read",
@@ -596,16 +600,19 @@
     "status": "ai"
   },
   "mealPlans:markMealSkipped": {
-    "status": "pending"
+    "status": "ai",
+    "action": "mark_meal_skipped"
   },
   "mealPlans:moveMealPlanEntry": {
-    "status": "pending"
+    "status": "ai",
+    "action": "move_meal_plan_entry"
   },
   "mealPlans:setMealPlanEntry": {
     "status": "ai"
   },
   "mealPlans:updateMealPlanEntry": {
-    "status": "pending"
+    "status": "ai",
+    "action": "update_meal_plan_entry"
   },
   "medications:createMedicationSchedule": {
     "status": "ai"
@@ -710,17 +717,21 @@
     "status": "ai"
   },
   "noteGroups:createNoteGroup": {
-    "status": "pending"
+    "status": "ai",
+    "action": "create_note_group"
   },
   "noteGroups:deleteNoteGroup": {
-    "status": "pending"
+    "status": "ai",
+    "action": "delete_note_group"
   },
   "noteGroups:getNoteGroups": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_note_groups"
   },
   "noteGroups:updateNoteGroup": {
-    "status": "pending"
+    "status": "ai",
+    "action": "update_note_group"
   },
   "notes:addNoteAttachment": {
     "status": "excluded",
@@ -817,7 +828,8 @@
   },
   "pantry:getExpiringSoon": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_expiring_pantry"
   },
   "pantry:getPantry": {
     "kind": "read",
@@ -1013,7 +1025,8 @@
   },
   "portfel:getWalletOverview": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "get_wallet_overview"
   },
   "portfel:importBankCsv": {
     "status": "excluded",
@@ -1129,10 +1142,12 @@
     "status": "pending"
   },
   "projectGroups:createProjectGroup": {
-    "status": "pending"
+    "status": "ai",
+    "action": "create_project_group"
   },
   "projectGroups:deleteProjectGroup": {
-    "status": "pending"
+    "status": "ai",
+    "action": "delete_project_group"
   },
   "projectGroups:getProjectGroup": {
     "kind": "read",
@@ -1140,10 +1155,12 @@
   },
   "projectGroups:getProjectGroups": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_project_groups"
   },
   "projectGroups:updateProjectGroup": {
-    "status": "pending"
+    "status": "ai",
+    "action": "update_project_group"
   },
   "qa:createEpic": {
     "status": "excluded",

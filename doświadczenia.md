@@ -4,6 +4,18 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-19 — Nie każdy model ma ownerId/ownerTeamId — resolver po nazwie może wysypać zapytanie
+**Problem:** Dodając akcje AI dla grup projektów i grup notatek użyłem generycznego `resolveByName`
+(zakłada `ownerId` + `ownerTeamId`). Ale `ProjectGroup` ma **tylko `ownerId`** (brak zespołu), a
+`NoteGroup` jest **globalny** (`getNoteGroups` nie filtruje po właścicielu). Zapytanie `where` z
+`ownerTeamId` na modelu bez tej kolumny wywala Prisma w runtime.
+**Rozwiązanie:** Rezolwery dopasowane do modelu: dla `ProjectGroup` filtr `{ ownerId: userId, name }`
+(bez `ownerOr`), dla `NoteGroup` filtr `{ name }` (globalny). Zawsze sprawdzaj model w `schema.prisma`
+(pola własności) ZANIM użyjesz wspólnego `resolveByName`/`ownerOr`.
+**Lekcja:** Wzorzec współwłasności `ownerId`/`ownerTeamId` NIE jest uniwersalny — część modeli jest
+user-only, część globalna. Przed dołożeniem resolvera po nazwie zajrzyj do schematu; generyczny helper
+zakładający zespół rozbije modele bez `ownerTeamId`.
+
 ## 2026-07-19 — Pokrycie AI musi obejmować też ODCZYTY (nie tylko mutacje)
 **Problem:** Bramka pokrycia (poprzedni wpis) pilnowała tylko akcji ZAPISU. Ale asystent ma umieć
 pokazać wszystko, co użytkownik PRZEGLĄDA — a wiele odczytów nie było wystawionych (np. `getWeather` =
