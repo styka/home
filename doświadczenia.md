@@ -4,6 +4,17 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-19 — Strona admina nie scrollowała się (AppShell `<main>` = overflow-hidden)
+**Problem:** `/admin/ai-coverage` nie dało się przewinąć — długa treść była ucięta. Przyczyna: w
+`AppShell` kontener `<main>` jest `flex-1 overflow-hidden flex flex-col`, więc to **strona** musi być
+własnym kontenerem przewijania. Moja strona miała root jako zwykły wyśrodkowany `<div>` (maxWidth +
+margin auto), bez `overflow`, więc nadmiar treści był chowany bez scrolla.
+**Rozwiązanie:** Root strony owinięty w `className="flex-1 overflow-y-auto"` (tak jak istniejące
+`SystemHealthPage`/`AuditLogPage`), a wyśrodkowany `maxWidth`-owy kontener wrzucony do środka.
+**Lekcja:** W tym projekcie `<main>` w `AppShell` jest `overflow-hidden` — KAŻDA strona treściowa musi
+sama zapewnić scroll, dając swojemu korzeniowi `flex-1 overflow-y-auto`. Nie polegaj na scrollu body.
+Wzoruj się na istniejących stronach admina, zamiast wymyślać własny layout korzenia.
+
 ## 2026-07-19 — Nie każdy model ma ownerId/ownerTeamId — resolver po nazwie może wysypać zapytanie
 **Problem:** Dodając akcje AI dla grup projektów i grup notatek użyłem generycznego `resolveByName`
 (zakłada `ownerId` + `ownerTeamId`). Ale `ProjectGroup` ma **tylko `ownerId`** (brak zespołu), a
