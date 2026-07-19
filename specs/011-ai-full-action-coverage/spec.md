@@ -54,6 +54,19 @@ zarządzanie zespołami, operacje konta.
 - **C-32** — teksty PL. **C-53** — minimalizm (reużycie istniejących akcji i resolverów).
 - **Nowa bramka** rozszerza rodzinę `check:*` (duch C-50).
 
+## 5a. Iteracja 2 (2026-07-19) — pokrycie ODCZYTÓW + kolejna partia
+Rozszerzono zakres o **akcje odczytu** (to, co użytkownik przegląda), zgodnie z decyzją właściciela:
+- **Mechanizm:** `check-ai-coverage.js` + manifest klasyfikują teraz także odczyty (`kind:"read"`,
+  `get*/list*/search*`) w reżimie `ai|pending|excluded`; bramka build'u wymusza triage każdego nowego
+  odczytu. Raport rozdziela mutacje i odczyty.
+- **+10 read-tooli:** `get_weather` (prognoza), `list_budgets`, `list_goals`, `list_task_tags`,
+  `list_note_tags`, `get_recipe` (pełny przepis), `list_care_agenda` (opieka nad zwierzętami),
+  `list_maintenance` (przeglądy warsztatu), `list_hot_topics`, `list_trash` (kosz).
+- **+6 mutacji:** `update_budget`/`delete_budget`, `update_goal`/`delete_goal`, `update_medication`,
+  `unlog_dose`.
+- **Stan po iteracji 2:** MUTACJE 113 ai / 117 pending / 113 excluded · ODCZYTY 41 ai / 44 pending /
+  60 excluded (patrz `docs/ai/pokrycie-akcji.md`).
+
 ## 6. Uwaga o kontynuacji
 `docs/ai/pokrycie-akcji.md` jest roadmapą: kolejne iteracje flipują wpisy `pending → ai` (dopisując
 egzekutor + katalog), aż licznik `pending` spadnie do zera dla akcji sensownych konwersacyjnie.

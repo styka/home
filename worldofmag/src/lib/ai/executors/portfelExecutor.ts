@@ -2,7 +2,7 @@
 // Scala trzy dawne bloki `module === "portfel"` z execute/route.ts.
 import { prisma } from "@/lib/prisma";
 import { addEntry, getWalletElements, createElement, updateElement, setBalance, archiveElement, deleteElement } from "@/actions/portfel";
-import { createBudget, createGoal, contributeGoal } from "@/actions/portfelBudgets";
+import { createBudget, createGoal, contributeGoal, updateBudget, deleteBudget, updateGoal, deleteGoal } from "@/actions/portfelBudgets";
 import { asStr, resolveByName, ownerOrArr } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 
@@ -47,6 +47,37 @@ export async function executePortfelAction(action: AIAction, userId: string): Pr
     );
     await contributeGoal(id, amount);
     return `Dodano ${amount} zł do celu oszczędnościowego`;
+  }
+
+  if (type === "update_budget" || type === "delete_budget") {
+    const teamOr = await ownerOrArr(userId);
+    const id = await resolveByName(
+      (w) => prisma.budget.findFirst({ where: w, select: { id: true } }),
+      teamOr, asStr(params.budgetId), "category", searchQuery ?? asStr(params.category), "budżet"
+    );
+    if (type === "delete_budget") { await deleteBudget(id); return `Usunięto budżet`; }
+    const patch: Parameters<typeof updateBudget>[1] = {};
+    if (params.category !== undefined) patch.category = String(params.category);
+    if (params.limitAmount !== undefined) patch.limitAmount = Number(params.limitAmount);
+    if (params.note !== undefined) patch.note = asStr(params.note) ?? null;
+    await updateBudget(id, patch);
+    return `Zaktualizowano budżet`;
+  }
+
+  if (type === "update_goal" || type === "delete_goal") {
+    const teamOr = await ownerOrArr(userId);
+    const id = await resolveByName(
+      (w) => prisma.financeGoal.findFirst({ where: w, select: { id: true } }),
+      teamOr, asStr(params.goalId), "name", searchQuery ?? asStr(params.name), "cel oszczędnościowy"
+    );
+    if (type === "delete_goal") { await deleteGoal(id); return `Usunięto cel oszczędnościowy`; }
+    const patch: Parameters<typeof updateGoal>[1] = {};
+    if (params.name !== undefined) patch.name = String(params.name);
+    if (params.targetAmount !== undefined) patch.targetAmount = Number(params.targetAmount);
+    if (params.deadline !== undefined) patch.deadline = asStr(params.deadline) ?? null;
+    if (params.note !== undefined) patch.note = asStr(params.note) ?? null;
+    await updateGoal(id, patch);
+    return `Zaktualizowano cel oszczędnościowy`;
   }
 
   if (type === "add_expense" || type === "add_income") {
