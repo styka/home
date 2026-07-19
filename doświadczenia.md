@@ -4,7 +4,27 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
-## 2026-07-18 — Offline: katalog list widać, ale nie da się wejść w listę (nawigacja SPA = RSC z sieci)
+## 2026-07-19 — Asystent AI zwracał surowy błąd Groq 429 (limit TPM) zamiast odpowiedzi
+**Problem:** Zapytanie do asystenta ("pokaż zadania otagowane raj") padało z surowym komunikatem dostawcy
+`Rate limit reached for model llama-3.3-70b-versatile … tokens per minute (TPM): Limit 12000, Used 8761,
+Requested 10243`. Limit TPM u Groq jest **przejściowy** (okno minuty zwalnia się po chwili), a mimo to
+`chatComplete` oddawał surowy błąd użytkownikowi. Istniejący łańcuch fallbacku (Z-133) próbuje tylko
+INNEGO modelu — przy jednym skonfigurowanym modelu 429 przechodził wprost do UI, a `AICommandSheet`
+wyświetlał go 1:1.
+**Rozwiązanie:** (1) W `src/lib/llm/chat.ts` dodano owijacz `fetchWithRetry` używany przez wszystkie 4
+funkcje dostawcy (openAi/anthropic × complete/stream): przy błędzie przejściowym (429/5xx/sieć) odczekuje
+i ponawia TEN SAM model — respektując nagłówek `Retry-After` (z capem `LLM_RETRY_CAP_MS=8000` na
+pojedyncze oczekiwanie i twardym limitem `LLM_MAX_RETRIES=2`), a bez nagłówka używa backoffu
+wykładniczego z jitterem. Retry jest ZAGNIEŻDŻONY w pojedynczym wywołaniu modelu, więc łańcuch fallbacku
+działa bez zmian (najpierw retry, potem dopiero next model). (2) W `src/app/api/llm/home/agent/route.ts`
+(`runAgentLoop` catch) status 429 mapujemy na łagodny polski komunikat zamiast surowego tekstu dostawcy —
+jedno miejsce obsługuje tryb zwykły i strumieniowy (SSE), bo oba idą przez `runAgentLoop`; klient bez zmian.
+**Lekcja:** Limity szybkości dostawcy LLM (429/TPM) to błąd PRZEJŚCIOWY — najpierw ponów z backoffem
+(respektując `Retry-After`, z twardym capem i limitem prób), dopiero potem fallback/komunikat. Retry rób
+na poziomie `fetch` (jedno miejsce dla wszystkich dostawców i trybów, też streaming — status sprawdzasz
+zanim skonsumujesz body). Nigdy nie pokazuj użytkownikowi surowej treści błędu dostawcy — zawsze własny,
+polski komunikat (C-41: brak ryzyka wycieku klucza/szczegółów). Ponawiaj TYLKO statusy przejściowe
+(429/≥500), nie 4xx poza 429.
 **Problem:** Po naprawie instalacji SW aplikacja wstawała offline i katalog `/shopping` był widoczny, ale
 kliknięcie w konkretną listę nic nie dawało. Przyczyna: w App Routerze wejście w `/shopping/[id]` przez
 `<Link>` to nawigacja **SPA**, która pobiera payload **RSC** z sieci — offline to pada. Do tego dokument
