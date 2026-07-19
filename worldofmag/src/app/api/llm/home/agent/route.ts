@@ -134,6 +134,13 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - plan_meal { customTitle, date?(ISO; pomiń jeśli „dziś"), slot?:"breakfast"|"lunch"|"dinner"|"snack" } — planuje posiłek w jadłospisie.
 - add_pantry_item { name, quantity?, unit?, expiresAt?(ISO) } — dodaje produkt do spiżarni.
 - create_recipe { title, description?, servings?, body? }
+- update_recipe { newTitle?, description?, servings?, recipeId? } (searchQuery = tytuł)
+- archive_recipe {} (searchQuery = tytuł)
+- duplicate_recipe {} (searchQuery = tytuł) — tworzy kopię przepisu.
+- mark_recipe_cooked { servings? } (searchQuery = tytuł) — oznacza jako ugotowany (zużywa spiżarnię).
+- shop_for_recipe { listName?, servings?, skipPantry? } (searchQuery = tytuł) — dodaje składniki przepisu do listy zakupów.
+- add_ingredient { name, quantity?, unit?, note?, isOptional? } (searchQuery = tytuł przepisu) — dopisuje składnik.
+- add_step { text, durationMin? } (searchQuery = tytuł przepisu) — dopisuje krok.
 - delete_recipe {} (searchQuery = tytuł) — DESTRUKCYJNE
 - mark_meal_cooked {} (searchQuery = tytuł posiłku)
 - delete_meal_plan {} (searchQuery = tytuł posiłku)

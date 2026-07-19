@@ -1234,23 +1234,27 @@
     "reason": "admin"
   },
   "recipes:addIngredient": {
-    "status": "pending"
+    "status": "ai",
+    "action": "add_ingredient"
   },
   "recipes:addRecipeImage": {
     "status": "excluded",
     "reason": "interactive"
   },
   "recipes:addStep": {
-    "status": "pending"
+    "status": "ai",
+    "action": "add_step"
   },
   "recipes:archiveRecipe": {
-    "status": "pending"
+    "status": "ai",
+    "action": "archive_recipe"
   },
   "recipes:createRecipe": {
     "status": "ai"
   },
   "recipes:deleteIngredient": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "recipes:deleteRecipe": {
     "status": "ai"
@@ -1260,10 +1264,12 @@
     "reason": "interactive"
   },
   "recipes:deleteStep": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "recipes:duplicateRecipe": {
-    "status": "pending"
+    "status": "ai",
+    "action": "duplicate_recipe"
   },
   "recipes:getRecipe": {
     "kind": "read",
@@ -1275,7 +1281,8 @@
     "status": "ai"
   },
   "recipes:markRecipeCooked": {
-    "status": "pending"
+    "status": "ai",
+    "action": "mark_recipe_cooked"
   },
   "recipes:reorderIngredients": {
     "status": "excluded",
@@ -1286,20 +1293,24 @@
     "reason": "interactive"
   },
   "recipes:shopForRecipe": {
-    "status": "pending"
+    "status": "ai",
+    "action": "shop_for_recipe"
   },
   "recipes:updateIngredient": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "recipes:updateRecipe": {
-    "status": "pending"
+    "status": "ai",
+    "action": "update_recipe"
   },
   "recipes:updateRecipeImage": {
     "status": "excluded",
     "reason": "interactive"
   },
   "recipes:updateStep": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "reports:createReport": {
     "status": "excluded",
