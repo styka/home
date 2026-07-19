@@ -1741,22 +1741,27 @@
     "status": "ai"
   },
   "warsztat:addWorkshopProject": {
-    "status": "pending"
+    "status": "ai",
+    "action": "add_workshop_project"
   },
   "warsztat:adjustWorkshopItemQuantity": {
-    "status": "pending"
+    "status": "ai",
+    "action": "adjust_workshop_item"
   },
   "warsztat:createWorkshop": {
     "status": "ai"
   },
   "warsztat:deleteWorkshop": {
-    "status": "pending"
+    "status": "ai",
+    "action": "delete_workshop"
   },
   "warsztat:deleteWorkshopItem": {
-    "status": "pending"
+    "status": "ai",
+    "action": "delete_workshop_item"
   },
   "warsztat:deleteWorkshopProject": {
-    "status": "pending"
+    "status": "ai",
+    "action": "delete_workshop_project"
   },
   "warsztat:getMaintenanceOverview": {
     "kind": "read",
@@ -1781,13 +1786,16 @@
     "reason": "admin"
   },
   "warsztat:updateWorkshop": {
-    "status": "pending"
+    "status": "ai",
+    "action": "update_workshop"
   },
   "warsztat:updateWorkshopItem": {
-    "status": "pending"
+    "status": "ai",
+    "action": "update_workshop_item"
   },
   "warsztat:updateWorkshopProject": {
-    "status": "pending"
+    "status": "ai",
+    "action": "update_workshop_project"
   },
   "weather:addCustomWatcher": {
     "status": "pending"
