@@ -1,11 +1,24 @@
 // Z-010: handler akcji asystenta dla modułu Zadania (zadania + projekty).
 // Scala oba dawne bloki `module === "tasks"` z execute/route.ts.
 import { prisma } from "@/lib/prisma";
-import { createTask, updateTask, deleteTask } from "@/actions/tasks";
+import { createTask, updateTask, deleteTask, updateTaskTags } from "@/actions/tasks";
 import { createTaskProject, updateTaskProject, deleteTaskProject } from "@/actions/taskProjects";
+import { createTaskTag } from "@/actions/taskTags";
 import { addDays, shiftPriority, asStr, undoAction, resolveTaskId, resolveProjectIdForCreate, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { TaskStatus, TaskPriority } from "@/types";
+
+// Zamień listę NAZW etykiet na ich id (tworzy brakujące — createTaskTag jest upsertem
+// po znormalizowanej nazwie). Puste/nietekstowe wpisy pomijamy.
+async function resolveTaskTagIds(names: unknown): Promise<string[]> {
+  const list = Array.isArray(names) ? names.map((n) => asStr(n)).filter((n): n is string => !!n) : [];
+  const ids: string[] = [];
+  for (const name of list) {
+    const tag = await createTaskTag(name);
+    ids.push(tag.id);
+  }
+  return ids;
+}
 
 export async function executeTasksAction(action: AIAction, userId: string, currentProjectId?: string): Promise<string | ExecOutcome> {
   const { type, params, searchQuery } = action;
@@ -15,12 +28,20 @@ export async function executeTasksAction(action: AIAction, userId: string, curre
     const priority = (asStr(params.priority) ?? "NONE") as TaskPriority;
     const dueDate = params.dueDate ? new Date(params.dueDate as string) : null;
     const projectId = await resolveProjectIdForCreate(userId, asStr(params.projectName), currentProjectId);
+    // Podzadanie: gdy podano rodzica (id lub nazwa) — podepnij pod niego.
+    let parentTaskId: string | null = null;
+    if (params.parentTaskId || params.parentSearch) {
+      parentTaskId = await resolveTaskId(userId, { taskId: params.parentTaskId }, asStr(params.parentSearch));
+    }
+    const tagIds = params.tags ? await resolveTaskTagIds(params.tags) : undefined;
     const task = await createTask({
       title,
       priority,
       dueDate,
       description: asStr(params.description) ?? null,
       projectId,
+      ...(parentTaskId ? { parentTaskId } : {}),
+      ...(tagIds && tagIds.length ? { tagIds } : {}),
     });
     const msg = `Utworzono zadanie "${task.title}"`;
     const undo = undoAction("tasks", "delete_task", { taskId: task.id }, `Usuń zadanie "${task.title}"`);
@@ -92,6 +113,31 @@ export async function executeTasksAction(action: AIAction, userId: string, curre
     const existing = await prisma.task.findUnique({ where: { id }, select: { title: true } });
     await deleteTask(id);
     return `Usunięto zadanie "${existing?.title ?? ""}"`;
+  }
+
+  if (type === "set_task_tags") {
+    const id = await resolveTaskId(userId, params, searchQuery);
+    const current = await prisma.task.findUnique({
+      where: { id },
+      select: { title: true, tags: { select: { tagId: true, tag: { select: { name: true } } } } },
+    });
+    const addIds = await resolveTaskTagIds(params.tags);
+    const removeNames = (Array.isArray(params.removeTags) ? params.removeTags : [])
+      .map((n) => asStr(n)?.toLowerCase())
+      .filter((n): n is string => !!n);
+    let finalIds: string[];
+    if (params.replace === true) {
+      finalIds = addIds; // pełne zastąpienie zestawu tagów
+    } else {
+      // Domyślnie DODAJEMY do istniejących (a removeTags zdejmuje wskazane).
+      const existingIds = (current?.tags ?? [])
+        .filter((t) => !removeNames.includes(t.tag.name.toLowerCase()))
+        .map((t) => t.tagId);
+      finalIds = Array.from(new Set([...existingIds, ...addIds]));
+    }
+    await updateTaskTags(id, finalIds);
+    const label = current?.title ?? "";
+    return `Zaktualizowano tagi zadania "${label}"`;
   }
 
   if (type === "create_project") {

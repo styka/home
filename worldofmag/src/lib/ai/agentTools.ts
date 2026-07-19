@@ -46,6 +46,7 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_decks: args {} → [{ id, name, nativeLang, targetLang }]. Talie fiszek (nauka języków).
 - list_news_topics: args {} → [{ id, title }]. Monitorowane tematy wiadomości.
 - list_weather_locations: args {} → [{ id, label, isDefault }]. Lokalizacje pogodowe.
+- list_contacts: args { search?, limit? } → [{ id, name, phone, email, company, tags }]. Kontakty (osobisty CRM). search filtruje po imieniu/telefonie/mailu/firmie/tagach.
 - list_calendar: args { year?, month? } → [{ module, title, date, at, href }]. Zagregowany kalendarz (zadania + posiłki + zdrowie + przeglądy floty) dla danego miesiąca (domyślnie bieżący; month = 1-12).
 - web_search: args { query, limit? } → [{ title, url, snippet }]. Wyszukiwarka internetowa — użyj TYLKO gdy potrzebujesz informacji spoza danych użytkownika (ceny, fakty, definicje, świat zewnętrzny). W odpowiedzi cytuj źródła linkami markdown.`;
 
@@ -71,6 +72,7 @@ export const READ_TOOL_NAMES = [
   "list_decks",
   "list_news_topics",
   "list_weather_locations",
+  "list_contacts",
   "list_calendar",
 ] as const;
 
@@ -609,6 +611,41 @@ export async function runReadTool(
         take: HARD_MAX,
       });
       return locations;
+    }
+
+    case "list_contacts": {
+      const search = asStr(args.search);
+      const teamIds = await getUserTeamIds(userId);
+      const contacts = await prisma.contact.findMany({
+        where: {
+          OR: [
+            { ownerId: userId },
+            ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+          ],
+          ...(search
+            ? {
+                OR: [
+                  { name: { contains: search, mode: "insensitive" as const } },
+                  { phone: { contains: search, mode: "insensitive" as const } },
+                  { email: { contains: search, mode: "insensitive" as const } },
+                  { company: { contains: search, mode: "insensitive" as const } },
+                  { tags: { contains: search, mode: "insensitive" as const } },
+                ],
+              }
+            : {}),
+        },
+        select: { id: true, name: true, phone: true, email: true, company: true, tags: true },
+        orderBy: { name: "asc" },
+        take: clampLimit(args.limit),
+      });
+      return contacts.map((c) => ({
+        id: c.id,
+        name: c.name,
+        phone: c.phone,
+        email: c.email,
+        company: c.company,
+        tags: (() => { try { return c.tags ? JSON.parse(c.tags) : []; } catch { return []; } })(),
+      }));
     }
 
     case "list_calendar": {
