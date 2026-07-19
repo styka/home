@@ -117,7 +117,11 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - archive_wallet_element { archived } (elementName?)
 - delete_wallet_element {} (elementName? / searchQuery = nazwa) — DESTRUKCYJNE
 - create_budget { category, limitAmount:number, note? } — budżet miesięczny dla kategorii (limit w PLN).
+- update_budget { category?, limitAmount?, note?, budgetId? } (searchQuery = kategoria budżetu)
+- delete_budget { budgetId? } (searchQuery = kategoria) — DESTRUKCYJNE
 - create_goal { name, targetAmount:number, currentAmount?, deadline?(ISO), note? } — cel oszczędnościowy.
+- update_goal { name?, targetAmount?, deadline?, note?, goalId? } (searchQuery = nazwa celu)
+- delete_goal { goalId? } (searchQuery = nazwa) — DESTRUKCYJNE
 - contribute_goal { amount:number, goalName? } (searchQuery = nazwa celu) — dopłata do celu (ujemna = wypłata).`,
 
   kitchen: `KUCHNIA (module "kitchen"):
@@ -157,6 +161,8 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - delete_health_event { eventId? } (searchQuery fallback) — DESTRUKCYJNE
 - create_medication { name, kind:"MEDICATION"|"CARE", dosage?, freqType:"DAILY"|"WEEKLY"|"HOURLY", interval?, daysOfWeek?(np. [1,3,5]; 0=nd..6=sb), timesOfDay?(np. ["08:00","20:00"]), hourlyStart?, hourlyEnd?, startDate?(ISO), endDate?(ISO), instructions?, reason? } — harmonogram leku (kind MEDICATION) lub czynności pielęgnacyjnej (kind CARE, np. zmiana opatrunku).
 - log_dose { medicationId?, slot?(HH:MM), date?(YYYY-MM-DD) } (searchQuery = nazwa leku) — odhacza dawkę/czynność (domyślnie dziś).
+- unlog_dose { medicationId?, slot?, date? } (searchQuery = nazwa leku) — cofa odhaczenie dawki (domyślnie dziś).
+- update_medication { name?, dosage?, instructions?, reason?, active?, medicationId? } (searchQuery = nazwa) — edycja harmonogramu.
 - delete_medication { medicationId? } (searchQuery = nazwa) — DESTRUKCYJNE`,
 
   languages: `JĘZYKI (module "languages"):
