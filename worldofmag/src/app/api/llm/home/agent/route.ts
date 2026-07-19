@@ -88,6 +88,7 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - shift_task_priority { steps:number, taskId? } (searchQuery fallback) — podnosi/obniża priorytet WZGLĘDNIE o "steps" szczebli na drabinie NONE<LOW<MEDIUM<HIGH<URGENT (ujemne = obniż). Każde zadanie zmienia się względem SWOJEGO obecnego priorytetu — użyj TEJ akcji (osobny shift_task_priority per zadanie) zamiast ustawiać wspólny priorytet przez update_task, gdy ktoś prosi „podnieś/zmniejsz priorytet o N".
 - delete_task { taskId? } (searchQuery fallback) — DESTRUKCYJNE
 - set_task_tags { tags:[string], removeTags?:[string], replace?, taskId? } (searchQuery = tytuł zadania) — DODAJE podane tagi do zadania (removeTags zdejmuje wskazane; replace:true zastępuje cały zestaw). Użyj dla „otaguj/oznacz tagiem/nadaj etykietę zadaniu".
+- add_task_comment { content, taskId? } (searchQuery = tytuł zadania) — dodaje komentarz do zadania.
 - create_project { name, emoji? }
 - update_project { name?, emoji?, projectId? } (searchQuery = nazwa projektu)
 - delete_project { projectId? } (searchQuery = nazwa) — DESTRUKCYJNE
@@ -112,7 +113,8 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - create_habit { name, description?, icon? } — tworzy nowy nawyk.
 - update_habit { name?, icon?, description? } (searchQuery = nazwa)
 - archive_habit { archived } (searchQuery = nazwa)
-- delete_habit {} (searchQuery = nazwa) — DESTRUKCYJNE`,
+- delete_habit {} (searchQuery = nazwa) — DESTRUKCYJNE
+- create_task_from_habit { dueDate?(ISO) } (searchQuery = nazwa nawyku) — tworzy zadanie na bazie nawyku.`,
 
   portfel: `PORTFEL (module "portfel"):
 - add_expense { amount:number, category?, note?, elementName? } — wydatek (kwota w PLN). elementName = fragment nazwy konta/elementu portfela.
@@ -134,6 +136,13 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - plan_meal { customTitle, date?(ISO; pomiń jeśli „dziś"), slot?:"breakfast"|"lunch"|"dinner"|"snack" } — planuje posiłek w jadłospisie.
 - add_pantry_item { name, quantity?, unit?, expiresAt?(ISO) } — dodaje produkt do spiżarni.
 - create_recipe { title, description?, servings?, body? }
+- update_recipe { newTitle?, description?, servings?, recipeId? } (searchQuery = tytuł)
+- archive_recipe {} (searchQuery = tytuł)
+- duplicate_recipe {} (searchQuery = tytuł) — tworzy kopię przepisu.
+- mark_recipe_cooked { servings? } (searchQuery = tytuł) — oznacza jako ugotowany (zużywa spiżarnię).
+- shop_for_recipe { listName?, servings?, skipPantry? } (searchQuery = tytuł) — dodaje składniki przepisu do listy zakupów.
+- add_ingredient { name, quantity?, unit?, note?, isOptional? } (searchQuery = tytuł przepisu) — dopisuje składnik.
+- add_step { text, durationMin? } (searchQuery = tytuł przepisu) — dopisuje krok.
 - delete_recipe {} (searchQuery = tytuł) — DESTRUKCYJNE
 - mark_meal_cooked {} (searchQuery = tytuł posiłku)
 - delete_meal_plan {} (searchQuery = tytuł posiłku)
@@ -141,6 +150,9 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - consume_pantry { quantity } (searchQuery = nazwa)
 - delete_pantry_item {} (searchQuery = nazwa) — DESTRUKCYJNE
 - generate_shopping_from_plan { days?, listName?, skipPantry? } — zbiera składniki z zaplanowanych posiłków (domyślnie 7 dni) do listy zakupów (domyślnie pomija to, co masz w spiżarni).
+- set_pantry_quantity { quantity:number } (searchQuery = nazwa) — ustawia dokładną ilość w spiżarni.
+- move_item_to_pantry {} (searchQuery = nazwa produktu z listy zakupów) — przenosi kupiony produkt do spiżarni.
+- auto_replenish_pantry { listName? } — dorzuca do listy zakupów produkty spiżarni poniżej progu.
 - mark_meal_skipped {} (searchQuery = tytuł posiłku) — oznacza posiłek jako pominięty.
 - update_meal_plan_entry { customTitle?, slot? } (searchQuery = tytuł posiłku) — zmienia nazwę/porę posiłku.
 - move_meal_plan_entry { date?(ISO), slot? } (searchQuery = tytuł posiłku) — przenosi posiłek na inny dzień/porę.
@@ -160,11 +172,24 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - adjust_storage { delta:number } (searchQuery = nazwa pozycji) — przyjęcie (+) lub wydanie (−) ze stanu.
 - update_storage_item { name?, unit?, warehouse?, location? } (searchQuery = nazwa)
 - delete_storage_item {} (searchQuery = nazwa) — DESTRUKCYJNE
-- transfer_storage { toWarehouse?, toLocation?, quantity } (searchQuery = nazwa)`,
+- transfer_storage { toWarehouse?, toLocation?, quantity } (searchQuery = nazwa)
+- add_batch { quantity:number, lotNo?, serialNo?, expiresAt?(ISO), note? } (searchQuery = nazwa pozycji) — dodaje partię/lot (FEFO).
+- add_low_stock_to_shopping { listName? } — dorzuca pozycje poniżej stanu minimalnego do listy zakupów.
+- add_supplier { name, contact?, email?, phone?, notes? } — nowy dostawca.
+- update_supplier { newName?, contact?, email?, phone?, notes?, supplierId? } (searchQuery = nazwa dostawcy)
+- delete_supplier { supplierId? } (searchQuery = nazwa) — DESTRUKCYJNE`,
 
   warsztaty: `WARSZTATY (module "warsztaty"):
 - create_workshop { name, type?, location? } — nowy warsztat/pracownia (type: "stolarski"|"samochodowy"|"malarski"|"elektroniczny"|"slusarski"|"ceramiczny"|"krawiecki"|"jubilerski"|"ogolny").
-- add_workshop_item { name, workshopName?, kind?, quantity?, unit?, category? } — dodaj pozycję wyposażenia do warsztatu (kind: "tool"|"machine"|"consumable"|"safety"|"material"; searchQuery = nazwa warsztatu).`,
+- add_workshop_item { name, workshopName?, kind?, quantity?, unit?, category? } — dodaj pozycję wyposażenia do warsztatu (kind: "tool"|"machine"|"consumable"|"safety"|"material"; searchQuery = nazwa warsztatu).
+- update_workshop { newName?, type?, location?, workshopId? } (searchQuery = nazwa warsztatu)
+- delete_workshop { workshopId? } (searchQuery = nazwa) — DESTRUKCYJNE
+- update_workshop_item { newName?, kind?, category?, unit?, itemId? } (searchQuery = nazwa pozycji)
+- delete_workshop_item { itemId? } (searchQuery = nazwa pozycji) — DESTRUKCYJNE
+- adjust_workshop_item { delta:number, itemId? } (searchQuery = nazwa pozycji) — zmiana ilości (+/−).
+- add_workshop_project { name, workshopName?, description?, status? } — projekt w warsztacie (Pro).
+- update_workshop_project { newName?, description?, status?, projectId? } (searchQuery = nazwa projektu)
+- delete_workshop_project { projectId? } (searchQuery = nazwa) — DESTRUKCYJNE`,
 
   health: `ZDROWIE (module "health"):
 - create_health_event { title, kind:"VISIT"|"TEST", scheduledAt(ISO), doctorName?, specialty?, facility?, notes? } — wizyta lub badanie.
@@ -183,19 +208,25 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - delete_word { wordId } — DESTRUKCYJNE
 - update_deck { name?, nativeLang?, targetLang?, deckName? }
 - delete_deck {} (searchQuery = nazwa) — DESTRUKCYJNE
-- update_word { term?, translation?, example?, wordId? }`,
+- update_word { term?, translation?, example?, wordId? }
+- bulk_add_words { deckName?, words:[{ term, translation, example? }] } — dodaje wiele fiszek naraz.`,
 
   news: `WIADOMOŚCI (module "news"):
 - create_news_topic { title, semanticFilter? } — nowy monitorowany temat.
 - delete_news_topic { topicId? } (searchQuery = tytuł) — DESTRUKCYJNE
 - update_news_topic { title?, semanticFilter?, topicId? } (searchQuery = tytuł)
-- refresh_news_topic { topicId? } (searchQuery = tytuł)`,
+- refresh_news_topic { topicId? } (searchQuery = tytuł)
+- create_news_source { name, rssUrl, homepageUrl?, leaning?("left"|"center"|"right") } — dodaje źródło RSS.
+- update_news_source { newName?, rssUrl?, homepageUrl?, leaning?, enabled?, sourceId? } (searchQuery = nazwa źródła)
+- delete_news_source { sourceId? } (searchQuery = nazwa źródła) — DESTRUKCYJNE`,
 
   weather: `POGODA (module "weather"):
 - add_weather_location { name } — dodaje lokalizację pogodową po nazwie miejscowości.
 - delete_weather_location { locationId? } (searchQuery = nazwa) — DESTRUKCYJNE
 - set_default_weather_location { locationId? } (searchQuery = nazwa)
 - add_weather_watcher { presetKey }
+- add_custom_watcher { title, query, horizon?("today"|"tomorrow"|"weekend"|"week") } — własny obserwator pogody.
+- update_watcher { newTitle?, query?, horizon?, enabled?, watcherId? } (searchQuery = tytuł obserwatora)
 - delete_weather_watcher { watcherId? } — DESTRUKCYJNE`,
 
   contacts: `KONTAKTY (module "contacts") — osobisty CRM:

@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { getUserTeamIds } from "@/lib/server-utils";
 import { parseRecurringRule, computeNextDue } from "@/lib/recurrence";
 import { updatePet, setPetStatus, deletePet } from "@/actions/pets";
+import { updateEnclosure, deleteEnclosure, assignPetToEnclosure } from "@/actions/petHusbandry";
+import { asStr } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { RecurringRule, PetStatus } from "@/types";
 
@@ -75,6 +77,32 @@ export async function executePetAction(action: AIAction, userId: string): Promis
       if (target) await prisma.pet.update({ where: { id: target.id }, data: { enclosureId: enc.id } });
     }
     return `Utworzono zbiornik "${enc.name}"`;
+  }
+
+  // Zbiorniki/terraria — rezolucja po nazwie w zakresie użytkownika/zespołu.
+  if (type === "update_enclosure" || type === "delete_enclosure" || type === "assign_pet_to_enclosure") {
+    const teamIds = await getUserTeamIds(userId);
+    const ownerOr = teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
+    const encQuery = asStr(params.enclosureName) ?? (type === "assign_pet_to_enclosure" ? undefined : searchQuery);
+    if (type === "assign_pet_to_enclosure") {
+      const target = await findPetByName(userId, searchQuery ?? asStr(params.petName) ?? "");
+      if (!target) throw new Error(`Nie znaleziono zwierzęcia: "${searchQuery ?? ""}"`);
+      const enc = encQuery
+        ? await prisma.petEnclosure.findFirst({ where: { OR: ownerOr, name: { contains: encQuery, mode: "insensitive" } }, select: { id: true, name: true } })
+        : null;
+      await assignPetToEnclosure(target.id, enc?.id ?? null);
+      return enc ? `Przypisano ${target.name} do zbiornika „${enc.name}"` : `Odpięto ${target.name} od zbiornika`;
+    }
+    const enc = await prisma.petEnclosure.findFirst({ where: { OR: ownerOr, name: { contains: encQuery ?? "", mode: "insensitive" } }, select: { id: true, name: true } });
+    if (!enc) throw new Error(`Nie znaleziono zbiornika: "${encQuery ?? ""}"`);
+    if (type === "delete_enclosure") { await deleteEnclosure(enc.id); return `Usunięto zbiornik „${enc.name}"`; }
+    await updateEnclosure(enc.id, {
+      name: asStr(params.newName),
+      type: asStr(params.type),
+      location: asStr(params.location) ?? null,
+      notes: asStr(params.notes) ?? null,
+    });
+    return `Zaktualizowano zbiornik „${enc.name}"`;
   }
 
   // Pozostałe akcje wymagają wskazania zwierzęcia po imieniu

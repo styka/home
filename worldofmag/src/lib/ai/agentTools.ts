@@ -6,15 +6,23 @@ import { getTrash } from "@/actions/trash";
 import { getTaskTags } from "@/actions/taskTags";
 import { getTags } from "@/actions/tags";
 import { getRecipe } from "@/actions/recipes";
-import { getCareAgenda } from "@/actions/petCare";
+import { getCareAgenda, getCareHistory, getPetWelfare } from "@/actions/petCare";
+import { getEnclosures } from "@/actions/petHusbandry";
 import { getMaintenanceOverview } from "@/actions/warsztat";
-import { getHotTopics } from "@/actions/news";
+import { getHotTopics, getSources, getTopics, getTopicView } from "@/actions/news";
 import { getLocations, getWeather } from "@/actions/weather";
+import { getSuppliers, getLowStock, getExpiringStorage, getStorageAnalytics } from "@/actions/storage";
 import { getProjectGroups } from "@/actions/projectGroups";
 import { getNoteGroups } from "@/actions/noteGroups";
 import { getCookbooks } from "@/actions/cookbooks";
 import { getWalletOverview } from "@/actions/portfel";
-import { getExpiringSoon } from "@/actions/pantry";
+import { getExpiringSoon, getAutoReplenishCandidates } from "@/actions/pantry";
+import { getTestTrends } from "@/actions/health";
+import { getDueCards, getStudyStreak } from "@/actions/languageDecks";
+import { getMealPlanCost, getTodaysMeals } from "@/actions/mealPlans";
+import { getMonthlyReport } from "@/actions/portfelReports";
+import { searchReports } from "@/actions/reports";
+import { getWatchers } from "@/actions/weather";
 import { describeFrequency } from "@/lib/medicationSchedule";
 import type { MedicationSchedule } from "@/types";
 
@@ -76,6 +84,24 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_cookbooks: args {} → [{ id, name, recipeCount }]. Książki kucharskie.
 - get_wallet_overview: args {} → { totalNet, currency, monthlyRate, projection6m }. Podsumowanie majątku (suma netto, tempo zmian, prognoza 6 mies.).
 - list_expiring_pantry: args { days? } → [{ id, name, quantity, unit, expiresAt }]. Produkty w spiżarni z terminem ważności w najbliższych N dniach (domyślnie 7).
+- list_enclosures: args {} → [{ id, name, type, location }]. Zbiorniki/terraria/klatki (husbandry).
+- get_pet_welfare: args {} → { agenda:[…], suggestions:[…] }. Dobrostan zwierząt: zaległa opieka + sugestie.
+- list_care_history: args { petName, limit? } → [{ date, kind, note }]. Historia opieki nad wskazanym zwierzęciem (searchowane po imieniu).
+- list_news_sources: args {} → [{ id, name, leaning, enabled }]. Skonfigurowane źródła RSS wiadomości.
+- get_news_topic_view: args { topicName } → { items:[…], knowledge:[…] }. Świeże pozycje i baza wiedzy dla wskazanego monitorowanego tematu.
+- list_suppliers: args {} → [{ id, name, contact, email, phone }]. Dostawcy (magazyn Pro).
+- list_low_stock: args {} → [{ id, name, quantity, minQuantity, warehouse }]. Pozycje magazynu poniżej stanu minimalnego.
+- list_expiring_storage: args { days? } → [{ name, quantity, expiresAt, warehouse }]. Partie/pozycje magazynu z bliskim terminem (domyślnie 30 dni).
+- get_storage_analytics: args {} → { totalValue, deadStock, abc, … }. Analityka magazynu (wartość, dead-stock, ABC).
+- get_test_trends: args {} → [{ name, points:[{ date, value }] }]. Trendy wyników badań laboratoryjnych (zdrowie).
+- list_due_cards: args { deckName, limit? } → [{ id, term, translation }]. Fiszki do powtórki w danej talii.
+- get_study_streak: args {} → { streak, reviewedToday }. Passa nauki języków.
+- get_meal_plan_cost: args { days? } → { total, currency, … }. Szacowany koszt jadłospisu na N dni (domyślnie 7).
+- list_todays_meals: args {} → [{ slot, title }]. Dzisiejsze zaplanowane posiłki.
+- list_replenish_candidates: args {} → [{ id, name, quantity, unit }]. Produkty spiżarni do automatycznego uzupełnienia (poniżej progu).
+- get_monthly_report: args { monthOffset? } → { income, expense, balance, byCategory:[…] }. Miesięczny raport finansowy (0=bieżący, -1=poprzedni).
+- search_reports: args { query } → [{ slug, title, category }]. Wyszukuje raporty (markdown) po treści/tytule.
+- list_watchers: args {} → [{ id, title, query, horizon, enabled }]. Obserwatorzy pogody (alerty).
 - list_calendar: args { year?, month? } → [{ module, title, date, at, href }]. Zagregowany kalendarz (zadania + posiłki + zdrowie + przeglądy floty) dla danego miesiąca (domyślnie bieżący; month = 1-12).
 - web_search: args { query, limit? } → [{ title, url, snippet }]. Wyszukiwarka internetowa — użyj TYLKO gdy potrzebujesz informacji spoza danych użytkownika (ceny, fakty, definicje, świat zewnętrzny). W odpowiedzi cytuj źródła linkami markdown.`;
 
@@ -118,6 +144,24 @@ export const READ_TOOL_NAMES = [
   "list_cookbooks",
   "get_wallet_overview",
   "list_expiring_pantry",
+  "list_enclosures",
+  "get_pet_welfare",
+  "list_care_history",
+  "list_news_sources",
+  "get_news_topic_view",
+  "list_suppliers",
+  "list_low_stock",
+  "list_expiring_storage",
+  "get_storage_analytics",
+  "get_test_trends",
+  "list_due_cards",
+  "get_study_streak",
+  "get_meal_plan_cost",
+  "list_todays_meals",
+  "list_replenish_candidates",
+  "get_monthly_report",
+  "search_reports",
+  "list_watchers",
 ] as const;
 
 async function accessibleProjectIds(userId: string): Promise<string[]> {
@@ -812,6 +856,127 @@ export async function runReadTool(
         id: i.id, name: i.name, quantity: i.quantity, unit: i.unit,
         expiresAt: i.expiresAt ? new Date(i.expiresAt).toISOString().slice(0, 10) : null,
       }));
+    }
+
+    case "list_enclosures": {
+      const encs = await getEnclosures();
+      return encs.map((e) => ({ id: e.id, name: e.name, type: e.type, location: e.location }));
+    }
+
+    case "get_pet_welfare": {
+      return getPetWelfare();
+    }
+
+    case "get_test_trends": {
+      return getTestTrends();
+    }
+
+    case "list_due_cards": {
+      const deckName = asStr(args.deckName) ?? asStr(args.search);
+      const teamIds = await getUserTeamIds(userId);
+      const deck = await prisma.languageDeck.findFirst({
+        where: {
+          OR: [{ ownerId: userId }, ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : [])],
+          ...(deckName ? { name: { contains: deckName, mode: "insensitive" as const } } : {}),
+        },
+        select: { id: true, name: true },
+        orderBy: { updatedAt: "desc" },
+      });
+      if (!deck) return { note: "Nie znaleziono talii fiszek." };
+      const cards = await getDueCards(deck.id, clampLimit(args.limit));
+      return { deck: deck.name, cards: cards.map((c) => ({ id: c.id, term: c.term, translation: c.translation })) };
+    }
+
+    case "get_study_streak": {
+      return getStudyStreak();
+    }
+
+    case "get_meal_plan_cost": {
+      const days = typeof args.days === "number" ? Math.max(1, Math.min(30, args.days)) : 7;
+      const from = new Date(); from.setHours(0, 0, 0, 0);
+      const to = new Date(from); to.setDate(to.getDate() + days);
+      return getMealPlanCost({ from, to });
+    }
+
+    case "list_todays_meals": {
+      const meals = await getTodaysMeals();
+      return meals.map((m) => ({ slot: m.slot, title: m.customTitle ?? m.recipe?.title ?? "(posiłek)" }));
+    }
+
+    case "list_replenish_candidates": {
+      const items = await getAutoReplenishCandidates();
+      return items.slice(0, clampLimit(args.limit)).map((i) => ({ id: i.id, name: i.name, quantity: i.quantity, unit: i.unit }));
+    }
+
+    case "get_monthly_report": {
+      const offset = typeof args.monthOffset === "number" ? args.monthOffset : 0;
+      return getMonthlyReport(offset);
+    }
+
+    case "search_reports": {
+      const q = asStr(args.query) ?? asStr(args.search) ?? "";
+      const reports = await searchReports(q);
+      return reports.slice(0, clampLimit(args.limit)).map((r) => ({ slug: r.slug, title: r.title, category: r.category }));
+    }
+
+    case "list_watchers": {
+      const watchers = await getWatchers();
+      return watchers.map((w) => ({ id: w.id, title: w.title, query: w.query, horizon: w.horizon, enabled: w.enabled }));
+    }
+
+    case "list_suppliers": {
+      const suppliers = await getSuppliers();
+      return suppliers.map((s) => ({ id: s.id, name: s.name, contact: s.contact, email: s.email, phone: s.phone }));
+    }
+
+    case "list_low_stock": {
+      const items = await getLowStock();
+      return items.slice(0, clampLimit(args.limit)).map((i) => ({
+        id: i.id, name: i.name, quantity: i.quantity, minQuantity: i.minQuantity, warehouse: i.warehouse,
+      }));
+    }
+
+    case "list_expiring_storage": {
+      const days = typeof args.days === "number" ? Math.max(1, Math.min(365, args.days)) : 30;
+      return getExpiringStorage(days);
+    }
+
+    case "get_storage_analytics": {
+      return getStorageAnalytics();
+    }
+
+    case "list_news_sources": {
+      const sources = await getSources();
+      return sources.map((s) => ({ id: s.id, name: s.name, leaning: s.leaning, enabled: s.enabled }));
+    }
+
+    case "get_news_topic_view": {
+      const name = asStr(args.topicName) ?? asStr(args.search);
+      if (!name) return { note: "Podaj nazwę tematu (topicName)." };
+      const topics = await getTopics();
+      const topic = topics.find((t) => t.title.toLowerCase().includes(name.toLowerCase()));
+      if (!topic) return { note: `Nie znaleziono tematu: „${name}".` };
+      return getTopicView(topic.id);
+    }
+
+    case "list_care_history": {
+      const petName = asStr(args.petName) ?? asStr(args.search);
+      if (!petName) return { note: "Podaj imię zwierzęcia (petName)." };
+      const teamIds = await getUserTeamIds(userId);
+      const pet = await prisma.pet.findFirst({
+        where: {
+          OR: [
+            { ownerId: userId },
+            ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+            { shares: { some: { userId } } },
+          ],
+          name: { contains: petName, mode: "insensitive" },
+        },
+        select: { id: true, name: true },
+      });
+      if (!pet) return { note: `Nie znaleziono zwierzęcia: „${petName}".` };
+      const history = await getCareHistory(pet.id, clampLimit(args.limit, 50));
+      return { pet: pet.name, history };
     }
 
     default:
