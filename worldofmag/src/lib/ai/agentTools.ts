@@ -10,6 +10,11 @@ import { getCareAgenda } from "@/actions/petCare";
 import { getMaintenanceOverview } from "@/actions/warsztat";
 import { getHotTopics } from "@/actions/news";
 import { getLocations, getWeather } from "@/actions/weather";
+import { getProjectGroups } from "@/actions/projectGroups";
+import { getNoteGroups } from "@/actions/noteGroups";
+import { getCookbooks } from "@/actions/cookbooks";
+import { getWalletOverview } from "@/actions/portfel";
+import { getExpiringSoon } from "@/actions/pantry";
 import { describeFrequency } from "@/lib/medicationSchedule";
 import type { MedicationSchedule } from "@/types";
 
@@ -66,6 +71,11 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_maintenance: args {} → { serviceDue:[…], lowStock:[…] }. Przeglądy narzędzi/maszyn i niski stan materiałów w warsztatach (tryb Pro).
 - list_hot_topics: args {} → [{ title, count }]. „Gorące" tematy z monitorowanych wiadomości (świeże, częste).
 - list_trash: args {} → { retentionDays, items:[{ id, module, label, deletedAt, daysLeft }] }. Kosz — elementy usunięte (do przywrócenia w /trash).
+- list_project_groups: args {} → [{ id, name, projectCount }]. Grupy projektów zadań (foldery/współdzielone widoki).
+- list_note_groups: args {} → [{ id, name }]. Grupy (foldery) notatek.
+- list_cookbooks: args {} → [{ id, name, recipeCount }]. Książki kucharskie.
+- get_wallet_overview: args {} → { totalNet, currency, monthlyRate, projection6m }. Podsumowanie majątku (suma netto, tempo zmian, prognoza 6 mies.).
+- list_expiring_pantry: args { days? } → [{ id, name, quantity, unit, expiresAt }]. Produkty w spiżarni z terminem ważności w najbliższych N dniach (domyślnie 7).
 - list_calendar: args { year?, month? } → [{ module, title, date, at, href }]. Zagregowany kalendarz (zadania + posiłki + zdrowie + przeglądy floty) dla danego miesiąca (domyślnie bieżący; month = 1-12).
 - web_search: args { query, limit? } → [{ title, url, snippet }]. Wyszukiwarka internetowa — użyj TYLKO gdy potrzebujesz informacji spoza danych użytkownika (ceny, fakty, definicje, świat zewnętrzny). W odpowiedzi cytuj źródła linkami markdown.`;
 
@@ -103,6 +113,11 @@ export const READ_TOOL_NAMES = [
   "list_maintenance",
   "list_hot_topics",
   "list_trash",
+  "list_project_groups",
+  "list_note_groups",
+  "list_cookbooks",
+  "get_wallet_overview",
+  "list_expiring_pantry",
 ] as const;
 
 async function accessibleProjectIds(userId: string): Promise<string[]> {
@@ -768,6 +783,35 @@ export async function runReadTool(
           id: it.id, module: it.module, label: it.title, deletedAt: it.deletedAt,
         })),
       };
+    }
+
+    case "list_project_groups": {
+      const groups = await getProjectGroups();
+      return groups.map((g) => ({ id: g.id, name: g.name, projectCount: g.projectIds?.length ?? 0 }));
+    }
+
+    case "list_note_groups": {
+      const groups = await getNoteGroups();
+      return groups.map((g) => ({ id: g.id, name: g.name }));
+    }
+
+    case "list_cookbooks": {
+      const cookbooks = await getCookbooks();
+      return cookbooks.map((c) => ({ id: c.id, name: c.name, recipeCount: c.recipeCount }));
+    }
+
+    case "get_wallet_overview": {
+      const o = await getWalletOverview();
+      return { totalNet: o.totalNet, currency: o.currency, monthlyRate: o.monthlyRate, projection6m: o.projection6m };
+    }
+
+    case "list_expiring_pantry": {
+      const days = typeof args.days === "number" ? Math.max(1, Math.min(60, args.days)) : 7;
+      const items = await getExpiringSoon(days);
+      return items.slice(0, clampLimit(args.limit)).map((i) => ({
+        id: i.id, name: i.name, quantity: i.quantity, unit: i.unit,
+        expiresAt: i.expiresAt ? new Date(i.expiresAt).toISOString().slice(0, 10) : null,
+      }));
     }
 
     default:

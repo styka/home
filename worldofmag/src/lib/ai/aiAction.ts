@@ -58,6 +58,9 @@ export const DESTRUCTIVE_ACTION_TYPES = new Set<string>([
   "delete_contact",
   "delete_budget",
   "delete_goal",
+  "delete_cookbook",
+  "delete_project_group",
+  "delete_note_group",
 ]);
 
 /** Czy akcja jest destrukcyjna (usuwa/archiwizuje dane) — wymaga świadomego potwierdzenia. */

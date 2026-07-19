@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createTask, updateTask, deleteTask, updateTaskTags } from "@/actions/tasks";
 import { createTaskProject, updateTaskProject, deleteTaskProject } from "@/actions/taskProjects";
 import { createTaskTag } from "@/actions/taskTags";
+import { createProjectGroup, updateProjectGroup, deleteProjectGroup } from "@/actions/projectGroups";
 import { addDays, shiftPriority, asStr, undoAction, resolveTaskId, resolveProjectIdForCreate, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { TaskStatus, TaskPriority } from "@/types";
@@ -173,6 +174,45 @@ export async function executeTasksAction(action: AIAction, userId: string, curre
     return n > 0
       ? `Usunięto projekt "${meta?.name ?? ""}" wraz z ${n} ${n === 1 ? "zadaniem" : "zadaniami"}`
       : `Usunięto pusty projekt "${meta?.name ?? ""}"`;
+  }
+
+  // Grupy projektów (foldery/współdzielony widok wieloprojektowy).
+  async function resolveProjectIdsByNames(names: unknown): Promise<string[]> {
+    const list = Array.isArray(names) ? names.map((n) => asStr(n)).filter((n): n is string => !!n) : [];
+    const ids: string[] = [];
+    for (const name of list) {
+      const p = await prisma.taskProject.findFirst({
+        where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }], name: { contains: name, mode: "insensitive" } },
+        select: { id: true },
+      });
+      if (p) ids.push(p.id);
+    }
+    return ids;
+  }
+  if (type === "create_project_group") {
+    const name = asStr(params.name);
+    if (!name) throw new Error("Podaj nazwę grupy projektów");
+    const projectIds = await resolveProjectIdsByNames(params.projectNames);
+    const group = await createProjectGroup({ name, projectIds, emoji: asStr(params.emoji), color: asStr(params.color) ?? null });
+    return `Utworzono grupę projektów „${group.name}"`;
+  }
+  if (type === "update_project_group" || type === "delete_project_group") {
+    // ProjectGroup jest user-only (ownerId, bez zespołu) — resolwujemy bez ownerOr.
+    const q = searchQuery ?? asStr(params.name);
+    const gid = asStr(params.groupId);
+    const grp = gid
+      ? await prisma.projectGroup.findFirst({ where: { id: gid, ownerId: userId }, select: { id: true } })
+      : await prisma.projectGroup.findFirst({ where: { ownerId: userId, name: { contains: q ?? "", mode: "insensitive" } }, select: { id: true } });
+    if (!grp) throw new Error(`Nie znaleziono grupy projektów: „${q ?? gid ?? ""}"`);
+    const id = grp.id;
+    if (type === "delete_project_group") { await deleteProjectGroup(id); return `Usunięto grupę projektów`; }
+    const patch: Parameters<typeof updateProjectGroup>[1] = {};
+    if (params.name !== undefined) patch.name = String(params.name);
+    if (params.emoji !== undefined) patch.emoji = asStr(params.emoji);
+    if (params.color !== undefined) patch.color = asStr(params.color) ?? null;
+    if (params.projectNames !== undefined) patch.projectIds = await resolveProjectIdsByNames(params.projectNames);
+    await updateProjectGroup(id, patch);
+    return `Zaktualizowano grupę projektów`;
   }
 
   throw new Error(`Nieznany typ akcji zadań: ${type}`);
