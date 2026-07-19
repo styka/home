@@ -73,6 +73,74 @@ function parseErr(raw: string): string {
   }
 }
 
+// 010-ai-chat-rate-limit: ponawianie z backoffem dla PRZEJŚCIOWYCH błędów dostawcy
+// (429 limit szybkości / 5xx / błąd sieci). Groq narzuca limit tokenów-na-minutę
+// (TPM), który zwalnia się po chwili — zamiast oddawać użytkownikowi surowy błąd,
+// odczekujemy (respektując nagłówek `Retry-After`) i próbujemy ten sam model ponownie.
+// Retry jest zagnieżdżony WEWNĄTRZ pojedynczego wywołania modelu; łańcuch fallbacku
+// (Z-133) w chatComplete/chatStream działa bez zmian (retry → dopiero potem next model).
+const LLM_MAX_RETRIES = 2; // do 3 prób łącznie na jeden model
+const LLM_RETRY_CAP_MS = 8000; // twardy cap na pojedyncze oczekiwanie
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+// Zwraca czas oczekiwania w ms z nagłówka `Retry-After` (sekundy albo data HTTP),
+// tylko dla rozsądnej, dodatniej wartości; inaczej null (→ backoff wykładniczy).
+function retryAfterMs(res: Response): number | null {
+  const raw = res.headers.get("retry-after");
+  if (!raw) return null;
+  const secs = Number(raw.trim());
+  if (Number.isFinite(secs)) {
+    if (secs <= 0 || secs > 300) return null; // NaN wykluczone; ujemne/olbrzymie → ignoruj
+    return secs * 1000;
+  }
+  const when = Date.parse(raw);
+  if (!Number.isNaN(when)) {
+    const delta = when - Date.now();
+    if (delta > 0 && delta <= 300_000) return delta;
+  }
+  return null;
+}
+
+// Backoff wykładniczy z jitterem (~600ms → ~1500ms), capowany.
+function backoffMs(attempt: number): number {
+  const base = 600 * 2 ** attempt; // 600, 1200
+  const jitter = Math.random() * 300;
+  return Math.min(LLM_RETRY_CAP_MS, base + jitter);
+}
+
+// Owija `fetch`: przy błędzie przejściowym odczekuje i ponawia ten sam request.
+// Ponawiamy TYLKO statusy przejściowe (isRetryableLlmStatus: 429/≥500) oraz rzucony
+// fetch (sieć). Zwraca ostatnią odpowiedź (ok albo nie-ok) — wywołujący obsługuje
+// `!res.ok` jak dotąd. Rzuca tylko, gdy sieć zawiodła we WSZYSTKICH próbach.
+async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+  let netErr: unknown = null;
+  for (let attempt = 0; attempt <= LLM_MAX_RETRIES; attempt++) {
+    let res: Response;
+    try {
+      res = await fetch(url, init);
+    } catch (e) {
+      netErr = e;
+      if (attempt < LLM_MAX_RETRIES) {
+        await sleep(backoffMs(attempt));
+        continue;
+      }
+      throw e;
+    }
+    if (res.ok || !isRetryableLlmStatus(res.status) || attempt === LLM_MAX_RETRIES) {
+      return res;
+    }
+    // Status przejściowy i mamy jeszcze próby: policz oczekiwanie i ponów.
+    const wait = retryAfterMs(res) ?? backoffMs(attempt);
+    if (wait > LLM_RETRY_CAP_MS) return res; // dostawca każe czekać za długo → oddaj fallbackowi
+    res.body?.cancel().catch(() => {}); // zwolnij ciało odrzuconej odpowiedzi
+    await sleep(wait);
+  }
+  // Nieosiągalne (pętla zawsze zwraca/rzuca), ale TS wymaga domknięcia.
+  if (netErr) throw netErr;
+  return fetch(url, init);
+}
+
 function parseDataUrl(url: string): { mediaType: string; data: string } | null {
   const m = /^data:([^;]+);base64,(.*)$/.exec(url);
   if (!m) return null;
@@ -133,7 +201,7 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
 async function openAiComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<ChatResult> {
   let res: Response;
   try {
-    res = await fetch(`${cfg.baseUrl}/chat/completions`, {
+    res = await fetchWithRetry(`${cfg.baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.apiKey}` },
       body: JSON.stringify({
@@ -221,7 +289,7 @@ async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<C
   const { system, messages } = toAnthropic(opts.messages);
   let res: Response;
   try {
-    res = await fetch(`${cfg.baseUrl}/messages`, {
+    res = await fetchWithRetry(`${cfg.baseUrl}/messages`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -315,7 +383,7 @@ export async function chatStream(opts: ChatOptions): Promise<Response> {
 async function openAiStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<StreamAttempt> {
   let res: Response;
   try {
-    res = await fetch(`${cfg.baseUrl}/chat/completions`, {
+    res = await fetchWithRetry(`${cfg.baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.apiKey}` },
       body: JSON.stringify({
@@ -344,7 +412,7 @@ async function anthropicStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<Str
   const { system, messages } = toAnthropic(opts.messages);
   let upstream: Response;
   try {
-    upstream = await fetch(`${cfg.baseUrl}/messages`, {
+    upstream = await fetchWithRetry(`${cfg.baseUrl}/messages`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
