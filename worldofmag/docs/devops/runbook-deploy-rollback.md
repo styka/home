@@ -17,7 +17,7 @@ na żądanie. To, co dotyka bazy, jest **osobnym krokiem**:
 | Seed | `npm run db:seed` | tak |
 
 > ⚠️ `npm run build` **łączy** kompilację z `scripts/migrate.js` (migracja + seed) w jednym
-> poleceniu — wygodne na Render free tier, ale **miesza artefakt z migracją**. Docelowo
+> poleceniu — wygodne na Renderze (oba tiery), ale **miesza artefakt z migracją**. Docelowo
 > (Z-092) migrację należy przenieść do **release command** Rendera (osobny krok przed startem
 > instancji), zostawiając `build` tylko na `next build`. Do tego czasu: **nigdy nie
 > uruchamiaj `npm run build` lokalnie z prod-owym `DATABASE_URL`** — uruchomi `migrate deploy`
@@ -32,6 +32,16 @@ robi osobnym krokiem na bazie testowej.
 1. Scal pracę do gałęzi integracyjnej (`develop` → test env; `v2` → kolejna linia; `master` → prod).
 2. CI (`verify`) musi być **zielone**: typy + testy + strażniki + build.
 3. Render auto-deployuje z `master` (prod) / `develop` (test). Build odpala migracje (patrz wyżej).
+
+> **Środowiska i tiery** (gałąź → serwis Render → plan):
+>
+> | Gałąź | Środowisko | Serwis Render (URL) | Tier |
+> |---|---|---|---|
+> | `develop` | Test | `worldofmag.onrender.com` | **Free** (usypia po 15 min) |
+> | `master` | Produkcja | `omnia-prod.onrender.com` | **Płatny** (nie usypia) |
+>
+> Uwaga na cold start: dotyczy **tylko** free tier (test). Prod na płatnym tierze nie usypia
+> — w-procesowy worker kolejki (`setInterval`) na tym polega.
 4. Po deployu: **smoke** — sprawdź `/api/health` (200 + ping DB) i kilka kluczowych tras
    (`/`, `/tasks`, `/shopping`). (Z-095 — automatyzacja smoke z alertem = follow-up.)
 
