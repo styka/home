@@ -16,7 +16,13 @@ import { getProjectGroups } from "@/actions/projectGroups";
 import { getNoteGroups } from "@/actions/noteGroups";
 import { getCookbooks } from "@/actions/cookbooks";
 import { getWalletOverview } from "@/actions/portfel";
-import { getExpiringSoon } from "@/actions/pantry";
+import { getExpiringSoon, getAutoReplenishCandidates } from "@/actions/pantry";
+import { getTestTrends } from "@/actions/health";
+import { getDueCards, getStudyStreak } from "@/actions/languageDecks";
+import { getMealPlanCost, getTodaysMeals } from "@/actions/mealPlans";
+import { getMonthlyReport } from "@/actions/portfelReports";
+import { searchReports } from "@/actions/reports";
+import { getWatchers } from "@/actions/weather";
 import { describeFrequency } from "@/lib/medicationSchedule";
 import type { MedicationSchedule } from "@/types";
 
@@ -87,6 +93,15 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_low_stock: args {} → [{ id, name, quantity, minQuantity, warehouse }]. Pozycje magazynu poniżej stanu minimalnego.
 - list_expiring_storage: args { days? } → [{ name, quantity, expiresAt, warehouse }]. Partie/pozycje magazynu z bliskim terminem (domyślnie 30 dni).
 - get_storage_analytics: args {} → { totalValue, deadStock, abc, … }. Analityka magazynu (wartość, dead-stock, ABC).
+- get_test_trends: args {} → [{ name, points:[{ date, value }] }]. Trendy wyników badań laboratoryjnych (zdrowie).
+- list_due_cards: args { deckName, limit? } → [{ id, term, translation }]. Fiszki do powtórki w danej talii.
+- get_study_streak: args {} → { streak, reviewedToday }. Passa nauki języków.
+- get_meal_plan_cost: args { days? } → { total, currency, … }. Szacowany koszt jadłospisu na N dni (domyślnie 7).
+- list_todays_meals: args {} → [{ slot, title }]. Dzisiejsze zaplanowane posiłki.
+- list_replenish_candidates: args {} → [{ id, name, quantity, unit }]. Produkty spiżarni do automatycznego uzupełnienia (poniżej progu).
+- get_monthly_report: args { monthOffset? } → { income, expense, balance, byCategory:[…] }. Miesięczny raport finansowy (0=bieżący, -1=poprzedni).
+- search_reports: args { query } → [{ slug, title, category }]. Wyszukuje raporty (markdown) po treści/tytule.
+- list_watchers: args {} → [{ id, title, query, horizon, enabled }]. Obserwatorzy pogody (alerty).
 - list_calendar: args { year?, month? } → [{ module, title, date, at, href }]. Zagregowany kalendarz (zadania + posiłki + zdrowie + przeglądy floty) dla danego miesiąca (domyślnie bieżący; month = 1-12).
 - web_search: args { query, limit? } → [{ title, url, snippet }]. Wyszukiwarka internetowa — użyj TYLKO gdy potrzebujesz informacji spoza danych użytkownika (ceny, fakty, definicje, świat zewnętrzny). W odpowiedzi cytuj źródła linkami markdown.`;
 
@@ -138,6 +153,15 @@ export const READ_TOOL_NAMES = [
   "list_low_stock",
   "list_expiring_storage",
   "get_storage_analytics",
+  "get_test_trends",
+  "list_due_cards",
+  "get_study_streak",
+  "get_meal_plan_cost",
+  "list_todays_meals",
+  "list_replenish_candidates",
+  "get_monthly_report",
+  "search_reports",
+  "list_watchers",
 ] as const;
 
 async function accessibleProjectIds(userId: string): Promise<string[]> {
@@ -841,6 +865,63 @@ export async function runReadTool(
 
     case "get_pet_welfare": {
       return getPetWelfare();
+    }
+
+    case "get_test_trends": {
+      return getTestTrends();
+    }
+
+    case "list_due_cards": {
+      const deckName = asStr(args.deckName) ?? asStr(args.search);
+      const teamIds = await getUserTeamIds(userId);
+      const deck = await prisma.languageDeck.findFirst({
+        where: {
+          OR: [{ ownerId: userId }, ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : [])],
+          ...(deckName ? { name: { contains: deckName, mode: "insensitive" as const } } : {}),
+        },
+        select: { id: true, name: true },
+        orderBy: { updatedAt: "desc" },
+      });
+      if (!deck) return { note: "Nie znaleziono talii fiszek." };
+      const cards = await getDueCards(deck.id, clampLimit(args.limit));
+      return { deck: deck.name, cards: cards.map((c) => ({ id: c.id, term: c.term, translation: c.translation })) };
+    }
+
+    case "get_study_streak": {
+      return getStudyStreak();
+    }
+
+    case "get_meal_plan_cost": {
+      const days = typeof args.days === "number" ? Math.max(1, Math.min(30, args.days)) : 7;
+      const from = new Date(); from.setHours(0, 0, 0, 0);
+      const to = new Date(from); to.setDate(to.getDate() + days);
+      return getMealPlanCost({ from, to });
+    }
+
+    case "list_todays_meals": {
+      const meals = await getTodaysMeals();
+      return meals.map((m) => ({ slot: m.slot, title: m.customTitle ?? m.recipe?.title ?? "(posiłek)" }));
+    }
+
+    case "list_replenish_candidates": {
+      const items = await getAutoReplenishCandidates();
+      return items.slice(0, clampLimit(args.limit)).map((i) => ({ id: i.id, name: i.name, quantity: i.quantity, unit: i.unit }));
+    }
+
+    case "get_monthly_report": {
+      const offset = typeof args.monthOffset === "number" ? args.monthOffset : 0;
+      return getMonthlyReport(offset);
+    }
+
+    case "search_reports": {
+      const q = asStr(args.query) ?? asStr(args.search) ?? "";
+      const reports = await searchReports(q);
+      return reports.slice(0, clampLimit(args.limit)).map((r) => ({ slug: r.slug, title: r.title, category: r.category }));
+    }
+
+    case "list_watchers": {
+      const watchers = await getWatchers();
+      return watchers.map((w) => ({ id: w.id, title: w.title, query: w.query, horizon: w.horizon, enabled: w.enabled }));
     }
 
     case "list_suppliers": {

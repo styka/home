@@ -2,7 +2,7 @@
 // Scala trzy dawne bloki `module === "habits"` z execute/route.ts.
 import { prisma } from "@/lib/prisma";
 import { getUserTeamIds } from "@/lib/server-utils";
-import { toggleHabitDay, createHabit, updateHabit, setHabitArchived, deleteHabit } from "@/actions/habits";
+import { toggleHabitDay, createHabit, updateHabit, setHabitArchived, deleteHabit, createTaskFromHabit } from "@/actions/habits";
 import { asStr, undoAction, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executors/shared";
 import { isoDate } from "@/lib/habitStats";
 import type { AIAction } from "@/lib/ai/aiAction";
@@ -55,6 +55,11 @@ export async function executeHabitsAction(action: AIAction, userId: string): Pro
     const id = await resolveHabit();
     await deleteHabit(id);
     return `Usunięto nawyk`;
+  }
+  if (type === "create_task_from_habit") {
+    const id = await resolveHabit();
+    await createTaskFromHabit(id, asStr(params.dueDate) ?? null);
+    return `Utworzono zadanie z nawyku`;
   }
 
   throw new Error(`Nieznany typ akcji nawyków: ${type}`);

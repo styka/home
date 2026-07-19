@@ -1,7 +1,7 @@
 // Z-010: handler akcji asystenta dla modułu Zadania (zadania + projekty).
 // Scala oba dawne bloki `module === "tasks"` z execute/route.ts.
 import { prisma } from "@/lib/prisma";
-import { createTask, updateTask, deleteTask, updateTaskTags } from "@/actions/tasks";
+import { createTask, updateTask, deleteTask, updateTaskTags, addTaskComment } from "@/actions/tasks";
 import { createTaskProject, updateTaskProject, deleteTaskProject } from "@/actions/taskProjects";
 import { createTaskTag } from "@/actions/taskTags";
 import { createProjectGroup, updateProjectGroup, deleteProjectGroup } from "@/actions/projectGroups";
@@ -114,6 +114,14 @@ export async function executeTasksAction(action: AIAction, userId: string, curre
     const existing = await prisma.task.findUnique({ where: { id }, select: { title: true } });
     await deleteTask(id);
     return `Usunięto zadanie "${existing?.title ?? ""}"`;
+  }
+
+  if (type === "add_task_comment") {
+    const id = await resolveTaskId(userId, params, searchQuery);
+    const content = asStr(params.content) ?? asStr(params.comment);
+    if (!content) throw new Error("Podaj treść komentarza");
+    await addTaskComment(id, content);
+    return `Dodano komentarz do zadania`;
   }
 
   if (type === "set_task_tags") {

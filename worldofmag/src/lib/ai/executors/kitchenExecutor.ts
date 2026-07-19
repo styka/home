@@ -1,8 +1,9 @@
 // Z-010: handler akcji asystenta dla modułu Kuchnia (jadłospis + przepisy + spiżarnia).
 // Scala trzy dawne bloki `module === "kitchen"` z execute/route.ts.
 import { prisma } from "@/lib/prisma";
+import { getUserTeamIds } from "@/lib/server-utils";
 import { setMealPlanEntry, markMealCooked, markMealSkipped, updateMealPlanEntry, moveMealPlanEntry, deleteMealPlanEntry, generateShoppingListFromPlan } from "@/actions/mealPlans";
-import { addPantryItem, updatePantryItem, consumePantryItem, deletePantryItem } from "@/actions/pantry";
+import { addPantryItem, updatePantryItem, consumePantryItem, deletePantryItem, setPantryQuantity, moveItemToPantry, autoReplenishToList } from "@/actions/pantry";
 import { createRecipe, deleteRecipe, updateRecipe, archiveRecipe, duplicateRecipe, markRecipeCooked, shopForRecipe, addIngredient, addStep } from "@/actions/recipes";
 import { createCookbook, updateCookbook, deleteCookbook } from "@/actions/cookbooks";
 import { asStr, resolveOrCreateList, type ExecOutcome, resolveByName, ownerOrArr } from "@/lib/ai/executors/shared";
@@ -173,6 +174,32 @@ export async function executeKitchenAction(action: AIAction, userId: string): Pr
     const id = await resolvePantry();
     await deletePantryItem(id);
     return `Usunięto pozycję spiżarni`;
+  }
+  if (type === "set_pantry_quantity") {
+    const id = await resolvePantry();
+    const q = Number(params.quantity);
+    if (!Number.isFinite(q)) throw new Error("Podaj ilość");
+    await setPantryQuantity(id, q);
+    return `Ustawiono ilość w spiżarni na ${q}`;
+  }
+  if (type === "auto_replenish_pantry") {
+    const list = await resolveOrCreateList(userId, { listId: asStr(params.listId), listName: asStr(params.listName) });
+    const res = await autoReplenishToList(list.id);
+    const n = res.addedItems.length;
+    return `Dorzucono ${n} ${n === 1 ? "pozycję" : "pozycji"} do uzupełnienia na listę „${list.name}"`;
+  }
+  if (type === "move_item_to_pantry") {
+    const q = searchQuery ?? asStr(params.name);
+    const teamIds = await getUserTeamIds(userId);
+    const ownerOr = teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
+    const shopItem = await prisma.item.findFirst({
+      where: { list: { OR: ownerOr }, name: { contains: q ?? "", mode: "insensitive" } },
+      select: { id: true, name: true },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!shopItem) throw new Error(`Nie znaleziono produktu na liście zakupów: „${q ?? ""}"`);
+    await moveItemToPantry(shopItem.id, {});
+    return `Przeniesiono „${shopItem.name}" z zakupów do spiżarni`;
   }
 
   if (type === "generate_shopping_from_plan") {

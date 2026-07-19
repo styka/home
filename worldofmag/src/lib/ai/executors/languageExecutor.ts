@@ -1,7 +1,7 @@
 // Z-010: handler akcji asystenta dla modułu Języki (talie + fiszki SRS).
 // Scala oba dawne bloki `module === "languages"` z execute/route.ts.
 import { prisma } from "@/lib/prisma";
-import { createDeck, updateDeck, deleteDeck, addWord, updateWord, deleteWord } from "@/actions/languageDecks";
+import { createDeck, updateDeck, deleteDeck, addWord, updateWord, deleteWord, bulkAddWords } from "@/actions/languageDecks";
 import { asStr, resolveDeckId, ownerOrArr } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 
@@ -53,6 +53,18 @@ export async function executeLanguageAction(action: AIAction, userId: string): P
     }
     await updateWord(id, { term: asStr(params.term), translation: asStr(params.translation), example: asStr(params.example) });
     return `Zaktualizowano fiszkę`;
+  }
+
+  if (type === "bulk_add_words") {
+    const deckId = await resolveDeckId(userId, params, asStr(params.deckName) ?? searchQuery);
+    const raw = Array.isArray(params.words) ? params.words : [];
+    const words = raw
+      .map((w) => w as { term?: unknown; translation?: unknown; example?: unknown })
+      .map((w) => ({ term: asStr(w.term) ?? "", translation: asStr(w.translation) ?? "", example: asStr(w.example) ?? null }))
+      .filter((w) => w.term && w.translation);
+    if (words.length === 0) throw new Error("Podaj listę słówek (words: [{term, translation}])");
+    const count = await bulkAddWords(deckId, words);
+    return `Dodano ${count} ${count === 1 ? "słówko" : "słówek"} do talii`;
   }
 
   throw new Error(`Nieznany typ akcji języków: ${type}`);

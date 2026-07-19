@@ -114,25 +114,31 @@
     "reason": "settings"
   },
   "categories:createCategory": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "categories:deleteCategory": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "categories:getCategories": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "categories:getCategoryEmojiMap": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "categories:getCategoryNames": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "categories:updateCategory": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "categoryIcons:assignIconToCategory": {
     "status": "excluded",
@@ -226,7 +232,8 @@
   },
   "cookbooks:getCookbook": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "redundant"
   },
   "cookbooks:getCookbooks": {
     "kind": "read",
@@ -269,10 +276,12 @@
     "status": "ai"
   },
   "flota:deleteFuelLog": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "flota:deleteServiceRecord": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "flota:deleteVehicle": {
     "status": "ai"
@@ -296,7 +305,8 @@
     "status": "ai"
   },
   "habits:createTaskFromHabit": {
-    "status": "pending"
+    "status": "ai",
+    "action": "create_task_from_habit"
   },
   "habits:deleteHabit": {
     "status": "ai"
@@ -348,7 +358,8 @@
   },
   "health:getTestTrends": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "get_test_trends"
   },
   "health:setHealthAiOptIn": {
     "status": "excluded",
@@ -438,7 +449,8 @@
     "status": "ai"
   },
   "languageDecks:bulkAddWords": {
-    "status": "pending"
+    "status": "ai",
+    "action": "bulk_add_words"
   },
   "languageDecks:createDeck": {
     "status": "ai"
@@ -451,7 +463,8 @@
   },
   "languageDecks:getDeck": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "redundant"
   },
   "languageDecks:getDecks": {
     "kind": "read",
@@ -459,11 +472,13 @@
   },
   "languageDecks:getDueCards": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_due_cards"
   },
   "languageDecks:getStudyStreak": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "get_study_streak"
   },
   "languageDecks:submitReview": {
     "status": "excluded",
@@ -575,7 +590,8 @@
     "reason": "admin"
   },
   "mealPlans:bulkSetMealPlan": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "mealPlans:deleteMealPlanEntry": {
     "status": "ai"
@@ -590,11 +606,13 @@
   },
   "mealPlans:getMealPlanCost": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "get_meal_plan_cost"
   },
   "mealPlans:getTodaysMeals": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_todays_meals"
   },
   "mealPlans:markMealCooked": {
     "status": "ai"
@@ -748,7 +766,8 @@
     "reason": "interactive"
   },
   "notes:addTagToNote": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "redundant"
   },
   "notes:createNote": {
     "status": "ai"
@@ -775,7 +794,8 @@
     "status": "ai"
   },
   "notes:removeTagFromNote": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "redundant"
   },
   "notes:restoreNoteRevision": {
     "status": "excluded",
@@ -820,7 +840,8 @@
     "status": "ai"
   },
   "pantry:autoReplenishToList": {
-    "status": "pending"
+    "status": "ai",
+    "action": "auto_replenish_pantry"
   },
   "pantry:bulkSetPantryQuantities": {
     "status": "excluded",
@@ -834,7 +855,8 @@
   },
   "pantry:getAutoReplenishCandidates": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_replenish_candidates"
   },
   "pantry:getExpiringSoon": {
     "kind": "read",
@@ -846,10 +868,12 @@
     "status": "ai"
   },
   "pantry:moveItemToPantry": {
-    "status": "pending"
+    "status": "ai",
+    "action": "move_item_to_pantry"
   },
   "pantry:setPantryQuantity": {
-    "status": "pending"
+    "status": "ai",
+    "action": "set_pantry_quantity"
   },
   "pantry:updatePantryItem": {
     "status": "ai"
@@ -877,7 +901,8 @@
   },
   "petBreeding:getPetBreeding": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "niche"
   },
   "petBreeding:markClutchHatched": {
     "status": "ai"
@@ -1054,7 +1079,8 @@
   },
   "portfel:getElement": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "redundant"
   },
   "portfel:getWalletElements": {
     "kind": "read",
@@ -1145,7 +1171,8 @@
   },
   "portfelReports:getMonthlyReport": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "get_monthly_report"
   },
   "privacy:deleteMyAccount": {
     "status": "excluded",
@@ -1156,27 +1183,34 @@
     "reason": "account"
   },
   "products:copyGlobalProduct": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "products:createProduct": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "products:deleteProduct": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "products:getProducts": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "products:getProductSuggestions": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "products:updateProduct": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "products:upsertUserProduct": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "projectGroups:createProjectGroup": {
     "status": "ai",
@@ -1188,7 +1222,8 @@
   },
   "projectGroups:getProjectGroup": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "redundant"
   },
   "projectGroups:getProjectGroups": {
     "kind": "read",
@@ -1362,23 +1397,28 @@
   },
   "reports:getReport": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "redundant"
   },
   "reports:getReportsMeta": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "redundant"
   },
   "reports:getUserReport": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "redundant"
   },
   "reports:getUserReportsMeta": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "redundant"
   },
   "reports:searchReports": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "search_reports"
   },
   "reports:updateReport": {
     "status": "excluded",
@@ -1595,10 +1635,12 @@
     "reason": "settings"
   },
   "tags:createTag": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "tags:deleteTag": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "tags:getTags": {
     "kind": "read",
@@ -1606,10 +1648,12 @@
     "action": "list_note_tags"
   },
   "tags:updateTag": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "taskProjects:addProjectMember": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "teams"
   },
   "taskProjects:createTaskProject": {
     "status": "ai"
@@ -1622,19 +1666,23 @@
     "status": "ai"
   },
   "taskProjects:removeProjectMember": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "teams"
   },
   "taskProjects:updateTaskProject": {
     "status": "ai"
   },
   "taskProjects:updateTaskProjectStatusConfig": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "settings"
   },
   "tasks:addTaskComment": {
-    "status": "pending"
+    "status": "ai",
+    "action": "add_task_comment"
   },
   "tasks:completeRecurringTask": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "internal"
   },
   "tasks:createTask": {
     "status": "ai"
@@ -1643,7 +1691,8 @@
     "status": "ai"
   },
   "tasks:deleteTaskComment": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "tasks:getAllUserTasks": {
     "kind": "read",
@@ -1670,20 +1719,24 @@
     "status": "ai"
   },
   "tasks:removeTaskShare": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "teams"
   },
   "tasks:reorderTask": {
     "status": "excluded",
     "reason": "interactive"
   },
   "tasks:shareTask": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "teams"
   },
   "tasks:shareTaskByEmail": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "teams"
   },
   "tasks:toggleTaskStatus": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "redundant"
   },
   "tasks:updateTask": {
     "status": "ai"
@@ -1693,10 +1746,12 @@
     "action": "set_task_tags"
   },
   "taskTags:createTaskTag": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "taskTags:deleteTaskTag": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "taskTags:getTaskTags": {
     "kind": "read",
@@ -1704,7 +1759,8 @@
     "action": "list_task_tags"
   },
   "taskTags:updateTaskTag": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "teams:changeMemberRole": {
     "status": "excluded",
@@ -1758,7 +1814,8 @@
     "reason": "teams"
   },
   "trash:emptyTrash": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "trash:getTrash": {
     "kind": "read",
@@ -1766,40 +1823,51 @@
     "action": "list_trash"
   },
   "trash:purgeTrashItem": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "trash:restoreTrashItem": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "truck:getVehicleProfile": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "niche"
   },
   "truck:planTruckRoute": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "niche"
   },
   "truck:saveVehicleProfile": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "niche"
   },
   "units:createUnit": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "units:deleteUnit": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "units:getUnits": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "units:getUnitSuggestions": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "units:renameUnit": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "dictionary"
   },
   "warsztat:addSuggestedItems": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "warsztat:addWorkshopItem": {
     "status": "ai"
@@ -1862,10 +1930,12 @@
     "action": "update_workshop_project"
   },
   "weather:addCustomWatcher": {
-    "status": "pending"
+    "status": "ai",
+    "action": "add_custom_watcher"
   },
   "weather:addLocation": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "redundant"
   },
   "weather:addLocationByName": {
     "status": "ai"
@@ -1885,7 +1955,8 @@
   },
   "weather:getWatchers": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_watchers"
   },
   "weather:getWeather": {
     "kind": "read",
@@ -1896,6 +1967,7 @@
     "status": "ai"
   },
   "weather:updateWatcher": {
-    "status": "pending"
+    "status": "ai",
+    "action": "update_watcher"
   }
 }

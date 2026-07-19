@@ -88,6 +88,7 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - shift_task_priority { steps:number, taskId? } (searchQuery fallback) — podnosi/obniża priorytet WZGLĘDNIE o "steps" szczebli na drabinie NONE<LOW<MEDIUM<HIGH<URGENT (ujemne = obniż). Każde zadanie zmienia się względem SWOJEGO obecnego priorytetu — użyj TEJ akcji (osobny shift_task_priority per zadanie) zamiast ustawiać wspólny priorytet przez update_task, gdy ktoś prosi „podnieś/zmniejsz priorytet o N".
 - delete_task { taskId? } (searchQuery fallback) — DESTRUKCYJNE
 - set_task_tags { tags:[string], removeTags?:[string], replace?, taskId? } (searchQuery = tytuł zadania) — DODAJE podane tagi do zadania (removeTags zdejmuje wskazane; replace:true zastępuje cały zestaw). Użyj dla „otaguj/oznacz tagiem/nadaj etykietę zadaniu".
+- add_task_comment { content, taskId? } (searchQuery = tytuł zadania) — dodaje komentarz do zadania.
 - create_project { name, emoji? }
 - update_project { name?, emoji?, projectId? } (searchQuery = nazwa projektu)
 - delete_project { projectId? } (searchQuery = nazwa) — DESTRUKCYJNE
@@ -112,7 +113,8 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - create_habit { name, description?, icon? } — tworzy nowy nawyk.
 - update_habit { name?, icon?, description? } (searchQuery = nazwa)
 - archive_habit { archived } (searchQuery = nazwa)
-- delete_habit {} (searchQuery = nazwa) — DESTRUKCYJNE`,
+- delete_habit {} (searchQuery = nazwa) — DESTRUKCYJNE
+- create_task_from_habit { dueDate?(ISO) } (searchQuery = nazwa nawyku) — tworzy zadanie na bazie nawyku.`,
 
   portfel: `PORTFEL (module "portfel"):
 - add_expense { amount:number, category?, note?, elementName? } — wydatek (kwota w PLN). elementName = fragment nazwy konta/elementu portfela.
@@ -148,6 +150,9 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - consume_pantry { quantity } (searchQuery = nazwa)
 - delete_pantry_item {} (searchQuery = nazwa) — DESTRUKCYJNE
 - generate_shopping_from_plan { days?, listName?, skipPantry? } — zbiera składniki z zaplanowanych posiłków (domyślnie 7 dni) do listy zakupów (domyślnie pomija to, co masz w spiżarni).
+- set_pantry_quantity { quantity:number } (searchQuery = nazwa) — ustawia dokładną ilość w spiżarni.
+- move_item_to_pantry {} (searchQuery = nazwa produktu z listy zakupów) — przenosi kupiony produkt do spiżarni.
+- auto_replenish_pantry { listName? } — dorzuca do listy zakupów produkty spiżarni poniżej progu.
 - mark_meal_skipped {} (searchQuery = tytuł posiłku) — oznacza posiłek jako pominięty.
 - update_meal_plan_entry { customTitle?, slot? } (searchQuery = tytuł posiłku) — zmienia nazwę/porę posiłku.
 - move_meal_plan_entry { date?(ISO), slot? } (searchQuery = tytuł posiłku) — przenosi posiłek na inny dzień/porę.
@@ -203,7 +208,8 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - delete_word { wordId } — DESTRUKCYJNE
 - update_deck { name?, nativeLang?, targetLang?, deckName? }
 - delete_deck {} (searchQuery = nazwa) — DESTRUKCYJNE
-- update_word { term?, translation?, example?, wordId? }`,
+- update_word { term?, translation?, example?, wordId? }
+- bulk_add_words { deckName?, words:[{ term, translation, example? }] } — dodaje wiele fiszek naraz.`,
 
   news: `WIADOMOŚCI (module "news"):
 - create_news_topic { title, semanticFilter? } — nowy monitorowany temat.
@@ -219,6 +225,8 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - delete_weather_location { locationId? } (searchQuery = nazwa) — DESTRUKCYJNE
 - set_default_weather_location { locationId? } (searchQuery = nazwa)
 - add_weather_watcher { presetKey }
+- add_custom_watcher { title, query, horizon?("today"|"tomorrow"|"weekend"|"week") } — własny obserwator pogody.
+- update_watcher { newTitle?, query?, horizon?, enabled?, watcherId? } (searchQuery = tytuł obserwatora)
 - delete_weather_watcher { watcherId? } — DESTRUKCYJNE`,
 
   contacts: `KONTAKTY (module "contacts") — osobisty CRM:
