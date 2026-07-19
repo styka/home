@@ -234,6 +234,7 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /admin/health/           # System health dashboard (DB/migrations/API diagnostics; `actions/systemHealth.ts`, computed live)
 /admin/config/           # System key-value config (e.g. groq_api_key, brave_search_api_key — masked, encrypted at rest)
 /admin/llm/              # LLM providers + model-per-operation-type assignment
+/admin/ai-coverage/      # AI action coverage viewer — every user mutation/read action + whether the AI assistant can do it (source: src/lib/ai/action-coverage.json via getAiCoverage(); gate-enforced always-current)
 /admin/skins/            # System skins manager
 /admin/categories/       # Global system category management
 /admin/reports/          # Markdown reports CRUD (+ /new, /[slug], /[slug]/edit)
@@ -504,6 +505,7 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 - **`/admin/health`** — system health dashboard (DB/migrations/API diagnostics; live, no model).
 - **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, `brave_search_api_key`, masked + encrypted at rest).
 - **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type).
+- **`/admin/ai-coverage`** — **Pokrycie akcji przez AI**: pełna lista akcji użytkownika (mutacje **i** odczyty z `src/actions/*`) z informacją, czy asystent AI ma do nich dostęp (`ai`/`pending`/`excluded`+powód). Źródło = manifest `src/lib/ai/action-coverage.json` (via `getAiCoverage()` w `src/lib/ai/coverage.ts`), którego kompletność wymusza bramka `scripts/check-ai-coverage.js` (wpięta w `build`) — więc lista jest **zawsze aktualna** wobec wdrożonego kodu. Nowa mutująca/odczytowa Server Action bez wpisu w manifeście = build pada. Filtry po statusie/rodzaju + wyszukiwarka.
 - **`/admin/skins`** — system skins manager.
 - **`/admin/categories`** — global system categories (name/color/icon).
 - **`/admin/reports`** — markdown reports CRUD.
