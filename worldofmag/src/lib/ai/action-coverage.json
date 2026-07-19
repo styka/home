@@ -854,13 +854,16 @@
     "status": "ai"
   },
   "petBreeding:deleteBreedingPair": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petBreeding:deleteClutch": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petBreeding:deleteSale": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petBreeding:getPetBreeding": {
     "kind": "read",
@@ -873,13 +876,16 @@
     "status": "ai"
   },
   "petBreeding:setGenetics": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petBreeding:setParentage": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petBreeding:updateBreedingPair": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petCare:addMeasurement": {
     "status": "ai"
@@ -903,19 +909,24 @@
     "status": "ai"
   },
   "petCare:deleteCareTask": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petCare:deleteHealthRecord": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petCare:deleteMeasurement": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petCare:deleteTreatment": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petCare:deleteVetVisit": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petCare:getCareAgenda": {
     "kind": "read",
@@ -924,48 +935,59 @@
   },
   "petCare:getCareHistory": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_care_history"
   },
   "petCare:getPetWelfare": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "get_pet_welfare"
   },
   "petCare:logFeeding": {
     "status": "ai"
   },
   "petCare:updateCareTask": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petCare:updateHealthRecord": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petCare:updateTreatment": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petCare:updateVetVisit": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petHusbandry:addEnvironmentReading": {
     "status": "ai"
   },
   "petHusbandry:assignPetToEnclosure": {
-    "status": "pending"
+    "status": "ai",
+    "action": "assign_pet_to_enclosure"
   },
   "petHusbandry:createEnclosure": {
     "status": "ai"
   },
   "petHusbandry:deleteEnclosure": {
-    "status": "pending"
+    "status": "ai",
+    "action": "delete_enclosure"
   },
   "petHusbandry:deleteEnvironmentReading": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "petHusbandry:getEnclosures": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_enclosures"
   },
   "petHusbandry:updateEnclosure": {
-    "status": "pending"
+    "status": "ai",
+    "action": "update_enclosure"
   },
   "pets:createPet": {
     "status": "ai"
@@ -983,25 +1005,30 @@
   },
   "pets:getPetSharing": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "teams"
   },
   "pets:removePetShare": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "teams"
   },
   "pets:setPetStatus": {
     "status": "ai"
   },
   "pets:sharePetByEmail": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "teams"
   },
   "pets:sharePetWithTeam": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "teams"
   },
   "pets:updatePet": {
     "status": "ai"
   },
   "pets:updatePetFeatures": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "portfel:addEntry": {
     "status": "ai"

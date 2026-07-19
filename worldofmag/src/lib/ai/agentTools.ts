@@ -6,7 +6,8 @@ import { getTrash } from "@/actions/trash";
 import { getTaskTags } from "@/actions/taskTags";
 import { getTags } from "@/actions/tags";
 import { getRecipe } from "@/actions/recipes";
-import { getCareAgenda } from "@/actions/petCare";
+import { getCareAgenda, getCareHistory, getPetWelfare } from "@/actions/petCare";
+import { getEnclosures } from "@/actions/petHusbandry";
 import { getMaintenanceOverview } from "@/actions/warsztat";
 import { getHotTopics } from "@/actions/news";
 import { getLocations, getWeather } from "@/actions/weather";
@@ -76,6 +77,9 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_cookbooks: args {} → [{ id, name, recipeCount }]. Książki kucharskie.
 - get_wallet_overview: args {} → { totalNet, currency, monthlyRate, projection6m }. Podsumowanie majątku (suma netto, tempo zmian, prognoza 6 mies.).
 - list_expiring_pantry: args { days? } → [{ id, name, quantity, unit, expiresAt }]. Produkty w spiżarni z terminem ważności w najbliższych N dniach (domyślnie 7).
+- list_enclosures: args {} → [{ id, name, type, location }]. Zbiorniki/terraria/klatki (husbandry).
+- get_pet_welfare: args {} → { agenda:[…], suggestions:[…] }. Dobrostan zwierząt: zaległa opieka + sugestie.
+- list_care_history: args { petName, limit? } → [{ date, kind, note }]. Historia opieki nad wskazanym zwierzęciem (searchowane po imieniu).
 - list_calendar: args { year?, month? } → [{ module, title, date, at, href }]. Zagregowany kalendarz (zadania + posiłki + zdrowie + przeglądy floty) dla danego miesiąca (domyślnie bieżący; month = 1-12).
 - web_search: args { query, limit? } → [{ title, url, snippet }]. Wyszukiwarka internetowa — użyj TYLKO gdy potrzebujesz informacji spoza danych użytkownika (ceny, fakty, definicje, świat zewnętrzny). W odpowiedzi cytuj źródła linkami markdown.`;
 
@@ -118,6 +122,9 @@ export const READ_TOOL_NAMES = [
   "list_cookbooks",
   "get_wallet_overview",
   "list_expiring_pantry",
+  "list_enclosures",
+  "get_pet_welfare",
+  "list_care_history",
 ] as const;
 
 async function accessibleProjectIds(userId: string): Promise<string[]> {
@@ -812,6 +819,35 @@ export async function runReadTool(
         id: i.id, name: i.name, quantity: i.quantity, unit: i.unit,
         expiresAt: i.expiresAt ? new Date(i.expiresAt).toISOString().slice(0, 10) : null,
       }));
+    }
+
+    case "list_enclosures": {
+      const encs = await getEnclosures();
+      return encs.map((e) => ({ id: e.id, name: e.name, type: e.type, location: e.location }));
+    }
+
+    case "get_pet_welfare": {
+      return getPetWelfare();
+    }
+
+    case "list_care_history": {
+      const petName = asStr(args.petName) ?? asStr(args.search);
+      if (!petName) return { note: "Podaj imię zwierzęcia (petName)." };
+      const teamIds = await getUserTeamIds(userId);
+      const pet = await prisma.pet.findFirst({
+        where: {
+          OR: [
+            { ownerId: userId },
+            ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+            { shares: { some: { userId } } },
+          ],
+          name: { contains: petName, mode: "insensitive" },
+        },
+        select: { id: true, name: true },
+      });
+      if (!pet) return { note: `Nie znaleziono zwierzęcia: „${petName}".` };
+      const history = await getCareHistory(pet.id, clampLimit(args.limit, 50));
+      return { pet: pet.name, history };
     }
 
     default:
