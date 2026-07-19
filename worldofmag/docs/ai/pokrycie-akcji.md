@@ -2,7 +2,7 @@
 
 > Plik generowany przez `scripts/check-ai-coverage.js --report`. Nie edytuj ręcznie.
 
-Mutacje (zapis): **113 ai / 117 pending / 113 excluded**. Odczyty (podgląd danych): **41 ai / 44 pending / 60 excluded**.
+Mutacje (zapis): **125 ai / 105 pending / 113 excluded**. Odczyty (podgląd danych): **46 ai / 39 pending / 60 excluded**.
 
 Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `excluded` = nie dla AI (admin/ustawienia/wewnętrzne/interaktywne).
 
@@ -102,15 +102,15 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `getContacts` | odczyt | ✅ ai |  |
 | `updateContact` | zapis | ✅ ai | → update_contact |
 
-## cookbooks — 0/5 wystawionych
+## cookbooks — 4/5 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `createCookbook` | zapis | 🕓 pending |  |
-| `deleteCookbook` | zapis | 🕓 pending |  |
+| `createCookbook` | zapis | ✅ ai | → create_cookbook |
+| `deleteCookbook` | zapis | ✅ ai | → delete_cookbook |
 | `getCookbook` | odczyt | 🕓 pending |  |
-| `getCookbooks` | odczyt | 🕓 pending |  |
-| `updateCookbook` | zapis | 🕓 pending |  |
+| `getCookbooks` | odczyt | ✅ ai | → list_cookbooks |
+| `updateCookbook` | zapis | ✅ ai | → update_cookbook |
 
 ## dashboardPrefs — 0/2 wystawionych
 
@@ -261,7 +261,7 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `setCostAlertThreshold` | zapis | ⛔ excluded | admin |
 | `updateProvider` | zapis | ⛔ excluded | admin |
 
-## mealPlans — 5/11 wystawionych
+## mealPlans — 8/11 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
@@ -272,10 +272,10 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `getMealPlanCost` | odczyt | 🕓 pending |  |
 | `getTodaysMeals` | odczyt | 🕓 pending |  |
 | `markMealCooked` | zapis | ✅ ai |  |
-| `markMealSkipped` | zapis | 🕓 pending |  |
-| `moveMealPlanEntry` | zapis | 🕓 pending |  |
+| `markMealSkipped` | zapis | ✅ ai | → mark_meal_skipped |
+| `moveMealPlanEntry` | zapis | ✅ ai | → move_meal_plan_entry |
 | `setMealPlanEntry` | zapis | ✅ ai |  |
-| `updateMealPlanEntry` | zapis | 🕓 pending |  |
+| `updateMealPlanEntry` | zapis | ✅ ai | → update_meal_plan_entry |
 
 ## medications — 7/7 wystawionych
 
@@ -325,14 +325,14 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `updateSource` | zapis | 🕓 pending |  |
 | `updateTopic` | zapis | ✅ ai |  |
 
-## noteGroups — 0/4 wystawionych
+## noteGroups — 4/4 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `createNoteGroup` | zapis | 🕓 pending |  |
-| `deleteNoteGroup` | zapis | 🕓 pending |  |
-| `getNoteGroups` | odczyt | 🕓 pending |  |
-| `updateNoteGroup` | zapis | 🕓 pending |  |
+| `createNoteGroup` | zapis | ✅ ai | → create_note_group |
+| `deleteNoteGroup` | zapis | ✅ ai | → delete_note_group |
+| `getNoteGroups` | odczyt | ✅ ai | → list_note_groups |
+| `updateNoteGroup` | zapis | ✅ ai | → update_note_group |
 
 ## notes — 6/13 wystawionych
 
@@ -363,7 +363,7 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `notifyUser` | zapis | ✅ ai |  |
 | `syncReminders` | zapis | ⛔ excluded | internal |
 
-## pantry — 5/11 wystawionych
+## pantry — 6/11 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
@@ -373,7 +373,7 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `consumePantryItem` | zapis | ✅ ai |  |
 | `deletePantryItem` | zapis | ✅ ai |  |
 | `getAutoReplenishCandidates` | odczyt | 🕓 pending |  |
-| `getExpiringSoon` | odczyt | 🕓 pending |  |
+| `getExpiringSoon` | odczyt | ✅ ai | → list_expiring_pantry |
 | `getPantry` | odczyt | ✅ ai |  |
 | `moveItemToPantry` | zapis | 🕓 pending |  |
 | `setPantryQuantity` | zapis | 🕓 pending |  |
@@ -449,7 +449,7 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `updatePet` | zapis | ✅ ai |  |
 | `updatePetFeatures` | zapis | 🕓 pending |  |
 
-## portfel — 7/10 wystawionych
+## portfel — 8/10 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
@@ -459,7 +459,7 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `deleteElement` | zapis | ✅ ai |  |
 | `getElement` | odczyt | 🕓 pending |  |
 | `getWalletElements` | odczyt | ✅ ai |  |
-| `getWalletOverview` | odczyt | 🕓 pending |  |
+| `getWalletOverview` | odczyt | ✅ ai | → get_wallet_overview |
 | `importBankCsv` | zapis | ⛔ excluded | interactive |
 | `setBalance` | zapis | ✅ ai |  |
 | `updateElement` | zapis | ✅ ai |  |
@@ -520,15 +520,15 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `updateProduct` | zapis | 🕓 pending |  |
 | `upsertUserProduct` | zapis | 🕓 pending |  |
 
-## projectGroups — 0/5 wystawionych
+## projectGroups — 4/5 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `createProjectGroup` | zapis | 🕓 pending |  |
-| `deleteProjectGroup` | zapis | 🕓 pending |  |
+| `createProjectGroup` | zapis | ✅ ai | → create_project_group |
+| `deleteProjectGroup` | zapis | ✅ ai | → delete_project_group |
 | `getProjectGroup` | odczyt | 🕓 pending |  |
-| `getProjectGroups` | odczyt | 🕓 pending |  |
-| `updateProjectGroup` | zapis | 🕓 pending |  |
+| `getProjectGroups` | odczyt | ✅ ai | → list_project_groups |
+| `updateProjectGroup` | zapis | ✅ ai | → update_project_group |
 
 ## qa — 0/16 wystawionych
 

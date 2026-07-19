@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { createNote, updateNote, deleteNote, toggleNotePin, setNoteTags } from "@/actions/notes";
 import { getTags, createTag } from "@/actions/tags";
+import { createNoteGroup, updateNoteGroup, deleteNoteGroup } from "@/actions/noteGroups";
 import { asStr, undoAction, resolveNoteId, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 
@@ -94,6 +95,24 @@ export async function executeNotesAction(action: AIAction, userId: string): Prom
     }
     await setNoteTags(id, finalIds);
     return `Zaktualizowano tagi notatki "${note?.title ?? ""}"`;
+  }
+
+  if (type === "create_note_group") {
+    const name = asStr(params.name);
+    if (!name) throw new Error("Podaj nazwę grupy notatek");
+    const g = await createNoteGroup({ name, description: asStr(params.description), color: asStr(params.color) });
+    return `Utworzono grupę notatek „${g.name}"`;
+  }
+  if (type === "update_note_group" || type === "delete_note_group") {
+    const q = searchQuery ?? asStr(params.name);
+    const gid = asStr(params.groupId);
+    const g = gid
+      ? await prisma.noteGroup.findFirst({ where: { id: gid }, select: { id: true } })
+      : await prisma.noteGroup.findFirst({ where: { name: { contains: q ?? "", mode: "insensitive" } }, select: { id: true } });
+    if (!g) throw new Error(`Nie znaleziono grupy notatek: „${q ?? gid ?? ""}"`);
+    if (type === "delete_note_group") { await deleteNoteGroup(g.id); return `Usunięto grupę notatek`; }
+    await updateNoteGroup(g.id, { name: asStr(params.name), description: asStr(params.description) ?? null, color: asStr(params.color) ?? null });
+    return `Zaktualizowano grupę notatek`;
   }
 
   throw new Error(`Nieznany typ akcji notatek: ${type}`);

@@ -90,7 +90,10 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - set_task_tags { tags:[string], removeTags?:[string], replace?, taskId? } (searchQuery = tytuł zadania) — DODAJE podane tagi do zadania (removeTags zdejmuje wskazane; replace:true zastępuje cały zestaw). Użyj dla „otaguj/oznacz tagiem/nadaj etykietę zadaniu".
 - create_project { name, emoji? }
 - update_project { name?, emoji?, projectId? } (searchQuery = nazwa projektu)
-- delete_project { projectId? } (searchQuery = nazwa) — DESTRUKCYJNE`,
+- delete_project { projectId? } (searchQuery = nazwa) — DESTRUKCYJNE
+- create_project_group { name, projectNames?:[string], emoji?, color? } — grupa/folder projektów (współdzielony widok).
+- update_project_group { name?, projectNames?:[string], emoji?, color?, groupId? } (searchQuery = nazwa grupy)
+- delete_project_group { groupId? } (searchQuery = nazwa) — DESTRUKCYJNE`,
 
   notes: `NOTATKI (module "notes"):
 - create_note { title, content? }
@@ -99,7 +102,10 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - update_note { title?, content?, noteId? } (searchQuery fallback)
 - delete_note { noteId? } (searchQuery fallback) — DESTRUKCYJNE
 - toggle_pin { noteId? } (searchQuery = tytuł) — przypnij/odepnij notatkę.
-- set_note_tags { tags:[string], removeTags?:[string], replace?, noteId? } (searchQuery = tytuł notatki) — DODAJE tagi do notatki (removeTags zdejmuje; replace:true zastępuje). Użyj dla „otaguj/oznacz tagiem notatkę".`,
+- set_note_tags { tags:[string], removeTags?:[string], replace?, noteId? } (searchQuery = tytuł notatki) — DODAJE tagi do notatki (removeTags zdejmuje; replace:true zastępuje). Użyj dla „otaguj/oznacz tagiem notatkę".
+- create_note_group { name, description?, color? } — grupa/folder notatek.
+- update_note_group { name?, description?, color?, groupId? } (searchQuery = nazwa grupy)
+- delete_note_group { groupId? } (searchQuery = nazwa) — DESTRUKCYJNE`,
 
   habits: `NAWYKI (module "habits"):
 - toggle_habit {} (searchQuery = nazwa nawyku lub jej fragment) — odhacza nawyk na dziś lub cofa odhaczenie.
@@ -134,7 +140,13 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - update_pantry_item { quantity?, unit?, expiresAt? } (searchQuery = nazwa)
 - consume_pantry { quantity } (searchQuery = nazwa)
 - delete_pantry_item {} (searchQuery = nazwa) — DESTRUKCYJNE
-- generate_shopping_from_plan { days?, listName?, skipPantry? } — zbiera składniki z zaplanowanych posiłków (domyślnie 7 dni) do listy zakupów (domyślnie pomija to, co masz w spiżarni).`,
+- generate_shopping_from_plan { days?, listName?, skipPantry? } — zbiera składniki z zaplanowanych posiłków (domyślnie 7 dni) do listy zakupów (domyślnie pomija to, co masz w spiżarni).
+- mark_meal_skipped {} (searchQuery = tytuł posiłku) — oznacza posiłek jako pominięty.
+- update_meal_plan_entry { customTitle?, slot? } (searchQuery = tytuł posiłku) — zmienia nazwę/porę posiłku.
+- move_meal_plan_entry { date?(ISO), slot? } (searchQuery = tytuł posiłku) — przenosi posiłek na inny dzień/porę.
+- create_cookbook { name, description?, emoji? } — nowa książka kucharska.
+- update_cookbook { name?, description?, emoji?, cookbookId? } (searchQuery = nazwa)
+- delete_cookbook { cookbookId? } (searchQuery = nazwa) — DESTRUKCYJNE`,
 
   flota: `FLOTA (module "flota"):
 - add_fuel_log { liters:number, totalCost?, odometer?, vehicleName?, note? } — zapis tankowania. vehicleName = fragment nazwy/modelu pojazdu.
