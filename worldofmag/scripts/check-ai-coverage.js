@@ -9,10 +9,13 @@
  * w ogóle wystawiona dla AI — dlatego np. „otaguj zadanie" (updateTaskTags) długo
  * nie istniało po stronie asystenta.
  *
- * Ten skrypt wymusza świadomą decyzję dla KAŻDEJ mutującej Server Action:
- *   - "ai"       → wystawiona dla asystenta (jest egzekutor + wpis w katalogu),
+ * Ten skrypt wymusza świadomą decyzję dla KAŻDEJ akcji użytkownika — zarówno
+ * MUTUJĄCEJ (zapis), jak i ODCZYTU (get.../list.../search..., czyli to, co użytkownik
+ * PRZEGLĄDA w aplikacji). Statusy:
+ *   - "ai"       → wystawiona dla asystenta (egzekutor+katalog dla mutacji; read-tool dla odczytu),
  *   - "pending"  → powinna być wystawiona, ale jeszcze nie jest (lista luk / roadmapa),
  *   - "excluded" → świadomie NIE dla AI (z powodem: admin/settings/internal/…).
+ * Wpisy odczytu mają w manifeście `"kind":"read"`; mutacje nie mają `kind`.
  *
  * Źródło prawdy klasyfikacji: `src/lib/ai/action-coverage.json`.
  * Gdy ktoś doda NOWĄ mutującą Server Action i jej NIE sklasyfikuje — build PADA,
@@ -28,12 +31,16 @@ const root = path.join(__dirname, "..");
 const actionsDir = path.join(root, "src/actions");
 const manifestPath = path.join(root, "src/lib/ai/action-coverage.json");
 
-// Prefiksy nazw = ODCZYT lub wewnętrzny helper (nie akcja użytkownika do wystawienia).
-const READ = /^(get|list|assert|ensure|find|preview|describe|has|is|count|resolve|read|search)/;
-const SKIP_EXTRA = new Set(["healthAiAllowed", "evaluateWatchers", "getOrCreateInbox"]);
+// Odczyt użytkownika = get*/list*/search* (to, co przegląda w aplikacji).
+const READ = /^(get|list|search)/;
+// Prefiksy/nazwy wewnętrzne — nie są akcją użytkownika (ani zapisem, ani odczytem do wystawienia).
+const INTERNAL = /^(assert|ensure|find|preview|describe|has|is|count|resolve|read)/;
+const SKIP_EXTRA = new Set([
+  "healthAiAllowed", "evaluateWatchers", "getOrCreateInbox", "getUserScope", "getUserTeamIds",
+]);
 const VALID = new Set(["ai", "pending", "excluded"]);
 
-// Zbierz mutujące Server Actions (kandydatów do pokrycia AI) jako klucze `plik:funkcja`.
+// Zbierz kandydatów (mutacje + odczyty) jako klucze `plik:funkcja`, z rozróżnieniem rodzaju.
 function collectCandidates() {
   const out = [];
   for (const f of fs.readdirSync(actionsDir)) {
@@ -42,21 +49,23 @@ function collectCandidates() {
     const src = fs.readFileSync(path.join(actionsDir, f), "utf8");
     for (const m of src.matchAll(/export async function ([a-zA-Z0-9_]+)/g)) {
       const fn = m[1];
-      if (READ.test(fn) || SKIP_EXTRA.has(fn)) continue;
-      out.push(`${mod}:${fn}`);
+      if (SKIP_EXTRA.has(fn)) continue;
+      if (READ.test(fn)) { out.push({ key: `${mod}:${fn}`, kind: "read" }); continue; }
+      if (INTERNAL.test(fn)) continue; // pomocnik wewnętrzny — pomiń
+      out.push({ key: `${mod}:${fn}`, kind: "mutation" });
     }
   }
-  return out.sort();
+  return out.sort((a, b) => a.key.localeCompare(b.key));
 }
 
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 const candidates = collectCandidates();
-const candidateSet = new Set(candidates);
+const candidateSet = new Set(candidates.map((c) => c.key));
 
 // 1) Każdy kandydat MUSI mieć wpis o poprawnym statusie.
 const unclassified = [];
 const badStatus = [];
-for (const key of candidates) {
+for (const { key } of candidates) {
   const entry = manifest[key];
   if (!entry) { unclassified.push(key); continue; }
   if (!VALID.has(entry.status)) badStatus.push(`${key} (status="${entry.status}")`);
@@ -65,34 +74,38 @@ for (const key of candidates) {
 // 2) Wpisy w manifeście, które nie odpowiadają już żadnej akcji (przestarzałe) — ostrzeżenie.
 const stale = Object.keys(manifest).filter((k) => !k.startsWith("__") && !candidateSet.has(k)).sort();
 
-const counts = { ai: 0, pending: 0, excluded: 0 };
-for (const key of candidates) {
+// Liczniki per rodzaj (mutacja/odczyt).
+const counts = {
+  mutation: { ai: 0, pending: 0, excluded: 0 },
+  read: { ai: 0, pending: 0, excluded: 0 },
+};
+for (const { key, kind } of candidates) {
   const s = manifest[key]?.status;
-  if (counts[s] !== undefined) counts[s]++;
+  if (counts[kind]?.[s] !== undefined) counts[kind][s]++;
 }
-const pending = candidates.filter((k) => manifest[k]?.status === "pending");
 
 // --report: zapisz czytelny raport luk (roadmapa integracji z AI).
 if (process.argv.includes("--report")) {
   const byModule = {};
-  for (const key of candidates) {
+  for (const { key, kind } of candidates) {
     const [mod, fn] = key.split(":");
-    const st = manifest[key]?.status ?? "?";
-    (byModule[mod] ??= []).push({ fn, st, reason: manifest[key]?.reason, action: manifest[key]?.action });
+    const e = manifest[key] ?? {};
+    (byModule[mod] ??= []).push({ fn, kind, st: e.status ?? "?", reason: e.reason, action: e.action });
   }
+  const tag = (st) => (st === "ai" ? "✅ ai" : st === "pending" ? "🕓 pending" : "⛔ excluded");
   let md = `# Pokrycie akcji użytkownika przez asystenta AI\n\n`;
   md += `> Plik generowany przez \`scripts/check-ai-coverage.js --report\`. Nie edytuj ręcznie.\n\n`;
-  md += `Stan: **${counts.ai} wystawionych (ai)**, **${counts.pending} do zrobienia (pending)**, `;
-  md += `**${counts.excluded} świadomie wykluczonych (excluded)** — razem ${candidates.length} mutujących akcji.\n\n`;
-  md += `Legenda statusów: \`ai\` = asystent to potrafi · \`pending\` = luka do domknięcia · \`excluded\` = nie dla AI (admin/ustawienia/wewnętrzne/interaktywne).\n\n`;
+  md += `Mutacje (zapis): **${counts.mutation.ai} ai / ${counts.mutation.pending} pending / ${counts.mutation.excluded} excluded**. `;
+  md += `Odczyty (podgląd danych): **${counts.read.ai} ai / ${counts.read.pending} pending / ${counts.read.excluded} excluded**.\n\n`;
+  md += `Legenda: \`ai\` = asystent to potrafi · \`pending\` = luka do domknięcia · \`excluded\` = nie dla AI (admin/ustawienia/wewnętrzne/interaktywne).\n\n`;
   for (const mod of Object.keys(byModule).sort()) {
     const rows = byModule[mod];
     const ai = rows.filter((r) => r.st === "ai").length;
     md += `## ${mod} — ${ai}/${rows.length} wystawionych\n\n`;
-    md += `| Akcja | Status | Uwaga |\n|---|---|---|\n`;
+    md += `| Akcja | Rodzaj | Status | Uwaga |\n|---|---|---|---|\n`;
     for (const r of rows.sort((a, b) => a.fn.localeCompare(b.fn))) {
-      const tag = r.st === "ai" ? "✅ ai" : r.st === "pending" ? "🕓 pending" : "⛔ excluded";
-      md += `| \`${r.fn}\` | ${tag} | ${r.action ? "→ " + r.action : r.reason ?? ""} |\n`;
+      const kind = r.kind === "read" ? "odczyt" : "zapis";
+      md += `| \`${r.fn}\` | ${kind} | ${tag(r.st)} | ${r.action ? "→ " + r.action : r.reason ?? ""} |\n`;
     }
     md += `\n`;
   }
@@ -120,6 +133,7 @@ if (stale.length) {
 }
 
 console.log(
-  `✓ Pokrycie AI: ${candidates.length} mutujących akcji sklasyfikowanych — ` +
-    `${counts.ai} ai, ${counts.pending} pending, ${counts.excluded} excluded.`
+  `✓ Pokrycie AI: ${candidates.length} akcji sklasyfikowanych — ` +
+    `MUTACJE ${counts.mutation.ai} ai/${counts.mutation.pending} pending/${counts.mutation.excluded} excluded · ` +
+    `ODCZYTY ${counts.read.ai} ai/${counts.read.pending} pending/${counts.read.excluded} excluded.`
 );

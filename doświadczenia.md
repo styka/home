@@ -4,6 +4,24 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-19 — Pokrycie AI musi obejmować też ODCZYTY (nie tylko mutacje)
+**Problem:** Bramka pokrycia (poprzedni wpis) pilnowała tylko akcji ZAPISU. Ale asystent ma umieć
+pokazać wszystko, co użytkownik PRZEGLĄDA — a wiele odczytów nie było wystawionych (np. `getWeather` =
+prognoza, budżety/cele, kosz, tagi do wyliczenia, pełny przepis). Nowe możliwości pobierania danych też
+mogłyby „przeciekać" bez integracji z AI.
+**Rozwiązanie:** Rozszerzono `check-ai-coverage.js` i manifest `action-coverage.json` o ODCZYTY
+(get*/list*/search* → `kind:"read"`), z tym samym reżimem `ai|pending|excluded` i tą samą bramką
+build'u. Raport `docs/ai/pokrycie-akcji.md` rozdziela mutacje i odczyty. Dodano 10 read-tooli
+(get_weather, list_budgets, list_goals, list_task_tags, list_note_tags, get_recipe, list_care_agenda,
+list_maintenance, list_hot_topics, list_trash) i 6 mutacji (update/delete budżetu i celu, update/unlog
+leku). Uwaga techniczna: read-tool NIE może wołać funkcji robiącej wewnętrzne wywołanie LLM
+(`describeDay`) — to zagnieżdżony koszt/TPM w pętli agenta; `get_weather` zwraca surowe liczby
+(Open-Meteo), a interpretację robi sam agent. Pułapka składniowa: sekwencja `*/` w komentarzu blokowym
+JS (np. „list*/search*") przedwcześnie zamyka komentarz — pisz „list.../search...".
+**Lekcja:** „AI umie wszystko co użytkownik" = ZAPIS **i** ODCZYT. Jedna bramka pokrycia z rozróżnieniem
+rodzaju (mutation/read) trzyma oba wymiary mierzalne (liczniki) i wymusza triage każdej nowej akcji —
+także nowego `get*/list*`.
+
 ## 2026-07-19 — Brak bramki pokrycia: akcje użytkownika nie były wystawiane dla AI
 **Problem:** Asystent nie potrafił wielu rzeczy, które użytkownik robi ręcznie (np. otagować zadania —
 `updateTaskTags`), bo możliwości AI utrzymywane są RĘCZNIE w 3 miejscach (katalog w prompt'cie,

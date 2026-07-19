@@ -1,6 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { getUserTeamIds } from "@/lib/server-utils";
 import { getCalendarEvents } from "@/actions/calendar";
+import { getBudgetsWithSpending, getFinanceGoals } from "@/actions/portfelBudgets";
+import { getTrash } from "@/actions/trash";
+import { getTaskTags } from "@/actions/taskTags";
+import { getTags } from "@/actions/tags";
+import { getRecipe } from "@/actions/recipes";
+import { getCareAgenda } from "@/actions/petCare";
+import { getMaintenanceOverview } from "@/actions/warsztat";
+import { getHotTopics } from "@/actions/news";
+import { getLocations, getWeather } from "@/actions/weather";
 import { describeFrequency } from "@/lib/medicationSchedule";
 import type { MedicationSchedule } from "@/types";
 
@@ -47,6 +56,16 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_news_topics: args {} → [{ id, title }]. Monitorowane tematy wiadomości.
 - list_weather_locations: args {} → [{ id, label, isDefault }]. Lokalizacje pogodowe.
 - list_contacts: args { search?, limit? } → [{ id, name, phone, email, company, tags }]. Kontakty (osobisty CRM). search filtruje po imieniu/telefonie/mailu/firmie/tagach.
+- get_weather: args { locationName? } → { location, current:{ temp, apparent, windKph }, daily:[{ date, tMax, tMin, precipProbMax, windMaxKph, code }] }. Prognoza pogody dla domyślnej (lub wskazanej nazwą) lokalizacji użytkownika. Kod pogody wg WMO. Użyj do pytań „jaka pogoda / czy będzie padać / jak się ubrać".
+- list_budgets: args {} → { periodLabel, budgets:[{ id, category, limitAmount, spent, currency }] }. Budżety miesięczne z wydatkowaniem.
+- list_goals: args {} → [{ id, name, targetAmount, currentAmount, currency, deadline }]. Cele oszczędnościowe.
+- list_task_tags: args {} → [{ id, name }]. Dostępne etykiety zadań (użyj, by podać istniejące tagi lub przed set_task_tags).
+- list_note_tags: args {} → [{ id, name }]. Dostępne etykiety notatek.
+- get_recipe: args { search? | recipeId? } → { id, title, servings, ingredients:[…], steps:[…] } | null. PEŁNY przepis (składniki + kroki) — do gotowania/analizy jednego przepisu.
+- list_care_agenda: args {} → [{ petName, kind, title, dueAt, overdue }]. Zaległe i nadchodzące czynności opieki nad zwierzętami (leczenie, karmienie, zadania pielęgnacyjne, wizyty).
+- list_maintenance: args {} → { serviceDue:[…], lowStock:[…] }. Przeglądy narzędzi/maszyn i niski stan materiałów w warsztatach (tryb Pro).
+- list_hot_topics: args {} → [{ title, count }]. „Gorące" tematy z monitorowanych wiadomości (świeże, częste).
+- list_trash: args {} → { retentionDays, items:[{ id, module, label, deletedAt, daysLeft }] }. Kosz — elementy usunięte (do przywrócenia w /trash).
 - list_calendar: args { year?, month? } → [{ module, title, date, at, href }]. Zagregowany kalendarz (zadania + posiłki + zdrowie + przeglądy floty) dla danego miesiąca (domyślnie bieżący; month = 1-12).
 - web_search: args { query, limit? } → [{ title, url, snippet }]. Wyszukiwarka internetowa — użyj TYLKO gdy potrzebujesz informacji spoza danych użytkownika (ceny, fakty, definicje, świat zewnętrzny). W odpowiedzi cytuj źródła linkami markdown.`;
 
@@ -74,6 +93,16 @@ export const READ_TOOL_NAMES = [
   "list_weather_locations",
   "list_contacts",
   "list_calendar",
+  "get_weather",
+  "list_budgets",
+  "list_goals",
+  "list_task_tags",
+  "list_note_tags",
+  "get_recipe",
+  "list_care_agenda",
+  "list_maintenance",
+  "list_hot_topics",
+  "list_trash",
 ] as const;
 
 async function accessibleProjectIds(userId: string): Promise<string[]> {
@@ -655,6 +684,90 @@ export async function runReadTool(
       const month1 = typeof args.month === "number" ? Math.max(1, Math.min(12, args.month)) : now.getMonth() + 1;
       const events = await getCalendarEvents(year, month1 - 1);
       return events.map((e) => ({ module: e.module, title: e.title, date: e.date, at: e.at, href: e.href }));
+    }
+
+    case "get_weather": {
+      const locations = await getLocations();
+      if (locations.length === 0) return { note: "Brak zapisanych lokalizacji pogodowych — dodaj miejscowość w /pogoda." };
+      const wanted = asStr(args.locationName);
+      const loc = (wanted && locations.find((l) => l.label.toLowerCase().includes(wanted.toLowerCase())))
+        || locations.find((l) => l.isDefault)
+        || locations[0];
+      const f = await getWeather(loc.lat, loc.lon);
+      return {
+        location: loc.label,
+        current: f.current ? { temp: f.current.temp, apparent: f.current.apparent, windKph: f.current.windKph, code: f.current.code } : null,
+        daily: f.daily.slice(0, 5).map((d) => ({
+          date: d.date, tMax: d.tMax, tMin: d.tMin, precipProbMax: d.precipProbMax, precipSum: d.precipSum, windMaxKph: d.windMaxKph, code: d.code,
+        })),
+      };
+    }
+
+    case "list_budgets": {
+      const { budgets, periodLabel } = await getBudgetsWithSpending();
+      return { periodLabel, budgets: budgets.map((b) => ({ id: b.id, category: b.category, limitAmount: b.limitAmount, spent: b.spent, currency: b.currency })) };
+    }
+
+    case "list_goals": {
+      const goals = await getFinanceGoals();
+      return goals.map((g) => ({
+        id: g.id, name: g.name, targetAmount: g.targetAmount, currentAmount: g.currentAmount,
+        currency: g.currency, deadline: g.deadline ? new Date(g.deadline).toISOString().slice(0, 10) : null,
+      }));
+    }
+
+    case "list_task_tags": {
+      const tags = await getTaskTags();
+      return tags.map((t) => ({ id: t.id, name: t.name }));
+    }
+
+    case "list_note_tags": {
+      const tags = await getTags();
+      return tags.map((t) => ({ id: t.id, name: t.name }));
+    }
+
+    case "get_recipe": {
+      const idOrSlug = asStr(args.recipeId);
+      const search = asStr(args.search);
+      let key = idOrSlug;
+      if (!key && search) {
+        const teamIds = await getUserTeamIds(userId);
+        const r = await prisma.recipe.findFirst({
+          where: {
+            OR: [{ ownerId: userId }, ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : [])],
+            title: { contains: search, mode: "insensitive" },
+          },
+          select: { id: true },
+          orderBy: { updatedAt: "desc" },
+        });
+        key = r?.id;
+      }
+      if (!key) return null;
+      const recipe = await getRecipe(key);
+      if (!recipe) return null;
+      return recipe;
+    }
+
+    case "list_care_agenda": {
+      return getCareAgenda();
+    }
+
+    case "list_maintenance": {
+      return getMaintenanceOverview();
+    }
+
+    case "list_hot_topics": {
+      return getHotTopics();
+    }
+
+    case "list_trash": {
+      const { items, retentionDays } = await getTrash();
+      return {
+        retentionDays,
+        items: items.slice(0, clampLimit(args.limit)).map((it) => ({
+          id: it.id, module: it.module, label: it.title, deletedAt: it.deletedAt,
+        })),
+      };
     }
 
     default:
