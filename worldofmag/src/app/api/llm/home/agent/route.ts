@@ -204,7 +204,10 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - create_news_topic { title, semanticFilter? } — nowy monitorowany temat.
 - delete_news_topic { topicId? } (searchQuery = tytuł) — DESTRUKCYJNE
 - update_news_topic { title?, semanticFilter?, topicId? } (searchQuery = tytuł)
-- refresh_news_topic { topicId? } (searchQuery = tytuł)`,
+- refresh_news_topic { topicId? } (searchQuery = tytuł)
+- create_news_source { name, rssUrl, homepageUrl?, leaning?("left"|"center"|"right") } — dodaje źródło RSS.
+- update_news_source { newName?, rssUrl?, homepageUrl?, leaning?, enabled?, sourceId? } (searchQuery = nazwa źródła)
+- delete_news_source { sourceId? } (searchQuery = nazwa źródła) — DESTRUKCYJNE`,
 
   weather: `POGODA (module "weather"):
 - add_weather_location { name } — dodaje lokalizację pogodową po nazwie miejscowości.

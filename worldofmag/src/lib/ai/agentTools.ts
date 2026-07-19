@@ -9,7 +9,7 @@ import { getRecipe } from "@/actions/recipes";
 import { getCareAgenda, getCareHistory, getPetWelfare } from "@/actions/petCare";
 import { getEnclosures } from "@/actions/petHusbandry";
 import { getMaintenanceOverview } from "@/actions/warsztat";
-import { getHotTopics } from "@/actions/news";
+import { getHotTopics, getSources, getTopics, getTopicView } from "@/actions/news";
 import { getLocations, getWeather } from "@/actions/weather";
 import { getProjectGroups } from "@/actions/projectGroups";
 import { getNoteGroups } from "@/actions/noteGroups";
@@ -80,6 +80,8 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_enclosures: args {} → [{ id, name, type, location }]. Zbiorniki/terraria/klatki (husbandry).
 - get_pet_welfare: args {} → { agenda:[…], suggestions:[…] }. Dobrostan zwierząt: zaległa opieka + sugestie.
 - list_care_history: args { petName, limit? } → [{ date, kind, note }]. Historia opieki nad wskazanym zwierzęciem (searchowane po imieniu).
+- list_news_sources: args {} → [{ id, name, leaning, enabled }]. Skonfigurowane źródła RSS wiadomości.
+- get_news_topic_view: args { topicName } → { items:[…], knowledge:[…] }. Świeże pozycje i baza wiedzy dla wskazanego monitorowanego tematu.
 - list_calendar: args { year?, month? } → [{ module, title, date, at, href }]. Zagregowany kalendarz (zadania + posiłki + zdrowie + przeglądy floty) dla danego miesiąca (domyślnie bieżący; month = 1-12).
 - web_search: args { query, limit? } → [{ title, url, snippet }]. Wyszukiwarka internetowa — użyj TYLKO gdy potrzebujesz informacji spoza danych użytkownika (ceny, fakty, definicje, świat zewnętrzny). W odpowiedzi cytuj źródła linkami markdown.`;
 
@@ -125,6 +127,8 @@ export const READ_TOOL_NAMES = [
   "list_enclosures",
   "get_pet_welfare",
   "list_care_history",
+  "list_news_sources",
+  "get_news_topic_view",
 ] as const;
 
 async function accessibleProjectIds(userId: string): Promise<string[]> {
@@ -828,6 +832,20 @@ export async function runReadTool(
 
     case "get_pet_welfare": {
       return getPetWelfare();
+    }
+
+    case "list_news_sources": {
+      const sources = await getSources();
+      return sources.map((s) => ({ id: s.id, name: s.name, leaning: s.leaning, enabled: s.enabled }));
+    }
+
+    case "get_news_topic_view": {
+      const name = asStr(args.topicName) ?? asStr(args.search);
+      if (!name) return { note: "Podaj nazwę tematu (topicName)." };
+      const topics = await getTopics();
+      const topic = topics.find((t) => t.title.toLowerCase().includes(name.toLowerCase()));
+      if (!topic) return { note: `Nie znaleziono tematu: „${name}".` };
+      return getTopicView(topic.id);
     }
 
     case "list_care_history": {

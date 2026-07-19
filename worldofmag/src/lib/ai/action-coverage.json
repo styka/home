@@ -654,22 +654,26 @@
     "reason": "settings"
   },
   "news:acknowledgeItem": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "news:createSource": {
-    "status": "pending"
+    "status": "ai",
+    "action": "create_news_source"
   },
   "news:createTopic": {
     "status": "ai"
   },
   "news:deleteSource": {
-    "status": "pending"
+    "status": "ai",
+    "action": "delete_news_source"
   },
   "news:deleteTopic": {
     "status": "ai"
   },
   "news:dismissItem": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "news:getHotTopics": {
     "kind": "read",
@@ -678,15 +682,18 @@
   },
   "news:getKnowledgeHistory": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "niche"
   },
   "news:getNewsPref": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "settings"
   },
   "news:getSources": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_news_sources"
   },
   "news:getTopics": {
     "kind": "read",
@@ -694,13 +701,15 @@
   },
   "news:getTopicView": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "get_news_topic_view"
   },
   "news:refreshTopic": {
     "status": "ai"
   },
   "news:resummarizeItem": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "news:setActiveSource": {
     "status": "excluded",
@@ -711,7 +720,8 @@
     "reason": "admin"
   },
   "news:updateSource": {
-    "status": "pending"
+    "status": "ai",
+    "action": "update_news_source"
   },
   "news:updateTopic": {
     "status": "ai"
