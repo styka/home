@@ -9,6 +9,14 @@
 > **Zasada speca:** opisujemy **CO i DLACZEGO**, nigdy **JAK**. Zero nazw plików, tabel, bibliotek,
 > endpointów. Jeśli piszesz o implementacji — to należy do `plan.md`, nie tutaj.
 
+> **Aktualizacja 2026-07-19 (po testach na develop, C-54):** okazało się, że dla komendy „pokaż zadania
+> otagowane X" 429 **nie był przejściowy** — read-tool `list_tasks` nie miał filtra po tagu ani nie
+> zwracał tagów, więc agent nie mógł spełnić prośby i **zapętlał się**, a wiele wywołań modelu w jednej
+> minucie stale przekraczało limit TPM. Zakres rozszerzono o **usunięcie przyczyny pętli** (tag w
+> `list_tasks`) oraz **zmniejszenie rezerwacji `max_tokens`** poza raportami (Groq wlicza `max_tokens`
+> do TPM). To koryguje wcześniejsze „poza zakresem: cięcie kontekstu" — nie tniemy kontekstu rozmowy,
+> lecz domyślną rezerwację odpowiedzi. Patrz AC-7/AC-8 niżej.
+
 ## 1. Problem / potrzeba
 Czat asystenta AI potrafi zwrócić użytkownikowi **surowy błąd dostawcy** zamiast odpowiedzi. Zgłoszenie
 z 2026-07-19: na pytanie „pokaż mi wszystkie zadania otagowane »raj«" agent padł z komunikatem
@@ -58,6 +66,12 @@ Format Given/When/Then — każde musi dać się zweryfikować w `/verify`.
 - [ ] **AC-6** — Given istnieje skonfigurowany model zapasowy (łańcuch fallbacku), when pierwszy model
   zwróci limit szybkości, then zachowanie pozostaje **co najmniej tak dobre jak dziś** (najpierw próba
   fallbacku na inny model/dostawcę), a ponawianie z odczekaniem jest **uzupełnieniem**, nie regresją.
+- [ ] **AC-7** — Given użytkownik pyta „pokaż/wypisz zadania otagowane «X»", when asystent obsłuży
+  polecenie, then korzysta z filtra po tagu w narzędziu odczytu zadań (kończy w 1–2 wywołaniach modelu,
+  bez zapętlenia) i zwraca listę zadań z tym tagiem — zamiast błędu limitu.
+- [ ] **AC-8** — Given zwykłe (nie-raportowe) polecenie wieloetapowe, when agent wykonuje pętlę, then
+  rezerwacja `max_tokens` na wywołanie jest mała (duży zapas tylko dla próśb o raport), by nie zbliżać
+  się bez potrzeby do limitu TPM; jakość raportów pozostaje bez regresji.
 
 ## 5. Zakres
 **W zakresie:**

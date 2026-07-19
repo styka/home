@@ -299,12 +299,20 @@ function extractJson(content: string): unknown {
 // H3 (transparentność): zbiera użyty model + sumę tokenów z całej pętli agenta.
 type AgentMeta = { model?: string; tokens: number };
 
-async function callAgent(messages: ChatMessage[], meta?: AgentMeta): Promise<string> {
+// Domyślna rezerwacja tokenów odpowiedzi w pętli agenta. Kroki query/answer/plan/
+// clarify/navigate zwracają krótki JSON — 1200 w zupełności starcza. Duży zapas
+// (REPORT_MAX_TOKENS) rezerwujemy TYLKO gdy użytkownik prosi o raport, bo Groq
+// wlicza max_tokens do limitu TPM: stała rezerwacja 2800/wywołanie przy zapytaniach
+// wieloetapowych (query→answer = 2 wywołania) niepotrzebnie zbliżała nas do limitu.
+const AGENT_MAX_TOKENS = 1200;
+const REPORT_MAX_TOKENS = 2800; // zapas na pełny raport (step "report") — przy 1500 markdown bywał ucinany
+
+async function callAgent(messages: ChatMessage[], meta?: AgentMeta, maxTokens = AGENT_MAX_TOKENS): Promise<string> {
   const result = await chatComplete({
     op: "reasoning",
     messages,
     temperature: 0.1,
-    maxTokens: 2800, // zapas na pełny raport (step "report") — przy 1500 markdown bywał ucinany w połowie JSON
+    maxTokens,
     json: true,
     source: "home_agent",
   });
@@ -426,7 +434,8 @@ async function runAgentLoop(
   messages: ChatMessage[],
   userId: string,
   onThought?: (thought: string) => void,
-  meta?: AgentMeta
+  meta?: AgentMeta,
+  maxTokens: number = AGENT_MAX_TOKENS
 ): Promise<LoopResult> {
   const log: LogEntry[] = [];
 
@@ -435,7 +444,7 @@ async function runAgentLoop(
     for (let attempt = 0; attempt < 2 && parsed === null; attempt++) {
       let content: string;
       try {
-        content = await callAgent(messages, meta);
+        content = await callAgent(messages, meta, maxTokens);
       } catch (e) {
         const status = (e as { status?: number }).status ?? 502;
         // 010-ai-chat-rate-limit: przejściowy limit szybkości modelu (429) — mimo
@@ -707,6 +716,14 @@ export async function POST(req: NextRequest) {
   // System prompt (z katalogiem tylko wybranych modułów) na początek konwersacji.
   messages.unshift({ role: "system", content: buildSystemPrompt(selectedModules) });
 
+  // Rezerwacja tokenów odpowiedzi: duża TYLKO gdy użytkownik prosi o raport/obszerne
+  // zestawienie (step "report" bywa długi). Dla zwykłych zapytań mała rezerwacja tnie
+  // presję na limit TPM (Groq wlicza max_tokens do TPM) — kluczowe przy zapytaniach
+  // wieloetapowych (query→answer = 2 wywołania w tej samej minucie).
+  const intentText = `${body.text ?? ""} ${body.refine ?? ""}`;
+  const wantsReport = /\braport\w*|podsumow\w*|zestawieni\w*|streść\w*|streszcz\w*/i.test(intentText);
+  const agentMaxTokens = wantsReport ? REPORT_MAX_TOKENS : AGENT_MAX_TOKENS;
+
   // H4: strażnik współbieżności — nie pozwól odpalić zbyt wielu ciężkich operacji naraz.
   const release = acquireSlot(userId);
   if (!release) {
@@ -723,7 +740,7 @@ export async function POST(req: NextRequest) {
         };
         const meta: AgentMeta = { tokens: 0 };
         try {
-          const result = await runAgentLoop(messages, userId, (t) => send({ type: "thought", text: t }), meta);
+          const result = await runAgentLoop(messages, userId, (t) => send({ type: "thought", text: t }), meta, agentMaxTokens);
           if (result.body && typeof result.body === "object" && !result.body.error) {
             result.body.meta = { model: meta.model, tokens: meta.tokens };
           }
@@ -744,7 +761,7 @@ export async function POST(req: NextRequest) {
 
   const meta: AgentMeta = { tokens: 0 };
   try {
-    const result = await runAgentLoop(messages, userId, undefined, meta);
+    const result = await runAgentLoop(messages, userId, undefined, meta, agentMaxTokens);
     if (result.body && typeof result.body === "object" && !result.body.error) {
       result.body.meta = { model: meta.model, tokens: meta.tokens };
     }
