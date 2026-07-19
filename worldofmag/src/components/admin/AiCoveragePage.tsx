@@ -79,7 +79,8 @@ export function AiCoveragePage({ coverage }: { coverage: AiCoverage }) {
   const shownCount = filtered.reduce((n, m) => n + m.entries.length, 0);
 
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 16px 64px" }}>
+    <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)" }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 16px 64px" }}>
       <Link href="/admin" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, color: "var(--text-secondary)", textDecoration: "none", marginBottom: 16 }}>
         <ChevronLeft size={15} /> Panel admina
       </Link>
@@ -136,6 +137,7 @@ export function AiCoveragePage({ coverage }: { coverage: AiCoverage }) {
       {filtered.length === 0 && (
         <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: 32 }}>Brak akcji spełniających filtry.</p>
       )}
+      </div>
     </div>
   );
 }
