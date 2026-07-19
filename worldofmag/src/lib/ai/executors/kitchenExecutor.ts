@@ -1,10 +1,10 @@
 // Z-010: handler akcji asystenta dla modułu Kuchnia (jadłospis + przepisy + spiżarnia).
 // Scala trzy dawne bloki `module === "kitchen"` z execute/route.ts.
 import { prisma } from "@/lib/prisma";
-import { setMealPlanEntry, markMealCooked, deleteMealPlanEntry } from "@/actions/mealPlans";
+import { setMealPlanEntry, markMealCooked, deleteMealPlanEntry, generateShoppingListFromPlan } from "@/actions/mealPlans";
 import { addPantryItem, updatePantryItem, consumePantryItem, deletePantryItem } from "@/actions/pantry";
 import { createRecipe, deleteRecipe } from "@/actions/recipes";
-import { asStr, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executors/shared";
+import { asStr, resolveOrCreateList, type ExecOutcome, resolveByName, ownerOrArr } from "@/lib/ai/executors/shared";
 import { isoDate } from "@/lib/habitStats";
 import type { AIAction } from "@/lib/ai/aiAction";
 
@@ -80,6 +80,29 @@ export async function executeKitchenAction(action: AIAction, userId: string): Pr
     const id = await resolvePantry();
     await deletePantryItem(id);
     return `Usunięto pozycję spiżarni`;
+  }
+
+  if (type === "generate_shopping_from_plan") {
+    // Zbierz składniki z zaplanowanych posiłków na najbliższe N dni do listy zakupów.
+    const days = Math.max(1, Math.min(30, Number(params.days ?? 7)));
+    const from = new Date();
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(from);
+    to.setDate(to.getDate() + days);
+    const list = await resolveOrCreateList(userId, {
+      listId: asStr(params.listId),
+      listName: asStr(params.listName),
+    });
+    const res = await generateShoppingListFromPlan({
+      from,
+      to,
+      listId: list.id,
+      skipPantry: params.skipPantry !== false,
+    });
+    const added = res.addedItems.length;
+    const skipped = res.skippedFromPantry.length;
+    return `Dodano ${added} ${added === 1 ? "pozycję" : "pozycji"} do listy "${list.name}" z jadłospisu na ${days} dni` +
+      (skipped > 0 ? ` (pominięto ${skipped} — masz w spiżarni)` : "");
   }
 
   throw new Error(`Nieznany typ akcji kuchni: ${type}`);

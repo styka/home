@@ -16,6 +16,7 @@ import { executePortfelAction } from "@/lib/ai/executors/portfelExecutor";
 import { executeFlotaAction } from "@/lib/ai/executors/flotaExecutor";
 import { executeKitchenAction } from "@/lib/ai/executors/kitchenExecutor";
 import { executeStorageAction } from "@/lib/ai/executors/storageExecutor";
+import { executeContactsAction } from "@/lib/ai/executors/contactsExecutor";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { ExecOutcome, ActionResult } from "@/lib/ai/executors/shared";
 
@@ -92,6 +93,11 @@ async function executeAction(
   // ── Pogoda (lokalizacje / obserwatorzy) ───────────────────────────────────────
   if (module === "weather") {
     return executeWeatherAction(action, userId);
+  }
+
+  // ── Kontakty (CRM) ────────────────────────────────────────────────────────────
+  if (module === "contacts") {
+    return executeContactsAction(action, userId);
   }
 
   // ── Raporty (zapis wyniku / sesji) ────────────────────────────────────────────

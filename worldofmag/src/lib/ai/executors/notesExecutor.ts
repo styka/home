@@ -1,9 +1,28 @@
 // Z-010: handler akcji asystenta dla modułu Notatki.
 // Scala oba dawne bloki `module === "notes"` (CRUD + toggle_pin) z execute/route.ts.
 import { prisma } from "@/lib/prisma";
-import { createNote, updateNote, deleteNote, toggleNotePin } from "@/actions/notes";
+import { createNote, updateNote, deleteNote, toggleNotePin, setNoteTags } from "@/actions/notes";
+import { getTags, createTag } from "@/actions/tags";
 import { asStr, undoAction, resolveNoteId, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
+
+// Zamień nazwy tagów notatek na id (znajdź istniejący po nazwie, inaczej utwórz).
+async function resolveNoteTagIds(names: unknown): Promise<string[]> {
+  const list = Array.isArray(names) ? names.map((n) => asStr(n)).filter((n): n is string => !!n) : [];
+  if (list.length === 0) return [];
+  const existing = await getTags();
+  const byName = new Map(existing.map((t) => [t.name.toLowerCase(), t.id]));
+  const ids: string[] = [];
+  for (const name of list) {
+    const key = name.trim().toLowerCase();
+    const found = byName.get(key);
+    if (found) { ids.push(found); continue; }
+    const created = await createTag({ name });
+    byName.set(key, created.id);
+    ids.push(created.id);
+  }
+  return ids;
+}
 
 export async function executeNotesAction(action: AIAction, userId: string): Promise<string | ExecOutcome> {
   const { type, params, searchQuery } = action;
@@ -52,6 +71,29 @@ export async function executeNotesAction(action: AIAction, userId: string): Prom
     const id = await resolveNoteId(userId, params, searchQuery);
     const note = await toggleNotePin(id);
     return note.pinned ? `Przypięto notatkę „${note.title}"` : `Odpięto notatkę „${note.title}"`;
+  }
+
+  if (type === "set_note_tags") {
+    const id = await resolveNoteId(userId, params, searchQuery);
+    const note = await prisma.note.findUnique({
+      where: { id },
+      select: { title: true, tags: { select: { tagId: true, tag: { select: { name: true } } } } },
+    });
+    const addIds = await resolveNoteTagIds(params.tags);
+    const removeNames = (Array.isArray(params.removeTags) ? params.removeTags : [])
+      .map((n) => asStr(n)?.toLowerCase())
+      .filter((n): n is string => !!n);
+    let finalIds: string[];
+    if (params.replace === true) {
+      finalIds = addIds;
+    } else {
+      const existingIds = (note?.tags ?? [])
+        .filter((t) => !removeNames.includes(t.tag.name.toLowerCase()))
+        .map((t) => t.tagId);
+      finalIds = Array.from(new Set([...existingIds, ...addIds]));
+    }
+    await setNoteTags(id, finalIds);
+    return `Zaktualizowano tagi notatki "${note?.title ?? ""}"`;
   }
 
   throw new Error(`Nieznany typ akcji notatek: ${type}`);

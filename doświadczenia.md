@@ -4,6 +4,28 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-19 — Brak bramki pokrycia: akcje użytkownika nie były wystawiane dla AI
+**Problem:** Asystent nie potrafił wielu rzeczy, które użytkownik robi ręcznie (np. otagować zadania —
+`updateTaskTags`), bo możliwości AI utrzymywane są RĘCZNIE w 3 miejscach (katalog w prompt'cie,
+egzekutory, whitelist fast-path), a jedyny guard (`check-action-coverage.js`) pilnował tylko spójności
+katalog↔egzekutor. NIC nie pilnowało, czy KAŻDA mutująca Server Action jest w ogóle wystawiona dla AI,
+więc nowe możliwości użytkownika „przeciekały" bez integracji z asystentem.
+**Rozwiązanie:** Dodano bramkę pokrycia: `scripts/check-ai-coverage.js` + manifest
+`src/lib/ai/action-coverage.json`, w którym KAŻDA mutująca Server Action (`src/actions/*`) musi mieć
+status `ai` (wystawiona) / `pending` (luka do zrobienia) / `excluded` (świadomie nie dla AI, z powodem).
+Build PADA, gdy ktoś doda nową mutującą akcję i jej nie sklasyfikuje — więc nowa możliwość użytkownika
+nie prześlizgnie się bez decyzji o AI. Skrypt (flaga `--report`) generuje czytelną roadmapę luk w
+`docs/ai/pokrycie-akcji.md`. Wpięto w `npm run build` obok pozostałych `check:*`. Domknięto pierwszą
+partię luk (12 akcji: tagowanie zadań/notatek, podzadania, kontakty CRM, budżety/cele portfela,
+jadłospis→zakupy, przenoszenie pozycji, odarchiwizacja/„zakończ zakupy"). Wzmocniono prompt agenta o
+regułę ŁAŃCUCHA AKCJI (jedno polecenie → wiele kroków, także między modułami, referencja po nazwie do
+elementów tworzonych w tym samym planie).
+**Lekcja:** Gdy zdolności AI są utrzymywane osobno od „prawdy" (Server Actions), potrzebna jest BRAMKA
+pokrycia, nie tylko dobre chęci. Wzorzec: enumeruj źródło prawdy (mutujące akcje), wymagaj świadomej
+klasyfikacji każdej z nich w manifeście, wywalaj build na nieklasyfikowanej nowej akcji. Dzięki temu
+„AI umie wszystko co użytkownik" staje się mierzalnym, egzekwowalnym stanem (licznik ai/pending), a nie
+jednorazową obietnicą.
+
 ## 2026-07-19 — Limit 429 NIE był przejściowy: „pokaż zadania otagowane X" zapętlał agenta
 **Problem:** Po pierwszym fixie (retry + łagodny komunikat) komenda „pokaż zadania otagowane raj"
 **zawsze** kończyła się „Asystent przeciążony", nawet po ponawianiu — podczas gdy „jak się masz?"
