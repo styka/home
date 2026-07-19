@@ -50,6 +50,13 @@ na poziomie `fetch` (jedno miejsce dla wszystkich dostawców i trybów, też str
 zanim skonsumujesz body). Nigdy nie pokazuj użytkownikowi surowej treści błędu dostawcy — zawsze własny,
 polski komunikat (C-41: brak ryzyka wycieku klucza/szczegółów). Ponawiaj TYLKO statusy przejściowe
 (429/≥500), nie 4xx poza 429.
+
+## 2026-07-19 — Dokumentacja myliła środowiska Render (który URL/tier to test, a który prod)
+**Problem:** CLAUDE.md podawał `worldofmag.onrender.com` jednocześnie jako „Live URL" i „auto-deploy on `master`" oraz „free tier", podczas gdy sekcja git-workflow traktowała ten sam URL jako środowisko **testowe** (`develop`). Drugi serwis (`omnia-prod.onrender.com`) figurował tylko w allowed origins, bez wskazania, że to produkcja. Tier per-środowisko nie był nigdzie jasno rozpisany — trzeba go było wywnioskować z luźnej uwagi „Render prod nie usypia".
+**Rozwiązanie:** Ujednolicono mapowanie w CLAUDE.md (tabela „Environments & tiers") i w runbooku: `develop` → test → `worldofmag.onrender.com` → **free** (usypia po 15 min); `master` → produkcja → `omnia-prod.onrender.com` → **płatny** (nie usypia). Poprawiono też roadmapę (migracja prod na płatny tier = zrobione).
+**Lekcja:** Gdy są dwa serwisy Render pod jednym projektem, trzymaj **jedną tabelę** gałąź → URL → tier jako źródło prawdy i nie rozrzucaj tych faktów po „Live URL"/„allowed origins"/uwagach. „Free tier usypia, prod nie" to jedyny twardy sygnał różnicujący tier — zapisz go wprost, nie zostawiaj do wywnioskowania.
+
+## 2026-07-18 — Offline: katalog list widać, ale nie da się wejść w listę (nawigacja SPA = RSC z sieci)
 **Problem:** Po naprawie instalacji SW aplikacja wstawała offline i katalog `/shopping` był widoczny, ale
 kliknięcie w konkretną listę nic nie dawało. Przyczyna: w App Routerze wejście w `/shopping/[id]` przez
 `<Link>` to nawigacja **SPA**, która pobiera payload **RSC** z sieci — offline to pada. Do tego dokument

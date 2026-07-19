@@ -597,10 +597,19 @@ Allowed server action origins: `localhost:3000`, `worldofmag.onrender.com`,
 | Service | Details |
 |---------|---------|
 | Database | Neon PostgreSQL, eu-central-1 (Frankfurt) |
-| Hosting | Render, Frankfurt, free tier, auto-deploy on push to `master` |
-| Live URL | `https://worldofmag.onrender.com` |
+| Hosting | Render, Frankfurt — **two services** (see the environment/tier table below), auto-deploy per branch |
 
-**Cold start**: Free tier sleeps after 15 min inactivity — first load takes ~10–15 seconds.
+**Environments & tiers** (branch → Render service → plan):
+
+| Branch | Environment | Render service (URL) | Tier |
+|--------|-------------|----------------------|------|
+| `develop` | Test | `https://worldofmag.onrender.com` | **Free** (sleeps after 15 min) |
+| `master` | Production | `https://omnia-prod.onrender.com` | **Paid** (does not sleep) |
+
+**Cold start**: only the **free tier** (`develop`/test → `worldofmag.onrender.com`)
+sleeps after 15 min inactivity — first load then takes ~10–15 seconds. **Production
+(`master` → `omnia-prod.onrender.com`) is on a paid tier and does not sleep** — the
+in-process job worker (`setInterval`) relies on this.
 
 **Seed data** does not run automatically after deploy — run manually via Render Shell if needed.
 
@@ -621,17 +630,17 @@ Allowed server action origins: `localhost:3000`, `worldofmag.onrender.com`,
 > merge from it into `develop`.)
 
 The flow is **`feature → develop → master`**:
-- **`develop`** is the integration branch and **test environment**: pushing to
-  `develop` triggers auto-deploy on `worldofmag.onrender.com`. It is the only way to
-  verify that the work actually runs live.
+- **`develop`** is the integration branch and **test environment** (**free tier**):
+  pushing to `develop` triggers auto-deploy on `worldofmag.onrender.com`. It is the
+  only way to verify that the work actually runs live.
 - **After finishing a task, merge the working branch (`claude/*`) → `develop` by
   default and automatically — without asking.** Don't pause with "you now have
   access / done" — merge to `develop` immediately so the change reaches the test env.
   Condition: the task is finished and `npm run build` passes (for a docs-only change
   there is nothing to build, so accuracy review stands in for the build).
-- **`master`** is production (Render auto-deploy) — promote `develop → master`
-  **only on the user's explicit request**, and only after confirming everything
-  works on the test env (`develop`).
+- **`master`** is production (**paid tier**, auto-deploy on `omnia-prod.onrender.com`)
+  — promote `develop → master` **only on the user's explicit request**, and only after
+  confirming everything works on the test env (`develop`).
 - Prefer fast-forward; if the target branch has diverged, do a normal merge (no force-push).
 
 ---
@@ -651,7 +660,9 @@ The flow is **`feature → develop → master`**:
 
 ## Short-Term Roadmap
 
-- [ ] Paid hosting migration if free-tier performance is insufficient ($7/mo on Render)
+- [x] Paid hosting migration for production — `master` → `omnia-prod.onrender.com`
+  runs on a paid Render tier (does not sleep). Test env (`develop` →
+  `worldofmag.onrender.com`) stays on the free tier.
 - [ ] (optional) Chip away the ~64 cosmetic ESLint warnings (Polish JSX quotes + exhaustive-deps)
 
 _Recently shipped (no longer roadmap): Calendar (unified agenda), Service marketplace
