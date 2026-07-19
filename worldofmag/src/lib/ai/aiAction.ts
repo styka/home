@@ -18,6 +18,7 @@ export type AIActionModule =
   | "languages"
   | "news"
   | "weather"
+  | "contacts"
   | "reports";
 
 export interface AIAction {
@@ -54,6 +55,7 @@ export const DESTRUCTIVE_ACTION_TYPES = new Set<string>([
   "delete_storage_item",
   "delete_pet",
   "delete_medication",
+  "delete_contact",
 ]);
 
 /** Czy akcja jest destrukcyjna (usuwa/archiwizuje dane) — wymaga świadomego potwierdzenia. */

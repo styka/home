@@ -1,0 +1,1156 @@
+{
+  "access:addUserRole": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:createPermission": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:deletePermission": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:removeUserRole": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:toggleRolePermission": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:updatePermission": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "activity:trackActivity": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "adminCategories:createSystemCategory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "adminCategories:deleteSystemCategory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "adminCategories:updateSystemCategory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "aiConversations:appendAiMessage": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "aiConversations:createAiConversation": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "aiConversations:deleteAiConversation": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "aiConversations:renameAiConversation": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "calendar:regenerateIcalFeed": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "categories:createCategory": {
+    "status": "pending"
+  },
+  "categories:deleteCategory": {
+    "status": "pending"
+  },
+  "categories:updateCategory": {
+    "status": "pending"
+  },
+  "categoryIcons:assignIconToCategory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:deactivateCategoryIcon": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:deleteCategoryIconVariant": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:orphanCategoryIcons": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:saveAndActivateCategoryIcon": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:saveToLibrary": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:setActiveCategoryIcon": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:upsertCategoryEmojiOverride": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "config:setConfigValue": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "contacts:createContact": {
+    "status": "ai",
+    "action": "create_contact"
+  },
+  "contacts:deleteContact": {
+    "status": "ai",
+    "action": "delete_contact"
+  },
+  "contacts:updateContact": {
+    "status": "ai",
+    "action": "update_contact"
+  },
+  "cookbooks:createCookbook": {
+    "status": "pending"
+  },
+  "cookbooks:deleteCookbook": {
+    "status": "pending"
+  },
+  "cookbooks:updateCookbook": {
+    "status": "pending"
+  },
+  "dashboardPrefs:setDashboardPrefs": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "drive:disconnectDrive": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "flota:addFuelLog": {
+    "status": "ai"
+  },
+  "flota:addServiceRecord": {
+    "status": "ai"
+  },
+  "flota:addVehicleAttachment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "flota:createVehicle": {
+    "status": "ai"
+  },
+  "flota:deleteFuelLog": {
+    "status": "pending"
+  },
+  "flota:deleteServiceRecord": {
+    "status": "pending"
+  },
+  "flota:deleteVehicle": {
+    "status": "ai"
+  },
+  "flota:deleteVehicleAttachment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "flota:updateVehicle": {
+    "status": "ai"
+  },
+  "habits:createHabit": {
+    "status": "ai"
+  },
+  "habits:createTaskFromHabit": {
+    "status": "pending"
+  },
+  "habits:deleteHabit": {
+    "status": "ai"
+  },
+  "habits:reorderHabits": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "habits:setHabitArchived": {
+    "status": "ai"
+  },
+  "habits:toggleHabitDay": {
+    "status": "ai"
+  },
+  "habits:updateHabit": {
+    "status": "ai"
+  },
+  "health:addHealthAttachment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "health:createHealthEvent": {
+    "status": "ai"
+  },
+  "health:deleteHealthAttachment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "health:deleteHealthEvent": {
+    "status": "ai"
+  },
+  "health:setHealthAiOptIn": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "health:setHealthStatus": {
+    "status": "ai"
+  },
+  "health:updateHealthEvent": {
+    "status": "ai"
+  },
+  "invitations:acceptInvitation": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "invitations:inviteUser": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "invitations:rejectInvitation": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "items:addItem": {
+    "status": "ai"
+  },
+  "items:addItemStructured": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "items:clearDoneItems": {
+    "status": "ai"
+  },
+  "items:deleteItem": {
+    "status": "ai"
+  },
+  "items:markAllInCart": {
+    "status": "ai"
+  },
+  "items:moveItem": {
+    "status": "ai",
+    "action": "move_item"
+  },
+  "items:reorderItems": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "items:updateItem": {
+    "status": "ai"
+  },
+  "items:updateItemStatus": {
+    "status": "ai"
+  },
+  "jobs:cancelJobAction": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "jobs:cleanupJobsAction": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "jobs:retryJobAction": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "languageDecks:addWord": {
+    "status": "ai"
+  },
+  "languageDecks:bulkAddWords": {
+    "status": "pending"
+  },
+  "languageDecks:createDeck": {
+    "status": "ai"
+  },
+  "languageDecks:deleteDeck": {
+    "status": "ai"
+  },
+  "languageDecks:deleteWord": {
+    "status": "ai"
+  },
+  "languageDecks:submitReview": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "languageDecks:updateDeck": {
+    "status": "ai"
+  },
+  "languageDecks:updateWord": {
+    "status": "ai"
+  },
+  "legal:acceptAllCurrentConsents": {
+    "status": "excluded",
+    "reason": "account"
+  },
+  "legal:acceptConsent": {
+    "status": "excluded",
+    "reason": "account"
+  },
+  "lists:archiveList": {
+    "status": "ai"
+  },
+  "lists:completeShopping": {
+    "status": "ai",
+    "action": "complete_shopping"
+  },
+  "lists:createList": {
+    "status": "ai"
+  },
+  "lists:deleteList": {
+    "status": "ai"
+  },
+  "lists:renameList": {
+    "status": "ai"
+  },
+  "lists:unarchiveList": {
+    "status": "ai",
+    "action": "unarchive_list"
+  },
+  "llmConfig:applyAnthropicProfile": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:createProvider": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:deleteProvider": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:setAssignment": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:setCostAlertThreshold": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:updateProvider": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "mealPlans:bulkSetMealPlan": {
+    "status": "pending"
+  },
+  "mealPlans:deleteMealPlanEntry": {
+    "status": "ai"
+  },
+  "mealPlans:generateShoppingListFromPlan": {
+    "status": "ai",
+    "action": "generate_shopping_from_plan"
+  },
+  "mealPlans:markMealCooked": {
+    "status": "ai"
+  },
+  "mealPlans:markMealSkipped": {
+    "status": "pending"
+  },
+  "mealPlans:moveMealPlanEntry": {
+    "status": "pending"
+  },
+  "mealPlans:setMealPlanEntry": {
+    "status": "ai"
+  },
+  "mealPlans:updateMealPlanEntry": {
+    "status": "pending"
+  },
+  "medications:createMedicationSchedule": {
+    "status": "ai"
+  },
+  "medications:deleteMedicationSchedule": {
+    "status": "ai"
+  },
+  "medications:logDose": {
+    "status": "ai"
+  },
+  "medications:unlogDose": {
+    "status": "pending"
+  },
+  "medications:updateMedicationSchedule": {
+    "status": "pending"
+  },
+  "menuPrefs:updateMenuPrefs": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "news:acknowledgeItem": {
+    "status": "pending"
+  },
+  "news:createSource": {
+    "status": "pending"
+  },
+  "news:createTopic": {
+    "status": "ai"
+  },
+  "news:deleteSource": {
+    "status": "pending"
+  },
+  "news:deleteTopic": {
+    "status": "ai"
+  },
+  "news:dismissItem": {
+    "status": "pending"
+  },
+  "news:refreshTopic": {
+    "status": "ai"
+  },
+  "news:resummarizeItem": {
+    "status": "pending"
+  },
+  "news:setActiveSource": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "news:setDefaultSummaryLength": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "news:updateSource": {
+    "status": "pending"
+  },
+  "news:updateTopic": {
+    "status": "ai"
+  },
+  "noteGroups:createNoteGroup": {
+    "status": "pending"
+  },
+  "noteGroups:deleteNoteGroup": {
+    "status": "pending"
+  },
+  "noteGroups:updateNoteGroup": {
+    "status": "pending"
+  },
+  "notes:addNoteAttachment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "notes:addTagToNote": {
+    "status": "pending"
+  },
+  "notes:createNote": {
+    "status": "ai"
+  },
+  "notes:deleteNote": {
+    "status": "ai"
+  },
+  "notes:deleteNoteAttachment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "notes:removeTagFromNote": {
+    "status": "pending"
+  },
+  "notes:restoreNoteRevision": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "notes:setNoteTags": {
+    "status": "ai",
+    "action": "set_note_tags"
+  },
+  "notes:toggleNotePin": {
+    "status": "ai"
+  },
+  "notes:updateNote": {
+    "status": "ai"
+  },
+  "notifications:markAllNotificationsRead": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "notifications:markNotificationRead": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "notifications:notifyUser": {
+    "status": "ai"
+  },
+  "notifications:syncReminders": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "pantry:addPantryItem": {
+    "status": "ai"
+  },
+  "pantry:autoReplenishToList": {
+    "status": "pending"
+  },
+  "pantry:bulkSetPantryQuantities": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "pantry:consumePantryItem": {
+    "status": "ai"
+  },
+  "pantry:deletePantryItem": {
+    "status": "ai"
+  },
+  "pantry:moveItemToPantry": {
+    "status": "pending"
+  },
+  "pantry:setPantryQuantity": {
+    "status": "pending"
+  },
+  "pantry:updatePantryItem": {
+    "status": "ai"
+  },
+  "petBreeding:createBreedingPair": {
+    "status": "ai"
+  },
+  "petBreeding:createClutch": {
+    "status": "ai"
+  },
+  "petBreeding:createOffspring": {
+    "status": "ai"
+  },
+  "petBreeding:deleteBreedingPair": {
+    "status": "pending"
+  },
+  "petBreeding:deleteClutch": {
+    "status": "pending"
+  },
+  "petBreeding:deleteSale": {
+    "status": "pending"
+  },
+  "petBreeding:markClutchHatched": {
+    "status": "ai"
+  },
+  "petBreeding:recordSale": {
+    "status": "ai"
+  },
+  "petBreeding:setGenetics": {
+    "status": "pending"
+  },
+  "petBreeding:setParentage": {
+    "status": "pending"
+  },
+  "petBreeding:updateBreedingPair": {
+    "status": "pending"
+  },
+  "petCare:addMeasurement": {
+    "status": "ai"
+  },
+  "petCare:completeCareTask": {
+    "status": "ai"
+  },
+  "petCare:completeTreatment": {
+    "status": "ai"
+  },
+  "petCare:createCareTask": {
+    "status": "ai"
+  },
+  "petCare:createHealthRecord": {
+    "status": "ai"
+  },
+  "petCare:createTreatment": {
+    "status": "ai"
+  },
+  "petCare:createVetVisit": {
+    "status": "ai"
+  },
+  "petCare:deleteCareTask": {
+    "status": "pending"
+  },
+  "petCare:deleteHealthRecord": {
+    "status": "pending"
+  },
+  "petCare:deleteMeasurement": {
+    "status": "pending"
+  },
+  "petCare:deleteTreatment": {
+    "status": "pending"
+  },
+  "petCare:deleteVetVisit": {
+    "status": "pending"
+  },
+  "petCare:logFeeding": {
+    "status": "ai"
+  },
+  "petCare:updateCareTask": {
+    "status": "pending"
+  },
+  "petCare:updateHealthRecord": {
+    "status": "pending"
+  },
+  "petCare:updateTreatment": {
+    "status": "pending"
+  },
+  "petCare:updateVetVisit": {
+    "status": "pending"
+  },
+  "petHusbandry:addEnvironmentReading": {
+    "status": "ai"
+  },
+  "petHusbandry:assignPetToEnclosure": {
+    "status": "pending"
+  },
+  "petHusbandry:createEnclosure": {
+    "status": "ai"
+  },
+  "petHusbandry:deleteEnclosure": {
+    "status": "pending"
+  },
+  "petHusbandry:deleteEnvironmentReading": {
+    "status": "pending"
+  },
+  "petHusbandry:updateEnclosure": {
+    "status": "pending"
+  },
+  "pets:createPet": {
+    "status": "ai"
+  },
+  "pets:deletePet": {
+    "status": "ai"
+  },
+  "pets:removePetShare": {
+    "status": "pending"
+  },
+  "pets:setPetStatus": {
+    "status": "ai"
+  },
+  "pets:sharePetByEmail": {
+    "status": "pending"
+  },
+  "pets:sharePetWithTeam": {
+    "status": "pending"
+  },
+  "pets:updatePet": {
+    "status": "ai"
+  },
+  "pets:updatePetFeatures": {
+    "status": "pending"
+  },
+  "portfel:addEntry": {
+    "status": "ai"
+  },
+  "portfel:archiveElement": {
+    "status": "ai"
+  },
+  "portfel:createElement": {
+    "status": "ai"
+  },
+  "portfel:deleteElement": {
+    "status": "ai"
+  },
+  "portfel:importBankCsv": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "portfel:setBalance": {
+    "status": "ai"
+  },
+  "portfel:updateElement": {
+    "status": "ai"
+  },
+  "portfelAuto:setFinanceSettings": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "portfelBudgets:contributeGoal": {
+    "status": "ai",
+    "action": "contribute_goal"
+  },
+  "portfelBudgets:createBudget": {
+    "status": "ai",
+    "action": "create_budget"
+  },
+  "portfelBudgets:createGoal": {
+    "status": "ai",
+    "action": "create_goal"
+  },
+  "portfelBudgets:deleteBudget": {
+    "status": "pending"
+  },
+  "portfelBudgets:deleteGoal": {
+    "status": "pending"
+  },
+  "portfelBudgets:updateBudget": {
+    "status": "pending"
+  },
+  "portfelBudgets:updateGoal": {
+    "status": "pending"
+  },
+  "portfelCurrency:deleteExchangeRate": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "portfelCurrency:refreshRatesFromNBP": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "portfelCurrency:setBaseCurrency": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "portfelCurrency:setExchangeRate": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "privacy:deleteMyAccount": {
+    "status": "excluded",
+    "reason": "account"
+  },
+  "privacy:exportMyData": {
+    "status": "excluded",
+    "reason": "account"
+  },
+  "products:copyGlobalProduct": {
+    "status": "pending"
+  },
+  "products:createProduct": {
+    "status": "pending"
+  },
+  "products:deleteProduct": {
+    "status": "pending"
+  },
+  "products:updateProduct": {
+    "status": "pending"
+  },
+  "products:upsertUserProduct": {
+    "status": "pending"
+  },
+  "projectGroups:createProjectGroup": {
+    "status": "pending"
+  },
+  "projectGroups:deleteProjectGroup": {
+    "status": "pending"
+  },
+  "projectGroups:updateProjectGroup": {
+    "status": "pending"
+  },
+  "qa:createEpic": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:createScenario": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:createStory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:deleteEpic": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:deleteScenario": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:deleteStory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:updateEpic": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:updateScenario": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:updateStory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "recipes:addIngredient": {
+    "status": "pending"
+  },
+  "recipes:addRecipeImage": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "recipes:addStep": {
+    "status": "pending"
+  },
+  "recipes:archiveRecipe": {
+    "status": "pending"
+  },
+  "recipes:createRecipe": {
+    "status": "ai"
+  },
+  "recipes:deleteIngredient": {
+    "status": "pending"
+  },
+  "recipes:deleteRecipe": {
+    "status": "ai"
+  },
+  "recipes:deleteRecipeImage": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "recipes:deleteStep": {
+    "status": "pending"
+  },
+  "recipes:duplicateRecipe": {
+    "status": "pending"
+  },
+  "recipes:markRecipeCooked": {
+    "status": "pending"
+  },
+  "recipes:reorderIngredients": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "recipes:reorderSteps": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "recipes:shopForRecipe": {
+    "status": "pending"
+  },
+  "recipes:updateIngredient": {
+    "status": "pending"
+  },
+  "recipes:updateRecipe": {
+    "status": "pending"
+  },
+  "recipes:updateRecipeImage": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "recipes:updateStep": {
+    "status": "pending"
+  },
+  "reports:createReport": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "reports:createUserReport": {
+    "status": "ai"
+  },
+  "reports:deleteReport": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "reports:updateReport": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "shoppingSync:syncShoppingMutations": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "skins:createSkin": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "skins:deleteSkin": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "skins:duplicateSkin": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "skins:setActiveSkin": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "skins:updateSkin": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "storage:addBatch": {
+    "status": "pending"
+  },
+  "storage:addLowStockToShoppingList": {
+    "status": "pending"
+  },
+  "storage:addStorageItem": {
+    "status": "ai"
+  },
+  "storage:addSupplier": {
+    "status": "pending"
+  },
+  "storage:adjustStorageQuantity": {
+    "status": "ai"
+  },
+  "storage:bulkAddStorageItems": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:bulkSetStorageQuantities": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:createDocument": {
+    "status": "pending"
+  },
+  "storage:createPurchaseOrder": {
+    "status": "pending"
+  },
+  "storage:deleteBatch": {
+    "status": "pending"
+  },
+  "storage:deleteDocument": {
+    "status": "pending"
+  },
+  "storage:deletePurchaseOrder": {
+    "status": "pending"
+  },
+  "storage:deleteStorageItem": {
+    "status": "ai"
+  },
+  "storage:deleteSupplier": {
+    "status": "pending"
+  },
+  "storage:setStorageCurrency": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "storage:setStorageMode": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "storage:transferStock": {
+    "status": "ai"
+  },
+  "storage:updatePurchaseOrder": {
+    "status": "pending"
+  },
+  "storage:updateStorageItem": {
+    "status": "ai"
+  },
+  "storage:updateSupplier": {
+    "status": "pending"
+  },
+  "stores:createStore": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:deleteStore": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:deleteStoreEdge": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:deleteStoreNode": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:renameStore": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:saveStoreGraph": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:upsertStoreEdge": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:upsertStoreNode": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "tags:createTag": {
+    "status": "pending"
+  },
+  "tags:deleteTag": {
+    "status": "pending"
+  },
+  "tags:updateTag": {
+    "status": "pending"
+  },
+  "taskProjects:addProjectMember": {
+    "status": "pending"
+  },
+  "taskProjects:createTaskProject": {
+    "status": "ai"
+  },
+  "taskProjects:deleteTaskProject": {
+    "status": "ai"
+  },
+  "taskProjects:removeProjectMember": {
+    "status": "pending"
+  },
+  "taskProjects:updateTaskProject": {
+    "status": "ai"
+  },
+  "taskProjects:updateTaskProjectStatusConfig": {
+    "status": "pending"
+  },
+  "tasks:addTaskComment": {
+    "status": "pending"
+  },
+  "tasks:completeRecurringTask": {
+    "status": "pending"
+  },
+  "tasks:createTask": {
+    "status": "ai"
+  },
+  "tasks:deleteTask": {
+    "status": "ai"
+  },
+  "tasks:deleteTaskComment": {
+    "status": "pending"
+  },
+  "tasks:removeTaskShare": {
+    "status": "pending"
+  },
+  "tasks:reorderTask": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "tasks:shareTask": {
+    "status": "pending"
+  },
+  "tasks:shareTaskByEmail": {
+    "status": "pending"
+  },
+  "tasks:toggleTaskStatus": {
+    "status": "pending"
+  },
+  "tasks:updateTask": {
+    "status": "ai"
+  },
+  "tasks:updateTaskTags": {
+    "status": "ai",
+    "action": "set_task_tags"
+  },
+  "taskTags:createTaskTag": {
+    "status": "pending"
+  },
+  "taskTags:deleteTaskTag": {
+    "status": "pending"
+  },
+  "taskTags:updateTaskTag": {
+    "status": "pending"
+  },
+  "teams:changeMemberRole": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:createSubTeam": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:createTeam": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:deleteTeam": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:leaveTeam": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:removeMember": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:setMemberModuleAccess": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:transferTeamOwnership": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:updateTeam": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "trash:emptyTrash": {
+    "status": "pending"
+  },
+  "trash:purgeTrashItem": {
+    "status": "pending"
+  },
+  "trash:restoreTrashItem": {
+    "status": "pending"
+  },
+  "truck:planTruckRoute": {
+    "status": "pending"
+  },
+  "truck:saveVehicleProfile": {
+    "status": "pending"
+  },
+  "units:createUnit": {
+    "status": "pending"
+  },
+  "units:deleteUnit": {
+    "status": "pending"
+  },
+  "units:renameUnit": {
+    "status": "pending"
+  },
+  "warsztat:addSuggestedItems": {
+    "status": "pending"
+  },
+  "warsztat:addWorkshopItem": {
+    "status": "ai"
+  },
+  "warsztat:addWorkshopProject": {
+    "status": "pending"
+  },
+  "warsztat:adjustWorkshopItemQuantity": {
+    "status": "pending"
+  },
+  "warsztat:createWorkshop": {
+    "status": "ai"
+  },
+  "warsztat:deleteWorkshop": {
+    "status": "pending"
+  },
+  "warsztat:deleteWorkshopItem": {
+    "status": "pending"
+  },
+  "warsztat:deleteWorkshopProject": {
+    "status": "pending"
+  },
+  "warsztat:setWarsztatMode": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "warsztat:updateWorkshop": {
+    "status": "pending"
+  },
+  "warsztat:updateWorkshopItem": {
+    "status": "pending"
+  },
+  "warsztat:updateWorkshopProject": {
+    "status": "pending"
+  },
+  "weather:addCustomWatcher": {
+    "status": "pending"
+  },
+  "weather:addLocation": {
+    "status": "pending"
+  },
+  "weather:addLocationByName": {
+    "status": "ai"
+  },
+  "weather:addPresetWatcher": {
+    "status": "ai"
+  },
+  "weather:deleteLocation": {
+    "status": "ai"
+  },
+  "weather:deleteWatcher": {
+    "status": "ai"
+  },
+  "weather:setDefaultLocation": {
+    "status": "ai"
+  },
+  "weather:updateWatcher": {
+    "status": "pending"
+  }
+}
