@@ -1419,16 +1419,19 @@
     "reason": "admin"
   },
   "storage:addBatch": {
-    "status": "pending"
+    "status": "ai",
+    "action": "add_batch"
   },
   "storage:addLowStockToShoppingList": {
-    "status": "pending"
+    "status": "ai",
+    "action": "add_low_stock_to_shopping"
   },
   "storage:addStorageItem": {
     "status": "ai"
   },
   "storage:addSupplier": {
-    "status": "pending"
+    "status": "ai",
+    "action": "add_supplier"
   },
   "storage:adjustStorageQuantity": {
     "status": "ai"
@@ -1442,25 +1445,31 @@
     "reason": "interactive"
   },
   "storage:createDocument": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "storage:createPurchaseOrder": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "storage:deleteBatch": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "storage:deleteDocument": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "storage:deletePurchaseOrder": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "storage:deleteStorageItem": {
     "status": "ai"
   },
   "storage:deleteSupplier": {
-    "status": "pending"
+    "status": "ai",
+    "action": "delete_supplier"
   },
   "storage:getDocument": {
     "kind": "read",
@@ -1474,11 +1483,13 @@
   },
   "storage:getExpiringStorage": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_expiring_storage"
   },
   "storage:getLowStock": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_low_stock"
   },
   "storage:getPurchaseOrder": {
     "kind": "read",
@@ -1492,11 +1503,13 @@
   },
   "storage:getStorageAnalytics": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "get_storage_analytics"
   },
   "storage:getStorageItem": {
     "kind": "read",
-    "status": "pending"
+    "status": "excluded",
+    "reason": "redundant"
   },
   "storage:getStorageItems": {
     "kind": "read",
@@ -1509,7 +1522,8 @@
   },
   "storage:getSuppliers": {
     "kind": "read",
-    "status": "pending"
+    "status": "ai",
+    "action": "list_suppliers"
   },
   "storage:setStorageCurrency": {
     "status": "excluded",
@@ -1523,13 +1537,15 @@
     "status": "ai"
   },
   "storage:updatePurchaseOrder": {
-    "status": "pending"
+    "status": "excluded",
+    "reason": "interactive"
   },
   "storage:updateStorageItem": {
     "status": "ai"
   },
   "storage:updateSupplier": {
-    "status": "pending"
+    "status": "ai",
+    "action": "update_supplier"
   },
   "stores:createStore": {
     "status": "excluded",

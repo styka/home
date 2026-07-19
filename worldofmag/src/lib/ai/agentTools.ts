@@ -11,6 +11,7 @@ import { getEnclosures } from "@/actions/petHusbandry";
 import { getMaintenanceOverview } from "@/actions/warsztat";
 import { getHotTopics, getSources, getTopics, getTopicView } from "@/actions/news";
 import { getLocations, getWeather } from "@/actions/weather";
+import { getSuppliers, getLowStock, getExpiringStorage, getStorageAnalytics } from "@/actions/storage";
 import { getProjectGroups } from "@/actions/projectGroups";
 import { getNoteGroups } from "@/actions/noteGroups";
 import { getCookbooks } from "@/actions/cookbooks";
@@ -82,6 +83,10 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_care_history: args { petName, limit? } → [{ date, kind, note }]. Historia opieki nad wskazanym zwierzęciem (searchowane po imieniu).
 - list_news_sources: args {} → [{ id, name, leaning, enabled }]. Skonfigurowane źródła RSS wiadomości.
 - get_news_topic_view: args { topicName } → { items:[…], knowledge:[…] }. Świeże pozycje i baza wiedzy dla wskazanego monitorowanego tematu.
+- list_suppliers: args {} → [{ id, name, contact, email, phone }]. Dostawcy (magazyn Pro).
+- list_low_stock: args {} → [{ id, name, quantity, minQuantity, warehouse }]. Pozycje magazynu poniżej stanu minimalnego.
+- list_expiring_storage: args { days? } → [{ name, quantity, expiresAt, warehouse }]. Partie/pozycje magazynu z bliskim terminem (domyślnie 30 dni).
+- get_storage_analytics: args {} → { totalValue, deadStock, abc, … }. Analityka magazynu (wartość, dead-stock, ABC).
 - list_calendar: args { year?, month? } → [{ module, title, date, at, href }]. Zagregowany kalendarz (zadania + posiłki + zdrowie + przeglądy floty) dla danego miesiąca (domyślnie bieżący; month = 1-12).
 - web_search: args { query, limit? } → [{ title, url, snippet }]. Wyszukiwarka internetowa — użyj TYLKO gdy potrzebujesz informacji spoza danych użytkownika (ceny, fakty, definicje, świat zewnętrzny). W odpowiedzi cytuj źródła linkami markdown.`;
 
@@ -129,6 +134,10 @@ export const READ_TOOL_NAMES = [
   "list_care_history",
   "list_news_sources",
   "get_news_topic_view",
+  "list_suppliers",
+  "list_low_stock",
+  "list_expiring_storage",
+  "get_storage_analytics",
 ] as const;
 
 async function accessibleProjectIds(userId: string): Promise<string[]> {
@@ -832,6 +841,27 @@ export async function runReadTool(
 
     case "get_pet_welfare": {
       return getPetWelfare();
+    }
+
+    case "list_suppliers": {
+      const suppliers = await getSuppliers();
+      return suppliers.map((s) => ({ id: s.id, name: s.name, contact: s.contact, email: s.email, phone: s.phone }));
+    }
+
+    case "list_low_stock": {
+      const items = await getLowStock();
+      return items.slice(0, clampLimit(args.limit)).map((i) => ({
+        id: i.id, name: i.name, quantity: i.quantity, minQuantity: i.minQuantity, warehouse: i.warehouse,
+      }));
+    }
+
+    case "list_expiring_storage": {
+      const days = typeof args.days === "number" ? Math.max(1, Math.min(365, args.days)) : 30;
+      return getExpiringStorage(days);
+    }
+
+    case "get_storage_analytics": {
+      return getStorageAnalytics();
     }
 
     case "list_news_sources": {

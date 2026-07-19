@@ -167,7 +167,12 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - adjust_storage { delta:number } (searchQuery = nazwa pozycji) — przyjęcie (+) lub wydanie (−) ze stanu.
 - update_storage_item { name?, unit?, warehouse?, location? } (searchQuery = nazwa)
 - delete_storage_item {} (searchQuery = nazwa) — DESTRUKCYJNE
-- transfer_storage { toWarehouse?, toLocation?, quantity } (searchQuery = nazwa)`,
+- transfer_storage { toWarehouse?, toLocation?, quantity } (searchQuery = nazwa)
+- add_batch { quantity:number, lotNo?, serialNo?, expiresAt?(ISO), note? } (searchQuery = nazwa pozycji) — dodaje partię/lot (FEFO).
+- add_low_stock_to_shopping { listName? } — dorzuca pozycje poniżej stanu minimalnego do listy zakupów.
+- add_supplier { name, contact?, email?, phone?, notes? } — nowy dostawca.
+- update_supplier { newName?, contact?, email?, phone?, notes?, supplierId? } (searchQuery = nazwa dostawcy)
+- delete_supplier { supplierId? } (searchQuery = nazwa) — DESTRUKCYJNE`,
 
   warsztaty: `WARSZTATY (module "warsztaty"):
 - create_workshop { name, type?, location? } — nowy warsztat/pracownia (type: "stolarski"|"samochodowy"|"malarski"|"elektroniczny"|"slusarski"|"ceramiczny"|"krawiecki"|"jubilerski"|"ogolny").
