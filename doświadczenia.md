@@ -4,6 +4,31 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-19 — Limit 429 NIE był przejściowy: „pokaż zadania otagowane X" zapętlał agenta
+**Problem:** Po pierwszym fixie (retry + łagodny komunikat) komenda „pokaż zadania otagowane raj"
+**zawsze** kończyła się „Asystent przeciążony", nawet po ponawianiu — podczas gdy „jak się masz?"
+i „dodaj zadanie" działały. To wykluczyło hipotezę „przejściowy limit". Prawdziwa przyczyna: read-tool
+`list_tasks` **nie miał filtra po tagu ani nie zwracał tagów** — agent nie mógł spełnić prośby, więc
+**zapętlał się** (do MAX_ITERATIONS=6 iteracji), a każda iteracja to pełne wywołanie modelu
+`reasoning` (~4k promptu + rezerwacja `max_tokens` 2800). Kilka takich wywołań w jednej minucie
+przekraczało limit Groq 12000 TPM — stąd „Used 8761 + Requested 10243" i STAŁA porażka tej konkretnej
+komendy (a nie losowa). Do tego stała rezerwacja `max_tokens=2800` na KAŻDE wywołanie pętli (Groq wlicza
+`max_tokens` do TPM) niepotrzebnie zbliżała do limitu przy zapytaniach wieloetapowych (query→answer = 2
+wywołania).
+**Rozwiązanie:** (1) `src/lib/ai/agentTools.ts` — `list_tasks` dostał argument `tag` (filtr
+`tags: { some: { tag: { name: { contains, mode:"insensitive" } } } }`) i zwraca teraz pole `tags`
+(nazwy etykiet); opis narzędzia w `READ_TOOLS_PROMPT` zaktualizowany, żeby agent wiedział, że dla
+„zadania otagowane X" ma użyć `tag`. Dzięki temu komenda kończy się w 1–2 wywołaniach zamiast pętli.
+(2) `src/app/api/llm/home/agent/route.ts` — rezerwacja tokenów odpowiedzi jest teraz mała domyślnie
+(`AGENT_MAX_TOKENS=1200`), a duży zapas (`REPORT_MAX_TOKENS=2800`) włączamy TYLKO gdy tekst prośby
+wygląda na raport (`/raport|podsumow|zestawieni|streść/i`) — mniejsza presja na TPM przy zwykłych
+zapytaniach, bez regresji długich raportów.
+**Lekcja:** Gdy 429/limit trafia **jedną konkretną** komendę za każdym razem (a inne działają), to NIE
+jest przejściowy limit — to komenda, której agent nie umie spełnić i **pętli** się, spalając TPM.
+Najpierw sprawdź, czy read-tool w ogóle POTRAFI odpowiedzieć na pytanie (tu: brak filtra po tagu), i czy
+`max_tokens` nie jest rezerwowany hojnie na każde wywołanie (Groq liczy to do TPM). Retry/łagodny
+komunikat to tylko siatka bezpieczeństwa — nie zastąpi usunięcia przyczyny pętli.
+
 ## 2026-07-19 — Asystent AI zwracał surowy błąd Groq 429 (limit TPM) zamiast odpowiedzi
 **Problem:** Zapytanie do asystenta ("pokaż zadania otagowane raj") padało z surowym komunikatem dostawcy
 `Rate limit reached for model llama-3.3-70b-versatile … tokens per minute (TPM): Limit 12000, Used 8761,

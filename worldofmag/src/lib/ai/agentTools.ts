@@ -26,7 +26,7 @@ function asStr(v: unknown): string | undefined {
 export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). Wywołaj je, gdy potrzebujesz danych użytkownika, zanim odpowiesz lub zaproponujesz akcje. Każdy wiersz zawiera "id" — użyj go w parametrach akcji (taskId/itemId/noteId/listId/projectId/petId), aby celować w konkretne rekordy (akcje zbiorcze = wiele akcji, każda z własnym id).
 
 - list_projects: args {} → [{ id, name, isInbox, taskCount }]
-- list_tasks: args { projectId?, status?, priority?, search?, dueBefore?, limit? } → [{ id, title, status, priority, dueDate, projectId, projectName }]. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO.
+- list_tasks: args { projectId?, status?, priority?, search?, tag?, dueBefore?, limit? } → [{ id, title, status, priority, dueDate, projectId, projectName, tags }]. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO. tag = nazwa etykiety (bez rozróżniania wielkości liter) — użyj go, gdy użytkownik pyta „zadania otagowane/z tagiem X". "tags" w wyniku to lista nazw etykiet danego zadania.
 - list_shopping_lists: args { includeArchived? } → [{ id, name, pendingCount, totalCount, archived }]
 - list_items: args { listId?, listName?, status?, search?, limit? } → [{ id, name, status, quantity, unit, listId, listName }]
 - list_notes: args { search?, limit? } → [{ id, title, snippet, updatedAt }]. Lista (snippet skrócony). Do PEŁNEJ treści użyj get_note.
@@ -135,6 +135,7 @@ export async function runReadTool(
       const search = asStr(args.search);
       const dueBefore = asStr(args.dueBefore);
       const projectId = asStr(args.projectId);
+      const tag = asStr(args.tag);
 
       const where: Record<string, unknown> = {
         parentTaskId: null,
@@ -149,6 +150,9 @@ export async function runReadTool(
       else where.status = { notIn: ["DONE", "CANCELLED"] };
       if (priority) where.priority = priority;
       if (search) where.title = { contains: search, mode: "insensitive" };
+      // Filtr po tagu (nazwa etykiety, bez rozróżniania wielkości liter) — bez tego
+      // agent nie umiał odpowiedzieć na „pokaż zadania otagowane X" i zapętlał się.
+      if (tag) where.tags = { some: { tag: { name: { contains: tag, mode: "insensitive" } } } };
       if (dueBefore) {
         const d = new Date(dueBefore);
         if (!isNaN(d.getTime())) where.dueDate = { lte: d };
@@ -164,6 +168,7 @@ export async function runReadTool(
           dueDate: true,
           projectId: true,
           project: { select: { name: true } },
+          tags: { select: { tag: { select: { name: true } } } },
         },
         orderBy: [{ dueDate: "asc" }, { priority: "asc" }, { order: "asc" }],
         take: clampLimit(args.limit),
@@ -176,6 +181,7 @@ export async function runReadTool(
         dueDate: t.dueDate?.toISOString() ?? null,
         projectId: t.projectId,
         projectName: t.project?.name ?? null,
+        tags: t.tags.map((tt) => tt.tag.name),
       }));
     }
 

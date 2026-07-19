@@ -8,6 +8,15 @@
 > feature. Plan pisze się pod istniejący kod — najpierw czytamy sąsiedni moduł i naśladujemy jego
 > wzorzec (C-53), potem projektujemy.
 
+> **Aktualizacja 2026-07-19 (C-54) — druga iteracja po testach:** dodano usunięcie **przyczyny pętli**
+> agenta dla zapytań o tagi oraz redukcję rezerwacji `max_tokens`:
+> - `src/lib/ai/agentTools.ts` — `list_tasks`: nowy arg `tag` (filtr
+>   `tags: { some: { tag: { name: { contains, mode:"insensitive" } } } }`) + pole `tags` w wyniku;
+>   opis w `READ_TOOLS_PROMPT` zaktualizowany. (AC-7)
+> - `src/app/api/llm/home/agent/route.ts` — `AGENT_MAX_TOKENS=1200` domyślnie, `REPORT_MAX_TOKENS=2800`
+>   tylko gdy tekst prośby wygląda na raport; `callAgent`/`runAgentLoop` przyjmują `maxTokens`. (AC-8)
+> Bez zmian schematu (tagi już istnieją: `TaskTaskTag`/`TaskTagDef`).
+
 ## 1. Podejście (2–4 zdania)
 Zmiana leży wyłącznie w **warstwie obsługi błędów LLM** — brak nowego modułu, modelu danych i UI.
 Wzorcem jest istniejący łańcuch fallbacku (Z-133) w `src/lib/llm/chat.ts` oraz obecna obsługa błędu w
