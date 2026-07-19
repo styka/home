@@ -438,7 +438,17 @@ async function runAgentLoop(
         content = await callAgent(messages, meta);
       } catch (e) {
         const status = (e as { status?: number }).status ?? 502;
-        return { status, body: { error: e instanceof Error ? e.message : "Błąd LLM" } };
+        // 010-ai-chat-rate-limit: przejściowy limit szybkości modelu (429) — mimo
+        // ponawiania z backoffem (lib/llm/chat.ts) nadal odbija. Zamiast surowego
+        // błędu dostawcy ("Rate limit reached for model …") pokaż użytkownikowi
+        // zrozumiały komunikat po polsku (C-41: nie przepisujemy treści dostawcy).
+        const message =
+          status === 429
+            ? "Asystent jest teraz przeciążony (chwilowy limit zapytań do modelu). Spróbuj ponownie za chwilę."
+            : e instanceof Error
+              ? e.message
+              : "Błąd LLM";
+        return { status, body: { error: message } };
       }
       messages.push({ role: "assistant", content });
       try {
