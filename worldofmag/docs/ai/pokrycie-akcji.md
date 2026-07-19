@@ -2,7 +2,7 @@
 
 > Plik generowany przez `scripts/check-ai-coverage.js --report`. Nie edytuj ręcznie.
 
-Mutacje (zapis): **125 ai / 105 pending / 113 excluded**. Odczyty (podgląd danych): **46 ai / 39 pending / 60 excluded**.
+Mutacje (zapis): **159 ai / 0 pending / 184 excluded**. Odczyty (podgląd danych): **64 ai / 0 pending / 81 excluded**.
 
 Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `excluded` = nie dla AI (admin/ustawienia/wewnętrzne/interaktywne).
 
@@ -61,12 +61,12 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `createCategory` | zapis | 🕓 pending |  |
-| `deleteCategory` | zapis | 🕓 pending |  |
-| `getCategories` | odczyt | 🕓 pending |  |
-| `getCategoryEmojiMap` | odczyt | 🕓 pending |  |
-| `getCategoryNames` | odczyt | 🕓 pending |  |
-| `updateCategory` | zapis | 🕓 pending |  |
+| `createCategory` | zapis | ⛔ excluded | dictionary |
+| `deleteCategory` | zapis | ⛔ excluded | dictionary |
+| `getCategories` | odczyt | ⛔ excluded | dictionary |
+| `getCategoryEmojiMap` | odczyt | ⛔ excluded | dictionary |
+| `getCategoryNames` | odczyt | ⛔ excluded | dictionary |
+| `updateCategory` | zapis | ⛔ excluded | dictionary |
 
 ## categoryIcons — 0/12 wystawionych
 
@@ -108,7 +108,7 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 |---|---|---|---|
 | `createCookbook` | zapis | ✅ ai | → create_cookbook |
 | `deleteCookbook` | zapis | ✅ ai | → delete_cookbook |
-| `getCookbook` | odczyt | 🕓 pending |  |
+| `getCookbook` | odczyt | ⛔ excluded | redundant |
 | `getCookbooks` | odczyt | ✅ ai | → list_cookbooks |
 | `updateCookbook` | zapis | ✅ ai | → update_cookbook |
 
@@ -134,20 +134,20 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `addServiceRecord` | zapis | ✅ ai |  |
 | `addVehicleAttachment` | zapis | ⛔ excluded | interactive |
 | `createVehicle` | zapis | ✅ ai |  |
-| `deleteFuelLog` | zapis | 🕓 pending |  |
-| `deleteServiceRecord` | zapis | 🕓 pending |  |
+| `deleteFuelLog` | zapis | ⛔ excluded | interactive |
+| `deleteServiceRecord` | zapis | ⛔ excluded | interactive |
 | `deleteVehicle` | zapis | ✅ ai |  |
 | `deleteVehicleAttachment` | zapis | ⛔ excluded | interactive |
 | `getVehicle` | odczyt | ✅ ai |  |
 | `getVehicles` | odczyt | ✅ ai |  |
 | `updateVehicle` | zapis | ✅ ai |  |
 
-## habits — 6/8 wystawionych
+## habits — 7/8 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
 | `createHabit` | zapis | ✅ ai |  |
-| `createTaskFromHabit` | zapis | 🕓 pending |  |
+| `createTaskFromHabit` | zapis | ✅ ai | → create_task_from_habit |
 | `deleteHabit` | zapis | ✅ ai |  |
 | `getHabits` | odczyt | ✅ ai |  |
 | `reorderHabits` | zapis | ⛔ excluded | interactive |
@@ -155,7 +155,7 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `toggleHabitDay` | zapis | ✅ ai |  |
 | `updateHabit` | zapis | ✅ ai |  |
 
-## health — 5/11 wystawionych
+## health — 6/11 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
@@ -166,7 +166,7 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `getHealthAttachments` | odczyt | ⛔ excluded | interactive |
 | `getHealthEvents` | odczyt | ✅ ai |  |
 | `getHealthSettings` | odczyt | ⛔ excluded | settings |
-| `getTestTrends` | odczyt | 🕓 pending |  |
+| `getTestTrends` | odczyt | ✅ ai | → get_test_trends |
 | `setHealthAiOptIn` | zapis | ⛔ excluded | admin |
 | `setHealthStatus` | zapis | ✅ ai |  |
 | `updateHealthEvent` | zapis | ✅ ai |  |
@@ -205,19 +205,19 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `getJobsOverview` | odczyt | ⛔ excluded | admin |
 | `retryJobAction` | zapis | ⛔ excluded | admin |
 
-## languageDecks — 7/12 wystawionych
+## languageDecks — 10/12 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
 | `addWord` | zapis | ✅ ai |  |
-| `bulkAddWords` | zapis | 🕓 pending |  |
+| `bulkAddWords` | zapis | ✅ ai | → bulk_add_words |
 | `createDeck` | zapis | ✅ ai |  |
 | `deleteDeck` | zapis | ✅ ai |  |
 | `deleteWord` | zapis | ✅ ai |  |
-| `getDeck` | odczyt | 🕓 pending |  |
+| `getDeck` | odczyt | ⛔ excluded | redundant |
 | `getDecks` | odczyt | ✅ ai |  |
-| `getDueCards` | odczyt | 🕓 pending |  |
-| `getStudyStreak` | odczyt | 🕓 pending |  |
+| `getDueCards` | odczyt | ✅ ai | → list_due_cards |
+| `getStudyStreak` | odczyt | ✅ ai | → get_study_streak |
 | `submitReview` | zapis | ⛔ excluded | interactive |
 | `updateDeck` | zapis | ✅ ai |  |
 | `updateWord` | zapis | ✅ ai |  |
@@ -261,16 +261,16 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `setCostAlertThreshold` | zapis | ⛔ excluded | admin |
 | `updateProvider` | zapis | ⛔ excluded | admin |
 
-## mealPlans — 8/11 wystawionych
+## mealPlans — 10/11 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `bulkSetMealPlan` | zapis | 🕓 pending |  |
+| `bulkSetMealPlan` | zapis | ⛔ excluded | interactive |
 | `deleteMealPlanEntry` | zapis | ✅ ai |  |
 | `generateShoppingListFromPlan` | zapis | ✅ ai | → generate_shopping_from_plan |
 | `getMealPlan` | odczyt | ✅ ai |  |
-| `getMealPlanCost` | odczyt | 🕓 pending |  |
-| `getTodaysMeals` | odczyt | 🕓 pending |  |
+| `getMealPlanCost` | odczyt | ✅ ai | → get_meal_plan_cost |
+| `getTodaysMeals` | odczyt | ✅ ai | → list_todays_meals |
 | `markMealCooked` | zapis | ✅ ai |  |
 | `markMealSkipped` | zapis | ✅ ai | → mark_meal_skipped |
 | `moveMealPlanEntry` | zapis | ✅ ai | → move_meal_plan_entry |
@@ -302,27 +302,27 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 |---|---|---|---|
 | `getUnitEconomics` | odczyt | ⛔ excluded | settings |
 
-## news — 6/18 wystawionych
+## news — 11/18 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `acknowledgeItem` | zapis | 🕓 pending |  |
-| `createSource` | zapis | 🕓 pending |  |
+| `acknowledgeItem` | zapis | ⛔ excluded | interactive |
+| `createSource` | zapis | ✅ ai | → create_news_source |
 | `createTopic` | zapis | ✅ ai |  |
-| `deleteSource` | zapis | 🕓 pending |  |
+| `deleteSource` | zapis | ✅ ai | → delete_news_source |
 | `deleteTopic` | zapis | ✅ ai |  |
-| `dismissItem` | zapis | 🕓 pending |  |
+| `dismissItem` | zapis | ⛔ excluded | interactive |
 | `getHotTopics` | odczyt | ✅ ai | → list_hot_topics |
-| `getKnowledgeHistory` | odczyt | 🕓 pending |  |
-| `getNewsPref` | odczyt | 🕓 pending |  |
-| `getSources` | odczyt | 🕓 pending |  |
+| `getKnowledgeHistory` | odczyt | ⛔ excluded | niche |
+| `getNewsPref` | odczyt | ⛔ excluded | settings |
+| `getSources` | odczyt | ✅ ai | → list_news_sources |
 | `getTopics` | odczyt | ✅ ai |  |
-| `getTopicView` | odczyt | 🕓 pending |  |
+| `getTopicView` | odczyt | ✅ ai | → get_news_topic_view |
 | `refreshTopic` | zapis | ✅ ai |  |
-| `resummarizeItem` | zapis | 🕓 pending |  |
+| `resummarizeItem` | zapis | ⛔ excluded | interactive |
 | `setActiveSource` | zapis | ⛔ excluded | admin |
 | `setDefaultSummaryLength` | zapis | ⛔ excluded | admin |
-| `updateSource` | zapis | 🕓 pending |  |
+| `updateSource` | zapis | ✅ ai | → update_news_source |
 | `updateTopic` | zapis | ✅ ai |  |
 
 ## noteGroups — 4/4 wystawionych
@@ -339,14 +339,14 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
 | `addNoteAttachment` | zapis | ⛔ excluded | interactive |
-| `addTagToNote` | zapis | 🕓 pending |  |
+| `addTagToNote` | zapis | ⛔ excluded | redundant |
 | `createNote` | zapis | ✅ ai |  |
 | `deleteNote` | zapis | ✅ ai |  |
 | `deleteNoteAttachment` | zapis | ⛔ excluded | interactive |
 | `getNoteAttachments` | odczyt | ⛔ excluded | interactive |
 | `getNoteRevisions` | odczyt | ⛔ excluded | interactive |
 | `getNotes` | odczyt | ✅ ai |  |
-| `removeTagFromNote` | zapis | 🕓 pending |  |
+| `removeTagFromNote` | zapis | ⛔ excluded | redundant |
 | `restoreNoteRevision` | zapis | ⛔ excluded | interactive |
 | `setNoteTags` | zapis | ✅ ai | → set_note_tags |
 | `toggleNotePin` | zapis | ✅ ai |  |
@@ -363,20 +363,20 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `notifyUser` | zapis | ✅ ai |  |
 | `syncReminders` | zapis | ⛔ excluded | internal |
 
-## pantry — 6/11 wystawionych
+## pantry — 10/11 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
 | `addPantryItem` | zapis | ✅ ai |  |
-| `autoReplenishToList` | zapis | 🕓 pending |  |
+| `autoReplenishToList` | zapis | ✅ ai | → auto_replenish_pantry |
 | `bulkSetPantryQuantities` | zapis | ⛔ excluded | interactive |
 | `consumePantryItem` | zapis | ✅ ai |  |
 | `deletePantryItem` | zapis | ✅ ai |  |
-| `getAutoReplenishCandidates` | odczyt | 🕓 pending |  |
+| `getAutoReplenishCandidates` | odczyt | ✅ ai | → list_replenish_candidates |
 | `getExpiringSoon` | odczyt | ✅ ai | → list_expiring_pantry |
 | `getPantry` | odczyt | ✅ ai |  |
-| `moveItemToPantry` | zapis | 🕓 pending |  |
-| `setPantryQuantity` | zapis | 🕓 pending |  |
+| `moveItemToPantry` | zapis | ✅ ai | → move_item_to_pantry |
+| `setPantryQuantity` | zapis | ✅ ai | → set_pantry_quantity |
 | `updatePantryItem` | zapis | ✅ ai |  |
 
 ## petBreeding — 5/12 wystawionych
@@ -386,17 +386,17 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `createBreedingPair` | zapis | ✅ ai |  |
 | `createClutch` | zapis | ✅ ai |  |
 | `createOffspring` | zapis | ✅ ai |  |
-| `deleteBreedingPair` | zapis | 🕓 pending |  |
-| `deleteClutch` | zapis | 🕓 pending |  |
-| `deleteSale` | zapis | 🕓 pending |  |
-| `getPetBreeding` | odczyt | 🕓 pending |  |
+| `deleteBreedingPair` | zapis | ⛔ excluded | interactive |
+| `deleteClutch` | zapis | ⛔ excluded | interactive |
+| `deleteSale` | zapis | ⛔ excluded | interactive |
+| `getPetBreeding` | odczyt | ⛔ excluded | niche |
 | `markClutchHatched` | zapis | ✅ ai |  |
 | `recordSale` | zapis | ✅ ai |  |
-| `setGenetics` | zapis | 🕓 pending |  |
-| `setParentage` | zapis | 🕓 pending |  |
-| `updateBreedingPair` | zapis | 🕓 pending |  |
+| `setGenetics` | zapis | ⛔ excluded | interactive |
+| `setParentage` | zapis | ⛔ excluded | interactive |
+| `updateBreedingPair` | zapis | ⛔ excluded | interactive |
 
-## petCare — 9/20 wystawionych
+## petCare — 11/20 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
@@ -407,31 +407,31 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `createHealthRecord` | zapis | ✅ ai |  |
 | `createTreatment` | zapis | ✅ ai |  |
 | `createVetVisit` | zapis | ✅ ai |  |
-| `deleteCareTask` | zapis | 🕓 pending |  |
-| `deleteHealthRecord` | zapis | 🕓 pending |  |
-| `deleteMeasurement` | zapis | 🕓 pending |  |
-| `deleteTreatment` | zapis | 🕓 pending |  |
-| `deleteVetVisit` | zapis | 🕓 pending |  |
+| `deleteCareTask` | zapis | ⛔ excluded | interactive |
+| `deleteHealthRecord` | zapis | ⛔ excluded | interactive |
+| `deleteMeasurement` | zapis | ⛔ excluded | interactive |
+| `deleteTreatment` | zapis | ⛔ excluded | interactive |
+| `deleteVetVisit` | zapis | ⛔ excluded | interactive |
 | `getCareAgenda` | odczyt | ✅ ai | → list_care_agenda |
-| `getCareHistory` | odczyt | 🕓 pending |  |
-| `getPetWelfare` | odczyt | 🕓 pending |  |
+| `getCareHistory` | odczyt | ✅ ai | → list_care_history |
+| `getPetWelfare` | odczyt | ✅ ai | → get_pet_welfare |
 | `logFeeding` | zapis | ✅ ai |  |
-| `updateCareTask` | zapis | 🕓 pending |  |
-| `updateHealthRecord` | zapis | 🕓 pending |  |
-| `updateTreatment` | zapis | 🕓 pending |  |
-| `updateVetVisit` | zapis | 🕓 pending |  |
+| `updateCareTask` | zapis | ⛔ excluded | interactive |
+| `updateHealthRecord` | zapis | ⛔ excluded | interactive |
+| `updateTreatment` | zapis | ⛔ excluded | interactive |
+| `updateVetVisit` | zapis | ⛔ excluded | interactive |
 
-## petHusbandry — 2/7 wystawionych
+## petHusbandry — 6/7 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
 | `addEnvironmentReading` | zapis | ✅ ai |  |
-| `assignPetToEnclosure` | zapis | 🕓 pending |  |
+| `assignPetToEnclosure` | zapis | ✅ ai | → assign_pet_to_enclosure |
 | `createEnclosure` | zapis | ✅ ai |  |
-| `deleteEnclosure` | zapis | 🕓 pending |  |
-| `deleteEnvironmentReading` | zapis | 🕓 pending |  |
-| `getEnclosures` | odczyt | 🕓 pending |  |
-| `updateEnclosure` | zapis | 🕓 pending |  |
+| `deleteEnclosure` | zapis | ✅ ai | → delete_enclosure |
+| `deleteEnvironmentReading` | zapis | ⛔ excluded | interactive |
+| `getEnclosures` | odczyt | ✅ ai | → list_enclosures |
+| `updateEnclosure` | zapis | ✅ ai | → update_enclosure |
 
 ## pets — 6/11 wystawionych
 
@@ -441,13 +441,13 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `deletePet` | zapis | ✅ ai |  |
 | `getPet` | odczyt | ✅ ai |  |
 | `getPets` | odczyt | ✅ ai |  |
-| `getPetSharing` | odczyt | 🕓 pending |  |
-| `removePetShare` | zapis | 🕓 pending |  |
+| `getPetSharing` | odczyt | ⛔ excluded | teams |
+| `removePetShare` | zapis | ⛔ excluded | teams |
 | `setPetStatus` | zapis | ✅ ai |  |
-| `sharePetByEmail` | zapis | 🕓 pending |  |
-| `sharePetWithTeam` | zapis | 🕓 pending |  |
+| `sharePetByEmail` | zapis | ⛔ excluded | teams |
+| `sharePetWithTeam` | zapis | ⛔ excluded | teams |
 | `updatePet` | zapis | ✅ ai |  |
-| `updatePetFeatures` | zapis | 🕓 pending |  |
+| `updatePetFeatures` | zapis | ⛔ excluded | interactive |
 
 ## portfel — 8/10 wystawionych
 
@@ -457,7 +457,7 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `archiveElement` | zapis | ✅ ai |  |
 | `createElement` | zapis | ✅ ai |  |
 | `deleteElement` | zapis | ✅ ai |  |
-| `getElement` | odczyt | 🕓 pending |  |
+| `getElement` | odczyt | ⛔ excluded | redundant |
 | `getWalletElements` | odczyt | ✅ ai |  |
 | `getWalletOverview` | odczyt | ✅ ai | → get_wallet_overview |
 | `importBankCsv` | zapis | ⛔ excluded | interactive |
@@ -495,11 +495,11 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `setBaseCurrency` | zapis | ⛔ excluded | settings |
 | `setExchangeRate` | zapis | ⛔ excluded | settings |
 
-## portfelReports — 0/1 wystawionych
+## portfelReports — 1/1 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `getMonthlyReport` | odczyt | 🕓 pending |  |
+| `getMonthlyReport` | odczyt | ✅ ai | → get_monthly_report |
 
 ## privacy — 0/2 wystawionych
 
@@ -512,13 +512,13 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `copyGlobalProduct` | zapis | 🕓 pending |  |
-| `createProduct` | zapis | 🕓 pending |  |
-| `deleteProduct` | zapis | 🕓 pending |  |
-| `getProducts` | odczyt | 🕓 pending |  |
-| `getProductSuggestions` | odczyt | 🕓 pending |  |
-| `updateProduct` | zapis | 🕓 pending |  |
-| `upsertUserProduct` | zapis | 🕓 pending |  |
+| `copyGlobalProduct` | zapis | ⛔ excluded | dictionary |
+| `createProduct` | zapis | ⛔ excluded | dictionary |
+| `deleteProduct` | zapis | ⛔ excluded | dictionary |
+| `getProducts` | odczyt | ⛔ excluded | dictionary |
+| `getProductSuggestions` | odczyt | ⛔ excluded | dictionary |
+| `updateProduct` | zapis | ⛔ excluded | dictionary |
+| `upsertUserProduct` | zapis | ⛔ excluded | dictionary |
 
 ## projectGroups — 4/5 wystawionych
 
@@ -526,7 +526,7 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 |---|---|---|---|
 | `createProjectGroup` | zapis | ✅ ai | → create_project_group |
 | `deleteProjectGroup` | zapis | ✅ ai | → delete_project_group |
-| `getProjectGroup` | odczyt | 🕓 pending |  |
+| `getProjectGroup` | odczyt | ⛔ excluded | redundant |
 | `getProjectGroups` | odczyt | ✅ ai | → list_project_groups |
 | `updateProjectGroup` | zapis | ✅ ai | → update_project_group |
 
@@ -551,43 +551,43 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `updateScenario` | zapis | ⛔ excluded | admin |
 | `updateStory` | zapis | ⛔ excluded | admin |
 
-## recipes — 4/20 wystawionych
+## recipes — 11/20 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `addIngredient` | zapis | 🕓 pending |  |
+| `addIngredient` | zapis | ✅ ai | → add_ingredient |
 | `addRecipeImage` | zapis | ⛔ excluded | interactive |
-| `addStep` | zapis | 🕓 pending |  |
-| `archiveRecipe` | zapis | 🕓 pending |  |
+| `addStep` | zapis | ✅ ai | → add_step |
+| `archiveRecipe` | zapis | ✅ ai | → archive_recipe |
 | `createRecipe` | zapis | ✅ ai |  |
-| `deleteIngredient` | zapis | 🕓 pending |  |
+| `deleteIngredient` | zapis | ⛔ excluded | interactive |
 | `deleteRecipe` | zapis | ✅ ai |  |
 | `deleteRecipeImage` | zapis | ⛔ excluded | interactive |
-| `deleteStep` | zapis | 🕓 pending |  |
-| `duplicateRecipe` | zapis | 🕓 pending |  |
+| `deleteStep` | zapis | ⛔ excluded | interactive |
+| `duplicateRecipe` | zapis | ✅ ai | → duplicate_recipe |
 | `getRecipe` | odczyt | ✅ ai | → get_recipe |
 | `getRecipes` | odczyt | ✅ ai |  |
-| `markRecipeCooked` | zapis | 🕓 pending |  |
+| `markRecipeCooked` | zapis | ✅ ai | → mark_recipe_cooked |
 | `reorderIngredients` | zapis | ⛔ excluded | interactive |
 | `reorderSteps` | zapis | ⛔ excluded | interactive |
-| `shopForRecipe` | zapis | 🕓 pending |  |
-| `updateIngredient` | zapis | 🕓 pending |  |
-| `updateRecipe` | zapis | 🕓 pending |  |
+| `shopForRecipe` | zapis | ✅ ai | → shop_for_recipe |
+| `updateIngredient` | zapis | ⛔ excluded | interactive |
+| `updateRecipe` | zapis | ✅ ai | → update_recipe |
 | `updateRecipeImage` | zapis | ⛔ excluded | interactive |
-| `updateStep` | zapis | 🕓 pending |  |
+| `updateStep` | zapis | ⛔ excluded | interactive |
 
-## reports — 1/9 wystawionych
+## reports — 2/9 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
 | `createReport` | zapis | ⛔ excluded | admin |
 | `createUserReport` | zapis | ✅ ai |  |
 | `deleteReport` | zapis | ⛔ excluded | admin |
-| `getReport` | odczyt | 🕓 pending |  |
-| `getReportsMeta` | odczyt | 🕓 pending |  |
-| `getUserReport` | odczyt | 🕓 pending |  |
-| `getUserReportsMeta` | odczyt | 🕓 pending |  |
-| `searchReports` | odczyt | 🕓 pending |  |
+| `getReport` | odczyt | ⛔ excluded | redundant |
+| `getReportsMeta` | odczyt | ⛔ excluded | redundant |
+| `getUserReport` | odczyt | ⛔ excluded | redundant |
+| `getUserReportsMeta` | odczyt | ⛔ excluded | redundant |
+| `searchReports` | odczyt | ✅ ai | → search_reports |
 | `updateReport` | zapis | ⛔ excluded | admin |
 
 ## shoppingSync — 0/1 wystawionych
@@ -608,41 +608,41 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `setActiveSkin` | zapis | ⛔ excluded | admin |
 | `updateSkin` | zapis | ⛔ excluded | admin |
 
-## storage — 6/31 wystawionych
+## storage — 15/31 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `addBatch` | zapis | 🕓 pending |  |
-| `addLowStockToShoppingList` | zapis | 🕓 pending |  |
+| `addBatch` | zapis | ✅ ai | → add_batch |
+| `addLowStockToShoppingList` | zapis | ✅ ai | → add_low_stock_to_shopping |
 | `addStorageItem` | zapis | ✅ ai |  |
-| `addSupplier` | zapis | 🕓 pending |  |
+| `addSupplier` | zapis | ✅ ai | → add_supplier |
 | `adjustStorageQuantity` | zapis | ✅ ai |  |
 | `bulkAddStorageItems` | zapis | ⛔ excluded | interactive |
 | `bulkSetStorageQuantities` | zapis | ⛔ excluded | interactive |
-| `createDocument` | zapis | 🕓 pending |  |
-| `createPurchaseOrder` | zapis | 🕓 pending |  |
-| `deleteBatch` | zapis | 🕓 pending |  |
-| `deleteDocument` | zapis | 🕓 pending |  |
-| `deletePurchaseOrder` | zapis | 🕓 pending |  |
+| `createDocument` | zapis | ⛔ excluded | interactive |
+| `createPurchaseOrder` | zapis | ⛔ excluded | interactive |
+| `deleteBatch` | zapis | ⛔ excluded | interactive |
+| `deleteDocument` | zapis | ⛔ excluded | interactive |
+| `deletePurchaseOrder` | zapis | ⛔ excluded | interactive |
 | `deleteStorageItem` | zapis | ✅ ai |  |
-| `deleteSupplier` | zapis | 🕓 pending |  |
+| `deleteSupplier` | zapis | ✅ ai | → delete_supplier |
 | `getDocument` | odczyt | ⛔ excluded | interactive |
 | `getDocuments` | odczyt | ⛔ excluded | interactive |
-| `getExpiringStorage` | odczyt | 🕓 pending |  |
-| `getLowStock` | odczyt | 🕓 pending |  |
+| `getExpiringStorage` | odczyt | ✅ ai | → list_expiring_storage |
+| `getLowStock` | odczyt | ✅ ai | → list_low_stock |
 | `getPurchaseOrder` | odczyt | ⛔ excluded | interactive |
 | `getPurchaseOrders` | odczyt | ⛔ excluded | interactive |
-| `getStorageAnalytics` | odczyt | 🕓 pending |  |
-| `getStorageItem` | odczyt | 🕓 pending |  |
+| `getStorageAnalytics` | odczyt | ✅ ai | → get_storage_analytics |
+| `getStorageItem` | odczyt | ⛔ excluded | redundant |
 | `getStorageItems` | odczyt | ✅ ai |  |
 | `getStorageSettings` | odczyt | ⛔ excluded | settings |
-| `getSuppliers` | odczyt | 🕓 pending |  |
+| `getSuppliers` | odczyt | ✅ ai | → list_suppliers |
 | `setStorageCurrency` | zapis | ⛔ excluded | admin |
 | `setStorageMode` | zapis | ⛔ excluded | admin |
 | `transferStock` | zapis | ✅ ai |  |
-| `updatePurchaseOrder` | zapis | 🕓 pending |  |
+| `updatePurchaseOrder` | zapis | ⛔ excluded | interactive |
 | `updateStorageItem` | zapis | ✅ ai |  |
-| `updateSupplier` | zapis | 🕓 pending |  |
+| `updateSupplier` | zapis | ✅ ai | → update_supplier |
 
 ## stores — 0/10 wystawionych
 
@@ -669,52 +669,52 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `createTag` | zapis | 🕓 pending |  |
-| `deleteTag` | zapis | 🕓 pending |  |
+| `createTag` | zapis | ⛔ excluded | dictionary |
+| `deleteTag` | zapis | ⛔ excluded | dictionary |
 | `getTags` | odczyt | ✅ ai | → list_note_tags |
-| `updateTag` | zapis | 🕓 pending |  |
+| `updateTag` | zapis | ⛔ excluded | dictionary |
 
 ## taskProjects — 4/7 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `addProjectMember` | zapis | 🕓 pending |  |
+| `addProjectMember` | zapis | ⛔ excluded | teams |
 | `createTaskProject` | zapis | ✅ ai |  |
 | `deleteTaskProject` | zapis | ✅ ai |  |
 | `getTaskProjects` | odczyt | ✅ ai |  |
-| `removeProjectMember` | zapis | 🕓 pending |  |
+| `removeProjectMember` | zapis | ⛔ excluded | teams |
 | `updateTaskProject` | zapis | ✅ ai |  |
-| `updateTaskProjectStatusConfig` | zapis | 🕓 pending |  |
+| `updateTaskProjectStatusConfig` | zapis | ⛔ excluded | settings |
 
 ## taskTags — 1/4 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `createTaskTag` | zapis | 🕓 pending |  |
-| `deleteTaskTag` | zapis | 🕓 pending |  |
+| `createTaskTag` | zapis | ⛔ excluded | dictionary |
+| `deleteTaskTag` | zapis | ⛔ excluded | dictionary |
 | `getTaskTags` | odczyt | ✅ ai | → list_task_tags |
-| `updateTaskTag` | zapis | 🕓 pending |  |
+| `updateTaskTag` | zapis | ⛔ excluded | dictionary |
 
-## tasks — 10/18 wystawionych
+## tasks — 11/18 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `addTaskComment` | zapis | 🕓 pending |  |
-| `completeRecurringTask` | zapis | 🕓 pending |  |
+| `addTaskComment` | zapis | ✅ ai | → add_task_comment |
+| `completeRecurringTask` | zapis | ⛔ excluded | internal |
 | `createTask` | zapis | ✅ ai |  |
 | `deleteTask` | zapis | ✅ ai |  |
-| `deleteTaskComment` | zapis | 🕓 pending |  |
+| `deleteTaskComment` | zapis | ⛔ excluded | interactive |
 | `getAllUserTasks` | odczyt | ✅ ai |  |
 | `getOverdueTasks` | odczyt | ✅ ai |  |
 | `getTask` | odczyt | ✅ ai |  |
 | `getTasks` | odczyt | ✅ ai |  |
 | `getTasksForProjects` | odczyt | ✅ ai |  |
 | `getTodayTasks` | odczyt | ✅ ai |  |
-| `removeTaskShare` | zapis | 🕓 pending |  |
+| `removeTaskShare` | zapis | ⛔ excluded | teams |
 | `reorderTask` | zapis | ⛔ excluded | interactive |
-| `shareTask` | zapis | 🕓 pending |  |
-| `shareTaskByEmail` | zapis | 🕓 pending |  |
-| `toggleTaskStatus` | zapis | 🕓 pending |  |
+| `shareTask` | zapis | ⛔ excluded | teams |
+| `shareTaskByEmail` | zapis | ⛔ excluded | teams |
+| `toggleTaskStatus` | zapis | ⛔ excluded | redundant |
 | `updateTask` | zapis | ✅ ai |  |
 | `updateTaskTags` | zapis | ✅ ai | → set_task_tags |
 
@@ -739,63 +739,63 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `emptyTrash` | zapis | 🕓 pending |  |
+| `emptyTrash` | zapis | ⛔ excluded | interactive |
 | `getTrash` | odczyt | ✅ ai | → list_trash |
-| `purgeTrashItem` | zapis | 🕓 pending |  |
-| `restoreTrashItem` | zapis | 🕓 pending |  |
+| `purgeTrashItem` | zapis | ⛔ excluded | interactive |
+| `restoreTrashItem` | zapis | ⛔ excluded | interactive |
 
 ## truck — 0/3 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `getVehicleProfile` | odczyt | 🕓 pending |  |
-| `planTruckRoute` | zapis | 🕓 pending |  |
-| `saveVehicleProfile` | zapis | 🕓 pending |  |
+| `getVehicleProfile` | odczyt | ⛔ excluded | niche |
+| `planTruckRoute` | zapis | ⛔ excluded | niche |
+| `saveVehicleProfile` | zapis | ⛔ excluded | niche |
 
 ## units — 0/5 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `createUnit` | zapis | 🕓 pending |  |
-| `deleteUnit` | zapis | 🕓 pending |  |
-| `getUnits` | odczyt | 🕓 pending |  |
-| `getUnitSuggestions` | odczyt | 🕓 pending |  |
-| `renameUnit` | zapis | 🕓 pending |  |
+| `createUnit` | zapis | ⛔ excluded | dictionary |
+| `deleteUnit` | zapis | ⛔ excluded | dictionary |
+| `getUnits` | odczyt | ⛔ excluded | dictionary |
+| `getUnitSuggestions` | odczyt | ⛔ excluded | dictionary |
+| `renameUnit` | zapis | ⛔ excluded | dictionary |
 
-## warsztat — 5/16 wystawionych
+## warsztat — 13/16 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `addSuggestedItems` | zapis | 🕓 pending |  |
+| `addSuggestedItems` | zapis | ⛔ excluded | interactive |
 | `addWorkshopItem` | zapis | ✅ ai |  |
-| `addWorkshopProject` | zapis | 🕓 pending |  |
-| `adjustWorkshopItemQuantity` | zapis | 🕓 pending |  |
+| `addWorkshopProject` | zapis | ✅ ai | → add_workshop_project |
+| `adjustWorkshopItemQuantity` | zapis | ✅ ai | → adjust_workshop_item |
 | `createWorkshop` | zapis | ✅ ai |  |
-| `deleteWorkshop` | zapis | 🕓 pending |  |
-| `deleteWorkshopItem` | zapis | 🕓 pending |  |
-| `deleteWorkshopProject` | zapis | 🕓 pending |  |
+| `deleteWorkshop` | zapis | ✅ ai | → delete_workshop |
+| `deleteWorkshopItem` | zapis | ✅ ai | → delete_workshop_item |
+| `deleteWorkshopProject` | zapis | ✅ ai | → delete_workshop_project |
 | `getMaintenanceOverview` | odczyt | ✅ ai | → list_maintenance |
 | `getWarsztatSettings` | odczyt | ⛔ excluded | settings |
 | `getWorkshop` | odczyt | ✅ ai |  |
 | `getWorkshops` | odczyt | ✅ ai |  |
 | `setWarsztatMode` | zapis | ⛔ excluded | admin |
-| `updateWorkshop` | zapis | 🕓 pending |  |
-| `updateWorkshopItem` | zapis | 🕓 pending |  |
-| `updateWorkshopProject` | zapis | 🕓 pending |  |
+| `updateWorkshop` | zapis | ✅ ai | → update_workshop |
+| `updateWorkshopItem` | zapis | ✅ ai | → update_workshop_item |
+| `updateWorkshopProject` | zapis | ✅ ai | → update_workshop_project |
 
-## weather — 7/11 wystawionych
+## weather — 10/11 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
-| `addCustomWatcher` | zapis | 🕓 pending |  |
-| `addLocation` | zapis | 🕓 pending |  |
+| `addCustomWatcher` | zapis | ✅ ai | → add_custom_watcher |
+| `addLocation` | zapis | ⛔ excluded | redundant |
 | `addLocationByName` | zapis | ✅ ai |  |
 | `addPresetWatcher` | zapis | ✅ ai |  |
 | `deleteLocation` | zapis | ✅ ai |  |
 | `deleteWatcher` | zapis | ✅ ai |  |
 | `getLocations` | odczyt | ✅ ai |  |
-| `getWatchers` | odczyt | 🕓 pending |  |
+| `getWatchers` | odczyt | ✅ ai | → list_watchers |
 | `getWeather` | odczyt | ✅ ai | → get_weather |
 | `setDefaultLocation` | zapis | ✅ ai |  |
-| `updateWatcher` | zapis | 🕓 pending |  |
+| `updateWatcher` | zapis | ✅ ai | → update_watcher |
 

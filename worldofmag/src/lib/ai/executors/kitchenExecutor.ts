@@ -1,9 +1,10 @@
 // Z-010: handler akcji asystenta dla modułu Kuchnia (jadłospis + przepisy + spiżarnia).
 // Scala trzy dawne bloki `module === "kitchen"` z execute/route.ts.
 import { prisma } from "@/lib/prisma";
+import { getUserTeamIds } from "@/lib/server-utils";
 import { setMealPlanEntry, markMealCooked, markMealSkipped, updateMealPlanEntry, moveMealPlanEntry, deleteMealPlanEntry, generateShoppingListFromPlan } from "@/actions/mealPlans";
-import { addPantryItem, updatePantryItem, consumePantryItem, deletePantryItem } from "@/actions/pantry";
-import { createRecipe, deleteRecipe } from "@/actions/recipes";
+import { addPantryItem, updatePantryItem, consumePantryItem, deletePantryItem, setPantryQuantity, moveItemToPantry, autoReplenishToList } from "@/actions/pantry";
+import { createRecipe, deleteRecipe, updateRecipe, archiveRecipe, duplicateRecipe, markRecipeCooked, shopForRecipe, addIngredient, addStep } from "@/actions/recipes";
 import { createCookbook, updateCookbook, deleteCookbook } from "@/actions/cookbooks";
 import { asStr, resolveOrCreateList, type ExecOutcome, resolveByName, ownerOrArr } from "@/lib/ai/executors/shared";
 import { isoDate } from "@/lib/habitStats";
@@ -50,10 +51,66 @@ export async function executeKitchenAction(action: AIAction, userId: string): Pr
   }
 
   const teamOr = await ownerOrArr(userId);
+  const resolveRecipe = () => resolveByName((w) => prisma.recipe.findFirst({ where: w, select: { id: true } }), teamOr, asStr(params.recipeId), "title", searchQuery ?? asStr(params.title), "przepis");
   if (type === "delete_recipe") {
-    const id = await resolveByName((w) => prisma.recipe.findFirst({ where: w, select: { id: true } }), teamOr, asStr(params.recipeId), "title", searchQuery, "przepis");
+    const id = await resolveRecipe();
     await deleteRecipe(id);
     return `Usunięto przepis`;
+  }
+  if (type === "update_recipe") {
+    const id = await resolveRecipe();
+    const patch: Record<string, unknown> = {};
+    if (params.newTitle !== undefined) patch.title = String(params.newTitle);
+    if (params.description !== undefined) patch.description = asStr(params.description) ?? null;
+    if (params.servings !== undefined) patch.servings = Number(params.servings);
+    await updateRecipe(id, patch);
+    return `Zaktualizowano przepis`;
+  }
+  if (type === "archive_recipe") {
+    const id = await resolveRecipe();
+    await archiveRecipe(id);
+    return `Zarchiwizowano przepis`;
+  }
+  if (type === "duplicate_recipe") {
+    const id = await resolveRecipe();
+    const copy = await duplicateRecipe(id);
+    return `Zduplikowano przepis → „${copy.title}"`;
+  }
+  if (type === "mark_recipe_cooked") {
+    const id = await resolveRecipe();
+    const r = await prisma.recipe.findUnique({ where: { id }, select: { servings: true } });
+    const servings = params.servings != null ? Number(params.servings) : (r?.servings ?? 1);
+    await markRecipeCooked(id, servings);
+    return `Oznaczono przepis jako ugotowany`;
+  }
+  if (type === "shop_for_recipe") {
+    const id = await resolveRecipe();
+    const r = await prisma.recipe.findUnique({ where: { id }, select: { servings: true } });
+    const list = await resolveOrCreateList(userId, { listId: asStr(params.listId), listName: asStr(params.listName) });
+    const servings = params.servings != null ? Number(params.servings) : (r?.servings ?? 1);
+    const res = await shopForRecipe({ recipeId: id, listId: list.id, servings, skipPantry: params.skipPantry !== false });
+    const added = res.addedItems?.length ?? 0;
+    return `Dodano ${added} ${added === 1 ? "składnik" : "składniki/-ów"} przepisu do listy „${list.name}"`;
+  }
+  if (type === "add_ingredient") {
+    const id = await resolveRecipe();
+    const name = asStr(params.name);
+    if (!name) throw new Error("Podaj nazwę składnika");
+    await addIngredient(id, {
+      name,
+      quantity: params.quantity != null ? Number(params.quantity) : null,
+      unit: asStr(params.unit) ?? null,
+      note: asStr(params.note) ?? null,
+      isOptional: params.isOptional === true,
+    });
+    return `Dodano składnik „${name}" do przepisu`;
+  }
+  if (type === "add_step") {
+    const id = await resolveRecipe();
+    const text = asStr(params.text);
+    if (!text) throw new Error("Podaj treść kroku");
+    await addStep(id, { text, durationMin: params.durationMin != null ? Number(params.durationMin) : null });
+    return `Dodano krok do przepisu`;
   }
   if (type === "mark_meal_cooked") {
     const id = await resolveByName((w) => prisma.mealPlanEntry.findFirst({ where: w, select: { id: true } }), teamOr, asStr(params.entryId), "customTitle", searchQuery, "posiłek");
@@ -117,6 +174,32 @@ export async function executeKitchenAction(action: AIAction, userId: string): Pr
     const id = await resolvePantry();
     await deletePantryItem(id);
     return `Usunięto pozycję spiżarni`;
+  }
+  if (type === "set_pantry_quantity") {
+    const id = await resolvePantry();
+    const q = Number(params.quantity);
+    if (!Number.isFinite(q)) throw new Error("Podaj ilość");
+    await setPantryQuantity(id, q);
+    return `Ustawiono ilość w spiżarni na ${q}`;
+  }
+  if (type === "auto_replenish_pantry") {
+    const list = await resolveOrCreateList(userId, { listId: asStr(params.listId), listName: asStr(params.listName) });
+    const res = await autoReplenishToList(list.id);
+    const n = res.addedItems.length;
+    return `Dorzucono ${n} ${n === 1 ? "pozycję" : "pozycji"} do uzupełnienia na listę „${list.name}"`;
+  }
+  if (type === "move_item_to_pantry") {
+    const q = searchQuery ?? asStr(params.name);
+    const teamIds = await getUserTeamIds(userId);
+    const ownerOr = teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
+    const shopItem = await prisma.item.findFirst({
+      where: { list: { OR: ownerOr }, name: { contains: q ?? "", mode: "insensitive" } },
+      select: { id: true, name: true },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!shopItem) throw new Error(`Nie znaleziono produktu na liście zakupów: „${q ?? ""}"`);
+    await moveItemToPantry(shopItem.id, {});
+    return `Przeniesiono „${shopItem.name}" z zakupów do spiżarni`;
   }
 
   if (type === "generate_shopping_from_plan") {

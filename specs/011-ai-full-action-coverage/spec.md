@@ -67,6 +67,23 @@ Rozszerzono zakres o **akcje odczytu** (to, co użytkownik przegląda), zgodnie 
 - **Stan po iteracji 2:** MUTACJE 113 ai / 117 pending / 113 excluded · ODCZYTY 41 ai / 44 pending /
   60 excluded (patrz `docs/ai/pokrycie-akcji.md`).
 
+## 5b. Iteracje 3–9 (2026-07-19) — domknięcie do ZERA pending
+Przetoczono kolejne paczki aż każda mutacja i każdy odczyt użytkownika ma status `ai` albo świadomy
+`excluded`:
+- **Warsztaty** (pełny CRUD warsztat/pozycja/projekt), **Przepisy** (edycja/archiwum/duplikat/gotowanie/
+  zakupy/składniki/kroki), **Zwierzęta** (zbiorniki + odczyty opieki), **Wiadomości** (źródła RSS +
+  podgląd tematów), **Magazyn Pro** (dostawcy/partie/niski stan + analityka), oraz reszta
+  (nawyk→zadanie, masowe fiszki, spiżarnia set/move/replenish, komentarz do zadania, obserwatorzy
+  pogody) + komplet odczytów (trendy badań, fiszki do powtórki, koszt/dzisiejsze posiłki, raport
+  miesięczny, wyszukiwarka raportów, obserwatorzy…).
+- **Świadome wykluczenia (`excluded`)** z powodami: `dictionary` (słowniki kategorii/jednostek/
+  produktów/definicji tagów), `teams` (udostępnianie/członkowie — kolaboracja), `interactive`
+  (załączniki/zdjęcia/reorder/edycja pojedynczych rekordów opieki/dokumenty PZ-WZ/kosz/graf sklepu),
+  `admin`/`settings`/`internal`/`niche`/`redundant`. Każde wykluczenie jest odwracalne (flip w
+  manifeście) — to nie „nie da się", lecz „świadomie nie teraz/nie dla czatu".
+- **Stan końcowy: MUTACJE 159 ai / 0 pending / 184 excluded · ODCZYTY 64 ai / 0 pending / 81 excluded.**
+  Bramka `check:ai-coverage` pilnuje, że każda PRZYSZŁA akcja (zapis lub odczyt) znów wymusi decyzję.
+
 ## 6. Uwaga o kontynuacji
 `docs/ai/pokrycie-akcji.md` jest roadmapą: kolejne iteracje flipują wpisy `pending → ai` (dopisując
 egzekutor + katalog), aż licznik `pending` spadnie do zera dla akcji sensownych konwersacyjnie.
