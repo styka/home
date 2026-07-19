@@ -1229,7 +1229,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
                       <CheckCircle size={15} style={{ color: "var(--accent-green)" }} /> Utworzono zadanie w projekcie „Omnia".
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={() => goTo("/tasks")} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-blue)", cursor: "pointer" }}>Otwórz listę zadań</button>
+                      <button onClick={() => goTo(`/tasks/${reportDone.projectId}`)} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-blue)", cursor: "pointer" }}>Otwórz w zadaniach</button>
                       <button onClick={() => { setShowReport(false); setReportDone(null); }} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Zamknij</button>
                     </div>
                   </div>
