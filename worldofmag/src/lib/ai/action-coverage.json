@@ -1676,6 +1676,8 @@
     "status": "excluded",
     "reason": "settings"
   },
+  "tasks:bulkDeleteTasks": { "status": "excluded", "reason": "interactive" },
+  "tasks:bulkUpdateTasks": { "status": "excluded", "reason": "interactive" },
   "tasks:addTaskComment": {
     "status": "ai",
     "action": "add_task_comment"
