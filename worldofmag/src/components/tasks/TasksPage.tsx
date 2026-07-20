@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, Trash2, CalendarCheck, CheckSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CalendarCheck, CheckSquare, ChevronLeft, ChevronRight } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
@@ -620,16 +620,17 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             {notificationsEnabled ? <Bell size={15} /> : <BellOff size={15} />}
           </button>
 
-          {/* Kosz = link do /trash (odzyskiwanie), NIE usuwanie — dlatego na końcu, przy rzadkich
-              akcjach, żeby nie mylił się z akcją „usuń" (delete jest w menu ⋮ / trybie zaznaczania). */}
+          {/* Kosz = link do /trash (ODZYSKIWANIE), NIE usuwanie. Świadomie osobna ikona
+              (ArchiveRestore), by nie mylić się z ikoną kosza „usuń" (Trash2) — ta zostaje wyłącznie
+              dla usuwania. Na końcu paska, przy rzadkich akcjach. */}
           <Link
             href="/trash"
             className="flex items-center justify-center p-1.5 rounded"
             style={{ color: "var(--text-muted)" }}
-            title="Kosz (usunięte do przywrócenia)"
-            aria-label="Kosz — usunięte zadania do przywrócenia"
+            title="Kosz — przywróć usunięte"
+            aria-label="Kosz — przywróć usunięte zadania"
           >
-            <Trash2 size={15} />
+            <ArchiveRestore size={15} />
           </Link>
 
           {/* Admin: skopiuj prompt dla Claude Code z zadaniami widocznymi w tej zakładce */}
