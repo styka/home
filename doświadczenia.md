@@ -4,6 +4,371 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-20 — Mobile UX: hover-only akcje, niewidoczny feedback transition i ukryty scroll poziomy
+**Problem:** Trzy wzorce psuły UX na dotyku: (1) w Wiadomościach (`NewsPage`) akcje tematu Edytuj/Usuń
+były `hidden group-hover:block` — na telefonie (brak hover) **nigdy** się nie pokazywały i były za małe
+(13px); (2) w `TaskDetail` przycisk „Zapisz" cykliczności wołał `updateTask` przez `useTransition`, ale
+jedyny sygnał (`Loader2` w nagłówku) był na mobile niewidoczny — wyglądało, jakby nic się nie stało; (3)
+pasek akcji listy zadań (`TasksPage`) miał `overflow-x-auto`, ale bez żadnej wskazówki, że da się go
+przewinąć — część ikon była poza kadrem i „nieodkrywalna".
+**Rozwiązanie:** (1) `hidden group-hover:block` → widoczne domyślnie + `md:hidden md:group-hover:block`
+(hover chowa je tylko na desktopie), ikony 16px, `p-1.5` na cel dotyku; (2) lokalny stan
+`recurringSaving/recurringSaved` + `setTimeout` — przycisk pokazuje w miejscu „Zapisywanie…" → „Zapisano"
+(zielony, ~1.5 s) → „Zapisz"; (3) wrapper `relative` + stan `actionScroll{left,right}` liczony ze
+`scrollWidth/clientWidth/scrollLeft` (`onScroll` + resize) i dekoracyjny fade `linear-gradient(...,
+var(--bg-surface), transparent)` na krawędzi (`pointer-events:none`, `aria-hidden`).
+**Lekcja:** Na dotyku `group-hover` jest niedostępny — akcje kontekstowe rób widoczne domyślnie i chowaj
+dopiero od `md` w górę. Globalny spinner z `useTransition` bywa na mobile niewidoczny — dawaj feedback
+**w miejscu akcji** (stan przycisku). Kontener `overflow-x-auto` bez wizualnej wskazówki = ukryte funkcje;
+zanikający gradient (kolor = tło paska, `pointer-events:none`) sygnalizuje scroll bez psucia estetyki i
+skinowalności.
+
+---
+
+## 2026-07-20 — Łamanie długich URL w markdown: catch-all przez dziedziczony overflow-wrap
+**Problem:** Po dodaniu `overflow-wrap:anywhere` tylko do `.md-p/.md-li/.md-td/.md-link` długie linki w
+treści wiedzy (module Wiadomości, `KnowledgePanel` → `markdownToHtml` → klasa `markdown-body`) DALEJ
+rozpychały sekcję, jeśli URL trafił do **nagłówka** (`.md-h1..h6`) albo **inline-code** (`.md-code`),
+których nie objąłem. Łatanie klasa-po-klasie było niekompletne.
+**Rozwiązanie:** `overflow-wrap` i `word-break` są **dziedziczone**, więc jedna reguła na kontenerze —
+`.markdown-body { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }` — wymusza łamanie we
+WSZYSTKICH potomkach naraz (nagłówki, code, cytaty, linki). Bloki kodu (`white-space: pre`) i tak się nie
+łamią i scrollują przez `.md-pre` (`overflow-x:auto`) — dziedziczenie ich nie psuje.
+**Lekcja:** Gdy chcesz wymusić właściwość TEKSTOWĄ (overflow-wrap, word-break, white-space, color) na
+całym poddrzewie — ustaw ją raz na kontenerze i wykorzystaj dziedziczenie, zamiast łatać każdą klasę
+elementu z osobna (łatwo pominąć nagłówek/kod). Do łamania URL-i: `overflow-wrap: anywhere` na wrapperze.
+
+## 2026-07-20 — UX dodawania w Omnii: quick-capture (tytuł) + pełny formularz na klik, nie mini-form
+**Problem:** Inline mini-formularz „szybkiego dodawania" zadania (tytuł + priorytet + pole daty + „+") gniótł
+się na mobile — natywne pole daty (16px anty-zoom) i „+" nie mieściły się w jednym rzędzie.
+**Rozwiązanie:** Analiza innych modułów (Health `EventForm`, Flota, Contacts) pokazała spójny wzorzec:
+JEDEN pełny formularz inline dla add+edit, otwierany przyciskiem. Tasks ma już taki pełny formularz
+(`TaskDetail`, otwierany kliknięciem zadania). Dlatego uprościłem quick-add do jednego czystego rzędu
+`[priorytet][tytuł][+]` (szybkie przechwytywanie — mocna strona listy zadań), a WSZYSTKIE pozostałe pola
+(termin, projekt, powtarzalność, podzadania) przeniosłem do `TaskDetail`. Efekt: brak gniecenia na mobile,
+zachowana szybkość, spójność z resztą aplikacji.
+**Lekcja:** Nie upychaj wielu pól w inline pasku dodawania na mobile. Dla list o wysokiej częstości dodawania
+(zadania) trzymaj quick-capture = sam tytuł; szczegóły w pełnym formularzu edycji (jeden komponent add=edit),
+jak robią to inne moduły. „Mniej pól w pasku, reszta w formularzu" > „wszystko w jednym rzędzie".
+
+## 2026-07-20 — Wykluczenie z modalOpen nie wystarczy: panel z-50 i tak zasłania FAB (z-index)
+**Problem:** Po oznaczeniu mobilnego podglądu zadania `data-omnia-overlay` (żeby `modalOpen` się nie
+zapalał i FAB asystenta się renderował) ikony asystenta i „zgłoś błąd" DALEJ były niewidoczne na mobile.
+Powód: sam fakt renderowania nie wystarcza — panel podglądu jest `fixed inset-0 z-50`, a pływające
+przyciski miały `zIndex 41` (asystent) i `39` (feedback), więc panel je **zasłaniał**. Co gorsza,
+regresja: wcześniej (gdy panel liczył się jako modal) feedback wskakiwał na `z-10001` i BYŁ widoczny —
+po wykluczeniu spadł na 39 i zniknął.
+**Rozwiązanie:** Dodałem do `useOverlayState` sygnał `panelOpen` (obecność `[data-omnia-overlay="panel"]`)
+i podbijam z-index przycisków TYLKO gdy panel otwarty: FAB `panelOpen?55:41`, feedback
+`modalOpen?10001:(panelOpen?54:39)`. Wartości dobrane między panelem (50) a toastami (60), więc przyciski
+są nad panelem, ale pod toastami. Marker zmieniłem z „taskdetail" na generyczny „panel".
+**Lekcja:** „Odblokowanie renderu" (wykluczenie z detekcji modalu) to połowa sprawy — element i tak musi
+mieć **wyższy z-index** niż nakładka, nad którą ma być widoczny. Przy pływających przyciskach trzymaj
+świadomą skalę z-index (panel 50 < FAB 55 < toast 60) i podbijaj kontekstowo, nie globalnie (globalne
+podbicie wchodziłoby nad menu nawigacyjne, też z-50).
+
+## 2026-07-20 — Przepełnienie długim URL: break-words za słabe w gridzie, trzeba overflow-wrap:anywhere
+**Problem:** Mimo `min-w-0` na kolumnie treści i `break-words` na tytule/streszczeniu newsów długie linki
+bez spacji dalej rozpychały sekcję (poziomy scroll). `break-words` (`overflow-wrap: break-word`) NIE
+zmniejsza rozmiaru min-content elementu, więc w kontenerze grid/flex liczonym od min-content długi token
+i tak wymuszał szerokość.
+**Rozwiązanie:** Przełączyłem łamanie na `overflow-wrap: anywhere` (Tailwind arbitralnie
+`[overflow-wrap:anywhere]`) — to JEDYNY wariant, który wpływa na min-content i pozwala kontenerowi się
+zwęzić. Dodatkowo `min-w-0 overflow-hidden` na karcie jako twarda gwarancja (residualny overflow się
+przycina, nie rozpycha strony).
+**Lekcja:** Do łamania długich URL używaj `overflow-wrap: anywhere`, nie `break-word` — tylko `anywhere`
+redukuje min-content, co jest kluczowe w grid/flex. `break-all` odpada (brzydko tnie zwykłe słowa).
+
+## 2026-07-20 — Pływający FAB asystenta znikał także na desktopie przy szczegółach zadania
+**Problem:** Ikona asystenta AI (Sparkles FAB) chowała się przy otwartych szczegółach zadania i na
+mobile, i na komputerze. Chowanie steruje `useOverlayState`, który wykrywa „modal treściowy" przez
+`document.querySelector('[class~="fixed"][class~="inset-0"]:not([data-omnia-overlay])')`. Mobilny panel
+szczegółów w `TasksPage.tsx` ma klasy `md:hidden fixed inset-0 z-50` — i choć `md:hidden` ukrywa go na
+desktopie wizualnie, **element wciąż jest w DOM**, a `querySelector` matchuje po atrybucie `class`, nie po
+`display`. Dlatego FAB znikał również na komputerze.
+**Rozwiązanie:** Oznaczyłem wrapper mobilnego panelu `data-omnia-overlay="taskdetail"` — selektor
+`:not([data-omnia-overlay])` go pomija, więc `modalOpen` nie zapala się przy szczegółach zadania (FAB
+zostaje widoczny na obu platformach). Świadomie zrobiliśmy z panelu szczegółów wyjątek od reguły
+„chowaj FAB nad modalem" — to ekran roboczy, nie przelotny dialog.
+**Lekcja:** Detekcja stanu UI przez `querySelector` po klasach `fixed inset-0` łapie też elementy ukryte
+przez `md:hidden` (bo są w DOM). Przy responsywnych „modalach mobilnych" trzeba je jawnie wykluczać
+(`data-omnia-overlay`) albo montować warunkowo, inaczej fałszywie zmieniają stan na desktopie.
+
+## 2026-07-20 — Anty-zoom iOS: reguła CSS musi przebić specyficzność utility Tailwinda
+**Problem:** iOS Safari auto-przybliża widok przy focusie pola z `font-size < 16px` (wiele pól używa
+`text-sm`/`text-xs`). Naiwna reguła `input { font-size: 16px }` (specyficzność 0,0,0,1) **nie zadziała** —
+utility Tailwinda `.text-xs` (0,0,1,0) ją przebija i pole zostaje 14/12px, więc zoom dalej występuje.
+**Rozwiązanie:** Reguła w `globals.css` w `@media (pointer: coarse)` z selektorem
+`input:not([type="checkbox"]):not([type="radio"]), select, textarea { font-size: 16px }` — `input:not(...)`
+ma specyficzność ~0,0,2,1, więc wygrywa z `.text-xs` **bez** `!important`. Celujemy tylko w `pointer:
+coarse` (dotyk), desktop zostaje z gęstszym tekstem; **nie** ruszamy `maximum-scale`/`user-scalable`, więc
+pinch-zoom (dostępność) zachowany.
+**Lekcja:** Nadpisując Tailwindowe utility surowym CSS-em pilnuj specyficzności — użyj selektora
+elementowego z `:not(...)`/atrybutami zamiast sięgać po `!important`. Anty-zoom rób przez font-size 16px
+na dotyku, nie przez blokowanie skalowania.
+
+---
+
+## 2026-07-20 — „Brak brancha develop" — mylny wniosek z niepełnego lokalnego klonu
+**Problem:** Przy domykaniu zadania stwierdziłem, że w repo nie ma brancha `develop`, bo `git branch -a`
+pokazywał tylko `master` i branch roboczy. Na tej podstawie pominąłem przepływ przez `develop` i na „Tak"
+właściciela poszedłem od razu na `master`. `develop` jednak ISTNIEJE na origin — lokalny klon miał
+zawężony refspec (pobrane tylko `master` + branch roboczy), więc `remotes/origin/develop` nie było w
+lokalnych refach.
+**Rozwiązanie:** Odpytałem zdalne repo wprost: `git ls-remote --heads origin` — pokazało `refs/heads/develop`.
+`develop` był przodkiem `master`, więc dociągnąłem go czystym fast-forwardem (`git checkout develop &&
+git merge --ff-only master && git push origin develop`). Teraz `develop == master`.
+**Lekcja:** NIGDY nie orzekaj „brak brancha X" na podstawie `git branch -a` w klonie sesyjnym — może mieć
+niepełny refspec. Prawdę o zdalnych branchach daje `git ls-remote --heads origin` (albo `git fetch origin <branch>`).
+Sprawdź to, ZANIM zdecydujesz o pominięciu `develop` czy pushu na `master`.
+
+## 2026-07-20 — Asystent AI przeredagowywał opis zadania wpisany przez użytkownika
+**Problem:** Przy tworzeniu zadania z asystenta (także przy zgłoszeniach admina o bugu/zmianie aplikacji)
+opis był „lekko redagowany" — zamieniany na formę bezosobową i „poprawiany" gramatycznie. Właściciel chciał,
+by opis pozostał DOKŁADNIE taki, jak wpisał user (tytuł generowany z treści jest OK, kontekst zgłoszenia
+nadal doklejany).
+**Rozwiązanie:** Źródłem redakcji NIE był kod akcji — `executeTasksAction`/`createTask` zapisują
+`description` wiernie. Redagował LLM, bo prompt mu na to pozwalał. Poprawiono instrukcje w trzech promptach:
+`agent/route.ts` (sekcja `create_task` — „lekka redakcja" → **verbatim**; oraz reguła bulk-add), oraz
+`AICommandSheet.tsx` (prompt zgłoszenia admina — opis admina verbatim + doklejony kontekst). Dodatkowo
+`lib/ai/fastPath.ts` (skrócona ścieżka `create_task`) dostała klauzulę verbatim dla spójności.
+**Lekcja:** Gdy asystent „zmienia" treść wpisaną przez usera, szukaj przyczyny w **promptach systemowych
+LLM**, nie w kodzie Server Action (który zwykle zapisuje dane 1:1). Pamiętaj, że tworzenie zadania ma DWIE
+ścieżki generujące `description`: pełny agent (`agent/route.ts`) i deterministyczny fast-path
+(`fastPath.ts`) — instrukcję trzeba zsynchronizować w obu, inaczej zachowanie zależy od tego, którą ścieżką
+poszło polecenie.
+
+## 2026-07-19 — Strona admina nie scrollowała się (AppShell `<main>` = overflow-hidden)
+**Problem:** `/admin/ai-coverage` nie dało się przewinąć — długa treść była ucięta. Przyczyna: w
+`AppShell` kontener `<main>` jest `flex-1 overflow-hidden flex flex-col`, więc to **strona** musi być
+własnym kontenerem przewijania. Moja strona miała root jako zwykły wyśrodkowany `<div>` (maxWidth +
+margin auto), bez `overflow`, więc nadmiar treści był chowany bez scrolla.
+**Rozwiązanie:** Root strony owinięty w `className="flex-1 overflow-y-auto"` (tak jak istniejące
+`SystemHealthPage`/`AuditLogPage`), a wyśrodkowany `maxWidth`-owy kontener wrzucony do środka.
+**Lekcja:** W tym projekcie `<main>` w `AppShell` jest `overflow-hidden` — KAŻDA strona treściowa musi
+sama zapewnić scroll, dając swojemu korzeniowi `flex-1 overflow-y-auto`. Nie polegaj na scrollu body.
+Wzoruj się na istniejących stronach admina, zamiast wymyślać własny layout korzenia.
+
+## 2026-07-19 — Nie każdy model ma ownerId/ownerTeamId — resolver po nazwie może wysypać zapytanie
+**Problem:** Dodając akcje AI dla grup projektów i grup notatek użyłem generycznego `resolveByName`
+(zakłada `ownerId` + `ownerTeamId`). Ale `ProjectGroup` ma **tylko `ownerId`** (brak zespołu), a
+`NoteGroup` jest **globalny** (`getNoteGroups` nie filtruje po właścicielu). Zapytanie `where` z
+`ownerTeamId` na modelu bez tej kolumny wywala Prisma w runtime.
+**Rozwiązanie:** Rezolwery dopasowane do modelu: dla `ProjectGroup` filtr `{ ownerId: userId, name }`
+(bez `ownerOr`), dla `NoteGroup` filtr `{ name }` (globalny). Zawsze sprawdzaj model w `schema.prisma`
+(pola własności) ZANIM użyjesz wspólnego `resolveByName`/`ownerOr`.
+**Lekcja:** Wzorzec współwłasności `ownerId`/`ownerTeamId` NIE jest uniwersalny — część modeli jest
+user-only, część globalna. Przed dołożeniem resolvera po nazwie zajrzyj do schematu; generyczny helper
+zakładający zespół rozbije modele bez `ownerTeamId`.
+
+## 2026-07-19 — Pokrycie AI musi obejmować też ODCZYTY (nie tylko mutacje)
+**Problem:** Bramka pokrycia (poprzedni wpis) pilnowała tylko akcji ZAPISU. Ale asystent ma umieć
+pokazać wszystko, co użytkownik PRZEGLĄDA — a wiele odczytów nie było wystawionych (np. `getWeather` =
+prognoza, budżety/cele, kosz, tagi do wyliczenia, pełny przepis). Nowe możliwości pobierania danych też
+mogłyby „przeciekać" bez integracji z AI.
+**Rozwiązanie:** Rozszerzono `check-ai-coverage.js` i manifest `action-coverage.json` o ODCZYTY
+(get*/list*/search* → `kind:"read"`), z tym samym reżimem `ai|pending|excluded` i tą samą bramką
+build'u. Raport `docs/ai/pokrycie-akcji.md` rozdziela mutacje i odczyty. Dodano 10 read-tooli
+(get_weather, list_budgets, list_goals, list_task_tags, list_note_tags, get_recipe, list_care_agenda,
+list_maintenance, list_hot_topics, list_trash) i 6 mutacji (update/delete budżetu i celu, update/unlog
+leku). Uwaga techniczna: read-tool NIE może wołać funkcji robiącej wewnętrzne wywołanie LLM
+(`describeDay`) — to zagnieżdżony koszt/TPM w pętli agenta; `get_weather` zwraca surowe liczby
+(Open-Meteo), a interpretację robi sam agent. Pułapka składniowa: sekwencja `*/` w komentarzu blokowym
+JS (np. „list*/search*") przedwcześnie zamyka komentarz — pisz „list.../search...".
+**Lekcja:** „AI umie wszystko co użytkownik" = ZAPIS **i** ODCZYT. Jedna bramka pokrycia z rozróżnieniem
+rodzaju (mutation/read) trzyma oba wymiary mierzalne (liczniki) i wymusza triage każdej nowej akcji —
+także nowego `get*/list*`.
+
+## 2026-07-19 — Brak bramki pokrycia: akcje użytkownika nie były wystawiane dla AI
+**Problem:** Asystent nie potrafił wielu rzeczy, które użytkownik robi ręcznie (np. otagować zadania —
+`updateTaskTags`), bo możliwości AI utrzymywane są RĘCZNIE w 3 miejscach (katalog w prompt'cie,
+egzekutory, whitelist fast-path), a jedyny guard (`check-action-coverage.js`) pilnował tylko spójności
+katalog↔egzekutor. NIC nie pilnowało, czy KAŻDA mutująca Server Action jest w ogóle wystawiona dla AI,
+więc nowe możliwości użytkownika „przeciekały" bez integracji z asystentem.
+**Rozwiązanie:** Dodano bramkę pokrycia: `scripts/check-ai-coverage.js` + manifest
+`src/lib/ai/action-coverage.json`, w którym KAŻDA mutująca Server Action (`src/actions/*`) musi mieć
+status `ai` (wystawiona) / `pending` (luka do zrobienia) / `excluded` (świadomie nie dla AI, z powodem).
+Build PADA, gdy ktoś doda nową mutującą akcję i jej nie sklasyfikuje — więc nowa możliwość użytkownika
+nie prześlizgnie się bez decyzji o AI. Skrypt (flaga `--report`) generuje czytelną roadmapę luk w
+`docs/ai/pokrycie-akcji.md`. Wpięto w `npm run build` obok pozostałych `check:*`. Domknięto pierwszą
+partię luk (12 akcji: tagowanie zadań/notatek, podzadania, kontakty CRM, budżety/cele portfela,
+jadłospis→zakupy, przenoszenie pozycji, odarchiwizacja/„zakończ zakupy"). Wzmocniono prompt agenta o
+regułę ŁAŃCUCHA AKCJI (jedno polecenie → wiele kroków, także między modułami, referencja po nazwie do
+elementów tworzonych w tym samym planie).
+**Lekcja:** Gdy zdolności AI są utrzymywane osobno od „prawdy" (Server Actions), potrzebna jest BRAMKA
+pokrycia, nie tylko dobre chęci. Wzorzec: enumeruj źródło prawdy (mutujące akcje), wymagaj świadomej
+klasyfikacji każdej z nich w manifeście, wywalaj build na nieklasyfikowanej nowej akcji. Dzięki temu
+„AI umie wszystko co użytkownik" staje się mierzalnym, egzekwowalnym stanem (licznik ai/pending), a nie
+jednorazową obietnicą.
+
+## 2026-07-19 — Limit 429 NIE był przejściowy: „pokaż zadania otagowane X" zapętlał agenta
+**Problem:** Po pierwszym fixie (retry + łagodny komunikat) komenda „pokaż zadania otagowane raj"
+**zawsze** kończyła się „Asystent przeciążony", nawet po ponawianiu — podczas gdy „jak się masz?"
+i „dodaj zadanie" działały. To wykluczyło hipotezę „przejściowy limit". Prawdziwa przyczyna: read-tool
+`list_tasks` **nie miał filtra po tagu ani nie zwracał tagów** — agent nie mógł spełnić prośby, więc
+**zapętlał się** (do MAX_ITERATIONS=6 iteracji), a każda iteracja to pełne wywołanie modelu
+`reasoning` (~4k promptu + rezerwacja `max_tokens` 2800). Kilka takich wywołań w jednej minucie
+przekraczało limit Groq 12000 TPM — stąd „Used 8761 + Requested 10243" i STAŁA porażka tej konkretnej
+komendy (a nie losowa). Do tego stała rezerwacja `max_tokens=2800` na KAŻDE wywołanie pętli (Groq wlicza
+`max_tokens` do TPM) niepotrzebnie zbliżała do limitu przy zapytaniach wieloetapowych (query→answer = 2
+wywołania).
+**Rozwiązanie:** (1) `src/lib/ai/agentTools.ts` — `list_tasks` dostał argument `tag` (filtr
+`tags: { some: { tag: { name: { contains, mode:"insensitive" } } } }`) i zwraca teraz pole `tags`
+(nazwy etykiet); opis narzędzia w `READ_TOOLS_PROMPT` zaktualizowany, żeby agent wiedział, że dla
+„zadania otagowane X" ma użyć `tag`. Dzięki temu komenda kończy się w 1–2 wywołaniach zamiast pętli.
+(2) `src/app/api/llm/home/agent/route.ts` — rezerwacja tokenów odpowiedzi jest teraz mała domyślnie
+(`AGENT_MAX_TOKENS=1200`), a duży zapas (`REPORT_MAX_TOKENS=2800`) włączamy TYLKO gdy tekst prośby
+wygląda na raport (`/raport|podsumow|zestawieni|streść/i`) — mniejsza presja na TPM przy zwykłych
+zapytaniach, bez regresji długich raportów.
+**Lekcja:** Gdy 429/limit trafia **jedną konkretną** komendę za każdym razem (a inne działają), to NIE
+jest przejściowy limit — to komenda, której agent nie umie spełnić i **pętli** się, spalając TPM.
+Najpierw sprawdź, czy read-tool w ogóle POTRAFI odpowiedzieć na pytanie (tu: brak filtra po tagu), i czy
+`max_tokens` nie jest rezerwowany hojnie na każde wywołanie (Groq liczy to do TPM). Retry/łagodny
+komunikat to tylko siatka bezpieczeństwa — nie zastąpi usunięcia przyczyny pętli.
+
+## 2026-07-19 — Asystent AI zwracał surowy błąd Groq 429 (limit TPM) zamiast odpowiedzi
+**Problem:** Zapytanie do asystenta ("pokaż zadania otagowane raj") padało z surowym komunikatem dostawcy
+`Rate limit reached for model llama-3.3-70b-versatile … tokens per minute (TPM): Limit 12000, Used 8761,
+Requested 10243`. Limit TPM u Groq jest **przejściowy** (okno minuty zwalnia się po chwili), a mimo to
+`chatComplete` oddawał surowy błąd użytkownikowi. Istniejący łańcuch fallbacku (Z-133) próbuje tylko
+INNEGO modelu — przy jednym skonfigurowanym modelu 429 przechodził wprost do UI, a `AICommandSheet`
+wyświetlał go 1:1.
+**Rozwiązanie:** (1) W `src/lib/llm/chat.ts` dodano owijacz `fetchWithRetry` używany przez wszystkie 4
+funkcje dostawcy (openAi/anthropic × complete/stream): przy błędzie przejściowym (429/5xx/sieć) odczekuje
+i ponawia TEN SAM model — respektując nagłówek `Retry-After` (z capem `LLM_RETRY_CAP_MS=8000` na
+pojedyncze oczekiwanie i twardym limitem `LLM_MAX_RETRIES=2`), a bez nagłówka używa backoffu
+wykładniczego z jitterem. Retry jest ZAGNIEŻDŻONY w pojedynczym wywołaniu modelu, więc łańcuch fallbacku
+działa bez zmian (najpierw retry, potem dopiero next model). (2) W `src/app/api/llm/home/agent/route.ts`
+(`runAgentLoop` catch) status 429 mapujemy na łagodny polski komunikat zamiast surowego tekstu dostawcy —
+jedno miejsce obsługuje tryb zwykły i strumieniowy (SSE), bo oba idą przez `runAgentLoop`; klient bez zmian.
+**Lekcja:** Limity szybkości dostawcy LLM (429/TPM) to błąd PRZEJŚCIOWY — najpierw ponów z backoffem
+(respektując `Retry-After`, z twardym capem i limitem prób), dopiero potem fallback/komunikat. Retry rób
+na poziomie `fetch` (jedno miejsce dla wszystkich dostawców i trybów, też streaming — status sprawdzasz
+zanim skonsumujesz body). Nigdy nie pokazuj użytkownikowi surowej treści błędu dostawcy — zawsze własny,
+polski komunikat (C-41: brak ryzyka wycieku klucza/szczegółów). Ponawiaj TYLKO statusy przejściowe
+(429/≥500), nie 4xx poza 429.
+
+## 2026-07-19 — Dokumentacja myliła środowiska Render (który URL/tier to test, a który prod)
+**Problem:** CLAUDE.md podawał `worldofmag.onrender.com` jednocześnie jako „Live URL" i „auto-deploy on `master`" oraz „free tier", podczas gdy sekcja git-workflow traktowała ten sam URL jako środowisko **testowe** (`develop`). Drugi serwis (`omnia-prod.onrender.com`) figurował tylko w allowed origins, bez wskazania, że to produkcja. Tier per-środowisko nie był nigdzie jasno rozpisany — trzeba go było wywnioskować z luźnej uwagi „Render prod nie usypia".
+**Rozwiązanie:** Ujednolicono mapowanie w CLAUDE.md (tabela „Environments & tiers") i w runbooku: `develop` → test → `worldofmag.onrender.com` → **free** (usypia po 15 min); `master` → produkcja → `omnia-prod.onrender.com` → **płatny** (nie usypia). Poprawiono też roadmapę (migracja prod na płatny tier = zrobione).
+**Lekcja:** Gdy są dwa serwisy Render pod jednym projektem, trzymaj **jedną tabelę** gałąź → URL → tier jako źródło prawdy i nie rozrzucaj tych faktów po „Live URL"/„allowed origins"/uwagach. „Free tier usypia, prod nie" to jedyny twardy sygnał różnicujący tier — zapisz go wprost, nie zostawiaj do wywnioskowania.
+
+## 2026-07-18 — Offline: katalog list widać, ale nie da się wejść w listę (nawigacja SPA = RSC z sieci)
+**Problem:** Po naprawie instalacji SW aplikacja wstawała offline i katalog `/shopping` był widoczny, ale
+kliknięcie w konkretną listę nic nie dawało. Przyczyna: w App Routerze wejście w `/shopping/[id]` przez
+`<Link>` to nawigacja **SPA**, która pobiera payload **RSC** z sieci — offline to pada. Do tego dokument
+HTML tej listy zwykle **nie był w cache**, bo online wchodziło się w listę klikając (SPA pobiera tylko RSC,
+nie cały dokument), więc nawet twarda nawigacja nie miała czego zserwować (fallback pokazywał znów katalog).
+**Rozwiązanie:** (1) **warm-up** w `OfflineSyncManager` dodatkowo `fetch('/shopping/'+id)` dla każdej
+aktywnej listy → SW buforuje **dokument HTML** każdej listy (zwykły fetch bez nagłówka RSC = pełny HTML);
+(2) w katalogu (`ShoppingHomePage`) linki do list offline renderujemy jako **twardą nawigację `<a>`** zamiast
+`<Link>` (helper `CardLink`), więc przeglądarka robi pełne przejście → SW serwuje zbuforowany dokument →
+`ShoppingPage` wstaje i przełącznik czyta ze snapshotu; (3) `caches.match(..., { ignoreVary: true })` w
+fallbacku SW, bo Next dodaje `Vary: RSC,…` i bez tego match po nawigacji mógłby nie trafić w dokument.
+**Lekcja:** Offline w Next App Router **nawigacja SPA nie zadziała** (RSC leci po sieci). Żeby offline wejść
+w dynamiczną trasę: (a) **zbuforuj jej dokument HTML** proaktywnie (`fetch(url)` przy okazji warm-upu — samo
+odwiedzenie przez SPA online NIE cache'uje dokumentu), i (b) offline nawiguj **twardo** (`<a>`, nie `<Link>`),
+żeby SW mógł ten dokument zserwować. Pamiętaj o `ignoreVary` przy match, bo Next varii po nagłówkach RSC.
+
+## 2026-07-18 — Service worker w ogóle się nie instalował (martwe URL-e w `cache.addAll`)
+**Problem:** Po dodaniu trybu offline Zakupów okazało się, że aplikacja i tak **nie wstawała offline**.
+Przyczyna zastana: `public/sw.js` w `install` robił `cache.addAll(SHELL)`, a `SHELL` zawierał
+**nieistniejące** ścieżki `/icons/icon-192.png` i `/icons/apple-touch-icon.png` (realne ikony są pod
+`/pwa-icon/*` i `/apple-touch-icon/*`). `cache.addAll` jest **atomowy** — jeden 404 odrzuca całą obietnicę,
+więc `event.waitUntil` w `install` padał, a wtedy **service worker w ogóle się nie aktywuje**. Efekt: nic
+się nie cache'owało (nawet poprawny `/_next/static`), więc offline nie działało wcale.
+**Rozwiązanie:** (1) `SHELL` zawężony do **istniejących** tras `["/", "/shopping"]`; (2) precache zrobiony
+**odpornie** — `Promise.allSettled(SHELL.map((u) => cache.add(u)))` zamiast `addAll`, więc pojedynczy
+błędny URL nigdy nie wywróci instalacji; (3) dodany fallback nawigacyjny (offline nawigacja bez trafienia
+w cache → cached `/shopping`→`/`), by aplikacja zawsze wstała; (4) bump `CACHE` do `worldofmag-v4`.
+**Lekcja:** `cache.addAll` to „wszystko albo nic" — **jeden martwy URL w precache = cały SW nie wstaje**.
+Do precache używaj `Promise.allSettled` z `cache.add` per-URL i wpisuj tam **tylko** trasy, które na pewno
+istnieją. Gdy „offline nie działa", najpierw sprawdź, czy SW w ogóle się **zainstalował/aktywował**
+(DevTools → Application → Service Workers), a nie dopiero logikę fetch.
+
+## 2026-07-18 — Zakupy offline: service worker nie cache'ował `/_next/`, a LWW psuł własne kolejne zmiany
+**Problem:** Przy dodawaniu trybu offline do Zakupów (feature 009-shopping-offline-sync) wyszły dwie
+nieoczywiste pułapki. (1) Istniejący `public/sw.js` w handlerze `fetch` **wychodził wcześnie dla
+każdego `/_next/`** (`return;`), więc bez sieci nie ładowały się hashowane bundle JS/CSS — aplikacja
+w ogóle **nie wstawała offline**, mimo że strona `/shopping` była w SHELL. (2) Reguła „ostatni zapis
+wygrywa" liczona jako `item.updatedAt > op.ts` **gubiła kolejne własne zmiany offline** tej samej
+pozycji: pierwszy zaaplikowany `op` podbijał `updatedAt` do `now()` serwera, więc następny `op`
+(z wcześniejszym `ts` klienta) był błędnie uznawany za „serwer nowszy" i pomijany — np. sekwencja
+NEEDED→IN_CART→DONE lądowała na IN_CART, a offline add→edit tracił edycję.
+**Rozwiązanie:** (1) W `sw.js`: `/_next/static/*` (immutable, content-hashed) serwujemy **cache-first**
+(i dopisujemy do cache przy pierwszym pobraniu), pozostałe `/_next/` → sieć; żądania RSC (`headers RSC=1`)
+i `/api/` nadal pomijane; bump `CACHE` do `worldofmag-v3`. (2) LWW liczymy **tylko przy pierwszym
+dotknięciu** danej pozycji w batchu synchronizacji: trzymamy `Map<itemId, "applied"|"conflict">` — nasze
+kolejne operacje na tej samej pozycji wygrywają bez porównania z `updatedAt` (bo to my ją przed chwilą
+zmieniliśmy), a konflikt z innym klientem wykrywamy tylko względem stanu serwera **sprzed** batcha.
+**Lekcja:** Offline-first PWA nie zadziała, jeśli service worker nie cache'uje **statycznych bundli
+`/_next/static`** — sam HTML strony to za mało. A przy „last-write-wins" po `updatedAt` pamiętaj, że
+**własne, kolejno odtwarzane operacje same podbijają znacznik czasu** — konflikt licz względem stanu
+sprzed synchronizacji (pierwsze dotknięcie), inaczej klient „konfliktuje sam ze sobą" i gubi ostatnią zmianę.
+
+## 2026-07-17 — Asystent klasyfikował prośby o ODCZYT jako akcje tworzące (fast-path)
+**Problem:** „Podaj mi zadanie, jakie mógłbym zrobić" kończyło się propozycją dodania (pustej) pozycji
+do listy zakupów, zamiast przeszukania zadań i podania konkretnej propozycji. Winny był
+`fastPath.classifyIntent`: tani klasyfikator (op:"dispatch") czasem błędnie mapował prośbę o
+wyszukanie na prostą akcję create (`add_item`/`create_task`), a bywało, że z pustym payloadem
+(„dodaj nic"). Dodatkowo fast-path dla `add_item` z założenia budował tylko `rawText` (bez `listName`)
+— więc gdy user wskazał listę po nazwie, wskazanie ginęło.
+**Rozwiązanie:** trzy deterministyczne strażniki w `fastPath.ts` (bez dodatkowego kosztu LLM):
+(1) **strażnik intencji odczytu** — regex kotwiczony na początku wypowiedzi
+(`podaj|pokaż|znajdź|ile|jakie|zaproponuj|…`) → od razu `complex` (pełny agent robi query+answer);
+(2) **strażnik pustego payloadu** — prosta akcja bez kluczowej treści (`rawText`/`title`/`name`/
+`amount`…) → `complex`; (3) **nazwana lista przy `add_item`** (`\blist[aąeęiy]\w*`) → `complex`, żeby
+agent wypełnił `listName` (executor `resolveOrCreateList` już go priorytetyzuje). Do tego reguły w
+`buildSystemPrompt` agenta: „QUERY-FIRST" (prośby o wyszukanie realizuj filtrowanym query, nigdy akcją
+tworzącą; filtruj po stronie narzędzia, nie „mieli" całości) i „SZANUJ WSKAZANY KONTENER".
+**Lekcja:** Fast-path (mały model dispatch) NIE jest wiarygodny przy rozróżnianiu „odczyt vs zmiana"
+ani przy pustych payloadach — postaw przed nim **tanie, deterministyczne strażniki** (regex intencji +
+walidacja payloadu). Nadmiarowe zepchnięcie do `complex` jest bezpieczne (pełny agent i tak poprawnie
+obsłuży tworzenie) — koszt to tylko latencja, nie błędne działanie. Gdy szybka ścieżka gubi parametr
+(np. `listName`), lepiej oddać ją agentowi niż „po cichu" wykonać niepełną akcję.
+
+---
+
+## 2026-07-16 — iOS Safari: rozpoznawanie mowy nie kończy tury po ciszy (mikrofon otwarty, brak odpowiedzi)
+**Problem:** Po naprawie 007 na iPhone dalej: „mówię pierwszą rzecz, a nie przestaje nasłuchiwać i nie
+odpowiada". Nasz `createSpeechListener` dostarczał transkrypt dopiero w `onend`, licząc, że
+`continuous=false` sam zatrzyma rozpoznawanie po ciszy (jak na Chrome). Na iOS Safari `continuous=false`
+**nie domyka niezawodnie** — mikrofon zostaje otwarty, `onend` nie odpala, a bywa też, że `isFinal`
+nigdy nie jest ustawione (mamy tylko `interim`). Efekt: wskaźnik utyka na „Słucham…", nic nie leci do
+agenta.
+**Rozwiązanie:** własne wykrywanie końca tury **timerem ciszy** w `createSpeechListener`: każdy
+`onresult` resetuje licznik `SILENCE_MS` (1500 ms); po pauzie sami domykamy turę — `stop()` (zwolnij
+mikrofon) + `onFinal(finalText || lastInterim)`. Dodatkowo `NO_SPEECH_MS` (8000 ms) od startu, by nie
+trzymać mikrofonu bez końca, gdy nic nie powiedziano. `onend` (Chrome) zostaje jako druga ścieżka —
+`delivered`/`aborted` chroni przed podwójnym dostarczeniem. Kluczowe: dostarczamy **final ALBO ostatni
+interim**, bo iOS często nie oznacza `isFinal`.
+**Lekcja:** Na iOS Safari NIE polegaj na `onend`/`isFinal` do zamknięcia tury rozpoznawania — steruj
+**własnym timerem ciszy** i dostarczaj najlepszy dostępny tekst (final || interim). `continuous=false`
+na iOS ≠ „auto-stop po ciszy" jak na Chrome.
+
+## 2026-07-16 — Rozmowa głosowa Asystenta milczała/zacinała się na iPhone (iOS Safari, Web Speech)
+**Problem:** Tryb rozmowy głosowej (spec 005/006) działał na Chrome, ale na iPhone (Safari/WebKit —
+silnik KAŻDEJ przeglądarki na iOS) Asystent **milczał** i pętla **zacinała się** po pierwszej turze,
+choć przycisk się pokazywał. Błędnie zakładaliśmy, że hands-free jest wykonalny „tylko na Chrome".
+Faktyczne przyczyny to wąskie ograniczenia iOS Safari, których nie obsługiwaliśmy: (a) `speechSynthesis.
+speak()` wywołane **poza gestem** użytkownika jest przez WebKit **po cichu wyciszane** — nasza pierwsza
+wypowiedź padała dopiero po asynchronicznej odpowiedzi agenta (bez gestu) → cisza; (b) tryb
+`continuous` rozpoznawania jest na iOS zawodny, a **natychmiastowy** restart `recognition.start()` po
+zakończeniu tury bywa blokowany/rzuca „already started"; (c) głosy syntezy ładują się asynchronicznie
+(`voiceschanged`).
+**Rozwiązanie:** (1) `primeSpeech()` w `@/lib/tts` — „odblokowanie" syntezy **w geście** włączenia
+trybu (cicha wypowiedź `volume=0` + `getVoices()` + `resume()`); wołane z `toggleVoice` (handler
+kliknięcia). (2) Rozgrzewka głosów przez `voiceschanged`. (3) `resume()` po każdym `speak()` (iOS/Safari
+wpada w stan „paused"). (4) Restart nasłuchu przez `scheduleListen()` = `setTimeout(startListening,
+250ms)` — bufor, którego iOS wymaga między turami; **pierwszy** start i barge-in zostają **synchroniczne
+w geście** (zgoda na mikrofon na iOS). Wykrywanie wsparcia zostaje **po istnieniu API**, nie po nazwie
+przeglądarki (żadnego UA-sniffingu).
+**Lekcja:** Web Speech na iOS Safari **jest** dostępne, ale gestozależne: `speak()` trzeba odblokować w
+geście (potem gra programowo), a `recognition.start()` — pierwszy w geście, kolejne z małym opóźnieniem
+i świeżym egzemplarzem (`continuous=false`). Nie zakładaj „to działa tylko w Chrome" — to zwykle **brak
+priming/handlingu iOS**, nie brak platformy. Weryfikacja mowy wymaga **realnego iPhone** (Web Speech nie
+działa w headless CI).
+
 ## 2026-07-15 — Kolizja `declare global { Window }` dla SpeechRecognition (build TS)
 **Problem:** Nowy helper `src/lib/speechRecognition.ts` (tryb rozmowy głosowej Asystenta) miał własny
 blok `declare global { interface Window { SpeechRecognition?: ISpeechRecognitionCtor; … } }`. Taki
@@ -1210,3 +1575,13 @@ do puli ~64 kosmetycznych warningów, które i tak są na roadmapie do sprzątni
 to tylko **bramka produkcyjna** (`develop → master`), i tę robimy jednym, zawsze-zadawanym pytaniem z
 bezpiecznym domyślnym „Nie". Cudzysłowy drukarskie w tekście JSX pakuj w `{"…"}`, żeby nie budzić
 `react/no-unescaped-entities`.
+
+## 2026-07-20 — Iteracja po `Set` w Server Action wywala `next build` (downlevelIteration)
+**Problem:** Nowa akcja `bulkUpdateTasks` używała `for (const pid of affectedProjectIds)` po `Set<string>`.
+`next build` (typecheck) padał: „Type 'Set<string>' can only be iterated through when using the
+'--downlevelIteration' flag or with a '--target' of 'es2015' or higher" — tsconfig projektu ma niższy
+target/brak downlevelIteration.
+**Rozwiązanie:** Zamiana na `Array.from(set).forEach(...)`. `lint` tego nie łapie — wychodzi dopiero na
+kroku „Checking validity of types" w `next build`.
+**Lekcja:** W kodzie `src/` nie iteruj `Set`/`Map` przez `for...of` ani span spreadem w gorących
+miejscach — używaj `Array.from(...)`. Realny typecheck daje dopiero `next build`, nie sam `lint`.

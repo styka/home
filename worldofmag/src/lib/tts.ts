@@ -33,6 +33,104 @@ export function ttsSupported(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
+// Głosy na iOS/Safari ładują się ASYNCHRONICZNIE — pierwszy `getVoices()` bywa pusty, dopóki nie
+// wypełni ich zdarzenie `voiceschanged`. Rozgrzewamy je raz, żeby `speak()` nie startował „w próżni".
+let voicesWarmed = false;
+function warmVoices(): void {
+  if (voicesWarmed || !ttsSupported()) return;
+  voicesWarmed = true;
+  try {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.addEventListener?.("voiceschanged", () => {
+      try { window.speechSynthesis.getVoices(); } catch { /* ignore */ }
+    });
+  } catch {
+    /* środowisko bez TTS — ignorujemy */
+  }
+}
+
+/**
+ * „Odblokowuje" syntezę mowy na iOS/Safari. **Musi być wywołana w geście użytkownika** (klik/dotknięcie),
+ * bo WebKit po cichu odrzuca `speak()` wywołane poza gestem. Wypowiada cichą (volume=0) wypowiedź, żeby
+ * dalsze programowe `speak()` (np. w pętli rozmowy) były już słyszalne. Idempotentna, bezpieczna bez
+ * wsparcia. Wywołaj przy włączaniu trybu rozmowy głosowej.
+ */
+export function primeSpeech(): void {
+  if (!ttsSupported()) return;
+  try {
+    warmVoices();
+    window.speechSynthesis.resume();
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+  } catch {
+    /* środowisko bez TTS — ignorujemy */
+  }
+}
+
+// ── Wybór głosu lektora (per-urządzenie) ──────────────────────────────────────
+// Głosy Web Speech są specyficzne dla urządzenia/przeglądarki, więc zapamiętany
+// wybór trzymamy lokalnie (localStorage), nie w bazie. `speak()` używa wybranego
+// głosu, a gdy jest niedostępny — wraca do domyślnego (bez błędu).
+const VOICE_STORAGE_KEY = "omnia.aiVoice";
+// undefined = jeszcze nie odczytano z localStorage; null = świadomie „domyślny".
+let preferredVoiceURI: string | null | undefined = undefined;
+
+/** Zapamiętany identyfikator głosu (voiceURI) lub null = domyślny przeglądarki. Leniwy odczyt. */
+export function getPreferredVoiceURI(): string | null {
+  if (preferredVoiceURI !== undefined) return preferredVoiceURI;
+  try {
+    preferredVoiceURI =
+      (typeof localStorage !== "undefined" ? localStorage.getItem(VOICE_STORAGE_KEY) : null) || null;
+  } catch {
+    preferredVoiceURI = null;
+  }
+  return preferredVoiceURI;
+}
+
+/** Ustawia (i zapamiętuje na tym urządzeniu) preferowany głos lektora. null = domyślny. */
+export function setPreferredVoiceURI(uri: string | null): void {
+  preferredVoiceURI = uri && uri.trim() ? uri : null;
+  try {
+    if (preferredVoiceURI) localStorage.setItem(VOICE_STORAGE_KEY, preferredVoiceURI);
+    else localStorage.removeItem(VOICE_STORAGE_KEY);
+  } catch {
+    /* brak localStorage — ignorujemy */
+  }
+}
+
+/** Lista głosów dostępnych w przeglądarce (może być pusta, dopóki nie odpali „voiceschanged"). */
+export function getAvailableVoices(): SpeechSynthesisVoice[] {
+  if (!ttsSupported()) return [];
+  try {
+    warmVoices();
+    return window.speechSynthesis.getVoices();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Subskrypcja zmiany listy głosów (iOS/Safari ładują je ASYNCHRONICZNIE). Zwraca funkcję odpięcia.
+ * Używane przez UI wyboru głosu, by odświeżyć listę, gdy głosy dopłyną.
+ */
+export function onVoicesChanged(cb: () => void): () => void {
+  if (!ttsSupported()) return () => {};
+  const handler = () => cb();
+  try {
+    window.speechSynthesis.addEventListener?.("voiceschanged", handler);
+  } catch {
+    /* ignore */
+  }
+  return () => {
+    try {
+      window.speechSynthesis.removeEventListener?.("voiceschanged", handler);
+    } catch {
+      /* ignore */
+    }
+  };
+}
+
 /** Opcje wypowiedzi. `onEnd` odpala się po naturalnym zakończeniu lub błędzie syntezy. */
 export type SpeakOptions = { onEnd?: () => void };
 
@@ -40,16 +138,25 @@ export type SpeakOptions = { onEnd?: () => void };
 export function speak(text: string, lang?: string | null, opts?: SpeakOptions): void {
   if (!ttsSupported() || !text.trim()) return;
   try {
+    warmVoices();
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     const code = langToBcp47(lang);
     if (code) u.lang = code;
+    // Wybrany głos lektora (jeśli ustawiony i wciąż dostępny) — inaczej głos domyślny.
+    const uri = getPreferredVoiceURI();
+    if (uri) {
+      const match = window.speechSynthesis.getVoices().find((v) => v.voiceURI === uri);
+      if (match) u.voice = match;
+    }
     u.rate = 0.95;
     if (opts?.onEnd) {
       u.onend = () => opts.onEnd!();
       u.onerror = () => opts.onEnd!();
     }
     window.speechSynthesis.speak(u);
+    // iOS/Safari (i Chrome) potrafią wejść w stan „paused" — resume() gwarantuje, że mowa ruszy.
+    window.speechSynthesis.resume();
   } catch {
     /* środowisko bez TTS — ignorujemy */
   }

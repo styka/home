@@ -4,19 +4,23 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings, Volume2, Mic, MicOff,
+  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings, Volume2, Mic, MicOff, AudioLines, Bug,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
+import { useDictation } from "@/hooks/useDictation";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
-import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported } from "@/lib/tts";
+import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported, primeSpeech, getAvailableVoices, onVoicesChanged, setPreferredVoiceURI, getPreferredVoiceURI } from "@/lib/tts";
 import { createSpeechListener, speechRecognitionSupported, type SpeechListener } from "@/lib/speechRecognition";
 import {
   listAiConversations, getAiConversation, createAiConversation, appendAiMessage,
   deleteAiConversation, renameAiConversation, type ConversationMeta,
 } from "@/actions/aiConversations";
 import { createUserReport } from "@/actions/reports";
+import { ensureOmniaProject } from "@/actions/taskProjects";
+import { createTask } from "@/actions/tasks";
 import type { AIAction } from "@/lib/ai/aiAction";
+import { isDestructiveAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executors/shared";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
 import { useOverlayState } from "@/hooks/useOverlayState";
@@ -71,12 +75,17 @@ type Turn =
   | { id: string; role: "assistant"; kind: "answer"; content: string; followups?: string[]; log?: LogEntry[]; meta?: AgentMeta }
   | { id: string; role: "assistant"; kind: "clarify"; content: string; options?: string[]; messages?: ChatMessage[]; log?: LogEntry[]; resolved?: boolean; meta?: AgentMeta }
   | { id: string; role: "assistant"; kind: "navigate"; content: string; url: string; label: string; log?: LogEntry[]; meta?: AgentMeta }
-  | { id: string; role: "assistant"; kind: "plan"; content: string; actions: AIAction[]; messages?: ChatMessage[]; log?: LogEntry[]; done?: boolean; meta?: AgentMeta }
+  | { id: string; role: "assistant"; kind: "plan"; content: string; actions: AIAction[]; messages?: ChatMessage[]; log?: LogEntry[]; done?: boolean; dismissed?: boolean; meta?: AgentMeta }
   | { id: string; role: "assistant"; kind: "report"; content: string; title: string; savedSlug?: string; log?: LogEntry[]; meta?: AgentMeta }
   | { id: string; role: "assistant"; kind: "results"; content: string; results: ActionResult[]; undone?: boolean };
 
 // Tryb rozmowy głosowej (magiczna ikona → hands-free). String-union, nie enum (C-12).
-type VoiceState = "off" | "listening" | "thinking" | "speaking" | "review";
+type VoiceState = "off" | "listening" | "thinking" | "speaking";
+
+// Wąskie, jednoznaczne frazy głosowe do sterowania kartą akcji (gdy jest aktywna, niepotwierdzona).
+// Wszystko inne = zwykła rozmowa/korekta (idzie do agenta).
+const VOICE_CONFIRM_RE = /^(zatwierdź|zatwierdz|wykonaj|potwierdzam|potwierdź|potwierdz|zrób to|zrob to|tak zrób|tak zrob|dobra rób|dobra rob|wykonaj to|zatwierdzam)\b/i;
+const VOICE_CANCEL_RE = /^(odrzuć|odrzuc|anuluj|nie rób|nie rob|zostaw to|odrzuć to|odrzuc to|skasuj to|nie wykonuj)\b/i;
 
 const LIST_SUB_PAGES = ["products", "units", "categories", "icons", "stores"];
 
@@ -121,6 +130,70 @@ function deriveContextFromPath(pathname: string): RouteContext {
   if (pathname.startsWith("/wiadomosci")) return { context: ctx("news"), placeholder: 'Np. "Dodaj temat: sztuczna inteligencja"', routeHint: "Moduł Wiadomości" };
   if (pathname.startsWith("/pogoda")) return { context: ctx("weather"), placeholder: 'Np. "Dodaj lokalizację Kraków"', routeHint: "Moduł Pogoda" };
   return { context: ctx("shopping"), placeholder: "Zapytaj o cokolwiek lub wydaj polecenie…", routeHint: "Strona główna aplikacji" };
+}
+
+// Składa czytelny markdown-owy raport z bieżącej rozmowy asystenta do zadania w projekcie „Omnia":
+// opcjonalny opis problemu, ostatni błąd z backendu, pełny zrzut rozmowy oraz logi połączeń
+// (kroki agenta: iter/step/thought/narzędzia/wyniki + model i tokeny). Admin zgłasza tym problem z czatem.
+function buildChatProblemReport(opts: {
+  turns: Turn[];
+  error: string | null;
+  description: string;
+  route: string;
+  conversationId: string | null;
+}): string {
+  const { turns, error, description, route, conversationId } = opts;
+  const roleLabel = (r: "user" | "assistant") => (r === "user" ? "Użytkownik" : "Asystent");
+  const trunc = (s: string, max = 4000) => (s.length > max ? s.slice(0, max) + "\n…(ucięto)" : s);
+  const json = (v: unknown) => {
+    try { return trunc(JSON.stringify(v, null, 2)); } catch { return String(v); }
+  };
+  const out: string[] = [];
+
+  out.push("## Opis problemu");
+  out.push(description.trim() ? description.trim() : "_(brak opisu)_");
+
+  if (error) {
+    out.push("\n## Ostatni błąd (backend)");
+    out.push("```\n" + trunc(error) + "\n```");
+  }
+
+  out.push("\n## Zrzut rozmowy");
+  if (turns.length === 0) {
+    out.push("_(rozmowa pusta)_");
+  } else {
+    turns.forEach((t, i) => {
+      out.push(`\n### ${i + 1}. ${roleLabel(t.role)} (${t.kind})`);
+      out.push(trunc(t.content || "_(brak treści)_"));
+    });
+  }
+
+  out.push("\n## Logi połączeń z backendem");
+  const hasAnyLog = turns.some((t) => t.role === "assistant" && (("log" in t && (t.log?.length ?? 0) > 0) || ("meta" in t && !!t.meta)));
+  if (!hasAnyLog) {
+    out.push("_(brak logów agenta dla tej rozmowy)_");
+  } else {
+    turns.forEach((t, i) => {
+      if (t.role !== "assistant") return;
+      const log = "log" in t ? t.log : undefined;
+      const meta = "meta" in t ? t.meta : undefined;
+      if (!(log?.length) && !meta) return;
+      const metaStr = meta ? ` — model: ${meta.model ?? "?"}, tokeny: ${meta.tokens ?? "?"}` : "";
+      out.push(`\n#### Tura ${i + 1}${metaStr}`);
+      (log ?? []).forEach((l) => {
+        out.push(`- **[iter ${l.iter} · ${l.step}]** ${l.thought ?? ""}`.trim());
+        if (l.tools?.length) out.push("  - narzędzia:\n```json\n" + json(l.tools) + "\n```");
+        if (l.results !== undefined) out.push("  - wyniki:\n```json\n" + json(l.results) + "\n```");
+      });
+    });
+  }
+
+  out.push("\n---");
+  out.push(`- **route:** \`${route}\``);
+  out.push(`- **conversationId:** \`${conversationId ?? "(brak)"}\``);
+  out.push(`- **czas zgłoszenia:** ${new Date().toISOString()}`);
+
+  return out.join("\n");
 }
 
 const STARTER_CHIPS = [
@@ -184,7 +257,7 @@ function newId(): string {
   return `t${Date.now()}_${TURN_SEQ}`;
 }
 
-export function AICommandSheet() {
+export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { context, placeholder, routeHint, activeListId, activeProjectId } = deriveContextFromPath(pathname);
@@ -192,8 +265,11 @@ export function AICommandSheet() {
   const [isOpen, setIsOpen] = useState(false);
   // Magiczną ikonę chowamy, gdy otwarty jest modal treściowy — nie nakładamy
   // dialogu na dialog i nie odciągamy uwagi od skupionego zadania w modalu.
-  const { modalOpen } = useOverlayState();
+  const { modalOpen, panelOpen } = useOverlayState();
   const [inputText, setInputText] = useState("");
+  // Composer: pole tekstowe (auto-rozrost) + dyktowanie mowy (mikrofon w pigułce, jak w ChatGPT).
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const dictation = useDictation((t) => setInputText((prev) => (prev.trim() ? prev.trimEnd() + " " : "") + t));
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
   const [liveThoughts, setLiveThoughts] = useState<string[]>([]); // myśli agenta na żywo (streaming)
@@ -212,10 +288,13 @@ export function AICommandSheet() {
   const spokenIdRef = useRef<string | null>(null); // id ostatnio wypowiedzianej tury (anty-dubel)
   const prevConvoIdRef = useRef<string | null>(null); // do rozróżnienia „utworzenie" vs „przełączenie" rozmowy
   const pendingClarifyRef = useRef<Extract<Turn, { kind: "clarify" }> | null>(null);
+  const pendingPlanIdRef = useRef<string | null>(null); // id aktywnej, niepotwierdzonej karty planu (tryb głosowy)
   // Refy na najświeższe wersje funkcji pętli — omija stale-closure w callbackach listenera/lektora.
   const startListeningRef = useRef<() => void>(() => {});
   const handleSendRef = useRef<(t?: string) => void | Promise<void>>(() => {});
   const submitClarifyRef = useRef<(turn: Extract<Turn, { kind: "clarify" }>, value: string) => void>(() => {});
+  const quickConfirmPlanRef = useRef<(turn: Extract<Turn, { kind: "plan" }>) => void>(() => {});
+  const turnsRef = useRef<Turn[]>([]);
 
   // Przegląd planu (ActionDrawer)
   const [planTurnId, setPlanTurnId] = useState<string | null>(null);
@@ -239,12 +318,22 @@ export function AICommandSheet() {
   // Załącznik-zdjęcie (multimodal): rozpoznanie przedmiotów → plan akcji.
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  // Composer: menu drugorzędnych akcji („+") — odchudza pasek na mobile (zdjęcie, preferencje).
+  const [showPlus, setShowPlus] = useState(false);
   // Stałe preferencje użytkownika („custom instructions") — pamięć per-urządzenie
   // (localStorage), wstrzykiwana do każdego polecenia. Ref, by uniknąć stale-closure.
   const [prefs, setPrefs] = useState("");
   const prefsRef = useRef("");
   prefsRef.current = prefs;
   const [showPrefs, setShowPrefs] = useState(false);
+  // Zgłaszanie problemu z czatem (admin-only): panel z opcjonalnym opisem → zadanie w projekcie „Omnia".
+  const [showReport, setShowReport] = useState(false);
+  const [reportDesc, setReportDesc] = useState("");
+  const [reportBusy, setReportBusy] = useState(false);
+  const [reportDone, setReportDone] = useState<{ projectId: string } | null>(null);
+  // Wybór głosu lektora (per-urządzenie). Głosy iOS/Safari ładują się asynchronicznie — subskrybujemy.
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [voiceURI, setVoiceURIState] = useState<string>("");
   // Tryb zgłoszenia (admin): kontekst wskazanego miejsca; gdy ustawiony, kolejna
   // wiadomość admina staje się opisem zadania w projekcie „Omnia". Ref — bo
   // listener zdarzenia i handleSend muszą widzieć aktualną wartość bez re-bind.
@@ -307,6 +396,31 @@ export function AICommandSheet() {
         if (voiceStateRef.current === "off") return;
         const trimmed = text.trim();
         if (!trimmed) { startListeningRef.current(); return; } // nic nie powiedziano → słuchaj dalej
+
+        // Aktywna, niepotwierdzona karta planu → komendy głosowe zatwierdź/odrzuć; inaczej rozmowa/korekta.
+        const pendingId = pendingPlanIdRef.current;
+        if (pendingId) {
+          const planTurn = turnsRef.current.find(
+            (t) => t.id === pendingId && t.kind === "plan" && !t.done && !t.dismissed,
+          ) as Extract<Turn, { kind: "plan" }> | undefined;
+          if (planTurn) {
+            if (VOICE_CONFIRM_RE.test(trimmed)) {
+              pendingPlanIdRef.current = null;
+              quickConfirmPlanRef.current(planTurn);
+              return;
+            }
+            if (VOICE_CANCEL_RE.test(trimmed)) {
+              pendingPlanIdRef.current = null;
+              dismissPlanTurn(planTurn.id);
+              startListeningRef.current();
+              return;
+            }
+            // inaczej → rozmowa/korekta: idzie do agenta (kontekst zawiera treść akcji, patrz buildHistory)
+          } else {
+            pendingPlanIdRef.current = null; // karta zniknęła / już rozstrzygnięta
+          }
+        }
+
         voiceStateRef.current = "thinking";
         setVoiceState("thinking");
         const clarify = pendingClarifyRef.current;
@@ -322,41 +436,92 @@ export function AICommandSheet() {
     listenerRef.current = listener;
     listener.start();
   }
-  startListeningRef.current = startListening;
+
+  // Restart nasłuchu z drobnym opóźnieniem — iOS/Safari bywa wrażliwy na natychmiastowy ponowny
+  // `recognition.start()` po zakończeniu poprzedniej tury (zacięcie / „already started"). Na Chrome
+  // opóźnienie jest niewyczuwalne. UŻYWAMY tego dla programowych restartów (po mowie/pustej turze);
+  // pierwszy start i barge-in idą synchronicznie w geście użytkownika (wymóg iOS na mikrofon).
+  function scheduleListen() {
+    if (voiceStateRef.current === "off") return;
+    window.setTimeout(() => { if (voiceStateRef.current !== "off") startListening(); }, 250);
+  }
+  // Programowe restarty (onEnd mowy, pusta wypowiedź, powrót po akcji/błędzie) → z opóźnieniem.
+  startListeningRef.current = scheduleListen;
   handleSendRef.current = handleSend;
   submitClarifyRef.current = submitClarify;
+  quickConfirmPlanRef.current = quickConfirmPlan;
+  turnsRef.current = turns;
 
   // Przełącznik trybu. Włączając, zapamiętaj ostatnią turę jako „już wypowiedzianą",
   // by pętla nie odczytała jej ponownie na starcie.
   function toggleVoice() {
     if (voiceStateRef.current !== "off") { stopVoice(); return; }
     if (!voiceSupported) return;
+    // KRYTYCZNE dla iOS/Safari: „odblokuj" syntezę mowy TERAZ, w geście dotknięcia — inaczej WebKit
+    // wycisza późniejsze (programowe) wypowiedzi Asystenta. Pierwszy nasłuch też startuje w geście.
+    primeSpeech();
     spokenIdRef.current = turns.length ? turns[turns.length - 1].id : null;
     voiceStateRef.current = "listening";
     startListening();
   }
 
-  // Zamknięcie podglądu planu (anuluj) w trybie głosowym → wróć do nasłuchu.
+  // Zamknięcie podglądu planu (drawer) w trybie głosowym → wróć do nasłuchu.
   function handlePlanClose() {
     setPlanTurnId(null);
-    if (voiceStateRef.current === "review") startListeningRef.current();
+    if (voiceStateRef.current !== "off") startListeningRef.current();
   }
 
-  // Sterownik pętli: po odpowiedzi agenta wypowiedz ją i wróć do nasłuchu (lub otwórz podgląd planu).
+  // Wypowiedz krótki komunikat, po czym (jeśli tryb wciąż on) wróć do nasłuchu.
+  function voiceAnnounce(text: string) {
+    if (voiceStateRef.current === "off") return;
+    voiceStateRef.current = "speaking";
+    setVoiceState("speaking");
+    speak(speechTextFromMarkdown(text), "pl", {
+      // Wróć do nasłuchu TYLKO gdy nadal „mówię" — jeśli użytkownik przerwał (barge-in „Przerwij"),
+      // nasłuch już wystartował synchronicznie i nie chcemy go ubić opóźnionym restartem.
+      onEnd: () => { if (voiceStateRef.current === "speaking") startListeningRef.current(); },
+    });
+  }
+
+  // Szybkie „Zatwierdź": wykonaj akcje NIE-niszczące karty (destructive opt-in zostaje — wymaga
+  // świadomego zaznaczenia w ActionDrawer). Wspólne dla dotyku i komendy głosowej.
+  function quickConfirmPlan(turn: Extract<Turn, { kind: "plan" }>) {
+    if (turn.done || turn.dismissed) return;
+    pendingPlanIdRef.current = null;
+    const safe = turn.actions.filter((a) => !isDestructiveAction(a));
+    if (!safe.length) {
+      // Sama akcja niszcząca — nie wykonujemy „samo"; poproś o świadome potwierdzenie na karcie.
+      if (voiceStateRef.current !== "off") voiceAnnounce("Te akcje są nieodwracalne — potwierdź je na karcie.");
+      return;
+    }
+    if (voiceStateRef.current !== "off") { voiceStateRef.current = "thinking"; setVoiceState("thinking"); }
+    void handleExecute(turn, safe);
+  }
+
+  // Odrzucenie karty planu (bez wykonywania).
+  function dismissPlanTurn(id: string) {
+    setTurns((t) => t.map((x) => (x.id === id && x.kind === "plan" ? { ...x, dismissed: true } : x)));
+  }
+
+  // Sterownik pętli: po odpowiedzi agenta wypowiedz ją i wróć do nasłuchu. Plan NIE pauzuje pętli —
+  // karta zostaje w wątku, Asystent zapowiada ją głosem i słucha dalej (potwierdzenie/korekta głosem).
   useEffect(() => {
     if (voiceState === "off" || busy) return;
     const last = turns[turns.length - 1];
-    // Brak (jeszcze) odpowiedzi asystenta — nie ruszaj pętli (np. luka async przy tworzeniu
-    // rozmowy). Powrót po błędzie/anulowaniu obsługują osobne efekty niżej.
+    // Brak (jeszcze) odpowiedzi asystenta — nie ruszaj pętli (np. luka async przy tworzeniu rozmowy).
     if (!last || last.role !== "assistant") return;
     if (spokenIdRef.current === last.id) return;
-    if (last.kind === "results") { spokenIdRef.current = last.id; return; } // powrót obsłużony w execute/close
+    if (last.kind === "results") { spokenIdRef.current = last.id; return; } // powrót po execute obsłużony osobno
     if (last.kind === "plan") {
       spokenIdRef.current = last.id;
-      voiceStateRef.current = "review";
-      setVoiceState("review");
-      setPlanTurnId(last.id);
-      setPlanVersion((v) => v + 1);
+      // Korekta głosem tworzy nową kartę — poprzednią, niepotwierdzoną, uznaj za zastąpioną,
+      // by w wątku nie zostały dwie „żywe" karty do potwierdzenia.
+      const prevId = pendingPlanIdRef.current;
+      if (prevId && prevId !== last.id) dismissPlanTurn(prevId);
+      pendingPlanIdRef.current = last.id;
+      const n = last.actions.length;
+      // Krótko — bez recytowania obsługi karty (przyciski/instrukcje są widoczne w czacie).
+      voiceAnnounce(`Przygotowałem ${n} ${n === 1 ? "akcję" : "akcji"}.`);
       return;
     }
     spokenIdRef.current = last.id;
@@ -368,8 +533,9 @@ export function AICommandSheet() {
     speak(text, "pl", {
       onEnd: () => {
         if (voiceStateRef.current === "off") return;
-        if (clarifyTurn) pendingClarifyRef.current = clarifyTurn;
-        startListeningRef.current();
+        if (clarifyTurn) pendingClarifyRef.current = clarifyTurn; // kontekst clarify zachowaj także po barge-in
+        // Wróć do nasłuchu TYLKO gdy nadal „mówię" — po barge-in nasłuch już wystartował synchronicznie.
+        if (voiceStateRef.current === "speaking") startListeningRef.current();
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -422,6 +588,23 @@ export function AICommandSheet() {
       if (raw) setPrefs(raw);
     } catch { /* ignore */ }
   }, []);
+
+  // Wczytaj listę głosów lektora + zapamiętany wybór; subskrybuj „voiceschanged" (async na iOS/Safari).
+  useEffect(() => {
+    if (!ttsSupported()) return;
+    const refresh = () => setVoices(getAvailableVoices());
+    refresh();
+    setVoiceURIState(getPreferredVoiceURI() ?? "");
+    return onVoicesChanged(refresh);
+  }, []);
+
+  // Auto-rozrost pola composera — rośnie z treścią do maksimum, potem przewija (jak w ChatGPT).
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+  }, [inputText]);
 
   // Globalny skrót Ctrl/Cmd+J — otwórz asystenta (działa też gdy jest zamknięty).
   useEffect(() => {
@@ -499,6 +682,28 @@ export function AICommandSheet() {
     setShowHistory(false);
   }
 
+  // Zgłoszenie problemu z czatem (admin): składa raport (opis + zrzut rozmowy + logi + błąd) i tworzy
+  // z niego zadanie w projekcie „Omnia" — jak główne zgłaszanie błędów, ale bezpośrednio (nie przez agenta).
+  const canReport = turns.length > 0 || !!error || reportDesc.trim().length > 0;
+  async function submitProblemReport() {
+    if (!canReport || reportBusy) return;
+    setReportBusy(true);
+    try {
+      const description = buildChatProblemReport({ turns, error, description: reportDesc, route: pathname, conversationId });
+      const stamp = new Date().toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+      const firstLine = reportDesc.trim().split("\n")[0]?.slice(0, 80);
+      const title = `🐛 Problem w czacie asystenta AI — ${stamp}${firstLine ? ` — ${firstLine}` : ""}`;
+      const project = await ensureOmniaProject();
+      await createTask({ title, projectId: project.id, description });
+      setReportDone({ projectId: project.id });
+      setReportDesc("");
+    } catch {
+      setError("Nie udało się utworzyć zgłoszenia.");
+    } finally {
+      setReportBusy(false);
+    }
+  }
+
   function goTo(url: string) {
     handleClose();
     router.push(url);
@@ -527,7 +732,12 @@ export function AICommandSheet() {
       else if (t.kind === "answer") out.push({ role: "assistant", content: t.content });
       else if (t.kind === "report") out.push({ role: "assistant", content: `(raport: ${t.title})` });
       else if (t.kind === "navigate") out.push({ role: "assistant", content: `(propozycja przejścia: ${t.label})` });
-      else if (t.kind === "plan") out.push({ role: "assistant", content: `(zaproponowano ${t.actions.length} akcji)` });
+      else if (t.kind === "plan") {
+        // Niesiemy treść proponowanych akcji, aby korekta głosem/tekstem („nie, do listy Apteka")
+        // była dla agenta zrozumiała.
+        const list = t.actions.slice(0, 8).map((a) => a.description).join("; ");
+        out.push({ role: "assistant", content: `(zaproponowane akcje: ${list}${t.actions.length > 8 ? "; …" : ""})` });
+      }
       else if (t.kind === "clarify") out.push({ role: "assistant", content: `(pytanie: ${t.content})` });
     }
     return out;
@@ -766,7 +976,7 @@ export function AICommandSheet() {
         "[ZGŁOSZENIE ADMINA — TRYB WSKAZYWANIA]\n" +
         'Utwórz dokładnie JEDNO zadanie w projekcie „Omnia" (module: tasks, type: create_task, params.projectName="Omnia").\n' +
         "- params.title: wygeneruj zwięzły, konkretny tytuł po polsku podsumowujący zgłoszenie (max ~80 znaków).\n" +
-        "- params.description: pełny opis admina ORAZ poniższy kontekst wskazanego miejsca.\n" +
+        "- params.description: NAJPIERW oryginalny opis admina wstawiony DOKŁADNIE, słowo w słowo (VERBATIM) — NIE przeredagowuj go, NIE poprawiaj gramatyki/interpunkcji, NIE streszczaj; zachowaj oryginalne słowa i ton. NASTĘPNIE dołącz poniższy kontekst wskazanego miejsca (UI).\n" +
         "Nie dopytuj i nie odpowiadaj tekstem — od razu zaproponuj plan z tym jednym zadaniem.\n\n" +
         `Opis zgłoszony przez admina:\n${text}\n\nKontekst wskazanego miejsca (UI):\n${feedbackContext}`;
       await callAgent({
@@ -852,8 +1062,8 @@ export function AICommandSheet() {
       void persist("assistant", "Wykonano akcje", "results", { results });
       setPlanTurnId(null);
       router.refresh();
-      // Tryb głosowy: po zatwierdzeniu planu wróć do nasłuchu.
-      if (voiceStateRef.current === "review") startListeningRef.current();
+      // Tryb głosowy: po wykonaniu akcji wróć do nasłuchu.
+      if (voiceStateRef.current !== "off") startListeningRef.current();
     } catch {
       setError("Nie udało się wykonać akcji");
     } finally {
@@ -968,7 +1178,9 @@ export function AICommandSheet() {
           title="Asystent AI"
           aria-label="Otwórz asystenta AI"
           className="fixed right-5 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
-          style={{ zIndex: 41, width: 52, height: 52, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
+          // Nad pełnoekranowym panelem roboczym (mobilny podgląd zadania, z-50) FAB musi
+          // stać wyżej niż panel, ale niżej niż toasty (z-60). Poza panelem zostaje na 41.
+          style={{ zIndex: panelOpen ? 55 : 41, width: 52, height: 52, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
         >
           <Sparkles size={22} />
         </button>
@@ -1001,14 +1213,60 @@ export function AICommandSheet() {
                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Asystent AI</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <button onClick={() => setShowPrefs((v) => !v)} title="Stałe preferencje" aria-label="Stałe preferencje" style={{ ...iconBtn, color: showPrefs || prefs.trim() ? "var(--accent-blue)" : undefined }}><Settings size={16} /></button>
                 <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
+                {isAdmin && (
+                  <button onClick={() => { setShowReport((v) => !v); setReportDone(null); }} title="Zgłoś problem z czatem" aria-label="Zgłoś problem z czatem" aria-expanded={showReport} style={{ ...iconBtn, color: showReport ? "var(--accent-purple)" : "var(--text-muted)" }}><Bug size={16} /></button>
+                )}
                 <button onClick={openHistory} title="Historia rozmów" aria-label="Historia rozmów" style={iconBtn}><History size={16} /></button>
                 <button onClick={handleClose} title="Zamknij" aria-label="Zamknij asystenta" style={iconBtn}><X size={16} /></button>
               </div>
             </div>
 
-            {/* Panel stałych preferencji (custom instructions) */}
+            {/* Panel zgłaszania problemu z czatem (admin-only) — tworzy zadanie w projekcie „Omnia" */}
+            {isAdmin && showReport && (
+              <div className="px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-base)" }}>
+                {reportDone ? (
+                  <div style={{ fontSize: 13, color: "var(--text-primary)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <CheckCircle size={15} style={{ color: "var(--accent-green)" }} /> Utworzono zadanie w projekcie „Omnia".
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => goTo(`/tasks/${reportDone.projectId}`)} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-blue)", cursor: "pointer" }}>Otwórz w zadaniach</button>
+                      <button onClick={() => { setShowReport(false); setReportDone(null); }} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Zamknij</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
+                      Zgłoś problem z czatem (opis opcjonalny)
+                    </label>
+                    <textarea
+                      value={reportDesc}
+                      onChange={(e) => setReportDesc(e.target.value)}
+                      rows={2}
+                      placeholder={'Np. „spodziewałem się odpowiedzi: …" (możesz zostawić puste — dołączymy sam błąd i zrzut rozmowy)'}
+                      style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none", resize: "vertical" }}
+                    />
+                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 8px" }}>
+                      Do zadania dołączymy pełny zrzut tej rozmowy i logi połączeń z backendem.
+                    </p>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <button
+                        onClick={submitProblemReport}
+                        disabled={!canReport || reportBusy}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, padding: "7px 12px", borderRadius: 8, border: "none", background: "var(--accent-purple)", color: "var(--on-accent)", cursor: !canReport || reportBusy ? "default" : "pointer", opacity: !canReport || reportBusy ? 0.6 : 1 }}
+                      >
+                        {reportBusy ? <Loader2 size={14} className="animate-spin" /> : <Bug size={14} />} Zgłoś problem
+                      </button>
+                      <button onClick={() => { setShowReport(false); setReportDesc(""); }} style={{ fontSize: 12.5, padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Anuluj</button>
+                      {!canReport && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Brak treści do zgłoszenia.</span>}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Panel ustawień asystenta (custom instructions + głos lektora) */}
             {showPrefs && (
               <div className="px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-base)" }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
@@ -1022,6 +1280,39 @@ export function AICommandSheet() {
                   style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none", resize: "vertical" }}
                 />
                 <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>Zapisywane na tym urządzeniu. Zmiany zapisują się automatycznie.</p>
+
+                {/* Wybór głosu lektora (odczyt na głos) */}
+                {ttsSupported() && (
+                  <div style={{ marginTop: 12 }}>
+                    <label htmlFor="ai-voice-select" style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
+                      Głos lektora (odczyt na głos)
+                    </label>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <select
+                        id="ai-voice-select"
+                        value={voiceURI}
+                        onChange={(e) => { setVoiceURIState(e.target.value); setPreferredVoiceURI(e.target.value || null); }}
+                        style={{ flex: 1, minWidth: 0, fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none" }}
+                      >
+                        <option value="">(domyślny przeglądarki)</option>
+                        {voices.map((v) => (
+                          <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => speak("Testowy głos asystenta.", "pl")}
+                        title="Przetestuj głos"
+                        aria-label="Przetestuj głos"
+                        style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-secondary)", cursor: "pointer" }}
+                      >
+                        <Volume2 size={14} /> Test
+                      </button>
+                    </div>
+                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>
+                      {voices.length === 0 ? "Głosy ładują się… (na iPhonie mogą pojawić się po chwili)." : "Zapisywane na tym urządzeniu."}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1076,7 +1367,9 @@ export function AICommandSheet() {
                     isLast={i === turns.length - 1}
                     onBubbleClick={handleBubbleClick}
                     onClarifySubmit={submitClarify}
-                    onOpenPlan={(t) => { setPlanTurnId(t.id); setPlanVersion((v) => v + 1); }}
+                    onOpenPlan={(t) => { pendingPlanIdRef.current = null; setPlanTurnId(t.id); setPlanVersion((v) => v + 1); }}
+                    onQuickConfirm={(t) => quickConfirmPlan(t)}
+                    onQuickDismiss={(t) => { if (pendingPlanIdRef.current === t.id) pendingPlanIdRef.current = null; dismissPlanTurn(t.id); }}
                     onNavigate={goTo}
                     onSaveReport={saveReport}
                     onRegenerate={lastPayloadRef.current ? regenerate : undefined}
@@ -1128,16 +1421,18 @@ export function AICommandSheet() {
             {/* Composer */}
             {!showHistory && (
               <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
-                {/* Pasek stanu rozmowy głosowej (słucham / myślę / mówię / do zatwierdzenia) */}
+                {/* Pasek stanu rozmowy głosowej — nie-zasłaniający (nad composerem, wątek/karty widoczne) */}
                 {voiceState !== "off" && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-                    <span aria-live="polite" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, minWidth: 0, color: voiceState === "listening" ? "var(--accent-blue)" : voiceState === "speaking" ? "var(--accent-green)" : voiceState === "review" ? "var(--accent-amber)" : "var(--text-secondary)" }}>
-                      {voiceState === "listening" && <Mic size={13} style={{ flexShrink: 0 }} />}
-                      {voiceState === "thinking" && <Loader2 size={13} className="animate-spin" style={{ flexShrink: 0 }} />}
-                      {voiceState === "speaking" && <Volume2 size={13} style={{ flexShrink: 0 }} />}
-                      {voiceState === "review" && <ListChecks size={13} style={{ flexShrink: 0 }} />}
-                      <span style={{ whiteSpace: "nowrap" }}>
-                        {voiceState === "listening" ? "Słucham…" : voiceState === "thinking" ? "Myślę…" : voiceState === "speaking" ? "Mówię…" : "Do zatwierdzenia"}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 10px", borderRadius: 10, border: `1px solid ${voiceState === "speaking" ? "var(--accent-green)" : "var(--accent-blue)"}`, background: "var(--bg-elevated)" }}>
+                    <span aria-live="polite" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, minWidth: 0, color: voiceState === "speaking" ? "var(--accent-green)" : voiceState === "thinking" ? "var(--text-secondary)" : "var(--accent-blue)" }}>
+                      {/* Subtelny, pulsujący wskaźnik trybu głosowego (bez bibliotek) */}
+                      {voiceState === "thinking" ? (
+                        <Loader2 size={13} className="animate-spin" style={{ flexShrink: 0 }} />
+                      ) : (
+                        <span className="animate-pulse" style={{ flexShrink: 0, width: 9, height: 9, borderRadius: "50%", background: voiceState === "speaking" ? "var(--accent-green)" : "var(--accent-blue)" }} />
+                      )}
+                      <span style={{ whiteSpace: "nowrap", fontWeight: 500 }}>
+                        {voiceState === "listening" ? "Słucham…" : voiceState === "thinking" ? "Myślę…" : "Mówię…"}
                       </span>
                       {voiceState === "listening" && interimText && (
                         <span style={{ color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>„{interimText}”</span>
@@ -1166,47 +1461,88 @@ export function AICommandSheet() {
                   </div>
                 )}
                 <input ref={fileRef} type="file" accept="image/*" onChange={onPickImage} style={{ display: "none" }} />
-                <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-                  {voiceSupported && (
+                {/* Composer „pigułka" (styl ChatGPT): [+] · [pole flex-1] · [mikrofon dyktowania] · [kółko rozmowy głosowej / wyślij] */}
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 2, padding: "4px 6px", border: "1px solid var(--border)", background: "var(--bg-elevated)", borderRadius: 26 }}>
+                  {/* „+" — drugorzędne akcje (zdjęcie, ustawienia) */}
+                  <div style={{ position: "relative", flexShrink: 0 }}>
                     <button
-                      onClick={toggleVoice}
-                      disabled={busy && voiceState === "off"}
-                      title={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa (mów zamiast pisać)"}
-                      aria-label={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa"}
-                      style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: `1px solid ${voiceState !== "off" ? "var(--accent-blue)" : "var(--border)"}`, background: voiceState !== "off" ? "var(--accent-blue)" : "transparent", color: voiceState !== "off" ? "var(--on-accent)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: (busy && voiceState === "off") ? "default" : "pointer" }}
+                      onClick={() => setShowPlus((v) => !v)}
+                      disabled={busy}
+                      title="Więcej (zdjęcie, ustawienia)"
+                      aria-label="Więcej akcji"
+                      aria-expanded={showPlus}
+                      style={{ width: 38, height: 38, borderRadius: "50%", border: "none", background: showPlus ? "var(--bg-hover)" : "transparent", color: attachedImage || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: busy ? "default" : "pointer" }}
                     >
-                      {voiceState !== "off" ? <MicOff size={17} /> : <Mic size={17} />}
+                      <Plus size={22} style={{ transform: showPlus ? "rotate(45deg)" : "none", transition: "transform 0.15s" }} />
+                    </button>
+                    {showPlus && (
+                      <>
+                        <div onClick={() => setShowPlus(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
+                        <div style={{ position: "absolute", bottom: 46, left: 0, zIndex: 41, minWidth: 190, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 6, boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
+                          <button onClick={() => { setShowPlus(false); fileRef.current?.click(); }} style={{ ...rowBtn, background: "none" }}>
+                            <ImagePlus size={16} style={{ color: "var(--text-muted)" }} /> <span style={{ fontSize: 13 }}>Zdjęcie</span>
+                          </button>
+                          <button onClick={() => { setShowPlus(false); setShowPrefs((v) => !v); }} style={{ ...rowBtn, background: "none" }}>
+                            <Settings size={16} style={{ color: prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }} /> <span style={{ fontSize: 13 }}>Ustawienia asystenta</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {/* Pole tekstowe — wtopione w pigułkę, auto-rozrost */}
+                  <textarea
+                    ref={composerRef}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); dictation.stop(); handleSend(); } }}
+                    placeholder={attachedImage ? 'Opcjonalny opis, np. „do zakupów"' : placeholder}
+                    rows={1}
+                    disabled={busy}
+                    aria-label="Wiadomość do asystenta"
+                    style={{ flex: 1, minWidth: 0, resize: "none", background: "transparent", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 15, lineHeight: 1.4, padding: "9px 6px", height: 38, maxHeight: 140, overflowY: "auto", caretColor: "var(--accent-blue)" }}
+                  />
+                  {/* Mikrofon dyktowania — dopisuje mowę do pola (oddzielny od trybu rozmowy głosowej) */}
+                  {dictation.supported && !busy && (
+                    <button
+                      onClick={dictation.toggle}
+                      title={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj (mowa → tekst)"}
+                      aria-label={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj"}
+                      className={dictation.recording ? "animate-pulse" : undefined}
+                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: dictation.recording ? "var(--accent-red)" : "transparent", color: dictation.recording ? "var(--on-accent)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    >
+                      {dictation.recording ? <MicOff size={19} /> : <Mic size={19} />}
                     </button>
                   )}
-                  <button
-                    onClick={() => fileRef.current?.click()}
-                    disabled={busy}
-                    title="Dodaj zdjęcie (rozpoznanie przedmiotów)"
-                    style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "1px solid var(--border)", background: attachedImage ? "var(--bg-elevated)" : "transparent", color: attachedImage ? "var(--accent-blue)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: busy ? "default" : "pointer" }}
-                  >
-                    <ImagePlus size={17} />
-                  </button>
-                  <div style={{ flex: 1 }}>
-                    <SmartTextarea value={inputText} onChange={setInputText} placeholder={attachedImage ? 'Opcjonalny opis, np. „do zakupów"' : placeholder} rows={2} onSubmit={() => handleSend()} disabled={busy} />
-                  </div>
+                  {/* Prawy klaster: Stop (generowanie) · Wyślij (jest treść) · kółko rozmowy głosowej (puste) */}
                   {busy ? (
                     <button
                       onClick={stopGeneration}
                       title="Zatrzymaj"
-                      style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "none", background: "var(--accent-red)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                      aria-label="Zatrzymaj"
+                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-red)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     >
                       <Square size={15} />
                     </button>
-                  ) : (
+                  ) : (inputText.trim() || attachedImage) ? (
                     <button
-                      onClick={() => handleSend()}
-                      disabled={!inputText.trim() && !attachedImage}
+                      onClick={() => { dictation.stop(); handleSend(); }}
                       title="Wyślij"
-                      style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 10, border: "none", background: (!inputText.trim() && !attachedImage) ? "var(--bg-elevated)" : "var(--accent-blue)", color: (!inputText.trim() && !attachedImage) ? "var(--text-muted)" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: (!inputText.trim() && !attachedImage) ? "not-allowed" : "pointer" }}
+                      aria-label="Wyślij"
+                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     >
                       <Send size={16} />
                     </button>
-                  )}
+                  ) : voiceSupported ? (
+                    <button
+                      onClick={() => { dictation.stop(); toggleVoice(); }}
+                      title={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa (mów zamiast pisać)"}
+                      aria-label={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa"}
+                      className={voiceState !== "off" ? "animate-pulse" : undefined}
+                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    >
+                      {voiceState !== "off" ? <Square size={15} /> : <AudioLines size={18} />}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             )}
@@ -1266,7 +1602,7 @@ function SpeakButton({ speaking, onToggle }: { speaking: boolean; onToggle: () =
 }
 
 function TurnView({
-  turn, isLast, onBubbleClick, onClarifySubmit, onOpenPlan, onNavigate, onSaveReport, onRegenerate, onFollowup, onFixFailed, onUndo,
+  turn, isLast, onBubbleClick, onClarifySubmit, onOpenPlan, onQuickConfirm, onQuickDismiss, onNavigate, onSaveReport, onRegenerate, onFollowup, onFixFailed, onUndo,
   speakingId, onToggleSpeak,
 }: {
   turn: Turn;
@@ -1274,6 +1610,8 @@ function TurnView({
   onBubbleClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   onClarifySubmit: (turn: Extract<Turn, { kind: "clarify" }>, value: string) => void;
   onOpenPlan: (turn: Extract<Turn, { kind: "plan" }>) => void;
+  onQuickConfirm?: (turn: Extract<Turn, { kind: "plan" }>) => void;
+  onQuickDismiss?: (turn: Extract<Turn, { kind: "plan" }>) => void;
   onNavigate: (url: string) => void;
   onSaveReport: (turn: Extract<Turn, { kind: "report" }>) => void;
   onRegenerate?: () => void;
@@ -1381,10 +1719,24 @@ function TurnView({
         </ul>
         {turn.done ? (
           <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--accent-green)", display: "flex", alignItems: "center", gap: 6 }}><CheckCircle size={13} /> Wykonano</p>
+        ) : turn.dismissed ? (
+          <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}><XCircle size={13} /> Odrzucono</p>
         ) : (
-          <button onClick={() => onOpenPlan(turn)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-            Przejrzyj i wykonaj
-          </button>
+          <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+            {onQuickConfirm && turn.actions.some((a) => !isDestructiveAction(a)) && (
+              <button onClick={() => onQuickConfirm(turn)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                <CheckCircle size={14} /> Zatwierdź
+              </button>
+            )}
+            <button onClick={() => onOpenPlan(turn)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+              Przejrzyj / popraw
+            </button>
+            {onQuickDismiss && (
+              <button onClick={() => onQuickDismiss(turn)} title="Odrzuć akcje" aria-label="Odrzuć akcje" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: "none", background: "none", color: "var(--text-muted)", fontSize: 13, cursor: "pointer" }}>
+                <X size={14} /> Odrzuć
+              </button>
+            )}
+          </div>
         )}
         {onToggleSpeak && turn.content && (
           <div style={{ marginTop: 8 }}><SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} /></div>

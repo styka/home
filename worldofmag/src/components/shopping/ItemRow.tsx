@@ -6,7 +6,9 @@ import type { Item, ItemStatus } from "@/types";
 import { STATUS_CYCLE } from "@/types";
 import { StatusBadge } from "./StatusBadge";
 import { cn } from "@/lib/cn";
-import { updateItemStatus, updateItem, deleteItem, moveItem } from "@/actions/items";
+import { moveItem } from "@/actions/items";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { mutSetStatus, mutUpdate, mutRemove } from "@/lib/shopping/offlineMutations";
 
 interface ItemRowProps {
   item: Item;
@@ -23,6 +25,7 @@ interface ItemRowProps {
 }
 
 export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, rowRef, otherLists = [], dragHandle }: ItemRowProps) {
+  const online = useOnlineStatus();
   const [isPending, startTransition] = useTransition();
   const [localStatus, setLocalStatus] = useState<ItemStatus>(item.status as ItemStatus);
   const [editName, setEditName] = useState(item.name);
@@ -53,27 +56,28 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
       ? STATUS_CYCLE[0]
       : STATUS_CYCLE[idx + 1];
     setLocalStatus(next);
-    startTransition(() => { updateItemStatus(item.id, next); });
+    startTransition(() => { mutSetStatus(item.listId, item.id, next); });
   }
 
   function markMissing() {
     setLocalStatus("MISSING");
-    startTransition(() => { updateItemStatus(item.id, "MISSING"); });
+    startTransition(() => { mutSetStatus(item.listId, item.id, "MISSING"); });
   }
 
   function handleDelete() {
-    startTransition(() => { deleteItem(item.id); });
+    startTransition(() => { mutRemove(item.listId, item.id); });
   }
 
+  // Przeniesienie na inną listę jest międzylistowe → online-only (poza zakresem offline, spec 009).
   function handleMove(targetListId: string) {
-    if (!targetListId) return;
+    if (!targetListId || !online) return;
     startTransition(() => { moveItem(item.id, targetListId); });
   }
 
   function handleSaveEdit() {
     if (!editName.trim()) { onStopEdit(); return; }
     startTransition(() => {
-      updateItem(item.id, {
+      mutUpdate(item.listId, item.id, {
         name: editName.trim(),
         quantity: editQty ? parseFloat(editQty) : null,
         unit: editUnit.trim() || null,
@@ -268,7 +272,7 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
       {/* Action buttons — visible on focus/hover */}
       {isFocused && (
         <div className="flex items-center gap-1 ml-1">
-          {otherLists.length > 0 && (
+          {online && otherLists.length > 0 && (
             <select
               value=""
               disabled={isPending}

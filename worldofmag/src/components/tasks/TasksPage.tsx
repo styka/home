@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, Trash2, CalendarCheck } from "lucide-react";
+import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, Trash2, CalendarCheck, CheckSquare } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
@@ -12,8 +12,9 @@ import { TaskStatusConfigEditor } from "./TaskStatusConfigEditor";
 import { QuickAddTask, type QuickAddTaskHandle } from "./QuickAddTask";
 import { ProjectActionsMenu } from "./ProjectActionsMenu";
 import { TaskListClipboardButton } from "./TaskListClipboardButton";
+import { BulkActionBar, type BulkPatch } from "./BulkActionBar";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { deleteTask, toggleTaskStatus } from "@/actions/tasks";
+import { deleteTask, toggleTaskStatus, bulkUpdateTasks, bulkDeleteTasks } from "@/actions/tasks";
 import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode, ProjectStatusConfig } from "@/types";
 import { resolveStatuses, statusMetaFor, DEFAULT_STATUS_CONFIG } from "@/types";
 
@@ -66,9 +67,20 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const [layout, setLayout] = useState<"list" | "kanban" | "timeline">("list");
   const canToggleGrouping = viewMode === "upcoming" || viewMode === "overdue" || viewMode === "all" || viewMode === "multi";
   const [, startTransition] = useTransition();
+  // Bulkowa (zbiorcza) edycja — tryb zaznaczania + zaznaczone id + kotwica zakresu (Shift).
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
+  const [bulkPending, startBulkTransition] = useTransition();
+  const [bulkMessage, setBulkMessage] = useState<string | null>(null);
   const quickAddRef = useRef<QuickAddTaskHandle>(null);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const searchRef = useRef<HTMLInputElement>(null);
+  // Pasek akcji na wąskich ekranach przewija się poziomo. Bez wizualnej wskazówki użytkownik nie wie,
+  // że są kolejne ikony poza kadrem — trzymamy stan „czy można przewinąć w lewo/prawo" i pokazujemy
+  // zanikający gradient („fade") na odpowiedniej krawędzi.
+  const actionsScrollRef = useRef<HTMLDivElement>(null);
+  const [actionScroll, setActionScroll] = useState<{ left: boolean; right: boolean }>({ left: false, right: false });
   // Zadania, dla których już wysłaliśmy powiadomienie (klucz: id + termin).
   // Przeżywa re-rendery i zmiany propu `tasks`, więc nie dublujemy notyfikacji.
   const notifiedRef = useRef<Set<string>>(new Set());
@@ -98,6 +110,20 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     }
     checkDueNotifications(tasks);
   }, [tasks]);
+
+  // Przelicz wskazówkę przewijania paska akcji na mount, przy resize i gdy zmienia się zestaw
+  // widocznych ikon (widok/układ/uprawnienia zmieniają szerokość rzędu).
+  useEffect(() => {
+    const el = actionsScrollRef.current;
+    if (!el) return;
+    const update = () => {
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      setActionScroll({ left: el.scrollLeft > 1, right: el.scrollLeft < maxScroll - 1 });
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [viewMode, layout, canEditStatuses, isAdmin, selectionMode]);
 
   // Preferencja grupowania przeżywa nawigację między widokami (localStorage).
   useEffect(() => {
@@ -260,6 +286,53 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     );
   }, [displayedTasks, activeFilter, selectedTagIds, statusConfig]);
 
+  // ─── Bulkowa edycja: handlery zaznaczenia ──────────────────────────────────
+  function finishSelection(msg: string | null) {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+    setLastSelectedId(null);
+    setBulkMessage(msg);
+    if (msg) setTimeout(() => setBulkMessage(null), 4000);
+  }
+  function toggleSelectOne(id: string) {
+    setSelectionMode(true);
+    setSelectedIds((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+    setLastSelectedId(id);
+  }
+  function selectRange(ids: string[]) {
+    setSelectionMode(true);
+    setSelectedIds((s) => { const n = new Set(s); ids.forEach((i) => n.add(i)); return n; });
+    setLastSelectedId(ids[ids.length - 1] ?? null);
+  }
+  function toggleSelectAllVisible() {
+    const ids = visibleTasks.map((t) => t.id);
+    const allSel = ids.length > 0 && ids.every((i) => selectedIds.has(i));
+    if (allSel) { setSelectedIds(new Set()); setLastSelectedId(null); }
+    else { setSelectionMode(true); setSelectedIds(new Set(ids)); }
+  }
+  function applyBulk(patch: BulkPatch) {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    startBulkTransition(async () => {
+      const res = await bulkUpdateTasks(ids, patch);
+      finishSelection(res.skipped > 0 ? `Zmieniono ${res.updated} z ${ids.length} (pominięto ${res.skipped})` : `Zmieniono ${res.updated}`);
+    });
+  }
+  function deleteBulk() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!confirm(`Usunąć ${ids.length} zaznaczonych zadań? Trafią do Kosza.`)) return;
+    startBulkTransition(async () => {
+      const res = await bulkDeleteTasks(ids);
+      finishSelection(res.skipped > 0 ? `Usunięto ${res.deleted} z ${ids.length} (pominięto ${res.skipped})` : `Usunięto ${res.deleted}`);
+    });
+  }
+
+  // Zaznaczanie działa tylko w widoku listy — przy zmianie układu wyczyść stan.
+  useEffect(() => {
+    if (layout !== "list") { setSelectionMode(false); setSelectedIds(new Set()); setLastSelectedId(null); }
+  }, [layout]);
+
   // Kanban: kolumny = wszystkie włączone statusy (także terminalne, by kolumna „Zrobione” się
   // wypełniała) — nie zawężamy po zakładce statusu (w Kanbanie ukryta), filtrujemy tylko po tagach
   // (wyszukiwanie już zawarte w `displayedTasks`). Wcześniej Kanban dostawał surowe `displayedTasks`,
@@ -327,13 +400,14 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
       onFilterTab: (index: number) => setActiveFilter(statusFilters[index] ?? "ALL"),
       onCommandPalette: () => {},
       onEscape: () => {
+        if (selectionMode || selectedIds.size > 0) { finishSelection(null); return; }
         if (aiSearchResults) { setAiSearchResults(null); setSearchQuery(""); return; }
         if (isSearchOpen) { setSearchQuery(""); setIsSearchOpen(false); return; }
         if (openTaskId) { setOpenTaskId(null); return; }
         setFocusedTaskId(null);
       },
     }),
-    [focusedTaskId, filteredForNav, openTaskId, isSearchOpen, aiSearchResults, statusFilters]
+    [focusedTaskId, filteredForNav, openTaskId, isSearchOpen, aiSearchResults, statusFilters, selectionMode, selectedIds]
   );
 
   useKeyboardShortcuts(handlers);
@@ -409,16 +483,36 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             liczy się jako auto), więc akcje z rozwijanym menu (ProjectActionsMenu) trzymamy POZA
             strefą scrolla — przypięte po prawej, zawsze widoczne i nieobcięte. */}
         <div className="flex items-center gap-2 min-w-0">
-          <div className="flex items-center gap-2 min-w-0 overflow-x-auto [&>*]:flex-shrink-0">
+          <div className="relative flex items-center min-w-0">
+          <div
+            ref={actionsScrollRef}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              const maxScroll = el.scrollWidth - el.clientWidth;
+              setActionScroll({ left: el.scrollLeft > 1, right: el.scrollLeft < maxScroll - 1 });
+            }}
+            className="flex items-center gap-2 min-w-0 overflow-x-auto [&>*]:flex-shrink-0"
+            role="toolbar"
+            aria-label="Pasek akcji listy — przewiń w poziomie, by zobaczyć więcej"
+          >
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {counts.ALL > 0 && `${counts.ALL} aktywne`}
           </span>
 
+          {/* Widoczność ikon paska (spójna, per kontekst):
+              • Kosz / Sortuj-zrobione / Szukaj / Powiadomienia — ZAWSZE
+              • Grupowanie (ListTree/Flag) — tylko widoki zbiorcze (canToggleGrouping: upcoming/overdue/all/multi)
+              • Konfiguracja statusów (SlidersHorizontal) — tylko właściciel listy (canEditStatuses)
+              • Zaznacz wiele (CheckSquare) — tylko układ Lista (layout==="list")
+              • Przełącznik układu Lista/Kanban/Timeline — ZAWSZE
+              • Clipboard dla Claude — tylko admin (isAdmin)
+              Wszystkie ikony size={15}; każda ma title + aria-label. */}
           <Link
             href="/trash"
             className="flex items-center justify-center p-1.5 rounded"
             style={{ color: "var(--text-muted)" }}
             title="Kosz (usunięte do przywrócenia)"
+            aria-label="Kosz — usunięte zadania do przywrócenia"
           >
             <Trash2 size={15} />
           </Link>
@@ -437,6 +531,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
                   backgroundColor: groupBy === "default" ? "var(--bg-hover)" : "transparent",
                 }}
                 title="Grupuj jak w widoku (dni / projekty)"
+                aria-label="Grupuj jak w widoku (dni / projekty)"
               >
                 <ListTree size={15} />
               </button>
@@ -448,6 +543,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
                   backgroundColor: groupBy === "priority" ? "var(--bg-hover)" : "transparent",
                 }}
                 title="Grupuj po priorytetach (jak w „Dziś”)"
+                aria-label="Grupuj po priorytetach"
               >
                 <Flag size={15} />
               </button>
@@ -460,6 +556,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             className="p-1.5 rounded focus:outline-none"
             style={{ color: sortBy === "completedAt" ? "var(--accent-blue)" : "var(--text-muted)" }}
             title={sortBy === "completedAt" ? "Zrobione: sortowane po dacie wykonania (kliknij, by wyłączyć)" : "Sortuj zrobione po dacie wykonania"}
+            aria-label="Sortuj zrobione po dacie wykonania"
           >
             <CalendarCheck size={15} />
           </button>
@@ -469,6 +566,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             className="p-1.5 rounded focus:outline-none"
             style={{ color: isSearchOpen ? "var(--accent-blue)" : "var(--text-muted)" }}
             title="Szukaj (/ lub f)"
+            aria-label="Szukaj zadań"
           >
             <Search size={15} />
           </button>
@@ -478,6 +576,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             className="p-1.5 rounded focus:outline-none"
             style={{ color: notificationsEnabled ? "var(--accent-amber)" : "var(--text-muted)" }}
             title={notificationsEnabled ? "Powiadomienia włączone" : "Włącz powiadomienia"}
+            aria-label={notificationsEnabled ? "Powiadomienia włączone" : "Włącz powiadomienia"}
           >
             {notificationsEnabled ? <Bell size={15} /> : <BellOff size={15} />}
           </button>
@@ -488,8 +587,22 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               className="p-1.5 rounded focus:outline-none"
               style={{ color: "var(--text-muted)" }}
               title="Statusy listy (konfiguracja)"
+              aria-label="Konfiguracja statusów listy"
             >
               <SlidersHorizontal size={15} />
+            </button>
+          )}
+
+          {/* Bulkowa edycja: wejście w tryb zaznaczania (tylko widok listy) */}
+          {layout === "list" && (
+            <button
+              onClick={() => { if (selectionMode || selectedIds.size > 0) finishSelection(null); else setSelectionMode(true); }}
+              className="p-1.5 rounded focus:outline-none"
+              style={{ color: selectionMode ? "var(--accent-blue)" : "var(--text-muted)" }}
+              title="Zaznacz wiele (edycja zbiorcza)"
+              aria-label="Zaznacz wiele zadań"
+            >
+              <CheckSquare size={15} />
             </button>
           )}
 
@@ -515,6 +628,24 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
 
           {/* Admin: skopiuj prompt dla Claude Code z zadaniami widocznymi w tej zakładce */}
           {isAdmin && <TaskListClipboardButton tasks={visibleTasks} />}
+          </div>
+          {/* Zanikające „fade" na krawędziach — sygnał, że pasek da się przewinąć. Dekoracyjne
+              (aria-hidden) i nie przechwytują kliknięć (pointer-events:none), więc skrajna ikona
+              pozostaje w pełni klikalna. Kolor = tło nagłówka (var(--bg-surface)), spójny ze skórką. */}
+          {actionScroll.left && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute left-0 top-0 bottom-0 w-6"
+              style={{ background: "linear-gradient(to right, var(--bg-surface), transparent)" }}
+            />
+          )}
+          {actionScroll.right && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute right-0 top-0 bottom-0 w-6"
+              style={{ background: "linear-gradient(to left, var(--bg-surface), transparent)" }}
+            />
+          )}
           </div>
 
           {/* Akcje projektu (zmień nazwę / usuń) — POZA strefą scrolla, żeby rozwijane menu
@@ -661,6 +792,11 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             onFocus={setFocusedTaskId}
             onOpen={(id) => setOpenTaskId(id)}
             rowRefs={rowRefs}
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            lastSelectedId={lastSelectedId}
+            onToggleOne={toggleSelectOne}
+            onSelectRange={selectRange}
           />
         )}
 
@@ -681,9 +817,16 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           </div>
         )}
 
-        {/* Detail panel — mobile modal (padding-top = pasek stanu/notch iPhone) */}
+        {/* Detail panel — mobile modal (padding-top = pasek stanu/notch iPhone).
+            data-omnia-overlay="panel": szczegóły zadania to ekran roboczy, nie przelotny dialog —
+            wykluczamy je z detekcji „modalu treściowego" (useOverlayState), a jednocześnie
+            sygnalizujemy „panel roboczy", by pływające przyciski (asystent AI, „zgłoś błąd")
+            zostały WYNIESIONE NAD ten panel (podbity z-index), zamiast zniknąć pod nim.
+            WAŻNE: ten div (mimo md:hidden) jest w DOM także na desktopie — na komputerze panelu
+            nie widać, a przyciski i tak działają, więc podniesiony z-index jest nieszkodliwy. */}
         {openTask && (
           <div
+            data-omnia-overlay="panel"
             className="md:hidden fixed inset-0 z-50 flex flex-col"
             style={{ backgroundColor: "var(--bg-surface)", paddingTop: "env(safe-area-inset-top)" }}
           >
@@ -698,6 +841,33 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           </div>
         )}
       </div>
+
+      {/* Pasek akcji zbiorczych — widoczny gdy coś zaznaczono (tylko widok listy) */}
+      {layout === "list" && selectedIds.size > 0 && (
+        <BulkActionBar
+          count={selectedIds.size}
+          totalVisible={visibleTasks.length}
+          allSelected={visibleTasks.length > 0 && visibleTasks.every((t) => selectedIds.has(t.id))}
+          pending={bulkPending}
+          statusConfig={statusConfig}
+          allProjects={allProjects}
+          allTags={allTags}
+          onSelectAll={toggleSelectAllVisible}
+          onClear={() => finishSelection(null)}
+          onApply={applyBulk}
+          onDelete={deleteBulk}
+        />
+      )}
+
+      {/* Krótki komunikat wyniku operacji zbiorczej */}
+      {bulkMessage && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-lg text-sm shadow-lg pointer-events-none"
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)", backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+        >
+          {bulkMessage}
+        </div>
+      )}
 
     </div>
   );

@@ -255,7 +255,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         </nav>
       )}
 
-      <AICommandSheet />
+      <AICommandSheet isAdmin={isAdmin} />
       <ConsentBanner />
       {isAdmin && <FeedbackInspector />}
     </div>

@@ -176,8 +176,9 @@ export function NewsPage({
             onRefreshList={() => router.refresh()}
           />
 
-          {/* Treść tematu */}
-          <div>
+          {/* Treść tematu — min-w-0: track 1fr ma domyślnie min-width:auto, więc bez tego
+              szeroki obraz lub długi link rozpychałby całą stronę w poziomie. */}
+          <div className="min-w-0">
             {!selectedTopic ? (
               <div className="rounded-lg border border-dashed border-[var(--border)] p-8 text-center text-[var(--text-muted)]">
                 Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.
@@ -330,7 +331,7 @@ function TopicList({
               selectedId === t.id ? "bg-[var(--bg-elevated)]" : "hover:bg-[var(--bg-hover)]"
             )}
           >
-            <button onClick={() => onSelect(t.id)} className="flex-1 text-left">
+            <button onClick={() => onSelect(t.id)} className="flex-1 text-left py-1">
               <div className="truncate text-sm text-[var(--text-primary)]">{t.title}</div>
             </button>
             {t.pendingCount > 0 && (
@@ -338,19 +339,23 @@ function TopicList({
                 {t.pendingCount}
               </span>
             )}
+            {/* Na dotyku (brak hover) akcje są zawsze widoczne i większe (cel dotyku, C-31);
+                na desktopie (md+) chowają się i pokazują na hover jak dotąd. */}
             <button
               onClick={() => setEditing(t)}
-              className="hidden text-[var(--text-muted)] hover:text-[var(--text-primary)] group-hover:block"
+              className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] md:hidden md:group-hover:block"
               title="Edytuj"
+              aria-label={`Edytuj temat: ${t.title}`}
             >
-              <Pencil size={13} />
+              <Pencil size={16} />
             </button>
             <button
               onClick={() => remove(t)}
-              className="hidden text-[var(--text-muted)] hover:text-[var(--accent-red)] group-hover:block"
+              className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent-red)] md:hidden md:group-hover:block"
               title="Usuń"
+              aria-label={`Usuń temat: ${t.title}`}
             >
-              <Trash2 size={13} />
+              <Trash2 size={16} />
             </button>
           </div>
         ))}

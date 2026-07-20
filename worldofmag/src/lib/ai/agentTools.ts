@@ -1,6 +1,28 @@
 import { prisma } from "@/lib/prisma";
 import { getUserTeamIds } from "@/lib/server-utils";
 import { getCalendarEvents } from "@/actions/calendar";
+import { getBudgetsWithSpending, getFinanceGoals } from "@/actions/portfelBudgets";
+import { getTrash } from "@/actions/trash";
+import { getTaskTags } from "@/actions/taskTags";
+import { getTags } from "@/actions/tags";
+import { getRecipe } from "@/actions/recipes";
+import { getCareAgenda, getCareHistory, getPetWelfare } from "@/actions/petCare";
+import { getEnclosures } from "@/actions/petHusbandry";
+import { getMaintenanceOverview } from "@/actions/warsztat";
+import { getHotTopics, getSources, getTopics, getTopicView } from "@/actions/news";
+import { getLocations, getWeather } from "@/actions/weather";
+import { getSuppliers, getLowStock, getExpiringStorage, getStorageAnalytics } from "@/actions/storage";
+import { getProjectGroups } from "@/actions/projectGroups";
+import { getNoteGroups } from "@/actions/noteGroups";
+import { getCookbooks } from "@/actions/cookbooks";
+import { getWalletOverview } from "@/actions/portfel";
+import { getExpiringSoon, getAutoReplenishCandidates } from "@/actions/pantry";
+import { getTestTrends } from "@/actions/health";
+import { getDueCards, getStudyStreak } from "@/actions/languageDecks";
+import { getMealPlanCost, getTodaysMeals } from "@/actions/mealPlans";
+import { getMonthlyReport } from "@/actions/portfelReports";
+import { searchReports } from "@/actions/reports";
+import { getWatchers } from "@/actions/weather";
 import { describeFrequency } from "@/lib/medicationSchedule";
 import type { MedicationSchedule } from "@/types";
 
@@ -26,7 +48,7 @@ function asStr(v: unknown): string | undefined {
 export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). Wywołaj je, gdy potrzebujesz danych użytkownika, zanim odpowiesz lub zaproponujesz akcje. Każdy wiersz zawiera "id" — użyj go w parametrach akcji (taskId/itemId/noteId/listId/projectId/petId), aby celować w konkretne rekordy (akcje zbiorcze = wiele akcji, każda z własnym id).
 
 - list_projects: args {} → [{ id, name, isInbox, taskCount }]
-- list_tasks: args { projectId?, status?, priority?, search?, dueBefore?, limit? } → [{ id, title, status, priority, dueDate, projectId, projectName }]. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO.
+- list_tasks: args { projectId?, status?, priority?, search?, tag?, dueBefore?, limit? } → [{ id, title, status, priority, dueDate, projectId, projectName, tags }]. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO. tag = nazwa etykiety (bez rozróżniania wielkości liter) — użyj go, gdy użytkownik pyta „zadania otagowane/z tagiem X". "tags" w wyniku to lista nazw etykiet danego zadania.
 - list_shopping_lists: args { includeArchived? } → [{ id, name, pendingCount, totalCount, archived }]
 - list_items: args { listId?, listName?, status?, search?, limit? } → [{ id, name, status, quantity, unit, listId, listName }]
 - list_notes: args { search?, limit? } → [{ id, title, snippet, updatedAt }]. Lista (snippet skrócony). Do PEŁNEJ treści użyj get_note.
@@ -46,6 +68,40 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_decks: args {} → [{ id, name, nativeLang, targetLang }]. Talie fiszek (nauka języków).
 - list_news_topics: args {} → [{ id, title }]. Monitorowane tematy wiadomości.
 - list_weather_locations: args {} → [{ id, label, isDefault }]. Lokalizacje pogodowe.
+- list_contacts: args { search?, limit? } → [{ id, name, phone, email, company, tags }]. Kontakty (osobisty CRM). search filtruje po imieniu/telefonie/mailu/firmie/tagach.
+- get_weather: args { locationName? } → { location, current:{ temp, apparent, windKph }, daily:[{ date, tMax, tMin, precipProbMax, windMaxKph, code }] }. Prognoza pogody dla domyślnej (lub wskazanej nazwą) lokalizacji użytkownika. Kod pogody wg WMO. Użyj do pytań „jaka pogoda / czy będzie padać / jak się ubrać".
+- list_budgets: args {} → { periodLabel, budgets:[{ id, category, limitAmount, spent, currency }] }. Budżety miesięczne z wydatkowaniem.
+- list_goals: args {} → [{ id, name, targetAmount, currentAmount, currency, deadline }]. Cele oszczędnościowe.
+- list_task_tags: args {} → [{ id, name }]. Dostępne etykiety zadań (użyj, by podać istniejące tagi lub przed set_task_tags).
+- list_note_tags: args {} → [{ id, name }]. Dostępne etykiety notatek.
+- get_recipe: args { search? | recipeId? } → { id, title, servings, ingredients:[…], steps:[…] } | null. PEŁNY przepis (składniki + kroki) — do gotowania/analizy jednego przepisu.
+- list_care_agenda: args {} → [{ petName, kind, title, dueAt, overdue }]. Zaległe i nadchodzące czynności opieki nad zwierzętami (leczenie, karmienie, zadania pielęgnacyjne, wizyty).
+- list_maintenance: args {} → { serviceDue:[…], lowStock:[…] }. Przeglądy narzędzi/maszyn i niski stan materiałów w warsztatach (tryb Pro).
+- list_hot_topics: args {} → [{ title, count }]. „Gorące" tematy z monitorowanych wiadomości (świeże, częste).
+- list_trash: args {} → { retentionDays, items:[{ id, module, label, deletedAt, daysLeft }] }. Kosz — elementy usunięte (do przywrócenia w /trash).
+- list_project_groups: args {} → [{ id, name, projectCount }]. Grupy projektów zadań (foldery/współdzielone widoki).
+- list_note_groups: args {} → [{ id, name }]. Grupy (foldery) notatek.
+- list_cookbooks: args {} → [{ id, name, recipeCount }]. Książki kucharskie.
+- get_wallet_overview: args {} → { totalNet, currency, monthlyRate, projection6m }. Podsumowanie majątku (suma netto, tempo zmian, prognoza 6 mies.).
+- list_expiring_pantry: args { days? } → [{ id, name, quantity, unit, expiresAt }]. Produkty w spiżarni z terminem ważności w najbliższych N dniach (domyślnie 7).
+- list_enclosures: args {} → [{ id, name, type, location }]. Zbiorniki/terraria/klatki (husbandry).
+- get_pet_welfare: args {} → { agenda:[…], suggestions:[…] }. Dobrostan zwierząt: zaległa opieka + sugestie.
+- list_care_history: args { petName, limit? } → [{ date, kind, note }]. Historia opieki nad wskazanym zwierzęciem (searchowane po imieniu).
+- list_news_sources: args {} → [{ id, name, leaning, enabled }]. Skonfigurowane źródła RSS wiadomości.
+- get_news_topic_view: args { topicName } → { items:[…], knowledge:[…] }. Świeże pozycje i baza wiedzy dla wskazanego monitorowanego tematu.
+- list_suppliers: args {} → [{ id, name, contact, email, phone }]. Dostawcy (magazyn Pro).
+- list_low_stock: args {} → [{ id, name, quantity, minQuantity, warehouse }]. Pozycje magazynu poniżej stanu minimalnego.
+- list_expiring_storage: args { days? } → [{ name, quantity, expiresAt, warehouse }]. Partie/pozycje magazynu z bliskim terminem (domyślnie 30 dni).
+- get_storage_analytics: args {} → { totalValue, deadStock, abc, … }. Analityka magazynu (wartość, dead-stock, ABC).
+- get_test_trends: args {} → [{ name, points:[{ date, value }] }]. Trendy wyników badań laboratoryjnych (zdrowie).
+- list_due_cards: args { deckName, limit? } → [{ id, term, translation }]. Fiszki do powtórki w danej talii.
+- get_study_streak: args {} → { streak, reviewedToday }. Passa nauki języków.
+- get_meal_plan_cost: args { days? } → { total, currency, … }. Szacowany koszt jadłospisu na N dni (domyślnie 7).
+- list_todays_meals: args {} → [{ slot, title }]. Dzisiejsze zaplanowane posiłki.
+- list_replenish_candidates: args {} → [{ id, name, quantity, unit }]. Produkty spiżarni do automatycznego uzupełnienia (poniżej progu).
+- get_monthly_report: args { monthOffset? } → { income, expense, balance, byCategory:[…] }. Miesięczny raport finansowy (0=bieżący, -1=poprzedni).
+- search_reports: args { query } → [{ slug, title, category }]. Wyszukuje raporty (markdown) po treści/tytule.
+- list_watchers: args {} → [{ id, title, query, horizon, enabled }]. Obserwatorzy pogody (alerty).
 - list_calendar: args { year?, month? } → [{ module, title, date, at, href }]. Zagregowany kalendarz (zadania + posiłki + zdrowie + przeglądy floty) dla danego miesiąca (domyślnie bieżący; month = 1-12).
 - web_search: args { query, limit? } → [{ title, url, snippet }]. Wyszukiwarka internetowa — użyj TYLKO gdy potrzebujesz informacji spoza danych użytkownika (ceny, fakty, definicje, świat zewnętrzny). W odpowiedzi cytuj źródła linkami markdown.`;
 
@@ -71,7 +127,41 @@ export const READ_TOOL_NAMES = [
   "list_decks",
   "list_news_topics",
   "list_weather_locations",
+  "list_contacts",
   "list_calendar",
+  "get_weather",
+  "list_budgets",
+  "list_goals",
+  "list_task_tags",
+  "list_note_tags",
+  "get_recipe",
+  "list_care_agenda",
+  "list_maintenance",
+  "list_hot_topics",
+  "list_trash",
+  "list_project_groups",
+  "list_note_groups",
+  "list_cookbooks",
+  "get_wallet_overview",
+  "list_expiring_pantry",
+  "list_enclosures",
+  "get_pet_welfare",
+  "list_care_history",
+  "list_news_sources",
+  "get_news_topic_view",
+  "list_suppliers",
+  "list_low_stock",
+  "list_expiring_storage",
+  "get_storage_analytics",
+  "get_test_trends",
+  "list_due_cards",
+  "get_study_streak",
+  "get_meal_plan_cost",
+  "list_todays_meals",
+  "list_replenish_candidates",
+  "get_monthly_report",
+  "search_reports",
+  "list_watchers",
 ] as const;
 
 async function accessibleProjectIds(userId: string): Promise<string[]> {
@@ -135,6 +225,7 @@ export async function runReadTool(
       const search = asStr(args.search);
       const dueBefore = asStr(args.dueBefore);
       const projectId = asStr(args.projectId);
+      const tag = asStr(args.tag);
 
       const where: Record<string, unknown> = {
         parentTaskId: null,
@@ -149,6 +240,9 @@ export async function runReadTool(
       else where.status = { notIn: ["DONE", "CANCELLED"] };
       if (priority) where.priority = priority;
       if (search) where.title = { contains: search, mode: "insensitive" };
+      // Filtr po tagu (nazwa etykiety, bez rozróżniania wielkości liter) — bez tego
+      // agent nie umiał odpowiedzieć na „pokaż zadania otagowane X" i zapętlał się.
+      if (tag) where.tags = { some: { tag: { name: { contains: tag, mode: "insensitive" } } } };
       if (dueBefore) {
         const d = new Date(dueBefore);
         if (!isNaN(d.getTime())) where.dueDate = { lte: d };
@@ -164,6 +258,7 @@ export async function runReadTool(
           dueDate: true,
           projectId: true,
           project: { select: { name: true } },
+          tags: { select: { tag: { select: { name: true } } } },
         },
         orderBy: [{ dueDate: "asc" }, { priority: "asc" }, { order: "asc" }],
         take: clampLimit(args.limit),
@@ -176,6 +271,7 @@ export async function runReadTool(
         dueDate: t.dueDate?.toISOString() ?? null,
         projectId: t.projectId,
         projectName: t.project?.name ?? null,
+        tags: t.tags.map((tt) => tt.tag.name),
       }));
     }
 
@@ -605,6 +701,41 @@ export async function runReadTool(
       return locations;
     }
 
+    case "list_contacts": {
+      const search = asStr(args.search);
+      const teamIds = await getUserTeamIds(userId);
+      const contacts = await prisma.contact.findMany({
+        where: {
+          OR: [
+            { ownerId: userId },
+            ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+          ],
+          ...(search
+            ? {
+                OR: [
+                  { name: { contains: search, mode: "insensitive" as const } },
+                  { phone: { contains: search, mode: "insensitive" as const } },
+                  { email: { contains: search, mode: "insensitive" as const } },
+                  { company: { contains: search, mode: "insensitive" as const } },
+                  { tags: { contains: search, mode: "insensitive" as const } },
+                ],
+              }
+            : {}),
+        },
+        select: { id: true, name: true, phone: true, email: true, company: true, tags: true },
+        orderBy: { name: "asc" },
+        take: clampLimit(args.limit),
+      });
+      return contacts.map((c) => ({
+        id: c.id,
+        name: c.name,
+        phone: c.phone,
+        email: c.email,
+        company: c.company,
+        tags: (() => { try { return c.tags ? JSON.parse(c.tags) : []; } catch { return []; } })(),
+      }));
+    }
+
     case "list_calendar": {
       // Reużywa agregatu kalendarza (zadania + posiłki + zdrowie + flota), scoping user/zespół wewnątrz.
       const now = new Date();
@@ -612,6 +743,240 @@ export async function runReadTool(
       const month1 = typeof args.month === "number" ? Math.max(1, Math.min(12, args.month)) : now.getMonth() + 1;
       const events = await getCalendarEvents(year, month1 - 1);
       return events.map((e) => ({ module: e.module, title: e.title, date: e.date, at: e.at, href: e.href }));
+    }
+
+    case "get_weather": {
+      const locations = await getLocations();
+      if (locations.length === 0) return { note: "Brak zapisanych lokalizacji pogodowych — dodaj miejscowość w /pogoda." };
+      const wanted = asStr(args.locationName);
+      const loc = (wanted && locations.find((l) => l.label.toLowerCase().includes(wanted.toLowerCase())))
+        || locations.find((l) => l.isDefault)
+        || locations[0];
+      const f = await getWeather(loc.lat, loc.lon);
+      return {
+        location: loc.label,
+        current: f.current ? { temp: f.current.temp, apparent: f.current.apparent, windKph: f.current.windKph, code: f.current.code } : null,
+        daily: f.daily.slice(0, 5).map((d) => ({
+          date: d.date, tMax: d.tMax, tMin: d.tMin, precipProbMax: d.precipProbMax, precipSum: d.precipSum, windMaxKph: d.windMaxKph, code: d.code,
+        })),
+      };
+    }
+
+    case "list_budgets": {
+      const { budgets, periodLabel } = await getBudgetsWithSpending();
+      return { periodLabel, budgets: budgets.map((b) => ({ id: b.id, category: b.category, limitAmount: b.limitAmount, spent: b.spent, currency: b.currency })) };
+    }
+
+    case "list_goals": {
+      const goals = await getFinanceGoals();
+      return goals.map((g) => ({
+        id: g.id, name: g.name, targetAmount: g.targetAmount, currentAmount: g.currentAmount,
+        currency: g.currency, deadline: g.deadline ? new Date(g.deadline).toISOString().slice(0, 10) : null,
+      }));
+    }
+
+    case "list_task_tags": {
+      const tags = await getTaskTags();
+      return tags.map((t) => ({ id: t.id, name: t.name }));
+    }
+
+    case "list_note_tags": {
+      const tags = await getTags();
+      return tags.map((t) => ({ id: t.id, name: t.name }));
+    }
+
+    case "get_recipe": {
+      const idOrSlug = asStr(args.recipeId);
+      const search = asStr(args.search);
+      let key = idOrSlug;
+      if (!key && search) {
+        const teamIds = await getUserTeamIds(userId);
+        const r = await prisma.recipe.findFirst({
+          where: {
+            OR: [{ ownerId: userId }, ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : [])],
+            title: { contains: search, mode: "insensitive" },
+          },
+          select: { id: true },
+          orderBy: { updatedAt: "desc" },
+        });
+        key = r?.id;
+      }
+      if (!key) return null;
+      const recipe = await getRecipe(key);
+      if (!recipe) return null;
+      return recipe;
+    }
+
+    case "list_care_agenda": {
+      return getCareAgenda();
+    }
+
+    case "list_maintenance": {
+      return getMaintenanceOverview();
+    }
+
+    case "list_hot_topics": {
+      return getHotTopics();
+    }
+
+    case "list_trash": {
+      const { items, retentionDays } = await getTrash();
+      return {
+        retentionDays,
+        items: items.slice(0, clampLimit(args.limit)).map((it) => ({
+          id: it.id, module: it.module, label: it.title, deletedAt: it.deletedAt,
+        })),
+      };
+    }
+
+    case "list_project_groups": {
+      const groups = await getProjectGroups();
+      return groups.map((g) => ({ id: g.id, name: g.name, projectCount: g.projectIds?.length ?? 0 }));
+    }
+
+    case "list_note_groups": {
+      const groups = await getNoteGroups();
+      return groups.map((g) => ({ id: g.id, name: g.name }));
+    }
+
+    case "list_cookbooks": {
+      const cookbooks = await getCookbooks();
+      return cookbooks.map((c) => ({ id: c.id, name: c.name, recipeCount: c.recipeCount }));
+    }
+
+    case "get_wallet_overview": {
+      const o = await getWalletOverview();
+      return { totalNet: o.totalNet, currency: o.currency, monthlyRate: o.monthlyRate, projection6m: o.projection6m };
+    }
+
+    case "list_expiring_pantry": {
+      const days = typeof args.days === "number" ? Math.max(1, Math.min(60, args.days)) : 7;
+      const items = await getExpiringSoon(days);
+      return items.slice(0, clampLimit(args.limit)).map((i) => ({
+        id: i.id, name: i.name, quantity: i.quantity, unit: i.unit,
+        expiresAt: i.expiresAt ? new Date(i.expiresAt).toISOString().slice(0, 10) : null,
+      }));
+    }
+
+    case "list_enclosures": {
+      const encs = await getEnclosures();
+      return encs.map((e) => ({ id: e.id, name: e.name, type: e.type, location: e.location }));
+    }
+
+    case "get_pet_welfare": {
+      return getPetWelfare();
+    }
+
+    case "get_test_trends": {
+      return getTestTrends();
+    }
+
+    case "list_due_cards": {
+      const deckName = asStr(args.deckName) ?? asStr(args.search);
+      const teamIds = await getUserTeamIds(userId);
+      const deck = await prisma.languageDeck.findFirst({
+        where: {
+          OR: [{ ownerId: userId }, ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : [])],
+          ...(deckName ? { name: { contains: deckName, mode: "insensitive" as const } } : {}),
+        },
+        select: { id: true, name: true },
+        orderBy: { updatedAt: "desc" },
+      });
+      if (!deck) return { note: "Nie znaleziono talii fiszek." };
+      const cards = await getDueCards(deck.id, clampLimit(args.limit));
+      return { deck: deck.name, cards: cards.map((c) => ({ id: c.id, term: c.term, translation: c.translation })) };
+    }
+
+    case "get_study_streak": {
+      return getStudyStreak();
+    }
+
+    case "get_meal_plan_cost": {
+      const days = typeof args.days === "number" ? Math.max(1, Math.min(30, args.days)) : 7;
+      const from = new Date(); from.setHours(0, 0, 0, 0);
+      const to = new Date(from); to.setDate(to.getDate() + days);
+      return getMealPlanCost({ from, to });
+    }
+
+    case "list_todays_meals": {
+      const meals = await getTodaysMeals();
+      return meals.map((m) => ({ slot: m.slot, title: m.customTitle ?? m.recipe?.title ?? "(posiłek)" }));
+    }
+
+    case "list_replenish_candidates": {
+      const items = await getAutoReplenishCandidates();
+      return items.slice(0, clampLimit(args.limit)).map((i) => ({ id: i.id, name: i.name, quantity: i.quantity, unit: i.unit }));
+    }
+
+    case "get_monthly_report": {
+      const offset = typeof args.monthOffset === "number" ? args.monthOffset : 0;
+      return getMonthlyReport(offset);
+    }
+
+    case "search_reports": {
+      const q = asStr(args.query) ?? asStr(args.search) ?? "";
+      const reports = await searchReports(q);
+      return reports.slice(0, clampLimit(args.limit)).map((r) => ({ slug: r.slug, title: r.title, category: r.category }));
+    }
+
+    case "list_watchers": {
+      const watchers = await getWatchers();
+      return watchers.map((w) => ({ id: w.id, title: w.title, query: w.query, horizon: w.horizon, enabled: w.enabled }));
+    }
+
+    case "list_suppliers": {
+      const suppliers = await getSuppliers();
+      return suppliers.map((s) => ({ id: s.id, name: s.name, contact: s.contact, email: s.email, phone: s.phone }));
+    }
+
+    case "list_low_stock": {
+      const items = await getLowStock();
+      return items.slice(0, clampLimit(args.limit)).map((i) => ({
+        id: i.id, name: i.name, quantity: i.quantity, minQuantity: i.minQuantity, warehouse: i.warehouse,
+      }));
+    }
+
+    case "list_expiring_storage": {
+      const days = typeof args.days === "number" ? Math.max(1, Math.min(365, args.days)) : 30;
+      return getExpiringStorage(days);
+    }
+
+    case "get_storage_analytics": {
+      return getStorageAnalytics();
+    }
+
+    case "list_news_sources": {
+      const sources = await getSources();
+      return sources.map((s) => ({ id: s.id, name: s.name, leaning: s.leaning, enabled: s.enabled }));
+    }
+
+    case "get_news_topic_view": {
+      const name = asStr(args.topicName) ?? asStr(args.search);
+      if (!name) return { note: "Podaj nazwę tematu (topicName)." };
+      const topics = await getTopics();
+      const topic = topics.find((t) => t.title.toLowerCase().includes(name.toLowerCase()));
+      if (!topic) return { note: `Nie znaleziono tematu: „${name}".` };
+      return getTopicView(topic.id);
+    }
+
+    case "list_care_history": {
+      const petName = asStr(args.petName) ?? asStr(args.search);
+      if (!petName) return { note: "Podaj imię zwierzęcia (petName)." };
+      const teamIds = await getUserTeamIds(userId);
+      const pet = await prisma.pet.findFirst({
+        where: {
+          OR: [
+            { ownerId: userId },
+            ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+            { shares: { some: { userId } } },
+          ],
+          name: { contains: petName, mode: "insensitive" },
+        },
+        select: { id: true, name: true },
+      });
+      if (!pet) return { note: `Nie znaleziono zwierzęcia: „${petName}".` };
+      const history = await getCareHistory(pet.id, clampLimit(args.limit, 50));
+      return { pet: pet.name, history };
     }
 
     default:

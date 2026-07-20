@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, getAccessibleTeamIds } from "@/lib/server-utils";
 import { bookAutoExpense } from "@/lib/portfel/autoExpense";
-import type { ShoppingList } from "@/types";
+import type { ShoppingList, ShoppingListWithItems } from "@/types";
 
 export interface ListSummary {
   id: string;
@@ -70,6 +70,33 @@ export async function getLists(): Promise<ShoppingList[]> {
     include: { ownerTeam: { select: { id: true, name: true } } },
     orderBy: { createdAt: "asc" },
   }) as unknown as Promise<ShoppingList[]>;
+}
+
+/**
+ * 009-shopping-offline-sync: wszystkie AKTYWNE listy użytkownika (user + team) wraz z pozycjami —
+ * do zbudowania lokalnego snapshotu na potrzeby pracy offline. Read-only (bez revalidatePath).
+ * Pozycje w tej samej kolejności co strona listy (ręczny order → priority → createdAt).
+ */
+export async function getActiveListsForOffline(): Promise<ShoppingListWithItems[]> {
+  const user = await requireAuth();
+  const teamIds = await getAccessibleTeamIds(user.id, "shopping");
+
+  const lists = await prisma.shoppingList.findMany({
+    where: {
+      archived: false,
+      OR: [
+        { ownerId: user.id },
+        ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+      ],
+    },
+    include: {
+      ownerTeam: { select: { id: true, name: true } },
+      items: { orderBy: [{ order: "asc" }, { priority: "desc" }, { createdAt: "asc" }] },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return lists as unknown as ShoppingListWithItems[];
 }
 
 export async function getArchivedLists(): Promise<ShoppingList[]> {

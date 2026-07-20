@@ -59,7 +59,7 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
   }
 
   return (
-    <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+    <div className="min-w-0 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-4">
       <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
         <span
           className="rounded px-1.5 py-0.5 font-medium"
@@ -76,7 +76,7 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
         rel="noopener noreferrer"
         className="mt-2 flex items-start gap-1.5 text-[var(--text-primary)] hover:text-[var(--accent-blue)]"
       >
-        <span className="font-semibold leading-snug">{item.title}</span>
+        <span className="min-w-0 [overflow-wrap:anywhere] font-semibold leading-snug">{item.title}</span>
         <ExternalLink size={14} className="mt-1 shrink-0 opacity-60" />
       </a>
 
@@ -93,12 +93,12 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
         />
       )}
 
-      <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+      <p className="mt-2 [overflow-wrap:anywhere] text-sm leading-relaxed text-[var(--text-secondary)]">{summary}</p>
 
       {item.noveltyNote && (
         <div className="mt-2 flex items-start gap-1.5 rounded-md bg-[var(--bg-elevated)] px-2.5 py-1.5 text-xs text-[var(--text-secondary)]">
           <Sparkles size={13} className="mt-0.5 shrink-0 text-[var(--accent-amber)]" />
-          <span>
+          <span className="min-w-0 [overflow-wrap:anywhere]">
             <span className="font-medium text-[var(--text-primary)]">Co nowego: </span>
             {item.noveltyNote}
           </span>
