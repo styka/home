@@ -754,9 +754,14 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           </div>
         )}
 
-        {/* Detail panel — mobile modal (padding-top = pasek stanu/notch iPhone) */}
+        {/* Detail panel — mobile modal (padding-top = pasek stanu/notch iPhone).
+            data-omnia-overlay: szczegóły zadania to ekran roboczy, nie przelotny dialog —
+            wykluczamy je z detekcji „modalu treściowego" (useOverlayState), żeby FAB asystenta
+            AI pozostał widoczny. WAŻNE: ten div (mimo md:hidden) jest w DOM także na desktopie,
+            więc bez tego atrybutu chowałby FAB również na komputerze. */}
         {openTask && (
           <div
+            data-omnia-overlay="taskdetail"
             className="md:hidden fixed inset-0 z-50 flex flex-col"
             style={{ backgroundColor: "var(--bg-surface)", paddingTop: "env(safe-area-inset-top)" }}
           >

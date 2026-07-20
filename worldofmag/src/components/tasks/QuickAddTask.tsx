@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useTransition, useImperativeHandle, forwardRef } from "react";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Calendar } from "lucide-react";
 import { createTask } from "@/actions/tasks";
 import { llm } from "@/lib/llm-client";
 import { useToast } from "@/components/ui/Toast";
@@ -129,14 +129,20 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
           />
 
           {showExtra && (
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="bg-transparent text-xs focus:outline-none border rounded px-1 py-0.5"
-              style={{ borderColor: "var(--border)", color: "var(--text-secondary)", width: 120 }}
-              title="Termin"
-            />
+            <div
+              className="flex items-center gap-1 rounded border px-2 py-1"
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elevated)" }}
+            >
+              <Calendar size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="bg-transparent text-xs focus:outline-none"
+                style={{ color: "var(--text-secondary)", width: 116 }}
+                title="Termin"
+              />
+            </div>
           )}
 
           <button
