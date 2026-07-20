@@ -39,7 +39,7 @@ Jeśli polecenie pasuje DOKŁADNIE do jednej z poniższych prostych intencji —
 
 Dostępne proste intencje (i pola params):
 - shopping / add_item — { rawText } — rawText to sama nazwa i ilość produktu ("2 kg jabłek"), bez nazwy listy. (np. "dodaj mleko do zakupów")
-- tasks / create_task — { title, description?, priority?("NONE"|"LOW"|"MEDIUM"|"HIGH"|"URGENT"), dueDate?(ISO) } — proste "dodaj zadanie X".
+- tasks / create_task — { title, description?, priority?("NONE"|"LOW"|"MEDIUM"|"HIGH"|"URGENT"), dueDate?(ISO) } — proste "dodaj zadanie X". Jeśli podajesz description, wstaw oryginalny tekst użytkownika VERBATIM (słowo w słowo) — NIE przeredagowuj, NIE poprawiaj gramatyki; title może być krótką etykietą wygenerowaną z treści.
 - notes / create_note — { title, content? } — proste "zanotuj/utwórz notatkę X".
 - portfel / add_expense — { amount(number, PLN), category?, note? } — "wydałem 20 zł na ...".
 - portfel / add_income — { amount(number, PLN), category?, note? } — "przychód 100 zł ...".

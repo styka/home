@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-20 — Asystent AI przeredagowywał opis zadania wpisany przez użytkownika
+**Problem:** Przy tworzeniu zadania z asystenta (także przy zgłoszeniach admina o bugu/zmianie aplikacji)
+opis był „lekko redagowany" — zamieniany na formę bezosobową i „poprawiany" gramatycznie. Właściciel chciał,
+by opis pozostał DOKŁADNIE taki, jak wpisał user (tytuł generowany z treści jest OK, kontekst zgłoszenia
+nadal doklejany).
+**Rozwiązanie:** Źródłem redakcji NIE był kod akcji — `executeTasksAction`/`createTask` zapisują
+`description` wiernie. Redagował LLM, bo prompt mu na to pozwalał. Poprawiono instrukcje w trzech promptach:
+`agent/route.ts` (sekcja `create_task` — „lekka redakcja" → **verbatim**; oraz reguła bulk-add), oraz
+`AICommandSheet.tsx` (prompt zgłoszenia admina — opis admina verbatim + doklejony kontekst). Dodatkowo
+`lib/ai/fastPath.ts` (skrócona ścieżka `create_task`) dostała klauzulę verbatim dla spójności.
+**Lekcja:** Gdy asystent „zmienia" treść wpisaną przez usera, szukaj przyczyny w **promptach systemowych
+LLM**, nie w kodzie Server Action (który zwykle zapisuje dane 1:1). Pamiętaj, że tworzenie zadania ma DWIE
+ścieżki generujące `description`: pełny agent (`agent/route.ts`) i deterministyczny fast-path
+(`fastPath.ts`) — instrukcję trzeba zsynchronizować w obu, inaczej zachowanie zależy od tego, którą ścieżką
+poszło polecenie.
+
 ## 2026-07-19 — Strona admina nie scrollowała się (AppShell `<main>` = overflow-hidden)
 **Problem:** `/admin/ai-coverage` nie dało się przewinąć — długa treść była ucięta. Przyczyna: w
 `AppShell` kontener `<main>` jest `flex-1 overflow-hidden flex flex-col`, więc to **strona** musi być
