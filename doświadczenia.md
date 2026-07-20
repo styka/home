@@ -4,6 +4,150 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-20 — „Brak brancha develop" — mylny wniosek z niepełnego lokalnego klonu
+**Problem:** Przy domykaniu zadania stwierdziłem, że w repo nie ma brancha `develop`, bo `git branch -a`
+pokazywał tylko `master` i branch roboczy. Na tej podstawie pominąłem przepływ przez `develop` i na „Tak"
+właściciela poszedłem od razu na `master`. `develop` jednak ISTNIEJE na origin — lokalny klon miał
+zawężony refspec (pobrane tylko `master` + branch roboczy), więc `remotes/origin/develop` nie było w
+lokalnych refach.
+**Rozwiązanie:** Odpytałem zdalne repo wprost: `git ls-remote --heads origin` — pokazało `refs/heads/develop`.
+`develop` był przodkiem `master`, więc dociągnąłem go czystym fast-forwardem (`git checkout develop &&
+git merge --ff-only master && git push origin develop`). Teraz `develop == master`.
+**Lekcja:** NIGDY nie orzekaj „brak brancha X" na podstawie `git branch -a` w klonie sesyjnym — może mieć
+niepełny refspec. Prawdę o zdalnych branchach daje `git ls-remote --heads origin` (albo `git fetch origin <branch>`).
+Sprawdź to, ZANIM zdecydujesz o pominięciu `develop` czy pushu na `master`.
+
+## 2026-07-20 — Asystent AI przeredagowywał opis zadania wpisany przez użytkownika
+**Problem:** Przy tworzeniu zadania z asystenta (także przy zgłoszeniach admina o bugu/zmianie aplikacji)
+opis był „lekko redagowany" — zamieniany na formę bezosobową i „poprawiany" gramatycznie. Właściciel chciał,
+by opis pozostał DOKŁADNIE taki, jak wpisał user (tytuł generowany z treści jest OK, kontekst zgłoszenia
+nadal doklejany).
+**Rozwiązanie:** Źródłem redakcji NIE był kod akcji — `executeTasksAction`/`createTask` zapisują
+`description` wiernie. Redagował LLM, bo prompt mu na to pozwalał. Poprawiono instrukcje w trzech promptach:
+`agent/route.ts` (sekcja `create_task` — „lekka redakcja" → **verbatim**; oraz reguła bulk-add), oraz
+`AICommandSheet.tsx` (prompt zgłoszenia admina — opis admina verbatim + doklejony kontekst). Dodatkowo
+`lib/ai/fastPath.ts` (skrócona ścieżka `create_task`) dostała klauzulę verbatim dla spójności.
+**Lekcja:** Gdy asystent „zmienia" treść wpisaną przez usera, szukaj przyczyny w **promptach systemowych
+LLM**, nie w kodzie Server Action (który zwykle zapisuje dane 1:1). Pamiętaj, że tworzenie zadania ma DWIE
+ścieżki generujące `description`: pełny agent (`agent/route.ts`) i deterministyczny fast-path
+(`fastPath.ts`) — instrukcję trzeba zsynchronizować w obu, inaczej zachowanie zależy od tego, którą ścieżką
+poszło polecenie.
+
+## 2026-07-19 — Strona admina nie scrollowała się (AppShell `<main>` = overflow-hidden)
+**Problem:** `/admin/ai-coverage` nie dało się przewinąć — długa treść była ucięta. Przyczyna: w
+`AppShell` kontener `<main>` jest `flex-1 overflow-hidden flex flex-col`, więc to **strona** musi być
+własnym kontenerem przewijania. Moja strona miała root jako zwykły wyśrodkowany `<div>` (maxWidth +
+margin auto), bez `overflow`, więc nadmiar treści był chowany bez scrolla.
+**Rozwiązanie:** Root strony owinięty w `className="flex-1 overflow-y-auto"` (tak jak istniejące
+`SystemHealthPage`/`AuditLogPage`), a wyśrodkowany `maxWidth`-owy kontener wrzucony do środka.
+**Lekcja:** W tym projekcie `<main>` w `AppShell` jest `overflow-hidden` — KAŻDA strona treściowa musi
+sama zapewnić scroll, dając swojemu korzeniowi `flex-1 overflow-y-auto`. Nie polegaj na scrollu body.
+Wzoruj się na istniejących stronach admina, zamiast wymyślać własny layout korzenia.
+
+## 2026-07-19 — Nie każdy model ma ownerId/ownerTeamId — resolver po nazwie może wysypać zapytanie
+**Problem:** Dodając akcje AI dla grup projektów i grup notatek użyłem generycznego `resolveByName`
+(zakłada `ownerId` + `ownerTeamId`). Ale `ProjectGroup` ma **tylko `ownerId`** (brak zespołu), a
+`NoteGroup` jest **globalny** (`getNoteGroups` nie filtruje po właścicielu). Zapytanie `where` z
+`ownerTeamId` na modelu bez tej kolumny wywala Prisma w runtime.
+**Rozwiązanie:** Rezolwery dopasowane do modelu: dla `ProjectGroup` filtr `{ ownerId: userId, name }`
+(bez `ownerOr`), dla `NoteGroup` filtr `{ name }` (globalny). Zawsze sprawdzaj model w `schema.prisma`
+(pola własności) ZANIM użyjesz wspólnego `resolveByName`/`ownerOr`.
+**Lekcja:** Wzorzec współwłasności `ownerId`/`ownerTeamId` NIE jest uniwersalny — część modeli jest
+user-only, część globalna. Przed dołożeniem resolvera po nazwie zajrzyj do schematu; generyczny helper
+zakładający zespół rozbije modele bez `ownerTeamId`.
+
+## 2026-07-19 — Pokrycie AI musi obejmować też ODCZYTY (nie tylko mutacje)
+**Problem:** Bramka pokrycia (poprzedni wpis) pilnowała tylko akcji ZAPISU. Ale asystent ma umieć
+pokazać wszystko, co użytkownik PRZEGLĄDA — a wiele odczytów nie było wystawionych (np. `getWeather` =
+prognoza, budżety/cele, kosz, tagi do wyliczenia, pełny przepis). Nowe możliwości pobierania danych też
+mogłyby „przeciekać" bez integracji z AI.
+**Rozwiązanie:** Rozszerzono `check-ai-coverage.js` i manifest `action-coverage.json` o ODCZYTY
+(get*/list*/search* → `kind:"read"`), z tym samym reżimem `ai|pending|excluded` i tą samą bramką
+build'u. Raport `docs/ai/pokrycie-akcji.md` rozdziela mutacje i odczyty. Dodano 10 read-tooli
+(get_weather, list_budgets, list_goals, list_task_tags, list_note_tags, get_recipe, list_care_agenda,
+list_maintenance, list_hot_topics, list_trash) i 6 mutacji (update/delete budżetu i celu, update/unlog
+leku). Uwaga techniczna: read-tool NIE może wołać funkcji robiącej wewnętrzne wywołanie LLM
+(`describeDay`) — to zagnieżdżony koszt/TPM w pętli agenta; `get_weather` zwraca surowe liczby
+(Open-Meteo), a interpretację robi sam agent. Pułapka składniowa: sekwencja `*/` w komentarzu blokowym
+JS (np. „list*/search*") przedwcześnie zamyka komentarz — pisz „list.../search...".
+**Lekcja:** „AI umie wszystko co użytkownik" = ZAPIS **i** ODCZYT. Jedna bramka pokrycia z rozróżnieniem
+rodzaju (mutation/read) trzyma oba wymiary mierzalne (liczniki) i wymusza triage każdej nowej akcji —
+także nowego `get*/list*`.
+
+## 2026-07-19 — Brak bramki pokrycia: akcje użytkownika nie były wystawiane dla AI
+**Problem:** Asystent nie potrafił wielu rzeczy, które użytkownik robi ręcznie (np. otagować zadania —
+`updateTaskTags`), bo możliwości AI utrzymywane są RĘCZNIE w 3 miejscach (katalog w prompt'cie,
+egzekutory, whitelist fast-path), a jedyny guard (`check-action-coverage.js`) pilnował tylko spójności
+katalog↔egzekutor. NIC nie pilnowało, czy KAŻDA mutująca Server Action jest w ogóle wystawiona dla AI,
+więc nowe możliwości użytkownika „przeciekały" bez integracji z asystentem.
+**Rozwiązanie:** Dodano bramkę pokrycia: `scripts/check-ai-coverage.js` + manifest
+`src/lib/ai/action-coverage.json`, w którym KAŻDA mutująca Server Action (`src/actions/*`) musi mieć
+status `ai` (wystawiona) / `pending` (luka do zrobienia) / `excluded` (świadomie nie dla AI, z powodem).
+Build PADA, gdy ktoś doda nową mutującą akcję i jej nie sklasyfikuje — więc nowa możliwość użytkownika
+nie prześlizgnie się bez decyzji o AI. Skrypt (flaga `--report`) generuje czytelną roadmapę luk w
+`docs/ai/pokrycie-akcji.md`. Wpięto w `npm run build` obok pozostałych `check:*`. Domknięto pierwszą
+partię luk (12 akcji: tagowanie zadań/notatek, podzadania, kontakty CRM, budżety/cele portfela,
+jadłospis→zakupy, przenoszenie pozycji, odarchiwizacja/„zakończ zakupy"). Wzmocniono prompt agenta o
+regułę ŁAŃCUCHA AKCJI (jedno polecenie → wiele kroków, także między modułami, referencja po nazwie do
+elementów tworzonych w tym samym planie).
+**Lekcja:** Gdy zdolności AI są utrzymywane osobno od „prawdy" (Server Actions), potrzebna jest BRAMKA
+pokrycia, nie tylko dobre chęci. Wzorzec: enumeruj źródło prawdy (mutujące akcje), wymagaj świadomej
+klasyfikacji każdej z nich w manifeście, wywalaj build na nieklasyfikowanej nowej akcji. Dzięki temu
+„AI umie wszystko co użytkownik" staje się mierzalnym, egzekwowalnym stanem (licznik ai/pending), a nie
+jednorazową obietnicą.
+
+## 2026-07-19 — Limit 429 NIE był przejściowy: „pokaż zadania otagowane X" zapętlał agenta
+**Problem:** Po pierwszym fixie (retry + łagodny komunikat) komenda „pokaż zadania otagowane raj"
+**zawsze** kończyła się „Asystent przeciążony", nawet po ponawianiu — podczas gdy „jak się masz?"
+i „dodaj zadanie" działały. To wykluczyło hipotezę „przejściowy limit". Prawdziwa przyczyna: read-tool
+`list_tasks` **nie miał filtra po tagu ani nie zwracał tagów** — agent nie mógł spełnić prośby, więc
+**zapętlał się** (do MAX_ITERATIONS=6 iteracji), a każda iteracja to pełne wywołanie modelu
+`reasoning` (~4k promptu + rezerwacja `max_tokens` 2800). Kilka takich wywołań w jednej minucie
+przekraczało limit Groq 12000 TPM — stąd „Used 8761 + Requested 10243" i STAŁA porażka tej konkretnej
+komendy (a nie losowa). Do tego stała rezerwacja `max_tokens=2800` na KAŻDE wywołanie pętli (Groq wlicza
+`max_tokens` do TPM) niepotrzebnie zbliżała do limitu przy zapytaniach wieloetapowych (query→answer = 2
+wywołania).
+**Rozwiązanie:** (1) `src/lib/ai/agentTools.ts` — `list_tasks` dostał argument `tag` (filtr
+`tags: { some: { tag: { name: { contains, mode:"insensitive" } } } }`) i zwraca teraz pole `tags`
+(nazwy etykiet); opis narzędzia w `READ_TOOLS_PROMPT` zaktualizowany, żeby agent wiedział, że dla
+„zadania otagowane X" ma użyć `tag`. Dzięki temu komenda kończy się w 1–2 wywołaniach zamiast pętli.
+(2) `src/app/api/llm/home/agent/route.ts` — rezerwacja tokenów odpowiedzi jest teraz mała domyślnie
+(`AGENT_MAX_TOKENS=1200`), a duży zapas (`REPORT_MAX_TOKENS=2800`) włączamy TYLKO gdy tekst prośby
+wygląda na raport (`/raport|podsumow|zestawieni|streść/i`) — mniejsza presja na TPM przy zwykłych
+zapytaniach, bez regresji długich raportów.
+**Lekcja:** Gdy 429/limit trafia **jedną konkretną** komendę za każdym razem (a inne działają), to NIE
+jest przejściowy limit — to komenda, której agent nie umie spełnić i **pętli** się, spalając TPM.
+Najpierw sprawdź, czy read-tool w ogóle POTRAFI odpowiedzieć na pytanie (tu: brak filtra po tagu), i czy
+`max_tokens` nie jest rezerwowany hojnie na każde wywołanie (Groq liczy to do TPM). Retry/łagodny
+komunikat to tylko siatka bezpieczeństwa — nie zastąpi usunięcia przyczyny pętli.
+
+## 2026-07-19 — Asystent AI zwracał surowy błąd Groq 429 (limit TPM) zamiast odpowiedzi
+**Problem:** Zapytanie do asystenta ("pokaż zadania otagowane raj") padało z surowym komunikatem dostawcy
+`Rate limit reached for model llama-3.3-70b-versatile … tokens per minute (TPM): Limit 12000, Used 8761,
+Requested 10243`. Limit TPM u Groq jest **przejściowy** (okno minuty zwalnia się po chwili), a mimo to
+`chatComplete` oddawał surowy błąd użytkownikowi. Istniejący łańcuch fallbacku (Z-133) próbuje tylko
+INNEGO modelu — przy jednym skonfigurowanym modelu 429 przechodził wprost do UI, a `AICommandSheet`
+wyświetlał go 1:1.
+**Rozwiązanie:** (1) W `src/lib/llm/chat.ts` dodano owijacz `fetchWithRetry` używany przez wszystkie 4
+funkcje dostawcy (openAi/anthropic × complete/stream): przy błędzie przejściowym (429/5xx/sieć) odczekuje
+i ponawia TEN SAM model — respektując nagłówek `Retry-After` (z capem `LLM_RETRY_CAP_MS=8000` na
+pojedyncze oczekiwanie i twardym limitem `LLM_MAX_RETRIES=2`), a bez nagłówka używa backoffu
+wykładniczego z jitterem. Retry jest ZAGNIEŻDŻONY w pojedynczym wywołaniu modelu, więc łańcuch fallbacku
+działa bez zmian (najpierw retry, potem dopiero next model). (2) W `src/app/api/llm/home/agent/route.ts`
+(`runAgentLoop` catch) status 429 mapujemy na łagodny polski komunikat zamiast surowego tekstu dostawcy —
+jedno miejsce obsługuje tryb zwykły i strumieniowy (SSE), bo oba idą przez `runAgentLoop`; klient bez zmian.
+**Lekcja:** Limity szybkości dostawcy LLM (429/TPM) to błąd PRZEJŚCIOWY — najpierw ponów z backoffem
+(respektując `Retry-After`, z twardym capem i limitem prób), dopiero potem fallback/komunikat. Retry rób
+na poziomie `fetch` (jedno miejsce dla wszystkich dostawców i trybów, też streaming — status sprawdzasz
+zanim skonsumujesz body). Nigdy nie pokazuj użytkownikowi surowej treści błędu dostawcy — zawsze własny,
+polski komunikat (C-41: brak ryzyka wycieku klucza/szczegółów). Ponawiaj TYLKO statusy przejściowe
+(429/≥500), nie 4xx poza 429.
+
+## 2026-07-19 — Dokumentacja myliła środowiska Render (który URL/tier to test, a który prod)
+**Problem:** CLAUDE.md podawał `worldofmag.onrender.com` jednocześnie jako „Live URL" i „auto-deploy on `master`" oraz „free tier", podczas gdy sekcja git-workflow traktowała ten sam URL jako środowisko **testowe** (`develop`). Drugi serwis (`omnia-prod.onrender.com`) figurował tylko w allowed origins, bez wskazania, że to produkcja. Tier per-środowisko nie był nigdzie jasno rozpisany — trzeba go było wywnioskować z luźnej uwagi „Render prod nie usypia".
+**Rozwiązanie:** Ujednolicono mapowanie w CLAUDE.md (tabela „Environments & tiers") i w runbooku: `develop` → test → `worldofmag.onrender.com` → **free** (usypia po 15 min); `master` → produkcja → `omnia-prod.onrender.com` → **płatny** (nie usypia). Poprawiono też roadmapę (migracja prod na płatny tier = zrobione).
+**Lekcja:** Gdy są dwa serwisy Render pod jednym projektem, trzymaj **jedną tabelę** gałąź → URL → tier jako źródło prawdy i nie rozrzucaj tych faktów po „Live URL"/„allowed origins"/uwagach. „Free tier usypia, prod nie" to jedyny twardy sygnał różnicujący tier — zapisz go wprost, nie zostawiaj do wywnioskowania.
+
 ## 2026-07-18 — Offline: katalog list widać, ale nie da się wejść w listę (nawigacja SPA = RSC z sieci)
 **Problem:** Po naprawie instalacji SW aplikacja wstawała offline i katalog `/shopping` był widoczny, ale
 kliknięcie w konkretną listę nic nie dawało. Przyczyna: w App Routerze wejście w `/shopping/[id]` przez
@@ -1326,3 +1470,13 @@ do puli ~64 kosmetycznych warningów, które i tak są na roadmapie do sprzątni
 to tylko **bramka produkcyjna** (`develop → master`), i tę robimy jednym, zawsze-zadawanym pytaniem z
 bezpiecznym domyślnym „Nie". Cudzysłowy drukarskie w tekście JSX pakuj w `{"…"}`, żeby nie budzić
 `react/no-unescaped-entities`.
+
+## 2026-07-20 — Iteracja po `Set` w Server Action wywala `next build` (downlevelIteration)
+**Problem:** Nowa akcja `bulkUpdateTasks` używała `for (const pid of affectedProjectIds)` po `Set<string>`.
+`next build` (typecheck) padał: „Type 'Set<string>' can only be iterated through when using the
+'--downlevelIteration' flag or with a '--target' of 'es2015' or higher" — tsconfig projektu ma niższy
+target/brak downlevelIteration.
+**Rozwiązanie:** Zamiana na `Array.from(set).forEach(...)`. `lint` tego nie łapie — wychodzi dopiero na
+kroku „Checking validity of types" w `next build`.
+**Lekcja:** W kodzie `src/` nie iteruj `Set`/`Map` przez `for...of` ani span spreadem w gorących
+miejscach — używaj `Array.from(...)`. Realny typecheck daje dopiero `next build`, nie sam `lint`.

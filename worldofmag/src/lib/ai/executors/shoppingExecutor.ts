@@ -1,8 +1,8 @@
 // Z-010: handler akcji asystenta dla modułu Zakupy (listy + pozycje).
 // Scala oba dawne bloki `module === "shopping"` z execute/route.ts.
 import { prisma } from "@/lib/prisma";
-import { addItem, updateItem, updateItemStatus, deleteItem, clearDoneItems, markAllInCart } from "@/actions/items";
-import { createList, renameList, archiveList, deleteList } from "@/actions/lists";
+import { addItem, updateItem, updateItemStatus, deleteItem, clearDoneItems, markAllInCart, moveItem } from "@/actions/items";
+import { createList, renameList, archiveList, deleteList, unarchiveList, completeShopping } from "@/actions/lists";
 import { asStr, undoAction, resolveOrCreateList, resolveListId, resolveItemId, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { ItemStatus } from "@/types";
@@ -106,6 +106,34 @@ export async function executeShoppingAction(action: AIAction, userId: string, ac
     const id = await resolveListId(userId, params, searchQuery, activeListId);
     await markAllInCart(id);
     return `Oznaczono wszystkie pozycje jako w koszyku`;
+  }
+
+  if (type === "move_item") {
+    const id = await resolveItemId(userId, params, searchQuery);
+    const target = await resolveOrCreateList(userId, {
+      listId: asStr(params.targetListId),
+      listName: asStr(params.targetListName),
+    });
+    const before = await prisma.item.findUnique({ where: { id }, select: { name: true, listId: true } });
+    const item = await moveItem(id, target.id);
+    const undo = before?.listId
+      ? undoAction("shopping", "move_item", { itemId: id, targetListId: before.listId }, `Cofnij przeniesienie "${item.name}"`)
+      : undefined;
+    return { message: `Przeniesiono "${item.name}" do listy "${target.name}"`, undo };
+  }
+
+  if (type === "unarchive_list") {
+    const id = await resolveListId(userId, params, searchQuery, activeListId);
+    await unarchiveList(id);
+    return `Przywrócono listę z archiwum`;
+  }
+
+  if (type === "complete_shopping") {
+    const id = await resolveListId(userId, params, searchQuery, activeListId);
+    const res = await completeShopping(id, { bookToPortfel: params.bookToPortfel === true });
+    return res.booked
+      ? `Zakończono zakupy — zaksięgowano wydatek ${res.total} zł w Portfelu`
+      : `Zakończono zakupy (lista zarchiwizowana)`;
   }
 
   throw new Error(`Nieznany typ akcji zakupów: ${type}`);

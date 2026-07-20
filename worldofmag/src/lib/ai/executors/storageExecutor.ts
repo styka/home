@@ -2,8 +2,8 @@
 // Scala oba dawne bloki `module === "magazynowanie"` z execute/route.ts.
 import { prisma } from "@/lib/prisma";
 import { getUserTeamIds } from "@/lib/server-utils";
-import { addStorageItem, adjustStorageQuantity, updateStorageItem, deleteStorageItem, transferStock } from "@/actions/storage";
-import { asStr, undoAction, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executors/shared";
+import { addStorageItem, adjustStorageQuantity, updateStorageItem, deleteStorageItem, transferStock, addSupplier, updateSupplier, deleteSupplier, addLowStockToShoppingList, addBatch } from "@/actions/storage";
+import { asStr, undoAction, resolveByName, ownerOrArr, resolveOrCreateList, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 
 export async function executeStorageAction(action: AIAction, userId: string): Promise<string | ExecOutcome> {
@@ -59,6 +59,39 @@ export async function executeStorageAction(action: AIAction, userId: string): Pr
     const id = await resolveStorage();
     await transferStock(id, asStr(params.toWarehouse) ?? null, asStr(params.toLocation) ?? null, Number(params.quantity ?? 0));
     return `Przeniesiono pozycję magazynu`;
+  }
+  if (type === "add_batch") {
+    const id = await resolveStorage();
+    const quantity = Number(params.quantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) throw new Error("Podaj ilość partii (>0)");
+    await addBatch(id, {
+      lotNo: asStr(params.lotNo) ?? null,
+      serialNo: asStr(params.serialNo) ?? null,
+      quantity,
+      expiresAt: params.expiresAt ? new Date(String(params.expiresAt)) : null,
+      note: asStr(params.note) ?? null,
+    });
+    return `Dodano partię/lot (${quantity})`;
+  }
+  if (type === "add_low_stock_to_shopping") {
+    const list = await resolveOrCreateList(userId, { listId: asStr(params.listId), listName: asStr(params.listName) });
+    const res = await addLowStockToShoppingList(list.id);
+    const n = res.addedItems.length;
+    return `Dodano ${n} ${n === 1 ? "pozycję" : "pozycji"} z niskim stanem do listy „${list.name}"`;
+  }
+
+  // Dostawcy
+  if (type === "add_supplier") {
+    const name = asStr(params.name);
+    if (!name) throw new Error("Podaj nazwę dostawcy");
+    await addSupplier({ name, contact: asStr(params.contact) ?? null, email: asStr(params.email) ?? null, phone: asStr(params.phone) ?? null, notes: asStr(params.notes) ?? null });
+    return `Dodano dostawcę „${name}"`;
+  }
+  if (type === "update_supplier" || type === "delete_supplier") {
+    const id = await resolveByName((w) => prisma.storageSupplier.findFirst({ where: w, select: { id: true } }), teamOr, asStr(params.supplierId), "name", searchQuery ?? asStr(params.name), "dostawca");
+    if (type === "delete_supplier") { await deleteSupplier(id); return `Usunięto dostawcę`; }
+    await updateSupplier(id, { name: asStr(params.newName), contact: asStr(params.contact), email: asStr(params.email), phone: asStr(params.phone), notes: asStr(params.notes) });
+    return `Zaktualizowano dostawcę`;
   }
 
   throw new Error(`Nieznany typ akcji magazynu: ${type}`);

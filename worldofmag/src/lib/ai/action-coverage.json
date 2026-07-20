@@ -1,0 +1,1975 @@
+{
+  "access:addUserRole": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:createPermission": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:deletePermission": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:getAuditLog": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:getAvailableRoles": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:getPermissions": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:getRolePermissions": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:getUsers": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:removeUserRole": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:toggleRolePermission": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "access:updatePermission": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "activity:getRecentActivity": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "activity:trackActivity": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "adminCategories:createSystemCategory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "adminCategories:deleteSystemCategory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "adminCategories:getSystemCategories": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "adminCategories:updateSystemCategory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "aiConversations:appendAiMessage": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "aiConversations:createAiConversation": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "aiConversations:deleteAiConversation": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "aiConversations:getAiConversation": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "aiConversations:listAiConversations": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "aiConversations:renameAiConversation": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "calendar:getCalendarEvents": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "calendar:getMyIcalFeedUrl": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "calendar:regenerateIcalFeed": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "categories:createCategory": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "categories:deleteCategory": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "categories:getCategories": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "categories:getCategoryEmojiMap": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "categories:getCategoryNames": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "categories:updateCategory": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "categoryIcons:assignIconToCategory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:deactivateCategoryIcon": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:deleteCategoryIconVariant": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:getActiveCategoryIconMap": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:getAllUserIconVariants": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:getAllUserIconVariantsFlat": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:getCategoryIconVariants": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:orphanCategoryIcons": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:saveAndActivateCategoryIcon": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:saveToLibrary": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:setActiveCategoryIcon": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "categoryIcons:upsertCategoryEmojiOverride": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "config:getConfigMasked": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "config:getConfigValue": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "config:setConfigValue": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "contacts:createContact": {
+    "status": "ai",
+    "action": "create_contact"
+  },
+  "contacts:deleteContact": {
+    "status": "ai",
+    "action": "delete_contact"
+  },
+  "contacts:getContacts": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "contacts:updateContact": {
+    "status": "ai",
+    "action": "update_contact"
+  },
+  "cookbooks:createCookbook": {
+    "status": "ai",
+    "action": "create_cookbook"
+  },
+  "cookbooks:deleteCookbook": {
+    "status": "ai",
+    "action": "delete_cookbook"
+  },
+  "cookbooks:getCookbook": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "redundant"
+  },
+  "cookbooks:getCookbooks": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_cookbooks"
+  },
+  "cookbooks:updateCookbook": {
+    "status": "ai",
+    "action": "update_cookbook"
+  },
+  "dashboardPrefs:getDashboardPrefs": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "dashboardPrefs:setDashboardPrefs": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "drive:disconnectDrive": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "drive:getDriveStatus": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "flota:addFuelLog": {
+    "status": "ai"
+  },
+  "flota:addServiceRecord": {
+    "status": "ai"
+  },
+  "flota:addVehicleAttachment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "flota:createVehicle": {
+    "status": "ai"
+  },
+  "flota:deleteFuelLog": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "flota:deleteServiceRecord": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "flota:deleteVehicle": {
+    "status": "ai"
+  },
+  "flota:deleteVehicleAttachment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "flota:getVehicle": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "flota:getVehicles": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "flota:updateVehicle": {
+    "status": "ai"
+  },
+  "habits:createHabit": {
+    "status": "ai"
+  },
+  "habits:createTaskFromHabit": {
+    "status": "ai",
+    "action": "create_task_from_habit"
+  },
+  "habits:deleteHabit": {
+    "status": "ai"
+  },
+  "habits:getHabits": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "habits:reorderHabits": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "habits:setHabitArchived": {
+    "status": "ai"
+  },
+  "habits:toggleHabitDay": {
+    "status": "ai"
+  },
+  "habits:updateHabit": {
+    "status": "ai"
+  },
+  "health:addHealthAttachment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "health:createHealthEvent": {
+    "status": "ai"
+  },
+  "health:deleteHealthAttachment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "health:deleteHealthEvent": {
+    "status": "ai"
+  },
+  "health:getHealthAttachments": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "health:getHealthEvents": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "health:getHealthSettings": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "health:getTestTrends": {
+    "kind": "read",
+    "status": "ai",
+    "action": "get_test_trends"
+  },
+  "health:setHealthAiOptIn": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "health:setHealthStatus": {
+    "status": "ai"
+  },
+  "health:updateHealthEvent": {
+    "status": "ai"
+  },
+  "invitations:acceptInvitation": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "invitations:getPendingInvitations": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "invitations:getPendingInvitationsCount": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "invitations:inviteUser": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "invitations:rejectInvitation": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "items:addItem": {
+    "status": "ai"
+  },
+  "items:addItemStructured": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "items:clearDoneItems": {
+    "status": "ai"
+  },
+  "items:deleteItem": {
+    "status": "ai"
+  },
+  "items:getSuggestionsForPrefix": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "items:markAllInCart": {
+    "status": "ai"
+  },
+  "items:moveItem": {
+    "status": "ai",
+    "action": "move_item"
+  },
+  "items:reorderItems": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "items:updateItem": {
+    "status": "ai"
+  },
+  "items:updateItemStatus": {
+    "status": "ai"
+  },
+  "jobs:cancelJobAction": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "jobs:cleanupJobsAction": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "jobs:getJobsOverview": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "jobs:retryJobAction": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "languageDecks:addWord": {
+    "status": "ai"
+  },
+  "languageDecks:bulkAddWords": {
+    "status": "ai",
+    "action": "bulk_add_words"
+  },
+  "languageDecks:createDeck": {
+    "status": "ai"
+  },
+  "languageDecks:deleteDeck": {
+    "status": "ai"
+  },
+  "languageDecks:deleteWord": {
+    "status": "ai"
+  },
+  "languageDecks:getDeck": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "redundant"
+  },
+  "languageDecks:getDecks": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "languageDecks:getDueCards": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_due_cards"
+  },
+  "languageDecks:getStudyStreak": {
+    "kind": "read",
+    "status": "ai",
+    "action": "get_study_streak"
+  },
+  "languageDecks:submitReview": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "languageDecks:updateDeck": {
+    "status": "ai"
+  },
+  "languageDecks:updateWord": {
+    "status": "ai"
+  },
+  "legal:acceptAllCurrentConsents": {
+    "status": "excluded",
+    "reason": "account"
+  },
+  "legal:acceptConsent": {
+    "status": "excluded",
+    "reason": "account"
+  },
+  "legal:getMyConsents": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "account"
+  },
+  "legal:getOutstandingConsents": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "account"
+  },
+  "lists:archiveList": {
+    "status": "ai"
+  },
+  "lists:completeShopping": {
+    "status": "ai",
+    "action": "complete_shopping"
+  },
+  "lists:createList": {
+    "status": "ai"
+  },
+  "lists:deleteList": {
+    "status": "ai"
+  },
+  "lists:getActiveListsForOffline": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "lists:getArchivedLists": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "lists:getLists": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "lists:getListSummaries": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "lists:renameList": {
+    "status": "ai"
+  },
+  "lists:unarchiveList": {
+    "status": "ai",
+    "action": "unarchive_list"
+  },
+  "llmConfig:applyAnthropicProfile": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:createProvider": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:deleteProvider": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:getAiCostBreakdown": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:getAssignments": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:getCostAlertThreshold": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:getLlmProviders": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:setAssignment": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:setCostAlertThreshold": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:updateProvider": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "mealPlans:bulkSetMealPlan": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "mealPlans:deleteMealPlanEntry": {
+    "status": "ai"
+  },
+  "mealPlans:generateShoppingListFromPlan": {
+    "status": "ai",
+    "action": "generate_shopping_from_plan"
+  },
+  "mealPlans:getMealPlan": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "mealPlans:getMealPlanCost": {
+    "kind": "read",
+    "status": "ai",
+    "action": "get_meal_plan_cost"
+  },
+  "mealPlans:getTodaysMeals": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_todays_meals"
+  },
+  "mealPlans:markMealCooked": {
+    "status": "ai"
+  },
+  "mealPlans:markMealSkipped": {
+    "status": "ai",
+    "action": "mark_meal_skipped"
+  },
+  "mealPlans:moveMealPlanEntry": {
+    "status": "ai",
+    "action": "move_meal_plan_entry"
+  },
+  "mealPlans:setMealPlanEntry": {
+    "status": "ai"
+  },
+  "mealPlans:updateMealPlanEntry": {
+    "status": "ai",
+    "action": "update_meal_plan_entry"
+  },
+  "medications:createMedicationSchedule": {
+    "status": "ai"
+  },
+  "medications:deleteMedicationSchedule": {
+    "status": "ai"
+  },
+  "medications:getMedicationDay": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "medications:getMedicationSchedules": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "medications:logDose": {
+    "status": "ai"
+  },
+  "medications:unlogDose": {
+    "status": "ai",
+    "action": "unlog_dose"
+  },
+  "medications:updateMedicationSchedule": {
+    "status": "ai",
+    "action": "update_medication"
+  },
+  "menuPrefs:getMenuPrefs": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "menuPrefs:updateMenuPrefs": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "metrics:getUnitEconomics": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "news:acknowledgeItem": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "news:createSource": {
+    "status": "ai",
+    "action": "create_news_source"
+  },
+  "news:createTopic": {
+    "status": "ai"
+  },
+  "news:deleteSource": {
+    "status": "ai",
+    "action": "delete_news_source"
+  },
+  "news:deleteTopic": {
+    "status": "ai"
+  },
+  "news:dismissItem": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "news:getHotTopics": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_hot_topics"
+  },
+  "news:getKnowledgeHistory": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "niche"
+  },
+  "news:getNewsPref": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "news:getSources": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_news_sources"
+  },
+  "news:getTopics": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "news:getTopicView": {
+    "kind": "read",
+    "status": "ai",
+    "action": "get_news_topic_view"
+  },
+  "news:refreshTopic": {
+    "status": "ai"
+  },
+  "news:resummarizeItem": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "news:setActiveSource": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "news:setDefaultSummaryLength": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "news:updateSource": {
+    "status": "ai",
+    "action": "update_news_source"
+  },
+  "news:updateTopic": {
+    "status": "ai"
+  },
+  "noteGroups:createNoteGroup": {
+    "status": "ai",
+    "action": "create_note_group"
+  },
+  "noteGroups:deleteNoteGroup": {
+    "status": "ai",
+    "action": "delete_note_group"
+  },
+  "noteGroups:getNoteGroups": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_note_groups"
+  },
+  "noteGroups:updateNoteGroup": {
+    "status": "ai",
+    "action": "update_note_group"
+  },
+  "notes:addNoteAttachment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "notes:addTagToNote": {
+    "status": "excluded",
+    "reason": "redundant"
+  },
+  "notes:createNote": {
+    "status": "ai"
+  },
+  "notes:deleteNote": {
+    "status": "ai"
+  },
+  "notes:deleteNoteAttachment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "notes:getNoteAttachments": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "notes:getNoteRevisions": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "notes:getNotes": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "notes:removeTagFromNote": {
+    "status": "excluded",
+    "reason": "redundant"
+  },
+  "notes:restoreNoteRevision": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "notes:setNoteTags": {
+    "status": "ai",
+    "action": "set_note_tags"
+  },
+  "notes:toggleNotePin": {
+    "status": "ai"
+  },
+  "notes:updateNote": {
+    "status": "ai"
+  },
+  "notifications:getNotifications": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "notifications:getUnreadCount": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "notifications:markAllNotificationsRead": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "notifications:markNotificationRead": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "notifications:notifyUser": {
+    "status": "ai"
+  },
+  "notifications:syncReminders": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "pantry:addPantryItem": {
+    "status": "ai"
+  },
+  "pantry:autoReplenishToList": {
+    "status": "ai",
+    "action": "auto_replenish_pantry"
+  },
+  "pantry:bulkSetPantryQuantities": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "pantry:consumePantryItem": {
+    "status": "ai"
+  },
+  "pantry:deletePantryItem": {
+    "status": "ai"
+  },
+  "pantry:getAutoReplenishCandidates": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_replenish_candidates"
+  },
+  "pantry:getExpiringSoon": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_expiring_pantry"
+  },
+  "pantry:getPantry": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "pantry:moveItemToPantry": {
+    "status": "ai",
+    "action": "move_item_to_pantry"
+  },
+  "pantry:setPantryQuantity": {
+    "status": "ai",
+    "action": "set_pantry_quantity"
+  },
+  "pantry:updatePantryItem": {
+    "status": "ai"
+  },
+  "petBreeding:createBreedingPair": {
+    "status": "ai"
+  },
+  "petBreeding:createClutch": {
+    "status": "ai"
+  },
+  "petBreeding:createOffspring": {
+    "status": "ai"
+  },
+  "petBreeding:deleteBreedingPair": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petBreeding:deleteClutch": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petBreeding:deleteSale": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petBreeding:getPetBreeding": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "niche"
+  },
+  "petBreeding:markClutchHatched": {
+    "status": "ai"
+  },
+  "petBreeding:recordSale": {
+    "status": "ai"
+  },
+  "petBreeding:setGenetics": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petBreeding:setParentage": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petBreeding:updateBreedingPair": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petCare:addMeasurement": {
+    "status": "ai"
+  },
+  "petCare:completeCareTask": {
+    "status": "ai"
+  },
+  "petCare:completeTreatment": {
+    "status": "ai"
+  },
+  "petCare:createCareTask": {
+    "status": "ai"
+  },
+  "petCare:createHealthRecord": {
+    "status": "ai"
+  },
+  "petCare:createTreatment": {
+    "status": "ai"
+  },
+  "petCare:createVetVisit": {
+    "status": "ai"
+  },
+  "petCare:deleteCareTask": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petCare:deleteHealthRecord": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petCare:deleteMeasurement": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petCare:deleteTreatment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petCare:deleteVetVisit": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petCare:getCareAgenda": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_care_agenda"
+  },
+  "petCare:getCareHistory": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_care_history"
+  },
+  "petCare:getPetWelfare": {
+    "kind": "read",
+    "status": "ai",
+    "action": "get_pet_welfare"
+  },
+  "petCare:logFeeding": {
+    "status": "ai"
+  },
+  "petCare:updateCareTask": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petCare:updateHealthRecord": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petCare:updateTreatment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petCare:updateVetVisit": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petHusbandry:addEnvironmentReading": {
+    "status": "ai"
+  },
+  "petHusbandry:assignPetToEnclosure": {
+    "status": "ai",
+    "action": "assign_pet_to_enclosure"
+  },
+  "petHusbandry:createEnclosure": {
+    "status": "ai"
+  },
+  "petHusbandry:deleteEnclosure": {
+    "status": "ai",
+    "action": "delete_enclosure"
+  },
+  "petHusbandry:deleteEnvironmentReading": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "petHusbandry:getEnclosures": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_enclosures"
+  },
+  "petHusbandry:updateEnclosure": {
+    "status": "ai",
+    "action": "update_enclosure"
+  },
+  "pets:createPet": {
+    "status": "ai"
+  },
+  "pets:deletePet": {
+    "status": "ai"
+  },
+  "pets:getPet": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "pets:getPets": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "pets:getPetSharing": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "pets:removePetShare": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "pets:setPetStatus": {
+    "status": "ai"
+  },
+  "pets:sharePetByEmail": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "pets:sharePetWithTeam": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "pets:updatePet": {
+    "status": "ai"
+  },
+  "pets:updatePetFeatures": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "portfel:addEntry": {
+    "status": "ai"
+  },
+  "portfel:archiveElement": {
+    "status": "ai"
+  },
+  "portfel:createElement": {
+    "status": "ai"
+  },
+  "portfel:deleteElement": {
+    "status": "ai"
+  },
+  "portfel:getElement": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "redundant"
+  },
+  "portfel:getWalletElements": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "portfel:getWalletOverview": {
+    "kind": "read",
+    "status": "ai",
+    "action": "get_wallet_overview"
+  },
+  "portfel:importBankCsv": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "portfel:setBalance": {
+    "status": "ai"
+  },
+  "portfel:updateElement": {
+    "status": "ai"
+  },
+  "portfelAuto:getFinanceSettings": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "portfelAuto:setFinanceSettings": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "portfelBudgets:contributeGoal": {
+    "status": "ai",
+    "action": "contribute_goal"
+  },
+  "portfelBudgets:createBudget": {
+    "status": "ai",
+    "action": "create_budget"
+  },
+  "portfelBudgets:createGoal": {
+    "status": "ai",
+    "action": "create_goal"
+  },
+  "portfelBudgets:deleteBudget": {
+    "status": "ai",
+    "action": "delete_budget"
+  },
+  "portfelBudgets:deleteGoal": {
+    "status": "ai",
+    "action": "delete_goal"
+  },
+  "portfelBudgets:getBudgetsWithSpending": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_budgets"
+  },
+  "portfelBudgets:getFinanceGoals": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_goals"
+  },
+  "portfelBudgets:updateBudget": {
+    "status": "ai",
+    "action": "update_budget"
+  },
+  "portfelBudgets:updateGoal": {
+    "status": "ai",
+    "action": "update_goal"
+  },
+  "portfelCurrency:deleteExchangeRate": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "portfelCurrency:getCurrencySettings": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "portfelCurrency:refreshRatesFromNBP": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "portfelCurrency:setBaseCurrency": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "portfelCurrency:setExchangeRate": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "portfelReports:getMonthlyReport": {
+    "kind": "read",
+    "status": "ai",
+    "action": "get_monthly_report"
+  },
+  "privacy:deleteMyAccount": {
+    "status": "excluded",
+    "reason": "account"
+  },
+  "privacy:exportMyData": {
+    "status": "excluded",
+    "reason": "account"
+  },
+  "products:copyGlobalProduct": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "products:createProduct": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "products:deleteProduct": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "products:getProducts": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "products:getProductSuggestions": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "products:updateProduct": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "products:upsertUserProduct": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "projectGroups:createProjectGroup": {
+    "status": "ai",
+    "action": "create_project_group"
+  },
+  "projectGroups:deleteProjectGroup": {
+    "status": "ai",
+    "action": "delete_project_group"
+  },
+  "projectGroups:getProjectGroup": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "redundant"
+  },
+  "projectGroups:getProjectGroups": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_project_groups"
+  },
+  "projectGroups:updateProjectGroup": {
+    "status": "ai",
+    "action": "update_project_group"
+  },
+  "qa:createEpic": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:createScenario": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:createStory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:deleteEpic": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:deleteScenario": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:deleteStory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:getAllEpics": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:getEpicForAdmin": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:getModuleStats": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:getModuleTree": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:getScenarioForAdmin": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:getScenarioWithContext": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:getStoryForAdmin": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:updateEpic": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:updateScenario": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "qa:updateStory": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "recipes:addIngredient": {
+    "status": "ai",
+    "action": "add_ingredient"
+  },
+  "recipes:addRecipeImage": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "recipes:addStep": {
+    "status": "ai",
+    "action": "add_step"
+  },
+  "recipes:archiveRecipe": {
+    "status": "ai",
+    "action": "archive_recipe"
+  },
+  "recipes:createRecipe": {
+    "status": "ai"
+  },
+  "recipes:deleteIngredient": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "recipes:deleteRecipe": {
+    "status": "ai"
+  },
+  "recipes:deleteRecipeImage": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "recipes:deleteStep": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "recipes:duplicateRecipe": {
+    "status": "ai",
+    "action": "duplicate_recipe"
+  },
+  "recipes:getRecipe": {
+    "kind": "read",
+    "status": "ai",
+    "action": "get_recipe"
+  },
+  "recipes:getRecipes": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "recipes:markRecipeCooked": {
+    "status": "ai",
+    "action": "mark_recipe_cooked"
+  },
+  "recipes:reorderIngredients": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "recipes:reorderSteps": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "recipes:shopForRecipe": {
+    "status": "ai",
+    "action": "shop_for_recipe"
+  },
+  "recipes:updateIngredient": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "recipes:updateRecipe": {
+    "status": "ai",
+    "action": "update_recipe"
+  },
+  "recipes:updateRecipeImage": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "recipes:updateStep": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "reports:createReport": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "reports:createUserReport": {
+    "status": "ai"
+  },
+  "reports:deleteReport": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "reports:getReport": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "redundant"
+  },
+  "reports:getReportsMeta": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "redundant"
+  },
+  "reports:getUserReport": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "redundant"
+  },
+  "reports:getUserReportsMeta": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "redundant"
+  },
+  "reports:searchReports": {
+    "kind": "read",
+    "status": "ai",
+    "action": "search_reports"
+  },
+  "reports:updateReport": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "shoppingSync:syncShoppingMutations": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "skins:createSkin": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "skins:deleteSkin": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "skins:duplicateSkin": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "skins:getActiveSkinId": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "skins:listAvailableSkins": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "skins:setActiveSkin": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "skins:updateSkin": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "storage:addBatch": {
+    "status": "ai",
+    "action": "add_batch"
+  },
+  "storage:addLowStockToShoppingList": {
+    "status": "ai",
+    "action": "add_low_stock_to_shopping"
+  },
+  "storage:addStorageItem": {
+    "status": "ai"
+  },
+  "storage:addSupplier": {
+    "status": "ai",
+    "action": "add_supplier"
+  },
+  "storage:adjustStorageQuantity": {
+    "status": "ai"
+  },
+  "storage:bulkAddStorageItems": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:bulkSetStorageQuantities": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:createDocument": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:createPurchaseOrder": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:deleteBatch": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:deleteDocument": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:deletePurchaseOrder": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:deleteStorageItem": {
+    "status": "ai"
+  },
+  "storage:deleteSupplier": {
+    "status": "ai",
+    "action": "delete_supplier"
+  },
+  "storage:getDocument": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:getDocuments": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:getExpiringStorage": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_expiring_storage"
+  },
+  "storage:getLowStock": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_low_stock"
+  },
+  "storage:getPurchaseOrder": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:getPurchaseOrders": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:getStorageAnalytics": {
+    "kind": "read",
+    "status": "ai",
+    "action": "get_storage_analytics"
+  },
+  "storage:getStorageItem": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "redundant"
+  },
+  "storage:getStorageItems": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "storage:getStorageSettings": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "storage:getSuppliers": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_suppliers"
+  },
+  "storage:setStorageCurrency": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "storage:setStorageMode": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "storage:transferStock": {
+    "status": "ai"
+  },
+  "storage:updatePurchaseOrder": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "storage:updateStorageItem": {
+    "status": "ai"
+  },
+  "storage:updateSupplier": {
+    "status": "ai",
+    "action": "update_supplier"
+  },
+  "stores:createStore": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:deleteStore": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:deleteStoreEdge": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:deleteStoreNode": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:getStore": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:getStores": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:renameStore": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:saveStoreGraph": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:upsertStoreEdge": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "stores:upsertStoreNode": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "systemHealth:getSystemHealth": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "tags:createTag": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "tags:deleteTag": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "tags:getTags": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_note_tags"
+  },
+  "tags:updateTag": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "taskProjects:addProjectMember": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "taskProjects:createTaskProject": {
+    "status": "ai"
+  },
+  "taskProjects:deleteTaskProject": {
+    "status": "ai"
+  },
+  "taskProjects:getTaskProjects": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "taskProjects:removeProjectMember": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "taskProjects:updateTaskProject": {
+    "status": "ai"
+  },
+  "taskProjects:updateTaskProjectStatusConfig": {
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "tasks:bulkDeleteTasks": { "status": "excluded", "reason": "interactive" },
+  "tasks:bulkUpdateTasks": { "status": "excluded", "reason": "interactive" },
+  "tasks:addTaskComment": {
+    "status": "ai",
+    "action": "add_task_comment"
+  },
+  "tasks:completeRecurringTask": {
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "tasks:createTask": {
+    "status": "ai"
+  },
+  "tasks:deleteTask": {
+    "status": "ai"
+  },
+  "tasks:deleteTaskComment": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "tasks:getAllUserTasks": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "tasks:getOverdueTasks": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "tasks:getTask": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "tasks:getTasks": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "tasks:getTasksForProjects": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "tasks:getTodayTasks": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "tasks:removeTaskShare": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "tasks:reorderTask": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "tasks:shareTask": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "tasks:shareTaskByEmail": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "tasks:toggleTaskStatus": {
+    "status": "excluded",
+    "reason": "redundant"
+  },
+  "tasks:updateTask": {
+    "status": "ai"
+  },
+  "tasks:updateTaskTags": {
+    "status": "ai",
+    "action": "set_task_tags"
+  },
+  "taskTags:createTaskTag": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "taskTags:deleteTaskTag": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "taskTags:getTaskTags": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_task_tags"
+  },
+  "taskTags:updateTaskTag": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "teams:changeMemberRole": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:createSubTeam": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:createTeam": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:deleteTeam": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:getHouseholdOnboarding": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:getMyTeams": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:getTeam": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:leaveTeam": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:removeMember": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:setMemberModuleAccess": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:transferTeamOwnership": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "teams:updateTeam": {
+    "status": "excluded",
+    "reason": "teams"
+  },
+  "trash:emptyTrash": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "trash:getTrash": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_trash"
+  },
+  "trash:purgeTrashItem": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "trash:restoreTrashItem": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "truck:getVehicleProfile": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "niche"
+  },
+  "truck:planTruckRoute": {
+    "status": "excluded",
+    "reason": "niche"
+  },
+  "truck:saveVehicleProfile": {
+    "status": "excluded",
+    "reason": "niche"
+  },
+  "units:createUnit": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "units:deleteUnit": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "units:getUnits": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "units:getUnitSuggestions": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "units:renameUnit": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "warsztat:addSuggestedItems": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "warsztat:addWorkshopItem": {
+    "status": "ai"
+  },
+  "warsztat:addWorkshopProject": {
+    "status": "ai",
+    "action": "add_workshop_project"
+  },
+  "warsztat:adjustWorkshopItemQuantity": {
+    "status": "ai",
+    "action": "adjust_workshop_item"
+  },
+  "warsztat:createWorkshop": {
+    "status": "ai"
+  },
+  "warsztat:deleteWorkshop": {
+    "status": "ai",
+    "action": "delete_workshop"
+  },
+  "warsztat:deleteWorkshopItem": {
+    "status": "ai",
+    "action": "delete_workshop_item"
+  },
+  "warsztat:deleteWorkshopProject": {
+    "status": "ai",
+    "action": "delete_workshop_project"
+  },
+  "warsztat:getMaintenanceOverview": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_maintenance"
+  },
+  "warsztat:getWarsztatSettings": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "warsztat:getWorkshop": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "warsztat:getWorkshops": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "warsztat:setWarsztatMode": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "warsztat:updateWorkshop": {
+    "status": "ai",
+    "action": "update_workshop"
+  },
+  "warsztat:updateWorkshopItem": {
+    "status": "ai",
+    "action": "update_workshop_item"
+  },
+  "warsztat:updateWorkshopProject": {
+    "status": "ai",
+    "action": "update_workshop_project"
+  },
+  "weather:addCustomWatcher": {
+    "status": "ai",
+    "action": "add_custom_watcher"
+  },
+  "weather:addLocation": {
+    "status": "excluded",
+    "reason": "redundant"
+  },
+  "weather:addLocationByName": {
+    "status": "ai"
+  },
+  "weather:addPresetWatcher": {
+    "status": "ai"
+  },
+  "weather:deleteLocation": {
+    "status": "ai"
+  },
+  "weather:deleteWatcher": {
+    "status": "ai"
+  },
+  "weather:getLocations": {
+    "kind": "read",
+    "status": "ai"
+  },
+  "weather:getWatchers": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_watchers"
+  },
+  "weather:getWeather": {
+    "kind": "read",
+    "status": "ai",
+    "action": "get_weather"
+  },
+  "weather:setDefaultLocation": {
+    "status": "ai"
+  },
+  "weather:updateWatcher": {
+    "status": "ai",
+    "action": "update_watcher"
+  }
+}

@@ -1,7 +1,7 @@
 // Z-010: handler akcji asystenta dla modułu Zdrowie (wizyty/badania + leki/pielęgnacja).
 // Wyodrębniony z execute/route.ts. `type === "..."` skanowane przez check-action-coverage.js.
 import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent } from "@/actions/health";
-import { createMedicationSchedule, deleteMedicationSchedule, logDose, getMedicationDay } from "@/actions/medications";
+import { createMedicationSchedule, deleteMedicationSchedule, updateMedicationSchedule, logDose, unlogDose, getMedicationDay } from "@/actions/medications";
 import { asStr, resolveHealthEventId, resolveMedicationId, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { HealthKind, HealthStatus } from "@/types";
@@ -81,6 +81,30 @@ export async function executeHealthAction(action: AIAction, userId: string): Pro
     if (!slot) throw new Error("Brak zaplanowanej dawki tego dnia — podaj godzinę (slot)");
     await logDose(id, date, slot, "TAKEN");
     return `Odhaczono dawkę o ${slot}`;
+  }
+  if (type === "unlog_dose") {
+    const id = await resolveMedicationId(userId, params, searchQuery);
+    const date = asStr(params.date) ?? new Date().toISOString().slice(0, 10);
+    let slot = asStr(params.slot);
+    if (!slot) {
+      const day = await getMedicationDay(date);
+      const done = day.slots.find((sl) => sl.scheduleId === id && sl.done);
+      slot = done?.slot;
+    }
+    if (!slot) throw new Error("Brak odhaczonej dawki tego dnia — podaj godzinę (slot)");
+    await unlogDose(id, date, slot);
+    return `Cofnięto odhaczenie dawki o ${slot}`;
+  }
+  if (type === "update_medication") {
+    const id = await resolveMedicationId(userId, params, searchQuery);
+    const patch: Parameters<typeof updateMedicationSchedule>[1] = {};
+    if (params.name !== undefined) patch.name = String(params.name);
+    if (params.dosage !== undefined) patch.dosage = asStr(params.dosage) ?? null;
+    if (params.instructions !== undefined) patch.instructions = asStr(params.instructions) ?? null;
+    if (params.reason !== undefined) patch.reason = asStr(params.reason) ?? null;
+    if (params.active !== undefined) patch.active = params.active === true;
+    await updateMedicationSchedule(id, patch);
+    return `Zaktualizowano harmonogram leku/pielęgnacji`;
   }
   if (type === "delete_medication") {
     const id = await resolveMedicationId(userId, params, searchQuery);

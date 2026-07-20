@@ -22,6 +22,9 @@ export const PET_ACTIONS_PROMPT = `ZWIERZĘTA (module: "pets"):
   Dodaje wpis do dziennika zdrowia. searchQuery to imię zwierzęcia.
 - add_enclosure: params { name: string, type?: "TERRARIUM"|"AQUARIUM"|"PALUDARIUM"|"CAGE"|"AVIARY"|"TANK", volumeL?: number, assignTo?: string }
   Tworzy zbiornik (terrarium/akwarium). assignTo = imię zwierzęcia do przypisania (opcjonalnie).
+- update_enclosure: params { newName?, type?, location?, notes? }, searchQuery = nazwa zbiornika. Edytuje zbiornik.
+- delete_enclosure: params {}, searchQuery = nazwa zbiornika. DESTRUKCYJNE.
+- assign_pet_to_enclosure: params { enclosureName? }, searchQuery = imię zwierzęcia. Przypisuje zwierzę do zbiornika (pusty enclosureName = odpięcie).
 - log_environment: params { tempWarmC?: number, tempCoolC?: number, humidityPct?: number, uvbIndex?: number, waterTempC?: number, ph?: number, ammoniaPpm?: number, nitritePpm?: number, nitratePpm?: number, salinityPpt?: number, gh?: number, kh?: number }, searchQuery: string
   Zapisuje pomiar parametrów środowiska dla zbiornika przypisanego do zwierzęcia. searchQuery to imię zwierzęcia. Terrarium: temp/wilgotność/UVB. Akwarium: pH/amoniak/azotyny/azotany/temp. wody.
 - record_sale: params { buyerName?: string, price?: number, buyerContact?: string }, searchQuery: string
