@@ -4,6 +4,32 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-20 — Łamanie długich URL w markdown: catch-all przez dziedziczony overflow-wrap
+**Problem:** Po dodaniu `overflow-wrap:anywhere` tylko do `.md-p/.md-li/.md-td/.md-link` długie linki w
+treści wiedzy (module Wiadomości, `KnowledgePanel` → `markdownToHtml` → klasa `markdown-body`) DALEJ
+rozpychały sekcję, jeśli URL trafił do **nagłówka** (`.md-h1..h6`) albo **inline-code** (`.md-code`),
+których nie objąłem. Łatanie klasa-po-klasie było niekompletne.
+**Rozwiązanie:** `overflow-wrap` i `word-break` są **dziedziczone**, więc jedna reguła na kontenerze —
+`.markdown-body { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }` — wymusza łamanie we
+WSZYSTKICH potomkach naraz (nagłówki, code, cytaty, linki). Bloki kodu (`white-space: pre`) i tak się nie
+łamią i scrollują przez `.md-pre` (`overflow-x:auto`) — dziedziczenie ich nie psuje.
+**Lekcja:** Gdy chcesz wymusić właściwość TEKSTOWĄ (overflow-wrap, word-break, white-space, color) na
+całym poddrzewie — ustaw ją raz na kontenerze i wykorzystaj dziedziczenie, zamiast łatać każdą klasę
+elementu z osobna (łatwo pominąć nagłówek/kod). Do łamania URL-i: `overflow-wrap: anywhere` na wrapperze.
+
+## 2026-07-20 — UX dodawania w Omnii: quick-capture (tytuł) + pełny formularz na klik, nie mini-form
+**Problem:** Inline mini-formularz „szybkiego dodawania" zadania (tytuł + priorytet + pole daty + „+") gniótł
+się na mobile — natywne pole daty (16px anty-zoom) i „+" nie mieściły się w jednym rzędzie.
+**Rozwiązanie:** Analiza innych modułów (Health `EventForm`, Flota, Contacts) pokazała spójny wzorzec:
+JEDEN pełny formularz inline dla add+edit, otwierany przyciskiem. Tasks ma już taki pełny formularz
+(`TaskDetail`, otwierany kliknięciem zadania). Dlatego uprościłem quick-add do jednego czystego rzędu
+`[priorytet][tytuł][+]` (szybkie przechwytywanie — mocna strona listy zadań), a WSZYSTKIE pozostałe pola
+(termin, projekt, powtarzalność, podzadania) przeniosłem do `TaskDetail`. Efekt: brak gniecenia na mobile,
+zachowana szybkość, spójność z resztą aplikacji.
+**Lekcja:** Nie upychaj wielu pól w inline pasku dodawania na mobile. Dla list o wysokiej częstości dodawania
+(zadania) trzymaj quick-capture = sam tytuł; szczegóły w pełnym formularzu edycji (jeden komponent add=edit),
+jak robią to inne moduły. „Mniej pól w pasku, reszta w formularzu" > „wszystko w jednym rzędzie".
+
 ## 2026-07-20 — Wykluczenie z modalOpen nie wystarczy: panel z-50 i tak zasłania FAB (z-index)
 **Problem:** Po oznaczeniu mobilnego podglądu zadania `data-omnia-overlay` (żeby `modalOpen` się nie
 zapalał i FAB asystenta się renderował) ikony asystenta i „zgłoś błąd" DALEJ były niewidoczne na mobile.
