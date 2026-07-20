@@ -76,6 +76,11 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const quickAddRef = useRef<QuickAddTaskHandle>(null);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const searchRef = useRef<HTMLInputElement>(null);
+  // Pasek akcji na wąskich ekranach przewija się poziomo. Bez wizualnej wskazówki użytkownik nie wie,
+  // że są kolejne ikony poza kadrem — trzymamy stan „czy można przewinąć w lewo/prawo" i pokazujemy
+  // zanikający gradient („fade") na odpowiedniej krawędzi.
+  const actionsScrollRef = useRef<HTMLDivElement>(null);
+  const [actionScroll, setActionScroll] = useState<{ left: boolean; right: boolean }>({ left: false, right: false });
   // Zadania, dla których już wysłaliśmy powiadomienie (klucz: id + termin).
   // Przeżywa re-rendery i zmiany propu `tasks`, więc nie dublujemy notyfikacji.
   const notifiedRef = useRef<Set<string>>(new Set());
@@ -105,6 +110,20 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     }
     checkDueNotifications(tasks);
   }, [tasks]);
+
+  // Przelicz wskazówkę przewijania paska akcji na mount, przy resize i gdy zmienia się zestaw
+  // widocznych ikon (widok/układ/uprawnienia zmieniają szerokość rzędu).
+  useEffect(() => {
+    const el = actionsScrollRef.current;
+    if (!el) return;
+    const update = () => {
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      setActionScroll({ left: el.scrollLeft > 1, right: el.scrollLeft < maxScroll - 1 });
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [viewMode, layout, canEditStatuses, isAdmin, selectionMode]);
 
   // Preferencja grupowania przeżywa nawigację między widokami (localStorage).
   useEffect(() => {
@@ -464,16 +483,36 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             liczy się jako auto), więc akcje z rozwijanym menu (ProjectActionsMenu) trzymamy POZA
             strefą scrolla — przypięte po prawej, zawsze widoczne i nieobcięte. */}
         <div className="flex items-center gap-2 min-w-0">
-          <div className="flex items-center gap-2 min-w-0 overflow-x-auto [&>*]:flex-shrink-0">
+          <div className="relative flex items-center min-w-0">
+          <div
+            ref={actionsScrollRef}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              const maxScroll = el.scrollWidth - el.clientWidth;
+              setActionScroll({ left: el.scrollLeft > 1, right: el.scrollLeft < maxScroll - 1 });
+            }}
+            className="flex items-center gap-2 min-w-0 overflow-x-auto [&>*]:flex-shrink-0"
+            role="toolbar"
+            aria-label="Pasek akcji listy — przewiń w poziomie, by zobaczyć więcej"
+          >
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {counts.ALL > 0 && `${counts.ALL} aktywne`}
           </span>
 
+          {/* Widoczność ikon paska (spójna, per kontekst):
+              • Kosz / Sortuj-zrobione / Szukaj / Powiadomienia — ZAWSZE
+              • Grupowanie (ListTree/Flag) — tylko widoki zbiorcze (canToggleGrouping: upcoming/overdue/all/multi)
+              • Konfiguracja statusów (SlidersHorizontal) — tylko właściciel listy (canEditStatuses)
+              • Zaznacz wiele (CheckSquare) — tylko układ Lista (layout==="list")
+              • Przełącznik układu Lista/Kanban/Timeline — ZAWSZE
+              • Clipboard dla Claude — tylko admin (isAdmin)
+              Wszystkie ikony size={15}; każda ma title + aria-label. */}
           <Link
             href="/trash"
             className="flex items-center justify-center p-1.5 rounded"
             style={{ color: "var(--text-muted)" }}
             title="Kosz (usunięte do przywrócenia)"
+            aria-label="Kosz — usunięte zadania do przywrócenia"
           >
             <Trash2 size={15} />
           </Link>
@@ -492,6 +531,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
                   backgroundColor: groupBy === "default" ? "var(--bg-hover)" : "transparent",
                 }}
                 title="Grupuj jak w widoku (dni / projekty)"
+                aria-label="Grupuj jak w widoku (dni / projekty)"
               >
                 <ListTree size={15} />
               </button>
@@ -503,6 +543,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
                   backgroundColor: groupBy === "priority" ? "var(--bg-hover)" : "transparent",
                 }}
                 title="Grupuj po priorytetach (jak w „Dziś”)"
+                aria-label="Grupuj po priorytetach"
               >
                 <Flag size={15} />
               </button>
@@ -515,6 +556,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             className="p-1.5 rounded focus:outline-none"
             style={{ color: sortBy === "completedAt" ? "var(--accent-blue)" : "var(--text-muted)" }}
             title={sortBy === "completedAt" ? "Zrobione: sortowane po dacie wykonania (kliknij, by wyłączyć)" : "Sortuj zrobione po dacie wykonania"}
+            aria-label="Sortuj zrobione po dacie wykonania"
           >
             <CalendarCheck size={15} />
           </button>
@@ -524,6 +566,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             className="p-1.5 rounded focus:outline-none"
             style={{ color: isSearchOpen ? "var(--accent-blue)" : "var(--text-muted)" }}
             title="Szukaj (/ lub f)"
+            aria-label="Szukaj zadań"
           >
             <Search size={15} />
           </button>
@@ -533,6 +576,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             className="p-1.5 rounded focus:outline-none"
             style={{ color: notificationsEnabled ? "var(--accent-amber)" : "var(--text-muted)" }}
             title={notificationsEnabled ? "Powiadomienia włączone" : "Włącz powiadomienia"}
+            aria-label={notificationsEnabled ? "Powiadomienia włączone" : "Włącz powiadomienia"}
           >
             {notificationsEnabled ? <Bell size={15} /> : <BellOff size={15} />}
           </button>
@@ -543,6 +587,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               className="p-1.5 rounded focus:outline-none"
               style={{ color: "var(--text-muted)" }}
               title="Statusy listy (konfiguracja)"
+              aria-label="Konfiguracja statusów listy"
             >
               <SlidersHorizontal size={15} />
             </button>
@@ -583,6 +628,24 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
 
           {/* Admin: skopiuj prompt dla Claude Code z zadaniami widocznymi w tej zakładce */}
           {isAdmin && <TaskListClipboardButton tasks={visibleTasks} />}
+          </div>
+          {/* Zanikające „fade" na krawędziach — sygnał, że pasek da się przewinąć. Dekoracyjne
+              (aria-hidden) i nie przechwytują kliknięć (pointer-events:none), więc skrajna ikona
+              pozostaje w pełni klikalna. Kolor = tło nagłówka (var(--bg-surface)), spójny ze skórką. */}
+          {actionScroll.left && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute left-0 top-0 bottom-0 w-6"
+              style={{ background: "linear-gradient(to right, var(--bg-surface), transparent)" }}
+            />
+          )}
+          {actionScroll.right && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute right-0 top-0 bottom-0 w-6"
+              style={{ background: "linear-gradient(to left, var(--bg-surface), transparent)" }}
+            />
+          )}
           </div>
 
           {/* Akcje projektu (zmień nazwę / usuń) — POZA strefą scrolla, żeby rozwijane menu
