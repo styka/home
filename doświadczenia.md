@@ -4,6 +4,19 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-20 — „Brak brancha develop" — mylny wniosek z niepełnego lokalnego klonu
+**Problem:** Przy domykaniu zadania stwierdziłem, że w repo nie ma brancha `develop`, bo `git branch -a`
+pokazywał tylko `master` i branch roboczy. Na tej podstawie pominąłem przepływ przez `develop` i na „Tak"
+właściciela poszedłem od razu na `master`. `develop` jednak ISTNIEJE na origin — lokalny klon miał
+zawężony refspec (pobrane tylko `master` + branch roboczy), więc `remotes/origin/develop` nie było w
+lokalnych refach.
+**Rozwiązanie:** Odpytałem zdalne repo wprost: `git ls-remote --heads origin` — pokazało `refs/heads/develop`.
+`develop` był przodkiem `master`, więc dociągnąłem go czystym fast-forwardem (`git checkout develop &&
+git merge --ff-only master && git push origin develop`). Teraz `develop == master`.
+**Lekcja:** NIGDY nie orzekaj „brak brancha X" na podstawie `git branch -a` w klonie sesyjnym — może mieć
+niepełny refspec. Prawdę o zdalnych branchach daje `git ls-remote --heads origin` (albo `git fetch origin <branch>`).
+Sprawdź to, ZANIM zdecydujesz o pominięciu `develop` czy pushu na `master`.
+
 ## 2026-07-20 — Asystent AI przeredagowywał opis zadania wpisany przez użytkownika
 **Problem:** Przy tworzeniu zadania z asystenta (także przy zgłoszeniach admina o bugu/zmianie aplikacji)
 opis był „lekko redagowany" — zamieniany na formę bezosobową i „poprawiany" gramatycznie. Właściciel chciał,
