@@ -499,23 +499,46 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             {counts.ALL > 0 && `${counts.ALL} aktywne`}
           </span>
 
-          {/* Widoczność ikon paska (spójna, per kontekst):
-              • Kosz / Sortuj-zrobione / Szukaj / Powiadomienia — ZAWSZE
+          {/* Kolejność paska = wg częstości użycia: najczęstsze akcje z lewej (zawsze widoczne bez
+              scrolla na mobile), rzadkie na końcu (Powiadomienia → Kosz → Clipboard).
+              Widoczność ikon (spójna, per kontekst):
+              • Szukaj / Przełącznik układu / Sortuj-zrobione / Powiadomienia / Kosz — ZAWSZE
               • Grupowanie (ListTree/Flag) — tylko widoki zbiorcze (canToggleGrouping: upcoming/overdue/all/multi)
-              • Konfiguracja statusów (SlidersHorizontal) — tylko właściciel listy (canEditStatuses)
               • Zaznacz wiele (CheckSquare) — tylko układ Lista (layout==="list")
-              • Przełącznik układu Lista/Kanban/Timeline — ZAWSZE
+              • Konfiguracja statusów (SlidersHorizontal) — tylko właściciel listy (canEditStatuses)
               • Clipboard dla Claude — tylko admin (isAdmin)
               Wszystkie ikony size={15}; każda ma title + aria-label. */}
-          <Link
-            href="/trash"
-            className="flex items-center justify-center p-1.5 rounded"
-            style={{ color: "var(--text-muted)" }}
-            title="Kosz (usunięte do przywrócenia)"
-            aria-label="Kosz — usunięte zadania do przywrócenia"
+
+          {/* Szukaj — jedna z najczęstszych akcji, więc pierwsza */}
+          <button
+            onClick={() => { setIsSearchOpen((v) => !v); setTimeout(() => searchRef.current?.focus(), 10); }}
+            className="p-1.5 rounded focus:outline-none"
+            style={{ color: isSearchOpen ? "var(--accent-blue)" : "var(--text-muted)" }}
+            title="Szukaj (/ lub f)"
+            aria-label="Szukaj zadań"
           >
-            <Trash2 size={15} />
-          </Link>
+            <Search size={15} />
+          </button>
+
+          {/* Przełącznik układu: Lista / Kanban / Timeline — częsty, więc blisko lewej */}
+          <div className="flex items-center gap-0.5 rounded" style={{ border: "1px solid var(--border)" }}>
+            {([
+              { key: "list", label: "Lista", Icon: ListIcon },
+              { key: "kanban", label: "Kanban", Icon: Columns3 },
+              { key: "timeline", label: "Timeline", Icon: CalendarRange },
+            ] as const).map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                onClick={() => setLayout(key)}
+                className="p-1.5 focus:outline-none"
+                title={label}
+                aria-label={label}
+                style={{ color: layout === key ? "var(--accent-blue)" : "var(--text-muted)", background: layout === key ? "var(--bg-hover)" : "transparent" }}
+              >
+                <Icon size={15} />
+              </button>
+            ))}
+          </div>
 
           {/* Przełącznik prezentacji: naturalne grupowanie widoku ↔ po priorytetach */}
           {canToggleGrouping && (
@@ -561,38 +584,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             <CalendarCheck size={15} />
           </button>
 
-          <button
-            onClick={() => { setIsSearchOpen((v) => !v); setTimeout(() => searchRef.current?.focus(), 10); }}
-            className="p-1.5 rounded focus:outline-none"
-            style={{ color: isSearchOpen ? "var(--accent-blue)" : "var(--text-muted)" }}
-            title="Szukaj (/ lub f)"
-            aria-label="Szukaj zadań"
-          >
-            <Search size={15} />
-          </button>
-
-          <button
-            onClick={requestNotifications}
-            className="p-1.5 rounded focus:outline-none"
-            style={{ color: notificationsEnabled ? "var(--accent-amber)" : "var(--text-muted)" }}
-            title={notificationsEnabled ? "Powiadomienia włączone" : "Włącz powiadomienia"}
-            aria-label={notificationsEnabled ? "Powiadomienia włączone" : "Włącz powiadomienia"}
-          >
-            {notificationsEnabled ? <Bell size={15} /> : <BellOff size={15} />}
-          </button>
-
-          {canEditStatuses && (
-            <button
-              onClick={() => setStatusConfigOpen(true)}
-              className="p-1.5 rounded focus:outline-none"
-              style={{ color: "var(--text-muted)" }}
-              title="Statusy listy (konfiguracja)"
-              aria-label="Konfiguracja statusów listy"
-            >
-              <SlidersHorizontal size={15} />
-            </button>
-          )}
-
           {/* Bulkowa edycja: wejście w tryb zaznaczania (tylko widok listy) */}
           {layout === "list" && (
             <button
@@ -606,25 +597,40 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             </button>
           )}
 
-          {/* Przełącznik układu: Lista / Kanban / Timeline (T1/T2) */}
-          <div className="flex items-center gap-0.5 rounded" style={{ border: "1px solid var(--border)" }}>
-            {([
-              { key: "list", label: "Lista", Icon: ListIcon },
-              { key: "kanban", label: "Kanban", Icon: Columns3 },
-              { key: "timeline", label: "Timeline", Icon: CalendarRange },
-            ] as const).map(({ key, label, Icon }) => (
-              <button
-                key={key}
-                onClick={() => setLayout(key)}
-                className="p-1.5 focus:outline-none"
-                title={label}
-                aria-label={label}
-                style={{ color: layout === key ? "var(--accent-blue)" : "var(--text-muted)", background: layout === key ? "var(--bg-hover)" : "transparent" }}
-              >
-                <Icon size={15} />
-              </button>
-            ))}
-          </div>
+          {canEditStatuses && (
+            <button
+              onClick={() => setStatusConfigOpen(true)}
+              className="p-1.5 rounded focus:outline-none"
+              style={{ color: "var(--text-muted)" }}
+              title="Statusy listy (konfiguracja)"
+              aria-label="Konfiguracja statusów listy"
+            >
+              <SlidersHorizontal size={15} />
+            </button>
+          )}
+
+          {/* Powiadomienia — rzadziej używane, więc bliżej końca */}
+          <button
+            onClick={requestNotifications}
+            className="p-1.5 rounded focus:outline-none"
+            style={{ color: notificationsEnabled ? "var(--accent-amber)" : "var(--text-muted)" }}
+            title={notificationsEnabled ? "Powiadomienia włączone" : "Włącz powiadomienia"}
+            aria-label={notificationsEnabled ? "Powiadomienia włączone" : "Włącz powiadomienia"}
+          >
+            {notificationsEnabled ? <Bell size={15} /> : <BellOff size={15} />}
+          </button>
+
+          {/* Kosz = link do /trash (odzyskiwanie), NIE usuwanie — dlatego na końcu, przy rzadkich
+              akcjach, żeby nie mylił się z akcją „usuń" (delete jest w menu ⋮ / trybie zaznaczania). */}
+          <Link
+            href="/trash"
+            className="flex items-center justify-center p-1.5 rounded"
+            style={{ color: "var(--text-muted)" }}
+            title="Kosz (usunięte do przywrócenia)"
+            aria-label="Kosz — usunięte zadania do przywrócenia"
+          >
+            <Trash2 size={15} />
+          </Link>
 
           {/* Admin: skopiuj prompt dla Claude Code z zadaniami widocznymi w tej zakładce */}
           {isAdmin && <TaskListClipboardButton tasks={visibleTasks} />}
