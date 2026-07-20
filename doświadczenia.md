@@ -1470,3 +1470,13 @@ do puli ~64 kosmetycznych warningów, które i tak są na roadmapie do sprzątni
 to tylko **bramka produkcyjna** (`develop → master`), i tę robimy jednym, zawsze-zadawanym pytaniem z
 bezpiecznym domyślnym „Nie". Cudzysłowy drukarskie w tekście JSX pakuj w `{"…"}`, żeby nie budzić
 `react/no-unescaped-entities`.
+
+## 2026-07-20 — Iteracja po `Set` w Server Action wywala `next build` (downlevelIteration)
+**Problem:** Nowa akcja `bulkUpdateTasks` używała `for (const pid of affectedProjectIds)` po `Set<string>`.
+`next build` (typecheck) padał: „Type 'Set<string>' can only be iterated through when using the
+'--downlevelIteration' flag or with a '--target' of 'es2015' or higher" — tsconfig projektu ma niższy
+target/brak downlevelIteration.
+**Rozwiązanie:** Zamiana na `Array.from(set).forEach(...)`. `lint` tego nie łapie — wychodzi dopiero na
+kroku „Checking validity of types" w `next build`.
+**Lekcja:** W kodzie `src/` nie iteruj `Set`/`Map` przez `for...of` ani span spreadem w gorących
+miejscach — używaj `Array.from(...)`. Realny typecheck daje dopiero `next build`, nie sam `lint`.

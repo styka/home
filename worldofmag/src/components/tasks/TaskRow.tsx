@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
-import { Clock, ChevronRight, Paperclip } from "lucide-react";
+import { useState, useTransition, useMemo, useRef } from "react";
+import { Clock, ChevronRight, Paperclip, Check } from "lucide-react";
 import { toggleTaskStatus, updateTask } from "@/actions/tasks";
 import { TaskTagBadge } from "./TaskTagBadge";
 import { RecurringBadge } from "./RecurringBadge";
@@ -39,11 +39,35 @@ interface TaskRowProps {
   rowRef?: (el: HTMLDivElement | null) => void;
   indent?: number;
   statusConfig?: ProjectStatusConfig;
+  /** Tryb zaznaczania (bulk) — checkbox widoczny, klik toggluje zaznaczenie zamiast otwierać panel. */
+  selectionMode?: boolean;
+  /** Czy wiersz jest zaznaczony w trybie bulk. */
+  isChecked?: boolean;
+  /** Toggle zaznaczenia (shiftKey = zaznaczenie zakresu). Wywołanie wchodzi też w tryb zaznaczania. */
+  onToggleSelect?: (shiftKey: boolean) => void;
 }
 
-export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, indent = 0, statusConfig = DEFAULT_STATUS_CONFIG }: TaskRowProps) {
+export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, indent = 0, statusConfig = DEFAULT_STATUS_CONFIG, selectionMode = false, isChecked = false, onToggleSelect }: TaskRowProps) {
   const [isPending, startTransition] = useTransition();
   const [editingDate, setEditingDate] = useState(false);
+  // Long-press na mobile wchodzi w tryb zaznaczania; ref blokuje „klik" wywołany po geście.
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+
+  function clearLongPress() {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  }
+  function handleTouchStart() {
+    if (!onToggleSelect) return;
+    longPressFired.current = false;
+    longPressTimer.current = setTimeout(() => { longPressFired.current = true; onToggleSelect(false); }, 450);
+  }
+
+  function handleRowClick(e: React.MouseEvent) {
+    if (longPressFired.current) { longPressFired.current = false; return; }
+    if (selectionMode && onToggleSelect) { onToggleSelect(e.shiftKey); return; }
+    onFocus(); onOpen();
+  }
   // Meta statusu z WŁASNEJ listy zadania (w widokach zbiorczych `statusConfig` jest scalony
   // z wielu list — własna konfiguracja projektu daje pewność poprawnej etykiety/ikony/koloru).
   const effectiveConfig = useMemo(
@@ -79,17 +103,37 @@ export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, 
   return (
     <div
       ref={rowRef}
-      onClick={() => { onFocus(); onOpen(); }}
+      onClick={handleRowClick}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={clearLongPress}
+      onTouchMove={clearLongPress}
       className="flex items-start gap-2 px-3 py-2 cursor-pointer group"
       style={{
         paddingLeft: 12 + indent * 20,
-        backgroundColor: isFocused ? "var(--bg-elevated)" : undefined,
-        borderLeft: isFocused ? "2px solid var(--accent-blue)" : "2px solid transparent",
+        backgroundColor: isChecked ? "var(--bg-elevated)" : isFocused ? "var(--bg-elevated)" : undefined,
+        borderLeft: isChecked ? "2px solid var(--accent-blue)" : isFocused ? "2px solid var(--accent-blue)" : "2px solid transparent",
         opacity: isTerminal ? 0.55 : 1,
       }}
-      onMouseEnter={(e) => { if (!isFocused) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
-      onMouseLeave={(e) => { if (!isFocused) e.currentTarget.style.backgroundColor = ""; }}
+      onMouseEnter={(e) => { if (!isFocused && !isChecked) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
+      onMouseLeave={(e) => { if (!isFocused && !isChecked) e.currentTarget.style.backgroundColor = ""; }}
     >
+      {/* Checkbox zaznaczania (bulk): w trybie zaznaczania zawsze widoczny; poza nim pojawia się przy najechaniu. */}
+      {onToggleSelect && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleSelect(e.shiftKey); }}
+          className={`flex-shrink-0 self-center flex items-center justify-center rounded focus:outline-none transition-opacity ${selectionMode ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+          style={{
+            width: 20, height: 20,
+            border: `2px solid ${isChecked ? "var(--accent-blue)" : "var(--border)"}`,
+            backgroundColor: isChecked ? "var(--accent-blue)" : "transparent",
+          }}
+          title={isChecked ? "Odznacz" : "Zaznacz"}
+          aria-label={isChecked ? "Odznacz zadanie" : "Zaznacz zadanie"}
+        >
+          {isChecked && <Check size={14} color="var(--on-accent)" />}
+        </button>
+      )}
+
       {/* Priority indicator */}
       <div
         className="flex-shrink-0 self-center"

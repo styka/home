@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, Trash2, CalendarCheck } from "lucide-react";
+import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, Trash2, CalendarCheck, CheckSquare } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
@@ -12,8 +12,9 @@ import { TaskStatusConfigEditor } from "./TaskStatusConfigEditor";
 import { QuickAddTask, type QuickAddTaskHandle } from "./QuickAddTask";
 import { ProjectActionsMenu } from "./ProjectActionsMenu";
 import { TaskListClipboardButton } from "./TaskListClipboardButton";
+import { BulkActionBar, type BulkPatch } from "./BulkActionBar";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { deleteTask, toggleTaskStatus } from "@/actions/tasks";
+import { deleteTask, toggleTaskStatus, bulkUpdateTasks, bulkDeleteTasks } from "@/actions/tasks";
 import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode, ProjectStatusConfig } from "@/types";
 import { resolveStatuses, statusMetaFor, DEFAULT_STATUS_CONFIG } from "@/types";
 
@@ -66,6 +67,12 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const [layout, setLayout] = useState<"list" | "kanban" | "timeline">("list");
   const canToggleGrouping = viewMode === "upcoming" || viewMode === "overdue" || viewMode === "all" || viewMode === "multi";
   const [, startTransition] = useTransition();
+  // Bulkowa (zbiorcza) edycja — tryb zaznaczania + zaznaczone id + kotwica zakresu (Shift).
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
+  const [bulkPending, startBulkTransition] = useTransition();
+  const [bulkMessage, setBulkMessage] = useState<string | null>(null);
   const quickAddRef = useRef<QuickAddTaskHandle>(null);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const searchRef = useRef<HTMLInputElement>(null);
@@ -260,6 +267,53 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     );
   }, [displayedTasks, activeFilter, selectedTagIds, statusConfig]);
 
+  // ─── Bulkowa edycja: handlery zaznaczenia ──────────────────────────────────
+  function finishSelection(msg: string | null) {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+    setLastSelectedId(null);
+    setBulkMessage(msg);
+    if (msg) setTimeout(() => setBulkMessage(null), 4000);
+  }
+  function toggleSelectOne(id: string) {
+    setSelectionMode(true);
+    setSelectedIds((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+    setLastSelectedId(id);
+  }
+  function selectRange(ids: string[]) {
+    setSelectionMode(true);
+    setSelectedIds((s) => { const n = new Set(s); ids.forEach((i) => n.add(i)); return n; });
+    setLastSelectedId(ids[ids.length - 1] ?? null);
+  }
+  function toggleSelectAllVisible() {
+    const ids = visibleTasks.map((t) => t.id);
+    const allSel = ids.length > 0 && ids.every((i) => selectedIds.has(i));
+    if (allSel) { setSelectedIds(new Set()); setLastSelectedId(null); }
+    else { setSelectionMode(true); setSelectedIds(new Set(ids)); }
+  }
+  function applyBulk(patch: BulkPatch) {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    startBulkTransition(async () => {
+      const res = await bulkUpdateTasks(ids, patch);
+      finishSelection(res.skipped > 0 ? `Zmieniono ${res.updated} z ${ids.length} (pominięto ${res.skipped})` : `Zmieniono ${res.updated}`);
+    });
+  }
+  function deleteBulk() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!confirm(`Usunąć ${ids.length} zaznaczonych zadań? Trafią do Kosza.`)) return;
+    startBulkTransition(async () => {
+      const res = await bulkDeleteTasks(ids);
+      finishSelection(res.skipped > 0 ? `Usunięto ${res.deleted} z ${ids.length} (pominięto ${res.skipped})` : `Usunięto ${res.deleted}`);
+    });
+  }
+
+  // Zaznaczanie działa tylko w widoku listy — przy zmianie układu wyczyść stan.
+  useEffect(() => {
+    if (layout !== "list") { setSelectionMode(false); setSelectedIds(new Set()); setLastSelectedId(null); }
+  }, [layout]);
+
   // Kanban: kolumny = wszystkie włączone statusy (także terminalne, by kolumna „Zrobione” się
   // wypełniała) — nie zawężamy po zakładce statusu (w Kanbanie ukryta), filtrujemy tylko po tagach
   // (wyszukiwanie już zawarte w `displayedTasks`). Wcześniej Kanban dostawał surowe `displayedTasks`,
@@ -327,13 +381,14 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
       onFilterTab: (index: number) => setActiveFilter(statusFilters[index] ?? "ALL"),
       onCommandPalette: () => {},
       onEscape: () => {
+        if (selectionMode || selectedIds.size > 0) { finishSelection(null); return; }
         if (aiSearchResults) { setAiSearchResults(null); setSearchQuery(""); return; }
         if (isSearchOpen) { setSearchQuery(""); setIsSearchOpen(false); return; }
         if (openTaskId) { setOpenTaskId(null); return; }
         setFocusedTaskId(null);
       },
     }),
-    [focusedTaskId, filteredForNav, openTaskId, isSearchOpen, aiSearchResults, statusFilters]
+    [focusedTaskId, filteredForNav, openTaskId, isSearchOpen, aiSearchResults, statusFilters, selectionMode, selectedIds]
   );
 
   useKeyboardShortcuts(handlers);
@@ -490,6 +545,19 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               title="Statusy listy (konfiguracja)"
             >
               <SlidersHorizontal size={15} />
+            </button>
+          )}
+
+          {/* Bulkowa edycja: wejście w tryb zaznaczania (tylko widok listy) */}
+          {layout === "list" && (
+            <button
+              onClick={() => { if (selectionMode || selectedIds.size > 0) finishSelection(null); else setSelectionMode(true); }}
+              className="p-1.5 rounded focus:outline-none"
+              style={{ color: selectionMode ? "var(--accent-blue)" : "var(--text-muted)" }}
+              title="Zaznacz wiele (edycja zbiorcza)"
+              aria-label="Zaznacz wiele zadań"
+            >
+              <CheckSquare size={15} />
             </button>
           )}
 
@@ -661,6 +729,11 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             onFocus={setFocusedTaskId}
             onOpen={(id) => setOpenTaskId(id)}
             rowRefs={rowRefs}
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            lastSelectedId={lastSelectedId}
+            onToggleOne={toggleSelectOne}
+            onSelectRange={selectRange}
           />
         )}
 
@@ -698,6 +771,33 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           </div>
         )}
       </div>
+
+      {/* Pasek akcji zbiorczych — widoczny gdy coś zaznaczono (tylko widok listy) */}
+      {layout === "list" && selectedIds.size > 0 && (
+        <BulkActionBar
+          count={selectedIds.size}
+          totalVisible={visibleTasks.length}
+          allSelected={visibleTasks.length > 0 && visibleTasks.every((t) => selectedIds.has(t.id))}
+          pending={bulkPending}
+          statusConfig={statusConfig}
+          allProjects={allProjects}
+          allTags={allTags}
+          onSelectAll={toggleSelectAllVisible}
+          onClear={() => finishSelection(null)}
+          onApply={applyBulk}
+          onDelete={deleteBulk}
+        />
+      )}
+
+      {/* Krótki komunikat wyniku operacji zbiorczej */}
+      {bulkMessage && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-lg text-sm shadow-lg pointer-events-none"
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)", backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+        >
+          {bulkMessage}
+        </div>
+      )}
 
     </div>
   );

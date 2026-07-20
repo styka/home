@@ -21,6 +21,15 @@ interface TaskListProps {
   onOpen: (id: string) => void;
   rowRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   statusConfig?: ProjectStatusConfig;
+  /** Tryb zaznaczania (bulk). */
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  /** Kotwica zakresu (ostatnio klikniętego) — do Shift+klik. */
+  lastSelectedId?: string | null;
+  /** Toggle pojedynczego zadania (ustawia kotwicę). */
+  onToggleOne?: (id: string) => void;
+  /** Zaznaczenie zakresu (Shift+klik) — dodaje wszystkie id z zakresu. */
+  onSelectRange?: (ids: string[]) => void;
 }
 
 const PRIORITY_ORDER = ["URGENT", "HIGH", "MEDIUM", "LOW", "NONE"] as const;
@@ -46,10 +55,28 @@ function byDueDateAsc(a: Task, b: Task): number {
   return (a.order ?? 0) - (b.order ?? 0);
 }
 
-export function TaskList({ tasks, filter, viewMode, groupBy, sortBy = "default", selectedTagIds, focusedTaskId, onFocus, onOpen, rowRefs, statusConfig = DEFAULT_STATUS_CONFIG }: TaskListProps) {
+export function TaskList({ tasks, filter, viewMode, groupBy, sortBy = "default", selectedTagIds, focusedTaskId, onFocus, onOpen, rowRefs, statusConfig = DEFAULT_STATUS_CONFIG, selectionMode = false, selectedIds, lastSelectedId, onToggleOne, onSelectRange }: TaskListProps) {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const isTerminal = (status: string) => statusMetaFor(status, statusConfig).isTerminal;
+
+  // Kolejność renderu (wypełniana przez renderTask) — do zakresu Shift+klik, który
+  // liczymy po faktycznej, widocznej kolejności wierszy niezależnie od grupowania.
+  const orderedIds: string[] = [];
+  const selectable = !!onToggleOne;
+
+  function handleRowSelect(id: string, shiftKey: boolean) {
+    if (shiftKey && lastSelectedId && onSelectRange) {
+      const a = orderedIds.indexOf(lastSelectedId);
+      const b = orderedIds.indexOf(id);
+      if (a !== -1 && b !== -1) {
+        const [lo, hi] = a < b ? [a, b] : [b, a];
+        onSelectRange(orderedIds.slice(lo, hi + 1));
+        return;
+      }
+    }
+    onToggleOne?.(id);
+  }
 
   function applyTagFilter(list: Task[]): Task[] {
     if (selectedTagIds.length === 0) return list;
@@ -66,6 +93,7 @@ export function TaskList({ tasks, filter, viewMode, groupBy, sortBy = "default",
   const filtered = applyTagFilter(applyStatusFilter(tasks));
 
   function renderTask(task: Task) {
+    orderedIds.push(task.id);
     return (
       <TaskRow
         key={task.id}
@@ -76,6 +104,9 @@ export function TaskList({ tasks, filter, viewMode, groupBy, sortBy = "default",
         onOpen={() => onOpen(task.id)}
         rowRef={(el) => { if (el) rowRefs.current.set(task.id, el); else rowRefs.current.delete(task.id); }}
         statusConfig={statusConfig}
+        selectionMode={selectionMode}
+        isChecked={selectedIds?.has(task.id) ?? false}
+        onToggleSelect={selectable ? (shiftKey) => handleRowSelect(task.id, shiftKey) : undefined}
       />
     );
   }
@@ -123,7 +154,7 @@ export function TaskList({ tasks, filter, viewMode, groupBy, sortBy = "default",
     const entries = Array.from(dayMap.entries()).sort(([a], [b]) => a.localeCompare(b));
 
     return (
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: selectionMode ? 140 : undefined }}>
         {entries.map(([key, { label, tasks: dayTasks }]) => (
           <TaskGroup key={key} label={label} count={dayTasks.length}>
             {[...dayTasks].sort(byDueDateAsc).map(renderTask)}
@@ -141,7 +172,7 @@ export function TaskList({ tasks, filter, viewMode, groupBy, sortBy = "default",
   // Overdue view: flat list sorted oldest first (po terminie z czasem) — chyba że grupowanie po priorytetach
   if (viewMode === "overdue" && groupBy === "default") {
     return (
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: selectionMode ? 140 : undefined }}>
         {[...filtered].sort(byDueDateAsc).map(renderTask)}
       </div>
     );
@@ -165,7 +196,7 @@ export function TaskList({ tasks, filter, viewMode, groupBy, sortBy = "default",
     }
 
     return (
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: selectionMode ? 140 : undefined }}>
         {Array.from(projectMap.entries()).map(([key, { label, tasks: groupTasks }]) => (
           <TaskGroup key={key} label={label} count={groupTasks.length}>
             {[...groupTasks].sort(byDueDateAsc).map(renderTask)}
@@ -183,7 +214,7 @@ export function TaskList({ tasks, filter, viewMode, groupBy, sortBy = "default",
     : [];
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto" style={{ paddingBottom: selectionMode ? 140 : undefined }}>
       {PRIORITY_ORDER.map((priority) => {
         const group = filtered.filter((t) => t.priority === priority).sort(byDueDateAsc);
         if (group.length === 0) return null;

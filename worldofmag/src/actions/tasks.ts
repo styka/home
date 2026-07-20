@@ -292,6 +292,141 @@ export async function deleteTask(id: string): Promise<void> {
   if (task.projectId) revalidatePath(`/tasks/${task.projectId}`);
 }
 
+/**
+ * Zbiorcza (bulkowa) edycja zaznaczonych zadań. Każde pole w `patch` jest opcjonalne —
+ * ustawiamy TYLKO te, które przekazano; nietknięte pola zadań zostają bez zmian.
+ * Tagi mają semantykę dodaj/usuń (`addTagIds`/`removeTagIds`) — pozostałe tagi zadania
+ * są nietknięte. Zadania bez prawa edycji są POMIJANE (nie zmieniane), a wynik zwraca
+ * liczniki `{ updated, skipped }` do komunikatu „zmieniono X z N".
+ * Logika `completedAt` i normalizacji custom statusu przy przeniesieniu projektu jest
+ * spójna z `updateTask` (patrz tam po uzasadnienie).
+ */
+export async function bulkUpdateTasks(
+  taskIds: string[],
+  patch: Partial<{
+    status: string;
+    priority: TaskPriority;
+    dueDate: Date | null;
+    category: string;
+    projectId: string | null;
+    addTagIds: string[];
+    removeTagIds: string[];
+  }>
+): Promise<{ updated: number; skipped: number }> {
+  const user = await requireAuth();
+  if (taskIds.length === 0) return { updated: 0, skipped: 0 };
+
+  // Przeniesienie do innego projektu wymaga dostępu także do celu (sprawdzane raz).
+  if (patch.projectId) await assertProjectAccess(patch.projectId, user.id);
+
+  const { addTagIds = [], removeTagIds = [], ...scalar } = patch;
+  const affectedProjectIds = new Set<string>();
+  let updated = 0;
+  let skipped = 0;
+
+  for (const id of taskIds) {
+    const existing = await prisma.task.findUnique({ where: { id } });
+    if (!existing) { skipped++; continue; }
+    // Brak dostępu = pomiń (nie rzucaj) — częściowy wynik jest zamierzony.
+    try {
+      await assertTaskAccess(existing, user.id);
+    } catch {
+      skipped++;
+      continue;
+    }
+
+    const data: Record<string, unknown> = {};
+    if (scalar.status !== undefined) data.status = scalar.status;
+    if (scalar.priority !== undefined) data.priority = scalar.priority;
+    if (scalar.dueDate !== undefined) data.dueDate = scalar.dueDate;
+    if (scalar.category !== undefined) data.category = scalar.category;
+    if (scalar.projectId !== undefined) data.projectId = scalar.projectId;
+
+    // Przeniesienie do innego projektu bez jawnej zmiany statusu: custom status, którego
+    // cel nie zna, „osierociałby" — zresetuj do pierwszego włączonego statusu celu.
+    if (scalar.projectId && scalar.projectId !== existing.projectId && scalar.status === undefined) {
+      const isSystemStatus = SYSTEM_TASK_STATUSES.some((s) => s.key === existing.status);
+      if (!isSystemStatus) {
+        const target = await prisma.taskProject.findUnique({ where: { id: scalar.projectId }, select: { statusConfig: true } });
+        const cfg = parseStatusConfig(target?.statusConfig ?? null);
+        const known = new Set<string>([...SYSTEM_TASK_STATUSES.map((s) => s.key), ...(cfg.custom ?? []).map((c) => c.key)]);
+        if (!known.has(existing.status)) data.status = cfg.enabled[0] ?? "TODO";
+      }
+    }
+
+    const newStatus = data.status as string | undefined;
+    if (newStatus === "DONE" && existing.status !== "DONE") data.completedAt = new Date();
+    else if (newStatus && newStatus !== "DONE") data.completedAt = null;
+
+    if (Object.keys(data).length > 0) {
+      await prisma.task.update({ where: { id }, data });
+    }
+
+    // Tagi: usuń wybrane, potem dodaj wybrane (pozostałe tagi zadania nietknięte).
+    if (removeTagIds.length > 0) {
+      await prisma.taskTaskTag.deleteMany({ where: { taskId: id, tagId: { in: removeTagIds } } });
+    }
+    if (addTagIds.length > 0) {
+      await prisma.taskTaskTag.createMany({ data: addTagIds.map((tagId) => ({ taskId: id, tagId })), skipDuplicates: true });
+    }
+
+    if (existing.projectId) affectedProjectIds.add(existing.projectId);
+    if (scalar.projectId) affectedProjectIds.add(scalar.projectId);
+    updated++;
+  }
+
+  void trackActivity("tasks", "bulk_update_tasks", { count: updated, skipped, patchKeys: Object.keys(patch) });
+  revalidatePath("/tasks");
+  Array.from(affectedProjectIds).forEach((pid) => revalidatePath(`/tasks/${pid}`));
+  return { updated, skipped };
+}
+
+/**
+ * Zbiorcze (bulkowe) usunięcie zaznaczonych zadań — soft-delete do Kosza (migawka jak w
+ * `deleteTask`). Zadania bez prawa edycji są pomijane; zwraca `{ deleted, skipped }`.
+ */
+export async function bulkDeleteTasks(taskIds: string[]): Promise<{ deleted: number; skipped: number }> {
+  const user = await requireAuth();
+  if (taskIds.length === 0) return { deleted: 0, skipped: 0 };
+
+  const affectedProjectIds = new Set<string>();
+  let deleted = 0;
+  let skipped = 0;
+
+  for (const id of taskIds) {
+    const task = await prisma.task.findUnique({ where: { id }, include: { tags: { select: { tagId: true } } } });
+    if (!task) { skipped++; continue; }
+    try {
+      await assertTaskAccess(task, user.id);
+    } catch {
+      skipped++;
+      continue;
+    }
+
+    await recordTrash(user.id, {
+      module: "tasks",
+      entityId: task.id,
+      title: task.title,
+      payload: {
+        id: task.id, title: task.title, description: task.description, status: task.status,
+        priority: task.priority, dueDate: task.dueDate, startDate: task.startDate,
+        completedAt: task.completedAt, estimatedMins: task.estimatedMins, recurring: task.recurring,
+        category: task.category, order: task.order, projectId: task.projectId,
+        parentTaskId: task.parentTaskId, createdById: task.createdById, assigneeId: task.assigneeId,
+        createdAt: task.createdAt, tagIds: task.tags.map((t) => t.tagId),
+      },
+    });
+    await prisma.task.delete({ where: { id } });
+    if (task.projectId) affectedProjectIds.add(task.projectId);
+    deleted++;
+  }
+
+  void trackActivity("tasks", "bulk_delete_tasks", { count: deleted, skipped });
+  revalidatePath("/tasks");
+  Array.from(affectedProjectIds).forEach((pid) => revalidatePath(`/tasks/${pid}`));
+  return { deleted, skipped };
+}
+
 export async function toggleTaskStatus(id: string): Promise<Task> {
   const user = await requireAuth();
   const task = await prisma.task.findUnique({
