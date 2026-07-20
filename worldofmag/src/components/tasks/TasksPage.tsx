@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, Trash2, CalendarCheck, CheckSquare } from "lucide-react";
+import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, Trash2, CalendarCheck, CheckSquare, ChevronLeft, ChevronRight } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
@@ -629,22 +629,30 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           {/* Admin: skopiuj prompt dla Claude Code z zadaniami widocznymi w tej zakładce */}
           {isAdmin && <TaskListClipboardButton tasks={visibleTasks} />}
           </div>
-          {/* Zanikające „fade" na krawędziach — sygnał, że pasek da się przewinąć. Dekoracyjne
-              (aria-hidden) i nie przechwytują kliknięć (pointer-events:none), więc skrajna ikona
-              pozostaje w pełni klikalna. Kolor = tło nagłówka (var(--bg-surface)), spójny ze skórką. */}
+          {/* Wskazówka przewijania: wyraźny chevron na krawędzi (mocny, zrozumiały sygnał „jest
+              więcej →") na tle mocniejszego gradientu = tło nagłówka. Chevron jest KLIKALNY — dotknięcie
+              przewija pasek o kawałek, więc działa też jako realny przycisk nawigacji (nie tylko ozdoba). */}
           {actionScroll.left && (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute left-0 top-0 bottom-0 w-6"
-              style={{ background: "linear-gradient(to right, var(--bg-surface), transparent)" }}
-            />
+            <button
+              type="button"
+              aria-label="Przewiń pasek akcji w lewo"
+              onClick={() => actionsScrollRef.current?.scrollBy({ left: -140, behavior: "smooth" })}
+              className="absolute left-0 top-0 bottom-0 flex items-center pl-0.5 pr-4 focus:outline-none"
+              style={{ background: "linear-gradient(to right, var(--bg-surface) 60%, transparent)" }}
+            >
+              <ChevronLeft size={18} style={{ color: "var(--text-secondary)" }} />
+            </button>
           )}
           {actionScroll.right && (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute right-0 top-0 bottom-0 w-6"
-              style={{ background: "linear-gradient(to left, var(--bg-surface), transparent)" }}
-            />
+            <button
+              type="button"
+              aria-label="Przewiń pasek akcji w prawo"
+              onClick={() => actionsScrollRef.current?.scrollBy({ left: 140, behavior: "smooth" })}
+              className="absolute right-0 top-0 bottom-0 flex items-center pr-0.5 pl-4 focus:outline-none"
+              style={{ background: "linear-gradient(to left, var(--bg-surface) 60%, transparent)" }}
+            >
+              <ChevronRight size={18} style={{ color: "var(--text-secondary)" }} />
+            </button>
           )}
           </div>
 
