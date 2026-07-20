@@ -4,6 +4,34 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-20 — Wykluczenie z modalOpen nie wystarczy: panel z-50 i tak zasłania FAB (z-index)
+**Problem:** Po oznaczeniu mobilnego podglądu zadania `data-omnia-overlay` (żeby `modalOpen` się nie
+zapalał i FAB asystenta się renderował) ikony asystenta i „zgłoś błąd" DALEJ były niewidoczne na mobile.
+Powód: sam fakt renderowania nie wystarcza — panel podglądu jest `fixed inset-0 z-50`, a pływające
+przyciski miały `zIndex 41` (asystent) i `39` (feedback), więc panel je **zasłaniał**. Co gorsza,
+regresja: wcześniej (gdy panel liczył się jako modal) feedback wskakiwał na `z-10001` i BYŁ widoczny —
+po wykluczeniu spadł na 39 i zniknął.
+**Rozwiązanie:** Dodałem do `useOverlayState` sygnał `panelOpen` (obecność `[data-omnia-overlay="panel"]`)
+i podbijam z-index przycisków TYLKO gdy panel otwarty: FAB `panelOpen?55:41`, feedback
+`modalOpen?10001:(panelOpen?54:39)`. Wartości dobrane między panelem (50) a toastami (60), więc przyciski
+są nad panelem, ale pod toastami. Marker zmieniłem z „taskdetail" na generyczny „panel".
+**Lekcja:** „Odblokowanie renderu" (wykluczenie z detekcji modalu) to połowa sprawy — element i tak musi
+mieć **wyższy z-index** niż nakładka, nad którą ma być widoczny. Przy pływających przyciskach trzymaj
+świadomą skalę z-index (panel 50 < FAB 55 < toast 60) i podbijaj kontekstowo, nie globalnie (globalne
+podbicie wchodziłoby nad menu nawigacyjne, też z-50).
+
+## 2026-07-20 — Przepełnienie długim URL: break-words za słabe w gridzie, trzeba overflow-wrap:anywhere
+**Problem:** Mimo `min-w-0` na kolumnie treści i `break-words` na tytule/streszczeniu newsów długie linki
+bez spacji dalej rozpychały sekcję (poziomy scroll). `break-words` (`overflow-wrap: break-word`) NIE
+zmniejsza rozmiaru min-content elementu, więc w kontenerze grid/flex liczonym od min-content długi token
+i tak wymuszał szerokość.
+**Rozwiązanie:** Przełączyłem łamanie na `overflow-wrap: anywhere` (Tailwind arbitralnie
+`[overflow-wrap:anywhere]`) — to JEDYNY wariant, który wpływa na min-content i pozwala kontenerowi się
+zwęzić. Dodatkowo `min-w-0 overflow-hidden` na karcie jako twarda gwarancja (residualny overflow się
+przycina, nie rozpycha strony).
+**Lekcja:** Do łamania długich URL używaj `overflow-wrap: anywhere`, nie `break-word` — tylko `anywhere`
+redukuje min-content, co jest kluczowe w grid/flex. `break-all` odpada (brzydko tnie zwykłe słowa).
+
 ## 2026-07-20 — Pływający FAB asystenta znikał także na desktopie przy szczegółach zadania
 **Problem:** Ikona asystenta AI (Sparkles FAB) chowała się przy otwartych szczegółach zadania i na
 mobile, i na komputerze. Chowanie steruje `useOverlayState`, który wykrywa „modal treściowy" przez

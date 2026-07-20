@@ -66,6 +66,24 @@
 | AC-4 (brak auto-zoomu na focus) | T-3 |
 | AC-5 (poprawność w skórkach, brak hardcode) | T-1, T-2 |
 
+## Faza 5 — Iteracja 2 (poprawki po zwrotce właściciela, 2026-07-20)
+Właściciel po wdrożeniu zgłosił, że AC-1 i AC-2 nie były domknięte, oraz nowy defekt UX w dodawaniu zadań.
+
+- [x] **T-9** — **AC-1 mocniej**: `break-words` nie wymuszało łamania w gridzie (nie redukuje min-content).
+  Przełączone na `[overflow-wrap:anywhere]` w `NewsItemCard` (tytuł, streszczenie, „Co nowego") + `min-w-0
+  overflow-hidden` na karcie jako twarda gwarancja. *Gotowe, gdy:* długi URL bez spacji nie rozpycha sekcji.
+- [x] **T-10** — **AC-2 mocniej**: samo wykluczenie z `modalOpen` nie wystarczyło — panel podglądu (`z-50`)
+  zasłaniał FAB (`z-41`) i feedback (`z-39`). Dodany sygnał `panelOpen` w `useOverlayState`; z-index
+  przycisków podbijany kontekstowo (FAB 55, feedback 54; panel 50 < 55 < toast 60). Marker zmieniony na
+  `data-omnia-overlay="panel"`. *Gotowe, gdy:* obie ikony widoczne i klikalne nad podglądem zadania (mobile
+  i desktop).
+- [x] **T-11** — **AC-3 redesign**: układ dwurzędowy w `QuickAddTask` — rząd 1 `[priorytet][tytuł
+  (flex-1 min-w-0)][+]` (przycisk `+` zawsze widoczny), pole daty w rzędzie 2 (bez sztywnej szerokości,
+  mieści się przy 16px na mobile). *Gotowe, gdy:* na mobile widać całe pole daty i przycisk `+`.
+- [x] **T-12** — Bramki (lint + build lokalnie) zielone; lekcje dopisane do `doświadczenia.md`.
+
 ## Notatki / blokady
 - Brak zależności między T-1..T-5 (różne pliki) → można je robić w dowolnej kolejności/równolegle;
   T-6..T-8 wymagają ich ukończenia.
+- Iteracja 2 (T-9..T-12): reakcja na zwrotkę właściciela — poprawki AC-1/AC-2 (były niedomknięte) i
+  redesign AC-3 (nowy defekt: pole daty + przycisk `+` nie mieściły się na mobile).
