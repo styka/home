@@ -71,7 +71,7 @@ export function FeedbackInspector() {
   // Pływający przycisk musi działać też NAD modalem (by wskazać element w modalu):
   // gdy modal jest otwarty, asystent chowa swój FAB, więc nasz wskakuje w jego
   // (główne) miejsce i nad modal. Przy otwartym asystencie chowamy się, by go nie zasłaniać.
-  const { modalOpen, assistantOpen } = useOverlayState();
+  const { modalOpen, assistantOpen, panelOpen } = useOverlayState();
 
   const capture = useCallback(async (el: HTMLElement) => {
     const context = describeElement(el, pathname);
@@ -153,7 +153,9 @@ export function FeedbackInspector() {
               ? "fixed right-5 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
               : "fixed right-5 bottom-[calc(132px+env(safe-area-inset-bottom))] md:bottom-[84px]"
           }
-          style={{ zIndex: modalOpen ? 10001 : 39, width: 44, height: 44, borderRadius: "50%", border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-purple)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
+          // Nad panelem roboczym (mobilny podgląd zadania, z-50) wynosimy przycisk nad panel
+          // (54 < FAB asystenta 55 < toasty 60), zachowując pozycję „nad-modalową" gdy modalOpen.
+          style={{ zIndex: modalOpen ? 10001 : (panelOpen ? 54 : 39), width: 44, height: 44, borderRadius: "50%", border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-purple)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
         >
           <Bug size={20} />
         </button>
