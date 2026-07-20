@@ -126,6 +126,12 @@ function escapeOutsideCodeBlocks(md: string): string {
 }
 
 export const MARKDOWN_STYLES = `
+/* Catch-all łamania: overflow-wrap i word-break są DZIEDZICZONE, więc ustawione na
+   kontenerze .markdown-body wymuszają łamanie długich URL-i we WSZYSTKICH potomkach
+   (także nagłówki, inline-code, cytaty), a nie tylko w akapitach/listach/linkach.
+   Bloki kodu (.md-code-block: white-space:pre) i tak się nie łamią — scrollują przez
+   .md-pre (overflow-x:auto). min-width:0 pozwala kontenerowi zwęzić się w grid/flex. */
+.markdown-body { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
 .md-h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 1.5rem 0 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
 .md-h2 { font-size: 1.15rem; font-weight: 600; color: var(--text-primary); margin: 1.5rem 0 0.5rem; }
 .md-h3 { font-size: 1rem; font-weight: 600; color: var(--text-secondary); margin: 1.25rem 0 0.4rem; }
