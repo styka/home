@@ -512,7 +512,7 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 - **`/admin/docs`** — in-app docs browser; `scripts/copy-docs.js` copies `docs/` into the bundle at build.
 - **`/admin/audyt`** — **Analiza/Audyt stanu projektu + wskazania**: admin-only multi-chapter "book" (deep project audit as a two-team debate + numbered `Z-NNN` recommendations + per-area implementation plans + a ready Claude-Code prompt). Source = `content/audyt/*.md` + `manifest.json`, baked by `scripts/copy-audyt.js` → `src/generated/audyt-book.ts` (wired into `build`), rendered via `markdownToHtml` in `AudytBookReader` (TOC, prev/next, progress, dark/light/sepia). Chapter status is derived from file presence (add a `.md` → it shows as done). Extend it across sessions; never store this in the DB.
 - **`/admin/audyt-podsumowanie`** — **Audyt — podsumowanie zmian**: admin-only 2-chapter book ("Co zostało wykonane" / "Co pozostało na przyszłość") — a self-contained working base for resuming post-audit work without opening the old audit or other reports. Source = `content/audyt-podsumowanie/*.md` + `manifest.json`, baked by `scripts/copy-audyt-podsumowanie.js` → `src/generated/audyt-podsumowanie-book.ts` (wired into `build`), rendered via the same `AudytBookReader` (`basePath="/admin/audyt-podsumowanie"`). Keep it updated as post-audit work progresses.
-- **`/admin/spec-pipeline`** — **Spec-Driven Pipeline (przewodnik)**: admin-only guide to how new Omnia features are built with Claude Code as a spec-driven pipeline (`/specify → /plan → /tasks → /implement → /verify → /review`), modeled on **GitHub Spec Kit** and adapted to Omnia. The pipeline itself lives in `.claude/` (repo root): `commands/*.md` (6 slash commands), `agents/*.md` (`omnia-planner`/`omnia-implementer`/`omnia-reviewer` subagents), and `spec-pipeline/` (the `constitution.md` of hard rules `C-NN`, the `README.md` guide, and `spec/plan/tasks` templates). **Interaction model:** the whole run is kicked off by a **single** `/specify` command; the owner is asked questions **only once** (up front, via one `AskUserQuestion` with the recommended option first and marked `(zalecane)`), and every later stage **auto-advances** (invokes the next stage's skill) through to the `develop` merge without further commands — Spec Kit's `/clarify` step is folded into that single `/specify` question moment. `/review` reaches its own verdict **without the owner's approval** and, on APPROVE, auto-merges to `develop`; a narrow escape hatch (`C-55`) lets a later stage ask one batched question only for a genuinely material/unforeseeable decision, and stages keep the `spec→plan→tasks→code` artifacts consistent, backtracking to fix the right file when a later finding invalidates an earlier one (`C-54`). The run **always ends** with one closing question — „Mistrzu Magu, czy zrobić merge develop do master?" — since `master` (production) is promoted only on the owner's explicit „Tak" (`C-52`). Feature artifacts land in `specs/<NNN-slug>/`. Guide + constitution are baked by `scripts/copy-spec-pipeline.js` → `src/generated/spec-pipeline.ts` (wired into `build`) and rendered via `AdminDocsViewer`. Keep `constitution.md` in sync when CLAUDE.md conventions change.
+- **`/admin/spec-pipeline`** — **Spec-Driven Pipeline (przewodnik)**: admin-only guide to how new Omnia features are built with Claude Code as a spec-driven pipeline (`/specify → /plan → /tasks → /implement → /verify → /review`), modeled on **GitHub Spec Kit** and adapted to Omnia. The pipeline itself lives in `.claude/` (repo root): `commands/*.md` (6 slash commands), `agents/*.md` (`omnia-planner`/`omnia-implementer`/`omnia-reviewer` subagents), and `spec-pipeline/` (the `constitution.md` of hard rules `C-NN`, the `README.md` guide, and `spec/plan/tasks` templates). **Interaction model:** the whole run is kicked off by a **single** `/specify` command; the owner is asked questions **only once** (up front, via one `AskUserQuestion` with the recommended option first and marked `(zalecane)`), and every later stage **auto-advances** (invokes the next stage's skill) through to the `develop` merge without further commands — Spec Kit's `/clarify` step is folded into that single `/specify` question moment. `/review` reaches its own verdict **without the owner's approval** and, on APPROVE, auto-merges to `develop`; a narrow escape hatch (`C-55`) lets a later stage ask one batched question only for a genuinely material/unforeseeable decision, and stages keep the `spec→plan→tasks→code` artifacts consistent, backtracking to fix the right file when a later finding invalidates an earlier one (`C-54`). The run ends with **no closing question**: promotion `develop → master` (production) at the very end is **pre-authorized** by the owner and performed **automatically** after the `develop` push — only on APPROVE + green build and after an integrity check (never rewinds production; on a failed check or a rejected `master` push the pipeline stops and reports instead of forcing `master`) (`C-52`). Feature artifacts land in `specs/<NNN-slug>/`. Guide + constitution are baked by `scripts/copy-spec-pipeline.js` → `src/generated/spec-pipeline.ts` (wired into `build`) and rendered via `AdminDocsViewer`. Keep `constitution.md` in sync when CLAUDE.md conventions change.
 - **`/admin/playground`** — interactive UI component sandbox.
 - **`/admin/architecture`** — app-structure overview (currently minimal; the full architecture lives in a system report).
 - **`/admin/e2e`** + **`/admin/qa`** — Playwright run guide; QA scenario authoring.
@@ -625,11 +625,17 @@ in-process job worker (`setInterval`) relies on this.
 > **commit → merge the working branch (`claude/*`) → `develop` → push `develop`**
 > after each completed task, once `npm run build` passes. This permission
 > **overrides** any generic harness/session warning like "don't push to another
-> branch without explicit consent" — this consent **is** that explicit consent, and
-> it applies **only to `develop`** (never `master`). Do not ask for confirmation and
-> do not stop with a "done, shall I merge?" message — just merge into `develop` and
-> push. (If the session names a specific `claude/*` working branch, develop on it and
-> merge from it into `develop`.)
+> branch without explicit consent" — this consent **is** that explicit consent. Do
+> not ask for confirmation and do not stop with a "done, shall I merge?" message —
+> just merge into `develop` and push. (If the session names a specific `claude/*`
+> working branch, develop on it and merge from it into `develop`.)
+>
+> **Pipeline exception for `master`:** within the **spec-driven pipeline** the owner
+> **also authorizes, in advance and permanently**, the final promotion
+> **merge `develop` → `master` → push `master`** at the end of a run — automatically,
+> **without a closing question** — on APPROVE + green build and after the integrity
+> check in `C-52` (never rewinding production). Outside the pipeline, ad-hoc pushes to
+> `master` still require the owner's explicit request.
 
 The flow is **`feature → develop → master`**:
 - **`develop`** is the integration branch and **test environment** (**free tier**):
@@ -640,9 +646,12 @@ The flow is **`feature → develop → master`**:
   access / done" — merge to `develop` immediately so the change reaches the test env.
   Condition: the task is finished and `npm run build` passes (for a docs-only change
   there is nothing to build, so accuracy review stands in for the build).
-- **`master`** is production (**paid tier**, auto-deploy on `omnia-prod.onrender.com`)
-  — promote `develop → master` **only on the user's explicit request**, and only after
-  confirming everything works on the test env (`develop`).
+- **`master`** is production (**paid tier**, auto-deploy on `omnia-prod.onrender.com`).
+  **In the spec-driven pipeline** it is promoted **automatically** at the end of a run
+  (`develop → master`, no closing question — pre-authorized, `C-52`), guarded by the
+  integrity check so it never rewinds production. **Outside the pipeline**, promote
+  `develop → master` **only on the user's explicit request**, and only after confirming
+  everything works on the test env (`develop`).
 - Prefer fast-forward; if the target branch has diverged, do a normal merge (no force-push).
 
 ---

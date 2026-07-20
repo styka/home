@@ -1,21 +1,22 @@
 ---
-description: Etap 6 SDD — recenzja diffa, werdykt, auto-merge do develop i pytanie o promocję do master (specs/NNN-slug/review.md)
+description: Etap 6 SDD — recenzja diffa, werdykt i auto-merge do develop, a na końcu automatyczna promocja develop → master (specs/NNN-slug/review.md)
 argument-hint: <specs/NNN-slug | slug>
 ---
 
-Jesteś na **etapie 6 (REVIEW)** spec-driven pipeline'u Omnia — ostatnia bramka przed merge do `develop`.
-Robisz **recenzję kodu** zmian feature'a: świeżym okiem, pod kątem poprawności i zgodności z konwencjami.
-To **koniec** automatycznego przebiegu — sam wystawiasz werdykt i po APPROVE domykasz zadanie zgodnie ze
-standing authorization, **bez czekania na approve właściciela**.
+Jesteś na **etapie 6 (REVIEW)** spec-driven pipeline'u Omnia — ostatnia bramka przed merge do `develop`
+i automatyczną promocją na produkcję (`master`). Robisz **recenzję kodu** zmian feature'a: świeżym
+okiem, pod kątem poprawności i zgodności z konwencjami. To **koniec** automatycznego przebiegu — sam
+wystawiasz werdykt i po APPROVE domykasz zadanie zgodnie ze standing authorization, **bez czekania na
+approve właściciela i bez pytania o produkcję**.
 
 ## Model interakcji (C-55, C-54)
 **Werdykt wystawiasz sam — nie prosisz właściciela o approve.** Drobne, bezpieczne poprawki nanieś sam;
 przy poważnych ustaleniach zawróć pipeline do `/implement` (patrz „Na koniec"), a jeśli defekt wynika z
 błędnego speca/planu — powrót ma najpierw poprawić `spec.md`/`plan.md` (C-54). Furtka C-55 (jedno
 zbiorcze pytanie) obowiązuje też tu, gdy trafisz na istotną, niejednoznaczną decyzję właściciela.
-**Jedyne pytanie na tym etapie to obowiązkowe pytanie domykające o promocję `develop → master`** (patrz
-„Na koniec") — zadaj je zawsze po udanym merge do `develop`. To ostatni etap — nie wywołujesz już
-kolejnego skilla pipeline'u.
+**Na tym etapie nie ma już pytania domykającego** — właściciel z góry autoryzował automatyczną promocję
+`develop → master` na koniec pipeline'u (C-52). To ostatni etap — nie wywołujesz już kolejnego skilla
+pipeline'u.
 
 ## Wejście
 Feature: **$ARGUMENTS**. Jeśli pusty — najnowszy katalog w `specs/` z `verify.md`.
@@ -59,17 +60,23 @@ sugerowana poprawka. Na końcu **werdykt**: APPROVE / APPROVE Z UWAGAMI / ZMIANY
   1. Domknij zadanie zgodnie ze **STANDING AUTHORIZATION** z `CLAUDE.md` — commit → merge brancha
      roboczego (`claude/*`) do `develop` → push `develop` (po zielonym buildzie; C-50/C-52). Nie pytaj
      o zgodę na to — to jest ta zgoda.
-  2. Wypisz jednym akapitem podsumowanie całego przebiegu (spec → review) i co trafiło na środowisko
-     testowe (`develop` → `worldofmag.onrender.com`).
-  3. **Pytanie domykające (obowiązkowe, zawsze — C-52/C-55):** na sam koniec zadaj właścicielowi
-     **jedno** pytanie `AskUserQuestion` o promocję na produkcję. Pytanie brzmi **dokładnie**:
-     „Mistrzu Magu, czy zrobić merge develop do master?". Opcje (rekomendowana **pierwsza**, z etykietą
-     `(zalecane)`):
-     - **„Nie — zostaw na develop (zalecane)"** — najpierw sprawdź zmianę na środowisku testowym;
-       `master` to produkcja (Render auto-deploy), promujemy dopiero po weryfikacji.
-     - **„Tak — merge develop → master (produkcja)"** — od razu promuj na produkcję.
-  4. Reakcja na odpowiedź:
-     - **„Nie"** → koniec. Nic więcej nie pushujesz; napisz, że zmiana czeka na `develop`.
-     - **„Tak"** → `git checkout master` → `git merge --no-ff develop` → `git push origin master`
-       (z retry/backoff wg `CLAUDE.md`). To **jedyny** moment, w którym pipeline dotyka `master`, i
-       tylko na wyraźne „Tak" (C-52). Potwierdź, że produkcja została zaktualizowana.
+  2. **Automatyczna promocja `develop → master` (C-52) — bez pytania.** Właściciel z góry autoryzował
+     merge na produkcję na koniec pipeline'u. Wykonaj to od razu po pushu `develop`, pod warunkiem
+     APPROVE/APPROVE Z UWAGAMI i zielonego buildu (C-50):
+     - `git fetch origin master` → `git checkout master`.
+     - **Kontrola integralności (obowiązkowo, żeby nie cofnąć produkcji):**
+       `git merge-base --is-ancestor origin/master develop` — jeśli **fałsz**, to `develop` nie zawiera
+       aktualnej produkcji: **NIE merguj**, zawróć: zsynchronizuj (`git merge origin/master` do develop
+       albo rebase) i dopiero wtedy promuj. Lokalny `master` zawsze ustaw z `origin/master`
+       (`git reset --hard origin/master` na świeżo checkoutowanej gałęzi, jeśli tracking jest za nią).
+     - `git merge --no-ff develop -m "Merge develop → master: <feature> [produkcja]"`.
+     - Po merge ponownie potwierdź: `git merge-base --is-ancestor origin/master HEAD` (musi być prawda)
+       oraz że HEAD dokłada tylko oczekiwane commity feature'a ponad `origin/master`.
+     - `git push origin master` (z retry/backoff wg `CLAUDE.md`).
+     - Jeśli którakolwiek kontrola integralności zawiedzie albo push odbije (np. równoległa zmiana na
+       `master`) — **zatrzymaj się i zgłoś to właścicielowi** zamiast forsować `master`. To jedyny
+       moment, w którym auto-promocja ustępuje.
+  3. Wypisz jednym akapitem podsumowanie całego przebiegu (spec → review) oraz co trafiło na
+     środowisko testowe (`develop` → `worldofmag.onrender.com`) **i na produkcję**
+     (`master` → `omnia-prod.onrender.com`). Potwierdź, że produkcja została zaktualizowana. Koniec —
+     bez pytania domykającego.

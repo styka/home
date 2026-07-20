@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, Trash2, CalendarCheck, CheckSquare } from "lucide-react";
+import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CalendarCheck, CheckSquare, ChevronLeft, ChevronRight } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
@@ -499,23 +499,46 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             {counts.ALL > 0 && `${counts.ALL} aktywne`}
           </span>
 
-          {/* Widoczność ikon paska (spójna, per kontekst):
-              • Kosz / Sortuj-zrobione / Szukaj / Powiadomienia — ZAWSZE
+          {/* Kolejność paska = wg częstości użycia: najczęstsze akcje z lewej (zawsze widoczne bez
+              scrolla na mobile), rzadkie na końcu (Powiadomienia → Kosz → Clipboard).
+              Widoczność ikon (spójna, per kontekst):
+              • Szukaj / Przełącznik układu / Sortuj-zrobione / Powiadomienia / Kosz — ZAWSZE
               • Grupowanie (ListTree/Flag) — tylko widoki zbiorcze (canToggleGrouping: upcoming/overdue/all/multi)
-              • Konfiguracja statusów (SlidersHorizontal) — tylko właściciel listy (canEditStatuses)
               • Zaznacz wiele (CheckSquare) — tylko układ Lista (layout==="list")
-              • Przełącznik układu Lista/Kanban/Timeline — ZAWSZE
+              • Konfiguracja statusów (SlidersHorizontal) — tylko właściciel listy (canEditStatuses)
               • Clipboard dla Claude — tylko admin (isAdmin)
               Wszystkie ikony size={15}; każda ma title + aria-label. */}
-          <Link
-            href="/trash"
-            className="flex items-center justify-center p-1.5 rounded"
-            style={{ color: "var(--text-muted)" }}
-            title="Kosz (usunięte do przywrócenia)"
-            aria-label="Kosz — usunięte zadania do przywrócenia"
+
+          {/* Szukaj — jedna z najczęstszych akcji, więc pierwsza */}
+          <button
+            onClick={() => { setIsSearchOpen((v) => !v); setTimeout(() => searchRef.current?.focus(), 10); }}
+            className="p-1.5 rounded focus:outline-none"
+            style={{ color: isSearchOpen ? "var(--accent-blue)" : "var(--text-muted)" }}
+            title="Szukaj (/ lub f)"
+            aria-label="Szukaj zadań"
           >
-            <Trash2 size={15} />
-          </Link>
+            <Search size={15} />
+          </button>
+
+          {/* Przełącznik układu: Lista / Kanban / Timeline — częsty, więc blisko lewej */}
+          <div className="flex items-center gap-0.5 rounded" style={{ border: "1px solid var(--border)" }}>
+            {([
+              { key: "list", label: "Lista", Icon: ListIcon },
+              { key: "kanban", label: "Kanban", Icon: Columns3 },
+              { key: "timeline", label: "Timeline", Icon: CalendarRange },
+            ] as const).map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                onClick={() => setLayout(key)}
+                className="p-1.5 focus:outline-none"
+                title={label}
+                aria-label={label}
+                style={{ color: layout === key ? "var(--accent-blue)" : "var(--text-muted)", background: layout === key ? "var(--bg-hover)" : "transparent" }}
+              >
+                <Icon size={15} />
+              </button>
+            ))}
+          </div>
 
           {/* Przełącznik prezentacji: naturalne grupowanie widoku ↔ po priorytetach */}
           {canToggleGrouping && (
@@ -561,38 +584,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             <CalendarCheck size={15} />
           </button>
 
-          <button
-            onClick={() => { setIsSearchOpen((v) => !v); setTimeout(() => searchRef.current?.focus(), 10); }}
-            className="p-1.5 rounded focus:outline-none"
-            style={{ color: isSearchOpen ? "var(--accent-blue)" : "var(--text-muted)" }}
-            title="Szukaj (/ lub f)"
-            aria-label="Szukaj zadań"
-          >
-            <Search size={15} />
-          </button>
-
-          <button
-            onClick={requestNotifications}
-            className="p-1.5 rounded focus:outline-none"
-            style={{ color: notificationsEnabled ? "var(--accent-amber)" : "var(--text-muted)" }}
-            title={notificationsEnabled ? "Powiadomienia włączone" : "Włącz powiadomienia"}
-            aria-label={notificationsEnabled ? "Powiadomienia włączone" : "Włącz powiadomienia"}
-          >
-            {notificationsEnabled ? <Bell size={15} /> : <BellOff size={15} />}
-          </button>
-
-          {canEditStatuses && (
-            <button
-              onClick={() => setStatusConfigOpen(true)}
-              className="p-1.5 rounded focus:outline-none"
-              style={{ color: "var(--text-muted)" }}
-              title="Statusy listy (konfiguracja)"
-              aria-label="Konfiguracja statusów listy"
-            >
-              <SlidersHorizontal size={15} />
-            </button>
-          )}
-
           {/* Bulkowa edycja: wejście w tryb zaznaczania (tylko widok listy) */}
           {layout === "list" && (
             <button
@@ -606,45 +597,69 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             </button>
           )}
 
-          {/* Przełącznik układu: Lista / Kanban / Timeline (T1/T2) */}
-          <div className="flex items-center gap-0.5 rounded" style={{ border: "1px solid var(--border)" }}>
-            {([
-              { key: "list", label: "Lista", Icon: ListIcon },
-              { key: "kanban", label: "Kanban", Icon: Columns3 },
-              { key: "timeline", label: "Timeline", Icon: CalendarRange },
-            ] as const).map(({ key, label, Icon }) => (
-              <button
-                key={key}
-                onClick={() => setLayout(key)}
-                className="p-1.5 focus:outline-none"
-                title={label}
-                aria-label={label}
-                style={{ color: layout === key ? "var(--accent-blue)" : "var(--text-muted)", background: layout === key ? "var(--bg-hover)" : "transparent" }}
-              >
-                <Icon size={15} />
-              </button>
-            ))}
-          </div>
+          {canEditStatuses && (
+            <button
+              onClick={() => setStatusConfigOpen(true)}
+              className="p-1.5 rounded focus:outline-none"
+              style={{ color: "var(--text-muted)" }}
+              title="Statusy listy (konfiguracja)"
+              aria-label="Konfiguracja statusów listy"
+            >
+              <SlidersHorizontal size={15} />
+            </button>
+          )}
+
+          {/* Powiadomienia — rzadziej używane, więc bliżej końca */}
+          <button
+            onClick={requestNotifications}
+            className="p-1.5 rounded focus:outline-none"
+            style={{ color: notificationsEnabled ? "var(--accent-amber)" : "var(--text-muted)" }}
+            title={notificationsEnabled ? "Powiadomienia włączone" : "Włącz powiadomienia"}
+            aria-label={notificationsEnabled ? "Powiadomienia włączone" : "Włącz powiadomienia"}
+          >
+            {notificationsEnabled ? <Bell size={15} /> : <BellOff size={15} />}
+          </button>
+
+          {/* Kosz = link do /trash (ODZYSKIWANIE), NIE usuwanie. Świadomie osobna ikona
+              (ArchiveRestore), by nie mylić się z ikoną kosza „usuń" (Trash2) — ta zostaje wyłącznie
+              dla usuwania. Na końcu paska, przy rzadkich akcjach. */}
+          <Link
+            href="/trash"
+            className="flex items-center justify-center p-1.5 rounded"
+            style={{ color: "var(--text-muted)" }}
+            title="Kosz — przywróć usunięte"
+            aria-label="Kosz — przywróć usunięte zadania"
+          >
+            <ArchiveRestore size={15} />
+          </Link>
 
           {/* Admin: skopiuj prompt dla Claude Code z zadaniami widocznymi w tej zakładce */}
           {isAdmin && <TaskListClipboardButton tasks={visibleTasks} />}
           </div>
-          {/* Zanikające „fade" na krawędziach — sygnał, że pasek da się przewinąć. Dekoracyjne
-              (aria-hidden) i nie przechwytują kliknięć (pointer-events:none), więc skrajna ikona
-              pozostaje w pełni klikalna. Kolor = tło nagłówka (var(--bg-surface)), spójny ze skórką. */}
+          {/* Wskazówka przewijania: wyraźny chevron na krawędzi (mocny, zrozumiały sygnał „jest
+              więcej →") na tle mocniejszego gradientu = tło nagłówka. Chevron jest KLIKALNY — dotknięcie
+              przewija pasek o kawałek, więc działa też jako realny przycisk nawigacji (nie tylko ozdoba). */}
           {actionScroll.left && (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute left-0 top-0 bottom-0 w-6"
-              style={{ background: "linear-gradient(to right, var(--bg-surface), transparent)" }}
-            />
+            <button
+              type="button"
+              aria-label="Przewiń pasek akcji w lewo"
+              onClick={() => actionsScrollRef.current?.scrollBy({ left: -140, behavior: "smooth" })}
+              className="absolute left-0 top-0 bottom-0 flex items-center pl-0.5 pr-4 focus:outline-none"
+              style={{ background: "linear-gradient(to right, var(--bg-surface) 60%, transparent)" }}
+            >
+              <ChevronLeft size={18} style={{ color: "var(--text-secondary)" }} />
+            </button>
           )}
           {actionScroll.right && (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute right-0 top-0 bottom-0 w-6"
-              style={{ background: "linear-gradient(to left, var(--bg-surface), transparent)" }}
-            />
+            <button
+              type="button"
+              aria-label="Przewiń pasek akcji w prawo"
+              onClick={() => actionsScrollRef.current?.scrollBy({ left: 140, behavior: "smooth" })}
+              className="absolute right-0 top-0 bottom-0 flex items-center pr-0.5 pl-4 focus:outline-none"
+              style={{ background: "linear-gradient(to left, var(--bg-surface) 60%, transparent)" }}
+            >
+              <ChevronRight size={18} style={{ color: "var(--text-secondary)" }} />
+            </button>
           )}
           </div>
 

@@ -4,6 +4,21 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-20 — Przeciążona ikona kosza: `Trash2` znaczyła i „usuń", i „otwórz Kosz/odzyskiwanie"
+**Problem:** Ta sama ikona `Trash2` była używana w dwóch sprzecznych znaczeniach: **„usuń element"**
+(~65 miejsc, wszystkie moduły — spójnie) oraz **„otwórz Kosz `/trash`" (odzyskiwanie)** — w nagłówkach
+Zadań i Notatek. W pasku akcji, obok innych ikon-koszy, które usuwają, link do Kosza czytał się jak
+„usuń" (na mobile bez tooltipa — całkiem myląco). Dodatkowo Kosz jest globalny, ale osiągalny tylko z 2
+z ~20 modułów i znikąd globalnie.
+**Rozwiązanie:** Skróty do Kosza w nagłówkach Zadań/Notatek dostały **osobną ikonę `ArchiveRestore`**
+(jednoznacznie „przywracanie"), a `Trash2` zostaje **wyłącznie** dla akcji usuwania. Tooltip/aria
+doprecyzowane („Kosz — przywróć usunięte"). Strona Kosza była już OK: przywracanie = `RotateCcw`,
+opróżnianie/trwałe usunięcie = `Trash2` (prawdziwe delete).
+**Lekcja:** Jedna ikona = jedno znaczenie. Kosz jako *lokalizacja* (Bin) i kosz jako *akcja usuń* to
+dwie różne rzeczy — nie oznaczaj ich tym samym glifem w tym samym kontekście (pasek akcji). Gdy
+weryfikujesz spójność ikonografii, grepnij **wszystkie** użycia glifu i rozdziel „akcja" od
+„nawigacja/lokalizacja". Do „odzyskiwania" użyj ikony restore (`ArchiveRestore`/`RotateCcw`), nie kosza.
+
 ## 2026-07-20 — Mobile UX: hover-only akcje, niewidoczny feedback transition i ukryty scroll poziomy
 **Problem:** Trzy wzorce psuły UX na dotyku: (1) w Wiadomościach (`NewsPage`) akcje tematu Edytuj/Usuń
 były `hidden group-hover:block` — na telefonie (brak hover) **nigdy** się nie pokazywały i były za małe

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useTransition, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { MessageCircle, X, Search, ChevronLeft, LayoutGrid, List, Trash2 } from "lucide-react";
+import { MessageCircle, X, Search, ChevronLeft, LayoutGrid, List, ArchiveRestore } from "lucide-react";
 import Link from "next/link";
 import { NoteList } from "./NoteList";
 import { QuickNoteBar, type QuickNoteBarHandle } from "./QuickNoteBar";
@@ -190,13 +190,16 @@ export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
           >
             {viewMode === "list" ? <LayoutGrid size={13} /> : <List size={13} />}
           </button>
+          {/* Kosz = link do /trash (ODZYSKIWANIE), NIE usuwanie — osobna ikona (ArchiveRestore),
+              by nie mylić się z ikoną kosza „usuń" (Trash2). */}
           <Link
             href="/trash"
             className="flex items-center justify-center p-1.5 rounded"
             style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-muted)" }}
-            title="Kosz (usunięte do przywrócenia)"
+            title="Kosz — przywróć usunięte"
+            aria-label="Kosz — przywróć usunięte notatki"
           >
-            <Trash2 size={13} />
+            <ArchiveRestore size={13} />
           </Link>
           <button
             onClick={() => setIsQAOpen((v) => !v)}
