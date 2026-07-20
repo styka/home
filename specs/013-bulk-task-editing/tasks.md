@@ -1,7 +1,7 @@
 # Zadania: Bulkowa (zbiorcza) edycja zadań
 
 - **Plan:** ./plan.md (013-bulk-task-editing)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-07-20
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami.
@@ -52,8 +52,8 @@
 ## Faza 4 — Bramki i domknięcie
 - [x] **T-8** — `npm run check:actions`, `npm run check:ai-coverage`, `npm run check:migrations`,
   `next lint`, `next build` (lokalny Postgres — C-13) — zielone.
-- [ ] **T-9** — Mapowanie każdego AC (AC-1..AC-13) na wynik — input do `/verify`.
-- [ ] **T-10** — Wpis do `doświadczenia.md`, jeśli po drodze był nieoczywisty problem (C-51).
+- [x] **T-9** — Mapowanie każdego AC (AC-1..AC-13) na wynik — input do `/verify`.
+- [x] **T-10** — Wpis do `doświadczenia.md`, jeśli po drodze był nieoczywisty problem (C-51).
 
 ## Ścieżka krytyczna / zależności
 - **T-1 → T-4**: `BulkActionBar` woła `bulkUpdateTasks`; **T-2 → T-4** dla usuwania.
