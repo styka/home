@@ -976,7 +976,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
         "[ZGŁOSZENIE ADMINA — TRYB WSKAZYWANIA]\n" +
         'Utwórz dokładnie JEDNO zadanie w projekcie „Omnia" (module: tasks, type: create_task, params.projectName="Omnia").\n' +
         "- params.title: wygeneruj zwięzły, konkretny tytuł po polsku podsumowujący zgłoszenie (max ~80 znaków).\n" +
-        "- params.description: pełny opis admina ORAZ poniższy kontekst wskazanego miejsca.\n" +
+        "- params.description: NAJPIERW oryginalny opis admina wstawiony DOKŁADNIE, słowo w słowo (VERBATIM) — NIE przeredagowuj go, NIE poprawiaj gramatyki/interpunkcji, NIE streszczaj; zachowaj oryginalne słowa i ton. NASTĘPNIE dołącz poniższy kontekst wskazanego miejsca (UI).\n" +
         "Nie dopytuj i nie odpowiadaj tekstem — od razu zaproponuj plan z tym jednym zadaniem.\n\n" +
         `Opis zgłoszony przez admina:\n${text}\n\nKontekst wskazanego miejsca (UI):\n${feedbackContext}`;
       await callAgent({
