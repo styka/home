@@ -89,11 +89,16 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
 - **C-51 — Każdy naprawiony bug / nieoczywisty problem → wpis do `doświadczenia.md`** (katalog
   główny repo, po polsku, format: `## YYYY-MM-DD — tytuł` / `**Problem:**` / `**Rozwiązanie:**` /
   `**Lekcja:**`). Nie pytaj o zgodę — dopisz i zacommituj razem z fixem.
-- **C-52 — Merge do `develop` po skończonym zadaniu** (gdy `build` zielony), zgodnie ze STANDING
-  AUTHORIZATION w `CLAUDE.md` — automatycznie, bez pytania. `master` (produkcja) **tylko na wyraźne
-  „Tak"** właściciela. Dlatego pipeline **zawsze kończy się jednym pytaniem domykającym**
-  („Mistrzu Magu, czy zrobić merge develop do master?", opcja `Nie/zostaw na develop` jako rekomendowana
-  pierwsza); merge `develop → master` (i push) robimy **wyłącznie** po odpowiedzi „Tak".
+- **C-52 — Merge do `develop`, a na koniec automatyczna promocja `develop → master`** (gdy `build`
+  zielony), zgodnie ze STANDING AUTHORIZATION w `CLAUDE.md` — **automatycznie, bez pytania**.
+  Właściciel z góry i trwale autoryzował na koniec pipeline'u sekwencję: merge brancha roboczego
+  (`claude/*`) → `develop` → push `develop`, a następnie merge `develop → master` → push `master`
+  (produkcja, Render auto-deploy na `omnia-prod.onrender.com`). Pipeline **nie zadaje już pytania
+  domykającego** o produkcję. Promocja na `master` odbywa się **wyłącznie** przy werdykcie
+  APPROVE/APPROVE Z UWAGAMI i zielonym buildzie, i **musi** przejść kontrolę integralności
+  (`git merge-base --is-ancestor origin/master develop` oraz ponowne sprawdzenie po merge), żeby nigdy
+  nie cofnąć produkcji; jeśli kontrola zawiedzie albo push do `master` odbije — **zatrzymaj się i zgłoś
+  właścicielowi** zamiast forsować `master`.
 - **C-53 — Minimalizm.** Rozwiązanie najmniejsze z możliwych: bez nadmiarowych abstrakcji, nowych
   zależności i „przy okazji" refaktorów. Zgodność ze stylem otoczenia > osobiste preferencje.
 
@@ -121,9 +126,10 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   artefaktów, kodu ani konwencji. Wtedy **pytaj, nie zgaduj** (`AskUserQuestion`, rekomendowana
   pierwsza + `(zalecane)`), po odpowiedzi zaktualizuj artefakty wg C-54 i jedź dalej. Cel: właściciel
   wołany **jak najrzadziej**, ale **nigdy nie zgadujemy** przy naprawdę ważnej, niejednoznacznej
-  decyzji. Wszystko poza tą furtką rozstrzygasz sam. **Wyjątek sankcjonowany:** obowiązkowe pytanie
-  domykające o promocję `develop → master` (C-52) jest zadawane **zawsze** na końcu i nie jest liczone
-  jako złamanie „jednego momentu pytań" — to świadoma bramka produkcyjna właściciela.
+  decyzji. Wszystko poza tą furtką rozstrzygasz sam. **Bez pytania domykającego:** promocja
+  `develop → master` na końcu pipeline'u jest **z góry autoryzowana** (C-52) i wykonywana automatycznie
+  — pipeline nie zadaje już żadnego pytania o produkcję. Jedyny wyjątek to sytuacja awaryjna z C-52
+  (nieudana kontrola integralności lub odbity push do `master`): wtedy zatrzymaj się i zgłoś właścicielowi.
 
 ---
 
