@@ -176,8 +176,9 @@ export function NewsPage({
             onRefreshList={() => router.refresh()}
           />
 
-          {/* Treść tematu */}
-          <div>
+          {/* Treść tematu — min-w-0: track 1fr ma domyślnie min-width:auto, więc bez tego
+              szeroki obraz lub długi link rozpychałby całą stronę w poziomie. */}
+          <div className="min-w-0">
             {!selectedTopic ? (
               <div className="rounded-lg border border-dashed border-[var(--border)] p-8 text-center text-[var(--text-muted)]">
                 Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.

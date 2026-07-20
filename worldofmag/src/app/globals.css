@@ -120,6 +120,20 @@ input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
 }
 
+/* Zapobiega auto-zoomowi iOS Safari przy focusie pola formularza. iOS przybliża
+   widok, gdy focusowana kontrolka ma font-size < 16px (wiele pól używa text-sm/xs).
+   Wymuszamy 16px TYLKO na urządzeniach dotykowych (pointer: coarse) — desktop
+   (pointer: fine) zostaje z gęstszym tekstem. NIE blokujemy pinch-zoomu (żadnego
+   maximum-scale/user-scalable), więc dostępność zachowana. Selektor input:not(...)
+   ma wyższą specyficzność niż utility .text-xs/.text-sm, więc wygrywa bez !important. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* Make the native calendar/clock picker icon visible on the dark theme.
    We replace the default (near-black) icon with our own light SVG so it is
    deterministic regardless of how the browser handles color-scheme. A single

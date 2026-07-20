@@ -76,7 +76,7 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
         rel="noopener noreferrer"
         className="mt-2 flex items-start gap-1.5 text-[var(--text-primary)] hover:text-[var(--accent-blue)]"
       >
-        <span className="font-semibold leading-snug">{item.title}</span>
+        <span className="min-w-0 break-words font-semibold leading-snug">{item.title}</span>
         <ExternalLink size={14} className="mt-1 shrink-0 opacity-60" />
       </a>
 
@@ -93,7 +93,7 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
         />
       )}
 
-      <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+      <p className="mt-2 break-words text-sm leading-relaxed text-[var(--text-secondary)]">{summary}</p>
 
       {item.noveltyNote && (
         <div className="mt-2 flex items-start gap-1.5 rounded-md bg-[var(--bg-elevated)] px-2.5 py-1.5 text-xs text-[var(--text-secondary)]">

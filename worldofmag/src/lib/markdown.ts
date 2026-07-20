@@ -132,22 +132,22 @@ export const MARKDOWN_STYLES = `
 .md-h4 { font-size: 0.95rem; font-weight: 600; color: var(--text-secondary); margin: 1rem 0 0.3rem; }
 .md-h5 { font-size: 0.875rem; font-weight: 600; color: var(--text-muted); margin: 0.9rem 0 0.3rem; }
 .md-h6 { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin: 0.85rem 0 0.3rem; text-transform: uppercase; letter-spacing: 0.03em; }
-.md-p  { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.75; margin: 0.5rem 0; }
+.md-p  { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.75; margin: 0.5rem 0; overflow-wrap: anywhere; word-break: break-word; }
 .md-hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
 .md-ul { list-style: none; padding: 0; margin: 0.5rem 0 0.75rem 0; }
 .md-ol { list-style: decimal; padding-left: 1.4rem; margin: 0.5rem 0 0.75rem 0; }
-.md-oli { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7; margin-left: 0.2rem; }
-.md-li { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7; padding-left: 1rem; position: relative; }
+.md-oli { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7; margin-left: 0.2rem; overflow-wrap: anywhere; word-break: break-word; }
+.md-li { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7; padding-left: 1rem; position: relative; overflow-wrap: anywhere; word-break: break-word; }
 .md-li::before { content: "•"; position: absolute; left: 0; color: var(--text-muted); }
 .md-ol { list-style: decimal; padding-left: 1.5rem; margin: 0.5rem 0 0.75rem 0; }
 .md-oli { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7; padding-left: 0.25rem; }
 .md-code { font-family: monospace; font-size: 0.8em; background: var(--bg-elevated); color: var(--accent-blue); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border); }
 .md-pre  { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin: 0.75rem 0; }
 .md-code-block { font-family: monospace; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.65; display: block; white-space: pre; }
-.md-table { border-collapse: collapse; width: 100%; margin: 0.75rem 0; font-size: 0.8rem; }
+.md-table { border-collapse: collapse; width: 100%; margin: 0.75rem 0; font-size: 0.8rem; display: block; overflow-x: auto; }
 .md-th { text-align: left; padding: 7px 12px; background: var(--bg-elevated); color: var(--text-muted); font-weight: 600; border: 1px solid var(--border); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
-.md-td { padding: 7px 12px; border: 1px solid var(--border); color: var(--text-secondary); vertical-align: top; }
-.md-link { color: var(--accent-blue); text-decoration: underline; }
+.md-td { padding: 7px 12px; border: 1px solid var(--border); color: var(--text-secondary); vertical-align: top; overflow-wrap: anywhere; word-break: break-word; }
+.md-link { color: var(--accent-blue); text-decoration: underline; overflow-wrap: anywhere; word-break: break-word; }
 .md-img { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); margin: 0.5rem 0; display: block; }
 .md-blockquote { border-left: 3px solid var(--accent-purple); padding-left: 12px; margin: 0.5rem 0; color: var(--text-muted); font-style: italic; font-size: 0.875rem; }
 strong { color: var(--text-primary); font-weight: 600; }

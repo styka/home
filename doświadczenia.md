@@ -4,6 +4,36 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-20 — Pływający FAB asystenta znikał także na desktopie przy szczegółach zadania
+**Problem:** Ikona asystenta AI (Sparkles FAB) chowała się przy otwartych szczegółach zadania i na
+mobile, i na komputerze. Chowanie steruje `useOverlayState`, który wykrywa „modal treściowy" przez
+`document.querySelector('[class~="fixed"][class~="inset-0"]:not([data-omnia-overlay])')`. Mobilny panel
+szczegółów w `TasksPage.tsx` ma klasy `md:hidden fixed inset-0 z-50` — i choć `md:hidden` ukrywa go na
+desktopie wizualnie, **element wciąż jest w DOM**, a `querySelector` matchuje po atrybucie `class`, nie po
+`display`. Dlatego FAB znikał również na komputerze.
+**Rozwiązanie:** Oznaczyłem wrapper mobilnego panelu `data-omnia-overlay="taskdetail"` — selektor
+`:not([data-omnia-overlay])` go pomija, więc `modalOpen` nie zapala się przy szczegółach zadania (FAB
+zostaje widoczny na obu platformach). Świadomie zrobiliśmy z panelu szczegółów wyjątek od reguły
+„chowaj FAB nad modalem" — to ekran roboczy, nie przelotny dialog.
+**Lekcja:** Detekcja stanu UI przez `querySelector` po klasach `fixed inset-0` łapie też elementy ukryte
+przez `md:hidden` (bo są w DOM). Przy responsywnych „modalach mobilnych" trzeba je jawnie wykluczać
+(`data-omnia-overlay`) albo montować warunkowo, inaczej fałszywie zmieniają stan na desktopie.
+
+## 2026-07-20 — Anty-zoom iOS: reguła CSS musi przebić specyficzność utility Tailwinda
+**Problem:** iOS Safari auto-przybliża widok przy focusie pola z `font-size < 16px` (wiele pól używa
+`text-sm`/`text-xs`). Naiwna reguła `input { font-size: 16px }` (specyficzność 0,0,0,1) **nie zadziała** —
+utility Tailwinda `.text-xs` (0,0,1,0) ją przebija i pole zostaje 14/12px, więc zoom dalej występuje.
+**Rozwiązanie:** Reguła w `globals.css` w `@media (pointer: coarse)` z selektorem
+`input:not([type="checkbox"]):not([type="radio"]), select, textarea { font-size: 16px }` — `input:not(...)`
+ma specyficzność ~0,0,2,1, więc wygrywa z `.text-xs` **bez** `!important`. Celujemy tylko w `pointer:
+coarse` (dotyk), desktop zostaje z gęstszym tekstem; **nie** ruszamy `maximum-scale`/`user-scalable`, więc
+pinch-zoom (dostępność) zachowany.
+**Lekcja:** Nadpisując Tailwindowe utility surowym CSS-em pilnuj specyficzności — użyj selektora
+elementowego z `:not(...)`/atrybutami zamiast sięgać po `!important`. Anty-zoom rób przez font-size 16px
+na dotyku, nie przez blokowanie skalowania.
+
+---
+
 ## 2026-07-20 — „Brak brancha develop" — mylny wniosek z niepełnego lokalnego klonu
 **Problem:** Przy domykaniu zadania stwierdziłem, że w repo nie ma brancha `develop`, bo `git branch -a`
 pokazywał tylko `master` i branch roboczy. Na tej podstawie pominąłem przepływ przez `develop` i na „Tak"
