@@ -66,8 +66,11 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
   const [aiLoading, setAiLoading] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
+  const [recurringSaved, setRecurringSaved] = useState(false);
+  const [recurringSaving, setRecurringSaving] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recurringSavedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Helper: wrap async server actions for startTransition
   function run(fn: () => Promise<unknown>) {
@@ -193,7 +196,17 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
       endDate: recurringEndDate || null,
       anchor: recurringAnchor,
     };
-    run(() => updateTask(task.id, { recurring: rule }));
+    // Widoczny feedback zapisu (szczególnie na mobile, gdzie spinner w nagłówku łatwo przeoczyć):
+    // stan przycisku „Zapisywanie…" → „Zapisano" na ~1.5 s.
+    if (recurringSavedTimeout.current) clearTimeout(recurringSavedTimeout.current);
+    setRecurringSaved(false);
+    setRecurringSaving(true);
+    startTransition(async () => {
+      await updateTask(task.id, { recurring: rule });
+      setRecurringSaving(false);
+      setRecurringSaved(true);
+      recurringSavedTimeout.current = setTimeout(() => setRecurringSaved(false), 1500);
+    });
   }
 
   function handleRecurringClear() {
@@ -665,9 +678,23 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
                 </select>
               </div>
 
-              <div className="flex gap-2">
-                <button onClick={handleRecurringSave} className="text-xs px-2 py-1 rounded focus:outline-none" style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}>
-                  Zapisz
+              <div className="flex gap-2 items-center">
+                <button
+                  onClick={handleRecurringSave}
+                  disabled={recurringSaving}
+                  className="text-xs px-2 py-1 rounded focus:outline-none inline-flex items-center gap-1 disabled:opacity-70"
+                  style={{
+                    backgroundColor: recurringSaved ? "var(--accent-green)" : "var(--accent-purple)",
+                    color: "var(--on-accent)",
+                  }}
+                >
+                  {recurringSaving ? (
+                    <><Loader2 size={12} className="animate-spin" /> Zapisywanie…</>
+                  ) : recurringSaved ? (
+                    <><CheckCircle2 size={12} /> Zapisano</>
+                  ) : (
+                    "Zapisz"
+                  )}
                 </button>
                 <button onClick={handleRecurringClear} className="text-xs focus:outline-none" style={{ color: "var(--text-muted)" }}>
                   Usuń powtarzanie

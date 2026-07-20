@@ -4,6 +4,27 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-20 — Mobile UX: hover-only akcje, niewidoczny feedback transition i ukryty scroll poziomy
+**Problem:** Trzy wzorce psuły UX na dotyku: (1) w Wiadomościach (`NewsPage`) akcje tematu Edytuj/Usuń
+były `hidden group-hover:block` — na telefonie (brak hover) **nigdy** się nie pokazywały i były za małe
+(13px); (2) w `TaskDetail` przycisk „Zapisz" cykliczności wołał `updateTask` przez `useTransition`, ale
+jedyny sygnał (`Loader2` w nagłówku) był na mobile niewidoczny — wyglądało, jakby nic się nie stało; (3)
+pasek akcji listy zadań (`TasksPage`) miał `overflow-x-auto`, ale bez żadnej wskazówki, że da się go
+przewinąć — część ikon była poza kadrem i „nieodkrywalna".
+**Rozwiązanie:** (1) `hidden group-hover:block` → widoczne domyślnie + `md:hidden md:group-hover:block`
+(hover chowa je tylko na desktopie), ikony 16px, `p-1.5` na cel dotyku; (2) lokalny stan
+`recurringSaving/recurringSaved` + `setTimeout` — przycisk pokazuje w miejscu „Zapisywanie…" → „Zapisano"
+(zielony, ~1.5 s) → „Zapisz"; (3) wrapper `relative` + stan `actionScroll{left,right}` liczony ze
+`scrollWidth/clientWidth/scrollLeft` (`onScroll` + resize) i dekoracyjny fade `linear-gradient(...,
+var(--bg-surface), transparent)` na krawędzi (`pointer-events:none`, `aria-hidden`).
+**Lekcja:** Na dotyku `group-hover` jest niedostępny — akcje kontekstowe rób widoczne domyślnie i chowaj
+dopiero od `md` w górę. Globalny spinner z `useTransition` bywa na mobile niewidoczny — dawaj feedback
+**w miejscu akcji** (stan przycisku). Kontener `overflow-x-auto` bez wizualnej wskazówki = ukryte funkcje;
+zanikający gradient (kolor = tło paska, `pointer-events:none`) sygnalizuje scroll bez psucia estetyki i
+skinowalności.
+
+---
+
 ## 2026-07-20 — Łamanie długich URL w markdown: catch-all przez dziedziczony overflow-wrap
 **Problem:** Po dodaniu `overflow-wrap:anywhere` tylko do `.md-p/.md-li/.md-td/.md-link` długie linki w
 treści wiedzy (module Wiadomości, `KnowledgePanel` → `markdownToHtml` → klasa `markdown-body`) DALEJ
