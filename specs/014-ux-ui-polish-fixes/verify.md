@@ -79,3 +79,27 @@ Dark/Light/Casual/Blue/Pink (C-30).
 ## Werdykt końcowy
 **GOTOWE.** Wszystkie 5 kryteriów akceptacji spełnione, wszystkie bramki zielone, brak naruszeń
 konstytucji, brak regresji. Przejście do `/review`.
+
+---
+
+## Iteracja 2 — re-weryfikacja po zwrotce właściciela (2026-07-20)
+Właściciel zgłosił, że w praktyce AC-1 i AC-2 nie były domknięte, oraz nowy defekt UX. Poprawki T-9..T-12.
+
+- **AC-1 (re)** ✅ — przyczyna: `break-words`/`overflow-wrap:break-word` nie redukuje min-content, więc w
+  kolumnie grid długi URL nadal rozpychał. Fix: `[overflow-wrap:anywhere]` na tytule/streszczeniu/noveltyNote
+  + `min-w-0 overflow-hidden` na karcie (`NewsItemCard.tsx`). `anywhere` redukuje min-content → kontener się
+  zwęża; `overflow-hidden` to twarda gwarancja braku poziomego scrolla.
+- **AC-2 (re)** ✅ — przyczyna: wykluczenie z `modalOpen` sprawiło, że FAB się renderował, ale panel
+  podglądu (`z-50`) zasłaniał go (FAB `z-41`, feedback `z-39`). Fix: `panelOpen` w `useOverlayState.ts`;
+  z-index podbijany kontekstowo — FAB `panelOpen?55:41` (`AICommandSheet.tsx`), feedback
+  `modalOpen?10001:(panelOpen?54:39)` (`FeedbackInspector.tsx`); marker `data-omnia-overlay="panel"`
+  (`TasksPage.tsx`). Skala: panel 50 < feedback 54 < FAB 55 < toast 60 → obie ikony nad panelem, pod
+  toastami. Naprawia też regresję (feedback wcześniej znikał po moim pierwszym fixie).
+- **AC-3 (re)** ✅ — nowy defekt: w jednym rzędzie pole daty + przycisk `+` nie mieściły się na mobile
+  (`+` uciekał poza ekran, bo `flex-1` input bez `min-w-0`). Fix: redesign dwurzędowy w `QuickAddTask.tsx`
+  — rząd 1 `[priorytet][tytuł (flex-1 min-w-0)][+]` (`+` zawsze widoczny, powiększony do 7×7), pole daty w
+  rzędzie 2 bez sztywnej szerokości (mieści się przy 16px). Ikona owinięta `<label>` (klik ikony = focus).
+- **Bramki (re)** ✅ — `check:migrations`/`check:actions` OK, `next lint` bez błędów, `next build`
+  zielony (lokalny Postgres). Lekcje dopisane do `doświadczenia.md`.
+
+**Werdykt iteracji 2: GOTOWE.**

@@ -265,7 +265,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
   const [isOpen, setIsOpen] = useState(false);
   // Magiczną ikonę chowamy, gdy otwarty jest modal treściowy — nie nakładamy
   // dialogu na dialog i nie odciągamy uwagi od skupionego zadania w modalu.
-  const { modalOpen } = useOverlayState();
+  const { modalOpen, panelOpen } = useOverlayState();
   const [inputText, setInputText] = useState("");
   // Composer: pole tekstowe (auto-rozrost) + dyktowanie mowy (mikrofon w pigułce, jak w ChatGPT).
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -1178,7 +1178,9 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
           title="Asystent AI"
           aria-label="Otwórz asystenta AI"
           className="fixed right-5 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
-          style={{ zIndex: 41, width: 52, height: 52, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
+          // Nad pełnoekranowym panelem roboczym (mobilny podgląd zadania, z-50) FAB musi
+          // stać wyżej niż panel, ale niżej niż toasty (z-60). Poza panelem zostaje na 41.
+          style={{ zIndex: panelOpen ? 55 : 41, width: 52, height: 52, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
         >
           <Sparkles size={22} />
         </button>

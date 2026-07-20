@@ -102,57 +102,65 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
         className="flex-shrink-0 border-b"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
       >
-        <div className="flex items-center gap-2 px-3 py-2">
-          {/* Priority picker */}
-          <button
-            type="button"
-            onClick={() => {
-              const opts: TaskPriority[] = ["NONE", "LOW", "MEDIUM", "HIGH", "URGENT"];
-              const idx = opts.indexOf(priority);
-              setPriority(opts[(idx + 1) % opts.length]);
-            }}
-            className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded focus:outline-none text-sm font-bold"
-            style={{ color: currentPriority.color }}
-            title="Priorytet (kliknij by zmienić)"
-          >
-            {currentPriority.label}
-          </button>
+        {/* Układ dwurzędowy: rząd 1 zawsze mieści [priorytet][pole tytułu][+], więc
+            przycisk dodawania nigdy nie ucieka poza ekran na wąskim mobile. Pole daty
+            (i ew. przyszłe opcje) ląduje w rzędzie 2 dopiero po rozwinięciu (showExtra). */}
+        <div className="px-3 py-2">
+          <div className="flex items-center gap-2">
+            {/* Priority picker */}
+            <button
+              type="button"
+              onClick={() => {
+                const opts: TaskPriority[] = ["NONE", "LOW", "MEDIUM", "HIGH", "URGENT"];
+                const idx = opts.indexOf(priority);
+                setPriority(opts[(idx + 1) % opts.length]);
+              }}
+              className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded focus:outline-none text-sm font-bold"
+              style={{ color: currentPriority.color }}
+              title="Priorytet (kliknij by zmienić)"
+            >
+              {currentPriority.label}
+            </button>
 
-          <input
-            ref={inputRef}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onFocus={() => setShowExtra(true)}
-            placeholder="Dodaj lub opisz zadanie — tytuł powstanie sam (a / n)"
-            className="flex-1 bg-transparent text-sm focus:outline-none"
-            style={{ color: "var(--text-primary)" }}
-          />
+            <input
+              ref={inputRef}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onFocus={() => setShowExtra(true)}
+              placeholder="Dodaj lub opisz zadanie — tytuł powstanie sam (a / n)"
+              className="flex-1 min-w-0 bg-transparent text-sm focus:outline-none"
+              style={{ color: "var(--text-primary)" }}
+            />
+
+            <button
+              type="submit"
+              disabled={!value.trim() || isPending}
+              className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded focus:outline-none disabled:opacity-30"
+              style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
+              title="Dodaj zadanie"
+            >
+              {isPending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+            </button>
+          </div>
 
           {showExtra && (
-            <div
-              className="flex items-center gap-1 rounded border px-2 py-1"
-              style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elevated)" }}
-            >
-              <Calendar size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="bg-transparent text-xs focus:outline-none"
-                style={{ color: "var(--text-secondary)", width: 116 }}
-                title="Termin"
-              />
+            <div className="mt-2 flex items-center gap-2">
+              <label
+                className="flex items-center gap-1.5 rounded border px-2 py-1"
+                style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elevated)" }}
+              >
+                <Calendar size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="bg-transparent text-xs focus:outline-none"
+                  style={{ color: "var(--text-secondary)" }}
+                  title="Termin"
+                />
+              </label>
             </div>
           )}
-
-          <button
-            type="submit"
-            disabled={!value.trim() || isPending}
-            className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded focus:outline-none disabled:opacity-30"
-            style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
-          >
-            {isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-          </button>
         </div>
       </form>
     );
