@@ -103,3 +103,26 @@ Właściciel zgłosił, że w praktyce AC-1 i AC-2 nie były domknięte, oraz no
   zielony (lokalny Postgres). Lekcje dopisane do `doświadczenia.md`.
 
 **Werdykt iteracji 2: GOTOWE.**
+
+---
+
+## Iteracja 3 — kolejna zwrotka właściciela (2026-07-20)
+Dwa tematy: (a) długie linki DALEJ rozpychają treść Wiadomości; (b) rewizja UX dodawania zadań.
+
+- **AC-1 (re²)** ✅ — przyczyna reszty przepełnienia: łamanie dodane tylko do części klas markdown
+  (`.md-p/.md-li/.md-td/.md-link`), ale nie do nagłówków/inline-code; długi URL w nagłówku/kodzie treści
+  wiedzy (`KnowledgePanel`, klasa `markdown-body`) nadal rozpychał. Fix u źródła: `.markdown-body {
+  overflow-wrap: anywhere; word-break: break-word; min-width: 0; }` w `MARKDOWN_STYLES` — dziedziczone,
+  więc obejmuje WSZYSTKIE potomki (nagłówki, code, cytaty, linki) naraz. Feed newsów pozostaje objęty
+  (overflow-wrap:anywhere + overflow-hidden na karcie z iteracji 2).
+- **AC-3 (re²) — rewizja UX dodawania zadań** ✅ — na prośbę właściciela („może lepiej akcja do pełnego
+  formularza jak edycja?"). Analiza modułów: Omnia stosuje JEDEN inline formularz add+edit otwierany
+  przyciskiem (`EventForm` w Health, analogicznie Flota/Contacts). Tasks ma już taki pełny formularz
+  (`TaskDetail`, otwierany kliknięciem zadania). Decyzja: quick-add uproszczony do czystego rzędu
+  `[priorytet][tytuł][+]` (szybkie przechwytywanie — kluczowa zaleta listy zadań), a termin i pozostałe
+  pola przeniesione do `TaskDetail`. Efekt: brak gniecenia „+"/daty na mobile, zachowana szybkość,
+  spójność z resztą aplikacji. `QuickAddTask.tsx` — usunięte inline pole daty/`showExtra`.
+- **Bramki (re²)** ✅ — `next build` zielony (lokalny Postgres), `check:migrations`/`check:actions` OK.
+  Lekcje dopisane do `doświadczenia.md`.
+
+**Werdykt iteracji 3: GOTOWE.**
