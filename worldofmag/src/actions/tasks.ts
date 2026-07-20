@@ -377,7 +377,7 @@ export async function bulkUpdateTasks(
 
   void trackActivity("tasks", "bulk_update_tasks", { count: updated, skipped, patchKeys: Object.keys(patch) });
   revalidatePath("/tasks");
-  for (const pid of affectedProjectIds) revalidatePath(`/tasks/${pid}`);
+  Array.from(affectedProjectIds).forEach((pid) => revalidatePath(`/tasks/${pid}`));
   return { updated, skipped };
 }
 
@@ -423,7 +423,7 @@ export async function bulkDeleteTasks(taskIds: string[]): Promise<{ deleted: num
 
   void trackActivity("tasks", "bulk_delete_tasks", { count: deleted, skipped });
   revalidatePath("/tasks");
-  for (const pid of affectedProjectIds) revalidatePath(`/tasks/${pid}`);
+  Array.from(affectedProjectIds).forEach((pid) => revalidatePath(`/tasks/${pid}`));
   return { deleted, skipped };
 }
 

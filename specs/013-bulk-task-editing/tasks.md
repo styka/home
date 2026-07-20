@@ -29,19 +29,19 @@
   w 1. wersji"). **Gotowe, gdy:** `npm run check:ai-coverage` przechodzi.
 
 ## Faza 2 — UI
-- [ ] **T-4** — Nowy komponent **`src/components/tasks/BulkActionBar.tsx`**: pływający pasek/bottom-sheet
+- [x] **T-4** — Nowy komponent **`src/components/tasks/BulkActionBar.tsx`**: pływający pasek/bottom-sheet
   (licznik „Zaznaczono N", „Zaznacz wszystkie/Odznacz", „Anuluj"; akcje: Status z
   `resolveStatuses(statusConfig)`, Priorytet, Termin ustaw/wyczyść, Kategoria, Projekt z `allProjects`,
   Tagi dodaj/usuń z `allTags`, Usuń z potwierdzeniem). Zmienne CSS + `--on-accent`, `safe-area-inset-bottom`,
   `useTransition`, komunikat „Zmieniono X z N". Teksty PL. **Gotowe, gdy:** pasek renderuje się i woła
   akcje z T-1/T-2. (AC-1, AC-4, AC-5, AC-6, AC-7, AC-8, AC-9, AC-12)
-- [ ] **T-5** — `TaskRow.tsx`: propsy `selectionMode`/`isChecked`/`onToggleSelect(id, shiftKey)`,
+- [x] **T-5** — `TaskRow.tsx`: propsy `selectionMode`/`isChecked`/`onToggleSelect(id, shiftKey)`,
   checkbox ≥20×20 po lewej (kolory CSS-vars), w trybie zaznaczania klik toggluje zaznaczenie (nie
   otwiera panelu), Shift+klik = zakres, long-press (~450 ms) na mobile wchodzi w tryb. **Gotowe, gdy:**
   wiersz zaznacza się kliknięciem/gestem, poza trybem zachowanie bez zmian. (AC-13)
-- [ ] **T-6** — `TaskList.tsx`: przekazać propsy zaznaczenia do `TaskRow` + indeks w kolejności renderu
+- [x] **T-6** — `TaskList.tsx`: przekazać propsy zaznaczenia do `TaskRow` + indeks w kolejności renderu
   do obsługi zakresu Shift. **Gotowe, gdy:** zaznaczenie działa we wszystkich wariantach grupowania.
-- [ ] **T-7** — `TasksPage.tsx`: stan `selectionMode`/`selectedIds`/`lastClickedId`, przycisk „Zaznacz"
+- [x] **T-7** — `TasksPage.tsx`: stan `selectionMode`/`selectedIds`/`lastClickedId`, przycisk „Zaznacz"
   w nagłówku (tylko `layout === "list"`), render `BulkActionBar`, „zaznacz wszystkie" po `visibleTasks`,
   Esc czyści i wychodzi (wpięte w obsługę klawiszy), dolny padding listy gdy pasek widoczny. **Gotowe,
   gdy:** pełny cykl zaznacz→zmień→wyczyść działa na widoku listy. (AC-1, AC-9, AC-11)
@@ -50,7 +50,7 @@
 - Nie dotyczy (plan §6) — brak nowej `AIAction`/read-toola; pokrycie AI domknięte w T-3.
 
 ## Faza 4 — Bramki i domknięcie
-- [ ] **T-8** — `npm run check:actions`, `npm run check:ai-coverage`, `npm run check:migrations`,
+- [x] **T-8** — `npm run check:actions`, `npm run check:ai-coverage`, `npm run check:migrations`,
   `next lint`, `next build` (lokalny Postgres — C-13) — zielone.
 - [ ] **T-9** — Mapowanie każdego AC (AC-1..AC-13) na wynik — input do `/verify`.
 - [ ] **T-10** — Wpis do `doświadczenia.md`, jeśli po drodze był nieoczywisty problem (C-51).
