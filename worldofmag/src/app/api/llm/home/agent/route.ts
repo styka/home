@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { PET_ACTIONS_PROMPT, PET_ACTION_EXAMPLES } from "@/lib/ai/petActions";
 import { buildReadToolsPrompt, READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentTools";
 import { webSearch } from "@/lib/news/webSearch";
-import { chatComplete } from "@/lib/llm/chat";
+import { chatComplete, classifyRateLimitKind, rateLimitUserMessage } from "@/lib/llm/chat";
 import { checkRateLimit, acquireSlot } from "@/lib/ai/rateLimit";
 import { checkAiBudget, recordAiUsage } from "@/lib/ai/usage";
 import { classifyIntent } from "@/lib/ai/fastPath";
@@ -518,16 +518,16 @@ async function runAgentLoop(
         content = await callAgent(messages, meta, maxTokens, conversationId);
       } catch (e) {
         const status = (e as { status?: number }).status ?? 502;
-        // 010-ai-chat-rate-limit: przejściowy limit szybkości modelu (429) — mimo
-        // ponawiania z backoffem (lib/llm/chat.ts) nadal odbija. Zamiast surowego
-        // błędu dostawcy ("Rate limit reached for model …") pokaż użytkownikowi
-        // zrozumiały komunikat po polsku (C-41: nie przepisujemy treści dostawcy).
+        // 010/017: przejściowy limit modelu (429) — mimo retry (010), pacingu (016) i
+        // degradacji na lżejszy model (017) nadal odbija (zwykle wyczerpany DZIENNY
+        // budżet darmowego modelu). Zamiast surowego błędu dostawcy ("Rate limit
+        // reached for model …") pokaż UCZCIWY komunikat po polsku, rozróżniający limit
+        // dzienny od minutowego (C-41: nie przepisujemy treści dostawcy).
+        const providerMsg = e instanceof Error ? e.message : "";
         const message =
           status === 429
-            ? "Asystent jest teraz przeciążony (chwilowy limit zapytań do modelu). Spróbuj ponownie za chwilę."
-            : e instanceof Error
-              ? e.message
-              : "Błąd LLM";
+            ? rateLimitUserMessage(classifyRateLimitKind(providerMsg))
+            : providerMsg || "Błąd LLM";
         return { status, body: { error: message } };
       }
       messages.push({ role: "assistant", content });
