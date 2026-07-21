@@ -67,6 +67,20 @@ export async function resolveLlmChain(op: OperationType): Promise<ResolvedLlm[]>
     });
   }
 
+  // 3. 017-ai-model-limit-resilience: dla `reasoning` dołóż lżejszy model Groqa jako
+  // OSTATNIE ogniwo. Gdy główny model (70b) wyczerpie limit (dzienny TPD lub minutowy
+  // TPM), `chatComplete` zdegraduje na lżejszy model (osobny budżet — w logach działał,
+  // gdy 70b padał) zamiast oddać użytkownikowi błąd. Dedup w `add()` chroni przed
+  // duplikatem (gdy admin ustawił już 8b jako główny). Tylko przy dostępnym kluczu Groqa.
+  if (op === "reasoning" && legacy?.value) {
+    add({
+      kind: "openai_compat",
+      baseUrl: GROQ_BASE_URL,
+      apiKey: decryptSecret(legacy.value),
+      model: OPERATION_TYPE_META.dispatch.defaultModel, // llama-3.1-8b-instant
+    });
+  }
+
   return chain;
 }
 
