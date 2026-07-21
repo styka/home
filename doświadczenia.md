@@ -4,6 +4,24 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-21 — Groq ma limit DZIENNY (TPD), nie tylko minutowy — degradacja na lżejszy model
+**Problem:** Po pacingu (016) asystent dalej padał. Produkcyjny log `/admin/ai-calls` pokazał inny
+limit niż zakładaliśmy: `429 … on tokens per day (TPD): Limit 100000, Used ~98300`. To **dzienny** limit
+darmowego Groqa na modelu reasoning (llama-3.3-70b): każde wywołanie reasoning kosztuje 6–8k tokenów,
+więc ~13–16 interakcji wyczerpuje CAŁY dzień; potem 429 aż do północy UTC. Retry i pacing minutowy tego
+NIE ruszą (dziennego okna nie da się przeczekać w kilka sekund). Komunikat „chwilowy limit… spróbuj za
+chwilę" był w tym wypadku nieprawdą.
+**Rozwiązanie:** (1) Degradacja: do łańcucha `resolveLlmChain("reasoning")` dołożono ostatnie ogniwo —
+Groq `llama-3.1-8b-instant` (osobny budżet; w logach działał, gdy 70b padał). `chatComplete` sam próbuje
+8b po 429 na 70b, więc asystent zwykle i tak odpowiada (świadoma zgoda właściciela na słabszą odpowiedź).
+(2) Uczciwy komunikat: `classifyRateLimitKind` rozpoznaje w treści błędu „per day/TPD" vs „per minute/TPM"
+i `rateLimitUserMessage` zwraca polski komunikat — dzienny („po północy UTC / ustaw płatny model w
+Admin → LLM") vs minutowy („spróbuj za chwilę"). Nigdy surowy tekst dostawcy (C-41).
+**Lekcja:** Zanim uznasz limit dostawcy za „chwilowy", sprawdź w treści błędu, czy to per-minute czy
+per-day — to zupełnie inne strategie (przeczekać sekundy vs przełączyć model / poczekać do jutra). Na
+darmowym tierze o ciasnym limicie dziennym miej gotowy fallback na lżejszy model z osobnym budżetem;
+docelowo płatny model znosi problem. I dawaj użytkownikowi PRAWDĘ o rodzaju limitu.
+
 ## 2026-07-21 — Diagnostyka asystenta: nieudane wywołania LLM były NIELOGOWANE + pacing pod TPM Groqa
 **Problem:** Zgłoszenie „nadal nie działa" po redukcji promptu. Nie dało się dojść przyczyny, bo
 `recordAiCall` logował do `AiCall` **tylko udane** wywołania (kod w `chatComplete` był w gałęzi

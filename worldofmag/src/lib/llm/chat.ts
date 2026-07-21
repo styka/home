@@ -13,6 +13,29 @@ export function isRetryableLlmStatus(status: number): boolean {
   return status === 429 || status >= 500;
 }
 
+/**
+ * 017-ai-model-limit-resilience: rozpoznaje RODZAJ limitu z treści błędu dostawcy,
+ * żeby dać użytkownikowi UCZCIWY komunikat. Groq rozróżnia limit dzienny (TPD —
+ * "tokens per day") od minutowego (TPM — "tokens per minute"); ten pierwszy NIE jest
+ * chwilowy (reset dopiero o północy), więc „spróbuj za chwilę" byłoby nieprawdą.
+ */
+export type RateLimitKind = "daily" | "minute" | "generic";
+
+export function classifyRateLimitKind(message: string | undefined | null): RateLimitKind {
+  const m = (message ?? "").toLowerCase();
+  if (/\bper day\b|\btpd\b|tokens per day/.test(m)) return "daily";
+  if (/\bper minute\b|\btpm\b|tokens per minute/.test(m)) return "minute";
+  return "generic";
+}
+
+/** Polski komunikat dla użytkownika przy limicie modelu (nigdy surowy tekst dostawcy — C-41). */
+export function rateLimitUserMessage(kind: RateLimitKind): string {
+  if (kind === "daily") {
+    return "Wyczerpano dzienny limit darmowego modelu AI. Spróbuj ponownie po północy (czasu UTC) albo ustaw płatny model w panelu Admin → LLM.";
+  }
+  return "Asystent jest teraz przeciążony (chwilowy limit zapytań do modelu). Spróbuj ponownie za chwilę.";
+}
+
 // Wspólny interfejs do rozmów z LLM. Trasy budują wiadomości w stylu OpenAI,
 // a dispatcher tłumaczy je na format konkretnego dostawcy (OpenAI-compatible
 // albo Anthropic Messages API). Dzięki temu przełączenie dostawcy/modelu w
@@ -257,7 +280,7 @@ async function openAiComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<Chat
   }
   if (!res.ok) {
     const err = await res.text().catch(() => "unknown");
-    return { ok: false, status: res.status, message: parseErr(err).slice(0, 200), attempts };
+    return { ok: false, status: res.status, message: parseErr(err).slice(0, 300), attempts };
   }
   const data = (await res.json().catch(() => null)) as
     | { choices?: Array<{ message?: { content?: string } }>; usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } }
@@ -352,7 +375,7 @@ async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<C
   }
   if (!res.ok) {
     const err = await res.text().catch(() => "unknown");
-    return { ok: false, status: res.status, message: parseErr(err).slice(0, 200), attempts };
+    return { ok: false, status: res.status, message: parseErr(err).slice(0, 300), attempts };
   }
   const data = (await res.json().catch(() => null)) as
     | {
@@ -449,7 +472,7 @@ async function openAiStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<Stream
   }
   if (!res.ok || !res.body) {
     const err = await res.text().catch(() => "LLM request failed");
-    return { ok: false, status: res.ok ? 502 : res.status, message: parseErr(err).slice(0, 200) };
+    return { ok: false, status: res.ok ? 502 : res.status, message: parseErr(err).slice(0, 300) };
   }
   return { ok: true, response: new Response(res.body, { headers: SSE_HEADERS }) };
 }
@@ -483,7 +506,7 @@ async function anthropicStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<Str
   }
   if (!upstream.ok || !upstream.body) {
     const err = await upstream.text().catch(() => "LLM request failed");
-    return { ok: false, status: upstream.ok ? 502 : upstream.status, message: parseErr(err).slice(0, 200) };
+    return { ok: false, status: upstream.ok ? 502 : upstream.status, message: parseErr(err).slice(0, 300) };
   }
 
   const reader = upstream.body.getReader();
