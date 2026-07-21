@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { PET_ACTIONS_PROMPT, PET_ACTION_EXAMPLES } from "@/lib/ai/petActions";
-import { READ_TOOLS_PROMPT, READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentTools";
+import { buildReadToolsPrompt, READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentTools";
 import { webSearch } from "@/lib/news/webSearch";
 import { chatComplete } from "@/lib/llm/chat";
 import { checkRateLimit, acquireSlot } from "@/lib/ai/rateLimit";
@@ -295,7 +295,7 @@ PROTOKÓŁ — w KAŻDEJ turze zwróć DOKŁADNIE JEDEN obiekt JSON (bez markdow
 { "step":"report", "thought":"...", "title":"Tytuł raportu", "content":"# Tytuł\\n\\n## Podsumowanie\\n...\\n\\n## Fakty i dane\\n| ... |\\n\\n## Wnioski\\n..." }
 Raport „z naszej sesji bez pomijania faktów, z podsumowaniem": uwzględnij WSZYSTKIE konkretne dane omówione w rozmowie (liczby, nazwy, terminy — w tabelach), sekcję ## Podsumowanie oraz linki markdown do elementów ([tytuł](/tasks/<id>)). Nie pomijaj faktów.
 
-${READ_TOOLS_PROMPT}
+${buildReadToolsPrompt(modules)}
 
 ${buildActionCatalog(modules)}
 

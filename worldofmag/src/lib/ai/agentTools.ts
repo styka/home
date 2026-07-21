@@ -105,6 +105,75 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_calendar: args { year?, month? } → [{ module, title, date, at, href }]. Zagregowany kalendarz (zadania + posiłki + zdrowie + przeglądy floty) dla danego miesiąca (domyślnie bieżący; month = 1-12).
 - web_search: args { query, limit? } → [{ title, url, snippet }]. Wyszukiwarka internetowa — użyj TYLKO gdy potrzebujesz informacji spoza danych użytkownika (ceny, fakty, definicje, świat zewnętrzny). W odpowiedzi cytuj źródła linkami markdown.`;
 
+// Mapowanie narzędzia odczytu → moduł, do FILTROWANIA katalogu po routingu (router
+// `routeModules` zawęża polecenie do 1–3 modułów). Bez tego cały katalog (~50 narzędzi,
+// ~2000 tokenów) trafiał do KAŻDEGO wywołania modelu — a proste zapytanie odpala dwa
+// wywołania (query→answer), co na free-tier Groqa przebijało minutowy limit tokenów (TPM)
+// niezależnie od ponawiania. Źródłem prawdy pozostaje płaski `READ_TOOLS_PROMPT` powyżej;
+// tutaj tylko przypisujemy każde narzędzie do modułu (jak `buildActionCatalog`).
+const READ_TOOL_MODULE: Record<string, string> = {
+  // tasks
+  list_projects: "tasks", list_tasks: "tasks", get_task: "tasks", list_task_tags: "tasks", list_project_groups: "tasks",
+  // shopping
+  list_shopping_lists: "shopping", list_items: "shopping",
+  // notes
+  list_notes: "notes", get_note: "notes", list_note_tags: "notes", list_note_groups: "notes",
+  // pets
+  list_pets: "pets", list_care_agenda: "pets", list_enclosures: "pets", get_pet_welfare: "pets", list_care_history: "pets",
+  // magazynowanie
+  list_storage_items: "magazynowanie", list_suppliers: "magazynowanie", list_low_stock: "magazynowanie",
+  list_expiring_storage: "magazynowanie", get_storage_analytics: "magazynowanie",
+  // habits
+  list_habits: "habits",
+  // health
+  list_health_events: "health", list_medications: "health", get_test_trends: "health",
+  // portfel
+  list_wallet: "portfel", list_budgets: "portfel", list_goals: "portfel", get_wallet_overview: "portfel", get_monthly_report: "portfel",
+  // kitchen
+  list_recipes: "kitchen", get_recipe: "kitchen", list_cookbooks: "kitchen", list_meal_plan: "kitchen",
+  list_todays_meals: "kitchen", list_pantry: "kitchen", list_expiring_pantry: "kitchen", get_meal_plan_cost: "kitchen",
+  list_replenish_candidates: "kitchen",
+  // flota
+  list_vehicles: "flota",
+  // warsztaty
+  list_workshops: "warsztaty", list_maintenance: "warsztaty",
+  // languages
+  list_decks: "languages", list_due_cards: "languages", get_study_streak: "languages",
+  // news
+  list_news_topics: "news", list_hot_topics: "news", list_news_sources: "news", get_news_topic_view: "news",
+  // weather
+  list_weather_locations: "weather", get_weather: "weather", list_watchers: "weather",
+  // contacts
+  list_contacts: "contacts",
+  // reports
+  search_reports: "reports",
+};
+
+// Narzędzia przekrojowe — ZAWSZE dostępne, niezależnie od routingu modułów.
+const CORE_READ_TOOLS = new Set(["list_calendar", "web_search", "list_trash"]);
+
+/**
+ * Buduje katalog narzędzi ODCZYTU zawężony do wybranych modułów (+ narzędzia core).
+ * Zmniejsza rozmiar promptu systemowego agenta, żeby proste zapytanie odczytowe
+ * (dwa wywołania modelu) mieściło się w minutowym limicie tokenów dostawcy.
+ * Puste/nieznane `modules` → pełny katalog (bezpieczny fallback, zachowanie jak dotąd).
+ * Narzędzie bez przypisanego modułu również zostaje (bezpiecznie).
+ */
+export function buildReadToolsPrompt(modules: string[]): string {
+  const selected = modules.filter((m) => Object.values(READ_TOOL_MODULE).includes(m));
+  if (selected.length === 0) return READ_TOOLS_PROMPT;
+  const [header, ...rest] = READ_TOOLS_PROMPT.split("\n");
+  const kept = rest.filter((line) => {
+    const m = /^- (\w+):/.exec(line);
+    if (!m) return true; // linie puste / nie-wypunktowane (odstęp po nagłówku) — zachowaj
+    const tool = m[1];
+    if (CORE_READ_TOOLS.has(tool)) return true;
+    const mod = READ_TOOL_MODULE[tool];
+    return mod ? selected.includes(mod) : true; // nieprzypisane narzędzie → zachowaj
+  });
+  return [header, ...kept].join("\n");
+}
+
 export const READ_TOOL_NAMES = [
   "list_projects",
   "list_tasks",
