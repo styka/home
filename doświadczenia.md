@@ -4,6 +4,25 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-21 — „Przeciążony asystent" na „pokaż zadania otagowane X" — limit TPM był STRUKTURALNY, nie chwilowy
+**Problem:** Mimo poprawek ze spec 010 (retry z backoffem + filtr po tagu w `list_tasks`) polecenie „pokaż
+zadania otagowane »raj«" nadal kończyło się komunikatem „Asystent jest teraz przeciążony…", choć zadania z
+tym tagiem istniały (brak logów agenta = padało już na pierwszym wywołaniu). Przyczyna: 010 założyło, że
+limit Groqa (12000 TPM) jest **chwilowy** i wystarczy go „przeczekać" retry. W rzeczywistości pełny katalog
+~50 narzędzi odczytu (`READ_TOOLS_PROMPT`, ~2000 tok.) trafiał do KAŻDEGO wywołania modelu — a proste
+zapytanie odczytowe odpala **dwa** wywołania (query→answer, ~5–6k tok. każde). Dwa takie wywołania w jednej
+minucie przebijały 12000 TPM **za każdym razem** — 8-sekundowy retry nie miał szans, bo okno się nie zwalniało.
+**Rozwiązanie:** Odchudzono prompt agenta: `buildReadToolsPrompt(modules)` filtruje katalog narzędzi odczytu
+do modułów wybranych przez router (`READ_TOOL_MODULE` + `CORE_READ_TOOLS`), dokładnie tak, jak
+`buildActionCatalog` już filtruje akcje. Dla zapytania o zadania prompt spada z ~2000 do ~kilkuset tokenów
+narzędzi/wywołanie → dwa wywołania mieszczą się poniżej TPM. `READ_TOOLS_PROMPT` został źródłem prawdy
+(builder tylko filtruje jego wiersze — bez transkrypcji, bez ryzyka rozjazdu).
+**Lekcja:** Gdy „chwilowy" limit dostawcy odbija **powtarzalnie** i to samo polecenie ginie za każdym razem —
+to nie jest chwilowość, tylko **strukturalne** przekroczenie budżetu na wywołanie/minutę; retry tego nie
+naprawi. Najpierw policz, ile tokenów i ile wywołań generuje JEDNO polecenie (Groq wlicza `max_tokens` i cały
+prompt do TPM), i **redukuj zapotrzebowanie** (filtruj kontekst do potrzebnego zakresu), zamiast dokładać
+kolejny retry. Brak logów agenta = pada przed pierwszą myślą → patrz na rozmiar pierwszego wywołania.
+
 ## 2026-07-20 — Przeciążona ikona kosza: `Trash2` znaczyła i „usuń", i „otwórz Kosz/odzyskiwanie"
 **Problem:** Ta sama ikona `Trash2` była używana w dwóch sprzecznych znaczeniach: **„usuń element"**
 (~65 miejsc, wszystkie moduły — spójnie) oraz **„otwórz Kosz `/trash`" (odzyskiwanie)** — w nagłówkach
