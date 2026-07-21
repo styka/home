@@ -291,3 +291,63 @@ export async function applyAnthropicProfile(data: { apiKey: string }): Promise<v
   );
   revalidatePath("/admin/llm");
 }
+
+// ─── Diagnostyka asystenta AI: surowy log wywołań LLM (per rozmowa) ──────────
+export interface AiCallLogRow {
+  id: string;
+  createdAt: string; // ISO
+  source: string | null;
+  operationType: string;
+  providerKind: string;
+  model: string;
+  ok: boolean;
+  status: number | null;
+  attempts: number;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  latencyMs: number;
+  conversationId: string | null;
+  errorText: string | null;
+}
+
+/**
+ * Ostatnie wywołania LLM z `AiCall` — do panelu diagnostycznego asystenta.
+ * Gdy podano `conversationId`, filtruje po jednej rozmowie (przebieg krok po kroku).
+ * Zawiera także wywołania NIEUDANE (status/errorText), których wcześniej nie logowano.
+ */
+export async function getRecentAiCalls(opts?: {
+  conversationId?: string;
+  limit?: number;
+}): Promise<AiCallLogRow[]> {
+  await requireAdmin();
+  const limit = Math.min(500, Math.max(1, opts?.limit ?? 100));
+  const convId = opts?.conversationId?.trim();
+  const rows = await prisma.aiCall.findMany({
+    where: convId ? { conversationId: convId } : undefined,
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    select: {
+      id: true, createdAt: true, source: true, operationType: true, providerKind: true,
+      model: true, ok: true, status: true, attempts: true, promptTokens: true,
+      completionTokens: true, totalTokens: true, latencyMs: true, conversationId: true, errorText: true,
+    },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    createdAt: r.createdAt.toISOString(),
+    source: r.source,
+    operationType: r.operationType,
+    providerKind: r.providerKind,
+    model: r.model,
+    ok: r.ok,
+    status: r.status,
+    attempts: r.attempts,
+    promptTokens: r.promptTokens,
+    completionTokens: r.completionTokens,
+    totalTokens: r.totalTokens,
+    latencyMs: r.latencyMs,
+    conversationId: r.conversationId,
+    errorText: r.errorText,
+  }));
+}

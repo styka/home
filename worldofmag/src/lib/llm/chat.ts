@@ -2,6 +2,7 @@ import { resolveLlmChain, type ResolvedLlm } from "./resolver";
 import type { OperationType } from "./operationTypes";
 import { cacheKeyFor, getCached, setCached } from "@/lib/ai/cache";
 import { checkAiBudget, recordAiUsage, recordAiCall } from "@/lib/ai/usage";
+import { reserveTpm, estimateTokens } from "./tpmLimiter";
 
 /**
  * Z-133: czy błąd jest przejściowy (warto spróbować fallbacku na inny model/dostawcę).
@@ -42,6 +43,8 @@ export interface ChatOptions {
   userId?: string;
   /** 002-ai-architecture: etykieta źródła wywołania do logu `AiCall` (np. "home_agent", "fast_path"). */
   source?: string;
+  /** Diagnostyka: id rozmowy asystenta — wiąże wpisy `AiCall` w jeden przebieg. */
+  conversationId?: string | null;
 }
 
 export type TokenUsage = {
@@ -55,8 +58,8 @@ export type TokenUsage = {
 };
 
 export type ChatResult =
-  | { ok: true; content: string; model?: string; usage?: TokenUsage }
-  | { ok: false; status: number; message: string };
+  | { ok: true; content: string; model?: string; usage?: TokenUsage; attempts?: number }
+  | { ok: false; status: number; message: string; attempts?: number };
 
 const UNCONFIGURED = {
   ok: false as const,
@@ -113,7 +116,7 @@ function backoffMs(attempt: number): number {
 // Ponawiamy TYLKO statusy przejściowe (isRetryableLlmStatus: 429/≥500) oraz rzucony
 // fetch (sieć). Zwraca ostatnią odpowiedź (ok albo nie-ok) — wywołujący obsługuje
 // `!res.ok` jak dotąd. Rzuca tylko, gdy sieć zawiodła we WSZYSTKICH próbach.
-async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+async function fetchWithRetry(url: string, init: RequestInit): Promise<{ res: Response; attempts: number }> {
   let netErr: unknown = null;
   for (let attempt = 0; attempt <= LLM_MAX_RETRIES; attempt++) {
     let res: Response;
@@ -128,17 +131,17 @@ async function fetchWithRetry(url: string, init: RequestInit): Promise<Response>
       throw e;
     }
     if (res.ok || !isRetryableLlmStatus(res.status) || attempt === LLM_MAX_RETRIES) {
-      return res;
+      return { res, attempts: attempt + 1 };
     }
     // Status przejściowy i mamy jeszcze próby: policz oczekiwanie i ponów.
     const wait = retryAfterMs(res) ?? backoffMs(attempt);
-    if (wait > LLM_RETRY_CAP_MS) return res; // dostawca każe czekać za długo → oddaj fallbackowi
+    if (wait > LLM_RETRY_CAP_MS) return { res, attempts: attempt + 1 }; // dostawca każe czekać za długo → oddaj fallbackowi
     res.body?.cancel().catch(() => {}); // zwolnij ciało odrzuconej odpowiedzi
     await sleep(wait);
   }
   // Nieosiągalne (pętla zawsze zwraca/rzuca), ale TS wymaga domknięcia.
   if (netErr) throw netErr;
-  return fetch(url, init);
+  return { res: await fetch(url, init), attempts: LLM_MAX_RETRIES + 1 };
 }
 
 function parseDataUrl(url: string): { mediaType: string; data: string } | null {
@@ -184,11 +187,29 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
         usage: res.usage,
         latencyMs,
         ok: true,
+        status: 200,
+        attempts: res.attempts,
+        conversationId: opts.conversationId,
         source: opts.source,
       }).catch(() => {});
       return res;
     }
     last = res;
+    // Diagnostyka: log także NIEUDANEGO wywołania (status + treść błędu) — inaczej
+    // 429/5xx były „niewidzialne" (brak logów agenta dla rozmowy, która padła).
+    void recordAiCall({
+      userId: opts.userId ?? null,
+      operationType: opts.op,
+      providerKind: cfg.kind,
+      model: cfg.model,
+      latencyMs,
+      ok: false,
+      status: res.status,
+      errorText: res.message,
+      attempts: res.attempts,
+      conversationId: opts.conversationId,
+      source: opts.source,
+    }).catch(() => {});
     // Błąd nieprzejściowy (4xx poza 429) → fallback nie pomoże, przerywamy.
     if (!isRetryableLlmStatus(res.status)) break;
     if (i < chain.length - 1) {
@@ -198,10 +219,26 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
   return last;
 }
 
+// Czy dostawca narzuca ciasny limit TPM, który trzeba paceować (Groq free-tier).
+// Wykrywamy po adresie bazowym — Anthropic (płatny) tego nie potrzebuje.
+function isTpmLimitedProvider(cfg: ResolvedLlm): boolean {
+  return /groq\.com/i.test(cfg.baseUrl);
+}
+
 async function openAiComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<ChatResult> {
+  // Pacing pod TPM (Groq): zarezerwuj szacowane tokeny w oknie minutowym ZANIM
+  // wyślemy request — dzięki temu kilka wywołań tej samej minuty nie przebije limitu.
+  if (isTpmLimitedProvider(cfg)) {
+    const promptTokens = estimateTokens(
+      opts.messages.map((m) => (typeof m.content === "string" ? m.content : JSON.stringify(m.content))).join("\n")
+    );
+    const reserve = promptTokens + (opts.maxTokens ?? cfg.maxTokens ?? 1024);
+    await reserveTpm(cfg.model, reserve);
+  }
   let res: Response;
+  let attempts = 1;
   try {
-    res = await fetchWithRetry(`${cfg.baseUrl}/chat/completions`, {
+    const r = await fetchWithRetry(`${cfg.baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.apiKey}` },
       body: JSON.stringify({
@@ -212,13 +249,15 @@ async function openAiComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<Chat
         ...(opts.json ? { response_format: { type: "json_object" } } : {}),
       }),
     });
+    res = r.res;
+    attempts = r.attempts;
   } catch (e) {
     // Z-133: błąd sieci → status przejściowy (503), by zadziałał fallback.
-    return { ok: false, status: 503, message: `Błąd sieci LLM: ${(e as Error).message}`.slice(0, 200) };
+    return { ok: false, status: 503, message: `Błąd sieci LLM: ${(e as Error).message}`.slice(0, 200), attempts: LLM_MAX_RETRIES + 1 };
   }
   if (!res.ok) {
     const err = await res.text().catch(() => "unknown");
-    return { ok: false, status: res.status, message: parseErr(err).slice(0, 200) };
+    return { ok: false, status: res.status, message: parseErr(err).slice(0, 200), attempts };
   }
   const data = (await res.json().catch(() => null)) as
     | { choices?: Array<{ message?: { content?: string } }>; usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } }
@@ -229,6 +268,7 @@ async function openAiComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<Chat
     content: data?.choices?.[0]?.message?.content ?? "",
     model: cfg.model,
     usage: u ? { prompt: u.prompt_tokens ?? 0, completion: u.completion_tokens ?? 0, total: u.total_tokens ?? (u.prompt_tokens ?? 0) + (u.completion_tokens ?? 0) } : undefined,
+    attempts,
   };
 }
 
@@ -288,8 +328,9 @@ function toAnthropic(messages: ChatMessage[]): {
 async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<ChatResult> {
   const { system, messages } = toAnthropic(opts.messages);
   let res: Response;
+  let attempts = 1;
   try {
-    res = await fetchWithRetry(`${cfg.baseUrl}/messages`, {
+    const r = await fetchWithRetry(`${cfg.baseUrl}/messages`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -304,12 +345,14 @@ async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<C
         messages,
       }),
     });
+    res = r.res;
+    attempts = r.attempts;
   } catch (e) {
-    return { ok: false, status: 503, message: `Błąd sieci LLM: ${(e as Error).message}`.slice(0, 200) };
+    return { ok: false, status: 503, message: `Błąd sieci LLM: ${(e as Error).message}`.slice(0, 200), attempts: LLM_MAX_RETRIES + 1 };
   }
   if (!res.ok) {
     const err = await res.text().catch(() => "unknown");
-    return { ok: false, status: res.status, message: parseErr(err).slice(0, 200) };
+    return { ok: false, status: res.status, message: parseErr(err).slice(0, 200), attempts };
   }
   const data = (await res.json().catch(() => null)) as
     | {
@@ -340,6 +383,7 @@ async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<C
           cacheWrite: u.cache_creation_input_tokens ?? 0,
         }
       : undefined,
+    attempts,
   };
 }
 
@@ -381,9 +425,15 @@ export async function chatStream(opts: ChatOptions): Promise<Response> {
 }
 
 async function openAiStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<StreamAttempt> {
+  if (isTpmLimitedProvider(cfg)) {
+    const promptTokens = estimateTokens(
+      opts.messages.map((m) => (typeof m.content === "string" ? m.content : JSON.stringify(m.content))).join("\n")
+    );
+    await reserveTpm(cfg.model, promptTokens + (opts.maxTokens ?? cfg.maxTokens ?? 1024));
+  }
   let res: Response;
   try {
-    res = await fetchWithRetry(`${cfg.baseUrl}/chat/completions`, {
+    ({ res } = await fetchWithRetry(`${cfg.baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.apiKey}` },
       body: JSON.stringify({
@@ -393,7 +443,7 @@ async function openAiStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<Stream
         max_tokens: opts.maxTokens ?? cfg.maxTokens ?? undefined,
         stream: true,
       }),
-    });
+    }));
   } catch (e) {
     return { ok: false, status: 503, message: `Błąd sieci LLM: ${(e as Error).message}`.slice(0, 200) };
   }
@@ -412,7 +462,7 @@ async function anthropicStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<Str
   const { system, messages } = toAnthropic(opts.messages);
   let upstream: Response;
   try {
-    upstream = await fetchWithRetry(`${cfg.baseUrl}/messages`, {
+    ({ res: upstream } = await fetchWithRetry(`${cfg.baseUrl}/messages`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -427,7 +477,7 @@ async function anthropicStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<Str
         messages,
         stream: true,
       }),
-    });
+    }));
   } catch (e) {
     return { ok: false, status: 503, message: `Błąd sieci LLM: ${(e as Error).message}`.slice(0, 200) };
   }

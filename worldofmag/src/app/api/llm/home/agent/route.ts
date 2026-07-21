@@ -374,7 +374,7 @@ type AgentMeta = { model?: string; tokens: number };
 const AGENT_MAX_TOKENS = 1200;
 const REPORT_MAX_TOKENS = 2800; // zapas na pełny raport (step "report") — przy 1500 markdown bywał ucinany
 
-async function callAgent(messages: ChatMessage[], meta?: AgentMeta, maxTokens = AGENT_MAX_TOKENS): Promise<string> {
+async function callAgent(messages: ChatMessage[], meta?: AgentMeta, maxTokens = AGENT_MAX_TOKENS, conversationId?: string | null): Promise<string> {
   const result = await chatComplete({
     op: "reasoning",
     messages,
@@ -382,6 +382,7 @@ async function callAgent(messages: ChatMessage[], meta?: AgentMeta, maxTokens = 
     maxTokens,
     json: true,
     source: "home_agent",
+    conversationId,
   });
   if (!result.ok) {
     const err = new Error(result.message) as Error & { status?: number };
@@ -432,7 +433,7 @@ function keywordRoute(text: string, allowed: string[], primary: string): string[
 // tokenów, mniej rozproszenia). Zawsze dorzucamy moduł podstawowy. Przy
 // jakiejkolwiek niepewności (błąd/pusto) zwracamy PEŁNY zestaw aktywnych modułów
 // — wtedy zachowanie = jak przed optymalizacją (zero regresji w najgorszym razie).
-async function routeModules(text: string, activeModules: string[], primary: string): Promise<string[]> {
+async function routeModules(text: string, activeModules: string[], primary: string, conversationId?: string | null): Promise<string[]> {
   const allowed = activeModules.filter((m) => CATALOG_MODULES.includes(m));
   if (allowed.length <= 3) return allowed; // i tak mało — nie ma co klasyfikować
 
@@ -458,6 +459,7 @@ async function routeModules(text: string, activeModules: string[], primary: stri
       maxTokens: 120,
       json: true,
       source: "dispatch_route",
+      conversationId,
     });
     if (!result.ok || !result.content) return allowed;
     const parsed = JSON.parse(result.content.trim().replace(/^```json\n?/i, "").replace(/```$/, "")) as { modules?: unknown };
@@ -503,7 +505,8 @@ async function runAgentLoop(
   userId: string,
   onThought?: (thought: string) => void,
   meta?: AgentMeta,
-  maxTokens: number = AGENT_MAX_TOKENS
+  maxTokens: number = AGENT_MAX_TOKENS,
+  conversationId?: string | null
 ): Promise<LoopResult> {
   const log: LogEntry[] = [];
 
@@ -512,7 +515,7 @@ async function runAgentLoop(
     for (let attempt = 0; attempt < 2 && parsed === null; attempt++) {
       let content: string;
       try {
-        content = await callAgent(messages, meta, maxTokens);
+        content = await callAgent(messages, meta, maxTokens, conversationId);
       } catch (e) {
         const status = (e as { status?: number }).status ?? 502;
         // 010-ai-chat-rate-limit: przejściowy limit szybkości modelu (429) — mimo
@@ -671,7 +674,9 @@ export async function POST(req: NextRequest) {
     history?: ChatMessage[]; // wcześniejsze tury rozmowy (poziom wyświetlania) do kontekstu wielo-turowego
     preferences?: string; // stałe preferencje użytkownika („custom instructions")
     stream?: boolean; // true → odpowiedź jako SSE z myślami na żywo
+    conversationId?: string; // diagnostyka: wiąże wpisy AiCall w jeden przebieg
   };
+  const conversationId = typeof body.conversationId === "string" ? body.conversationId : null;
 
   // Zbuduj konwersację. System prompt zawsze budujemy po stronie serwera (nie ufamy klientowi).
   // Moduły do katalogu akcji ustala router (krok 1) na ścieżce świeżego polecenia;
@@ -734,7 +739,7 @@ export async function POST(req: NextRequest) {
     // BEZ uruchamiania dużego modelu (op:"reasoning"). Zwracamy krok "plan" w tym
     // samym kształcie co pętla agenta → panel potwierdzenia (ActionDrawer) bez zmian.
     // Każda niepewność → complex → dotychczasowa pełna pętla poniżej.
-    const fast = await classifyIntent(text, context, userId);
+    const fast = await classifyIntent(text, context, userId, conversationId);
     if (fast.kind === "simple") {
       const thought = fast.action.description || "Przygotowano akcję.";
       return NextResponse.json({
@@ -748,7 +753,7 @@ export async function POST(req: NextRequest) {
     }
 
     // KROK 1 (router): zawęź katalog akcji do modułów istotnych dla polecenia.
-    selectedModules = await routeModules(text, context, primary);
+    selectedModules = await routeModules(text, context, primary, conversationId);
 
     // Nazwa bieżącego projektu (jeśli użytkownik jest na jego widoku)
     let currentProjectName: string | null = null;
@@ -808,7 +813,7 @@ export async function POST(req: NextRequest) {
         };
         const meta: AgentMeta = { tokens: 0 };
         try {
-          const result = await runAgentLoop(messages, userId, (t) => send({ type: "thought", text: t }), meta, agentMaxTokens);
+          const result = await runAgentLoop(messages, userId, (t) => send({ type: "thought", text: t }), meta, agentMaxTokens, conversationId);
           if (result.body && typeof result.body === "object" && !result.body.error) {
             result.body.meta = { model: meta.model, tokens: meta.tokens };
           }
@@ -829,7 +834,7 @@ export async function POST(req: NextRequest) {
 
   const meta: AgentMeta = { tokens: 0 };
   try {
-    const result = await runAgentLoop(messages, userId, undefined, meta, agentMaxTokens);
+    const result = await runAgentLoop(messages, userId, undefined, meta, agentMaxTokens, conversationId);
     if (result.body && typeof result.body === "object" && !result.body.error) {
       result.body.meta = { model: meta.model, tokens: meta.tokens };
     }
