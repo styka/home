@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
-import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes, Palette, ClipboardList, LineChart, Sparkles } from "lucide-react"
+import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes, Palette, ClipboardList, LineChart, Sparkles, Bug } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { FeedbackTriggerButton } from "@/components/admin/FeedbackTriggerButton"
@@ -246,6 +246,11 @@ export default async function AdminPage() {
             <Link href="/admin/ai-coverage" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Sparkles size={15} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Pokrycie akcji przez AI (mutacje + odczyty)</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
+            <Link href="/admin/ai-calls" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <Bug size={15} style={{ color: "var(--accent-amber)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Diagnostyka asystenta AI (log wywołań / rozmowa)</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/admin/jobs" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
