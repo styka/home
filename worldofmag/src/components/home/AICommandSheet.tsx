@@ -792,7 +792,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
       const res = await fetch("/api/llm/home/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, preferences: prefsRef.current.trim() || undefined, stream: true }),
+        body: JSON.stringify({ ...payload, preferences: prefsRef.current.trim() || undefined, stream: true, conversationId: convoIdRef.current ?? undefined }),
         signal: controller.signal,
       });
 
@@ -1028,7 +1028,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
       const res = await fetch("/api/llm/home/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: turn.messages, refine: fb, context, routeHint, activeListId, currentProjectId: activeProjectId, today: new Date().toISOString() }),
+        body: JSON.stringify({ messages: turn.messages, refine: fb, context, routeHint, activeListId, currentProjectId: activeProjectId, today: new Date().toISOString(), conversationId: convoIdRef.current ?? undefined }),
       });
       const data = (await res.json()) as AgentResponse;
       if (!res.ok && !data.step) { setError(data.error ?? "Błąd asystenta"); return; }

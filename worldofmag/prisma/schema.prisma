@@ -885,12 +885,17 @@ model AiCall {
   costUsd          Float    @default(0) // koszt SZACOWANY wg cennika (lib/llm/pricing.ts)
   latencyMs        Int      @default(0)
   ok               Boolean  @default(true)
+  status           Int? // status HTTP dostawcy (np. 200 / 429 / 503); null gdy nieznany
+  errorText        String? // treść błędu dostawcy (skrócona) dla wywołań nieudanych
+  conversationId   String? // powiązanie z rozmową asystenta (diagnostyka krok po kroku)
+  attempts         Int      @default(1) // liczba prób wysłania (retry na 429/5xx wliczone)
   source           String? // np. "home_agent" | "fast_path" | "dispatch_route" | ...
   createdAt        DateTime @default(now())
 
   @@index([createdAt])
   @@index([model])
   @@index([operationType])
+  @@index([conversationId])
 }
 
 // Asystent AI ("magiczna ikona") — trwała pamięć rozmów per-user.

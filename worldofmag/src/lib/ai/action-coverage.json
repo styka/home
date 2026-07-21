@@ -577,6 +577,11 @@
     "status": "excluded",
     "reason": "admin"
   },
+  "llmConfig:getRecentAiCalls": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
   "llmConfig:setAssignment": {
     "status": "excluded",
     "reason": "admin"

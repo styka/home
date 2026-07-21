@@ -129,7 +129,8 @@ function hasEmptyPayload(type: string, params: Record<string, unknown>, searchQu
 export async function classifyIntent(
   text: string,
   activeModules: string[],
-  userId: string
+  userId: string,
+  conversationId?: string | null
 ): Promise<FastPathResult> {
   const trimmed = text.trim();
   if (!trimmed) return { kind: "complex" };
@@ -148,6 +149,7 @@ export async function classifyIntent(
     json: true,
     userId,
     source: "fast_path",
+    conversationId,
   });
   if (!result.ok || !result.content) return { kind: "complex" };
 

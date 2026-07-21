@@ -93,6 +93,10 @@ export interface AiCallEntry {
   latencyMs: number;
   ok: boolean;
   source?: string;
+  status?: number; // status HTTP dostawcy (np. 429); dla diagnostyki
+  errorText?: string; // treść błędu dostawcy (skrócona) dla wywołań nieudanych
+  conversationId?: string | null; // powiązanie z rozmową asystenta
+  attempts?: number; // liczba prób (retry na 429/5xx wliczone)
 }
 
 /**
@@ -127,6 +131,10 @@ export async function recordAiCall(entry: AiCallEntry): Promise<void> {
       costUsd,
       latencyMs: Math.max(0, Math.round(entry.latencyMs || 0)),
       ok: entry.ok,
+      status: entry.status ?? null,
+      errorText: entry.errorText ? entry.errorText.slice(0, 500) : null,
+      conversationId: entry.conversationId ?? null,
+      attempts: Math.max(1, Math.round(entry.attempts ?? 1)),
       source: entry.source ?? null,
     },
   });

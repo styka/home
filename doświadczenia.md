@@ -4,6 +4,25 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-21 — Diagnostyka asystenta: nieudane wywołania LLM były NIELOGOWANE + pacing pod TPM Groqa
+**Problem:** Zgłoszenie „nadal nie działa" po redukcji promptu. Nie dało się dojść przyczyny, bo
+`recordAiCall` logował do `AiCall` **tylko udane** wywołania (kod w `chatComplete` był w gałęzi
+`if (res.ok)`), więc 429/5xx nie zostawiały śladu → „brak logów agenta dla rozmowy, która padła".
+Dodatkowo nie było wiązania wpisów z rozmową (`conversationId`), więc nie dało się odtworzyć przebiegu
+krok po kroku. Osobno: sama redukcja promptu nie gwarantuje, że kilka wywołań tej samej minuty nie
+przebije TPM (przy większym modelu / dłuższej historii).
+**Rozwiązanie:** (1) `AiCall` rozszerzony o `status`, `errorText`, `conversationId`, `attempts`
+(migracja 0206) i logowanie **także** nieudanych wywołań; `conversationId` przepchnięty z klienta przez
+route agenta do `chatComplete` (callAgent/routeModules/classifyIntent). (2) Panel `/admin/ai-calls`
+(admin) pokazuje surowy log per rozmowa z przyciskiem „Kopiuj". (3) Pacing pod TPM: `lib/llm/tpmLimiter.ts`
+— kroczące okno 60 s rezerwuje szacowane tokeny PRZED wysłaniem do Groqa (wykrywanie po `groq.com` w
+baseUrl; Anthropic bez pacingu), więc kilka wywołań minuty czeka zamiast dostać 429. „Wolniej, ale
+działa" — zgodnie z decyzją właściciela.
+**Lekcja:** Log per-wywołanie MUSI obejmować błędy — inaczej najważniejszy przypadek (padło) jest
+niewidoczny. Wiąż wpisy z jednostką pracy (rozmowa), żeby dało się odtworzyć przebieg. Przy dostawcy z
+ciasnym TPM nie wystarczy retry ani redukcja — dołóż **pacing** (rezerwacja tokenów w oknie), bo retry w
+kilka sekund nie przeczeka okna minuty.
+
 ## 2026-07-21 — „Przeciążony asystent" na „pokaż zadania otagowane X" — limit TPM był STRUKTURALNY, nie chwilowy
 **Problem:** Mimo poprawek ze spec 010 (retry z backoffem + filtr po tagu w `list_tasks`) polecenie „pokaż
 zadania otagowane »raj«" nadal kończyło się komunikatem „Asystent jest teraz przeciążony…", choć zadania z
