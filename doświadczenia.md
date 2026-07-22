@@ -4,6 +4,24 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-22 — Kotwica „od daty wykonania": korekta daty wykonania musi przeliczyć termin następcy
+**Problem:** Kotwica cykliczności `COMPLETION` („licz od daty wykonania") liczy termin następnego
+wystąpienia w chwili domknięcia i zapisuje go na sztywno na następcy. Po 021/022 datę wykonania da się
+poprawić po fakcie — 022 synchronizował `lastCompletedAt` następcy, ale NIE jego `dueDate`. Dla kotwicy
+COMPLETION termin następcy zostawał policzony od starej daty i rozjeżdżał się z poprawioną (np. korekta
+o 12 dni wstecz → następne zadanie dalej 12 dni za daleko).
+**Rozwiązanie:** W `updateTask`, w bloku sync 022, dla `rule.anchor === "COMPLETION"` (jawna niepusta
+data + istniejące poprzednie `completedAt`) pobieramy aktywnego (`status != DONE`) bezpośredniego
+następcę (`previousTaskId`) i przeliczamy jego `dueDate = computeNextDue(newCompletedAt, rule)` —
+ale TYLKO gdy jego termin jest „nietknięty", tj. `successor.dueDate === computeNextDue(oldCompletedAt,
+rule)` (heurystyka: równość terminów wyłącza ręczne zmiany i „Następne w tej dacie"). Start następcy
+przesuwamy o tę samą różnicę (`newNextDue - oldNextDue`). DUE / zrobiony następca / niecykliczne —
+nietknięte.
+**Lekcja:** Gdy wartość jest DENORMALIZOWANA i liczona od innego pola przy zdarzeniu (tu: termin
+następcy liczony od daty wykonania przy domknięciu), późniejsza edycja pola źródłowego musi przeliczyć
+wszystkie zależne wartości, nie tylko część. „Czy użytkownik ruszył wartość ręcznie?" najtaniej
+rozpoznać przez równość z tym, co system by policzył — bez dodatkowej flagi w schemacie.
+
 ## 2026-07-22 — Cykliczne: bulk „Zrobione" musi rolować przez akcję cykliczną + link wystąpień
 **Problem:** Po 020/021 zostały luki w modelu cyklicznym: (a) masowa zmiana statusu na „Zrobione"
 (`bulkUpdateTasks`) robiła surowy `prisma.task.update`, więc NIE generowała kolejnego wystąpienia
