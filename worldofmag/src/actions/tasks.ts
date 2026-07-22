@@ -8,7 +8,7 @@ import { assertProjectAccess } from "@/actions/taskProjects";
 import { assertTaskAccess } from "@/lib/tasks/access";
 import { trackActivity } from "@/actions/activity";
 import { recordTrash } from "@/lib/trash";
-import { computeNextDue } from "@/lib/recurrence";
+import { computeNextDue, parseRecurringRule } from "@/lib/recurrence";
 import type { Task, TaskPriority, TaskWithRelations, RecurringRule } from "@/types";
 import { parseStatusConfig, DEFAULT_STATUS_CONFIG, SYSTEM_TASK_STATUSES } from "@/types";
 
@@ -253,6 +253,28 @@ export async function updateTask(
   // obsłuży 0 lub 1 następcę (brak następcy / niecykliczne → no-op).
   if (explicitCompletedAt !== undefined) {
     await prisma.task.updateMany({ where: { previousTaskId: id }, data: { lastCompletedAt: explicitCompletedAt } });
+
+    // 023: dla kotwicy „od daty wykonania" (COMPLETION) termin następcy liczy się od daty
+    // wykonania poprzednika — więc korekta tej daty musi przeliczyć termin (i przesunąć start)
+    // AKTYWNEGO, nietkniętego następcy. „Nietknięty" = termin wciąż równy policzonemu ze starej
+    // daty (nie ruszony ręcznie ani przez „Następne w tej dacie"). DUE / zrobiony następca /
+    // niecykliczne → pomijamy (zmienia się tylko lastCompletedAt powyżej).
+    const rule = parseRecurringRule(existing.recurring);
+    if (rule?.anchor === "COMPLETION" && explicitCompletedAt !== null && existing.completedAt) {
+      const successor = await prisma.task.findFirst({ where: { previousTaskId: id, status: { not: "DONE" } } });
+      const oldNextDue = computeNextDue(existing.completedAt, rule);
+      if (successor?.dueDate && oldNextDue && successor.dueDate.getTime() === oldNextDue.getTime()) {
+        const newNextDue = computeNextDue(explicitCompletedAt, rule);
+        if (newNextDue) {
+          const succData: Record<string, unknown> = { dueDate: newNextDue };
+          // Zachowaj wyprzedzenie startu względem terminu — przesuń o tę samą różnicę.
+          if (successor.startDate) {
+            succData.startDate = new Date(successor.startDate.getTime() + (newNextDue.getTime() - oldNextDue.getTime()));
+          }
+          await prisma.task.update({ where: { id: successor.id }, data: succData });
+        }
+      }
+    }
   }
 
   void trackActivity("tasks", "update_task", { id, patchKeys: Object.keys(patch) });
