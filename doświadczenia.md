@@ -4,6 +4,26 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-22 — Przepisanie kompozytora asystenta na układ „Chat with Claude" (dwuwierszowa karta)
+**Problem:** Kompozytor asystenta był jednowierszową „pigułką" (`[+] · pole flex-1 · mikrofon · wyślij`)
+z uporczywym błędem karetki na iOS (kursor nad polem do pierwszego wpisania) — kolejne punktowe naprawy
+nie pomagały, a jedna (VisualViewport) zepsuła płynność przewijania. Właściciel poprosił o przepisanie
+od nowa na wzór „Chat with Claude".
+**Rozwiązanie:** Nowy układ **dwuwierszowej karty** w `AICommandSheet.tsx`: WIERSZ 1 = pole tekstowe
+pełnej szerokości (auto-rozrost przez istniejący `useEffect` na `scrollHeight`), WIERSZ 2 = wiersz akcji
+(lewo: aparat `capture="environment"` + galeria; prawo: mikrofon dyktowania + główny przycisk
+Stop/Wyślij[`ArrowUp`]/Rozmowa-głosowa). Ikona „Ustawienia asystenta" przeniesiona z menu „+" do
+GÓRNEGO paska nagłówka (panel `showPrefs` już był u góry — przeniesiono sam wyzwalacz); menu „+" i stan
+`showPlus` usunięte. Kluczowe dla karetki: pole NIE jest przy dolnej krawędzi karty (pod nim statyczny
+wiersz akcji), a margines na kreskę iPhone siedzi na ZEWNĘTRZNEJ stopce warunkowo od fokusu — żadnego
+`env(safe-area-inset-bottom)` pod fokusowanym polem. Bez dynamicznej zmiany wysokości na scroll
+(płynne przewijanie). Zero zmian w agencie/LLM. Właściciel rezygnował z „dodaj plik" (tylko obrazy).
+**Lekcja:** Gdy punktowe łatki nie domykają błędu układu, czasem szybciej i czyściej jest przepisać
+fragment na sprawdzony wzorzec (tu: dwuwierszowa karta jak w Claude) niż mnożyć obejścia. Trzymaj pole
+wejścia z treścią pod spodem (statyczny wiersz akcji), a insety safe-area poza fokusowanym polem —
+to strukturalnie eliminuje „kursor nad polem" na iOS. Zachowaj istniejące handlery przy przepisaniu
+UI — zmieniaj układ, nie logikę.
+
 ## 2026-07-22 — Surowy komunikat dostawcy przeciekał NIE-429 ścieżką + iOS „kursor nad polem" po zdjęciu zoomu
 **Problem:** (1) Mimo poprawki 017 (uczciwy PL komunikat przy 429) użytkownik znów zobaczył surowy tekst
 dostawcy („Rate limit reached for model …"). Przyczyna: w `agent/route.ts` ładny komunikat robił się
