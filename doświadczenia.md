@@ -4,6 +4,25 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-22 — „Sort zrobionych po dacie" nie dawał różnicy — brakowało WIDOCZNEJ daty na wierszu
+**Problem:** Przycisk „Sortuj zrobione po dacie wykonania" (druga zgłoszona próba) nadal „nie dawał
+różnicy". Poprzednia poprawka (018) tylko rozwijała zwiniętą sekcję. Realna przyczyna: wiersze zadań w
+sekcji „Zrobione" NIE pokazywały daty wykonania, więc nawet poprawny reorder „wyglądał tak samo", a
+domyślna kolejność bywała zbliżona do kolejności wg daty. Dodatkowo właściciel chciał, by data była
+„datą OSTATNIEGO wykonania" — czyli aktywne zadanie cykliczne też powinno pokazywać datę poprzedniego
+wykonania (a przy przetaczaniu cyklu powstaje NOWY rekord z `completedAt = null`).
+**Rozwiązanie:** (1) Nowa kolumna `Task.lastCompletedAt` (migracja 0207, nullable) — `completeRecurringTask`
+ustawia ją na nowym wystąpieniu = data wykonania właśnie zamkniętego. (2) `TaskRow` pokazuje dyskretny
+znacznik „✓ <data>" gdy `completedAt ?? lastCompletedAt` istnieje (widoczna data w sekcji „Zrobione" i
+data ostatniego wykonania na aktywnych cyklicznych). (3) `CompletedSection` sortuje po tej efektywnej
+dacie malejąco i zmienia nagłówek przy aktywnym sorcie („— wg daty wykonania"), zachowując auto-rozwinięcie
+z 018. Efekt: klik daje jednoznaczną, widoczną różnicę (kolejność + daty + nagłówek).
+**Lekcja:** „Sortowanie nie działa" bywa naprawdę „nie widać PO CZYM sortujemy" — zanim dłubiesz w
+logice sortu, pokaż użytkownikowi klucz sortowania (tu: datę) na elemencie; sam reorder bez widocznego
+klucza wygląda jak brak zmiany. Gdy „ostatnie wykonanie" ma dotyczyć bytu, który przy zdarzeniu tworzy
+NOWY rekord (cykliczne zadania → nowe wystąpienie), potrzebujesz trwałego pola przenoszonego na następcę,
+bo `completedAt` nowego rekordu jest puste.
+
 ## 2026-07-22 — Przepisanie kompozytora asystenta na układ „Chat with Claude" (dwuwierszowa karta)
 **Problem:** Kompozytor asystenta był jednowierszową „pigułką" (`[+] · pole flex-1 · mikrofon · wyślij`)
 z uporczywym błędem karetki na iOS (kursor nad polem do pierwszego wpisania) — kolejne punktowe naprawy

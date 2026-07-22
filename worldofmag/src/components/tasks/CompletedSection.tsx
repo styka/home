@@ -16,23 +16,21 @@ interface CompletedSectionProps {
 export function CompletedSection({ tasks, renderTask, sortBy = "default" }: CompletedSectionProps) {
   if (tasks.length === 0) return null;
 
-  // Przegląd „co zrobiłem kiedy": najnowsze wykonania na górze; brak completedAt na końcu.
-  const ordered =
-    sortBy === "completedAt"
-      ? [...tasks].sort((a, b) => {
-          const ta = a.completedAt ? new Date(a.completedAt).getTime() : 0;
-          const tb = b.completedAt ? new Date(b.completedAt).getTime() : 0;
-          return tb - ta;
-        })
-      : tasks;
+  // Przegląd „co zrobiłem kiedy": najnowsze wykonania na górze. Sortujemy po EFEKTYWNEJ
+  // dacie wykonania (completedAt, a dla cyklicznych — lastCompletedAt); brak daty → na końcu.
+  const doneTime = (t: Task) => {
+    const d = t.completedAt ?? t.lastCompletedAt;
+    return d ? new Date(d).getTime() : 0;
+  };
+  const ordered = sortBy === "completedAt" ? [...tasks].sort((a, b) => doneTime(b) - doneTime(a)) : tasks;
 
   // Gdy użytkownik włączy sortowanie po dacie wykonania, rozwijamy sekcję (domyślnie
-  // zwiniętą), żeby przesortowana kolejność była od razu widoczna. `key={sortBy}`
-  // remountuje grupę przy przełączeniu sortu, więc ponownie stosuje `defaultOpen`.
+  // zwiniętą), żeby przesortowana kolejność była od razu widoczna, a nagłówek sygnalizuje
+  // aktywny sort. `key={sortBy}` remountuje grupę, więc ponownie stosuje `defaultOpen`.
   return (
     <TaskGroup
       key={sortBy}
-      label="✓ Zrobione / Anulowane"
+      label={sortBy === "completedAt" ? "✓ Zrobione / Anulowane — wg daty wykonania" : "✓ Zrobione / Anulowane"}
       count={ordered.length}
       defaultOpen={sortBy === "completedAt"}
       muted
