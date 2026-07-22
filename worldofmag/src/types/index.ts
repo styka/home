@@ -176,6 +176,7 @@ export type Task = {
   order: number;
   projectId: string | null;
   parentTaskId: string | null;
+  previousTaskId: string | null;
   createdById: string | null;
   assigneeId: string | null;
   createdAt: Date;

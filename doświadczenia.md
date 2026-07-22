@@ -4,6 +4,23 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-22 — Cykliczne: bulk „Zrobione" musi rolować przez akcję cykliczną + link wystąpień
+**Problem:** Po 020/021 zostały luki w modelu cyklicznym: (a) masowa zmiana statusu na „Zrobione"
+(`bulkUpdateTasks`) robiła surowy `prisma.task.update`, więc NIE generowała kolejnego wystąpienia
+(klik z listy/szczegóły robiły to przez `completeRecurringTask`); (b) nie było powiązania między
+wystąpieniami, więc edycja daty zrobienia domkniętego cyklicznego nie mogła zaktualizować „daty
+ostatniego zrobienia" (`lastCompletedAt`) jego następcy.
+**Rozwiązanie:** Dodano nullable self-FK `Task.previousTaskId` (relacja `TaskRecurrence`, `onDelete:
+SetNull`, migracja 0208) — `completeRecurringTask` ustawia go na nowym wystąpieniu obok
+`lastCompletedAt`. `bulkUpdateTasks` przy `→DONE` na zadaniu z `recurring` woła teraz
+`completeRecurringTask(id, { completionDate })` zamiast surowego update (usuwa `status` z `data`,
+resztę pól/tagów nakłada normalnie). `updateTask` po jawnej edycji `completedAt` robi
+`updateMany({ where: { previousTaskId: id }, data: { lastCompletedAt } })` — synchronizuje następcę.
+**Lekcja:** Gdy operacja ma spójne „szybką ścieżkę" (`completeRecurringTask`) i „wolną ścieżkę"
+(surowy bulk update), bulk NIE może iść skrótem — musi wołać tę samą akcję domenową, inaczej gubi
+efekty uboczne (tu: generację następnego wystąpienia). Denormalizowaną wartość (`lastCompletedAt`)
+trzymaj spójną przez trwały link (`previousTaskId`) + sync przy edycji, a nie licz jej w locie.
+
 ## 2026-07-22 — Edytowalna data wykonania: jawny `completedAt` musi bić derivację ze statusu
 **Problem:** Data wykonania (`completedAt`) miała stać się edytowalna (szczegóły + bulk + wybór przy
 oznaczaniu). Pułapka: `updateTask` wyprowadza `completedAt` z przejścia statusu (→DONE = teraz), a

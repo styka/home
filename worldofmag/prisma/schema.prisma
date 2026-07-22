@@ -701,6 +701,7 @@ model Task {
   order         Float     @default(0)
   projectId     String?
   parentTaskId  String?
+  previousTaskId String?  // 022: domknięte wystąpienie cykliczne, które utworzyło to zadanie
   createdById   String?
   assigneeId    String?
   createdAt     DateTime  @default(now())
@@ -709,6 +710,8 @@ model Task {
   project   TaskProject?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   parent    Task?         @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
   subtasks  Task[]        @relation("TaskSubtasks")
+  previous        Task?   @relation("TaskRecurrence", fields: [previousTaskId], references: [id], onDelete: SetNull)
+  nextOccurrences Task[]  @relation("TaskRecurrence")
   createdBy User?         @relation("TasksCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   assignee  User?         @relation("TasksAssignedTo", fields: [assigneeId], references: [id], onDelete: SetNull)
   tags      TaskTaskTag[]
@@ -720,6 +723,7 @@ model Task {
   // parentTaskId IS NULL) i — jako prefiks — filtr po samym projectId.
   @@index([projectId, parentTaskId])
   @@index([parentTaskId])
+  @@index([previousTaskId])
   @@index([createdById])
   @@index([assigneeId])
 }
