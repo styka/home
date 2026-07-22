@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight,
-  Send, History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Settings, Volume2, Mic, MicOff, AudioLines, Bug,
+  Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight, ArrowUp,
+  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { useDictation } from "@/hooks/useDictation";
@@ -321,10 +321,10 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
   const abortRef = useRef<AbortController | null>(null);
   const lastPayloadRef = useRef<Record<string, unknown> | null>(null);
   // Załącznik-zdjęcie (multimodal): rozpoznanie przedmiotów → plan akcji.
+  // Dwa ukryte inputy: galeria (bez capture) i aparat (`capture="environment"`).
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const cameraRef = useRef<HTMLInputElement | null>(null);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
-  // Composer: menu drugorzędnych akcji („+") — odchudza pasek na mobile (zdjęcie, preferencje).
-  const [showPlus, setShowPlus] = useState(false);
   // Stałe preferencje użytkownika („custom instructions") — pamięć per-urządzenie
   // (localStorage), wstrzykiwana do każdego polecenia. Ref, by uniknąć stale-closure.
   const [prefs, setPrefs] = useState("");
@@ -1219,6 +1219,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
+                <button onClick={() => setShowPrefs((v) => !v)} title="Ustawienia asystenta" aria-label="Ustawienia asystenta" aria-expanded={showPrefs} style={{ ...iconBtn, color: showPrefs || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }}><Settings size={16} /></button>
                 {isAdmin && (
                   <button onClick={() => { setShowReport((v) => !v); setReportDone(null); }} title="Zgłoś problem z czatem" aria-label="Zgłoś problem z czatem" aria-expanded={showReport} style={{ ...iconBtn, color: showReport ? "var(--accent-purple)" : "var(--text-muted)" }}><Bug size={16} /></button>
                 )}
@@ -1466,39 +1467,13 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
                   </div>
                 )}
                 <input ref={fileRef} type="file" accept="image/*" onChange={onPickImage} style={{ display: "none" }} />
-                {/* Composer „pigułka" (styl ChatGPT): [+] · [pole flex-1] · [mikrofon dyktowania] · [kółko rozmowy głosowej / wyślij] */}
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 2, padding: "4px 6px", border: "1px solid var(--border)", background: "var(--bg-elevated)", borderRadius: 26 }}>
-                  {/* „+" — drugorzędne akcje (zdjęcie, ustawienia) */}
-                  <div style={{ position: "relative", flexShrink: 0 }}>
-                    <button
-                      onClick={() => setShowPlus((v) => !v)}
-                      disabled={busy}
-                      title="Więcej (zdjęcie, ustawienia)"
-                      aria-label="Więcej akcji"
-                      aria-expanded={showPlus}
-                      style={{ width: 38, height: 38, borderRadius: "50%", border: "none", background: showPlus ? "var(--bg-hover)" : "transparent", color: attachedImage || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: busy ? "default" : "pointer" }}
-                    >
-                      <Plus size={22} style={{ transform: showPlus ? "rotate(45deg)" : "none", transition: "transform 0.15s" }} />
-                    </button>
-                    {showPlus && (
-                      <>
-                        <div onClick={() => setShowPlus(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
-                        <div style={{ position: "absolute", bottom: 46, left: 0, zIndex: 41, minWidth: 190, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 6, boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
-                          <button onClick={() => { setShowPlus(false); fileRef.current?.click(); }} style={{ ...rowBtn, background: "none" }}>
-                            <ImagePlus size={16} style={{ color: "var(--text-muted)" }} /> <span style={{ fontSize: 13 }}>Zdjęcie</span>
-                          </button>
-                          <button onClick={() => { setShowPlus(false); setShowPrefs((v) => !v); }} style={{ ...rowBtn, background: "none" }}>
-                            <Settings size={16} style={{ color: prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }} /> <span style={{ fontSize: 13 }}>Ustawienia asystenta</span>
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  {/* Pole tekstowe — wtopione w pigułkę, auto-rozrost.
-                      Wysokość liczy auto-rozrost (useEffect na scrollHeight) — NIE ustawiamy tu
-                      stałej `height`: przy wymuszonym na mobile 16px (reguła anty-zoom) linia 16×1.4
-                      nie mieściła się w 38px (border-box, padding 9px → 20px na treść) i kursor
-                      pojawiał się NAD polem do pierwszego wpisania. `minHeight` trzyma wysokość pigułki. */}
+                <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={onPickImage} style={{ display: "none" }} />
+                {/* Karta kompozytora (styl „Chat with Claude"): pole u góry (auto-rozrost) + dolny
+                    wiersz akcji. Pole NIE jest przy dolnej krawędzi karty (pod nim wiersz akcji), a
+                    margines na kreskę iPhone siedzi na ZEWNĘTRZNEJ stopce warunkowo od fokusu (patrz
+                    div wyżej) — dzięki temu karetka na iOS nie „ucieka" nad pole. */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 10px", border: "1px solid var(--border)", background: "var(--bg-elevated)", borderRadius: "var(--radius-lg)" }}>
+                  {/* Wiersz 1 — pole tekstowe (pełna szerokość, auto-rozrost przez useEffect na scrollHeight) */}
                   <textarea
                     ref={composerRef}
                     value={inputText}
@@ -1510,50 +1485,53 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
                     rows={1}
                     disabled={busy}
                     aria-label="Wiadomość do asystenta"
-                    style={{ flex: 1, minWidth: 0, resize: "none", background: "transparent", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 15, lineHeight: 1.4, padding: "9px 6px", minHeight: 40, maxHeight: 140, overflowY: "auto", caretColor: "var(--accent-blue)" }}
+                    style={{ width: "100%", resize: "none", background: "transparent", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 16, lineHeight: 1.4, padding: "6px 4px", minHeight: 36, maxHeight: 160, overflowY: "auto", caretColor: "var(--accent-blue)" }}
                   />
-                  {/* Mikrofon dyktowania — dopisuje mowę do pola (oddzielny od trybu rozmowy głosowej) */}
-                  {dictation.supported && !busy && (
-                    <button
-                      onClick={dictation.toggle}
-                      title={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj (mowa → tekst)"}
-                      aria-label={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj"}
-                      className={dictation.recording ? "animate-pulse" : undefined}
-                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: dictation.recording ? "var(--accent-red)" : "transparent", color: dictation.recording ? "var(--on-accent)" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-                    >
-                      {dictation.recording ? <MicOff size={19} /> : <Mic size={19} />}
-                    </button>
-                  )}
-                  {/* Prawy klaster: Stop (generowanie) · Wyślij (jest treść) · kółko rozmowy głosowej (puste) */}
-                  {busy ? (
-                    <button
-                      onClick={stopGeneration}
-                      title="Zatrzymaj"
-                      aria-label="Zatrzymaj"
-                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-red)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-                    >
-                      <Square size={15} />
-                    </button>
-                  ) : (inputText.trim() || attachedImage) ? (
-                    <button
-                      onClick={() => { dictation.stop(); handleSend(); }}
-                      title="Wyślij"
-                      aria-label="Wyślij"
-                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-                    >
-                      <Send size={16} />
-                    </button>
-                  ) : voiceSupported ? (
-                    <button
-                      onClick={() => { dictation.stop(); toggleVoice(); }}
-                      title={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa (mów zamiast pisać)"}
-                      aria-label={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa"}
-                      className={voiceState !== "off" ? "animate-pulse" : undefined}
-                      style={{ flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-                    >
-                      {voiceState !== "off" ? <Square size={15} /> : <AudioLines size={18} />}
-                    </button>
-                  ) : null}
+                  {/* Wiersz 2 — akcje: lewo (aparat, galeria) · prawo (mikrofon, główny przycisk) */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <button onClick={() => cameraRef.current?.click()} disabled={busy} title="Zrób zdjęcie" aria-label="Zrób zdjęcie" style={composerActionBtn}>
+                        <Camera size={20} />
+                      </button>
+                      <button onClick={() => fileRef.current?.click()} disabled={busy} title="Dodaj zdjęcie" aria-label="Dodaj zdjęcie" style={{ ...composerActionBtn, color: attachedImage ? "var(--accent-blue)" : "var(--text-muted)" }}>
+                        <ImagePlus size={20} />
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      {/* Mikrofon dyktowania — dopisuje mowę do pola (oddzielny od trybu rozmowy głosowej) */}
+                      {dictation.supported && !busy && (
+                        <button
+                          onClick={dictation.toggle}
+                          title={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj (mowa → tekst)"}
+                          aria-label={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj"}
+                          className={dictation.recording ? "animate-pulse" : undefined}
+                          style={{ ...composerActionBtn, background: dictation.recording ? "var(--accent-red)" : "transparent", color: dictation.recording ? "var(--on-accent)" : "var(--text-muted)" }}
+                        >
+                          {dictation.recording ? <MicOff size={19} /> : <Mic size={19} />}
+                        </button>
+                      )}
+                      {/* Główny przycisk: Stop (generowanie) · Wyślij (jest treść) · rozmowa głosowa (puste) */}
+                      {busy ? (
+                        <button onClick={stopGeneration} title="Zatrzymaj" aria-label="Zatrzymaj" style={{ ...composerPrimaryBtn, background: "var(--accent-red)" }}>
+                          <Square size={15} />
+                        </button>
+                      ) : (inputText.trim() || attachedImage) ? (
+                        <button onClick={() => { dictation.stop(); handleSend(); }} title="Wyślij" aria-label="Wyślij" style={composerPrimaryBtn}>
+                          <ArrowUp size={18} />
+                        </button>
+                      ) : voiceSupported ? (
+                        <button
+                          onClick={() => { dictation.stop(); toggleVoice(); }}
+                          title={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa (mów zamiast pisać)"}
+                          aria-label={voiceState !== "off" ? "Zakończ rozmowę głosową" : "Rozmowa głosowa"}
+                          className={voiceState !== "off" ? "animate-pulse" : undefined}
+                          style={composerPrimaryBtn}
+                        >
+                          {voiceState !== "off" ? <Square size={15} /> : <AudioLines size={18} />}
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1581,6 +1559,9 @@ const iconBtn: React.CSSProperties = { padding: 6, background: "none", border: "
 const rowBtn: React.CSSProperties = { display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", borderRadius: 8, border: "none", background: "var(--bg-elevated)", cursor: "pointer", textAlign: "left", width: "100%" };
 const chipBtn: React.CSSProperties = { fontSize: 12.5, padding: "8px 12px", borderRadius: 18, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", cursor: "pointer", textAlign: "left" };
 const voicePillBtn: React.CSSProperties = { display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-secondary)", background: "var(--bg-base)", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" };
+// Kompozytor (karta „Chat with Claude"): okrągłe przyciski w dolnym wierszu akcji.
+const composerActionBtn: React.CSSProperties = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "transparent", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" };
+const composerPrimaryBtn: React.CSSProperties = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" };
 
 // ── Widok pojedynczej tury ──────────────────────────────────────────────────
 function CopyButton({ text }: { text: string }) {
