@@ -1420,7 +1420,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
 
             {/* Composer */}
             {!showHistory && (
-              <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)", paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
+              <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)", paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
                 {/* Pasek stanu rozmowy głosowej — nie-zasłaniający (nad composerem, wątek/karty widoczne) */}
                 {voiceState !== "off" && (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 10px", borderRadius: 10, border: `1px solid ${voiceState === "speaking" ? "var(--accent-green)" : "var(--accent-blue)"}`, background: "var(--bg-elevated)" }}>
@@ -1489,7 +1489,11 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
                       </>
                     )}
                   </div>
-                  {/* Pole tekstowe — wtopione w pigułkę, auto-rozrost */}
+                  {/* Pole tekstowe — wtopione w pigułkę, auto-rozrost.
+                      Wysokość liczy auto-rozrost (useEffect na scrollHeight) — NIE ustawiamy tu
+                      stałej `height`: przy wymuszonym na mobile 16px (reguła anty-zoom) linia 16×1.4
+                      nie mieściła się w 38px (border-box, padding 9px → 20px na treść) i kursor
+                      pojawiał się NAD polem do pierwszego wpisania. `minHeight` trzyma wysokość pigułki. */}
                   <textarea
                     ref={composerRef}
                     value={inputText}
@@ -1499,7 +1503,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
                     rows={1}
                     disabled={busy}
                     aria-label="Wiadomość do asystenta"
-                    style={{ flex: 1, minWidth: 0, resize: "none", background: "transparent", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 15, lineHeight: 1.4, padding: "9px 6px", height: 38, maxHeight: 140, overflowY: "auto", caretColor: "var(--accent-blue)" }}
+                    style={{ flex: 1, minWidth: 0, resize: "none", background: "transparent", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 15, lineHeight: 1.4, padding: "9px 6px", minHeight: 40, maxHeight: 140, overflowY: "auto", caretColor: "var(--accent-blue)" }}
                   />
                   {/* Mikrofon dyktowania — dopisuje mowę do pola (oddzielny od trybu rozmowy głosowej) */}
                   {dictation.supported && !busy && (

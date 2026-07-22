@@ -4,6 +4,23 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-22 — Anty-zoom 16px odsłonił błąd pudełka pola + `calc(pad + safe-area)` zawyża odstęp
+**Problem:** Po wymuszeniu 16px na polach (reguła anty-zoom) kompozytor asystenta AI dostał dwa
+regresyjne defekty: (1) pole „za wysoko" — stopka miała `paddingBottom: calc(0.75rem +
+env(safe-area-inset-bottom))`, czyli DODAWAŁA cały inset do istniejącego `py-3`, przez co na iPhonie
+pole unosiło się ~34px za wysoko; (2) kursor pojawiał się NAD polem do pierwszego wpisania — textarea
+miała stałą `height: 38` (border-box, padding 9px → 20px na treść), a linia 16×1.4 = 22.4px nie mieści
+się w 20px, więc karetka wychodziła nad pole; dopiero auto-rozrost (useEffect na scrollHeight) po
+pierwszym wpisaniu ustawiał poprawną wysokość.
+**Rozwiązanie:** (1) `paddingBottom: max(0.75rem, env(safe-area-inset-bottom))` — czyści home indicator
+bez nadmiarowego odstępu (na desktopie i tak = 0.75rem). (2) Usunięto stałą `height: 38` z textarea;
+wysokość liczy wyłącznie auto-rozrost + `minHeight: 40`, więc linia 16px mieści się od pierwszego
+renderu (przy okazji znika walka React↔useEffect o `height`).
+**Lekcja:** Do odstępu na `safe-area-inset` używaj `max(padding, env(...))`, nie `calc(padding +
+env(...))` — suma zawyża. Wymuszając globalnie 16px na polach sprawdź komponenty ze STAŁĄ wysokością
+liczoną pod mniejszy font (tu 38px pod 15px) — 16px z lineHeight 1.4 potrzebuje ~40px, inaczej karetka/
+tekst wychodzą poza pudełko. Nie ustawiaj `height` inline na polu, którym i tak steruje auto-rozrost.
+
 ## 2026-07-22 — Style inline `font-size` omijają globalną regułę anty-zoom iOS + zwinięta grupa maskuje działający sort
 **Problem:** (1) Mimo istniejącej reguły `@media (pointer: coarse){ input,select,textarea{ font-size:16px } }`
 asystent AI nadal przybliżał (zoom iOS) przy focusie pola. Przyczyna: kompozytor w `AICommandSheet.tsx`
