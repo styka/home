@@ -525,6 +525,33 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
               style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
             />
           </div>
+          {/* 022: data zrobienia tuż pod „Start", jako normalne pole daty (edytowalne,
+              gdy zadanie jest zrobione). */}
+          {task.completedAt && (
+            <div className="flex items-center gap-2">
+              <Calendar size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+              <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Zrobione</label>
+              <input
+                type="date"
+                value={completedAt}
+                onChange={(e) => handleCompletedAtChange(e.target.value)}
+                title="Data wykonania — możesz ją zmienić (np. gdy odhaczasz z opóźnieniem)"
+                className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
+                style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+              />
+            </div>
+          )}
+          {/* 022: aktywne cykliczne pokazuje „datę ostatniego zrobienia" (poprzednika),
+              a nie własną — read-only, dla rozróżnienia. */}
+          {task.lastCompletedAt && !task.completedAt && (
+            <div className="flex items-center gap-2">
+              <Calendar size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+              <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Ostatnio</label>
+              <span className="flex-1 text-xs" style={{ color: "var(--text-secondary)" }}>
+                {new Date(task.lastCompletedAt).toLocaleDateString("pl-PL")}
+              </span>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Timer size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
             <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Szacowany czas</label>
@@ -842,19 +869,6 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
         <div className="px-4 py-3 text-xs space-y-1" style={{ color: "var(--text-muted)" }}>
           <div>Utworzone: {new Date(task.createdAt).toLocaleString("pl-PL")}</div>
           <div>Zaktualizowane: {new Date(task.updatedAt).toLocaleString("pl-PL")}</div>
-          {task.completedAt && (
-            <div className="flex items-center gap-2">
-              <span>Ukończone:</span>
-              <input
-                type="date"
-                value={completedAt}
-                onChange={(e) => handleCompletedAtChange(e.target.value)}
-                title="Data wykonania — możesz ją zmienić (np. gdy odhaczasz z opóźnieniem)"
-                className="bg-transparent focus:outline-none cursor-pointer hover:underline"
-                style={{ color: "var(--text-secondary)", border: "none" }}
-              />
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -248,6 +248,13 @@ export async function updateTask(
 
   const task = await prisma.task.update({ where: { id }, data, include: TASK_INCLUDE });
 
+  // 022: przy jawnej edycji daty wykonania zsynchronizuj „datę ostatniego wykonania"
+  // następnego wystąpienia cyklicznego (powiązanego przez previousTaskId). `updateMany`
+  // obsłuży 0 lub 1 następcę (brak następcy / niecykliczne → no-op).
+  if (explicitCompletedAt !== undefined) {
+    await prisma.task.updateMany({ where: { previousTaskId: id }, data: { lastCompletedAt: explicitCompletedAt } });
+  }
+
   void trackActivity("tasks", "update_task", { id, patchKeys: Object.keys(patch) });
   revalidatePath("/tasks");
   // Odśwież zarówno stary, jak i nowy projekt (przy przeniesieniu zadanie znika
@@ -362,12 +369,26 @@ export async function bulkUpdateTasks(
     }
 
     const newStatus = data.status as string | undefined;
-    // Przy masowym „Zrobione": wspólna podana data wykonania albo „teraz" (dotychczasowe zachowanie).
-    if (newStatus === "DONE" && existing.status !== "DONE") data.completedAt = scalar.completedAt ?? new Date();
-    else if (newStatus && newStatus !== "DONE") data.completedAt = null;
+    const isDoneTransition = newStatus === "DONE" && existing.status !== "DONE";
 
-    if (Object.keys(data).length > 0) {
-      await prisma.task.update({ where: { id }, data });
+    if (isDoneTransition && existing.recurring) {
+      // 022: cykliczne domykane masowo rolujemy jak pojedyncze odhaczenie (tworzy kolejne
+      // wystąpienie), z opcjonalną wspólną datą wykonania (021). NIE surowy update — ten
+      // ominąłby generację następnego wystąpienia.
+      await completeRecurringTask(id, scalar.completedAt ? { completionDate: scalar.completedAt.toISOString() } : {});
+      // Pozostałe pola skalarne (priorytet/kategoria/projekt) nałóż na domknięty rekord.
+      delete data.status;
+      if (Object.keys(data).length > 0) {
+        await prisma.task.update({ where: { id }, data });
+      }
+    } else {
+      // Przy masowym „Zrobione": wspólna podana data wykonania albo „teraz" (dotychczasowe zachowanie).
+      if (isDoneTransition) data.completedAt = scalar.completedAt ?? new Date();
+      else if (newStatus && newStatus !== "DONE") data.completedAt = null;
+
+      if (Object.keys(data).length > 0) {
+        await prisma.task.update({ where: { id }, data });
+      }
     }
 
     // Tagi: usuń wybrane, potem dodaj wybrane (pozostałe tagi zadania nietknięte).
@@ -530,6 +551,9 @@ export async function completeRecurringTask(
       // Kolejne wystąpienie niesie datę wykonania właśnie zamkniętego — żeby aktywne
       // zadanie cykliczne pokazywało „datę ostatniego wykonania" (020).
       lastCompletedAt: completedAt,
+      // 022: trwały link do domkniętego poprzednika — pozwala zsynchronizować
+      // „datę ostatniego wykonania" następcy, gdy poprawimy datę zrobienia poprzednika.
+      previousTaskId: existing.id,
       order: existing.order,
       // Skopiuj tagi do nowego wystąpienia.
       ...(existing.tags.length > 0 && {
