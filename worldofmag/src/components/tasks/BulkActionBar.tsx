@@ -182,8 +182,9 @@ export function BulkActionBar({
           </div>
         )}
 
-        {/* Główny pasek */}
-        <div className="flex items-center gap-1 p-2" style={{ opacity: pending ? 0.6 : 1 }}>
+        {/* Główny pasek — przewijalny poziomo na mobile, żeby wszystkie akcje były osiągalne
+            na wąskim ekranie (wzorzec z paska narzędzi TasksPage). */}
+        <div className="flex items-center gap-1 p-2 overflow-x-auto [&>*]:flex-shrink-0" style={{ opacity: pending ? 0.6 : 1 }}>
           <div className="flex flex-col items-start pr-1 pl-1">
             <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{count}</span>
             <button onClick={onSelectAll} className="text-xs focus:outline-none hover:underline" style={{ color: "var(--accent-blue)" }}>

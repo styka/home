@@ -124,13 +124,15 @@ input[type="number"]::-webkit-outer-spin-button {
    widok, gdy focusowana kontrolka ma font-size < 16px (wiele pól używa text-sm/xs).
    Wymuszamy 16px TYLKO na urządzeniach dotykowych (pointer: coarse) — desktop
    (pointer: fine) zostaje z gęstszym tekstem. NIE blokujemy pinch-zoomu (żadnego
-   maximum-scale/user-scalable), więc dostępność zachowana. Selektor input:not(...)
-   ma wyższą specyficzność niż utility .text-xs/.text-sm, więc wygrywa bez !important. */
+   maximum-scale/user-scalable), więc dostępność zachowana.
+   `!important` jest konieczny: część pól (np. kompozytor asystenta AI, SmartTextarea)
+   ustawia font-size INLINE (style={{ fontSize: 15 }}), a styl inline bije regułę z
+   arkusza bez `!important` — bez tego takie pola nadal wywoływałyby zoom na iOS. */
 @media (pointer: coarse) {
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
 

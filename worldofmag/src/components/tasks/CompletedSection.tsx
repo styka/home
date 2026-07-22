@@ -26,8 +26,17 @@ export function CompletedSection({ tasks, renderTask, sortBy = "default" }: Comp
         })
       : tasks;
 
+  // Gdy użytkownik włączy sortowanie po dacie wykonania, rozwijamy sekcję (domyślnie
+  // zwiniętą), żeby przesortowana kolejność była od razu widoczna. `key={sortBy}`
+  // remountuje grupę przy przełączeniu sortu, więc ponownie stosuje `defaultOpen`.
   return (
-    <TaskGroup label="✓ Zrobione / Anulowane" count={ordered.length} defaultOpen={false} muted>
+    <TaskGroup
+      key={sortBy}
+      label="✓ Zrobione / Anulowane"
+      count={ordered.length}
+      defaultOpen={sortBy === "completedAt"}
+      muted
+    >
       {ordered.map(renderTask)}
     </TaskGroup>
   );
