@@ -30,6 +30,14 @@ function formatDate(date: Date | null): { text: string; isOverdue: boolean; isTo
   return { text, isOverdue, isToday };
 }
 
+// Krótka data wykonania (przeszła) — do znacznika „✓ …" na wierszu zadania.
+// Rok pokazujemy tylko, gdy inny niż bieżący.
+function formatDoneDate(date: Date): string {
+  const d = new Date(date);
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short", year: sameYear ? undefined : "numeric" });
+}
+
 interface TaskRowProps {
   task: Task;
   isFocused: boolean;
@@ -218,6 +226,15 @@ export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, 
               {dateInfo.text}
             </span>
           ) : null}
+
+          {/* Data ostatniego wykonania — dla zrobionych (completedAt) oraz aktywnych
+              cyklicznych (lastCompletedAt z poprzedniego wystąpienia). Dyskretny znacznik. */}
+          {(task.completedAt ?? task.lastCompletedAt) && (
+            <span className="text-xs flex items-center gap-0.5" style={{ color: "var(--text-muted)" }} title="Data ostatniego wykonania">
+              <Check size={10} />
+              {formatDoneDate((task.completedAt ?? task.lastCompletedAt)!)}
+            </span>
+          )}
 
           {/* Estimated time */}
           {task.estimatedMins && (

@@ -694,6 +694,7 @@ model Task {
   dueDate       DateTime?
   startDate     DateTime?
   completedAt   DateTime?
+  lastCompletedAt DateTime? // data ostatniego wykonania (cykliczne: przenoszona na kolejne wystąpienie)
   estimatedMins Int?
   recurring     String? // JSON: RecurringRule
   category      String    @default("Other")
