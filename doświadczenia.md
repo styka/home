@@ -4,6 +4,29 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-22 — Style inline `font-size` omijają globalną regułę anty-zoom iOS + zwinięta grupa maskuje działający sort
+**Problem:** (1) Mimo istniejącej reguły `@media (pointer: coarse){ input,select,textarea{ font-size:16px } }`
+asystent AI nadal przybliżał (zoom iOS) przy focusie pola. Przyczyna: kompozytor w `AICommandSheet.tsx`
+ma font-size ustawiony **inline** (`style={{ fontSize: 15 }}`), a styl inline ma wyższą specyficzność
+niż reguła z arkusza bez `!important` — więc efektywny rozmiar to 15px < 16px i Safari przybliżał. To
+samo dotyczyło `SmartTextarea` (inline `fontSize:14`). (2) Ikona „Sortuj zrobione po dacie wykonania"
+wyglądała na niedziałającą — po kliknięciu żadnej różnicy w widoku. Sort działał poprawnie, ale sekcja
+„✓ Zrobione / Anulowane" jest **domyślnie zwinięta** (`defaultOpen={false}`), więc przesortowana lista
+była schowana.
+**Rozwiązanie:** (1) Dodano `!important` do reguły anty-zoom w `globals.css` (tylko `pointer: coarse`),
+żeby wygrywała z inline `fontSize < 16` — globalnie, dla wszystkich pól teraz i w przyszłości, bez
+tropienia każdego z osobna. Pinch-zoom nietknięty (brak `maximum-scale`/`user-scalable`). (2)
+`CompletedSection` rozwija grupę, gdy sort jest aktywny: `defaultOpen={sortBy === "completedAt"}` +
+`key={sortBy}` (remount przy przełączeniu → ponowne zastosowanie `defaultOpen`). Przy okazji: pasek
+akcji masowych zadań dostał `overflow-x-auto [&>*]:flex-shrink-0` (mieści się przewijaniem na mobile),
+a stopka kompozytora asystenta `paddingBottom: calc(0.75rem + env(safe-area-inset-bottom))`
+(nad kreską iOS).
+**Lekcja:** Globalna reguła CSS na pole formularza NIE zadziała, jeśli komponent ustawia właściwość
+inline — inline bije arkusz bez `!important`. Przy regułach „na wszystkie pola" (anti-zoom, kolory)
+zakładaj, że gdzieś jest inline i użyj `!important` w wąsko scope'owanej regule (`pointer: coarse`).
+Gdy funkcja „nie daje efektu w widoku", sprawdź, czy wynik nie jest schowany (zwinięta grupa/panel) —
+zanim uznasz logikę za zepsutą.
+
 ## 2026-07-21 — Groq ma limit DZIENNY (TPD), nie tylko minutowy — degradacja na lżejszy model
 **Problem:** Po pacingu (016) asystent dalej padał. Produkcyjny log `/admin/ai-calls` pokazał inny
 limit niż zakładaliśmy: `429 … on tokens per day (TPD): Limit 100000, Used ~98300`. To **dzienny** limit
