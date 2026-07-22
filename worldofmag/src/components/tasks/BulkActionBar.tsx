@@ -15,6 +15,7 @@ export type BulkPatch = Partial<{
   projectId: string | null;
   addTagIds: string[];
   removeTagIds: string[];
+  completedAt: Date | null;
 }>;
 
 interface BulkActionBarProps {
@@ -42,6 +43,8 @@ export function BulkActionBar({
   const [panel, setPanel] = useState<Panel>(null);
   const [dueValue, setDueValue] = useState("");
   const [categoryValue, setCategoryValue] = useState("");
+  // Opcjonalna wspólna data wykonania dla masowego przejścia na status terminalny („Zrobione").
+  const [doneDateValue, setDoneDateValue] = useState("");
   // Tagi: mapa id → "add" | "remove". Klik cyklicznie: brak → dodaj → usuń → brak.
   const [tagState, setTagState] = useState<Record<string, "add" | "remove">>({});
 
@@ -91,9 +94,17 @@ export function BulkActionBar({
         {/* Popover aktywnej akcji */}
         {panel === "status" && (
           <div className={panelWrap} style={panelStyle}>
+            {/* Opcjonalna data wykonania — stosowana przy przejściu na status „zamykający". */}
+            <label className="block text-xs px-1 pb-1" style={{ color: "var(--text-muted)" }}>
+              Data wykonania (opcjonalnie — dla „Zrobione”)
+            </label>
+            <input type="date" value={doneDateValue}
+              onChange={(e) => setDoneDateValue(e.target.value)}
+              className="w-full px-2 py-2 rounded text-sm mb-2"
+              style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }} />
             {statuses.map((s) => (
               <button key={s.key} className={itemBtn} style={{ color: "var(--text-primary)" }}
-                onClick={() => apply({ status: s.key })}
+                onClick={() => apply({ status: s.key, completedAt: s.isTerminal && doneDateValue ? new Date(doneDateValue + "T12:00:00") : undefined })}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-hover)")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}>
                 <StatusIcon name={s.icon} size={16} color={s.color} />

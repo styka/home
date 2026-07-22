@@ -201,6 +201,7 @@ export async function updateTask(
     assigneeId: string | null;
     recurring: RecurringRule | null;
     order: number;
+    completedAt: Date | null; // jawna data wykonania — ma pierwszeństwo nad wyliczaną ze statusu
   }>
 ): Promise<Task> {
   const user = await requireAuth();
@@ -226,18 +227,23 @@ export async function updateTask(
     }
   }
 
-  const completedAt =
+  // Data wykonania wyliczana ze zmiany statusu (→DONE = teraz; →inny = wyczyść).
+  const derivedCompletedAt =
     patch.status === "DONE" && existing.status !== "DONE"
       ? new Date()
       : patch.status && patch.status !== "DONE"
       ? null
       : undefined;
+  // Jawnie podana data wykonania (edycja w szczegółach / oznaczanie z datą) MA PIERWSZEŃSTWO
+  // nad wyliczoną ze statusu. `completedAt` NIE wchodzi przez `{ ...patch }` — ustawiamy jawnie.
+  const { completedAt: explicitCompletedAt, ...restPatch } = patch;
+  const finalCompletedAt = explicitCompletedAt !== undefined ? explicitCompletedAt : derivedCompletedAt;
 
-  const data: Record<string, unknown> = { ...patch };
+  const data: Record<string, unknown> = { ...restPatch };
   if (patch.recurring !== undefined) {
     data.recurring = patch.recurring ? JSON.stringify(patch.recurring) : null;
   }
-  if (completedAt !== undefined) data.completedAt = completedAt;
+  if (finalCompletedAt !== undefined) data.completedAt = finalCompletedAt;
   if (patch.title) data.title = patch.title.trim();
 
   const task = await prisma.task.update({ where: { id }, data, include: TASK_INCLUDE });
@@ -311,6 +317,7 @@ export async function bulkUpdateTasks(
     projectId: string | null;
     addTagIds: string[];
     removeTagIds: string[];
+    completedAt: Date | null; // wspólna data wykonania dla zaznaczonych (opcjonalna; dla „Zrobione")
   }>
 ): Promise<{ updated: number; skipped: number }> {
   const user = await requireAuth();
@@ -355,7 +362,8 @@ export async function bulkUpdateTasks(
     }
 
     const newStatus = data.status as string | undefined;
-    if (newStatus === "DONE" && existing.status !== "DONE") data.completedAt = new Date();
+    // Przy masowym „Zrobione": wspólna podana data wykonania albo „teraz" (dotychczasowe zachowanie).
+    if (newStatus === "DONE" && existing.status !== "DONE") data.completedAt = scalar.completedAt ?? new Date();
     else if (newStatus && newStatus !== "DONE") data.completedAt = null;
 
     if (Object.keys(data).length > 0) {
