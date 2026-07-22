@@ -1420,7 +1420,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
 
             {/* Composer */}
             {!showHistory && (
-              <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
+              <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)", paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
                 {/* Pasek stanu rozmowy głosowej — nie-zasłaniający (nad composerem, wątek/karty widoczne) */}
                 {voiceState !== "off" && (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 10px", borderRadius: 10, border: `1px solid ${voiceState === "speaking" ? "var(--accent-green)" : "var(--accent-blue)"}`, background: "var(--bg-elevated)" }}>
