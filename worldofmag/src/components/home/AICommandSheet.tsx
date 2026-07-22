@@ -274,11 +274,11 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
   const [busy, setBusy] = useState(false);
   const [liveThoughts, setLiveThoughts] = useState<string[]>([]); // myśli agenta na żywo (streaming)
   const [error, setError] = useState<string | null>(null);
-  // iOS: przy otwartej klawiaturze ekranowej dolny composer jest ZA klawiaturą, więc
-  // Safari sam przewija widok, a to rozjeżdża karetkę (kursor „nad polem" do pierwszego
-  // wpisania). Śledzimy realną (visual) wysokość widoku i podnosimy sheet nad klawiaturę,
-  // żeby iOS nie musiał już przewijać — karetka zostaje w polu.
-  const [keyboardInset, setKeyboardInset] = useState(0);
+  // Czy pole kompozytora ma fokus (klawiatura ekranowa otwarta). Gdy piszesz, NIE
+  // dokładamy dolnego marginesu safe-area — dodatkowy padding pod fokusowanym polem
+  // w bottom-sheecie iOS rozjeżdża karetkę (kursor „nad polem"). Margines na kreskę
+  // iPhone potrzebny jest tylko przy ZAMKNIĘTEJ klawiaturze (pole u samego dołu).
+  const [composerFocused, setComposerFocused] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   // Odczyt postów Asystenta na głos — id posta aktualnie czytanego (jeden głos naraz).
   const [speakingId, setSpeakingId] = useState<string | null>(null);
@@ -663,27 +663,6 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
     }, 80);
     return () => clearTimeout(t);
   }, [isOpen, showHistory]);
-
-  // iOS: śledź wysokość klawiatury ekranowej (VisualViewport) i podnieś sheet nad nią.
-  // Próg 60px odsiewa drobne zmiany (pasek URL) od realnej klawiatury. Na desktopie
-  // i tam, gdzie API nie ma, `keyboardInset` zostaje 0 → zero wpływu.
-  useEffect(() => {
-    if (!isOpen) { setKeyboardInset(0); return; }
-    const vv = typeof window !== "undefined" ? window.visualViewport : null;
-    if (!vv) return;
-    const update = () => {
-      const overlap = window.innerHeight - vv.height - vv.offsetTop;
-      setKeyboardInset(overlap > 60 ? Math.round(overlap) : 0);
-    };
-    update();
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
-    return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
-      setKeyboardInset(0);
-    };
-  }, [isOpen]);
 
   // Zapis wiadomości do DB (best-effort, nie blokuje UI).
   const persist = useCallback(async (role: "user" | "assistant", content: string, kind: string, data?: unknown) => {
@@ -1216,7 +1195,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
         <div
           data-omnia-overlay="assistant"
           className="fixed inset-0 flex items-end md:items-center md:justify-center"
-          style={{ zIndex: 9990, backgroundColor: "rgba(0,0,0,0.6)", paddingBottom: keyboardInset || undefined }}
+          style={{ zIndex: 9990, backgroundColor: "rgba(0,0,0,0.6)" }}
           onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
         >
           <div
@@ -1225,7 +1204,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
             aria-modal="true"
             aria-label="Asystent AI"
             className="w-full md:max-w-lg md:mx-4"
-            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "16px 16px 0 0", height: "85vh", maxHeight: keyboardInset ? `calc(100vh - ${keyboardInset}px)` : "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "16px 16px 0 0", height: "85vh", maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}
           >
             {/* Handle bar (mobile) */}
             <div className="md:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
@@ -1446,7 +1425,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
 
             {/* Composer */}
             {!showHistory && (
-              <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)", paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+              <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)", paddingBottom: composerFocused ? undefined : "max(0.75rem, env(safe-area-inset-bottom))" }}>
                 {/* Pasek stanu rozmowy głosowej — nie-zasłaniający (nad composerem, wątek/karty widoczne) */}
                 {voiceState !== "off" && (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 10px", borderRadius: 10, border: `1px solid ${voiceState === "speaking" ? "var(--accent-green)" : "var(--accent-blue)"}`, background: "var(--bg-elevated)" }}>
@@ -1524,6 +1503,8 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
                     ref={composerRef}
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
+                    onFocus={() => setComposerFocused(true)}
+                    onBlur={() => setComposerFocused(false)}
                     onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); dictation.stop(); handleSend(); } }}
                     placeholder={attachedImage ? 'Opcjonalny opis, np. „do zakupów"' : placeholder}
                     rows={1}
