@@ -4,6 +4,24 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-22 — Edytowalna data wykonania: jawny `completedAt` musi bić derivację ze statusu
+**Problem:** Data wykonania (`completedAt`) miała stać się edytowalna (szczegóły + bulk + wybór przy
+oznaczaniu). Pułapka: `updateTask` wyprowadza `completedAt` z przejścia statusu (→DONE = teraz), a
+`data` budowane było przez `{ ...patch }`. Gdyby `completedAt` weszło razem z patchem, a potem wyliczona
+wartość by je nadpisała (albo odwrotnie), edycja daty byłaby ignorowana lub niespójna.
+**Rozwiązanie:** W `updateTask` `completedAt` NIE wchodzi już przez `{ ...patch }` — wyłuskujemy je
+(`const { completedAt: explicit, ...restPatch } = patch`) i ustawiamy jawnie: `final = explicit !==
+undefined ? explicit : derived`. Jawnie podana data (edycja w szczegółach / oznaczanie z datą) ma
+PIERWSZEŃSTWO nad wyliczoną ze statusu; brak podanej → zachowanie jak dotąd (→DONE=teraz, →inny=null).
+`bulkUpdateTasks` dostał opcjonalny wspólny `completedAt`: przy `status→DONE` `data.completedAt =
+scalar.completedAt ?? new Date()`. UI: pole „Ukończone" w `TaskDetail` (type=date, wzór pola „Start")
+oraz opcjonalne pole daty w panelu „Status" bulku (stosowane, gdy `s.isTerminal`). Szybkie odhaczanie w
+wierszu bez zmian („teraz").
+**Lekcja:** Gdy pole jest zarazem WYLICZANE (z innego pola) i EDYTOWALNE, nie wpuszczaj go przez
+`{ ...patch }` — wyłuskaj i jawnie ustal priorytet (jawna wartość > wyliczona), inaczej jedno cicho
+nadpisze drugie. `resolveStatuses` zwraca `isTerminal` per status — używaj tego zamiast dublować logikę
+„czy status zamykający".
+
 ## 2026-07-22 — „Sort zrobionych po dacie" nie dawał różnicy — brakowało WIDOCZNEJ daty na wierszu
 **Problem:** Przycisk „Sortuj zrobione po dacie wykonania" (druga zgłoszona próba) nadal „nie dawał
 różnicy". Poprzednia poprawka (018) tylko rozwijała zwiniętą sekcję. Realna przyczyna: wiersze zadań w

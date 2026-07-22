@@ -48,6 +48,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
   const [priority, setPriority] = useState<TaskPriority>(task.priority);
   const [dueDate, setDueDate] = useState(toDateTimeLocalValue(task.dueDate));
   const [startDate, setStartDate] = useState(toDateValue(task.startDate));
+  const [completedAt, setCompletedAt] = useState(toDateValue(task.completedAt));
   const [estimatedMins, setEstimatedMins] = useState(task.estimatedMins?.toString() ?? "");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>((task.tags ?? []).map((t) => t.tag.id));
   const [newTagName, setNewTagName] = useState("");
@@ -84,6 +85,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
     setPriority(task.priority);
     setDueDate(toDateTimeLocalValue(task.dueDate));
     setStartDate(toDateValue(task.startDate));
+    setCompletedAt(toDateValue(task.completedAt));
     setEstimatedMins(task.estimatedMins?.toString() ?? "");
     setSelectedTagIds((task.tags ?? []).map((t) => t.tag.id));
     setEditingDesc(false);
@@ -153,6 +155,13 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
     setStartDate(v);
     // Pole „Start" to `type="date"` (tylko dzień) → lokalne południe.
     run(() => updateTask(task.id, { startDate: parseDateInput(v, { dayOnly: true }) }));
+  }
+
+  function handleCompletedAtChange(v: string) {
+    setCompletedAt(v);
+    // Pole „Ukończone" to `type="date"` (tylko dzień) → lokalne południe. Jawna data ma
+    // pierwszeństwo nad wyliczaną ze statusu (patrz updateTask); puste = wyczyść.
+    run(() => updateTask(task.id, { completedAt: parseDateInput(v, { dayOnly: true }) }));
   }
 
   function handleEstimatedChange(v: string) {
@@ -833,7 +842,19 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
         <div className="px-4 py-3 text-xs space-y-1" style={{ color: "var(--text-muted)" }}>
           <div>Utworzone: {new Date(task.createdAt).toLocaleString("pl-PL")}</div>
           <div>Zaktualizowane: {new Date(task.updatedAt).toLocaleString("pl-PL")}</div>
-          {task.completedAt && <div>Ukończone: {new Date(task.completedAt).toLocaleString("pl-PL")}</div>}
+          {task.completedAt && (
+            <div className="flex items-center gap-2">
+              <span>Ukończone:</span>
+              <input
+                type="date"
+                value={completedAt}
+                onChange={(e) => handleCompletedAtChange(e.target.value)}
+                title="Data wykonania — możesz ją zmienić (np. gdy odhaczasz z opóźnieniem)"
+                className="bg-transparent focus:outline-none cursor-pointer hover:underline"
+                style={{ color: "var(--text-secondary)", border: "none" }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
