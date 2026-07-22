@@ -4,6 +4,29 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-22 — Surowy komunikat dostawcy przeciekał NIE-429 ścieżką + iOS „kursor nad polem" po zdjęciu zoomu
+**Problem:** (1) Mimo poprawki 017 (uczciwy PL komunikat przy 429) użytkownik znów zobaczył surowy tekst
+dostawcy („Rate limit reached for model …"). Przyczyna: w `agent/route.ts` ładny komunikat robił się
+TYLKO dla `status === 429`; gałąź `else` zwracała `providerMsg || "Błąd LLM"`, czyli surową treść. Po
+wyczerpaniu łańcucha fallbacku (Z-133) limit potrafi odbić z innym statusem (503/502) → przeciek. Drugi
+przeciek: `catch` strumienia SSE wysyłał `e.message` wprost. (2) Po globalnym anty-zoomie (16px) w
+asystencie kursor pojawiał się NAD polem do pierwszego wpisania, losowo. To natywny błąd iOS Safari:
+pole w `position: fixed` bottom-sheecie jest ZA klawiaturą, więc iOS sam przewija widok i rozjeżdża
+karetkę. Wcześniej maskował to niechciany auto-zoom (przy zoomie iOS recentruje na polu) — zdjęcie
+zoomu odsłoniło problem.
+**Rozwiązanie:** (1) Na granicy prezentacji NIGDY nie zwracamy surowej treści dostawcy (C-41): limit
+rozpoznajemy po statusie 429 LUB po treści (`/rate.?limit|per day|per minute|tpd|tpm|quota/`), reszta →
+ogólny uprzejmy PL komunikat; surowe idzie tylko do `console.warn`. `catch` SSE też daje ogólny
+komunikat + `console.error`. (2) `AICommandSheet` śledzi `window.visualViewport` i podnosi sheet nad
+klawiaturę: `paddingBottom = keyboardInset` na nakładce + `maxHeight: calc(100vh - keyboardInset)` na
+sheecie (próg 60px odsiewa pasek URL). iOS nie musi już przewijać → karetka zostaje w polu. Desktop/brak
+API → `keyboardInset` = 0, zero wpływu.
+**Lekcja:** Komunikaty błędów mapuj na przyjazne NA KAŻDEJ gałęzi (429 i „reszta"), nie tylko w
+happy-casie — inaczej surowy tekst dostawcy przecieka bokiem; rozpoznawaj limit też po TREŚCI, bo status
+bywa inny po fallbacku. Gdy „naprawa" nagle odsłania inny błąd (tu: zdjęcie zoomu → karetka), sprawdź,
+czy stary błąd nie był tylko MASKOWANY. Do pól w `position: fixed` na mobile używaj VisualViewport, żeby
+podnosić UI nad klawiaturę zamiast liczyć na natywne przewijanie iOS.
+
 ## 2026-07-22 — Anty-zoom 16px odsłonił błąd pudełka pola + `calc(pad + safe-area)` zawyża odstęp
 **Problem:** Po wymuszeniu 16px na polach (reguła anty-zoom) kompozytor asystenta AI dostał dwa
 regresyjne defekty: (1) pole „za wysoko" — stopka miała `paddingBottom: calc(0.75rem +

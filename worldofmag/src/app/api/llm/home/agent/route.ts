@@ -524,10 +524,16 @@ async function runAgentLoop(
         // reached for model …") pokaż UCZCIWY komunikat po polsku, rozróżniający limit
         // dzienny od minutowego (C-41: nie przepisujemy treści dostawcy).
         const providerMsg = e instanceof Error ? e.message : "";
-        const message =
-          status === 429
-            ? rateLimitUserMessage(classifyRateLimitKind(providerMsg))
-            : providerMsg || "Błąd LLM";
+        // NIGDY nie pokazujemy użytkownikowi surowej treści dostawcy (C-41). Limit
+        // rozpoznajemy po STATUSIE 429 LUB po treści błędu — po wyczerpaniu łańcucha
+        // fallbacku (Z-133) limit potrafi odbić z innym statusem (np. 503/502), a wtedy
+        // wcześniej przeciekał surowy komunikat „Rate limit reached for model …".
+        const looksRateLimited =
+          status === 429 || /rate.?limit|per day|per minute|\btpd\b|\btpm\b|quota/i.test(providerMsg);
+        const message = looksRateLimited
+          ? rateLimitUserMessage(classifyRateLimitKind(providerMsg))
+          : "Asystent chwilowo nie może połączyć się z modelem AI. Spróbuj ponownie za chwilę.";
+        if (providerMsg) console.warn(`[agent] błąd LLM (status ${status}): ${providerMsg}`);
         return { status, body: { error: message } };
       }
       messages.push({ role: "assistant", content });
@@ -819,7 +825,9 @@ export async function POST(req: NextRequest) {
           }
           send({ type: "final", status: result.status ?? 200, body: result.body });
         } catch (e) {
-          send({ type: "final", status: 502, body: { error: e instanceof Error ? e.message : "Błąd asystenta" } });
+          // Nieoczekiwany wyjątek w pętli agenta — nie przeciekamy surowej treści (C-41).
+          console.error("[agent/stream] nieoczekiwany błąd:", e);
+          send({ type: "final", status: 502, body: { error: "Asystent napotkał nieoczekiwany błąd. Spróbuj ponownie za chwilę." } });
         } finally {
           release();
           void recordAiUsage(userId, meta.tokens).catch(() => {});
