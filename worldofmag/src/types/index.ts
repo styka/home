@@ -169,6 +169,7 @@ export type Task = {
   dueDate: Date | null;
   startDate: Date | null;
   completedAt: Date | null;
+  lastCompletedAt: Date | null;
   estimatedMins: number | null;
   recurring: string | null;
   category: string;

@@ -519,6 +519,9 @@ export async function completeRecurringTask(
       recurring: existing.recurring,
       startDate: nextStart,
       dueDate: nextDue,
+      // Kolejne wystąpienie niesie datę wykonania właśnie zamkniętego — żeby aktywne
+      // zadanie cykliczne pokazywało „datę ostatniego wykonania" (020).
+      lastCompletedAt: completedAt,
       order: existing.order,
       // Skopiuj tagi do nowego wystąpienia.
       ...(existing.tags.length > 0 && {
