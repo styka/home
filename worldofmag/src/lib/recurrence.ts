@@ -45,6 +45,43 @@ export function computeNextDue(from: Date, rule: RecurringRule): Date | null {
   }
 }
 
+/** Wyliczone pola następnego wystąpienia zadania cyklicznego. */
+export interface RecurringSuccessor {
+  /** Termin następnego wystąpienia. */
+  nextDue: Date;
+  /** Data startu następnego wystąpienia (zachowuje wyprzedzenie względem terminu);
+   * `null`, gdy poprzednik nie miał kompletu start+termin. */
+  nextStart: Date | null;
+}
+
+/**
+ * Czysta logika wyliczania pól następnika zadania cyklicznego (bez bazy danych) — wspólna dla
+ * wszystkich wejść (UI, operacje zbiorcze, asystent AI). Zwraca `null`, gdy seria się skończyła
+ * (nieznana reguła albo termin za `endDate`).
+ *
+ * `anchor` liczy bazę terminu: `COMPLETION` = od daty wykonania; `DUE` (domyślnie) = od terminu
+ * zadania (fallback: data wykonania). `nextDueOverride` (ISO) pomija `computeNextDue`.
+ */
+export function computeRecurringSuccessor(
+  input: { recurring: RecurringRule; dueDate: Date | null; startDate: Date | null; completedAt: Date },
+  opts: { anchor?: "DUE" | "COMPLETION"; nextDueOverride?: string } = {},
+): RecurringSuccessor | null {
+  const rule = input.recurring;
+  const anchor = opts.anchor ?? rule.anchor;
+  const base = anchor === "COMPLETION" ? input.completedAt : input.dueDate ?? input.completedAt;
+  const nextDue = opts.nextDueOverride ? new Date(opts.nextDueOverride) : computeNextDue(base, rule);
+  if (!nextDue) return null;
+  if (rule.endDate && nextDue > new Date(rule.endDate)) return null;
+
+  // Zachowaj wyprzedzenie startu względem terminu (przesuwamy startDate o tę samą różnicę co termin).
+  // Bez kompletu start+termin nie da się policzyć → start pomijamy.
+  let nextStart: Date | null = null;
+  if (input.startDate && input.dueDate) {
+    nextStart = new Date(input.startDate.getTime() + (nextDue.getTime() - input.dueDate.getTime()));
+  }
+  return { nextDue, nextStart };
+}
+
 /** Parse a JSON-encoded RecurringRule string; returns null on empty/invalid. */
 export function parseRecurringRule(raw: string | null | undefined): RecurringRule | null {
   if (!raw) return null;

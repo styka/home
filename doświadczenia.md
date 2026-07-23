@@ -4,6 +4,30 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-23 — Efekt uboczny w wywołującym, nie w warstwie domenowej → asystent AI omijał spawn cyklicznego zadania
+**Problem:** Domknięcie zadania cyklicznego tworzy kolejne wystąpienie, ale ta logika (`completeRecurringTask`)
+była wpięta TYLKO w ścieżki UI: przełącznik statusu (`toggleTaskStatus`) i operacje zbiorcze (`bulkUpdateTasks`).
+Asystent AI woła `updateTask(id, { status: "DONE" })` bezpośrednio (executor `update_task`/`update_task_status`),
+a `updateTask` samo w sobie następnika NIE tworzyło — więc oznaczenie zadania cyklicznego jako „zrobione" przez
+AI gubiło kolejne wystąpienie. Ten sam wzorzec „logika biznesowa w wywołującym, nie w warstwie domenowej"
+powtarzał się w petach: executor AI `log_treatment_done` **reimplementował** liczenie następnego terminu
+(`parseRecurringRule`+`computeNextDue`) i osobno tworzył `petCareLog`, zamiast wołać domenowe `completeTreatment`
+— ryzyko cichego rozjazdu (inna baza terminu, inne traktowanie `endDate`).
+**Rozwiązanie:** Centralizacja efektu w JEDNYM miejscu egzekucji. W `updateTask` dodano jedyny punkt tworzenia
+następcy przy „prawdziwym przejściu" (`patch.status==="DONE" && existing.status!=="DONE" && existing.recurring`);
+logikę create'a wydzielono do prywatnego `spawnRecurringSuccessor`, a czyste wyliczanie dat/pól następnika do
+testowalnej `computeRecurringSuccessor` w `lib/recurrence.ts`. `completeRecurringTask` stało się cienkim wrapperem
+nad `updateTask` (przekazuje odstępstwa anchor/override wewnętrznym 3. parametrem), więc jest DOKŁADNIE jeden
+spawn niezależnie od wejścia (UI/bulk/AI). Warunek „prawdziwego przejścia" oddziela pierwsze domknięcie (spawn)
+od późniejszej edycji daty wykonania już-DONE (to obsługuje istniejący blok 022/023 na następcy) — brak dubletu.
+W petach executor AI woła teraz `completeTreatment(t.id)`. Health/Habits sprawdzone — ich executory już wołały
+akcje domenowe (`logDose`/`unlogDose`/`toggleHabitDay`), parytet OK.
+**Lekcja:** Efekty uboczne (spawn cyklicznego następnika, `completedAt`, przeliczenia) trzymaj w warstwie
+domenowej (akcja/serwis), nigdy w wywołującym (UI/executor AI). Test „czy ta akcja z KAŻDEGO wejścia daje ten
+sam wynik?" wychwytuje takie pułapki. Gdy jest kilka wejść (UI, operacje zbiorcze, asystent AI) — zbiegają się
+one do jednej funkcji domenowej; jeśli któraś ścieżka „obchodzi" tę funkcję i robi swoje, to bug czekający na
+zgłoszenie. Przy centralizacji uważaj na podwójne wyzwolenie: dozwolony jest DOKŁADNIE jeden punkt efektu.
+
 ## 2026-07-23 — Anthropic: `temperature` deprecated w nowych modelach → 400 wywala agenta
 **Problem:** Po przełączeniu dostawcy LLM na Anthropic asystent przestał odpowiadać („Asystent
 chwilowo nie może połączyć się z modelem AI"). Diagnostyka: operacje `dispatch` (Haiku 4.5) przechodziły

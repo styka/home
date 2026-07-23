@@ -4,8 +4,8 @@
 // aktualizacji katalogu w agent/route.ts + petActions.ts.
 import { prisma } from "@/lib/prisma";
 import { getUserTeamIds } from "@/lib/server-utils";
-import { parseRecurringRule, computeNextDue } from "@/lib/recurrence";
 import { updatePet, setPetStatus, deletePet } from "@/actions/pets";
+import { completeTreatment } from "@/actions/petCare";
 import { updateEnclosure, deleteEnclosure, assignPetToEnclosure } from "@/actions/petHusbandry";
 import { asStr } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
@@ -214,12 +214,10 @@ export async function executePetAction(action: AIAction, userId: string): Promis
       where: { petId: { in: petIds }, name: { contains: searchQuery ?? "", mode: "insensitive" }, active: true },
     });
     if (!t) throw new Error(`Nie znaleziono zaplanowanego zabiegu: "${searchQuery}"`);
-    const rule = parseRecurringRule(t.recurring);
-    const base = t.nextDueAt ?? new Date();
-    let nextDueAt: Date | null = rule ? computeNextDue(base, rule) : null;
-    if (nextDueAt && rule?.endDate && nextDueAt > new Date(rule.endDate)) nextDueAt = null;
-    await prisma.petCareLog.create({ data: { petId: t.petId, treatmentId: t.id, category: t.kind } });
-    await prisma.petTreatment.update({ where: { id: t.id }, data: { lastDoneAt: new Date(), nextDueAt } });
+    // Wołaj logikę domenową — jedyne miejsce liczenia następnego terminu i tworzenia wpisu w
+    // dzienniku pielęgnacji. Dzięki temu odhaczenie przez asystenta AI daje identyczny wynik jak
+    // odhaczenie w UI (koniec z równoległą implementacją cykliczności w executorze).
+    await completeTreatment(t.id);
     return `Odhaczono "${t.name}"`;
   }
 
