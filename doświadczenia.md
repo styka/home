@@ -4,6 +4,24 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-23 — Anthropic: `temperature` deprecated w nowych modelach → 400 wywala agenta
+**Problem:** Po przełączeniu dostawcy LLM na Anthropic asystent przestał odpowiadać („Asystent
+chwilowo nie może połączyć się z modelem AI"). Diagnostyka: operacje `dispatch` (Haiku 4.5) przechodziły
+200, ale operacja `reasoning` (home_agent) na `claude-sonnet-5` padała **400** z treścią
+„`temperature` is deprecated for this model". Warstwa `chatComplete`/`chatStream` zawsze wstawiała do
+ciała żądania Anthropic pole `temperature: opts.temperature ?? cfg.temperature ?? undefined`. Ponieważ
+400 jest nieprzejściowy (`isRetryableLlmStatus` → false), przerywał łańcuch fallbacku — cały agent padał,
+mimo że tańsze modele działały.
+**Rozwiązanie:** W `src/lib/llm/chat.ts` wyodrębniono budowę ciała żądania do czystych, testowalnych
+funkcji `openAiBody()` / `anthropicBody()`. Builder Anthropic **nie wysyła `temperature`** (Messages API
+użyje domyślnej) — dla obu wariantów (jednorazowy i `stream:true`). Ścieżka OpenAI-compatible (Groq/OpenAI)
+bez zmian. Dodano test `__tests__/anthropicBody.test.ts` (Anthropic bez `temperature`, OpenAI z
+`temperature`).
+**Lekcja:** Nowsze modele Anthropic (Claude 5 / Opus 4.x) odrzucają `temperature` — nie przekazuj tego
+parametru do dostawcy Anthropic. Ogólniej: budowę ciała żądania per-dostawca trzymaj w jednej,
+testowalnej funkcji i pamiętaj, że błąd 4xx (nieprzejściowy) przerywa fallback — pojedynczy zły parametr
+potrafi wyłączyć całą operację, mimo działających modeli zapasowych.
+
 ## 2026-07-23 — Asystent AI: nazwa projektu ≠ id, i limity TPM różnią się per model
 **Problem:** Dwa niezależne błędy w czacie asystenta. (1) Na „zadania z projektu LZ" agent wywoływał
 `list_tasks` z `projectId:"LZ"` (nazwa, nie cuid) — read-tool filtrował po surowej wartości, zwracał
