@@ -1698,6 +1698,23 @@ function TurnView({
             <div style={{ marginTop: 8 }}>
               <SmartTextarea value={clarifyInput} onChange={setClarifyInput} placeholder="Twoja odpowiedź…" rows={2} onSubmit={() => onClarifySubmit(turn, clarifyInput)} />
             </div>
+            {/* 025: widoczny przycisk wysyłki — na mobile brak skrótu klawiszowego, więc
+                bez tego przycisku nie dało się zatwierdzić odpowiedzi na pytanie clarify. */}
+            <div style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={() => onClarifySubmit(turn, clarifyInput)}
+                disabled={!clarifyInput.trim()}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6, padding: "10px 16px", borderRadius: 10,
+                  border: "none", background: "var(--accent-blue)", color: "var(--on-accent)",
+                  fontSize: 13, fontWeight: 600, cursor: clarifyInput.trim() ? "pointer" : "not-allowed",
+                  opacity: clarifyInput.trim() ? 1 : 0.5,
+                }}
+              >
+                <ArrowUp size={15} /> Wyślij
+              </button>
+            </div>
           </>
         )}
         {onToggleSpeak && turn.content && (

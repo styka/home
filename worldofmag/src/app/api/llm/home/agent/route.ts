@@ -14,7 +14,11 @@ const MAX_ITERATIONS = 6;
 const MAX_TOOLS_PER_TURN = 4;
 
 // Ile wcześniejszych tur rozmowy (poziom wyświetlania) wstrzykujemy do kontekstu.
-const MAX_HISTORY_MESSAGES = 12;
+// 025: obniżone 12→8 + dodatkowy budżet znakowy (niżej), żeby prompt agenta mieścił się
+// w limitach TPM darmowych modeli Groq (zapytania ~7,5k tok wpadały w 413/429).
+const MAX_HISTORY_MESSAGES = 8;
+// 025: twardy budżet znaków na wstrzykiwaną historię (obok limitu liczby wiadomości).
+const MAX_HISTORY_CHARS = 2500;
 
 const MODULES = [
   "shopping",
@@ -530,9 +534,15 @@ async function runAgentLoop(
         // wcześniej przeciekał surowy komunikat „Rate limit reached for model …".
         const looksRateLimited =
           status === 429 || /rate.?limit|per day|per minute|\btpd\b|\btpm\b|quota/i.test(providerMsg);
+        // 025: 413 „Request too large" — osobny, uczciwy komunikat (zamiast mylącego
+        // „nie mogę się połączyć"). NIGDY nie pokazujemy surowej treści dostawcy (C-41).
+        const looksTooLarge =
+          status === 413 || /too large|request too large|zbyt du[żz]/i.test(providerMsg);
         const message = looksRateLimited
           ? rateLimitUserMessage(classifyRateLimitKind(providerMsg))
-          : "Asystent chwilowo nie może połączyć się z modelem AI. Spróbuj ponownie za chwilę.";
+          : looksTooLarge
+            ? "Zapytanie było zbyt duże dla modelu AI. Spróbuj sformułować je krócej/prościej."
+            : "Asystent chwilowo nie może połączyć się z modelem AI. Spróbuj ponownie za chwilę.";
         if (providerMsg) console.warn(`[agent] błąd LLM (status ${status}): ${providerMsg}`);
         return { status, body: { error: message } };
       }
@@ -697,12 +707,23 @@ export async function POST(req: NextRequest) {
       (m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim()
     );
     const recent = hist.slice(-MAX_HISTORY_MESSAGES);
-    if (recent.length) {
+    // 025: dodatkowo tnij historię do budżetu znaków — od NAJNOWSZYCH wstecz, żeby
+    // długa rozmowa nie rozsadziła okna tokenów modelu (limity TPM Groq).
+    const lines: string[] = [];
+    let used = 0;
+    for (let i = recent.length - 1; i >= 0; i--) {
+      const m = recent[i];
+      const line = `${m.role === "user" ? "Użytkownik" : "Asystent"}: ${m.content}`;
+      if (used + line.length > MAX_HISTORY_CHARS && lines.length > 0) break;
+      lines.unshift(line);
+      used += line.length;
+    }
+    if (lines.length) {
       messages.push({
         role: "user",
         content:
           "Kontekst wcześniejszej rozmowy (dla ciągłości — NIE odpowiadaj na to ponownie):\n" +
-          recent.map((m) => `${m.role === "user" ? "Użytkownik" : "Asystent"}: ${m.content}`).join("\n"),
+          lines.join("\n"),
       });
     }
   }

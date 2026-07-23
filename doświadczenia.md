@@ -4,6 +4,29 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-23 — Asystent AI: nazwa projektu ≠ id, i limity TPM różnią się per model
+**Problem:** Dwa niezależne błędy w czacie asystenta. (1) Na „zadania z projektu LZ" agent wywoływał
+`list_tasks` z `projectId:"LZ"` (nazwa, nie cuid) — read-tool filtrował po surowej wartości, zwracał
+pustą listę i asystent twierdził „nie ma zadań", choć były. (2) Zapytania agenta (~7,5k tok) wpadały w
+limity Groq: 70b wyczerpywał dzienny TPD (429), a fallback na 8b-instant (limit 6000 TPM) odbijał 413
+„Request too large" — bo `tpmLimiter` capował WSZYSTKIE modele jednym `DEFAULT_TPM=12000`, więc za duże
+zapytanie przechodziło rezerwację i lądowało na modelu, który z definicji nie mógł go obsłużyć. Efekt:
+mylące „nie mogę się połączyć" zamiast uczciwego „wyczerpany limit dzienny".
+**Rozwiązanie:** (1) Helper `resolveProjectRef(userId, ref)` w `agentTools.ts` — rozwiązuje id-lub-nazwę
+(dokładne id → dokładna nazwa case-insensitive → jednoznaczne częściowe) w granicach dostępu; brak/wiele
+dopasowań → `throw` z listą dostępnych nazw (łapane przez `runReadTool` → `{error}` → agent robi
+`clarify`). Wpięte w `list_tasks` (get_task nie ma parametru projektu). (2) Limity TPM per-model w
+`tpmLimiter.ts` (`modelTpmLimit()`: 70b=12000, 8b=6000) + w `chatComplete` pomijanie modelu, w którym
+szacowane `prompt+maxTokens` przekracza jego limit — z zachowaniem POPRZEDNIEJ realnej porażki jako
+`last` (uczciwy komunikat), a gdy pominięto wszystkie → jasny PL „Zapytanie było zbyt duże". Plus
+przycięcie promptu (historia: budżet 2500 znaków + `MAX_HISTORY_MESSAGES` 12→8) i osobny komunikat dla 413.
+**Lekcja:** (a) Gdy narzędzie AI przyjmuje „id", warto pozwolić podać też NAZWĘ i rozwiązać ją serwerowo
+(zero kosztu tokenów, zero halucynacji id) — a brak dopasowania sygnalizować agentowi błędem, nie cichą
+pustką. (b) Limity dostawcy (TPM/TPD) różnią się per model — fallback musi je znać i NIE kierować
+zapytania do modelu, który go nie zmieści; inaczej degradacja produkuje gorszy błąd niż oryginał.
+**Uwaga składniowa:** `READ_TOOLS_PROMPT` to template literal (backticki) — nie wstawiaj w opisach
+narzędzi tekstu w backtickach (``\`projectId\```), bo urywa string (TS1005).
+
 ## 2026-07-22 — Kotwica „od daty wykonania": korekta daty wykonania musi przeliczyć termin następcy
 **Problem:** Kotwica cykliczności `COMPLETION` („licz od daty wykonania") liczy termin następnego
 wystąpienia w chwili domknięcia i zapisuje go na sztywno na następcy. Po 021/022 datę wykonania da się
