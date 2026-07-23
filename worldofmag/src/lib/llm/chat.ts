@@ -173,6 +173,45 @@ function parseDataUrl(url: string): { mediaType: string; data: string } | null {
   return { mediaType: m[1], data: m[2] };
 }
 
+// 026-anthropic-temperature-fix: budowa ciała żądania wyodrębniona do czystych,
+// testowalnych funkcji (jedno źródło prawdy dla wariantu jednorazowego i strumienia).
+// KLUCZOWA różnica między dostawcami: parametr `temperature`.
+//  - OpenAI-compatible (Groq/OpenAI): przekazujemy `temperature` jak dotąd.
+//  - Anthropic (Messages API): NIE wysyłamy `temperature`. Nowsze modele (np.
+//    `claude-sonnet-5`, Opus 4.x) odrzucają go błędem 400 „temperature is deprecated
+//    for this model", a 400 jest nieprzejściowy (isRetryableLlmStatus → false), więc
+//    przerywał łańcuch fallbacku i wywalał całego agenta. Pominięty parametr = wartość
+//    domyślna Anthropic; determinizm JSON dla Anthropic i tak jest wymuszany promptem.
+
+/** Ciało żądania dla dostawcy OpenAI-compatible (`/chat/completions`). */
+export function openAiBody(cfg: ResolvedLlm, opts: ChatOptions, stream: boolean): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    model: cfg.model,
+    messages: opts.messages,
+    temperature: opts.temperature ?? cfg.temperature ?? undefined,
+    max_tokens: opts.maxTokens ?? cfg.maxTokens ?? undefined,
+  };
+  if (stream) {
+    body.stream = true;
+  } else if (opts.json) {
+    body.response_format = { type: "json_object" };
+  }
+  return body;
+}
+
+/** Ciało żądania dla dostawcy Anthropic (`/messages`) — bez `temperature` (patrz wyżej). */
+export function anthropicBody(cfg: ResolvedLlm, opts: ChatOptions, stream: boolean): Record<string, unknown> {
+  const { system, messages } = toAnthropic(opts.messages);
+  const body: Record<string, unknown> = {
+    model: cfg.model,
+    max_tokens: opts.maxTokens ?? cfg.maxTokens ?? 1024,
+    ...(system ? { system: toAnthropicSystem(system) } : {}),
+    messages,
+  };
+  if (stream) body.stream = true;
+  return body;
+}
+
 /** Jednorazowa odpowiedź (bez streamingu). */
 export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
   // Z-133: łańcuch [model admina → fallback Groq]. Próbujemy po kolei.
@@ -294,13 +333,7 @@ async function openAiComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<Chat
     const r = await fetchWithRetry(`${cfg.baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.apiKey}` },
-      body: JSON.stringify({
-        model: cfg.model,
-        messages: opts.messages,
-        temperature: opts.temperature ?? cfg.temperature ?? undefined,
-        max_tokens: opts.maxTokens ?? cfg.maxTokens ?? undefined,
-        ...(opts.json ? { response_format: { type: "json_object" } } : {}),
-      }),
+      body: JSON.stringify(openAiBody(cfg, opts, false)),
     });
     res = r.res;
     attempts = r.attempts;
@@ -379,7 +412,6 @@ function toAnthropic(messages: ChatMessage[]): {
 }
 
 async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<ChatResult> {
-  const { system, messages } = toAnthropic(opts.messages);
   let res: Response;
   let attempts = 1;
   try {
@@ -390,13 +422,7 @@ async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<C
         "x-api-key": cfg.apiKey,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify({
-        model: cfg.model,
-        max_tokens: opts.maxTokens ?? cfg.maxTokens ?? 1024,
-        temperature: opts.temperature ?? cfg.temperature ?? undefined,
-        ...(system ? { system: toAnthropicSystem(system) } : {}),
-        messages,
-      }),
+      body: JSON.stringify(anthropicBody(cfg, opts, false)),
     });
     res = r.res;
     attempts = r.attempts;
@@ -489,13 +515,7 @@ async function openAiStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<Stream
     ({ res } = await fetchWithRetry(`${cfg.baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.apiKey}` },
-      body: JSON.stringify({
-        model: cfg.model,
-        messages: opts.messages,
-        temperature: opts.temperature ?? cfg.temperature ?? undefined,
-        max_tokens: opts.maxTokens ?? cfg.maxTokens ?? undefined,
-        stream: true,
-      }),
+      body: JSON.stringify(openAiBody(cfg, opts, true)),
     }));
   } catch (e) {
     return { ok: false, status: 503, message: `Błąd sieci LLM: ${(e as Error).message}`.slice(0, 200) };
@@ -512,7 +532,6 @@ function openAiDelta(text: string): string {
 }
 
 async function anthropicStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<StreamAttempt> {
-  const { system, messages } = toAnthropic(opts.messages);
   let upstream: Response;
   try {
     ({ res: upstream } = await fetchWithRetry(`${cfg.baseUrl}/messages`, {
@@ -522,14 +541,7 @@ async function anthropicStream(cfg: ResolvedLlm, opts: ChatOptions): Promise<Str
         "x-api-key": cfg.apiKey,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify({
-        model: cfg.model,
-        max_tokens: opts.maxTokens ?? cfg.maxTokens ?? 1024,
-        temperature: opts.temperature ?? cfg.temperature ?? undefined,
-        ...(system ? { system: toAnthropicSystem(system) } : {}),
-        messages,
-        stream: true,
-      }),
+      body: JSON.stringify(anthropicBody(cfg, opts, true)),
     }));
   } catch (e) {
     return { ok: false, status: 503, message: `Błąd sieci LLM: ${(e as Error).message}`.slice(0, 200) };
