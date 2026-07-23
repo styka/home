@@ -2,7 +2,7 @@ import { resolveLlmChain, type ResolvedLlm } from "./resolver";
 import type { OperationType } from "./operationTypes";
 import { cacheKeyFor, getCached, setCached } from "@/lib/ai/cache";
 import { checkAiBudget, recordAiUsage, recordAiCall } from "@/lib/ai/usage";
-import { reserveTpm, estimateTokens } from "./tpmLimiter";
+import { reserveTpm, estimateTokens, modelTpmLimit } from "./tpmLimiter";
 
 /**
  * Z-133: czy błąd jest przejściowy (warto spróbować fallbacku na inny model/dostawcę).
@@ -193,8 +193,18 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
   }
 
   let last: Extract<ChatResult, { ok: false }> = { ok: false, status: 502, message: "LLM request failed" };
+  let hadRealFailure = false; // czy któryś model realnie odpowiedział błędem (vs. tylko pominięty)
+  let skippedTooLarge = false; // czy pominęliśmy model, bo zapytanie nie mieści się w jego limicie TPM
   for (let i = 0; i < chain.length; i++) {
     const cfg = chain[i];
+    // 025: nie wysyłaj zapytania do modelu Groq, którego limit TPM z góry je wyklucza —
+    // dostawca odbiłby je 413 „Request too large". Pomiń i spróbuj kolejnego ogniwa,
+    // ZACHOWUJĄC poprzednią realną porażkę (np. 429 dzienny z 70b) jako uczciwszy komunikat.
+    if (isTpmLimitedProvider(cfg) && requestExceedsModelLimit(cfg, opts)) {
+      skippedTooLarge = true;
+      console.warn(`[llm] ${opts.op}: pomijam model ${cfg.model} — zapytanie przekracza jego limit TPM (${modelTpmLimit(cfg.model)})`);
+      continue;
+    }
     const started = Date.now();
     const res = cfg.kind === "anthropic" ? await anthropicComplete(cfg, opts) : await openAiComplete(cfg, opts);
     const latencyMs = Date.now() - started;
@@ -218,6 +228,7 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
       return res;
     }
     last = res;
+    hadRealFailure = true;
     // Diagnostyka: log także NIEUDANEGO wywołania (status + treść błędu) — inaczej
     // 429/5xx były „niewidzialne" (brak logów agenta dla rozmowy, która padła).
     void recordAiCall({
@@ -239,7 +250,26 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
       console.warn(`[llm] ${opts.op}: model ${cfg.model} niedostępny (status ${res.status}) — próbuję fallback`);
     }
   }
+  // 025: gdy WSZYSTKIE ogniwa pominięto jako za małe (żaden nie odpowiedział realnym błędem) —
+  // oddaj czytelny komunikat PL zamiast placeholdera „LLM request failed" (C-41: bez treści dostawcy).
+  if (!hadRealFailure && skippedTooLarge) {
+    return {
+      ok: false,
+      status: 413,
+      message:
+        "Zapytanie było zbyt duże dla dostępnych modeli AI. Spróbuj sformułować je krócej/prościej albo ustaw większy model w panelu Admin → LLM.",
+    };
+  }
   return last;
+}
+
+// 025: czy szacowany rozmiar zapytania przekracza limit TPM danego modelu (→ 413).
+function requestExceedsModelLimit(cfg: ResolvedLlm, opts: ChatOptions): boolean {
+  const promptTokens = estimateTokens(
+    opts.messages.map((m) => (typeof m.content === "string" ? m.content : JSON.stringify(m.content))).join("\n")
+  );
+  const reserve = promptTokens + (opts.maxTokens ?? cfg.maxTokens ?? 1024);
+  return reserve > modelTpmLimit(cfg.model);
 }
 
 // Czy dostawca narzuca ciasny limit TPM, który trzeba paceować (Groq free-tier).
