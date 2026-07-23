@@ -21,6 +21,16 @@ const DEFAULT_TPM = 12_000;
 const CAP_RATIO = 0.9;
 const MAX_WAIT_TOTAL_MS = 30_000; // twardy limit łącznego oczekiwania (nie wisimy w nieskończoność)
 
+// 025-assistant-chat-reliability-ux: limity TPM RÓŻNIĄ SIĘ per model (Groq free-tier).
+// Wcześniej wszystkie modele capowaliśmy jednym DEFAULT_TPM=12000 — przez to zapytanie
+// ~7,5k tokenów przechodziło rezerwację i lądowało na llama-3.1-8b-instant (limit 6000
+// TPM), gdzie dostawca odbijał je 413 „Request too large". Trzymamy limit per model, żeby
+// pacing (i logika pomijania w chat.ts) liczyły się wobec RZECZYWISTEGO limitu modelu.
+const MODEL_TPM: Record<string, number> = {
+  "llama-3.3-70b-versatile": 12_000,
+  "llama-3.1-8b-instant": 6_000,
+};
+
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /** Szacunek tokenów wiadomości (proste ~4 znaki/token) — do rezerwacji w oknie TPM. */
@@ -28,9 +38,20 @@ export function estimateTokens(text: string): number {
   return Math.ceil((text?.length ?? 0) / 4);
 }
 
-function tpmLimitFor(): number {
+/**
+ * Limit TPM dla konkretnego modelu. Globalny override `GROQ_TPM_LIMIT` (env) ma
+ * pierwszeństwo (gdyby właściciel miał wyższy plan); inaczej limit per model z mapy,
+ * a w ostateczności DEFAULT_TPM.
+ */
+export function modelTpmLimit(model?: string): number {
   const env = Number(process.env.GROQ_TPM_LIMIT);
-  return Number.isFinite(env) && env > 0 ? env : DEFAULT_TPM;
+  if (Number.isFinite(env) && env > 0) return env;
+  if (model && MODEL_TPM[model]) return MODEL_TPM[model];
+  return DEFAULT_TPM;
+}
+
+function tpmLimitFor(model?: string): number {
+  return modelTpmLimit(model);
 }
 
 function usedTokens(key: string, now: number): number {
@@ -45,7 +66,7 @@ function usedTokens(key: string, now: number): number {
  * do diagnostyki. Nie rzuca; po MAX_WAIT_TOTAL_MS przepuszcza (retry/backoff w
  * chat.ts jest drugą linią obrony).
  */
-export async function reserveTpm(key: string, tokens: number, limit = tpmLimitFor()): Promise<number> {
+export async function reserveTpm(key: string, tokens: number, limit = tpmLimitFor(key)): Promise<number> {
   const cap = Math.max(1, Math.floor(limit * CAP_RATIO));
   const need = Math.min(Math.max(1, tokens), cap); // pojedyncze żądanie nie przekroczy capu
   const startedAt = Date.now();

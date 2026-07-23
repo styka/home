@@ -48,7 +48,7 @@ function asStr(v: unknown): string | undefined {
 export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). Wywołaj je, gdy potrzebujesz danych użytkownika, zanim odpowiesz lub zaproponujesz akcje. Każdy wiersz zawiera "id" — użyj go w parametrach akcji (taskId/itemId/noteId/listId/projectId/petId), aby celować w konkretne rekordy (akcje zbiorcze = wiele akcji, każda z własnym id).
 
 - list_projects: args {} → [{ id, name, isInbox, taskCount }]
-- list_tasks: args { projectId?, status?, priority?, search?, tag?, dueBefore?, limit? } → [{ id, title, status, priority, dueDate, projectId, projectName, tags }]. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO. tag = nazwa etykiety (bez rozróżniania wielkości liter) — użyj go, gdy użytkownik pyta „zadania otagowane/z tagiem X". "tags" w wyniku to lista nazw etykiet danego zadania.
+- list_tasks: args { projectId?, status?, priority?, search?, tag?, dueBefore?, limit? } → [{ id, title, status, priority, dueDate, projectId, projectName, tags }]. projectId może być identyfikatorem ALBO nazwą projektu (dopasowanie bez rozróżniania wielkości liter) — gdy użytkownik nazwie projekt (np. „z projektu LZ"), podaj tę nazwę wprost. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO. tag = nazwa etykiety (bez rozróżniania wielkości liter) — użyj go, gdy użytkownik pyta „zadania otagowane/z tagiem X". "tags" w wyniku to lista nazw etykiet danego zadania.
 - list_shopping_lists: args { includeArchived? } → [{ id, name, pendingCount, totalCount, archived }]
 - list_items: args { listId?, listName?, status?, search?, limit? } → [{ id, name, status, quantity, unit, listId, listName }]
 - list_notes: args { search?, limit? } → [{ id, title, snippet, updatedAt }]. Lista (snippet skrócony). Do PEŁNEJ treści użyj get_note.
@@ -241,6 +241,40 @@ async function accessibleProjectIds(userId: string): Promise<string[]> {
   return projects.map((p) => p.id);
 }
 
+/**
+ * 025-assistant-chat-reliability-ux: agent często przekazuje NAZWĘ projektu ("LZ")
+ * tam, gdzie read-toole oczekiwały identyfikatora — filtr po surowej nazwie zwracał
+ * pustą listę i asystent twierdził „nie ma zadań", mimo że były. Rozwiązujemy `ref`
+ * (id ALBO nazwa) na realne id projektu dostępnego dla użytkownika (C-21):
+ *  - `ref` == dostępne id → to id (kompatybilność wstecz),
+ *  - inaczej dopasowanie po nazwie bez rozróżniania wielkości liter: najpierw dokładne,
+ *    potem JEDNOZNACZNE częściowe,
+ *  - brak dopasowania LUB wiele kandydatów → `{ unresolved, available }` (wołający
+ *    zgłasza to agentowi, który dopytuje/clarify zamiast cicho zwracać pustkę).
+ */
+async function resolveProjectRef(
+  userId: string,
+  ref: string
+): Promise<{ id: string } | { unresolved: string; available: string[] }> {
+  const projects = await prisma.taskProject.findMany({
+    where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
+    select: { id: true, name: true },
+  });
+  const needle = ref.trim().toLowerCase();
+  // 1) dokładne id.
+  const byId = projects.find((p) => p.id === ref);
+  if (byId) return { id: byId.id };
+  // 2) dokładna nazwa (case-insensitive).
+  const exact = projects.filter((p) => p.name.trim().toLowerCase() === needle);
+  if (exact.length === 1) return { id: exact[0].id };
+  // 3) jednoznaczne częściowe dopasowanie.
+  if (exact.length === 0) {
+    const partial = projects.filter((p) => p.name.toLowerCase().includes(needle));
+    if (partial.length === 1) return { id: partial[0].id };
+  }
+  return { unresolved: ref, available: projects.map((p) => p.name) };
+}
+
 async function accessibleListWhere(userId: string) {
   const teamIds = await getUserTeamIds(userId);
   return {
@@ -304,7 +338,18 @@ export async function runReadTool(
           { assigneeId: userId },
         ],
       };
-      if (projectId) where.projectId = projectId;
+      // 025: `projectId` bywa NAZWĄ projektu ("LZ"), nie identyfikatorem — rozwiąż na
+      // realne id. Nierozwiązany ref → błąd (łapany przez wołającego → agent dopytuje),
+      // zamiast cicho zwrócić pustą listę i twierdzić „nie ma zadań".
+      if (projectId) {
+        const resolved = await resolveProjectRef(userId, projectId);
+        if ("id" in resolved) where.projectId = resolved.id;
+        else {
+          throw new Error(
+            `Nie znaleziono projektu o nazwie „${projectId}". Dostępne projekty: ${resolved.available.join(", ") || "(brak)"}. Doprecyzuj nazwę albo użyj list_projects.`
+          );
+        }
+      }
       if (status) where.status = status;
       else where.status = { notIn: ["DONE", "CANCELLED"] };
       if (priority) where.priority = priority;
