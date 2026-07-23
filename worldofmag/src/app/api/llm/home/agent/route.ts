@@ -771,9 +771,12 @@ export async function POST(req: NextRequest) {
     // BEZ uruchamiania dużego modelu (op:"reasoning"). Zwracamy krok "plan" w tym
     // samym kształcie co pętla agenta → panel potwierdzenia (ActionDrawer) bez zmian.
     // Każda niepewność → complex → dotychczasowa pełna pętla poniżej.
-    const fast = await classifyIntent(text, context, userId, conversationId, meta);
+    const fast = await classifyIntent(text, context, conversationId, meta);
     if (fast.kind === "simple") {
       const thought = fast.action.description || "Przygotowano akcję.";
+      // 028: ścieżka „simple" zwraca wcześnie (omija finally z recordAiUsage), więc
+      // rozlicz tu tokeny klasyfikacji do dziennego budżetu — JEDEN punkt rozliczania.
+      void recordAiUsage(userId, meta.tokens).catch(() => {});
       return NextResponse.json({
         step: "plan",
         actions: [fast.action],
