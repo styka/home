@@ -17,6 +17,8 @@ import {
   deleteAiConversation, renameAiConversation, type ConversationMeta,
 } from "@/actions/aiConversations";
 import { createUserReport } from "@/actions/reports";
+import { getRecentAiCalls, type AiCallLogRow } from "@/actions/llmConfig";
+import { aiCallsToText } from "@/lib/ai/aiCallLog";
 import { ensureOmniaProject } from "@/actions/taskProjects";
 import { createTask } from "@/actions/tasks";
 import type { AIAction } from "@/lib/ai/aiAction";
@@ -133,16 +135,19 @@ function deriveContextFromPath(pathname: string): RouteContext {
 }
 
 // Składa czytelny markdown-owy raport z bieżącej rozmowy asystenta do zadania w projekcie „Omnia":
-// opcjonalny opis problemu, ostatni błąd z backendu, pełny zrzut rozmowy oraz logi połączeń
-// (kroki agenta: iter/step/thought/narzędzia/wyniki + model i tokeny). Admin zgłasza tym problem z czatem.
+// opcjonalny opis problemu, ostatni błąd z backendu, pełny zrzut rozmowy, logi połączeń (kroki agenta:
+// iter/step/thought/narzędzia/wyniki + model i tokeny) oraz serwerowy log diagnostyki AI (te same
+// wywołania modelu, które admin widzi w /admin/ai-calls). Admin zgłasza tym problem z czatem.
 function buildChatProblemReport(opts: {
   turns: Turn[];
   error: string | null;
   description: string;
   route: string;
   conversationId: string | null;
+  aiCalls?: AiCallLogRow[];
+  aiCallsError?: boolean;
 }): string {
-  const { turns, error, description, route, conversationId } = opts;
+  const { turns, error, description, route, conversationId, aiCalls, aiCallsError } = opts;
   const roleLabel = (r: "user" | "assistant") => (r === "user" ? "Użytkownik" : "Asystent");
   const trunc = (s: string, max = 4000) => (s.length > max ? s.slice(0, max) + "\n…(ucięto)" : s);
   const json = (v: unknown) => {
@@ -186,6 +191,19 @@ function buildChatProblemReport(opts: {
         if (l.results !== undefined) out.push("  - wyniki:\n```json\n" + json(l.results) + "\n```");
       });
     });
+  }
+
+  // Serwerowy log diagnostyki AI — to samo, co panel /admin/ai-calls po odfiltrowaniu tej rozmowy
+  // (wywołania modelu, w tym NIEUDANE: status dostawcy, treść błędu, liczba prób, tokeny, latencja).
+  out.push("\n## Diagnostyka AI (log wywołań modelu)");
+  if (aiCallsError) {
+    out.push("_(nie udało się pobrać logu diagnostyki)_");
+  } else if (!conversationId) {
+    out.push("_(rozmowa niezapisana — brak identyfikatora; log diagnostyki niedostępny)_");
+  } else if (!aiCalls?.length) {
+    out.push("_(brak zarejestrowanych wywołań modelu dla tej rozmowy)_");
+  } else {
+    out.push("```\n" + trunc(aiCallsToText(aiCalls), 8000) + "\n```");
   }
 
   out.push("\n---");
@@ -694,7 +712,16 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
     if (!canReport || reportBusy) return;
     setReportBusy(true);
     try {
-      const description = buildChatProblemReport({ turns, error, description: reportDesc, route: pathname, conversationId });
+      // Dołącz serwerowy log diagnostyki AI dla tej rozmowy (admin-gated). Brak/awaria pobrania nie
+      // wywraca zgłoszenia — do raportu trafi wtedy tylko adnotacja.
+      let aiCalls: AiCallLogRow[] = [];
+      let aiCallsError = false;
+      try {
+        if (conversationId) aiCalls = await getRecentAiCalls({ conversationId, limit: 200 });
+      } catch {
+        aiCallsError = true;
+      }
+      const description = buildChatProblemReport({ turns, error, description: reportDesc, route: pathname, conversationId, aiCalls, aiCallsError });
       const stamp = new Date().toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
       const firstLine = reportDesc.trim().split("\n")[0]?.slice(0, 80);
       const title = `🐛 Problem w czacie asystenta AI — ${stamp}${firstLine ? ` — ${firstLine}` : ""}`;

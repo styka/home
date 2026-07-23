@@ -4,39 +4,12 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronLeft, Bug, RefreshCw, Copy, Check } from "lucide-react";
 import { getRecentAiCalls, type AiCallLogRow } from "@/actions/llmConfig";
+import { aiCallsToText, fmtAiCallTime as fmtTime } from "@/lib/ai/aiCallLog";
 
 // Diagnostyka asystenta AI: surowy log wywołań LLM (per rozmowa), łącznie z
 // wywołaniami NIEUDANYMI (status/błąd/liczba prób). Admin może odfiltrować po
 // conversationId i skopiować przebieg do wklejenia (np. do Claude Code).
-
-function fmtTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString("pl-PL", { hour12: false });
-  } catch {
-    return iso;
-  }
-}
-
-function rowsToText(rows: AiCallLogRow[]): string {
-  const head = "czas | źródło | op | dostawca | model | ok | status | próby | prompt+compl=total tok | latency ms | conversationId | błąd";
-  const lines = rows.map((r) =>
-    [
-      fmtTime(r.createdAt),
-      r.source ?? "—",
-      r.operationType,
-      r.providerKind,
-      r.model,
-      r.ok ? "OK" : "FAIL",
-      r.status ?? "—",
-      r.attempts,
-      `${r.promptTokens}+${r.completionTokens}=${r.totalTokens}`,
-      r.latencyMs,
-      r.conversationId ?? "—",
-      r.errorText ? r.errorText.replace(/\s+/g, " ") : "",
-    ].join(" | ")
-  );
-  return [head, ...lines].join("\n");
-}
+// Format logu jest współdzielony z zgłoszeniem błędu z czatu → `@/lib/ai/aiCallLog`.
 
 export function AiCallsPage({ initial }: { initial: AiCallLogRow[] }) {
   const [rows, setRows] = useState<AiCallLogRow[]>(initial);
@@ -53,7 +26,7 @@ export function AiCallsPage({ initial }: { initial: AiCallLogRow[] }) {
 
   async function copyAll() {
     try {
-      await navigator.clipboard.writeText(rowsToText(rows));
+      await navigator.clipboard.writeText(aiCallsToText(rows));
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
