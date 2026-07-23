@@ -10,6 +10,7 @@
 // (ActionDrawer), tak samo jak krok "plan" agenta (destructive opt-in bez zmian).
 
 import { chatComplete } from "@/lib/llm/chat";
+import { accrueUsage, type UsageMeter } from "@/lib/ai/usage";
 import type { AIAction, AIActionModule } from "@/lib/ai/aiAction";
 
 export type FastPathResult =
@@ -130,7 +131,8 @@ export async function classifyIntent(
   text: string,
   activeModules: string[],
   userId: string,
-  conversationId?: string | null
+  conversationId?: string | null,
+  meta?: UsageMeter
 ): Promise<FastPathResult> {
   const trimmed = text.trim();
   if (!trimmed) return { kind: "complex" };
@@ -151,6 +153,8 @@ export async function classifyIntent(
     source: "fast_path",
     conversationId,
   });
+  // 028: dolicz koszt klasyfikacji do akumulatora tury (wskaźnik ma być realny).
+  if (meta) accrueUsage(meta, result.ok ? result.usage : undefined, result.ok ? result.model : undefined);
   if (!result.ok || !result.content) return { kind: "complex" };
 
   const parsed = extractJson(result.content);

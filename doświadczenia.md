@@ -4,6 +4,26 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-23 — Koszt asystenta AI: wyniki narzędzi narastają w kontekście pętli agenta
+**Problem:** Asystent (`/api/llm/home/agent`) wysyłał do modelu bardzo dużo tokenów. Największy ZMIENNY
+koszt to nie prompt systemowy (już routowany per-moduł i cache'owany), lecz **surowe wyniki narzędzi**:
+krok `query` robił `JSON.stringify(results)` i wstrzykiwał je jako wiadomość, która **zostawała w tablicy
+`messages` na wszystkie kolejne iteracje** — więc w pętli `query→query→answer` te same dane szły do modelu
+wielokrotnie (narost ~kwadratowy), a duże listy leciały bez limitu rekordów.
+**Rozwiązanie:** Dwie czyste, testowalne dźwignie w nowym `src/lib/ai/agentContext.ts`: (1)
+`compactToolResults` — limit `PER_TOOL_MAX_RECORDS=12` + bezpiecznik `TOOL_RESULT_MAX_CHARS=3500` z
+**jawnym** znacznikiem „pokazano X z Y — zawęź zapytanie" (model wie, że dane niepełne — nie zgaduje po
+cichu); (2) `collapseUsedToolData` — przed każdym wywołaniem modelu starsze bloki wyników zwijane do
+stuba, pełny zostaje tylko OSTATNI. Delimiter „NIEUFNE DANE" zachowany (prompt-injection). Wskaźnik kosztu
+w oknie czatu (`MetaFooter`) rozszerzony o USD, a `AgentMeta`=`UsageMeter` (nowy `accrueUsage` w
+`usage.ts`) sumuje koszt ze WSZYSTKICH wywołań tury (fast-path + router + pętla), więc zgadza się z sumą
+w `AiCall`.
+**Lekcja:** W agentowej pętli narzędziowej licz koszt nie tylko promptu systemowego, ale przede wszystkim
+**akumulacji wyników w kontekście**. Trzymaj efekt uboczny (skracanie/zwijanie) w JEDNYM, czystym miejscu
+i wystaw go jako osobny moduł — wtedy łatwo go przetestować bez importu całego route'a (next/prisma/auth).
+Odchudzanie promptu rób konserwatywnie (tylko deduplikacje), bo opisy pól narzędzi i reguły to najczęstsze
+źródło regresji zachowania.
+
 ## 2026-07-23 — Efekt uboczny w wywołującym, nie w warstwie domenowej → asystent AI omijał spawn cyklicznego zadania
 **Problem:** Domknięcie zadania cyklicznego tworzy kolejne wystąpienie, ale ta logika (`completeRecurringTask`)
 była wpięta TYLKO w ścieżki UI: przełącznik statusu (`toggleTaskStatus`) i operacje zbiorcze (`bulkUpdateTasks`).
