@@ -10,6 +10,7 @@
 // (ActionDrawer), tak samo jak krok "plan" agenta (destructive opt-in bez zmian).
 
 import { chatComplete } from "@/lib/llm/chat";
+import { accrueUsage, type UsageMeter } from "@/lib/ai/usage";
 import type { AIAction, AIActionModule } from "@/lib/ai/aiAction";
 
 export type FastPathResult =
@@ -129,8 +130,8 @@ function hasEmptyPayload(type: string, params: Record<string, unknown>, searchQu
 export async function classifyIntent(
   text: string,
   activeModules: string[],
-  userId: string,
-  conversationId?: string | null
+  conversationId?: string | null,
+  meta?: UsageMeter
 ): Promise<FastPathResult> {
   const trimmed = text.trim();
   if (!trimmed) return { kind: "complex" };
@@ -138,6 +139,11 @@ export async function classifyIntent(
   // Strażnik intencji odczytu (bez wołania LLM) — „podaj/pokaż/znajdź/ile/zaproponuj …" → pełny agent.
   if (READ_INTENT_RE.test(trimmed)) return { kind: "complex" };
 
+  // 028: NIE przekazujemy tu `userId` do chatComplete — inaczej ten dispatch-call
+  // samo-rozliczyłby tokeny do AiUsage, a poniżej sumujemy je do `meta`, które i tak
+  // trafia do `recordAiUsage` po stronie route'a → byłoby podwójne liczenie budżetu.
+  // Budżet dzienny jest już sprawdzony z góry (checkAiBudget w POST). Rozliczenie
+  // tokenów tury odbywa się w JEDNYM miejscu: recordAiUsage(meta.tokens) w route.ts.
   const result = await chatComplete({
     op: "dispatch",
     messages: [
@@ -147,10 +153,11 @@ export async function classifyIntent(
     temperature: 0,
     maxTokens: 300,
     json: true,
-    userId,
     source: "fast_path",
     conversationId,
   });
+  // 028: dolicz koszt klasyfikacji do akumulatora tury (wskaźnik ma być realny).
+  if (meta) accrueUsage(meta, result.ok ? result.usage : undefined, result.ok ? result.model : undefined);
   if (!result.ok || !result.content) return { kind: "complex" };
 
   const parsed = extractJson(result.content);

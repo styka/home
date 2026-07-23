@@ -3,6 +3,48 @@ import { getActivePlan } from "@/lib/plans";
 import { estimateCostUsd } from "@/lib/llm/pricing";
 import { PERMISSIONS } from "@/lib/permissions";
 import { notifyUser } from "@/actions/notifications";
+import type { TokenUsage } from "@/lib/llm/chat";
+
+/**
+ * 028: lekki akumulator zużycia dla JEDNEJ odpowiedzi asystenta — sumuje tokeny i
+ * SZACOWANY koszt (USD) ze WSZYSTKICH wywołań modelu w obrębie jednej tury (router
+ * modułów + fast-path + pętla agenta), żeby pokazać użytkownikowi realny koszt w
+ * oknie czatu (wskaźnik `MetaFooter`). Koszt liczymy identycznie jak `recordAiCall`
+ * (ten sam `estimateCostUsd`), więc wskaźnik zgadza się z sumą wpisów w `AiCall`.
+ */
+export type UsageMeter = {
+  model?: string;
+  tokens: number;
+  promptTokens: number;
+  completionTokens: number;
+  cacheRead: number;
+  cacheWrite: number;
+  costUsd: number;
+};
+
+export function newUsageMeter(): UsageMeter {
+  return { tokens: 0, promptTokens: 0, completionTokens: 0, cacheRead: 0, cacheWrite: 0, costUsd: 0 };
+}
+
+/** Dolicza jedno wywołanie modelu do akumulatora (bezpieczne przy braku `usage`). */
+export function accrueUsage(meter: UsageMeter, usage: TokenUsage | undefined, model?: string): void {
+  if (model) meter.model = model;
+  if (!usage) return;
+  meter.tokens += usage.total;
+  meter.promptTokens += usage.prompt;
+  meter.completionTokens += usage.completion;
+  meter.cacheRead += usage.cacheRead ?? 0;
+  meter.cacheWrite += usage.cacheWrite ?? 0;
+  meter.costUsd += estimateCostUsd(
+    {
+      promptTokens: usage.prompt,
+      completionTokens: usage.completion,
+      cacheReadTokens: usage.cacheRead,
+      cacheWriteTokens: usage.cacheWrite,
+    },
+    model ?? ""
+  );
+}
 
 /**
  * Z-130/Z-511: trwały budżet AI per użytkownik/plan (kontrola kosztów).

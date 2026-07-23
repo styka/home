@@ -69,7 +69,7 @@ interface AgentResponse {
 }
 
 // H3: transparentność — który model odpowiedział i ile tokenów zużyto.
-type AgentMeta = { model?: string; tokens?: number };
+type AgentMeta = { model?: string; tokens?: number; costUsd?: number };
 
 // Jedna „kafelka" w wątku rozmowy. `data` z DB pozwala odtworzyć kartę bez ponownego uruchamiania agenta.
 type Turn =
@@ -183,7 +183,8 @@ function buildChatProblemReport(opts: {
       const log = "log" in t ? t.log : undefined;
       const meta = "meta" in t ? t.meta : undefined;
       if (!(log?.length) && !meta) return;
-      const metaStr = meta ? ` — model: ${meta.model ?? "?"}, tokeny: ${meta.tokens ?? "?"}` : "";
+      const costStr = meta?.costUsd && meta.costUsd > 0 ? `, koszt: ~$${meta.costUsd.toFixed(4)}` : "";
+      const metaStr = meta ? ` — model: ${meta.model ?? "?"}, tokeny: ${meta.tokens ?? "?"}${costStr}` : "";
       out.push(`\n#### Tura ${i + 1}${metaStr}`);
       (log ?? []).forEach((l) => {
         out.push(`- **[iter ${l.iter} · ${l.step}]** ${l.thought ?? ""}`.trim());
@@ -223,12 +224,14 @@ const STARTER_CHIPS = [
 
 // H3: drobny podpis pod odpowiedzią — który model i ile tokenów (transparentność).
 function MetaFooter({ meta }: { meta?: AgentMeta }) {
-  if (!meta?.model && !meta?.tokens) return null;
+  if (!meta?.model && !meta?.tokens && !meta?.costUsd) return null;
   const parts: string[] = [];
   if (meta.model) parts.push(meta.model);
   if (meta.tokens) parts.push(`${meta.tokens} tok.`);
+  // 028: szacowany koszt tej odpowiedzi (USD). Pomijamy przy 0/nieznanym modelu.
+  if (meta.costUsd && meta.costUsd > 0) parts.push(`~$${meta.costUsd.toFixed(4)}`);
   return (
-    <div style={{ marginTop: 6, fontSize: 10, color: "var(--text-muted)", opacity: 0.75 }} title="Model i zużycie tokenów tej odpowiedzi">
+    <div style={{ marginTop: 6, fontSize: 10, color: "var(--text-muted)", opacity: 0.75 }} title="Model, zużycie tokenów i szacowany koszt tej odpowiedzi">
       {parts.join(" · ")}
     </div>
   );

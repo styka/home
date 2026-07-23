@@ -45,7 +45,7 @@ function asStr(v: unknown): string | undefined {
   return typeof v === "string" && v.trim() ? v.trim() : undefined;
 }
 
-export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). Wywołaj je, gdy potrzebujesz danych użytkownika, zanim odpowiesz lub zaproponujesz akcje. Każdy wiersz zawiera "id" — użyj go w parametrach akcji (taskId/itemId/noteId/listId/projectId/petId), aby celować w konkretne rekordy (akcje zbiorcze = wiele akcji, każda z własnym id).
+export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). Wywołaj je, gdy potrzebujesz danych użytkownika, zanim odpowiesz lub zaproponujesz akcje. Każdy wiersz zawiera "id" — użyj go w parametrach akcji (taskId/itemId/noteId/listId/projectId/petId), aby celować w konkretne rekordy.
 
 - list_projects: args {} → [{ id, name, isInbox, taskCount }]
 - list_tasks: args { projectId?, status?, priority?, search?, tag?, dueBefore?, limit? } → [{ id, title, status, priority, dueDate, projectId, projectName, tags }]. projectId może być identyfikatorem ALBO nazwą projektu (dopasowanie bez rozróżniania wielkości liter) — gdy użytkownik nazwie projekt (np. „z projektu LZ"), podaj tę nazwę wprost. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO. tag = nazwa etykiety (bez rozróżniania wielkości liter) — użyj go, gdy użytkownik pyta „zadania otagowane/z tagiem X". "tags" w wyniku to lista nazw etykiet danego zadania.
