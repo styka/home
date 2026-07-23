@@ -8,7 +8,7 @@ import { assertProjectAccess } from "@/actions/taskProjects";
 import { assertTaskAccess } from "@/lib/tasks/access";
 import { trackActivity } from "@/actions/activity";
 import { recordTrash } from "@/lib/trash";
-import { computeNextDue, parseRecurringRule } from "@/lib/recurrence";
+import { computeNextDue, parseRecurringRule, computeRecurringSuccessor } from "@/lib/recurrence";
 import type { Task, TaskPriority, TaskWithRelations, RecurringRule } from "@/types";
 import { parseStatusConfig, DEFAULT_STATUS_CONFIG, SYSTEM_TASK_STATUSES } from "@/types";
 
@@ -187,6 +187,59 @@ export async function createTask(data: {
   return toTask(task);
 }
 
+/**
+ * JEDYNE miejsce tworzenia następnego wystąpienia zadania cyklicznego. Wywoływane wyłącznie z
+ * `updateTask` (przy prawdziwym przejściu → „zrobione"), więc efekt jest wymuszony centralnie i
+ * identyczny niezależnie od wejścia (UI, operacje zbiorcze, asystent AI). Zwraca utworzone zadanie
+ * albo `null`, gdy seria się skończyła.
+ */
+async function spawnRecurringSuccessor(
+  existing: {
+    id: string; title: string; description: string | null; priority: string;
+    projectId: string | null; parentTaskId: string | null; estimatedMins: number | null;
+    createdById: string | null; assigneeId: string | null; recurring: string | null;
+    startDate: Date | null; dueDate: Date | null; order: number;
+  },
+  opts: { completedAt: Date; anchor?: "DUE" | "COMPLETION"; nextDueOverride?: string },
+): Promise<Task | null> {
+  const rule = parseRecurringRule(existing.recurring);
+  if (!rule) return null;
+
+  const dates = computeRecurringSuccessor(
+    { recurring: rule, dueDate: existing.dueDate, startDate: existing.startDate, completedAt: opts.completedAt },
+    { anchor: opts.anchor, nextDueOverride: opts.nextDueOverride },
+  );
+  if (!dates) return null;
+
+  const tags = await prisma.taskTaskTag.findMany({ where: { taskId: existing.id }, select: { tagId: true } });
+
+  const nextTask = await prisma.task.create({
+    data: {
+      title: existing.title,
+      description: existing.description,
+      priority: existing.priority,
+      projectId: existing.projectId,
+      parentTaskId: existing.parentTaskId,
+      estimatedMins: existing.estimatedMins,
+      createdById: existing.createdById,
+      assigneeId: existing.assigneeId,
+      recurring: existing.recurring,
+      startDate: dates.nextStart,
+      dueDate: dates.nextDue,
+      // Kolejne wystąpienie niesie datę wykonania właśnie zamkniętego — żeby aktywne
+      // zadanie cykliczne pokazywało „datę ostatniego wykonania" (020).
+      lastCompletedAt: opts.completedAt,
+      // 022: trwały link do domkniętego poprzednika — pozwala zsynchronizować „datę ostatniego
+      // wykonania" następcy, gdy poprawimy datę zrobienia poprzednika.
+      previousTaskId: existing.id,
+      order: existing.order,
+      ...(tags.length > 0 && { tags: { create: tags.map((t) => ({ tagId: t.tagId })) } }),
+    },
+    include: TASK_INCLUDE,
+  });
+  return toTask(nextTask);
+}
+
 export async function updateTask(
   id: string,
   patch: Partial<{
@@ -202,7 +255,10 @@ export async function updateTask(
     recurring: RecurringRule | null;
     order: number;
     completedAt: Date | null; // jawna data wykonania — ma pierwszeństwo nad wyliczaną ze statusu
-  }>
+  }>,
+  // Wewnętrzne odstępstwa jednorazowe przy domykaniu cyklicznego (anchor/override/data wykonania).
+  // Przekazywane WYŁĄCZNIE przez wrapper `completeRecurringTask`; klienci wołają z 2 argumentami.
+  internalOpts?: { recurring?: CompleteRecurringOptions },
 ): Promise<Task> {
   const user = await requireAuth();
   const existing = await prisma.task.findUnique({ where: { id } });
@@ -275,6 +331,19 @@ export async function updateTask(
         }
       }
     }
+  }
+
+  // Wymuszenie centralne: PIERWSZE domknięcie zadania cyklicznego (z DOWOLNEGO wejścia — UI,
+  // operacje zbiorcze, asystent AI) tworzy kolejne wystąpienie. Warunek „prawdziwego przejścia"
+  // (`existing.status !== "DONE"`) oddziela pierwsze domknięcie (spawn) od późniejszej edycji daty
+  // wykonania już-zrobionego zadania — tę obsługuje blok 022/023 wyżej (na istniejącym następcy),
+  // więc obie ścieżki się nie dublują.
+  if (patch.status === "DONE" && existing.status !== "DONE" && existing.recurring) {
+    await spawnRecurringSuccessor(existing, {
+      completedAt: finalCompletedAt ?? new Date(),
+      anchor: internalOpts?.recurring?.anchor,
+      nextDueOverride: internalOpts?.recurring?.nextDueOverride,
+    });
   }
 
   void trackActivity("tasks", "update_task", { id, patchKeys: Object.keys(patch) });
@@ -494,12 +563,8 @@ export async function toggleTaskStatus(id: string): Promise<Task> {
   // Status spoza ścieżki (np. CANCELLED/DEFERRED) → wskakujemy na początek ścieżki.
   const next: string = idx === -1 ? cycle[0] : cycle[(idx + 1) % cycle.length];
 
-  // Spójność z panelem szczegółów: oznaczenie zadania cyklicznego jako „zrobione"
-  // z listy/skrótu również generuje kolejne wystąpienie.
-  if (next === "DONE" && task.recurring) {
-    return completeRecurringTask(id);
-  }
-
+  // `updateTask` wymusza centralnie utworzenie kolejnego wystąpienia przy przejściu → „zrobione"
+  // zadania cyklicznego (patrz `spawnRecurringSuccessor`), więc nie ma tu już specjalnej ścieżki.
   return updateTask(id, { status: next });
 }
 
@@ -516,78 +581,36 @@ export interface CompleteRecurringOptions {
   nextDueOverride?: string;
 }
 
+/**
+ * Domknięcie zadania cyklicznego z opcjonalnym jednorazowym odstępstwem (anchor / data wykonania /
+ * termin następnika). To **cienki wrapper** nad `updateTask` — jedynym miejscem tworzącym następcę
+ * (patrz `spawnRecurringSuccessor`). Dzięki temu domknięcie z listy/skrótu, z panelu szczegółów,
+ * masowe i przez asystenta AI dają identyczny wynik i nie ma ryzyka podwójnego następcy.
+ * Zwraca utworzone następne wystąpienie (kontrakt historyczny), a gdy seria się skończyła —
+ * zamknięte zadanie.
+ */
 export async function completeRecurringTask(
   id: string,
   opts: CompleteRecurringOptions = {},
 ): Promise<Task> {
-  const user = await requireAuth();
-  const existing = await prisma.task.findUnique({
-    where: { id },
-    include: { tags: { select: { tagId: true } } },
-  });
-  if (!existing) throw new Error("Task not found");
-  await assertTaskAccess(existing, user.id);
-  if (!existing.recurring) throw new Error("Not a recurring task");
+  const completedAt = opts.completionDate ? new Date(opts.completionDate) : undefined;
+  await updateTask(
+    id,
+    { status: "DONE", ...(completedAt !== undefined ? { completedAt } : {}) },
+    { recurring: opts },
+  );
 
-  const rule: RecurringRule = JSON.parse(existing.recurring);
-  const completedAt = opts.completionDate ? new Date(opts.completionDate) : new Date();
-
-  // Oznacz bieżące jako zrobione (zostaje jako rekord historyczny).
-  // updateTask sam ustawia completedAt na „teraz" — nadpisujemy je osobno, gdy
-  // podano konkretną datę wykonania.
-  await updateTask(id, { status: "DONE" });
-  if (opts.completionDate) {
-    await prisma.task.update({ where: { id }, data: { completedAt } });
-  }
-
-  // Następny termin: konkretna data (override) albo wyliczony z bazy. Baza wg
-  // anchora — z odstępstwem (opts.anchor) lub regułą zadania; COMPLETION liczy
-  // od daty wykonania, DUE od terminu zadania (fallback: data wykonania).
-  const anchor = opts.anchor ?? rule.anchor;
-  const base = anchor === "COMPLETION" ? completedAt : (existing.dueDate ?? completedAt);
-  const nextDue = opts.nextDueOverride ? new Date(opts.nextDueOverride) : computeNextDue(base, rule);
-  if (!nextDue) return toTask(existing);
-
-  if (rule.endDate && nextDue > new Date(rule.endDate)) return toTask(existing);
-
-  // Zachowaj wyprzedzenie startu względem terminu (przesuwamy startDate o tę
-  // samą różnicę co termin). Bez terminu nie da się policzyć → start pomijamy.
-  let nextStart: Date | null = null;
-  if (existing.startDate && existing.dueDate) {
-    nextStart = new Date(existing.startDate.getTime() + (nextDue.getTime() - existing.dueDate.getTime()));
-  }
-
-  const nextTask = await prisma.task.create({
-    data: {
-      title: existing.title,
-      description: existing.description,
-      priority: existing.priority,
-      projectId: existing.projectId,
-      parentTaskId: existing.parentTaskId,
-      estimatedMins: existing.estimatedMins,
-      createdById: existing.createdById,
-      assigneeId: existing.assigneeId,
-      recurring: existing.recurring,
-      startDate: nextStart,
-      dueDate: nextDue,
-      // Kolejne wystąpienie niesie datę wykonania właśnie zamkniętego — żeby aktywne
-      // zadanie cykliczne pokazywało „datę ostatniego wykonania" (020).
-      lastCompletedAt: completedAt,
-      // 022: trwały link do domkniętego poprzednika — pozwala zsynchronizować
-      // „datę ostatniego wykonania" następcy, gdy poprawimy datę zrobienia poprzednika.
-      previousTaskId: existing.id,
-      order: existing.order,
-      // Skopiuj tagi do nowego wystąpienia.
-      ...(existing.tags.length > 0 && {
-        tags: { create: existing.tags.map((t) => ({ tagId: t.tagId })) },
-      }),
-    },
+  // Zwróć nowo utworzonego następcę (jeśli powstał) — zgodność z wcześniejszym kontraktem zwrotu.
+  const successor = await prisma.task.findFirst({
+    where: { previousTaskId: id },
+    orderBy: { createdAt: "desc" },
     include: TASK_INCLUDE,
   });
+  if (successor) return toTask(successor);
 
-  revalidatePath("/tasks");
-  if (existing.projectId) revalidatePath(`/tasks/${existing.projectId}`);
-  return toTask(nextTask);
+  const closed = await prisma.task.findUnique({ where: { id }, include: TASK_INCLUDE });
+  if (!closed) throw new Error("Task not found");
+  return toTask(closed);
 }
 
 export async function addTaskComment(taskId: string, content: string): Promise<void> {
