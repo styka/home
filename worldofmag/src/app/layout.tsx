@@ -8,6 +8,7 @@ import { readMenuPrefs } from "@/actions/menuPrefs";
 import { readActiveSkin } from "@/actions/skins";
 import { defaultMenuPrefs } from "@/lib/modules";
 import { tokensToStyle } from "@/lib/skins";
+import { getUsdPlnRate } from "@/lib/usdPlnRate";
 import { APP_TITLE, ICON_VERSION } from "@/lib/appName";
 
 export const viewport: Viewport = {
@@ -50,6 +51,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? await readActiveSkin(session.user.id).catch(() => ({ skinId: null, tokens: {}, colorScheme: "dark" as const }))
     : { skinId: null, tokens: {}, colorScheme: "dark" as const };
 
+  // 029: przelicznik USD→PLN — do wskaźnika kosztu asystenta (kwoty USD z równowartością PLN).
+  const usdPlnRate = await getUsdPlnRate();
+
   return (
     <html lang="en" className="dark" data-skin-scheme={skin.colorScheme} style={tokensToStyle(skin.tokens)}>
       <head>
@@ -63,7 +67,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-icon" href={`/apple-touch-icon/${ICON_VERSION}`} />
       </head>
       <body>
-        <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs}>{children}</AppShell>
+        <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} usdPlnRate={usdPlnRate}>{children}</AppShell>
         <ServiceWorkerRegistration />
       </body>
     </html>
