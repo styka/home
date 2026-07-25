@@ -70,7 +70,10 @@ interface AgentResponse {
 }
 
 // H3: transparentność — który model odpowiedział i ile tokenów zużyto.
-type AgentMeta = { model?: string; tokens?: number; costUsd?: number };
+// 029: `calls` = rozbicie per wywołanie modelu (do panelu szczegółów kosztu). Lekki
+// mirror typu `UsageCall` z `@/lib/ai/usage` (unikamy importu server-only modułu).
+type UsageCall = { model: string; label?: string; promptTokens: number; completionTokens: number; totalTokens: number; costUsd: number };
+type AgentMeta = { model?: string; tokens?: number; costUsd?: number; calls?: UsageCall[] };
 
 // Jedna „kafelka" w wątku rozmowy. `data` z DB pozwala odtworzyć kartę bez ponownego uruchamiania agenta.
 type Turn =
@@ -78,7 +81,7 @@ type Turn =
   | { id: string; role: "assistant"; kind: "answer"; content: string; followups?: string[]; log?: LogEntry[]; meta?: AgentMeta }
   | { id: string; role: "assistant"; kind: "clarify"; content: string; options?: string[]; messages?: ChatMessage[]; log?: LogEntry[]; resolved?: boolean; meta?: AgentMeta }
   | { id: string; role: "assistant"; kind: "navigate"; content: string; url: string; label: string; log?: LogEntry[]; meta?: AgentMeta }
-  | { id: string; role: "assistant"; kind: "plan"; content: string; actions: AIAction[]; messages?: ChatMessage[]; log?: LogEntry[]; done?: boolean; dismissed?: boolean; meta?: AgentMeta }
+  | { id: string; role: "assistant"; kind: "plan"; content: string; actions: AIAction[]; messages?: ChatMessage[]; log?: LogEntry[]; done?: boolean; dismissed?: boolean; results?: ActionResult[]; undone?: boolean; meta?: AgentMeta }
   | { id: string; role: "assistant"; kind: "report"; content: string; title: string; savedSlug?: string; log?: LogEntry[]; meta?: AgentMeta }
   | { id: string; role: "assistant"; kind: "results"; content: string; results: ActionResult[]; undone?: boolean };
 
@@ -224,17 +227,49 @@ const STARTER_CHIPS = [
   "Zrób raport z tej rozmowy",
 ];
 
-// H3: drobny podpis pod odpowiedzią — który model i ile tokenów (transparentność).
-function MetaFooter({ meta, rate = DEFAULT_USD_PLN_RATE }: { meta?: AgentMeta; rate?: number }) {
-  if (!meta?.model && !meta?.tokens && !meta?.costUsd) return null;
-  const parts: string[] = [];
-  if (meta.model) parts.push(meta.model);
-  if (meta.tokens) parts.push(`${meta.tokens} tok.`);
-  // 028/029: szacowany koszt tej odpowiedzi (USD) z równowartością w PLN. Pomijamy przy 0/nieznanym modelu.
-  if (meta.costUsd && meta.costUsd > 0) parts.push(withPln(`~$${meta.costUsd.toFixed(4)}`, meta.costUsd, rate));
+// 029: stopka kosztu — w wierszu widać TYLKO sumaryczną kwotę (lub „szczegóły modelu",
+// gdy koszt nieznany). Klik rozwija rozbicie per wywołanie modelu (model/tokeny/koszt) +
+// sumę zgodną z kwotą. Transparentność bez zaśmiecania głównego wiersza stopki.
+function CostChip({ meta, rate = DEFAULT_USD_PLN_RATE }: { meta?: AgentMeta; rate?: number }) {
+  const [open, setOpen] = useState(false);
+  if (!meta) return null;
+  const hasCost = !!(meta.costUsd && meta.costUsd > 0);
+  const hasDetail = !!(meta.calls?.length) || !!meta.model || !!meta.tokens;
+  if (!hasCost && !hasDetail) return null;
+  const label = hasCost ? withPln(`~$${meta.costUsd!.toFixed(4)}`, meta.costUsd!, rate) : "szczegóły modelu";
+  const calls = meta.calls ?? [];
   return (
-    <div style={{ marginTop: 6, fontSize: 10, color: "var(--text-muted)", opacity: 0.75 }} title="Model, zużycie tokenów i szacowany koszt tej odpowiedzi">
-      {parts.join(" · ")}
+    <div style={{ marginLeft: "auto", position: "relative" }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        title="Szczegóły kosztu i modelu (kliknij, by rozwinąć)"
+        aria-expanded={open}
+        style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10.5, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0, opacity: 0.85 }}
+      >
+        {label} {open ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+      </button>
+      {open && (
+        <div style={{ position: "absolute", right: 0, bottom: "calc(100% + 6px)", zIndex: 5, minWidth: 240, maxWidth: 320, padding: "8px 10px", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,0.35)", fontSize: 11, color: "var(--text-secondary)", overflowX: "auto" }}>
+          <p style={{ margin: "0 0 6px", fontWeight: 600, color: "var(--text-primary)" }}>Rozbicie kosztu</p>
+          {calls.length > 0 ? (
+            calls.map((c, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 3, whiteSpace: "nowrap" }}>
+                <span>{c.label ? `${c.label} · ` : ""}{c.model} · {c.promptTokens}+{c.completionTokens}={c.totalTokens} tok.</span>
+                <span style={{ color: "var(--text-primary)" }}>{c.costUsd > 0 ? withPln(`~$${c.costUsd.toFixed(4)}`, c.costUsd, rate) : "—"}</span>
+              </div>
+            ))
+          ) : (
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 3 }}>
+              <span>{meta.model ?? "?"}{meta.tokens ? ` · ${meta.tokens} tok.` : ""}</span>
+              <span style={{ color: "var(--text-primary)" }}>{hasCost ? withPln(`~$${meta.costUsd!.toFixed(4)}`, meta.costUsd!, rate) : "—"}</span>
+            </div>
+          )}
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--border)", fontWeight: 600, color: "var(--text-primary)" }}>
+            <span>Suma{meta.tokens ? ` · ${meta.tokens} tok.` : ""}</span>
+            <span>{hasCost ? withPln(`~$${meta.costUsd!.toFixed(4)}`, meta.costUsd!, rate) : "—"}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -366,6 +401,9 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   // wiadomość admina staje się opisem zadania w projekcie „Omnia". Ref — bo
   // listener zdarzenia i handleSend muszą widzieć aktualną wartość bez re-bind.
   const feedbackRef = useRef<string | null>(null);
+  // 029: gdy ustawiony (tryb głównego robaczka), tytuły akcji create_task w powstałym planie
+  // dostają deterministycznie prefiks 🐛 przy wykonaniu (nawet gdy model pominie emoji).
+  const feedbackPrefixRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -727,9 +765,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
         aiCallsError = true;
       }
       const description = buildChatProblemReport({ turns, error, description: reportDesc, route: pathname, conversationId, aiCalls, aiCallsError, usdPlnRate });
-      const stamp = new Date().toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+      // 029: rozpoznawalny prefiks (🐛✨ = zgłoszenie z robaczka Asystenta AI) + krótki tytuł z opisu,
+      // bez prefiksu z datą (data jest w treści raportu).
       const firstLine = reportDesc.trim().split("\n")[0]?.slice(0, 80);
-      const title = `🐛 Problem w czacie asystenta AI — ${stamp}${firstLine ? ` — ${firstLine}` : ""}`;
+      const title = `🐛✨ ${firstLine || "Problem z Asystentem AI"}`;
       const project = await ensureOmniaProject();
       await createTask({ title, projectId: project.id, description });
       setReportDone({ projectId: project.id });
@@ -1000,6 +1039,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     const feedbackContext = feedbackRef.current;
     if (feedbackContext) {
       feedbackRef.current = null; // jednorazowo — kolejne wiadomości są zwykłe
+      feedbackPrefixRef.current = "🐛 "; // 029: tytuł zadania z głównego robaczka dostaje prefiks 🐛 (domknięcie na kliencie)
       if (!convoIdRef.current) {
         try {
           const convo = await createAiConversation(`Zgłoszenie: ${text.slice(0, 48)}`);
@@ -1012,7 +1052,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
       const prompt =
         "[ZGŁOSZENIE ADMINA — TRYB WSKAZYWANIA]\n" +
         'Utwórz dokładnie JEDNO zadanie w projekcie „Omnia" (module: tasks, type: create_task, params.projectName="Omnia").\n' +
-        "- params.title: wygeneruj zwięzły, konkretny tytuł po polsku podsumowujący zgłoszenie (max ~80 znaków).\n" +
+        '- params.title: wygeneruj zwięzły, konkretny tytuł po polsku podsumowujący zgłoszenie (max ~80 znaków), ZACZYNAJĄCY SIĘ od "🐛 " (emoji robaka + spacja).\n' +
         "- params.description: NAJPIERW oryginalny opis admina wstawiony DOKŁADNIE, słowo w słowo (VERBATIM) — NIE przeredagowuj go, NIE poprawiaj gramatyki/interpunkcji, NIE streszczaj; zachowaj oryginalne słowa i ton. NASTĘPNIE dołącz poniższy kontekst wskazanego miejsca (UI).\n" +
         "Nie dopytuj i nie odpowiadaj tekstem — od razu zaproponuj plan z tym jednym zadaniem.\n\n" +
         `Opis zgłoszony przez admina:\n${text}\n\nKontekst wskazanego miejsca (UI):\n${feedbackContext}`;
@@ -1086,16 +1126,28 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
 
   async function handleExecute(turn: Extract<Turn, { kind: "plan" }>, confirmedActions: AIAction[]) {
     setIsExecuting(true);
+    // 029: tryb głównego robaczka — deterministycznie zapewnij prefiks 🐛 w tytule tworzonego zadania.
+    const prefix = feedbackPrefixRef.current;
+    const actionsToRun = prefix
+      ? confirmedActions.map((a) => {
+          if (a.type !== "create_task") return a;
+          const title = String(a.params.title ?? "");
+          if (title.startsWith("🐛")) return a;
+          return { ...a, params: { ...a.params, title: `${prefix}${title}` } };
+        })
+      : confirmedActions;
+    feedbackPrefixRef.current = null;
     try {
       const res = await fetch("/api/llm/home/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actions: confirmedActions, activeListId, currentProjectId: activeProjectId }),
+        body: JSON.stringify({ actions: actionsToRun, activeListId, currentProjectId: activeProjectId }),
       });
       const data = (await res.json()) as { results?: ActionResult[] };
       const results = data.results ?? [];
-      setTurns((t) => t.map((x) => (x.id === turn.id && x.kind === "plan" ? { ...x, done: true } : x)));
-      setTurns((t) => [...t, { id: newId(), role: "assistant", kind: "results", content: "Wykonano akcje", results }]);
+      // 029: wynik wchodzi do TEJ SAMEJ tury planu (jedna dynamiczna sekcja: propozycja→wykonano→cofnij),
+      // bez pushowania osobnej tury „results". Zapis do DB (append-only) scalamy przy hydratacji.
+      setTurns((t) => t.map((x) => (x.id === turn.id && x.kind === "plan" ? { ...x, done: true, results } : x)));
       void persist("assistant", "Wykonano akcje", "results", { results });
       setPlanTurnId(null);
       router.refresh();
@@ -1110,8 +1162,8 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
 
   // Cofnij: wykonaj akcje odwracające (delete utworzonego / przeciwna korekta)
   // w odwrotnej kolejności, przez ten sam /execute (te same asercje dostępu).
-  async function undoActions(turn: Extract<Turn, { kind: "results" }>) {
-    const undos = turn.results.filter((r) => r.success && r.undo).map((r) => r.undo!);
+  async function undoActions(turn: Extract<Turn, { kind: "plan" }>) {
+    const undos = (turn.results ?? []).filter((r) => r.success && r.undo).map((r) => r.undo!);
     if (!undos.length) return;
     try {
       const res = await fetch("/api/llm/home/execute", {
@@ -1119,12 +1171,11 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ actions: [...undos].reverse(), activeListId, currentProjectId: activeProjectId }),
       });
-      const data = (await res.json()) as { results?: ActionResult[] };
-      const undoResults = data.results ?? [];
-      setTurns((t) => t.map((x) => (x.id === turn.id && x.kind === "results" ? { ...x, undone: true } : x)));
-      setTurns((t) => [...t, { id: newId(), role: "user", kind: "text", content: "Cofnij" }, { id: newId(), role: "assistant", kind: "results", content: "Cofnięto", results: undoResults, undone: true }]);
-      void persist("user", "Cofnij", "text");
-      void persist("assistant", "Cofnięto", "results", { results: undoResults });
+      await res.json();
+      // 029: cofnięcie oznaczamy na TEJ SAMEJ turze planu (bez osobnej tury „Cofnięto").
+      // Do DB (append-only) dokładamy lekki znacznik scalany przy hydratacji.
+      setTurns((t) => t.map((x) => (x.id === turn.id && x.kind === "plan" ? { ...x, undone: true } : x)));
+      void persist("assistant", "Cofnięto", "results", { undo: true });
       router.refresh();
     } catch {
       setError("Nie udało się cofnąć akcji");
@@ -1165,18 +1216,38 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     try {
       const convo = await getAiConversation(id);
       if (!convo) return;
-      const rehydrated: Turn[] = convo.messages.map((m) => {
+      // 029: wiadomość „results" scalamy w poprzedzającą turę planu (jedna sekcja), zamiast tworzyć
+      // osobną turę. Znacznik { undo:true } oznacza cofnięcie tego planu. Bardzo stare rozmowy bez
+      // poprzedzającego planu renderują się jako samodzielna tura „results" (wsteczna zgodność).
+      const rehydrated: Turn[] = [];
+      let lastPlan: Extract<Turn, { kind: "plan" }> | null = null;
+      for (const m of convo.messages) {
         const data = (m.data ?? {}) as Record<string, unknown>;
-        if (m.role === "user") return { id: m.id, role: "user", kind: "text", content: m.content };
+        if (m.role === "user") { rehydrated.push({ id: m.id, role: "user", kind: "text", content: m.content }); continue; }
         switch (m.kind) {
-          case "report": return { id: m.id, role: "assistant", kind: "report", title: (data.title as string) ?? "Raport", content: m.content };
-          case "navigate": return { id: m.id, role: "assistant", kind: "navigate", content: m.content, url: (data.url as string) ?? "/", label: (data.label as string) ?? "Otwórz" };
-          case "plan": return { id: m.id, role: "assistant", kind: "plan", content: m.content, actions: (data.actions as AIAction[]) ?? [], done: true };
-          case "results": return { id: m.id, role: "assistant", kind: "results", content: m.content, results: (data.results as ActionResult[]) ?? [] };
-          case "clarify": return { id: m.id, role: "assistant", kind: "clarify", content: m.content, resolved: true };
-          default: return { id: m.id, role: "assistant", kind: "answer", content: m.content, followups: Array.isArray(data.followups) ? (data.followups as string[]) : undefined };
+          case "report": rehydrated.push({ id: m.id, role: "assistant", kind: "report", title: (data.title as string) ?? "Raport", content: m.content }); lastPlan = null; break;
+          case "navigate": rehydrated.push({ id: m.id, role: "assistant", kind: "navigate", content: m.content, url: (data.url as string) ?? "/", label: (data.label as string) ?? "Otwórz" }); lastPlan = null; break;
+          case "plan": {
+            const planTurn: Extract<Turn, { kind: "plan" }> = { id: m.id, role: "assistant", kind: "plan", content: m.content, actions: (data.actions as AIAction[]) ?? [], done: true };
+            rehydrated.push(planTurn);
+            lastPlan = planTurn;
+            break;
+          }
+          case "results": {
+            if (data.undo === true) {
+              if (lastPlan) lastPlan.undone = true;
+            } else if (lastPlan && !lastPlan.results) {
+              lastPlan.results = (data.results as ActionResult[]) ?? [];
+              lastPlan.done = true;
+            } else {
+              rehydrated.push({ id: m.id, role: "assistant", kind: "results", content: m.content, results: (data.results as ActionResult[]) ?? [] });
+            }
+            break;
+          }
+          case "clarify": rehydrated.push({ id: m.id, role: "assistant", kind: "clarify", content: m.content, resolved: true }); lastPlan = null; break;
+          default: rehydrated.push({ id: m.id, role: "assistant", kind: "answer", content: m.content, followups: Array.isArray(data.followups) ? (data.followups as string[]) : undefined }); lastPlan = null; break;
         }
-      });
+      }
       setTurns(rehydrated);
       setConversationId(convo.id);
       convoIdRef.current = convo.id;
@@ -1252,16 +1323,14 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
                 <button onClick={() => setShowPrefs((v) => !v)} title="Ustawienia asystenta" aria-label="Ustawienia asystenta" aria-expanded={showPrefs} style={{ ...iconBtn, color: showPrefs || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }}><Settings size={16} /></button>
-                {isAdmin && (
-                  <button onClick={() => { setShowReport((v) => !v); setReportDone(null); }} title="Zgłoś problem z czatem" aria-label="Zgłoś problem z czatem" aria-expanded={showReport} style={{ ...iconBtn, color: showReport ? "var(--accent-purple)" : "var(--text-muted)" }}><Bug size={16} /></button>
-                )}
+                <button onClick={() => { setShowReport((v) => !v); setReportDone(null); }} title="Zgłoś problem z Asystentem AI" aria-label="Zgłoś problem z Asystentem AI" aria-expanded={showReport} style={{ ...iconBtn, color: showReport ? "var(--accent-purple)" : "var(--text-muted)" }}><Bug size={16} /></button>
                 <button onClick={openHistory} title="Historia rozmów" aria-label="Historia rozmów" style={iconBtn}><History size={16} /></button>
                 <button onClick={handleClose} title="Zamknij" aria-label="Zamknij asystenta" style={iconBtn}><X size={16} /></button>
               </div>
             </div>
 
-            {/* Panel zgłaszania problemu z czatem (admin-only) — tworzy zadanie w projekcie „Omnia" */}
-            {isAdmin && showReport && (
+            {/* Panel zgłaszania problemu z Asystentem AI — dostępny dla każdego usera; tworzy zadanie w projekcie „Omnia" */}
+            {showReport && (
               <div className="px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-base)" }}>
                 {reportDone ? (
                   <div style={{ fontSize: 13, color: "var(--text-primary)" }}>
@@ -1276,7 +1345,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 ) : (
                   <>
                     <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
-                      Zgłoś problem z czatem (opis opcjonalny)
+                      Zgłoś problem z Asystentem AI (opis opcjonalny)
                     </label>
                     <textarea
                       value={reportDesc}
@@ -1285,10 +1354,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                       placeholder={'Np. „spodziewałem się odpowiedzi: …" (możesz zostawić puste — dołączymy sam błąd i zrzut rozmowy)'}
                       style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none", resize: "vertical" }}
                     />
-                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 8px" }}>
-                      Do zadania dołączymy pełny zrzut tej rozmowy i logi połączeń z backendem.
-                    </p>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
                       <button
                         onClick={submitProblemReport}
                         disabled={!canReport || reportBusy}
@@ -1403,6 +1469,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     key={turn.id}
                     turn={turn}
                     isLast={i === turns.length - 1}
+                    isAdmin={isAdmin}
                     usdPlnRate={usdPlnRate}
                     onBubbleClick={handleBubbleClick}
                     onClarifySubmit={submitClarify}
@@ -1611,6 +1678,7 @@ function CopyButton({ text }: { text: string }) {
 }
 
 // Przycisk odczytu posta Asystenta na głos (start ↔ stop). Chowa się, gdy przeglądarka nie wspiera syntezy.
+// 029: wariant icon-only (bez labelki) — trafia do jednego wiersza stopki obok kwoty kosztu.
 function SpeakButton({ speaking, onToggle }: { speaking: boolean; onToggle: () => void }) {
   const [supported] = useState(() => ttsSupported());
   if (!supported) return null;
@@ -1619,19 +1687,45 @@ function SpeakButton({ speaking, onToggle }: { speaking: boolean; onToggle: () =
       onClick={onToggle}
       title={speaking ? "Zatrzymaj odczyt" : "Odczytaj na głos"}
       aria-label={speaking ? "Zatrzymaj odczyt" : "Odczytaj na głos"}
-      style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: speaking ? "var(--accent-blue)" : "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, color: speaking ? "var(--accent-blue)" : "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
     >
-      {speaking ? <Square size={12} /> : <Volume2 size={12} />} {speaking ? "Zatrzymaj" : "Odczytaj"}
+      {speaking ? <Square size={13} /> : <Volume2 size={13} />}
     </button>
   );
 }
 
+// 029: lista wyników wykonania (ikona ✓/✗ + opis + „Przejdź") — współdzielona przez
+// scaloną sekcję planu i (wsteczna zgodność) samodzielną turę „results".
+function ResultRows({ results, onNavigate }: { results: ActionResult[]; onNavigate: (url: string) => void }) {
+  return (
+    <>
+      {results.map((r) => (
+        <div key={r.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
+          <span style={{ flexShrink: 0, marginTop: 1, color: r.success ? "var(--accent-green)" : "var(--accent-red)" }}>
+            {r.success ? <CheckCircle size={13} /> : <XCircle size={13} />}
+          </span>
+          <div>
+            <p style={{ fontSize: 13, color: "var(--text-primary)", margin: 0 }}>{r.description}</p>
+            {r.error && <p style={{ fontSize: 11, color: "var(--accent-red)", margin: 0 }}>{r.error}</p>}
+            {r.success && r.navigateTo && (
+              <button onClick={() => onNavigate(r.navigateTo!)} style={{ marginTop: 4, display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--accent-blue)", fontSize: 12, cursor: "pointer" }}>
+                <ArrowRight size={12} /> {r.navigateLabel ?? "Przejdź"}
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
 function TurnView({
-  turn, isLast, onBubbleClick, onClarifySubmit, onOpenPlan, onQuickConfirm, onQuickDismiss, onNavigate, onSaveReport, onRegenerate, onFollowup, onFixFailed, onUndo,
+  turn, isLast, isAdmin, onBubbleClick, onClarifySubmit, onOpenPlan, onQuickConfirm, onQuickDismiss, onNavigate, onSaveReport, onRegenerate, onFollowup, onFixFailed, onUndo,
   speakingId, onToggleSpeak, usdPlnRate,
 }: {
   turn: Turn;
   isLast: boolean;
+  isAdmin?: boolean;
   usdPlnRate: number;
   onBubbleClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   onClarifySubmit: (turn: Extract<Turn, { kind: "clarify" }>, value: string) => void;
@@ -1643,7 +1737,7 @@ function TurnView({
   onRegenerate?: () => void;
   onFollowup?: (text: string) => void;
   onFixFailed?: (results: ActionResult[]) => void;
-  onUndo?: (turn: Extract<Turn, { kind: "results" }>) => void;
+  onUndo?: (turn: Extract<Turn, { kind: "plan" }>) => void;
   speakingId?: string | null;
   onToggleSpeak?: (id: string, text: string) => void;
 }) {
@@ -1665,8 +1759,7 @@ function TurnView({
     return (
       <div style={bubble}>
         <div onClick={onBubbleClick} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
-        <ReasoningLog log={turn.log} />
-        <MetaFooter meta={turn.meta} rate={usdPlnRate} />
+        {isAdmin && <ReasoningLog log={turn.log} />}
         {isLast && turn.followups && turn.followups.length > 0 && onFollowup && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
             {turn.followups.map((f) => (
@@ -1676,7 +1769,7 @@ function TurnView({
             ))}
           </div>
         )}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 6 }}>
           <CopyButton text={turn.content} />
           {onToggleSpeak && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
           {isLast && onRegenerate && (
@@ -1684,6 +1777,7 @@ function TurnView({
               <RefreshCw size={12} /> Ponów
             </button>
           )}
+          <CostChip meta={turn.meta} rate={usdPlnRate} />
         </div>
       </div>
     );
@@ -1724,11 +1818,11 @@ function TurnView({
             </div>
           </>
         )}
-        {onToggleSpeak && turn.content && (
-          <div style={{ marginTop: 8 }}><SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} /></div>
-        )}
-        <ReasoningLog log={turn.log} />
-        <MetaFooter meta={turn.meta} rate={usdPlnRate} />
+        {isAdmin && <ReasoningLog log={turn.log} />}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
+          {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
+          <CostChip meta={turn.meta} rate={usdPlnRate} />
+        </div>
       </div>
     );
   }
@@ -1740,11 +1834,11 @@ function TurnView({
         <button onClick={() => onNavigate(turn.url)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           <ArrowRight size={15} /> {turn.label}
         </button>
-        {onToggleSpeak && turn.content && (
-          <div style={{ marginTop: 8 }}><SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} /></div>
-        )}
-        <ReasoningLog log={turn.log} />
-        <MetaFooter meta={turn.meta} rate={usdPlnRate} />
+        {isAdmin && <ReasoningLog log={turn.log} />}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
+          {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
+          <CostChip meta={turn.meta} rate={usdPlnRate} />
+        </div>
       </div>
     );
   }
@@ -1761,7 +1855,32 @@ function TurnView({
           {turn.actions.length > 5 && <li>…i {turn.actions.length - 5} więcej</li>}
         </ul>
         {turn.done ? (
-          <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--accent-green)", display: "flex", alignItems: "center", gap: 6 }}><CheckCircle size={13} /> Wykonano</p>
+          turn.results && turn.results.length ? (
+            // 029: jedna dynamiczna sekcja — wyniki wykonania + Cofnij/Popraw w tej samej karcie planu.
+            <div style={{ marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--accent-green)", margin: "0 0 6px", display: "flex", alignItems: "center", gap: 6 }}><CheckCircle size={13} /> {turn.undone ? "Wykonano (cofnięte)" : "Wykonano"}</p>
+              <ResultRows results={turn.results} onNavigate={onNavigate} />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                {isLast && onFixFailed && turn.results.some((r) => !r.success) && (
+                  <button onClick={() => onFixFailed(turn.results!)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--accent-amber)", background: "transparent", color: "var(--accent-amber)", fontSize: 12, cursor: "pointer" }}>
+                    <Wand2 size={12} /> Popraw nieudane ({turn.results.filter((r) => !r.success).length})
+                  </button>
+                )}
+                {isLast && onUndo && !turn.undone && turn.results.some((r) => r.success && r.undo) && (
+                  <button onClick={() => onUndo(turn)} title="Cofnij skutki tych akcji" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 12, cursor: "pointer" }}>
+                    <RotateCcw size={12} /> Cofnij ({turn.results.filter((r) => r.success && r.undo).length})
+                  </button>
+                )}
+                {turn.undone && (
+                  <span style={{ fontSize: 11.5, color: "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <RotateCcw size={11} /> cofnięte
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--accent-green)", display: "flex", alignItems: "center", gap: 6 }}><CheckCircle size={13} /> Wykonano</p>
+          )
         ) : turn.dismissed ? (
           <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}><XCircle size={13} /> Odrzucono</p>
         ) : (
@@ -1781,11 +1900,11 @@ function TurnView({
             )}
           </div>
         )}
-        {onToggleSpeak && turn.content && (
-          <div style={{ marginTop: 8 }}><SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} /></div>
-        )}
-        <ReasoningLog log={turn.log} />
-        <MetaFooter meta={turn.meta} rate={usdPlnRate} />
+        {isAdmin && <ReasoningLog log={turn.log} />}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
+          {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
+          <CostChip meta={turn.meta} rate={usdPlnRate} />
+        </div>
       </div>
     );
   }
@@ -1798,9 +1917,10 @@ function TurnView({
           <span style={{ fontWeight: 600 }}>{turn.title}</span>
         </div>
         <div onClick={onBubbleClick} style={{ maxHeight: 280, overflowY: "auto", borderTop: "1px solid var(--border)", paddingTop: 8 }} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
           <CopyButton text={turn.content} />
           {onToggleSpeak && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, `${turn.title}. ${turn.content}`)} />}
+          <CostChip meta={turn.meta} rate={usdPlnRate} />
         </div>
         {turn.savedSlug ? (
           <button onClick={() => onNavigate(`/reports/${turn.savedSlug}`)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
@@ -1815,50 +1935,22 @@ function TurnView({
     );
   }
 
-  // results
+  // results — tylko dla wstecznej zgodności hydratowanych starych rozmów (nowy przepływ
+  // scala wynik w turę planu). Read-only lista + ewentualna „Popraw nieudane".
   return (
     <div style={bubble}>
-      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", margin: "0 0 6px" }}>Wykonano</p>
-      {turn.results.map((r) => (
-        <div key={r.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
-          <span style={{ flexShrink: 0, marginTop: 1, color: r.success ? "var(--accent-green)" : "var(--accent-red)" }}>
-            {r.success ? <CheckCircle size={13} /> : <XCircle size={13} />}
-          </span>
-          <div>
-            <p style={{ fontSize: 13, color: "var(--text-primary)", margin: 0 }}>{r.description}</p>
-            {r.error && <p style={{ fontSize: 11, color: "var(--accent-red)", margin: 0 }}>{r.error}</p>}
-            {r.success && r.navigateTo && (
-              <button onClick={() => onNavigate(r.navigateTo!)} style={{ marginTop: 4, display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--accent-blue)", fontSize: 12, cursor: "pointer" }}>
-                <ArrowRight size={12} /> {r.navigateLabel ?? "Przejdź"}
-              </button>
-            )}
-          </div>
-        </div>
-      ))}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-        {isLast && onFixFailed && turn.results.some((r) => !r.success) && (
+      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", margin: "0 0 6px" }}>{turn.undone ? "Wykonano (cofnięte)" : "Wykonano"}</p>
+      <ResultRows results={turn.results} onNavigate={onNavigate} />
+      {isLast && onFixFailed && turn.results.some((r) => !r.success) && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
           <button
             onClick={() => onFixFailed(turn.results)}
             style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--accent-amber)", background: "transparent", color: "var(--accent-amber)", fontSize: 12, cursor: "pointer" }}
           >
             <Wand2 size={12} /> Popraw nieudane ({turn.results.filter((r) => !r.success).length})
           </button>
-        )}
-        {isLast && onUndo && !turn.undone && turn.results.some((r) => r.success && r.undo) && (
-          <button
-            onClick={() => onUndo(turn)}
-            title="Cofnij skutki tych akcji"
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 12, cursor: "pointer" }}
-          >
-            <RotateCcw size={12} /> Cofnij ({turn.results.filter((r) => r.success && r.undo).length})
-          </button>
-        )}
-        {turn.undone && (
-          <span style={{ fontSize: 11.5, color: "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: 5 }}>
-            <RotateCcw size={11} /> cofnięte
-          </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -14,6 +14,20 @@ import type { TokenUsage } from "@/lib/llm/chat";
  * oknie czatu (wskaźnik `MetaFooter`). Koszt liczymy identycznie jak `recordAiCall`
  * (ten sam `estimateCostUsd`), więc wskaźnik zgadza się z sumą wpisów w `AiCall`.
  */
+/**
+ * 029: pojedyncze wywołanie modelu w obrębie jednej odpowiedzi asystenta — do
+ * czytelnego rozbicia kosztu w oknie czatu (panel `CostBreakdown`). `label` jest
+ * czysto informacyjny (np. "router" / "fast_path" / "agent").
+ */
+export type UsageCall = {
+  model: string;
+  label?: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  costUsd: number;
+};
+
 export type UsageMeter = {
   model?: string;
   tokens: number;
@@ -22,14 +36,16 @@ export type UsageMeter = {
   cacheRead: number;
   cacheWrite: number;
   costUsd: number;
+  // 029: rozbicie per wywołanie — suma `costUsd` z `calls` == `meter.costUsd`.
+  calls: UsageCall[];
 };
 
 export function newUsageMeter(): UsageMeter {
-  return { tokens: 0, promptTokens: 0, completionTokens: 0, cacheRead: 0, cacheWrite: 0, costUsd: 0 };
+  return { tokens: 0, promptTokens: 0, completionTokens: 0, cacheRead: 0, cacheWrite: 0, costUsd: 0, calls: [] };
 }
 
 /** Dolicza jedno wywołanie modelu do akumulatora (bezpieczne przy braku `usage`). */
-export function accrueUsage(meter: UsageMeter, usage: TokenUsage | undefined, model?: string): void {
+export function accrueUsage(meter: UsageMeter, usage: TokenUsage | undefined, model?: string, label?: string): void {
   if (model) meter.model = model;
   if (!usage) return;
   meter.tokens += usage.total;
@@ -37,7 +53,7 @@ export function accrueUsage(meter: UsageMeter, usage: TokenUsage | undefined, mo
   meter.completionTokens += usage.completion;
   meter.cacheRead += usage.cacheRead ?? 0;
   meter.cacheWrite += usage.cacheWrite ?? 0;
-  meter.costUsd += estimateCostUsd(
+  const costUsd = estimateCostUsd(
     {
       promptTokens: usage.prompt,
       completionTokens: usage.completion,
@@ -46,6 +62,16 @@ export function accrueUsage(meter: UsageMeter, usage: TokenUsage | undefined, mo
     },
     model ?? ""
   );
+  meter.costUsd += costUsd;
+  // 029: dopisz wpis do rozbicia (suma tych wpisów == meter.costUsd).
+  meter.calls.push({
+    model: model ?? "?",
+    label,
+    promptTokens: usage.prompt,
+    completionTokens: usage.completion,
+    totalTokens: usage.total,
+    costUsd,
+  });
 }
 
 /**
