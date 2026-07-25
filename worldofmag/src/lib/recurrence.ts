@@ -91,3 +91,37 @@ export function parseRecurringRule(raw: string | null | undefined): RecurringRul
     return null;
   }
 }
+
+const DAY_NAMES = ["nd", "pon", "wt", "śr", "czw", "pt", "sb"];
+
+/** Krótki, czytelny opis reguły cykliczności do UI/AI (np. "co tydzień: pon, śr"). */
+export function describeRecurringRule(rule: RecurringRule | null | undefined): string | null {
+  if (!rule) return null;
+  const n = Math.max(1, rule.interval || 1);
+  let base: string;
+  switch (rule.type) {
+    case "DAILY":
+      base = n === 1 ? "codziennie" : `co ${n} dni`;
+      break;
+    case "WEEKLY": {
+      const every = n === 1 ? "co tydzień" : `co ${n} tyg.`;
+      const days = rule.daysOfWeek?.length
+        ? `: ${[...rule.daysOfWeek].sort((a, b) => a - b).map((d) => DAY_NAMES[d] ?? String(d)).join(", ")}`
+        : "";
+      base = `${every}${days}`;
+      break;
+    }
+    case "MONTHLY": {
+      const every = n === 1 ? "co miesiąc" : `co ${n} mies.`;
+      base = rule.dayOfMonth ? `${every} (${rule.dayOfMonth}. dnia)` : every;
+      break;
+    }
+    case "YEARLY":
+      base = n === 1 ? "co rok" : `co ${n} lata`;
+      break;
+    default:
+      return null;
+  }
+  if (rule.endDate) base += ` do ${String(rule.endDate).slice(0, 10)}`;
+  return base;
+}

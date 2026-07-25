@@ -49,3 +49,31 @@ test("parseRecurringRule: poprawny JSON / pusty / śmieci", () => {
   assert.equal(parseRecurringRule(""), null);
   assert.equal(parseRecurringRule("{nie-json"), null);
 });
+
+// 030: describeRecurringRule — krótki polski opis reguły do read-tooli asystenta AI.
+import { describeRecurringRule } from "../recurrence";
+
+test("describeRecurringRule: DAILY", () => {
+  assert.equal(describeRecurringRule({ type: "DAILY", interval: 1 }), "codziennie");
+  assert.equal(describeRecurringRule({ type: "DAILY", interval: 2 }), "co 2 dni");
+});
+
+test("describeRecurringRule: WEEKLY z dniami tygodnia", () => {
+  assert.equal(describeRecurringRule({ type: "WEEKLY", interval: 1, daysOfWeek: [3, 1] }), "co tydzień: pon, śr");
+  assert.equal(describeRecurringRule({ type: "WEEKLY", interval: 2 }), "co 2 tyg.");
+});
+
+test("describeRecurringRule: MONTHLY i YEARLY", () => {
+  assert.equal(describeRecurringRule({ type: "MONTHLY", interval: 1, dayOfMonth: 15 }), "co miesiąc (15. dnia)");
+  assert.equal(describeRecurringRule({ type: "MONTHLY", interval: 3 }), "co 3 mies.");
+  assert.equal(describeRecurringRule({ type: "YEARLY", interval: 1 }), "co rok");
+});
+
+test("describeRecurringRule: endDate i wejścia brzegowe", () => {
+  assert.equal(
+    describeRecurringRule({ type: "DAILY", interval: 1, endDate: "2026-12-31T00:00:00.000Z" }),
+    "codziennie do 2026-12-31"
+  );
+  assert.equal(describeRecurringRule(null), null);
+  assert.equal(describeRecurringRule({ type: "FOO" as never, interval: 1 }), null);
+});

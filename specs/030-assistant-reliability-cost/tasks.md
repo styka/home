@@ -12,7 +12,7 @@
 - `[P]` — niezależne od poprzedniego, można robić równolegle
 
 ## Faza 1 — Czyste funkcje pomocnicze (niezależne pliki)
-- [ ] **T-1** `[P]` — `src/lib/recurrence.ts`: helper `describeRecurringRule(rule): string`
+- [x] **T-1** `[P]` — `src/lib/recurrence.ts`: helper `describeRecurringRule(rule): string`
   (krótki polski opis: „co tydzień: pn, śr", „co 2 dni", „co miesiąc 15.", z końcem `do <data>`
   gdy `endDate`). Test jednostkowy w układzie testów repo.
   Gotowe, gdy: testy opisu przechodzą dla DAILY/WEEKLY/MONTHLY/YEARLY + interval>1.
