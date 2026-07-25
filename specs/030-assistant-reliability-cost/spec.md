@@ -1,7 +1,7 @@
 # Spec: Niezawodność i efektywność kosztowa asystenta AI
 
 - **ID:** 030-assistant-reliability-cost
-- **Status:** draft
+- **Status:** done
 - **Autor sesji:** Claude Code (spec-driven pipeline)
 - **Data:** 2026-07-25
 - **Moduł(y):** Home / Asystent AI (agent)

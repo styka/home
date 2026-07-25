@@ -373,6 +373,10 @@ type AgentMeta = UsageMeter;
 const AGENT_MAX_TOKENS = 1200;
 const REPORT_MAX_TOKENS = 2800; // zapas na pełny raport (step "report") — przy 1500 markdown bywał ucinany
 
+// 030: słowa wykluczające „prostą turę odczytową" (analiza/ocena/raport → zawsze reasoning).
+const SIMPLE_READ_ANALYTIC_RE =
+  /\b(oceń|ocen\w*|przeanalizuj|analiz\w*|porównaj|porownaj|dlaczego|zaproponuj|zasugeruj|doradź|doradz|raport\w*|podsumow\w*|streść|streszcz\w*|zestawieni\w*)\b/i;
+
 // 030: `op` konfigurowalne — proste tury odczytowe jadą na tańszym modelu (op "dispatch",
 // przydział w /admin/llm — C-40), z fallbackiem do "reasoning" po stronie wołającego.
 type AgentOp = "dispatch" | "reasoning";
@@ -871,8 +875,6 @@ export async function POST(req: NextRequest) {
   // z jednorazowym fallbackiem do "reasoning". Klasyfikacja konserwatywna (wątpliwość →
   // reasoning): tylko świeże polecenie (nie wznowienie clarify/refine), intencja odczytu
   // (READ_INTENT_RE), krótki tekst, bez słów analitycznych/raportowych.
-  const SIMPLE_READ_ANALYTIC_RE =
-    /\b(oceń|ocen\w*|przeanalizuj|analiz\w*|porównaj|porownaj|dlaczego|zaproponuj|zasugeruj|doradź|doradz|raport\w*|podsumow\w*|streść|streszcz\w*|zestawieni\w*)\b/i;
   const freshText = body.messages?.length ? "" : (body.text ?? "").trim();
   const isSimpleRead =
     !!freshText && freshText.length <= 160 && READ_INTENT_RE.test(freshText) && !SIMPLE_READ_ANALYTIC_RE.test(freshText);

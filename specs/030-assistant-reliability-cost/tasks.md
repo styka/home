@@ -1,7 +1,7 @@
 # Zadania: Niezawodność i efektywność kosztowa asystenta AI
 
 - **Plan:** ./plan.md (030-assistant-reliability-cost)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-07-25
 
 > Kolejność od najłatwiejszego do najtrudniejszego, zgodna z zależnościami. `[P]` = można
