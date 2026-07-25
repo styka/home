@@ -24,6 +24,7 @@ import { getMonthlyReport } from "@/actions/portfelReports";
 import { searchReports } from "@/actions/reports";
 import { getWatchers } from "@/actions/weather";
 import { describeFrequency } from "@/lib/medicationSchedule";
+import { describeRecurringRule, parseRecurringRule } from "@/lib/recurrence";
 import type { MedicationSchedule } from "@/types";
 
 /**
@@ -36,7 +37,8 @@ import type { MedicationSchedule } from "@/types";
  */
 
 const HARD_MAX = 60;
-function clampLimit(n: unknown, def = 40): number {
+// 030: domyślny limit list 40→25 — tnie tokeny wyników; model zawsze może podać jawny limit.
+function clampLimit(n: unknown, def = 25): number {
   const v = typeof n === "number" && Number.isFinite(n) ? n : def;
   return Math.max(1, Math.min(HARD_MAX, Math.floor(v)));
 }
@@ -48,12 +50,12 @@ function asStr(v: unknown): string | undefined {
 export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). Wywołaj je, gdy potrzebujesz danych użytkownika, zanim odpowiesz lub zaproponujesz akcje. Każdy wiersz zawiera "id" — użyj go w parametrach akcji (taskId/itemId/noteId/listId/projectId/petId), aby celować w konkretne rekordy.
 
 - list_projects: args {} → [{ id, name, isInbox, taskCount }]
-- list_tasks: args { projectId?, status?, priority?, search?, tag?, dueBefore?, limit? } → [{ id, title, status, priority, dueDate, projectId, projectName, tags }]. projectId może być identyfikatorem ALBO nazwą projektu (dopasowanie bez rozróżniania wielkości liter) — gdy użytkownik nazwie projekt (np. „z projektu LZ"), podaj tę nazwę wprost. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO. tag = nazwa etykiety (bez rozróżniania wielkości liter) — użyj go, gdy użytkownik pyta „zadania otagowane/z tagiem X". "tags" w wyniku to lista nazw etykiet danego zadania.
+- list_tasks: args { projectId?, status?, priority?, search?, tag?, dueBefore?, limit? } → [{ id, title, status, priority, dueDate, projectId, projectName, tags, recurring?, hasDescription? }]. projectId może być identyfikatorem ALBO nazwą projektu (dopasowanie bez rozróżniania wielkości liter) — gdy użytkownik nazwie projekt (np. „z projektu LZ"), podaj tę nazwę wprost. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO. tag = nazwa etykiety (bez rozróżniania wielkości liter) — użyj go, gdy użytkownik pyta „zadania otagowane/z tagiem X". "tags" w wyniku to lista nazw etykiet danego zadania. recurring:true = zadanie CYKLICZNE (powtarzalne; szczegóły reguły przez get_task); hasDescription:true = zadanie ma niepusty opis (warto pobrać przez get_task, gdy potrzebujesz treści).
 - list_shopping_lists: args { includeArchived? } → [{ id, name, pendingCount, totalCount, archived }]
 - list_items: args { listId?, listName?, status?, search?, limit? } → [{ id, name, status, quantity, unit, listId, listName }]
 - list_notes: args { search?, limit? } → [{ id, title, snippet, updatedAt }]. Lista (snippet skrócony). Do PEŁNEJ treści użyj get_note.
 - get_note: args { noteId? | search? } → { id, title, content, updatedAt } | null. PEŁNA treść jednej notatki — wywołaj PRZED przepisaniem/edycją treści (update_note/append_to_note), gdy potrzebujesz aktualnego tekstu.
-- get_task: args { taskId? | search? } → { id, title, description, status, priority, dueDate, projectName } | null. PEŁNY opis jednego zadania — wywołaj PRZED edycją opisu (update_task), gdy potrzebujesz aktualnej treści.
+- get_task: args { taskId? | search? } → { id, title, description, status, priority, dueDate, projectName, recurring? } | null. PEŁNY opis jednego zadania — wywołaj PRZED edycją opisu (update_task), gdy potrzebujesz aktualnej treści. recurring = opis reguły cykliczności po polsku (np. "co tydzień: pon, śr"), obecny tylko dla zadań cyklicznych.
 - list_pets: args { search? } → [{ id, name, species, status }]
 - list_storage_items: args { search?, warehouse?, lowStockOnly?, limit? } → [{ id, name, quantity, unit, warehouse, location, minQuantity }]. Pozycje magazynu (dom/firma). lowStockOnly=true zwraca tylko poniżej stanu minimalnego.
 - list_habits: args {} → [{ id, name, doneToday }]. Nawyki użytkownika (doneToday = czy odhaczony dziś).
@@ -371,12 +373,17 @@ export async function runReadTool(
           priority: true,
           dueDate: true,
           projectId: true,
+          recurring: true,
+          description: true,
           project: { select: { name: true } },
           tags: { select: { tag: { select: { name: true } } } },
         },
         orderBy: [{ dueDate: "asc" }, { priority: "asc" }, { order: "asc" }],
         take: clampLimit(args.limit),
       });
+      // 030: pola recurring/hasDescription tylko-gdy-ustawione — zero kosztu tokenów dla
+      // zwykłych zadań, a model wie o cykliczności (nie halucynuje „aplikacja tego nie ma")
+      // i wie, czy warto dociągać pełny opis przez get_task.
       return tasks.map((t) => ({
         id: t.id,
         title: t.title,
@@ -386,6 +393,8 @@ export async function runReadTool(
         projectId: t.projectId,
         projectName: t.project?.name ?? null,
         tags: t.tags.map((tt) => tt.tag.name),
+        ...(t.recurring ? { recurring: true } : {}),
+        ...(t.description?.trim() ? { hasDescription: true } : {}),
       }));
     }
 
@@ -406,11 +415,12 @@ export async function runReadTool(
           : { ...access, ...(search ? { title: { contains: search, mode: "insensitive" } } : {}) },
         select: {
           id: true, title: true, description: true, status: true,
-          priority: true, dueDate: true, project: { select: { name: true } },
+          priority: true, dueDate: true, recurring: true, project: { select: { name: true } },
         },
         orderBy: { updatedAt: "desc" },
       });
       if (!task) return null;
+      const recurringLabel = describeRecurringRule(parseRecurringRule(task.recurring));
       return {
         id: task.id,
         title: task.title,
@@ -419,6 +429,7 @@ export async function runReadTool(
         priority: task.priority,
         dueDate: task.dueDate?.toISOString() ?? null,
         projectName: task.project?.name ?? null,
+        ...(recurringLabel ? { recurring: recurringLabel } : {}),
       };
     }
 

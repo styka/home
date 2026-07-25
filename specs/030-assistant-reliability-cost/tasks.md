@@ -31,12 +31,12 @@
   dla danych mieszczących się po trimie.
 
 ## Faza 2 — Read-toole i klasyfikator (zależne od Fazy 1)
-- [ ] **T-4** — `src/lib/ai/agentTools.ts` (zależy od T-1): w `list_tasks` select+wynik
+- [x] **T-4** — `src/lib/ai/agentTools.ts` (zależy od T-1): w `list_tasks` select+wynik
   `recurring: true` (tylko gdy ustawione) i `hasDescription: true` (tylko gdy opis niepusty);
   w `get_task` pole `recurring` = `describeRecurringRule(parseRecurringRule(...))` (pomijane gdy
   null); aktualizacja linii `list_tasks`/`get_task` w `READ_TOOLS_PROMPT`; `clampLimit` def 40→25.
   Gotowe, gdy: `tsc --noEmit` czysto; opisy narzędzi w promptcie zgodne z nowymi polami.
-- [ ] **T-5** `[P]` — `src/lib/ai/fastPath.ts`: eksport `READ_INTENT_RE` (bez zmiany zachowania).
+- [x] **T-5** `[P]` — `src/lib/ai/fastPath.ts`: eksport `READ_INTENT_RE` (bez zmiany zachowania).
   Gotowe, gdy: `tsc --noEmit` czysto, istniejące testy fastPath/readToolGating przechodzą.
 
 ## Faza 3 — Pętla agenta (`route.ts`; sekwencyjnie, jeden plik)
