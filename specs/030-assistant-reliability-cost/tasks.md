@@ -40,22 +40,22 @@
   Gotowe, gdy: `tsc --noEmit` czysto, istniejące testy fastPath/readToolGating przechodzą.
 
 ## Faza 3 — Pętla agenta (`route.ts`; sekwencyjnie, jeden plik)
-- [ ] **T-6** — Naprawa formatu (plan §3.1): pętla naprawy do 3 prób z komunikatem zawierającym
+- [x] **T-6** — Naprawa formatu (plan §3.1): pętla naprawy do 3 prób z komunikatem zawierającym
   przyczynę parse-błędu; po wyczerpaniu — `{ step:"answer", answer: salvageAnswerText(last),
   degraded:true }` (status 200) zamiast 502 „LLM zwrócił nieprawidłowy format" (komunikat znika
   ze ścieżki parsowania). Zależy od T-2.
   Gotowe, gdy: w kodzie nie ma ścieżki zwracającej błąd formatu do UI; grep po „nieprawidłowy
   format" pusty w route.ts.
-- [ ] **T-7** — Deduplikacja wywołań narzędzi (plan §3.3): `toolCache` per tura
+- [x] **T-7** — Deduplikacja wywołań narzędzi (plan §3.3): `toolCache` per tura
   (klucz `tool:JSON.stringify(args)`); powtórka → wynik z pamięci + marker `repeat` w bloku
   wyników. Dotyczy read-tooli i `web_search`.
   Gotowe, gdy: powtórzone wywołanie nie wykonuje narzędzia (inspekcja/test) i model dostaje
   jasny znacznik powtórki.
-- [ ] **T-8** `[P]` — Reguła rzetelności (plan §3.2): w `buildSystemPrompt` sekcja ZASADY —
+- [x] **T-8** `[P]` — Reguła rzetelności (plan §3.2): w `buildSystemPrompt` sekcja ZASADY —
   „RZETELNOŚĆ O APLIKACJI: …" (nie zaprzeczaj kategorycznie istnieniu funkcji, których nie
   możesz zweryfikować narzędziami).
   Gotowe, gdy: reguła w promptcie, tekst PL, zwięzła (≤3 zdania).
-- [ ] **T-9** — Tani model + fallback (plan §3.4): param `op` w `callAgent`/`runAgentLoop`;
+- [x] **T-9** — Tani model + fallback (plan §3.4): param `op` w `callAgent`/`runAgentLoop`;
   klasyfikacja prostej tury odczytowej (READ_INTENT_RE ∧ ≤160 znaków ∧ brak słów analitycznych,
   tylko świeże polecenie); przebieg na `dispatch`, przy degradacji/błędzie/limicie kroków —
   jednorazowe ponowienie na `reasoning` ze świeżą kopią `messages`; koszty obu przebiegów w

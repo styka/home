@@ -15,7 +15,14 @@ export const TOOL_RESULT_MAX_CHARS = 3500; // twardy budżet znaków na CAŁY bl
 export const TOOL_DATA_HEADER = "Wyniki narzędzi";
 export const TOOL_DATA_STUB = "[wyniki narzędzi z wcześniejszego kroku — już wykorzystane]";
 
-export type ToolResult = { tool: string; args: Record<string, unknown>; data: unknown; error?: string };
+export type ToolResult = {
+  tool: string;
+  args: Record<string, unknown>;
+  data: unknown;
+  error?: string;
+  /** 030: znacznik powtórzonego wywołania (wynik z pamięci tury, nie z narzędzia). */
+  repeat?: string;
+};
 
 // 030: próg skracania pojedynczego pola tekstowego w wynikach narzędzi. Długie opisy
 // (np. zgłoszenia błędów ze zrzutami rozmów w opisie zadania) rozsadzały blok wyników,
@@ -64,6 +71,7 @@ export function compactToolResults(results: ToolResult[]): string {
         data: shown,
         truncated: `pokazano ${shown.length} z ${data.length} rekordów — zawęź zapytanie (search/status/limit)`,
         ...(r.error ? { error: r.error } : {}),
+        ...(r.repeat ? { repeat: r.repeat } : {}),
       };
     }
     return { ...r, data };
