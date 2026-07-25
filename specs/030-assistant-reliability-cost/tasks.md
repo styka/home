@@ -16,7 +16,7 @@
   (krótki polski opis: „co tydzień: pn, śr", „co 2 dni", „co miesiąc 15.", z końcem `do <data>`
   gdy `endDate`). Test jednostkowy w układzie testów repo.
   Gotowe, gdy: testy opisu przechodzą dla DAILY/WEEKLY/MONTHLY/YEARLY + interval>1.
-- [ ] **T-2** `[P]` — nowy `src/lib/ai/agentProtocol.ts`: `extractJsonLoose(content)` (płotki,
+- [x] **T-2** `[P]` — nowy `src/lib/ai/agentProtocol.ts`: `extractJsonLoose(content)` (płotki,
   skan zbalansowanego `{…}` w tekście mieszanym, trailing commas, zwraca `null` zamiast throw)
   + `salvageAnswerText(content)` (preferuje pole `"answer"`, inaczej oczyszczony tekst).
   Testy `__tests__/agentProtocol.test.ts`: czysty JSON, JSON w płotkach, JSON z prozą
