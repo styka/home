@@ -393,7 +393,7 @@ async function callAgent(messages: ChatMessage[], meta?: AgentMeta, maxTokens = 
     err.status = result.status;
     throw err;
   }
-  if (meta) accrueUsage(meta, result.usage, result.model);
+  if (meta) accrueUsage(meta, result.usage, result.model, "agent");
   return result.content || "{}";
 }
 
@@ -462,7 +462,7 @@ async function routeModules(text: string, activeModules: string[], primary: stri
       source: "dispatch_route",
       conversationId,
     });
-    if (meta) accrueUsage(meta, result.ok ? result.usage : undefined, result.ok ? result.model : undefined);
+    if (meta) accrueUsage(meta, result.ok ? result.usage : undefined, result.ok ? result.model : undefined, "router");
     if (!result.ok || !result.content) return allowed;
     const parsed = JSON.parse(result.content.trim().replace(/^```json\n?/i, "").replace(/```$/, "")) as { modules?: unknown };
     const picked = Array.isArray(parsed.modules)
@@ -783,7 +783,7 @@ export async function POST(req: NextRequest) {
         thought,
         log: [{ iter: 0, step: "plan", thought, actionsCount: 1 }],
         messages: [{ role: "user", content: text }],
-        meta: { source: "fast_path", model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd },
+        meta: { source: "fast_path", model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd, calls: meta.calls },
       });
     }
 
@@ -849,7 +849,7 @@ export async function POST(req: NextRequest) {
         try {
           const result = await runAgentLoop(messages, userId, (t) => send({ type: "thought", text: t }), meta, agentMaxTokens, conversationId);
           if (result.body && typeof result.body === "object" && !result.body.error) {
-            result.body.meta = { model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd };
+            result.body.meta = { model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd, calls: meta.calls };
           }
           send({ type: "final", status: result.status ?? 200, body: result.body });
         } catch (e) {
@@ -871,7 +871,7 @@ export async function POST(req: NextRequest) {
   try {
     const result = await runAgentLoop(messages, userId, undefined, meta, agentMaxTokens, conversationId);
     if (result.body && typeof result.body === "object" && !result.body.error) {
-      result.body.meta = { model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd };
+      result.body.meta = { model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd, calls: meta.calls };
     }
     return NextResponse.json(result.body, result.status ? { status: result.status } : undefined);
   } finally {

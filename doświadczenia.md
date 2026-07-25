@@ -4,6 +4,23 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-25 — Scalenie dwóch sekcji akcji asystenta przy append-only historii czatu
+**Problem:** Po wykonaniu akcji asystent pokazywał DWIE sekcje: turę `plan` z „✓ Wykonano" oraz osobną
+turę `results` z listą wyników i „Cofnij" — podwójna informacja. Chcieliśmy jedną dynamiczną sekcję, ale
+historia rozmowy w DB (`AiMessage`) jest **append-only** (`appendAiMessage`) — nie da się zaktualizować
+istniejącej wiadomości `plan`, więc naiwne scalenie na żywo wracałoby jako dwie tury po przeładowaniu.
+**Rozwiązanie:** Na żywo wynik wchodzi do TEJ SAMEJ tury `plan` (`{done:true, results}`), a do DB dalej
+dopisujemy wiadomość `results` (append-only bez zmian). Kluczowe: przy **hydratacji** (`loadConversation`)
+zamieniono `.map` na pętlę, która scala wiadomość `results` w poprzedzającą turę `plan` (a znacznik
+`{undo:true}` ustawia `undone`). Bardzo stare rozmowy bez poprzedzającego planu renderują `results` jako
+samodzielną turę (wsteczna zgodność). Prefiks 🐛/🐛✨ w tytule zgłoszenia: dla robaczka Asystenta tytuł
+ustawiamy wprost na kliencie; dla głównego robaczka (tytuł generuje agent) — instrukcja w promptcie PLUS
+deterministyczne domknięcie: `create_task` w trybie zgłoszenia dostaje prefiks 🐛 przy wykonaniu, jeśli
+model go pominie.
+**Lekcja:** Przy append-only historii nie „aktualizuj wstecz" — scalaj przy ODCZYCIE (hydratacji), a stan
+na żywo trzymaj w jednej turze. Emoji/prefiksów generowanych przez LLM nie zostawiaj na łasce modelu —
+wymuś je w jednym choke-poincie po stronie klienta (tu: `handleExecute`).
+
 ## 2026-07-25 — Prod build pada na bramce, której `next build` nie odpala (`check-ai-coverage`)
 **Problem:** Lokalnie weryfikowałem `npx next build` (przechodził), ale Render odpala `npm run build`,
 który ma DŁUŻSZY łańcuch bramek: `copy-* → check-action-coverage → check-ai-coverage → check-migrations
