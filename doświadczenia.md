@@ -1933,3 +1933,22 @@ target/brak downlevelIteration.
 kroku „Checking validity of types" w `next build`.
 **Lekcja:** W kodzie `src/` nie iteruj `Set`/`Map` przez `for...of` ani span spreadem w gorących
 miejscach — używaj `Array.from(...)`. Realny typecheck daje dopiero `next build`, nie sam `lint`.
+
+## 2026-07-25 — Ucinany w połowie JSON wyników narzędzi wpędzał agenta w pętlę powtórek
+**Problem:** Bezpiecznik znakowy bloku wyników narzędzi (`compactToolResults`) ucinał serializowany
+JSON w POŁOWIE, gdy pojedyncze pole (np. opis zadania będący zgłoszeniem błędu ze zrzutem rozmowy)
+było ogromne. Model dostawał niedomknięty JSON, nie rozumiał wyniku i ponawiał to samo `get_task`
+aż do wyczerpania limitu kroków („Nie udało się dokończyć w limicie kroków"). Osobno: pojedyncza
+niesforna odpowiedź modelu (proza wokół JSON, trailing comma) kończyła całą turę błędem
+„LLM zwrócił nieprawidłowy format" (502).
+**Rozwiązanie:** (1) Skracanie długich pól PER-POLE (`trimLongStrings`, marker „SKRÓCONO z N znaków
+— pełna treść: get_task/get_note po id") — blok zawsze pozostaje poprawnym JSON-em; bezpiecznik
+blokowy zostaje tylko jako ostateczność. (2) Deduplikacja wywołań narzędzi w obrębie tury (mapa
+tool+args → wynik + marker POWTÓRKA). (3) Tolerancyjne parsowanie odpowiedzi protokołu
+(`extractJsonLoose`: płotki, zbalansowany blok `{…}` w prozie, trailing commas) + 3 próby naprawy
+z przyczyną błędu, a po nich degradacja do zwykłego kroku `answer` (`salvageAnswerText`) zamiast 502.
+**Lekcja:** Limity znakowe stosuj na poziomie PÓL, nie na serializowanym JSON-ie — ucięty JSON to
+dla modelu szum, który generuje kosztowne pętle. Odpowiedzi LLM parsuj tolerancyjnie i zawsze miej
+ścieżkę degradacji do tekstu: użytkownik ma dostać treść, nie kod błędu. Powtórzone wywołania
+narzędzi w jednej turze to sygnał zgubionego kontekstu — deduplikuj je i mów modelowi wprost,
+że to powtórka.

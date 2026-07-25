@@ -7,7 +7,8 @@ import { webSearch } from "@/lib/news/webSearch";
 import { chatComplete, classifyRateLimitKind, rateLimitUserMessage } from "@/lib/llm/chat";
 import { checkRateLimit, acquireSlot } from "@/lib/ai/rateLimit";
 import { checkAiBudget, recordAiUsage, newUsageMeter, accrueUsage, type UsageMeter } from "@/lib/ai/usage";
-import { classifyIntent } from "@/lib/ai/fastPath";
+import { classifyIntent, READ_INTENT_RE } from "@/lib/ai/fastPath";
+import { extractJsonLoose, salvageAnswerText } from "@/lib/ai/agentProtocol";
 import { compactToolResults, collapseUsedToolData, TOOL_DATA_HEADER } from "@/lib/ai/agentContext";
 import type { AIAction } from "@/lib/ai/aiAction";
 
@@ -314,6 +315,7 @@ ZASADY:
 - DOPYTUJ, NIE ZGADUJ: gdy to polecenie zmiany, ale cel jest NIEJEDNOZNACZNY, a istnieje WIELE kandydatów (np. kilka list zakupów/projektów zadań/zwierząt, a użytkownik nie wskazał którego) — NAJPIERW "clarify" (krótkie pytanie, np. „Do której listy?" z options), ZANIM zaproponujesz akcje. ALE gdy cel jest jednoznaczny (użytkownik nazwał listę/projekt, albo istnieje tylko jeden sensowny kandydat, albo pasuje kontekst aktywnego widoku) — NIE pytaj zbędnie, od razu "plan". Nie dopytuj o drobiazgi, które możesz rozsądnie przyjąć.
 - WYSZUKIWANIE (QUERY-FIRST): prośby o ZNALEZIENIE/POKAZANIE/PODANIE/ZAPROPONOWANIE danych („podaj mi zadanie do zrobienia", „pokaż moje notatki", „ile mam pilnych zadań", „znajdź …", „zaproponuj coś z listy") to ODCZYT — realizuj je ZAWSZE przez "query" z konkretnymi parametrami narzędzia (status/priority/search/limit/dueBefore…), a potem "answer" z konkretnym wynikiem. NIGDY nie odpowiadaj na taką prośbę akcją tworzącą (np. add_item/create_task). Przykład: „podaj mi zadanie, jakie mógłbym zrobić" → query list_tasks {status:"TODO", limit:20}, wybierz 1–3 sensowne i podaj je w answer (z nazwami). Filtruj PO STRONIE NARZĘDZIA (parametry) — nie pobieraj wszystkiego „na zapas" i nie przetwarzaj dużych zbiorów w całości; sięgaj po dane celowanym zapytaniem.
 - SZANUJ WSKAZANY KONTENER: gdy użytkownik wskaże konkretną listę/projekt/talię/warsztat/konto po nazwie („dodaj mleko do listy Apteka", „zadanie X w projekcie Dom", „słówko do talii Angielski") — ZAWSZE wypełnij odpowiedni parametr celujący (listName/projectName/deckName/workshopName/elementName…). NIGDY nie dodawaj do innej ani domyślnej listy, gdy nazwa padła. Gdy nazwany kontener nie istnieje — użyj "clarify" albo utwórz go zgodnie z intencją, ale NIE dodawaj po cichu gdzie indziej.
+- RZETELNOŚĆ O APLIKACJI: nie twierdź kategorycznie, że aplikacja NIE MA jakiejś funkcji — znasz tylko to, co widzisz w narzędziach i ich wynikach, a aplikacja ma też funkcje poza nimi (np. cykliczność zadań, podzadania, widoki). Gdy pytanie dotyczy możliwości aplikacji, których nie możesz zweryfikować narzędziami — odpowiedz ostrożnie („nie mam wglądu w to ustawienie"), zamiast zaprzeczać.
 - INTERNET: gdy odpowiedź wymaga informacji spoza danych użytkownika (ceny, fakty, definicje, wydarzenia, rzeczy ze świata), użyj "query" z narzędziem web_search, a w odpowiedzi CYTUJ źródła linkami markdown. Najpierw sprawdź dane użytkownika, dopiero potem sięgaj do internetu.
 - Korzystaj z kontekstu (aktualny widok / aktywna lista / bieżący projekt) podanego w wiadomości użytkownika, gdy polecenie nie wskazuje wprost celu. Wcześniejsze tury rozmowy bywają dołączone jako kontekst — wykorzystuj je dla ciągłości.
 - WYBÓR MODUŁU: gdy polecenie nie wskazuje wprost modułu, użyj modułu PODSTAWOWEGO (pierwszego na liście „Aktywne moduły"). Gdy użytkownik użyje słowa-klucza innego aktywnego modułu (np. „wydatek/przychód" → portfel, „zatankowałem" → flota, „nawyk/odhacz" → habits, „magazyn/wydaj ze stanu" → magazynowanie, „zaplanuj posiłek" → kitchen) — użyj tamtego modułu, o ile jest aktywny.
@@ -355,15 +357,8 @@ function sanitizeNavUrl(raw: unknown): string | null {
   return ok ? url : null;
 }
 
-function extractJson(content: string): unknown {
-  const cleaned = content
-    .trim()
-    .replace(/^```json\n?/i, "")
-    .replace(/^```\n?/, "")
-    .replace(/\n?```$/, "")
-    .trim();
-  return JSON.parse(cleaned);
-}
+// 030: parsowanie odpowiedzi protokołu przeniesione do `lib/ai/agentProtocol.ts`
+// (tolerancyjne `extractJsonLoose` + awaryjne `salvageAnswerText`, testowalne).
 
 // H3 (transparentność): zbiera użyty model + sumę tokenów z całej pętli agenta.
 // 028: rozszerzone o rozbicie tokenów i SZACOWANY koszt (USD), sumowane przez
@@ -378,9 +373,17 @@ type AgentMeta = UsageMeter;
 const AGENT_MAX_TOKENS = 1200;
 const REPORT_MAX_TOKENS = 2800; // zapas na pełny raport (step "report") — przy 1500 markdown bywał ucinany
 
-async function callAgent(messages: ChatMessage[], meta?: AgentMeta, maxTokens = AGENT_MAX_TOKENS, conversationId?: string | null): Promise<string> {
+// 030: słowa wykluczające „prostą turę odczytową" (analiza/ocena/raport → zawsze reasoning).
+const SIMPLE_READ_ANALYTIC_RE =
+  /\b(oceń|ocen\w*|przeanalizuj|analiz\w*|porównaj|porownaj|dlaczego|zaproponuj|zasugeruj|doradź|doradz|raport\w*|podsumow\w*|streść|streszcz\w*|zestawieni\w*)\b/i;
+
+// 030: `op` konfigurowalne — proste tury odczytowe jadą na tańszym modelu (op "dispatch",
+// przydział w /admin/llm — C-40), z fallbackiem do "reasoning" po stronie wołającego.
+type AgentOp = "dispatch" | "reasoning";
+
+async function callAgent(messages: ChatMessage[], meta?: AgentMeta, maxTokens = AGENT_MAX_TOKENS, conversationId?: string | null, op: AgentOp = "reasoning"): Promise<string> {
   const result = await chatComplete({
-    op: "reasoning",
+    op,
     messages,
     temperature: 0.1,
     maxTokens,
@@ -508,9 +511,14 @@ async function runAgentLoop(
   onThought?: (thought: string) => void,
   meta?: AgentMeta,
   maxTokens: number = AGENT_MAX_TOKENS,
-  conversationId?: string | null
+  conversationId?: string | null,
+  op: AgentOp = "reasoning"
 ): Promise<LoopResult> {
   const log: LogEntry[] = [];
+  // 030: pamięć wywołań narzędzi w obrębie tury — identyczne wywołanie (tool+args) nie
+  // wykonuje się drugi raz (wynik z mapy + marker powtórki), co przerywa pętle
+  // „pobierz to samo jeszcze raz", które wyczerpywały limit kroków.
+  const toolCache = new Map<string, unknown>();
 
   for (let iter = 1; iter <= MAX_ITERATIONS; iter++) {
     // 028: przed każdym wywołaniem modelu zwiń starsze, już zużyte bloki wyników
@@ -518,10 +526,13 @@ async function runAgentLoop(
     collapseUsedToolData(messages);
 
     let parsed: Record<string, unknown> | null = null;
-    for (let attempt = 0; attempt < 2 && parsed === null; attempt++) {
+    let lastContent = "";
+    // 030: do 3 prób naprawy formatu (z konkretną przyczyną w komunikacie korekcyjnym);
+    // po wyczerpaniu — łagodna degradacja do odpowiedzi tekstowej (niżej), nie błąd.
+    for (let attempt = 0; attempt < 3 && parsed === null; attempt++) {
       let content: string;
       try {
-        content = await callAgent(messages, meta, maxTokens, conversationId);
+        content = await callAgent(messages, meta, maxTokens, conversationId, op);
       } catch (e) {
         const status = (e as { status?: number }).status ?? 502;
         // 010/017: przejściowy limit modelu (429) — mimo retry (010), pacingu (016) i
@@ -548,18 +559,30 @@ async function runAgentLoop(
         if (providerMsg) console.warn(`[agent] błąd LLM (status ${status}): ${providerMsg}`);
         return { status, body: { error: message } };
       }
+      lastContent = content;
       messages.push({ role: "assistant", content });
-      try {
-        const j = extractJson(content);
-        if (j && typeof j === "object" && !Array.isArray(j)) parsed = j as Record<string, unknown>;
-        else throw new Error("not an object");
-      } catch {
-        messages.push({ role: "user", content: "Zwróć wyłącznie poprawny JSON wg schematu (jeden obiekt z polem step)." });
+      parsed = extractJsonLoose(content);
+      if (!parsed) {
+        let reason = "treść nie jest pojedynczym obiektem JSON";
+        try {
+          JSON.parse(content);
+        } catch (e) {
+          if (e instanceof Error && e.message) reason = e.message.slice(0, 160);
+        }
+        messages.push({
+          role: "user",
+          content: `Twoja poprzednia odpowiedź nie była poprawnym JSON-em protokołu (${reason}). Zwróć DOKŁADNIE jeden obiekt JSON z polem "step" (query/clarify/answer/navigate/plan/report), bez markdown i bez tekstu poza JSON-em.`,
+        });
       }
     }
 
     if (!parsed) {
-      return { status: 502, body: { error: "LLM zwrócił nieprawidłowy format", log } };
+      // 030 (decyzja właściciela): zamiast technicznego błędu „LLM zwrócił nieprawidłowy
+      // format" — oddaj użytkownikowi oczyszczoną treść ostatniej odpowiedzi jako zwykły
+      // krok "answer" (bez akcji mutujących). `degraded` zostaje w body do diagnostyki.
+      const answer = salvageAnswerText(lastContent);
+      log.push({ iter, step: "answer", thought: "Degradacja formatu — oddaję treść odpowiedzi jako tekst." });
+      return { body: { step: "answer", answer, degraded: true, log } };
     }
 
     const step = String(parsed.step ?? "");
@@ -572,16 +595,30 @@ async function runAgentLoop(
         .map((t) => t as { tool?: string; args?: Record<string, unknown> })
         .filter((t) => t.tool && ((READ_TOOL_NAMES as readonly string[]).includes(t.tool) || t.tool === "web_search"));
 
-      const results: { tool: string; args: Record<string, unknown>; data: unknown; error?: string }[] = [];
+      const results: { tool: string; args: Record<string, unknown>; data: unknown; error?: string; repeat?: string }[] = [];
       for (const call of toolCalls) {
+        // 030: deduplikacja — identyczne wywołanie w tej samej turze nie wykonuje się
+        // ponownie; model dostaje wynik z pamięci + jasny znacznik powtórki.
+        const cacheKey = `${call.tool}:${JSON.stringify(call.args ?? {})}`;
+        if (toolCache.has(cacheKey)) {
+          results.push({
+            tool: call.tool!,
+            args: call.args ?? {},
+            data: toolCache.get(cacheKey),
+            repeat: "POWTÓRKA — to samo wywołanie już wykonano w tej turze (wynik z pamięci). Nie powtarzaj identycznych zapytań; wykorzystaj dane albo zawęź parametry.",
+          });
+          continue;
+        }
         try {
           if (call.tool === "web_search") {
             const query = typeof call.args?.query === "string" ? call.args.query : "";
             const limit = typeof call.args?.limit === "number" ? Math.min(8, Math.max(1, call.args.limit)) : 5;
             const data = query.trim() ? await webSearch(query, limit) : [];
+            toolCache.set(cacheKey, data);
             results.push({ tool: call.tool, args: call.args ?? {}, data });
           } else {
             const data = await runReadTool(call.tool!, call.args ?? {}, userId);
+            toolCache.set(cacheKey, data);
             results.push({ tool: call.tool!, args: call.args ?? {}, data });
           }
         } catch (e) {
@@ -656,7 +693,9 @@ async function runAgentLoop(
   }
 
   return {
-    body: { step: "answer", answer: "Nie udało się dokończyć w limicie kroków. Spróbuj sformułować polecenie prościej lub bardziej konkretnie.", log },
+    // 030: `limitReached` pozwala wołającemu (fallback dispatch→reasoning) rozpoznać
+    // niedokończoną turę bez porównywania treści komunikatu.
+    body: { step: "answer", answer: "Nie udało się dokończyć w limicie kroków. Spróbuj sformułować polecenie prościej lub bardziej konkretnie.", limitReached: true, log },
   };
 }
 
@@ -832,6 +871,28 @@ export async function POST(req: NextRequest) {
   const wantsReport = /\braport\w*|podsumow\w*|zestawieni\w*|streść\w*|streszcz\w*/i.test(intentText);
   const agentMaxTokens = wantsReport ? REPORT_MAX_TOKENS : AGENT_MAX_TOKENS;
 
+  // 030: PROSTA TURA ODCZYTOWA → tańszy model (op "dispatch", przydział w /admin/llm — C-40)
+  // z jednorazowym fallbackiem do "reasoning". Klasyfikacja konserwatywna (wątpliwość →
+  // reasoning): tylko świeże polecenie (nie wznowienie clarify/refine), intencja odczytu
+  // (READ_INTENT_RE), krótki tekst, bez słów analitycznych/raportowych.
+  const freshText = body.messages?.length ? "" : (body.text ?? "").trim();
+  const isSimpleRead =
+    !!freshText && freshText.length <= 160 && READ_INTENT_RE.test(freshText) && !SIMPLE_READ_ANALYTIC_RE.test(freshText);
+  // Kopia wyjściowych wiadomości do ewentualnego ponowienia na "reasoning" (pętla mutuje messages).
+  const baselineMessages: ChatMessage[] | null = isSimpleRead ? messages.map((m) => ({ ...m })) : null;
+
+  // Fallback obejmuje: błąd LLM (status), degradację formatu i niedokończenie w limicie kroków.
+  const loopNeedsFallback = (r: LoopResult): boolean =>
+    (typeof r.status === "number" && r.status >= 400) || r.body.degraded === true || r.body.limitReached === true;
+
+  const runLoop = async (onThought?: (t: string) => void): Promise<LoopResult> => {
+    const first = await runAgentLoop(
+      messages, userId, onThought, meta, agentMaxTokens, conversationId, isSimpleRead ? "dispatch" : "reasoning"
+    );
+    if (!baselineMessages || !loopNeedsFallback(first)) return first;
+    return runAgentLoop(baselineMessages, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning");
+  };
+
   // H4: strażnik współbieżności — nie pozwól odpalić zbyt wielu ciężkich operacji naraz.
   const release = acquireSlot(userId);
   if (!release) {
@@ -847,7 +908,7 @@ export async function POST(req: NextRequest) {
           try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`)); } catch { /* zamknięte */ }
         };
         try {
-          const result = await runAgentLoop(messages, userId, (t) => send({ type: "thought", text: t }), meta, agentMaxTokens, conversationId);
+          const result = await runLoop((t) => send({ type: "thought", text: t }));
           if (result.body && typeof result.body === "object" && !result.body.error) {
             result.body.meta = { model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd, calls: meta.calls };
           }
@@ -869,7 +930,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await runAgentLoop(messages, userId, undefined, meta, agentMaxTokens, conversationId);
+    const result = await runLoop();
     if (result.body && typeof result.body === "object" && !result.body.error) {
       result.body.meta = { model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd, calls: meta.calls };
     }

@@ -85,7 +85,9 @@ function extractJson(content: string): RawParsed | null {
 // nie tworzenie. Kotwiczymy na POCZĄTKU wypowiedzi (prośby o wyszukanie zwykle tak się zaczynają),
 // żeby nie łapać zdań typu „dodaj X i pokaż Y". Trafienie → oddajemy pełnemu agentowi (query+answer).
 // Fałszywe trafienie jest tanie (agent i tak poprawnie obsłuży tworzenie) — nadmiar „complex" jest OK.
-const READ_INTENT_RE =
+// 030: eksportowany — route agenta reużywa go do klasyfikacji „prostej tury odczytowej"
+// (tani model op:"dispatch" z fallbackiem do "reasoning").
+export const READ_INTENT_RE =
   /^\s*(podaj|pokaż|pokaz|wyświetl|wyswietl|wylistuj|wypisz|listuj|znajdź|znajdz|wyszukaj|poszukaj|ile\b|jak(ie|i|a|ich)\b|któr\w+|co (mam|mogę|moge|powinien|powinienem|jest|robić|zrobić|warto)|masz|czy (mam|jest|są|sa|mogę|moge)|zaproponuj|zasugeruj|doradź|doradz|poradź|poradz|przypomnij|kiedy|gdzie|sprawdź|sprawdz)\b/i;
 
 // Wskazanie nazwanej listy zakupów (np. „do listy Apteka", „na listę Tygodniowe") — fast-path

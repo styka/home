@@ -33,9 +33,11 @@ test("compactToolResults nie rusza wyników mieszczących się w limicie", () =>
 });
 
 test("compactToolResults egzekwuje twardy budżet znaków (bezpiecznik)", () => {
-  // Pojedynczy rekord z ogromnym polem — poniżej limitu rekordów, ale ponad budżet znaków.
-  const huge = "x".repeat(TOOL_RESULT_MAX_CHARS + 2000);
-  const results: ToolResult[] = [{ tool: "get_note", args: {}, data: { id: "n1", content: huge } }];
+  // 030: pojedyncze wielkie pole łapie teraz trim per-pole (test niżej), więc bezpiecznik
+  // blokowy prowokujemy WIELOMA rekordami z polami poniżej progu per-pole.
+  const results: ToolResult[] = [
+    { tool: "list_notes", args: {}, data: Array.from({ length: 12 }, (_, i) => ({ id: `n${i}`, content: "x".repeat(400) })) },
+  ];
   const out = compactToolResults(results);
   assert.ok(out.length <= TOOL_RESULT_MAX_CHARS + 80, "blok nie przekracza budżetu (+ marker)");
   assert.match(out, /\[UCIĘTO — przekroczono budżet znaków/, "czytelny marker ucięcia po budżecie");
@@ -64,4 +66,36 @@ test("collapseUsedToolData nie rusza pojedynczego bloku", () => {
   const messages = [{ role: "system", content: "P" }, only];
   collapseUsedToolData(messages);
   assert.match(messages[1].content, /"id":"1"/, "jedyny blok zostaje pełny");
+});
+
+// 030: skracanie długich pól per-pole — blok wyników pozostaje POPRAWNYM JSON-em
+// (wcześniej bezpiecznik znakowy ucinał JSON w połowie i model wpadał w pętlę powtórek).
+import { trimLongStrings, FIELD_MAX_CHARS } from "@/lib/ai/agentContext";
+
+test("trimLongStrings skraca długi string z markerem, krótkie zostawia", () => {
+  const long = "y".repeat(FIELD_MAX_CHARS + 500);
+  const out = trimLongStrings({ id: "t1", title: "krótki", description: long }) as Record<string, string>;
+  assert.equal(out.title, "krótki");
+  assert.ok(out.description.length < long.length, "opis skrócony");
+  assert.match(out.description, /SKRÓCONO z \d+ znaków/, "marker z liczbą znaków");
+  assert.match(out.description, /get_task\/get_note/, "wskazówka jak sięgnąć po całość");
+});
+
+test("compactToolResults z ogromnym opisem zwraca POPRAWNY JSON z markerem skrócenia", () => {
+  const huge = "opis ".repeat(2000); // ~10k znaków w jednym polu
+  const results: ToolResult[] = [
+    { tool: "get_task", args: { taskId: "t1" }, data: { id: "t1", title: "A", description: huge } },
+  ];
+  const out = compactToolResults(results);
+  const parsed = JSON.parse(out) as Array<{ data: { description: string } }>; // nie rzuca = poprawny JSON
+  assert.match(parsed[0].data.description, /SKRÓCONO/, "pole oznaczone jako skrócone");
+  assert.ok(out.length <= TOOL_RESULT_MAX_CHARS, "mieści się w budżecie bloku bez cięcia w połowie");
+});
+
+test("trimLongStrings działa rekurencyjnie w tablicach i zagnieżdżeniach", () => {
+  const long = "z".repeat(FIELD_MAX_CHARS * 2);
+  const out = trimLongStrings([{ nested: { note: long } }, "ok"]) as Array<unknown>;
+  const first = out[0] as { nested: { note: string } };
+  assert.match(first.nested.note, /SKRÓCONO/);
+  assert.equal(out[1], "ok");
 });
