@@ -72,7 +72,7 @@
   `npm run check:migrations`, `npx next lint`, `npx tsc --noEmit`, `npx next build`
   (bez `migrate.js` — C-13; brak migracji).
   Gotowe, gdy: wszystko zielone lokalnie.
-- [~] **T-12** — Mapowanie AC-1…AC-11 na wyniki (tabela do `verify.md`), w tym: analiza AC-8
+- [x] **T-12** — Mapowanie AC-1…AC-11 na wyniki (tabela do `verify.md`), w tym: analiza AC-8
   (scenariusz zgłoszenia #5 po zmianach), szacunek AC-10 (tokeny przed/po) i szkic odpowiedzi
   AC-11 dla administratora (ograniczenia → wykonalność dla Haiku).
   Gotowe, gdy: każdy AC ma przypisany wynik/uzasadnienie.
