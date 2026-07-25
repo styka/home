@@ -5,17 +5,19 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { getUnitEconomics } from "@/actions/metrics";
+import { getUsdPlnRate } from "@/lib/usdPlnRate";
+import { withPln } from "@/lib/usdPln";
 import { ChevronLeft, LineChart } from "lucide-react";
-
-function usd(n: number): string {
-  return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
 
 export default async function AdminMetricsPage() {
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
-  const m = await getUnitEconomics(30);
+  const [m, usdPlnRate] = await Promise.all([getUnitEconomics(30), getUsdPlnRate()]);
+
+  // 029: kwoty USD z równowartością w PLN (przelicznik z /admin/llm).
+  const usd = (n: number): string =>
+    withPln("$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), n, usdPlnRate);
 
   const cards: { label: string; value: string; hint?: string }[] = [
     { label: "Użytkownicy (zarejestrowani)", value: String(m.registeredUsers) },

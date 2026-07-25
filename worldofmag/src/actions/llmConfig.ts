@@ -13,6 +13,7 @@ import {
 import { encryptSecret, decryptSecret, maskSecret } from "@/lib/crypto/secrets";
 import { logAudit } from "@/lib/audit";
 import { COST_ALERT_CONFIG_KEY, getDailyCostUsd } from "@/lib/ai/usage";
+import { USD_PLN_CONFIG_KEY, DEFAULT_USD_PLN_RATE, parseUsdPlnRate } from "@/lib/usdPln";
 
 async function requireAdmin() {
   const session = await auth();
@@ -231,6 +232,28 @@ export async function setCostAlertThreshold(usd: number): Promise<void> {
   });
   await logAudit("config", "ai_cost_alert.set", COST_ALERT_CONFIG_KEY, `Ustawiono dzienny próg kosztów AI na $${value}`);
   revalidatePath("/admin/llm");
+}
+
+/** 029: przelicznik USD→PLN (kwoty USD pokazujemy z równowartością PLN). Domyślnie 3,81. */
+export async function getUsdPlnRate(): Promise<number> {
+  await requireAdmin();
+  const row = await prisma.config.findUnique({ where: { key: USD_PLN_CONFIG_KEY } });
+  return parseUsdPlnRate(row?.value, DEFAULT_USD_PLN_RATE);
+}
+
+export async function setUsdPlnRate(rate: number): Promise<void> {
+  await requireAdmin();
+  if (!Number.isFinite(rate) || rate <= 0) throw new Error("Przelicznik musi być liczbą dodatnią.");
+  const value = String(rate);
+  await prisma.config.upsert({
+    where: { key: USD_PLN_CONFIG_KEY },
+    update: { value },
+    create: { key: USD_PLN_CONFIG_KEY, value },
+  });
+  await logAudit("config", "usd_pln_rate.set", USD_PLN_CONFIG_KEY, `Ustawiono przelicznik USD→PLN na ${value}`);
+  // Kwoty PLN pojawiają się w wielu miejscach — odśwież panele, które je pokazują.
+  revalidatePath("/admin/llm");
+  revalidatePath("/admin/metrics");
 }
 
 // Rekomendowany profil Anthropic: Sonnet do rozumowania/generowania, Haiku do

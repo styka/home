@@ -17,6 +17,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { isPathLocked } from "@/lib/permissions";
 import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
+import { DEFAULT_USD_PLN_RATE } from "@/lib/usdPln";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ interface AppShellProps {
   userRoles?: string[];
   userPermissions?: string[];
   menuPrefs?: MenuPrefs;
+  usdPlnRate?: number;
 }
 
 // Pozycje dolne (stałe, niepodlegające konfiguracji) — do wykrywania aktywnego modułu i paska górnego.
@@ -35,7 +37,7 @@ const BOTTOM_ITEMS: BottomItem[] = [
   { id: "admin",       label: "Admin",       href: "/admin",       Icon: Shield,   color: "var(--accent-purple)" },
 ];
 
-export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs() }: AppShellProps) {
+export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs(), usdPlnRate = DEFAULT_USD_PLN_RATE }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [, startTransition] = useTransition();
@@ -255,7 +257,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         </nav>
       )}
 
-      <AICommandSheet isAdmin={isAdmin} />
+      <AICommandSheet isAdmin={isAdmin} usdPlnRate={usdPlnRate} />
       <ConsentBanner />
       {isAdmin && <FeedbackInspector />}
     </div>

@@ -10,6 +10,7 @@ import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { useDictation } from "@/hooks/useDictation";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
+import { withPln, DEFAULT_USD_PLN_RATE } from "@/lib/usdPln";
 import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported, primeSpeech, getAvailableVoices, onVoicesChanged, setPreferredVoiceURI, getPreferredVoiceURI } from "@/lib/tts";
 import { createSpeechListener, speechRecognitionSupported, type SpeechListener } from "@/lib/speechRecognition";
 import {
@@ -146,8 +147,9 @@ function buildChatProblemReport(opts: {
   conversationId: string | null;
   aiCalls?: AiCallLogRow[];
   aiCallsError?: boolean;
+  usdPlnRate?: number;
 }): string {
-  const { turns, error, description, route, conversationId, aiCalls, aiCallsError } = opts;
+  const { turns, error, description, route, conversationId, aiCalls, aiCallsError, usdPlnRate = DEFAULT_USD_PLN_RATE } = opts;
   const roleLabel = (r: "user" | "assistant") => (r === "user" ? "Użytkownik" : "Asystent");
   const trunc = (s: string, max = 4000) => (s.length > max ? s.slice(0, max) + "\n…(ucięto)" : s);
   const json = (v: unknown) => {
@@ -183,7 +185,7 @@ function buildChatProblemReport(opts: {
       const log = "log" in t ? t.log : undefined;
       const meta = "meta" in t ? t.meta : undefined;
       if (!(log?.length) && !meta) return;
-      const costStr = meta?.costUsd && meta.costUsd > 0 ? `, koszt: ~$${meta.costUsd.toFixed(4)}` : "";
+      const costStr = meta?.costUsd && meta.costUsd > 0 ? `, koszt: ${withPln(`~$${meta.costUsd.toFixed(4)}`, meta.costUsd, usdPlnRate)}` : "";
       const metaStr = meta ? ` — model: ${meta.model ?? "?"}, tokeny: ${meta.tokens ?? "?"}${costStr}` : "";
       out.push(`\n#### Tura ${i + 1}${metaStr}`);
       (log ?? []).forEach((l) => {
@@ -223,13 +225,13 @@ const STARTER_CHIPS = [
 ];
 
 // H3: drobny podpis pod odpowiedzią — który model i ile tokenów (transparentność).
-function MetaFooter({ meta }: { meta?: AgentMeta }) {
+function MetaFooter({ meta, rate = DEFAULT_USD_PLN_RATE }: { meta?: AgentMeta; rate?: number }) {
   if (!meta?.model && !meta?.tokens && !meta?.costUsd) return null;
   const parts: string[] = [];
   if (meta.model) parts.push(meta.model);
   if (meta.tokens) parts.push(`${meta.tokens} tok.`);
-  // 028: szacowany koszt tej odpowiedzi (USD). Pomijamy przy 0/nieznanym modelu.
-  if (meta.costUsd && meta.costUsd > 0) parts.push(`~$${meta.costUsd.toFixed(4)}`);
+  // 028/029: szacowany koszt tej odpowiedzi (USD) z równowartością w PLN. Pomijamy przy 0/nieznanym modelu.
+  if (meta.costUsd && meta.costUsd > 0) parts.push(withPln(`~$${meta.costUsd.toFixed(4)}`, meta.costUsd, rate));
   return (
     <div style={{ marginTop: 6, fontSize: 10, color: "var(--text-muted)", opacity: 0.75 }} title="Model, zużycie tokenów i szacowany koszt tej odpowiedzi">
       {parts.join(" · ")}
@@ -278,7 +280,7 @@ function newId(): string {
   return `t${Date.now()}_${TURN_SEQ}`;
 }
 
-export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) {
+export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_RATE }: { isAdmin?: boolean; usdPlnRate?: number } = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { context, placeholder, routeHint, activeListId, activeProjectId } = deriveContextFromPath(pathname);
@@ -724,7 +726,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
       } catch {
         aiCallsError = true;
       }
-      const description = buildChatProblemReport({ turns, error, description: reportDesc, route: pathname, conversationId, aiCalls, aiCallsError });
+      const description = buildChatProblemReport({ turns, error, description: reportDesc, route: pathname, conversationId, aiCalls, aiCallsError, usdPlnRate });
       const stamp = new Date().toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
       const firstLine = reportDesc.trim().split("\n")[0]?.slice(0, 80);
       const title = `🐛 Problem w czacie asystenta AI — ${stamp}${firstLine ? ` — ${firstLine}` : ""}`;
@@ -1401,6 +1403,7 @@ export function AICommandSheet({ isAdmin = false }: { isAdmin?: boolean } = {}) 
                     key={turn.id}
                     turn={turn}
                     isLast={i === turns.length - 1}
+                    usdPlnRate={usdPlnRate}
                     onBubbleClick={handleBubbleClick}
                     onClarifySubmit={submitClarify}
                     onOpenPlan={(t) => { pendingPlanIdRef.current = null; setPlanTurnId(t.id); setPlanVersion((v) => v + 1); }}
@@ -1625,10 +1628,11 @@ function SpeakButton({ speaking, onToggle }: { speaking: boolean; onToggle: () =
 
 function TurnView({
   turn, isLast, onBubbleClick, onClarifySubmit, onOpenPlan, onQuickConfirm, onQuickDismiss, onNavigate, onSaveReport, onRegenerate, onFollowup, onFixFailed, onUndo,
-  speakingId, onToggleSpeak,
+  speakingId, onToggleSpeak, usdPlnRate,
 }: {
   turn: Turn;
   isLast: boolean;
+  usdPlnRate: number;
   onBubbleClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   onClarifySubmit: (turn: Extract<Turn, { kind: "clarify" }>, value: string) => void;
   onOpenPlan: (turn: Extract<Turn, { kind: "plan" }>) => void;
@@ -1662,7 +1666,7 @@ function TurnView({
       <div style={bubble}>
         <div onClick={onBubbleClick} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
         <ReasoningLog log={turn.log} />
-        <MetaFooter meta={turn.meta} />
+        <MetaFooter meta={turn.meta} rate={usdPlnRate} />
         {isLast && turn.followups && turn.followups.length > 0 && onFollowup && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
             {turn.followups.map((f) => (
@@ -1724,7 +1728,7 @@ function TurnView({
           <div style={{ marginTop: 8 }}><SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} /></div>
         )}
         <ReasoningLog log={turn.log} />
-        <MetaFooter meta={turn.meta} />
+        <MetaFooter meta={turn.meta} rate={usdPlnRate} />
       </div>
     );
   }
@@ -1740,7 +1744,7 @@ function TurnView({
           <div style={{ marginTop: 8 }}><SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} /></div>
         )}
         <ReasoningLog log={turn.log} />
-        <MetaFooter meta={turn.meta} />
+        <MetaFooter meta={turn.meta} rate={usdPlnRate} />
       </div>
     );
   }
@@ -1781,7 +1785,7 @@ function TurnView({
           <div style={{ marginTop: 8 }}><SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} /></div>
         )}
         <ReasoningLog log={turn.log} />
-        <MetaFooter meta={turn.meta} />
+        <MetaFooter meta={turn.meta} rate={usdPlnRate} />
       </div>
     );
   }

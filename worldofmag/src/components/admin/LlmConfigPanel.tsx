@@ -9,10 +9,12 @@ import {
   setAssignment,
   applyAnthropicProfile,
   setCostAlertThreshold,
+  setUsdPlnRate,
   type ProviderDTO,
   type AssignmentDTO,
   type AiCostBreakdown,
 } from "@/actions/llmConfig";
+import { withPln } from "@/lib/usdPln";
 
 const KIND_LABELS: Record<string, string> = {
   openai_compat: "OpenAI-compatible (Groq, OpenAI, xAI, OpenRouter…)",
@@ -351,17 +353,22 @@ function AnthropicProfileCard() {
   );
 }
 
-function fmtUsd(n: number): string {
-  return `$${n.toFixed(n < 1 ? 4 : 2)}`;
+// 029: kwoty USD pokazujemy z równowartością w PLN (przelicznik z /admin/llm).
+function fmtUsd(n: number, rate: number): string {
+  return withPln(`$${n.toFixed(n < 1 ? 4 : 2)}`, n, rate);
 }
 
 const tdStyle: React.CSSProperties = { padding: "8px 10px", fontSize: 12, color: "var(--text-secondary)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" };
 const thStyle: React.CSSProperties = { padding: "8px 10px", fontSize: 11, color: "var(--text-muted)", textAlign: "left", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" };
 
-function CostSection({ cost, threshold }: { cost: AiCostBreakdown; threshold: number }) {
+function CostSection({ cost, threshold, usdPlnRate }: { cost: AiCostBreakdown; threshold: number; usdPlnRate: number }) {
   const [isPending, startTransition] = useTransition();
   const [value, setValue] = useState(String(threshold || ""));
   const [saved, setSaved] = useState(false);
+  // 029: przelicznik USD→PLN — lokalny stan pola + zapis.
+  const [rateValue, setRateValue] = useState(String(usdPlnRate));
+  const [rateSaved, setRateSaved] = useState(false);
+  const [ratePending, startRateTransition] = useTransition();
 
   function saveThreshold() {
     startTransition(async () => {
@@ -371,14 +378,24 @@ function CostSection({ cost, threshold }: { cost: AiCostBreakdown; threshold: nu
     });
   }
 
+  function saveRate() {
+    const parsed = Number(rateValue.trim().replace(",", "."));
+    if (!Number.isFinite(parsed) || parsed <= 0) return;
+    startRateTransition(async () => {
+      await setUsdPlnRate(parsed);
+      setRateSaved(true);
+      setTimeout(() => setRateSaved(false), 2000);
+    });
+  }
+
   return (
     <section style={{ marginBottom: 32 }}>
       <SectionTitle>Zużycie i koszty (ostatnie {cost.days} dni)</SectionTitle>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 12, fontSize: 13, color: "var(--text-secondary)" }}>
         <span>Wywołań: <strong style={{ color: "var(--text-primary)" }}>{cost.totalCalls}</strong></span>
-        <span>Koszt (szac.): <strong style={{ color: "var(--text-primary)" }}>{fmtUsd(cost.totalCostUsd)}</strong></span>
-        <span>Dziś: <strong style={{ color: "var(--text-primary)" }}>{fmtUsd(cost.todayCostUsd)}</strong></span>
+        <span>Koszt (szac.): <strong style={{ color: "var(--text-primary)" }}>{fmtUsd(cost.totalCostUsd, usdPlnRate)}</strong></span>
+        <span>Dziś: <strong style={{ color: "var(--text-primary)" }}>{fmtUsd(cost.todayCostUsd, usdPlnRate)}</strong></span>
       </div>
 
       <div
@@ -415,7 +432,7 @@ function CostSection({ cost, threshold }: { cost: AiCostBreakdown; threshold: nu
                   <td style={tdStyle}>{r.calls}</td>
                   <td style={tdStyle}>{r.promptTokens} / {r.completionTokens}</td>
                   <td style={tdStyle}>{r.cacheReadTokens}</td>
-                  <td style={{ ...tdStyle, color: "var(--text-primary)" }}>{fmtUsd(r.costUsd)}</td>
+                  <td style={{ ...tdStyle, color: "var(--text-primary)" }}>{fmtUsd(r.costUsd, usdPlnRate)}</td>
                   <td style={tdStyle}>{r.avgLatencyMs} ms</td>
                 </tr>
               ))
@@ -461,6 +478,46 @@ function CostSection({ cost, threshold }: { cost: AiCostBreakdown; threshold: nu
           </button>
         </div>
       </div>
+
+      {/* 029: przelicznik USD→PLN — kwoty w USD pokazujemy z równowartością w PLN. */}
+      <div
+        style={{
+          marginTop: 16,
+          padding: 16,
+          border: "1px solid var(--border)",
+          borderRadius: 10,
+          background: "var(--bg-surface)",
+        }}
+      >
+        <label style={labelStyle}>Przelicznik USD → PLN</label>
+        <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 10px" }}>
+          Ile złotych za 1 USD. Wszędzie, gdzie pokazujemy kwotę w USD, doklejamy w nawiasie
+          równowartość w PLN wg tego przelicznika (domyślnie 1 USD = 3,81 PLN).
+        </p>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", maxWidth: 320 }}>
+          <div style={{ position: "relative", flex: 1 }}>
+            <DollarSign size={14} style={{ position: "absolute", left: 10, top: 10, color: "var(--text-muted)" }} />
+            <input
+              style={{ ...inputStyle, paddingLeft: 28 }}
+              type="number"
+              min={0}
+              step="0.01"
+              value={rateValue}
+              onChange={(e) => setRateValue(e.target.value)}
+              placeholder="3.81"
+            />
+          </div>
+          <button
+            onClick={saveRate}
+            disabled={ratePending}
+            className="flex items-center gap-1 px-3 py-2 rounded text-sm font-medium disabled:opacity-40"
+            style={{ background: rateSaved ? "var(--accent-green)" : "var(--accent-blue)", color: "var(--on-accent)" }}
+          >
+            {rateSaved ? <Check size={14} /> : null}
+            {rateSaved ? "Zapisano" : "Zapisz"}
+          </button>
+        </div>
+      </div>
     </section>
   );
 }
@@ -470,11 +527,13 @@ export function LlmConfigPanel({
   assignments,
   cost,
   costThreshold,
+  usdPlnRate,
 }: {
   providers: ProviderDTO[];
   assignments: AssignmentDTO[];
   cost: AiCostBreakdown;
   costThreshold: number;
+  usdPlnRate: number;
 }) {
   return (
     <div>
@@ -491,7 +550,7 @@ export function LlmConfigPanel({
         </div>
       </section>
 
-      <CostSection cost={cost} threshold={costThreshold} />
+      <CostSection cost={cost} threshold={costThreshold} usdPlnRate={usdPlnRate} />
     </div>
   );
 }

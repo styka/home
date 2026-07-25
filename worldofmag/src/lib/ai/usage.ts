@@ -3,6 +3,8 @@ import { getActivePlan } from "@/lib/plans";
 import { estimateCostUsd } from "@/lib/llm/pricing";
 import { PERMISSIONS } from "@/lib/permissions";
 import { notifyUser } from "@/actions/notifications";
+import { getUsdPlnRate } from "@/lib/usdPlnRate";
+import { withPln } from "@/lib/usdPln";
 import type { TokenUsage } from "@/lib/llm/chat";
 
 /**
@@ -210,13 +212,17 @@ async function maybeFireCostAlert(): Promise<void> {
   const total = await getDailyCostUsd(day);
   if (total < threshold) return;
   const admins = await getAdminUserIds();
+  // 029: dokładamy równowartość w PLN wg przelicznika z /admin/llm.
+  const rate = await getUsdPlnRate();
+  const totalStr = withPln(`$${total.toFixed(2)}`, total, rate);
+  const thresholdStr = withPln(`$${threshold.toFixed(2)}`, threshold, rate);
   await Promise.all(
     admins.map((userId) =>
       notifyUser({
         userId,
         module: "admin",
         title: "Przekroczono dzienny próg kosztów AI",
-        body: `Szacowany koszt AI na dziś (${day}) to $${total.toFixed(2)} — próg $${threshold.toFixed(2)}.`,
+        body: `Szacowany koszt AI na dziś (${day}) to ${totalStr} — próg ${thresholdStr}.`,
         href: "/admin/llm",
         dedupeKey: `ai-cost-alert-${day}`,
       })
