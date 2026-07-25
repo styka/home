@@ -566,6 +566,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
 
   // Odrzucenie karty planu (bez wykonywania).
   function dismissPlanTurn(id: string) {
+    feedbackPrefixRef.current = null; // 029: porzucony plan zgłoszenia nie może „przenieść" prefiksu 🐛 dalej
     setTurns((t) => t.map((x) => (x.id === id && x.kind === "plan" ? { ...x, dismissed: true } : x)));
   }
 
@@ -1063,6 +1064,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
       });
       return;
     }
+
+    // 029: normalna (nie-zgłoszeniowa) wiadomość — porzuć ewentualny nieużyty prefiks 🐛,
+    // by nie trafił omyłkowo do niezwiązanego zadania utworzonego później.
+    feedbackPrefixRef.current = null;
 
     // Utwórz rozmowę przy pierwszej wiadomości.
     if (!convoIdRef.current) {
