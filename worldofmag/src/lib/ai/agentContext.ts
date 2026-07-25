@@ -17,25 +17,56 @@ export const TOOL_DATA_STUB = "[wyniki narzędzi z wcześniejszego kroku — ju�
 
 export type ToolResult = { tool: string; args: Record<string, unknown>; data: unknown; error?: string };
 
+// 030: próg skracania pojedynczego pola tekstowego w wynikach narzędzi. Długie opisy
+// (np. zgłoszenia błędów ze zrzutami rozmów w opisie zadania) rozsadzały blok wyników,
+// przez co bezpiecznik znakowy ucinał JSON W POŁOWIE — model nie rozumiał wyniku i
+// ponawiał to samo zapytanie aż do limitu kroków. Skracamy per-pole (JSON zostaje
+// poprawny), z jawnym markerem jak sięgnąć po całość.
+export const FIELD_MAX_CHARS = 700;
+const FIELD_TRIM_MARKER = (total: number) =>
+  ` …[SKRÓCONO z ${total} znaków — pełna treść: get_task/get_note po id]`;
+
+/**
+ * Rekurencyjnie skraca wszystkie długie stringi w strukturze wyniku narzędzia do
+ * `maxLen` znaków, doklejając czytelny marker skrócenia. Zwraca nową strukturę
+ * (nie mutuje wejścia). JSON po serializacji pozostaje poprawny.
+ */
+export function trimLongStrings(value: unknown, maxLen: number = FIELD_MAX_CHARS): unknown {
+  if (typeof value === "string") {
+    return value.length > maxLen ? value.slice(0, maxLen) + FIELD_TRIM_MARKER(value.length) : value;
+  }
+  if (Array.isArray(value)) return value.map((v) => trimLongStrings(v, maxLen));
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[k] = trimLongStrings(v, maxLen);
+    }
+    return out;
+  }
+  return value;
+}
+
 /**
  * Kompaktuje wyniki narzędzi PRZED wstrzyknięciem do kontekstu. Dla każdego narzędzia
  * ogranicza listę rekordów do `PER_TOOL_MAX_RECORDS` z czytelnym znacznikiem ucięcia,
+ * skraca długie pola tekstowe per-pole (`trimLongStrings` — JSON zostaje poprawny),
  * a na końcu stosuje twardy bezpiecznik znakowy na cały blok. Zwraca serializowany JSON
  * (string) gotowy do wstawienia między delimitery `<<<DANE … DANE>>>`.
  */
 export function compactToolResults(results: ToolResult[]): string {
   const trimmed = results.map((r) => {
-    if (Array.isArray(r.data) && r.data.length > PER_TOOL_MAX_RECORDS) {
-      const shown = r.data.slice(0, PER_TOOL_MAX_RECORDS);
+    const data = trimLongStrings(r.data);
+    if (Array.isArray(data) && data.length > PER_TOOL_MAX_RECORDS) {
+      const shown = data.slice(0, PER_TOOL_MAX_RECORDS);
       return {
         tool: r.tool,
         args: r.args,
         data: shown,
-        truncated: `pokazano ${shown.length} z ${r.data.length} rekordów — zawęź zapytanie (search/status/limit)`,
+        truncated: `pokazano ${shown.length} z ${data.length} rekordów — zawęź zapytanie (search/status/limit)`,
         ...(r.error ? { error: r.error } : {}),
       };
     }
-    return r;
+    return { ...r, data };
   });
   const json = JSON.stringify(trimmed);
   if (json.length > TOOL_RESULT_MAX_CHARS) {

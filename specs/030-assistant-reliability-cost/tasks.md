@@ -22,7 +22,7 @@
   Testy `__tests__/agentProtocol.test.ts`: czysty JSON, JSON w płotkach, JSON z prozą
   przed/po, trailing comma, kompletnie popsuty tekst → salvage.
   Gotowe, gdy: testy przechodzą.
-- [ ] **T-3** `[P]` — `src/lib/ai/agentContext.ts`: `trimLongStrings(value, maxLen=700)`
+- [x] **T-3** `[P]` — `src/lib/ai/agentContext.ts`: `trimLongStrings(value, maxLen=700)`
   (rekurencyjne skracanie stringów w wynikach z markerem `…[SKRÓCONO z N znaków — pełna treść:
   get_task/get_note po id]`) + użycie w `compactToolResults` PRZED serializacją. Rozszerzyć
   `__tests__/agentContext.test.ts`: długi opis w rekordzie → wynik to poprawny JSON z markerem;
