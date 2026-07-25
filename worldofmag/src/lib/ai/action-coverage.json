@@ -582,11 +582,20 @@
     "status": "excluded",
     "reason": "admin"
   },
+  "llmConfig:getUsdPlnRate": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin"
+  },
   "llmConfig:setAssignment": {
     "status": "excluded",
     "reason": "admin"
   },
   "llmConfig:setCostAlertThreshold": {
+    "status": "excluded",
+    "reason": "admin"
+  },
+  "llmConfig:setUsdPlnRate": {
     "status": "excluded",
     "reason": "admin"
   },
