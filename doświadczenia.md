@@ -4,6 +4,21 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-25 — Prod build pada na bramce, której `next build` nie odpala (`check-ai-coverage`)
+**Problem:** Lokalnie weryfikowałem `npx next build` (przechodził), ale Render odpala `npm run build`,
+który ma DŁUŻSZY łańcuch bramek: `copy-* → check-action-coverage → check-ai-coverage → check-migrations
+→ next lint → prisma generate → next build → migrate.js`. Nowe Server Actions `getUsdPlnRate`/
+`setUsdPlnRate` (029) nie miały wpisu w `src/lib/ai/action-coverage.json`, więc `check-ai-coverage.js`
+wywalił build na produkcji (deploy nie wszedł; stary build dalej serwował).
+**Rozwiązanie:** Dodano wpisy `llmConfig:getUsdPlnRate` (read) i `llmConfig:setUsdPlnRate` jako
+`excluded`/`admin` (akcje admin-only, nie dla asystenta), wzorem `get/setCostAlertThreshold`. Ponowna
+promocja na master.
+**Lekcja:** Po dodaniu JAKIEJKOLWIEK Server Action weryfikuj lokalnie CAŁYM łańcuchem bramek, nie samym
+`next build`. Minimum bez ruszania prod DB: `node scripts/check-action-coverage.js && node scripts/
+check-ai-coverage.js && node scripts/check-migrations.js && npx next lint --dir src && npx next build`
+(pomiń tylko ostatni `migrate.js`, który rusza prod DB — C-13). Każda nowa mutująca/odczytowa akcja =
+wpis w `action-coverage.json`, inaczej `npm run build` (a więc Render) pada.
+
 ## 2026-07-23 — Koszt asystenta AI: wyniki narzędzi narastają w kontekście pętli agenta
 **Problem:** Asystent (`/api/llm/home/agent`) wysyłał do modelu bardzo dużo tokenów. Największy ZMIENNY
 koszt to nie prompt systemowy (już routowany per-moduł i cache'owany), lecz **surowe wyniki narzędzi**:
