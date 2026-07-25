@@ -26,6 +26,10 @@ const DESTRUCTIVE_TYPES = DESTRUCTIVE_ACTION_TYPES;
 // akcję po opisie i po czytelnym `searchQuery` (nazwa/tytuł rekordu).
 const ID_KEY = /Id$/;
 
+// Wysokość wiersza nagłówka pozycji (ikona modułu + etykieta). Wspólna dla wiersza i dla pola
+// wyboru obok niego — dzięki temu checkbox jest wyrównany w PIONIE z ikoną i nazwą akcji.
+const BADGE_ROW_HEIGHT = 20;
+
 // Parametry-daty agent przesyła jako surowy string ISO z JSON-a
 // (np. „2026-06-08T00:00:00.000Z"). W podglądzie akcji to nieczytelne, więc
 // wykrywamy takie wartości i pokazujemy je natywnym date/datetime-pickerem,
@@ -281,11 +285,18 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                   transition: "opacity 0.1s",
                 }}
               >
+                {/* Pole wyboru wyrównane w PIONIE z wierszem nagłówka (ikona modułu + nazwa akcji):
+                    stała wysokość równa BADGE_ROW_HEIGHT + centrowanie, zamiast kruchego marginTop.
+                    Szerokość 20 px = minimalny cel dotyku (C-31). */}
                 <button
                   onClick={() => toggleAction(action.id)}
                   style={{
                     flexShrink: 0,
-                    marginTop: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 20,
+                    height: BADGE_ROW_HEIGHT,
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -298,7 +309,7 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   {/* Module badge + action type */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, minHeight: BADGE_ROW_HEIGHT }}>
                     <span style={{ color: moduleColor(action.module) }}>{moduleIcon(action.module)}</span>
                     <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: moduleColor(action.module) }}>
                       {moduleLabel(action.module)}

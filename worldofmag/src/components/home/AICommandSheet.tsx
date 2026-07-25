@@ -1433,7 +1433,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 </button>
                 {conversations.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 16 }}>Brak zapisanych rozmów.</p>}
                 {conversations.map((c) => (
-                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  // 031: `minWidth: 0` na wierszu ORAZ na przycisku tytułu — bez tego dziecko flexboxa
+                  // ma domyślnie `min-width: auto` i długi tytuł rozpycha wiersz poza szerokość ekranu
+                  // (na telefonie objawiało się to przewijaniem w poziomie w historii rozmów).
+                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                     {renamingId === c.id ? (
                       <input
                         autoFocus
@@ -1444,8 +1447,8 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                         style={{ flex: 1, fontSize: 13, padding: "9px 10px", borderRadius: 8, border: "1px solid var(--accent-blue)", background: "var(--bg-base)", color: "var(--text-primary)", outline: "none" }}
                       />
                     ) : (
-                      <button onClick={() => loadConversation(c.id)} style={{ ...rowBtn, flex: 1, justifyContent: "flex-start" }}>
-                        <span style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</span>
+                      <button onClick={() => loadConversation(c.id)} style={{ ...rowBtn, flex: 1, minWidth: 0, overflow: "hidden", justifyContent: "flex-start" }}>
+                        <span style={{ fontSize: 13, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowWrap: "anywhere" }}>{c.title}</span>
                       </button>
                     )}
                     <button onClick={() => { setRenamingId(c.id); setRenameText(c.title); }} title="Zmień nazwę" aria-label="Zmień nazwę rozmowy" style={{ ...iconBtn, color: "var(--text-muted)" }}><Pencil size={13} /></button>
@@ -1638,6 +1641,11 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     </div>
                   </div>
                 </div>
+                {/* 031: podpowiedź skrótu wysyłania. Tylko desktop (`hidden md:block`) — na telefonie
+                    nie ma klawiatury sprzętowej, a wiersz zabierałby miejsce nad klawiaturą ekranową. */}
+                <p className="hidden md:block" style={{ margin: "4px 2px 0", fontSize: 10.5, color: "var(--text-muted)" }}>
+                  <kbd style={{ fontFamily: "inherit", fontWeight: 600 }}>Ctrl</kbd>+<kbd style={{ fontFamily: "inherit", fontWeight: 600 }}>Enter</kbd> wysyła wiadomość
+                </p>
               </div>
             )}
           </div>
@@ -1669,15 +1677,32 @@ const composerActionBtn: React.CSSProperties = { flexShrink: 0, width: 38, heigh
 const composerPrimaryBtn: React.CSSProperties = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" };
 
 // ── Widok pojedynczej tury ──────────────────────────────────────────────────
+// 031: stopka odpowiedzi to WYŁĄCZNIE ikony (bez labelek) — każda z `title` (tooltip) i
+// `aria-label`. Kolejność w stopce: 1. odczytaj na głos, 2. kopiuj, 3. ponów.
+const footerIconBtn: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
+  width: 26, height: 26, background: "none", border: "none", cursor: "pointer", padding: 0,
+};
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
+  const label = copied ? "Skopiowano" : "Kopiuj";
   return (
     <button
       onClick={() => { navigator.clipboard?.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); }}
-      title="Kopiuj"
-      style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: copied ? "var(--accent-green)" : "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+      title={label}
+      aria-label={label}
+      style={{ ...footerIconBtn, color: copied ? "var(--accent-green)" : "var(--text-muted)" }}
     >
-      {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? "Skopiowano" : "Kopiuj"}
+      {copied ? <Check size={13} /> : <Copy size={13} />}
+    </button>
+  );
+}
+
+function RegenerateButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} title="Generuj ponownie" aria-label="Generuj ponownie" style={{ ...footerIconBtn, color: "var(--text-muted)" }}>
+      <RefreshCw size={13} />
     </button>
   );
 }
@@ -1775,13 +1800,9 @@ function TurnView({
           </div>
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 6 }}>
-          <CopyButton text={turn.content} />
           {onToggleSpeak && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
-          {isLast && onRegenerate && (
-            <button onClick={onRegenerate} title="Generuj ponownie" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-              <RefreshCw size={12} /> Ponów
-            </button>
-          )}
+          <CopyButton text={turn.content} />
+          {isLast && onRegenerate && <RegenerateButton onClick={onRegenerate} />}
           <CostChip meta={turn.meta} rate={usdPlnRate} />
         </div>
       </div>
@@ -1923,8 +1944,8 @@ function TurnView({
         </div>
         <div onClick={onBubbleClick} style={{ maxHeight: 280, overflowY: "auto", borderTop: "1px solid var(--border)", paddingTop: 8 }} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
-          <CopyButton text={turn.content} />
           {onToggleSpeak && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, `${turn.title}. ${turn.content}`)} />}
+          <CopyButton text={turn.content} />
           <CostChip meta={turn.meta} rate={usdPlnRate} />
         </div>
         {turn.savedSlug ? (

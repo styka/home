@@ -16,21 +16,21 @@
 
 ## Faza 0 — Szybkie poprawki UI (bez zależności)
 
-- [ ] **T-1** `[P]` — **Wyrównanie pól wyboru w `ActionDrawer`.** Przycisk wyboru pozycji dostaje
+- [x] **T-1** `[P]` — **Wyrównanie pól wyboru w `ActionDrawer`.** Przycisk wyboru pozycji dostaje
   stałą wysokość równą wierszowi nagłówka (ikona modułu + etykieta) i wyśrodkowanie w pionie zamiast
   `marginTop: 1`; cel dotyku ≥20×20 px.
   *Gotowe, gdy:* pole wyboru jest optycznie w jednej linii z ikoną i nazwą akcji (AC-7).
 
-- [ ] **T-2** `[P]` — **Stopka odpowiedzi: same ikony + nowa kolejność.** Usuń etykiety tekstowe z
+- [x] **T-2** `[P]` — **Stopka odpowiedzi: same ikony + nowa kolejność.** Usuń etykiety tekstowe z
   „Kopiuj"/„Odczytaj na głos"/„Ponów", zostaw ikony z `title` + `aria-label`; kolejność w JSX:
   odczytaj na głos → kopiuj → ponów. Stan „skopiowano" sygnalizuje ikona + zmiana `title`.
   *Gotowe, gdy:* w stopce są trzy ikony bez tekstu, w zadanej kolejności, każda z podpowiedzią (AC-8).
 
-- [ ] **T-3** `[P]` — **Historia rozmów nie wyjeżdża poza ekran na telefonie.** `minWidth: 0` na
+- [x] **T-3** `[P]` — **Historia rozmów nie wyjeżdża poza ekran na telefonie.** `minWidth: 0` na
   kontenerze wiersza i na przycisku tytułu, `overflow: hidden`, `overflow-wrap: anywhere`.
   *Gotowe, gdy:* przy szerokości 375 px lista rozmów nie powoduje przewijania poziomego (AC-9).
 
-- [ ] **T-4** `[P]` — **Podpowiedź „Ctrl+Enter wysyła".** Dyskretny tekst pod kompozytorem
+- [x] **T-4** `[P]` — **Podpowiedź „Ctrl+Enter wysyła".** Dyskretny tekst pod kompozytorem
   (`var(--text-muted)`), widoczny na desktopie (`hidden md:block`), ukryty na telefonie.
   *Gotowe, gdy:* podpowiedź widoczna na desktopie, brak jej na mobile, layout kompozytora bez zmian (AC-10).
 
