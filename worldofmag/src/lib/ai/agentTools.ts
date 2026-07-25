@@ -53,7 +53,7 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_tasks: args { projectId?, status?, priority?, search?, tag?, dueBefore?, limit? } → [{ id, title, status, priority, dueDate, projectId, projectName, tags, recurring?, hasDescription? }]. projectId może być identyfikatorem ALBO nazwą projektu (dopasowanie bez rozróżniania wielkości liter) — gdy użytkownik nazwie projekt (np. „z projektu LZ"), podaj tę nazwę wprost. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO. tag = nazwa etykiety (bez rozróżniania wielkości liter) — użyj go, gdy użytkownik pyta „zadania otagowane/z tagiem X". "tags" w wyniku to lista nazw etykiet danego zadania. recurring:true = zadanie CYKLICZNE (powtarzalne; szczegóły reguły przez get_task); hasDescription:true = zadanie ma niepusty opis (warto pobrać przez get_task, gdy potrzebujesz treści).
 - list_shopping_lists: args { includeArchived? } → [{ id, name, pendingCount, totalCount, archived }]
 - list_items: args { listId?, listName?, status?, search?, limit? } → [{ id, name, status, quantity, unit, listId, listName }]
-- list_notes: args { search?, limit? } → [{ id, title, snippet, updatedAt }]. Lista (snippet skrócony). Do PEŁNEJ treści użyj get_note.
+- list_notes: args { search?, limit? } → [{ id, title, snippet, updatedAt, pinned? }]. Lista (snippet skrócony; pinned:true = notatka przypięta). Do PEŁNEJ treści użyj get_note.
 - get_note: args { noteId? | search? } → { id, title, content, updatedAt } | null. PEŁNA treść jednej notatki — wywołaj PRZED przepisaniem/edycją treści (update_note/append_to_note), gdy potrzebujesz aktualnego tekstu.
 - get_task: args { taskId? | search? } → { id, title, description, status, priority, dueDate, projectName, recurring? } | null. PEŁNY opis jednego zadania — wywołaj PRZED edycją opisu (update_task), gdy potrzebujesz aktualnej treści. recurring = opis reguły cykliczności po polsku (np. "co tydzień: pon, śr"), obecny tylko dla zadań cyklicznych.
 - list_pets: args { search? } → [{ id, name, species, status }]
@@ -512,15 +512,17 @@ export async function runReadTool(
       }
       const notes = await prisma.note.findMany({
         where,
-        select: { id: true, title: true, content: true, updatedAt: true },
+        select: { id: true, title: true, content: true, updatedAt: true, pinned: true },
         orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
         take: clampLimit(args.limit),
       });
+      // 030: pinned tylko-gdy-ustawione (audyt AC-4 — model ma widzieć stan przypięcia).
       return notes.map((n) => ({
         id: n.id,
         title: n.title,
         snippet: (n.content ?? "").slice(0, 120),
         updatedAt: n.updatedAt.toISOString(),
+        ...(n.pinned ? { pinned: true } : {}),
       }));
     }
 

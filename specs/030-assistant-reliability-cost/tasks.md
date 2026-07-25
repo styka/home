@@ -64,19 +64,19 @@
   trzy warunki, wznowienia clarify/refine zawsze na `reasoning`.
 
 ## Faza 4 — Audyt, bramki i domknięcie
-- [ ] **T-10** `[P]` — Audyt AC-4: przegląd wszystkich case'ów `runReadTool` vs schema pod kątem
+- [x] **T-10** `[P]` — Audyt AC-4: przegląd wszystkich case'ów `runReadTool` vs schema pod kątem
   pomijanych pól funkcjonalnych; wynik (tabelka: narzędzie → werdykt) do `verify.md`; ewentualne
   znalezione luki załatane wzorcem „pole tylko-gdy-ustawione" (aktualizując plan §3.2 — C-54).
   Gotowe, gdy: tabelka audytu kompletna dla wszystkich narzędzi.
-- [ ] **T-11** — Bramki (C-50): testy jednostkowe repo zielone, `npm run check:actions`,
+- [x] **T-11** — Bramki (C-50): testy jednostkowe repo zielone, `npm run check:actions`,
   `npm run check:migrations`, `npx next lint`, `npx tsc --noEmit`, `npx next build`
   (bez `migrate.js` — C-13; brak migracji).
   Gotowe, gdy: wszystko zielone lokalnie.
-- [ ] **T-12** — Mapowanie AC-1…AC-11 na wyniki (tabela do `verify.md`), w tym: analiza AC-8
+- [~] **T-12** — Mapowanie AC-1…AC-11 na wyniki (tabela do `verify.md`), w tym: analiza AC-8
   (scenariusz zgłoszenia #5 po zmianach), szacunek AC-10 (tokeny przed/po) i szkic odpowiedzi
   AC-11 dla administratora (ograniczenia → wykonalność dla Haiku).
   Gotowe, gdy: każdy AC ma przypisany wynik/uzasadnienie.
-- [ ] **T-13** — Wpis do `doświadczenia.md` (C-51) o naprawionych bugach (błąd formatu, pętla
+- [x] **T-13** — Wpis do `doświadczenia.md` (C-51) o naprawionych bugach (błąd formatu, pętla
   powtórek przez ucinany JSON) + commit razem z fixem.
   Gotowe, gdy: wpis w formacie repo (Problem/Rozwiązanie/Lekcja) dodany.
 
