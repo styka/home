@@ -157,7 +157,7 @@ export async function classifyIntent(
     conversationId,
   });
   // 028: dolicz koszt klasyfikacji do akumulatora tury (wskaźnik ma być realny).
-  if (meta) accrueUsage(meta, result.ok ? result.usage : undefined, result.ok ? result.model : undefined);
+  if (meta) accrueUsage(meta, result.ok ? result.usage : undefined, result.ok ? result.model : undefined, "fast_path");
   if (!result.ok || !result.content) return { kind: "complex" };
 
   const parsed = extractJson(result.content);
