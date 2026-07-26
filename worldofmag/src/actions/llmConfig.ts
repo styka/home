@@ -10,6 +10,8 @@ import {
   isOperationType,
   type OperationType,
 } from "@/lib/llm/operationTypes";
+import { PROVIDER_KINDS, isSpeechOnlyKind, type ProviderKind } from "@/lib/llm/resolver";
+import { TTS_CATALOG, findTtsProvider, findTtsProviderById, providerMatchesSpec, normalizeBaseUrl } from "@/lib/tts/catalog";
 import { encryptSecret, decryptSecret, maskSecret } from "@/lib/crypto/secrets";
 import { logAudit } from "@/lib/audit";
 import { COST_ALERT_CONFIG_KEY, getDailyCostUsd } from "@/lib/ai/usage";
@@ -56,6 +58,15 @@ export async function getLlmProviders(): Promise<ProviderDTO[]> {
   }));
 }
 
+/**
+ * 032: normalizacja rodzaju dostawcy. Wcześniej „wszystko, co nie `anthropic` → `openai_compat`",
+ * co zjadałoby nowe rodzaje syntezy mowy (ElevenLabs, Google, Azure) i wysyłałoby ich żądania na
+ * endpoint zgodny z OpenAI. Nieznana wartość nadal degraduje do `openai_compat`.
+ */
+function normalizeProviderKind(kind: string | undefined): ProviderKind {
+  return PROVIDER_KINDS.includes(kind as ProviderKind) ? (kind as ProviderKind) : "openai_compat";
+}
+
 export async function createProvider(data: {
   label: string;
   kind: string;
@@ -65,7 +76,7 @@ export async function createProvider(data: {
   await requireAdmin();
   const label = data.label.trim();
   const baseUrl = data.baseUrl.trim().replace(/\/+$/, "");
-  const kind = data.kind === "anthropic" ? "anthropic" : "openai_compat";
+  const kind = normalizeProviderKind(data.kind);
   if (!label || !baseUrl) throw new Error("Nazwa i adres bazowy są wymagane");
   await prisma.llmProvider.create({
     data: { label, kind, baseUrl, apiKey: encryptSecret(data.apiKey.trim()), enabled: true },
@@ -82,7 +93,7 @@ export async function updateProvider(
   const patch: Record<string, unknown> = {};
   if (data.label !== undefined) patch.label = data.label.trim();
   if (data.baseUrl !== undefined) patch.baseUrl = data.baseUrl.trim().replace(/\/+$/, "");
-  if (data.kind !== undefined) patch.kind = data.kind === "anthropic" ? "anthropic" : "openai_compat";
+  if (data.kind !== undefined) patch.kind = normalizeProviderKind(data.kind);
   if (data.enabled !== undefined) patch.enabled = data.enabled;
   // Pusty klucz = nie nadpisuj (pozwala edytować inne pola bez ujawniania klucza).
   if (data.apiKey !== undefined && data.apiKey.trim()) patch.apiKey = encryptSecret(data.apiKey.trim());
@@ -134,6 +145,20 @@ export async function setAssignment(data: {
   if (!isOperationType(data.operationType)) throw new Error("Nieznany typ operacji");
   const model = data.model.trim();
   if (!data.providerId || !model) throw new Error("Wybierz dostawcę i podaj model");
+  // 032: dostawca obsługujący WYŁĄCZNIE syntezę mowy nie może zostać przypisany do operacji
+  // czatowej — jego endpoint nie odpowiada na prompt. Blokujemy to już przy zapisie, żeby
+  // administrator dowiedział się od razu, a nie z błędu asystenta (druga bariera: `resolveLlmChain`).
+  if (data.operationType !== "speech") {
+    const provider = await prisma.llmProvider.findUnique({
+      where: { id: data.providerId },
+      select: { kind: true, label: true },
+    });
+    if (provider && isSpeechOnlyKind(provider.kind)) {
+      throw new Error(
+        `Dostawca „${provider.label}” obsługuje wyłącznie syntezę mowy — nie da się go przypisać do tego typu operacji.`
+      );
+    }
+  }
   await prisma.llmAssignment.upsert({
     where: { operationType: data.operationType },
     update: {
@@ -151,6 +176,155 @@ export async function setAssignment(data: {
     },
   });
   await logAudit("config", "llm_assignment.set", data.operationType, `Przypisano model „${model}” do operacji ${data.operationType}`);
+  revalidatePath("/admin/llm");
+}
+
+// ─── 032: konfiguracja syntezy mowy (lektor asystenta) ───────────────────────
+//
+// Administrator nie ma znać z pamięci dostawców, modeli ani nazw głosów. Panel dostaje gotowe listy
+// z katalogu (`src/lib/tts/catalog.ts`), informację o koszcie i wymaganiach oraz możliwość dopisania
+// brakującego klucza w tym samym miejscu. Wybór dalej ląduje w bazie (C-40) — katalog jest tylko
+// słownikiem podpowiedzi.
+
+/** Klucz `Config` z domyślnym głosem lektora wybranym przez administratora (jawny, nie sekret). */
+const SPEECH_VOICE_CONFIG_KEY = "speech_default_voice";
+
+export interface SpeechCatalogEntryDTO {
+  id: string;
+  label: string;
+  kind: string;
+  baseUrl: string;
+  models: { id: string; label: string }[];
+  voices: { id: string; label: string; description: string }[];
+  paid: boolean;
+  costHint: string;
+  requiresKey: boolean;
+  polishHint: string;
+  setupHint: string;
+  /** Czy dla tej pozycji istnieje już dostawca w bazie… */
+  providerExists: boolean;
+  /** …i czy ma zapisany klucz (samego klucza NIGDY nie zwracamy — C-41). */
+  hasKey: boolean;
+}
+
+export interface SpeechConfigDTO {
+  catalog: SpeechCatalogEntryDTO[];
+  /** Pozycja katalogu odpowiadająca obecnemu przypisaniu (albo null, gdy lektor jest wyłączony). */
+  currentCatalogId: string | null;
+  currentModel: string | null;
+  currentVoiceId: string | null;
+}
+
+export async function getSpeechConfig(): Promise<SpeechConfigDTO> {
+  await requireAdmin();
+  const providers = await prisma.llmProvider.findMany({ select: { kind: true, baseUrl: true, apiKey: true } });
+  const assignment = await prisma.llmAssignment.findUnique({
+    where: { operationType: "speech" },
+    include: { provider: { select: { kind: true, baseUrl: true } } },
+  });
+  const voiceRow = await prisma.config.findUnique({ where: { key: SPEECH_VOICE_CONFIG_KEY } });
+
+  const catalog: SpeechCatalogEntryDTO[] = TTS_CATALOG.map((spec) => {
+    const match = providers.find((p) => providerMatchesSpec(p, spec));
+    return {
+      id: spec.id,
+      label: spec.label,
+      kind: spec.kind,
+      baseUrl: spec.baseUrl,
+      models: spec.models,
+      voices: spec.voices,
+      paid: spec.paid,
+      costHint: spec.costHint,
+      requiresKey: spec.requiresKey,
+      polishHint: spec.polishHint,
+      setupHint: spec.setupHint,
+      providerExists: !!match,
+      hasKey: !!match?.apiKey,
+    };
+  });
+
+  const current = assignment ? findTtsProvider(assignment.provider.kind, assignment.provider.baseUrl) : undefined;
+  return {
+    catalog,
+    currentCatalogId: current?.id ?? null,
+    currentModel: assignment?.model ?? null,
+    currentVoiceId: voiceRow?.value ?? null,
+  };
+}
+
+/**
+ * Ustawia lektora „jednym zapisem": upsert dostawcy z danych KATALOGU (nie z wejścia klienta),
+ * przypisanie modelu do typu operacji `speech` i domyślny głos. Wzorzec 1:1 z `applyAnthropicProfile`.
+ *
+ * Pusty `apiKey` nie nadpisuje istniejącego klucza (pozwala zmienić model/głos bez wpisywania klucza
+ * od nowa). Głos spoza listy dostawcy → zapisujemy jego głos domyślny, nigdy obcą nazwę (AC-7).
+ */
+export async function applySpeechProvider(data: {
+  catalogId: string;
+  apiKey?: string;
+  model: string;
+  voiceId?: string | null;
+  /** Adres bazowy — tylko dla Azure, gdzie zależy od regionu wybranego przez administratora. */
+  baseUrl?: string;
+}): Promise<void> {
+  await requireAdmin();
+  const spec = findTtsProviderById(data.catalogId);
+  if (!spec) throw new Error("Nieznany dostawca syntezy mowy.");
+
+  const model = data.model.trim();
+  if (!spec.models.some((m) => m.id === model)) {
+    throw new Error("Wybierz model z listy dostępnej dla tego dostawcy.");
+  }
+
+  const baseUrl = normalizeBaseUrl(data.baseUrl?.trim() || spec.baseUrl);
+  const apiKey = data.apiKey?.trim();
+
+  // 032: szukamy dostawcy odpowiadającego TEJ pozycji katalogu (rodzaj + adres), nie pierwszego
+  // o tym samym rodzaju — inaczej zapis lektora OpenAI przestawiał adres istniejącego Groqa i
+  // wyłączał czat. `providerMatchesSpec` dopuszcza rozjazd adresu tylko dla rodzajów jednoznacznych
+  // (np. inny region Azure), więc tam nadal aktualizujemy w miejscu zamiast mnożyć wiersze.
+  const candidates = await prisma.llmProvider.findMany({
+    where: { kind: spec.kind },
+    orderBy: { createdAt: "asc" },
+  });
+  let provider = candidates.find((p) => providerMatchesSpec(p, { kind: spec.kind, baseUrl })) ?? null;
+  if (provider) {
+    await prisma.llmProvider.update({
+      where: { id: provider.id },
+      data: { baseUrl, enabled: true, ...(apiKey ? { apiKey: encryptSecret(apiKey) } : {}) },
+    });
+  } else {
+    if (spec.requiresKey && !apiKey) {
+      throw new Error(`Dostawca „${spec.label}” wymaga klucza API — podaj go, żeby włączyć lektora.`);
+    }
+    provider = await prisma.llmProvider.create({
+      data: { label: spec.label, kind: spec.kind, baseUrl, apiKey: encryptSecret(apiKey ?? ""), enabled: true },
+    });
+  }
+
+  await prisma.llmAssignment.upsert({
+    where: { operationType: "speech" },
+    update: { providerId: provider.id, model },
+    create: { operationType: "speech", providerId: provider.id, model },
+  });
+
+  // Głos walidujemy wprost przeciw TEJ pozycji katalogu — mamy `spec`, więc nie ma po co pytać
+  // katalogu drugi raz (i nie ma ryzyka trafienia w inną pozycję o tym samym rodzaju).
+  const voiceId = spec.voices.some((v) => v.id === data.voiceId) ? data.voiceId! : (spec.voices[0]?.id ?? null);
+  if (voiceId) {
+    await prisma.config.upsert({
+      where: { key: SPEECH_VOICE_CONFIG_KEY },
+      update: { value: voiceId },
+      create: { key: SPEECH_VOICE_CONFIG_KEY, value: voiceId },
+    });
+  }
+
+  await logAudit(
+    "config",
+    "llm_speech.set",
+    provider.id,
+    `Ustawiono lektora: ${spec.label}, model „${model}”${voiceId ? `, głos „${voiceId}”` : ""}${apiKey ? " (w tym klucz)" : ""}`
+  );
   revalidatePath("/admin/llm");
 }
 

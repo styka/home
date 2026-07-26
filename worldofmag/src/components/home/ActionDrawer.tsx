@@ -146,6 +146,10 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
   const [editedSearchQuery, setEditedSearchQuery] = useState<Record<string, string>>(
     Object.fromEntries(actions.map((a) => [a.id, a.searchQuery ?? ""]))
   );
+  // 032: parametry POMOCNICZE (np. „szukana nazwa", po której backend dopiero celuje w rekord)
+  // widzi tylko administrator, i to po świadomym rozwinięciu — zwykły użytkownik nie ma co z nimi
+  // zrobić, a zajmowały miejsce obok pól, które faktycznie warto poprawić.
+  const [techExpanded, setTechExpanded] = useState<Set<string>>(new Set());
 
   function toggleAction(id: string) {
     setIncluded((prev) => {
@@ -166,6 +170,14 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
 
   function toggleParams(id: string) {
     setParamsExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleTech(id: string) {
+    setTechExpanded((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
@@ -396,9 +408,12 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                         // znaczący czas — pokazujemy pełny picker (nie gubimy godziny).
                         const dateControl = spec.control === "date" || spec.control === "datetime";
                         return (
-                          <div key={key} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontSize: 11, color: "var(--text-muted)", width: 110, flexShrink: 0 }}>{spec.label}</span>
+                          <div key={key} style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                            {/* 032: wiersz musi się ZAWIJAĆ, a nie rozpychać karty — długa wartość
+                                (albo szeroka kontrolka na wąskim telefonie) wychodziła poza obszar
+                                panelu i wymuszała przewijanie w poziomie. */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
+                              <span style={{ fontSize: 11, color: "var(--text-muted)", width: 110, flexShrink: 0, overflowWrap: "anywhere" }}>{spec.label}</span>
                               {spec.control === "select" ? (
                                 <select
                                   value={value}
@@ -467,15 +482,31 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                           </div>
                         );
                       })}
-                      {action.searchQuery !== undefined && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 11, color: "var(--accent-amber)", width: 110, flexShrink: 0 }}>Szukana nazwa</span>
+                      {/* 032: „szukana nazwa" to parametr POMOCNICZY — nie opisuje tego, co się
+                          stanie, tylko po czym backend znajdzie rekord. Zwykły użytkownik go nie
+                          widzi (AC-13); administrator ma go pod zwiniętym rozwinięciem (AC-14). */}
+                      {isAdmin && action.searchQuery !== undefined && (
+                        <button
+                          onClick={() => toggleTech(action.id)}
+                          aria-expanded={techExpanded.has(action.id)}
+                          style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10.5, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                        >
+                          {techExpanded.has(action.id) ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                          Szczegóły techniczne
+                        </button>
+                      )}
+                      {isAdmin && action.searchQuery !== undefined && techExpanded.has(action.id) && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
+                          <span style={{ fontSize: 11, color: "var(--accent-amber)", width: 110, flexShrink: 0, overflowWrap: "anywhere" }}>Szukana nazwa</span>
                           <input
                             value={editedSearchQuery[action.id] ?? ""}
                             onChange={(e) => setEditedSearchQuery((prev) => ({ ...prev, [action.id]: e.target.value }))}
                             style={{
-                              flex: 1, fontSize: 12, color: "var(--text-primary)",
-                              background: "var(--bg-surface)", border: "1px solid rgba(245,158,11,0.4)",
+                              // 032: `minWidth: 0` — bez tego input trzymał swoją naturalną szerokość
+                              // (domyślne `size`) i rozpychał wiersz poza obszar panelu na telefonie.
+                              // Kolor obwiedni ze zmiennej CSS (C-30) — hardcodowany hex łamał skórki.
+                              flex: 1, minWidth: 0, fontSize: 12, color: "var(--text-primary)",
+                              background: "var(--bg-surface)", border: "1px solid var(--accent-amber)",
                               borderRadius: 6, padding: "3px 8px", outline: "none",
                             }}
                           />

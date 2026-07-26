@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { getLlmProviders, getAssignments, getAiCostBreakdown, getCostAlertThreshold, getUsdPlnRate } from "@/actions/llmConfig";
+import { getLlmProviders, getAssignments, getAiCostBreakdown, getCostAlertThreshold, getUsdPlnRate, getSpeechConfig } from "@/actions/llmConfig";
 import { LlmConfigPanel } from "@/components/admin/LlmConfigPanel";
 import { ChevronLeft, Cpu } from "lucide-react";
 import Link from "next/link";
@@ -12,12 +12,13 @@ export default async function AdminLlmPage() {
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
-  const [providers, assignments, cost, costThreshold, usdPlnRate] = await Promise.all([
+  const [providers, assignments, cost, costThreshold, usdPlnRate, speech] = await Promise.all([
     getLlmProviders(),
     getAssignments(),
     getAiCostBreakdown(30),
     getCostAlertThreshold(),
     getUsdPlnRate(),
+    getSpeechConfig(),
   ]);
 
   return (
@@ -41,7 +42,7 @@ export default async function AdminLlmPage() {
           Typy odpowiadają charakterowi zadania, nie modułowi. Domyślnie wszystkie korzystają z Groq.
         </p>
 
-        <LlmConfigPanel providers={providers} assignments={assignments} cost={cost} costThreshold={costThreshold} usdPlnRate={usdPlnRate} />
+        <LlmConfigPanel providers={providers} assignments={assignments} cost={cost} costThreshold={costThreshold} usdPlnRate={usdPlnRate} speech={speech} />
       </div>
     </div>
   );

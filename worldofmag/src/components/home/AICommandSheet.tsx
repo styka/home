@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight, ArrowUp,
-  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug, Gauge, Zap,
+  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug, Gauge, Zap, CornerUpLeft,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { useDictation } from "@/hooks/useDictation";
@@ -15,7 +15,7 @@ import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported, primeSpeech,
 import { createSpeechListener, speechRecognitionSupported, type SpeechListener } from "@/lib/speechRecognition";
 import {
   listAiConversations, getAiConversation, createAiConversation, appendAiMessage,
-  deleteAiConversation, renameAiConversation, type ConversationMeta,
+  deleteAiConversation, renameAiConversation, saveConversationDraft, type ConversationMeta,
 } from "@/actions/aiConversations";
 import { createUserReport } from "@/actions/reports";
 import { getRecentAiCalls, type AiCallLogRow } from "@/actions/llmConfig";
@@ -389,6 +389,12 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   const [planVersion, setPlanVersion] = useState(0);
   const [isRefining, setIsRefining] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+
+  // 032: ostatnia zakończona rozmowa — do jednodotknięciowego powrotu w nagłówku. Etykietę
+  // wyprowadzamy z pierwszej wypowiedzi użytkownika (tak samo jak serwer tworzy tytuł rozmowy),
+  // więc nie potrzebujemy dodatkowego zapytania do bazy tylko po tytuł.
+  const [lastConversationId, setLastConversationId] = useState<string | null>(null);
+  const [lastConversationLabel, setLastConversationLabel] = useState<string>("");
 
   // Historia rozmów
   const [showHistory, setShowHistory] = useState(false);
@@ -767,6 +773,44 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     return () => window.removeEventListener(ASSISTANT_OPEN_EVENT, onOpen);
   }, []);
 
+  // ── 032: brudnopis pola wiadomości ────────────────────────────────────────
+  // Zapis jest RZADKI i zbiorczy (debounce + jawne zapisy przy zmianie/zamknięciu wątku), a nie na
+  // każdy wpisany znak — inaczej każde uderzenie w klawiaturę leciałoby do serwera.
+  const draftSaveTimer = useRef<number | null>(null);
+  const lastSavedDraftRef = useRef<string>("");
+  const inputTextRef = useRef("");
+  inputTextRef.current = inputText;
+
+  /**
+   * Zapisuje brudnopis natychmiast. `explicit` podajemy tam, gdzie nie możemy czekać na re-render
+   * (np. wyczyszczenie po wysłaniu wiadomości — `inputTextRef` jeszcze trzyma starą treść).
+   */
+  function saveDraftNow(explicit?: string) {
+    if (draftSaveTimer.current) {
+      window.clearTimeout(draftSaveTimer.current);
+      draftSaveTimer.current = null;
+    }
+    const cid = convoIdRef.current;
+    // Brudnopis należy do ROZMOWY. Gdy rozmowa jeszcze nie istnieje (pierwsza wiadomość nigdy nie
+    // wysłana), nie ma do czego go przypiąć — świadome ograniczenie: nie tworzymy pustych rozmów.
+    if (!cid) return;
+    const value = explicit ?? inputTextRef.current;
+    if (value === lastSavedDraftRef.current) return;
+    lastSavedDraftRef.current = value;
+    void saveConversationDraft(cid, value).catch(() => {});
+  }
+
+  useEffect(() => {
+    if (!convoIdRef.current) return;
+    if (inputText === lastSavedDraftRef.current) return;
+    if (draftSaveTimer.current) window.clearTimeout(draftSaveTimer.current);
+    draftSaveTimer.current = window.setTimeout(() => saveDraftNow(), 2000);
+    return () => {
+      if (draftSaveTimer.current) window.clearTimeout(draftSaveTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputText]);
+
   // Zapis stałych preferencji na konto użytkownika (debounce — pole zapisuje się „samo").
   const prefsSaveTimer = useRef<number | null>(null);
   function savePrefs(value: string) {
@@ -822,7 +866,27 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     } catch { /* ignore */ }
   }, []);
 
+  /**
+   * 032: rozwinięte sekcje (ustawienia, zgłoszenie problemu, menu poziomu) należą do KONKRETNEJ
+   * rozmowy — przy zmianie wątku albo zamknięciu asystenta muszą się zwinąć, żeby nowa rozmowa
+   * startowała z czystym ekranem.
+   */
+  function collapseSections() {
+    setShowPrefs(false);
+    setShowReport(false);
+    setReportDone(null);
+    setShowLevelMenu(false);
+  }
+
   function resetConversation() {
+    saveDraftNow();
+    collapseSections();
+    // 032: świadome „Nowa rozmowa" też czyni poprzednią historyczną — udostępniamy do niej powrót
+    // jednym dotknięciem (ta sama ścieżka co po zamknięciu asystenta).
+    if (convoIdRef.current && turnsRef.current.length > 0) {
+      setLastConversationId(convoIdRef.current);
+      setLastConversationLabel(conversationLabelFrom(turnsRef.current));
+    }
     setTurns([]);
     setConversationId(null);
     convoIdRef.current = null;
@@ -831,9 +895,38 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     setInputText("");
   }
 
+  /**
+   * 032: zamknięcie asystenta KOŃCZY rozmowę — po ponownym otwarciu użytkownik dostaje nowy wątek, a
+   * poprzedni jest jedno dotknięcie dalej („Wróć do…" w nagłówku) i w historii. Wyjątek: rozmowa bez
+   * ani jednej tury zostaje, żeby nie zaśmiecać historii pustymi wpisami (i tak nie istnieje jeszcze
+   * w bazie — `AiConversation` powstaje przy pierwszej wiadomości).
+   */
   function handleClose() {
+    saveDraftNow();
+    collapseSections();
     setIsOpen(false);
     setShowHistory(false);
+    if (turnsRef.current.length > 0) {
+      // 032: PRZERWIJ trwające generowanie, zanim wyczyścimy wątek. Komponent siedzi w `AppShell` i
+      // nigdy się nie odmontowuje, więc bez tego żądanie leci dalej i dopisuje odpowiedź do już
+      // wyczyszczonego wątku — przy `convoIdRef === null`, czyli bez zapisu w historii. Efekt:
+      // osierocona wypowiedź asystenta w rzekomo nowej rozmowie. Nie wracamy tu do nasłuchu
+      // głosowego (inaczej niż w `stopGeneration`) — asystent się zamyka, a `stopVoice` i tak
+      // odpala efekt na `isOpen`.
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setBusy(false);
+      if (convoIdRef.current) {
+        setLastConversationId(convoIdRef.current);
+        setLastConversationLabel(conversationLabelFrom(turnsRef.current));
+      }
+      setTurns([]);
+      setConversationId(null);
+      convoIdRef.current = null;
+      setPlanTurnId(null);
+      setError(null);
+      setInputText("");
+    }
   }
 
   // Zgłoszenie problemu z czatem (admin): składa raport (opis + zrzut rozmowy + logi + błąd) i tworzy
@@ -1120,10 +1213,12 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
 
   async function handleSend(textArg?: string) {
     // Wysyłka ze zdjęciem ma własną ścieżkę (vision → plan).
-    if (attachedImage) { void sendImage(attachedImage, (textArg ?? inputText).trim()); setInputText(""); return; }
+    if (attachedImage) { void sendImage(attachedImage, (textArg ?? inputText).trim()); setInputText(""); saveDraftNow(""); return; }
     const text = (textArg ?? inputText).trim();
     if (!text || busy) return;
     setInputText("");
+    // 032: wysłana treść przestaje być brudnopisem — po powrocie do rozmowy pole ma być puste.
+    saveDraftNow("");
 
     // Tryb zgłoszenia: opis admina → zadanie w projekcie „Omnia" (tytuł z AI).
     const feedbackContext = feedbackRef.current;
@@ -1309,6 +1404,9 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   }
 
   async function loadConversation(id: string) {
+    // 032: zapisz brudnopis STAREGO wątku, zanim go opuścimy, i zwiń rozwinięte sekcje.
+    saveDraftNow();
+    collapseSections();
     try {
       const convo = await getAiConversation(id);
       if (!convo) return;
@@ -1347,6 +1445,15 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
       setTurns(rehydrated);
       setConversationId(convo.id);
       convoIdRef.current = convo.id;
+      // 032: przywróć niewysłany tekst tej rozmowy, żeby można było dokończyć to, co się pisało
+      // (także po przejściu na inne urządzenie — brudnopis siedzi na koncie).
+      setInputText(convo.draft ?? "");
+      lastSavedDraftRef.current = convo.draft ?? "";
+      // Wróciliśmy do tej rozmowy, więc „poprzednia" przestaje być nią samą.
+      if (lastConversationId === convo.id) {
+        setLastConversationId(null);
+        setLastConversationLabel("");
+      }
       setShowHistory(false);
     } catch { /* ignore */ }
   }
@@ -1355,6 +1462,8 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     try {
       await deleteAiConversation(id);
       setConversations((c) => c.filter((x) => x.id !== id));
+      // 032: nie proponuj powrotu do rozmowy, której już nie ma.
+      if (lastConversationId === id) { setLastConversationId(null); setLastConversationLabel(""); }
       if (convoIdRef.current === id) resetConversation();
     } catch { /* ignore */ }
   }
@@ -1417,6 +1526,21 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Asystent AI</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                {/* 032: jednodotknięciowy powrót do poprzedniej rozmowy. Pokazujemy tylko wtedy, gdy
+                    jest po co wracać i bieżący wątek jest pusty — inaczej przycisk byłby szumem.
+                    Zajmuje jeden wiersz nagłówka (bez dodatkowej sekcji), z tytułem, żeby było jasne
+                    DO CZEGO wracamy. */}
+                {lastConversationId && turns.length === 0 && (
+                  <button
+                    onClick={() => loadConversation(lastConversationId)}
+                    title={`Wróć do rozmowy: ${lastConversationLabel}`}
+                    aria-label={`Wróć do poprzedniej rozmowy: ${lastConversationLabel}`}
+                    style={{ display: "flex", alignItems: "center", gap: 4, maxWidth: 170, minHeight: 38, padding: "0 8px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-secondary)", cursor: "pointer", fontSize: 11.5 }}
+                  >
+                    <CornerUpLeft size={13} style={{ flexShrink: 0 }} />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lastConversationLabel}</span>
+                  </button>
+                )}
                 <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
                 <button onClick={() => setShowPrefs((v) => !v)} title="Ustawienia asystenta" aria-label="Ustawienia asystenta" aria-expanded={showPrefs} style={{ ...iconBtn, color: showPrefs || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }}><Settings size={16} /></button>
                 <button onClick={() => { setShowReport((v) => !v); setReportDone(null); }} title="Zgłoś problem z Asystentem AI" aria-label="Zgłoś problem z Asystentem AI" aria-expanded={showReport} style={{ ...iconBtn, color: showReport ? "var(--accent-purple)" : "var(--text-muted)" }}><Bug size={16} /></button>
@@ -1483,7 +1607,6 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                   placeholder={'Np. „Domyślnie dodawaj do listy Tygodniowe. Kwoty w PLN. Pisz zwięźle."'}
                   style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none", resize: "vertical" }}
                 />
-                <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>Zapisywane na Twoim koncie — widoczne na każdym urządzeniu. Zmiany zapisują się automatycznie.</p>
 
                 {/* 031: wybór głosu lektora — jedna lista: głosy SERWEROWE (jeśli administrator je
                     włączył; działają w każdej przeglądarce) + głosy systemu użytkownika. Lista
@@ -1708,10 +1831,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                   {/* Wiersz 2 — akcje: lewo (aparat, galeria) · prawo (mikrofon, główny przycisk) */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <button onClick={() => cameraRef.current?.click()} disabled={busy} title="Zrób zdjęcie" aria-label="Zrób zdjęcie" style={composerActionBtn}>
+                      <button onPointerDown={keepKeyboardOpen} onClick={() => cameraRef.current?.click()} disabled={busy} title="Zrób zdjęcie" aria-label="Zrób zdjęcie" style={composerActionBtn}>
                         <Camera size={20} />
                       </button>
-                      <button onClick={() => fileRef.current?.click()} disabled={busy} title="Dodaj zdjęcie" aria-label="Dodaj zdjęcie" style={{ ...composerActionBtn, color: attachedImage ? "var(--accent-blue)" : "var(--text-muted)" }}>
+                      <button onPointerDown={keepKeyboardOpen} onClick={() => fileRef.current?.click()} disabled={busy} title="Dodaj zdjęcie" aria-label="Dodaj zdjęcie" style={{ ...composerActionBtn, color: attachedImage ? "var(--accent-blue)" : "var(--text-muted)" }}>
                         <ImagePlus size={20} />
                       </button>
                     </div>
@@ -1720,6 +1843,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                           koncie użytkownika, więc jest ten sam na każdym urządzeniu. */}
                       <div style={{ position: "relative", flexShrink: 0 }}>
                         <button
+                          onPointerDown={keepKeyboardOpen}
                           onClick={() => setShowLevelMenu((v) => !v)}
                           disabled={busy}
                           title={`Poziom pracy asystenta: ${ASSISTANT_LEVEL_LABELS[level]}`}
@@ -1733,7 +1857,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                           <div
                             role="menu"
                             style={{
-                              position: "absolute", bottom: "calc(100% + 6px)", left: 0, zIndex: 6,
+                              // 032: przycisk poziomu siedzi w PRAWEJ grupie akcji kompozytora, więc
+                              // menu musi być kotwiczone prawą krawędzią (rozwija się w stronę środka).
+                              // Przy `left: 0` szerokie menu wychodziło poza prawą krawędź telefonu.
+                              position: "absolute", bottom: "calc(100% + 6px)", right: 0, left: "auto", zIndex: 6,
                               minWidth: 240, maxWidth: "min(300px, calc(100vw - 40px))",
                               padding: 4, background: "var(--bg-elevated)", border: "1px solid var(--border)",
                               borderRadius: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.35)",
@@ -1768,6 +1895,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                       {/* Mikrofon dyktowania — dopisuje mowę do pola (oddzielny od trybu rozmowy głosowej) */}
                       {dictation.supported && !busy && (
                         <button
+                          onPointerDown={keepKeyboardOpen}
                           onClick={dictation.toggle}
                           title={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj (mowa → tekst)"}
                           aria-label={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj"}
@@ -1783,7 +1911,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                           <Square size={15} />
                         </button>
                       ) : (inputText.trim() || attachedImage) ? (
-                        <button onClick={() => { dictation.stop(); handleSend(); }} title="Wyślij" aria-label="Wyślij" style={composerPrimaryBtn}>
+                        // 032: jedno dotknięcie ma WYSŁAĆ i zamknąć klawiaturę. `preventDefault` na
+                        // pointerdown chroni przed zgubieniem dotknięcia (klawiatura zwija się,
+                        // układ skacze), a klawiaturę zamykamy jawnym `blur()` po wysłaniu.
+                        <button onPointerDown={keepKeyboardOpen} onClick={() => { dictation.stop(); handleSend(); composerRef.current?.blur(); }} title="Wyślij" aria-label="Wyślij" style={composerPrimaryBtn}>
                           <ArrowUp size={18} />
                         </button>
                       ) : voiceSupported ? (
@@ -1826,6 +1957,31 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
       )}
     </>
   );
+}
+
+/**
+ * 032: przyciski leżące BEZPOŚREDNIO pod polem wiadomości nie mogą odbierać mu fokusu. Na telefonie
+ * pierwsze dotknięcie zwijało klawiaturę, układ podskakiwał i dotknięcie nie trafiało w przycisk —
+ * akcję trzeba było wywołać dwa razy. `preventDefault` na `pointerdown` blokuje domyślne
+ * przeniesienie fokusu (klawiatura zostaje otwarta), a `onClick` odpala się normalnie, więc na
+ * desktopie nic się nie zmienia.
+ *
+ * NIE stosujemy tego do przycisku wysyłania (tam klawiatura ma się zamknąć — jawne `blur()`) ani do
+ * rozmowy głosowej (użytkownik przechodzi z pisania na mówienie).
+ */
+const keepKeyboardOpen = (e: React.PointerEvent<HTMLButtonElement>) => e.preventDefault();
+
+/**
+ * 032: etykieta ostatniej rozmowy dla przycisku powrotu w nagłówku — z pierwszej wypowiedzi
+ * użytkownika, tak jak serwer tworzy tytuł rozmowy (`deriveTitle`). Dzięki temu nie potrzebujemy
+ * osobnego zapytania tylko po tytuł.
+ */
+function conversationLabelFrom(turns: Turn[]): string {
+  const first = turns.find((t) => t.role === "user");
+  const raw = first && "content" in first ? first.content : "";
+  const clean = raw.trim().replace(/\s+/g, " ");
+  if (!clean) return "poprzednia rozmowa";
+  return clean.length > 28 ? `${clean.slice(0, 28)}…` : clean;
 }
 
 const iconBtn: React.CSSProperties = { padding: 6, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", borderRadius: 6 };
