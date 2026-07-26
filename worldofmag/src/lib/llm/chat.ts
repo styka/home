@@ -243,8 +243,17 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
   const chain = await resolveLlmChain(opts.op);
   if (chain.length === 0) return UNCONFIGURED;
   // Z-511: opcjonalny cache (identyczne wejście → identyczne wyjście).
+  // 032: `effort` MUSI wchodzić do klucza cache — inaczej po zmianie ustawienia w /admin/llm
+  // identyczne wejście oddawałoby stary wynik policzony na innym poziomie wysiłku.
   const cacheKey = opts.cache
-    ? cacheKeyFor({ op: opts.op, messages: opts.messages, temperature: opts.temperature, maxTokens: opts.maxTokens, json: opts.json })
+    ? cacheKeyFor({
+        op: opts.op,
+        messages: opts.messages,
+        temperature: opts.temperature,
+        maxTokens: opts.maxTokens,
+        json: opts.json,
+        effort: chain[0] ? resolveEffort(chain[0], opts) : "none",
+      })
     : null;
   if (cacheKey) {
     const hit = getCached(cacheKey);
@@ -529,7 +538,14 @@ export async function chatStream(opts: ChatOptions): Promise<Response> {
   let lastMsg = "LLM request failed";
   for (let i = 0; i < chain.length; i++) {
     const cfg = chain[i];
-    const attempt = cfg.kind === "anthropic" ? await anthropicStream(cfg, opts) : await openAiStream(cfg, opts);
+    let attempt = cfg.kind === "anthropic" ? await anthropicStream(cfg, opts) : await openAiStream(cfg, opts);
+    // 032: ta sama degradacja co w `chatComplete` — strumień też może dostać 400 za parametr
+    // wysiłku, a 400 jest nieprzejściowy, więc bez tego przerwałby łańcuch i oddał błąd klientowi.
+    if (!attempt.ok && resolveEffort(cfg, opts) !== "none" && isEffortRejection(attempt.status, attempt.message)) {
+      console.warn(`[llm] stream ${opts.op}: model ${cfg.model} odrzucił parametr wysiłku — ponawiam bez niego`);
+      const plain: ChatOptions = { ...opts, effort: "none", boostEffort: false };
+      attempt = cfg.kind === "anthropic" ? await anthropicStream(cfg, plain) : await openAiStream(cfg, plain);
+    }
     if (attempt.ok) return attempt.response;
     lastStatus = attempt.status;
     lastMsg = attempt.message;

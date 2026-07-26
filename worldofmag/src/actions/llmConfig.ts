@@ -42,8 +42,6 @@ export interface AssignmentDTO {
   maxTokens: number | null;
   /** 032: poziom wysiłku modelu (wspólna skala tłumaczona per dostawca). */
   effort: LlmEffort;
-  /** 032: rodzaj dostawcy — panel musi wiedzieć, które pokrętła ten dostawca w ogóle obsługuje. */
-  providerKind: string | null;
 }
 
 export async function getLlmProviders(): Promise<ProviderDTO[]> {
@@ -110,7 +108,7 @@ export async function deleteProvider(id: string): Promise<void> {
 
 export async function getAssignments(): Promise<AssignmentDTO[]> {
   await requireAdmin();
-  const rows = await prisma.llmAssignment.findMany({ include: { provider: { select: { kind: true } } } });
+  const rows = await prisma.llmAssignment.findMany();
   const byType = new Map(rows.map((r) => [r.operationType, r]));
   return OPERATION_TYPES.map((op) => {
     const meta = OPERATION_TYPE_META[op];
@@ -125,7 +123,6 @@ export async function getAssignments(): Promise<AssignmentDTO[]> {
       temperature: a?.temperature ?? null,
       maxTokens: a?.maxTokens ?? null,
       effort: parseEffort(a?.effort),
-      providerKind: a?.provider?.kind ?? null,
     };
   });
 }
@@ -375,6 +372,8 @@ export interface AiCallLogRow {
   latencyMs: number;
   conversationId: string | null;
   errorText: string | null;
+  /** 032: poziom wysiłku FAKTYCZNIE użyty (null = parametr nie był wysłany). */
+  effort: string | null;
 }
 
 /**
@@ -397,6 +396,7 @@ export async function getRecentAiCalls(opts?: {
       id: true, createdAt: true, source: true, operationType: true, providerKind: true,
       model: true, ok: true, status: true, attempts: true, promptTokens: true,
       completionTokens: true, totalTokens: true, latencyMs: true, conversationId: true, errorText: true,
+      effort: true,
     },
   });
   return rows.map((r) => ({
@@ -415,5 +415,6 @@ export async function getRecentAiCalls(opts?: {
     latencyMs: r.latencyMs,
     conversationId: r.conversationId,
     errorText: r.errorText,
+    effort: r.effort,
   }));
 }

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronLeft, Bug, RefreshCw, Copy, Check } from "lucide-react";
 import { getRecentAiCalls, type AiCallLogRow } from "@/actions/llmConfig";
+import { LLM_EFFORT_LABELS, type LlmEffort } from "@/lib/llm/effort";
 import { aiCallsToText, fmtAiCallTime as fmtTime } from "@/lib/ai/aiCallLog";
 
 // Diagnostyka asystenta AI: surowy log wywołań LLM (per rozmowa), łącznie z
@@ -83,7 +84,7 @@ export function AiCallsPage({ initial }: { initial: AiCallLogRow[] }) {
             <table style={{ borderCollapse: "collapse", width: "100%" }}>
               <thead>
                 <tr style={{ background: "var(--bg-surface)", textAlign: "left", color: "var(--text-secondary)" }}>
-                  {["czas", "źródło", "op", "dostawca", "model", "wynik", "próby", "tokeny (p+c=t)", "latency", "błąd"].map((h) => (
+                  {["czas", "źródło", "op", "dostawca", "model", "wysiłek", "wynik", "próby", "tokeny (p+c=t)", "latency", "błąd"].map((h) => (
                     <th key={h} style={{ ...cell, fontWeight: 600 }}>{h}</th>
                   ))}
                 </tr>
@@ -96,6 +97,10 @@ export function AiCallsPage({ initial }: { initial: AiCallLogRow[] }) {
                     <td style={cell}>{r.operationType}</td>
                     <td style={cell}>{r.providerKind}</td>
                     <td style={cell}>{r.model}</td>
+                    {/* 032: poziom wysiłku FAKTYCZNIE użyty (po ewentualnej degradacji); „—" = nie wysłano. */}
+                    <td style={{ ...cell, color: r.effort ? "var(--accent-purple)" : "var(--text-muted)" }}>
+                      {r.effort ? LLM_EFFORT_LABELS[r.effort as LlmEffort] ?? r.effort : "—"}
+                    </td>
                     <td style={{ ...cell, color: r.ok ? "var(--accent-green)" : "var(--accent-red)", fontWeight: 600 }}>
                       {r.ok ? "OK" : `FAIL ${r.status ?? ""}`}
                     </td>
