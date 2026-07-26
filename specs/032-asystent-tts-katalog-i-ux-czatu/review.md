@@ -2,149 +2,131 @@
 
 - **Spec:** ./spec.md · **Plan:** ./plan.md · **Weryfikacja:** ./verify.md
 - **Data:** 2026-07-26
-- **Diff:** `origin/develop...HEAD` — 31 plików, +3187 / −99 (z czego ~1270 to artefakty pipeline'u)
-
-Recenzja świeżym okiem, z naciskiem na to, czego `/verify` nie mogło złapać: weryfikacja testowała
-lektora na dostawcy `azure_tts` (rodzaj, którego w bazie nie ma nikt inny), więc **nie wyszedł
-najpoważniejszy przypadek — kolizja dwóch dostawców o tym samym `kind`**.
+- **Diff:** `origin/develop...HEAD` — 31 plików, ~+3400 / −140 (z czego ~1500 to artefakty pipeline'u)
 
 ---
 
-## R-1 — `applySpeechProvider` przestawia CUDZEGO dostawcę i wyłącza cały asystent
+# Tura 1 — ZMIANY WYMAGANE (naprawione)
 
-- **Plik:** `worldofmag/src/actions/llmConfig.ts:282-290`
+Recenzja świeżym okiem trafiła w błąd, którego weryfikacja nie mogła złapać: testowała lektora na
+`azure_tts`, czyli rodzaju, którego w bazie nie ma nikt inny, więc kolizja `openai_compat` nigdy się
+nie ujawniła.
+
+## R-1 — `applySpeechProvider` przestawiał CUDZEGO dostawcę i wyłączał cały asystent
+
+- **Plik:** `worldofmag/src/actions/llmConfig.ts:282-290` (stan przed naprawą)
 - **Kategoria:** correctness (**krytyczne**)
-- **Opis:** Dostawca jest wyszukiwany po **samym `kind`** (`findFirst({ where: { kind: spec.kind } })`,
-  `orderBy: createdAt asc`), a następnie **nadpisywany jest jego `baseUrl`**. Tymczasem `kind`
-  **nie identyfikuje** pozycji katalogu: `openai_compat` mają zarówno **OpenAI**, jak i **Groq
-  PlayAI** — a w każdej instalacji Omnii istnieje domyślny wiersz Groqa obsługujący czat.
+- **Opis:** Dostawca był wyszukiwany po **samym `kind`**, a następnie nadpisywany był jego `baseUrl`.
+  `kind` **nie identyfikuje** pozycji katalogu: `openai_compat` mają zarówno OpenAI, jak i Groq PlayAI.
+- **Scenariusz awarii:** (1) standardowa instalacja z dostawcą „Groq (domyślny)" przypisanym do
+  `dispatch`/`reasoning`/`vision`/`generation`; (2) administrator wybiera w panelu lektora **OpenAI**
+  i zapisuje; (3) wiersz Groqa dostaje `baseUrl = api.openai.com`, zachowując klucz Groqa;
+  (4) **każde** wywołanie asystenta zwraca `401` — cały asystent przestaje działać, bez widocznego
+  związku z włączeniem lektora.
+- **Status:** ✅ **naprawione (T-32).** Wspólny `providerMatchesSpec` dopasowuje po `kind` **+**
+  `baseUrl`; brak trafienia → **nowy** wiersz zamiast przestawienia cudzego. Dowód: test
+  `providerMatchesSpec: zapis lektora OpenAI NIE MOŻE trafić w wiersz Groqa (R-1)`.
 
-**Scenariusz awarii (konkretnie):**
-1. Standardowa instalacja: dostawca „Groq (domyślny)", `kind=openai_compat`,
-   `baseUrl=https://api.groq.com/openai/v1`, klucz `gsk_…`, przypisany do `dispatch`, `reasoning`,
-   `vision`, `generation`.
-2. Administrator wchodzi w `/admin/llm` → „Synteza mowy" → wybiera **OpenAI**, model
-   `gpt-4o-mini-tts` → „Zapisz lektora". Pole klucza **nie jest nawet pokazane** (patrz R-2).
-3. `applySpeechProvider` trafia na **wiersz Groqa** i ustawia mu
-   `baseUrl = https://api.openai.com/v1`, zachowując klucz Groqa.
-4. Od tej chwili **każde** wywołanie asystenta (`dispatch`/`reasoning`/`vision`/`generation`) leci na
-   `api.openai.com` z kluczem Groqa → `401` → użytkownik widzi „Asystent chwilowo nie może połączyć
-   się z modelem AI". **Cały asystent przestaje działać**, a administrator nie ma powodu łączyć tego
-   z włączeniem lektora.
+## R-2 — `getSpeechConfig` pokazywał stan klucza CUDZEGO dostawcy
 
-- **Poprawka:** szukać i zakładać dostawcę po **`kind` + znormalizowanym `baseUrl`**; przy braku
-  dokładnego trafienia **utworzyć nowy wiersz**, a **nigdy** nie przestawiać `baseUrl` istniejącego
-  dostawcy na inny host. (Dla Azure, gdzie region jest w adresie, dopuszczalne jest dopasowanie po
-  `kind` + wyborze administratora — ale tam `kind` jest już unikalny w katalogu.)
+- **Plik:** `worldofmag/src/actions/llmConfig.ts:~228`
+- **Kategoria:** correctness (wysokie) — to ono czyniło R-1 **cichym**
+- **Scenariusz awarii:** pozycja OpenAI raportowała `hasKey` z wiersza Groqa, więc pole klucza się nie
+  renderowało — nie było jak podać klucza OpenAI, a zapis niszczył konfigurację czatu.
+- **Status:** ✅ **naprawione (T-32)** — odczyt i zapis używają **tej samej** funkcji dopasowania, więc
+  panel nie może pokazać czegoś innego, niż zrobi przycisk.
 
-## R-2 — `getSpeechConfig` pokazuje stan klucza CUDZEGO dostawcy
+## R-3 — głosy wybierane po `kind`, więc Groq PlayAI dostawał głosy OpenAI
 
-- **Plik:** `worldofmag/src/actions/llmConfig.ts:~218` (`providers.find((p) => p.kind === spec.kind)`)
-- **Kategoria:** correctness (wysokie) — to ono czyni R-1 **cichym**
-- **Opis:** `providerExists`/`hasKey` liczone są po samym `kind`, więc pozycja **OpenAI** raportuje
-  stan klucza **Groqa** (i odwrotnie).
-- **Scenariusz awarii:** administrator widzi przy OpenAI zieloną adnotację „klucz zapisany", więc
-  `needsKey` jest fałszywe i **pole klucza się nie renderuje** — nie ma jak podać klucza OpenAI, a
-  zapis (R-1) niszczy konfigurację czatu. Nawet bez R-1 lektor byłby wołany z niewłaściwym kluczem.
-- **Poprawka:** dopasowanie po `kind` + `baseUrl` (jak w `findTtsProvider`).
-
-## R-3 — głosy wybierane po `kind`, więc Groq PlayAI dostaje głosy OpenAI
-
-- **Pliki:** `worldofmag/src/lib/tts/catalog.ts:~178` (`voicesForKind`, `isVoiceOfKind`,
-  `defaultVoiceForKind`), używane w `serverTts.ts:41,74` i `actions/assistantPrefs.ts:112`
+- **Pliki:** `worldofmag/src/lib/tts/catalog.ts`, `serverTts.ts`, `actions/assistantPrefs.ts`
 - **Kategoria:** correctness (średnie)
-- **Opis:** Te trzy helpery szukają pozycji katalogu **po samym `kind`**, więc dla
-  `openai_compat` **zawsze** trafiają w wpis OpenAI — nawet gdy skonfigurowano **Groq PlayAI**
-  (którego głosy to `Fritz-PlayAI`, `Arista-PlayAI`, `Atlas-PlayAI`).
-- **Scenariusz awarii:** administrator ustawia lektora na Groq PlayAI. Użytkownik w ustawieniach
-  asystenta dostaje listę głosów **OpenAI** (`nova`, `shimmer`, …), wybiera `nova`, a `synthesizeSpeech`
-  wysyła `voice: "nova"` do Groqa → dostawca odpowiada błędem → `502` i cisza zamiast lektora. Ten sam
-  mechanizm wybiera zły głos domyślny, więc funkcja nie działa **nawet bez** wyboru użytkownika.
-- **Poprawka:** kluczować po pozycji katalogu (`findTtsProvider(kind, baseUrl)`), a nie po `kind`;
-  helpery przyjmują `kind + baseUrl` (z zachowaniem dotychczasowego fallbacku na `kind`, żeby zmiana
-  regionu Azure nadal działała).
+- **Scenariusz awarii:** przy lektorze na Groq PlayAI użytkownik dostawał listę głosów OpenAI
+  (`nova`…), wybierał `nova`, a żądanie szło do Groqa → błąd dostawcy i cisza zamiast lektora.
+- **Status:** ✅ **naprawione (T-32)** — `voicesFor`/`isVoiceOf`/`defaultVoiceFor` kluczują po pozycji
+  katalogu. Dowód **na żywej bazie**: lektor na Groqu → `Fritz-PlayAI, Arista-PlayAI, Atlas-PlayAI`;
+  po przełączeniu na OpenAI → `nova, shimmer, coral, sage`.
 
-## R-4 — martwy kod po refaktorze (C-53)
+## R-4 · R-5 · R-6 · R-7 · R-8 — drobne
 
-- **Pliki:** `worldofmag/src/lib/tts/serverTts.ts:68` (`isServerSpeechConfigured`),
-  `worldofmag/src/lib/tts/serverVoices.ts` (`DEFAULT_SERVER_VOICE`, `isServerVoiceId`)
-- **Kategoria:** simplification
-- **Opis:** Po przejściu `assistantPrefs` na `configuredSpeechVoices` żaden z tych trzech eksportów
-  nie ma już ani jednego użycia poza własnym plikiem (sprawdzone `grep` po `src/`).
-- **Skutek:** martwy kod myli następnego czytającego — `isServerSpeechConfigured()` sugeruje, że
-  „skonfigurowany" wystarcza, choć `synthesizeSpeech` może i tak zwrócić `null` (brak znanych głosów).
-- **Poprawka:** usunąć trzy nieużywane eksporty.
+| Ust. | Opis | Status |
+|---|---|---|
+| **R-4** | martwe eksporty po refaktorze (`isServerSpeechConfigured`, `DEFAULT_SERVER_VOICE`, `isServerVoiceId`) — C-53 | ✅ usunięte (T-34) |
+| **R-5** | osierocony JSDoc z 025 opisujący inną funkcję | ✅ wrócił nad `resolveProjectRef` (T-34) |
+| **R-6** | zmarnowane, płatne wywołanie podsumowania przed fallbackiem `dispatch→reasoning` | ✅ `isFinalRun` (T-33) |
+| **R-7** | `get_recipe` wołało `getRecipe` dwa razy; `list_items` liczyło dostęp dwa razy | ✅ (T-35) |
+| **R-8** | nieaktualna flaga ucięcia mogła źle nazwać przyczynę niedokończenia | ✅ zerowana po sparsowaniu (T-36) |
 
-## R-5 — osierocony komentarz opisuje inną funkcję
+## R-9 — znaleziona przy naprawie: walidacja głosu po stronie klienta blokowała lektora
 
-- **Plik:** `worldofmag/src/lib/ai/agentTools.ts:248-258`
-- **Kategoria:** convention
-- **Opis:** Blok JSDoc z paczki 025 (opisujący kontrakt `resolveProjectRef`, w tym nieaktualne
-  `{ unresolved, available }`) został po refaktorze **nad `resolveRefOrThrow`**, więc dwa bloki JSDoc
-  stoją jeden na drugim, a pierwszy opisuje inną funkcję.
-- **Poprawka:** przenieść blok 025 z powrotem nad `resolveProjectRef`.
-
-## R-6 — zmarnowane wywołanie modelu przy fallbacku `dispatch → reasoning`
-
-- **Plik:** `worldofmag/src/app/api/llm/home/agent/route.ts:814` (wywołanie `summarizePartialRun`)
-  vs `:1067-1072` (`runLoop`)
-- **Kategoria:** efficiency (podniesione z `verify.md` U-1)
-- **Opis:** `runAgentLoopRaw` **zawsze** dokłada jedno wywołanie modelu na podsumowanie przed
-  zwróceniem `limitReached: true`, a `runLoop` dla prostej tury odczytowej **ponawia cały przebieg**
-  na `reasoning` — więc podsumowanie pierwszego przebiegu jest **odrzucane**.
-- **Skutek:** płatne wywołanie bez żadnej korzyści, w feature'rze, którego sensem jest ukrócenie
-  spalania budżetu. **Nie jest to regresja** (bilans ≈8 wywołań wobec ≈12 przed zmianą), ale zostawia
-  pieniądze na stole. Nie dotyczy scenariusza Z-2 (fraza „dlaczego" → `isSimpleRead` fałszywe).
-- **Poprawka:** podsumowanie tylko dla przebiegu **ostatecznego** — np. parametr
-  `summarizeOnPartial` przekazywany przez `runLoop` (fałsz dla pierwszego przebiegu, gdy istnieje
-  `baselineMessages`).
-
-## R-7 — dwa zbędne zapytania na typowej ścieżce
-
-- **Pliki:** `worldofmag/src/lib/ai/agentTools.ts:998-1006` (`get_recipe`), `:513-521` (`list_items`)
-- **Kategoria:** efficiency (drobne)
-- **Opis:** (a) `get_recipe` woła `getRecipe(ref)` w `findById`, a potem **ponownie** `getRecipe(key)`
-  na końcu — dwa razy to samo dla poprawnego id/sluga. (b) `list_items` liczy
-  `accessibleListWhere(userId)` (czyli `getUserTeamIds`) dwukrotnie: raz w resolverze, raz w głównym
-  zapytaniu.
-- **Skutek:** wyłącznie narzut, bez błędu.
-- **Poprawka:** przekazać wynik pierwszego `getRecipe` dalej; wyciągnąć `accessibleListWhere` do
-  zmiennej przed oboma użyciami.
-
-## R-8 — nieaktualna flaga ucięcia może źle nazwać przyczynę
-
-- **Plik:** `worldofmag/src/app/api/llm/home/agent/route.ts:633` (`lastTruncated = truncated`)
-- **Kategoria:** correctness (drobne)
-- **Opis:** `lastTruncated` nie jest zerowane po udanym sparsowaniu. Jeśli ucięcie zdarzy się w
-  iteracji 1 i zostanie odratowane, a przebieg skończy się później z innego powodu, podsumowanie
-  awaryjne poda przyczynę „odpowiedź nie zmieściła się w dopuszczalnej długości" — nieprawdziwą.
-- **Skutek:** mylący (ale wciąż użyteczny) komunikat w rzadkim przypadku; ścieżka główna
-  (podsumowanie modelem) nie jest tym dotknięta.
-- **Poprawka:** ustawiać `lastTruncated` tylko na wyjściu z pętli prób (albo zerować po sparsowaniu).
+- **Plik:** `worldofmag/src/lib/tts/serverVoices.ts:37-41` (stan przed naprawą)
+- **Kategoria:** correctness (wysokie) — **trzecia odsłona tej samej przyczyny**
+- **Opis:** `parseServerVoiceValue` sprawdzał przynależność głosu do **stałej listy OpenAI**.
+- **Scenariusz awarii:** administrator ustawia lektora na Azure, użytkownik wybiera „Zofia" —
+  `parseServerVoiceValue` zwraca `null`, UI traktuje wybór jako **głos przeglądarki** i zapisuje
+  `voiceKind: "browser"`. Lektor serwerowy **nigdy** się nie włącza dla dostawcy spoza rodziny OpenAI.
+- **Status:** ✅ **naprawione (T-32)** — funkcja tylko zdejmuje prefiks; walidacja należy do serwera
+  (`updateAssistantPrefs`, `synthesizeSpeech`), bo dopuszczalna lista zależy od konfiguracji.
 
 ---
 
-## Co jest dobre (żeby nie zgubić w naprawie)
+# Tura 2 — recenzja naprawy (T-32…T-36)
 
+Przejrzany diff `f8265fc..HEAD` (8 plików, +217 / −80). Sprawdzone celowo:
+
+- **Poprawność dopasowania.** `providerMatchesSpec` zwraca `false` przy różnym rodzaju, `true` przy
+  zgodnym adresie (z normalizacją ukośnika), a fallback po rodzaju **wyłącznie** gdy rodzaj jest
+  unikalny. Przypadek Azure ze zmienionym regionem nadal aktualizuje wiersz w miejscu (nie mnoży
+  dostawców), przypadek OpenAI vs Groq nigdy się nie myli — jedno i drugie pokryte testem.
+- **Zapis klucza.** `applySpeechProvider` nadal nie nadpisuje klucza pustą wartością, a przy zakładaniu
+  nowego dostawcy wymaga klucza, gdy pozycja go wymaga. Klucz nigdy nie wraca w DTO (tylko `hasKey`).
+- **`isFinalRun`.** Wartość domyślna `true` — każde istniejące wywołanie zachowuje dotychczasowe
+  zachowanie; `false` przekazywane wyłącznie tam, gdzie wołający ma w zapasie ponowienie, a wynik
+  pierwszego przebiegu jest odrzucany. Wypełniacz nigdy nie dociera do użytkownika.
+- **`lastTruncated`.** Zerowane po udanym sparsowaniu, więc opisuje wyłącznie ostatnią **nieudaną**
+  odpowiedź — zgodnie z tym, do czego służy.
+- **Brak nowych naruszeń konwencji:** zero enumów Prisma, zero hexów, teksty po polsku, importy przez
+  alias, praca wyłącznie w `worldofmag/`.
+
+**Poprawka naniesiona w recenzji (drobna, bezpieczna):** nieaktualna nazwa funkcji w komentarzu
+`llmConfig.ts` (`matchesSpec` → `providerMatchesSpec`).
+
+**Ustalenia otwarte:** brak blokujących. Pozostaje jedna **świadoma** decyzja, odnotowana w
+`verify.md` §8: dostawca zgodny z OpenAI pod adresem **spoza katalogu** (proxy/self-host) nie ma
+znanych głosów, więc lektor jest wyłączony (klient wraca do głosów przeglądarki) zamiast zgadywać
+nazwy głosów. To celowe — zgadywanie było przyczyną R-3, a ścieżka z panelu zawsze podaje adres
+katalogowy.
+
+---
+
+## Co jest dobre (żeby nie zgubić przy dalszych zmianach)
+
+- **Jedna funkcja dopasowania dla odczytu i zapisu** — konstrukcyjnie uniemożliwia rozjazd „panel
+  pokazuje co innego, niż zrobi przycisk". To jest właściwa naprawa R-1/R-2, nie łatka na objaw.
 - **Podwójna bariera** przed przypisaniem dostawcy tylko-TTS do operacji czatowej (`setAssignment` +
-  `resolveLlmChain`) — właściwa reakcja na realne ryzyko, obie sprawdzone uruchomieniem.
-- **Rozdzielenie „nie ma" od „pasuje kilka"** w `refResolve` — to jest sedno naprawy Z-2 po stronie
-  odczytów, z pokryciem testowym i naprawioną zastaną luką (pusta referencja).
+  `resolveLlmChain`), obie sprawdzone uruchomieniem.
+- **Rozdzielenie „nie ma" od „pasuje kilka"** w `refResolve` — sedno naprawy Z-2 po stronie odczytów,
+  z pokryciem testowym i naprawioną zastaną luką (pusta referencja dopasowująca się do wszystkiego).
 - **Kontrola dostępu brudnopisu** przez `updateMany` z `userId` — milczenie zamiast potwierdzania
   istnienia cudzej rozmowy (C-21), sprawdzone uruchomieniem.
-- **Adaptery TTS** w jednym `switch`, bez nowych zależności, z escapowaniem SSML pokrytym testem.
-- Zero enumów Prisma, zero hardcodowanych kolorów (a nawet **usunięty** zastany hex), teksty po polsku.
+- **Adaptery TTS** w jednym `switch`, bez nowych zależności, z escapowaniem SSML pokrytym testem i
+  trzema torami przepuszczonymi end-to-end przez lokalną atrapę.
+- Przy okazji usunięte **zastane** problemy: hardcodowany hex w `ActionDrawer` (C-30) i martwy cleanup
+  w komponencie, który nigdy się nie odmontowuje.
 
 ## Werdykt
 
-**ZMIANY WYMAGANE.**
+**APPROVE Z UWAGAMI.**
 
-Blokujące: **R-1**, **R-2**, **R-3** — wszystkie mają jedną wspólną przyczynę: **`kind` został użyty
-jako klucz pozycji katalogu, a nie jest unikalny** (OpenAI i Groq PlayAI dzielą `openai_compat`).
-Najgorszy skutek — konfiguracja lektora przestawia adres dostawcy używanego przez czat i **wyłącza
-cały asystent AI** — jest dokładnie tym rodzajem awarii, której ten feature miał zapobiegać, a nie
-tworzyć.
+Wszystkie ustalenia blokujące (R-1, R-2, R-3, R-9) naprawione i potwierdzone — dwa z nich dowodem
+uruchomionym na żywej bazie, nie samą lekturą kodu. Bramki zielone: `check:migrations`,
+`check:actions`, `check:ai-coverage`, `tsc --noEmit`, `next lint` (0 błędów, 16 zastanych ostrzeżeń),
+`next build`, `test:unit` **521/521**.
 
-Do naprawy razem z nimi (tanie, w tym samym obszarze): **R-4**, **R-5**, **R-6**, **R-7**, **R-8**.
+**Uwagi (nie-blokujące), świadomie zaakceptowane:**
+1. Dostawca OpenAI-compat pod adresem spoza katalogu wyłącza lektora zamiast zgadywać głosy.
+2. Ucięcie, które mimo wszystko sparsowało się, idzie dalej normalnie (mamy użyteczny krok).
+3. Do sprawdzenia klikiem na środowisku testowym: scenariusz Z-2 (AC-12), klawiatura mobilna na iOS
+   (AC-19/AC-20), zamknięcie asystenta w trakcie generowania, panel lektora z prawdziwym kluczem
+   dostawcy (AC-4/AC-5 na żywym API).
 
-Nie merguję do `develop`. Zawracam do `/implement` z zadaniami **T-32…T-36**.
+Merge do `develop` i promocja `develop → master` zgodnie z C-52.

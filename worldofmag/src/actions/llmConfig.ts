@@ -281,7 +281,7 @@ export async function applySpeechProvider(data: {
 
   // 032: szukamy dostawcy odpowiadającego TEJ pozycji katalogu (rodzaj + adres), nie pierwszego
   // o tym samym rodzaju — inaczej zapis lektora OpenAI przestawiał adres istniejącego Groqa i
-  // wyłączał czat. `matchesSpec` dopuszcza rozjazd adresu tylko dla rodzajów jednoznacznych
+  // wyłączał czat. `providerMatchesSpec` dopuszcza rozjazd adresu tylko dla rodzajów jednoznacznych
   // (np. inny region Azure), więc tam nadal aktualizujemy w miejscu zamiast mnożyć wiersze.
   const candidates = await prisma.llmProvider.findMany({
     where: { kind: spec.kind },
