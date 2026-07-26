@@ -17,8 +17,9 @@ import { assertProjectAccess } from "@/actions/taskProjects";
 // nic więcej) i wyłącznie jednego, wyznaczonego projektu. Nie ma dla niego uprawnienia RBAC,
 // żeby nie dało się go przypadkiem rozszerzyć z panelu administratora.
 
-/** Klucz w `Config` wskazujący projekt-skrzynkę. Puste = fallback na projekt „Omnia" administratora. */
-export const FEEDBACK_PROJECT_CONFIG_KEY = "feedback_project_id";
+// Klucz w `Config` wskazujący projekt-skrzynkę. Puste = fallback na projekt „Omnia" administratora.
+// NIE eksportujemy: w pliku "use server" wolno eksportować wyłącznie funkcje async.
+const FEEDBACK_PROJECT_CONFIG_KEY = "feedback_project_id";
 
 const TITLE_MAX = 200;
 const DESCRIPTION_MAX = 60_000;

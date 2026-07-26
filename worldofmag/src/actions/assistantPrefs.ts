@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
+import { isServerSpeechConfigured } from "@/lib/tts/serverTts";
+import { SERVER_VOICES, type ServerVoice } from "@/lib/tts/serverVoices";
 import {
   ASSISTANT_LEVELS,
   ASSISTANT_VOICE_KINDS,
@@ -14,8 +16,9 @@ import {
 // pamięci przeglądarki — dzięki temu stałe preferencje i poziom pracy asystenta są te same
 // na komputerze i na telefonie. Wzorzec: `dashboardPrefs.ts`.
 
-/** Maksymalna długość stałych preferencji — wchodzą do KAŻDEGO promptu, więc trzymamy je krótko. */
-export const ASSISTANT_INSTRUCTIONS_MAX = 2000;
+// Maksymalna długość stałych preferencji — wchodzą do KAŻDEGO promptu, więc trzymamy je krótko.
+// NIE eksportujemy: w pliku "use server" wolno eksportować wyłącznie funkcje async.
+const ASSISTANT_INSTRUCTIONS_MAX = 2000;
 
 export interface AssistantPrefsDTO {
   instructions: string;
@@ -116,4 +119,15 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
     voiceKind: parseVoiceKind(row.voiceKind),
     voiceId: row.voiceId ?? null,
   };
+}
+
+/**
+ * 031: czy administrator skonfigurował serwerową syntezę mowy (typ operacji `speech` w /admin/llm)
+ * i jakie głosy są wtedy dostępne. Gdy nie — UI pokazuje wyłącznie głosy przeglądarki i nie obiecuje
+ * czegoś, czego nie ma (AC-17).
+ */
+export async function getSpeechOptions(): Promise<{ serverAvailable: boolean; voices: ServerVoice[] }> {
+  await requireAuth();
+  const serverAvailable = await isServerSpeechConfigured().catch(() => false);
+  return { serverAvailable, voices: serverAvailable ? SERVER_VOICES : [] };
 }

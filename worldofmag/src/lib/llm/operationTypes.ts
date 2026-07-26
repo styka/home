@@ -2,7 +2,7 @@
 // Dzięki temu admin przypisuje model do rodzaju pracy, jaką wykonuje model,
 // a nie do konkretnej funkcji aplikacji.
 
-export const OPERATION_TYPES = ["dispatch", "reasoning", "vision", "generation"] as const;
+export const OPERATION_TYPES = ["dispatch", "reasoning", "vision", "generation", "speech"] as const;
 
 export type OperationType = (typeof OPERATION_TYPES)[number];
 
@@ -38,6 +38,15 @@ export const OPERATION_TYPE_META: Record<OperationType, OperationTypeMeta> = {
     label: "Analiza obrazów (OCR)",
     description: "Rozpoznawanie i odczyt treści z obrazów (OCR przepisów, zdjęcia).",
     defaultModel: "meta-llama/llama-4-scout-17b-16e-instruct",
+  },
+  // 031: synteza mowy (lektor asystenta). Domyślny model PUSTY — dopóki admin nie przypisze
+  // dostawcy, funkcja jest wyłączona i klient płynnie wraca do głosów przeglądarki.
+  speech: {
+    type: "speech",
+    label: "Synteza mowy (lektor)",
+    description:
+      "Czytanie odpowiedzi asystenta na głos po stronie serwera — daje polskie głosy niezależne od przeglądarki i systemu. Bez przypisania działają wyłącznie głosy przeglądarki.",
+    defaultModel: "",
   },
   generation: {
     type: "generation",

@@ -99,12 +99,54 @@ export function setPreferredVoiceURI(uri: string | null): void {
   }
 }
 
-/** Lista głosów dostępnych w przeglądarce (może być pusta, dopóki nie odpali „voiceschanged"). */
+// 031: PRZYCZYNA „ZNIKAJĄCYCH GŁOSÓW". `speechSynthesis.getVoices()` na Chrome/Windows zwraca
+// najpierw pełną listę (łącznie z głosami ZDALNYMI silnika, których przeglądarka nie potrafi
+// odtworzyć), a po dociągnięciu silników oddaje listę KRÓTSZĄ. UI brał każdą odpowiedź jako
+// prawdę, więc raz pokazywał wiele polskich głosów (z których działał jeden), a chwilę później
+// tylko ten jeden. Poprawka:
+//   • akumulujemy głosy między odczytami po `voiceURI` (lista przestaje „migać"),
+//   • ale ZWRACAMY wyłącznie te, które są w AKTUALNEJ odpowiedzi silnika — pozycja, która
+//     zniknęła, jest niedostępna i nie wolno jej pokazywać (to była właśnie ta pułapka),
+//   • odsiewamy głosy niedostępne lokalnie (`localService === false`) — na Chrome/Windows to
+//     właśnie te „polskie głosy, które nic nie mówią"; jeśli po odsianiu nie zostałby ŻADEN głos
+//     dla danego języka, zostawiamy je (lepiej dać wybór niż puste pole),
+//   • sortujemy: polskie najpierw, potem alfabetycznie.
+const voiceCache = new Map<string, SpeechSynthesisVoice>();
+
+function isPolish(v: SpeechSynthesisVoice): boolean {
+  return v.lang?.toLowerCase().startsWith("pl") ?? false;
+}
+
+/**
+ * Głosy dostępne w przeglądarce — TYLKO te, które faktycznie da się odtworzyć.
+ * Może być pusta, dopóki nie odpali „voiceschanged" (iOS/Safari ładują asynchronicznie).
+ */
 export function getAvailableVoices(): SpeechSynthesisVoice[] {
   if (!ttsSupported()) return [];
   try {
     warmVoices();
-    return window.speechSynthesis.getVoices();
+    const current = window.speechSynthesis.getVoices() ?? [];
+    for (const v of current) voiceCache.set(v.voiceURI, v);
+    const live = current.map((v) => voiceCache.get(v.voiceURI) ?? v);
+
+    const local = live.filter((v) => v.localService !== false);
+    // Nie odbieraj użytkownikowi WSZYSTKICH głosów w danym języku: gdy dla polskiego nie zostałby
+    // żaden lokalny, przywracamy zdalne polskie (część silników raportuje `localService:false`
+    // także dla działających głosów).
+    const usable = local.length > 0 ? local : live;
+    const polishLocal = usable.filter(isPolish);
+    const result = polishLocal.length > 0 || live.filter(isPolish).length === 0
+      ? usable
+      : [...usable, ...live.filter(isPolish)];
+
+    const seen = new Set<string>();
+    return result
+      .filter((v) => (seen.has(v.voiceURI) ? false : (seen.add(v.voiceURI), true)))
+      .sort((a, b) => {
+        const pa = isPolish(a) ? 0 : 1;
+        const pb = isPolish(b) ? 0 : 1;
+        return pa !== pb ? pa - pb : a.name.localeCompare(b.name, "pl");
+      });
   } catch {
     return [];
   }
@@ -134,9 +176,85 @@ export function onVoicesChanged(cb: () => void): () => void {
 /** Opcje wypowiedzi. `onEnd` odpala się po naturalnym zakończeniu lub błędzie syntezy. */
 export type SpeakOptions = { onEnd?: () => void };
 
+// ── Głos SERWEROWY (031) ──────────────────────────────────────────────────────
+// Gdy użytkownik wybrał głos serwerowy, czytamy tekst przez `/api/tts` i odtwarzamy `Audio`.
+// Każda awaria (brak konfiguracji, 429, sieć) po cichu SPADA na syntezę przeglądarki, więc
+// „odczytaj na głos" nigdy nie przestaje działać.
+let serverVoiceId: string | null = null;
+let currentAudio: HTMLAudioElement | null = null;
+
+/** Ustawia głos serwerowy (null = korzystaj z syntezy przeglądarki). */
+export function setServerVoiceId(id: string | null): void {
+  serverVoiceId = id && id.trim() ? id.trim() : null;
+}
+
+export function getServerVoiceId(): string | null {
+  return serverVoiceId;
+}
+
+function stopServerAudio(): void {
+  if (!currentAudio) return;
+  try {
+    currentAudio.pause();
+    currentAudio.src = "";
+  } catch {
+    /* ignore */
+  }
+  currentAudio = null;
+}
+
+/** Czy jakakolwiek synteza jest dostępna (przeglądarka LUB serwer). */
+export function speechAvailable(): boolean {
+  return ttsSupported() || !!serverVoiceId;
+}
+
+async function speakViaServer(text: string, opts?: SpeakOptions): Promise<boolean> {
+  if (!serverVoiceId) return false;
+  try {
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text.slice(0, 1200), voiceId: serverVoiceId }),
+    });
+    if (!res.ok) return false; // 501 (brak konfiguracji) / 429 / 502 → fallback na przeglądarkę
+    const blob = await res.blob();
+    stopServerAudio();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    currentAudio = audio;
+    const done = () => {
+      URL.revokeObjectURL(url);
+      if (currentAudio === audio) currentAudio = null;
+      opts?.onEnd?.();
+    };
+    audio.onended = done;
+    audio.onerror = done;
+    await audio.play();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Wypowiada tekst w danym języku (BCP-47 lub nazwa). Przerywa poprzednią wypowiedź. */
 export function speak(text: string, lang?: string | null, opts?: SpeakOptions): void {
-  if (!ttsSupported() || !text.trim()) return;
+  if (!text.trim()) return;
+  // Głos serwerowy ma pierwszeństwo; przy jakimkolwiek problemie wracamy do przeglądarki.
+  if (serverVoiceId) {
+    stopSpeaking();
+    void speakViaServer(text, opts).then((ok) => {
+      if (!ok) speakViaBrowser(text, lang, opts);
+    });
+    return;
+  }
+  speakViaBrowser(text, lang, opts);
+}
+
+function speakViaBrowser(text: string, lang?: string | null, opts?: SpeakOptions): void {
+  if (!ttsSupported() || !text.trim()) {
+    opts?.onEnd?.();
+    return;
+  }
   try {
     warmVoices();
     window.speechSynthesis.cancel();
@@ -162,8 +280,9 @@ export function speak(text: string, lang?: string | null, opts?: SpeakOptions): 
   }
 }
 
-/** Zatrzymuje trwającą wypowiedź (jeśli jakakolwiek trwa). Bezpieczne bez wsparcia syntezy. */
+/** Zatrzymuje trwającą wypowiedź (obie ścieżki: przeglądarka i głos serwerowy). */
 export function stopSpeaking(): void {
+  stopServerAudio();
   if (!ttsSupported()) return;
   try {
     window.speechSynthesis.cancel();

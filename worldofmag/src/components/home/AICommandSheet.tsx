@@ -11,7 +11,7 @@ import { useDictation } from "@/hooks/useDictation";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { withPln, DEFAULT_USD_PLN_RATE } from "@/lib/usdPln";
-import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported, primeSpeech, getAvailableVoices, onVoicesChanged, setPreferredVoiceURI, getPreferredVoiceURI } from "@/lib/tts";
+import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported, primeSpeech, getAvailableVoices, onVoicesChanged, setPreferredVoiceURI, getPreferredVoiceURI, setServerVoiceId, speechAvailable } from "@/lib/tts";
 import { createSpeechListener, speechRecognitionSupported, type SpeechListener } from "@/lib/speechRecognition";
 import {
   listAiConversations, getAiConversation, createAiConversation, appendAiMessage,
@@ -21,7 +21,8 @@ import { createUserReport } from "@/actions/reports";
 import { getRecentAiCalls, type AiCallLogRow } from "@/actions/llmConfig";
 import { aiCallsToText } from "@/lib/ai/aiCallLog";
 import { submitFeedbackTask } from "@/actions/feedback";
-import { getAssistantPrefs, updateAssistantPrefs } from "@/actions/assistantPrefs";
+import { getAssistantPrefs, getSpeechOptions, updateAssistantPrefs } from "@/actions/assistantPrefs";
+import { parseServerVoiceValue, toServerVoiceValue, type ServerVoice } from "@/lib/tts/serverVoices";
 import { ASSISTANT_LEVEL_DESCRIPTIONS, ASSISTANT_LEVEL_LABELS, ASSISTANT_LEVELS, type AssistantLevel } from "@/types";
 import type { AIAction } from "@/lib/ai/aiAction";
 import { isDestructiveAction } from "@/lib/ai/aiAction";
@@ -425,6 +426,9 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   // Wybór głosu lektora (per-urządzenie). Głosy iOS/Safari ładują się asynchronicznie — subskrybujemy.
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceURI, setVoiceURIState] = useState<string>("");
+  // 031: głosy SERWEROWE (niezależne od przeglądarki) — dostępne tylko, gdy administrator
+  // przypisał dostawcę dla syntezy mowy. Wybór głosu serwerowego zapisujemy na koncie.
+  const [serverVoices, setServerVoices] = useState<ServerVoice[]>([]);
   // Tryb zgłoszenia (admin): kontekst wskazanego miejsca; gdy ustawiony, kolejna
   // wiadomość admina staje się opisem zadania w projekcie „Omnia". Ref — bo
   // listener zdarzenia i handleSend muszą widzieć aktualną wartość bez re-bind.
@@ -686,6 +690,13 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
         const p = await getAssistantPrefs();
         if (cancelled) return;
         setLevel(p.level);
+        if (p.voiceKind === "server" && p.voiceId) {
+          setServerVoiceId(p.voiceId);
+          setVoiceURIState(toServerVoiceValue(p.voiceId));
+        }
+        void getSpeechOptions()
+          .then((o) => { if (!cancelled) setServerVoices(o.voices); })
+          .catch(() => {});
         let legacy = "";
         try { legacy = localStorage.getItem("omnia.aiPrefs") ?? ""; } catch { /* ignore */ }
         if (!p.instructions && legacy.trim()) {
@@ -764,6 +775,25 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     prefsSaveTimer.current = window.setTimeout(() => {
       void updateAssistantPrefs({ instructions: value }).catch(() => {});
     }, 600);
+  }
+
+  /**
+   * 031: wybór głosu lektora. Głos SERWEROWY zapisujemy na koncie (brzmi tak samo na każdym
+   * urządzeniu), a głos SYSTEMOWY zostaje lokalnie — jest właściwością konkretnego urządzenia
+   * i na innym telefonie po prostu nie istnieje.
+   */
+  function changeVoice(value: string) {
+    setVoiceURIState(value);
+    const serverId = parseServerVoiceValue(value);
+    if (serverId) {
+      setServerVoiceId(serverId);
+      setPreferredVoiceURI(null);
+      void updateAssistantPrefs({ voiceKind: "server", voiceId: serverId }).catch(() => {});
+      return;
+    }
+    setServerVoiceId(null);
+    setPreferredVoiceURI(value || null);
+    void updateAssistantPrefs({ voiceKind: "browser", voiceId: null }).catch(() => {});
   }
 
   // Zmiana poziomu pracy asystenta — zapis natychmiastowy (to jedno kliknięcie, nie pisanie).
@@ -1455,8 +1485,11 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 />
                 <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>Zapisywane na Twoim koncie — widoczne na każdym urządzeniu. Zmiany zapisują się automatycznie.</p>
 
-                {/* Wybór głosu lektora (odczyt na głos) */}
-                {ttsSupported() && (
+                {/* 031: wybór głosu lektora — jedna lista: głosy SERWEROWE (jeśli administrator je
+                    włączył; działają w każdej przeglądarce) + głosy systemu użytkownika. Lista
+                    głosów systemowych jest przefiltrowana do tych, które faktycznie da się
+                    odtworzyć (patrz `getAvailableVoices` w lib/tts.ts). */}
+                {(ttsSupported() || serverVoices.length > 0) && (
                   <div style={{ marginTop: 12 }}>
                     <label htmlFor="ai-voice-select" style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
                       Głos lektora (odczyt na głos)
@@ -1465,25 +1498,40 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                       <select
                         id="ai-voice-select"
                         value={voiceURI}
-                        onChange={(e) => { setVoiceURIState(e.target.value); setPreferredVoiceURI(e.target.value || null); }}
+                        onChange={(e) => changeVoice(e.target.value)}
                         style={{ flex: 1, minWidth: 0, fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none" }}
                       >
                         <option value="">(domyślny przeglądarki)</option>
-                        {voices.map((v) => (
-                          <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
-                        ))}
+                        {serverVoices.length > 0 && (
+                          <optgroup label="Głosy Omnii (działają wszędzie)">
+                            {serverVoices.map((v) => (
+                              <option key={v.id} value={toServerVoiceValue(v.id)}>{v.label} — {v.description}</option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {voices.length > 0 && (
+                          <optgroup label="Głosy tego urządzenia">
+                            {voices.map((v) => (
+                              <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
+                            ))}
+                          </optgroup>
+                        )}
                       </select>
                       <button
-                        onClick={() => speak("Testowy głos asystenta.", "pl")}
-                        title="Przetestuj głos"
-                        aria-label="Przetestuj głos"
+                        onClick={() => speak("Dzień dobry, Wielki Magu. Tak brzmi wybrany głos lektora.", "pl")}
+                        title="Posłuchaj próbki"
+                        aria-label="Posłuchaj próbki głosu"
                         style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-secondary)", cursor: "pointer" }}
                       >
-                        <Volume2 size={14} /> Test
+                        <Volume2 size={14} /> Próbka
                       </button>
                     </div>
-                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>
-                      {voices.length === 0 ? "Głosy ładują się… (na iPhonie mogą pojawić się po chwili)." : "Zapisywane na tym urządzeniu."}
+                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0", lineHeight: 1.5 }}>
+                      {voices.length === 0 && serverVoices.length === 0
+                        ? "Głosy ładują się… (na iPhonie mogą pojawić się po chwili)."
+                        : serverVoices.length > 0
+                          ? "Głosy Omnii zapisujemy na Twoim koncie i brzmią tak samo na każdym urządzeniu. Głosy tego urządzenia pochodzą z systemu — ich lista zależy od komputera lub telefonu."
+                          : "Lista pochodzi z Twojego systemu — pokazujemy tylko głosy, które faktycznie działają. Więcej polskich głosów można doinstalować w ustawieniach systemu."}
                     </p>
                   </div>
                 )}
@@ -1822,8 +1870,10 @@ function RegenerateButton({ onClick }: { onClick: () => void }) {
 // Przycisk odczytu posta Asystenta na głos (start ↔ stop). Chowa się, gdy przeglądarka nie wspiera syntezy.
 // 029: wariant icon-only (bez labelki) — trafia do jednego wiersza stopki obok kwoty kosztu.
 function SpeakButton({ speaking, onToggle }: { speaking: boolean; onToggle: () => void }) {
-  const [supported] = useState(() => ttsSupported());
-  if (!supported) return null;
+  // 031: liczy się KTÓRAKOLWIEK ścieżka syntezy — przeglądarka albo wybrany głos serwerowy
+  // (ten działa nawet tam, gdzie przeglądarka nie ma własnej syntezy). Sprawdzamy przy każdym
+  // renderze, bo głos serwerowy dochodzi asynchronicznie po wczytaniu ustawień.
+  if (!speechAvailable()) return null;
   return (
     <button
       onClick={onToggle}

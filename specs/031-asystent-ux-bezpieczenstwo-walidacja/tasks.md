@@ -1,7 +1,7 @@
 # Zadania: Asystent AI — czytelność, bezpieczeństwo i wymuszona walidacja akcji
 
 - **Plan:** ./plan.md (031-asystent-ux-bezpieczenstwo-walidacja)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-07-25
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -192,21 +192,21 @@
 
 ## Faza 9 — Lektor: naprawa listy i serwerowa synteza
 
-- [ ] **T-34** — **Naprawa listy głosów przeglądarki.** `getAvailableVoices()` sumuje odczyty po
+- [x] **T-34** — **Naprawa listy głosów przeglądarki.** `getAvailableVoices()` sumuje odczyty po
   `voiceschanged` zamiast zastępować, deduplikuje po `voiceURI`, odsiewa głosy niedziałające,
   sortuje polskie najpierw; komunikat, gdy lista pusta.
   *Gotowe, gdy:* lista nie „znika" po chwili i zawiera tylko głosy odtwarzalne (AC-15).
 
-- [ ] **T-35** — **Typ operacji `speech` + katalog głosów.** `OPERATION_TYPES`/`OPERATION_TYPE_META`
+- [x] **T-35** — **Typ operacji `speech` + katalog głosów.** `OPERATION_TYPES`/`OPERATION_TYPE_META`
   + obsługa w `/admin/llm`; `src/lib/tts/serverVoices.ts` z polskimi opisami głosów.
   *Gotowe, gdy:* admin może przypisać dostawcę i model dla syntezy mowy.
 
-- [ ] **T-36** — **Synteza serwerowa.** `src/lib/tts/serverTts.ts` (`resolveLlmChain("speech")`,
+- [x] **T-36** — **Synteza serwerowa.** `src/lib/tts/serverTts.ts` (`resolveLlmChain("speech")`,
   limit 1200 znaków, brak trwałego zapisu audio) + `src/app/api/tts/route.ts` (sesja, limit żądań,
   `audio/mpeg`, `501` przy braku konfiguracji).
   *Gotowe, gdy:* przy skonfigurowanym dostawcy endpoint zwraca dźwięk, bez konfiguracji `501` (AC-16, AC-17).
 
-- [ ] **T-37** — **Rozgałęzienie `speak()` + wybór głosu w UI.** Głos serwerowy → `/api/tts` +
+- [x] **T-37** — **Rozgałęzienie `speak()` + wybór głosu w UI.** Głos serwerowy → `/api/tts` +
   `Audio`, awaria/brak → Web Speech; `stopSpeaking()` zatrzymuje obie ścieżki; lista wyboru łączy
   głosy serwerowe i przeglądarki, przycisk „Posłuchaj próbki"; wybór głosu serwerowego zapisywany w
   `AssistantPref`.
@@ -214,20 +214,20 @@
 
 ## Faza 10 — Bramki i domknięcie
 
-- [ ] **T-38** — **Bramki lokalnie.** `npm run check:migrations`, `npm run check:actions`,
+- [x] **T-38** — **Bramki lokalnie.** `npm run check:migrations`, `npm run check:actions`,
   `npm run check:ai-coverage`, `next lint --dir src`, `npx next build` na **lokalnym** Postgresie
   (C-13 — bez `scripts/migrate.js`).
   *Gotowe, gdy:* wszystkie kroki zielone (AC-30).
 
-- [ ] **T-39** — **Dokumentacja projektu.** `CLAUDE.md`: model `AssistantPref`, akcje
+- [x] **T-39** — **Dokumentacja projektu.** `CLAUDE.md`: model `AssistantPref`, akcje
   `assistantPrefs`/`feedback`, nowa bramka kontroli dostępu, typ operacji `speech`, kontrakt akcji.
   *Gotowe, gdy:* opis w `CLAUDE.md` zgadza się z kodem.
 
-- [ ] **T-40** — **Mapowanie AC → wynik** (input do `/verify`): dla każdego z AC-1..AC-30 wskazanie
+- [x] **T-40** — **Mapowanie AC → wynik** (input do `/verify`): dla każdego z AC-1..AC-30 wskazanie
   zadania i sposobu sprawdzenia.
   *Gotowe, gdy:* żaden AC nie zostaje bez pokrycia.
 
-- [ ] **T-41** — **Wpis(y) do `doświadczenia.md`** (C-51) dla nieoczywistych problemów napotkanych po
+- [x] **T-41** — **Wpis(y) do `doświadczenia.md`** (C-51) dla nieoczywistych problemów napotkanych po
   drodze (m.in. przyczyna „znikania" głosów, pułapka `minWidth:0` we flexboksie, deterministyczne
   domykanie wyjścia modelu).
   *Gotowe, gdy:* lekcje dopisane po polsku we właściwym formacie i zacommitowane z fixem.
@@ -276,4 +276,10 @@ Wszystko zbiega się w **T-38** (bramki), potem T-39..T-41.
 Faza 0 (T-1..T-4) jest w pełni niezależna — można ją zrobić od razu i zacommitować osobno.
 
 ## Notatki / blokady
-- (brak)
+- **T-10b dopisane w trakcie (C-54)** — główny robaczek tworzy zgłoszenie przez agenta, więc obok
+  akcji serwerowej potrzebna była osobna akcja AI `submit_feedback`; plan zaktualizowany.
+- **T-31 zawężone** — `fastPath` i `briefing` już działały na `op:"dispatch"`, więc tryb oszczędny
+  dotyczy wyłącznie pętli agenta (jedyna kosztowna ścieżka). Odnotowane w `plan.md`.
+- **Audyt (T-29/T-30)** wykrył 5 realnych luk na 544 akcje; wszystkie naprawione. Trzy modele
+  (`NoteGroup`, `Tag`, `ItemHistory`) nie mają kolumny właściciela — to ograniczenie modelu danych,
+  udokumentowane w `docs/ai/kontrola-dostepu.md`, rozdzielenie wymagałoby migracji poza zakresem.

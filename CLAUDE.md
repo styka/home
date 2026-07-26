@@ -306,7 +306,7 @@ Never add manual cache invalidation elsewhere. Action files:
 - **Pets**: `pets`, `petCare`, `petHusbandry`, `petBreeding`
 - **Health**: `health`, `medications`
 - **Other modules**: `habits`, `flota`, `portfel`, `portfelBudgets`, `portfelReports`, `portfelCurrency`, `portfelAuto` (Portfel: budgets/reports/multi-currency/auto-expense), `languageDecks`, `news`, `weather`, `qa`, `truck`, `storage` (Magazynowanie), `warsztat` (Warsztaty), `services` (marketplace; incl. `getModerationDisputes`), `calendar`, `contacts`
-- **Collaboration / system / UX**: `teams`, `invitations`, `access` (incl. `getAuditLog`), `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `aiConversations` (chat persistence), `notifications`, `menuPrefs` (sidebar customization), `dashboardPrefs` (home dashboard personalization), `skins`, `trash` (soft-delete recovery), `systemHealth`, `drive` (Google Drive)
+- **Collaboration / system / UX**: `teams`, `invitations`, `access` (incl. `getAuditLog`), `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `aiConversations` (chat persistence), `notifications`, `menuPrefs` (sidebar customization), `dashboardPrefs` (home dashboard personalization), `skins`, `trash` (soft-delete recovery), `systemHealth`, `drive` (Google Drive), `assistantPrefs` (per-user assistant settings + `getSpeechOptions`), `feedback` (`submitFeedbackTask`/`getFeedbackInboxInfo` — the user-report inbox)
 
 ### Authentication & Authorization
 
@@ -334,6 +334,7 @@ Team, TeamMember, TeamInvitation              — Collaboration
 Skin, UserSkinPref                            — Skins/themes (system/user/team; tokens=JSON CSS-var map; isPublic to share; UserSkinPref = per-user choice)
 UserMenuPref                                  — Per-user sidebar/menu customization (order/disabled/tabBar = JSON string[] of module ids)
 DashboardPref                                 — Per-user Home dashboard personalization (section order/visibility = JSON string[])
+AssistantPref                                 — Per-user AI assistant settings (standing instructions, work level standard|economy, reader voice browser|server + voiceId)
 Notification                                  — Notification engine (per-user; bell in chrome; reminders synced from agenda/deadlines)
 AuditLog                                      — Audit trail for RBAC + config changes (category rbac|config; NO FK to User — snapshots actor email)
 TrashItem                                     — Soft-delete recovery (JSON entity snapshot + retention days; surfaced at /trash)
@@ -440,7 +441,13 @@ document, orderDraft, insights, search), `pets` (insights).
   The operation types (`src/lib/llm/operationTypes.ts`) are: **`dispatch`** (fast
   parsing/classification), **`reasoning`** (multi-step: home agent, week planning,
   semantic search, Q&A, store layout), **`vision`** (image OCR), **`generation`**
-  (longer text: note rewrite, recipe/vocabulary generation). Default provider is
+  (longer text: note rewrite, recipe/vocabulary generation) and **`speech`**
+  (server-side text-to-speech for the assistant's reader — **no default model**, so an
+  unassigned `speech` simply disables the feature and the client falls back to browser
+  voices; `src/lib/tts/{serverTts,serverVoices}.ts` + `/api/tts`).
+  The per-user **assistant work level** (`AssistantPref.level`) picks the *operation type*, not a
+  model: `economy` routes every assistant call to `dispatch` (`effectiveOperation()`), so the model
+  choice stays with the admin. Default provider is
   Groq (OpenAI-compatible); key in `Config` (`groq_api_key`) / env.
   Shared helpers: `src/lib/llm/chat.ts` (`chatComplete`), `src/lib/llm/json.ts`.
 - Rule-based fallback for categorization (no LLM): `categorize.ts` (~500 Polish+English keywords).
@@ -503,7 +510,7 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 - **`/admin/access`** — RBAC manager (`PermissionManager`): permissions, role↔permission grid, user↔role; self-lockout guard.
 - **`/admin/audit`** — audit log viewer (RBAC + config changes; `AuditLog`).
 - **`/admin/health`** — system health dashboard (DB/migrations/API diagnostics; live, no model).
-- **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, `brave_search_api_key`, masked + encrypted at rest).
+- **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, `brave_search_api_key`, masked + encrypted at rest; plus the plain-text `feedback_project_id` — which task project acts as the **user-report inbox**; empty = the admin's „Omnia" project).
 - **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type).
 - **`/admin/ai-coverage`** — **Pokrycie akcji przez AI**: pełna lista akcji użytkownika (mutacje **i** odczyty z `src/actions/*`) z informacją, czy asystent AI ma do nich dostęp (`ai`/`pending`/`excluded`+powód). Źródło = manifest `src/lib/ai/action-coverage.json` (via `getAiCoverage()` w `src/lib/ai/coverage.ts`), którego kompletność wymusza bramka `scripts/check-ai-coverage.js` (wpięta w `build`) — więc lista jest **zawsze aktualna** wobec wdrożonego kodu. Nowa mutująca/odczytowa Server Action bez wpisu w manifeście = build pada. Filtry po statusie/rodzaju + wyszukiwarka.
 - **`/admin/skins`** — system skins manager.
@@ -581,7 +588,20 @@ the table/paragraph merge).
 - `copy-docs.js` bundles `docs/` for `/admin/docs`.
 - `check-action-coverage.js` (also `npm run check:actions`) verifies **every AI
   `AIAction` has an executor** in `/api/llm/home/execute` — the build **fails**
-  otherwise, so when you add an `AIAction` variant, wire up its handler.
+  otherwise, so when you add an `AIAction` variant, wire up its handler. It also enforces the
+  **action contract**: every action type must have an entry in `src/lib/ai/actionContract.ts`
+  (Polish action label, per-field control, technical→visible value dictionary, validation rules).
+  That single registry feeds `ActionDrawer`, the server-side validation choke point in
+  `/api/llm/home/execute`, and the answer humanizer (`src/lib/ai/humanize.ts`).
+- `check-ai-coverage.js` (also `npm run check:ai-coverage` / `npm run check:access`) enforces two
+  things per action: the **AI exposure** classification *and* **access control** — an `access`
+  declaration (`owner|self|shared|admin|internal|open`) **plus an actual guard call in the action's
+  body** (thin wrappers declare `guardedVia: "<action>"`). `open` additionally requires
+  `accessReason`; the only one today is the feedback inbox. `--report` regenerates
+  `docs/ai/pokrycie-akcji.md` and `docs/ai/kontrola-dostepu.md`.
+- **Never export a non-function from a `"use server"` file** — `next build` fails ("Only async
+  functions are allowed to be exported"), and `tsc --noEmit` does *not* catch it. Shared constants
+  belong in `src/lib/*`.
 - `check-migrations.js` (also `npm run check:migrations`) **fails** on a *new*
   duplicate migration-number prefix (legacy duplicates grandfathered).
 - `migrate.js` runs `prisma migrate deploy` (with retries for Neon cold-start) then

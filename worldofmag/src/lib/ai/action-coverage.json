@@ -129,6 +129,12 @@
     "reason": "settings",
     "access": "self"
   },
+  "assistantPrefs:getSpeechOptions": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
   "assistantPrefs:updateAssistantPrefs": {
     "status": "excluded",
     "reason": "settings",
