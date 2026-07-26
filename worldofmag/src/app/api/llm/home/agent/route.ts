@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import type { AssistantLevel } from "@/types";
 import { auth } from "@/lib/auth";
 import { PET_ACTIONS_PROMPT, PET_ACTION_EXAMPLES } from "@/lib/ai/petActions";
 import { buildReadToolsPrompt, READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentTools";
@@ -760,6 +761,13 @@ export async function POST(req: NextRequest) {
   }
   const userId = session.user.id;
 
+  // 031: ustawienia asystenta użytkownika — jeden odczyt na żądanie. Dają: poziom pracy
+  // (standardowy/oszczędny → dobór typu operacji) i stałe preferencje wstrzykiwane do promptu.
+  const assistantPref = await prisma.assistantPref
+    .findUnique({ where: { userId }, select: { instructions: true, level: true } })
+    .catch(() => null);
+  const assistantLevel: AssistantLevel = assistantPref?.level === "economy" ? "economy" : "standard";
+
   // H4: rate-limit per użytkownik (ochrona przed pętlą klienta i kosztami LLM).
   const rl = checkRateLimit(userId);
   if (!rl.ok) {
@@ -896,7 +904,10 @@ export async function POST(req: NextRequest) {
       currentProjectName = project?.name ?? null;
     }
 
-    const prefs = typeof body.preferences === "string" ? body.preferences.trim().slice(0, 1000) : "";
+    // 031: stałe preferencje bierzemy z BAZY (per użytkownik, widoczne na każdym urządzeniu).
+    // Wartość z body traktujemy tylko jako awaryjny fallback dla starszych klientów.
+    const prefs = (assistantPref?.instructions?.trim() ||
+      (typeof body.preferences === "string" ? body.preferences.trim() : "")).slice(0, 2000);
 
     const userMsg = [
       `Dzisiejsza data: ${today}`,
@@ -939,11 +950,14 @@ export async function POST(req: NextRequest) {
   const loopNeedsFallback = (r: LoopResult): boolean =>
     (typeof r.status === "number" && r.status >= 400) || r.body.degraded === true || r.body.limitReached === true;
 
+  // 031: TRYB OSZCZĘDNY użytkownika — cały asystent jedzie na typie operacji `dispatch`
+  // (model najprostszych operacji z /admin/llm). Świadomy wybór użytkownika, więc NIE robimy
+  // fallbacku do „reasoning" — inaczej tryb nie oszczędzałby.
+  const economy = assistantLevel === "economy";
   const runLoop = async (onThought?: (t: string) => void): Promise<LoopResult> => {
-    const first = await runAgentLoop(
-      messages, userId, onThought, meta, agentMaxTokens, conversationId, isSimpleRead ? "dispatch" : "reasoning"
-    );
-    if (!baselineMessages || !loopNeedsFallback(first)) return first;
+    const primaryOp: AgentOp = economy || isSimpleRead ? "dispatch" : "reasoning";
+    const first = await runAgentLoop(messages, userId, onThought, meta, agentMaxTokens, conversationId, primaryOp);
+    if (economy || !baselineMessages || !loopNeedsFallback(first)) return first;
     return runAgentLoop(baselineMessages, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning");
   };
 

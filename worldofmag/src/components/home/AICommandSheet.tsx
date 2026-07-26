@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight, ArrowUp,
-  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug,
+  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug, Gauge, Zap,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { useDictation } from "@/hooks/useDictation";
@@ -21,6 +21,8 @@ import { createUserReport } from "@/actions/reports";
 import { getRecentAiCalls, type AiCallLogRow } from "@/actions/llmConfig";
 import { aiCallsToText } from "@/lib/ai/aiCallLog";
 import { submitFeedbackTask } from "@/actions/feedback";
+import { getAssistantPrefs, updateAssistantPrefs } from "@/actions/assistantPrefs";
+import { ASSISTANT_LEVEL_DESCRIPTIONS, ASSISTANT_LEVEL_LABELS, ASSISTANT_LEVELS, type AssistantLevel } from "@/types";
 import type { AIAction } from "@/lib/ai/aiAction";
 import { isDestructiveAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executors/shared";
@@ -411,6 +413,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   const prefsRef = useRef("");
   prefsRef.current = prefs;
   const [showPrefs, setShowPrefs] = useState(false);
+  // 031: poziom pracy asystenta — zapisywany w BAZIE per użytkownik (widoczny na każdym
+  // urządzeniu), nie w pamięci przeglądarki. Serwer i tak czyta go z bazy; ten stan służy UI.
+  const [level, setLevel] = useState<AssistantLevel>("standard");
+  const [showLevelMenu, setShowLevelMenu] = useState(false);
   // Zgłaszanie problemu z czatem (admin-only): panel z opcjonalnym opisem → zadanie w projekcie „Omnia".
   const [showReport, setShowReport] = useState(false);
   const [reportDesc, setReportDesc] = useState("");
@@ -670,12 +676,29 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   // Zatrzymaj generowanie przy zamknięciu/unmount.
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  // Wczytaj zapamiętane preferencje (localStorage) raz przy montażu.
+  // 031: ustawienia asystenta wczytujemy z BAZY (per użytkownik). Jeśli baza jest pusta, a w
+  // przeglądarce siedzą stare preferencje per-urządzenie — przenosimy je JEDNORAZOWO na konto i
+  // czyścimy klucz lokalny, żeby nikt nie stracił tego, co już wpisał.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("omnia.aiPrefs");
-      if (raw) setPrefs(raw);
-    } catch { /* ignore */ }
+    let cancelled = false;
+    (async () => {
+      try {
+        const p = await getAssistantPrefs();
+        if (cancelled) return;
+        setLevel(p.level);
+        let legacy = "";
+        try { legacy = localStorage.getItem("omnia.aiPrefs") ?? ""; } catch { /* ignore */ }
+        if (!p.instructions && legacy.trim()) {
+          setPrefs(legacy);
+          try { await updateAssistantPrefs({ instructions: legacy }); } catch { /* ignore */ }
+          try { localStorage.removeItem("omnia.aiPrefs"); } catch { /* ignore */ }
+        } else {
+          setPrefs(p.instructions);
+          if (legacy) { try { localStorage.removeItem("omnia.aiPrefs"); } catch { /* ignore */ } }
+        }
+      } catch { /* brak sesji / offline — zostajemy z domyślnymi */ }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   // Wczytaj listę głosów lektora + zapamiętany wybór; subskrybuj „voiceschanged" (async na iOS/Safari).
@@ -733,9 +756,21 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     return () => window.removeEventListener(ASSISTANT_OPEN_EVENT, onOpen);
   }, []);
 
+  // Zapis stałych preferencji na konto użytkownika (debounce — pole zapisuje się „samo").
+  const prefsSaveTimer = useRef<number | null>(null);
   function savePrefs(value: string) {
     setPrefs(value);
-    try { localStorage.setItem("omnia.aiPrefs", value); } catch { /* ignore */ }
+    if (prefsSaveTimer.current) window.clearTimeout(prefsSaveTimer.current);
+    prefsSaveTimer.current = window.setTimeout(() => {
+      void updateAssistantPrefs({ instructions: value }).catch(() => {});
+    }, 600);
+  }
+
+  // Zmiana poziomu pracy asystenta — zapis natychmiastowy (to jedno kliknięcie, nie pisanie).
+  function changeLevel(next: AssistantLevel) {
+    setLevel(next);
+    setShowLevelMenu(false);
+    void updateAssistantPrefs({ level: next }).catch(() => {});
   }
 
   // Autofokus pola wejścia po otwarciu (desktop) — natychmiast piszesz.
@@ -1418,7 +1453,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                   placeholder={'Np. „Domyślnie dodawaj do listy Tygodniowe. Kwoty w PLN. Pisz zwięźle."'}
                   style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none", resize: "vertical" }}
                 />
-                <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>Zapisywane na tym urządzeniu. Zmiany zapisują się automatycznie.</p>
+                <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>Zapisywane na Twoim koncie — widoczne na każdym urządzeniu. Zmiany zapisują się automatycznie.</p>
 
                 {/* Wybór głosu lektora (odczyt na głos) */}
                 {ttsSupported() && (
@@ -1633,6 +1668,55 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                       </button>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      {/* 031: poziom pracy asystenta — NA LEWO od mikrofonu. Wybór zapisuje się na
+                          koncie użytkownika, więc jest ten sam na każdym urządzeniu. */}
+                      <div style={{ position: "relative", flexShrink: 0 }}>
+                        <button
+                          onClick={() => setShowLevelMenu((v) => !v)}
+                          disabled={busy}
+                          title={`Poziom pracy asystenta: ${ASSISTANT_LEVEL_LABELS[level]}`}
+                          aria-label={`Poziom pracy asystenta: ${ASSISTANT_LEVEL_LABELS[level]}`}
+                          aria-expanded={showLevelMenu}
+                          style={{ ...composerActionBtn, color: level === "economy" ? "var(--accent-amber)" : "var(--text-muted)" }}
+                        >
+                          {level === "economy" ? <Zap size={19} /> : <Gauge size={19} />}
+                        </button>
+                        {showLevelMenu && (
+                          <div
+                            role="menu"
+                            style={{
+                              position: "absolute", bottom: "calc(100% + 6px)", left: 0, zIndex: 6,
+                              minWidth: 240, maxWidth: "min(300px, calc(100vw - 40px))",
+                              padding: 4, background: "var(--bg-elevated)", border: "1px solid var(--border)",
+                              borderRadius: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.35)",
+                            }}
+                          >
+                            {ASSISTANT_LEVELS.map((lvl) => (
+                              <button
+                                key={lvl}
+                                role="menuitemradio"
+                                aria-checked={level === lvl}
+                                onClick={() => changeLevel(lvl)}
+                                style={{
+                                  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2,
+                                  width: "100%", padding: "8px 10px", borderRadius: 8, border: "none",
+                                  background: level === lvl ? "var(--bg-hover)" : "transparent",
+                                  cursor: "pointer", textAlign: "left",
+                                }}
+                              >
+                                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-primary)" }}>
+                                  {lvl === "economy" ? <Zap size={13} /> : <Gauge size={13} />}
+                                  {ASSISTANT_LEVEL_LABELS[lvl]}
+                                  {level === lvl && <Check size={12} style={{ color: "var(--accent-green)" }} />}
+                                </span>
+                                <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
+                                  {ASSISTANT_LEVEL_DESCRIPTIONS[lvl]}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       {/* Mikrofon dyktowania — dopisuje mowę do pola (oddzielny od trybu rozmowy głosowej) */}
                       {dictation.supported && !busy && (
                         <button

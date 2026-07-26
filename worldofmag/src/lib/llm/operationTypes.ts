@@ -51,3 +51,13 @@ export const OPERATION_TYPE_META: Record<OperationType, OperationTypeMeta> = {
 export function isOperationType(value: string): value is OperationType {
   return (OPERATION_TYPES as readonly string[]).includes(value);
 }
+
+/**
+ * 031: poziom pracy asystenta („standardowy" / „oszczędny") wybiera TYP OPERACJI, nigdy konkretny
+ * model — dobór modelu zostaje w rękach administratora (`/admin/llm`, C-40). Tryb oszczędny
+ * kieruje wszystko do `dispatch`, czyli do modelu przypisanego przez admina do najprostszych
+ * operacji (dla Anthropic to zwykle Haiku).
+ */
+export function effectiveOperation(op: OperationType, level: "standard" | "economy" | undefined): OperationType {
+  return level === "economy" ? "dispatch" : op;
+}

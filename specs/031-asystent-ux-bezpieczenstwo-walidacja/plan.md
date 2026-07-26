@@ -260,8 +260,11 @@ export function actionLabel(action: AIAction): string;
 
 - `src/lib/llm/operationTypes.ts`: helper `effectiveOperation(op, level)` →
   `level === "economy" ? "dispatch" : op`.
-- Wpięcie w miejscach, gdzie asystent woła model: `agent/route.ts` (pętla agenta),
-  `fastPath.ts`, `briefing`. Poziom czytamy raz na żądanie z `AssistantPref` (jeden `findUnique`).
+- Wpięcie w `agent/route.ts` (pętla agenta) — poziom czytamy raz na żądanie z `AssistantPref`
+  (jeden `findUnique`). **Ustalenie z implementacji:** `fastPath.ts` (klasyfikacja intencji) i
+  `briefing` **już** działają na `op: "dispatch"`, więc tryb oszczędny nie ma tam czego zmieniać;
+  jedyną kosztowną ścieżką jest pętla agenta. W trybie oszczędnym świadomie **nie** robimy
+  fallbacku `dispatch → reasoning` (inaczej tryb nie oszczędzałby).
 - **Brak hardcodowania modelu** — tryb oszczędny wybiera *typ operacji*, model dalej rozstrzyga
   admin w `/admin/llm` (C-40).
 

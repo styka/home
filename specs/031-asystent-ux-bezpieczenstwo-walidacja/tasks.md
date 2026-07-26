@@ -176,16 +176,16 @@
 
 ## Faza 8 — Tryb oszczędny
 
-- [ ] **T-31** — **`effectiveOperation(op, level)`** w `src/lib/llm/operationTypes.ts` + wpięcie w
+- [x] **T-31** — **`effectiveOperation(op, level)`** w `src/lib/llm/operationTypes.ts` + wpięcie w
   `agent/route.ts`, `fastPath.ts` i briefing; poziom czytany raz na żądanie z `AssistantPref`.
   *Gotowe, gdy:* w trybie oszczędnym log `AiCall` pokazuje model przypisany do `dispatch` (AC-14).
 
-- [ ] **T-32** — **Przełącznik poziomu w kompozytorze.** Kontrolka na lewo od mikrofonu, dwie opcje
+- [x] **T-32** — **Przełącznik poziomu w kompozytorze.** Kontrolka na lewo od mikrofonu, dwie opcje
   („Standardowy" / „Oszczędny") z krótkimi opisami, zapis natychmiast do bazy, aktywny tryb
   oszczędny podświetlony.
   *Gotowe, gdy:* wybór widoczny po przeładowaniu i na innym urządzeniu (AC-12, AC-13).
 
-- [ ] **T-33** — **Stałe preferencje per użytkownik.** Panel ustawień na `getAssistantPrefs`/
+- [x] **T-33** — **Stałe preferencje per użytkownik.** Panel ustawień na `getAssistantPrefs`/
   `updateAssistantPrefs` (debounce), jednorazowa migracja treści z `localStorage`, nowy opis
   „Zapisywane na Twoim koncie — widoczne na każdym urządzeniu."
   *Gotowe, gdy:* preferencje widoczne po zalogowaniu na innym urządzeniu, brak mylącego opisu (AC-11).
