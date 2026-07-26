@@ -146,6 +146,10 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
   const [editedSearchQuery, setEditedSearchQuery] = useState<Record<string, string>>(
     Object.fromEntries(actions.map((a) => [a.id, a.searchQuery ?? ""]))
   );
+  // 032: parametry POMOCNICZE (np. „szukana nazwa", po której backend dopiero celuje w rekord)
+  // widzi tylko administrator, i to po świadomym rozwinięciu — zwykły użytkownik nie ma co z nimi
+  // zrobić, a zajmowały miejsce obok pól, które faktycznie warto poprawić.
+  const [techExpanded, setTechExpanded] = useState<Set<string>>(new Set());
 
   function toggleAction(id: string) {
     setIncluded((prev) => {
@@ -166,6 +170,14 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
 
   function toggleParams(id: string) {
     setParamsExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleTech(id: string) {
+    setTechExpanded((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
@@ -470,7 +482,20 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                           </div>
                         );
                       })}
-                      {action.searchQuery !== undefined && (
+                      {/* 032: „szukana nazwa" to parametr POMOCNICZY — nie opisuje tego, co się
+                          stanie, tylko po czym backend znajdzie rekord. Zwykły użytkownik go nie
+                          widzi (AC-13); administrator ma go pod zwiniętym rozwinięciem (AC-14). */}
+                      {isAdmin && action.searchQuery !== undefined && (
+                        <button
+                          onClick={() => toggleTech(action.id)}
+                          aria-expanded={techExpanded.has(action.id)}
+                          style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10.5, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                        >
+                          {techExpanded.has(action.id) ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                          Szczegóły techniczne
+                        </button>
+                      )}
+                      {isAdmin && action.searchQuery !== undefined && techExpanded.has(action.id) && (
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
                           <span style={{ fontSize: 11, color: "var(--accent-amber)", width: 110, flexShrink: 0, overflowWrap: "anywhere" }}>Szukana nazwa</span>
                           <input

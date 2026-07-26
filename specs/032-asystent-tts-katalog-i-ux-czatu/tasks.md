@@ -35,7 +35,7 @@
   **Gotowe, gdy:** parametr o wartości 200 znaków nie powoduje przewijania poziomego karty na
   viewporcie 375 px; `grep -n "rgba(245" src/components/home/ActionDrawer.tsx` bez trafień. *(AC-15)*
 
-- [ ] **T-4** — `ActionDrawer.tsx`: schowaj parametry pomocnicze. Blok „Szukana nazwa" renderowany
+- [x] **T-4** — `ActionDrawer.tsx`: schowaj parametry pomocnicze. Blok „Szukana nazwa" renderowany
   **tylko** przy `isAdmin`, wewnątrz nowego, domyślnie **zwiniętego** pod-rozwinięcia „Szczegóły
   techniczne" w sekcji „Parametry". Dla nie-admina — brak w drzewie.
   **Gotowe, gdy:** render z `isAdmin={false}` nie zawiera frazy „Szukana nazwa"; z `isAdmin={true}`
@@ -45,12 +45,12 @@
 
 ## Faza 1 — Fundament danych
 
-- [ ] **T-5** — Migracja `prisma/migrations/0210_ai_conversation_draft/migration.sql`:
+- [x] **T-5** — Migracja `prisma/migrations/0210_ai_conversation_draft/migration.sql`:
   `ALTER TABLE "AiConversation" ADD COLUMN IF NOT EXISTS "draft" TEXT;`
   **Gotowe, gdy:** `npm run check:migrations` przechodzi (numer 0210 bez kolizji) i
   `npx prisma migrate deploy` na lokalnym Postgresie kończy się sukcesem. *(baza dla AC-25..AC-27)*
 
-- [ ] **T-6** — `prisma/schema.prisma`: `draft String?` w `model AiConversation` (zgodnie z DDL z T-5).
+- [x] **T-6** — `prisma/schema.prisma`: `draft String?` w `model AiConversation` (zgodnie z DDL z T-5).
   **Gotowe, gdy:** `npx prisma generate` czysto, `AiConversation.draft` widoczne w typach klienta.
 
 ---
