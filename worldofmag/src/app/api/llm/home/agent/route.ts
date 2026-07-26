@@ -95,6 +95,7 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - delete_task { taskId? } (searchQuery fallback) — DESTRUKCYJNE
 - set_task_tags { tags:[string], removeTags?:[string], replace?, taskId? } (searchQuery = tytuł zadania) — DODAJE podane tagi do zadania (removeTags zdejmuje wskazane; replace:true zastępuje cały zestaw). Użyj dla „otaguj/oznacz tagiem/nadaj etykietę zadaniu".
 - add_task_comment { content, taskId? } (searchQuery = tytuł zadania) — dodaje komentarz do zadania.
+- submit_feedback { title, description } — ZGŁOSZENIE błędu/sugestii do aplikacji, trafia do skrzynki administratora. Używaj TYLKO w trybie zgłoszeniowym (gdy polecenie tak mówi). NIE używaj create_task do zgłoszeń — skrzynka należy do administratora i zwykły użytkownik nie ma do niej dostępu.
 - create_project { name, emoji? }
 - update_project { name?, emoji?, projectId? } (searchQuery = nazwa projektu)
 - delete_project { projectId? } (searchQuery = nazwa) — DESTRUKCYJNE

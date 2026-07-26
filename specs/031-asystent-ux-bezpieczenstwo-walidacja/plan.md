@@ -110,6 +110,15 @@ znaków; niepoprawne wartości → błąd z polskim komunikatem.
 - Klient (`AICommandSheet`, `FeedbackInspector`) przestaje wołać `ensureOmniaProject()` +
   `createTask()` i woła `submitFeedbackTask()`. `ensureOmniaProject()` zostaje jako helper
   administratora (tworzenie skrzynki), używany po stronie serwera w fallbacku.
+- **Korekta planu (C-54, odkryte w trakcie implementacji):** panel „Zgłoś problem z Asystentem AI"
+  woła akcję serwerową bezpośrednio, ale **główny robaczek** (tryb wskazywania elementu) tworzy
+  zgłoszenie **przez agenta** — prompt każe mu zaproponować `create_task` z
+  `params.projectName="Omnia"`, co dla zwykłego użytkownika kończy się utworzeniem *własnego*
+  projektu „Omnia" (zgłoszenie nigdy nie dociera do admina) albo odmową dostępu. Dlatego dokładamy
+  **nowy typ akcji `submit_feedback`** (moduł `tasks`), którego egzekutor woła `submitFeedbackTask()`.
+  Tryb zgłoszeniowy proponuje **tę** akcję zamiast `create_task`; wyjątek dostępowy zostaje w jednym
+  miejscu (jedna akcja serwerowa), a recenzja w `ActionDrawer` działa jak dotąd. Wymaga: wpisu w
+  katalogu agenta, egzekutora (bramka C-23) i wpisu w kontrakcie akcji.
 - **AC-21**: odczyt zadań skrzynki nadal idzie przez `assertProjectAccess` — wyjątek nie dotyka
   ścieżek odczytu ani read-toolów asystenta.
 

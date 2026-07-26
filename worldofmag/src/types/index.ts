@@ -238,6 +238,26 @@ export const TASK_PRIORITY_COLORS: Record<TaskPriority, string> = {
 
 export const TASK_STATUS_CYCLE: TaskStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
 
+// ── Ustawienia asystenta AI (model AssistantPref) ────────────────────────────
+// Poziom pracy asystenta: "standard" = modele wg przypisań admina (/admin/llm);
+// "economy" = do wszystkich operacji asystenta używamy typu operacji `dispatch`
+// (najprostszy, najtańszy model wskazany przez admina).
+export type AssistantLevel = "standard" | "economy";
+export const ASSISTANT_LEVELS: AssistantLevel[] = ["standard", "economy"];
+export const ASSISTANT_LEVEL_LABELS: Record<AssistantLevel, string> = {
+  standard: "Standardowy",
+  economy: "Oszczędny",
+};
+export const ASSISTANT_LEVEL_DESCRIPTIONS: Record<AssistantLevel, string> = {
+  standard: "Modele wg ustawień administratora — pełna jakość odpowiedzi.",
+  economy: "Najprostszy, najtańszy model do wszystkiego — szybciej i taniej, kosztem jakości.",
+};
+
+// Źródło głosu lektora: "browser" = synteza w przeglądarce (Web Speech),
+// "server" = synteza u dostawcy skonfigurowanego przez admina.
+export type AssistantVoiceKind = "browser" | "server";
+export const ASSISTANT_VOICE_KINDS: AssistantVoiceKind[] = ["browser", "server"];
+
 export type TaskStatusFilter = "ALL" | TaskStatus;
 export const TASK_STATUS_FILTERS: TaskStatusFilter[] = ["ALL", "TODO", "IN_PROGRESS", "IN_VERIFICATION", "DONE", "DEFERRED", "CANCELLED"];
 export const TASK_STATUS_FILTER_LABELS: Record<TaskStatusFilter, string> = {

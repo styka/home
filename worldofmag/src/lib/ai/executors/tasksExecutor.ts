@@ -5,6 +5,7 @@ import { createTask, updateTask, deleteTask, updateTaskTags, addTaskComment } fr
 import { createTaskProject, updateTaskProject, deleteTaskProject } from "@/actions/taskProjects";
 import { createTaskTag } from "@/actions/taskTags";
 import { createProjectGroup, updateProjectGroup, deleteProjectGroup } from "@/actions/projectGroups";
+import { submitFeedbackTask } from "@/actions/feedback";
 import { addDays, shiftPriority, asStr, undoAction, resolveTaskId, resolveProjectIdForCreate, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { TaskStatus, TaskPriority } from "@/types";
@@ -23,6 +24,23 @@ async function resolveTaskTagIds(names: unknown): Promise<string[]> {
 
 export async function executeTasksAction(action: AIAction, userId: string, currentProjectId?: string): Promise<string | ExecOutcome> {
   const { type, params, searchQuery } = action;
+
+  // 031: zgłoszenie błędu/sugestii do skrzynki administratora. ODRĘBNA akcja (nie `create_task`),
+  // bo zwykły użytkownik nie ma dostępu do projektu-skrzynki — cały wyjątek dostępowy siedzi w
+  // jednej akcji serwerowej `submitFeedbackTask`. Patrz src/actions/feedback.ts.
+  if (type === "submit_feedback") {
+    const title = asStr(params.title) ?? "Zgłoszenie z aplikacji";
+    const description = asStr(params.description) ?? "";
+    const res = await submitFeedbackTask({ title, description });
+    // „Przejdź do zadania" proponujemy TYLKO, gdy użytkownik może je otworzyć (AC-20).
+    return res.canRead
+      ? {
+          message: `Zgłoszenie „${title}" trafiło do administratora.`,
+          navigateTo: `/tasks/${res.projectId}`,
+          navigateLabel: "Otwórz w zadaniach",
+        }
+      : { message: `Zgłoszenie „${title}" trafiło do administratora. Dziękujemy!` };
+  }
 
   if (type === "create_task") {
     const title = asStr(params.title) ?? "Nowe zadanie";

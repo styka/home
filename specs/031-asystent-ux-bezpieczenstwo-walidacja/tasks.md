@@ -36,36 +36,43 @@
 
 ## Faza 1 — Fundament danych
 
-- [ ] **T-5** — **Migracja `0209_assistant_pref`.** Ręczny `migration.sql` wg planu §2.3 (tabela
+- [x] **T-5** — **Migracja `0209_assistant_pref`.** Ręczny `migration.sql` wg planu §2.3 (tabela
   `AssistantPref`, unikat na `userId`, FK `ON DELETE CASCADE`, idempotentnie).
   *Gotowe, gdy:* `npm run check:migrations` przechodzi, migracja aplikuje się na lokalnym Postgresie.
 
-- [ ] **T-6** — **`schema.prisma` + typy TS.** Model `AssistantPref` zgodny z DDL, relacja w `User`;
+- [x] **T-6** — **`schema.prisma` + typy TS.** Model `AssistantPref` zgodny z DDL, relacja w `User`;
   `AssistantLevel` i `AssistantVoiceKind` w `src/types/index.ts` jako unie stringów (C-12).
   *Gotowe, gdy:* `npx prisma generate` czysto, brak enumów Prisma.
 
 ## Faza 2 — Warstwa serwera: ustawienia i skrzynka zgłoszeń
 
-- [ ] **T-7** — **`src/actions/assistantPrefs.ts`.** `getAssistantPrefs()` (domyślne w locie) +
+- [x] **T-7** — **`src/actions/assistantPrefs.ts`.** `getAssistantPrefs()` (domyślne w locie) +
   `updateAssistantPrefs(input)` z walidacją wartości i `revalidatePath("/")`; zapis wyłącznie po
   `userId` z sesji.
   *Gotowe, gdy:* akcje działają, wartość spoza unii jest odrzucana z polskim komunikatem (AC-11, AC-13).
 
-- [ ] **T-8** — **`src/actions/feedback.ts`.** `submitFeedbackTask({title, description})` —
+- [x] **T-8** — **`src/actions/feedback.ts`.** `submitFeedbackTask({title, description})` —
   wyznaczenie skrzynki (`Config.feedback_project_id` → fallback: projekt „Omnia" admina), zapis z
   pominięciem guardu projektu, limity długości, `revalidatePath("/tasks")`. Plus
   `getFeedbackInboxInfo()` → `{ projectId, canRead }` (dostęp sprawdzany istniejącym
   `assertProjectAccess`).
   *Gotowe, gdy:* użytkownik bez dostępu tworzy zgłoszenie, ale `canRead === false` (AC-19, AC-22).
 
-- [ ] **T-9** `[P]` — **Klucz `feedback_project_id` w panelu admina.** Pole w `AdminConfigForm` +
+- [x] **T-9** `[P]` — **Klucz `feedback_project_id` w panelu admina.** Pole w `AdminConfigForm` +
   odczyt w `page.tsx`, opis „puste = projekt »Omnia« administratora".
   *Gotowe, gdy:* admin ustawia id projektu, zmiana trafia do `AuditLog` (C-25, AC-22).
 
-- [ ] **T-10** — **Wpięcie zgłoszeń w UI.** `AICommandSheet` i `FeedbackInspector` wołają
+- [x] **T-10** — **Wpięcie zgłoszeń w UI.** `AICommandSheet` i `FeedbackInspector` wołają
   `submitFeedbackTask()` zamiast `ensureOmniaProject()` + `createTask()`; przycisk „Otwórz w
   zadaniach" renderowany **tylko** przy `canRead === true`, inaczej komunikat podziękowania.
   *Gotowe, gdy:* konto bez dostępu nie widzi propozycji przejścia do zadania (AC-20).
+
+- [x] **T-10b** — **Akcja `submit_feedback` dla agenta** (korekta planu C-54: główny robaczek tworzy
+  zgłoszenie przez agenta, więc `create_task` do cudzej skrzynki by nie przeszło). Wpis w katalogu
+  agenta + egzekutor wołający `submitFeedbackTask()` + prompt trybu zgłoszeniowego proponujący tę
+  akcję; `npm run check:actions` przechodzi.
+  *Gotowe, gdy:* zgłoszenie z głównego robaczka trafia do skrzynki admina także z konta bez
+  uprawnień do jej projektu (AC-19).
 
 - [ ] **T-11** — **Odczyt skrzynki pozostaje chroniony.** Weryfikacja, że listowanie/odczyt/edycja
   zadań skrzynki przez UI i przez read-toole asystenta nadal wymaga dostępu; test ręczny na koncie

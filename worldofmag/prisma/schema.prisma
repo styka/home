@@ -72,6 +72,7 @@ model User {
   exchangeRates          ExchangeRate[]        @relation("UserExchangeRates")
   trashItems             TrashItem[]           @relation("UserTrashItems")
   dashboardPref          DashboardPref?        @relation("UserDashboardPref")
+  assistantPref          AssistantPref?        @relation("UserAssistantPref")
   languageDecks          LanguageDeck[]        @relation("OwnedLanguageDecks")
   healthEvents           HealthEvent[]         @relation("OwnedHealthEvents")
   medicationSchedules    MedicationSchedule[]  @relation("OwnedMedicationSchedules")
@@ -1815,6 +1816,21 @@ model FinanceSettings {
 }
 
 // H1: personalizacja pulpitu (kolejność i ukrywanie sekcji strony głównej, per-user).
+// 031: ustawienia asystenta AI per UŻYTKOWNIK (widoczne na każdym urządzeniu):
+// stałe preferencje, poziom pracy asystenta i wybór głosu lektora.
+model AssistantPref {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  instructions String   @default("") // stałe preferencje („custom instructions")
+  level        String   @default("standard") // AssistantLevel: "standard" | "economy"
+  voiceKind    String   @default("browser") // AssistantVoiceKind: "browser" | "server"
+  voiceId      String? // id głosu serwerowego (gdy voiceKind = "server")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation("UserAssistantPref", fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model DashboardPref {
   id        String   @id @default(cuid())
   userId    String   @unique

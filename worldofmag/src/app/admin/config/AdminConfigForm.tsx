@@ -9,9 +9,11 @@ type MaskedKey = { hasValue: boolean; masked: string };
 interface AdminConfigFormProps {
   groqKey: MaskedKey;
   braveKey: MaskedKey;
+  /** 031: id projektu-skrzynki zgłoszeń (jawna wartość, nie sekret). */
+  feedbackProjectId: string;
 }
 
-export function AdminConfigForm({ groqKey, braveKey }: AdminConfigFormProps) {
+export function AdminConfigForm({ groqKey, braveKey, feedbackProjectId }: AdminConfigFormProps) {
   return (
     <>
       <ApiKeyCard
@@ -75,7 +77,100 @@ export function AdminConfigForm({ groqKey, braveKey }: AdminConfigFormProps) {
           </>
         }
       />
+
+      <div style={{ height: 24 }} />
+
+      <PlainValueCard
+        sectionTitle="Skrzynka zgłoszeń od użytkowników"
+        label="Projekt-skrzynka (identyfikator projektu zadań)"
+        configKey="feedback_project_id"
+        current={feedbackProjectId}
+        placeholder="np. cmpq1l67f000gyt0vvfnfifob"
+        help={
+          <>
+            Do tego projektu trafiają zgłoszenia błędów i sugestii wysyłane przez{" "}
+            <strong>wszystkich</strong> użytkowników (robaczek w asystencie AI oraz tryb wskazywania
+            elementu). Zgłaszający <strong>nie zyskuje</strong> prawa do odczytu tego projektu — może
+            tam wyłącznie wrzucić zgłoszenie.
+            <br />
+            <br />
+            Identyfikator znajdziesz w adresie projektu: <code>/tasks/&lt;identyfikator&gt;</code>.{" "}
+            <strong>Puste pole</strong> = zachowanie domyślne, czyli projekt o nazwie „Omnia”
+            należący do administratora.
+          </>
+        }
+      />
     </>
+  );
+}
+
+// 031: karta dla wartości JAWNEJ (nie sekretu) — w przeciwieństwie do `ApiKeyCard` pokazuje
+// aktualną wartość i pozwala ją wyczyścić (puste = zachowanie domyślne).
+function PlainValueCard({
+  sectionTitle,
+  label,
+  configKey,
+  current,
+  placeholder,
+  help,
+}: {
+  sectionTitle: string;
+  label: string;
+  configKey: string;
+  current: string;
+  placeholder: string;
+  help: React.ReactNode;
+}) {
+  const [value, setValue] = useState(current);
+  const [saved, setSaved] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  function save() {
+    startTransition(async () => {
+      await setConfigValue(configKey, value.trim());
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    });
+  }
+
+  return (
+    <section>
+      <h2 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 10px" }}>
+        {sectionTitle}
+      </h2>
+      <div style={{ padding: 16, borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
+        <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>
+          {label}
+        </label>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") save(); }}
+            placeholder={placeholder}
+            className="mono text-sm focus:outline-none"
+            style={{
+              flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: 6,
+              border: "1px solid var(--border)", background: "var(--bg-base)", color: "var(--text-primary)",
+            }}
+          />
+          <button
+            onClick={save}
+            disabled={isPending}
+            className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium focus:outline-none disabled:opacity-40"
+            style={{
+              backgroundColor: saved ? "var(--accent-green)" : "var(--accent-blue)",
+              color: "var(--on-accent)",
+              transition: "background-color 0.2s",
+            }}
+          >
+            {saved ? <Check size={14} /> : null}
+            {saved ? "Zapisano" : "Zapisz"}
+          </button>
+        </div>
+        <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "10px 0 0", lineHeight: 1.6 }}>{help}</p>
+      </div>
+    </section>
   );
 }
 

@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { getConfigMasked } from "@/actions/config";
+import { getConfigMasked, getConfigValue } from "@/actions/config";
 import { AdminConfigForm } from "./AdminConfigForm";
 import { ChevronLeft, Cpu, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -15,6 +15,8 @@ export default async function AdminConfigPage() {
   // A2: do klienta trafia tylko maska + flaga, nigdy surowy klucz.
   const groqKey = await getConfigMasked("groq_api_key");
   const braveKey = await getConfigMasked("brave_search_api_key");
+  // 031: wartość jawna (nie sekret) — pokazujemy ją adminowi wprost.
+  const feedbackProjectId = (await getConfigValue("feedback_project_id")) ?? "";
 
   return (
     <div
@@ -57,7 +59,7 @@ export default async function AdminConfigPage() {
           <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />
         </Link>
 
-        <AdminConfigForm groqKey={groqKey} braveKey={braveKey} />
+        <AdminConfigForm groqKey={groqKey} braveKey={braveKey} feedbackProjectId={feedbackProjectId} />
       </div>
     </div>
   );

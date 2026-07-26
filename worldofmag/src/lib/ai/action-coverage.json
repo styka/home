@@ -100,6 +100,15 @@
     "status": "excluded",
     "reason": "internal"
   },
+  "assistantPrefs:getAssistantPrefs": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings"
+  },
+  "assistantPrefs:updateAssistantPrefs": {
+    "status": "excluded",
+    "reason": "settings"
+  },
   "calendar:getCalendarEvents": {
     "kind": "read",
     "status": "ai"
@@ -261,6 +270,15 @@
     "kind": "read",
     "status": "excluded",
     "reason": "settings"
+  },
+  "feedback:getFeedbackInboxInfo": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "internal"
+  },
+  "feedback:submitFeedbackTask": {
+    "status": "ai",
+    "action": "submit_feedback"
   },
   "flota:addFuelLog": {
     "status": "ai"
@@ -530,11 +548,11 @@
     "kind": "read",
     "status": "ai"
   },
-  "lists:getLists": {
+  "lists:getListSummaries": {
     "kind": "read",
     "status": "ai"
   },
-  "lists:getListSummaries": {
+  "lists:getLists": {
     "kind": "read",
     "status": "ai"
   },
@@ -727,14 +745,14 @@
     "status": "ai",
     "action": "list_news_sources"
   },
-  "news:getTopics": {
-    "kind": "read",
-    "status": "ai"
-  },
   "news:getTopicView": {
     "kind": "read",
     "status": "ai",
     "action": "get_news_topic_view"
+  },
+  "news:getTopics": {
+    "kind": "read",
+    "status": "ai"
   },
   "news:refreshTopic": {
     "status": "ai"
@@ -1048,14 +1066,14 @@
     "kind": "read",
     "status": "ai"
   },
-  "pets:getPets": {
-    "kind": "read",
-    "status": "ai"
-  },
   "pets:getPetSharing": {
     "kind": "read",
     "status": "excluded",
     "reason": "teams"
+  },
+  "pets:getPets": {
+    "kind": "read",
+    "status": "ai"
   },
   "pets:removePetShare": {
     "status": "excluded",
@@ -1208,12 +1226,12 @@
     "status": "excluded",
     "reason": "dictionary"
   },
-  "products:getProducts": {
+  "products:getProductSuggestions": {
     "kind": "read",
     "status": "excluded",
     "reason": "dictionary"
   },
-  "products:getProductSuggestions": {
+  "products:getProducts": {
     "kind": "read",
     "status": "excluded",
     "reason": "dictionary"
@@ -1690,11 +1708,34 @@
     "status": "excluded",
     "reason": "settings"
   },
-  "tasks:bulkDeleteTasks": { "status": "excluded", "reason": "interactive" },
-  "tasks:bulkUpdateTasks": { "status": "excluded", "reason": "interactive" },
+  "taskTags:createTaskTag": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "taskTags:deleteTaskTag": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
+  "taskTags:getTaskTags": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_task_tags"
+  },
+  "taskTags:updateTaskTag": {
+    "status": "excluded",
+    "reason": "dictionary"
+  },
   "tasks:addTaskComment": {
     "status": "ai",
     "action": "add_task_comment"
+  },
+  "tasks:bulkDeleteTasks": {
+    "status": "excluded",
+    "reason": "interactive"
+  },
+  "tasks:bulkUpdateTasks": {
+    "status": "excluded",
+    "reason": "interactive"
   },
   "tasks:completeRecurringTask": {
     "status": "excluded",
@@ -1760,23 +1801,6 @@
   "tasks:updateTaskTags": {
     "status": "ai",
     "action": "set_task_tags"
-  },
-  "taskTags:createTaskTag": {
-    "status": "excluded",
-    "reason": "dictionary"
-  },
-  "taskTags:deleteTaskTag": {
-    "status": "excluded",
-    "reason": "dictionary"
-  },
-  "taskTags:getTaskTags": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_task_tags"
-  },
-  "taskTags:updateTaskTag": {
-    "status": "excluded",
-    "reason": "dictionary"
   },
   "teams:changeMemberRole": {
     "status": "excluded",
@@ -1867,12 +1891,12 @@
     "status": "excluded",
     "reason": "dictionary"
   },
-  "units:getUnits": {
+  "units:getUnitSuggestions": {
     "kind": "read",
     "status": "excluded",
     "reason": "dictionary"
   },
-  "units:getUnitSuggestions": {
+  "units:getUnits": {
     "kind": "read",
     "status": "excluded",
     "reason": "dictionary"

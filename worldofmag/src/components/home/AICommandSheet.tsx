@@ -20,8 +20,7 @@ import {
 import { createUserReport } from "@/actions/reports";
 import { getRecentAiCalls, type AiCallLogRow } from "@/actions/llmConfig";
 import { aiCallsToText } from "@/lib/ai/aiCallLog";
-import { ensureOmniaProject } from "@/actions/taskProjects";
-import { createTask } from "@/actions/tasks";
+import { submitFeedbackTask } from "@/actions/feedback";
 import type { AIAction } from "@/lib/ai/aiAction";
 import { isDestructiveAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executors/shared";
@@ -393,7 +392,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   const [showReport, setShowReport] = useState(false);
   const [reportDesc, setReportDesc] = useState("");
   const [reportBusy, setReportBusy] = useState(false);
-  const [reportDone, setReportDone] = useState<{ projectId: string } | null>(null);
+  const [reportDone, setReportDone] = useState<{ projectId: string; canRead: boolean } | null>(null);
   // Wybór głosu lektora (per-urządzenie). Głosy iOS/Safari ładują się asynchronicznie — subskrybujemy.
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceURI, setVoiceURIState] = useState<string>("");
@@ -770,9 +769,11 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
       // bez prefiksu z datą (data jest w treści raportu).
       const firstLine = reportDesc.trim().split("\n")[0]?.slice(0, 80);
       const title = `🐛✨ ${firstLine || "Problem z Asystentem AI"}`;
-      const project = await ensureOmniaProject();
-      await createTask({ title, projectId: project.id, description });
-      setReportDone({ projectId: project.id });
+      // 031: zgłoszenie idzie do SKRZYNKI ADMINISTRATORA (jeden wąski wyjątek dostępowy w
+      // `submitFeedbackTask`) — wcześniej `ensureOmniaProject()` tworzyło projekt „Omnia" u
+      // zgłaszającego, więc zgłoszenia zwykłych użytkowników nigdy nie docierały do admina.
+      const res = await submitFeedbackTask({ title, description });
+      setReportDone({ projectId: res.projectId, canRead: res.canRead });
       setReportDesc("");
     } catch {
       setError("Nie udało się utworzyć zgłoszenia.");
@@ -1051,15 +1052,17 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
       setTurns((t) => [...t, { id: newId(), role: "user", kind: "text", content: text }]);
       void persist("user", text, "text");
       const prompt =
-        "[ZGŁOSZENIE ADMINA — TRYB WSKAZYWANIA]\n" +
-        'Utwórz dokładnie JEDNO zadanie w projekcie „Omnia" (module: tasks, type: create_task, params.projectName="Omnia").\n' +
+        "[ZGŁOSZENIE — TRYB WSKAZYWANIA]\n" +
+        // 031: zgłoszenie idzie akcją `submit_feedback` (skrzynka administratora), NIE `create_task` —
+        // zwykły użytkownik nie ma dostępu do projektu-skrzynki.
+        "Zaproponuj dokładnie JEDNO zgłoszenie (module: tasks, type: submit_feedback).\n" +
         '- params.title: wygeneruj zwięzły, konkretny tytuł po polsku podsumowujący zgłoszenie (max ~80 znaków), ZACZYNAJĄCY SIĘ od "🐛 " (emoji robaka + spacja).\n' +
-        "- params.description: NAJPIERW oryginalny opis admina wstawiony DOKŁADNIE, słowo w słowo (VERBATIM) — NIE przeredagowuj go, NIE poprawiaj gramatyki/interpunkcji, NIE streszczaj; zachowaj oryginalne słowa i ton. NASTĘPNIE dołącz poniższy kontekst wskazanego miejsca (UI).\n" +
-        "Nie dopytuj i nie odpowiadaj tekstem — od razu zaproponuj plan z tym jednym zadaniem.\n\n" +
-        `Opis zgłoszony przez admina:\n${text}\n\nKontekst wskazanego miejsca (UI):\n${feedbackContext}`;
+        "- params.description: NAJPIERW oryginalny opis zgłaszającego wstawiony DOKŁADNIE, słowo w słowo (VERBATIM) — NIE przeredagowuj go, NIE poprawiaj gramatyki/interpunkcji, NIE streszczaj; zachowaj oryginalne słowa i ton. NASTĘPNIE dołącz poniższy kontekst wskazanego miejsca (UI).\n" +
+        "Nie dopytuj i nie odpowiadaj tekstem — od razu zaproponuj plan z tym jednym zgłoszeniem.\n\n" +
+        `Opis zgłoszony przez użytkownika:\n${text}\n\nKontekst wskazanego miejsca (UI):\n${feedbackContext}`;
       await callAgent({
         text: prompt, context: ctx("tasks"),
-        routeHint: "Zgłoszenie błędu/sugestii od admina przez tryb wskazywania UI",
+        routeHint: "Zgłoszenie błędu/sugestii przez tryb wskazywania UI",
         today: new Date().toISOString(), history: [],
       });
       return;
@@ -1340,10 +1343,14 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 {reportDone ? (
                   <div style={{ fontSize: 13, color: "var(--text-primary)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                      <CheckCircle size={15} style={{ color: "var(--accent-green)" }} /> Utworzono zadanie w projekcie „Omnia".
+                      <CheckCircle size={15} style={{ color: "var(--accent-green)" }} />{" "}
+                      {reportDone.canRead ? "Utworzono zgłoszenie w skrzynce zgłoszeń." : "Dziękujemy — zgłoszenie trafiło do administratora."}
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={() => goTo(`/tasks/${reportDone.projectId}`)} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-blue)", cursor: "pointer" }}>Otwórz w zadaniach</button>
+                      {/* 031: przejście do zadania proponujemy TYLKO, gdy użytkownik ma dostęp do skrzynki. */}
+                      {reportDone.canRead && (
+                        <button onClick={() => goTo(`/tasks/${reportDone.projectId}`)} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-blue)", cursor: "pointer" }}>Otwórz w zadaniach</button>
+                      )}
                       <button onClick={() => { setShowReport(false); setReportDone(null); }} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Zamknij</button>
                     </div>
                   </div>
