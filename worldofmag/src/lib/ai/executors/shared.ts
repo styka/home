@@ -32,11 +32,15 @@ export function asStr(v: unknown): string | undefined {
   return typeof v === "string" && v.trim() ? v.trim() : undefined;
 }
 
-// 031: guardy modułów rzucają komunikatami technicznymi („Access denied", „Project not found",
-// „Forbidden"), które trafiały wprost do czatu. Tłumaczymy je na JEDEN, zrozumiały komunikat
-// o braku dostępu — bez ujawniania, czy cudzy rekord istnieje i co zawiera.
+// 031: guardy modułów rzucają komunikatami technicznymi („Access denied", „Forbidden",
+// „Admin access required"), które trafiały wprost do czatu. Tłumaczymy je na JEDEN, zrozumiały
+// komunikat o braku dostępu — bez ujawniania, czy cudzy rekord istnieje i co zawiera.
+//
+// Świadomie NIE ruszamy komunikatów „nie znaleziono": są już po polsku, dotyczą WYŁĄCZNIE danych
+// dostępnych użytkownikowi i często niosą podpowiedź, z której korzysta agent (np. „Nie znaleziono
+// projektu o nazwie »o mnie«. Dostępne projekty: …" → agent dopytuje sensownie zamiast zgadywać).
+// Zamiana ich na tekst ogólny psułaby tę ścieżkę.
 const ACCESS_ERROR_RE = /access denied|forbidden|unauthorized|admin access required|not authorized/i;
-const NOT_FOUND_RE = /not found|nie znaleziono/i;
 
 /** Czy błąd oznacza brak uprawnień do danych (a nie zwykłą awarię). */
 export function isAccessError(e: unknown): boolean {
@@ -46,14 +50,11 @@ export function isAccessError(e: unknown): boolean {
 
 /**
  * Komunikat błędu przeznaczony DLA UŻYTKOWNIKA. Odmowa dostępu → jednolity tekst po polsku;
- * „nie znaleziono" → informacja, że rekordu nie ma **w danych, do których użytkownik ma dostęp**
- * (nie potwierdzamy istnienia cudzych rekordów); pozostałe błędy przechodzą bez zmian.
+ * pozostałe błędy przechodzą bez zmian (patrz komentarz wyżej).
  */
 export function toUserFacingError(e: unknown): string {
-  const msg = e instanceof Error ? e.message : "Nieznany błąd";
   if (isAccessError(e)) return "Nie masz dostępu do tych danych.";
-  if (NOT_FOUND_RE.test(msg)) return "Nie znaleziono takiego wpisu w Twoich danych.";
-  return msg;
+  return e instanceof Error ? e.message : "Nieznany błąd";
 }
 
 export interface ActionResult {

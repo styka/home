@@ -18,8 +18,7 @@ import { executeKitchenAction } from "@/lib/ai/executors/kitchenExecutor";
 import { executeStorageAction } from "@/lib/ai/executors/storageExecutor";
 import { executeContactsAction } from "@/lib/ai/executors/contactsExecutor";
 import type { AIAction } from "@/lib/ai/aiAction";
-import type { ExecOutcome, ActionResult } from "@/lib/ai/executors/shared";
-import { toUserFacingError } from "@/lib/ai/executors/shared";
+import { toUserFacingError, type ExecOutcome, type ActionResult } from "@/lib/ai/executors/shared";
 import { hasContract, validateActionParams } from "@/lib/ai/actionContract";
 
 

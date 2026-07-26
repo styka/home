@@ -172,8 +172,14 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
     });
   }
 
+  // Które pola użytkownik REALNIE zmienił (klucz: `${actionId}:${key}`). Potrzebne, bo stan
+  // edycji trzyma wszystkie parametry jako STRINGI — bez tego pola nietknięte wracałyby do
+  // backendu zniekształcone (np. `tags: ["pilne"]` → `"pilne"`, obiekt → `"[object Object]"`).
+  const [touchedParams, setTouchedParams] = useState<Set<string>>(new Set());
+
   function updateParam(actionId: string, key: string, value: string) {
     setEditedParams((prev) => ({ ...prev, [actionId]: { ...prev[actionId], [key]: value } }));
+    setTouchedParams((prev) => new Set(prev).add(`${actionId}:${key}`));
   }
 
   // 031: walidacja z kontraktu akcji — ta sama funkcja, którą serwer odpala
@@ -186,6 +192,7 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
     const params = Object.fromEntries(
       Object.entries(edited).map(([k, v]) => {
         const orig = action.params[k];
+        if (!touchedParams.has(`${action.id}:${k}`)) return [k, orig];
         if (typeof orig === "boolean") return [k, v === "true"];
         return [k, v];
       })
@@ -204,6 +211,10 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
         params: Object.fromEntries(
           Object.entries(editedParams[a.id] ?? a.params).map(([k, v]) => {
             const orig = a.params[k];
+            // Pole nietknięte → oddajemy ORYGINALNĄ wartość, nie jej reprezentację tekstową.
+            // Inaczej tablice i obiekty (tags, words, daysOfWeek, timesOfDay…) traciły strukturę
+            // i akcja po cichu robiła coś innego, niż użytkownik zatwierdził.
+            if (!touchedParams.has(`${a.id}:${k}`)) return [k, orig];
             if (typeof orig === "number") return [k, Number(v)];
             if (typeof orig === "boolean") return [k, v === "true"];
             return [k, v];
