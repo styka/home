@@ -538,11 +538,12 @@ async function runAgentLoop(
   meta?: AgentMeta,
   maxTokens: number = AGENT_MAX_TOKENS,
   conversationId?: string | null,
-  op: AgentOp = "reasoning"
+  op: AgentOp = "reasoning",
+  isFinalRun = true
 ): Promise<LoopResult> {
   // Myśli lecą do klienta NA ŻYWO (SSE) — humanizujemy je po drodze, nie tylko na końcu.
   const humanThought = onThought ? (t: string) => onThought(humanizeAssistantText(t)) : undefined;
-  const result = await runAgentLoopRaw(messages, userId, humanThought, meta, maxTokens, conversationId, op);
+  const result = await runAgentLoopRaw(messages, userId, humanThought, meta, maxTokens, conversationId, op, isFinalRun);
   const body = result.body as Record<string, unknown>;
   for (const key of ["answer", "question", "content", "thought", "label", "title"]) {
     if (typeof body[key] === "string") body[key] = humanizeAssistantText(body[key] as string);
@@ -572,7 +573,11 @@ async function runAgentLoopRaw(
   meta?: AgentMeta,
   maxTokens: number = AGENT_MAX_TOKENS,
   conversationId?: string | null,
-  op: AgentOp = "reasoning"
+  op: AgentOp = "reasoning",
+  // 032: czy ten przebieg jest OSTATECZNY. Gdy wołający ma jeszcze w zapasie ponowienie na
+  // „reasoning" (fallback z 030), podsumowanie niedokończonego przebiegu byłoby wyrzucone razem
+  // z jego wynikiem — a to płatne wywołanie modelu. Wtedy je pomijamy.
+  isFinalRun = true
 ): Promise<LoopResult> {
   const log: LogEntry[] = [];
   // 030: pamięć wywołań narzędzi w obrębie tury — identyczne wywołanie (tool+args) nie
@@ -630,9 +635,13 @@ async function runAgentLoopRaw(
         return { status, body: { error: message } };
       }
       lastContent = content;
+      // 032: flaga ucięcia opisuje OSTATNIĄ, NIEUDANĄ odpowiedź. Po udanym sparsowaniu zerujemy ją,
+      // żeby ucięcie odratowane w jednej iteracji nie było potem podawane jako przyczyna zakończenia
+      // przebiegu, które nastąpiło z całkiem innego powodu.
       lastTruncated = truncated;
       messages.push({ role: "assistant", content });
       parsed = extractJsonLoose(content);
+      if (parsed) lastTruncated = false;
       if (!parsed) {
         // 032: UCIĘCIE to inny problem niż zły format — mówimy modelowi prawdę („zabrakło miejsca,
         // skróć"), zamiast kazać mu poprawiać JSON, który był poprawny do momentu obcięcia. Jedna
@@ -814,7 +823,11 @@ async function runAgentLoopRaw(
   // się dokończyć w limicie kroków" — które nie mówi ani co ustalono, ani co zablokowało — dajemy
   // modelowi JEDNO dodatkowe wywołanie na podsumowanie zebranych danych. Gdy i to zawiedzie,
   // składamy komunikat po stronie serwera z tego, co jest w logu.
-  const partial = await summarizePartialRun(messages, log, meta, conversationId, op, lastTruncated);
+  const partial = isFinalRun
+    ? await summarizePartialRun(messages, log, meta, conversationId, op, lastTruncated)
+    : // Przebieg nieostateczny: wołający ponowi turę na mocniejszym modelu i odrzuci ten wynik —
+      // nie płacimy za podsumowanie, którego nikt nie zobaczy. Treść jest tylko wypełnieniem.
+      partialRunFallbackMessage(log, lastTruncated);
   return {
     // 030: `limitReached` pozwala wołającemu (fallback dispatch→reasoning) rozpoznać
     // niedokończoną turę bez porównywania treści komunikatu.
@@ -1066,9 +1079,12 @@ export async function POST(req: NextRequest) {
   const economy = assistantLevel === "economy";
   const runLoop = async (onThought?: (t: string) => void): Promise<LoopResult> => {
     const primaryOp: AgentOp = economy || isSimpleRead ? "dispatch" : "reasoning";
-    const first = await runAgentLoop(messages, userId, onThought, meta, agentMaxTokens, conversationId, primaryOp);
+    // 032: pierwszy przebieg jest OSTATECZNY tylko wtedy, gdy nie mamy w zapasie ponowienia na
+    // „reasoning" — inaczej jego podsumowanie i tak poszłoby do kosza (patrz `isFinalRun`).
+    const canFallback = !economy && !!baselineMessages;
+    const first = await runAgentLoop(messages, userId, onThought, meta, agentMaxTokens, conversationId, primaryOp, !canFallback);
     if (economy || !baselineMessages || !loopNeedsFallback(first)) return first;
-    return runAgentLoop(baselineMessages, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning");
+    return runAgentLoop(baselineMessages, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning", true);
   };
 
   // H4: strażnik współbieżności — nie pozwól odpalić zbyt wielu ciężkich operacji naraz.

@@ -165,29 +165,63 @@ export function findTtsProviderById(id: string): TtsProviderSpec | undefined {
   return TTS_CATALOG.find((p) => p.id === id);
 }
 
+export function normalizeBaseUrl(baseUrl: string): string {
+  return baseUrl.trim().replace(/\/+$/, "");
+}
+
 /**
- * Dopasowuje skonfigurowanego dostawcę (`LlmProvider`) do pozycji katalogu. Najpierw po adresie
- * bazowym (jednoznacznie), potem po samym rodzaju — dzięki temu administrator może zmienić region w
- * adresie Azure albo użyć proxy zgodnego z OpenAI, a katalog nadal poda właściwe głosy.
+ * Czy dany rodzaj wskazuje JEDNOZNACZNIE na jedną pozycję katalogu.
+ *
+ * To rozróżnienie jest krytyczne: `openai_compat` mają **dwie** pozycje (OpenAI i Groq PlayAI), więc
+ * sam rodzaj NIE identyfikuje dostawcy. Wcześniejsza wersja dopasowywała po samym rodzaju i przy
+ * zapisie lektora OpenAI trafiała w istniejący wiersz Groqa (obsługujący czat), przestawiając mu adres
+ * bazowy — czyli wyłączała cały asystent. Fallback po rodzaju wolno stosować TYLKO wtedy, gdy rodzaj
+ * jest unikalny (Azure, Google, ElevenLabs) — tam ratuje sytuację, gdy administrator zmieni region
+ * w adresie.
+ */
+export function isKindUnique(kind: string): boolean {
+  return TTS_CATALOG.filter((p) => p.kind === kind).length === 1;
+}
+
+/**
+ * Dopasowuje skonfigurowanego dostawcę (`LlmProvider`) do pozycji katalogu — po rodzaju **i** adresie
+ * bazowym. Gdy adres nie pasuje, schodzimy do dopasowania po rodzaju wyłącznie dla rodzajów
+ * jednoznacznych (patrz `isKindUnique`), żeby nigdy nie pomylić OpenAI z Groq PlayAI.
  */
 export function findTtsProvider(kind: string, baseUrl: string): TtsProviderSpec | undefined {
-  const normalized = baseUrl.replace(/\/+$/, "");
-  return (
-    TTS_CATALOG.find((p) => p.kind === kind && p.baseUrl.replace(/\/+$/, "") === normalized) ??
-    TTS_CATALOG.find((p) => p.kind === kind)
-  );
+  const normalized = normalizeBaseUrl(baseUrl);
+  const exact = TTS_CATALOG.find((p) => p.kind === kind && normalizeBaseUrl(p.baseUrl) === normalized);
+  if (exact) return exact;
+  return isKindUnique(kind) ? TTS_CATALOG.find((p) => p.kind === kind) : undefined;
 }
 
-/** Głosy dostawcy o danym rodzaju (pierwsza pasująca pozycja katalogu). */
-export function voicesForKind(kind: string): ServerVoice[] {
-  return TTS_CATALOG.find((p) => p.kind === kind)?.voices ?? [];
+/**
+ * Czy istniejący wiersz `LlmProvider` odpowiada TEJ pozycji katalogu.
+ *
+ * Używane zarówno przy ODCZYCIE (stan klucza w panelu admina), jak i przy ZAPISIE (który wiersz
+ * zaktualizować) — dzięki jednej funkcji panel nie pokazuje czegoś innego, niż zrobi przycisk
+ * „Zapisz lektora". Rozjazd adresu dopuszczamy tylko dla rodzajów jednoznacznych (np. zmiana regionu
+ * Azure); dla `openai_compat` NIGDY, bo tam ten sam rodzaj mają OpenAI i Groq PlayAI.
+ */
+export function providerMatchesSpec(
+  provider: { kind: string; baseUrl: string },
+  spec: { kind: string; baseUrl: string }
+): boolean {
+  if (provider.kind !== spec.kind) return false;
+  if (normalizeBaseUrl(provider.baseUrl) === normalizeBaseUrl(spec.baseUrl)) return true;
+  return isKindUnique(spec.kind);
 }
 
-export function isVoiceOfKind(kind: string, voiceId: string | null | undefined): boolean {
-  return !!voiceId && voicesForKind(kind).some((v) => v.id === voiceId);
+/** Głosy pozycji katalogu odpowiadającej temu dostawcy (rodzaj + adres bazowy). */
+export function voicesFor(kind: string, baseUrl: string): ServerVoice[] {
+  return findTtsProvider(kind, baseUrl)?.voices ?? [];
+}
+
+export function isVoiceOf(kind: string, baseUrl: string, voiceId: string | null | undefined): boolean {
+  return !!voiceId && voicesFor(kind, baseUrl).some((v) => v.id === voiceId);
 }
 
 /** Domyślny głos dostawcy — pierwszy z listy (kolejność w katalogu jest celowa). */
-export function defaultVoiceForKind(kind: string): string | null {
-  return voicesForKind(kind)[0]?.id ?? null;
+export function defaultVoiceFor(kind: string, baseUrl: string): string | null {
+  return voicesFor(kind, baseUrl)[0]?.id ?? null;
 }

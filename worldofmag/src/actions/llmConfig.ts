@@ -11,7 +11,7 @@ import {
   type OperationType,
 } from "@/lib/llm/operationTypes";
 import { PROVIDER_KINDS, isSpeechOnlyKind, type ProviderKind } from "@/lib/llm/resolver";
-import { TTS_CATALOG, findTtsProvider, findTtsProviderById, defaultVoiceForKind, isVoiceOfKind } from "@/lib/tts/catalog";
+import { TTS_CATALOG, findTtsProvider, findTtsProviderById, providerMatchesSpec, normalizeBaseUrl } from "@/lib/tts/catalog";
 import { encryptSecret, decryptSecret, maskSecret } from "@/lib/crypto/secrets";
 import { logAudit } from "@/lib/audit";
 import { COST_ALERT_CONFIG_KEY, getDailyCostUsd } from "@/lib/ai/usage";
@@ -225,7 +225,7 @@ export async function getSpeechConfig(): Promise<SpeechConfigDTO> {
   const voiceRow = await prisma.config.findUnique({ where: { key: SPEECH_VOICE_CONFIG_KEY } });
 
   const catalog: SpeechCatalogEntryDTO[] = TTS_CATALOG.map((spec) => {
-    const match = providers.find((p) => p.kind === spec.kind);
+    const match = providers.find((p) => providerMatchesSpec(p, spec));
     return {
       id: spec.id,
       label: spec.label,
@@ -276,13 +276,18 @@ export async function applySpeechProvider(data: {
     throw new Error("Wybierz model z listy dostępnej dla tego dostawcy.");
   }
 
-  const baseUrl = (data.baseUrl?.trim() || spec.baseUrl).replace(/\/+$/, "");
+  const baseUrl = normalizeBaseUrl(data.baseUrl?.trim() || spec.baseUrl);
   const apiKey = data.apiKey?.trim();
 
-  let provider = await prisma.llmProvider.findFirst({
+  // 032: szukamy dostawcy odpowiadającego TEJ pozycji katalogu (rodzaj + adres), nie pierwszego
+  // o tym samym rodzaju — inaczej zapis lektora OpenAI przestawiał adres istniejącego Groqa i
+  // wyłączał czat. `matchesSpec` dopuszcza rozjazd adresu tylko dla rodzajów jednoznacznych
+  // (np. inny region Azure), więc tam nadal aktualizujemy w miejscu zamiast mnożyć wiersze.
+  const candidates = await prisma.llmProvider.findMany({
     where: { kind: spec.kind },
     orderBy: { createdAt: "asc" },
   });
+  let provider = candidates.find((p) => providerMatchesSpec(p, { kind: spec.kind, baseUrl })) ?? null;
   if (provider) {
     await prisma.llmProvider.update({
       where: { id: provider.id },
@@ -303,7 +308,9 @@ export async function applySpeechProvider(data: {
     create: { operationType: "speech", providerId: provider.id, model },
   });
 
-  const voiceId = isVoiceOfKind(spec.kind, data.voiceId) ? data.voiceId! : defaultVoiceForKind(spec.kind);
+  // Głos walidujemy wprost przeciw TEJ pozycji katalogu — mamy `spec`, więc nie ma po co pytać
+  // katalogu drugi raz (i nie ma ryzyka trafienia w inną pozycję o tym samym rodzaju).
+  const voiceId = spec.voices.some((v) => v.id === data.voiceId) ? data.voiceId! : (spec.voices[0]?.id ?? null);
   if (voiceId) {
     await prisma.config.upsert({
       where: { key: SPEECH_VOICE_CONFIG_KEY },

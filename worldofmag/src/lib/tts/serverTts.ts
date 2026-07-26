@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { resolveLlmChain } from "@/lib/llm/resolver";
 import { buildSpeechRequest, parseSpeechResponse } from "@/lib/tts/adapters";
-import { defaultVoiceForKind, isVoiceOfKind, voicesForKind } from "@/lib/tts/catalog";
+import { defaultVoiceFor, isVoiceOf, voicesFor } from "@/lib/tts/catalog";
 import type { ServerVoice } from "@/lib/tts/serverVoices";
 
 // Klucz `Config` z domyślnym głosem wybranym przez administratora (ustawiany w /admin/llm).
@@ -42,9 +42,9 @@ export async function synthesizeSpeech(input: { text: string; voiceId?: string |
   // poprzedniego dostawcy (administrator zmienił konfigurację), schodzimy po kolei: głos domyślny
   // ustawiony przez administratora → pierwszy głos dostawcy z katalogu. Nigdy nie wysyłamy nazwy,
   // której dostawca nie zna.
-  const voiceId = isVoiceOfKind(cfg.kind, input.voiceId)
+  const voiceId = isVoiceOf(cfg.kind, cfg.baseUrl, input.voiceId)
     ? input.voiceId!
-    : (await adminDefaultVoice(cfg.kind)) ?? defaultVoiceForKind(cfg.kind);
+    : (await adminDefaultVoice(cfg.kind, cfg.baseUrl)) ?? defaultVoiceFor(cfg.kind, cfg.baseUrl);
   if (!voiceId) return null; // dostawca bez znanych głosów — traktujemy jak nieskonfigurowany
 
   const req = buildSpeechRequest(cfg, { text, voiceId });
@@ -59,25 +59,20 @@ export async function synthesizeSpeech(input: { text: string; voiceId?: string |
 }
 
 /** Domyślny głos ustawiony przez administratora — o ile należy do obecnego dostawcy. */
-async function adminDefaultVoice(kind: string): Promise<string | null> {
+async function adminDefaultVoice(kind: string, baseUrl: string): Promise<string | null> {
   const row = await prisma.config.findUnique({ where: { key: SPEECH_VOICE_CONFIG_KEY } }).catch(() => null);
-  return isVoiceOfKind(kind, row?.value) ? row!.value : null;
-}
-
-/** Czy serwerowa synteza mowy jest skonfigurowana (do decyzji UI, czy pokazywać głosy serwerowe). */
-export async function isServerSpeechConfigured(): Promise<boolean> {
-  const chain = await resolveLlmChain("speech");
-  return chain.length > 0;
+  return isVoiceOf(kind, baseUrl, row?.value) ? row!.value : null;
 }
 
 /**
  * 032: głosy dostawcy AKTUALNIE przypisanego do syntezy mowy (`null`, gdy nic nie jest przypisane).
  * Ustawienia asystenta pokazują tylko te głosy — użytkownik nie ma wybierać spośród nazw, których
- * skonfigurowany dostawca nie zna (AC-7).
+ * skonfigurowany dostawca nie zna (AC-7). Kluczujemy po rodzaju **i adresie bazowym**, bo sam rodzaj
+ * nie odróżnia OpenAI od Groq PlayAI (oba `openai_compat`, ale mają zupełnie inne głosy).
  */
-export async function configuredSpeechVoices(): Promise<{ kind: string; voices: ServerVoice[] } | null> {
+export async function configuredSpeechVoices(): Promise<{ voices: ServerVoice[] } | null> {
   const chain = await resolveLlmChain("speech");
   const cfg = chain[0];
   if (!cfg) return null;
-  return { kind: cfg.kind, voices: voicesForKind(cfg.kind) };
+  return { voices: voicesFor(cfg.kind, cfg.baseUrl) };
 }

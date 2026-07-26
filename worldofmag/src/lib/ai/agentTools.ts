@@ -246,17 +246,6 @@ async function accessibleProjectIds(userId: string): Promise<string[]> {
 }
 
 /**
- * 025-assistant-chat-reliability-ux: agent często przekazuje NAZWĘ projektu ("LZ")
- * tam, gdzie read-toole oczekiwały identyfikatora — filtr po surowej nazwie zwracał
- * pustą listę i asystent twierdził „nie ma zadań", mimo że były. Rozwiązujemy `ref`
- * (id ALBO nazwa) na realne id projektu dostępnego dla użytkownika (C-21):
- *  - `ref` == dostępne id → to id (kompatybilność wstecz),
- *  - inaczej dopasowanie po nazwie bez rozróżniania wielkości liter: najpierw dokładne,
- *    potem JEDNOZNACZNE częściowe,
- *  - brak dopasowania LUB wiele kandydatów → `{ unresolved, available }` (wołający
- *    zgłasza to agentowi, który dopytuje/clarify zamiast cicho zwracać pustkę).
- */
-/**
  * 032: rozwiązuje referencję albo RZUCA błędem, który mówi agentowi, co się stało. Kluczowe, że
  * rozróżniamy „nie znalazłem” od „pasuje kilka” — na tym stoi zdolność agenta do dopytania zamiast
  * powtarzania tego samego odczytu (albo, co gorsza, twierdzenia „nie ma nic”).
@@ -296,9 +285,10 @@ async function resolveIdOrName(
 }
 
 /**
- * Rozwiązanie referencji projektu zadań. Zachowuje dotychczasowy kształt zwracany (`{ id }` albo
- * `{ unresolved, available }`), żeby komunikat błędu dla zadań pozostał ten sam co przed 032 —
- * z dodatkiem informacji o wielu dopasowaniach.
+ * Rozwiązanie referencji projektu zadań (025): agent często przekazuje NAZWĘ projektu („LZ") tam,
+ * gdzie read-tool oczekuje identyfikatora. Zwracany kształt (`{ id }` albo `{ unresolved, matches,
+ * available }`) zostaje, żeby komunikat błędu dla zadań był ten sam co przed 032 — z dodatkiem
+ * informacji o wielu dopasowaniach. Samo dopasowanie robi wspólny `matchNamedRef`.
  */
 async function resolveProjectRef(
   userId: string,
@@ -509,12 +499,15 @@ export async function runReadTool(
       const status = asStr(args.status);
       const search = asStr(args.search);
 
+      // 032: liczymy dostęp RAZ i używamy w obu zapytaniach (resolver + główne) — `accessibleListWhere`
+      // woła `getUserTeamIds`, więc dwa razy to dwa zapytania po to samo.
+      const listAccess = await accessibleListWhere(userId);
       // 032: `listId` bywa NAZWĄ listy („moje”), nie identyfikatorem — wcześniej `where: { id: "moje" }`
       // dawało pustą listę i asystent twierdził, że nic tam nie ma. Rozwiązujemy referencję.
       const resolvedListId = listId
         ? await resolveRefOrThrow(listId, "listy zakupów", async () =>
             prisma.shoppingList.findMany({
-              where: await accessibleListWhere(userId),
+              where: listAccess,
               select: { id: true, name: true },
               take: HARD_MAX,
             })
@@ -524,7 +517,7 @@ export async function runReadTool(
       // Zbiór list dostępnych użytkownikowi (zawęż do wskazanej, jeśli podano)
       const lists = await prisma.shoppingList.findMany({
         where: {
-          ...(await accessibleListWhere(userId)),
+          ...listAccess,
           ...(resolvedListId ? { id: resolvedListId } : {}),
           ...(listName ? { name: { contains: listName, mode: "insensitive" } } : {}),
         },
@@ -997,11 +990,17 @@ export async function runReadTool(
       };
       let key = idOrSlug;
       // 032: `recipeId` bywa TYTUŁEM przepisu — rozwiąż (id/slug → nazwa), zamiast zwrócić null.
+      // Wynik pierwszego trafienia zapamiętujemy, bo `getRecipe` jest pełnym odczytem przepisu
+      // (składniki, kroki, obrazki) — wołanie go dwa razy dla tego samego klucza to czysty narzut.
+      let resolved: Awaited<ReturnType<typeof getRecipe>> | null = null;
       if (key) {
         key = await resolveIdOrName(
           key,
           "przepisu",
-          async (ref) => ((await getRecipe(ref)) ? ref : null), // obsługuje zarówno id, jak i slug
+          async (ref) => {
+            resolved = await getRecipe(ref); // obsługuje zarówno id, jak i slug
+            return resolved ? ref : null;
+          },
           async () =>
             prisma.recipe
               .findMany({ where: { OR: await recipeOwnerOr() }, select: { id: true, title: true }, take: HARD_MAX })
@@ -1017,7 +1016,7 @@ export async function runReadTool(
         key = r?.id;
       }
       if (!key) return null;
-      const recipe = await getRecipe(key);
+      const recipe = resolved ?? (await getRecipe(key));
       if (!recipe) return null;
       return recipe;
     }

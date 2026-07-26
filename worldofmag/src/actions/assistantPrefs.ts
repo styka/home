@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
 import { configuredSpeechVoices } from "@/lib/tts/serverTts";
-import { isVoiceOfKind } from "@/lib/tts/catalog";
 import { type ServerVoice } from "@/lib/tts/serverVoices";
 import {
   ASSISTANT_LEVELS,
@@ -112,7 +111,7 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
     // razem z `voiceId`, a identyfikatory głosów przeglądarki (voiceURI) nie należą do katalogu.
     if (raw && data.voiceKind === "server") {
       const configured = await configuredSpeechVoices().catch(() => null);
-      data.voiceId = configured && isVoiceOfKind(configured.kind, raw) ? raw : null;
+      data.voiceId = configured?.voices.some((v) => v.id === raw) ? raw : null;
     } else {
       data.voiceId = raw;
     }

@@ -4,6 +4,30 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-26 — `kind` dostawcy to nie jest jego tożsamość: zapis lektora wyłączał cały asystent
+**Problem:** Katalog TTS opisuje pięciu dostawców, ale **dwaj** (OpenAI i Groq PlayAI) mają ten sam
+`LlmProvider.kind = "openai_compat"`. Kod dopasowywał pozycję katalogu po samym `kind`, więc
+`applySpeechProvider` przy zapisie lektora OpenAI robiło `findFirst({ where: { kind } })` — i trafiało
+w **domyślny wiersz Groqa**, tego samego, który obsługuje `dispatch`/`reasoning`/`vision`/`generation`.
+Następnie nadpisywało mu `baseUrl` na `api.openai.com`, zostawiając klucz Groqa. Skutek: administrator
+włącza lektora, a **cały asystent zaczyna zwracać 401** — bez żadnego związku widocznego dla niego.
+Ten sam błąd sprawiał, że panel pokazywał przy OpenAI „klucz zapisany" (bo widział klucz Groqa, więc
+pole klucza się nie renderowało) oraz że konfiguracja Groq PlayAI oferowała użytkownikom głosy OpenAI.
+Trzecia odsłona wyszła dopiero przy sprzątaniu martwego kodu: `parseServerVoiceValue` walidował głos
+przeciw stałej liście OpenAI, więc wybór poprawnego głosu Azure zwracał `null` i UI brało go za głos
+przeglądarki — lektor serwerowy nigdy się nie włączał.
+**Rozwiązanie:** Tożsamością pozycji katalogu jest **`kind` + `baseUrl`**. Wspólny
+`providerMatchesSpec` (w `lib/tts/catalog.ts`) obsługuje ODCZYT i ZAPIS, więc panel nie może pokazać
+czegoś innego, niż zrobi przycisk. Fallback po samym rodzaju został, ale **tylko dla rodzajów
+jednoznacznych** (`isKindUnique` — Azure/Google/ElevenLabs), gdzie ratuje zmianę regionu w adresie.
+Walidacja głosu przeniesiona na serwer (`updateAssistantPrefs`, `synthesizeSpeech`), bo dopuszczalna
+lista zależy od konfiguracji administratora, a nie od stałej w kodzie.
+**Lekcja:** Zanim użyjesz pola jako klucza wyszukiwania **przed zapisem**, sprawdź, czy jest unikalne w
+zbiorze, po którym szukasz — „rodzaj/typ" prawie nigdy nie jest. Szczególnie groźne jest to przy
+`findFirst` + `update`, bo cicho modyfikuje **cudzy** rekord. Weryfikacja tego nie złapała, bo testowała
+na dostawcy o rodzaju unikalnym (Azure) — przy wspólnym zasobie testuj zawsze przypadek **kolizji**,
+a nie ten wygodny.
+
 ## 2026-07-26 — „Zamknij i zacznij nowy czat" bez przerwania żądania = osierocona odpowiedź
 **Problem:** Zmiana cyklu życia rozmowy asystenta (zamknięcie kończy rozmowę, ponowne otwarcie daje
 nowy wątek) wprowadziła regresję: `handleClose` czyścił `turns` i `conversationId`, ale NIE przerywał

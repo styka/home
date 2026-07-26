@@ -1,7 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildSpeechRequest, parseSpeechResponse, escapeSsml } from "@/lib/tts/adapters";
-import { TTS_CATALOG, findTtsProvider, voicesForKind, isVoiceOfKind, defaultVoiceForKind } from "@/lib/tts/catalog";
+import {
+  TTS_CATALOG,
+  findTtsProvider,
+  findTtsProviderById,
+  voicesFor,
+  isVoiceOf,
+  defaultVoiceFor,
+  isKindUnique,
+  providerMatchesSpec,
+} from "@/lib/tts/catalog";
 import type { ResolvedLlm } from "@/lib/llm/resolver";
 
 // 032: dostawców wymagających płatnego konta (ElevenLabs, Google, Azure) nie da się sprawdzić realnym
@@ -114,17 +123,96 @@ test("katalog: identyfikatory pozycji są unikalne", () => {
   assert.equal(new Set(ids).size, ids.length);
 });
 
-test("findTtsProvider: dopasowanie po adresie, a przy jego zmianie — po rodzaju", () => {
+test("findTtsProvider: dopasowanie po rodzaju I adresie", () => {
   assert.equal(findTtsProvider("openai_compat", "https://api.openai.com/v1")?.id, "openai");
-  // Zmieniony region Azure nadal ma trafić w pozycję Azure (dopasowanie po rodzaju).
-  assert.equal(findTtsProvider("azure_tts", "https://polandcentral.tts.speech.microsoft.com")?.id, "azure-speech");
+  assert.equal(findTtsProvider("openai_compat", "https://api.groq.com/openai/v1")?.id, "groq-playai");
+  // Końcowy ukośnik nie może psuć dopasowania.
+  assert.equal(findTtsProvider("openai_compat", "https://api.openai.com/v1/")?.id, "openai");
 });
 
-test("głosy: walidacja po rodzaju dostawcy i głos domyślny", () => {
-  assert.ok(isVoiceOfKind("azure_tts", "pl-PL-ZofiaNeural"));
+// ── R-1/R-2/R-3: `kind` NIE identyfikuje pozycji katalogu ────────────────────
+// OpenAI i Groq PlayAI dzielą `openai_compat`. Dopasowanie po samym rodzaju powodowało, że zapis
+// lektora OpenAI trafiał w istniejący wiersz Groqa (obsługujący czat) i przestawiał mu adres —
+// czyli wyłączał cały asystent. Te testy pilnują, że rodzaj jest fallbackiem TYLKO gdy jednoznaczny.
+
+test("isKindUnique: openai_compat NIE jest jednoznaczny, pozostałe są", () => {
+  assert.equal(isKindUnique("openai_compat"), false);
+  assert.equal(isKindUnique("elevenlabs"), true);
+  assert.equal(isKindUnique("google_tts"), true);
+  assert.equal(isKindUnique("azure_tts"), true);
+});
+
+test("nieznany adres przy NIEJEDNOZNACZNYM rodzaju → brak dopasowania (nie zgadujemy)", () => {
+  // Proxy zgodne z OpenAI pod obcym adresem: nie wolno założyć, że to OpenAI ani że to Groq.
+  assert.equal(findTtsProvider("openai_compat", "https://proxy.example.com/v1"), undefined);
+  assert.deepEqual(voicesFor("openai_compat", "https://proxy.example.com/v1"), []);
+  assert.equal(defaultVoiceFor("openai_compat", "https://proxy.example.com/v1"), null);
+});
+
+test("nieznany adres przy JEDNOZNACZNYM rodzaju → fallback po rodzaju (region Azure)", () => {
+  assert.equal(findTtsProvider("azure_tts", "https://polandcentral.tts.speech.microsoft.com")?.id, "azure-speech");
+  assert.ok(isVoiceOf("azure_tts", "https://polandcentral.tts.speech.microsoft.com", "pl-PL-ZofiaNeural"));
+});
+
+test("głosy należą do POZYCJI katalogu, nie do rodzaju", () => {
+  const openaiUrl = "https://api.openai.com/v1";
+  const groqUrl = "https://api.groq.com/openai/v1";
+  // Ten sam `kind`, a listy głosów rozłączne — to jest sedno błędu R-3.
+  assert.ok(isVoiceOf("openai_compat", openaiUrl, "nova"));
+  assert.equal(isVoiceOf("openai_compat", groqUrl, "nova"), false);
+  assert.ok(isVoiceOf("openai_compat", groqUrl, "Fritz-PlayAI"));
+  assert.equal(isVoiceOf("openai_compat", openaiUrl, "Fritz-PlayAI"), false);
+  assert.equal(defaultVoiceFor("openai_compat", groqUrl), "Fritz-PlayAI");
+  assert.equal(defaultVoiceFor("openai_compat", openaiUrl), "nova");
+});
+
+test("głosy: walidacja po dostawcy i głos domyślny", () => {
+  const azureUrl = "https://westeurope.tts.speech.microsoft.com";
+  assert.ok(isVoiceOf("azure_tts", azureUrl, "pl-PL-ZofiaNeural"));
   // Głos OpenAI nie jest głosem Azure — tego pilnuje AC-7 (nie zapisujemy obcego głosu po cichu).
-  assert.equal(isVoiceOfKind("azure_tts", "nova"), false);
-  assert.equal(isVoiceOfKind("azure_tts", null), false);
-  assert.equal(defaultVoiceForKind("azure_tts"), voicesForKind("azure_tts")[0].id);
-  assert.equal(defaultVoiceForKind("nieistniejacy"), null);
+  assert.equal(isVoiceOf("azure_tts", azureUrl, "nova"), false);
+  assert.equal(isVoiceOf("azure_tts", azureUrl, null), false);
+  assert.equal(defaultVoiceFor("azure_tts", azureUrl), voicesFor("azure_tts", azureUrl)[0].id);
+  assert.equal(defaultVoiceFor("nieistniejacy", "https://x"), null);
+});
+
+test("providerMatchesSpec: zapis lektora OpenAI NIE MOŻE trafić w wiersz Groqa (R-1)", () => {
+  // Dokładny scenariusz z recenzji: standardowa instalacja ma dostawcę Groq obsługującego czat.
+  const groqRow = { kind: "openai_compat", baseUrl: "https://api.groq.com/openai/v1" };
+  const openaiSpec = findTtsProviderById("openai")!;
+  const groqSpec = findTtsProviderById("groq-playai")!;
+
+  // Gdyby to było `true`, `applySpeechProvider` przestawiłoby adres Groqa na api.openai.com,
+  // zostawiając klucz Groqa — i cały asystent zacząłby zwracać 401.
+  assert.equal(providerMatchesSpec(groqRow, openaiSpec), false);
+  // Ten sam wiersz JEST natomiast właściwym dostawcą dla pozycji Groq PlayAI.
+  assert.equal(providerMatchesSpec(groqRow, groqSpec), true);
+});
+
+test("providerMatchesSpec: rodzaj jednoznaczny dopuszcza zmianę adresu (region Azure)", () => {
+  const azureSpec = findTtsProviderById("azure-speech")!;
+  const azureRow = { kind: "azure_tts", baseUrl: "https://polandcentral.tts.speech.microsoft.com" };
+  // Inny region to nadal ten sam dostawca — aktualizujemy w miejscu, nie mnożymy wierszy.
+  assert.equal(providerMatchesSpec(azureRow, azureSpec), true);
+  // Ale inny RODZAJ to zawsze inny dostawca.
+  assert.equal(providerMatchesSpec({ kind: "google_tts", baseUrl: azureSpec.baseUrl }, azureSpec), false);
+});
+
+test("providerMatchesSpec: końcowy ukośnik nie tworzy duplikatu dostawcy", () => {
+  const openaiSpec = findTtsProviderById("openai")!;
+  assert.equal(providerMatchesSpec({ kind: "openai_compat", baseUrl: "https://api.openai.com/v1/" }, openaiSpec), true);
+});
+
+test("adresy bazowe pozycji katalogu są rozłączne w obrębie rodzaju", () => {
+  // Gdyby dwie pozycje miały ten sam rodzaj I adres, dopasowanie znów byłoby niejednoznaczne.
+  const keys = TTS_CATALOG.map((p) => `${p.kind}|${p.baseUrl.replace(/\/+$/, "")}`);
+  assert.equal(new Set(keys).size, keys.length);
+});
+
+test("każda pozycja katalogu ma głos domyślny osiągalny przez swój adres", () => {
+  for (const spec of TTS_CATALOG) {
+    const fallback = defaultVoiceFor(spec.kind, spec.baseUrl);
+    assert.equal(fallback, spec.voices[0].id, `${spec.id}: zły głos domyślny`);
+    assert.equal(findTtsProviderById(spec.id)?.id, spec.id);
+  }
 });

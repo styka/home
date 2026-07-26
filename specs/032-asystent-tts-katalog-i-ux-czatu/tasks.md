@@ -1,7 +1,7 @@
 # Zadania: Asystent AI — katalog syntezy mowy, cykl życia czatu i domknięcie usterek UX
 
 - **Plan:** ./plan.md (032-asystent-tts-katalog-i-ux-czatu)
-- **Status:** in-progress (ustalenia recenzji: T-32…T-36)
+- **Status:** done
 - **Data:** 2026-07-26
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -120,8 +120,8 @@
 - [x] **T-15** — `src/lib/tts/catalog.ts` (nowy): `TTS_CATALOG: TtsProviderSpec[]` z pozycjami
   OpenAI, Groq PlayAI, ElevenLabs, Google Cloud TTS, Azure Speech — każda z `id`, `label`, `kind`,
   `baseUrl`, `models[]`, `voices[]`, `paid`, `costHint`, `requiresKey`, `polishHint`, `setupHint`
-  (teksty po polsku, C-32). Helpery: `findTtsProvider`, `voicesForKind`, `isVoiceOfKind`,
-  `defaultVoiceForKind`. Groq PlayAI ma w `polishHint` jawnie zapisane, że głosy są angielskie.
+  (teksty po polsku, C-32). Helpery: `findTtsProvider`, `voicesFor`, `isVoiceOf`, `defaultVoiceFor`,
+  `isKindUnique`, `providerMatchesSpec` (kluczowanie po rodzaju **i** adresie — patrz T-32). Groq PlayAI ma w `polishHint` jawnie zapisane, że głosy są angielskie.
   **Gotowe, gdy:** katalog kompiluje się, każda pozycja ma ≥1 model i ≥1 głos, a `tsc --noEmit` czysto.
   *(AC-1, AC-2)*
 
@@ -241,7 +241,7 @@
 
 ## Faza 6c — Ustalenia z recenzji (dopisane przez `/review`)
 
-- [ ] **T-32** — **BLOKUJĄCE (R-1, R-2, R-3): `kind` nie jest kluczem pozycji katalogu.** OpenAI i Groq
+- [x] **T-32** — **BLOKUJĄCE (R-1, R-2, R-3): `kind` nie jest kluczem pozycji katalogu.** OpenAI i Groq
   PlayAI dzielą `kind: "openai_compat"`, więc wszędzie, gdzie dopasowujemy pozycję katalogu po samym
   `kind`, trafiamy w złą. Do poprawy w trzech miejscach:
   1. `applySpeechProvider` (`llmConfig.ts`) — szukaj dostawcy po `kind` **+ znormalizowanym `baseUrl`**;
@@ -257,24 +257,24 @@
   konfiguracja Groq PlayAI oferuje głosy `*-PlayAI`, a nie `nova`. Do każdego z trzech punktów test
   albo uruchomiony scenariusz na lokalnej bazie. *(R-1, R-2, R-3)*
 
-- [ ] **T-33** — (R-6) `summarizePartialRun` tylko dla przebiegu **ostatecznego**: przekaż z `runLoop`
+- [x] **T-33** — (R-6) `summarizePartialRun` tylko dla przebiegu **ostatecznego**: przekaż z `runLoop`
   informację, czy po tym przebiegu nastąpi fallback `dispatch→reasoning` (istnieje `baselineMessages`),
   i wtedy **pomiń** podsumowanie — dziś płacimy za wywołanie, którego wynik jest odrzucany.
   **Gotowe, gdy:** pierwszy (dispatch) przebieg prostej tury odczytowej kończy się bez dodatkowego
   wywołania modelu, a ostateczny przebieg nadal oddaje pełne podsumowanie. *(R-6)*
 
-- [ ] **T-34** — (R-4, R-5) Sprzątanie: usuń nieużywane eksporty `isServerSpeechConfigured`
+- [x] **T-34** — (R-4, R-5) Sprzątanie: usuń nieużywane eksporty `isServerSpeechConfigured`
   (`serverTts.ts`) oraz `DEFAULT_SERVER_VOICE` i `isServerVoiceId` (`serverVoices.ts`); przenieś
   osierocony blok JSDoc z paczki 025 (`agentTools.ts:248-258`) z powrotem nad `resolveProjectRef`.
   **Gotowe, gdy:** `grep` nie pokazuje użyć usuniętych eksportów, `tsc` czysto, a nad
   `resolveRefOrThrow` stoi wyłącznie jego własny komentarz. *(C-53)*
 
-- [ ] **T-35** — (R-7) Dwa zbędne zapytania: `get_recipe` nie woła `getRecipe` dwa razy dla poprawnego
+- [x] **T-35** — (R-7) Dwa zbędne zapytania: `get_recipe` nie woła `getRecipe` dwa razy dla poprawnego
   id/sluga; `list_items` liczy `accessibleListWhere(userId)` raz i używa wyniku w obu miejscach.
   **Gotowe, gdy:** ścieżka z prawidłowym id wykonuje jedno `getRecipe`, a `list_items` jedno
   `getUserTeamIds`. *(R-7)*
 
-- [ ] **T-36** — (R-8) `lastTruncated` nie może przeżywać udanego sparsowania — zeruj je po
+- [x] **T-36** — (R-8) `lastTruncated` nie może przeżywać udanego sparsowania — zeruj je po
   sparsowaniu odpowiedzi (albo ustawiaj dopiero na wyjściu z pętli prób), żeby podsumowanie awaryjne
   nie podawało ucięcia jako przyczyny, gdy przebieg padł z innego powodu.
   **Gotowe, gdy:** ucięcie odratowane w iteracji 1 nie wpływa na opis przyczyny przy zakończeniu
