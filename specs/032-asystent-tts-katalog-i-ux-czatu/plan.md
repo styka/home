@@ -349,9 +349,18 @@ Bramki: `npm run check:migrations` · `npm run check:actions` · `npm run check:
 | AC-6 | brak przypisania `speech` → `/api/tts` zwraca 501, klient używa głosów przeglądarki (bez regresji wobec 031) |
 | AC-7 | zmiana dostawcy w panelu przełącza listę głosów; `applySpeechProvider` z głosem obcym dostawcy → zapisany domyślny głos dostawcy (test jednostkowy walidacji) |
 | AC-8, AC-9 | testy jednostkowe `resolveRef`: id · nazwa dokładna · nazwa częściowa jednoznaczna · wiele dopasowań (błąd z listą) · brak (błąd z listą dostępnych); dodatkowo `list_items` z `listId="moje"` zwraca pozycje listy „moje", nie pustkę |
-| AC-10 | test pętli na atrapie modelu zwracającej stale to samo `query`: przebieg kończy się po ≤ 3 wywołaniach LLM (< `MAX_ITERATIONS`) |
-| AC-11, AC-12 | test pętli: wyjście przy niedokończeniu zawiera ustalenia + przyczynę + podpowiedź i **nie** zawiera frazy o „limicie kroków”; scenariusz Z-2 odtworzony manualnie na `develop` |
-| AC-28 | test: odpowiedź z `finish_reason: "length"` → komunikat korekcyjny o **ucięciu** (nie o JSON-ie), drugie ucięcie → treść częściowa z informacją o zbyt długiej odpowiedzi |
+| AC-10 | przegląd kodu (licznik `unproductiveIterations`, przerwanie przy 2) + scenariusz Z-2 na `develop`: liczba wywołań w logu diagnostyki AI **poniżej** limitu iteracji |
+| AC-11 | testy jednostkowe `agentPartialRun` (ustalenia + przyczyna + podpowiedź, brak frazy o „limicie kroków”) |
+| AC-12 | scenariusz Z-2 odtworzony manualnie na `develop` (odpowiedź merytoryczna zamiast komunikatu o niedokończeniu) |
+| AC-28 | testy jednostkowe `truncation` (rozpoznanie `finish_reason: "length"` / `stop_reason: "max_tokens"`) + przegląd kodu ścieżki korekcyjnej (jedna próba skrócenia, potem treść częściowa z adnotacją) |
+
+> **Korekta sposobu weryfikacji (C-54).** Pierwotnie planowaliśmy testy całej pętli agenta na atrapie
+> modelu. `runAgentLoopRaw` nie jest eksportowany, a jego wyciągnięcie/otwarcie na wstrzykiwanie
+> klienta LLM byłoby refaktorem wykraczającym poza zakres tej paczki (C-53). Zamiast tego **czysta
+> logika** została wydzielona do testowalnych modułów — `src/lib/llm/truncation.ts` (rozpoznanie
+> ucięcia) i `src/lib/ai/agentPartialRun.ts` (opis niedokończonego przebiegu) — i objęta testami,
+> a zachowanie samej pętli (przerwanie po dwóch bezowocnych iteracjach, jedna próba skrócenia)
+> weryfikujemy przeglądem kodu i przebiegiem na środowisku testowym.
 | AC-13, AC-14 | `ActionDrawer` z `isAdmin={false}` — brak „Szukanej nazwy" w drzewie; z `isAdmin` — obecna, zwinięta (test komponentowy albo przegląd na `develop` na dwóch kontach) |
 | AC-15 | parametr o wartości 200 znaków — brak przewijania poziomego karty (przegląd na wąskim viewporcie 375 px) |
 | AC-16, AC-17 | viewport 375 px: menu poziomu pracy w całości w obszarze ekranu; to samo na desktopie |

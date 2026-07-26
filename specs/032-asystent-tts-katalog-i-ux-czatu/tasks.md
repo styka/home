@@ -192,36 +192,37 @@
   nieistniejąca zwraca błąd z listą dostępnych nazw, a niejednoznaczna — z listą trafień; lista
   objętych tooli zapisana w komentarzu przy helperze. *(AC-8, AC-9)*
 
-- [ ] **T-23** — `src/lib/llm/chat.ts`: `ChatResult` (wariant `ok: true`) zyskuje `truncated?: boolean`
+- [x] **T-23** — `src/lib/llm/chat.ts`: `ChatResult` (wariant `ok: true`) zyskuje `truncated?: boolean`
   ustawiane z `choices[0].finish_reason === "length"` (OpenAI-compatible) i
   `stop_reason === "max_tokens"` (Anthropic).
   **Gotowe, gdy:** `tsc --noEmit` czysto, a testy jednostkowe potwierdzają `truncated: true` dla obu
   formatów odpowiedzi i `false`/brak dla normalnego zakończenia. *(baza dla AC-28)*
 
-- [ ] **T-24** — `src/app/api/llm/home/agent/route.ts`: `callAgent` zwraca
+- [x] **T-24** — `src/app/api/llm/home/agent/route.ts`: `callAgent` zwraca
   `{ content, truncated }` zamiast samego `string` (wszystkie ścieżki: pętla, streaming, fallback
   baseline). W `runAgentLoopRaw`: przy `truncated` komunikat korekcyjny mówi o **ucięciu** („odpowiedź
   była zbyt długa — skróć treść"), nie o złym JSON-ie; dozwolona **jedna** taka próba
   (`truncationRetries <= 1`), przy drugim ucięciu → wyjście przez `salvageAnswerText` z dopiskiem o
   zbyt długiej odpowiedzi.
-  **Gotowe, gdy:** test z odpowiedzią `finish_reason: "length"` pokazuje komunikat o ucięciu, a drugie
-  ucięcie oddaje treść częściową bez pętli. *(AC-28)*
+  **Gotowe, gdy:** testy `truncation` rozpoznają ucięcie w obu formatach, a przegląd ścieżki
+  korekcyjnej potwierdza jedną próbę skrócenia i wyjście z treścią częściową. *(AC-28)*
 
-- [ ] **T-25** — `src/app/api/llm/home/agent/route.ts`: licznik `unproductiveIterations` — rośnie, gdy
+- [x] **T-25** — `src/app/api/llm/home/agent/route.ts`: licznik `unproductiveIterations` — rośnie, gdy
   iteracja `query` nie wniosła żadnego nowego wyniku (wszystko z `toolCache` albo błędy). Po **2**
   takich iteracjach przerwij pętlę i wejdź w wyjście częściowe (T-26).
-  **Gotowe, gdy:** test na atrapie modelu zwracającej stale to samo `query` kończy przebieg po ≤ 3
-  wywołaniach LLM, czyli poniżej `MAX_ITERATIONS`. *(AC-10)*
+  **Gotowe, gdy:** licznik przerywa pętlę po dwóch bezowocnych iteracjach (przegląd kodu); przebieg
+  scenariusza Z-2 na `develop` pokazuje w logu diagnostyki AI liczbę wywołań **poniżej** limitu
+  iteracji. *(AC-10)*
 
-- [ ] **T-26** — `src/app/api/llm/home/agent/route.ts`: zamiast suchego „Nie udało się dokończyć w
+- [x] **T-26** — `src/app/api/llm/home/agent/route.ts`: zamiast suchego „Nie udało się dokończyć w
   limicie kroków" — **jedno** dodatkowe wywołanie modelu z instrukcją podsumowania (co ustalono / co
   zablokowało / jak dopytać), `maxTokens` jednorazowo `REPORT_MAX_TOKENS`. Gdy i to zawiedzie —
   komunikat składany po stronie serwera z `log` (nazwy narzędzi przez `humanizeAssistantText`,
   przyczyna: ucięcie / brak dopasowania / błąd narzędzia + podpowiedź). Nigdy samo zdanie o limicie
   kroków, nigdy identyfikatory ani surowe wartości.
-  **Gotowe, gdy:** test potwierdza, że wyjście przy niedokończeniu zawiera ustalenia + przyczynę +
-  podpowiedź i **nie** zawiera frazy o „limicie kroków"; `AGENT_MAX_TOKENS` (1200) niezmienione.
-  *(AC-11, AC-12)*
+  **Gotowe, gdy:** testy jednostkowe `agentPartialRun` potwierdzają, że komunikat zawiera ustalenia +
+  przyczynę + podpowiedź i **nie** zawiera frazy o „limicie kroków"; `AGENT_MAX_TOKENS` (1200)
+  niezmienione. *(AC-11; AC-12 domykane przebiegiem na `develop` w `/verify`)*
 
 ---
 
@@ -267,8 +268,8 @@
 | AC-7 | T-18, T-19, T-20 | lista głosów podąża za dostawcą; obcy głos nie zapisuje się po cichu |
 | AC-8 | T-21, T-22 | regresja `list_tasks` + `list_items` z nazwą zwraca dane |
 | AC-9 | T-22 | błąd z listą trafień (wiele) / dostępnych nazw (brak) |
-| AC-10 | T-25 | przebieg kończy się poniżej limitu iteracji |
-| AC-11 | T-26 | wyjście z ustaleniami + przyczyną + podpowiedzią |
+| AC-10 | T-25 | przegląd licznika + przebieg Z-2 na `develop` poniżej limitu iteracji |
+| AC-11 | T-26 | testy `agentPartialRun`: ustalenia + przyczyna + podpowiedź |
 | AC-12 | T-21..T-26 | scenariusz Z-2 odtworzony na `develop` daje odpowiedź merytoryczną |
 | AC-13 | T-4 | brak „Szukanej nazwy" przy `isAdmin={false}` |
 | AC-14 | T-4 | obecna, domyślnie zwinięta przy `isAdmin={true}` |
@@ -285,7 +286,7 @@
 | AC-25 | T-7, T-14 | brudnopis wraca po powrocie do rozmowy |
 | AC-26 | T-7, T-14 | brudnopis wraca na innym urządzeniu |
 | AC-27 | T-14 | po wysłaniu pole puste |
-| AC-28 | T-23, T-24 | ucięcie rozpoznane jako ucięcie, jedna próba, potem treść częściowa |
+| AC-28 | T-23, T-24 | testy `truncation` + przegląd ścieżki korekcyjnej (jedna próba, potem treść częściowa) |
 
 ---
 

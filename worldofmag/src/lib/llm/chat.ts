@@ -1,4 +1,5 @@
 import { resolveLlmChain, type ResolvedLlm } from "./resolver";
+import { isTruncatedAnthropicResponse, isTruncatedOpenAiResponse } from "./truncation";
 import type { OperationType } from "./operationTypes";
 import { cacheKeyFor, getCached, setCached } from "@/lib/ai/cache";
 import { checkAiBudget, recordAiUsage, recordAiCall } from "@/lib/ai/usage";
@@ -81,7 +82,10 @@ export type TokenUsage = {
 };
 
 export type ChatResult =
-  | { ok: true; content: string; model?: string; usage?: TokenUsage; attempts?: number }
+  // 032: `truncated` = model przerwał, bo skończył się budżet tokenów odpowiedzi (a nie bo
+  // skończył myśl). Bez tej informacji pętla agenta traktowała ucięty JSON jak „model zwrócił zły
+  // format" i kazała powtarzać odpowiedź — w kółko, do wyczerpania limitu kroków (i budżetu).
+  | { ok: true; content: string; model?: string; usage?: TokenUsage; attempts?: number; truncated?: boolean }
   | { ok: false; status: number; message: string; attempts?: number };
 
 const UNCONFIGURED = {
@@ -346,13 +350,17 @@ async function openAiComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<Chat
     return { ok: false, status: res.status, message: parseErr(err).slice(0, 300), attempts };
   }
   const data = (await res.json().catch(() => null)) as
-    | { choices?: Array<{ message?: { content?: string } }>; usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } }
+    | {
+        choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
+        usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+      }
     | null;
   const u = data?.usage;
   return {
     ok: true,
     content: data?.choices?.[0]?.message?.content ?? "",
     model: cfg.model,
+    truncated: isTruncatedOpenAiResponse(data),
     usage: u ? { prompt: u.prompt_tokens ?? 0, completion: u.completion_tokens ?? 0, total: u.total_tokens ?? (u.prompt_tokens ?? 0) + (u.completion_tokens ?? 0) } : undefined,
     attempts,
   };
@@ -436,6 +444,7 @@ async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<C
   const data = (await res.json().catch(() => null)) as
     | {
         content?: Array<{ type: string; text?: string }>;
+        stop_reason?: string;
         usage?: {
           input_tokens?: number;
           output_tokens?: number;
@@ -453,6 +462,7 @@ async function anthropicComplete(cfg: ResolvedLlm, opts: ChatOptions): Promise<C
     ok: true,
     content: text,
     model: cfg.model,
+    truncated: isTruncatedAnthropicResponse(data),
     usage: u
       ? {
           prompt: u.input_tokens ?? 0,
