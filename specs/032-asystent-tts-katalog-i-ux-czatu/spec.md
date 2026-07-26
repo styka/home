@@ -19,10 +19,15 @@ w realnym użyciu i które psują asystenta w trzech różnych warstwach:
    dostawca jest darmowy, który wymaga klucza i który w ogóle mówi dobrze po polsku. Efekt: funkcja
    jest w aplikacji, ale praktycznie niekonfigurowalna.
 2. **Asystent potrafi się zapętlić i spalić pieniądze bez wyniku.** Przy prośbie „znajdź najważniejsze
-   zadanie i opisz, dlaczego jest ważne" agent sześć razy pod rząd wołał to samo odczytanie zadań,
-   podając **nazwę** projektu tam, gdzie potrzebny jest identyfikator; wyczerpał limit kroków, wydał
-   ~0,81 zł i oddał użytkownikowi komunikat „nie udało się dokończyć w limicie kroków", który nie mówi
-   ani co ustalił, ani co zablokowało.
+   zadanie i opisz, dlaczego jest ważne" agent wykonał sześć wywołań modelu bez żadnego wyniku,
+   wyczerpał limit kroków, wydał ~0,81 zł i oddał użytkownikowi komunikat „nie udało się dokończyć w
+   limicie kroków", który nie mówi ani co ustalił, ani co zablokowało. **Ustalenie z etapu
+   planowania (patrz p. 8):** bezpośrednią przyczyną nie było — jak pierwotnie zakładaliśmy — podanie
+   nazwy projektu zamiast identyfikatora, bo rozwiązywanie nazwy dla zadań już działa. Odpowiedź
+   asystenta była **ucinana na limicie długości**, przez co przestawała być poprawnym komunikatem
+   protokołu; aplikacja czytała to jako „zły format" i kazała modelowi odpowiedzieć jeszcze raz — w
+   kółko, aż do wyczerpania kroków. Ucięcie jest dziś dla aplikacji **niewidoczne**: nie odróżnia
+   „model się pomylił" od „modelowi zabrakło miejsca".
 3. **Drobne, ale codzienne usterki interfejsu** — dwie listy rozwijane wychodzą poza ekran, w panelu
    akcji świeci techniczne pole, którego zwykły użytkownik nie rozumie, w ustawieniach wisi zbędna
    podpowiedź, a na telefonie każda akcja pod polem wiadomości wymaga **dwóch** dotknięć, bo pierwsze
@@ -123,6 +128,11 @@ każdym trafieniu, a (3) dotyka najczęściej używanego wejścia do aplikacji �
 - [ ] **AC-12** — Given prośba z zgłoszenia Z-2 („znajdź najważniejsze zadanie, opisz, dlaczego jest
   ważne, i zapisz to od tyłu"), when użytkownik ją wyśle, then dostaje odpowiedź merytoryczną (wskazane
   zadanie + uzasadnienie w żądanej formie), a nie komunikat o niedokończeniu.
+- [ ] **AC-28** — Given odpowiedź asystenta zostaje **ucięta**, bo nie zmieściła się w dopuszczalnej
+  długości, when aplikacja ją odbiera, then rozpoznaje ucięcie jako ucięcie (a nie jako „zły format"),
+  daje modelowi **jedną** szansę dokończenia z instrukcją skrócenia, a przy kolejnym ucięciu oddaje
+  użytkownikowi to, co udało się uzyskać, wraz z informacją, że odpowiedź była zbyt długa — bez
+  powtarzania w pętli.
 
 ### Panel akcji — parametry pomocnicze (Z-5)
 
@@ -278,6 +288,15 @@ Założenia przyjęte samodzielnie (nie wymagały pytania, C-55):
   zamiast wskazania") może wystąpić przy listach zakupów, kolekcjach czy zwierzakach.
 - **Sposób prezentacji „co ustalił / co zablokowało"** korzysta z tego samego, ludzkiego języka co
   reszta odpowiedzi asystenta po 031 — bez surowych danych technicznych.
+
+**Korekta ustalona na etapie `/plan` (C-54):** rozpoznanie przyczyny Z-2 z p. 1 zostało poprawione po
+przeczytaniu kodu. Rozwiązywanie **nazwy** projektu na wskazanie zbioru jest już zrobione (wdrożone w
+paczce 025) i w zgłoszonym przebiegu zadziałało — dane wróciły. Prawdziwą przyczyną było **ucięcie
+odpowiedzi na limicie długości**, nierozpoznawane przez aplikację (nowe **AC-28**). AC-8/AC-9
+pozostają w zakresie w **dwóch** rolach: (a) jako zabezpieczenie przed regresją tego, co działa dla
+zadań, i (b) jako **rozszerzenie** na pozostałe odczyty (listy zakupów, notatki, przepisy, zwierzęta,
+talie…), gdzie takiego rozwiązywania nazw **nadal nie ma** — tam nierozpoznana nazwa daje albo pustą
+odpowiedź, albo dane spoza intencji użytkownika.
 
 ## 9. Ryzyka
 
