@@ -62,11 +62,23 @@ export function isOperationType(value: string): value is OperationType {
 }
 
 /**
- * 031: poziom pracy asystenta („standardowy" / „oszczędny") wybiera TYP OPERACJI, nigdy konkretny
- * model — dobór modelu zostaje w rękach administratora (`/admin/llm`, C-40). Tryb oszczędny
- * kieruje wszystko do `dispatch`, czyli do modelu przypisanego przez admina do najprostszych
- * operacji (dla Anthropic to zwykle Haiku).
+ * 031: poziom pracy asystenta wybiera TYP OPERACJI, nigdy konkretny model — dobór modelu zostaje
+ * w rękach administratora (`/admin/llm`, C-40). Tryb oszczędny kieruje wszystko do `dispatch`,
+ * czyli do modelu przypisanego przez admina do najprostszych operacji (dla Anthropic to zwykle
+ * Haiku).
+ *
+ * 032: tryb „maksymalny" NIE zmienia typu operacji — działa na modelu, który admin przypisał, ale
+ * z podniesionym poziomem wysiłku (patrz `boostEffort` w `chatComplete`). Dzięki temu nadal to
+ * admin decyduje, jaki model obsługuje daną operację.
  */
-export function effectiveOperation(op: OperationType, level: "standard" | "economy" | undefined): OperationType {
+export function effectiveOperation(op: OperationType, level: AssistantWorkLevel | undefined): OperationType {
   return level === "economy" ? "dispatch" : op;
+}
+
+/** Poziom pracy asystenta w rozumieniu warstwy LLM (bez importu z `@/types`, żeby nie mieszać warstw). */
+export type AssistantWorkLevel = "standard" | "economy" | "max";
+
+/** Czy dla tego poziomu podnosimy wysiłek ustawiony przez admina o jeden stopień. */
+export function shouldBoostEffort(level: AssistantWorkLevel | undefined): boolean {
+  return level === "max";
 }

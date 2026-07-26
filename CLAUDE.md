@@ -334,7 +334,7 @@ Team, TeamMember, TeamInvitation              — Collaboration
 Skin, UserSkinPref                            — Skins/themes (system/user/team; tokens=JSON CSS-var map; isPublic to share; UserSkinPref = per-user choice)
 UserMenuPref                                  — Per-user sidebar/menu customization (order/disabled/tabBar = JSON string[] of module ids)
 DashboardPref                                 — Per-user Home dashboard personalization (section order/visibility = JSON string[])
-AssistantPref                                 — Per-user AI assistant settings (standing instructions, work level standard|economy, reader voice browser|server + voiceId)
+AssistantPref                                 — Per-user AI assistant settings (standing instructions, work level standard|economy|max, reader voice browser|server + voiceId)
 Notification                                  — Notification engine (per-user; bell in chrome; reminders synced from agenda/deadlines)
 AuditLog                                      — Audit trail for RBAC + config changes (category rbac|config; NO FK to User — snapshots actor email)
 TrashItem                                     — Soft-delete recovery (JSON entity snapshot + retention days; surfaced at /trash)
@@ -445,9 +445,19 @@ document, orderDraft, insights, search), `pets` (insights).
   (server-side text-to-speech for the assistant's reader — **no default model**, so an
   unassigned `speech` simply disables the feature and the client falls back to browser
   voices; `src/lib/tts/{serverTts,serverVoices}.ts` + `/api/tts`).
+  Each assignment also carries **effort / temperature / max-tokens** (`LlmAssignment.effort` —
+  `LlmEffort = none|low|medium|high`). Effort is **one shared descriptive scale** translated to the
+  provider's own parameter in `src/lib/llm/effort.ts` (Anthropic → extended-thinking
+  `budget_tokens`, and `max_tokens` is raised above it because the provider requires it;
+  OpenAI-compatible *reasoning* families → `reasoning_effort`; anything else → **parameter omitted**,
+  and `/admin/llm` says so). A 400 rejecting the effort parameter triggers **one** retry without it
+  (400 is non-retryable, so it would otherwise break the fallback chain). `AiCall.effort` records
+  the level actually used. Anthropic still never receives `temperature` (see `doświadczenia.md`
+  2026, 026-anthropic-temperature-fix).
   The per-user **assistant work level** (`AssistantPref.level`) picks the *operation type*, not a
   model: `economy` routes every assistant call to `dispatch` (`effectiveOperation()`), so the model
-  choice stays with the admin. Default provider is
+  choice stays with the admin. **`max`** keeps the admin's model but raises effort one notch
+  (`shouldBoostEffort()` → `boostEffort`) and skips the cheap-model shortcut for simple reads. Default provider is
   Groq (OpenAI-compatible); key in `Config` (`groq_api_key`) / env.
   Shared helpers: `src/lib/llm/chat.ts` (`chatComplete`), `src/lib/llm/json.ts`.
 - Rule-based fallback for categorization (no LLM): `categorize.ts` (~500 Polish+English keywords).
@@ -511,7 +521,7 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 - **`/admin/audit`** — audit log viewer (RBAC + config changes; `AuditLog`).
 - **`/admin/health`** — system health dashboard (DB/migrations/API diagnostics; live, no model).
 - **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, `brave_search_api_key`, masked + encrypted at rest; plus the plain-text `feedback_project_id` — which task project acts as the **user-report inbox**; empty = the admin's „Omnia" project).
-- **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type).
+- **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type **+ effort / temperature / max-tokens**; the panel states outright which knobs the chosen provider/model ignores).
 - **`/admin/ai-coverage`** — **Pokrycie akcji przez AI**: pełna lista akcji użytkownika (mutacje **i** odczyty z `src/actions/*`) z informacją, czy asystent AI ma do nich dostęp (`ai`/`pending`/`excluded`+powód). Źródło = manifest `src/lib/ai/action-coverage.json` (via `getAiCoverage()` w `src/lib/ai/coverage.ts`), którego kompletność wymusza bramka `scripts/check-ai-coverage.js` (wpięta w `build`) — więc lista jest **zawsze aktualna** wobec wdrożonego kodu. Nowa mutująca/odczytowa Server Action bez wpisu w manifeście = build pada. Filtry po statusie/rodzaju + wyszukiwarka.
 - **`/admin/skins`** — system skins manager.
 - **`/admin/categories`** — global system categories (name/color/icon).

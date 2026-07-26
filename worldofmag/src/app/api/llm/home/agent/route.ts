@@ -12,6 +12,7 @@ import { classifyIntent, READ_INTENT_RE } from "@/lib/ai/fastPath";
 import { extractJsonLoose, salvageAnswerText } from "@/lib/ai/agentProtocol";
 import { compactToolResults, collapseUsedToolData, TOOL_DATA_HEADER } from "@/lib/ai/agentContext";
 import { humanizeAssistantText } from "@/lib/ai/humanize";
+import { shouldBoostEffort } from "@/lib/llm/operationTypes";
 import { isAccessError, toUserFacingError } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 
@@ -388,7 +389,7 @@ const SIMPLE_READ_ANALYTIC_RE =
 // przydział w /admin/llm — C-40), z fallbackiem do "reasoning" po stronie wołającego.
 type AgentOp = "dispatch" | "reasoning";
 
-async function callAgent(messages: ChatMessage[], meta?: AgentMeta, maxTokens = AGENT_MAX_TOKENS, conversationId?: string | null, op: AgentOp = "reasoning"): Promise<string> {
+async function callAgent(messages: ChatMessage[], meta?: AgentMeta, maxTokens = AGENT_MAX_TOKENS, conversationId?: string | null, op: AgentOp = "reasoning", boostEffort = false): Promise<string> {
   const result = await chatComplete({
     op,
     messages,
@@ -397,6 +398,8 @@ async function callAgent(messages: ChatMessage[], meta?: AgentMeta, maxTokens = 
     json: true,
     source: "home_agent",
     conversationId,
+    // 032: tryb „maksymalny" użytkownika podnosi wysiłek USTAWIONY PRZEZ ADMINA o jeden stopień.
+    boostEffort,
   });
   if (!result.ok) {
     const err = new Error(result.message) as Error & { status?: number };
@@ -524,11 +527,12 @@ async function runAgentLoop(
   meta?: AgentMeta,
   maxTokens: number = AGENT_MAX_TOKENS,
   conversationId?: string | null,
-  op: AgentOp = "reasoning"
+  op: AgentOp = "reasoning",
+  boostEffort = false
 ): Promise<LoopResult> {
   // Myśli lecą do klienta NA ŻYWO (SSE) — humanizujemy je po drodze, nie tylko na końcu.
   const humanThought = onThought ? (t: string) => onThought(humanizeAssistantText(t)) : undefined;
-  const result = await runAgentLoopRaw(messages, userId, humanThought, meta, maxTokens, conversationId, op);
+  const result = await runAgentLoopRaw(messages, userId, humanThought, meta, maxTokens, conversationId, op, boostEffort);
   const body = result.body as Record<string, unknown>;
   for (const key of ["answer", "question", "content", "thought", "label", "title"]) {
     if (typeof body[key] === "string") body[key] = humanizeAssistantText(body[key] as string);
@@ -558,7 +562,8 @@ async function runAgentLoopRaw(
   meta?: AgentMeta,
   maxTokens: number = AGENT_MAX_TOKENS,
   conversationId?: string | null,
-  op: AgentOp = "reasoning"
+  op: AgentOp = "reasoning",
+  boostEffort = false
 ): Promise<LoopResult> {
   const log: LogEntry[] = [];
   // 030: pamięć wywołań narzędzi w obrębie tury — identyczne wywołanie (tool+args) nie
@@ -578,7 +583,7 @@ async function runAgentLoopRaw(
     for (let attempt = 0; attempt < 3 && parsed === null; attempt++) {
       let content: string;
       try {
-        content = await callAgent(messages, meta, maxTokens, conversationId, op);
+        content = await callAgent(messages, meta, maxTokens, conversationId, op, boostEffort);
       } catch (e) {
         const status = (e as { status?: number }).status ?? 502;
         // 010/017: przejściowy limit modelu (429) — mimo retry (010), pacingu (016) i
@@ -766,7 +771,8 @@ export async function POST(req: NextRequest) {
   const assistantPref = await prisma.assistantPref
     .findUnique({ where: { userId }, select: { instructions: true, level: true } })
     .catch(() => null);
-  const assistantLevel: AssistantLevel = assistantPref?.level === "economy" ? "economy" : "standard";
+  const assistantLevel: AssistantLevel =
+    assistantPref?.level === "economy" ? "economy" : assistantPref?.level === "max" ? "max" : "standard";
 
   // H4: rate-limit per użytkownik (ochrona przed pętlą klienta i kosztami LLM).
   const rl = checkRateLimit(userId);
@@ -954,10 +960,14 @@ export async function POST(req: NextRequest) {
   // (model najprostszych operacji z /admin/llm). Świadomy wybór użytkownika, więc NIE robimy
   // fallbacku do „reasoning" — inaczej tryb nie oszczędzałby.
   const economy = assistantLevel === "economy";
+  // 032: TRYB MAKSYMALNY — modele wg ustawień admina, ale (a) z podniesionym o stopień wysiłkiem,
+  // (b) BEZ automatycznego zejścia na tańszy model przy prostych pytaniach odczytowych. Inaczej
+  // „drożej" nie znaczyłoby nic dla połowy pytań.
+  const boostEffort = shouldBoostEffort(assistantLevel);
   const runLoop = async (onThought?: (t: string) => void): Promise<LoopResult> => {
-    const primaryOp: AgentOp = economy || isSimpleRead ? "dispatch" : "reasoning";
-    const first = await runAgentLoop(messages, userId, onThought, meta, agentMaxTokens, conversationId, primaryOp);
-    if (economy || !baselineMessages || !loopNeedsFallback(first)) return first;
+    const primaryOp: AgentOp = boostEffort ? "reasoning" : economy || isSimpleRead ? "dispatch" : "reasoning";
+    const first = await runAgentLoop(messages, userId, onThought, meta, agentMaxTokens, conversationId, primaryOp, boostEffort);
+    if (economy || boostEffort || !baselineMessages || !loopNeedsFallback(first)) return first;
     return runAgentLoop(baselineMessages, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning");
   };
 

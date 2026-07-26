@@ -4,6 +4,43 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-26 — „Effort" nie jest jednym parametrem: wspólna skala zamiast surowej wartości
+**Problem:** Zgłoszenie brzmiało „dodaj możliwość ustawienia effort", ale u każdego dostawcy to co
+innego: Anthropic ma rozszerzone myślenie z budżetem tokenów (`thinking.budget_tokens`), modele
+rozumujące zgodne z OpenAI mają `reasoning_effort`, a llama na Groqu nie ma tego wcale. Gdyby admin
+wpisywał surową wartość, literówka albo model bez wsparcia dawałyby **400** — a 400 jest
+NIEPRZEJŚCIOWY (`isRetryableLlmStatus` → false), więc przerywa łańcuch fallbacku i wywala całego
+agenta. Opcjonalne ustawienie potrafiłoby więc położyć asystenta.
+**Rozwiązanie:** Jedna opisowa skala (brak/niski/średni/wysoki) + tłumaczenie na parametr dostawcy w
+jednym miejscu (`src/lib/llm/effort.ts`) z **konserwatywną** tabelą możliwości (wysyłamy tylko przy
+pewnej rodzinie modelu). Trzy warstwy obrony: tabela, jednorazowa degradacja bez wysiłku przy 400
+rozpoznanym jako odrzucenie tego parametru, oraz domyślne „brak" (bez ruchu admina zero zmian).
+Panel mówi wprost, że dla wybranego modelu ustawienie zostanie pominięte.
+**Lekcja:** Gdy „jeden parametr" ma różne API u różnych dostawców, nie wystawiaj go surowo — wystaw
+INTENCJĘ (skala) i tłumacz ją w jednym choke-poincie. I zawsze sprawdź, czy błąd, którym dostawca
+odrzuci nowy parametr, jest przejściowy: jeśli nie, potrzebna jest jawna degradacja, bo inaczej
+opcjonalne ustawienie zabiera funkcję główną.
+
+## 2026-07-26 — Anthropic: `max_tokens` musi być WIĘKSZY od budżetu myślenia
+**Problem:** Włączenie rozszerzonego myślenia (`thinking.budget_tokens`) przy zachowanym
+`max_tokens: 1024` daje 400 — budżet myślenia jest częścią `max_tokens`, więc odpowiedź nie miałaby
+gdzie się zmieścić. Łatwo to przeoczyć, bo w naszej konfiguracji `max_tokens` ustawia admin osobno.
+**Rozwiązanie:** `applyEffort` podnosi `max_tokens` do `budget + 1024`, gdy skonfigurowana wartość
+jest mniejsza (i **nie** obniża, gdy admin ustawił większą). Objęte testem jednostkowym.
+**Lekcja:** Parametry modelu bywają powiązane — dokładając jeden, sprawdź jego warunki brzegowe
+względem już wysyłanych. Test „ciało żądania spełnia niezmiennik dostawcy" jest tu tańszy niż
+diagnozowanie 400 z produkcji.
+
+## 2026-07-26 — Polski cudzysłów zamykający ” w literale TS (drugi raz ta sama pułapka)
+**Problem:** `it("poziom „brak" nigdy nic nie dokłada", …)` — otwierający „ jest znakiem
+typograficznym, ale zamykający wpisałem jako zwykły `"`, co PRZEDWCZEŚNIE kończy literał. `esbuild`
+wywala się dopiero przy uruchomieniu testów: „Expected ) but found nigdy". Ten sam błąd trafił mnie
+wcześniej w tej samej sesji przy testach kontraktu akcji.
+**Rozwiązanie:** Konsekwentnie para „ … ” (oba typograficzne) albo brak cudzysłowu w nazwie testu.
+**Lekcja:** W plikach TS trzymaj polskie cudzysłowy PARAMI („ z ”). Gdy komunikat kompilatora wskazuje
+nieoczekiwane słowo w środku zdania po polsku — szukaj cudzysłowu zamykającego, nie składni.
+
+
 ## 2026-07-25 — `tsc --noEmit` NIE łapie reguły „use server": eksport nie-funkcji wywala build
 **Problem:** W `src/actions/feedback.ts` i `assistantPrefs.ts` wystawiłem `export const
 FEEDBACK_PROJECT_CONFIG_KEY` / `export const ASSISTANT_INSTRUCTIONS_MAX`. `npx tsc --noEmit`

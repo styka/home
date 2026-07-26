@@ -242,15 +242,20 @@ export const TASK_STATUS_CYCLE: TaskStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
 // Poziom pracy asystenta: "standard" = modele wg przypisań admina (/admin/llm);
 // "economy" = do wszystkich operacji asystenta używamy typu operacji `dispatch`
 // (najprostszy, najtańszy model wskazany przez admina).
-export type AssistantLevel = "standard" | "economy";
-export const ASSISTANT_LEVELS: AssistantLevel[] = ["standard", "economy"];
+// 032: trzeci poziom „max" — modele wg ustawień admina, ale z PODNIESIONYM o stopień wysiłkiem
+// i bez automatycznego zejścia na tańszy model przy prostych pytaniach. Kolejność w
+// ASSISTANT_LEVELS = kolejność w menu (od najtańszego do najdroższego).
+export type AssistantLevel = "standard" | "economy" | "max";
+export const ASSISTANT_LEVELS: AssistantLevel[] = ["economy", "standard", "max"];
 export const ASSISTANT_LEVEL_LABELS: Record<AssistantLevel, string> = {
   standard: "Standardowy",
   economy: "Oszczędny",
+  max: "Maksymalny",
 };
 export const ASSISTANT_LEVEL_DESCRIPTIONS: Record<AssistantLevel, string> = {
   standard: "Modele wg ustawień administratora — pełna jakość odpowiedzi.",
   economy: "Najprostszy, najtańszy model do wszystkiego — szybciej i taniej, kosztem jakości.",
+  max: "Podniesiony wysiłek modelu na każdym pytaniu — najlepsza jakość, wyższy koszt i dłuższe oczekiwanie.",
 };
 
 // Źródło głosu lektora: "browser" = synteza w przeglądarce (Web Speech),

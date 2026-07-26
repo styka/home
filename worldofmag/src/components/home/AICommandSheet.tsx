@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight, ArrowUp,
-  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug, Gauge, Zap,
+  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug, Gauge, Zap, Rocket,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { useDictation } from "@/hooks/useDictation";
@@ -1725,9 +1725,9 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                           title={`Poziom pracy asystenta: ${ASSISTANT_LEVEL_LABELS[level]}`}
                           aria-label={`Poziom pracy asystenta: ${ASSISTANT_LEVEL_LABELS[level]}`}
                           aria-expanded={showLevelMenu}
-                          style={{ ...composerActionBtn, color: level === "economy" ? "var(--accent-amber)" : "var(--text-muted)" }}
+                          style={{ ...composerActionBtn, color: LEVEL_COLORS[level] }}
                         >
-                          {level === "economy" ? <Zap size={19} /> : <Gauge size={19} />}
+                          {levelIcon(level, 19)}
                         </button>
                         {showLevelMenu && (
                           <div
@@ -1753,7 +1753,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                                 }}
                               >
                                 <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-primary)" }}>
-                                  {lvl === "economy" ? <Zap size={13} /> : <Gauge size={13} />}
+                                  {levelIcon(lvl, 13)}
                                   {ASSISTANT_LEVEL_LABELS[lvl]}
                                   {level === lvl && <Check size={12} style={{ color: "var(--accent-green)" }} />}
                                 </span>
@@ -1835,6 +1835,20 @@ const voicePillBtn: React.CSSProperties = { display: "flex", alignItems: "center
 // Kompozytor (karta „Chat with Claude"): okrągłe przyciski w dolnym wierszu akcji.
 const composerActionBtn: React.CSSProperties = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "transparent", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" };
 const composerPrimaryBtn: React.CSSProperties = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" };
+
+// 032: ikona i kolor poziomu pracy asystenta. Oszczędny = błyskawica (szybko/tanio),
+// standardowy = wskaźnik, maksymalny = rakieta (drożej, ale najlepsza jakość).
+const LEVEL_COLORS: Record<AssistantLevel, string> = {
+  economy: "var(--accent-amber)",
+  standard: "var(--text-muted)",
+  max: "var(--accent-purple)",
+};
+
+function levelIcon(level: AssistantLevel, size: number) {
+  if (level === "economy") return <Zap size={size} />;
+  if (level === "max") return <Rocket size={size} />;
+  return <Gauge size={size} />;
+}
 
 // ── Widok pojedynczej tury ──────────────────────────────────────────────────
 // 031: stopka odpowiedzi to WYŁĄCZNIE ikony (bez labelek) — każda z `title` (tooltip) i

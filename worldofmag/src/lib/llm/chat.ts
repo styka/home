@@ -1,5 +1,6 @@
 import { resolveLlmChain, type ResolvedLlm } from "./resolver";
 import type { OperationType } from "./operationTypes";
+import { applyEffort, bumpEffort, isEffortRejection, parseEffort, type LlmEffort } from "./effort";
 import { cacheKeyFor, getCached, setCached } from "@/lib/ai/cache";
 import { checkAiBudget, recordAiUsage, recordAiCall } from "@/lib/ai/usage";
 import { reserveTpm, estimateTokens, modelTpmLimit } from "./tpmLimiter";
@@ -68,6 +69,21 @@ export interface ChatOptions {
   source?: string;
   /** Diagnostyka: id rozmowy asystenta — wiąże wpisy `AiCall` w jeden przebieg. */
   conversationId?: string | null;
+  /** 032: nadpisanie poziomu wysiłku (pomija ustawienie admina). Rzadko potrzebne. */
+  effort?: LlmEffort;
+  /** 032: podnieś o stopień wysiłek USTAWIONY PRZEZ ADMINA — tryb „maksymalny" asystenta.
+   *  Wychodzimy od konfiguracji, nigdy nie wybieramy modelu za admina (C-40). */
+  boostEffort?: boolean;
+}
+
+/**
+ * 032: poziom wysiłku dla konkretnego ogniwa łańcucha. Kolejność: jawne nadpisanie → ustawienie
+ * admina dla tego typu operacji (opcjonalnie podniesione o stopień w trybie „maksymalnym").
+ */
+export function resolveEffort(cfg: ResolvedLlm, opts: ChatOptions): LlmEffort {
+  if (opts.effort) return opts.effort;
+  const base = parseEffort(cfg.effort ?? null);
+  return opts.boostEffort ? bumpEffort(base) : base;
 }
 
 export type TokenUsage = {
@@ -191,6 +207,9 @@ export function openAiBody(cfg: ResolvedLlm, opts: ChatOptions, stream: boolean)
     temperature: opts.temperature ?? cfg.temperature ?? undefined,
     max_tokens: opts.maxTokens ?? cfg.maxTokens ?? undefined,
   };
+  // 032: poziom wysiłku — jedno miejsce tłumaczenia (`applyEffort`); dla modelu, który tego nie
+  // obsługuje, ciało zostaje NIETKNIĘTE.
+  applyEffort(body, cfg.kind, cfg.model, resolveEffort(cfg, opts));
   if (stream) {
     body.stream = true;
   } else if (opts.json) {
@@ -208,6 +227,12 @@ export function anthropicBody(cfg: ResolvedLlm, opts: ChatOptions, stream: boole
     ...(system ? { system: toAnthropicSystem(system) } : {}),
     messages,
   };
+  // 032: rozszerzone myślenie Anthropic. `applyEffort` podnosi też `max_tokens` ponad budżet
+  // myślenia — dostawca wymaga `max_tokens > budget_tokens`, inaczej odbija żądanie błędem 400.
+  // Bloki `thinking` NIE wyciekają do odpowiedzi: `anthropicComplete` filtruje bloki po
+  // `type === "text"`, a strumień przepuszcza tylko delty mające pole `text`
+  // (`thinking_delta`/`signature_delta` go nie mają).
+  applyEffort(body, cfg.kind, cfg.model, resolveEffort(cfg, opts));
   if (stream) body.stream = true;
   return body;
 }
@@ -245,7 +270,18 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
       continue;
     }
     const started = Date.now();
-    const res = cfg.kind === "anthropic" ? await anthropicComplete(cfg, opts) : await openAiComplete(cfg, opts);
+    let effortUsed = resolveEffort(cfg, opts);
+    let res = cfg.kind === "anthropic" ? await anthropicComplete(cfg, opts) : await openAiComplete(cfg, opts);
+    // 032: DEGRADACJA WYSIŁKU. Gdy dostawca odbije żądanie błędem 400 dotyczącym parametru
+    // wysiłku (model z rodziny, która wg naszej tabeli go obsługuje, a jednak nie), robimy JEDNĄ
+    // próbę bez wysiłku na tym samym modelu. Bez tego 400 — jako błąd NIEPRZEJŚCIOWY — przerwałby
+    // łańcuch fallbacku i wywalił całego agenta z powodu opcjonalnego ustawienia.
+    if (!res.ok && effortUsed !== "none" && isEffortRejection(res.status, res.message)) {
+      console.warn(`[llm] ${opts.op}: model ${cfg.model} odrzucił parametr wysiłku — ponawiam bez niego`);
+      const plain: ChatOptions = { ...opts, effort: "none", boostEffort: false };
+      res = cfg.kind === "anthropic" ? await anthropicComplete(cfg, plain) : await openAiComplete(cfg, plain);
+      effortUsed = "none";
+    }
     const latencyMs = Date.now() - started;
     if (res.ok) {
       if (cacheKey) setCached(cacheKey, res.content, res.model);
@@ -263,6 +299,7 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
         attempts: res.attempts,
         conversationId: opts.conversationId,
         source: opts.source,
+        effort: effortUsed,
       }).catch(() => {});
       return res;
     }
@@ -282,6 +319,7 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
       attempts: res.attempts,
       conversationId: opts.conversationId,
       source: opts.source,
+      effort: effortUsed,
     }).catch(() => {});
     // Błąd nieprzejściowy (4xx poza 429) → fallback nie pomoże, przerywamy.
     if (!isRetryableLlmStatus(res.status)) break;
