@@ -1,7 +1,7 @@
 # Zadania: Asystent AI — katalog syntezy mowy, cykl życia czatu i domknięcie usterek UX
 
 - **Plan:** ./plan.md (032-asystent-tts-katalog-i-ux-czatu)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-07-26
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -228,13 +228,13 @@
 
 ## Faza 6 — Bramki i domknięcie
 
-- [ ] **T-27** — Bramki lokalnie (lokalny Postgres, C-13 — **nigdy** prod `DATABASE_URL`):
+- [x] **T-27** — Bramki lokalnie (lokalny Postgres, C-13 — **nigdy** prod `DATABASE_URL`):
   `npm run check:migrations` · `npm run check:actions` · `npm run check:ai-coverage` ·
   `npx tsc --noEmit` · `next lint` · `next build`.
   **Gotowe, gdy:** wszystkie zielone, build przechodzi do kroku `next build` włącznie (bez
   `scripts/migrate.js`). *(C-50)*
 
-- [ ] **T-28** — Aktualizacja dokumentacji projektu: `CLAUDE.md` — katalog TTS + nowe rodzaje
+- [x] **T-28** — Aktualizacja dokumentacji projektu: `CLAUDE.md` — katalog TTS + nowe rodzaje
   dostawców (`elevenlabs`/`google_tts`/`azure_tts`) + `AiConversation.draft` w opisie schematu +
   wzmianka o brudnopisie i cyklu życia rozmowy w opisie asystenta.
   **Gotowe, gdy:** opis w `CLAUDE.md` zgadza się z wdrożonym kodem (tabela modułów, schemat, sekcja
@@ -245,7 +245,7 @@
   **Gotowe, gdy:** każde AC ma przypisane zadanie i sposób potwierdzenia; żadne nie zostaje bez
   pokrycia.
 
-- [ ] **T-30** — Wpisy do `doświadczenia.md` (C-51, po polsku, format `## YYYY-MM-DD — tytuł` /
+- [x] **T-30** — Wpisy do `doświadczenia.md` (C-51, po polsku, format `## YYYY-MM-DD — tytuł` /
   `**Problem:**` / `**Rozwiązanie:**` / `**Lekcja:**`): (a) ucięcie odpowiedzi LLM czytane jako „zły
   format" → pętla naprawcza wyczerpująca limit kroków i pieniądze; (b) `onPointerDown` +
   `preventDefault` jako sposób na „pierwsze dotknięcie tylko zwija klawiaturę" na mobile; (c) argument
