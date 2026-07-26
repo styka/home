@@ -1,7 +1,7 @@
 # Zadania: Asystent AI — katalog syntezy mowy, cykl życia czatu i domknięcie usterek UX
 
 - **Plan:** ./plan.md (032-asystent-tts-katalog-i-ux-czatu)
-- **Status:** in-progress (braki z weryfikacji: T-31)
+- **Status:** done
 - **Data:** 2026-07-26
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -228,7 +228,7 @@
 
 ## Faza 6b — Braki z weryfikacji (dopisane przez `/verify`)
 
-- [ ] **T-31** — `AICommandSheet.tsx`: `handleClose()` musi **przerwać trwające generowanie**, zanim
+- [x] **T-31** — `AICommandSheet.tsx`: `handleClose()` musi **przerwać trwające generowanie**, zanim
   wyczyści wątek (`abortRef.current?.abort()`, `abortRef.current = null`, `setBusy(false)`) — bez
   powrotu do nasłuchu głosowego, bo asystent się zamyka. Bez tego odpowiedź, która przyjdzie po
   zamknięciu, dopisuje się do świeżo wyczyszczonego wątku przy `convoIdRef === null`, więc nie zostaje

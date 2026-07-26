@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-26 — „Zamknij i zacznij nowy czat" bez przerwania żądania = osierocona odpowiedź
+**Problem:** Zmiana cyklu życia rozmowy asystenta (zamknięcie kończy rozmowę, ponowne otwarcie daje
+nowy wątek) wprowadziła regresję: `handleClose` czyścił `turns` i `conversationId`, ale NIE przerywał
+trwającego żądania do agenta. `AICommandSheet` siedzi w `AppShell` i nigdy się nie odmontowuje, więc
+sprzątanie z `useEffect(() => () => abortRef.current?.abort(), [])` nigdy nie odpalało. Efekt:
+zamknięcie asystenta w trakcie „myślę" → odpowiedź przychodziła po chwili i dopisywała się do świeżo
+wyczyszczonego wątku, przy `convoIdRef === null`, czyli BEZ zapisu do historii. Po ponownym otwarciu
+użytkownik widział samotną wypowiedź asystenta w rzekomo nowej rozmowie, której nie było w historii.
+**Rozwiązanie:** `handleClose` przerywa generowanie (`abortRef.current?.abort()`, wyzerowanie refa,
+`setBusy(false)`) przed wyczyszczeniem wątku — bez powrotu do nasłuchu głosowego, bo asystent się
+zamyka. Klient już wcześniej cicho ignorował `AbortError`, więc nie pojawia się żadna tura błędu.
+**Lekcja:** Jeśli komponent żyje przez cały czas działania aplikacji (jest w `AppShell`), sprzątanie
+w `useEffect` z pustą tablicą zależności to martwy kod — nigdy się nie wykona. Każde „zamknij/zresetuj"
+w takim komponencie musi jawnie anulować to, co jest w locie. Przy zmianie cyklu życia widoku
+sprawdzaj wszystkie asynchroniczne operacje, które mogą wrócić PO resecie stanu.
+
 ## 2026-07-26 — Ucięta odpowiedź LLM czytana jako „zły format" → pętla naprawcza za 0,81 zł
 **Problem:** Użytkownik poprosił asystenta: „znajdź najważniejsze zadanie, opisz dlaczego jest ważne,
 ale zapisz to od tyłu". Dostał „Nie udało się dokończyć w limicie kroków". W logach: 6 wywołań

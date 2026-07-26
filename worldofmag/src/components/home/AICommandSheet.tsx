@@ -907,6 +907,15 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     setIsOpen(false);
     setShowHistory(false);
     if (turnsRef.current.length > 0) {
+      // 032: PRZERWIJ trwające generowanie, zanim wyczyścimy wątek. Komponent siedzi w `AppShell` i
+      // nigdy się nie odmontowuje, więc bez tego żądanie leci dalej i dopisuje odpowiedź do już
+      // wyczyszczonego wątku — przy `convoIdRef === null`, czyli bez zapisu w historii. Efekt:
+      // osierocona wypowiedź asystenta w rzekomo nowej rozmowie. Nie wracamy tu do nasłuchu
+      // głosowego (inaczej niż w `stopGeneration`) — asystent się zamyka, a `stopVoice` i tak
+      // odpala efekt na `isOpen`.
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setBusy(false);
       if (convoIdRef.current) {
         setLastConversationId(convoIdRef.current);
         setLastConversationLabel(conversationLabelFrom(turnsRef.current));
