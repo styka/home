@@ -1,7 +1,7 @@
 # Zadania: Asystent AI — katalog syntezy mowy, cykl życia czatu i domknięcie usterek UX
 
 - **Plan:** ./plan.md (032-asystent-tts-katalog-i-ux-czatu)
-- **Status:** done
+- **Status:** in-progress (braki z weryfikacji: T-31)
 - **Data:** 2026-07-26
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -223,6 +223,19 @@
   **Gotowe, gdy:** testy jednostkowe `agentPartialRun` potwierdzają, że komunikat zawiera ustalenia +
   przyczynę + podpowiedź i **nie** zawiera frazy o „limicie kroków"; `AGENT_MAX_TOKENS` (1200)
   niezmienione. *(AC-11; AC-12 domykane przebiegiem na `develop` w `/verify`)*
+
+---
+
+## Faza 6b — Braki z weryfikacji (dopisane przez `/verify`)
+
+- [ ] **T-31** — `AICommandSheet.tsx`: `handleClose()` musi **przerwać trwające generowanie**, zanim
+  wyczyści wątek (`abortRef.current?.abort()`, `abortRef.current = null`, `setBusy(false)`) — bez
+  powrotu do nasłuchu głosowego, bo asystent się zamyka. Bez tego odpowiedź, która przyjdzie po
+  zamknięciu, dopisuje się do świeżo wyczyszczonego wątku przy `convoIdRef === null`, więc nie zostaje
+  zapisana i po ponownym otwarciu widać osieroconą wypowiedź w rzekomo nowej rozmowie (regresja
+  wprowadzona w T-12 — patrz `verify.md` B-1).
+  **Gotowe, gdy:** zamknięcie asystenta w trakcie „myślę" nie dopisuje żadnej tury po zamknięciu;
+  ponowne otwarcie daje pusty wątek; `stopGeneration` działa bez zmian. *(regresja T-12 / AC-22)*
 
 ---
 
