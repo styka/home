@@ -57,18 +57,18 @@
 
 ## Faza 2 — Warstwa serwera
 
-- [ ] **T-7** — `src/actions/aiConversations.ts`: nowa akcja `saveConversationDraft(id, draft)` —
+- [x] **T-7** — `src/actions/aiConversations.ts`: nowa akcja `saveConversationDraft(id, draft)` —
   `requireAuth()`, `updateMany({ where: { id, userId: user.id } })`, przycięcie do 4000 znaków,
   `revalidatePath("/")`. Rozszerz DTO `getAiConversation` o `draft: string | null`.
   **Gotowe, gdy:** próba zapisu brudnopisu do cudzej rozmowy nie zmienia żadnego wiersza i nie
   ujawnia jej istnienia; `getAiConversation` zwraca `draft`. *(C-20, C-21; AC-25..AC-27)*
 
-- [ ] **T-8** — `src/lib/ai/action-coverage.json`: wpis dla `saveConversationDraft`
+- [x] **T-8** — `src/lib/ai/action-coverage.json`: wpis dla `saveConversationDraft`
   (`access: "self"`, klasyfikacja `excluded` + powód: brudnopis pola wiadomości to stan UI czatu, nie
   dane do zarządzania przez asystenta).
   **Gotowe, gdy:** `npm run check:ai-coverage` przechodzi. *(bramka C-50)*
 
-- [ ] **T-9** `[P]` — `src/lib/llm/resolver.ts`: rozszerz union `ProviderKind` o
+- [x] **T-9** `[P]` — `src/lib/llm/resolver.ts`: rozszerz union `ProviderKind` o
   `"elevenlabs" | "google_tts" | "azure_tts"`; w `resolveLlmChain` **pomiń** dostawców tylko-TTS dla
   operacji `op !== "speech"` (pierwsza z dwóch barier chroniących `chatComplete`).
   **Gotowe, gdy:** `resolveLlmChain("reasoning")` nie zwraca dostawcy o `kind` tylko-TTS, nawet gdy

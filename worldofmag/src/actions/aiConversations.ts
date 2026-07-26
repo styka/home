@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
 import type { Prisma } from "@prisma/client";
-import { MESSAGE_WINDOW, boundMessageData } from "@/lib/ai/conversationLimits";
+import { MESSAGE_WINDOW, DRAFT_MAX_CHARS, boundMessageData } from "@/lib/ai/conversationLimits";
 
 // Pamięć rozmów asystenta AID ("magiczna ikona"). Wszystko per-user (ownerId === userId);
 // rozmowy zespołowe nie istnieją — to prywatny asystent użytkownika.
@@ -39,13 +39,14 @@ export async function listAiConversations(): Promise<ConversationMeta[]> {
 /** Pełna rozmowa z wiadomościami (po weryfikacji własności). */
 export async function getAiConversation(
   id: string
-): Promise<{ id: string; title: string; messages: StoredMessage[] } | null> {
+): Promise<{ id: string; title: string; draft: string | null; messages: StoredMessage[] } | null> {
   const user = await requireAuth();
   const convo = await prisma.aiConversation.findFirst({
     where: { id, userId: user.id },
     select: {
       id: true,
       title: true,
+      draft: true,
       messages: {
         // Z-215: ładuj tylko najnowsze MESSAGE_WINDOW (zejście od najnowszych),
         // potem odwróć do porządku chronologicznego do wyświetlenia.
@@ -57,7 +58,7 @@ export async function getAiConversation(
   });
   if (!convo) return null;
   const messages = (convo.messages as StoredMessage[]).slice().reverse();
-  return { id: convo.id, title: convo.title, messages };
+  return { id: convo.id, title: convo.title, draft: convo.draft, messages };
 }
 
 function deriveTitle(firstText: string): string {
@@ -118,5 +119,23 @@ export async function renameAiConversation(id: string, title: string): Promise<v
 export async function deleteAiConversation(id: string): Promise<void> {
   const user = await requireAuth();
   await prisma.aiConversation.deleteMany({ where: { id, userId: user.id } });
+  revalidatePath("/");
+}
+
+/**
+ * 032: zapisuje BRUDNOPIS — niewysłany tekst pola wiadomości — przy rozmowie. Dzięki temu treść
+ * wraca po powrocie do rozmowy, także na innym urządzeniu (wybór właściciela: brudnopis „na koncie",
+ * nie w pamięci przeglądarki).
+ *
+ * `updateMany` z `userId` w `where` jest tu celowe: cudza rozmowa daje 0 zmienionych wierszy i
+ * milczenie, zamiast błędu potwierdzającego, że taka rozmowa istnieje.
+ */
+export async function saveConversationDraft(id: string, draft: string): Promise<void> {
+  const user = await requireAuth();
+  const value = draft.slice(0, DRAFT_MAX_CHARS);
+  await prisma.aiConversation.updateMany({
+    where: { id, userId: user.id },
+    data: { draft: value || null },
+  });
   revalidatePath("/");
 }

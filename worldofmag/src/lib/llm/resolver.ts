@@ -6,7 +6,21 @@ import {
   type OperationType,
 } from "./operationTypes";
 
-export type ProviderKind = "openai_compat" | "anthropic";
+/**
+ * Rodzaje dostawców. `openai_compat` i `anthropic` obsługują CZAT (i syntezę mowy w przypadku
+ * dostawców zgodnych z OpenAI); trzy pozostałe to dostawcy **wyłącznie syntezy mowy** — mają własny
+ * format żądania i nie odpowiedzą na prompt czatowy.
+ *
+ * Zgodnie z C-12 to zwykły `String` w bazie + zawężający union tutaj — żadnego enuma Prisma.
+ */
+export type ProviderKind = "openai_compat" | "anthropic" | "elevenlabs" | "google_tts" | "azure_tts";
+
+/** Dostawcy obsługujący WYŁĄCZNIE syntezę mowy — nigdy nie wolno im trafić do wywołania czatu. */
+export const SPEECH_ONLY_PROVIDER_KINDS: readonly ProviderKind[] = ["elevenlabs", "google_tts", "azure_tts"];
+
+export function isSpeechOnlyKind(kind: string): boolean {
+  return (SPEECH_ONLY_PROVIDER_KINDS as readonly string[]).includes(kind);
+}
 
 export interface ResolvedLlm {
   kind: ProviderKind;
@@ -46,14 +60,21 @@ export async function resolveLlmChain(op: OperationType): Promise<ResolvedLlm[]>
   });
   if (assignment && assignment.provider.enabled && assignment.provider.apiKey) {
     const p = assignment.provider;
-    add({
-      kind: (p.kind as ProviderKind) ?? "openai_compat",
-      baseUrl: p.baseUrl,
-      apiKey: decryptSecret(p.apiKey), // A2: klucz zaszyfrowany w spoczynku
-      model: assignment.model,
-      temperature: assignment.temperature,
-      maxTokens: assignment.maxTokens,
-    });
+    // 032: dostawca WYŁĄCZNIE syntezy mowy nie może obsłużyć operacji czatowej — `chatComplete`
+    // rozgałęzia się tylko na „anthropic vs reszta", więc bez tego filtra wysłałby prompt na
+    // endpoint TTS. To druga bariera obok walidacji w `setAssignment` (pas i szelki).
+    if (op !== "speech" && isSpeechOnlyKind(p.kind)) {
+      console.warn(`[llm] ${op}: pomijam dostawcę ${p.label} — obsługuje wyłącznie syntezę mowy`);
+    } else {
+      add({
+        kind: (p.kind as ProviderKind) ?? "openai_compat",
+        baseUrl: p.baseUrl,
+        apiKey: decryptSecret(p.apiKey), // A2: klucz zaszyfrowany w spoczynku
+        model: assignment.model,
+        temperature: assignment.temperature,
+        maxTokens: assignment.maxTokens,
+      });
+    }
   }
 
   // 2. Fallback: stary, pojedynczy klucz Groq + domyślny model dla typu operacji.

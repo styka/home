@@ -123,6 +123,11 @@
     "reason": "internal",
     "access": "self"
   },
+  "aiConversations:saveConversationDraft": {
+    "status": "excluded",
+    "reason": "internal",
+    "access": "self"
+  },
   "assistantPrefs:getAssistantPrefs": {
     "kind": "read",
     "status": "excluded",
