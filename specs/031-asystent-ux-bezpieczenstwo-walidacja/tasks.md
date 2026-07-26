@@ -155,22 +155,22 @@
 
 ## Faza 7 — Bramka kontroli dostępu i audyt
 
-- [ ] **T-27** — **Rozszerzenie manifestu o `access`.** Pole `access` (`owner|self|admin|open|internal`)
+- [x] **T-27** — **Rozszerzenie manifestu o `access`.** Pole `access` (`owner|self|admin|open|internal`)
   w `src/lib/ai/action-coverage.json`; `open` wymaga `accessReason`. Uzupełnienie wpisów dla nowych
   akcji z T-7/T-8.
   *Gotowe, gdy:* manifest zawiera `access` dla każdego wpisu.
 
-- [ ] **T-28** — **Bramka `check:ai-coverage` + heurystyka guardu.** Skrypt wymaga `access`,
+- [x] **T-28** — **Bramka `check:ai-coverage` + heurystyka guardu.** Skrypt wymaga `access`,
   sprawdza obecność wywołania guardu w ciele akcji (biała lista helperów), `--report` generuje
   `docs/ai/kontrola-dostepu.md`; alias `check:access` w `package.json`.
   *Gotowe, gdy:* akcja testowa bez `access` wywala build, a raport się generuje (AC-28).
 
-- [ ] **T-29** — **Audyt akcji: moduły danych osobistych** (zakupy, zadania, notatki, kuchnia,
+- [x] **T-29** — **Audyt akcji: moduły danych osobistych** (zakupy, zadania, notatki, kuchnia,
   zwierzęta, zdrowie, nawyki). Nadanie `access`, weryfikacja faktycznego guardu, poprawki tam, gdzie
   sprawdzenia brakuje.
   *Gotowe, gdy:* brak pozycji „brak guardu" w raporcie dla tych modułów.
 
-- [ ] **T-30** — **Audyt akcji: pozostałe moduły i systemowe** (portfel, flota, magazynowanie,
+- [x] **T-30** — **Audyt akcji: pozostałe moduły i systemowe** (portfel, flota, magazynowanie,
   warsztaty, języki, wiadomości, pogoda, kontakty, usługi, raporty, teams, trash, drive, admin).
   *Gotowe, gdy:* raport `docs/ai/kontrola-dostepu.md` bez pozycji „brak guardu" (AC-29).
 

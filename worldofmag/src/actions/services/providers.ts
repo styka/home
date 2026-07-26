@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { notifyUser } from "@/actions/notifications";
+import { notifyUser } from "@/lib/notify";
 import { uniqueProviderSlug, requireOwnProvider } from "@/lib/services/helpers";
 import type { ServiceCategoryDTO } from "@/lib/services";
 

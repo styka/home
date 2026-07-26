@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { notifyUser } from "@/actions/notifications";
+import { notifyUser } from "@/lib/notify";
 import { loadRequestAccess } from "@/lib/services/access";
 import type { ServiceDisputeDTO, DisputeStatus, ModerationDisputeDTO } from "@/lib/services";
 

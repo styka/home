@@ -6,6 +6,9 @@ import { requireAuth } from "@/lib/server-utils";
 import type { Tag } from "@/types";
 
 export async function getTags(): Promise<Tag[]> {
+  // 031: `Tag` to wspólny słownik etykiet (bez właściciela — jak kategorie systemowe).
+  // Odczyt wymaga zalogowania (C-22).
+  await requireAuth();
   return prisma.tag.findMany({ orderBy: { name: "asc" } });
 }
 

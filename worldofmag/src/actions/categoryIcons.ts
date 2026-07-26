@@ -229,7 +229,16 @@ export async function assignIconToCategory(
 }
 
 /** Moves all icon variants for a category to __library__ (called before category deletion). */
+/**
+ * 031 (audyt kontroli dostępu): funkcja przyjmuje `userId`, ale plik ma `"use server"`, więc była
+ * wystawiona jako zdalny endpoint — dowolny użytkownik mógł podać CUDZE id i „osierocić" jego
+ * ikony. Wszyscy realni wołający przekazują id z sesji, więc wymuszamy to twardo: id musi zgadzać
+ * się z zalogowanym użytkownikiem.
+ */
 export async function orphanCategoryIcons(categoryName: string, userId: string): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  if (session.user.id !== userId) throw new Error("Access denied");
   await prisma.categoryIconVariant.updateMany({
     where: { userId, categoryName },
     data: { categoryName: "__library__", isActive: false },
