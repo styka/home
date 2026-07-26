@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getUserTeamIds } from "@/lib/server-utils";
+import { matchNamedRef, unresolvedRefMessage, type NamedCandidate, type RefResolution } from "@/lib/ai/refResolve";
 import { getCalendarEvents } from "@/actions/calendar";
 import { getBudgetsWithSpending, getFinanceGoals } from "@/actions/portfelBudgets";
 import { getTrash } from "@/actions/trash";
@@ -245,37 +246,59 @@ async function accessibleProjectIds(userId: string): Promise<string[]> {
 }
 
 /**
- * 025-assistant-chat-reliability-ux: agent często przekazuje NAZWĘ projektu ("LZ")
- * tam, gdzie read-toole oczekiwały identyfikatora — filtr po surowej nazwie zwracał
- * pustą listę i asystent twierdził „nie ma zadań", mimo że były. Rozwiązujemy `ref`
- * (id ALBO nazwa) na realne id projektu dostępnego dla użytkownika (C-21):
- *  - `ref` == dostępne id → to id (kompatybilność wstecz),
- *  - inaczej dopasowanie po nazwie bez rozróżniania wielkości liter: najpierw dokładne,
- *    potem JEDNOZNACZNE częściowe,
- *  - brak dopasowania LUB wiele kandydatów → `{ unresolved, available }` (wołający
- *    zgłasza to agentowi, który dopytuje/clarify zamiast cicho zwracać pustkę).
+ * 032: rozwiązuje referencję albo RZUCA błędem, który mówi agentowi, co się stało. Kluczowe, że
+ * rozróżniamy „nie znalazłem” od „pasuje kilka” — na tym stoi zdolność agenta do dopytania zamiast
+ * powtarzania tego samego odczytu (albo, co gorsza, twierdzenia „nie ma nic”).
+ *
+ * Objęte tym mechanizmem toole (audyt argumentów kończących się na `Id`): `list_tasks` (projectId,
+ * przez `resolveProjectRef`), `get_task` (taskId), `list_items` (listId), `get_note` (noteId),
+ * `get_recipe` (recipeId). Pozostałe argumenty „identyfikatorowe” w read-toolach albo już są nazwami
+ * (`args.warehouse`, `args.petName`, `args.deckName` — dopasowanie po `contains`), albo nie istnieją.
+ *
+ * `label` to polska nazwa rodzaju zasobu w dopełniaczu, np. „listy zakupów”, „notatki”.
+ */
+async function resolveRefOrThrow(
+  ref: string,
+  label: string,
+  load: () => Promise<NamedCandidate[]>
+): Promise<string> {
+  const candidates = await load();
+  const res = matchNamedRef(ref, candidates);
+  if ("id" in res) return res.id;
+  throw new Error(unresolvedRefMessage(res, label));
+}
+
+/**
+ * 032: wariant dla getterów pojedynczego rekordu. Najpierw TANI strzał po identyfikatorze — dopiero
+ * gdy nie trafi, ładujemy listę nazw i rozwiązujemy referencję. Dzięki temu typowy przypadek (agent
+ * ma prawdziwe id z wcześniejszego odczytu) nie kosztuje dodatkowego zapytania po całą listę.
+ */
+async function resolveIdOrName(
+  ref: string,
+  label: string,
+  findById: (id: string) => Promise<string | null>,
+  load: () => Promise<NamedCandidate[]>
+): Promise<string> {
+  const direct = await findById(ref);
+  if (direct) return direct;
+  return resolveRefOrThrow(ref, label, load);
+}
+
+/**
+ * Rozwiązanie referencji projektu zadań (025): agent często przekazuje NAZWĘ projektu („LZ") tam,
+ * gdzie read-tool oczekuje identyfikatora. Zwracany kształt (`{ id }` albo `{ unresolved, matches,
+ * available }`) zostaje, żeby komunikat błędu dla zadań był ten sam co przed 032 — z dodatkiem
+ * informacji o wielu dopasowaniach. Samo dopasowanie robi wspólny `matchNamedRef`.
  */
 async function resolveProjectRef(
   userId: string,
   ref: string
-): Promise<{ id: string } | { unresolved: string; available: string[] }> {
+): Promise<RefResolution> {
   const projects = await prisma.taskProject.findMany({
     where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
     select: { id: true, name: true },
   });
-  const needle = ref.trim().toLowerCase();
-  // 1) dokładne id.
-  const byId = projects.find((p) => p.id === ref);
-  if (byId) return { id: byId.id };
-  // 2) dokładna nazwa (case-insensitive).
-  const exact = projects.filter((p) => p.name.trim().toLowerCase() === needle);
-  if (exact.length === 1) return { id: exact[0].id };
-  // 3) jednoznaczne częściowe dopasowanie.
-  if (exact.length === 0) {
-    const partial = projects.filter((p) => p.name.toLowerCase().includes(needle));
-    if (partial.length === 1) return { id: partial[0].id };
-  }
-  return { unresolved: ref, available: projects.map((p) => p.name) };
+  return matchNamedRef(ref, projects);
 }
 
 async function accessibleListWhere(userId: string) {
@@ -347,9 +370,14 @@ export async function runReadTool(
       if (projectId) {
         const resolved = await resolveProjectRef(userId, projectId);
         if ("id" in resolved) where.projectId = resolved.id;
-        else {
+        else if (resolved.matches.length > 1) {
+          // 032: „pasuje kilka” to inny problem niż „nie ma” — agent ma dopytać, a nie zgadywać.
           throw new Error(
-            `Nie znaleziono projektu o nazwie „${projectId}". Dostępne projekty: ${resolved.available.join(", ") || "(brak)"}. Doprecyzuj nazwę albo użyj list_projects.`
+            `Nazwa „${projectId}” pasuje do kilku projektów: ${resolved.matches.join(", ")}. Doprecyzuj, o który chodzi.`
+          );
+        } else {
+          throw new Error(
+            `Nie znaleziono projektu o nazwie „${projectId}”. Dostępne projekty: ${resolved.available.join(", ") || "(brak)"}. Doprecyzuj nazwę albo użyj list_projects.`
           );
         }
       }
@@ -411,9 +439,21 @@ export async function runReadTool(
           { assigneeId: userId },
         ],
       };
+      // 032: `taskId` bywa TYTUŁEM zadania, nie identyfikatorem — rozwiąż, zamiast cicho zwrócić null.
+      const resolvedTaskId = taskId
+        ? await resolveIdOrName(
+            taskId,
+            "zadania",
+            async (id) => (await prisma.task.findFirst({ where: { id, ...access }, select: { id: true } }))?.id ?? null,
+            async () =>
+              (await prisma.task.findMany({ where: access, select: { id: true, title: true }, take: HARD_MAX })).map(
+                (t) => ({ id: t.id, name: t.title })
+              )
+          )
+        : undefined;
       const task = await prisma.task.findFirst({
-        where: taskId
-          ? { id: taskId, ...access }
+        where: resolvedTaskId
+          ? { id: resolvedTaskId, ...access }
           : { ...access, ...(search ? { title: { contains: search, mode: "insensitive" } } : {}) },
         select: {
           id: true, title: true, description: true, status: true,
@@ -459,11 +499,26 @@ export async function runReadTool(
       const status = asStr(args.status);
       const search = asStr(args.search);
 
+      // 032: liczymy dostęp RAZ i używamy w obu zapytaniach (resolver + główne) — `accessibleListWhere`
+      // woła `getUserTeamIds`, więc dwa razy to dwa zapytania po to samo.
+      const listAccess = await accessibleListWhere(userId);
+      // 032: `listId` bywa NAZWĄ listy („moje”), nie identyfikatorem — wcześniej `where: { id: "moje" }`
+      // dawało pustą listę i asystent twierdził, że nic tam nie ma. Rozwiązujemy referencję.
+      const resolvedListId = listId
+        ? await resolveRefOrThrow(listId, "listy zakupów", async () =>
+            prisma.shoppingList.findMany({
+              where: listAccess,
+              select: { id: true, name: true },
+              take: HARD_MAX,
+            })
+          )
+        : undefined;
+
       // Zbiór list dostępnych użytkownikowi (zawęż do wskazanej, jeśli podano)
       const lists = await prisma.shoppingList.findMany({
         where: {
-          ...(await accessibleListWhere(userId)),
-          ...(listId ? { id: listId } : {}),
+          ...listAccess,
+          ...(resolvedListId ? { id: resolvedListId } : {}),
           ...(listName ? { name: { contains: listName, mode: "insensitive" } } : {}),
         },
         select: { id: true, name: true },
@@ -536,9 +591,21 @@ export async function runReadTool(
         { ownerId: userId },
         ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
       ];
+      // 032: `noteId` bywa TYTUŁEM notatki — rozwiąż, zamiast cicho zwrócić null.
+      const resolvedNoteId = noteId
+        ? await resolveIdOrName(
+            noteId,
+            "notatki",
+            async (id) => (await prisma.note.findFirst({ where: { id, OR: ownerOr }, select: { id: true } }))?.id ?? null,
+            async () =>
+              prisma.note.findMany({ where: { OR: ownerOr }, select: { id: true, title: true }, take: HARD_MAX }).then((rows) =>
+                rows.map((n) => ({ id: n.id, name: n.title }))
+              )
+          )
+        : undefined;
       const note = await prisma.note.findFirst({
-        where: noteId
-          ? { id: noteId, OR: ownerOr }
+        where: resolvedNoteId
+          ? { id: resolvedNoteId, OR: ownerOr }
           : {
               OR: ownerOr,
               ...(search
@@ -917,21 +984,39 @@ export async function runReadTool(
     case "get_recipe": {
       const idOrSlug = asStr(args.recipeId);
       const search = asStr(args.search);
-      let key = idOrSlug;
-      if (!key && search) {
+      const recipeOwnerOr = async () => {
         const teamIds = await getUserTeamIds(userId);
-        const r = await prisma.recipe.findFirst({
-          where: {
-            OR: [{ ownerId: userId }, ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : [])],
-            title: { contains: search, mode: "insensitive" },
+        return [{ ownerId: userId }, ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : [])];
+      };
+      let key = idOrSlug;
+      // 032: `recipeId` bywa TYTUŁEM przepisu — rozwiąż (id/slug → nazwa), zamiast zwrócić null.
+      // Wynik pierwszego trafienia zapamiętujemy, bo `getRecipe` jest pełnym odczytem przepisu
+      // (składniki, kroki, obrazki) — wołanie go dwa razy dla tego samego klucza to czysty narzut.
+      let resolved: Awaited<ReturnType<typeof getRecipe>> | null = null;
+      if (key) {
+        key = await resolveIdOrName(
+          key,
+          "przepisu",
+          async (ref) => {
+            resolved = await getRecipe(ref); // obsługuje zarówno id, jak i slug
+            return resolved ? ref : null;
           },
+          async () =>
+            prisma.recipe
+              .findMany({ where: { OR: await recipeOwnerOr() }, select: { id: true, title: true }, take: HARD_MAX })
+              .then((rows) => rows.map((r) => ({ id: r.id, name: r.title })))
+        );
+      }
+      if (!key && search) {
+        const r = await prisma.recipe.findFirst({
+          where: { OR: await recipeOwnerOr(), title: { contains: search, mode: "insensitive" } },
           select: { id: true },
           orderBy: { updatedAt: "desc" },
         });
         key = r?.id;
       }
       if (!key) return null;
-      const recipe = await getRecipe(key);
+      const recipe = resolved ?? (await getRecipe(key));
       if (!recipe) return null;
       return recipe;
     }

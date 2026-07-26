@@ -4,6 +4,28 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-26 — Równoległa sesja zajęła ten sam numer speca i migracji
+**Problem:** Podczas pracy nad feature'em „effort/temperature" druga sesja zmergowała do `develop`
+inny feature też ponumerowany **032** (katalog TTS) razem z migracją **0210**. Moja gałąź miała
+`specs/032-llm-effort-temperature` i `prisma/migrations/0210_llm_effort`, więc po `git fetch`
+`git merge --ff-only` odbił się („Not possible to fast-forward"), a `check:migrations` wywaliłby
+build na duplikacie numeru.
+**Rozwiązanie:** Przed merge PRZENUMEROWAŁEM swoje artefakty na wolne numery (spec 032 → 033,
+migracja `0210_llm_effort` → `0211_llm_effort`) — bezpiecznie, bo moja migracja nie była nigdzie
+zaaplikowana poza lokalną bazą deweloperską (C-11 zabrania renamować tylko migracje JUŻ
+zaaplikowane). Potem zwykły `git merge origin/develop` i ręczne rozwiązanie 6 konfliktów: w
+`resolver.ts`/`llmConfig.ts` obie zmiany są komplementarne (ich filtr dostawców tylko-TTS + moje
+`effort`), w `agent/route.ts` trzeba było ZŁOŻYĆ dwa nowe parametry tych samych funkcji
+(`isFinalRun` ich, `boostEffort` mój), w `doświadczenia.md` zachować OBA zestawy wpisów.
+**Lekcja:** Numer migracji i numer speca to zasoby GLOBALNE — przy pracy równoległej sprawdzaj
+`origin/develop` **przed** pushem, nie tylko na starcie. Gdy trzeba przenumerować, zrób to PRZED
+merge (inaczej rozwiązujesz konflikty dwa razy). Przy konflikcie w pliku, gdzie obie strony dodały
+parametr do tej samej funkcji, nie wybieraj „naszej/ich" wersji — złóż sygnaturę z obu i sprawdź
+KAŻDE wywołanie. I pamiętaj: `git diff origin/develop HEAD` w trakcie nierozwiązanego merge porównuje
+do commitu PRZED merge, więc wygląda, jakby czyjaś praca ginęła — patrz na stan roboczy
+(`git diff origin/develop -- plik`).
+
+
 ## 2026-07-26 — „Effort" nie jest jednym parametrem: wspólna skala zamiast surowej wartości
 **Problem:** Zgłoszenie brzmiało „dodaj możliwość ustawienia effort", ale u każdego dostawcy to co
 innego: Anthropic ma rozszerzone myślenie z budżetem tokenów (`thinking.budget_tokens`), modele
@@ -40,6 +62,100 @@ wcześniej w tej samej sesji przy testach kontraktu akcji.
 **Lekcja:** W plikach TS trzymaj polskie cudzysłowy PARAMI („ z ”). Gdy komunikat kompilatora wskazuje
 nieoczekiwane słowo w środku zdania po polsku — szukaj cudzysłowu zamykającego, nie składni.
 
+## 2026-07-26 — `kind` dostawcy to nie jest jego tożsamość: zapis lektora wyłączał cały asystent
+**Problem:** Katalog TTS opisuje pięciu dostawców, ale **dwaj** (OpenAI i Groq PlayAI) mają ten sam
+`LlmProvider.kind = "openai_compat"`. Kod dopasowywał pozycję katalogu po samym `kind`, więc
+`applySpeechProvider` przy zapisie lektora OpenAI robiło `findFirst({ where: { kind } })` — i trafiało
+w **domyślny wiersz Groqa**, tego samego, który obsługuje `dispatch`/`reasoning`/`vision`/`generation`.
+Następnie nadpisywało mu `baseUrl` na `api.openai.com`, zostawiając klucz Groqa. Skutek: administrator
+włącza lektora, a **cały asystent zaczyna zwracać 401** — bez żadnego związku widocznego dla niego.
+Ten sam błąd sprawiał, że panel pokazywał przy OpenAI „klucz zapisany" (bo widział klucz Groqa, więc
+pole klucza się nie renderowało) oraz że konfiguracja Groq PlayAI oferowała użytkownikom głosy OpenAI.
+Trzecia odsłona wyszła dopiero przy sprzątaniu martwego kodu: `parseServerVoiceValue` walidował głos
+przeciw stałej liście OpenAI, więc wybór poprawnego głosu Azure zwracał `null` i UI brało go za głos
+przeglądarki — lektor serwerowy nigdy się nie włączał.
+**Rozwiązanie:** Tożsamością pozycji katalogu jest **`kind` + `baseUrl`**. Wspólny
+`providerMatchesSpec` (w `lib/tts/catalog.ts`) obsługuje ODCZYT i ZAPIS, więc panel nie może pokazać
+czegoś innego, niż zrobi przycisk. Fallback po samym rodzaju został, ale **tylko dla rodzajów
+jednoznacznych** (`isKindUnique` — Azure/Google/ElevenLabs), gdzie ratuje zmianę regionu w adresie.
+Walidacja głosu przeniesiona na serwer (`updateAssistantPrefs`, `synthesizeSpeech`), bo dopuszczalna
+lista zależy od konfiguracji administratora, a nie od stałej w kodzie.
+**Lekcja:** Zanim użyjesz pola jako klucza wyszukiwania **przed zapisem**, sprawdź, czy jest unikalne w
+zbiorze, po którym szukasz — „rodzaj/typ" prawie nigdy nie jest. Szczególnie groźne jest to przy
+`findFirst` + `update`, bo cicho modyfikuje **cudzy** rekord. Weryfikacja tego nie złapała, bo testowała
+na dostawcy o rodzaju unikalnym (Azure) — przy wspólnym zasobie testuj zawsze przypadek **kolizji**,
+a nie ten wygodny.
+
+## 2026-07-26 — „Zamknij i zacznij nowy czat" bez przerwania żądania = osierocona odpowiedź
+**Problem:** Zmiana cyklu życia rozmowy asystenta (zamknięcie kończy rozmowę, ponowne otwarcie daje
+nowy wątek) wprowadziła regresję: `handleClose` czyścił `turns` i `conversationId`, ale NIE przerywał
+trwającego żądania do agenta. `AICommandSheet` siedzi w `AppShell` i nigdy się nie odmontowuje, więc
+sprzątanie z `useEffect(() => () => abortRef.current?.abort(), [])` nigdy nie odpalało. Efekt:
+zamknięcie asystenta w trakcie „myślę" → odpowiedź przychodziła po chwili i dopisywała się do świeżo
+wyczyszczonego wątku, przy `convoIdRef === null`, czyli BEZ zapisu do historii. Po ponownym otwarciu
+użytkownik widział samotną wypowiedź asystenta w rzekomo nowej rozmowie, której nie było w historii.
+**Rozwiązanie:** `handleClose` przerywa generowanie (`abortRef.current?.abort()`, wyzerowanie refa,
+`setBusy(false)`) przed wyczyszczeniem wątku — bez powrotu do nasłuchu głosowego, bo asystent się
+zamyka. Klient już wcześniej cicho ignorował `AbortError`, więc nie pojawia się żadna tura błędu.
+**Lekcja:** Jeśli komponent żyje przez cały czas działania aplikacji (jest w `AppShell`), sprzątanie
+w `useEffect` z pustą tablicą zależności to martwy kod — nigdy się nie wykona. Każde „zamknij/zresetuj"
+w takim komponencie musi jawnie anulować to, co jest w locie. Przy zmianie cyklu życia widoku
+sprawdzaj wszystkie asynchroniczne operacje, które mogą wrócić PO resecie stanu.
+
+## 2026-07-26 — Ucięta odpowiedź LLM czytana jako „zły format" → pętla naprawcza za 0,81 zł
+**Problem:** Użytkownik poprosił asystenta: „znajdź najważniejsze zadanie, opisz dlaczego jest ważne,
+ale zapisz to od tyłu". Dostał „Nie udało się dokończyć w limicie kroków". W logach: 6 wywołań
+`claude-sonnet-5`, każde z `completion = 1200` tokenów (czyli dokładnie `AGENT_MAX_TOKENS`), prompt
+rosnący za każdym razem o ~38 tokenów, koszt ~0,81 zł, zero wyniku. Pierwsza (błędna) hipoteza była
+taka, że agent nie umie rozwiązać nazwy projektu na identyfikator — ale `resolveProjectRef` istnieje
+od paczki 025 i w tym przebiegu ZADZIAŁAŁO (dane wróciły). Prawdziwa przyczyna: odpowiedź modelu była
+**ucinana na limicie tokenów**, więc przestawała być poprawnym JSON-em protokołu. Pętla widziała tylko
+„nieprawidłowy JSON" i wysyłała komunikat korekcyjny „zwróć poprawny JSON" — model znów pisał długo,
+znów go ucięło, i tak w kółko aż do wyczerpania limitu kroków.
+**Rozwiązanie:** `chatComplete` zwraca teraz `truncated` (z `finish_reason === "length"` dla API zgodnych
+z OpenAI i `stop_reason === "max_tokens"` dla Anthropic — `src/lib/llm/truncation.ts`). Pętla agenta
+przy ucięciu mówi modelowi PRAWDĘ („odpowiedź została ucięta, odpowiedz znacznie krócej") i daje na to
+**jedną** próbę; przy drugim ucięciu oddaje treść częściową z adnotacją. Dodatkowo licznik
+`unproductiveIterations` przerywa przebieg po dwóch iteracjach bez nowego wyniku, a niedokończony
+przebieg zamyka się podsumowaniem „co ustaliłem / co mnie zablokowało / jak dopytać" zamiast zdania o
+limicie kroków. `AGENT_MAX_TOKENS` zostało bez zmian — leczymy przyczynę, nie objaw.
+**Lekcja:** „Model zwrócił nieprawidłowy JSON" i „modelowi zabrakło miejsca na odpowiedź" to DWIE różne
+awarie i wymagają dwóch różnych reakcji. Zanim wpiszesz retry na parsowanie odpowiedzi LLM, sprawdź
+`finish_reason`/`stop_reason` — bez tego każdy retry generuje tę samą, znów uciętą odpowiedź i płacisz
+za pętlę. Sygnał diagnostyczny: `completion` w logu równe DOKŁADNIE limitowi `max_tokens` w kilku
+wywołaniach z rzędu oraz prompt rosnący o stałą, małą liczbę tokenów (to komunikat korekcyjny).
+
+## 2026-07-26 — Argument `*Id` w read-toolu asystenta przyjmujący nazwę = cicha pustka
+**Problem:** Agent naturalnie mówi nazwami („na liście moje", „w projekcie Omnia") i wstawia je w
+argumenty typu `listId`/`noteId`/`taskId`/`recipeId`. Zapytanie `where: { id: "moje" }` nie pasuje do
+niczego, więc narzędzie zwracało PUSTĄ listę albo `null` — a asystent na tej podstawie twierdził, że
+„nic tam nie ma", albo próbował jeszcze raz. Rozwiązywanie nazw istniało tylko dla `list_tasks`.
+**Rozwiązanie:** Wspólny rdzeń `matchNamedRef` w `src/lib/ai/refResolve.ts` (id → nazwa dokładna →
+jednoznaczna nazwa częściowa → błąd), wpięty w `get_task`, `list_items`, `get_note`, `get_recipe`.
+Kluczowe: błąd **rozróżnia** „nie znalazłem" (z listą dostępnych nazw) od „pasuje kilka" (z listą
+trafień) — dopiero wtedy agent dopytuje zamiast zgadywać. Przy okazji wyszła luka w dotychczasowym
+`resolveProjectRef`: pusta referencja przechodziła przez `includes("")`, więc przy jednym kandydacie
+rozwiązywała się „na oślep".
+**Lekcja:** Read-tool asystenta nigdy nie powinien cicho zwracać pustki, gdy dostał argument, którego
+nie umiał zinterpretować — cisza jest gorsza od błędu, bo zamienia się w pewne siebie kłamstwo
+w odpowiedzi. Argument nazwany `*Id` w narzędziu LLM traktuj jako „id ALBO nazwa", i to najpierw
+jako id (żeby prawidłowe id nie poszło ścieżką dopasowania po nazwie).
+
+## 2026-07-26 — Mobilna klawiatura: pierwsze dotknięcie ikony pod polem tylko ją zwijało
+**Problem:** W asystencie na telefonie, przy otwartej klawiaturze, dotknięcie mikrofonu/aparatu/wyboru
+trybu pod polem wiadomości nie wywoływało akcji — najpierw zwijało klawiaturę (bo przycisk odbierał
+fokus polu), układ podskakiwał i dotknięcie nie trafiało już w przycisk. Akcję trzeba było wywołać
+dwa razy.
+**Rozwiązanie:** `onPointerDown={(e) => e.preventDefault()}` na przyciskach dolnego wiersza kompozytora
+— blokuje domyślne przeniesienie fokusu, więc klawiatura zostaje otwarta, a `onClick` odpala się
+normalnie (desktop bez zmian). Wyjątki świadome: przycisk wysyłania dostaje to samo plus jawne
+`blur()` po wysłaniu (jedno dotknięcie = wyślij + zamknij klawiaturę), a rozmowa głosowa zostaje bez
+`preventDefault`, bo tam użytkownik przechodzi z pisania na mówienie.
+**Lekcja:** Na mobile „przycisk obok pola tekstowego" to zawsze dwa zdarzenia: utrata fokusu i klik.
+Jeśli akcja ma zadziałać przy pierwszym dotknięciu, blokuj utratę fokusu na `pointerdown` — nie
+próbuj tego naprawiać `setTimeout`-em ani ponownym `focus()` po kliknięciu.
+
+---
 
 ## 2026-07-25 — `tsc --noEmit` NIE łapie reguły „use server": eksport nie-funkcji wywala build
 **Problem:** W `src/actions/feedback.ts` i `assistantPrefs.ts` wystawiłem `export const

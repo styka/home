@@ -9,6 +9,12 @@ export const MESSAGE_WINDOW = 300;
 export const MAX_DATA_BYTES = 128 * 1024;
 
 /**
+ * 032: limit długości brudnopisu (niewysłanego tekstu pola wiadomości) zapisywanego przy rozmowie.
+ * Z zapasem powyżej realnego polecenia, ale bez ryzyka, że ktoś wklei do pola książkę.
+ */
+export const DRAFT_MAX_CHARS = 4000;
+
+/**
  * Ogranicza rozmiar `AiMessage.data`. Zwraca:
  *  - `undefined` dla braku/nieserializowalnych danych (np. BigInt) — nie zapisujemy,
  *  - oryginał, gdy mieści się w limicie,

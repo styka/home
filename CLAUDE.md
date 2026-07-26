@@ -288,6 +288,16 @@ proactive **follow-up suggestion chips**; the agent can also propose a **report*
 (full markdown with summary + facts) saved to `/reports` via `createUserReport`
 (per-user, no admin needed). Chat UX: live "thinking", Stop/Copy/Regenerate/Retry,
 Esc-to-close, autofocus, a11y (`role=dialog`/`aria-live`).
+**Conversation lifecycle**: closing the sheet ends a conversation that has at least one
+turn — reopening starts a fresh thread and the previous one is one tap away via a
+"return to last conversation" button in the header (labelled with its first message);
+an empty conversation is reused instead of littering history. Unsent composer text is
+kept as a **draft on the conversation** (`AiConversation.draft`, saved on a 2 s debounce
+plus explicitly on close/thread switch), so it comes back on any device. Expanded
+sections (settings, problem report) collapse on thread switch/close. **Mobile keyboard**:
+buttons under the composer use `onPointerDown` + `preventDefault` so the first tap fires
+the action without dismissing the keyboard; send is the exception (single tap sends and
+blurs). See `doświadczenia.md` for why.
 *(The old `interpret` route and the duplicate `AICommandSection` widget were
 removed; the assistant is agent + execute only.)*
 
@@ -378,7 +388,7 @@ ServicePayment, ServiceDispute                — Usługi marketplace (payments/
 ServiceStaff, ServiceFavorite, ServicePromoCode — Usługi marketplace (multi-worker firms; favorite providers; promo codes)
 QaEpic, QaUserStory, QaTestScenario           — QA module
 LlmProvider, LlmAssignment                    — LLM config (admin)
-AiConversation, AiMessage                     — AI assistant chat memory (per-user; message kind: text/plan/report/navigate/clarify/results)
+AiConversation, AiMessage                     — AI assistant chat memory (per-user; message kind: text/plan/report/navigate/clarify/results; `AiConversation.draft` = unsent composer text, per conversation, so it returns on any device)
 Config, UserActivity, Report                  — System
 ```
 
@@ -444,7 +454,20 @@ document, orderDraft, insights, search), `pets` (insights).
   (longer text: note rewrite, recipe/vocabulary generation) and **`speech`**
   (server-side text-to-speech for the assistant's reader — **no default model**, so an
   unassigned `speech` simply disables the feature and the client falls back to browser
-  voices; `src/lib/tts/{serverTts,serverVoices}.ts` + `/api/tts`).
+  voices; `src/lib/tts/{serverTts,serverVoices,catalog,adapters}.ts` + `/api/tts`).
+  **TTS provider catalog** (`src/lib/tts/catalog.ts`): a static dictionary of known speech
+  providers (OpenAI, Groq PlayAI, ElevenLabs, Google Cloud TTS, Azure Speech) with models,
+  voices, cost/free hints, whether an API key is needed and **how good their Polish is** — it
+  drives the dropdowns in `/admin/llm`, so the admin never types a model name from memory.
+  Per-provider request/response differences live in **one** `switch` in
+  `src/lib/tts/adapters.ts` (`buildSpeechRequest`/`parseSpeechResponse`; Google returns
+  base64 in JSON, Azure takes SSML). `LlmProvider.kind` therefore accepts `openai_compat |
+  anthropic | elevenlabs | google_tts | azure_tts` (still `String` + TS union — no Prisma
+  enum); the last three are **speech-only** and are blocked from non-`speech` operation types
+  in **both** `setAssignment` and `resolveLlmChain`, because `chatComplete` branches only on
+  `anthropic` vs the rest and would POST a chat prompt to a TTS endpoint. The admin's default
+  voice lives in `Config.speech_default_voice`; a user's saved voice that the configured
+  provider doesn't know degrades to that provider's default instead of erroring.
   Each assignment also carries **effort / temperature / max-tokens** (`LlmAssignment.effort` —
   `LlmEffort = none|low|medium|high`). Effort is **one shared descriptive scale** translated to the
   provider's own parameter in `src/lib/llm/effort.ts` (Anthropic → extended-thinking

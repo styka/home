@@ -913,6 +913,9 @@ model AiConversation {
   // Krótkie podsumowanie starszych tur — wysyłane do LLM zamiast pełnej historii
   // (higiena kontekstu w długich rozmowach).
   summary   String?
+  // 032: niewysłany tekst z pola wiadomości tej rozmowy (brudnopis). Trzymany na koncie, więc
+  // wraca też na innym urządzeniu. NULL/"" = brak brudnopisu.
+  draft     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
   user      User        @relation("AiConversations", fields: [userId], references: [id], onDelete: Cascade)
