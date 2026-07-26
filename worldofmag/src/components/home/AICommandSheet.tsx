@@ -1483,7 +1483,6 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                   placeholder={'Np. „Domyślnie dodawaj do listy Tygodniowe. Kwoty w PLN. Pisz zwięźle."'}
                   style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none", resize: "vertical" }}
                 />
-                <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>Zapisywane na Twoim koncie — widoczne na każdym urządzeniu. Zmiany zapisują się automatycznie.</p>
 
                 {/* 031: wybór głosu lektora — jedna lista: głosy SERWEROWE (jeśli administrator je
                     włączył; działają w każdej przeglądarce) + głosy systemu użytkownika. Lista
@@ -1733,7 +1732,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                           <div
                             role="menu"
                             style={{
-                              position: "absolute", bottom: "calc(100% + 6px)", left: 0, zIndex: 6,
+                              // 032: przycisk poziomu siedzi w PRAWEJ grupie akcji kompozytora, więc
+                              // menu musi być kotwiczone prawą krawędzią (rozwija się w stronę środka).
+                              // Przy `left: 0` szerokie menu wychodziło poza prawą krawędź telefonu.
+                              position: "absolute", bottom: "calc(100% + 6px)", right: 0, left: "auto", zIndex: 6,
                               minWidth: 240, maxWidth: "min(300px, calc(100vw - 40px))",
                               padding: 4, background: "var(--bg-elevated)", border: "1px solid var(--border)",
                               borderRadius: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.35)",

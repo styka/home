@@ -396,9 +396,12 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                         // znaczący czas — pokazujemy pełny picker (nie gubimy godziny).
                         const dateControl = spec.control === "date" || spec.control === "datetime";
                         return (
-                          <div key={key} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontSize: 11, color: "var(--text-muted)", width: 110, flexShrink: 0 }}>{spec.label}</span>
+                          <div key={key} style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                            {/* 032: wiersz musi się ZAWIJAĆ, a nie rozpychać karty — długa wartość
+                                (albo szeroka kontrolka na wąskim telefonie) wychodziła poza obszar
+                                panelu i wymuszała przewijanie w poziomie. */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
+                              <span style={{ fontSize: 11, color: "var(--text-muted)", width: 110, flexShrink: 0, overflowWrap: "anywhere" }}>{spec.label}</span>
                               {spec.control === "select" ? (
                                 <select
                                   value={value}
@@ -468,14 +471,17 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                         );
                       })}
                       {action.searchQuery !== undefined && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 11, color: "var(--accent-amber)", width: 110, flexShrink: 0 }}>Szukana nazwa</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
+                          <span style={{ fontSize: 11, color: "var(--accent-amber)", width: 110, flexShrink: 0, overflowWrap: "anywhere" }}>Szukana nazwa</span>
                           <input
                             value={editedSearchQuery[action.id] ?? ""}
                             onChange={(e) => setEditedSearchQuery((prev) => ({ ...prev, [action.id]: e.target.value }))}
                             style={{
-                              flex: 1, fontSize: 12, color: "var(--text-primary)",
-                              background: "var(--bg-surface)", border: "1px solid rgba(245,158,11,0.4)",
+                              // 032: `minWidth: 0` — bez tego input trzymał swoją naturalną szerokość
+                              // (domyślne `size`) i rozpychał wiersz poza obszar panelu na telefonie.
+                              // Kolor obwiedni ze zmiennej CSS (C-30) — hardcodowany hex łamał skórki.
+                              flex: 1, minWidth: 0, fontSize: 12, color: "var(--text-primary)",
+                              background: "var(--bg-surface)", border: "1px solid var(--accent-amber)",
                               borderRadius: 6, padding: "3px 8px", outline: "none",
                             }}
                           />

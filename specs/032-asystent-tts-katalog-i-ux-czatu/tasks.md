@@ -16,19 +16,19 @@
 
 ## Faza 0 — Drobne, samodzielne poprawki UI (bez zależności)
 
-- [ ] **T-1** `[P]` — Usuń z panelu ustawień asystenta akapit „Zapisywane na Twoim koncie — widoczne
+- [x] **T-1** `[P]` — Usuń z panelu ustawień asystenta akapit „Zapisywane na Twoim koncie — widoczne
   na każdym urządzeniu. Zmiany zapisują się automatycznie." (`AICommandSheet.tsx`, ~1486). Reszta
   panelu bez zmian.
   **Gotowe, gdy:** `grep -rn "Zapisywane na Twoim koncie" src/` nie ma trafień, a panel ustawień
   renderuje się bez luki w układzie. *(AC-18)*
 
-- [ ] **T-2** `[P]` — Napraw wychodzenie menu poziomu pracy poza ekran: w menu (`AICommandSheet.tsx`,
+- [x] **T-2** `[P]` — Napraw wychodzenie menu poziomu pracy poza ekran: w menu (`AICommandSheet.tsx`,
   ~1736) zamień `left: 0` na `right: 0` + `left: "auto"`. Zaudytuj pozostałe menu/rozwinięcia w
   kompozytorze tym samym kluczem (kotwica po tej stronie, po której jest przycisk).
   **Gotowe, gdy:** przy viewporcie 375 px całe menu (obie opcje + opisy) mieści się w obszarze ekranu,
   na desktopie bez regresji. *(AC-16, AC-17)*
 
-- [ ] **T-3** `[P]` — `ActionDrawer.tsx`: napraw przepełnienie wiersza parametru — `minWidth: 0` na
+- [x] **T-3** `[P]` — `ActionDrawer.tsx`: napraw przepełnienie wiersza parametru — `minWidth: 0` na
   kontenerze flex, `flexWrap: "wrap"` dla pary etykieta/wartość, `overflowWrap: "anywhere"` na
   wartościach. Przy okazji zamień hardcodowany `rgba(245,158,11,0.4)` na `var(--accent-amber)`
   (naruszenie C-30).
