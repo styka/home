@@ -16,36 +16,36 @@
 
 ## Faza 0 — Fundament danych
 
-- [ ] **T-1** — **Migracja `0210_llm_effort`.** Ręczny `migration.sql` wg planu §2.2: dwa
+- [x] **T-1** — **Migracja `0210_llm_effort`.** Ręczny `migration.sql` wg planu §2.2: dwa
   `ALTER TABLE … ADD COLUMN IF NOT EXISTS "effort" TEXT` (`LlmAssignment`, `AiCall`). Addytywna,
   nullable, bez backfillu.
   *Gotowe, gdy:* `npm run check:migrations` przechodzi i migracja aplikuje się na lokalnym Postgresie.
 
-- [ ] **T-2** — **`schema.prisma`.** Kolumny `effort String?` w `LlmAssignment` i `AiCall`, zgodne
+- [x] **T-2** — **`schema.prisma`.** Kolumny `effort String?` w `LlmAssignment` i `AiCall`, zgodne
   1:1 z DDL, z komentarzem wskazującym unię TS (C-12 — bez enuma Prisma).
   *Gotowe, gdy:* `npx prisma generate` czysto.
 
 ## Faza 1 — Rdzeń: skala wysiłku i tłumaczenie na dostawcę
 
-- [ ] **T-3** — **`src/lib/llm/effort.ts` — skala i pomocniki.** `LlmEffort`, `LLM_EFFORT_LEVELS`,
+- [x] **T-3** — **`src/lib/llm/effort.ts` — skala i pomocniki.** `LlmEffort`, `LLM_EFFORT_LEVELS`,
   `LLM_EFFORT_LABELS` (PL), `bumpEffort()` (o stopień, `high` → `high`), `parseEffort()` (walidacja
   wejścia z bazy/klienta).
   *Gotowe, gdy:* moduł kompiluje się, `bumpEffort` pokryty testem (AC-10).
 
-- [ ] **T-4** — **Tabela możliwości dostawców.** `effortSupported(kind, model)` (rodziny modeli wg
+- [x] **T-4** — **Tabela możliwości dostawców.** `effortSupported(kind, model)` (rodziny modeli wg
   planu §6.1) + `supportsTemperature(kind)` (Anthropic → `false`, zgodnie z istniejącą lekcją
   026-anthropic-temperature-fix).
   *Gotowe, gdy:* testy potwierdzają: `claude-sonnet-5` ✓, `claude-3-5-sonnet` ✗, `llama-3.3-70b` ✗,
   `gpt-5`/`o3`/`qwen3` ✓ (AC-3, AC-14).
 
-- [ ] **T-5** — **`applyEffort()` — tłumaczenie na parametr dostawcy.** Anthropic →
+- [x] **T-5** — **`applyEffort()` — tłumaczenie na parametr dostawcy.** Anthropic →
   `thinking:{type:"enabled",budget_tokens}` + podniesienie `max_tokens` do `budget + 1024`;
   `openai_compat` (rodzina rozumująca) → `reasoning_effort`; pozostałe → ciało **bez zmian**.
   `effort:"none"`/`null` → nigdy nic nie dokłada.
   *Gotowe, gdy:* testy dla wszystkich czterech przypadków przechodzą, w tym „ciało identyczne jak bez
   wysiłku" (AC-4, AC-5).
 
-- [ ] **T-6** — **`isEffortRejection(status, text)`** — rozpoznaje błąd 400 dotyczący parametru
+- [x] **T-6** — **`isEffortRejection(status, text)`** — rozpoznaje błąd 400 dotyczący parametru
   wysiłku (nazwy parametrów + typowe frazy dostawców), żeby dało się zdegradować zamiast wywalić
   agenta.
   *Gotowe, gdy:* test rozpoznaje 400 o `thinking`/`reasoning_effort` i **nie** myli go z innym 400.

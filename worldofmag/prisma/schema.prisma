@@ -895,6 +895,7 @@ model AiCall {
   errorText        String? // treść błędu dostawcy (skrócona) dla wywołań nieudanych
   conversationId   String? // powiązanie z rozmową asystenta (diagnostyka krok po kroku)
   attempts         Int      @default(1) // liczba prób wysłania (retry na 429/5xx wliczone)
+  effort           String? // 032: poziom wysiłku FAKTYCZNIE użyty (LlmEffort); null = nie wysłano
   source           String? // np. "home_agent" | "fast_path" | "dispatch_route" | ...
   createdAt        DateTime @default(now())
 
@@ -1954,6 +1955,9 @@ model LlmAssignment {
   model         String
   temperature   Float?
   maxTokens     Int?
+  // 032: LlmEffort ("none" | "low" | "medium" | "high"); null = brak (nie wysyłamy parametru).
+  // Tłumaczenie na parametr dostawcy: src/lib/llm/effort.ts.
+  effort        String?
   updatedAt     DateTime @updatedAt
 
   provider LlmProvider @relation(fields: [providerId], references: [id], onDelete: Restrict)
