@@ -26,14 +26,6 @@ export const SERVER_VOICES: ServerVoice[] = [
   { id: "echo", label: "Echo", description: "Męski, wyraźny i szybki w odbiorze." },
 ];
 
-/** Domyślny głos serwerowy, gdy użytkownik nie wybrał żadnego. */
-export const DEFAULT_SERVER_VOICE = "nova";
-
-/** Czy podany identyfikator jest znanym głosem serwerowym (walidacja wejścia z klienta). */
-export function isServerVoiceId(id: string | null | undefined): boolean {
-  return !!id && SERVER_VOICES.some((v) => v.id === id);
-}
-
 // Prefiks odróżniający głos serwerowy od głosu przeglądarki na jednej liście wyboru w UI.
 export const SERVER_VOICE_PREFIX = "omnia-server:";
 
@@ -41,9 +33,16 @@ export function toServerVoiceValue(id: string): string {
   return `${SERVER_VOICE_PREFIX}${id}`;
 }
 
-/** Wyciąga identyfikator głosu serwerowego z wartości listy wyboru (albo null dla głosu systemowego). */
+/**
+ * Wyciąga identyfikator głosu serwerowego z wartości listy wyboru (albo null dla głosu systemowego).
+ *
+ * 032: świadomie BEZ walidacji wobec listy głosów. Wcześniej sprawdzaliśmy tu przynależność do stałej
+ * listy głosów OpenAI — po dołożeniu innych dostawców oznaczało to, że wybór poprawnego głosu Azure
+ * czy Google zwracał `null` i UI brało go za głos przeglądarki, więc lektor serwerowy nigdy się nie
+ * włączał. Lista dopuszczalnych głosów zależy od dostawcy skonfigurowanego przez administratora, więc
+ * walidacja należy do serwera: `updateAssistantPrefs` (zapis) i `synthesizeSpeech` (użycie).
+ */
 export function parseServerVoiceValue(value: string | null | undefined): string | null {
   if (!value || !value.startsWith(SERVER_VOICE_PREFIX)) return null;
-  const id = value.slice(SERVER_VOICE_PREFIX.length);
-  return isServerVoiceId(id) ? id : null;
+  return value.slice(SERVER_VOICE_PREFIX.length) || null;
 }
