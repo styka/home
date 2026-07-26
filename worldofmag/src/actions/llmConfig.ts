@@ -40,7 +40,7 @@ export interface AssignmentDTO {
   model: string | null;
   temperature: number | null;
   maxTokens: number | null;
-  /** 032: poziom wysiłku modelu (wspólna skala tłumaczona per dostawca). */
+  /** 033: poziom wysiłku modelu (wspólna skala tłumaczona per dostawca). */
   effort: LlmEffort;
 }
 
@@ -127,7 +127,7 @@ export async function getAssignments(): Promise<AssignmentDTO[]> {
   });
 }
 
-// 032: zakresy walidacji parametrów modelu. Temperatura: skala OpenAI-compatible (0–2).
+// 033: zakresy walidacji parametrów modelu. Temperatura: skala OpenAI-compatible (0–2).
 // Limit odpowiedzi: górna granica z zapasem na najdłuższe raporty, ale chroni przed literówką
 // („80000" zamiast „8000") zamieniającą jedno wywołanie w bardzo drogie.
 const TEMPERATURE_MIN = 0;
@@ -148,7 +148,7 @@ export async function setAssignment(data: {
   const model = data.model.trim();
   if (!data.providerId || !model) throw new Error("Wybierz dostawcę i podaj model");
 
-  // 032: walidacja parametrów modelu — niepoprawna wartość NIE nadpisuje działającej konfiguracji.
+  // 033: walidacja parametrów modelu — niepoprawna wartość NIE nadpisuje działającej konfiguracji.
   if (data.effort != null && data.effort !== "" && !LLM_EFFORT_LEVELS.includes(data.effort as LlmEffort)) {
     throw new Error("Nieznany poziom wysiłku modelu.");
   }
@@ -372,7 +372,7 @@ export interface AiCallLogRow {
   latencyMs: number;
   conversationId: string | null;
   errorText: string | null;
-  /** 032: poziom wysiłku FAKTYCZNIE użyty (null = parametr nie był wysłany). */
+  /** 033: poziom wysiłku FAKTYCZNIE użyty (null = parametr nie był wysłany). */
   effort: string | null;
 }
 

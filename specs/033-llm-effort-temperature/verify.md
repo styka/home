@@ -2,20 +2,20 @@
 
 - **Spec:** ./spec.md · **Plan:** ./plan.md · **Zadania:** ./tasks.md (22/22 odhaczone)
 - **Data:** 2026-07-26
-- **Środowisko:** lokalny PostgreSQL 16 (`127.0.0.1:5432/omnia_dev`) z zaaplikowaną migracją `0210`.
+- **Środowisko:** lokalny PostgreSQL 16 (`127.0.0.1:5432/omnia_dev`) z zaaplikowaną migracją `0211`.
   **Produkcyjna baza nietknięta** (C-13) — `scripts/migrate.js` nie uruchamiany.
 
 ## 1. Bramki
 
 | Komenda | Wynik |
 |---|---|
-| `npm run check:migrations` | ✅ „Numeracja migracji OK (następny wolny numer: 0211)" |
+| `npm run check:migrations` | ✅ „Numeracja migracji OK (następny wolny numer: 0212)" |
 | `npm run check:actions` | ✅ „160 akcji w katalogu, wszystkie obsługiwane przez executor i opisane w kontrakcie" |
 | `npm run check:access` | ✅ „497 akcji z zadeklarowanym zakresem i guardem w kodzie" |
 | `next lint --dir src` | ✅ 0 błędów (bez zmian w liczbie istniejących ostrzeżeń kosmetycznych) |
 | `npm run test:unit` | ✅ **494 pass / 0 fail** (+14 nowych testów `effort`) |
 | `npx next build` | ✅ przeszedł |
-| `prisma migrate deploy` (lokalnie) | ✅ `0210_llm_effort` zaaplikowana |
+| `prisma migrate deploy` (lokalnie) | ✅ `0211_llm_effort` zaaplikowana |
 
 ## 2. Kryteria akceptacji
 
@@ -57,7 +57,7 @@
 | Reguła | Ocena |
 |---|---|
 | C-01, C-02 | ✅ Cała praca w `worldofmag/`; importy przez alias. **Uwaga procesowa:** w trakcie weryfikacji plik pomocniczy trafił omyłkowo do legacy `src/` w katalogu głównym — natychmiast usunięty, `git status` czysty, nic nie zostało zacommitowane |
-| C-10, C-11 | ✅ Ręczna migracja `0210_llm_effort` (numer z `next:migration`), idempotentna (`ADD COLUMN IF NOT EXISTS`), addytywna i nullable; `schema.prisma` zgodny z DDL |
+| C-10, C-11 | ✅ Ręczna migracja `0211_llm_effort` (numer z `next:migration`), idempotentna (`ADD COLUMN IF NOT EXISTS`), addytywna i nullable; `schema.prisma` zgodny z DDL |
 | C-12 | ✅ `effort` to kolumna `TEXT` + unia TS `LlmEffort`; `AssistantPref.level` też `String`. Zero enumów Prisma |
 | C-13 | ✅ Weryfikacja na lokalnej bazie; `migrate.js` nie uruchamiany |
 | C-20 | ✅ Zapis przez istniejące Server Actions, `revalidatePath("/admin/llm")` na końcu `setAssignment` |

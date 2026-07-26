@@ -21,7 +21,7 @@ export function aiCallsToText(rows: AiCallLogRow[]): string {
       r.operationType,
       r.providerKind,
       r.model,
-      // 032: poziom wysiłku faktycznie użyty; „—" = parametr nie był wysyłany.
+      // 033: poziom wysiłku faktycznie użyty; „—" = parametr nie był wysyłany.
       r.effort ?? "—",
       r.ok ? "OK" : "FAIL",
       r.status ?? "—",

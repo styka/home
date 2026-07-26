@@ -1836,7 +1836,7 @@ const voicePillBtn: React.CSSProperties = { display: "flex", alignItems: "center
 const composerActionBtn: React.CSSProperties = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "transparent", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" };
 const composerPrimaryBtn: React.CSSProperties = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" };
 
-// 032: ikona i kolor poziomu pracy asystenta. Oszczędny = błyskawica (szybko/tanio),
+// 033: ikona i kolor poziomu pracy asystenta. Oszczędny = błyskawica (szybko/tanio),
 // standardowy = wskaźnik, maksymalny = rakieta (drożej, ale najlepsza jakość).
 const LEVEL_COLORS: Record<AssistantLevel, string> = {
   economy: "var(--accent-amber)",

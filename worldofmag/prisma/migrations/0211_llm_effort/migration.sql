@@ -1,4 +1,4 @@
--- 032: poziom „wysiłku" (effort) modelu LLM.
+-- 033: poziom „wysiłku" (effort) modelu LLM.
 --
 -- `LlmAssignment.effort` — ustawiany przez admina per typ operacji. Wspólna, opisowa skala
 -- (none|low|medium|high) tłumaczona na parametr WŁAŚCIWY dla dostawcy w src/lib/llm/effort.ts

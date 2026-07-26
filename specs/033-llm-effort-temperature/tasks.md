@@ -1,6 +1,6 @@
 # Zadania: Effort i temperature modeli LLM + tryb „maksymalny" asystenta
 
-- **Plan:** ./plan.md (032-llm-effort-temperature)
+- **Plan:** ./plan.md (033-llm-effort-temperature)
 - **Status:** done
 - **Data:** 2026-07-26
 
@@ -16,7 +16,7 @@
 
 ## Faza 0 — Fundament danych
 
-- [x] **T-1** — **Migracja `0210_llm_effort`.** Ręczny `migration.sql` wg planu §2.2: dwa
+- [x] **T-1** — **Migracja `0211_llm_effort`.** Ręczny `migration.sql` wg planu §2.2: dwa
   `ALTER TABLE … ADD COLUMN IF NOT EXISTS "effort" TEXT` (`LlmAssignment`, `AiCall`). Addytywna,
   nullable, bez backfillu.
   *Gotowe, gdy:* `npm run check:migrations` przechodzi i migracja aplikuje się na lokalnym Postgresie.

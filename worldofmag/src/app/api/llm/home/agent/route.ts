@@ -398,7 +398,7 @@ async function callAgent(messages: ChatMessage[], meta?: AgentMeta, maxTokens = 
     json: true,
     source: "home_agent",
     conversationId,
-    // 032: tryb „maksymalny" użytkownika podnosi wysiłek USTAWIONY PRZEZ ADMINA o jeden stopień.
+    // 033: tryb „maksymalny" użytkownika podnosi wysiłek USTAWIONY PRZEZ ADMINA o jeden stopień.
     boostEffort,
   });
   if (!result.ok) {
@@ -960,7 +960,7 @@ export async function POST(req: NextRequest) {
   // (model najprostszych operacji z /admin/llm). Świadomy wybór użytkownika, więc NIE robimy
   // fallbacku do „reasoning" — inaczej tryb nie oszczędzałby.
   const economy = assistantLevel === "economy";
-  // 032: TRYB MAKSYMALNY — modele wg ustawień admina, ale (a) z podniesionym o stopień wysiłkiem,
+  // 033: TRYB MAKSYMALNY — modele wg ustawień admina, ale (a) z podniesionym o stopień wysiłkiem,
   // (b) BEZ automatycznego zejścia na tańszy model przy prostych pytaniach odczytowych. Inaczej
   // „drożej" nie znaczyłoby nic dla połowy pytań.
   const boostEffort = shouldBoostEffort(assistantLevel);

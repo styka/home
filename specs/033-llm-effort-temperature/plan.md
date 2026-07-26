@@ -1,6 +1,6 @@
 # Plan techniczny: Effort i temperature modeli LLM + tryb „maksymalny" asystenta
 
-- **Spec:** ./spec.md (032-llm-effort-temperature)
+- **Spec:** ./spec.md (033-llm-effort-temperature)
 - **Status:** draft
 - **Data:** 2026-07-26
 
@@ -45,8 +45,8 @@ Typy TS w `src/lib/llm/effort.ts` (**nie** enum Prisma — C-12):
 
 ### 2.2 Migracja (C-10, C-11)
 
-- Numer z `npm run next:migration`: **0210**
-- Katalog: `prisma/migrations/0210_llm_effort/migration.sql`
+- Numer z `npm run next:migration`: **0211**
+- Katalog: `prisma/migrations/0211_llm_effort/migration.sql`
 - Szkic DDL (idempotentnie):
 
 ```sql
@@ -190,7 +190,7 @@ uznał tego za brak.
 
 | Plik | Akcja | Po co |
 |------|-------|-------|
-| `prisma/migrations/0210_llm_effort/migration.sql` | nowy | `effort` w `LlmAssignment` i `AiCall` (C-10) |
+| `prisma/migrations/0211_llm_effort/migration.sql` | nowy | `effort` w `LlmAssignment` i `AiCall` (C-10) |
 | `prisma/schema.prisma` | edycja | dwie kolumny zgodne z DDL |
 | `src/lib/llm/effort.ts` | nowy | skala, etykiety PL, `bumpEffort`, tabela możliwości, tłumaczenie na parametr dostawcy, rozpoznanie odrzucenia 400 |
 | `src/lib/llm/resolver.ts` | edycja | przeniesienie `effort` do `ResolvedLlm` |
@@ -252,7 +252,7 @@ uznał tego za brak.
 
 ## 10. Zgodność z konstytucją — checklista
 
-- [x] **C-10, C-11, C-12** — ręczna migracja `0210_llm_effort` (numer z `next:migration`),
+- [x] **C-10, C-11, C-12** — ręczna migracja `0211_llm_effort` (numer z `next:migration`),
   idempotentna, addytywna; `effort` jako `TEXT` + unia TS, **zero enumów Prisma**;
   `AssistantPref.level` bez migracji (już `String`).
 - [x] **C-13** — weryfikacja na lokalnym Postgresie, `migrate.js` nie uruchamiany.

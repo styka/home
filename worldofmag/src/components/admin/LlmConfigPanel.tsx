@@ -240,7 +240,7 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
   const [isPending, startTransition] = useTransition();
   const [providerId, setProviderId] = useState(assignment.providerId ?? providers[0]?.id ?? "");
   const [model, setModel] = useState(assignment.model ?? assignment.defaultModel);
-  // 032: pokrętła modelu — wysiłek, temperatura i limit odpowiedzi. Puste = wartość domyślna
+  // 033: pokrętła modelu — wysiłek, temperatura i limit odpowiedzi. Puste = wartość domyślna
   // dostawcy (nie wysyłamy parametru).
   const [effort, setEffort] = useState<LlmEffort>(assignment.effort);
   const [temperature, setTemperature] = useState(assignment.temperature === null ? "" : String(assignment.temperature));
@@ -311,7 +311,7 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
         </button>
       </div>
 
-      {/* 032: parametry modelu. Na telefonie jedna kolumna (C-31). */}
+      {/* 033: parametry modelu. Na telefonie jedna kolumna (C-31). */}
       <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 8, marginTop: 10 }}>
         <div style={{ opacity: canEffort ? 1 : 0.55 }}>
           <label style={labelStyle}>Wysiłek modelu</label>

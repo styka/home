@@ -97,7 +97,7 @@ export function AiCallsPage({ initial }: { initial: AiCallLogRow[] }) {
                     <td style={cell}>{r.operationType}</td>
                     <td style={cell}>{r.providerKind}</td>
                     <td style={cell}>{r.model}</td>
-                    {/* 032: poziom wysiłku FAKTYCZNIE użyty (po ewentualnej degradacji); „—" = nie wysłano. */}
+                    {/* 033: poziom wysiłku FAKTYCZNIE użyty (po ewentualnej degradacji); „—" = nie wysłano. */}
                     <td style={{ ...cell, color: r.effort ? "var(--accent-purple)" : "var(--text-muted)" }}>
                       {r.effort ? LLM_EFFORT_LABELS[r.effort as LlmEffort] ?? r.effort : "—"}
                     </td>

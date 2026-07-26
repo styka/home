@@ -67,7 +67,7 @@ export function isOperationType(value: string): value is OperationType {
  * czyli do modelu przypisanego przez admina do najprostszych operacji (dla Anthropic to zwykle
  * Haiku).
  *
- * 032: tryb „maksymalny" NIE zmienia typu operacji — działa na modelu, który admin przypisał, ale
+ * 033: tryb „maksymalny" NIE zmienia typu operacji — działa na modelu, który admin przypisał, ale
  * z podniesionym poziomem wysiłku (patrz `boostEffort` w `chatComplete`). Dzięki temu nadal to
  * admin decyduje, jaki model obsługuje daną operację.
  */

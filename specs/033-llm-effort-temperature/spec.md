@@ -1,6 +1,6 @@
 # Spec: Effort i temperature modeli LLM w konfiguracji + tryb „maksymalny" asystenta
 
-- **ID:** 032-llm-effort-temperature
+- **ID:** 033-llm-effort-temperature
 - **Status:** draft
 - **Autor sesji:** Claude Code (spec-driven pipeline)
 - **Data:** 2026-07-26

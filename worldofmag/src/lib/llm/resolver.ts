@@ -16,7 +16,7 @@ export interface ResolvedLlm {
   model: string;
   temperature?: number | null;
   maxTokens?: number | null;
-  /** 032: poziom wysiłku ustawiony przez admina dla tego typu operacji ("none" = nie wysyłaj). */
+  /** 033: poziom wysiłku ustawiony przez admina dla tego typu operacji ("none" = nie wysyłaj). */
   effort?: LlmEffort | null;
 }
 

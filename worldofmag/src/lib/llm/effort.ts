@@ -1,4 +1,4 @@
-// 032: POZIOM WYSIŁKU („effort") modelu LLM — jedno miejsce tłumaczenia wspólnej skali na parametr
+// 033: POZIOM WYSIŁKU („effort") modelu LLM — jedno miejsce tłumaczenia wspólnej skali na parametr
 // właściwy dla dostawcy.
 //
 // Problem: „effort" znaczy co innego u każdego dostawcy. Anthropic ma rozszerzone myślenie z

@@ -167,7 +167,7 @@ export interface AiCallEntry {
   errorText?: string; // treść błędu dostawcy (skrócona) dla wywołań nieudanych
   conversationId?: string | null; // powiązanie z rozmową asystenta
   attempts?: number; // liczba prób (retry na 429/5xx wliczone)
-  effort?: string | null; // 032: poziom wysiłku FAKTYCZNIE użyty ("none" → zapisujemy null)
+  effort?: string | null; // 033: poziom wysiłku FAKTYCZNIE użyty ("none" → zapisujemy null)
 }
 
 /**

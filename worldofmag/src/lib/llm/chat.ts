@@ -69,15 +69,15 @@ export interface ChatOptions {
   source?: string;
   /** Diagnostyka: id rozmowy asystenta — wiąże wpisy `AiCall` w jeden przebieg. */
   conversationId?: string | null;
-  /** 032: nadpisanie poziomu wysiłku (pomija ustawienie admina). Rzadko potrzebne. */
+  /** 033: nadpisanie poziomu wysiłku (pomija ustawienie admina). Rzadko potrzebne. */
   effort?: LlmEffort;
-  /** 032: podnieś o stopień wysiłek USTAWIONY PRZEZ ADMINA — tryb „maksymalny" asystenta.
+  /** 033: podnieś o stopień wysiłek USTAWIONY PRZEZ ADMINA — tryb „maksymalny" asystenta.
    *  Wychodzimy od konfiguracji, nigdy nie wybieramy modelu za admina (C-40). */
   boostEffort?: boolean;
 }
 
 /**
- * 032: poziom wysiłku dla konkretnego ogniwa łańcucha. Kolejność: jawne nadpisanie → ustawienie
+ * 033: poziom wysiłku dla konkretnego ogniwa łańcucha. Kolejność: jawne nadpisanie → ustawienie
  * admina dla tego typu operacji (opcjonalnie podniesione o stopień w trybie „maksymalnym").
  */
 export function resolveEffort(cfg: ResolvedLlm, opts: ChatOptions): LlmEffort {
@@ -207,7 +207,7 @@ export function openAiBody(cfg: ResolvedLlm, opts: ChatOptions, stream: boolean)
     temperature: opts.temperature ?? cfg.temperature ?? undefined,
     max_tokens: opts.maxTokens ?? cfg.maxTokens ?? undefined,
   };
-  // 032: poziom wysiłku — jedno miejsce tłumaczenia (`applyEffort`); dla modelu, który tego nie
+  // 033: poziom wysiłku — jedno miejsce tłumaczenia (`applyEffort`); dla modelu, który tego nie
   // obsługuje, ciało zostaje NIETKNIĘTE.
   applyEffort(body, cfg.kind, cfg.model, resolveEffort(cfg, opts));
   if (stream) {
@@ -227,7 +227,7 @@ export function anthropicBody(cfg: ResolvedLlm, opts: ChatOptions, stream: boole
     ...(system ? { system: toAnthropicSystem(system) } : {}),
     messages,
   };
-  // 032: rozszerzone myślenie Anthropic. `applyEffort` podnosi też `max_tokens` ponad budżet
+  // 033: rozszerzone myślenie Anthropic. `applyEffort` podnosi też `max_tokens` ponad budżet
   // myślenia — dostawca wymaga `max_tokens > budget_tokens`, inaczej odbija żądanie błędem 400.
   // Bloki `thinking` NIE wyciekają do odpowiedzi: `anthropicComplete` filtruje bloki po
   // `type === "text"`, a strumień przepuszcza tylko delty mające pole `text`
@@ -243,7 +243,7 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
   const chain = await resolveLlmChain(opts.op);
   if (chain.length === 0) return UNCONFIGURED;
   // Z-511: opcjonalny cache (identyczne wejście → identyczne wyjście).
-  // 032: `effort` MUSI wchodzić do klucza cache — inaczej po zmianie ustawienia w /admin/llm
+  // 033: `effort` MUSI wchodzić do klucza cache — inaczej po zmianie ustawienia w /admin/llm
   // identyczne wejście oddawałoby stary wynik policzony na innym poziomie wysiłku.
   const cacheKey = opts.cache
     ? cacheKeyFor({
@@ -281,7 +281,7 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
     const started = Date.now();
     let effortUsed = resolveEffort(cfg, opts);
     let res = cfg.kind === "anthropic" ? await anthropicComplete(cfg, opts) : await openAiComplete(cfg, opts);
-    // 032: DEGRADACJA WYSIŁKU. Gdy dostawca odbije żądanie błędem 400 dotyczącym parametru
+    // 033: DEGRADACJA WYSIŁKU. Gdy dostawca odbije żądanie błędem 400 dotyczącym parametru
     // wysiłku (model z rodziny, która wg naszej tabeli go obsługuje, a jednak nie), robimy JEDNĄ
     // próbę bez wysiłku na tym samym modelu. Bez tego 400 — jako błąd NIEPRZEJŚCIOWY — przerwałby
     // łańcuch fallbacku i wywalił całego agenta z powodu opcjonalnego ustawienia.
@@ -539,7 +539,7 @@ export async function chatStream(opts: ChatOptions): Promise<Response> {
   for (let i = 0; i < chain.length; i++) {
     const cfg = chain[i];
     let attempt = cfg.kind === "anthropic" ? await anthropicStream(cfg, opts) : await openAiStream(cfg, opts);
-    // 032: ta sama degradacja co w `chatComplete` — strumień też może dostać 400 za parametr
+    // 033: ta sama degradacja co w `chatComplete` — strumień też może dostać 400 za parametr
     // wysiłku, a 400 jest nieprzejściowy, więc bez tego przerwałby łańcuch i oddał błąd klientowi.
     if (!attempt.ok && resolveEffort(cfg, opts) !== "none" && isEffortRejection(attempt.status, attempt.message)) {
       console.warn(`[llm] stream ${opts.op}: model ${cfg.model} odrzucił parametr wysiłku — ponawiam bez niego`);

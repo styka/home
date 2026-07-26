@@ -242,7 +242,7 @@ export const TASK_STATUS_CYCLE: TaskStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
 // Poziom pracy asystenta: "standard" = modele wg przypisań admina (/admin/llm);
 // "economy" = do wszystkich operacji asystenta używamy typu operacji `dispatch`
 // (najprostszy, najtańszy model wskazany przez admina).
-// 032: trzeci poziom „max" — modele wg ustawień admina, ale z PODNIESIONYM o stopień wysiłkiem
+// 033: trzeci poziom „max" — modele wg ustawień admina, ale z PODNIESIONYM o stopień wysiłkiem
 // i bez automatycznego zejścia na tańszy model przy prostych pytaniach. Kolejność w
 // ASSISTANT_LEVELS = kolejność w menu (od najtańszego do najdroższego).
 export type AssistantLevel = "standard" | "economy" | "max";
