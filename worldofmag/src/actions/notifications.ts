@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
 import { isoDay } from "@/lib/calendar";
+import { notifyUser } from "@/lib/notify";
 import { isScheduledOn, weekDoneCount } from "@/lib/habitStats";
 
 export type NotificationDTO = {
@@ -17,38 +18,6 @@ export type NotificationDTO = {
 };
 
 const MS_DAY = 24 * 60 * 60 * 1000;
-
-/**
- * Tworzy powiadomienie idempotentnie po (userId, dedupeKey). Wołane przez skan
- * terminów (poniżej) oraz przez inne moduły przy zdarzeniach (np. marketplace).
- * Gdy `dedupeKey` jest puste — zawsze tworzy nowe (ad-hoc).
- */
-export async function notifyUser(input: {
-  userId: string;
-  module: string;
-  title: string;
-  body?: string | null;
-  href?: string | null;
-  dueAt?: Date | null;
-  dedupeKey?: string | null;
-}): Promise<void> {
-  const data = {
-    module: input.module,
-    title: input.title,
-    body: input.body ?? null,
-    href: input.href ?? null,
-    dueAt: input.dueAt ?? null,
-  };
-  if (input.dedupeKey) {
-    await prisma.notification.upsert({
-      where: { userId_dedupeKey: { userId: input.userId, dedupeKey: input.dedupeKey } },
-      create: { userId: input.userId, dedupeKey: input.dedupeKey, ...data },
-      update: {}, // istnieje → nie duplikuj i nie „odczytuj" ponownie
-    });
-  } else {
-    await prisma.notification.create({ data: { userId: input.userId, ...data } });
-  }
-}
 
 /** Lista ostatnich powiadomień użytkownika (nieprzeczytane najpierw). */
 export async function getNotifications(limit = 30): Promise<NotificationDTO[]> {

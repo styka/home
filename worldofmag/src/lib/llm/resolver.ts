@@ -57,8 +57,10 @@ export async function resolveLlmChain(op: OperationType): Promise<ResolvedLlm[]>
   }
 
   // 2. Fallback: stary, pojedynczy klucz Groq + domyślny model dla typu operacji.
+  // 031: typ operacji BEZ domyślnego modelu (np. `speech`) nie ma fallbacku — brak przypisania
+  // administratora oznacza, że funkcja jest po prostu wyłączona (a nie „wołana z pustym modelem").
   const legacy = await prisma.config.findUnique({ where: { key: "groq_api_key" } });
-  if (legacy?.value) {
+  if (legacy?.value && OPERATION_TYPE_META[op].defaultModel) {
     add({
       kind: "openai_compat",
       baseUrl: GROQ_BASE_URL,

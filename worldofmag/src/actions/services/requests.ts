@@ -4,7 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
-import { notifyUser } from "@/actions/notifications";
+import { notifyUser } from "@/lib/notify";
 import { REQUEST_STATUS_LABELS } from "@/lib/services";
 import { PROVIDER_TRANSITIONS, mapRequest, computeSlots } from "@/lib/services/helpers";
 import type { RequestStatus, RequestDTO } from "@/lib/services";

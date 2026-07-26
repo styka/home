@@ -32,6 +32,31 @@ export function asStr(v: unknown): string | undefined {
   return typeof v === "string" && v.trim() ? v.trim() : undefined;
 }
 
+// 031: guardy modułów rzucają komunikatami technicznymi („Access denied", „Forbidden",
+// „Admin access required"), które trafiały wprost do czatu. Tłumaczymy je na JEDEN, zrozumiały
+// komunikat o braku dostępu — bez ujawniania, czy cudzy rekord istnieje i co zawiera.
+//
+// Świadomie NIE ruszamy komunikatów „nie znaleziono": są już po polsku, dotyczą WYŁĄCZNIE danych
+// dostępnych użytkownikowi i często niosą podpowiedź, z której korzysta agent (np. „Nie znaleziono
+// projektu o nazwie »o mnie«. Dostępne projekty: …" → agent dopytuje sensownie zamiast zgadywać).
+// Zamiana ich na tekst ogólny psułaby tę ścieżkę.
+const ACCESS_ERROR_RE = /access denied|forbidden|unauthorized|admin access required|not authorized/i;
+
+/** Czy błąd oznacza brak uprawnień do danych (a nie zwykłą awarię). */
+export function isAccessError(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e ?? "");
+  return ACCESS_ERROR_RE.test(msg);
+}
+
+/**
+ * Komunikat błędu przeznaczony DLA UŻYTKOWNIKA. Odmowa dostępu → jednolity tekst po polsku;
+ * pozostałe błędy przechodzą bez zmian (patrz komentarz wyżej).
+ */
+export function toUserFacingError(e: unknown): string {
+  if (isAccessError(e)) return "Nie masz dostępu do tych danych.";
+  return e instanceof Error ? e.message : "Nieznany błąd";
+}
+
 export interface ActionResult {
   id: string;
   success: boolean;

@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getActivePlan } from "@/lib/plans";
 import { estimateCostUsd } from "@/lib/llm/pricing";
 import { PERMISSIONS } from "@/lib/permissions";
-import { notifyUser } from "@/actions/notifications";
+import { notifyUser } from "@/lib/notify";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
 import { withPln } from "@/lib/usdPln";
 import type { TokenUsage } from "@/lib/llm/chat";

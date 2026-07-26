@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { Bug, X } from "lucide-react";
 import { openAssistant } from "@/lib/ai/assistantBus";
 import { FEEDBACK_START_EVENT } from "@/lib/ai/feedbackBus";
-import { ensureOmniaProject } from "@/actions/taskProjects";
 import { useOverlayState } from "@/hooks/useOverlayState";
 
 // Tryb wskazywania (admin-only): admin włącza tryb, najeżdża/klika dowolny element
@@ -77,7 +76,9 @@ export function FeedbackInspector() {
     const context = describeElement(el, pathname);
     setActive(false);
     setRect(null);
-    try { await ensureOmniaProject(); } catch { /* projekt powstanie i tak przy wykonaniu akcji (fallback skrzynka) */ }
+    // 031: nie tworzymy tu żadnego projektu — skrzynkę zgłoszeń wyznacza serwer
+    // (`submitFeedbackTask`), więc zgłoszenie trafia do administratora niezależnie od
+    // uprawnień zgłaszającego.
     openAssistant({ feedbackContext: context });
   }, [pathname]);
 

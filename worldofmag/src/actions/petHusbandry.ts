@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
 import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "@/actions/pets";
-import { notifyUser } from "@/actions/notifications";
+import { notifyUser } from "@/lib/notify";
 import { ENV_PARAMS, classifyValue, rangeLabel, type Range } from "@/lib/petEnvironment";
 import type { PetEnclosure, PetEnvironmentReading } from "@/types";
 

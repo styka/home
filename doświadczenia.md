@@ -4,6 +4,64 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-25 — `tsc --noEmit` NIE łapie reguły „use server": eksport nie-funkcji wywala build
+**Problem:** W `src/actions/feedback.ts` i `assistantPrefs.ts` wystawiłem `export const
+FEEDBACK_PROJECT_CONFIG_KEY` / `export const ASSISTANT_INSTRUCTIONS_MAX`. `npx tsc --noEmit`
+przechodził na zielono, `npm run check:*` też — a `next build` padał na webpacku:
+„Only async functions are allowed to be exported in a »use server« file".
+**Rozwiązanie:** Stałe zostały prywatne (bez `export`). Eksport `interface`/`type` jest OK (typy są
+wymazywane), problem dotyczy WARTOŚCI runtime.
+**Lekcja:** W pliku z `"use server"` eksportuj WYŁĄCZNIE funkcje async (i typy). Nie polegaj na
+`tsc` jako bramce dla plików akcji — to reguła kompilatora Next/SWC, nie TypeScriptu, więc
+zobaczysz ją dopiero w `next build`. Stałe współdzielone z klientem trzymaj w `src/lib/*`.
+
+## 2026-07-25 — Eksport w pliku „use server" to publiczny endpoint (audyt kontroli dostępu)
+**Problem:** Audyt 544 akcji wykrył, że `notifyUser({userId, …})` i `orphanCategoryIcons(name,
+userId)` żyły w plikach `"use server"` jako funkcje pomocnicze przyjmujące CUDZE `userId`. Ponieważ
+każdy eksport w takim pliku jest zdalnie wołalny, dowolny zalogowany użytkownik mógł wysłać
+powiadomienie innej osobie albo „osierocić" jej ikony kategorii. Dodatkowo `getNoteGroups`,
+`getTags` i `getSuggestionsForPrefix` czytały dane bez ŻADNEGO sprawdzenia sesji.
+**Rozwiązanie:** `notifyUser` → przeniesione do `src/lib/notify.ts` (zwykły moduł serwerowy, bez
+`"use server"` — legalnie powiadamia inne osoby, więc nie da się jej ograniczyć do własnego konta).
+`orphanCategoryIcons` → wymuszone `userId` z sesji. Pozostałe → `requireAuth()`. Bramka
+`check:ai-coverage` wymaga teraz dla KAŻDEJ akcji pola `access` **oraz** faktycznego wywołania
+guardu w kodzie (`guardedVia` dla cienkich nakładek), więc nowa akcja bez sprawdzenia = build pada.
+**Lekcja:** Traktuj każdą eksportowaną funkcję w `"use server"` jak publiczny endpoint — nawet gdy
+„jest tylko helperem wołanym z innej akcji". Helper przyjmujący `userId` jako parametr to sygnał
+ostrzegawczy: albo wymuś id z sesji, albo wyprowadź go z pliku akcji do `src/lib/`. Sama deklaracja
+w manifeście nie jest dowodem — bramka musi sprawdzać KOD.
+
+## 2026-07-25 — „Znikające" głosy lektora: `getVoices()` zwraca coraz KRÓTSZĄ listę
+**Problem:** Na Chrome/Windows lista głosów najpierw pokazywała kilka polskich (działał jeden),
+a po chwili zostawał tylko ten działający. Wyglądało to jak błąd Omnii („czemu głosy znikają?").
+**Rozwiązanie:** `speechSynthesis.getVoices()` przy pierwszym odczycie oddaje też głosy ZDALNE
+silnika (`localService:false`), których przeglądarka nie potrafi odtworzyć, a po dociągnięciu
+silników zwraca listę krótszą. UI brał każdą odpowiedź za prawdę. `getAvailableVoices()`
+akumuluje teraz głosy po `voiceURI` między odczytami (koniec migania), ale ZWRACA tylko te obecne
+w aktualnej odpowiedzi, odsiewa `localService:false` (z zabezpieczeniem: jeśli dla polskiego nie
+zostałby żaden głos, przywraca zdalne) i sortuje polskie na początek.
+**Lekcja:** Web Speech `getVoices()` jest ASYNCHRONICZNE **i niestabilne** — nie cache'uj pierwszej
+odpowiedzi ani nie zastępuj listy w całości. Nie pokazuj użytkownikowi głosów, których nie da się
+odtworzyć: obietnica wyboru, który nie działa, jest gorsza niż krótsza lista. Realny wybór
+polskich głosów daje tylko synteza serwerowa (u nas: typ operacji `speech` w `/admin/llm`).
+
+## 2026-07-25 — Zgłoszenia użytkowników nigdy nie docierały do admina (własny projekt „Omnia")
+**Problem:** `ensureOmniaProject()` szukało projektu „Omnia" **właściciela sesji** i tworzyło go,
+gdy nie istniał. Efekt: zgłoszenie zwykłego użytkownika lądowało w JEGO nowym projekcie „Omnia",
+więc admin nigdy go nie widział. Druga droga (główny robaczek → agent → `create_task` z
+`projectName:"Omnia"`) dla użytkownika bez dostępu kończyła się odmową albo tym samym skutkiem.
+**Rozwiązanie:** Jedna akcja `submitFeedbackTask` z JEDNYM, wąskim odstępstwem dostępowym (tylko
+zapis, tylko do wyznaczonego projektu, bez prawa odczytu) + `Config.feedback_project_id` z
+fallbackiem na projekt „Omnia" konta z rolą ADMIN. Dla agenta osobna akcja `submit_feedback`
+(zamiast `create_task`), żeby wyjątek nie rozlał się na tworzenie zwykłych zadań. Propozycję
+„Otwórz w zadaniach" pokazujemy tylko przy realnym dostępie.
+**Lekcja:** „Skrzynka na zgłoszenia" to inny model dostępu niż zwykły zasób: zapis dla wszystkich,
+odczyt dla nikogo. Nie realizuj tego przez rozluźnienie guardu istniejącej akcji ani przez
+uprawnienie RBAC (da się je przypadkiem rozszerzyć) — zrób osobną akcję z odstępstwem opisanym w
+jednym miejscu. I sprawdź, czy „wspólny" zasób jest naprawdę wspólny: `findFirst({ownerId: user.id})`
+cicho tworzy osobny byt per użytkownik.
+
+
 ## 2026-07-25 — Scalenie dwóch sekcji akcji asystenta przy append-only historii czatu
 **Problem:** Po wykonaniu akcji asystent pokazywał DWIE sekcje: turę `plan` z „✓ Wykonano" oraz osobną
 turę `results` z listą wyników i „Cofnij" — podwójna informacja. Chcieliśmy jedną dynamiczną sekcję, ale

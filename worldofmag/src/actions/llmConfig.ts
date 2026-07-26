@@ -264,7 +264,7 @@ const ANTHROPIC_MODELS = {
   generation: "claude-sonnet-5",
   vision: "claude-sonnet-5",
   dispatch: "claude-haiku-4-5",
-} as const satisfies Record<OperationType, string>;
+} as const satisfies Partial<Record<OperationType, string>>;
 
 /**
  * Jednoklikowy profil „Anthropic (Sonnet + Haiku)": dodaje/aktualizuje dostawcę
@@ -299,7 +299,10 @@ export async function applyAnthropicProfile(data: { apiKey: string }): Promise<v
   }
 
   for (const op of OPERATION_TYPES) {
-    const model = ANTHROPIC_MODELS[op];
+    // 031: Anthropic nie ma syntezy mowy — typ operacji bez modelu w profilu pomijamy
+    // (admin przypisze dla niego dostawcę osobno albo funkcja zostaje wyłączona).
+    const model = (ANTHROPIC_MODELS as Partial<Record<OperationType, string>>)[op];
+    if (!model) continue;
     await prisma.llmAssignment.upsert({
       where: { operationType: op },
       update: { providerId: provider.id, model },

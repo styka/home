@@ -6,6 +6,10 @@ import { requireAuth } from "@/lib/server-utils";
 import type { NoteGroup } from "@/types";
 
 export async function getNoteGroups(): Promise<NoteGroup[]> {
+  // 031: `NoteGroup` nie ma kolumny właściciela — grupy notatek są w tym modelu WSPÓLNE dla
+  // wszystkich kont (tak jak słowniki systemowe). Odczyt wymaga jednak zalogowania (C-22).
+  // Ograniczenie modelu jest odnotowane w docs/ai/kontrola-dostepu.md.
+  await requireAuth();
   return prisma.noteGroup.findMany({ orderBy: { createdAt: "asc" } });
 }
 

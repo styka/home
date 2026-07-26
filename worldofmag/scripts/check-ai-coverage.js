@@ -47,13 +47,16 @@ function collectCandidates() {
     if (!f.endsWith(".ts")) continue;
     const mod = f.replace(/\.ts$/, "");
     const src = fs.readFileSync(path.join(actionsDir, f), "utf8");
-    for (const m of src.matchAll(/export async function ([a-zA-Z0-9_]+)/g)) {
+    // 031: zapamiętujemy też CIAŁO funkcji — bramka kontroli dostępu sprawdza w nim wywołanie guardu.
+    const found = [...src.matchAll(/export async function ([a-zA-Z0-9_]+)/g)];
+    found.forEach((m, i) => {
       const fn = m[1];
-      if (SKIP_EXTRA.has(fn)) continue;
-      if (READ.test(fn)) { out.push({ key: `${mod}:${fn}`, kind: "read" }); continue; }
-      if (INTERNAL.test(fn)) continue; // pomocnik wewnętrzny — pomiń
-      out.push({ key: `${mod}:${fn}`, kind: "mutation" });
-    }
+      const body = src.slice(m.index, i + 1 < found.length ? found[i + 1].index : src.length);
+      if (SKIP_EXTRA.has(fn)) return;
+      if (READ.test(fn)) { out.push({ key: `${mod}:${fn}`, kind: "read", body }); return; }
+      if (INTERNAL.test(fn)) return; // pomocnik wewnętrzny — pomiń
+      out.push({ key: `${mod}:${fn}`, kind: "mutation", body });
+    });
   }
   return out.sort((a, b) => a.key.localeCompare(b.key));
 }
@@ -115,6 +118,119 @@ if (process.argv.includes("--report")) {
   console.log("✓ Zapisano raport: docs/ai/pokrycie-akcji.md");
 }
 
+// ── 031: BRAMKA KONTROLI DOSTĘPU ─────────────────────────────────────────────
+// Dwa warunki, oba obowiązkowe:
+//  1) DEKLARACJA — każdy wpis w manifeście musi mieć `access` z zamkniętej listy. To wymusza
+//     świadomą decyzję „kto ma prawo do tych danych" przy KAŻDEJ nowej akcji.
+//  2) KOD — w ciele akcji musi znaleźć się wywołanie guardu (sesja / uprawnienie / dostęp do
+//     rekordu) albo delegacja do innej akcji, która guard woła. Sama deklaracja nie dowodzi
+//     niczego, więc bez tego drugiego warunku bramka dawałaby fałszywe poczucie bezpieczeństwa.
+// Odstępstwo jest możliwe TYLKO jawnie: access "open" + `accessReason` (np. skrzynka zgłoszeń).
+const VALID_ACCESS = new Set([
+  "owner", // dane właściciela / udostępnione (guard modułu, model ownerId/ownerTeamId)
+  "self", // dane wyłącznie zalogowanego użytkownika (ustawienia, preferencje, konto)
+  "shared", // wspólny słownik systemowy (kategorie, jednostki, tagi) — wymaga zalogowania
+  "admin", // wymaga uprawnienia module.admin
+  "internal", // wołane wyłącznie serwerowo (nie z UI), bez danych użytkownika
+  "open", // świadome odstępstwo — WYMAGA "accessReason"
+]);
+
+// Nazwy guardów obecnych w repo (whitelist). Delegacja do innej akcji też się liczy — dlatego
+// dopuszczamy wywołanie funkcji z rodziny `assert*`/`require*` oraz helperów zakresu.
+const GUARD_RE =
+  /require(?:Auth|Admin|UserId|QaAccess|[A-Z][A-Za-z]*)\s*\(|assert[A-Za-z]*\s*\(|getAccessibleTeamIds\s*\(|getUserTeamIds\s*\(|getUserScope\s*\(|hasPermission\s*\(|auth\s*\(\)|ownershipFilter\s*\(|scopeWhere\s*\(/;
+
+const missingAccess = [];
+const badAccess = [];
+const openWithoutReason = [];
+const noGuard = [];
+for (const { key, body } of candidates) {
+  const entry = manifest[key];
+  if (!entry) continue; // brak wpisu zgłosi sekcja pokrycia AI
+  const access = entry.access;
+  if (!access) { missingAccess.push(key); continue; }
+  if (!VALID_ACCESS.has(access)) { badAccess.push(`${key} (access="${access}")`); continue; }
+  if (access === "open" && !entry.accessReason) { openWithoutReason.push(key); continue; }
+  // Delegacja/guard w kodzie — wymagany dla wszystkiego poza jawnym odstępstwem.
+  // `guardedVia` obsługuje cienkie nakładki (np. `setPetStatus` → `updatePet`): deklarujemy
+  // JAWNIE, przez którą akcję idzie sprawdzenie, a bramka weryfikuje, że wywołanie tam jest.
+  if (access === "open") continue;
+  if (entry.guardedVia) {
+    const delegate = new RegExp(`\\b${entry.guardedVia}\\s*\\(`);
+    if (!body || !delegate.test(body)) {
+      noGuard.push(`${key} (deklaruje guardedVia="${entry.guardedVia}", ale go nie woła)`);
+    }
+    continue;
+  }
+  if (body && !GUARD_RE.test(body)) noGuard.push(key);
+}
+
+if (process.argv.includes("--report")) {
+  const byMod = {};
+  for (const { key, kind } of candidates) {
+    const [mod, fn] = key.split(":");
+    const e = manifest[key] ?? {};
+    (byMod[mod] ??= []).push({ fn, kind, access: e.access ?? "?", accessReason: e.accessReason });
+  }
+  const ACCESS_LABEL = {
+    owner: "właściciel / udostępnienie",
+    self: "tylko własne konto",
+    shared: "wspólny słownik (wymaga zalogowania)",
+    admin: "administrator",
+    internal: "wyłącznie serwerowo",
+    open: "świadome odstępstwo",
+  };
+  let md = `# Kontrola dostępu do akcji użytkownika\n\n`;
+  md += `> Plik generowany przez \`node scripts/check-ai-coverage.js --report\`. Nie edytuj ręcznie.\n\n`;
+  md += `Każda akcja odczytu i mutacji w \`src/actions/*\` ma zadeklarowany zakres dostępu, a bramka\n`;
+  md += `sprawdza dodatkowo, czy w jej kodzie faktycznie wywoływany jest guard. Nowa akcja bez\n`;
+  md += `deklaracji albo bez guardu **przerywa build**.\n\n`;
+  md += `Akcji objętych kontrolą: **${candidates.length}**. Pozycji „brak guardu": **${noGuard.length}**.\n\n`;
+  md += `## Znane ograniczenia modelu danych\n\n`;
+  md += `- \`NoteGroup\` i \`Tag\` nie mają kolumny właściciela — grupy notatek i etykiety są WSPÓLNE dla\n`;
+  md += `  wszystkich kont (jak słowniki systemowe). Odczyt wymaga zalogowania; rozdzielenie ich na\n`;
+  md += `  właścicieli wymagałoby migracji i jest poza zakresem tej zmiany.\n`;
+  md += `- \`ItemHistory\` (podpowiedzi zakupów) jest wspólnym słownikiem nazw produktów.\n\n`;
+  for (const mod of Object.keys(byMod).sort()) {
+    md += `## ${mod}\n\n| Akcja | Rodzaj | Zakres dostępu | Uwaga |\n|---|---|---|---|\n`;
+    for (const r of byMod[mod].sort((a, b) => a.fn.localeCompare(b.fn))) {
+      const kind = r.kind === "read" ? "odczyt" : "zapis";
+      md += `| \`${r.fn}\` | ${kind} | ${ACCESS_LABEL[r.access] ?? r.access} | ${r.accessReason ?? ""} |\n`;
+    }
+    md += `\n`;
+  }
+  const outDir2 = path.join(root, "docs/ai");
+  fs.mkdirSync(outDir2, { recursive: true });
+  fs.writeFileSync(path.join(outDir2, "kontrola-dostepu.md"), md);
+  console.log("✓ Zapisano raport: docs/ai/kontrola-dostepu.md");
+}
+
+if (missingAccess.length) {
+  console.error("\n✖ Kontrola dostępu: akcje BEZ zadeklarowanego zakresu `access` w src/lib/ai/action-coverage.json:");
+  console.error("  " + missingAccess.join("\n  "));
+  console.error("\n  Dodaj do wpisu pole \"access\": jedno z: " + [...VALID_ACCESS].join(" | "));
+  console.error("  → \"owner\": dane właściciela/udostępnione · \"self\": tylko własne konto · \"shared\": wspólny słownik");
+  console.error("  → \"admin\": wymaga module.admin · \"internal\": wołane tylko serwerowo");
+  console.error("  → \"open\": świadome odstępstwo — dopisz też \"accessReason\" z uzasadnieniem.\n");
+}
+if (badAccess.length) {
+  console.error("\n✖ Kontrola dostępu: nieprawidłowa wartość `access` (dozwolone: " + [...VALID_ACCESS].join("|") + "):");
+  console.error("  " + badAccess.join("\n  "));
+}
+if (openWithoutReason.length) {
+  console.error("\n✖ Kontrola dostępu: access=\"open\" BEZ pola \"accessReason\" (odstępstwo musi być uzasadnione):");
+  console.error("  " + openWithoutReason.join("\n  "));
+}
+if (noGuard.length) {
+  console.error("\n✖ Kontrola dostępu: akcje BEZ wywołania guardu w kodzie:");
+  console.error("  " + noGuard.join("\n  "));
+  console.error("\n  Każda akcja musi sprawdzić uprawnienia — wywołaj `requireAuth()` (sesja),");
+  console.error("  guard modułu (`assert…Access`), `requireAdmin()`/`hasPermission()` albo deleguj do akcji,");
+  console.error("  która to robi. Jeśli akcja świadomie jest dostępna bez tego — ustaw access=\"open\"");
+  console.error("  i opisz powód w \"accessReason\". Dla cienkiej nakładki na inną akcję użyj");
+  console.error("  \"guardedVia\": \"<nazwaAkcji>\" — bramka sprawdzi, że faktycznie ją wołasz.\n");
+}
+
 if (badStatus.length) {
   console.error("\n✖ Pokrycie AI: wpisy z nieprawidłowym statusem (dozwolone: ai|pending|excluded):");
   console.error("  " + badStatus.join("\n  "));
@@ -126,12 +242,15 @@ if (unclassified.length) {
   console.error("  → \"ai\": wystaw akcję dla asystenta (egzekutor + katalog). \"pending\": luka do zrobienia.");
   console.error("  → \"excluded\": nie dla AI — podaj \"reason\" (admin/settings/internal/interactive/teams/account).\n");
 }
-if (badStatus.length || unclassified.length) process.exit(1);
+if (badStatus.length || unclassified.length || missingAccess.length || badAccess.length || openWithoutReason.length || noGuard.length) process.exit(1);
 
 if (stale.length) {
   console.warn("⚠ Pokrycie AI: przestarzałe wpisy w manifeście (akcja już nie istnieje): " + stale.join(", "));
 }
 
+console.log(
+  `✓ Kontrola dostępu: ${candidates.length} akcji z zadeklarowanym zakresem i guardem w kodzie.`
+);
 console.log(
   `✓ Pokrycie AI: ${candidates.length} akcji sklasyfikowanych — ` +
     `MUTACJE ${counts.mutation.ai} ai/${counts.mutation.pending} pending/${counts.mutation.excluded} excluded · ` +

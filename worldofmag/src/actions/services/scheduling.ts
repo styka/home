@@ -5,7 +5,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
-import { notifyUser } from "@/actions/notifications";
+import { notifyUser } from "@/lib/notify";
 import { requireOwnProvider, computeSlots } from "@/lib/services/helpers";
 import type { AvailabilityRule } from "@/lib/serviceSlots";
 

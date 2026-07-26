@@ -4,7 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
-import { notifyUser } from "@/actions/notifications";
+import { notifyUser } from "@/lib/notify";
 import { loadRequestAccess } from "@/lib/services/access";
 import type { RequestStatus, RequestThreadDTO, QuoteStatus, PaymentMethod, PaymentStatus } from "@/lib/services";
 

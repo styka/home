@@ -2,7 +2,7 @@
 
 > Plik generowany przez `scripts/check-ai-coverage.js --report`. Nie edytuj ręcznie.
 
-Mutacje (zapis): **159 ai / 0 pending / 184 excluded**. Odczyty (podgląd danych): **64 ai / 0 pending / 81 excluded**.
+Mutacje (zapis): **159 ai / 0 pending / 188 excluded**. Odczyty (podgląd danych): **64 ai / 0 pending / 85 excluded**.
 
 Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `excluded` = nie dla AI (admin/ustawienia/wewnętrzne/interaktywne).
 
@@ -48,6 +48,13 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `getAiConversation` | odczyt | ⛔ excluded | internal |
 | `listAiConversations` | odczyt | ⛔ excluded | internal |
 | `renameAiConversation` | zapis | ⛔ excluded | internal |
+
+## assistantPrefs — 0/2 wystawionych
+
+| Akcja | Rodzaj | Status | Uwaga |
+|---|---|---|---|
+| `getAssistantPrefs` | odczyt | ⛔ excluded | settings |
+| `updateAssistantPrefs` | zapis | ⛔ excluded | settings |
 
 ## calendar — 1/3 wystawionych
 
@@ -125,6 +132,13 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 |---|---|---|---|
 | `disconnectDrive` | zapis | ⛔ excluded | settings |
 | `getDriveStatus` | odczyt | ⛔ excluded | settings |
+
+## feedback — 1/2 wystawionych
+
+| Akcja | Rodzaj | Status | Uwaga |
+|---|---|---|---|
+| `getFeedbackInboxInfo` | odczyt | ⛔ excluded | internal |
+| `submitFeedbackTask` | zapis | ✅ ai | → submit_feedback |
 
 ## flota — 7/11 wystawionych
 
@@ -246,7 +260,7 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `renameList` | zapis | ✅ ai |  |
 | `unarchiveList` | zapis | ✅ ai | → unarchive_list |
 
-## llmConfig — 0/10 wystawionych
+## llmConfig — 0/13 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
@@ -257,8 +271,11 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `getAssignments` | odczyt | ⛔ excluded | admin |
 | `getCostAlertThreshold` | odczyt | ⛔ excluded | admin |
 | `getLlmProviders` | odczyt | ⛔ excluded | admin |
+| `getRecentAiCalls` | odczyt | ⛔ excluded | admin |
+| `getUsdPlnRate` | odczyt | ⛔ excluded | admin |
 | `setAssignment` | zapis | ⛔ excluded | admin |
 | `setCostAlertThreshold` | zapis | ⛔ excluded | admin |
+| `setUsdPlnRate` | zapis | ⛔ excluded | admin |
 | `updateProvider` | zapis | ⛔ excluded | admin |
 
 ## mealPlans — 10/11 wystawionych
@@ -352,7 +369,7 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `toggleNotePin` | zapis | ✅ ai |  |
 | `updateNote` | zapis | ✅ ai |  |
 
-## notifications — 1/6 wystawionych
+## notifications — 0/5 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
@@ -360,7 +377,6 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `getUnreadCount` | odczyt | ⛔ excluded | settings |
 | `markAllNotificationsRead` | zapis | ⛔ excluded | internal |
 | `markNotificationRead` | zapis | ⛔ excluded | internal |
-| `notifyUser` | zapis | ✅ ai |  |
 | `syncReminders` | zapis | ⛔ excluded | internal |
 
 ## pantry — 10/11 wystawionych
@@ -695,11 +711,13 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `getTaskTags` | odczyt | ✅ ai | → list_task_tags |
 | `updateTaskTag` | zapis | ⛔ excluded | dictionary |
 
-## tasks — 11/18 wystawionych
+## tasks — 11/20 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
 | `addTaskComment` | zapis | ✅ ai | → add_task_comment |
+| `bulkDeleteTasks` | zapis | ⛔ excluded | interactive |
+| `bulkUpdateTasks` | zapis | ⛔ excluded | interactive |
 | `completeRecurringTask` | zapis | ⛔ excluded | internal |
 | `createTask` | zapis | ✅ ai |  |
 | `deleteTask` | zapis | ✅ ai |  |

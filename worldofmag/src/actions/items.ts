@@ -177,6 +177,9 @@ export async function reorderItems(listId: string, category: string, orderedIds:
 }
 
 export async function getSuggestionsForPrefix(prefix: string): Promise<ItemHistory[]> {
+  // 031: `ItemHistory` to wspólny słownik podpowiedzi (bez właściciela), ale odczyt i tak
+  // wymaga zalogowania — aplikacja nie ma trybu anonimowego (C-22).
+  await requireAuth();
   if (!prefix || prefix.length < 1) return [];
   return prisma.itemHistory.findMany({
     where: { name: { contains: prefix.toLowerCase() } },

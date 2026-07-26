@@ -72,4 +72,33 @@ if (orphan.length > 0) {
   console.warn("⚠ Spójność akcji asystenta: executor obsługuje akcje spoza katalogu agenta (ostrzeżenie): " + orphan.join(", "));
 }
 
-console.log(`✓ Spójność akcji asystenta: ${catalog.size} akcji w katalogu, wszystkie obsługiwane przez executor.`);
+// 031: KONTRAKT AKCJI — każdy typ akcji musi mieć wpis w `src/lib/ai/actionContract.ts`.
+// Bez wpisu panel „Przejrzyj / popraw" pokazałby użytkownikowi techniczną nazwę akcji i surowe
+// wartości parametrów (id, enumy), a walidacja serwerowa nie miałaby reguł do sprawdzenia.
+// Skan jest statyczny: bierzemy klucze najwyższego poziomu z obiektu ACTION_CONTRACTS.
+const contractSrc = read("src/lib/ai/actionContract.ts");
+const cStart = contractSrc.indexOf("export const ACTION_CONTRACTS");
+const cEnd = contractSrc.indexOf("\n};", cStart);
+const contracted = new Set();
+if (cStart !== -1 && cEnd !== -1) {
+  for (const m of contractSrc.slice(cStart, cEnd).matchAll(/^ {2}([a-z][a-z0-9_]*):/gm)) {
+    contracted.add(m[1]);
+  }
+}
+
+const noContract = [...new Set([...catalog, ...handled])].filter((t) => !contracted.has(t)).sort();
+if (noContract.length > 0) {
+  console.error("\n✖ Kontrakt akcji: akcje BEZ wpisu w src/lib/ai/actionContract.ts:");
+  console.error("  " + noContract.join(", "));
+  console.error(
+    "\n  Dopisz do ACTION_CONTRACTS wpis `<typ>: { label: \"<polska nazwa akcji>\", fields: { … } }`.\n" +
+      "  `label` jest obowiązkowy (widzi go użytkownik zamiast technicznej nazwy); `fields` opisuj tylko\n" +
+      "  tam, gdzie pole potrzebuje innej kontrolki niż tekst (wybór wartości / data / liczba / tak-nie).\n"
+  );
+  process.exit(1);
+}
+
+console.log(
+  `✓ Spójność akcji asystenta: ${catalog.size} akcji w katalogu, wszystkie obsługiwane przez executor ` +
+    `i opisane w kontrakcie (${contracted.size} wpisów).`
+);

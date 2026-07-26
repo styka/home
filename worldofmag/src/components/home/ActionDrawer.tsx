@@ -5,6 +5,7 @@ import { X, ShoppingCart, CheckSquare, FileText, PawPrint, Boxes, Wallet, Fuel, 
 import type { AIAction } from "@/lib/ai/aiAction";
 import { DESTRUCTIVE_ACTION_TYPES } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executors/shared";
+import { actionLabel, fieldSpec, validateActionParams } from "@/lib/ai/actionContract";
 
 interface ActionDrawerProps {
   actions: AIAction[];
@@ -15,16 +16,21 @@ interface ActionDrawerProps {
   /** Korekta planu przez AI: użytkownik opisuje, co poprawić, a agent przeplanowuje całość. */
   onRefine?: (feedback: string) => void;
   isRefining?: boolean;
+  /** 031: techniczny typ akcji (diagnostyka) pokazujemy wyłącznie administratorowi. */
+  isAdmin?: boolean;
 }
 
 // Akcje destrukcyjne — domyślnie ODZNACZONE i oznaczone na czerwono (świadomy opt-in).
 // Zbiór współdzielony z AICommandSheet — źródło: `@/lib/ai/aiAction`.
 const DESTRUCTIVE_TYPES = DESTRUCTIVE_ACTION_TYPES;
-// Surowe identyfikatory rekordów (taskId/listId/itemId/noteId…) nic nie mówią
-// użytkownikowi, więc NIE pokazujemy ich w edytorze parametrów — i tak przechodzą
-// dalej do backendu, który celuje po nich w konkretny rekord. Użytkownik recenzuje
-// akcję po opisie i po czytelnym `searchQuery` (nazwa/tytuł rekordu).
-const ID_KEY = /Id$/;
+// Surowe identyfikatory rekordów (taskId/listId/itemId/noteId…) nic nie mówią użytkownikowi,
+// więc NIE pokazujemy ich w edytorze parametrów — i tak przechodzą dalej do backendu, który
+// celuje po nich w konkretny rekord. Decyduje o tym kontrakt akcji (`fieldSpec` → "hidden").
+// Użytkownik recenzuje akcję po opisie i po czytelnej „Szukanej nazwie".
+
+// Wysokość wiersza nagłówka pozycji (ikona modułu + etykieta). Wspólna dla wiersza i dla pola
+// wyboru obok niego — dzięki temu checkbox jest wyrównany w PIONIE z ikoną i nazwą akcji.
+const BADGE_ROW_HEIGHT = 20;
 
 // Parametry-daty agent przesyła jako surowy string ISO z JSON-a
 // (np. „2026-06-08T00:00:00.000Z"). W podglądzie akcji to nieczytelne, więc
@@ -125,7 +131,7 @@ function moduleLabel(module: string) {
   return "Notatki";
 }
 
-export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results, onRefine, isRefining }: ActionDrawerProps) {
+export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results, onRefine, isRefining, isAdmin = false }: ActionDrawerProps) {
   const [refineText, setRefineText] = useState("");
   const [included, setIncluded] = useState<Set<string>>(
     new Set(actions.filter((a) => !DESTRUCTIVE_TYPES.has(a.type)).map((a) => a.id))
@@ -166,9 +172,35 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
     });
   }
 
+  // Które pola użytkownik REALNIE zmienił (klucz: `${actionId}:${key}`). Potrzebne, bo stan
+  // edycji trzyma wszystkie parametry jako STRINGI — bez tego pola nietknięte wracałyby do
+  // backendu zniekształcone (np. `tags: ["pilne"]` → `"pilne"`, obiekt → `"[object Object]"`).
+  const [touchedParams, setTouchedParams] = useState<Set<string>>(new Set());
+
   function updateParam(actionId: string, key: string, value: string) {
     setEditedParams((prev) => ({ ...prev, [actionId]: { ...prev[actionId], [key]: value } }));
+    setTouchedParams((prev) => new Set(prev).add(`${actionId}:${key}`));
   }
+
+  // 031: walidacja z kontraktu akcji — ta sama funkcja, którą serwer odpala
+  // rozstrzygająco w egzekutorze. Tu działa od razu (UX), żeby użytkownik zobaczył problem
+  // przed uruchomieniem akcji, a nie po.
+  function errorsFor(action: AIAction): string[] {
+    const edited = editedParams[action.id];
+    if (!edited) return validateActionParams(action);
+    // Zachowaj typy oryginalnych parametrów (liczby/bool), inaczej walidacja liczb dostałaby string.
+    const params = Object.fromEntries(
+      Object.entries(edited).map(([k, v]) => {
+        const orig = action.params[k];
+        if (!touchedParams.has(`${action.id}:${k}`)) return [k, orig];
+        if (typeof orig === "boolean") return [k, v === "true"];
+        return [k, v];
+      })
+    );
+    return validateActionParams({ type: action.type, params });
+  }
+
+  const invalidIncluded = actions.filter((a) => included.has(a.id) && errorsFor(a).length > 0);
 
   function handleConfirm() {
     const confirmed = actions
@@ -179,6 +211,10 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
         params: Object.fromEntries(
           Object.entries(editedParams[a.id] ?? a.params).map(([k, v]) => {
             const orig = a.params[k];
+            // Pole nietknięte → oddajemy ORYGINALNĄ wartość, nie jej reprezentację tekstową.
+            // Inaczej tablice i obiekty (tags, words, daysOfWeek, timesOfDay…) traciły strukturę
+            // i akcja po cichu robiła coś innego, niż użytkownik zatwierdził.
+            if (!touchedParams.has(`${a.id}:${k}`)) return [k, orig];
             if (typeof orig === "number") return [k, Number(v)];
             if (typeof orig === "boolean") return [k, v === "true"];
             return [k, v];
@@ -191,6 +227,7 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
 
   const showResults = !!results;
   const selectedCount = included.size;
+  const blocked = selectedCount === 0 || isRefining || invalidIncluded.length > 0;
   const successCount = results?.filter((r) => r.success).length ?? 0;
   const failCount = results?.filter((r) => !r.success).length ?? 0;
 
@@ -281,11 +318,18 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                   transition: "opacity 0.1s",
                 }}
               >
+                {/* Pole wyboru wyrównane w PIONIE z wierszem nagłówka (ikona modułu + nazwa akcji):
+                    stała wysokość równa BADGE_ROW_HEIGHT + centrowanie, zamiast kruchego marginTop.
+                    Szerokość 20 px = minimalny cel dotyku (C-31). */}
                 <button
                   onClick={() => toggleAction(action.id)}
                   style={{
                     flexShrink: 0,
-                    marginTop: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 20,
+                    height: BADGE_ROW_HEIGHT,
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -298,12 +342,17 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   {/* Module badge + action type */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, minHeight: BADGE_ROW_HEIGHT }}>
                     <span style={{ color: moduleColor(action.module) }}>{moduleIcon(action.module)}</span>
                     <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: moduleColor(action.module) }}>
                       {moduleLabel(action.module)}
                     </span>
-                    <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace" }}>{action.type}</span>
+                    {/* 031: użytkownik widzi POLSKĄ nazwę akcji z kontraktu; techniczny typ akcji
+                        (diagnostyka) pokazujemy wyłącznie administratorowi. */}
+                    <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{actionLabel(action)}</span>
+                    {isAdmin && (
+                      <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace" }}>{action.type}</span>
+                    )}
                     {DESTRUCTIVE_TYPES.has(action.type) && (
                       <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "var(--accent-red)", border: "1px solid var(--accent-red)", borderRadius: 4, padding: "0 4px" }}>
                         USUWA
@@ -327,47 +376,100 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                     Parametry
                   </button>
 
-                  {/* Params editor (pomijamy surowe identyfikatory — patrz ID_KEY) */}
+                  {/* 031: edytor parametrów oparty na KONTRAKCIE AKCJI — polskie etykiety pól,
+                      kontrolka adekwatna do rodzaju pola (wybór/data/liczba/tak-nie/tekst) i
+                      wartości w formie widocznej w aplikacji. Pola techniczne (identyfikatory)
+                      są ukryte, ale przechodzą do backendu bez zmian. */}
                   {paramsExpanded.has(action.id) && (
                     <div style={{ marginTop: 8, padding: "8px 10px", background: "var(--bg-elevated)", borderRadius: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                      {Object.entries(editedParams[action.id] ?? {}).filter(([key]) => !ID_KEY.test(key)).map(([key, value]) => {
-                        const isDate = isDateValue(value);
+                      {Object.entries(editedParams[action.id] ?? {}).map(([key, value]) => {
+                        const spec = fieldSpec(action.type, key, action.params[key]);
+                        if (spec.control === "hidden") return null;
+                        const fieldError = errorsFor(action).find((e) => e.startsWith(`Pole „${spec.label}"`));
+                        const inputStyle: React.CSSProperties = {
+                          flex: 1, minWidth: 0, fontSize: 12, color: "var(--text-primary)",
+                          background: "var(--bg-surface)",
+                          border: `1px solid ${fieldError ? "var(--accent-red)" : "var(--border)"}`,
+                          borderRadius: 6, padding: "3px 8px", outline: "none",
+                        };
+                        // Data: kontrakt może wskazać dzień/dzień+godzinę, ale gdy wartość niesie
+                        // znaczący czas — pokazujemy pełny picker (nie gubimy godziny).
+                        const dateControl = spec.control === "date" || spec.control === "datetime";
                         return (
-                          <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 11, color: "var(--text-muted)", width: 90, flexShrink: 0, fontFamily: "monospace" }}>{key}</span>
-                            {isDate ? (
-                              <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                                <input
-                                  type={hasTime(value) ? "datetime-local" : "date"}
-                                  value={toInputValue(value)}
+                          <div key={key} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: 11, color: "var(--text-muted)", width: 110, flexShrink: 0 }}>{spec.label}</span>
+                              {spec.control === "select" ? (
+                                <select
+                                  value={value}
                                   onChange={(e) => updateParam(action.id, key, e.target.value)}
-                                  style={{
-                                    fontSize: 12, color: "var(--text-primary)",
-                                    background: "var(--bg-surface)", border: "1px solid var(--border)",
-                                    borderRadius: 6, padding: "3px 8px", outline: "none",
-                                  }}
+                                  style={inputStyle}
+                                >
+                                  {/* Wartość spoza słownika (np. halucynacja modelu) zostaje widoczna,
+                                      żeby użytkownik wiedział, co poprawia — walidacja ją oznaczy. */}
+                                  {!spec.options?.some((o) => o.value === value) && value !== "" && (
+                                    <option value={value}>{value} (nieznana wartość)</option>
+                                  )}
+                                  <option value="">(nie ustawiaj)</option>
+                                  {spec.options?.map((o) => (
+                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                  ))}
+                                </select>
+                              ) : spec.control === "boolean" ? (
+                                <select
+                                  value={value === "true" ? "true" : value === "false" ? "false" : ""}
+                                  onChange={(e) => updateParam(action.id, key, e.target.value)}
+                                  style={inputStyle}
+                                >
+                                  <option value="">(nie ustawiaj)</option>
+                                  <option value="true">Tak</option>
+                                  <option value="false">Nie</option>
+                                </select>
+                              ) : spec.control === "number" ? (
+                                <input
+                                  type="number"
+                                  value={value}
+                                  min={spec.min}
+                                  max={spec.max}
+                                  onChange={(e) => updateParam(action.id, key, e.target.value)}
+                                  style={inputStyle}
                                 />
-                                <span style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {formatDateLabel(value)}
-                                </span>
-                              </div>
-                            ) : (
-                              <input
-                                value={value}
-                                onChange={(e) => updateParam(action.id, key, e.target.value)}
-                                style={{
-                                  flex: 1, fontSize: 12, color: "var(--text-primary)",
-                                  background: "var(--bg-surface)", border: "1px solid var(--border)",
-                                  borderRadius: 6, padding: "3px 8px", outline: "none",
-                                }}
-                              />
+                              ) : dateControl && isDateValue(value) ? (
+                                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                                  <input
+                                    type={spec.control === "datetime" && hasTime(value) ? "datetime-local" : "date"}
+                                    value={toInputValue(value)}
+                                    onChange={(e) => updateParam(action.id, key, e.target.value)}
+                                    style={{ ...inputStyle, flex: "0 0 auto" }}
+                                  />
+                                  <span style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {formatDateLabel(value)}
+                                  </span>
+                                </div>
+                              ) : spec.control === "textarea" ? (
+                                <textarea
+                                  value={value}
+                                  rows={2}
+                                  onChange={(e) => updateParam(action.id, key, e.target.value)}
+                                  style={{ ...inputStyle, resize: "vertical", lineHeight: 1.45 }}
+                                />
+                              ) : (
+                                <input
+                                  value={value}
+                                  onChange={(e) => updateParam(action.id, key, e.target.value)}
+                                  style={inputStyle}
+                                />
+                              )}
+                            </div>
+                            {fieldError && (
+                              <span style={{ fontSize: 10.5, color: "var(--accent-red)", paddingLeft: 118 }}>{fieldError}</span>
                             )}
                           </div>
                         );
                       })}
                       {action.searchQuery !== undefined && (
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 11, color: "var(--accent-amber)", width: 90, flexShrink: 0, fontFamily: "monospace" }}>searchQuery</span>
+                          <span style={{ fontSize: 11, color: "var(--accent-amber)", width: 110, flexShrink: 0 }}>Szukana nazwa</span>
                           <input
                             value={editedSearchQuery[action.id] ?? ""}
                             onChange={(e) => setEditedSearchQuery((prev) => ({ ...prev, [action.id]: e.target.value }))}
@@ -508,18 +610,21 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
                 >
                   Anuluj
                 </button>
+                {/* 031: nie da się uruchomić planu z niepoprawną wartością — walidacja z kontraktu
+                    blokuje przycisk (serwer i tak sprawdzi to samo, ale user dowiaduje się od razu). */}
                 <button
                   onClick={handleConfirm}
-                  disabled={selectedCount === 0 || isExecuting || isRefining}
+                  disabled={selectedCount === 0 || isExecuting || isRefining || invalidIncluded.length > 0}
+                  title={invalidIncluded.length > 0 ? "Popraw zaznaczone błędy w parametrach akcji" : undefined}
                   style={{
                     fontSize: 13,
                     fontWeight: 600,
                     padding: "7px 16px",
                     borderRadius: 8,
                     border: "none",
-                    background: selectedCount === 0 || isRefining ? "var(--bg-elevated)" : "var(--accent-blue)",
-                    color: selectedCount === 0 || isRefining ? "var(--text-muted)" : "#fff",
-                    cursor: selectedCount === 0 || isRefining ? "not-allowed" : "pointer",
+                    background: blocked ? "var(--bg-elevated)" : "var(--accent-blue)",
+                    color: blocked ? "var(--text-muted)" : "var(--on-accent)",
+                    cursor: blocked ? "not-allowed" : "pointer",
                     display: "flex",
                     alignItems: "center",
                     gap: 6,

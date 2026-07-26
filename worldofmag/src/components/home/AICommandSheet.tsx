@@ -4,14 +4,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight, ArrowUp,
-  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug,
+  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug, Gauge, Zap,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { useDictation } from "@/hooks/useDictation";
 import { ActionDrawer } from "@/components/home/ActionDrawer";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { withPln, DEFAULT_USD_PLN_RATE } from "@/lib/usdPln";
-import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported, primeSpeech, getAvailableVoices, onVoicesChanged, setPreferredVoiceURI, getPreferredVoiceURI } from "@/lib/tts";
+import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported, primeSpeech, getAvailableVoices, onVoicesChanged, setPreferredVoiceURI, getPreferredVoiceURI, setServerVoiceId, speechAvailable } from "@/lib/tts";
 import { createSpeechListener, speechRecognitionSupported, type SpeechListener } from "@/lib/speechRecognition";
 import {
   listAiConversations, getAiConversation, createAiConversation, appendAiMessage,
@@ -20,8 +20,10 @@ import {
 import { createUserReport } from "@/actions/reports";
 import { getRecentAiCalls, type AiCallLogRow } from "@/actions/llmConfig";
 import { aiCallsToText } from "@/lib/ai/aiCallLog";
-import { ensureOmniaProject } from "@/actions/taskProjects";
-import { createTask } from "@/actions/tasks";
+import { submitFeedbackTask } from "@/actions/feedback";
+import { getAssistantPrefs, getSpeechOptions, updateAssistantPrefs } from "@/actions/assistantPrefs";
+import { parseServerVoiceValue, toServerVoiceValue, type ServerVoice } from "@/lib/tts/serverVoices";
+import { ASSISTANT_LEVEL_DESCRIPTIONS, ASSISTANT_LEVEL_LABELS, ASSISTANT_LEVELS, type AssistantLevel } from "@/types";
 import type { AIAction } from "@/lib/ai/aiAction";
 import { isDestructiveAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executors/shared";
@@ -274,36 +276,59 @@ function CostChip({ meta, rate = DEFAULT_USD_PLN_RATE }: { meta?: AgentMeta; rat
   );
 }
 
-function ReasoningLog({ log }: { log?: LogEntry[] }) {
+// 031: log rozumowania w DWÓCH warstwach.
+//  • „Pokaż log rozumowania" (dla wszystkich) — kroki opisane po ludzku, ZWINIĘTE. Wcześniej cała
+//    lista myśli wisiała pod każdą odpowiedzią i zaśmiecała czat („Pobieram zadania…", „Mam listę…").
+//  • „Pokaż techniczny log rozumowania (admin)" — dawny surowy zrzut z nazwami narzędzi i JSON-ami;
+//    widoczny WYŁĄCZNIE dla administratora (zwykły użytkownik nie ma po co widzieć wnętrza).
+// Stare rozmowy bez logu renderują się bez żadnego przełącznika (wsteczna zgodność).
+function ReasoningLog({ log, isAdmin = false }: { log?: LogEntry[]; isAdmin?: boolean }) {
   const [expanded, setExpanded] = useState(false);
+  const [techExpanded, setTechExpanded] = useState(false);
   if (!log?.length) return null;
+  const thoughts = log.filter((l) => l.thought);
+  const toggleStyle: React.CSSProperties = {
+    display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--text-muted)",
+    background: "none", border: "none", cursor: "pointer", padding: 0,
+  };
   return (
-    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 8 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {log.filter((l) => l.thought).map((l, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
-            <Sparkles size={11} style={{ color: "var(--text-muted)", flexShrink: 0, marginTop: 3 }} />
-            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{l.thought}</span>
-          </div>
-        ))}
-      </div>
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-      >
-        {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-        {expanded ? "Ukryj log rozumowania" : "Pokaż log rozumowania"}
-      </button>
-      {expanded && (
-        <pre style={{ marginTop: 6, padding: "8px 10px", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 10.5, lineHeight: 1.5, color: "var(--text-secondary)", overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 240, overflowY: "auto" }}>
-          {log.map((l) => {
-            const head = `#${l.iter} [${l.step}] ${l.thought}`;
-            if (l.step === "query") return `${head}\n  narzędzia: ${JSON.stringify(l.tools)}\n  wyniki: ${JSON.stringify(l.results)}`;
-            if (l.step === "clarify") return `${head}\n  pytanie: ${l.question}`;
-            if (l.step === "plan") return `${head}\n  akcje: ${l.actionsCount}`;
-            return head;
-          }).join("\n\n")}
-        </pre>
+    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+      {thoughts.length > 0 && (
+        <>
+          <button onClick={() => setExpanded((v) => !v)} style={toggleStyle} aria-expanded={expanded}>
+            {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+            {expanded ? "Ukryj log rozumowania" : "Pokaż log rozumowania"}
+          </button>
+          {expanded && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {thoughts.map((l, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                  <Sparkles size={11} style={{ color: "var(--text-muted)", flexShrink: 0, marginTop: 3 }} />
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{l.thought}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      {isAdmin && (
+        <>
+          <button onClick={() => setTechExpanded((v) => !v)} style={toggleStyle} aria-expanded={techExpanded}>
+            {techExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+            {techExpanded ? "Ukryj techniczny log rozumowania (admin)" : "Pokaż techniczny log rozumowania (admin)"}
+          </button>
+          {techExpanded && (
+            <pre style={{ padding: "8px 10px", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 10.5, lineHeight: 1.5, color: "var(--text-secondary)", overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 240, overflowY: "auto" }}>
+              {log.map((l) => {
+                const head = `#${l.iter} [${l.step}] ${l.thought}`;
+                if (l.step === "query") return `${head}\n  narzędzia: ${JSON.stringify(l.tools)}\n  wyniki: ${JSON.stringify(l.results)}`;
+                if (l.step === "clarify") return `${head}\n  pytanie: ${l.question}`;
+                if (l.step === "plan") return `${head}\n  akcje: ${l.actionsCount}`;
+                return head;
+              }).join("\n\n")}
+            </pre>
+          )}
+        </>
       )}
     </div>
   );
@@ -389,14 +414,21 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   const prefsRef = useRef("");
   prefsRef.current = prefs;
   const [showPrefs, setShowPrefs] = useState(false);
+  // 031: poziom pracy asystenta — zapisywany w BAZIE per użytkownik (widoczny na każdym
+  // urządzeniu), nie w pamięci przeglądarki. Serwer i tak czyta go z bazy; ten stan służy UI.
+  const [level, setLevel] = useState<AssistantLevel>("standard");
+  const [showLevelMenu, setShowLevelMenu] = useState(false);
   // Zgłaszanie problemu z czatem (admin-only): panel z opcjonalnym opisem → zadanie w projekcie „Omnia".
   const [showReport, setShowReport] = useState(false);
   const [reportDesc, setReportDesc] = useState("");
   const [reportBusy, setReportBusy] = useState(false);
-  const [reportDone, setReportDone] = useState<{ projectId: string } | null>(null);
+  const [reportDone, setReportDone] = useState<{ projectId: string; canRead: boolean } | null>(null);
   // Wybór głosu lektora (per-urządzenie). Głosy iOS/Safari ładują się asynchronicznie — subskrybujemy.
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceURI, setVoiceURIState] = useState<string>("");
+  // 031: głosy SERWEROWE (niezależne od przeglądarki) — dostępne tylko, gdy administrator
+  // przypisał dostawcę dla syntezy mowy. Wybór głosu serwerowego zapisujemy na koncie.
+  const [serverVoices, setServerVoices] = useState<ServerVoice[]>([]);
   // Tryb zgłoszenia (admin): kontekst wskazanego miejsca; gdy ustawiony, kolejna
   // wiadomość admina staje się opisem zadania w projekcie „Omnia". Ref — bo
   // listener zdarzenia i handleSend muszą widzieć aktualną wartość bez re-bind.
@@ -648,12 +680,36 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   // Zatrzymaj generowanie przy zamknięciu/unmount.
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  // Wczytaj zapamiętane preferencje (localStorage) raz przy montażu.
+  // 031: ustawienia asystenta wczytujemy z BAZY (per użytkownik). Jeśli baza jest pusta, a w
+  // przeglądarce siedzą stare preferencje per-urządzenie — przenosimy je JEDNORAZOWO na konto i
+  // czyścimy klucz lokalny, żeby nikt nie stracił tego, co już wpisał.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("omnia.aiPrefs");
-      if (raw) setPrefs(raw);
-    } catch { /* ignore */ }
+    let cancelled = false;
+    (async () => {
+      try {
+        const p = await getAssistantPrefs();
+        if (cancelled) return;
+        setLevel(p.level);
+        if (p.voiceKind === "server" && p.voiceId) {
+          setServerVoiceId(p.voiceId);
+          setVoiceURIState(toServerVoiceValue(p.voiceId));
+        }
+        void getSpeechOptions()
+          .then((o) => { if (!cancelled) setServerVoices(o.voices); })
+          .catch(() => {});
+        let legacy = "";
+        try { legacy = localStorage.getItem("omnia.aiPrefs") ?? ""; } catch { /* ignore */ }
+        if (!p.instructions && legacy.trim()) {
+          setPrefs(legacy);
+          try { await updateAssistantPrefs({ instructions: legacy }); } catch { /* ignore */ }
+          try { localStorage.removeItem("omnia.aiPrefs"); } catch { /* ignore */ }
+        } else {
+          setPrefs(p.instructions);
+          if (legacy) { try { localStorage.removeItem("omnia.aiPrefs"); } catch { /* ignore */ } }
+        }
+      } catch { /* brak sesji / offline — zostajemy z domyślnymi */ }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   // Wczytaj listę głosów lektora + zapamiętany wybór; subskrybuj „voiceschanged" (async na iOS/Safari).
@@ -711,9 +767,40 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     return () => window.removeEventListener(ASSISTANT_OPEN_EVENT, onOpen);
   }, []);
 
+  // Zapis stałych preferencji na konto użytkownika (debounce — pole zapisuje się „samo").
+  const prefsSaveTimer = useRef<number | null>(null);
   function savePrefs(value: string) {
     setPrefs(value);
-    try { localStorage.setItem("omnia.aiPrefs", value); } catch { /* ignore */ }
+    if (prefsSaveTimer.current) window.clearTimeout(prefsSaveTimer.current);
+    prefsSaveTimer.current = window.setTimeout(() => {
+      void updateAssistantPrefs({ instructions: value }).catch(() => {});
+    }, 600);
+  }
+
+  /**
+   * 031: wybór głosu lektora. Głos SERWEROWY zapisujemy na koncie (brzmi tak samo na każdym
+   * urządzeniu), a głos SYSTEMOWY zostaje lokalnie — jest właściwością konkretnego urządzenia
+   * i na innym telefonie po prostu nie istnieje.
+   */
+  function changeVoice(value: string) {
+    setVoiceURIState(value);
+    const serverId = parseServerVoiceValue(value);
+    if (serverId) {
+      setServerVoiceId(serverId);
+      setPreferredVoiceURI(null);
+      void updateAssistantPrefs({ voiceKind: "server", voiceId: serverId }).catch(() => {});
+      return;
+    }
+    setServerVoiceId(null);
+    setPreferredVoiceURI(value || null);
+    void updateAssistantPrefs({ voiceKind: "browser", voiceId: null }).catch(() => {});
+  }
+
+  // Zmiana poziomu pracy asystenta — zapis natychmiastowy (to jedno kliknięcie, nie pisanie).
+  function changeLevel(next: AssistantLevel) {
+    setLevel(next);
+    setShowLevelMenu(false);
+    void updateAssistantPrefs({ level: next }).catch(() => {});
   }
 
   // Autofokus pola wejścia po otwarciu (desktop) — natychmiast piszesz.
@@ -770,9 +857,11 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
       // bez prefiksu z datą (data jest w treści raportu).
       const firstLine = reportDesc.trim().split("\n")[0]?.slice(0, 80);
       const title = `🐛✨ ${firstLine || "Problem z Asystentem AI"}`;
-      const project = await ensureOmniaProject();
-      await createTask({ title, projectId: project.id, description });
-      setReportDone({ projectId: project.id });
+      // 031: zgłoszenie idzie do SKRZYNKI ADMINISTRATORA (jeden wąski wyjątek dostępowy w
+      // `submitFeedbackTask`) — wcześniej `ensureOmniaProject()` tworzyło projekt „Omnia" u
+      // zgłaszającego, więc zgłoszenia zwykłych użytkowników nigdy nie docierały do admina.
+      const res = await submitFeedbackTask({ title, description });
+      setReportDone({ projectId: res.projectId, canRead: res.canRead });
       setReportDesc("");
     } catch {
       setError("Nie udało się utworzyć zgłoszenia.");
@@ -1051,15 +1140,17 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
       setTurns((t) => [...t, { id: newId(), role: "user", kind: "text", content: text }]);
       void persist("user", text, "text");
       const prompt =
-        "[ZGŁOSZENIE ADMINA — TRYB WSKAZYWANIA]\n" +
-        'Utwórz dokładnie JEDNO zadanie w projekcie „Omnia" (module: tasks, type: create_task, params.projectName="Omnia").\n' +
+        "[ZGŁOSZENIE — TRYB WSKAZYWANIA]\n" +
+        // 031: zgłoszenie idzie akcją `submit_feedback` (skrzynka administratora), NIE `create_task` —
+        // zwykły użytkownik nie ma dostępu do projektu-skrzynki.
+        "Zaproponuj dokładnie JEDNO zgłoszenie (module: tasks, type: submit_feedback).\n" +
         '- params.title: wygeneruj zwięzły, konkretny tytuł po polsku podsumowujący zgłoszenie (max ~80 znaków), ZACZYNAJĄCY SIĘ od "🐛 " (emoji robaka + spacja).\n' +
-        "- params.description: NAJPIERW oryginalny opis admina wstawiony DOKŁADNIE, słowo w słowo (VERBATIM) — NIE przeredagowuj go, NIE poprawiaj gramatyki/interpunkcji, NIE streszczaj; zachowaj oryginalne słowa i ton. NASTĘPNIE dołącz poniższy kontekst wskazanego miejsca (UI).\n" +
-        "Nie dopytuj i nie odpowiadaj tekstem — od razu zaproponuj plan z tym jednym zadaniem.\n\n" +
-        `Opis zgłoszony przez admina:\n${text}\n\nKontekst wskazanego miejsca (UI):\n${feedbackContext}`;
+        "- params.description: NAJPIERW oryginalny opis zgłaszającego wstawiony DOKŁADNIE, słowo w słowo (VERBATIM) — NIE przeredagowuj go, NIE poprawiaj gramatyki/interpunkcji, NIE streszczaj; zachowaj oryginalne słowa i ton. NASTĘPNIE dołącz poniższy kontekst wskazanego miejsca (UI).\n" +
+        "Nie dopytuj i nie odpowiadaj tekstem — od razu zaproponuj plan z tym jednym zgłoszeniem.\n\n" +
+        `Opis zgłoszony przez użytkownika:\n${text}\n\nKontekst wskazanego miejsca (UI):\n${feedbackContext}`;
       await callAgent({
         text: prompt, context: ctx("tasks"),
-        routeHint: "Zgłoszenie błędu/sugestii od admina przez tryb wskazywania UI",
+        routeHint: "Zgłoszenie błędu/sugestii przez tryb wskazywania UI",
         today: new Date().toISOString(), history: [],
       });
       return;
@@ -1340,10 +1431,14 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 {reportDone ? (
                   <div style={{ fontSize: 13, color: "var(--text-primary)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                      <CheckCircle size={15} style={{ color: "var(--accent-green)" }} /> Utworzono zadanie w projekcie „Omnia".
+                      <CheckCircle size={15} style={{ color: "var(--accent-green)" }} />{" "}
+                      {reportDone.canRead ? "Utworzono zgłoszenie w skrzynce zgłoszeń." : "Dziękujemy — zgłoszenie trafiło do administratora."}
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={() => goTo(`/tasks/${reportDone.projectId}`)} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-blue)", cursor: "pointer" }}>Otwórz w zadaniach</button>
+                      {/* 031: przejście do zadania proponujemy TYLKO, gdy użytkownik ma dostęp do skrzynki. */}
+                      {reportDone.canRead && (
+                        <button onClick={() => goTo(`/tasks/${reportDone.projectId}`)} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-blue)", cursor: "pointer" }}>Otwórz w zadaniach</button>
+                      )}
                       <button onClick={() => { setShowReport(false); setReportDone(null); }} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Zamknij</button>
                     </div>
                   </div>
@@ -1388,10 +1483,13 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                   placeholder={'Np. „Domyślnie dodawaj do listy Tygodniowe. Kwoty w PLN. Pisz zwięźle."'}
                   style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none", resize: "vertical" }}
                 />
-                <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>Zapisywane na tym urządzeniu. Zmiany zapisują się automatycznie.</p>
+                <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>Zapisywane na Twoim koncie — widoczne na każdym urządzeniu. Zmiany zapisują się automatycznie.</p>
 
-                {/* Wybór głosu lektora (odczyt na głos) */}
-                {ttsSupported() && (
+                {/* 031: wybór głosu lektora — jedna lista: głosy SERWEROWE (jeśli administrator je
+                    włączył; działają w każdej przeglądarce) + głosy systemu użytkownika. Lista
+                    głosów systemowych jest przefiltrowana do tych, które faktycznie da się
+                    odtworzyć (patrz `getAvailableVoices` w lib/tts.ts). */}
+                {(ttsSupported() || serverVoices.length > 0) && (
                   <div style={{ marginTop: 12 }}>
                     <label htmlFor="ai-voice-select" style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
                       Głos lektora (odczyt na głos)
@@ -1400,25 +1498,40 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                       <select
                         id="ai-voice-select"
                         value={voiceURI}
-                        onChange={(e) => { setVoiceURIState(e.target.value); setPreferredVoiceURI(e.target.value || null); }}
+                        onChange={(e) => changeVoice(e.target.value)}
                         style={{ flex: 1, minWidth: 0, fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none" }}
                       >
                         <option value="">(domyślny przeglądarki)</option>
-                        {voices.map((v) => (
-                          <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
-                        ))}
+                        {serverVoices.length > 0 && (
+                          <optgroup label="Głosy Omnii (działają wszędzie)">
+                            {serverVoices.map((v) => (
+                              <option key={v.id} value={toServerVoiceValue(v.id)}>{v.label} — {v.description}</option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {voices.length > 0 && (
+                          <optgroup label="Głosy tego urządzenia">
+                            {voices.map((v) => (
+                              <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
+                            ))}
+                          </optgroup>
+                        )}
                       </select>
                       <button
-                        onClick={() => speak("Testowy głos asystenta.", "pl")}
-                        title="Przetestuj głos"
-                        aria-label="Przetestuj głos"
+                        onClick={() => speak("Dzień dobry, Wielki Magu. Tak brzmi wybrany głos lektora.", "pl")}
+                        title="Posłuchaj próbki"
+                        aria-label="Posłuchaj próbki głosu"
                         style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-secondary)", cursor: "pointer" }}
                       >
-                        <Volume2 size={14} /> Test
+                        <Volume2 size={14} /> Próbka
                       </button>
                     </div>
-                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0" }}>
-                      {voices.length === 0 ? "Głosy ładują się… (na iPhonie mogą pojawić się po chwili)." : "Zapisywane na tym urządzeniu."}
+                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0", lineHeight: 1.5 }}>
+                      {voices.length === 0 && serverVoices.length === 0
+                        ? "Głosy ładują się… (na iPhonie mogą pojawić się po chwili)."
+                        : serverVoices.length > 0
+                          ? "Głosy Omnii zapisujemy na Twoim koncie i brzmią tak samo na każdym urządzeniu. Głosy tego urządzenia pochodzą z systemu — ich lista zależy od komputera lub telefonu."
+                          : "Lista pochodzi z Twojego systemu — pokazujemy tylko głosy, które faktycznie działają. Więcej polskich głosów można doinstalować w ustawieniach systemu."}
                     </p>
                   </div>
                 )}
@@ -1433,7 +1546,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 </button>
                 {conversations.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 16 }}>Brak zapisanych rozmów.</p>}
                 {conversations.map((c) => (
-                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  // 031: `minWidth: 0` na wierszu ORAZ na przycisku tytułu — bez tego dziecko flexboxa
+                  // ma domyślnie `min-width: auto` i długi tytuł rozpycha wiersz poza szerokość ekranu
+                  // (na telefonie objawiało się to przewijaniem w poziomie w historii rozmów).
+                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                     {renamingId === c.id ? (
                       <input
                         autoFocus
@@ -1444,8 +1560,8 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                         style={{ flex: 1, fontSize: 13, padding: "9px 10px", borderRadius: 8, border: "1px solid var(--accent-blue)", background: "var(--bg-base)", color: "var(--text-primary)", outline: "none" }}
                       />
                     ) : (
-                      <button onClick={() => loadConversation(c.id)} style={{ ...rowBtn, flex: 1, justifyContent: "flex-start" }}>
-                        <span style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</span>
+                      <button onClick={() => loadConversation(c.id)} style={{ ...rowBtn, flex: 1, minWidth: 0, overflow: "hidden", justifyContent: "flex-start" }}>
+                        <span style={{ fontSize: 13, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowWrap: "anywhere" }}>{c.title}</span>
                       </button>
                     )}
                     <button onClick={() => { setRenamingId(c.id); setRenameText(c.title); }} title="Zmień nazwę" aria-label="Zmień nazwę rozmowy" style={{ ...iconBtn, color: "var(--text-muted)" }}><Pencil size={13} /></button>
@@ -1494,18 +1610,15 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
 
                 {busy && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {/* Myśli agenta na żywo (streaming) */}
+                    {/* 031: myśl agenta na żywo — POJEDYNCZY, aktualny krok zastępowany przez
+                        następny (wcześniej narastała lista, której użytkownik nie potrzebuje).
+                        Pełny przebieg jest po zakończeniu pod „Pokaż log rozumowania". */}
                     {liveThoughts.length > 0 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                        {liveThoughts.map((t, i) => {
-                          const last = i === liveThoughts.length - 1;
-                          return (
-                            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, opacity: last ? 1 : 0.5 }}>
-                              <Sparkles size={11} style={{ color: "var(--accent-blue)", flexShrink: 0, marginTop: 3 }} />
-                              <span style={{ fontSize: 12, color: last ? "var(--text-secondary)" : "var(--text-muted)" }}>{t}</span>
-                            </div>
-                          );
-                        })}
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }} aria-live="polite">
+                        <Sparkles size={11} style={{ color: "var(--accent-blue)", flexShrink: 0, marginTop: 3 }} />
+                        <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                          {liveThoughts[liveThoughts.length - 1]}
+                        </span>
                       </div>
                     )}
                     <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--text-muted)", fontSize: 13 }}>
@@ -1603,6 +1716,55 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                       </button>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      {/* 031: poziom pracy asystenta — NA LEWO od mikrofonu. Wybór zapisuje się na
+                          koncie użytkownika, więc jest ten sam na każdym urządzeniu. */}
+                      <div style={{ position: "relative", flexShrink: 0 }}>
+                        <button
+                          onClick={() => setShowLevelMenu((v) => !v)}
+                          disabled={busy}
+                          title={`Poziom pracy asystenta: ${ASSISTANT_LEVEL_LABELS[level]}`}
+                          aria-label={`Poziom pracy asystenta: ${ASSISTANT_LEVEL_LABELS[level]}`}
+                          aria-expanded={showLevelMenu}
+                          style={{ ...composerActionBtn, color: level === "economy" ? "var(--accent-amber)" : "var(--text-muted)" }}
+                        >
+                          {level === "economy" ? <Zap size={19} /> : <Gauge size={19} />}
+                        </button>
+                        {showLevelMenu && (
+                          <div
+                            role="menu"
+                            style={{
+                              position: "absolute", bottom: "calc(100% + 6px)", left: 0, zIndex: 6,
+                              minWidth: 240, maxWidth: "min(300px, calc(100vw - 40px))",
+                              padding: 4, background: "var(--bg-elevated)", border: "1px solid var(--border)",
+                              borderRadius: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.35)",
+                            }}
+                          >
+                            {ASSISTANT_LEVELS.map((lvl) => (
+                              <button
+                                key={lvl}
+                                role="menuitemradio"
+                                aria-checked={level === lvl}
+                                onClick={() => changeLevel(lvl)}
+                                style={{
+                                  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2,
+                                  width: "100%", padding: "8px 10px", borderRadius: 8, border: "none",
+                                  background: level === lvl ? "var(--bg-hover)" : "transparent",
+                                  cursor: "pointer", textAlign: "left",
+                                }}
+                              >
+                                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-primary)" }}>
+                                  {lvl === "economy" ? <Zap size={13} /> : <Gauge size={13} />}
+                                  {ASSISTANT_LEVEL_LABELS[lvl]}
+                                  {level === lvl && <Check size={12} style={{ color: "var(--accent-green)" }} />}
+                                </span>
+                                <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
+                                  {ASSISTANT_LEVEL_DESCRIPTIONS[lvl]}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       {/* Mikrofon dyktowania — dopisuje mowę do pola (oddzielny od trybu rozmowy głosowej) */}
                       {dictation.supported && !busy && (
                         <button
@@ -1638,6 +1800,11 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     </div>
                   </div>
                 </div>
+                {/* 031: podpowiedź skrótu wysyłania. Tylko desktop (`hidden md:block`) — na telefonie
+                    nie ma klawiatury sprzętowej, a wiersz zabierałby miejsce nad klawiaturą ekranową. */}
+                <p className="hidden md:block" style={{ margin: "4px 2px 0", fontSize: 10.5, color: "var(--text-muted)" }}>
+                  <kbd style={{ fontFamily: "inherit", fontWeight: 600 }}>Ctrl</kbd>+<kbd style={{ fontFamily: "inherit", fontWeight: 600 }}>Enter</kbd> wysyła wiadomość
+                </p>
               </div>
             )}
           </div>
@@ -1654,6 +1821,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
           isRefining={isRefining}
           onClose={handlePlanClose}
           isExecuting={isExecuting}
+          isAdmin={isAdmin}
         />
       )}
     </>
@@ -1669,15 +1837,32 @@ const composerActionBtn: React.CSSProperties = { flexShrink: 0, width: 38, heigh
 const composerPrimaryBtn: React.CSSProperties = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" };
 
 // ── Widok pojedynczej tury ──────────────────────────────────────────────────
+// 031: stopka odpowiedzi to WYŁĄCZNIE ikony (bez labelek) — każda z `title` (tooltip) i
+// `aria-label`. Kolejność w stopce: 1. odczytaj na głos, 2. kopiuj, 3. ponów.
+const footerIconBtn: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
+  width: 26, height: 26, background: "none", border: "none", cursor: "pointer", padding: 0,
+};
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
+  const label = copied ? "Skopiowano" : "Kopiuj";
   return (
     <button
       onClick={() => { navigator.clipboard?.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); }}
-      title="Kopiuj"
-      style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: copied ? "var(--accent-green)" : "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+      title={label}
+      aria-label={label}
+      style={{ ...footerIconBtn, color: copied ? "var(--accent-green)" : "var(--text-muted)" }}
     >
-      {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? "Skopiowano" : "Kopiuj"}
+      {copied ? <Check size={13} /> : <Copy size={13} />}
+    </button>
+  );
+}
+
+function RegenerateButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} title="Generuj ponownie" aria-label="Generuj ponownie" style={{ ...footerIconBtn, color: "var(--text-muted)" }}>
+      <RefreshCw size={13} />
     </button>
   );
 }
@@ -1685,8 +1870,10 @@ function CopyButton({ text }: { text: string }) {
 // Przycisk odczytu posta Asystenta na głos (start ↔ stop). Chowa się, gdy przeglądarka nie wspiera syntezy.
 // 029: wariant icon-only (bez labelki) — trafia do jednego wiersza stopki obok kwoty kosztu.
 function SpeakButton({ speaking, onToggle }: { speaking: boolean; onToggle: () => void }) {
-  const [supported] = useState(() => ttsSupported());
-  if (!supported) return null;
+  // 031: liczy się KTÓRAKOLWIEK ścieżka syntezy — przeglądarka albo wybrany głos serwerowy
+  // (ten działa nawet tam, gdzie przeglądarka nie ma własnej syntezy). Sprawdzamy przy każdym
+  // renderze, bo głos serwerowy dochodzi asynchronicznie po wczytaniu ustawień.
+  if (!speechAvailable()) return null;
   return (
     <button
       onClick={onToggle}
@@ -1764,7 +1951,7 @@ function TurnView({
     return (
       <div style={bubble}>
         <div onClick={onBubbleClick} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
-        {isAdmin && <ReasoningLog log={turn.log} />}
+        <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         {isLast && turn.followups && turn.followups.length > 0 && onFollowup && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
             {turn.followups.map((f) => (
@@ -1775,13 +1962,9 @@ function TurnView({
           </div>
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 6 }}>
-          <CopyButton text={turn.content} />
           {onToggleSpeak && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
-          {isLast && onRegenerate && (
-            <button onClick={onRegenerate} title="Generuj ponownie" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-              <RefreshCw size={12} /> Ponów
-            </button>
-          )}
+          <CopyButton text={turn.content} />
+          {isLast && onRegenerate && <RegenerateButton onClick={onRegenerate} />}
           <CostChip meta={turn.meta} rate={usdPlnRate} />
         </div>
       </div>
@@ -1823,7 +2006,7 @@ function TurnView({
             </div>
           </>
         )}
-        {isAdmin && <ReasoningLog log={turn.log} />}
+        <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
           <CostChip meta={turn.meta} rate={usdPlnRate} />
@@ -1839,7 +2022,7 @@ function TurnView({
         <button onClick={() => onNavigate(turn.url)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           <ArrowRight size={15} /> {turn.label}
         </button>
-        {isAdmin && <ReasoningLog log={turn.log} />}
+        <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
           <CostChip meta={turn.meta} rate={usdPlnRate} />
@@ -1905,7 +2088,7 @@ function TurnView({
             )}
           </div>
         )}
-        {isAdmin && <ReasoningLog log={turn.log} />}
+        <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
           <CostChip meta={turn.meta} rate={usdPlnRate} />
@@ -1923,8 +2106,8 @@ function TurnView({
         </div>
         <div onClick={onBubbleClick} style={{ maxHeight: 280, overflowY: "auto", borderTop: "1px solid var(--border)", paddingTop: 8 }} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
-          <CopyButton text={turn.content} />
           {onToggleSpeak && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, `${turn.title}. ${turn.content}`)} />}
+          <CopyButton text={turn.content} />
           <CostChip meta={turn.meta} rate={usdPlnRate} />
         </div>
         {turn.savedSlug ? (
