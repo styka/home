@@ -122,34 +122,34 @@
 
 ## Faza 5 — Log rozumowania i panel akcji dla użytkownika
 
-- [ ] **T-21** — **Przebudowa logu rozumowania.** Na żywo tylko ostatnia myśl (zastępowana); po
+- [x] **T-21** — **Przebudowa logu rozumowania.** Na żywo tylko ostatnia myśl (zastępowana); po
   zakończeniu zwinięte „Pokaż log rozumowania" z myślami po humanizacji; surowy log za drugim
   przełącznikiem „Pokaż techniczny log rozumowania (admin)", widocznym tylko przy `isAdmin`. Stare
   rozmowy bez logu renderują się bez przełączników.
   *Gotowe, gdy:* AC-2, AC-3, AC-4 spełnione, a historia starych rozmów działa bez wyjątku.
 
-- [ ] **T-22** — **`ActionDrawer` na kontrakcie.** Etykieta akcji zamiast technicznego typu
+- [x] **T-22** — **`ActionDrawer` na kontrakcie.** Etykieta akcji zamiast technicznego typu
   (techniczny typ tylko dla admina), etykiety parametrów, pola `hidden` niewidoczne, kontrolki wg
   `control` (select/date/datetime/number/boolean/text), `searchQuery` → „Szukana nazwa".
   *Gotowe, gdy:* plan z polami enum/data/liczba/bool renderuje właściwe kontrolki i żadnego id (AC-5, AC-6).
 
-- [ ] **T-23** — **Walidacja na froncie w `ActionDrawer`.** `validateActionParams` przy edycji; pole
+- [x] **T-23** — **Walidacja na froncie w `ActionDrawer`.** `validateActionParams` przy edycji; pole
   z błędem obramowane `var(--accent-red)` + komunikat; „Wykonaj" zablokowane przy błędach.
   *Gotowe, gdy:* nie da się zatwierdzić planu z niepoprawną wartością (AC-27).
 
 ## Faza 6 — Walidacja i autoryzacja po stronie serwera
 
-- [ ] **T-24** — **Walidacja w egzekutorze (choke point).** W `executeAction`:
+- [x] **T-24** — **Walidacja w egzekutorze (choke point).** W `executeAction`:
   `assertActionContract` + `validateActionParams` przed rozgałęzieniem na moduł; naruszenie →
   `success:false` z polskim komunikatem wskazującym pole i regułę.
   *Gotowe, gdy:* akcja z wartością spoza słownika jest odrzucana także przy pominięciu frontu (AC-26).
 
-- [ ] **T-25** — **Jednolita odmowa dostępu.** `toAccessError` w `executors/shared.ts` + mapowanie
+- [x] **T-25** — **Jednolita odmowa dostępu.** `toAccessError` w `executors/shared.ts` + mapowanie
   wyjątków guardów na komunikat „Nie masz dostępu do tych danych." (bez ujawniania cudzych treści);
   wynik trafia do `ActionResult`.
   *Gotowe, gdy:* akcja na cudzym rekordzie kończy się czytelną odmową, nie błędem technicznym (AC-23, AC-24).
 
-- [ ] **T-26** — **Asystent wie o odmowie.** Wynik odmowy wraca do pętli agenta w formie, na
+- [x] **T-26** — **Asystent wie o odmowie.** Wynik odmowy wraca do pętli agenta w formie, na
   podstawie której nie obiecuje wykonania i informuje użytkownika o braku dostępu.
   *Gotowe, gdy:* w przebiegu z odmową agent nie twierdzi, że akcja się powiodła (AC-25).
 

@@ -273,36 +273,59 @@ function CostChip({ meta, rate = DEFAULT_USD_PLN_RATE }: { meta?: AgentMeta; rat
   );
 }
 
-function ReasoningLog({ log }: { log?: LogEntry[] }) {
+// 031: log rozumowania w DWÓCH warstwach.
+//  • „Pokaż log rozumowania" (dla wszystkich) — kroki opisane po ludzku, ZWINIĘTE. Wcześniej cała
+//    lista myśli wisiała pod każdą odpowiedzią i zaśmiecała czat („Pobieram zadania…", „Mam listę…").
+//  • „Pokaż techniczny log rozumowania (admin)" — dawny surowy zrzut z nazwami narzędzi i JSON-ami;
+//    widoczny WYŁĄCZNIE dla administratora (zwykły użytkownik nie ma po co widzieć wnętrza).
+// Stare rozmowy bez logu renderują się bez żadnego przełącznika (wsteczna zgodność).
+function ReasoningLog({ log, isAdmin = false }: { log?: LogEntry[]; isAdmin?: boolean }) {
   const [expanded, setExpanded] = useState(false);
+  const [techExpanded, setTechExpanded] = useState(false);
   if (!log?.length) return null;
+  const thoughts = log.filter((l) => l.thought);
+  const toggleStyle: React.CSSProperties = {
+    display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--text-muted)",
+    background: "none", border: "none", cursor: "pointer", padding: 0,
+  };
   return (
-    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 8 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {log.filter((l) => l.thought).map((l, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
-            <Sparkles size={11} style={{ color: "var(--text-muted)", flexShrink: 0, marginTop: 3 }} />
-            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{l.thought}</span>
-          </div>
-        ))}
-      </div>
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-      >
-        {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-        {expanded ? "Ukryj log rozumowania" : "Pokaż log rozumowania"}
-      </button>
-      {expanded && (
-        <pre style={{ marginTop: 6, padding: "8px 10px", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 10.5, lineHeight: 1.5, color: "var(--text-secondary)", overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 240, overflowY: "auto" }}>
-          {log.map((l) => {
-            const head = `#${l.iter} [${l.step}] ${l.thought}`;
-            if (l.step === "query") return `${head}\n  narzędzia: ${JSON.stringify(l.tools)}\n  wyniki: ${JSON.stringify(l.results)}`;
-            if (l.step === "clarify") return `${head}\n  pytanie: ${l.question}`;
-            if (l.step === "plan") return `${head}\n  akcje: ${l.actionsCount}`;
-            return head;
-          }).join("\n\n")}
-        </pre>
+    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+      {thoughts.length > 0 && (
+        <>
+          <button onClick={() => setExpanded((v) => !v)} style={toggleStyle} aria-expanded={expanded}>
+            {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+            {expanded ? "Ukryj log rozumowania" : "Pokaż log rozumowania"}
+          </button>
+          {expanded && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {thoughts.map((l, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                  <Sparkles size={11} style={{ color: "var(--text-muted)", flexShrink: 0, marginTop: 3 }} />
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{l.thought}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      {isAdmin && (
+        <>
+          <button onClick={() => setTechExpanded((v) => !v)} style={toggleStyle} aria-expanded={techExpanded}>
+            {techExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+            {techExpanded ? "Ukryj techniczny log rozumowania (admin)" : "Pokaż techniczny log rozumowania (admin)"}
+          </button>
+          {techExpanded && (
+            <pre style={{ padding: "8px 10px", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 10.5, lineHeight: 1.5, color: "var(--text-secondary)", overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 240, overflowY: "auto" }}>
+              {log.map((l) => {
+                const head = `#${l.iter} [${l.step}] ${l.thought}`;
+                if (l.step === "query") return `${head}\n  narzędzia: ${JSON.stringify(l.tools)}\n  wyniki: ${JSON.stringify(l.results)}`;
+                if (l.step === "clarify") return `${head}\n  pytanie: ${l.question}`;
+                if (l.step === "plan") return `${head}\n  akcje: ${l.actionsCount}`;
+                return head;
+              }).join("\n\n")}
+            </pre>
+          )}
+        </>
       )}
     </div>
   );
@@ -1504,18 +1527,15 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
 
                 {busy && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {/* Myśli agenta na żywo (streaming) */}
+                    {/* 031: myśl agenta na żywo — POJEDYNCZY, aktualny krok zastępowany przez
+                        następny (wcześniej narastała lista, której użytkownik nie potrzebuje).
+                        Pełny przebieg jest po zakończeniu pod „Pokaż log rozumowania". */}
                     {liveThoughts.length > 0 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                        {liveThoughts.map((t, i) => {
-                          const last = i === liveThoughts.length - 1;
-                          return (
-                            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, opacity: last ? 1 : 0.5 }}>
-                              <Sparkles size={11} style={{ color: "var(--accent-blue)", flexShrink: 0, marginTop: 3 }} />
-                              <span style={{ fontSize: 12, color: last ? "var(--text-secondary)" : "var(--text-muted)" }}>{t}</span>
-                            </div>
-                          );
-                        })}
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }} aria-live="polite">
+                        <Sparkles size={11} style={{ color: "var(--accent-blue)", flexShrink: 0, marginTop: 3 }} />
+                        <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                          {liveThoughts[liveThoughts.length - 1]}
+                        </span>
                       </div>
                     )}
                     <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--text-muted)", fontSize: 13 }}>
@@ -1669,6 +1689,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
           isRefining={isRefining}
           onClose={handlePlanClose}
           isExecuting={isExecuting}
+          isAdmin={isAdmin}
         />
       )}
     </>
@@ -1796,7 +1817,7 @@ function TurnView({
     return (
       <div style={bubble}>
         <div onClick={onBubbleClick} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
-        {isAdmin && <ReasoningLog log={turn.log} />}
+        <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         {isLast && turn.followups && turn.followups.length > 0 && onFollowup && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
             {turn.followups.map((f) => (
@@ -1851,7 +1872,7 @@ function TurnView({
             </div>
           </>
         )}
-        {isAdmin && <ReasoningLog log={turn.log} />}
+        <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
           <CostChip meta={turn.meta} rate={usdPlnRate} />
@@ -1867,7 +1888,7 @@ function TurnView({
         <button onClick={() => onNavigate(turn.url)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           <ArrowRight size={15} /> {turn.label}
         </button>
-        {isAdmin && <ReasoningLog log={turn.log} />}
+        <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
           <CostChip meta={turn.meta} rate={usdPlnRate} />
@@ -1933,7 +1954,7 @@ function TurnView({
             )}
           </div>
         )}
-        {isAdmin && <ReasoningLog log={turn.log} />}
+        <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
           <CostChip meta={turn.meta} rate={usdPlnRate} />

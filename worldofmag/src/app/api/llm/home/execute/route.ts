@@ -19,6 +19,8 @@ import { executeStorageAction } from "@/lib/ai/executors/storageExecutor";
 import { executeContactsAction } from "@/lib/ai/executors/contactsExecutor";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { ExecOutcome, ActionResult } from "@/lib/ai/executors/shared";
+import { toUserFacingError } from "@/lib/ai/executors/shared";
+import { hasContract, validateActionParams } from "@/lib/ai/actionContract";
 
 
 async function executeAction(
@@ -28,6 +30,13 @@ async function executeAction(
   currentProjectId?: string
 ): Promise<string | ExecOutcome> {
   const { module, type } = action;
+
+  // 031: JEDEN choke point walidacji — zanim akcja dotknie jakiegokolwiek modułu.
+  // Asystent nie ma drogi obejścia reguł, które obowiązują użytkownika w formularzu: te same
+  // reguły (kontrakt akcji) sprawdza front dla UX, a TUTAJ sprawdzamy je rozstrzygająco.
+  if (!hasContract(type)) throw new Error(`Nieznana akcja: ${type}`);
+  const invalid = validateActionParams(action);
+  if (invalid.length > 0) throw new Error(invalid.join(" "));
 
   if (module === "shopping") {
     return executeShoppingAction(action, userId, activeListId);
@@ -141,11 +150,13 @@ export async function POST(req: NextRequest) {
         },
       }).catch(() => {});
     } catch (e) {
+      // 031: odmowa dostępu wraca jako JEDEN, zrozumiały komunikat — bez wyciekania treści
+      // cudzych rekordów i bez technicznego „Access denied".
       results.push({
         id: action.id,
         success: false,
         description: action.description,
-        error: e instanceof Error ? e.message : "Nieznany błąd",
+        error: toUserFacingError(e),
       });
     }
   }

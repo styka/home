@@ -11,6 +11,7 @@ import { classifyIntent, READ_INTENT_RE } from "@/lib/ai/fastPath";
 import { extractJsonLoose, salvageAnswerText } from "@/lib/ai/agentProtocol";
 import { compactToolResults, collapseUsedToolData, TOOL_DATA_HEADER } from "@/lib/ai/agentContext";
 import { humanizeAssistantText } from "@/lib/ai/humanize";
+import { isAccessError, toUserFacingError } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 
 const MAX_ITERATIONS = 6;
@@ -322,6 +323,7 @@ ZASADY:
 - Korzystaj z kontekstu (aktualny widok / aktywna lista / bieżący projekt) podanego w wiadomości użytkownika, gdy polecenie nie wskazuje wprost celu. Wcześniejsze tury rozmowy bywają dołączone jako kontekst — wykorzystuj je dla ciągłości.
 - WYBÓR MODUŁU: gdy polecenie nie wskazuje wprost modułu, użyj modułu PODSTAWOWEGO (pierwszego na liście „Aktywne moduły"). Gdy użytkownik użyje słowa-klucza innego aktywnego modułu (np. „wydatek/przychód" → portfel, „zatankowałem" → flota, „nawyk/odhacz" → habits, „magazyn/wydaj ze stanu" → magazynowanie, „zaplanuj posiłek" → kitchen) — użyj tamtego modułu, o ile jest aktywny.
 - Twórz akcje tylko dla modułów, których katalog masz wyżej: ${modules.join(", ")}. Jeśli polecenie wyraźnie dotyczy INNEGO modułu (nie ma go w katalogu) — użyj "clarify" lub "answer" i poproś o doprecyzowanie, NIE zgaduj akcji spoza katalogu.
+- BRAK DOSTĘPU DO DANYCH: gdy wynik narzędzia ma "accessDenied":true albo mówi o braku dostępu — to znaczy, że użytkownik NIE MA prawa do tych danych. Powiedz mu to wprost („nie masz dostępu do tych danych") i NIE proponuj akcji na tym rekordzie, NIE zgaduj jego zawartości i NIE obiecuj, że coś zrobisz. Nie próbuj obejść odmowy innym narzędziem ani innym parametrem.
 - JĘZYK APLIKACJI, NIE BAZY DANYCH: w tekstach dla użytkownika (answer, question, content, thought, description akcji) NIGDY nie cytuj identyfikatorów rekordów ani wartości technicznych. Zamiast „NONE" pisz „brak priorytetu", zamiast „TODO" — „do zrobienia", zamiast „MEDIUM" — „średni". Identyfikatorów (np. cmrxo01jm00egksnw1ycs4dq8) nie wypisuj w ogóle — używaj nazw i tytułów. W parametrach akcji (params) wartości techniczne są OK i wymagane.
 - MYŚLI (thought) SĄ WIDOCZNE: pole "thought" pokazujemy użytkownikowi jako aktualny krok pracy. Pisz je krótko, po ludzku i w 1. osobie („Sprawdzam zadania z projektu Mieszkanie"), bez nazw narzędzi, parametrów i danych technicznych.
 - Zawsze zwracaj wyłącznie poprawny JSON wg schematu, bez żadnego dodatkowego tekstu.
@@ -665,7 +667,16 @@ async function runAgentLoopRaw(
             results.push({ tool: call.tool!, args: call.args ?? {}, data });
           }
         } catch (e) {
-          results.push({ tool: call.tool!, args: call.args ?? {}, data: null, error: e instanceof Error ? e.message : "błąd" });
+          // 031: odmowę dostępu podajemy agentowi WPROST i jednolicie — ma o niej uczciwie
+          // powiedzieć użytkownikowi, a nie obiecywać wykonanie ani zgadywać zawartość.
+          const accessDenied = isAccessError(e);
+          results.push({
+            tool: call.tool!,
+            args: call.args ?? {},
+            data: null,
+            error: toUserFacingError(e),
+            ...(accessDenied ? { accessDenied: true } : {}),
+          });
         }
       }
 
