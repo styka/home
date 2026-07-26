@@ -189,7 +189,56 @@ a `stopVoice` i tak odpala efekt na `isOpen`.
 Regresji wtórnych nie wykryto: zmiana dotyczy jednej funkcji, nie rusza `stopGeneration`, `handleSend`
 ani ścieżki strumieniowej.
 
-## 8. Werdykt końcowy
+## 8. Tura 3 — po naprawie ustaleń recenzji (T-32…T-36)
+
+Recenzja znalazła błąd, którego **tura 1 i 2 nie mogły złapać**: testowały lektora na `azure_tts`,
+czyli rodzaju, którego w bazie nie ma nikt inny, więc kolizja `openai_compat` (OpenAI **i** Groq PlayAI)
+nigdy się nie ujawniła. Poprawka zmienia tożsamość pozycji katalogu na **`kind` + `baseUrl`**.
+
+**Dowody na naprawę (uruchomione, nie „na oko"):**
+
+| Ustalenie | Dowód |
+|---|---|
+| **R-1** — zapis lektora nie rusza cudzego wiersza | Test `providerMatchesSpec: zapis lektora OpenAI NIE MOŻE trafić w wiersz Groqa (R-1)` — wiersz Groqa nie pasuje do pozycji OpenAI, a pasuje do pozycji Groq PlayAI. `applySpeechProvider` szuka teraz wśród kandydatów tym samym predykatem, więc zakłada **osobnego** dostawcę zamiast przestawiać adres istniejącego |
+| **R-2** — panel nie dziedziczy klucza | `getSpeechConfig` używa tego samego `providerMatchesSpec`, co zapis — panel nie może pokazać czegoś innego, niż zrobi przycisk |
+| **R-3** — głosy należą do dostawcy | Uruchomione na żywej bazie: lektor na Groqu → `Fritz-PlayAI, Arista-PlayAI, Atlas-PlayAI`; przełączenie na OpenAI → `nova, shimmer, coral, sage`. Plus test `głosy należą do POZYCJI katalogu, nie do rodzaju` |
+| **R-4/R-5** | `grep` bez trafień na usunięte eksporty; nad `resolveRefOrThrow` stoi wyłącznie jego własny komentarz |
+| **R-6** | `runLoop` przekazuje `isFinalRun=false` dla przebiegu z zapasowym fallbackiem — podsumowanie modelem tylko dla przebiegu ostatecznego |
+| **R-7/R-8** | `get_recipe` zapamiętuje wynik pierwszego `getRecipe`; `list_items` liczy dostęp raz; `lastTruncated` zerowane po udanym sparsowaniu |
+
+**Trzecia odsłona tego samego błędu, wykryta dopiero przy sprzątaniu (R-4):** `parseServerVoiceValue`
+walidował głos przeciw **stałej liście OpenAI**, więc wybór poprawnego głosu Azure/Google zwracał
+`null`, a UI brało go za głos przeglądarki — lektor serwerowy **nigdy** by się nie włączył dla
+dostawcy spoza rodziny OpenAI. Walidacja przeniesiona na serwer (`updateAssistantPrefs`,
+`synthesizeSpeech`), gdzie znana jest konfiguracja administratora.
+
+**Ponowna weryfikacja AC-5 end-to-end** (poprzednia metoda przestała działać po zaostrzeniu
+dopasowania — atrapa stała pod niekatalogowym adresem): przepuszczone przez lokalny serwer-atrapę
+**trzy** adaptery o rodzajach jednoznacznych, przez pełny `synthesizeSpeech`:
+`elevenlabs → /text-to-speech/<voice>` ✅, `google_tts → /text:synthesize?key=…` z dekodowaniem
+base64 i głosem `pl-PL-Standard-A` ✅, `azure_tts → /cognitiveservices/v1` ✅. Adapter
+`openai_compat` pozostaje pokryty testami kontraktu żądania (jego ścieżka jest niezmieniona od 031).
+
+**Zmiana zachowania do odnotowania (świadoma, bezpieczna):** dostawca zgodny z OpenAI pod adresem
+**spoza katalogu** (proxy, self-host) nie ma znanych głosów, więc `synthesizeSpeech` zwraca `null` →
+`/api/tts` oddaje `501` → klient wraca do głosów przeglądarki. Wcześniej kod zgadywał głosy OpenAI —
+i to była właśnie przyczyna R-3. Wybór z listy w panelu zawsze podaje adres z katalogu, więc ścieżka
+wspierana nie jest tym dotknięta; potwierdzone uruchomieniem (`lektor wyłączony (bez zgadywania
+głosów)`).
+
+**Bramki po naprawie (pełny, ponowny przebieg):**
+
+| Komenda | Wynik |
+|---|---|
+| `npm run check:migrations` | ✅ następny wolny numer 0211 |
+| `npm run check:actions` | ✅ 160 akcji |
+| `npm run check:ai-coverage` | ✅ 500 akcji |
+| `npx tsc --noEmit` | ✅ bez błędów |
+| `npx next lint --dir src` | ✅ 0 błędów, 16 zastanych ostrzeżeń |
+| `npx next build` | ✅ `Compiled successfully` |
+| `npm run test:unit` | ✅ **521/521** (+9 nowych na kolizję `kind`) |
+
+## 9. Werdykt końcowy
 
 **GOTOWE Z UWAGAMI.**
 
@@ -202,9 +251,11 @@ ani ścieżki strumieniowej.
   wszystkiego).
 - **B-1 naprawione** w turze 2.
 
-**Uwagi przechodzące do recenzji (nie-blokujące):** **U-1** (zmarnowane wywołanie podsumowania, gdy po
-przerwanym przebiegu prostej tury odczytowej następuje fallback `dispatch→reasoning`) i **U-2**
-(ucięcie, które mimo wszystko sparsowało się, idzie dalej normalnie).
+**Uwagi z tury 2 — domknięte w turze 3:** **U-1** naprawione jako R-6 (podsumowanie tylko dla przebiegu
+ostatecznego). **U-2** zostaje świadomie: ucięcie, które mimo wszystko sparsowało się, idzie dalej
+normalnie — mamy użyteczny krok, więc lepiej go oddać niż wymuszać powtórkę.
+
+**Ustalenia recenzji R-1…R-8: wszystkie naprawione i potwierdzone** (p. 8).
 
 **Do sprawdzenia klikiem na środowisku testowym po merge:** scenariusz Z-2 (AC-12), klawiatura mobilna
 na iOS i Androidzie (AC-19/AC-20), zamknięcie asystenta w trakcie generowania (B-1), oraz panel lektora
