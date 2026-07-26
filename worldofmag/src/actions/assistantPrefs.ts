@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
-import { isServerSpeechConfigured } from "@/lib/tts/serverTts";
-import { SERVER_VOICES, type ServerVoice } from "@/lib/tts/serverVoices";
+import { configuredSpeechVoices } from "@/lib/tts/serverTts";
+import { isVoiceOfKind } from "@/lib/tts/catalog";
+import { type ServerVoice } from "@/lib/tts/serverVoices";
 import {
   ASSISTANT_LEVELS,
   ASSISTANT_VOICE_KINDS,
@@ -102,7 +103,19 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
     data.voiceKind = input.voiceKind as AssistantVoiceKind;
   }
   if (input.voiceId !== undefined) {
-    data.voiceId = input.voiceId?.trim() ? input.voiceId.trim().slice(0, 120) : null;
+    const raw = input.voiceId?.trim() ? input.voiceId.trim().slice(0, 120) : null;
+    // 032: głos serwerowy musi należeć do dostawcy, który JEST przypisany do syntezy mowy. Głos
+    // nierozpoznany (np. po przełączeniu dostawcy przez administratora) zapisujemy jako `null`, czyli
+    // „domyślny głos dostawcy" — nigdy nie zapisujemy po cichu nazwy, której dostawca nie zna, i nie
+    // wywalamy użytkownikowi błędu za coś, czego nie zmieniał (AC-7).
+    // Walidujemy tylko przy JAWNYM wyborze głosu serwerowego — klient zawsze wysyła `voiceKind`
+    // razem z `voiceId`, a identyfikatory głosów przeglądarki (voiceURI) nie należą do katalogu.
+    if (raw && data.voiceKind === "server") {
+      const configured = await configuredSpeechVoices().catch(() => null);
+      data.voiceId = configured && isVoiceOfKind(configured.kind, raw) ? raw : null;
+    } else {
+      data.voiceId = raw;
+    }
   }
 
   // Zapis WYŁĄCZNIE po userId z sesji — użytkownik nie może dotknąć cudzych ustawień.
@@ -124,10 +137,15 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
 /**
  * 031: czy administrator skonfigurował serwerową syntezę mowy (typ operacji `speech` w /admin/llm)
  * i jakie głosy są wtedy dostępne. Gdy nie — UI pokazuje wyłącznie głosy przeglądarki i nie obiecuje
- * czegoś, czego nie ma (AC-17).
+ * czegoś, czego nie ma.
+ *
+ * 032: lista głosów pochodzi teraz od DOSTAWCY, który jest przypisany (a nie ze stałej listy głosów
+ * rodziny OpenAI). Po przełączeniu dostawcy użytkownik widzi jego głosy — nie nazwy, których nowy
+ * dostawca nie zna (AC-7).
  */
 export async function getSpeechOptions(): Promise<{ serverAvailable: boolean; voices: ServerVoice[] }> {
   await requireAuth();
-  const serverAvailable = await isServerSpeechConfigured().catch(() => false);
-  return { serverAvailable, voices: serverAvailable ? SERVER_VOICES : [] };
+  const configured = await configuredSpeechVoices().catch(() => null);
+  if (!configured) return { serverAvailable: false, voices: [] };
+  return { serverAvailable: true, voices: configured.voices };
 }

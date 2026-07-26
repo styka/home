@@ -13,12 +13,18 @@ import {
   type ProviderDTO,
   type AssignmentDTO,
   type AiCostBreakdown,
+  type SpeechConfigDTO,
 } from "@/actions/llmConfig";
+import { SpeechAssignmentRow } from "@/components/admin/SpeechAssignmentRow";
 import { withPln } from "@/lib/usdPln";
 
 const KIND_LABELS: Record<string, string> = {
   openai_compat: "OpenAI-compatible (Groq, OpenAI, xAI, OpenRouter…)",
   anthropic: "Anthropic (Claude)",
+  // 032: dostawcy WYŁĄCZNIE syntezy mowy — konfiguruje się ich w sekcji lektora, nie tutaj.
+  elevenlabs: "ElevenLabs (tylko synteza mowy)",
+  google_tts: "Google Cloud Text-to-Speech (tylko synteza mowy)",
+  azure_tts: "Microsoft Azure Speech (tylko synteza mowy)",
 };
 
 const inputStyle: React.CSSProperties = {
@@ -528,12 +534,14 @@ export function LlmConfigPanel({
   cost,
   costThreshold,
   usdPlnRate,
+  speech,
 }: {
   providers: ProviderDTO[];
   assignments: AssignmentDTO[];
   cost: AiCostBreakdown;
   costThreshold: number;
   usdPlnRate: number;
+  speech: SpeechConfigDTO;
 }) {
   return (
     <div>
@@ -544,9 +552,15 @@ export function LlmConfigPanel({
       <section style={{ marginBottom: 32 }}>
         <SectionTitle>Przypisanie modeli do typów operacji</SectionTitle>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {assignments.map((a) => (
-            <AssignmentRow key={a.operationType} assignment={a} providers={providers} />
-          ))}
+          {assignments.map((a) =>
+            // 032: synteza mowy ma własny wiersz — z listami dostawców/modeli/głosów z katalogu,
+            // kosztem, wymaganiami i próbką. Reszta typów operacji zostaje bez zmian.
+            a.operationType === "speech" ? (
+              <SpeechAssignmentRow key={a.operationType} label={a.label} description={a.description} config={speech} />
+            ) : (
+              <AssignmentRow key={a.operationType} assignment={a} providers={providers} />
+            )
+          )}
         </div>
       </section>
 

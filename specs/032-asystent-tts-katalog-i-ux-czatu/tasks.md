@@ -117,7 +117,7 @@
 
 ## Faza 4 — Synteza mowy: katalog, adaptery, panel admina
 
-- [ ] **T-15** — `src/lib/tts/catalog.ts` (nowy): `TTS_CATALOG: TtsProviderSpec[]` z pozycjami
+- [x] **T-15** — `src/lib/tts/catalog.ts` (nowy): `TTS_CATALOG: TtsProviderSpec[]` z pozycjami
   OpenAI, Groq PlayAI, ElevenLabs, Google Cloud TTS, Azure Speech — każda z `id`, `label`, `kind`,
   `baseUrl`, `models[]`, `voices[]`, `paid`, `costHint`, `requiresKey`, `polishHint`, `setupHint`
   (teksty po polsku, C-32). Helpery: `findTtsProvider`, `voicesForKind`, `isVoiceOfKind`,
@@ -125,7 +125,7 @@
   **Gotowe, gdy:** katalog kompiluje się, każda pozycja ma ≥1 model i ≥1 głos, a `tsc --noEmit` czysto.
   *(AC-1, AC-2)*
 
-- [ ] **T-16** — `src/lib/tts/adapters.ts` (nowy): `buildSpeechRequest(kind, cfg, { text, voiceId })`
+- [x] **T-16** — `src/lib/tts/adapters.ts` (nowy): `buildSpeechRequest(kind, cfg, { text, voiceId })`
   → `{ url, init, contentTypeFallback }` oraz `parseSpeechResponse(kind, res)` — jeden `switch` na
   `kind`: `openai_compat` (`/audio/speech`, Bearer), `elevenlabs` (`/text-to-speech/{voiceId}`,
   `xi-api-key`), `google_tts` (`/text:synthesize?key=`, odpowiedź JSON+base64), `azure_tts`
@@ -134,7 +134,7 @@
   potwierdzają dla każdego z pięciu rodzajów: URL, nagłówki, kształt body/SSML oraz escapowanie
   `& < > "` w SSML. *(AC-5 — dowód kontraktowy dla dostawców bez konta)*
 
-- [ ] **T-17** — `src/lib/tts/serverTts.ts` + `serverVoices.ts`: `synthesizeSpeech` przechodzi na
+- [x] **T-17** — `src/lib/tts/serverTts.ts` + `serverVoices.ts`: `synthesizeSpeech` przechodzi na
   `buildSpeechRequest`/`parseSpeechResponse`; `voiceId` walidowany przeciw głosom **skonfigurowanego**
   dostawcy z fallbackiem na jego domyślny. Zachowane: `SPEECH_MAX_CHARS`, `null` przy braku
   przypisania, brak przecieku treści błędu dostawcy (C-41). `serverVoices.ts` zostaje jako głosy
@@ -143,7 +143,7 @@
   **Gotowe, gdy:** brak przypisania `speech` → `/api/tts` nadal zwraca 501 i klient wraca do głosów
   przeglądarki (bez regresji wobec 031); z kluczem OpenAI odczyt na głos działa. *(AC-5, AC-6)*
 
-- [ ] **T-18** — `src/actions/llmConfig.ts`: `getSpeechConfig()` (katalog + aktualne przypisanie +
+- [x] **T-18** — `src/actions/llmConfig.ts`: `getSpeechConfig()` (katalog + aktualne przypisanie +
   domyślny głos + per pozycja `hasKey`, nigdy klucz — C-41), `applySpeechProvider({ catalogId,
   apiKey?, model, voiceId? })` wzorowane na `applyAnthropicProfile` (upsert `LlmProvider` z danymi
   **z katalogu**, `encryptSecret` tylko gdy klucz podany, upsert `LlmAssignment` dla `"speech"`, zapis
@@ -154,7 +154,7 @@
   **Gotowe, gdy:** `npm run check:ai-coverage` i `npm run check:actions` przechodzą; `applySpeechProvider`
   z głosem obcym dostawcy zapisuje głos **domyślny** tego dostawcy, nie obcy. *(AC-3, AC-7, C-25, C-41)*
 
-- [ ] **T-19** — `src/components/admin/SpeechAssignmentRow.tsx` (nowy) + wpięcie w
+- [x] **T-19** — `src/components/admin/SpeechAssignmentRow.tsx` (nowy) + wpięcie w
   `LlmConfigPanel.tsx` (dla `operationType === "speech"`; `KIND_LABELS` o nowe rodzaje). Trzy
   `<select>` (dostawca / model / głos), karta informacyjna (darmowy-płatny + koszt, czy potrzebny
   klucz, jakość polskiego, skąd wziąć klucz), pole klucza **inline** tylko gdy dostawca go nie ma,
@@ -165,7 +165,7 @@
   przełącza listy modeli i głosów; brak klucza → widoczne pole klucza; `grep` po hexach w nowym pliku
   bez trafień. *(AC-1, AC-2, AC-3, AC-4, AC-7, C-30, C-31, C-32)*
 
-- [ ] **T-20** — `src/actions/assistantPrefs.ts`: `getSpeechOptions()` zwraca głosy
+- [x] **T-20** — `src/actions/assistantPrefs.ts`: `getSpeechOptions()` zwraca głosy
   **skonfigurowanego** dostawcy (nie stałą listę OpenAI); walidacja `voiceId` przy zapisie preferencji
   przechodzi na `isVoiceOfConfiguredProvider` — głos nierozpoznany zapisuje `voiceKind: "server"` bez
   `voiceId` (domyślny głos dostawcy), nigdy błąd dla użytkownika.

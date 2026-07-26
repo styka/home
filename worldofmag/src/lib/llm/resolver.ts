@@ -13,7 +13,9 @@ import {
  *
  * Zgodnie z C-12 to zwykły `String` w bazie + zawężający union tutaj — żadnego enuma Prisma.
  */
-export type ProviderKind = "openai_compat" | "anthropic" | "elevenlabs" | "google_tts" | "azure_tts";
+export const PROVIDER_KINDS = ["openai_compat", "anthropic", "elevenlabs", "google_tts", "azure_tts"] as const;
+
+export type ProviderKind = (typeof PROVIDER_KINDS)[number];
 
 /** Dostawcy obsługujący WYŁĄCZNIE syntezę mowy — nigdy nie wolno im trafić do wywołania czatu. */
 export const SPEECH_ONLY_PROVIDER_KINDS: readonly ProviderKind[] = ["elevenlabs", "google_tts", "azure_tts"];

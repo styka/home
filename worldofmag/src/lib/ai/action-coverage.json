@@ -720,6 +720,11 @@
     "reason": "admin",
     "access": "admin"
   },
+  "llmConfig:applySpeechProvider": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
   "llmConfig:createProvider": {
     "status": "excluded",
     "reason": "admin",
@@ -749,6 +754,12 @@
     "access": "admin"
   },
   "llmConfig:getLlmProviders": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "llmConfig:getSpeechConfig": {
     "kind": "read",
     "status": "excluded",
     "reason": "admin",
