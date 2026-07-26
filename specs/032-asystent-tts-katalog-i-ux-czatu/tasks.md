@@ -176,14 +176,14 @@
 
 ## Faza 5 — Pętla agenta: rozwiązywanie nazw, ucięcie, uczciwe wyjście
 
-- [ ] **T-21** — `src/lib/ai/agentTools.ts`: generyczny `resolveRef(ref, lookup, list, entity)` —
+- [x] **T-21** — `src/lib/ai/agentTools.ts`: generyczny `resolveRef(ref, lookup, list, entity)` —
   kolejność: (1) jako identyfikator, (2) nazwa dokładna (case-insensitive), (3) nazwa częściowa: jedno
   trafienie → użyj, **wiele** → `throw` z listą trafień, (4) brak → `throw` z listą dostępnych nazw.
   `resolveProjectRef` przepisany na `resolveRef` **bez zmiany treści błędu** (brak regresji).
   **Gotowe, gdy:** testy jednostkowe pokrywają wszystkie pięć ścieżek; `list_tasks` z
   `projectId: "Omnia"` zachowuje się dokładnie jak dziś. *(AC-8 — regresja)*
 
-- [ ] **T-22** — `src/lib/ai/agentTools.ts`: audyt **każdego** read-toola przyjmującego argument
+- [x] **T-22** — `src/lib/ai/agentTools.ts`: audyt **każdego** read-toola przyjmującego argument
   kończący się na `Id` (oraz `warehouse`) i wpięcie `resolveRef` tam, gdzie nazwa daje dziś cichą
   pustkę — co najmniej `list_items` (`listId`), `get_note` (`noteId`), `get_recipe` (`recipeId`),
   `list_care_agenda`/`list_care_history` (`petId`), `list_meal_plan`, `list_pantry`,

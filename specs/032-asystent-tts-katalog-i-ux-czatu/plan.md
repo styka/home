@@ -221,10 +221,17 @@ istniejących modelach (`LlmProvider`/`LlmAssignment`) i w `Config` (klucz-warto
     **dopytuje**, a nie powtarza (AC-9).
   - `resolveProjectRef` przepisany na `resolveRef` (zachowanie i treść błędu bez regresji — AC-8 dla
     zadań to dziś działający przypadek).
-  - Objęte tooli (dziś cicho zwracają pustkę przy nazwie): `list_items` (`listId`), `get_note`
-    (`noteId`), `get_recipe` (`recipeId`), `list_care_agenda`/`list_care_history` (`petId`),
-    `list_meal_plan`, `list_pantry`, `list_storage_items` (`warehouse`) — pełną listę domyka audyt
-    „każdy argument kończący się na `Id`" jako pierwsze zadanie etapu implementacji.
+  - Objęte toole — **wynik audytu wykonanego w implementacji** (argumenty kończące się na `Id`):
+    `list_tasks` (`projectId`, już przez `resolveProjectRef`), `get_task` (`taskId`), `list_items`
+    (`listId`), `get_note` (`noteId`), `get_recipe` (`recipeId`). **Korekta wobec pierwotnego
+    założenia (C-54):** `list_care_agenda`/`list_care_history`, `list_meal_plan` i `list_pantry`
+    **nie przyjmują** argumentu `petId` ani innego identyfikatora (agenda liczy się dla wszystkich
+    zwierząt), a `list_storage_items` przyjmuje `warehouse` jako **nazwę** dopasowywaną przez
+    `contains` — te cztery nie wymagają zmiany. Podobnie `args.petName`/`args.deckName` są już
+    nazwami.
+  - Czysta logika dopasowania wydzielona do `src/lib/ai/refResolve.ts` (wzorzec
+    `conversationLimits.ts`), żeby dała się przetestować bez bazy — `agentTools.ts` importuje
+    `matchNamedRef`/`unresolvedRefMessage`.
 - **Pętla agenta (`src/app/api/llm/home/agent/route.ts`) — ucięcie i limit kroków:**
   - **Rozpoznanie ucięcia (AC-28)** wymaga informacji z warstwy niżej: `src/lib/llm/chat.ts` →
     `ChatResult` (wariant `ok: true`) zyskuje `truncated?: boolean`, ustawiane z
