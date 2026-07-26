@@ -74,33 +74,33 @@
   *Gotowe, gdy:* zgłoszenie z głównego robaczka trafia do skrzynki admina także z konta bez
   uprawnień do jej projektu (AC-19).
 
-- [ ] **T-11** — **Odczyt skrzynki pozostaje chroniony.** Weryfikacja, że listowanie/odczyt/edycja
+- [x] **T-11** — **Odczyt skrzynki pozostaje chroniony.** Weryfikacja, że listowanie/odczyt/edycja
   zadań skrzynki przez UI i przez read-toole asystenta nadal wymaga dostępu; test ręczny na koncie
   bez uprawnień.
   *Gotowe, gdy:* każda droga poza `submitFeedbackTask` odmawia dostępu (AC-21).
 
 ## Faza 3 — Kontrakt akcji (rdzeń)
 
-- [ ] **T-12** — **Szkielet `src/lib/ai/actionContract.ts`.** Typy `FieldControl`/`FieldSpec`/
+- [x] **T-12** — **Szkielet `src/lib/ai/actionContract.ts`.** Typy `FieldControl`/`FieldSpec`/
   `ActionContract`, wspólny `PARAM_LABELS`, `fieldSpec()` z fallbackiem, `actionLabel()`,
   `validateActionParams()`. Re-eksport istniejących map etykiet (`TASK_STATUS_LABELS`,
   `TASK_PRIORITY_LABELS`, etykiety modułowe) — bez duplikowania słowników (C-53).
   *Gotowe, gdy:* moduł kompiluje się i ma testy jednostkowe walidacji na kilku przypadkach.
 
-- [ ] **T-13** — **Kontrakty: zakupy, zadania, notatki.** Wpisy dla wszystkich typów akcji tych
+- [x] **T-13** — **Kontrakty: zakupy, zadania, notatki.** Wpisy dla wszystkich typów akcji tych
   modułów (etykieta + pola enum/data/liczba/bool; identyfikatory jako `hidden`).
   *Gotowe, gdy:* każdy typ z egzekutorów tych modułów ma wpis.
 
-- [ ] **T-14** `[P]` — **Kontrakty: zwierzęta, zdrowie, nawyki, kuchnia.**
+- [x] **T-14** `[P]` — **Kontrakty: zwierzęta, zdrowie, nawyki, kuchnia.**
   *Gotowe, gdy:* jw. dla tych modułów.
 
-- [ ] **T-15** `[P]` — **Kontrakty: portfel, flota, magazynowanie, warsztaty.**
+- [x] **T-15** `[P]` — **Kontrakty: portfel, flota, magazynowanie, warsztaty.**
   *Gotowe, gdy:* jw. dla tych modułów.
 
-- [ ] **T-16** `[P]` — **Kontrakty: języki, wiadomości, pogoda, kontakty, raporty.**
+- [x] **T-16** `[P]` — **Kontrakty: języki, wiadomości, pogoda, kontakty, raporty.**
   *Gotowe, gdy:* jw. — łącznie wszystkie 159 typów mają wpis.
 
-- [ ] **T-17** — **Bramka kontraktu.** Rozszerz `scripts/check-action-coverage.js`: każdy typ akcji
+- [x] **T-17** — **Bramka kontraktu.** Rozszerz `scripts/check-action-coverage.js`: każdy typ akcji
   z katalogu agenta musi mieć wpis w `ACTION_CONTRACTS`; komunikat błędu wskazuje, gdzie dopisać.
   *Gotowe, gdy:* `npm run check:actions` przechodzi, a usunięcie wpisu na próbę wywala bramkę.
 
