@@ -78,7 +78,7 @@
 
 ## Faza 3 — Czat asystenta: klawiatura i cykl życia rozmowy
 
-- [ ] **T-10** — `AICommandSheet.tsx`: obsługa klawiatury mobilnej. Przyciski dolnego wiersza
+- [x] **T-10** — `AICommandSheet.tsx`: obsługa klawiatury mobilnej. Przyciski dolnego wiersza
   kompozytora (aparat, galeria, poziom pracy, mikrofon) dostają
   `onPointerDown={(e) => e.preventDefault()}` — fokus zostaje w polu, klawiatura nie zwija się, akcja
   odpala się przy pierwszym dotknięciu. Przycisk wysyłania: to samo + jawne `composerRef.current?.blur()`
@@ -87,26 +87,26 @@
   klawiatury; jedno dotknięcie wysyłania wysyła **i** zwija klawiaturę; na desktopie kliknięcia
   działają bez zmian. *(AC-19, AC-20)*
 
-- [ ] **T-11** — `AICommandSheet.tsx`: wspólna `collapseSections()` (`showPrefs`, `showReport`,
+- [x] **T-11** — `AICommandSheet.tsx`: wspólna `collapseSections()` (`showPrefs`, `showReport`,
   `reportDone`, `showLevelMenu`) wołana w `resetConversation()`, `loadConversation()` i `handleClose()`.
   **Gotowe, gdy:** rozwinięte ustawienia / formularz zgłoszenia zwijają się przy „Nowej rozmowie",
   przełączeniu na rozmowę z historii i zamknięciu asystenta. *(AC-21)*
 
-- [ ] **T-12** — `AICommandSheet.tsx`: cykl życia rozmowy. Nowy stan `lastConversationId`;
+- [x] **T-12** — `AICommandSheet.tsx`: cykl życia rozmowy. Nowy stan `lastConversationId`;
   `handleClose()` → `saveDraftNow()` → `collapseSections()` → gdy `turns.length > 0`:
   `setLastConversationId(conversationId)` + `resetConversation()`. Rozmowa bez tur zostaje
   (nie tworzymy pustych wpisów — `AiConversation` i tak powstaje dopiero przy pierwszej wiadomości).
   **Gotowe, gdy:** rozmowa z wiadomością → zamknij/otwórz → pusty wątek, a poprzednia jest w historii;
   rozmowa pusta → zamknij/otwórz → brak nowego wpisu w historii. *(AC-22, AC-23)*
 
-- [ ] **T-13** — `AICommandSheet.tsx`: jednoprzyciskowy powrót do ostatniej rozmowy w nagłówku
+- [x] **T-13** — `AICommandSheet.tsx`: jednoprzyciskowy powrót do ostatniej rozmowy w nagłówku
   arkusza (ikona `CornerUpLeft` + skrócony tytuł, ~18 znaków, pełny w `title`/`aria-label`), widoczny
   tylko gdy `lastConversationId` istnieje i bieżący wątek jest pusty. Klik → `loadConversation(...)`.
   Cel dotyku ≥ 38 px, jeden wiersz nagłówka (bez nowej sekcji).
   **Gotowe, gdy:** po otwarciu asystenta widać jeden przycisk z tytułem ostatniej rozmowy i jedno
   dotknięcie ją wczytuje; przy braku historii przycisku nie ma. *(AC-24, C-31)*
 
-- [ ] **T-14** — `AICommandSheet.tsx`: brudnopis. `saveDraftNow()` (zapis tylko gdy jest
+- [x] **T-14** — `AICommandSheet.tsx`: brudnopis. `saveDraftNow()` (zapis tylko gdy jest
   `conversationId` i treść ≠ `lastSavedDraftRef`) wołane w `handleClose()`, przed przełączeniem wątku
   oraz z `useEffect` z debounce 2 s na `inputText`. `loadConversation()` ustawia
   `setInputText(convo.draft ?? "")`. `handleSend()` po udanym wysłaniu zeruje brudnopis.
