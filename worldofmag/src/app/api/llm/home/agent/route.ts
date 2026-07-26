@@ -10,6 +10,7 @@ import { checkAiBudget, recordAiUsage, newUsageMeter, accrueUsage, type UsageMet
 import { classifyIntent, READ_INTENT_RE } from "@/lib/ai/fastPath";
 import { extractJsonLoose, salvageAnswerText } from "@/lib/ai/agentProtocol";
 import { compactToolResults, collapseUsedToolData, TOOL_DATA_HEADER } from "@/lib/ai/agentContext";
+import { humanizeAssistantText } from "@/lib/ai/humanize";
 import type { AIAction } from "@/lib/ai/aiAction";
 
 const MAX_ITERATIONS = 6;
@@ -321,6 +322,8 @@ ZASADY:
 - Korzystaj z kontekstu (aktualny widok / aktywna lista / bieżący projekt) podanego w wiadomości użytkownika, gdy polecenie nie wskazuje wprost celu. Wcześniejsze tury rozmowy bywają dołączone jako kontekst — wykorzystuj je dla ciągłości.
 - WYBÓR MODUŁU: gdy polecenie nie wskazuje wprost modułu, użyj modułu PODSTAWOWEGO (pierwszego na liście „Aktywne moduły"). Gdy użytkownik użyje słowa-klucza innego aktywnego modułu (np. „wydatek/przychód" → portfel, „zatankowałem" → flota, „nawyk/odhacz" → habits, „magazyn/wydaj ze stanu" → magazynowanie, „zaplanuj posiłek" → kitchen) — użyj tamtego modułu, o ile jest aktywny.
 - Twórz akcje tylko dla modułów, których katalog masz wyżej: ${modules.join(", ")}. Jeśli polecenie wyraźnie dotyczy INNEGO modułu (nie ma go w katalogu) — użyj "clarify" lub "answer" i poproś o doprecyzowanie, NIE zgaduj akcji spoza katalogu.
+- JĘZYK APLIKACJI, NIE BAZY DANYCH: w tekstach dla użytkownika (answer, question, content, thought, description akcji) NIGDY nie cytuj identyfikatorów rekordów ani wartości technicznych. Zamiast „NONE" pisz „brak priorytetu", zamiast „TODO" — „do zrobienia", zamiast „MEDIUM" — „średni". Identyfikatorów (np. cmrxo01jm00egksnw1ycs4dq8) nie wypisuj w ogóle — używaj nazw i tytułów. W parametrach akcji (params) wartości techniczne są OK i wymagane.
+- MYŚLI (thought) SĄ WIDOCZNE: pole "thought" pokazujemy użytkownikowi jako aktualny krok pracy. Pisz je krótko, po ludzku i w 1. osobie („Sprawdzam zadania z projektu Mieszkanie"), bez nazw narzędzi, parametrów i danych technicznych.
 - Zawsze zwracaj wyłącznie poprawny JSON wg schematu, bez żadnego dodatkowego tekstu.
 ${includePets ? `\n${PET_ACTION_EXAMPLES}` : ""}`;
 }
@@ -506,7 +509,46 @@ interface LoopResult {
 // myśl każdej iteracji NA ŻYWO — używane przez tryb streamingu (SSE) do pokazania,
 // co asystent właśnie robi. Zwraca obiekt {status?, body} (bez NextResponse), żeby
 // współdzielić logikę między trybem zwykłym a strumieniowym.
+// 031: JEDEN choke point humanizacji — cokolwiek pętla zwróci, tekst przeznaczony dla
+// użytkownika przechodzi przez `humanizeAssistantText` (wartości techniczne → etykiety z
+// aplikacji, identyfikatory rekordów usunięte). Prompt też o to prosi, ale na modelu nie da się
+// tego wymusić — deterministyczne domknięcie jest tutaj (lekcja z doświadczeń, 2026-07-25).
+// Świadomie NIE ruszamy `log[].tools/results` — to techniczny log rozumowania dla admina.
 async function runAgentLoop(
+  messages: ChatMessage[],
+  userId: string,
+  onThought?: (thought: string) => void,
+  meta?: AgentMeta,
+  maxTokens: number = AGENT_MAX_TOKENS,
+  conversationId?: string | null,
+  op: AgentOp = "reasoning"
+): Promise<LoopResult> {
+  // Myśli lecą do klienta NA ŻYWO (SSE) — humanizujemy je po drodze, nie tylko na końcu.
+  const humanThought = onThought ? (t: string) => onThought(humanizeAssistantText(t)) : undefined;
+  const result = await runAgentLoopRaw(messages, userId, humanThought, meta, maxTokens, conversationId, op);
+  const body = result.body as Record<string, unknown>;
+  for (const key of ["answer", "question", "content", "thought", "label", "title"]) {
+    if (typeof body[key] === "string") body[key] = humanizeAssistantText(body[key] as string);
+  }
+  if (Array.isArray(body.followups)) {
+    body.followups = (body.followups as unknown[]).map((f) => humanizeAssistantText(String(f)));
+  }
+  // Opisy akcji w planie też widzi użytkownik (w panelu „Przejrzyj / popraw").
+  if (Array.isArray(body.actions)) {
+    for (const a of body.actions as Array<Record<string, unknown>>) {
+      if (typeof a.description === "string") a.description = humanizeAssistantText(a.description);
+    }
+  }
+  // Myśli w logu opisowym („Pokaż log rozumowania") — bez danych technicznych.
+  if (Array.isArray(body.log)) {
+    for (const entry of body.log as Array<Record<string, unknown>>) {
+      if (typeof entry.thought === "string") entry.thought = humanizeAssistantText(entry.thought);
+    }
+  }
+  return result;
+}
+
+async function runAgentLoopRaw(
   messages: ChatMessage[],
   userId: string,
   onThought?: (thought: string) => void,

@@ -25,6 +25,7 @@ import { searchReports } from "@/actions/reports";
 import { getWatchers } from "@/actions/weather";
 import { describeFrequency } from "@/lib/medicationSchedule";
 import { describeRecurringRule, parseRecurringRule } from "@/lib/recurrence";
+import { technicalToLabel } from "@/lib/ai/humanize";
 import type { MedicationSchedule } from "@/types";
 
 /**
@@ -387,8 +388,9 @@ export async function runReadTool(
       return tasks.map((t) => ({
         id: t.id,
         title: t.title,
-        status: t.status,
-        priority: t.priority,
+        // 031: etykiety zamiast wartości technicznych — użytkownik widzi „Do zrobienia", nie „TODO".
+        status: technicalToLabel(t.status),
+        priority: technicalToLabel(t.priority),
         dueDate: t.dueDate?.toISOString() ?? null,
         projectId: t.projectId,
         projectName: t.project?.name ?? null,
@@ -425,8 +427,8 @@ export async function runReadTool(
         id: task.id,
         title: task.title,
         description: task.description ?? "",
-        status: task.status,
-        priority: task.priority,
+        status: technicalToLabel(task.status),
+        priority: technicalToLabel(task.priority),
         dueDate: task.dueDate?.toISOString() ?? null,
         projectName: task.project?.name ?? null,
         ...(recurringLabel ? { recurring: recurringLabel } : {}),
@@ -483,7 +485,7 @@ export async function runReadTool(
       return items.map((i) => ({
         id: i.id,
         name: i.name,
-        status: i.status,
+        status: technicalToLabel(i.status),
         quantity: i.quantity,
         unit: i.unit,
         listId: i.listId,
@@ -580,7 +582,7 @@ export async function runReadTool(
         orderBy: { createdAt: "desc" },
         take: HARD_MAX,
       });
-      return pets.map((p) => ({ id: p.id, name: p.name, species: p.species, status: p.status }));
+      return pets.map((p) => ({ id: p.id, name: p.name, species: p.species, status: technicalToLabel(p.status) }));
     }
 
     case "list_storage_items": {
@@ -654,10 +656,10 @@ export async function runReadTool(
       });
       return events.map((e) => ({
         id: e.id,
-        kind: e.kind,
+        kind: technicalToLabel(e.kind),
         title: e.title,
         scheduledAt: e.scheduledAt.toISOString(),
-        status: e.status,
+        status: technicalToLabel(e.status),
       }));
     }
 

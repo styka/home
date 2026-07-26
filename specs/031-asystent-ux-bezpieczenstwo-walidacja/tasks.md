@@ -106,17 +106,17 @@
 
 ## Faza 4 — Humanizacja wyjścia asystenta
 
-- [ ] **T-18** — **`src/lib/ai/humanize.ts`.** `humanizeAssistantText()` — mapowanie tokenów
+- [x] **T-18** — **`src/lib/ai/humanize.ts`.** `humanizeAssistantText()` — mapowanie tokenów
   technicznych na etykiety (całe słowa, poza blokami kodu) i usuwanie gołych identyfikatorów
   (cuid) wraz z osieroconymi nawiasami; testy jednostkowe przypadków granicznych.
   *Gotowe, gdy:* testy zielone, tekst użytkownika ze słowem „NONE" w zdaniu nie jest psuty (AC-1).
 
-- [ ] **T-19** — **Wpięcie humanizacji w agenta.** Jeden choke point w `agent/route.ts` na krokach
+- [x] **T-19** — **Wpięcie humanizacji w agenta.** Jeden choke point w `agent/route.ts` na krokach
   `answer`/`report`/`clarify` + krótka reguła w promptcie („nie cytuj identyfikatorów ani wartości
   technicznych").
   *Gotowe, gdy:* odpowiedź z listą zadań nie zawiera `TODO`/`NONE`/id (AC-1).
 
-- [ ] **T-20** `[P]` — **Etykiety w wynikach read-toolów.** `agentTools.ts` zwraca statusy i
+- [x] **T-20** `[P]` — **Etykiety w wynikach read-toolów.** `agentTools.ts` zwraca statusy i
   priorytety już jako etykiety; identyfikatory zostają (agent ich potrzebuje).
   *Gotowe, gdy:* wyniki narzędzi nie wnoszą wartości technicznych do treści odpowiedzi (AC-1).
 
