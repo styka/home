@@ -17,6 +17,14 @@ import {
 } from "@/actions/llmConfig";
 import { SpeechAssignmentRow } from "@/components/admin/SpeechAssignmentRow";
 import { withPln } from "@/lib/usdPln";
+import {
+  LLM_EFFORT_LABELS,
+  LLM_EFFORT_LEVELS,
+  effortSupported,
+  supportsTemperature,
+  type LlmEffort,
+} from "@/lib/llm/effort";
+import type { ProviderKind } from "@/lib/llm/resolver";
 
 const KIND_LABELS: Record<string, string> = {
   openai_compat: "OpenAI-compatible (Groq, OpenAI, xAI, OpenRouter…)",
@@ -238,14 +246,38 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
   const [isPending, startTransition] = useTransition();
   const [providerId, setProviderId] = useState(assignment.providerId ?? providers[0]?.id ?? "");
   const [model, setModel] = useState(assignment.model ?? assignment.defaultModel);
+  // 033: pokrętła modelu — wysiłek, temperatura i limit odpowiedzi. Puste = wartość domyślna
+  // dostawcy (nie wysyłamy parametru).
+  const [effort, setEffort] = useState<LlmEffort>(assignment.effort);
+  const [temperature, setTemperature] = useState(assignment.temperature === null ? "" : String(assignment.temperature));
+  const [maxTokens, setMaxTokens] = useState(assignment.maxTokens === null ? "" : String(assignment.maxTokens));
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Możliwości liczymy z AKTUALNIE wybranego dostawcy i wpisanego modelu, więc komunikat
+  // przelicza się od razu — admin widzi go PRZED zapisem (AC-3).
+  const kind = (providers.find((p) => p.id === providerId)?.kind ?? "openai_compat") as ProviderKind;
+  const canEffort = effortSupported(kind, model);
+  const canTemperature = supportsTemperature(kind);
 
   function save() {
     if (!providerId || !model.trim()) return;
+    setError(null);
     startTransition(async () => {
-      await setAssignment({ operationType: assignment.operationType, providerId, model });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      try {
+        await setAssignment({
+          operationType: assignment.operationType,
+          providerId,
+          model,
+          effort,
+          temperature: temperature.trim() === "" ? null : Number(temperature.replace(",", ".")),
+          maxTokens: maxTokens.trim() === "" ? null : Number(maxTokens),
+        });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Nie udało się zapisać ustawień.");
+      }
     });
   }
 
@@ -284,6 +316,67 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
           {saved ? "Zapisano" : "Zapisz"}
         </button>
       </div>
+
+      {/* 033: parametry modelu. Na telefonie jedna kolumna (C-31). */}
+      <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 8, marginTop: 10 }}>
+        <div style={{ opacity: canEffort ? 1 : 0.55 }}>
+          <label style={labelStyle}>Wysiłek modelu</label>
+          <select style={inputStyle} value={effort} onChange={(e) => setEffort(e.target.value as LlmEffort)}>
+            {LLM_EFFORT_LEVELS.map((lvl) => (
+              <option key={lvl} value={lvl}>{LLM_EFFORT_LABELS[lvl]}</option>
+            ))}
+          </select>
+        </div>
+        <div style={{ opacity: canTemperature ? 1 : 0.55 }}>
+          <label style={labelStyle}>Temperatura (0–2)</label>
+          <input
+            style={inputStyle}
+            type="number"
+            step="0.1"
+            min={0}
+            max={2}
+            value={temperature}
+            onChange={(e) => setTemperature(e.target.value)}
+            placeholder="domyślna"
+          />
+        </div>
+        <div>
+          <label style={labelStyle}>Limit odpowiedzi (tokeny)</label>
+          <input
+            style={inputStyle}
+            type="number"
+            min={1}
+            max={32000}
+            value={maxTokens}
+            onChange={(e) => setMaxTokens(e.target.value)}
+            placeholder="domyślny"
+          />
+        </div>
+      </div>
+
+      {/* Uczciwa informacja o możliwościach — zamiast pozwalać ustawiać coś bez efektu (AC-3). */}
+      {(effort !== "none" && !canEffort) || (temperature.trim() !== "" && !canTemperature) ? (
+        <div style={{ marginTop: 8, fontSize: 11, color: "var(--accent-amber)", lineHeight: 1.5 }}>
+          {effort !== "none" && !canEffort && (
+            <div>
+              Ten model nie obsługuje wysiłku — ustawienie zostanie pominięte przy wywołaniu.
+              {kind === "anthropic"
+                ? " Rozszerzone myślenie mają modele Claude 4 i nowsze."
+                : " Wysiłek przyjmują modele rozumujące (np. GPT-5, o3, Qwen3, GPT-OSS)."}
+            </div>
+          )}
+          {temperature.trim() !== "" && !canTemperature && (
+            <div>
+              Dostawca Anthropic ignoruje temperaturę (nowsze modele Claude odrzucają ten parametr) —
+              nie zostanie wysłana.
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {error && (
+        <div style={{ marginTop: 8, fontSize: 11.5, color: "var(--accent-red)" }}>{error}</div>
+      )}
     </div>
   );
 }

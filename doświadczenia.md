@@ -4,6 +4,64 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-26 — Równoległa sesja zajęła ten sam numer speca i migracji
+**Problem:** Podczas pracy nad feature'em „effort/temperature" druga sesja zmergowała do `develop`
+inny feature też ponumerowany **032** (katalog TTS) razem z migracją **0210**. Moja gałąź miała
+`specs/032-llm-effort-temperature` i `prisma/migrations/0210_llm_effort`, więc po `git fetch`
+`git merge --ff-only` odbił się („Not possible to fast-forward"), a `check:migrations` wywaliłby
+build na duplikacie numeru.
+**Rozwiązanie:** Przed merge PRZENUMEROWAŁEM swoje artefakty na wolne numery (spec 032 → 033,
+migracja `0210_llm_effort` → `0211_llm_effort`) — bezpiecznie, bo moja migracja nie była nigdzie
+zaaplikowana poza lokalną bazą deweloperską (C-11 zabrania renamować tylko migracje JUŻ
+zaaplikowane). Potem zwykły `git merge origin/develop` i ręczne rozwiązanie 6 konfliktów: w
+`resolver.ts`/`llmConfig.ts` obie zmiany są komplementarne (ich filtr dostawców tylko-TTS + moje
+`effort`), w `agent/route.ts` trzeba było ZŁOŻYĆ dwa nowe parametry tych samych funkcji
+(`isFinalRun` ich, `boostEffort` mój), w `doświadczenia.md` zachować OBA zestawy wpisów.
+**Lekcja:** Numer migracji i numer speca to zasoby GLOBALNE — przy pracy równoległej sprawdzaj
+`origin/develop` **przed** pushem, nie tylko na starcie. Gdy trzeba przenumerować, zrób to PRZED
+merge (inaczej rozwiązujesz konflikty dwa razy). Przy konflikcie w pliku, gdzie obie strony dodały
+parametr do tej samej funkcji, nie wybieraj „naszej/ich" wersji — złóż sygnaturę z obu i sprawdź
+KAŻDE wywołanie. I pamiętaj: `git diff origin/develop HEAD` w trakcie nierozwiązanego merge porównuje
+do commitu PRZED merge, więc wygląda, jakby czyjaś praca ginęła — patrz na stan roboczy
+(`git diff origin/develop -- plik`).
+
+
+## 2026-07-26 — „Effort" nie jest jednym parametrem: wspólna skala zamiast surowej wartości
+**Problem:** Zgłoszenie brzmiało „dodaj możliwość ustawienia effort", ale u każdego dostawcy to co
+innego: Anthropic ma rozszerzone myślenie z budżetem tokenów (`thinking.budget_tokens`), modele
+rozumujące zgodne z OpenAI mają `reasoning_effort`, a llama na Groqu nie ma tego wcale. Gdyby admin
+wpisywał surową wartość, literówka albo model bez wsparcia dawałyby **400** — a 400 jest
+NIEPRZEJŚCIOWY (`isRetryableLlmStatus` → false), więc przerywa łańcuch fallbacku i wywala całego
+agenta. Opcjonalne ustawienie potrafiłoby więc położyć asystenta.
+**Rozwiązanie:** Jedna opisowa skala (brak/niski/średni/wysoki) + tłumaczenie na parametr dostawcy w
+jednym miejscu (`src/lib/llm/effort.ts`) z **konserwatywną** tabelą możliwości (wysyłamy tylko przy
+pewnej rodzinie modelu). Trzy warstwy obrony: tabela, jednorazowa degradacja bez wysiłku przy 400
+rozpoznanym jako odrzucenie tego parametru, oraz domyślne „brak" (bez ruchu admina zero zmian).
+Panel mówi wprost, że dla wybranego modelu ustawienie zostanie pominięte.
+**Lekcja:** Gdy „jeden parametr" ma różne API u różnych dostawców, nie wystawiaj go surowo — wystaw
+INTENCJĘ (skala) i tłumacz ją w jednym choke-poincie. I zawsze sprawdź, czy błąd, którym dostawca
+odrzuci nowy parametr, jest przejściowy: jeśli nie, potrzebna jest jawna degradacja, bo inaczej
+opcjonalne ustawienie zabiera funkcję główną.
+
+## 2026-07-26 — Anthropic: `max_tokens` musi być WIĘKSZY od budżetu myślenia
+**Problem:** Włączenie rozszerzonego myślenia (`thinking.budget_tokens`) przy zachowanym
+`max_tokens: 1024` daje 400 — budżet myślenia jest częścią `max_tokens`, więc odpowiedź nie miałaby
+gdzie się zmieścić. Łatwo to przeoczyć, bo w naszej konfiguracji `max_tokens` ustawia admin osobno.
+**Rozwiązanie:** `applyEffort` podnosi `max_tokens` do `budget + 1024`, gdy skonfigurowana wartość
+jest mniejsza (i **nie** obniża, gdy admin ustawił większą). Objęte testem jednostkowym.
+**Lekcja:** Parametry modelu bywają powiązane — dokładając jeden, sprawdź jego warunki brzegowe
+względem już wysyłanych. Test „ciało żądania spełnia niezmiennik dostawcy" jest tu tańszy niż
+diagnozowanie 400 z produkcji.
+
+## 2026-07-26 — Polski cudzysłów zamykający ” w literale TS (drugi raz ta sama pułapka)
+**Problem:** `it("poziom „brak" nigdy nic nie dokłada", …)` — otwierający „ jest znakiem
+typograficznym, ale zamykający wpisałem jako zwykły `"`, co PRZEDWCZEŚNIE kończy literał. `esbuild`
+wywala się dopiero przy uruchomieniu testów: „Expected ) but found nigdy". Ten sam błąd trafił mnie
+wcześniej w tej samej sesji przy testach kontraktu akcji.
+**Rozwiązanie:** Konsekwentnie para „ … ” (oba typograficzne) albo brak cudzysłowu w nazwie testu.
+**Lekcja:** W plikach TS trzymaj polskie cudzysłowy PARAMI („ z ”). Gdy komunikat kompilatora wskazuje
+nieoczekiwane słowo w środku zdania po polsku — szukaj cudzysłowu zamykającego, nie składni.
+
 ## 2026-07-26 — `kind` dostawcy to nie jest jego tożsamość: zapis lektora wyłączał cały asystent
 **Problem:** Katalog TTS opisuje pięciu dostawców, ale **dwaj** (OpenAI i Groq PlayAI) mają ten sam
 `LlmProvider.kind = "openai_compat"`. Kod dopasowywał pozycję katalogu po samym `kind`, więc

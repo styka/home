@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto/secrets";
+import { parseEffort, type LlmEffort } from "@/lib/llm/effort";
 import {
   GROQ_BASE_URL,
   OPERATION_TYPE_META,
@@ -31,6 +32,8 @@ export interface ResolvedLlm {
   model: string;
   temperature?: number | null;
   maxTokens?: number | null;
+  /** 033: poziom wysiłku ustawiony przez admina dla tego typu operacji ("none" = nie wysyłaj). */
+  effort?: LlmEffort | null;
 }
 
 /**
@@ -75,6 +78,8 @@ export async function resolveLlmChain(op: OperationType): Promise<ResolvedLlm[]>
         model: assignment.model,
         temperature: assignment.temperature,
         maxTokens: assignment.maxTokens,
+        // 033: poziom wysiłku ustawiony przez admina dla tego typu operacji.
+        effort: parseEffort(assignment.effort),
       });
     }
   }

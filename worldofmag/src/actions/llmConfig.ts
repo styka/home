@@ -14,6 +14,7 @@ import { PROVIDER_KINDS, isSpeechOnlyKind, type ProviderKind } from "@/lib/llm/r
 import { TTS_CATALOG, findTtsProvider, findTtsProviderById, providerMatchesSpec, normalizeBaseUrl } from "@/lib/tts/catalog";
 import { encryptSecret, decryptSecret, maskSecret } from "@/lib/crypto/secrets";
 import { logAudit } from "@/lib/audit";
+import { LLM_EFFORT_LABELS, LLM_EFFORT_LEVELS, parseEffort, type LlmEffort } from "@/lib/llm/effort";
 import { COST_ALERT_CONFIG_KEY, getDailyCostUsd } from "@/lib/ai/usage";
 import { USD_PLN_CONFIG_KEY, DEFAULT_USD_PLN_RATE, parseUsdPlnRate } from "@/lib/usdPln";
 
@@ -41,6 +42,8 @@ export interface AssignmentDTO {
   model: string | null;
   temperature: number | null;
   maxTokens: number | null;
+  /** 033: poziom wysiłku modelu (wspólna skala tłumaczona per dostawca). */
+  effort: LlmEffort;
 }
 
 export async function getLlmProviders(): Promise<ProviderDTO[]> {
@@ -130,9 +133,18 @@ export async function getAssignments(): Promise<AssignmentDTO[]> {
       model: a?.model ?? null,
       temperature: a?.temperature ?? null,
       maxTokens: a?.maxTokens ?? null,
+      effort: parseEffort(a?.effort),
     };
   });
 }
+
+// 033: zakresy walidacji parametrów modelu. Temperatura: skala OpenAI-compatible (0–2).
+// Limit odpowiedzi: górna granica z zapasem na najdłuższe raporty, ale chroni przed literówką
+// („80000" zamiast „8000") zamieniającą jedno wywołanie w bardzo drogie.
+const TEMPERATURE_MIN = 0;
+const TEMPERATURE_MAX = 2;
+const MAX_TOKENS_MIN = 1;
+const MAX_TOKENS_MAX = 32000;
 
 export async function setAssignment(data: {
   operationType: string;
@@ -140,11 +152,13 @@ export async function setAssignment(data: {
   model: string;
   temperature?: number | null;
   maxTokens?: number | null;
+  effort?: string | null;
 }): Promise<void> {
   await requireAdmin();
   if (!isOperationType(data.operationType)) throw new Error("Nieznany typ operacji");
   const model = data.model.trim();
   if (!data.providerId || !model) throw new Error("Wybierz dostawcę i podaj model");
+
   // 032: dostawca obsługujący WYŁĄCZNIE syntezę mowy nie może zostać przypisany do operacji
   // czatowej — jego endpoint nie odpowiada na prompt. Blokujemy to już przy zapisie, żeby
   // administrator dowiedział się od razu, a nie z błędu asystenta (druga bariera: `resolveLlmChain`).
@@ -159,23 +173,47 @@ export async function setAssignment(data: {
       );
     }
   }
+
+  // 033: walidacja parametrów modelu — niepoprawna wartość NIE nadpisuje działającej konfiguracji.
+  if (data.effort != null && data.effort !== "" && !LLM_EFFORT_LEVELS.includes(data.effort as LlmEffort)) {
+    throw new Error("Nieznany poziom wysiłku modelu.");
+  }
+  const effort = data.effort ? parseEffort(data.effort) : "none";
+
+  const temperature = data.temperature ?? null;
+  if (temperature !== null) {
+    if (!Number.isFinite(temperature) || temperature < TEMPERATURE_MIN || temperature > TEMPERATURE_MAX) {
+      throw new Error(`Temperatura musi być liczbą z zakresu ${TEMPERATURE_MIN}–${TEMPERATURE_MAX}.`);
+    }
+  }
+  const maxTokens = data.maxTokens ?? null;
+  if (maxTokens !== null) {
+    if (!Number.isInteger(maxTokens) || maxTokens < MAX_TOKENS_MIN || maxTokens > MAX_TOKENS_MAX) {
+      throw new Error(`Limit odpowiedzi musi być liczbą całkowitą z zakresu ${MAX_TOKENS_MIN}–${MAX_TOKENS_MAX} tokenów.`);
+    }
+  }
+
+  // "none" zapisujemy jako NULL — kolumna pusta znaczy „nie wysyłaj parametru".
+  const effortValue = effort === "none" ? null : effort;
+  const fields = { providerId: data.providerId, model, temperature, maxTokens, effort: effortValue };
   await prisma.llmAssignment.upsert({
     where: { operationType: data.operationType },
-    update: {
-      providerId: data.providerId,
-      model,
-      temperature: data.temperature ?? null,
-      maxTokens: data.maxTokens ?? null,
-    },
-    create: {
-      operationType: data.operationType,
-      providerId: data.providerId,
-      model,
-      temperature: data.temperature ?? null,
-      maxTokens: data.maxTokens ?? null,
-    },
+    update: fields,
+    create: { operationType: data.operationType, ...fields },
   });
-  await logAudit("config", "llm_assignment.set", data.operationType, `Przypisano model „${model}” do operacji ${data.operationType}`);
+
+  // C-25: opis w audycie mówi też, z jakimi parametrami — inaczej nie da się odtworzyć zmiany.
+  const params = [
+    `wysiłek: ${LLM_EFFORT_LABELS[effort]}`,
+    temperature !== null ? `temperatura: ${temperature}` : "temperatura: domyślna",
+    maxTokens !== null ? `limit: ${maxTokens} tok.` : "limit: domyślny",
+  ].join(", ");
+  await logAudit(
+    "config",
+    "llm_assignment.set",
+    data.operationType,
+    `Przypisano model „${model}” do operacji ${data.operationType} (${params})`
+  );
   revalidatePath("/admin/llm");
 }
 
@@ -509,6 +547,8 @@ export interface AiCallLogRow {
   latencyMs: number;
   conversationId: string | null;
   errorText: string | null;
+  /** 033: poziom wysiłku FAKTYCZNIE użyty (null = parametr nie był wysłany). */
+  effort: string | null;
 }
 
 /**
@@ -531,6 +571,7 @@ export async function getRecentAiCalls(opts?: {
       id: true, createdAt: true, source: true, operationType: true, providerKind: true,
       model: true, ok: true, status: true, attempts: true, promptTokens: true,
       completionTokens: true, totalTokens: true, latencyMs: true, conversationId: true, errorText: true,
+      effort: true,
     },
   });
   return rows.map((r) => ({
@@ -549,5 +590,6 @@ export async function getRecentAiCalls(opts?: {
     latencyMs: r.latencyMs,
     conversationId: r.conversationId,
     errorText: r.errorText,
+    effort: r.effort,
   }));
 }

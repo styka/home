@@ -167,6 +167,7 @@ export interface AiCallEntry {
   errorText?: string; // treść błędu dostawcy (skrócona) dla wywołań nieudanych
   conversationId?: string | null; // powiązanie z rozmową asystenta
   attempts?: number; // liczba prób (retry na 429/5xx wliczone)
+  effort?: string | null; // 033: poziom wysiłku FAKTYCZNIE użyty ("none" → zapisujemy null)
 }
 
 /**
@@ -206,6 +207,7 @@ export async function recordAiCall(entry: AiCallEntry): Promise<void> {
       conversationId: entry.conversationId ?? null,
       attempts: Math.max(1, Math.round(entry.attempts ?? 1)),
       source: entry.source ?? null,
+      effort: entry.effort && entry.effort !== "none" ? entry.effort : null,
     },
   });
   // Alert kosztowy — tylko gdy próg skonfigurowany (>0). Idempotentny per dzień.

@@ -13,7 +13,7 @@ export function fmtAiCallTime(iso: string): string {
 }
 
 export function aiCallsToText(rows: AiCallLogRow[]): string {
-  const head = "czas | źródło | op | dostawca | model | ok | status | próby | prompt+compl=total tok | latency ms | conversationId | błąd";
+  const head = "czas | źródło | op | dostawca | model | wysiłek | ok | status | próby | prompt+compl=total tok | latency ms | conversationId | błąd";
   const lines = rows.map((r) =>
     [
       fmtAiCallTime(r.createdAt),
@@ -21,6 +21,8 @@ export function aiCallsToText(rows: AiCallLogRow[]): string {
       r.operationType,
       r.providerKind,
       r.model,
+      // 033: poziom wysiłku faktycznie użyty; „—" = parametr nie był wysyłany.
+      r.effort ?? "—",
       r.ok ? "OK" : "FAIL",
       r.status ?? "—",
       r.attempts,
