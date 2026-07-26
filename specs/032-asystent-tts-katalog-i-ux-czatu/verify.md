@@ -141,7 +141,7 @@ Sprawdzone celowo:
 
 ### Braki do poprawy
 
-- **B-1 (blokujące) — zamknięcie asystenta w trakcie generowania zostawia „sierotę".**
+- **B-1 — ✅ NAPRAWIONE (tura 2, T-31).** Opis poniżej zostaje jako ślad decyzji.
   `handleClose` (`AICommandSheet.tsx:904`) czyści wątek i `conversationId`, ale **nie przerywa**
   trwającego żądania: `abortRef.current?.abort()` jest tylko w `stopGeneration` i w efekcie odmontowania
   (`:687`), a komponent siedzi w `AppShell` i nigdy się nie odmontowuje. Skutek po zmianie T-12:
@@ -154,11 +154,58 @@ Sprawdzone celowo:
   `abortRef.current = null`, `setBusy(false)`) — analogicznie do `stopGeneration`, ale bez powrotu do
   nasłuchu głosowego, bo asystent się zamyka.
 
-## 7. Werdykt końcowy
+## 7. Tura 2 — po naprawie B-1 (T-31)
 
-**DO POPRAWY** — jedno konkretne, blokujące ustalenie: **B-1** (regresja wprowadzona przez T-12).
-Wszystkie 28 kryteriów akceptacji jest spełnionych lub potwierdzonych kodowo, bramki są zielone, a
-zgodność z konstytucją bez naruszeń — ale nie wypuszczamy zmiany, która potrafi zostawić w czacie
-niezapisaną, osieroconą odpowiedź.
+**Naprawa:** `handleClose` (`AICommandSheet.tsx:909-918`) przerywa trwające generowanie
+(`abortRef.current?.abort()` → wyzerowanie refa → `setBusy(false)`) **przed** wyczyszczeniem wątku.
+Świadomie bez powrotu do nasłuchu głosowego (inaczej niż w `stopGeneration`), bo asystent się zamyka,
+a `stopVoice` i tak odpala efekt na `isOpen`.
 
-Ustalenia **U-1** i **U-2** są nie-blokujące i przechodzą do recenzji.
+**Dowód poprawności:**
+- Kolejność w kodzie: abort wykonuje się w tej samej gałęzi `turnsRef.current.length > 0` i **przed**
+  `setTurns([])` / `convoIdRef.current = null`, więc żądanie nie może dopisać tury po resecie.
+- Klient **już wcześniej** cicho ignorował przerwanie: `:1093`
+  `if ((e as Error)?.name === "AbortError") return;` — więc naprawa nie wprowadza żadnej tury błędu,
+  a blok `finally` (`:1095-1099`) i tak zeruje `abortRef`/`busy`/`liveThoughts`.
+- `stopGeneration` (`:1093`) pozostaje nietknięty — przycisk „Zatrzymaj" działa jak dotąd.
+- **Ograniczenie dowodu:** repozytorium **nie ma infrastruktury testów komponentów** (brak
+  `@testing-library`/`jsdom` w `package.json`), więc nie da się tego zamknąć testem automatycznym bez
+  dołożenia nowej zależności — czego C-53 nie uzasadnia dla jednej regresji. Dowodem jest przegląd
+  kodu + istniejąca obsługa `AbortError`; zachowanie po zamknięciu w trakcie „myślę" trafia na listę
+  rzeczy do sprawdzenia klikiem na środowisku testowym.
+
+**Bramki po naprawie (ponowny, pełny przebieg):**
+
+| Komenda | Wynik |
+|---|---|
+| `npm run check:migrations` | ✅ następny wolny numer 0211 |
+| `npm run check:actions` | ✅ 160 akcji |
+| `npm run check:ai-coverage` | ✅ 500 akcji (159/64 ai, 0 pending) |
+| `npx tsc --noEmit` | ✅ bez błędów |
+| `npx next lint --dir src` | ✅ 0 błędów, 16 zastanych ostrzeżeń |
+| `npx next build` | ✅ `Compiled successfully` |
+| `npm run test:unit` | ✅ 512/512 |
+
+Regresji wtórnych nie wykryto: zmiana dotyczy jednej funkcji, nie rusza `stopGeneration`, `handleSend`
+ani ścieżki strumieniowej.
+
+## 8. Werdykt końcowy
+
+**GOTOWE Z UWAGAMI.**
+
+- 28 kryteriów akceptacji: **26 × ✅** (w tym 13 potwierdzonych uruchomieniem na lokalnej bazie albo
+  end-to-end przez serwer-atrapę), **2 × ⚠️** wyłącznie z powodu ograniczeń środowiska (AC-12 wymaga
+  żywego modelu i danych właściciela; AC-19/AC-20 nie ma jak kliknąć na realnym iOS). **0 × ❌.**
+- Bramki: wszystkie zielone, `next build` włącznie; `migrate.js` świadomie nie uruchamiany (C-13).
+- Konstytucja: brak naruszeń; przy okazji **usunięte** zastane naruszenie C-30 (hardcodowany hex
+  w `ActionDrawer`) i zastana luka w `resolveProjectRef` (pusta referencja dopasowująca się do
+  wszystkiego).
+- **B-1 naprawione** w turze 2.
+
+**Uwagi przechodzące do recenzji (nie-blokujące):** **U-1** (zmarnowane wywołanie podsumowania, gdy po
+przerwanym przebiegu prostej tury odczytowej następuje fallback `dispatch→reasoning`) i **U-2**
+(ucięcie, które mimo wszystko sparsowało się, idzie dalej normalnie).
+
+**Do sprawdzenia klikiem na środowisku testowym po merge:** scenariusz Z-2 (AC-12), klawiatura mobilna
+na iOS i Androidzie (AC-19/AC-20), zamknięcie asystenta w trakcie generowania (B-1), oraz panel lektora
+z prawdziwym kluczem dostawcy (AC-4/AC-5 na żywym API).
