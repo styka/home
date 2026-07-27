@@ -5,6 +5,7 @@ import { createNote, updateNote, deleteNote, toggleNotePin, setNoteTags } from "
 import { getTags, createTag } from "@/actions/tags";
 import { createNoteGroup, updateNoteGroup, deleteNoteGroup } from "@/actions/noteGroups";
 import { asStr, undoAction, resolveNoteId, type ExecOutcome } from "@/lib/ai/executors/shared";
+import { getUserTeamIds, ownedOrSystemWhere } from "@/lib/server-utils";
 import type { AIAction } from "@/lib/ai/aiAction";
 
 // Zamień nazwy tagów notatek na id (znajdź istniejący po nazwie, inaczej utwórz).
@@ -25,11 +26,41 @@ async function resolveNoteTagIds(names: unknown): Promise<string[]> {
   return ids;
 }
 
+/**
+ * 034: JEDNO miejsce, w którym asystent szuka grupy notatek po nazwie — dzięki temu zawężenie do
+ * właściciela (C-21) jest wpięte raz, a nie w każdym typie akcji z osobna.
+ */
+async function findAccessibleNoteGroup(userId: string, name: string): Promise<{ id: string } | null> {
+  const teamIds = await getUserTeamIds(userId);
+  return prisma.noteGroup.findFirst({
+    where: { ...ownedOrSystemWhere(userId, teamIds), name: { contains: name, mode: "insensitive" } },
+    select: { id: true },
+  });
+}
+
+/**
+ * 034: `groupName` → id grupy notatek. Katalog akcji nie miał wcześniej ŻADNEGO sposobu, by wskazać
+ * grupę przy tworzeniu notatki, więc model wymyślał parametr `groupName`, a executor go ignorował —
+ * notatka lądowała poza grupą (zgłoszenie Z1). Dopasowanie po nazwie, jak `projectName` w zadaniach;
+ * nieznana nazwa = brak grupy (notatka i tak powstaje, zamiast wywalać całą akcję).
+ */
+async function resolveNoteGroupId(userId: string, params: Record<string, unknown>): Promise<string | null> {
+  const name = asStr(params.groupName)?.trim();
+  if (!name) return null;
+  const group = await findAccessibleNoteGroup(userId, name);
+  return group?.id ?? null;
+}
+
 export async function executeNotesAction(action: AIAction, userId: string): Promise<string | ExecOutcome> {
   const { type, params, searchQuery } = action;
 
   if (type === "create_note") {
-    const note = await createNote({ title: asStr(params.title) ?? "Nowa notatka", content: asStr(params.content) ?? "" });
+    const groupId = await resolveNoteGroupId(userId, params);
+    const note = await createNote({
+      title: asStr(params.title) ?? "Nowa notatka",
+      content: asStr(params.content) ?? "",
+      groupId,
+    });
     const msg = `Utworzono notatkę "${note.title}"`;
     const undo = undoAction("notes", "delete_note", { noteId: note.id }, `Usuń notatkę "${note.title}"`);
     if (params.openAfter === true) {
@@ -54,6 +85,11 @@ export async function executeNotesAction(action: AIAction, userId: string): Prom
     const undoParams: Record<string, unknown> = { noteId: id };
     if (params.title !== undefined) { patch.title = String(params.title); undoParams.title = before?.title ?? ""; }
     if (params.content !== undefined) { patch.content = String(params.content); undoParams.content = before?.content ?? ""; }
+    // 034: przeniesienie notatki do grupy wskazanej nazwą (nieznana nazwa = zostawiamy grupę bez zmian).
+    if (params.groupName !== undefined) {
+      const groupId = await resolveNoteGroupId(userId, params);
+      if (groupId) patch.groupId = groupId;
+    }
     const note = await updateNote(id, patch);
     const undo = before
       ? { ...undoAction("notes", "update_note", undoParams, `Cofnij zmiany w notatce "${note.title}"`), searchQuery: note.title }
@@ -106,9 +142,10 @@ export async function executeNotesAction(action: AIAction, userId: string): Prom
   if (type === "update_note_group" || type === "delete_note_group") {
     const q = searchQuery ?? asStr(params.name);
     const gid = asStr(params.groupId);
+    const teamIds = await getUserTeamIds(userId);
     const g = gid
-      ? await prisma.noteGroup.findFirst({ where: { id: gid }, select: { id: true } })
-      : await prisma.noteGroup.findFirst({ where: { name: { contains: q ?? "", mode: "insensitive" } }, select: { id: true } });
+      ? await prisma.noteGroup.findFirst({ where: { ...ownedOrSystemWhere(userId, teamIds), id: gid }, select: { id: true } })
+      : await findAccessibleNoteGroup(userId, q ?? "");
     if (!g) throw new Error(`Nie znaleziono grupy notatek: „${q ?? gid ?? ""}"`);
     if (type === "delete_note_group") { await deleteNoteGroup(g.id); return `Usunięto grupę notatek`; }
     await updateNoteGroup(g.id, { name: asStr(params.name), description: asStr(params.description) ?? null, color: asStr(params.color) ?? null });

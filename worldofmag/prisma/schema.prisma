@@ -45,6 +45,10 @@ model User {
   categoryIconVariants   CategoryIconVariant[]
   userRoles              UserRole[]
   ownedNotes             Note[]                @relation("OwnedNotes")
+  ownedNoteGroups        NoteGroup[]           @relation("OwnedNoteGroups")
+  ownedTags              Tag[]                 @relation("OwnedTags")
+  ownedItemHistory       ItemHistory[]         @relation("OwnedItemHistory")
+  llmPrefs               UserLlmPref[]         @relation("UserLlmPrefs")
   reports                Report[]              @relation("AuthoredReports")
   aiConversations        AiConversation[]      @relation("AiConversations")
   qaScenarios            QaTestScenario[]      @relation("QaAuthored")
@@ -328,6 +332,8 @@ model Team {
   taskProjects         TaskProject[]         @relation("TeamTaskProjects")
   taskShares           TaskShare[]           @relation("TeamTaskShares")
   notes                Note[]                @relation("TeamNotes")
+  noteGroups           NoteGroup[]           @relation("TeamNoteGroups")
+  tags                 Tag[]                 @relation("TeamTags")
   categoryIconVariants CategoryIconVariant[] @relation("TeamIconVariants")
   reports              Report[]              @relation("TeamReports")
   recipes              Recipe[]              @relation("TeamRecipes")
@@ -435,13 +441,20 @@ model Item {
   @@index([listId, status])
 }
 
+// 034: podpowiedzi zakupowe są prywatne — właściciel to użytkownik (bez wariantu zespołowego,
+// jak `Store`). ownerId=null = rekord systemowy sprzed migracji.
 model ItemHistory {
   id        String   @id @default(cuid())
-  name      String   @unique
+  name      String
   category  String
   unit      String?
   useCount  Int      @default(1)
+  ownerId   String?
   updatedAt DateTime @updatedAt
+  owner     User?    @relation("OwnedItemHistory", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@unique([ownerId, name])
+  @@index([ownerId])
 }
 
 // ─── Product Catalog ──────────────────────────────────────────────────────
@@ -544,23 +557,42 @@ model CategoryIconVariant {
 
 // ─── Notes ────────────────────────────────────────────────────────────────
 
+// 034: grupy notatek mają właściciela (użytkownik LUB zespół). ownerId=null i ownerTeamId=null
+// oznacza rekord SYSTEMOWY — wspólny dla wszystkich kont, edytowalny tylko przez administratora.
+// FK z SetNull: skasowanie konta nie kasuje grupy, tylko czyni ją systemową.
 model NoteGroup {
   id          String   @id @default(cuid())
   name        String
   description String?
   color       String?
+  ownerId     String?
+  ownerTeamId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   notes       Note[]
+  owner       User?    @relation("OwnedNoteGroups", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerTeam   Team?    @relation("TeamNoteGroups", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+  @@index([ownerTeamId])
 }
 
+// 034: etykiety również mają właściciela. Unikalność nazwy jest teraz „w obrębie właściciela",
+// bo globalna blokowałaby drugiemu użytkownikowi założenie etykiety o tej samej nazwie.
 model Tag {
-  id        String      @id @default(cuid())
-  name      String      @unique
-  color     String?
-  createdAt DateTime    @default(now())
-  notes     NoteTag[]
-  recipes   RecipeTag[]
+  id          String      @id @default(cuid())
+  name        String
+  color       String?
+  ownerId     String?
+  ownerTeamId String?
+  createdAt   DateTime    @default(now())
+  notes       NoteTag[]
+  recipes     RecipeTag[]
+  owner       User?       @relation("OwnedTags", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerTeam   Team?       @relation("TeamTags", fields: [ownerTeamId], references: [id], onDelete: SetNull)
+
+  @@unique([ownerId, name])
+  @@index([ownerTeamId])
 }
 
 model Note {
@@ -1953,9 +1985,12 @@ model LlmProvider {
 // Przypisanie modelu do typu operacji (charakter zadania, nie moduł).
 // operationType: "dispatch" | "reasoning" | "vision" | "generation"
 model LlmAssignment {
-  operationType String   @id
+  operationType String
+  // 034: AssistantConfigLevel ("economy" | "standard" | "max") — String + union TS (C-12).
+  // Admin definiuje KAŻDY poziom osobno; pole puste = dziedziczy z poziomu "standard".
+  level         String   @default("standard")
   providerId    String
-  model         String
+  model         String? // null = dziedzicz model z poziomu "standard"
   temperature   Float?
   maxTokens     Int?
   // 032: LlmEffort ("none" | "low" | "medium" | "high"); null = brak (nie wysyłamy parametru).
@@ -1965,7 +2000,41 @@ model LlmAssignment {
 
   provider LlmProvider @relation(fields: [providerId], references: [id], onDelete: Restrict)
 
+  @@id([operationType, level])
   @@index([providerId])
+}
+
+// 034: WŁASNY poziom pracy asystenta (per użytkownik). Świadomie BEZ `maxTokens` — limit odpowiedzi
+// zostaje w rękach administratora. `providerId` bez relacji (snapshot jak `AiCall.userId`):
+// skasowanie dostawcy nie wysadza ustawień użytkownika, resolver sprawdza istnienie i `enabled`.
+model UserLlmPref {
+  id            String   @id @default(cuid())
+  userId        String
+  operationType String
+  providerId    String?
+  model         String?
+  effort        String? // LlmEffort
+  temperature   Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation("UserLlmPrefs", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, operationType])
+  @@index([userId])
+}
+
+// 034: cennik modeli — przeniesiony z kodu (lib/llm/pricing.ts) do panelu admina, żeby aktualizacja
+// stawek nie wymagała wdrożenia. Dopasowanie po PREFIKSIE nazwy modelu (id bywają z sufiksami wersji).
+model LlmModelPrice {
+  id             String   @id @default(cuid())
+  modelPrefix    String   @unique
+  label          String?
+  inputPer1M     Float
+  outputPer1M    Float
+  cacheReadMult  Float    @default(0.1)
+  cacheWriteMult Float    @default(1.25)
+  updatedAt      DateTime @updatedAt
 }
 
 // ─── Nauka języków ──────────────────────────────────────────────────────────
