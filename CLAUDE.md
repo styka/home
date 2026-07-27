@@ -353,7 +353,7 @@ Contact                                       — Contacts / personal CRM (per-u
 ShoppingList, Item, ItemHistory               — Shopping core
 Product, Category, Unit, CategoryIconVariant  — Shopping config
 Store, StoreNode, StoreEdge                   — Store maps (graph)
-Note, NoteGroup, Tag, NoteTag                 — Notes module (wikilinks [[Title]] + full-text search)
+Note, NoteGroup, Tag, NoteTag                 — Notes module (wikilinks [[Title]] + full-text search; NoteGroup/Tag are owner-scoped — see "Dictionary Ownership Levels")
 NoteRevision, NoteAttachment                  — Notes version history + attachments/images
 TaskProject, TaskProjectMember, Task          — Tasks module
 TaskTagDef, TaskTaskTag, TaskComment, TaskShare — Tasks extras
@@ -387,7 +387,8 @@ ServiceQuote, ServiceAvailability, ServiceImage — Usługi marketplace (quotes;
 ServicePayment, ServiceDispute                — Usługi marketplace (payments/invoices → Portfel; disputes + admin moderation)
 ServiceStaff, ServiceFavorite, ServicePromoCode — Usługi marketplace (multi-worker firms; favorite providers; promo codes)
 QaEpic, QaUserStory, QaTestScenario           — QA module
-LlmProvider, LlmAssignment                    — LLM config (admin)
+LlmProvider, LlmAssignment                    — LLM config (admin; LlmAssignment PK = operationType+level)
+UserLlmPref, LlmModelPrice                    — Per-user "custom" assistant level (model/effort/temperature per operation type, no maxTokens) + admin-editable model price list
 AiConversation, AiMessage                     — AI assistant chat memory (per-user; message kind: text/plan/report/navigate/clarify/results; `AiConversation.draft` = unsent composer text, per conversation, so it returns on any device)
 Config, UserActivity, Report                  — System
 ```
@@ -435,6 +436,13 @@ Three-tier system for categories, units, products:
 
 `getCategories()`, `getUnits()` — return all three levels merged, with `isBase`, `isOwn`, `teamId` fields.
 
+**034**: `NoteGroup`, `Tag` and `ItemHistory` follow the same idea via `ownerId`/`ownerTeamId`
+(`ItemHistory` is user-only). `NULL/NULL` = **system record**: readable by every signed-in user,
+editable only by an admin (`assertDictionaryAccess`, `ownedOrSystemWhere` in `src/lib/server-utils.ts`).
+Name uniqueness on `Tag`/`ItemHistory` is now **per owner** (`@@unique([ownerId, name])`) — a global
+unique name would stop a second user from creating the same label. Migration 0212 backfilled every
+pre-existing row to the admin account.
+
 ### LLM Integration
 
 `src/lib/llm-client.ts` is a typed client wrapping the `/api/llm/*` routes.
@@ -477,12 +485,24 @@ document, orderDraft, insights, search), `pets` (insights).
   (400 is non-retryable, so it would otherwise break the fallback chain). `AiCall.effort` records
   the level actually used. Anthropic still never receives `temperature` (see `doświadczenia.md`
   2026, 026-anthropic-temperature-fix).
-  The per-user **assistant work level** (`AssistantPref.level`) picks the *operation type*, not a
-  model: `economy` routes every assistant call to `dispatch` (`effectiveOperation()`), so the model
-  choice stays with the admin. **`max`** keeps the admin's model but raises effort one notch
-  (`shouldBoostEffort()` → `boostEffort`) and skips the cheap-model shortcut for simple reads. Default provider is
-  Groq (OpenAI-compatible); key in `Config` (`groq_api_key`) / env.
+  **Assistant work levels (034)**: `LlmAssignment` is keyed by **(`operationType`, `level`)** —
+  the admin configures *all three* levels (`economy`/`standard`/`max`) per operation type in
+  `/admin/llm`; a field left empty **inherits from `standard`**. The per-user `AssistantPref.level`
+  adds a fourth option, **`custom`**, backed by `UserLlmPref` (model from the admin's catalog +
+  effort + temperature per operation type; **never** `maxTokens`). `resolveLlmChain(op, {level,
+  userId})` composes it all; a provider the user picked that was later removed/disabled degrades
+  silently to `standard`. The old in-code rules (`effectiveOperation`, `shouldBoostEffort`,
+  `boostEffort`) are **gone** — migration 0212 seeded the equivalent rows so behaviour is unchanged
+  but now visible and editable. Default provider is Groq (OpenAI-compatible); key in `Config`
+  (`groq_api_key`) / env.
   Shared helpers: `src/lib/llm/chat.ts` (`chatComplete`), `src/lib/llm/json.ts`.
+  **Cost accounting (034)**: model prices live in the DB (`LlmModelPrice`, edited in `/admin/llm`),
+  loaded into a 60 s module cache by `ensurePricesLoaded()` (called from `chatComplete`/`chatStream`);
+  `src/lib/llm/pricing.ts` `estimateCost()` returns `{usd, known, parts}` split into input / output /
+  cache-write / cache-read. An unpriced model is reported as **„koszt nieznany"**, never as 0. The
+  cost UI is the shared, assistant-agnostic `src/components/ui/AiCostBadge.tsx` (ready for other
+  modules). Effort and temperature do **not** change the per-token price — effort raises the *number*
+  of output tokens, which the estimate already counts.
 - Rule-based fallback for categorization (no LLM): `categorize.ts` (~500 Polish+English keywords).
 - LLM prompts treat category names as **Polish words** (not English); category hints injected from DB-driven categories.
 - **External integrations** (mostly key-free / cheap): `lib/weather/openMeteo.ts`

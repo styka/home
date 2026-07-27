@@ -671,6 +671,9 @@ export interface AiCallLogRow {
   attempts: number;
   promptTokens: number;
   completionTokens: number;
+  /** 034: tokeny pamięci podręcznej promptu — rozliczane, więc bez nich kwota jest nie do sprawdzenia. */
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
   totalTokens: number;
   latencyMs: number;
   conversationId: string | null;
@@ -698,7 +701,8 @@ export async function getRecentAiCalls(opts?: {
     select: {
       id: true, createdAt: true, source: true, operationType: true, providerKind: true,
       model: true, ok: true, status: true, attempts: true, promptTokens: true,
-      completionTokens: true, totalTokens: true, latencyMs: true, conversationId: true, errorText: true,
+      completionTokens: true, cacheReadTokens: true, cacheWriteTokens: true,
+      totalTokens: true, latencyMs: true, conversationId: true, errorText: true,
       effort: true,
     },
   });
@@ -714,6 +718,8 @@ export async function getRecentAiCalls(opts?: {
     attempts: r.attempts,
     promptTokens: r.promptTokens,
     completionTokens: r.completionTokens,
+    cacheReadTokens: r.cacheReadTokens,
+    cacheWriteTokens: r.cacheWriteTokens,
     totalTokens: r.totalTokens,
     latencyMs: r.latencyMs,
     conversationId: r.conversationId,

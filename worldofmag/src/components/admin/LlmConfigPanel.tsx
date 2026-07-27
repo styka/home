@@ -10,10 +10,13 @@ import {
   applyAnthropicProfile,
   setCostAlertThreshold,
   setUsdPlnRate,
+  setModelPrice,
+  deleteModelPrice,
   type ProviderDTO,
   type AssignmentDTO,
   type AiCostBreakdown,
   type SpeechConfigDTO,
+  type ModelPriceDTO,
 } from "@/actions/llmConfig";
 import { SpeechAssignmentRow } from "@/components/admin/SpeechAssignmentRow";
 import { withPln } from "@/lib/usdPln";
@@ -25,6 +28,12 @@ import {
   type LlmEffort,
 } from "@/lib/llm/effort";
 import type { ProviderKind } from "@/lib/llm/resolver";
+import {
+  CONFIG_LEVELS,
+  CONFIG_LEVEL_DESCRIPTIONS,
+  CONFIG_LEVEL_LABELS,
+  type ConfigLevel,
+} from "@/lib/llm/operationTypes";
 
 const KIND_LABELS: Record<string, string> = {
   openai_compat: "OpenAI-compatible (Groq, OpenAI, xAI, OpenRouter…)",
@@ -245,7 +254,11 @@ function ProviderRow({ provider }: { provider: ProviderDTO }) {
 function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; providers: ProviderDTO[] }) {
   const [isPending, startTransition] = useTransition();
   const [providerId, setProviderId] = useState(assignment.providerId ?? providers[0]?.id ?? "");
-  const [model, setModel] = useState(assignment.model ?? assignment.defaultModel);
+  // 034: pusty model na poziomie innym niż standardowy = świadome dziedziczenie ze standardowego,
+  // więc NIE podstawiamy tu wartości domyślnej — placeholder mówi, co zadziała.
+  const isBase = assignment.level === "standard";
+  const [model, setModel] = useState(assignment.model ?? (isBase ? assignment.defaultModel : ""));
+  const inheritedModelHint = assignment.inheritedModel ?? assignment.defaultModel;
   // 033: pokrętła modelu — wysiłek, temperatura i limit odpowiedzi. Puste = wartość domyślna
   // dostawcy (nie wysyłamy parametru).
   const [effort, setEffort] = useState<LlmEffort>(assignment.effort);
@@ -261,12 +274,13 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
   const canTemperature = supportsTemperature(kind);
 
   function save() {
-    if (!providerId || !model.trim()) return;
+    if (!providerId || (isBase && !model.trim())) return;
     setError(null);
     startTransition(async () => {
       try {
         await setAssignment({
           operationType: assignment.operationType,
+          level: assignment.level,
           providerId,
           model,
           effort,
@@ -304,11 +318,16 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
         </div>
         <div>
           <label style={labelStyle}>Model</label>
-          <input style={inputStyle} value={model} onChange={(e) => setModel(e.target.value)} placeholder={assignment.defaultModel} />
+          <input
+            style={inputStyle}
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            placeholder={isBase ? assignment.defaultModel : `dziedziczy: ${inheritedModelHint}`}
+          />
         </div>
         <button
           onClick={save}
-          disabled={isPending || !providerId || !model.trim()}
+          disabled={isPending || !providerId || (isBase && !model.trim())}
           className="flex items-center gap-1 px-3 py-2 rounded text-sm font-medium disabled:opacity-40"
           style={{ background: saved ? "var(--accent-green)" : "var(--accent-blue)", color: "var(--on-accent)", height: 35 }}
         >
@@ -459,6 +478,110 @@ function fmtUsd(n: number, rate: number): string {
 
 const tdStyle: React.CSSProperties = { padding: "8px 10px", fontSize: 12, color: "var(--text-secondary)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" };
 const thStyle: React.CSSProperties = { padding: "8px 10px", fontSize: 11, color: "var(--text-muted)", textAlign: "left", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" };
+
+/**
+ * 034: cennik modeli. Wcześniej stawki były zaszyte w kodzie — model spoza listy „kosztował 0",
+ * a aktualizacja ceny wymagała wdrożenia. Dopasowanie idzie po POCZĄTKU nazwy modelu, bo
+ * identyfikatory bywają z sufiksami wersji („claude-haiku-4-5-20251001").
+ */
+function ModelPricesSection({ prices }: { prices: ModelPriceDTO[] }) {
+  const [isPending, startTransition] = useTransition();
+  const [prefix, setPrefix] = useState("");
+  const [label, setLabel] = useState("");
+  const [input, setInput] = useState("");
+  const [output, setOutput] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  function add() {
+    setError(null);
+    startTransition(async () => {
+      try {
+        await setModelPrice({
+          modelPrefix: prefix,
+          label: label || null,
+          inputPer1M: Number(input.replace(",", ".")),
+          outputPer1M: Number(output.replace(",", ".")),
+        });
+        setPrefix(""); setLabel(""); setInput(""); setOutput("");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Nie udało się zapisać cennika.");
+      }
+    });
+  }
+
+  return (
+    <section style={{ marginBottom: 32 }}>
+      <SectionTitle>Cennik modeli</SectionTitle>
+      <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 12px", lineHeight: 1.5 }}>
+        Stawki w dolarach za milion tokenów. Na ich podstawie liczymy koszt pokazywany użytkownikowi.
+        Model, którego tu nie ma, ma koszt <strong>nieznany</strong> — nie zerowy. Wysiłek modelu i
+        temperatura nie zmieniają ceny za token (wysiłek podnosi jednak liczbę tokenów odpowiedzi).
+      </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+        {prices.map((p) => (
+          <div
+            key={p.id}
+            style={{
+              display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", minWidth: 0,
+              border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-surface)",
+            }}
+          >
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {p.label || p.modelPrefix}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                {p.modelPrefix}… · wejście ${p.inputPer1M} / wyjście ${p.outputPer1M} za 1M tok.
+              </div>
+            </div>
+            <button
+              onClick={() => startTransition(async () => { await deleteModelPrice(p.id); })}
+              title="Usuń stawkę"
+              aria-label={`Usuń stawkę ${p.modelPrefix}`}
+              style={{ flexShrink: 0, background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex" }}
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
+        ))}
+        {prices.length === 0 && (
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
+            Cennik jest pusty — koszty liczymy wtedy z wartości wbudowanych w aplikację.
+          </p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4" style={{ gap: 8, alignItems: "end" }}>
+        <div>
+          <label style={labelStyle}>Początek nazwy modelu</label>
+          <input style={inputStyle} value={prefix} onChange={(e) => setPrefix(e.target.value)} placeholder="claude-haiku-4-5" />
+        </div>
+        <div>
+          <label style={labelStyle}>Nazwa własna (opcjonalnie)</label>
+          <input style={inputStyle} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Claude Haiku 4.5" />
+        </div>
+        <div>
+          <label style={labelStyle}>Wejście (USD / 1M)</label>
+          <input style={inputStyle} value={input} onChange={(e) => setInput(e.target.value)} placeholder="1.0" inputMode="decimal" />
+        </div>
+        <div>
+          <label style={labelStyle}>Wyjście (USD / 1M)</label>
+          <input style={inputStyle} value={output} onChange={(e) => setOutput(e.target.value)} placeholder="5.0" inputMode="decimal" />
+        </div>
+      </div>
+      <button
+        onClick={add}
+        disabled={isPending || !prefix.trim() || !input.trim() || !output.trim()}
+        className="flex items-center gap-1 px-3 py-2 rounded text-sm font-medium disabled:opacity-40"
+        style={{ background: "var(--accent-blue)", color: "var(--on-accent)", marginTop: 10 }}
+      >
+        <Plus size={14} /> Zapisz stawkę
+      </button>
+      {error && <p style={{ fontSize: 12, color: "var(--accent-red)", marginTop: 8 }}>{error}</p>}
+    </section>
+  );
+}
 
 function CostSection({ cost, threshold, usdPlnRate }: { cost: AiCostBreakdown; threshold: number; usdPlnRate: number }) {
   const [isPending, startTransition] = useTransition();
@@ -623,19 +746,26 @@ function CostSection({ cost, threshold, usdPlnRate }: { cost: AiCostBreakdown; t
 
 export function LlmConfigPanel({
   providers,
-  assignments,
+  assignmentsByLevel,
   cost,
   costThreshold,
   usdPlnRate,
   speech,
+  prices,
 }: {
   providers: ProviderDTO[];
-  assignments: AssignmentDTO[];
+  assignmentsByLevel: Record<ConfigLevel, AssignmentDTO[]>;
   cost: AiCostBreakdown;
   costThreshold: number;
   usdPlnRate: number;
   speech: SpeechConfigDTO;
+  prices: ModelPriceDTO[];
 }) {
+  // 034: poziom pracy asystenta wybierany zakładką nad siatką typów operacji. Wcześniej admin
+  // konfigurował wyłącznie poziom standardowy, a dwa pozostałe były regułami zaszytymi w kodzie.
+  const [level, setLevel] = useState<ConfigLevel>("standard");
+  const assignments = assignmentsByLevel[level] ?? [];
+
   return (
     <div>
       <AnthropicProfileCard />
@@ -644,18 +774,48 @@ export function LlmConfigPanel({
 
       <section style={{ marginBottom: 32 }}>
         <SectionTitle>Przypisanie modeli do typów operacji</SectionTitle>
+
+        {/* Zakładki poziomów. Na telefonie zawijają się w kolejny wiersz (C-31). */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          {CONFIG_LEVELS.map((lvl) => (
+            <button
+              key={lvl}
+              onClick={() => setLevel(lvl)}
+              aria-pressed={level === lvl}
+              style={{
+                fontSize: 12.5, padding: "8px 12px", borderRadius: 8, cursor: "pointer",
+                border: `1px solid ${level === lvl ? "var(--accent-blue)" : "var(--border)"}`,
+                background: level === lvl ? "var(--bg-elevated)" : "transparent",
+                color: level === lvl ? "var(--text-primary)" : "var(--text-muted)",
+              }}
+            >
+              {CONFIG_LEVEL_LABELS[lvl]}
+            </button>
+          ))}
+        </div>
+        <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 12px", lineHeight: 1.5 }}>
+          {CONFIG_LEVEL_DESCRIPTIONS[level]}
+          {level !== "standard" && " Pole zostawione puste dziedziczy wartość z poziomu standardowego."}
+        </p>
+
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {assignments.map((a) =>
             // 032: synteza mowy ma własny wiersz — z listami dostawców/modeli/głosów z katalogu,
             // kosztem, wymaganiami i próbką. Reszta typów operacji zostaje bez zmian.
+            // 034: lektor nie zależy od poziomu pracy asystenta, więc pokazujemy go tylko raz.
             a.operationType === "speech" ? (
-              <SpeechAssignmentRow key={a.operationType} label={a.label} description={a.description} config={speech} />
+              level === "standard" ? (
+                <SpeechAssignmentRow key={a.operationType} label={a.label} description={a.description} config={speech} />
+              ) : null
             ) : (
-              <AssignmentRow key={a.operationType} assignment={a} providers={providers} />
+              // Klucz z poziomem = stan wiersza resetuje się przy zmianie zakładki.
+              <AssignmentRow key={`${a.operationType}-${level}`} assignment={a} providers={providers} />
             )
           )}
         </div>
       </section>
+
+      <ModelPricesSection prices={prices} />
 
       <CostSection cost={cost} threshold={costThreshold} usdPlnRate={usdPlnRate} />
     </div>

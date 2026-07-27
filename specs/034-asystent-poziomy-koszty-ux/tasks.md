@@ -1,7 +1,7 @@
 # Zadania: Asystent — poziomy pracy, rzetelne koszty, dopracowany UX czatu i właściciele encji
 
 - **Plan:** ./plan.md (034-asystent-poziomy-koszty-ux)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-07-27
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami
@@ -33,22 +33,22 @@
   *Gotowe, gdy:* `npm run check:actions` przechodzi, a **celowe** usunięcie jednej etykiety wywala
   build z czytelnym komunikatem (sabotaż-test, potem przywróć). **(AC-2)**
 
-- [ ] **T-3** `[P]` — **Kursor nad menu poziomu** (Z3): w `AICommandSheet.tsx` pole kompozytora
+- [x] **T-3** `[P]` — **Kursor nad menu poziomu** (Z3): w `AICommandSheet.tsx` pole kompozytora
   dostaje `caretColor: showLevelMenu ? "transparent" : "var(--accent-blue)"`; komentarz wyjaśnia
   przyczynę (fokus trzymany przez `keepKeyboardOpen`, karetka rysowana ponad HTML).
   *Gotowe, gdy:* przy otwartym menu karetka nie jest rysowana, a klawiatura na telefonie zostaje. **(AC-11)**
 
-- [ ] **T-4** `[P]` — **Kursor na końcu draftu** (Z4): po `focus()` w efekcie autofokusu oraz po
+- [x] **T-4** `[P]` — **Kursor na końcu draftu** (Z4): po `focus()` w efekcie autofokusu oraz po
   wczytaniu rozmowy z draftem ustaw `setSelectionRange(len, len)`.
   *Gotowe, gdy:* otwarcie rozmowy z niewysłanym tekstem stawia kursor na końcu. **(AC-12)**
 
-- [ ] **T-5** — **Jeden panel nagłówka naraz** (Z5): zamień `showPrefs`/`showReport`/`showHistory` na
+- [x] **T-5** — **Jeden panel nagłówka naraz** (Z5): zamień `showPrefs`/`showReport`/`showHistory` na
   `headerPanel: "none"|"prefs"|"report"|"history"` + `togglePanel()`; historia zamykana ponownym
   klikiem; usuń z historii pozycję „Nowa rozmowa"; `Esc` zamyka najpierw panel.
   *Gotowe, gdy:* nie da się otworzyć dwóch sekcji naraz, każda zamyka się swoją ikoną, historia
   zawiera wyłącznie listę rozmów. **(AC-13, AC-14, AC-15)**
 
-- [ ] **T-6** — **Skrót do poprzedniej rozmowy na mobile** (Z6): przenieś przycisk z rzędu ikon do
+- [x] **T-6** — **Skrót do poprzedniej rozmowy na mobile** (Z6): przenieś przycisk z rzędu ikon do
   osobnego, pełnoszerokościowego wiersza pod nagłówkiem (`minWidth: 0`, ellipsis); rząd ikon
   `flexShrink: 0`, nagłówek `minWidth: 0`.
   *Gotowe, gdy:* przy szerokości 320 px nagłówek się mieści i nie ma poziomego przewijania. **(AC-16)**
@@ -73,41 +73,41 @@
 
 ## Faza 2 — Warstwa serwera
 
-- [ ] **T-9** — **Cennik z bazy** (Z7): `src/lib/llm/pricing.ts` — `ensurePricesLoaded()` z cache
+- [x] **T-9** — **Cennik z bazy** (Z7): `src/lib/llm/pricing.ts` — `ensurePricesLoaded()` z cache
   60 s + statyczna tablica awaryjna; nowe `estimateCost()` zwracające `{ usd, known, parts }`;
   `estimateCostUsd` jako cienka nakładka. Wywołanie `ensurePricesLoaded()` w `chatComplete`/`chatStream`.
   *Gotowe, gdy:* dla tokenów z przykładu ze zgłoszenia kwoty da się odtworzyć ręcznym rachunkiem, a
   model spoza cennika zwraca `known: false` (nie „0"). **(AC-18, AC-19)**
 
-- [ ] **T-10** — **Rozbicie zużycia** (Z7): `src/lib/ai/usage.ts` — `UsageCall` o `cacheReadTokens`,
+- [x] **T-10** — **Rozbicie zużycia** (Z7): `src/lib/ai/usage.ts` — `UsageCall` o `cacheReadTokens`,
   `cacheWriteTokens`, `costKnown`, `operationType`; `UsageMeter.costKnown`; `accrueUsage` je wypełnia.
   *Gotowe, gdy:* suma `calls[].costUsd` nadal równa się `meter.costUsd`, a tokeny cache są w danych. **(AC-17)**
 
-- [ ] **T-11** — **Rozstrzyganie poziomu** (Z2): `resolveLlmChain(op, { level, userId })` z
+- [x] **T-11** — **Rozstrzyganie poziomu** (Z2): `resolveLlmChain(op, { level, userId })` z
   dziedziczeniem pól po `standard`, obsługą `custom` (z `UserLlmPref`) i cichym zjazdem przy
   nieistniejącym/wyłączonym dostawcy. `ChatOptions.level`; **usuń** `boostEffort`,
   `effectiveOperation()`, `shouldBoostEffort()`; `agent/route.ts` i `fastPath.ts` przekazują `level`.
   *Gotowe, gdy:* skrypt na lokalnej bazie pokazuje poprawny model/effort dla każdego z 4 poziomów, a
   usunięcie dostawcy z `UserLlmPref` nie kończy się błędem. **(AC-9, AC-10)**
 
-- [ ] **T-12** — **Akcje konfiguracji admina** (Z2, Z7): `src/actions/llmConfig.ts` — `level` w
+- [x] **T-12** — **Akcje konfiguracji admina** (Z2, Z7): `src/actions/llmConfig.ts` — `level` w
   `AssignmentDTO`, `getAssignments()` z informacją o dziedziczeniu, walidacja przed upsertem, audyt z
   poziomem w opisie; `getModelPrices`/`setModelPrice`/`deleteModelPrice` + audyt.
   *Gotowe, gdy:* zapis dowolnego poziomu i ceny zostawia wpis w `AuditLog` kategorii `config`. **(AC-3, AC-5, AC-19)**
 
-- [ ] **T-13** — **Akcje własnego poziomu** (Z2): `src/actions/assistantPrefs.ts` — poziom `custom`,
+- [x] **T-13** — **Akcje własnego poziomu** (Z2): `src/actions/assistantPrefs.ts` — poziom `custom`,
   `updateUserLlmPref`, `resetUserLlmPrefs`, katalog modeli dopuszczonych przez admina; walidacja
   odrzuca model spoza katalogu i **nie przyjmuje** `maxTokens`. `revalidatePath`.
   *Gotowe, gdy:* próba zapisu obcego modelu lub `maxTokens` kończy się błędem walidacji. **(AC-6, AC-7)**
 
-- [ ] **T-14** — **Właściciele: guardy i akcje** (Z8): `assertNoteGroupAccess`/`assertTagAccess` w
+- [x] **T-14** — **Właściciele: guardy i akcje** (Z8): `assertNoteGroupAccess`/`assertTagAccess` w
   `src/lib/server-utils.ts`; `noteGroups.ts`, `tags.ts`, `items.ts`, `shoppingSync.ts`, `privacy.ts`
   filtrują i ustawiają właściciela; `notesExecutor.ts` szuka grupy w zakresie właściciela; rekord
   systemowy czytelny dla wszystkich, edytowalny tylko przez admina.
   *Gotowe, gdy:* `upsert` historii zakupów idzie po kluczu `ownerId_name`, a odczyty nie zwracają
   cudzych rekordów. **(AC-23, AC-25)**
 
-- [ ] **T-15** — **Manifest pokrycia i dostępu**: `src/lib/ai/action-coverage.json` — `noteGroups:*`,
+- [x] **T-15** — **Manifest pokrycia i dostępu**: `src/lib/ai/action-coverage.json` — `noteGroups:*`,
   `tags:*`, `items:getItemHistory` z `shared` na `owner`; wpisy dla nowych akcji.
   *Gotowe, gdy:* `npm run check:ai-coverage` przechodzi (deklaracja **i** realne wywołanie guarda).
 
@@ -115,20 +115,20 @@
 
 ## Faza 3 — UI
 
-- [ ] **T-16** — **Komponent kosztu wielokrotnego użytku** (Z7): nowy
+- [x] **T-16** — **Komponent kosztu wielokrotnego użytku** (Z7): nowy
   `src/components/ui/AiCostBadge.tsx` (przeniesiony `CostChip`, props `{ usage, rate }`, zero wiedzy o
   asystencie); rozbicie pokazuje wejście / wyjście / zapis do cache / odczyt z cache i „koszt
   nieznany"; `AICommandSheet.tsx` używa komponentu zamiast lokalnej kopii.
   *Gotowe, gdy:* w `AICommandSheet.tsx` nie ma już własnego renderu kosztu, a komponent nie importuje
   niczego z `home/`. **(AC-17, AC-19, AC-21)**
 
-- [ ] **T-17** — **Panel admina: poziomy + cennik** (Z2, Z7): `LlmConfigPanel.tsx` — przełącznik
+- [x] **T-17** — **Panel admina: poziomy + cennik** (Z2, Z7): `LlmConfigPanel.tsx` — przełącznik
   poziomów (oszczędny/standardowy/maksymalny) nad siatką typów operacji, znacznik „dziedziczy ze
   standardowego" na pustych polach, sekcja **Cennik modeli** (CRUD). Wyłącznie zmienne CSS, teksty PL.
   *Gotowe, gdy:* wszystkie trzy poziomy da się ustawić bez opuszczania ekranu, a dziedziczone pola są
   widocznie oznaczone. **(AC-3, AC-4)**
 
-- [ ] **T-18** — **Ustawienia własnego poziomu** (Z2): nowy
+- [x] **T-18** — **Ustawienia własnego poziomu** (Z2): nowy
   `src/components/home/AssistantLevelSettings.tsx` — widok prosty (jedna oś jakość ↔ koszt) +
   rozwijane „zaawansowane" per typ działania: wybór modelu z listy admina, suwak wysiłku, suwak
   temperatury; suwak wyłączony z wyjaśnieniem, gdy model danej opcji nie obsługuje; **brak** limitu
@@ -136,7 +136,7 @@
   *Gotowe, gdy:* użytkownik przełącza się na własny poziom i reguluje ustawienia w ≤2 kliknięciach,
   a nieobsługiwany suwak jest nieaktywny z komunikatem. **(AC-6, AC-7, AC-8, AC-9)**
 
-- [ ] **T-19** `[P]` — **Diagnostyka AI**: `AiCallsPage.tsx` + `lib/ai/aiCallLog.ts` — kolumny tokenów
+- [x] **T-19** `[P]` — **Diagnostyka AI**: `AiCallsPage.tsx` + `lib/ai/aiCallLog.ts` — kolumny tokenów
   cache, żeby log admina zgadzał się z rozbiciem w czacie.
   *Gotowe, gdy:* tabela i eksport tekstowy pokazują zapis/odczyt cache. **(AC-17)**
 
@@ -144,21 +144,21 @@
 
 ## Faza 4 — Bramki i domknięcie
 
-- [ ] **T-20** — **Bramki**: `npm run check:migrations`, `npm run check:actions`,
+- [x] **T-20** — **Bramki**: `npm run check:migrations`, `npm run check:actions`,
   `npm run check:ai-coverage`, `npx next lint`, `npx next build` na **lokalnym** Postgresie (C-13,
   bez `scripts/migrate.js`).
   *Gotowe, gdy:* wszystkie zielone.
 
-- [ ] **T-21** — **Dokumentacja**: `npm run check:ai-coverage -- --report` (regeneracja
+- [x] **T-21** — **Dokumentacja**: `npm run check:ai-coverage -- --report` (regeneracja
   `docs/ai/kontrola-dostepu.md` i `docs/ai/pokrycie-akcji.md`) + aktualizacja `CLAUDE.md` (poziomy
   pracy, cennik w panelu, właściciele `NoteGroup`/`Tag`/`ItemHistory`).
   *Gotowe, gdy:* dokumentacja nie opisuje już tych encji jako „bez właściciela". **(AC-26)**
 
-- [ ] **T-22** — **Weryfikacja liczbowa kosztów**: skrypt jednorazowy liczy koszt dla tokenów z
+- [x] **T-22** — **Weryfikacja liczbowa kosztów**: skrypt jednorazowy liczy koszt dla tokenów z
   przykładu ze zgłoszenia (wejście/wyjście/cache) i porównuje z cennikiem; wynik wchodzi do `verify.md`.
   *Gotowe, gdy:* różnica między kwotą aplikacji a rachunkiem ręcznym = 0. **(AC-18, AC-20)**
 
-- [ ] **T-23** — **Lekcje** (C-51): wpis do `doświadczenia.md` — (a) koszt liczony z tokenów cache,
+- [x] **T-23** — **Lekcje** (C-51): wpis do `doświadczenia.md` — (a) koszt liczony z tokenów cache,
   których UI nie pokazywał, (b) karetka pola tekstowego ponad menu przy wymuszonym fokusie,
   (c) zmiana klucza głównego tabeli konfiguracyjnej w idempotentnej migracji.
 

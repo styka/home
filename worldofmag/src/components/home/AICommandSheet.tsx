@@ -30,6 +30,7 @@ import type { ActionResult } from "@/lib/ai/executors/shared";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
 import { useOverlayState } from "@/hooks/useOverlayState";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import { AssistantLevelSettings } from "@/components/home/AssistantLevelSettings";
 
 interface RouteContext {
   context: string[];
@@ -811,6 +812,8 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   function changeLevel(next: AssistantLevel) {
     setLevel(next);
     setShowLevelMenu(false);
+    // 034: wybór poziomu „Własny" bez pokazania jego ustawień byłby ślepym zaułkiem — otwieramy je od razu.
+    if (next === "custom") setHeaderPanel("prefs");
     void updateAssistantPrefs({ level: next }).catch(() => {});
   }
 
@@ -1593,6 +1596,17 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                   placeholder={'Np. „Domyślnie dodawaj do listy Tygodniowe. Kwoty w PLN. Pisz zwięźle."'}
                   style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none", resize: "vertical" }}
                 />
+
+                {/* 034: własny poziom pracy — pokazujemy TYLKO, gdy użytkownik go wybrał. Inaczej
+                    sekcja ustawień rozrastałaby się o rzeczy, które i tak nie działają. */}
+                {level === "custom" && (
+                  <div style={{ marginTop: 12 }}>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
+                      Własny poziom pracy asystenta
+                    </label>
+                    <AssistantLevelSettings />
+                  </div>
+                )}
 
                 {/* 031: wybór głosu lektora — jedna lista: głosy SERWEROWE (jeśli administrator je
                     włączył; działają w każdej przeglądarce) + głosy systemu użytkownika. Lista

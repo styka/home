@@ -6,14 +6,16 @@ Każda akcja odczytu i mutacji w `src/actions/*` ma zadeklarowany zakres dostęp
 sprawdza dodatkowo, czy w jej kodzie faktycznie wywoływany jest guard. Nowa akcja bez
 deklaracji albo bez guardu **przerywa build**.
 
-Akcji objętych kontrolą: **496**. Pozycji „brak guardu": **0**.
+Akcji objętych kontrolą: **506**. Pozycji „brak guardu": **0**.
 
-## Znane ograniczenia modelu danych
+## Model własności słowników
 
-- `NoteGroup` i `Tag` nie mają kolumny właściciela — grupy notatek i etykiety są WSPÓLNE dla
-  wszystkich kont (jak słowniki systemowe). Odczyt wymaga zalogowania; rozdzielenie ich na
-  właścicieli wymagałoby migracji i jest poza zakresem tej zmiany.
-- `ItemHistory` (podpowiedzi zakupów) jest wspólnym słownikiem nazw produktów.
+- `NoteGroup`, `Tag` i `ItemHistory` mają właściciela (migracja 0212). Grupy notatek i
+  etykiety mogą należeć do użytkownika albo do zespołu; podpowiedzi zakupowe są prywatne.
+- Rekord bez właściciela (`ownerId` i `ownerTeamId` puste) jest **systemowy**: widzi go każde
+  zalogowane konto, ale zmienić może go tylko administrator.
+- Unikalność nazwy etykiety i podpowiedzi zakupowej obowiązuje **w obrębie właściciela**, więc
+  dwoje użytkowników może mieć wpis o tej samej nazwie.
 
 ## access
 
@@ -57,13 +59,18 @@ Akcji objętych kontrolą: **496**. Pozycji „brak guardu": **0**.
 | `getAiConversation` | odczyt | tylko własne konto |  |
 | `listAiConversations` | odczyt | tylko własne konto |  |
 | `renameAiConversation` | zapis | tylko własne konto |  |
+| `saveConversationDraft` | zapis | tylko własne konto |  |
 
 ## assistantPrefs
 
 | Akcja | Rodzaj | Zakres dostępu | Uwaga |
 |---|---|---|---|
+| `getAssistantLevelConfig` | odczyt | tylko własne konto |  |
 | `getAssistantPrefs` | odczyt | tylko własne konto |  |
+| `getSpeechOptions` | odczyt | tylko własne konto |  |
+| `resetUserLlmPrefs` | zapis | tylko własne konto |  |
 | `updateAssistantPrefs` | zapis | tylko własne konto |  |
+| `updateUserLlmPref` | zapis | tylko własne konto |  |
 
 ## calendar
 
@@ -212,7 +219,7 @@ Akcji objętych kontrolą: **496**. Pozycji „brak guardu": **0**.
 | `addItemStructured` | zapis | właściciel / udostępnienie |  |
 | `clearDoneItems` | zapis | właściciel / udostępnienie |  |
 | `deleteItem` | zapis | właściciel / udostępnienie |  |
-| `getSuggestionsForPrefix` | odczyt | wspólny słownik (wymaga zalogowania) |  |
+| `getSuggestionsForPrefix` | odczyt | właściciel / udostępnienie |  |
 | `markAllInCart` | zapis | właściciel / udostępnienie |  |
 | `moveItem` | zapis | właściciel / udostępnienie |  |
 | `reorderItems` | zapis | właściciel / udostępnienie |  |
@@ -274,16 +281,21 @@ Akcji objętych kontrolą: **496**. Pozycji „brak guardu": **0**.
 | Akcja | Rodzaj | Zakres dostępu | Uwaga |
 |---|---|---|---|
 | `applyAnthropicProfile` | zapis | administrator |  |
+| `applySpeechProvider` | zapis | administrator |  |
 | `createProvider` | zapis | administrator |  |
+| `deleteModelPrice` | zapis | administrator |  |
 | `deleteProvider` | zapis | administrator |  |
 | `getAiCostBreakdown` | odczyt | administrator |  |
 | `getAssignments` | odczyt | administrator |  |
 | `getCostAlertThreshold` | odczyt | administrator |  |
 | `getLlmProviders` | odczyt | administrator |  |
+| `getModelPrices` | odczyt | administrator |  |
 | `getRecentAiCalls` | odczyt | administrator |  |
+| `getSpeechConfig` | odczyt | administrator |  |
 | `getUsdPlnRate` | odczyt | administrator |  |
 | `setAssignment` | zapis | administrator |  |
 | `setCostAlertThreshold` | zapis | administrator |  |
+| `setModelPrice` | zapis | administrator |  |
 | `setUsdPlnRate` | zapis | administrator |  |
 | `updateProvider` | zapis | administrator |  |
 
@@ -355,10 +367,10 @@ Akcji objętych kontrolą: **496**. Pozycji „brak guardu": **0**.
 
 | Akcja | Rodzaj | Zakres dostępu | Uwaga |
 |---|---|---|---|
-| `createNoteGroup` | zapis | wspólny słownik (wymaga zalogowania) |  |
-| `deleteNoteGroup` | zapis | wspólny słownik (wymaga zalogowania) |  |
-| `getNoteGroups` | odczyt | wspólny słownik (wymaga zalogowania) |  |
-| `updateNoteGroup` | zapis | wspólny słownik (wymaga zalogowania) |  |
+| `createNoteGroup` | zapis | właściciel / udostępnienie |  |
+| `deleteNoteGroup` | zapis | właściciel / udostępnienie |  |
+| `getNoteGroups` | odczyt | właściciel / udostępnienie |  |
+| `updateNoteGroup` | zapis | właściciel / udostępnienie |  |
 
 ## notes
 
@@ -694,10 +706,10 @@ Akcji objętych kontrolą: **496**. Pozycji „brak guardu": **0**.
 
 | Akcja | Rodzaj | Zakres dostępu | Uwaga |
 |---|---|---|---|
-| `createTag` | zapis | wspólny słownik (wymaga zalogowania) |  |
-| `deleteTag` | zapis | wspólny słownik (wymaga zalogowania) |  |
-| `getTags` | odczyt | wspólny słownik (wymaga zalogowania) |  |
-| `updateTag` | zapis | wspólny słownik (wymaga zalogowania) |  |
+| `createTag` | zapis | właściciel / udostępnienie |  |
+| `deleteTag` | zapis | właściciel / udostępnienie |  |
+| `getTags` | odczyt | właściciel / udostępnienie |  |
+| `updateTag` | zapis | właściciel / udostępnienie |  |
 
 ## taskProjects
 
