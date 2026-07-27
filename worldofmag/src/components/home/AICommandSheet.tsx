@@ -29,6 +29,7 @@ import { isDestructiveAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executors/shared";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
 import { useOverlayState } from "@/hooks/useOverlayState";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface RouteContext {
   context: string[];
@@ -72,10 +73,10 @@ interface AgentResponse {
 }
 
 // H3: transparentność — który model odpowiedział i ile tokenów zużyto.
-// 029: `calls` = rozbicie per wywołanie modelu (do panelu szczegółów kosztu). Lekki
-// mirror typu `UsageCall` z `@/lib/ai/usage` (unikamy importu server-only modułu).
-type UsageCall = { model: string; label?: string; promptTokens: number; completionTokens: number; totalTokens: number; costUsd: number };
-type AgentMeta = { model?: string; tokens?: number; costUsd?: number; calls?: UsageCall[] };
+// 034: kształt zużycia = `AiCostUsage` ze WSPÓLNEGO komponentu kosztu (`ui/AiCostBadge`), używanego
+// docelowo także poza asystentem. Lekki mirror `UsageMeter` z `@/lib/ai/usage` — nie importujemy
+// modułu server-only do komponentu klienckiego.
+type AgentMeta = AiCostUsage;
 
 // Jedna „kafelka" w wątku rozmowy. `data` z DB pozwala odtworzyć kartę bez ponownego uruchamiania agenta.
 type Turn =
@@ -231,53 +232,6 @@ const STARTER_CHIPS = [
   "Znajdź 5 obowiązków pasujących do mojego nastroju i posortuj priorytetami",
   "Zrób raport z tej rozmowy",
 ];
-
-// 029: stopka kosztu — w wierszu widać TYLKO sumaryczną kwotę (lub „szczegóły modelu",
-// gdy koszt nieznany). Klik rozwija rozbicie per wywołanie modelu (model/tokeny/koszt) +
-// sumę zgodną z kwotą. Transparentność bez zaśmiecania głównego wiersza stopki.
-function CostChip({ meta, rate = DEFAULT_USD_PLN_RATE }: { meta?: AgentMeta; rate?: number }) {
-  const [open, setOpen] = useState(false);
-  if (!meta) return null;
-  const hasCost = !!(meta.costUsd && meta.costUsd > 0);
-  const hasDetail = !!(meta.calls?.length) || !!meta.model || !!meta.tokens;
-  if (!hasCost && !hasDetail) return null;
-  const label = hasCost ? withPln(`~$${meta.costUsd!.toFixed(4)}`, meta.costUsd!, rate) : "szczegóły modelu";
-  const calls = meta.calls ?? [];
-  return (
-    <div style={{ marginLeft: "auto", position: "relative" }}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        title="Szczegóły kosztu i modelu (kliknij, by rozwinąć)"
-        aria-expanded={open}
-        style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10.5, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0, opacity: 0.85 }}
-      >
-        {label} {open ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-      </button>
-      {open && (
-        <div style={{ position: "absolute", right: 0, bottom: "calc(100% + 6px)", zIndex: 5, minWidth: 240, maxWidth: 320, padding: "8px 10px", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,0.35)", fontSize: 11, color: "var(--text-secondary)", overflowX: "auto" }}>
-          <p style={{ margin: "0 0 6px", fontWeight: 600, color: "var(--text-primary)" }}>Rozbicie kosztu</p>
-          {calls.length > 0 ? (
-            calls.map((c, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 3, whiteSpace: "nowrap" }}>
-                <span>{c.label ? `${c.label} · ` : ""}{c.model} · {c.promptTokens}+{c.completionTokens}={c.totalTokens} tok.</span>
-                <span style={{ color: "var(--text-primary)" }}>{c.costUsd > 0 ? withPln(`~$${c.costUsd.toFixed(4)}`, c.costUsd, rate) : "—"}</span>
-              </div>
-            ))
-          ) : (
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 3 }}>
-              <span>{meta.model ?? "?"}{meta.tokens ? ` · ${meta.tokens} tok.` : ""}</span>
-              <span style={{ color: "var(--text-primary)" }}>{hasCost ? withPln(`~$${meta.costUsd!.toFixed(4)}`, meta.costUsd!, rate) : "—"}</span>
-            </div>
-          )}
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--border)", fontWeight: 600, color: "var(--text-primary)" }}>
-            <span>Suma{meta.tokens ? ` · ${meta.tokens} tok.` : ""}</span>
-            <span>{hasCost ? withPln(`~$${meta.costUsd!.toFixed(4)}`, meta.costUsd!, rate) : "—"}</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // 031: log rozumowania w DWÓCH warstwach.
 //  • „Pokaż log rozumowania" (dla wszystkich) — kroki opisane po ludzku, ZWINIĘTE. Wcześniej cała
@@ -2177,7 +2131,7 @@ function TurnView({
           {onToggleSpeak && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
           <CopyButton text={turn.content} />
           {isLast && onRegenerate && <RegenerateButton onClick={onRegenerate} />}
-          <CostChip meta={turn.meta} rate={usdPlnRate} />
+          <AiCostBadge usage={turn.meta} rate={usdPlnRate} />
         </div>
       </div>
     );
@@ -2221,7 +2175,7 @@ function TurnView({
         <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
-          <CostChip meta={turn.meta} rate={usdPlnRate} />
+          <AiCostBadge usage={turn.meta} rate={usdPlnRate} />
         </div>
       </div>
     );
@@ -2237,7 +2191,7 @@ function TurnView({
         <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
-          <CostChip meta={turn.meta} rate={usdPlnRate} />
+          <AiCostBadge usage={turn.meta} rate={usdPlnRate} />
         </div>
       </div>
     );
@@ -2303,7 +2257,7 @@ function TurnView({
         <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
-          <CostChip meta={turn.meta} rate={usdPlnRate} />
+          <AiCostBadge usage={turn.meta} rate={usdPlnRate} />
         </div>
       </div>
     );
@@ -2320,7 +2274,7 @@ function TurnView({
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
           {onToggleSpeak && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, `${turn.title}. ${turn.content}`)} />}
           <CopyButton text={turn.content} />
-          <CostChip meta={turn.meta} rate={usdPlnRate} />
+          <AiCostBadge usage={turn.meta} rate={usdPlnRate} />
         </div>
         {turn.savedSlug ? (
           <button onClick={() => onNavigate(`/reports/${turn.savedSlug}`)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
