@@ -2,8 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto/secrets";
 import { parseEffort, type LlmEffort } from "@/lib/llm/effort";
 import {
+  BASE_CONFIG_LEVEL,
   GROQ_BASE_URL,
   OPERATION_TYPE_META,
+  configLevelFor,
+  type AssistantWorkLevel,
   type OperationType,
 } from "./operationTypes";
 
@@ -47,7 +50,74 @@ export interface ResolvedLlm {
  * Wpisy są deduplikowane (kind|baseUrl|model), więc gdy admin używa już Groqa z
  * domyślnym modelem, nie ma sztucznego „fallbacku na to samo".
  */
-export async function resolveLlmChain(op: OperationType): Promise<ResolvedLlm[]> {
+export interface ResolveOptions {
+  /** 034: poziom pracy asystenta — wybiera zestaw ustawień admina albo własny zestaw użytkownika. */
+  level?: AssistantWorkLevel;
+  /** 034: potrzebne tylko dla poziomu `custom` (odczyt `UserLlmPref`). */
+  userId?: string;
+}
+
+/**
+ * 034: składa efektywne ustawienia dla (typ operacji, poziom). Pole puste na poziomie
+ * `economy`/`max` DZIEDZICZY z poziomu `standard` — dzięki temu admin wypełnia tylko to, co ma się
+ * różnić, a wdrożenie nie zmienia zachowania, dopóki świadomie czegoś nie zmieni.
+ */
+async function resolveAssignment(op: OperationType, level: AssistantWorkLevel | undefined) {
+  const configLevel = configLevelFor(level);
+  const rows = await prisma.llmAssignment.findMany({
+    where: { operationType: op, level: { in: [configLevel, BASE_CONFIG_LEVEL] } },
+    include: { provider: true },
+  });
+  const own = rows.find((r) => r.level === configLevel) ?? null;
+  const base = rows.find((r) => r.level === BASE_CONFIG_LEVEL) ?? null;
+  const row = own ?? base;
+  if (!row) return null;
+  return {
+    provider: row.provider,
+    model: row.model ?? base?.model ?? null,
+    temperature: row.temperature ?? base?.temperature ?? null,
+    maxTokens: row.maxTokens ?? base?.maxTokens ?? null,
+    effort: row.effort ?? base?.effort ?? null,
+  };
+}
+
+type ResolvedAssignment = NonNullable<Awaited<ReturnType<typeof resolveAssignment>>>;
+
+/**
+ * 034: nakładka WŁASNEGO poziomu użytkownika (`UserLlmPref`). Użytkownik może wskazać model, wysiłek
+ * i temperaturę per typ operacji — ale NIE limit odpowiedzi (`maxTokens` zostaje przy adminie).
+ *
+ * Dostawcę bierzemy po `providerId` zapisanym przy wyborze modelu. Gdy zniknął albo został wyłączony
+ * przez admina, po cichu zostajemy przy ustawieniach poziomu standardowego — użytkownik dostaje
+ * odpowiedź zamiast błędu (AC-10).
+ */
+async function applyUserOverride(
+  base: ResolvedAssignment,
+  op: OperationType,
+  opts: ResolveOptions
+): Promise<ResolvedAssignment> {
+  if (opts.level !== "custom" || !opts.userId) return base;
+  const pref = await prisma.userLlmPref.findUnique({
+    where: { userId_operationType: { userId: opts.userId, operationType: op } },
+  });
+  if (!pref) return base;
+
+  let provider = base.provider;
+  if (pref.providerId && pref.providerId !== base.provider.id) {
+    const chosen = await prisma.llmProvider.findUnique({ where: { id: pref.providerId } });
+    if (!chosen || !chosen.enabled || !chosen.apiKey) return base;
+    provider = chosen;
+  }
+  return {
+    provider,
+    model: pref.model ?? base.model,
+    temperature: pref.temperature ?? base.temperature,
+    maxTokens: base.maxTokens, // świadomie: limitu odpowiedzi użytkownik nie ustawia
+    effort: pref.effort ?? base.effort,
+  };
+}
+
+export async function resolveLlmChain(op: OperationType, opts: ResolveOptions = {}): Promise<ResolvedLlm[]> {
   const chain: ResolvedLlm[] = [];
   const seen = new Set<string>();
   const add = (cfg: ResolvedLlm | null) => {
@@ -58,11 +128,12 @@ export async function resolveLlmChain(op: OperationType): Promise<ResolvedLlm[]>
     chain.push(cfg);
   };
 
-  // 1. Przypisanie admina.
-  const assignment = await prisma.llmAssignment.findUnique({
-    where: { operationType: op },
-    include: { provider: true },
-  });
+  // 1. Przypisanie admina dla wybranego poziomu (z dziedziczeniem po poziomie standardowym),
+  //    ewentualnie nadpisane WŁASNYM poziomem użytkownika.
+  const resolved = await resolveAssignment(op, opts.level);
+  const assignment = resolved && resolved.model
+    ? await applyUserOverride(resolved, op, opts)
+    : null;
   if (assignment && assignment.provider.enabled && assignment.provider.apiKey) {
     const p = assignment.provider;
     // 032: dostawca WYŁĄCZNIE syntezy mowy nie może obsłużyć operacji czatowej — `chatComplete`
@@ -75,7 +146,7 @@ export async function resolveLlmChain(op: OperationType): Promise<ResolvedLlm[]>
         kind: (p.kind as ProviderKind) ?? "openai_compat",
         baseUrl: p.baseUrl,
         apiKey: decryptSecret(p.apiKey), // A2: klucz zaszyfrowany w spoczynku
-        model: assignment.model,
+        model: assignment.model!,
         temperature: assignment.temperature,
         maxTokens: assignment.maxTokens,
         // 033: poziom wysiłku ustawiony przez admina dla tego typu operacji.
@@ -120,7 +191,7 @@ export async function resolveLlmChain(op: OperationType): Promise<ResolvedLlm[]>
  * zachowanie dla wywołań, które nie potrzebują łańcucha fallbacku (np. streaming
  * jednego dostawcy).
  */
-export async function resolveLlm(op: OperationType): Promise<ResolvedLlm | null> {
-  const chain = await resolveLlmChain(op);
+export async function resolveLlm(op: OperationType, opts: ResolveOptions = {}): Promise<ResolvedLlm | null> {
+  const chain = await resolveLlmChain(op, opts);
   return chain[0] ?? null;
 }

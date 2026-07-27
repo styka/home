@@ -90,6 +90,9 @@ type Turn =
 // Tryb rozmowy głosowej (magiczna ikona → hands-free). String-union, nie enum (C-12).
 type VoiceState = "off" | "listening" | "thinking" | "speaking";
 
+/** 034: sekcje nagłówka asystenta — otwarta może być najwyżej JEDNA naraz. */
+type HeaderPanel = "none" | "prefs" | "report" | "history";
+
 // Wąskie, jednoznaczne frazy głosowe do sterowania kartą akcji (gdy jest aktywna, niepotwierdzona).
 // Wszystko inne = zwykła rozmowa/korekta (idzie do agenta).
 const VOICE_CONFIRM_RE = /^(zatwierdź|zatwierdz|wykonaj|potwierdzam|potwierdź|potwierdz|zrób to|zrob to|tak zrób|tak zrob|dobra rób|dobra rob|wykonaj to|zatwierdzam)\b/i;
@@ -396,8 +399,15 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   const [lastConversationId, setLastConversationId] = useState<string | null>(null);
   const [lastConversationLabel, setLastConversationLabel] = useState<string>("");
 
-  // Historia rozmów
-  const [showHistory, setShowHistory] = useState(false);
+  /**
+   * 034: sekcje nagłówka (ustawienia / zgłoszenie problemu / historia) trzymamy w JEDNYM stanie,
+   * a nie w trzech niezależnych flagach. Dzięki temu z definicji nie da się otworzyć dwóch naraz,
+   * a każda ikona działa tak samo: klik otwiera, ponowny klik zamyka i wraca do rozmowy.
+   */
+  const [headerPanel, setHeaderPanel] = useState<HeaderPanel>("none");
+  const showPrefs = headerPanel === "prefs";
+  const showReport = headerPanel === "report";
+  const showHistory = headerPanel === "history";
   const [conversations, setConversations] = useState<ConversationMeta[]>([]);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameText, setRenameText] = useState("");
@@ -419,13 +429,11 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   const [prefs, setPrefs] = useState("");
   const prefsRef = useRef("");
   prefsRef.current = prefs;
-  const [showPrefs, setShowPrefs] = useState(false);
   // 031: poziom pracy asystenta — zapisywany w BAZIE per użytkownik (widoczny na każdym
   // urządzeniu), nie w pamięci przeglądarki. Serwer i tak czyta go z bazy; ten stan służy UI.
   const [level, setLevel] = useState<AssistantLevel>("standard");
   const [showLevelMenu, setShowLevelMenu] = useState(false);
   // Zgłaszanie problemu z czatem (admin-only): panel z opcjonalnym opisem → zadanie w projekcie „Omnia".
-  const [showReport, setShowReport] = useState(false);
   const [reportDesc, setReportDesc] = useState("");
   const [reportBusy, setReportBusy] = useState(false);
   const [reportDone, setReportDone] = useState<{ projectId: string; canRead: boolean } | null>(null);
@@ -675,13 +683,18 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         const tag = (document.activeElement?.tagName ?? "").toLowerCase();
-        if (tag !== "textarea" && tag !== "input") handleClose();
+        if (tag === "textarea" || tag === "input") return;
+        // 034: Esc domyka najpierw rozwiniętą sekcję nagłówka (powrót do rozmowy), a dopiero
+        // gdy żadnej nie ma — cały arkusz. Bez tego jedyne wyjście z historii było przez X.
+        if (showLevelMenu) { setShowLevelMenu(false); return; }
+        if (headerPanel !== "none") { setHeaderPanel("none"); return; }
+        handleClose();
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, [isOpen, headerPanel, showLevelMenu]);
 
   // Zatrzymaj generowanie przy zamknięciu/unmount.
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -753,7 +766,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     function onOpen(e: Event) {
       const detail = (e as CustomEvent<AssistantOpenDetail>).detail ?? {};
       setIsOpen(true);
-      setShowHistory(false);
+      setHeaderPanel("none");
       if (detail.feedbackContext) {
         setConversationId(null);
         convoIdRef.current = null;
@@ -848,14 +861,21 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   }
 
   // Autofokus pola wejścia po otwarciu (desktop) — natychmiast piszesz.
+  // 034: gdy wraca zapamiętany brudnopis, kursor musi stanąć na KOŃCU tekstu. Samo `focus()` na
+  // świeżo zamontowanym polu ustawia zaznaczenie na pozycji 0, więc dopisywanie zaczynało się
+  // przed tym, co użytkownik już napisał. Zależność od `conversationId` domyka przypadek wczytania
+  // rozmowy z historii (brudnopis dojeżdża asynchronicznie, już po pierwszym fokusie).
   useEffect(() => {
     if (!isOpen || showHistory) return;
     const t = setTimeout(() => {
-      const ta = sheetRef.current?.querySelector("textarea") as HTMLTextAreaElement | null;
-      ta?.focus();
+      const ta = composerRef.current;
+      if (!ta) return;
+      ta.focus();
+      const end = ta.value.length;
+      ta.setSelectionRange(end, end);
     }, 80);
     return () => clearTimeout(t);
-  }, [isOpen, showHistory]);
+  }, [isOpen, showHistory, conversationId]);
 
   // Zapis wiadomości do DB (best-effort, nie blokuje UI).
   const persist = useCallback(async (role: "user" | "assistant", content: string, kind: string, data?: unknown) => {
@@ -872,10 +892,19 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
    * startowała z czystym ekranem.
    */
   function collapseSections() {
-    setShowPrefs(false);
-    setShowReport(false);
+    setHeaderPanel("none");
     setReportDone(null);
     setShowLevelMenu(false);
+  }
+
+  /** 034: klik w ikonę nagłówka otwiera sekcję, ponowny klik ją zamyka; inne sekcje się chowają. */
+  function togglePanel(panel: Exclude<HeaderPanel, "none">) {
+    setReportDone(null);
+    setShowLevelMenu(false);
+    setHeaderPanel((current) => (current === panel ? "none" : panel));
+    if (panel === "history") {
+      void listAiConversations().then(setConversations).catch(() => { /* ignore */ });
+    }
   }
 
   function resetConversation() {
@@ -905,7 +934,6 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     saveDraftNow();
     collapseSections();
     setIsOpen(false);
-    setShowHistory(false);
     if (turnsRef.current.length > 0) {
       // 032: PRZERWIJ trwające generowanie, zanim wyczyścimy wątek. Komponent siedzi w `AppShell` i
       // nigdy się nie odmontowuje, więc bez tego żądanie leci dalej i dopisuje odpowiedź do już
@@ -1398,11 +1426,6 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   }
 
   // ── Historia rozmów ─────────────────────────────────────────────────────────
-  async function openHistory() {
-    setShowHistory(true);
-    try { setConversations(await listAiConversations()); } catch { /* ignore */ }
-  }
-
   async function loadConversation(id: string) {
     // 032: zapisz brudnopis STAREGO wątku, zanim go opuścimy, i zwiń rozwinięte sekcje.
     saveDraftNow();
@@ -1454,7 +1477,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
         setLastConversationId(null);
         setLastConversationLabel("");
       }
-      setShowHistory(false);
+      setHeaderPanel("none");
     } catch { /* ignore */ }
   }
 
@@ -1520,34 +1543,43 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <Sparkles size={15} style={{ color: "var(--accent-blue)" }} />
-                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Asystent AI</span>
+            <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)", minWidth: 0, gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                <Sparkles size={15} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
+                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap" }}>Asystent AI</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                {/* 032: jednodotknięciowy powrót do poprzedniej rozmowy. Pokazujemy tylko wtedy, gdy
-                    jest po co wracać i bieżący wątek jest pusty — inaczej przycisk byłby szumem.
-                    Zajmuje jeden wiersz nagłówka (bez dodatkowej sekcji), z tytułem, żeby było jasne
-                    DO CZEGO wracamy. */}
-                {lastConversationId && turns.length === 0 && (
-                  <button
-                    onClick={() => loadConversation(lastConversationId)}
-                    title={`Wróć do rozmowy: ${lastConversationLabel}`}
-                    aria-label={`Wróć do poprzedniej rozmowy: ${lastConversationLabel}`}
-                    style={{ display: "flex", alignItems: "center", gap: 4, maxWidth: 170, minHeight: 38, padding: "0 8px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-secondary)", cursor: "pointer", fontSize: 11.5 }}
-                  >
-                    <CornerUpLeft size={13} style={{ flexShrink: 0 }} />
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lastConversationLabel}</span>
-                  </button>
-                )}
+              <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                 <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
-                <button onClick={() => setShowPrefs((v) => !v)} title="Ustawienia asystenta" aria-label="Ustawienia asystenta" aria-expanded={showPrefs} style={{ ...iconBtn, color: showPrefs || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }}><Settings size={16} /></button>
-                <button onClick={() => { setShowReport((v) => !v); setReportDone(null); }} title="Zgłoś problem z Asystentem AI" aria-label="Zgłoś problem z Asystentem AI" aria-expanded={showReport} style={{ ...iconBtn, color: showReport ? "var(--accent-purple)" : "var(--text-muted)" }}><Bug size={16} /></button>
-                <button onClick={openHistory} title="Historia rozmów" aria-label="Historia rozmów" style={iconBtn}><History size={16} /></button>
+                <button onClick={() => togglePanel("prefs")} title="Ustawienia asystenta" aria-label="Ustawienia asystenta" aria-expanded={showPrefs} style={{ ...iconBtn, color: showPrefs || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }}><Settings size={16} /></button>
+                <button onClick={() => togglePanel("report")} title="Zgłoś problem z Asystentem AI" aria-label="Zgłoś problem z Asystentem AI" aria-expanded={showReport} style={{ ...iconBtn, color: showReport ? "var(--accent-purple)" : "var(--text-muted)" }}><Bug size={16} /></button>
+                <button onClick={() => togglePanel("history")} title={showHistory ? "Zamknij historię (wróć do rozmowy)" : "Historia rozmów"} aria-label="Historia rozmów" aria-expanded={showHistory} style={{ ...iconBtn, color: showHistory ? "var(--accent-blue)" : "var(--text-muted)" }}><History size={16} /></button>
                 <button onClick={handleClose} title="Zamknij" aria-label="Zamknij asystenta" style={iconBtn}><X size={16} /></button>
               </div>
             </div>
+
+            {/* 034: powrót do poprzedniej rozmowy dostaje WŁASNY wiersz pod nagłówkiem. Wcześniej
+                siedział w rzędzie ikon i na telefonie rozpychał nagłówek poza ekran (tytuł rozmowy
+                bywa długi). Pokazujemy go tylko wtedy, gdy jest po co wracać, a bieżący wątek jest
+                pusty. `minWidth: 0` + ellipsis gwarantują, że długi tytuł się przycina zamiast
+                rozciągać arkusz. */}
+            {lastConversationId && turns.length === 0 && headerPanel === "none" && (
+              <button
+                onClick={() => loadConversation(lastConversationId)}
+                title={`Wróć do rozmowy: ${lastConversationLabel}`}
+                aria-label={`Wróć do poprzedniej rozmowy: ${lastConversationLabel}`}
+                className="flex-shrink-0"
+                style={{
+                  display: "flex", alignItems: "center", gap: 6, width: "100%", minWidth: 0, minHeight: 40,
+                  padding: "0 20px", border: "none", borderBottom: "1px solid var(--border)",
+                  background: "var(--bg-base)", color: "var(--text-secondary)", cursor: "pointer",
+                  fontSize: 12, textAlign: "left",
+                }}
+              >
+                <CornerUpLeft size={13} style={{ flexShrink: 0 }} />
+                <span style={{ color: "var(--text-muted)", flexShrink: 0 }}>Wróć do:</span>
+                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lastConversationLabel}</span>
+              </button>
+            )}
 
             {/* Panel zgłaszania problemu z Asystentem AI — dostępny dla każdego usera; tworzy zadanie w projekcie „Omnia" */}
             {showReport && (
@@ -1563,7 +1595,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                       {reportDone.canRead && (
                         <button onClick={() => goTo(`/tasks/${reportDone.projectId}`)} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-blue)", cursor: "pointer" }}>Otwórz w zadaniach</button>
                       )}
-                      <button onClick={() => { setShowReport(false); setReportDone(null); }} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Zamknij</button>
+                      <button onClick={() => setHeaderPanel("none")} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Zamknij</button>
                     </div>
                   </div>
                 ) : (
@@ -1586,7 +1618,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                       >
                         {reportBusy ? <Loader2 size={14} className="animate-spin" /> : <Bug size={14} />} Zgłoś problem
                       </button>
-                      <button onClick={() => { setShowReport(false); setReportDesc(""); }} style={{ fontSize: 12.5, padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Anuluj</button>
+                      <button onClick={() => { setHeaderPanel("none"); setReportDesc(""); }} style={{ fontSize: 12.5, padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Anuluj</button>
                       {!canReport && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Brak treści do zgłoszenia.</span>}
                     </div>
                   </>
@@ -1664,9 +1696,6 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
             {/* Body: historia LUB wątek */}
             {showHistory ? (
               <div className="flex-1 overflow-y-auto px-3 py-3" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <button onClick={() => { resetConversation(); setShowHistory(false); }} style={{ ...rowBtn, color: "var(--accent-blue)" }}>
-                  <Plus size={15} /> Nowa rozmowa
-                </button>
                 {conversations.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 16 }}>Brak zapisanych rozmów.</p>}
                 {conversations.map((c) => (
                   // 031: `minWidth: 0` na wierszu ORAZ na przycisku tytułu — bez tego dziecko flexboxa
@@ -1826,7 +1855,17 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     rows={1}
                     disabled={busy}
                     aria-label="Wiadomość do asystenta"
-                    style={{ width: "100%", resize: "none", background: "transparent", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 16, lineHeight: 1.4, padding: "6px 4px", minHeight: 36, maxHeight: 160, overflowY: "auto", caretColor: "var(--accent-blue)" }}
+                    style={{
+                      width: "100%", resize: "none", background: "transparent", border: "none", outline: "none",
+                      color: "var(--text-primary)", fontSize: 16, lineHeight: 1.4, padding: "6px 4px",
+                      minHeight: 36, maxHeight: 160, overflowY: "auto",
+                      // 034: przy ROZWINIĘTYM menu poziomu chowamy karetkę. Przyciski kompozytora
+                      // celowo zatrzymują fokus w polu (`keepKeyboardOpen`, żeby na telefonie nie
+                      // znikała klawiatura), więc przeglądarka dalej rysuje migający kursor — a
+                      // robi to w warstwie ponad HTML-em, której NIE da się przykryć z-indexem.
+                      // Fokus i klawiatura zostają; znika tylko kursor przebijający się przez menu.
+                      caretColor: showLevelMenu ? "transparent" : "var(--accent-blue)",
+                    }}
                   />
                   {/* Wiersz 2 — akcje: lewo (aparat, galeria) · prawo (mikrofon, główny przycisk) */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>

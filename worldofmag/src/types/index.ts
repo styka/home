@@ -245,18 +245,26 @@ export const TASK_STATUS_CYCLE: TaskStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
 // 033: trzeci poziom „max" — modele wg ustawień admina, ale z PODNIESIONYM o stopień wysiłkiem
 // i bez automatycznego zejścia na tańszy model przy prostych pytaniach. Kolejność w
 // ASSISTANT_LEVELS = kolejność w menu (od najtańszego do najdroższego).
-export type AssistantLevel = "standard" | "economy" | "max";
-export const ASSISTANT_LEVELS: AssistantLevel[] = ["economy", "standard", "max"];
+// 034: czwarty poziom „custom" — WŁASNY zestaw użytkownika (model/wysiłek/temperatura per rodzaj
+// działania, bez limitu tokenów). Trzy pozostałe definiuje administrator w /admin/llm.
+export type AssistantLevel = "standard" | "economy" | "max" | "custom";
+export const ASSISTANT_LEVELS: AssistantLevel[] = ["economy", "standard", "max", "custom"];
 export const ASSISTANT_LEVEL_LABELS: Record<AssistantLevel, string> = {
   standard: "Standardowy",
   economy: "Oszczędny",
   max: "Maksymalny",
+  custom: "Własny",
 };
 export const ASSISTANT_LEVEL_DESCRIPTIONS: Record<AssistantLevel, string> = {
   standard: "Modele wg ustawień administratora — pełna jakość odpowiedzi.",
   economy: "Najprostszy, najtańszy model do wszystkiego — szybciej i taniej, kosztem jakości.",
-  max: "Podniesiony wysiłek modelu na każdym pytaniu — najlepsza jakość, wyższy koszt i dłuższe oczekiwanie.",
+  max: "Najmocniejsze ustawienia administratora — najlepsza jakość, wyższy koszt i dłuższe oczekiwanie.",
+  custom: "Twoje własne ustawienia dla każdego rodzaju działania — model, wysiłek i temperatura.",
 };
+
+export function isAssistantLevel(value: string): value is AssistantLevel {
+  return (ASSISTANT_LEVELS as string[]).includes(value);
+}
 
 // Źródło głosu lektora: "browser" = synteza w przeglądarce (Web Speech),
 // "server" = synteza u dostawcy skonfigurowanego przez admina.

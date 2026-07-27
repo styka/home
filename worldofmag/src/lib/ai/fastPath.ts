@@ -11,6 +11,7 @@
 
 import { chatComplete } from "@/lib/llm/chat";
 import { accrueUsage, type UsageMeter } from "@/lib/ai/usage";
+import type { AssistantWorkLevel } from "@/lib/llm/operationTypes";
 import type { AIAction, AIActionModule } from "@/lib/ai/aiAction";
 
 export type FastPathResult =
@@ -133,7 +134,10 @@ export async function classifyIntent(
   text: string,
   activeModules: string[],
   conversationId?: string | null,
-  meta?: UsageMeter
+  meta?: UsageMeter,
+  // 034: poziom pracy asystenta — klasyfikacja też ma jechać na modelu wybranym dla tego poziomu.
+  level?: AssistantWorkLevel,
+  userId?: string
 ): Promise<FastPathResult> {
   const trimmed = text.trim();
   if (!trimmed) return { kind: "complex" };
@@ -157,9 +161,11 @@ export async function classifyIntent(
     json: true,
     source: "fast_path",
     conversationId,
+    level,
+    userId,
   });
   // 028: dolicz koszt klasyfikacji do akumulatora tury (wskaźnik ma być realny).
-  if (meta) accrueUsage(meta, result.ok ? result.usage : undefined, result.ok ? result.model : undefined, "fast_path");
+  if (meta) accrueUsage(meta, result.ok ? result.usage : undefined, result.ok ? result.model : undefined, "fast_path", "dispatch");
   if (!result.ok || !result.content) return { kind: "complex" };
 
   const parsed = extractJson(result.content);
