@@ -5,12 +5,17 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import {
+  BASE_CONFIG_LEVEL,
+  CONFIG_LEVEL_LABELS,
   OPERATION_TYPES,
   OPERATION_TYPE_META,
+  isConfigLevel,
   isOperationType,
+  type ConfigLevel,
   type OperationType,
 } from "@/lib/llm/operationTypes";
 import { PROVIDER_KINDS, isSpeechOnlyKind, type ProviderKind } from "@/lib/llm/resolver";
+import { invalidatePriceCache } from "@/lib/llm/pricing";
 import { TTS_CATALOG, findTtsProvider, findTtsProviderById, providerMatchesSpec, normalizeBaseUrl } from "@/lib/tts/catalog";
 import { encryptSecret, decryptSecret, maskSecret } from "@/lib/crypto/secrets";
 import { logAudit } from "@/lib/audit";
@@ -35,6 +40,8 @@ export interface ProviderDTO {
 
 export interface AssignmentDTO {
   operationType: OperationType;
+  /** 034: poziom pracy asystenta, którego dotyczy ten wiersz. */
+  level: ConfigLevel;
   label: string;
   description: string;
   defaultModel: string;
@@ -44,6 +51,12 @@ export interface AssignmentDTO {
   maxTokens: number | null;
   /** 033: poziom wysiłku modelu (wspólna skala tłumaczona per dostawca). */
   effort: LlmEffort;
+  // 034: co zadziała, gdy pole zostanie puste (dziedziczenie z poziomu standardowego).
+  inheritedProviderId: string | null;
+  inheritedModel: string | null;
+  inheritedTemperature: number | null;
+  inheritedMaxTokens: number | null;
+  inheritedEffort: LlmEffort | null;
 }
 
 export async function getLlmProviders(): Promise<ProviderDTO[]> {
@@ -117,15 +130,26 @@ export async function deleteProvider(id: string): Promise<void> {
   revalidatePath("/admin/llm");
 }
 
-export async function getAssignments(): Promise<AssignmentDTO[]> {
+/**
+ * 034: przypisania dla WSKAZANEGO poziomu. Pole puste na poziomie innym niż standardowy dziedziczy
+ * ze standardowego — zwracamy więc obok wartości własnej także `inherited*`, żeby panel mógł
+ * pokazać, co realnie zadziała, i oznaczyć to jako dziedziczone (AC-4).
+ */
+export async function getAssignments(level: string = BASE_CONFIG_LEVEL): Promise<AssignmentDTO[]> {
   await requireAdmin();
-  const rows = await prisma.llmAssignment.findMany();
-  const byType = new Map(rows.map((r) => [r.operationType, r]));
+  if (!isConfigLevel(level)) throw new Error("Nieznany poziom pracy asystenta");
+  const rows = await prisma.llmAssignment.findMany({
+    where: { level: { in: [level, BASE_CONFIG_LEVEL] } },
+  });
+  const own = new Map(rows.filter((r) => r.level === level).map((r) => [r.operationType, r]));
+  const base = new Map(rows.filter((r) => r.level === BASE_CONFIG_LEVEL).map((r) => [r.operationType, r]));
   return OPERATION_TYPES.map((op) => {
     const meta = OPERATION_TYPE_META[op];
-    const a = byType.get(op);
+    const a = own.get(op);
+    const b = base.get(op);
     return {
       operationType: op,
+      level,
       label: meta.label,
       description: meta.description,
       defaultModel: meta.defaultModel,
@@ -134,6 +158,12 @@ export async function getAssignments(): Promise<AssignmentDTO[]> {
       temperature: a?.temperature ?? null,
       maxTokens: a?.maxTokens ?? null,
       effort: parseEffort(a?.effort),
+      // Co zadziała, gdy pole zostanie puste (null = też nic, czyli fallback wbudowany).
+      inheritedProviderId: level === BASE_CONFIG_LEVEL ? null : b?.providerId ?? null,
+      inheritedModel: level === BASE_CONFIG_LEVEL ? null : b?.model ?? null,
+      inheritedTemperature: level === BASE_CONFIG_LEVEL ? null : b?.temperature ?? null,
+      inheritedMaxTokens: level === BASE_CONFIG_LEVEL ? null : b?.maxTokens ?? null,
+      inheritedEffort: level === BASE_CONFIG_LEVEL ? null : parseEffort(b?.effort),
     };
   });
 }
@@ -145,9 +175,15 @@ const TEMPERATURE_MIN = 0;
 const TEMPERATURE_MAX = 2;
 const MAX_TOKENS_MIN = 1;
 const MAX_TOKENS_MAX = 32000;
+// 034: granice cennika — chronią przed literówką („30" zamiast „3" USD za 1M tokenów), która
+// cicho przekłamałaby wszystkie kwoty pokazywane użytkownikowi.
+const PRICE_PER_1M_MAX = 1000;
+const CACHE_MULT_MAX = 10;
 
 export async function setAssignment(data: {
   operationType: string;
+  /** 034: poziom pracy asystenta, którego dotyczy zapis (domyślnie standardowy). */
+  level?: string;
   providerId: string;
   model: string;
   temperature?: number | null;
@@ -156,8 +192,12 @@ export async function setAssignment(data: {
 }): Promise<void> {
   await requireAdmin();
   if (!isOperationType(data.operationType)) throw new Error("Nieznany typ operacji");
+  const level = data.level ?? BASE_CONFIG_LEVEL;
+  if (!isConfigLevel(level)) throw new Error("Nieznany poziom pracy asystenta");
   const model = data.model.trim();
-  if (!data.providerId || !model) throw new Error("Wybierz dostawcę i podaj model");
+  if (!data.providerId) throw new Error("Wybierz dostawcę");
+  // 034: pusty model na poziomie innym niż standardowy = świadome DZIEDZICZENIE ze standardowego.
+  if (!model && level === BASE_CONFIG_LEVEL) throw new Error("Podaj model dla poziomu standardowego");
 
   // 032: dostawca obsługujący WYŁĄCZNIE syntezę mowy nie może zostać przypisany do operacji
   // czatowej — jego endpoint nie odpowiada na prompt. Blokujemy to już przy zapisie, żeby
@@ -195,11 +235,11 @@ export async function setAssignment(data: {
 
   // "none" zapisujemy jako NULL — kolumna pusta znaczy „nie wysyłaj parametru".
   const effortValue = effort === "none" ? null : effort;
-  const fields = { providerId: data.providerId, model, temperature, maxTokens, effort: effortValue };
+  const fields = { providerId: data.providerId, model: model || null, temperature, maxTokens, effort: effortValue };
   await prisma.llmAssignment.upsert({
-    where: { operationType: data.operationType },
+    where: { operationType_level: { operationType: data.operationType, level } },
     update: fields,
-    create: { operationType: data.operationType, ...fields },
+    create: { operationType: data.operationType, level, ...fields },
   });
 
   // C-25: opis w audycie mówi też, z jakimi parametrami — inaczej nie da się odtworzyć zmiany.
@@ -211,8 +251,8 @@ export async function setAssignment(data: {
   await logAudit(
     "config",
     "llm_assignment.set",
-    data.operationType,
-    `Przypisano model „${model}” do operacji ${data.operationType} (${params})`
+    `${data.operationType}:${level}`,
+    `Poziom „${CONFIG_LEVEL_LABELS[level]}”: przypisano model „${model || "(dziedziczony)"}” do operacji ${data.operationType} (${params})`
   );
   revalidatePath("/admin/llm");
 }
@@ -257,7 +297,7 @@ export async function getSpeechConfig(): Promise<SpeechConfigDTO> {
   await requireAdmin();
   const providers = await prisma.llmProvider.findMany({ select: { kind: true, baseUrl: true, apiKey: true } });
   const assignment = await prisma.llmAssignment.findUnique({
-    where: { operationType: "speech" },
+    where: { operationType_level: { operationType: "speech", level: BASE_CONFIG_LEVEL } },
     include: { provider: { select: { kind: true, baseUrl: true } } },
   });
   const voiceRow = await prisma.config.findUnique({ where: { key: SPEECH_VOICE_CONFIG_KEY } });
@@ -341,9 +381,9 @@ export async function applySpeechProvider(data: {
   }
 
   await prisma.llmAssignment.upsert({
-    where: { operationType: "speech" },
+    where: { operationType_level: { operationType: "speech", level: BASE_CONFIG_LEVEL } },
     update: { providerId: provider.id, model },
-    create: { operationType: "speech", providerId: provider.id, model },
+    create: { operationType: "speech", level: BASE_CONFIG_LEVEL, providerId: provider.id, model },
   });
 
   // Głos walidujemy wprost przeciw TEJ pozycji katalogu — mamy `spec`, więc nie ma po co pytać
@@ -515,10 +555,11 @@ export async function applyAnthropicProfile(data: { apiKey: string }): Promise<v
     // (admin przypisze dla niego dostawcę osobno albo funkcja zostaje wyłączona).
     const model = (ANTHROPIC_MODELS as Partial<Record<OperationType, string>>)[op];
     if (!model) continue;
+    // 034: profil ustawia poziom STANDARDOWY — pozostałe poziomy z niego dziedziczą.
     await prisma.llmAssignment.upsert({
-      where: { operationType: op },
+      where: { operationType_level: { operationType: op, level: BASE_CONFIG_LEVEL } },
       update: { providerId: provider.id, model },
-      create: { operationType: op, providerId: provider.id, model },
+      create: { operationType: op, level: BASE_CONFIG_LEVEL, providerId: provider.id, model },
     });
   }
   await logAudit(
@@ -527,6 +568,93 @@ export async function applyAnthropicProfile(data: { apiKey: string }): Promise<v
     provider.id,
     "Zastosowano profil Anthropic (Sonnet dla reasoning/generation/vision, Haiku dla dispatch)"
   );
+  revalidatePath("/admin/llm");
+}
+
+// ─── 034: cennik modeli (podstawa liczenia kosztów) ─────────────────────────
+//
+// Cennik był zaszyty w kodzie, więc zmiana stawki wymagała wdrożenia nowej wersji, a model spoza
+// listy „kosztował 0". Teraz stawki edytuje administrator, a `lib/llm/pricing.ts` czyta je z bazy.
+
+export interface ModelPriceDTO {
+  id: string;
+  modelPrefix: string;
+  label: string | null;
+  inputPer1M: number;
+  outputPer1M: number;
+  cacheReadMult: number;
+  cacheWriteMult: number;
+}
+
+export async function getModelPrices(): Promise<ModelPriceDTO[]> {
+  await requireAdmin();
+  const rows = await prisma.llmModelPrice.findMany({ orderBy: { modelPrefix: "asc" } });
+  return rows.map((r) => ({
+    id: r.id,
+    modelPrefix: r.modelPrefix,
+    label: r.label,
+    inputPer1M: r.inputPer1M,
+    outputPer1M: r.outputPer1M,
+    cacheReadMult: r.cacheReadMult,
+    cacheWriteMult: r.cacheWriteMult,
+  }));
+}
+
+export async function setModelPrice(data: {
+  modelPrefix: string;
+  label?: string | null;
+  inputPer1M: number;
+  outputPer1M: number;
+  cacheReadMult?: number;
+  cacheWriteMult?: number;
+}): Promise<void> {
+  await requireAdmin();
+  const modelPrefix = data.modelPrefix.trim();
+  if (!modelPrefix) throw new Error("Podaj początek nazwy modelu (np. „claude-haiku-4-5”)");
+
+  // Ceny walidujemy PRZED zapisem — zła stawka cicho przekłamywałaby wszystkie koszty.
+  const rate = (value: number, name: string): number => {
+    if (!Number.isFinite(value) || value < 0 || value > PRICE_PER_1M_MAX) {
+      throw new Error(`${name} musi być liczbą z zakresu 0–${PRICE_PER_1M_MAX} USD za milion tokenów.`);
+    }
+    return value;
+  };
+  const mult = (value: number | undefined, fallback: number, name: string): number => {
+    if (value === undefined) return fallback;
+    if (!Number.isFinite(value) || value < 0 || value > CACHE_MULT_MAX) {
+      throw new Error(`${name} musi być liczbą z zakresu 0–${CACHE_MULT_MAX}.`);
+    }
+    return value;
+  };
+
+  const fields = {
+    label: data.label?.trim() || null,
+    inputPer1M: rate(data.inputPer1M, "Cena wejścia"),
+    outputPer1M: rate(data.outputPer1M, "Cena wyjścia"),
+    cacheReadMult: mult(data.cacheReadMult, 0.1, "Mnożnik odczytu z cache"),
+    cacheWriteMult: mult(data.cacheWriteMult, 1.25, "Mnożnik zapisu do cache"),
+  };
+  await prisma.llmModelPrice.upsert({
+    where: { modelPrefix },
+    update: fields,
+    create: { modelPrefix, ...fields },
+  });
+  invalidatePriceCache();
+  await logAudit(
+    "config",
+    "llm_price.set",
+    modelPrefix,
+    `Ustawiono cennik modelu „${modelPrefix}”: wejście ${fields.inputPer1M} / wyjście ${fields.outputPer1M} USD za 1M tokenów`
+  );
+  revalidatePath("/admin/llm");
+}
+
+export async function deleteModelPrice(id: string): Promise<void> {
+  await requireAdmin();
+  const row = await prisma.llmModelPrice.findUnique({ where: { id }, select: { modelPrefix: true } });
+  await prisma.llmModelPrice.delete({ where: { id } });
+  invalidatePriceCache();
+  await logAudit("config", "llm_price.delete", id, `Usunięto cennik modelu „${row?.modelPrefix ?? id}”`);
   revalidatePath("/admin/llm");
 }
 

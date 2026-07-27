@@ -2,15 +2,34 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import {
+  requireAuth,
+  getUserTeamIds,
+  ownedOrSystemWhere,
+  assertDictionaryAccess,
+} from "@/lib/server-utils";
 import type { NoteGroup } from "@/types";
 
+/**
+ * 034: grupy notatek mają właściciela (C-21). Widzimy swoje, zespołowe i systemowe (bez
+ * właściciela — wspólne dla wszystkich kont, tak jak kategorie systemowe). Wcześniej model nie miał
+ * kolumny właściciela, więc każda grupa była widoczna dla każdego konta.
+ */
+async function assertNoteGroupAccess(id: string, userId: string): Promise<void> {
+  const group = await prisma.noteGroup.findUnique({
+    where: { id },
+    select: { ownerId: true, ownerTeamId: true },
+  });
+  await assertDictionaryAccess(group, userId, "grupa notatek");
+}
+
 export async function getNoteGroups(): Promise<NoteGroup[]> {
-  // 031: `NoteGroup` nie ma kolumny właściciela — grupy notatek są w tym modelu WSPÓLNE dla
-  // wszystkich kont (tak jak słowniki systemowe). Odczyt wymaga jednak zalogowania (C-22).
-  // Ograniczenie modelu jest odnotowane w docs/ai/kontrola-dostepu.md.
-  await requireAuth();
-  return prisma.noteGroup.findMany({ orderBy: { createdAt: "asc" } });
+  const user = await requireAuth();
+  const teamIds = await getUserTeamIds(user.id);
+  return prisma.noteGroup.findMany({
+    where: ownedOrSystemWhere(user.id, teamIds),
+    orderBy: { createdAt: "asc" },
+  });
 }
 
 export async function createNoteGroup(data: {
@@ -18,12 +37,13 @@ export async function createNoteGroup(data: {
   description?: string;
   color?: string;
 }): Promise<NoteGroup> {
-  await requireAuth();
+  const user = await requireAuth();
   const group = await prisma.noteGroup.create({
     data: {
       name: data.name.trim(),
       description: data.description?.trim() || null,
       color: data.color || null,
+      ownerId: user.id,
     },
   });
   revalidatePath("/notes");
@@ -35,7 +55,8 @@ export async function updateNoteGroup(
   id: string,
   patch: { name?: string; description?: string | null; color?: string | null }
 ): Promise<NoteGroup> {
-  await requireAuth();
+  const user = await requireAuth();
+  await assertNoteGroupAccess(id, user.id);
   const data: Record<string, unknown> = { ...patch };
   if (patch.name) data.name = patch.name.trim();
 
@@ -46,7 +67,8 @@ export async function updateNoteGroup(
 }
 
 export async function deleteNoteGroup(id: string): Promise<void> {
-  await requireAuth();
+  const user = await requireAuth();
+  await assertNoteGroupAccess(id, user.id);
   await prisma.noteGroup.delete({ where: { id } });
   revalidatePath("/notes");
   revalidatePath("/notes/groups");

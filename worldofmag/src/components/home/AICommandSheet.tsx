@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight, ArrowUp,
-  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug, Gauge, Zap, Rocket, CornerUpLeft,
+  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug, Gauge, Zap, Rocket, CornerUpLeft, SlidersHorizontal,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { useDictation } from "@/hooks/useDictation";
@@ -2037,11 +2037,14 @@ const LEVEL_COLORS: Record<AssistantLevel, string> = {
   economy: "var(--accent-amber)",
   standard: "var(--text-muted)",
   max: "var(--accent-purple)",
+  // 034: własny poziom — ustawienia użytkownika, nie administratora.
+  custom: "var(--accent-blue)",
 };
 
 function levelIcon(level: AssistantLevel, size: number) {
   if (level === "economy") return <Zap size={size} />;
   if (level === "max") return <Rocket size={size} />;
+  if (level === "custom") return <SlidersHorizontal size={size} />;
   return <Gauge size={size} />;
 }
 

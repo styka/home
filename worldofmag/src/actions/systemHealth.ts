@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { OPERATION_TYPES, OPERATION_TYPE_META } from "@/lib/llm/operationTypes";
+import { BASE_CONFIG_LEVEL, OPERATION_TYPES, OPERATION_TYPE_META } from "@/lib/llm/operationTypes";
 import { isSecretConfigured } from "@/lib/crypto/secrets";
 import { summarizeExplainPlan, REPRESENTATIVE_QUERIES, type ScanType } from "@/lib/health/queryDiag";
 
@@ -51,12 +51,17 @@ export async function getSystemHealth(): Promise<SystemHealth> {
   // LLM: dostawcy + przypisania per typ operacji.
   const providers = await prisma.llmProvider.findMany({ select: { id: true, enabled: true, apiKey: true } });
   const enabledProviders = providers.filter((p) => p.enabled && p.apiKey).length;
-  const assignmentsRaw = await prisma.llmAssignment.findMany({ include: { provider: { select: { enabled: true, apiKey: true } } } });
+  // 034: diagnostyka patrzy na poziom STANDARDOWY — pozostałe z niego dziedziczą.
+  const assignmentsRaw = await prisma.llmAssignment.findMany({
+    where: { level: BASE_CONFIG_LEVEL },
+    include: { provider: { select: { enabled: true, apiKey: true } } },
+  });
   const byType = new Map(assignmentsRaw.map((a) => [a.operationType, a]));
   const assignments: HealthCheck[] = OPERATION_TYPES.map((op) => {
     const a = byType.get(op);
     const ok = !!a && !!a.provider?.enabled && !!a.provider?.apiKey;
-    return { label: OPERATION_TYPE_META[op].label, ok, detail: a ? (ok ? a.model : "dostawca wyłączony/brak klucza") : "brak przypisania" };
+    const detail = a ? (ok ? a.model ?? "model dziedziczony" : "dostawca wyłączony/brak klucza") : "brak przypisania";
+    return { label: OPERATION_TYPE_META[op].label, ok, detail };
   });
   const legacy = await prisma.config.findUnique({ where: { key: "groq_api_key" }, select: { value: true } });
   const legacyGroq = !!legacy?.value;

@@ -84,10 +84,11 @@ export async function syncShoppingMutations(ops: OfflineOp[]): Promise<SyncResul
           },
         });
         // Utrzymanie słowników jak w addItemStructured.
+        // 034: klucz podpowiedzi to (właściciel, nazwa).
         await prisma.itemHistory.upsert({
-          where: { name },
+          where: { ownerId_name: { ownerId: user.id, name } },
           update: { useCount: { increment: 1 }, category, unit: unit ?? undefined, updatedAt: new Date() },
-          create: { name, category, unit },
+          create: { ownerId: user.id, name, category, unit },
         });
         await upsertUserProduct(name, unit, category);
         applied.push(op.opId);
