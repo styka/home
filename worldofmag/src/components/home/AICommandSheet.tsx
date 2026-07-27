@@ -848,8 +848,11 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
    * rozmowy — przy zmianie wątku albo zamknięciu asystenta muszą się zwinąć, żeby nowa rozmowa
    * startowała z czystym ekranem.
    */
-  function collapseSections() {
-    setHeaderPanel("none");
+  function collapseSections(options?: { keepPanel?: boolean }) {
+    // `keepPanel` — przy wczytywaniu rozmowy z historii NIE zamykamy panelu z góry: gdyby odczyt
+    // się nie powiódł, użytkownik zostałby z zamkniętą historią i bez żadnej informacji.
+    // Panel zamyka się dopiero po udanym wczytaniu wątku.
+    if (!options?.keepPanel) setHeaderPanel("none");
     setReportDone(null);
     setShowLevelMenu(false);
   }
@@ -1386,7 +1389,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   async function loadConversation(id: string) {
     // 032: zapisz brudnopis STAREGO wątku, zanim go opuścimy, i zwiń rozwinięte sekcje.
     saveDraftNow();
-    collapseSections();
+    collapseSections({ keepPanel: true });
     try {
       const convo = await getAiConversation(id);
       if (!convo) return;

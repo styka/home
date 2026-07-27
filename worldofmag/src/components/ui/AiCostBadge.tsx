@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { DEFAULT_USD_PLN_RATE } from "@/lib/usdPln";
-import { withPln } from "@/lib/usdPln";
+import { DEFAULT_USD_PLN_RATE, withPln } from "@/lib/usdPln";
 
 /**
  * 034: WSPÓLNY wskaźnik kosztu operacji AI. Wyjęty z okna asystenta, żeby dało się go użyć wszędzie,
