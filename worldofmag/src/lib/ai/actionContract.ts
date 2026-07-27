@@ -186,7 +186,9 @@ export const PARAM_LABELS: Record<string, string> = {
   amount: "Kwota",
   active: "Aktywne",
   archived: "Zarchiwizowane",
+  bookToPortfel: "Zaksięguj wydatek w Portfelu",
   body: "Treść",
+  breed: "Rasa / odmiana",
   buyerContact: "Kontakt kupującego",
   buyerName: "Kupujący",
   category: "Kategoria",
@@ -198,6 +200,8 @@ export const PARAM_LABELS: Record<string, string> = {
   currentAmount: "Zebrana kwota",
   customTitle: "Nazwa posiłku",
   date: "Data",
+  days: "Liczba dni",
+  daysOfWeek: "Dni tygodnia",
   deadline: "Termin",
   deckName: "Talia",
   delta: "Zmiana ilości",
@@ -205,6 +209,7 @@ export const PARAM_LABELS: Record<string, string> = {
   doctorName: "Lekarz",
   dosage: "Dawka",
   dueDate: "Termin",
+  durationMin: "Czas trwania (min)",
   elementName: "Konto / element portfela",
   email: "E-mail",
   emoji: "Ikona (emoji)",
@@ -216,7 +221,11 @@ export const PARAM_LABELS: Record<string, string> = {
   expiresAt: "Data ważności",
   facility: "Placówka",
   foodType: "Rodzaj pokarmu",
+  freqType: "Częstotliwość",
+  goalName: "Cel oszczędnościowy",
+  groupName: "Grupa notatek",
   homepageUrl: "Adres strony",
+  horizon: "Zakres czasu",
   hourlyEnd: "Godzina zakończenia",
   hourlyStart: "Godzina rozpoczęcia",
   icon: "Ikona",
@@ -225,6 +234,7 @@ export const PARAM_LABELS: Record<string, string> = {
   interval: "Co ile",
   isOptional: "Opcjonalny",
   kind: "Rodzaj",
+  leaning: "Profil / nastawienie źródła",
   lengthCm: "Długość (cm)",
   limitAmount: "Limit",
   listName: "Lista",
@@ -248,10 +258,12 @@ export const PARAM_LABELS: Record<string, string> = {
   preyType: "Rodzaj karmy",
   presetKey: "Gotowy obserwator",
   price: "Cena",
+  priority: "Priorytet",
   projectName: "Projekt",
   projectNames: "Projekty",
   quantity: "Ilość",
   query: "Zapytanie",
+  rawText: "Co dodać",
   reason: "Powód",
   removeTags: "Etykiety do usunięcia",
   replace: "Zastąp cały zestaw",
@@ -263,6 +275,7 @@ export const PARAM_LABELS: Record<string, string> = {
   serviceType: "Rodzaj serwisu",
   skipPantry: "Pomiń to, co w spiżarni",
   slot: "Pora",
+  specialty: "Specjalizacja",
   startDate: "Data rozpoczęcia",
   status: "Status",
   steps: "Liczba szczebli",
@@ -272,6 +285,7 @@ export const PARAM_LABELS: Record<string, string> = {
   targetListName: "Lista docelowa",
   term: "Słowo",
   text: "Treść",
+  timesOfDay: "Pory dnia",
   title: "Tytuł",
   toLocation: "Miejsce docelowe",
   totalCost: "Koszt całkowity",
@@ -594,6 +608,16 @@ export function paramLabel(type: string, key: string): string {
   return ACTION_CONTRACTS[type]?.fields?.[key]?.label ?? PARAM_LABELS[key] ?? key;
 }
 
+/**
+ * 034: czy parametr ma opis PO POLSKU (w kontrakcie akcji albo we wspólnym słowniku).
+ * Bramka `check:actions` pilnuje kompletności dla parametrów z KATALOGU akcji, ale model potrafi
+ * wymyślić parametr, którego katalog nie zna (tak powstał `groupName` w zgłoszeniu) — takiego pola
+ * nie wolno pokazać użytkownikowi pod nazwą z kodu, więc `fieldSpec` chowa je (patrz niżej).
+ */
+export function hasParamLabel(type: string, key: string): boolean {
+  return !!(ACTION_CONTRACTS[type]?.fields?.[key] || PARAM_LABELS[key]);
+}
+
 const ID_KEY = /Id$/;
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
 
@@ -601,6 +625,8 @@ const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?
  * Opis pola z sensownym fallbackiem:
  *  • wprost z kontraktu, gdy jest,
  *  • pola `…Id` → `hidden` (identyfikatory nic użytkownikowi nie mówią, ale przechodzą do backendu),
+ *  • 034: pole BEZ polskiej etykiety → `hidden` (parametr wymyślony przez model; pokazanie go
+ *    znaczyłoby wyciek nazwy technicznej do UI — wartość i tak jedzie do backendu bez zmian),
  *  • wartość wyglądająca na datę ISO → kontrolka daty,
  *  • wartość logiczna / liczbowa → odpowiednia kontrolka,
  *  • reszta → tekst.
@@ -609,6 +635,7 @@ export function fieldSpec(type: string, key: string, value?: unknown): FieldSpec
   const explicit = ACTION_CONTRACTS[type]?.fields?.[key];
   if (explicit) return explicit;
   if (ID_KEY.test(key)) return { label: paramLabel(type, key), control: "hidden" };
+  if (!hasParamLabel(type, key)) return { label: key, control: "hidden" };
 
   const label = paramLabel(type, key);
   if (typeof value === "boolean") return { label, control: "boolean" };

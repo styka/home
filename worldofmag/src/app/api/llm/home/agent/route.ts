@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { AssistantLevel } from "@/types";
+import { isAssistantLevel, type AssistantLevel } from "@/types";
 import { auth } from "@/lib/auth";
 import { PET_ACTIONS_PROMPT, PET_ACTION_EXAMPLES } from "@/lib/ai/petActions";
 import { buildReadToolsPrompt, READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentTools";
@@ -13,7 +13,7 @@ import { classifyIntent, READ_INTENT_RE } from "@/lib/ai/fastPath";
 import { extractJsonLoose, salvageAnswerText } from "@/lib/ai/agentProtocol";
 import { compactToolResults, collapseUsedToolData, TOOL_DATA_HEADER } from "@/lib/ai/agentContext";
 import { humanizeAssistantText } from "@/lib/ai/humanize";
-import { shouldBoostEffort } from "@/lib/llm/operationTypes";
+import type { AssistantWorkLevel } from "@/lib/llm/operationTypes";
 import { isAccessError, toUserFacingError } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 
@@ -111,10 +111,10 @@ const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - delete_project_group { groupId? } (searchQuery = nazwa) — DESTRUKCYJNE`,
 
   notes: `NOTATKI (module "notes"):
-- create_note { title, content? }
+- create_note { title, content?, groupName? } — groupName = nazwa grupy/folderu notatek, gdy użytkownik prosi o notatkę „w grupie X" (grupa musi istnieć; gdy jej nie ma, najpierw create_note_group).
   • TYTUŁ vs TREŚĆ: gdy użytkownik NIE rozdziela wyraźnie tytułu od treści, a podał tylko JEDEN tekst — potraktuj ten tekst jako ZAWARTOŚĆ notatki (content) przepisaną wiernie, a title WYGENERUJ samodzielnie jako krótką, zwięzłą etykietę (kilka słów) na jego podstawie. NIE wrzucaj całego tekstu jako tytułu. Wyjątek: jeśli to wyraźnie sam krótki tytuł — użyj go jako title i pomiń content.
 - append_to_note { content, noteId? } (searchQuery fallback)
-- update_note { title?, content?, noteId? } (searchQuery fallback)
+- update_note { title?, content?, groupName?, noteId? } (searchQuery fallback) — groupName przenosi notatkę do wskazanej grupy.
 - delete_note { noteId? } (searchQuery fallback) — DESTRUKCYJNE
 - toggle_pin { noteId? } (searchQuery = tytuł) — przypnij/odepnij notatkę.
 - set_note_tags { tags:[string], removeTags?:[string], replace?, noteId? } (searchQuery = tytuł notatki) — DODAJE tagi do notatki (removeTags zdejmuje; replace:true zastępuje). Użyj dla „otaguj/oznacz tagiem notatkę".
@@ -396,7 +396,7 @@ type AgentOp = "dispatch" | "reasoning";
  * 032: zwracamy nie tylko treść, ale i informację, czy odpowiedź została UCIĘTA na limicie tokenów.
  * Bez tego pętla niżej nie odróżniała „model się pomylił" od „modelowi zabrakło miejsca" i w drugim
  * przypadku kazała powtarzać odpowiedź do wyczerpania limitu kroków (zgłoszenie Z-2).
- * 033: `boostEffort` podnosi o stopień wysiłek USTAWIONY PRZEZ ADMINA (tryb „maksymalny").
+ * 034: `level` wybiera ZESTAW ustawień modelu (poziom pracy asystenta) — patrz `ChatOptions.level`.
  */
 async function callAgent(
   messages: ChatMessage[],
@@ -404,7 +404,7 @@ async function callAgent(
   maxTokens = AGENT_MAX_TOKENS,
   conversationId?: string | null,
   op: AgentOp = "reasoning",
-  boostEffort = false
+  level?: AssistantWorkLevel
 ): Promise<{ content: string; truncated: boolean }> {
   const result = await chatComplete({
     op,
@@ -414,15 +414,15 @@ async function callAgent(
     json: true,
     source: "home_agent",
     conversationId,
-    // 033: tryb „maksymalny" użytkownika podnosi wysiłek USTAWIONY PRZEZ ADMINA o jeden stopień.
-    boostEffort,
+    // 034: poziom pracy asystenta — model, wysiłek i temperatura wynikają z konfiguracji poziomu.
+    level,
   });
   if (!result.ok) {
     const err = new Error(result.message) as Error & { status?: number };
     err.status = result.status;
     throw err;
   }
-  if (meta) accrueUsage(meta, result.usage, result.model, "agent");
+  if (meta) accrueUsage(meta, result.usage, result.model, "agent", op);
   return { content: result.content || "{}", truncated: result.truncated === true };
 }
 
@@ -545,11 +545,11 @@ async function runAgentLoop(
   conversationId?: string | null,
   op: AgentOp = "reasoning",
   isFinalRun = true,
-  boostEffort = false
+  level?: AssistantWorkLevel
 ): Promise<LoopResult> {
   // Myśli lecą do klienta NA ŻYWO (SSE) — humanizujemy je po drodze, nie tylko na końcu.
   const humanThought = onThought ? (t: string) => onThought(humanizeAssistantText(t)) : undefined;
-  const result = await runAgentLoopRaw(messages, userId, humanThought, meta, maxTokens, conversationId, op, isFinalRun, boostEffort);
+  const result = await runAgentLoopRaw(messages, userId, humanThought, meta, maxTokens, conversationId, op, isFinalRun, level);
   const body = result.body as Record<string, unknown>;
   for (const key of ["answer", "question", "content", "thought", "label", "title"]) {
     if (typeof body[key] === "string") body[key] = humanizeAssistantText(body[key] as string);
@@ -584,8 +584,8 @@ async function runAgentLoopRaw(
   // „reasoning" (fallback z 030), podsumowanie niedokończonego przebiegu byłoby wyrzucone razem
   // z jego wynikiem — a to płatne wywołanie modelu. Wtedy je pomijamy.
   isFinalRun = true,
-  // 033: podnieś wysiłek ustawiony przez admina (tryb „maksymalny" użytkownika).
-  boostEffort = false
+  // 034: poziom pracy asystenta (wybiera zestaw ustawień modelu z konfiguracji).
+  level?: AssistantWorkLevel
 ): Promise<LoopResult> {
   const log: LogEntry[] = [];
   // 030: pamięć wywołań narzędzi w obrębie tury — identyczne wywołanie (tool+args) nie
@@ -613,7 +613,7 @@ async function runAgentLoopRaw(
       let content: string;
       let truncated = false;
       try {
-        const res = await callAgent(messages, meta, maxTokens, conversationId, op, boostEffort);
+        const res = await callAgent(messages, meta, maxTokens, conversationId, op, level);
         content = res.content;
         truncated = res.truncated;
       } catch (e) {
@@ -897,8 +897,7 @@ export async function POST(req: NextRequest) {
   const assistantPref = await prisma.assistantPref
     .findUnique({ where: { userId }, select: { instructions: true, level: true } })
     .catch(() => null);
-  const assistantLevel: AssistantLevel =
-    assistantPref?.level === "economy" ? "economy" : assistantPref?.level === "max" ? "max" : "standard";
+  const assistantLevel: AssistantLevel = isAssistantLevel(assistantPref?.level ?? "") ? (assistantPref!.level as AssistantLevel) : "standard";
 
   // H4: rate-limit per użytkownik (ochrona przed pętlą klienta i kosztami LLM).
   const rl = checkRateLimit(userId);
@@ -1004,7 +1003,7 @@ export async function POST(req: NextRequest) {
     // BEZ uruchamiania dużego modelu (op:"reasoning"). Zwracamy krok "plan" w tym
     // samym kształcie co pętla agenta → panel potwierdzenia (ActionDrawer) bez zmian.
     // Każda niepewność → complex → dotychczasowa pełna pętla poniżej.
-    const fast = await classifyIntent(text, context, conversationId, meta);
+    const fast = await classifyIntent(text, context, conversationId, meta, assistantLevel, userId);
     if (fast.kind === "simple") {
       const thought = fast.action.description || "Przygotowano akcję.";
       // 028: ścieżka „simple" zwraca wcześnie (omija finally z recordAiUsage), więc
@@ -1082,26 +1081,22 @@ export async function POST(req: NextRequest) {
   const loopNeedsFallback = (r: LoopResult): boolean =>
     (typeof r.status === "number" && r.status >= 400) || r.body.degraded === true || r.body.limitReached === true;
 
-  // 031: TRYB OSZCZĘDNY użytkownika — cały asystent jedzie na typie operacji `dispatch`
-  // (model najprostszych operacji z /admin/llm). Świadomy wybór użytkownika, więc NIE robimy
-  // fallbacku do „reasoning" — inaczej tryb nie oszczędzałby.
+  // 034: poziom pracy asystenta NIE podmienia już typu operacji ani wysiłku w kodzie — wybiera
+  // ZESTAW ustawień z konfiguracji (`/admin/llm` dla trzech poziomów admina, `UserLlmPref` dla
+  // poziomu własnego). Zostaje tu wyłącznie logika PRZEBIEGU pętli, która od modelu nie zależy:
+  //  • `economy` = świadomy wybór taniej obsługi → bez ponawiania na cięższym typie operacji,
+  //  • `max`/`custom` = użytkownik chce najlepszej jakości → bez zejścia na `dispatch` przy
+  //    prostych pytaniach odczytowych (inaczej „drożej" nie znaczyłoby nic dla połowy pytań).
   const economy = assistantLevel === "economy";
-  // 033: TRYB MAKSYMALNY — modele wg ustawień admina, ale (a) z podniesionym o stopień wysiłkiem,
-  // (b) BEZ automatycznego zejścia na tańszy model przy prostych pytaniach odczytowych. Inaczej
-  // „drożej" nie znaczyłoby nic dla połowy pytań.
-  const boostEffort = shouldBoostEffort(assistantLevel);
+  const wantsBestQuality = assistantLevel === "max" || assistantLevel === "custom";
   const runLoop = async (onThought?: (t: string) => void): Promise<LoopResult> => {
-    // 033: w trybie „maksymalnym" ZAWSZE `reasoning` — znika zejście na tańszy model przy prostych
-    // pytaniach odczytowych, bo „drożej" ma znaczyć maksymalną jakość na każdym pytaniu.
-    const primaryOp: AgentOp = boostEffort ? "reasoning" : economy || isSimpleRead ? "dispatch" : "reasoning";
+    const primaryOp: AgentOp = wantsBestQuality ? "reasoning" : economy || isSimpleRead ? "dispatch" : "reasoning";
     // 032: pierwszy przebieg jest OSTATECZNY tylko wtedy, gdy nie mamy w zapasie ponowienia na
     // „reasoning" — inaczej jego podsumowanie i tak poszłoby do kosza (patrz `isFinalRun`).
-    // 033: w trybie maksymalnym nie ma ponowienia (już jesteśmy na `reasoning`), więc przebieg
-    // jest ostateczny.
-    const canFallback = !economy && !boostEffort && !!baselineMessages;
-    const first = await runAgentLoop(messages, userId, onThought, meta, agentMaxTokens, conversationId, primaryOp, !canFallback, boostEffort);
+    const canFallback = !economy && !wantsBestQuality && !!baselineMessages;
+    const first = await runAgentLoop(messages, userId, onThought, meta, agentMaxTokens, conversationId, primaryOp, !canFallback, assistantLevel);
     if (!canFallback || !loopNeedsFallback(first)) return first;
-    return runAgentLoop(baselineMessages!, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning", true);
+    return runAgentLoop(baselineMessages!, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning", true, assistantLevel);
   };
 
   // H4: strażnik współbieżności — nie pozwól odpalić zbyt wielu ciężkich operacji naraz.

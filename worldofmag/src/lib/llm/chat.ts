@@ -1,10 +1,11 @@
 import { resolveLlmChain, type ResolvedLlm } from "./resolver";
 import { isTruncatedAnthropicResponse, isTruncatedOpenAiResponse } from "./truncation";
-import type { OperationType } from "./operationTypes";
-import { applyEffort, bumpEffort, isEffortRejection, parseEffort, type LlmEffort } from "./effort";
+import type { AssistantWorkLevel, OperationType } from "./operationTypes";
+import { applyEffort, isEffortRejection, parseEffort, type LlmEffort } from "./effort";
 import { cacheKeyFor, getCached, setCached } from "@/lib/ai/cache";
 import { checkAiBudget, recordAiUsage, recordAiCall } from "@/lib/ai/usage";
 import { reserveTpm, estimateTokens, modelTpmLimit } from "./tpmLimiter";
+import { ensurePricesLoaded } from "./pricing";
 
 /**
  * Z-133: czy błąd jest przejściowy (warto spróbować fallbacku na inny model/dostawcę).
@@ -72,19 +73,22 @@ export interface ChatOptions {
   conversationId?: string | null;
   /** 033: nadpisanie poziomu wysiłku (pomija ustawienie admina). Rzadko potrzebne. */
   effort?: LlmEffort;
-  /** 033: podnieś o stopień wysiłek USTAWIONY PRZEZ ADMINA — tryb „maksymalny" asystenta.
-   *  Wychodzimy od konfiguracji, nigdy nie wybieramy modelu za admina (C-40). */
-  boostEffort?: boolean;
+  /**
+   * 034: poziom pracy asystenta. Wybiera ZESTAW ustawień: oszczędny/standardowy/maksymalny definiuje
+   * admin w `/admin/llm` (per typ operacji), `custom` to własny zestaw użytkownika (`UserLlmPref`).
+   * Zastąpił dawne `boostEffort` — o wysiłku decyduje teraz konfiguracja poziomu, a nie reguła
+   * ukryta w kodzie (C-40: dobór modelu zostaje po stronie konfiguracji).
+   */
+  level?: AssistantWorkLevel;
 }
 
 /**
- * 033: poziom wysiłku dla konkretnego ogniwa łańcucha. Kolejność: jawne nadpisanie → ustawienie
- * admina dla tego typu operacji (opcjonalnie podniesione o stopień w trybie „maksymalnym").
+ * 033/034: poziom wysiłku dla konkretnego ogniwa łańcucha. Kolejność: jawne nadpisanie w wywołaniu →
+ * ustawienie z konfiguracji rozwiązanej dla danego poziomu pracy.
  */
 export function resolveEffort(cfg: ResolvedLlm, opts: ChatOptions): LlmEffort {
   if (opts.effort) return opts.effort;
-  const base = parseEffort(cfg.effort ?? null);
-  return opts.boostEffort ? bumpEffort(base) : base;
+  return parseEffort(cfg.effort ?? null);
 }
 
 export type TokenUsage = {
@@ -244,7 +248,8 @@ export function anthropicBody(cfg: ResolvedLlm, opts: ChatOptions, stream: boole
 /** Jednorazowa odpowiedź (bez streamingu). */
 export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
   // Z-133: łańcuch [model admina → fallback Groq]. Próbujemy po kolei.
-  const chain = await resolveLlmChain(opts.op);
+  await ensurePricesLoaded();
+  const chain = await resolveLlmChain(opts.op, { level: opts.level, userId: opts.userId });
   if (chain.length === 0) return UNCONFIGURED;
   // Z-511: opcjonalny cache (identyczne wejście → identyczne wyjście).
   // 033: `effort` MUSI wchodzić do klucza cache — inaczej po zmianie ustawienia w /admin/llm
@@ -291,7 +296,7 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
     // łańcuch fallbacku i wywalił całego agenta z powodu opcjonalnego ustawienia.
     if (!res.ok && effortUsed !== "none" && isEffortRejection(res.status, res.message)) {
       console.warn(`[llm] ${opts.op}: model ${cfg.model} odrzucił parametr wysiłku — ponawiam bez niego`);
-      const plain: ChatOptions = { ...opts, effort: "none", boostEffort: false };
+      const plain: ChatOptions = { ...opts, effort: "none" };
       res = cfg.kind === "anthropic" ? await anthropicComplete(cfg, plain) : await openAiComplete(cfg, plain);
       effortUsed = "none";
     }
@@ -541,7 +546,8 @@ type StreamAttempt =
 export async function chatStream(opts: ChatOptions): Promise<Response> {
   // Z-133: ten sam łańcuch fallbacku co w chatComplete — przy błędzie przejściowym
   // (429/5xx/sieć) próbujemy kolejnego modelu, ZANIM strumień ruszy do klienta.
-  const chain = await resolveLlmChain(opts.op);
+  await ensurePricesLoaded();
+  const chain = await resolveLlmChain(opts.op, { level: opts.level, userId: opts.userId });
   if (chain.length === 0) return new Response(UNCONFIGURED.message, { status: 503 });
 
   let lastStatus = 502;
@@ -553,7 +559,7 @@ export async function chatStream(opts: ChatOptions): Promise<Response> {
     // wysiłku, a 400 jest nieprzejściowy, więc bez tego przerwałby łańcuch i oddał błąd klientowi.
     if (!attempt.ok && resolveEffort(cfg, opts) !== "none" && isEffortRejection(attempt.status, attempt.message)) {
       console.warn(`[llm] stream ${opts.op}: model ${cfg.model} odrzucił parametr wysiłku — ponawiam bez niego`);
-      const plain: ChatOptions = { ...opts, effort: "none", boostEffort: false };
+      const plain: ChatOptions = { ...opts, effort: "none" };
       attempt = cfg.kind === "anthropic" ? await anthropicStream(cfg, plain) : await openAiStream(cfg, plain);
     }
     if (attempt.ok) return attempt.response;

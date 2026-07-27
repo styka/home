@@ -2,7 +2,7 @@
 
 > Plik generowany przez `scripts/check-ai-coverage.js --report`. Nie edytuj ręcznie.
 
-Mutacje (zapis): **159 ai / 0 pending / 188 excluded**. Odczyty (podgląd danych): **64 ai / 0 pending / 85 excluded**.
+Mutacje (zapis): **159 ai / 0 pending / 194 excluded**. Odczyty (podgląd danych): **64 ai / 0 pending / 89 excluded**.
 
 Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `excluded` = nie dla AI (admin/ustawienia/wewnętrzne/interaktywne).
 
@@ -38,7 +38,7 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `getSystemCategories` | odczyt | ⛔ excluded | admin |
 | `updateSystemCategory` | zapis | ⛔ excluded | admin |
 
-## aiConversations — 0/6 wystawionych
+## aiConversations — 0/7 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
@@ -48,13 +48,18 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `getAiConversation` | odczyt | ⛔ excluded | internal |
 | `listAiConversations` | odczyt | ⛔ excluded | internal |
 | `renameAiConversation` | zapis | ⛔ excluded | internal |
+| `saveConversationDraft` | zapis | ⛔ excluded | internal |
 
-## assistantPrefs — 0/2 wystawionych
+## assistantPrefs — 0/6 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
+| `getAssistantLevelConfig` | odczyt | ⛔ excluded | settings |
 | `getAssistantPrefs` | odczyt | ⛔ excluded | settings |
+| `getSpeechOptions` | odczyt | ⛔ excluded | settings |
+| `resetUserLlmPrefs` | zapis | ⛔ excluded | settings |
 | `updateAssistantPrefs` | zapis | ⛔ excluded | settings |
+| `updateUserLlmPref` | zapis | ⛔ excluded | settings |
 
 ## calendar — 1/3 wystawionych
 
@@ -260,21 +265,26 @@ Legenda: `ai` = asystent to potrafi · `pending` = luka do domknięcia · `exclu
 | `renameList` | zapis | ✅ ai |  |
 | `unarchiveList` | zapis | ✅ ai | → unarchive_list |
 
-## llmConfig — 0/13 wystawionych
+## llmConfig — 0/18 wystawionych
 
 | Akcja | Rodzaj | Status | Uwaga |
 |---|---|---|---|
 | `applyAnthropicProfile` | zapis | ⛔ excluded | admin |
+| `applySpeechProvider` | zapis | ⛔ excluded | admin |
 | `createProvider` | zapis | ⛔ excluded | admin |
+| `deleteModelPrice` | zapis | ⛔ excluded | admin |
 | `deleteProvider` | zapis | ⛔ excluded | admin |
 | `getAiCostBreakdown` | odczyt | ⛔ excluded | admin |
 | `getAssignments` | odczyt | ⛔ excluded | admin |
 | `getCostAlertThreshold` | odczyt | ⛔ excluded | admin |
 | `getLlmProviders` | odczyt | ⛔ excluded | admin |
+| `getModelPrices` | odczyt | ⛔ excluded | admin |
 | `getRecentAiCalls` | odczyt | ⛔ excluded | admin |
+| `getSpeechConfig` | odczyt | ⛔ excluded | admin |
 | `getUsdPlnRate` | odczyt | ⛔ excluded | admin |
 | `setAssignment` | zapis | ⛔ excluded | admin |
 | `setCostAlertThreshold` | zapis | ⛔ excluded | admin |
+| `setModelPrice` | zapis | ⛔ excluded | admin |
 | `setUsdPlnRate` | zapis | ⛔ excluded | admin |
 | `updateProvider` | zapis | ⛔ excluded | admin |
 

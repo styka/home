@@ -135,7 +135,9 @@ export async function exportMyData(): Promise<UserDataExport> {
     prisma.task.findMany({ where: { createdById: userId, projectId: null } }),
     // notes
     prisma.note.findMany({ where: own, include: { tags: true, attachments: true, revisions: true } }),
-    prisma.noteGroup.findMany({ where: { notes: { some: { ownerId: userId } } } }),
+    // 034: grupy notatek mają własną kolumnę właściciela — eksportujemy TE użytkownika,
+    // a nie te, w których akurat leży jego notatka.
+    prisma.noteGroup.findMany({ where: { ownerId: userId } }),
     // kitchen
     prisma.recipe.findMany({ where: own, include: { ingredients: true, steps: true, tags: true, ratings: true } }),
     prisma.cookbook.findMany({ where: own }),

@@ -4,6 +4,61 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-27 — Koszt liczony z tokenów, których UI w ogóle nie pokazywał
+**Problem:** W rozbiciu kosztu pod odpowiedzią asystenta dwa wywołania tego samego modelu
+(claude-haiku-4-5) o podobnej liczbie tokenów miały kwoty różniące się dwudziestokrotnie:
+`router 317+15=332 tok. → $0,0004` obok `agent 181+125=306 tok. → $0,0090`. Wyglądało to jak błąd
+w liczeniu kosztów.
+**Rozwiązanie:** Rachunek się zgadzał — `estimateCostUsd` wliczał tokeny PAMIĘCI PODRĘCZNEJ promptu
+(zapis 1,25× ceny wejścia, odczyt 0,1×), ale rozbicie w UI pokazywało wyłącznie `prompt+completion`.
+Zgłoszone $0,0090 to ~6,5 tys. tokenów zapisu do cache przy 306 widocznych. Naprawa polegała na
+POKAZANIU wszystkich składowych (`estimateCost` zwraca `parts`, komponent wypisuje wejście / wyjście /
+zapis / odczyt), a nie na zmianie arytmetyki. Przy okazji cennik przeniesiono z kodu do bazy
+(`LlmModelPrice`), a model spoza cennika pokazuje „koszt nieznany" zamiast zera.
+**Lekcja:** Gdy użytkownik zgłasza „liczby się nie zgadzają", najpierw sprawdź, czy pokazujesz
+WSZYSTKIE dane wejściowe rachunku. Kwota, której nie da się odtworzyć z tego, co widać na ekranie,
+jest dla użytkownika błędem — nawet gdy jest poprawna. I nie licz kosztu jako 0 dla nieznanej stawki:
+zero to konkretna informacja („darmowe"), a nie brak informacji.
+
+## 2026-07-27 — Kursor pola tekstowego przebijający się nad rozwiniętym menu
+**Problem:** Menu wyboru poziomu pracy asystenta (`position: absolute`, `z-index: 6`) zachodziło na
+pole wpisywania wiadomości i migający kursor pola był widoczny NAD menu. Podbijanie `z-index` nic nie
+dawało.
+**Rozwiązanie:** To nie był problem warstw. Przyciski kompozytora mają `onPointerDown` +
+`preventDefault` (`keepKeyboardOpen`), żeby na telefonie nie znikała klawiatura — więc fokus ZOSTAJE
+w polu, a przeglądarka rysuje karetkę w warstwie kompozytora systemu, ponad HTML-em. Rozwiązanie:
+`caretColor: "transparent"` na czas otwartego menu (fokus i klawiatura zostają, znika sam kursor).
+**Lekcja:** Karetki tekstowej nie przykryjesz `z-index`-em — jest rysowana poza drzewem CSS. Gdy
+element nakłada się na sfokusowane pole, chowaj karetkę (`caretColor`), a nie podbijaj warstwy.
+Zanim zaczniesz licytować `z-index`, sprawdź, czy problem w ogóle dotyczy kontekstu nakładania.
+
+## 2026-07-27 — Model wymyślił parametr akcji, bo katalog nie miał jak wyrazić prośby
+**Problem:** W podglądzie akcji „dodaj notatkę do grupy" widniał techniczny parametr `groupName`.
+Szukanie go w kodzie nic nie dawało — nie było go ani w katalogu akcji, ani w kontrakcie, ani w
+executorze. Model go WYMYŚLIŁ, bo `create_note { title, content? }` nie przyjmowało grupy; executor
+parametr ignorował, więc notatka po cichu lądowała poza grupą.
+**Rozwiązanie:** Trzy warstwy: (1) katalog i executor przyjmują `groupName` (naprawa funkcji, nie
+tylko etykiety), (2) `fieldSpec()` ukrywa parametr bez polskiej etykiety zamiast pokazywać nazwę z
+kodu — bramka statyczna nie zna parametrów wymyślonych, (3) nowa bramka w `check-action-coverage.js`
+wymusza etykietę dla każdego parametru z katalogu.
+**Lekcja:** Techniczna nazwa w UI bywa objawem BRAKU w katalogu akcji, nie zapomnianej etykiety —
+sprawdź najpierw, czy akcja w ogóle przyjmuje to, o co prosi użytkownik. I pamiętaj, że bramka
+statyczna zabezpiecza tylko to, co jest w kodzie: przy danych generowanych przez model potrzebny jest
+dodatkowo bezpieczny domyślny wariant w runtime.
+
+## 2026-07-27 — Zmiana klucza głównego tabeli konfiguracyjnej w idempotentnej migracji
+**Problem:** Dodanie wymiaru „poziom" do `LlmAssignment` wymagało zamiany jednokolumnowego klucza
+głównego (`operationType`) na złożony (`operationType`, `level`) — na żywej tabeli, migracją, która
+musi dać się odpalić ponownie bez błędu.
+**Rozwiązanie:** `ADD COLUMN IF NOT EXISTS "level" TEXT NOT NULL DEFAULT 'standard'` (istniejące
+wiersze stają się poziomem standardowym), a podmiana klucza w bloku `DO $$` warunkowanym
+`array_length(conkey, 1) = 1` w `pg_constraint` — drugi przebieg widzi klucz już złożony i nic nie
+robi. Nowe indeksy unikalne tworzone PO backfillu właścicieli, żeby nie trafić na duplikaty.
+**Lekcja:** Idempotentność migracji na kluczach i ograniczeniach robi się przez sprawdzenie STANU w
+`pg_constraint`/`pg_indexes`, nie przez `IF NOT EXISTS` (którego `ADD CONSTRAINT` nie ma). Kolejność
+ma znaczenie: najpierw dane (backfill), potem ograniczenia unikalności.
+
+
 ## 2026-07-26 — Równoległa sesja zajęła ten sam numer speca i migracji
 **Problem:** Podczas pracy nad feature'em „effort/temperature" druga sesja zmergowała do `develop`
 inny feature też ponumerowany **032** (katalog TTS) razem z migracją **0210**. Moja gałąź miała

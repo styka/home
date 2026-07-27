@@ -101,17 +101,17 @@ async function main() {
 
   console.log(`Created list: ${list.name}`);
 
-  // Seed ItemHistory for backward compat
+  // Seed ItemHistory for backward compat.
+  // 034: podpowiedzi mają właściciela; seedowe zostają SYSTEMOWE (ownerId = null), więc widzi je
+  // każdy. Klucz złożony (ownerId, name) nie działa jako `where` dla NULL-a, stąd findFirst.
   for (const { name } of COMMON_ITEMS) {
-    await prisma.itemHistory.upsert({
-      where: { name: name.toLowerCase() },
-      update: {},
-      create: {
-        name: name.toLowerCase(),
-        category: categorize(name),
-        useCount: 1,
-      },
-    });
+    const key = name.toLowerCase();
+    const existing = await prisma.itemHistory.findFirst({ where: { ownerId: null, name: key } });
+    if (!existing) {
+      await prisma.itemHistory.create({
+        data: { name: key, category: categorize(name), useCount: 1 },
+      });
+    }
   }
 
   console.log(`Seeded ${COMMON_ITEMS.length} ItemHistory entries`);

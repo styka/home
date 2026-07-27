@@ -13,7 +13,7 @@ export function fmtAiCallTime(iso: string): string {
 }
 
 export function aiCallsToText(rows: AiCallLogRow[]): string {
-  const head = "czas | źródło | op | dostawca | model | wysiłek | ok | status | próby | prompt+compl=total tok | latency ms | conversationId | błąd";
+  const head = "czas | źródło | op | dostawca | model | wysiłek | ok | status | próby | prompt+compl=total tok | cache zapis/odczyt | latency ms | conversationId | błąd";
   const lines = rows.map((r) =>
     [
       fmtAiCallTime(r.createdAt),
@@ -27,6 +27,9 @@ export function aiCallsToText(rows: AiCallLogRow[]): string {
       r.status ?? "—",
       r.attempts,
       `${r.promptTokens}+${r.completionTokens}=${r.totalTokens}`,
+      // 034: tokeny pamięci podręcznej promptu są ROZLICZANE (zapis drożej niż wejście), więc bez
+      // nich kwota kosztu wygląda na wziętą z sufitu.
+      `${r.cacheWriteTokens}/${r.cacheReadTokens}`,
       r.latencyMs,
       r.conversationId ?? "—",
       r.errorText ? r.errorText.replace(/\s+/g, " ") : "",

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { requireAuth, ownedOrSystemWhere } from "@/lib/server-utils";
 import { categorize } from "@/lib/categorize";
 import { parseQuantity } from "@/lib/parseQuantity";
 import { assertListAccess } from "@/actions/lists";
@@ -33,15 +33,16 @@ export async function addItem(listId: string, rawText: string): Promise<Item> {
     data: { listId, name, quantity, unit, category, order: await nextCategoryOrder(listId, category) },
   });
 
+  // 034: podpowiedzi zakupowe należą do KONKRETNEGO konta — klucz to (właściciel, nazwa).
   await prisma.itemHistory.upsert({
-    where: { name: name.toLowerCase() },
+    where: { ownerId_name: { ownerId: user.id, name: name.toLowerCase() } },
     update: {
       useCount: { increment: 1 },
       category,
       unit: unit ?? undefined,
       updatedAt: new Date(),
     },
-    create: { name: name.toLowerCase(), category, unit: unit ?? null },
+    create: { ownerId: user.id, name: name.toLowerCase(), category, unit: unit ?? null },
   });
 
   await upsertUserProduct(name.toLowerCase(), unit ?? null, category);
@@ -137,11 +138,11 @@ export async function addItemStructured(
     data: { listId, name: trimmedName, quantity, unit, category: resolvedCategory, order: await nextCategoryOrder(listId, resolvedCategory) },
   });
 
-  // Update legacy ItemHistory
+  // Update legacy ItemHistory (034: per właściciel)
   await prisma.itemHistory.upsert({
-    where: { name: trimmedName },
+    where: { ownerId_name: { ownerId: user.id, name: trimmedName } },
     update: { useCount: { increment: 1 }, category: resolvedCategory, unit: unit ?? undefined, updatedAt: new Date() },
-    create: { name: trimmedName, category: resolvedCategory, unit },
+    create: { ownerId: user.id, name: trimmedName, category: resolvedCategory, unit },
   });
 
   // Update product catalog
@@ -177,12 +178,14 @@ export async function reorderItems(listId: string, category: string, orderedIds:
 }
 
 export async function getSuggestionsForPrefix(prefix: string): Promise<ItemHistory[]> {
-  // 031: `ItemHistory` to wspólny słownik podpowiedzi (bez właściciela), ale odczyt i tak
-  // wymaga zalogowania — aplikacja nie ma trybu anonimowego (C-22).
-  await requireAuth();
+  // 034: podpowiedzi zakupowe mają właściciela — użytkownik widzi SWOJE oraz systemowe
+  // (bez właściciela, sprzed migracji 0212). Cudzych nie widzi (C-21).
+  const user = await requireAuth();
   if (!prefix || prefix.length < 1) return [];
   return prisma.itemHistory.findMany({
-    where: { name: { contains: prefix.toLowerCase() } },
+    where: {
+      AND: [ownedOrSystemWhere(user.id, [], false), { name: { contains: prefix.toLowerCase() } }],
+    },
     orderBy: { useCount: "desc" },
     take: 8,
   });

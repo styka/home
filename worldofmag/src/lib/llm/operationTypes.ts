@@ -62,23 +62,43 @@ export function isOperationType(value: string): value is OperationType {
 }
 
 /**
- * 031: poziom pracy asystenta wybiera TYP OPERACJI, nigdy konkretny model — dobór modelu zostaje
- * w rękach administratora (`/admin/llm`, C-40). Tryb oszczędny kieruje wszystko do `dispatch`,
- * czyli do modelu przypisanego przez admina do najprostszych operacji (dla Anthropic to zwykle
- * Haiku).
+ * Poziom pracy asystenta w rozumieniu warstwy LLM (bez importu z `@/types`, żeby nie mieszać warstw).
  *
- * 033: tryb „maksymalny" NIE zmienia typu operacji — działa na modelu, który admin przypisał, ale
- * z podniesionym poziomem wysiłku (patrz `boostEffort` w `chatComplete`). Dzięki temu nadal to
- * admin decyduje, jaki model obsługuje daną operację.
+ * 034: `custom` = własny poziom użytkownika (`UserLlmPref`). Trzy pozostałe definiuje administrator
+ * w `/admin/llm` — każdy jako pełny zestaw ustawień per typ operacji.
  */
-export function effectiveOperation(op: OperationType, level: AssistantWorkLevel | undefined): OperationType {
-  return level === "economy" ? "dispatch" : op;
+export type AssistantWorkLevel = "standard" | "economy" | "max" | "custom";
+
+/**
+ * 034: poziomy definiowane przez ADMINA (bez `custom`, który należy do użytkownika).
+ * To zwykły `String` w bazie + union tutaj — żadnego enuma Prisma (C-12).
+ */
+export const CONFIG_LEVELS = ["economy", "standard", "max"] as const;
+export type ConfigLevel = (typeof CONFIG_LEVELS)[number];
+
+export const CONFIG_LEVEL_LABELS: Record<ConfigLevel, string> = {
+  economy: "Oszczędny",
+  standard: "Standardowy",
+  max: "Maksymalny",
+};
+
+export const CONFIG_LEVEL_DESCRIPTIONS: Record<ConfigLevel, string> = {
+  economy: "Najtańsza obsługa — do prostych pytań i szybkich poleceń.",
+  standard: "Domyślny zestaw modeli. Pozostałe poziomy dziedziczą z niego to, czego nie wypełnisz.",
+  max: "Najmocniejsza obsługa — do trudnych, wieloetapowych poleceń.",
+};
+
+export function isConfigLevel(value: string): value is ConfigLevel {
+  return (CONFIG_LEVELS as readonly string[]).includes(value);
 }
 
-/** Poziom pracy asystenta w rozumieniu warstwy LLM (bez importu z `@/types`, żeby nie mieszać warstw). */
-export type AssistantWorkLevel = "standard" | "economy" | "max";
+/** Poziom, z którego dziedziczą pozostałe (i do którego wracamy, gdy czegoś brakuje). */
+export const BASE_CONFIG_LEVEL: ConfigLevel = "standard";
 
-/** Czy dla tego poziomu podnosimy wysiłek ustawiony przez admina o jeden stopień. */
-export function shouldBoostEffort(level: AssistantWorkLevel | undefined): boolean {
-  return level === "max";
+/**
+ * Poziom pracy → poziom konfiguracji administratora. `custom` startuje od standardowego, bo
+ * ustawienia użytkownika są NAKŁADKĄ na niego (a `maxTokens` bierzemy stamtąd zawsze).
+ */
+export function configLevelFor(level: AssistantWorkLevel | undefined): ConfigLevel {
+  return level && level !== "custom" && isConfigLevel(level) ? level : BASE_CONFIG_LEVEL;
 }

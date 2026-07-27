@@ -128,6 +128,12 @@
     "reason": "internal",
     "access": "self"
   },
+  "assistantPrefs:getAssistantLevelConfig": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
   "assistantPrefs:getAssistantPrefs": {
     "kind": "read",
     "status": "excluded",
@@ -140,7 +146,17 @@
     "reason": "settings",
     "access": "self"
   },
+  "assistantPrefs:resetUserLlmPrefs": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
   "assistantPrefs:updateAssistantPrefs": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
+  "assistantPrefs:updateUserLlmPref": {
     "status": "excluded",
     "reason": "settings",
     "access": "self"
@@ -543,7 +559,7 @@
     "kind": "read",
     "status": "excluded",
     "reason": "settings",
-    "access": "shared"
+    "access": "owner"
   },
   "items:markAllInCart": {
     "status": "ai",
@@ -730,6 +746,11 @@
     "reason": "admin",
     "access": "admin"
   },
+  "llmConfig:deleteModelPrice": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
   "llmConfig:deleteProvider": {
     "status": "excluded",
     "reason": "admin",
@@ -759,13 +780,19 @@
     "reason": "admin",
     "access": "admin"
   },
-  "llmConfig:getSpeechConfig": {
+  "llmConfig:getModelPrices": {
     "kind": "read",
     "status": "excluded",
     "reason": "admin",
     "access": "admin"
   },
   "llmConfig:getRecentAiCalls": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "llmConfig:getSpeechConfig": {
     "kind": "read",
     "status": "excluded",
     "reason": "admin",
@@ -783,6 +810,11 @@
     "access": "admin"
   },
   "llmConfig:setCostAlertThreshold": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "llmConfig:setModelPrice": {
     "status": "excluded",
     "reason": "admin",
     "access": "admin"
@@ -995,23 +1027,23 @@
   "noteGroups:createNoteGroup": {
     "status": "ai",
     "action": "create_note_group",
-    "access": "shared"
+    "access": "owner"
   },
   "noteGroups:deleteNoteGroup": {
     "status": "ai",
     "action": "delete_note_group",
-    "access": "shared"
+    "access": "owner"
   },
   "noteGroups:getNoteGroups": {
     "kind": "read",
     "status": "ai",
     "action": "list_note_groups",
-    "access": "shared"
+    "access": "owner"
   },
   "noteGroups:updateNoteGroup": {
     "status": "ai",
     "action": "update_note_group",
-    "access": "shared"
+    "access": "owner"
   },
   "notes:addNoteAttachment": {
     "status": "excluded",
@@ -2102,23 +2134,23 @@
   "tags:createTag": {
     "status": "excluded",
     "reason": "dictionary",
-    "access": "shared"
+    "access": "owner"
   },
   "tags:deleteTag": {
     "status": "excluded",
     "reason": "dictionary",
-    "access": "shared"
+    "access": "owner"
   },
   "tags:getTags": {
     "kind": "read",
     "status": "ai",
     "action": "list_note_tags",
-    "access": "shared"
+    "access": "owner"
   },
   "tags:updateTag": {
     "status": "excluded",
     "reason": "dictionary",
-    "access": "shared"
+    "access": "owner"
   },
   "taskProjects:addProjectMember": {
     "status": "excluded",

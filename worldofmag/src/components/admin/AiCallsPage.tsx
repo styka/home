@@ -84,7 +84,7 @@ export function AiCallsPage({ initial }: { initial: AiCallLogRow[] }) {
             <table style={{ borderCollapse: "collapse", width: "100%" }}>
               <thead>
                 <tr style={{ background: "var(--bg-surface)", textAlign: "left", color: "var(--text-secondary)" }}>
-                  {["czas", "źródło", "op", "dostawca", "model", "wysiłek", "wynik", "próby", "tokeny (p+c=t)", "latency", "błąd"].map((h) => (
+                  {["czas", "źródło", "op", "dostawca", "model", "wysiłek", "wynik", "próby", "tokeny (p+c=t)", "cache (zap./odcz.)", "latency", "błąd"].map((h) => (
                     <th key={h} style={{ ...cell, fontWeight: 600 }}>{h}</th>
                   ))}
                 </tr>
@@ -106,6 +106,7 @@ export function AiCallsPage({ initial }: { initial: AiCallLogRow[] }) {
                     </td>
                     <td style={cell}>{r.attempts}</td>
                     <td style={cell}>{r.promptTokens}+{r.completionTokens}={r.totalTokens}</td>
+                    <td style={cell}>{r.cacheWriteTokens}/{r.cacheReadTokens}</td>
                     <td style={cell}>{r.latencyMs} ms</td>
                     <td style={{ ...cell, whiteSpace: "normal", maxWidth: 320, color: "var(--text-muted)" }}>{r.errorText ?? ""}</td>
                   </tr>

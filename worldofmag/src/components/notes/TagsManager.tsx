@@ -96,7 +96,7 @@ export function TagsManager({ tags }: TagsManagerProps) {
               ))}
             </div>
             {newName && (
-              <TagChip tag={{ id: "", name: newName, color: newColor, createdAt: new Date() }} size="sm" />
+              <TagChip tag={{ id: "", name: newName, color: newColor, createdAt: new Date(), ownerId: null, ownerTeamId: null }} size="sm" />
             )}
             <div className="flex gap-2">
               <button onClick={handleCreate} disabled={!newName.trim()}

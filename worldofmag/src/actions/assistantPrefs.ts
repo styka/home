@@ -11,6 +11,20 @@ import {
   type AssistantLevel,
   type AssistantVoiceKind,
 } from "@/types";
+import {
+  BASE_CONFIG_LEVEL,
+  OPERATION_TYPES,
+  OPERATION_TYPE_META,
+  isOperationType,
+} from "@/lib/llm/operationTypes";
+import { isSpeechOnlyKind, type ProviderKind } from "@/lib/llm/resolver";
+import {
+  LLM_EFFORT_LEVELS,
+  effortSupported,
+  parseEffort,
+  supportsTemperature,
+  type LlmEffort,
+} from "@/lib/llm/effort";
 
 // 031: ustawienia asystenta AI trzymane PER UŻYTKOWNIK (model `AssistantPref`), a nie w
 // pamięci przeglądarki — dzięki temu stałe preferencje i poziom pracy asystenta są te same
@@ -131,6 +145,156 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
     voiceKind: parseVoiceKind(row.voiceKind),
     voiceId: row.voiceId ?? null,
   };
+}
+
+// ─── 034: WŁASNY poziom pracy asystenta (per użytkownik) ────────────────────
+//
+// Użytkownik może zbudować własny zestaw ustawień per rodzaj działania: model, wysiłek i
+// temperaturę. Świadomie NIE dostaje limitu odpowiedzi (`maxTokens`) — to parametr kosztowo-
+// techniczny, który zostaje przy administratorze. Model wolno wybrać WYŁĄCZNIE z modeli, które
+// administrator już skonfigurował (C-40: to on decyduje, co w ogóle wolno wołać).
+
+export interface AssistantModelChoiceDTO {
+  /** Identyfikator wyboru = „providerId|model" (jedna wartość dla kontrolki select). */
+  key: string;
+  providerId: string;
+  model: string;
+  providerLabel: string;
+  providerKind: string;
+  /** Czy dla tego modelu ma sens suwak wysiłku / temperatury (AC-8). */
+  supportsEffort: boolean;
+  supportsTemperature: boolean;
+}
+
+export interface AssistantOperationPrefDTO {
+  operationType: string;
+  label: string;
+  description: string;
+  /** Ustawienia poziomu standardowego — punkt wyjścia, gdy użytkownik niczego nie zmieni. */
+  defaultKey: string | null;
+  defaultEffort: LlmEffort;
+  defaultTemperature: number | null;
+  /** Wybór użytkownika (null = „jak w poziomie standardowym"). */
+  key: string | null;
+  effort: LlmEffort | null;
+  temperature: number | null;
+}
+
+export interface AssistantLevelConfigDTO {
+  choices: AssistantModelChoiceDTO[];
+  operations: AssistantOperationPrefDTO[];
+}
+
+function choiceKey(providerId: string, model: string): string {
+  return `${providerId}|${model}`;
+}
+
+/**
+ * Katalog modeli dostępnych użytkownikowi + jego własne ustawienia per rodzaj działania.
+ * Katalog = modele przypisane przez administratora na DOWOLNYM poziomie (u włączonych dostawców
+ * z kluczem) — użytkownik nie wpisuje nazwy modelu z palca.
+ */
+export async function getAssistantLevelConfig(): Promise<AssistantLevelConfigDTO> {
+  const user = await requireAuth();
+  const [assignments, prefs] = await Promise.all([
+    prisma.llmAssignment.findMany({ include: { provider: true } }),
+    prisma.userLlmPref.findMany({ where: { userId: user.id } }),
+  ]);
+
+  const usable = assignments.filter(
+    (a) => a.model && a.provider.enabled && a.provider.apiKey && !isSpeechOnlyKind(a.provider.kind)
+  );
+  const byKey = new Map<string, AssistantModelChoiceDTO>();
+  for (const a of usable) {
+    const key = choiceKey(a.providerId, a.model!);
+    if (byKey.has(key)) continue;
+    byKey.set(key, {
+      key,
+      providerId: a.providerId,
+      model: a.model!,
+      providerLabel: a.provider.label,
+      providerKind: a.provider.kind,
+      supportsEffort: effortSupported(a.provider.kind as ProviderKind, a.model!),
+      supportsTemperature: supportsTemperature(a.provider.kind as ProviderKind),
+    });
+  }
+
+  const standard = new Map(
+    assignments.filter((a) => a.level === BASE_CONFIG_LEVEL).map((a) => [a.operationType, a])
+  );
+  const byOp = new Map(prefs.map((p) => [p.operationType, p]));
+
+  const operations = OPERATION_TYPES.filter((op) => op !== "speech").map((op) => {
+    const base = standard.get(op);
+    const pref = byOp.get(op);
+    return {
+      operationType: op,
+      label: OPERATION_TYPE_META[op].label,
+      description: OPERATION_TYPE_META[op].description,
+      defaultKey: base?.model ? choiceKey(base.providerId, base.model) : null,
+      defaultEffort: parseEffort(base?.effort),
+      defaultTemperature: base?.temperature ?? null,
+      key: pref?.model && pref.providerId ? choiceKey(pref.providerId, pref.model) : null,
+      effort: pref?.effort ? parseEffort(pref.effort) : null,
+      temperature: pref?.temperature ?? null,
+    };
+  });
+
+  return { choices: Array.from(byKey.values()), operations };
+}
+
+/**
+ * Zapis jednego rodzaju działania we własnym poziomie. Pola puste = „jak w poziomie standardowym".
+ * Model musi pochodzić z katalogu administratora — inaczej użytkownik mógłby wskazać dowolny
+ * (także nieistniejący albo drogi) model.
+ */
+export async function updateUserLlmPref(input: {
+  operationType: string;
+  /** „providerId|model" z katalogu; null = wróć do modelu z poziomu standardowego. */
+  key?: string | null;
+  effort?: string | null;
+  temperature?: number | null;
+}): Promise<void> {
+  const user = await requireAuth();
+  if (!isOperationType(input.operationType) || input.operationType === "speech") {
+    throw new Error("Nieznany rodzaj działania asystenta.");
+  }
+
+  let providerId: string | null = null;
+  let model: string | null = null;
+  if (input.key) {
+    const { choices } = await getAssistantLevelConfig();
+    const chosen = choices.find((c) => c.key === input.key);
+    if (!chosen) throw new Error("Ten model nie jest dostępny — wybierz jeden z listy.");
+    providerId = chosen.providerId;
+    model = chosen.model;
+  }
+
+  let effort: string | null = null;
+  if (input.effort != null && input.effort !== "") {
+    if (!LLM_EFFORT_LEVELS.includes(input.effort as LlmEffort)) throw new Error("Nieznany poziom wysiłku modelu.");
+    effort = input.effort === "none" ? null : input.effort;
+  }
+
+  const temperature = input.temperature ?? null;
+  if (temperature !== null && (!Number.isFinite(temperature) || temperature < 0 || temperature > 2)) {
+    throw new Error("Temperatura musi być liczbą z zakresu 0–2.");
+  }
+
+  const fields = { providerId, model, effort, temperature };
+  await prisma.userLlmPref.upsert({
+    where: { userId_operationType: { userId: user.id, operationType: input.operationType } },
+    create: { userId: user.id, operationType: input.operationType, ...fields },
+    update: fields,
+  });
+  revalidatePath("/");
+}
+
+/** Czyści cały własny poziom (powrót do ustawień administratora). */
+export async function resetUserLlmPrefs(): Promise<void> {
+  const user = await requireAuth();
+  await prisma.userLlmPref.deleteMany({ where: { userId: user.id } });
+  revalidatePath("/");
 }
 
 /**

@@ -253,6 +253,8 @@ function TagChipDoc() {
     color,
     createdAt: new Date(),
     updatedAt: new Date(),
+    ownerId: null,
+    ownerTeamId: null,
   }));
   const visible = mockTags.filter((t) => !removedIds.includes(t.id));
 

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getActivePlan } from "@/lib/plans";
-import { estimateCostUsd } from "@/lib/llm/pricing";
+import { estimateCost, estimateCostUsd } from "@/lib/llm/pricing";
 import { PERMISSIONS } from "@/lib/permissions";
 import { notifyUser } from "@/lib/notify";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
@@ -22,10 +22,18 @@ import type { TokenUsage } from "@/lib/llm/chat";
 export type UsageCall = {
   model: string;
   label?: string;
+  /** 034: typ operacji (dispatch/reasoning/…) — pokazujemy go w rozbiciu kosztu. */
+  operationType?: string;
   promptTokens: number;
   completionTokens: number;
+  /** 034: tokeny ODCZYTANE z cache promptu — rozliczane taniej, ale rozliczane. */
+  cacheReadTokens: number;
+  /** 034: tokeny ZAPISANE do cache promptu — rozliczane DROŻEJ niż zwykłe wejście. */
+  cacheWriteTokens: number;
   totalTokens: number;
   costUsd: number;
+  /** 034: `false` = model spoza cennika → „koszt nieznany", a nie „koszt zerowy". */
+  costKnown: boolean;
 };
 
 export type UsageMeter = {
@@ -36,16 +44,24 @@ export type UsageMeter = {
   cacheRead: number;
   cacheWrite: number;
   costUsd: number;
+  /** 034: `false`, gdy CHOĆ JEDNO wywołanie użyło modelu spoza cennika (suma jest zaniżona). */
+  costKnown: boolean;
   // 029: rozbicie per wywołanie — suma `costUsd` z `calls` == `meter.costUsd`.
   calls: UsageCall[];
 };
 
 export function newUsageMeter(): UsageMeter {
-  return { tokens: 0, promptTokens: 0, completionTokens: 0, cacheRead: 0, cacheWrite: 0, costUsd: 0, calls: [] };
+  return { tokens: 0, promptTokens: 0, completionTokens: 0, cacheRead: 0, cacheWrite: 0, costUsd: 0, costKnown: true, calls: [] };
 }
 
 /** Dolicza jedno wywołanie modelu do akumulatora (bezpieczne przy braku `usage`). */
-export function accrueUsage(meter: UsageMeter, usage: TokenUsage | undefined, model?: string, label?: string): void {
+export function accrueUsage(
+  meter: UsageMeter,
+  usage: TokenUsage | undefined,
+  model?: string,
+  label?: string,
+  operationType?: string
+): void {
   if (model) meter.model = model;
   if (!usage) return;
   meter.tokens += usage.total;
@@ -53,7 +69,7 @@ export function accrueUsage(meter: UsageMeter, usage: TokenUsage | undefined, mo
   meter.completionTokens += usage.completion;
   meter.cacheRead += usage.cacheRead ?? 0;
   meter.cacheWrite += usage.cacheWrite ?? 0;
-  const costUsd = estimateCostUsd(
+  const cost = estimateCost(
     {
       promptTokens: usage.prompt,
       completionTokens: usage.completion,
@@ -62,15 +78,21 @@ export function accrueUsage(meter: UsageMeter, usage: TokenUsage | undefined, mo
     },
     model ?? ""
   );
-  meter.costUsd += costUsd;
+  meter.costUsd += cost.usd;
+  if (!cost.known) meter.costKnown = false;
   // 029: dopisz wpis do rozbicia (suma tych wpisów == meter.costUsd).
+  // 034: razem z tokenami cache — bez nich kwoty w rozbiciu wyglądały na wzięte z sufitu.
   meter.calls.push({
     model: model ?? "?",
     label,
+    operationType,
     promptTokens: usage.prompt,
     completionTokens: usage.completion,
+    cacheReadTokens: usage.cacheRead ?? 0,
+    cacheWriteTokens: usage.cacheWrite ?? 0,
     totalTokens: usage.total,
-    costUsd,
+    costUsd: cost.usd,
+    costKnown: cost.known,
   });
 }
 

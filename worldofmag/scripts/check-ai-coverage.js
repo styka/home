@@ -186,11 +186,13 @@ if (process.argv.includes("--report")) {
   md += `sprawdza dodatkowo, czy w jej kodzie faktycznie wywoływany jest guard. Nowa akcja bez\n`;
   md += `deklaracji albo bez guardu **przerywa build**.\n\n`;
   md += `Akcji objętych kontrolą: **${candidates.length}**. Pozycji „brak guardu": **${noGuard.length}**.\n\n`;
-  md += `## Znane ograniczenia modelu danych\n\n`;
-  md += `- \`NoteGroup\` i \`Tag\` nie mają kolumny właściciela — grupy notatek i etykiety są WSPÓLNE dla\n`;
-  md += `  wszystkich kont (jak słowniki systemowe). Odczyt wymaga zalogowania; rozdzielenie ich na\n`;
-  md += `  właścicieli wymagałoby migracji i jest poza zakresem tej zmiany.\n`;
-  md += `- \`ItemHistory\` (podpowiedzi zakupów) jest wspólnym słownikiem nazw produktów.\n\n`;
+  md += `## Model własności słowników\n\n`;
+  md += `- \`NoteGroup\`, \`Tag\` i \`ItemHistory\` mają właściciela (migracja 0212). Grupy notatek i\n`;
+  md += `  etykiety mogą należeć do użytkownika albo do zespołu; podpowiedzi zakupowe są prywatne.\n`;
+  md += `- Rekord bez właściciela (\`ownerId\` i \`ownerTeamId\` puste) jest **systemowy**: widzi go każde\n`;
+  md += `  zalogowane konto, ale zmienić może go tylko administrator.\n`;
+  md += `- Unikalność nazwy etykiety i podpowiedzi zakupowej obowiązuje **w obrębie właściciela**, więc\n`;
+  md += `  dwoje użytkowników może mieć wpis o tej samej nazwie.\n\n`;
   for (const mod of Object.keys(byMod).sort()) {
     md += `## ${mod}\n\n| Akcja | Rodzaj | Zakres dostępu | Uwaga |\n|---|---|---|---|\n`;
     for (const r of byMod[mod].sort((a, b) => a.fn.localeCompare(b.fn))) {

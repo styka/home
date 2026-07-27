@@ -98,7 +98,72 @@ if (noContract.length > 0) {
   process.exit(1);
 }
 
+// 034: KOMPLETNOŚĆ ETYKIET PARAMETRÓW — użytkownik nie może zobaczyć w panelu „Przejrzyj / popraw"
+// technicznej nazwy pola (zgłoszenie: parametr `groupName` zamiast „Grupa notatek"). Wyciągamy nazwy
+// parametrów z sygnatur katalogu (`- akcja { p1, p2?, p3:"A"|"B" }`) i żądamy, by każda miała opis
+// po polsku: albo w `PARAM_LABELS`, albo w `fields` kontraktu SWOJEJ akcji.
+// Wyjątki: `…Id` (i tak ukrywane), `openAfter`/`searchQuery` (metaparametry opisane osobno).
+const PARAM_EXEMPT = new Set(["openAfter", "searchQuery"]);
+
+const paramsByAction = new Map();
+for (const m of catalogText.matchAll(/^\s*-\s+([a-z][a-z0-9_]*)\s*\{([^}]*)\}/gm)) {
+  const [, action, body] = m;
+  const names = paramsByAction.get(action) ?? new Set();
+  for (const part of body.split(",")) {
+    const nm = part.trim().match(/^([a-zA-Z][a-zA-Z0-9_]*)/);
+    if (nm) names.add(nm[1]);
+  }
+  paramsByAction.set(action, names);
+}
+
+// Wspólny słownik etykiet.
+const paramLabels = new Set();
+const plStart = contractSrc.indexOf("export const PARAM_LABELS");
+const plEnd = contractSrc.indexOf("\n};", plStart);
+if (plStart !== -1 && plEnd !== -1) {
+  for (const m of contractSrc.slice(plStart, plEnd).matchAll(/^ {2}([a-zA-Z][a-zA-Z0-9_]*):/gm)) {
+    paramLabels.add(m[1]);
+  }
+}
+
+// Etykiety per akcja: blok `<akcja>: { label: "…", fields: { <pole>: … } }` w ACTION_CONTRACTS.
+const fieldsByAction = new Map();
+if (cStart !== -1 && cEnd !== -1) {
+  const body = contractSrc.slice(cStart, cEnd);
+  for (const m of body.matchAll(/^ {2}([a-z][a-z0-9_]*):\s*\{([\s\S]*?)\n {2}\},?$/gm)) {
+    const [, action, entry] = m;
+    const fieldsIdx = entry.indexOf("fields:");
+    if (fieldsIdx === -1) continue;
+    const names = new Set();
+    for (const f of entry.slice(fieldsIdx).matchAll(/([a-zA-Z][a-zA-Z0-9_]*)\s*:\s*(?:f|sel|num|bool|day|dt|longText)\(/g)) {
+      names.add(f[1]);
+    }
+    fieldsByAction.set(action, names);
+  }
+}
+
+const unlabelled = [];
+for (const [action, names] of paramsByAction) {
+  for (const name of names) {
+    if (/Id$/.test(name) || PARAM_EXEMPT.has(name)) continue;
+    if (paramLabels.has(name)) continue;
+    if (fieldsByAction.get(action)?.has(name)) continue;
+    unlabelled.push(`${action}.${name}`);
+  }
+}
+
+if (unlabelled.length > 0) {
+  console.error("\n✖ Kontrakt akcji: parametry BEZ polskiej etykiety (użytkownik zobaczyłby nazwę z kodu):");
+  console.error("  " + unlabelled.sort().join(", "));
+  console.error(
+    "\n  Dopisz etykietę do `PARAM_LABELS` w src/lib/ai/actionContract.ts (gdy nazwa znaczy to samo\n" +
+      "  w wielu akcjach) albo do `fields` konkretnej akcji (gdy potrzebuje własnej etykiety/kontrolki).\n"
+  );
+  process.exit(1);
+}
+
 console.log(
   `✓ Spójność akcji asystenta: ${catalog.size} akcji w katalogu, wszystkie obsługiwane przez executor ` +
-    `i opisane w kontrakcie (${contracted.size} wpisów).`
+    `i opisane w kontrakcie (${contracted.size} wpisów); ` +
+    `${[...paramsByAction.values()].reduce((n, s) => n + s.size, 0)} parametrów z etykietami po polsku.`
 );
