@@ -59,7 +59,7 @@
   wyborze poziomu `custom`.
   *Gotowe, gdy:* klik w wiersz wybiera poziom, klik w ikonę otwiera konfigurację. **(AC-2)**
 
-- [ ] **T-7** — **Uproszczenie konfiguracji** (Z1a, Z1c): usuń suwak jakość↔koszt
+- [x] **T-7** — **Uproszczenie konfiguracji** (Z1a, Z1c): usuń suwak jakość↔koszt
   (`setEffortForAll`, `EFFORT_INDEX`, `sharedEffort`) oraz rozwijane „Ustawienia zaawansowane";
   z listy modeli usuń opcję „Jak u administratora", a pola wypełniaj wstępnie wartością z poziomu
   standardowego (`op.key ?? op.defaultKey`). Gdy administrator nie przypisał modelu — czytelny
@@ -67,17 +67,17 @@
   *Gotowe, gdy:* w ustawieniach asystenta nie ma już suwaka ani ustawień per rodzaj działania, a w
   konfiguracji poziomu nie da się wybrać „jak u administratora". **(AC-1, AC-4)**
 
-- [ ] **T-8** — **Układ mobilny konfiguracji** (Z1d): siatka `grid-cols-1 md:grid-cols-3`, kontrolki
+- [x] **T-8** — **Układ mobilny konfiguracji** (Z1d): siatka `grid-cols-1 md:grid-cols-3`, kontrolki
   `width: 100%` + `minWidth: 0`, cele dotyku `py-3`, bezpieczny margines dolny.
   *Gotowe, gdy:* przy 320 px wszystko mieści się w szerokości i nie ma przewijania w poziomie. **(AC-5)**
 
-- [ ] **T-9** — **Panel kosztu mieszczący się w oknie** (Z2): w `AiCostBadge.tsx` policz pozycję po
+- [x] **T-9** — **Panel kosztu mieszczący się w oknie** (Z2): w `AiCostBadge.tsx` policz pozycję po
   otwarciu z `getBoundingClientRect()` przycisku i szerokości okna — wybierz stronę z większym zapasem
   i przytnij przesunięcie do marginesu 8 px z obu stron; przelicz na `resize`/`orientationchange`.
   *Gotowe, gdy:* panel nie wychodzi poza ekran ani przy kwocie przy lewej, ani przy prawej krawędzi.
   **(AC-6, AC-8)**
 
-- [ ] **T-10** — **Przewijanie poziome wewnątrz panelu** (Z2): `overflow-x: auto` na liście wywołań,
+- [x] **T-10** — **Przewijanie poziome wewnątrz panelu** (Z2): `overflow-x: auto` na liście wywołań,
   wiersze `min-width: max-content`, twardy sufit `max-width: min(360px, calc(100vw - 16px))`.
   *Gotowe, gdy:* przy wąskim ekranie zawartość przewija się w panelu, a strona pod spodem stoi. **(AC-7)**
 

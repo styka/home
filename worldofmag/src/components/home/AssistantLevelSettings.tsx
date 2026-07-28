@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import {
   getAssistantLevelConfig,
   updateUserLlmPref,
@@ -14,16 +14,14 @@ import { LLM_EFFORT_LABELS, LLM_EFFORT_LEVELS, type LlmEffort } from "@/lib/llm/
 /**
  * 034: ustawienia WŁASNEGO poziomu pracy asystenta.
  *
- * UX wzorowany na tym, jak robią to inne czaty AI: domyślnie widać JEDEN suwak „szybko ↔ dokładnie"
- * (wysiłek modelu dla całego asystenta), a szczegóły per rodzaj działania — model i temperatura —
- * chowają się pod „Ustawienia zaawansowane". Dzięki temu przeciętne użycie to jedno przeciągnięcie
- * suwaka, a pełna kontrola nadal jest o jedno kliknięcie dalej.
+ * 035: komponent jest OSOBNYM widokiem (sekcja `level` w oknie asystenta), otwieranym ikoną przy
+ * pozycji „Własny" w menu poziomu — a nie sekcją schowaną w ustawieniach asystenta, gdzie nie dało
+ * się go przewinąć. Zniknął też suwak „szybko ↔ dokładnie": mieszał wysiłek wszystkich rodzajów
+ * działań naraz i nie niósł żadnej informacji, której nie ma niżej.
  *
  * Limitu odpowiedzi (tokenów) użytkownik NIE ustawia — to parametr kosztowo-techniczny
  * administratora.
  */
-
-const EFFORT_INDEX: Record<LlmEffort, number> = { none: 0, low: 1, medium: 2, high: 3 };
 
 const inputStyle: React.CSSProperties = {
   width: "100%", fontSize: 13, padding: "7px 9px", borderRadius: 8,
@@ -49,7 +47,6 @@ function capabilitiesFor(config: AssistantLevelConfigDTO, op: AssistantOperation
 
 export function AssistantLevelSettings() {
   const [config, setConfig] = useState<AssistantLevelConfigDTO | null>(null);
-  const [advanced, setAdvanced] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -77,12 +74,6 @@ export function AssistantLevelSettings() {
     });
   }
 
-  /** Jeden suwak dla całego asystenta — ustawia ten sam wysiłek każdemu rodzajowi działania. */
-  function setEffortForAll(effort: LlmEffort) {
-    if (!config) return;
-    for (const op of config.operations) save(op, { effort });
-  }
-
   function reset() {
     setError(null);
     startTransition(async () => {
@@ -108,81 +99,50 @@ export function AssistantLevelSettings() {
     );
   }
 
-  // Wspólny wysiłek pokazujemy tylko wtedy, gdy wszystkie rodzaje działań mają go takiego samego.
-  const efforts = config.operations.map((o) => o.effort ?? o.defaultEffort);
-  const sharedEffort = efforts.every((e) => e === efforts[0]) ? efforts[0] : null;
-  const anySupportsEffort = config.operations.some((o) => capabilitiesFor(config, o).effort);
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div>
-        <label htmlFor="assistant-effort-slider" style={labelStyle}>
-          Jak dokładnie ma pracować asystent
-        </label>
-        <input
-          id="assistant-effort-slider"
-          type="range"
-          min={0}
-          max={3}
-          step={1}
-          value={sharedEffort ? EFFORT_INDEX[sharedEffort] : 0}
-          onChange={(e) => setEffortForAll(LLM_EFFORT_LEVELS[Number(e.target.value)])}
-          disabled={!anySupportsEffort}
-          style={{ width: "100%", accentColor: "var(--accent-blue)" }}
-        />
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "var(--text-muted)" }}>
-          <span>Szybko i tanio</span>
-          <span>Dokładnie i drożej</span>
-        </div>
-        <p style={{ fontSize: 11.5, color: "var(--text-secondary)", margin: "6px 0 0" }}>
-          {sharedEffort
-            ? `Wysiłek modelu: ${LLM_EFFORT_LABELS[sharedEffort]}.`
-            : "Wysiłek ustawiony osobno dla różnych rodzajów działań (patrz ustawienia zaawansowane)."}
-          {!anySupportsEffort && " Wybrane modele nie obsługują regulacji wysiłku — suwak nic nie zmieni."}
-        </p>
-      </div>
+      <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>
+        Ustaw model, wysiłek i temperaturę osobno dla każdego rodzaju działania asystenta. Wartości
+        startowe pochodzą z poziomu standardowego — zmieniasz tylko to, co chcesz mieć inaczej.
+      </p>
 
-      <button
-        onClick={() => setAdvanced((v) => !v)}
-        aria-expanded={advanced}
-        style={{
-          display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)",
-          background: "none", border: "none", cursor: "pointer", padding: 0,
-        }}
-      >
-        {advanced ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-        {advanced ? "Ukryj ustawienia zaawansowane" : "Ustawienia zaawansowane (model per rodzaj działania)"}
-      </button>
+      {config.operations.map((op) => {
+        const caps = capabilitiesFor(config, op);
+        const effort = op.effort ?? op.defaultEffort;
+        // 035: pole modelu jest zawsze WYPEŁNIONE — startuje od wartości poziomu standardowego.
+        // Wcześniej pierwszą pozycją listy było „Jak u administratora", co dla użytkownika nic nie
+        // znaczyło i ukrywało realnie działający model.
+        const modelValue = op.key ?? op.defaultKey ?? "";
+        return (
+          <div
+            key={op.operationType}
+            style={{ padding: "12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-surface)", minWidth: 0 }}
+          >
+            <div style={{ fontSize: 13, color: "var(--text-primary)" }}>{op.label}</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.4 }}>{op.description}</div>
 
-      {advanced && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {config.operations.map((op) => {
-            const caps = capabilitiesFor(config, op);
-            const effort = op.effort ?? op.defaultEffort;
-            return (
-              <div
-                key={op.operationType}
-                style={{ padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-surface)" }}
-              >
-                <div style={{ fontSize: 13, color: "var(--text-primary)" }}>{op.label}</div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.4 }}>{op.description}</div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 8 }}>
-                  <div>
+            {modelValue === "" ? (
+              <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>
+                Administrator nie przypisał modelu do tego rodzaju działania, więc nie ma tu czego
+                ustawiać. Pojawi się, gdy przypisanie powstanie w panelu LLM.
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 8, minWidth: 0 }}>
+                  <div style={{ minWidth: 0 }}>
                     <label style={labelStyle}>Model</label>
                     <select
                       style={inputStyle}
-                      value={op.key ?? ""}
-                      onChange={(e) => save(op, { key: e.target.value || null })}
+                      value={modelValue}
+                      onChange={(e) => save(op, { key: e.target.value })}
                     >
-                      <option value="">Jak u administratora</option>
                       {config.choices.map((c) => (
                         <option key={c.key} value={c.key}>{c.model} — {c.providerLabel}</option>
                       ))}
                     </select>
                   </div>
 
-                  <div style={{ opacity: caps.effort ? 1 : 0.55 }}>
+                  <div style={{ minWidth: 0, opacity: caps.effort ? 1 : 0.55 }}>
                     <label style={labelStyle}>Wysiłek</label>
                     <select
                       style={inputStyle}
@@ -196,7 +156,7 @@ export function AssistantLevelSettings() {
                     </select>
                   </div>
 
-                  <div style={{ opacity: caps.temperature ? 1 : 0.55 }}>
+                  <div style={{ minWidth: 0, opacity: caps.temperature ? 1 : 0.55 }}>
                     <label style={labelStyle}>Temperatura (0–2)</label>
                     <input
                       style={inputStyle}
@@ -218,23 +178,24 @@ export function AssistantLevelSettings() {
                     {!caps.temperature && "Ten dostawca ignoruje temperaturę."}
                   </p>
                 )}
-              </div>
-            );
-          })}
+              </>
+            )}
+          </div>
+        );
+      })}
 
-          <button
-            onClick={reset}
-            disabled={isPending}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start",
-              fontSize: 12, padding: "7px 11px", borderRadius: 8, border: "1px solid var(--border)",
-              background: "none", color: "var(--text-muted)", cursor: "pointer",
-            }}
-          >
-            <RotateCcw size={13} /> Przywróć ustawienia administratora
-          </button>
-        </div>
-      )}
+      <button
+        onClick={reset}
+        disabled={isPending}
+        className="py-3"
+        style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+          fontSize: 12.5, padding: "0 12px", minHeight: 44, borderRadius: 8,
+          border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer",
+        }}
+      >
+        <RotateCcw size={13} /> Przywróć ustawienia administratora
+      </button>
 
       {error && <p style={{ fontSize: 11.5, color: "var(--accent-red)", margin: 0 }}>{error}</p>}
     </div>
