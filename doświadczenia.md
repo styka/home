@@ -4,6 +4,43 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-28 — Karetka na iPhonie skacze, bo układ zmienia się w momencie pojawienia klawiatury
+**Problem:** Po kliknięciu w pole wiadomości asystenta na iPhonie kursor pojawiał się raz PONAD polem,
+raz bardzo nisko, a po wpisaniu pierwszego znaku wskakiwał na właściwe miejsce.
+**Rozwiązanie:** Winne było „sprytne" rozwiązanie safe-area: stopka kompozytora miała
+`paddingBottom: composerFocused ? undefined : "max(0.75rem, env(safe-area-inset-bottom))"`, czyli
+wysokość elementu zmieniała się DOKŁADNIE w tej klatce, w której iOS animuje klawiaturę i wylicza
+pozycję karetki. Naprawa: stały, bezwarunkowy `padding-bottom` (stan `composerFocused` usunięty).
+**Lekcja:** Nie zmieniaj wysokości/paddingu elementu w reakcji na fokus pola tekstowego na iOS —
+przeglądarka liczy pozycję karetki w trakcie animacji klawiatury i dostaje nieaktualny układ. Margines
+na systemową kreskę iPhone'a ma być stały; „oszczędzanie" go przy otwartej klawiaturze kosztuje więcej
+niż daje.
+
+## 2026-07-28 — Pamięć podręczna promptu, która nigdy nie trafia, podnosi koszt o 25%
+**Problem:** W logu każde wywołanie agenta miało `cache zapis/odczyt` = `5284/0` — prompt był
+zapisywany do pamięci podręcznej dostawcy przy KAŻDYM wywołaniu i nigdy z niej nie czytany.
+**Rozwiązanie (diagnoza; wdrożenie świadomie odłożone do decyzji właściciela):** prefiks systemowy jest
+budowany dynamicznie — `buildSystemPrompt(selectedModules)` wstawia katalog akcji tylko tych modułów,
+które wybrał router, więc przy innym poleceniu prefiks jest INNY i nie ma czego trafić. Zapis kosztuje
+1,25× ceny wejścia, odczyt 0,1× — przy zerowej trafialności to czysta nadpłata 25% na każdym wywołaniu.
+**Lekcja:** `cache_control` opłaca się tylko dla prefiksu STAŁEGO między wywołaniami. Zanim oznaczysz
+prompt jako cache'owany, sprawdź w logach stosunek zapisów do odczytów — sam zapis bez odczytu jest
+droższy niż brak pamięci podręcznej. Gdy prompt ma część stałą i zmienną, cache'uj wyłącznie stały
+prefiks, a zmienne katalogi trzymaj za nim.
+
+## 2026-07-28 — Bramka jako test kompletności refaktoru
+**Problem:** Prompty agenta (katalog akcji, protokół, zasady) siedziały w pliku trasy Next.js, który
+nie może eksportować nic poza handlerami — więc nie dało się ich zaimportować ani policzyć bez
+przepisywania ręcznie. Audyt zużycia tokenów wymagał dokładnie tej treści, którą dostaje model.
+**Rozwiązanie:** Przeniesienie 1:1 do `src/lib/ai/agentPrompt.ts`. Bramka `check-action-coverage.js`
+czytała katalog z pliku trasy po `indexOf("const ACTION_CATALOG")`, więc po przenosinach od razu
+pokazała **15 akcji zamiast 160** — czyli natychmiast wykryła, że przeniesienie zmieniło powierzchnię.
+Po przestawieniu bramki na nowy plik znów 160 akcji i 373 parametry.
+**Lekcja:** Statyczna bramka czytająca konkretny plik jest darmowym testem kompletności refaktoru —
+jej „fałszywy alarm" po przenosinach to sygnał, że coś REALNIE się przesunęło. Przy takich zmianach
+dowód neutralności warto zrobić wprost: porównać treść bloku przed i po (`git show`), znak po znaku.
+
+
 ## 2026-07-27 — Koszt liczony z tokenów, których UI w ogóle nie pokazywał
 **Problem:** W rozbiciu kosztu pod odpowiedzią asystenta dwa wywołania tego samego modelu
 (claude-haiku-4-5) o podobnej liczbie tokenów miały kwoty różniące się dwudziestokrotnie:

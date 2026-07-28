@@ -92,8 +92,9 @@ type Turn =
 // Tryb rozmowy głosowej (magiczna ikona → hands-free). String-union, nie enum (C-12).
 type VoiceState = "off" | "listening" | "thinking" | "speaking";
 
-/** 034: sekcje nagłówka asystenta — otwarta może być najwyżej JEDNA naraz. */
-type HeaderPanel = "none" | "prefs" | "report" | "history";
+/** 034: sekcje nagłówka asystenta — otwarta może być najwyżej JEDNA naraz.
+ *  035: doszła sekcja `level` — konfiguracja WŁASNEGO poziomu pracy, otwierana ikoną z menu poziomu. */
+type HeaderPanel = "none" | "prefs" | "report" | "history" | "level";
 
 // Wąskie, jednoznaczne frazy głosowe do sterowania kartą akcji (gdy jest aktywna, niepotwierdzona).
 // Wszystko inne = zwykła rozmowa/korekta (idzie do agenta).
@@ -315,11 +316,6 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   const [busy, setBusy] = useState(false);
   const [liveThoughts, setLiveThoughts] = useState<string[]>([]); // myśli agenta na żywo (streaming)
   const [error, setError] = useState<string | null>(null);
-  // Czy pole kompozytora ma fokus (klawiatura ekranowa otwarta). Gdy piszesz, NIE
-  // dokładamy dolnego marginesu safe-area — dodatkowy padding pod fokusowanym polem
-  // w bottom-sheecie iOS rozjeżdża karetkę (kursor „nad polem"). Margines na kreskę
-  // iPhone potrzebny jest tylko przy ZAMKNIĘTEJ klawiaturze (pole u samego dołu).
-  const [composerFocused, setComposerFocused] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   // Odczyt postów Asystenta na głos — id posta aktualnie czytanego (jeden głos naraz).
   const [speakingId, setSpeakingId] = useState<string | null>(null);
@@ -353,6 +349,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   // więc nie potrzebujemy dodatkowego zapytania do bazy tylko po tytuł.
   const [lastConversationId, setLastConversationId] = useState<string | null>(null);
   const [lastConversationLabel, setLastConversationLabel] = useState<string>("");
+  // 035: skrót „wróć do poprzedniej rozmowy" da się ODRZUCIĆ — inaczej wisiał w kółko i zabierał
+  // miejsce w czacie komuś, kto wracać nie zamierza. Odrzucenie żyje do końca sesji; sama rozmowa
+  // zostaje w historii, więc nic nie ginie.
+  const [lastConversationDismissed, setLastConversationDismissed] = useState(false);
 
   /**
    * 034: sekcje nagłówka (ustawienia / zgłoszenie problemu / historia) trzymamy w JEDNYM stanie,
@@ -808,12 +808,20 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     void updateAssistantPrefs({ voiceKind: "browser", voiceId: null }).catch(() => {});
   }
 
+  /** 035: ikona przy pozycji „Własny" — wybiera ten poziom i od razu otwiera jego konfigurację. */
+  function openLevelSettings() {
+    setShowLevelMenu(false);
+    if (level !== "custom") {
+      setLevel("custom");
+      void updateAssistantPrefs({ level: "custom" }).catch(() => {});
+    }
+    setHeaderPanel("level");
+  }
+
   // Zmiana poziomu pracy asystenta — zapis natychmiastowy (to jedno kliknięcie, nie pisanie).
   function changeLevel(next: AssistantLevel) {
     setLevel(next);
     setShowLevelMenu(false);
-    // 034: wybór poziomu „Własny" bez pokazania jego ustawień byłby ślepym zaułkiem — otwieramy je od razu.
-    if (next === "custom") setHeaderPanel("prefs");
     void updateAssistantPrefs({ level: next }).catch(() => {});
   }
 
@@ -870,6 +878,8 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   function resetConversation() {
     saveDraftNow();
     collapseSections();
+    // 035: nowa rozmowa = nowy powód, by pokazać skrót (poprzednie odrzucenie już nie obowiązuje).
+    setLastConversationDismissed(false);
     // 032: świadome „Nowa rozmowa" też czyni poprzednią historyczną — udostępniamy do niej powrót
     // jednym dotknięciem (ta sama ścieżka co po zamknięciu asystenta).
     if (convoIdRef.current && turnsRef.current.length > 0) {
@@ -1522,28 +1532,46 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 bywa długi). Pokazujemy go tylko wtedy, gdy jest po co wracać, a bieżący wątek jest
                 pusty. `minWidth: 0` + ellipsis gwarantują, że długi tytuł się przycina zamiast
                 rozciągać arkusz. */}
-            {lastConversationId && turns.length === 0 && headerPanel === "none" && (
-              <button
-                onClick={() => loadConversation(lastConversationId)}
-                title={`Wróć do rozmowy: ${lastConversationLabel}`}
-                aria-label={`Wróć do poprzedniej rozmowy: ${lastConversationLabel}`}
+            {lastConversationId && !lastConversationDismissed && turns.length === 0 && headerPanel === "none" && (
+              <div
                 className="flex-shrink-0"
                 style={{
-                  display: "flex", alignItems: "center", gap: 6, width: "100%", minWidth: 0, minHeight: 40,
-                  padding: "0 20px", border: "none", borderBottom: "1px solid var(--border)",
-                  background: "var(--bg-base)", color: "var(--text-secondary)", cursor: "pointer",
-                  fontSize: 12, textAlign: "left",
+                  display: "flex", alignItems: "center", width: "100%", minWidth: 0, minHeight: 40,
+                  borderBottom: "1px solid var(--border)", background: "var(--bg-base)",
                 }}
               >
-                <CornerUpLeft size={13} style={{ flexShrink: 0 }} />
-                <span style={{ color: "var(--text-muted)", flexShrink: 0 }}>Wróć do:</span>
-                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lastConversationLabel}</span>
-              </button>
+                <button
+                  onClick={() => loadConversation(lastConversationId)}
+                  title={`Wróć do rozmowy: ${lastConversationLabel}`}
+                  aria-label={`Wróć do poprzedniej rozmowy: ${lastConversationLabel}`}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0, minHeight: 40,
+                    padding: "0 8px 0 20px", border: "none", background: "none",
+                    color: "var(--text-secondary)", cursor: "pointer", fontSize: 12, textAlign: "left",
+                  }}
+                >
+                  <CornerUpLeft size={13} style={{ flexShrink: 0 }} />
+                  <span style={{ color: "var(--text-muted)", flexShrink: 0 }}>Wróć do:</span>
+                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lastConversationLabel}</span>
+                </button>
+                <button
+                  onClick={() => setLastConversationDismissed(true)}
+                  title="Ukryj ten skrót"
+                  aria-label="Ukryj skrót do poprzedniej rozmowy"
+                  style={{
+                    flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                    width: 40, minHeight: 40, border: "none", background: "none",
+                    color: "var(--text-muted)", cursor: "pointer",
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
             )}
 
             {/* Panel zgłaszania problemu z Asystentem AI — dostępny dla każdego usera; tworzy zadanie w projekcie „Omnia" */}
             {showReport && (
-              <div className="px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-base)" }}>
+              <div className="flex-1 overflow-y-auto px-5 py-4" style={{ background: "var(--bg-base)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
                 {reportDone ? (
                   <div style={{ fontSize: 13, color: "var(--text-primary)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
@@ -1588,7 +1616,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
 
             {/* Panel ustawień asystenta (custom instructions + głos lektora) */}
             {showPrefs && (
-              <div className="px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-base)" }}>
+              <div className="flex-1 overflow-y-auto px-5 py-4" style={{ background: "var(--bg-base)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
                   Stałe preferencje (asystent uwzględnia je w każdym poleceniu)
                 </label>
@@ -1599,17 +1627,6 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                   placeholder={'Np. „Domyślnie dodawaj do listy Tygodniowe. Kwoty w PLN. Pisz zwięźle."'}
                   style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none", resize: "vertical" }}
                 />
-
-                {/* 034: własny poziom pracy — pokazujemy TYLKO, gdy użytkownik go wybrał. Inaczej
-                    sekcja ustawień rozrastałaby się o rzeczy, które i tak nie działają. */}
-                {level === "custom" && (
-                  <div style={{ marginTop: 12 }}>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
-                      Własny poziom pracy asystenta
-                    </label>
-                    <AssistantLevelSettings />
-                  </div>
-                )}
 
                 {/* 031: wybór głosu lektora — jedna lista: głosy SERWEROWE (jeśli administrator je
                     włączył; działają w każdej przeglądarce) + głosy systemu użytkownika. Lista
@@ -1664,7 +1681,19 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
               </div>
             )}
 
-            {/* Body: historia LUB wątek */}
+            {/* 035: konfiguracja WŁASNEGO poziomu pracy — własna sekcja, otwierana ikoną przy pozycji
+                „Własny" w menu poziomu. Wcześniej siedziała w środku ustawień asystenta, gdzie nie
+                dało się jej przewinąć (widać było tylko pierwszy rodzaj działania). */}
+            {headerPanel === "level" && (
+              <div className="flex-1 overflow-y-auto px-5 py-4" style={{ background: "var(--bg-base)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+                <AssistantLevelSettings />
+              </div>
+            )}
+
+            {/* Body: dokładnie JEDNA sekcja naraz — historia, panel nagłówka albo wątek rozmowy.
+                035: panele („ustawienia", „zgłoś problem", „własny poziom") zajmują miejsce wątku, tak
+                jak od dawna robi to historia. Wcześniej wciskały się NAD wątek jako `flex-shrink-0`,
+                więc nie miały własnego przewijania i dłuższa treść była po prostu ucinana. */}
             {showHistory ? (
               <div className="flex-1 overflow-y-auto px-3 py-3" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {conversations.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 16 }}>Brak zapisanych rozmów.</p>}
@@ -1692,7 +1721,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                   </div>
                 ))}
               </div>
-            ) : (
+            ) : headerPanel !== "none" ? null : (
               <div ref={scrollRef} aria-live="polite" className="flex-1 overflow-y-auto px-4 py-4" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {/* Pusty wątek → sugestie startowe */}
                 {turns.length === 0 && !busy && (
@@ -1765,9 +1794,17 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
               </div>
             )}
 
-            {/* Composer */}
-            {!showHistory && (
-              <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)", paddingBottom: composerFocused ? undefined : "max(0.75rem, env(safe-area-inset-bottom))" }}>
+            {/* Composer.
+                035: odstęp od dołu jest STAŁY. Wcześniej znikał na czas fokusu — czyli wysokość stopki
+                zmieniała się w tej samej klatce, w której iOS animuje klawiaturę i wylicza pozycję
+                karetki. Stąd kursor „nad polem" albo bardzo nisko, korygowany dopiero po pierwszym
+                wpisanym znaku (który wymusza ponowne wyliczenie). Zwykły, niezmienny padding to
+                rozwiązanie przyczyny — margines na systemową kreskę iPhone'a i tak jest potrzebny. */}
+            {headerPanel === "none" && (
+              <div
+                className="px-4 py-3 flex-shrink-0"
+                style={{ borderTop: "1px solid var(--border)", paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+              >
                 {/* Pasek stanu rozmowy głosowej — nie-zasłaniający (nad composerem, wątek/karty widoczne) */}
                 {voiceState !== "off" && (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 10px", borderRadius: 10, border: `1px solid ${voiceState === "speaking" ? "var(--accent-green)" : "var(--accent-blue)"}`, background: "var(--bg-elevated)" }}>
@@ -1819,8 +1856,6 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     ref={composerRef}
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
-                    onFocus={() => setComposerFocused(true)}
-                    onBlur={() => setComposerFocused(false)}
                     onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); dictation.stop(); handleSend(); } }}
                     placeholder={attachedImage ? 'Opcjonalny opis, np. „do zakupów"' : placeholder}
                     rows={1}
@@ -1830,21 +1865,16 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                       width: "100%", resize: "none", background: "transparent", border: "none", outline: "none",
                       color: "var(--text-primary)", fontSize: 16, lineHeight: 1.4, padding: "6px 4px",
                       minHeight: 36, maxHeight: 160, overflowY: "auto",
-                      // 034: przy ROZWINIĘTYM menu poziomu chowamy karetkę. Przyciski kompozytora
-                      // celowo zatrzymują fokus w polu (`keepKeyboardOpen`, żeby na telefonie nie
-                      // znikała klawiatura), więc przeglądarka dalej rysuje migający kursor — a
-                      // robi to w warstwie ponad HTML-em, której NIE da się przykryć z-indexem.
-                      // Fokus i klawiatura zostają; znika tylko kursor przebijający się przez menu.
-                      caretColor: showLevelMenu ? "transparent" : "var(--accent-blue)",
+                      caretColor: "var(--accent-blue)",
                     }}
                   />
                   {/* Wiersz 2 — akcje: lewo (aparat, galeria) · prawo (mikrofon, główny przycisk) */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <button onPointerDown={keepKeyboardOpen} onClick={() => cameraRef.current?.click()} disabled={busy} title="Zrób zdjęcie" aria-label="Zrób zdjęcie" style={composerActionBtn}>
+                      <button onClick={() => cameraRef.current?.click()} disabled={busy} title="Zrób zdjęcie" aria-label="Zrób zdjęcie" style={composerActionBtn}>
                         <Camera size={20} />
                       </button>
-                      <button onPointerDown={keepKeyboardOpen} onClick={() => fileRef.current?.click()} disabled={busy} title="Dodaj zdjęcie" aria-label="Dodaj zdjęcie" style={{ ...composerActionBtn, color: attachedImage ? "var(--accent-blue)" : "var(--text-muted)" }}>
+                      <button onClick={() => fileRef.current?.click()} disabled={busy} title="Dodaj zdjęcie" aria-label="Dodaj zdjęcie" style={{ ...composerActionBtn, color: attachedImage ? "var(--accent-blue)" : "var(--text-muted)" }}>
                         <ImagePlus size={20} />
                       </button>
                     </div>
@@ -1853,7 +1883,6 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                           koncie użytkownika, więc jest ten sam na każdym urządzeniu. */}
                       <div style={{ position: "relative", flexShrink: 0 }}>
                         <button
-                          onPointerDown={keepKeyboardOpen}
                           onClick={() => setShowLevelMenu((v) => !v)}
                           disabled={busy}
                           title={`Poziom pracy asystenta: ${ASSISTANT_LEVEL_LABELS[level]}`}
@@ -1877,27 +1906,50 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                             }}
                           >
                             {ASSISTANT_LEVELS.map((lvl) => (
-                              <button
+                              // 035: wiersz poziomu to przycisk WYBORU, a przy „Własnym" dochodzi po prawej
+                              // druga, mniejsza ikona otwierająca konfigurację tego poziomu. Zagnieżdżanie
+                              // przycisku w przycisku jest niepoprawne, więc wiersz jest kontenerem.
+                              <div
                                 key={lvl}
-                                role="menuitemradio"
-                                aria-checked={level === lvl}
-                                onClick={() => changeLevel(lvl)}
                                 style={{
-                                  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2,
-                                  width: "100%", padding: "8px 10px", borderRadius: 8, border: "none",
-                                  background: level === lvl ? "var(--bg-hover)" : "transparent",
-                                  cursor: "pointer", textAlign: "left",
+                                  display: "flex", alignItems: "center", gap: 4, width: "100%",
+                                  borderRadius: 8, background: level === lvl ? "var(--bg-hover)" : "transparent",
                                 }}
                               >
-                                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-primary)" }}>
-                                  {levelIcon(lvl, 13)}
-                                  {ASSISTANT_LEVEL_LABELS[lvl]}
-                                  {level === lvl && <Check size={12} style={{ color: "var(--accent-green)" }} />}
-                                </span>
-                                <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
-                                  {ASSISTANT_LEVEL_DESCRIPTIONS[lvl]}
-                                </span>
-                              </button>
+                                <button
+                                  role="menuitemradio"
+                                  aria-checked={level === lvl}
+                                  onClick={() => changeLevel(lvl)}
+                                  style={{
+                                    display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2,
+                                    flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: 8, border: "none",
+                                    background: "transparent", cursor: "pointer", textAlign: "left",
+                                  }}
+                                >
+                                  <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-primary)" }}>
+                                    {levelIcon(lvl, 13)}
+                                    {ASSISTANT_LEVEL_LABELS[lvl]}
+                                    {level === lvl && <Check size={12} style={{ color: "var(--accent-green)" }} />}
+                                  </span>
+                                  <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
+                                    {ASSISTANT_LEVEL_DESCRIPTIONS[lvl]}
+                                  </span>
+                                </button>
+                                {lvl === "custom" && (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); openLevelSettings(); }}
+                                    title="Ustawienia własnego poziomu"
+                                    aria-label="Ustawienia własnego poziomu"
+                                    style={{
+                                      flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                                      width: 38, minHeight: 38, marginRight: 4, borderRadius: 8, border: "none",
+                                      background: "transparent", color: "var(--accent-blue)", cursor: "pointer",
+                                    }}
+                                  >
+                                    <SlidersHorizontal size={16} />
+                                  </button>
+                                )}
+                              </div>
                             ))}
                           </div>
                         )}
@@ -1905,7 +1957,6 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                       {/* Mikrofon dyktowania — dopisuje mowę do pola (oddzielny od trybu rozmowy głosowej) */}
                       {dictation.supported && !busy && (
                         <button
-                          onPointerDown={keepKeyboardOpen}
                           onClick={dictation.toggle}
                           title={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj (mowa → tekst)"}
                           aria-label={dictation.recording ? "Zatrzymaj dyktowanie" : "Dyktuj"}
@@ -1924,7 +1975,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                         // 032: jedno dotknięcie ma WYSŁAĆ i zamknąć klawiaturę. `preventDefault` na
                         // pointerdown chroni przed zgubieniem dotknięcia (klawiatura zwija się,
                         // układ skacze), a klawiaturę zamykamy jawnym `blur()` po wysłaniu.
-                        <button onPointerDown={keepKeyboardOpen} onClick={() => { dictation.stop(); handleSend(); composerRef.current?.blur(); }} title="Wyślij" aria-label="Wyślij" style={composerPrimaryBtn}>
+                        <button onClick={() => { dictation.stop(); handleSend(); composerRef.current?.blur(); }} title="Wyślij" aria-label="Wyślij" style={composerPrimaryBtn}>
                           <ArrowUp size={18} />
                         </button>
                       ) : voiceSupported ? (
@@ -1979,7 +2030,6 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
  * NIE stosujemy tego do przycisku wysyłania (tam klawiatura ma się zamknąć — jawne `blur()`) ani do
  * rozmowy głosowej (użytkownik przechodzi z pisania na mówienie).
  */
-const keepKeyboardOpen = (e: React.PointerEvent<HTMLButtonElement>) => e.preventDefault();
 
 /**
  * 032: etykieta ostatniej rozmowy dla przycisku powrotu w nagłówku — z pierwszej wypowiedzi

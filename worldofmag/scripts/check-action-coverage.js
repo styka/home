@@ -18,7 +18,10 @@ const path = require("path");
 const root = path.join(__dirname, "..");
 const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
 
-const agentSrc = read("src/app/api/llm/home/agent/route.ts");
+// 035: katalog akcji mieszka w `src/lib/ai/agentPrompt.ts` (wyjęty z pliku trasy, żeby dało się go
+// zaimportować i policzyć — patrz raport „Asystent — audyt zużycia tokenów"). Trasa nadal jest
+// czytana pod kątem NAWIGACJI i pozostałych odwołań.
+const agentSrc = read("src/lib/ai/agentPrompt.ts");
 const petSrc = read("src/lib/ai/petActions.ts");
 
 // Powierzchnia executora = route + wszystkie wyodrębnione handlery per-domena
@@ -34,7 +37,7 @@ if (fs.existsSync(execDir)) {
 
 // Katalog akcji: tylko segment ACTION_CATALOG (między deklaracją a NAVIGATION_CATALOG)
 // + pełny katalog akcji zwierząt (petActions.ts).
-const catStart = agentSrc.indexOf("const ACTION_CATALOG");
+const catStart = agentSrc.indexOf("const ACTION_CATALOG_HEADER");
 const catEnd = agentSrc.indexOf("const NAVIGATION_CATALOG");
 const catalogText = agentSrc.slice(catStart, catEnd) + "\n" + petSrc;
 
