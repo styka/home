@@ -524,8 +524,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   function toggleVoice() {
     if (voiceStateRef.current !== "off") { stopVoice(); return; }
     if (!voiceSupported) return;
-    // KRYTYCZNE dla iOS/Safari: „odblokuj" syntezę mowy TERAZ, w geście dotknięcia — inaczej WebKit
-    // wycisza późniejsze (programowe) wypowiedzi Asystenta. Pierwszy nasłuch też startuje w geście.
+    // KRYTYCZNE dla iOS/Safari: „odblokuj" odczyt TERAZ, w geście dotknięcia — inaczej WebKit wycisza
+    // późniejsze (programowe) wypowiedzi Asystenta. 036: dotyczy to OBU ścieżek — syntezy przeglądarki
+    // i głosu serwerowego (element audio); `primeSpeech` odblokowuje obie. Musi być przed jakimkolwiek
+    // `await`, bo aktywacja użytkownika wygasa. Pierwszy nasłuch też startuje w geście.
     primeSpeech();
     spokenIdRef.current = turns.length ? turns[turns.length - 1].id : null;
     voiceStateRef.current = "listening";
