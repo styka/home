@@ -84,21 +84,33 @@ export function AiCostBadge({
   // od szerokości OKNA — więc gdy kwota wypadała blisko lewej krawędzi (krótka odpowiedź), panel
   // wyjeżdżał poza lewą stronę ekranu i jego początek był nieosiągalny.
   const [offsetLeft, setOffsetLeft] = useState(0);
+  // Szerokość dostępna dla panelu — liczona z kontenera (arkusz asystenta), nie z okna.
+  const [maxPanelWidth, setMaxPanelWidth] = useState(PANEL_MAX_WIDTH);
 
   const reposition = useCallback(() => {
     const wrap = wrapRef.current;
     const panel = panelRef.current;
     if (!wrap || !panel) return;
     const anchor = wrap.getBoundingClientRect();
-    const width = panel.offsetWidth;
-    const viewport = window.innerWidth;
+
+    // Granicą NIE jest okno przeglądarki, tylko kontener, w którym panel faktycznie żyje: na
+    // komputerze arkusz asystenta ma `max-w-lg` i stoi pośrodku szerokiego ekranu, a jego obszar
+    // przewijania przycina wszystko, co z niego wystaje. Clampowanie do okna przepuściłoby panel
+    // poza lewą krawędź arkusza — czyli dokładnie ten błąd, który naprawiamy.
+    const host = wrap.closest('[role="dialog"]');
+    const bounds = host ? host.getBoundingClientRect() : null;
+    const minX = Math.max(PANEL_MARGIN, (bounds?.left ?? 0) + PANEL_MARGIN);
+    const maxX = Math.min(window.innerWidth - PANEL_MARGIN, (bounds?.right ?? window.innerWidth) - PANEL_MARGIN);
+    const available = Math.max(160, maxX - minX);
+    setMaxPanelWidth(available);
+    const width = Math.min(panel.offsetWidth, available);
+
     // Domyślnie wyrównujemy PRAWĄ krawędź panelu do prawej krawędzi przycisku…
     let left = anchor.right - width;
-    // …a potem wpychamy go w widoczny obszar z obu stron. Przy ekranie węższym niż panel
-    // wygrywa lewa krawędź (panel i tak jest przewijalny w środku).
-    const maxLeft = viewport - PANEL_MARGIN - width;
-    if (left > maxLeft) left = maxLeft;
-    if (left < PANEL_MARGIN) left = PANEL_MARGIN;
+    // …a potem wpychamy go w dozwolony obszar. Gdy kontener jest węższy niż panel, wygrywa lewa
+    // krawędź (zawartość panelu i tak jest przewijalna w poziomie).
+    if (left + width > maxX) left = maxX - width;
+    if (left < minX) left = minX;
     setOffsetLeft(left - anchor.left);
   }, []);
 
@@ -152,8 +164,8 @@ export function AiCostBadge({
             position: "absolute", bottom: "calc(100% + 6px)", zIndex: 5,
             left: offsetLeft,
             minWidth: 0,
-            width: `min(${PANEL_MAX_WIDTH}px, calc(100vw - ${PANEL_MARGIN * 2}px))`,
-            maxWidth: `calc(100vw - ${PANEL_MARGIN * 2}px)`,
+            width: `min(${PANEL_MAX_WIDTH}px, ${maxPanelWidth}px)`,
+            maxWidth: `${maxPanelWidth}px`,
             padding: "8px 10px", background: "var(--bg-elevated)",
             border: "1px solid var(--border)", borderRadius: 8,
             boxShadow: "0 6px 20px rgba(0,0,0,0.35)",
