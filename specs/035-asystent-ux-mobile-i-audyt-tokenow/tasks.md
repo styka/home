@@ -91,28 +91,28 @@
 
 ## Faza 3 — Audyt tokenów i raport (Z7)
 
-- [ ] **T-12** — **Wyodrębnienie promptów** (plan §6.1): przenieś 1:1 `ACTION_CATALOG_HEADER/FOOTER`,
+- [x] **T-12** — **Wyodrębnienie promptów** (plan §6.1): przenieś 1:1 `ACTION_CATALOG_HEADER/FOOTER`,
   `ACTION_CATALOG_BY_MODULE`, `buildActionCatalog`, `NAVIGATION_CATALOG`, `buildSystemPrompt` oraz
   treść promptu routera z `agent/route.ts` do nowego `src/lib/ai/agentPrompt.ts`; `fastPath.ts`
   eksportuje swój `SYSTEM_PROMPT`. **Zero zmian w treści promptów.**
   *Gotowe, gdy:* trasa importuje prompty z nowego modułu, a `tsc` przechodzi. **(warunek AC-19, AC-22)**
 
-- [ ] **T-13** — **Aktualizacja bramki** (plan §6.1): `scripts/check-action-coverage.js` czyta katalog
+- [x] **T-13** — **Aktualizacja bramki** (plan §6.1): `scripts/check-action-coverage.js` czyta katalog
   akcji z `src/lib/ai/agentPrompt.ts` zamiast z pliku trasy.
   *Gotowe, gdy:* `npm run check:actions` przechodzi i nadal raportuje 160 akcji oraz komplet etykiet
   parametrów (czyli przenosiny są kompletne).
 
-- [ ] **T-14** — **Skrypt audytowy** (plan §6.2): tymczasowy `src/audyt-tokenow.ts` (`npx tsx`,
+- [x] **T-14** — **Skrypt audytowy** (plan §6.2): tymczasowy `src/audyt-tokenow.ts` (`npx tsx`,
   kasowany po użyciu) odtwarza trzy prompty dla polecenia „hej", liczy tokeny istniejącym
   `estimateTokens`, zestawia je z rzeczywistymi liczbami z logu `AiCall` i generuje markdown raportu.
   *Gotowe, gdy:* skrypt wypisuje rozliczenie, którego suma odpowiada 7734 tokenom ze zgłoszenia
   (z jawnie opisaną różnicą szacunku i pomiaru). **(AC-20)**
 
-- [ ] **T-15** — **Weryfikacja neutralności przenosin** (AC-22): skrypt audytowy porównuje prompt
+- [x] **T-15** — **Weryfikacja neutralności przenosin** (AC-22): skrypt audytowy porównuje prompt
   wygenerowany po zmianie z treścią sprzed niej (odczyt z gita) — muszą być identyczne.
   *Gotowe, gdy:* porównanie zwraca „bez różnic". **(AC-22)**
 
-- [ ] **T-16** — **Migracja z raportem** (plan §2, §6.3): `prisma/migrations/0213_raport_audyt_tokenow/`
+- [x] **T-16** — **Migracja z raportem** (plan §2, §6.3): `prisma/migrations/0213_raport_audyt_tokenow/`
   — idempotentny seed `Report` (`ON CONFLICT ("slug") DO UPDATE`), slug
   `asystent-audyt-zuzycia-tokenow-2026-07-28`, treść z T-14 (analiza + załączniki A/B/C z pełnymi
   promptami i odpowiedziami). Skrypt sprawdza brak kolizji z tagiem `$report_md$`.
@@ -128,11 +128,11 @@
   (C-13, bez `scripts/migrate.js`).
   *Gotowe, gdy:* wszystkie zielone.
 
-- [ ] **T-18** — **Dokumentacja**: `CLAUDE.md` — odnotowanie `src/lib/ai/agentPrompt.ts` w opisie
+- [x] **T-18** — **Dokumentacja**: `CLAUDE.md` — odnotowanie `src/lib/ai/agentPrompt.ts` w opisie
   asystenta (gdzie mieszka prompt i że bramka czyta go stamtąd).
   *Gotowe, gdy:* opis odpowiada stanowi kodu.
 
-- [ ] **T-19** — **Lekcje** (C-51): wpis do `doświadczenia.md` — (a) karetka na iOS a układ zmieniający
+- [x] **T-19** — **Lekcje** (C-51): wpis do `doświadczenia.md` — (a) karetka na iOS a układ zmieniający
   wysokość w momencie pojawienia się klawiatury, (b) pamięć podręczna promptu, która nigdy nie trafia,
   bo prefiks jest budowany dynamicznie.
 

@@ -32,7 +32,8 @@ const WHITELIST: Record<string, { module: AIActionModule; type: string }> = {
   "flota:add_fuel_log": { module: "flota", type: "add_fuel_log" },
 };
 
-const SYSTEM_PROMPT = `Jesteś szybkim klasyfikatorem intencji asystenta WorldOfMag. Twoim zadaniem jest rozpoznać, czy polecenie użytkownika to POJEDYNCZA, PROSTA operacja dodania/utworzenia/zapisania, którą można wykonać deterministycznie bez głębszego rozumowania.
+/** 035: eksportowany, żeby audyt zużycia tokenów mógł policzyć DOKŁADNIE ten tekst, który idzie do modelu. */
+export const SYSTEM_PROMPT = `Jesteś szybkim klasyfikatorem intencji asystenta WorldOfMag. Twoim zadaniem jest rozpoznać, czy polecenie użytkownika to POJEDYNCZA, PROSTA operacja dodania/utworzenia/zapisania, którą można wykonać deterministycznie bez głębszego rozumowania.
 
 Zwróć WYŁĄCZNIE jeden obiekt JSON (bez markdown, bez komentarzy).
 

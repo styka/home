@@ -264,6 +264,12 @@ Each module typically has a `*Page.tsx` (client entry) and `*HomePage.tsx` (serv
 wrapper). The `AppShell` (`shell/`) wraps all pages with `ModuleSidebar` (desktop),
 a mobile top bar + bottom tab bar, the notification bell, and the global AI assistant.
 
+**Assistant prompts live in `src/lib/ai/agentPrompt.ts`** (035) — action catalog per module,
+navigation catalog, `buildSystemPrompt()` and the module-router prompt. They were moved out of
+`api/llm/home/agent/route.ts` because a route file cannot export anything but handlers, which made the
+prompt impossible to import or measure. `scripts/check-action-coverage.js` reads the action catalog
+from **that** file. See the report „Asystent — audyt zużycia tokenów" in `/reports`.
+
 **The "magic icon" / AI assistant** (`home/AICommandSheet.tsx`): a global Sparkles
 floating action button (bottom-right, in `AppShell`) opening a **conversational chat
 sheet** — persistent message thread (user/assistant bubbles), free back-and-forth
