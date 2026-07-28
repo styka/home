@@ -32,23 +32,23 @@
 
 ## Faza 1 — Okno asystenta na pełny ekran (Z1)
 
-- [ ] **T-3** — **Hook widocznego obszaru** (plan §5.1): nowy `src/hooks/useVisualViewport.ts` —
+- [x] **T-3** — **Hook widocznego obszaru** (plan §5.1): nowy `src/hooks/useVisualViewport.ts` —
   zwraca `{ height, offsetTop }` z `window.visualViewport` (nasłuch `resize` + `scroll`, wygładzenie
   przez `requestAnimationFrame`), a przy braku API zwraca `null`.
   *Gotowe, gdy:* hook nie rzuca na serwerze (SSR), sprząta nasłuchy i degraduje się do `null`.
 
-- [ ] **T-4** — **Pełny ekran na telefonie** (plan §5.1): w `AICommandSheet.tsx` na `< md` arkusz
+- [x] **T-4** — **Pełny ekran na telefonie** (plan §5.1): w `AICommandSheet.tsx` na `< md` arkusz
   dostaje `position: fixed`, `left: 0`, `width: 100%`, `top: <offsetTop>`, `height: <height>`,
   `borderRadius: 0`, bez uchwytu i bez przyciemnionego tła. Rozróżnienie mobile/desktop przez
   `matchMedia("(min-width: 768px)")` (wysokość ustawiamy inline, więc klasy nie wystarczą).
   *Gotowe, gdy:* na telefonie okno wypełnia ekran, a przy otwartej klawiaturze kurczy się wyłącznie
   obszar wiadomości; nagłówek i kompozytor pozostają widoczne. **(AC-1, AC-2, AC-3, AC-4)**
 
-- [ ] **T-5** — **Desktop bez zmian** (plan §5.1): potwierdź i zabezpiecz, że na `md:` zostaje
+- [x] **T-5** — **Desktop bez zmian** (plan §5.1): potwierdź i zabezpiecz, że na `md:` zostaje
   wyśrodkowany panel `max-w-lg`, `85vh`, przyciemnione tło i zamykanie kliknięciem obok.
   *Gotowe, gdy:* gałąź desktopowa nie używa wartości z hooka. **(AC-6)**
 
-- [ ] **T-6** — **Inwentarz zabiegów na fokusie i karetce** (plan §5.1): przejrzyj komponent i wypisz
+- [x] **T-6** — **Inwentarz zabiegów na fokusie i karetce** (plan §5.1): przejrzyj komponent i wypisz
   **wszystkie** miejsca dotykające fokusu/karetki (autofokus, `setSelectionRange`, `caretColor`,
   `blur()`, cokolwiek na `pointerdown`). Wynik trafia do `verify.md` jako odpowiedź dla właściciela.
   *Gotowe, gdy:* lista jest kompletna i każde miejsce ma jednozdaniowe uzasadnienie albo jest usunięte.
