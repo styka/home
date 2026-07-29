@@ -78,13 +78,16 @@
 
 ## Faza 3 — Optymalizacje P1, P2, P4 (Z3)
 
-- [ ] **T-10** — **Podział promptu na część stałą i zmienną** (plan §6.1): `buildSystemPrompt` zwraca
+- [x] **T-10** — **Podział promptu na część stałą i zmienną** (plan §6.1): `buildSystemPrompt` zwraca
   `{ stable, variable }`; dotychczasowa forma (sklejenie) zostaje jako funkcja pomocnicza — służy za
-  **dowód neutralności treści**. Katalog nawigacji wędruje do części stałej (świadoma zmiana
-  KOLEJNOŚCI, nie treści).
-  *Gotowe, gdy:* zbiór bloków przed i po jest identyczny (porównanie posortowanych bloków). **(AC-17)**
+  **dowód neutralności treści**. **Korekta z implementacji (C-54, plan §6.1):** katalog nawigacji
+  **zostaje** w części zmiennej — przeniesienie go do prefiksu wypchnęłoby blok „ZASADY" przed
+  katalogi, do których wprost się odwołuje. Częścią stałą jest wyłącznie wstęp + protokół, więc
+  **kolejność ani treść się nie zmieniają**.
+  *Gotowe, gdy:* `stable + variable` jest identyczne **co do znaku** z dotychczasowym promptem — dla
+  wszystkich zestawów modułów (zmierzone: 5 zestawów, w tym pusty i pełny). **(AC-17)**
 
-- [ ] **T-11** — **Pamięć podręczna tylko na prefiksie stałym** (plan §6.1): `ChatOptions.systemBlocks`;
+- [x] **T-11** — **Pamięć podręczna tylko na prefiksie stałym** (plan §6.1): `ChatOptions.systemBlocks`;
   `toAnthropicSystem` buduje dwa bloki i oznacza `cache_control` **wyłącznie na pierwszym**.
   Wywołania bez `systemBlocks` — bez zmian.
   *Gotowe, gdy:* prefiks stały nie zależy od wybranych modułów, więc powtarza się między poleceniami.

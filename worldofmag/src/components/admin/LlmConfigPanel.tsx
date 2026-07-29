@@ -12,6 +12,7 @@ import {
   setUsdPlnRate,
   setModelPrice,
   deleteModelPrice,
+  setFollowupsEnabled,
   type ProviderDTO,
   type AssignmentDTO,
   type AiCostBreakdown,
@@ -480,6 +481,62 @@ const tdStyle: React.CSSProperties = { padding: "8px 10px", fontSize: 12, color:
 const thStyle: React.CSSProperties = { padding: "8px 10px", fontSize: 11, color: "var(--text-muted)", textAlign: "left", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" };
 
 /**
+ * 036: propozycje kolejnych pytań pod odpowiedzią asystenta. Model dopisuje je do KAŻDEJ odpowiedzi,
+ * więc kosztują tokeny przy każdej wiadomości — stąd przełącznik obok cennika, czyli tam, gdzie
+ * patrzy się na koszty.
+ */
+function FollowupsSection({ enabled }: { enabled: boolean }) {
+  const [isPending, startTransition] = useTransition();
+  const [value, setValue] = useState(enabled);
+  const [error, setError] = useState<string | null>(null);
+
+  function toggle(next: boolean) {
+    setValue(next);
+    setError(null);
+    startTransition(async () => {
+      try {
+        await setFollowupsEnabled(next);
+      } catch (e) {
+        setValue(!next);
+        setError(e instanceof Error ? e.message : "Nie udało się zapisać ustawienia.");
+      }
+    });
+  }
+
+  return (
+    <section style={{ marginBottom: 32 }}>
+      <SectionTitle>Propozycje kolejnych pytań</SectionTitle>
+      <label
+        className="py-3"
+        style={{
+          display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer",
+          padding: "12px", border: "1px solid var(--border)", borderRadius: 8,
+          background: "var(--bg-surface)",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={value}
+          disabled={isPending}
+          onChange={(e) => toggle(e.target.checked)}
+          style={{ width: 20, height: 20, flexShrink: 0, accentColor: "var(--accent-blue)", cursor: "pointer" }}
+        />
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 13, color: "var(--text-primary)" }}>
+            Podpowiadaj kolejne pytania pod odpowiedzią
+          </span>
+          <span style={{ display: "block", fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.5, marginTop: 2 }}>
+            Asystent dopisuje 2–3 propozycje następnego pytania do <strong>każdej</strong> odpowiedzi —
+            a każda z nich to dodatkowe tokeny wyjścia. Wyłącz, jeśli wolisz krótsze i tańsze odpowiedzi.
+          </span>
+        </span>
+      </label>
+      {error && <p style={{ fontSize: 12, color: "var(--accent-red)", marginTop: 8 }}>{error}</p>}
+    </section>
+  );
+}
+
+/**
  * 034: cennik modeli. Wcześniej stawki były zaszyte w kodzie — model spoza listy „kosztował 0",
  * a aktualizacja ceny wymagała wdrożenia. Dopasowanie idzie po POCZĄTKU nazwy modelu, bo
  * identyfikatory bywają z sufiksami wersji („claude-haiku-4-5-20251001").
@@ -752,6 +809,7 @@ export function LlmConfigPanel({
   usdPlnRate,
   speech,
   prices,
+  followupsEnabled,
 }: {
   providers: ProviderDTO[];
   assignmentsByLevel: Record<ConfigLevel, AssignmentDTO[]>;
@@ -760,6 +818,7 @@ export function LlmConfigPanel({
   usdPlnRate: number;
   speech: SpeechConfigDTO;
   prices: ModelPriceDTO[];
+  followupsEnabled: boolean;
 }) {
   // 034: poziom pracy asystenta wybierany zakładką nad siatką typów operacji. Wcześniej admin
   // konfigurował wyłącznie poziom standardowy, a dwa pozostałe były regułami zaszytymi w kodzie.
@@ -814,6 +873,8 @@ export function LlmConfigPanel({
           )}
         </div>
       </section>
+
+      <FollowupsSection enabled={followupsEnabled} />
 
       <ModelPricesSection prices={prices} />
 

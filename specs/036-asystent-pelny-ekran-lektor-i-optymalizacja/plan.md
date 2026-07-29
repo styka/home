@@ -111,11 +111,17 @@ Zmiana w `src/lib/llm/chat.ts` + `src/lib/ai/agentPrompt.ts`:
 - `ChatOptions` zyskuje opcjonalne `systemBlocks?: { stable: string; variable: string }`; gdy podane,
   `toAnthropicSystem` buduje **dwa** bloki tekstu, `cache_control` **tylko na pierwszym** (stałym).
   Dla pozostałych wywołań (bez `systemBlocks`) zachowanie bez zmian.
-- **Uwaga o kolejności:** blok stały musi iść **pierwszy**, bo pamięć podręczna działa na prefiksie.
-  Dziś kolejność w prompcie to `zasady → narzędzia → akcje → nawigacja → …`; podział wymaga
-  **przestawienia** nawigacji do części stałej. To **zmiana kolejności bloków, nie treści** —
-  AC-17 mówi o identyczności *zasad zachowania*, więc weryfikacja porówna zbiór bloków, a nie ich
-  kolejność, i odnotuje to wprost. **(C-54: to ustalenie planu, nieprzewidziane w specu — zapisane tutaj.)**
+- **Korekta z implementacji (C-54).** Pierwotnie plan zakładał przeniesienie katalogu nawigacji do
+  części stałej, żeby powiększyć prefiks. **Odrzucone**: pamięć podręczna działa na PREFIKSIE, więc
+  część stała musi iść pierwsza — a wtedy blok „ZASADY" wylądowałby **przed** katalogami, mimo że
+  odwołuje się do nich wprost („Twórz akcje tylko dla modułów, których katalog masz **wyżej**").
+  Do tego sam blok zasad zawiera listę wybranych modułów, więc i tak nie jest stały.
+  **Przyjęte rozwiązanie:** częścią stałą jest **wyłącznie wstęp + protokół** (2560 znaków, ~780
+  tokenów wg pomiaru) — czyli dokładnie ten fragment, który już dziś stoi na początku i nie zależy od
+  niczego. **Zero przestawiania, zero zmian treści**, a sklejenie `stable + variable` jest identyczne
+  co do znaku z dotychczasowym promptem (AC-17 spełnione dosłownie, nie „co do zbioru").
+  Zysk pozostaje realny: prefiks jest czytany zamiast zapisywany, a **reszta promptu przestaje być
+  zapisywana do pamięci po 1,25× ceny** — to drugie daje więcej niż samo trafienie w prefiks.
 
 ### 6.2 P2 — zwykła uprzejmość bez klasyfikatora i routera
 
