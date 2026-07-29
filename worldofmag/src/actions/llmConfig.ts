@@ -16,6 +16,7 @@ import {
 } from "@/lib/llm/operationTypes";
 import { PROVIDER_KINDS, isSpeechOnlyKind, type ProviderKind } from "@/lib/llm/resolver";
 import { invalidatePriceCache } from "@/lib/llm/pricing";
+import { FOLLOWUPS_CONFIG_KEY, readFollowupsEnabled } from "@/lib/ai/followups";
 import { TTS_CATALOG, findTtsProvider, findTtsProviderById, providerMatchesSpec, normalizeBaseUrl } from "@/lib/tts/catalog";
 import { encryptSecret, decryptSecret, maskSecret } from "@/lib/crypto/secrets";
 import { logAudit } from "@/lib/audit";
@@ -567,6 +568,33 @@ export async function applyAnthropicProfile(data: { apiKey: string }): Promise<v
     "llm_profile.anthropic",
     provider.id,
     "Zastosowano profil Anthropic (Sonnet dla reasoning/generation/vision, Haiku dla dispatch)"
+  );
+  revalidatePath("/admin/llm");
+}
+
+// ─── 036: propozycje kolejnych pytań („follow-upy") ─────────────────────────
+//
+// Model dopisuje je do KAŻDEJ odpowiedzi, więc kosztują tokeny przy każdej wiadomości. Administrator
+// steruje nimi stąd; wartość żyje w `Config` (wzorzec 1:1 z progiem alertu kosztowego).
+
+export async function getFollowupsEnabled(): Promise<boolean> {
+  await requireAdmin();
+  return readFollowupsEnabled();
+}
+
+export async function setFollowupsEnabled(enabled: boolean): Promise<void> {
+  await requireAdmin();
+  const value = enabled ? "1" : "0";
+  await prisma.config.upsert({
+    where: { key: FOLLOWUPS_CONFIG_KEY },
+    update: { value },
+    create: { key: FOLLOWUPS_CONFIG_KEY, value },
+  });
+  await logAudit(
+    "config",
+    "assistant_followups.set",
+    FOLLOWUPS_CONFIG_KEY,
+    `${enabled ? "Włączono" : "Wyłączono"} propozycje kolejnych pytań w odpowiedziach asystenta`
   );
   revalidatePath("/admin/llm");
 }

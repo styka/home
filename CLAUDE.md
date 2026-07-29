@@ -269,6 +269,19 @@ navigation catalog, `buildSystemPrompt()` and the module-router prompt. They wer
 `api/llm/home/agent/route.ts` because a route file cannot export anything but handlers, which made the
 prompt impossible to import or measure. `scripts/check-action-coverage.js` reads the action catalog
 from **that** file. See the report „Asystent — audyt zużycia tokenów" in `/reports`.
+**036 — token economy.** `buildSystemPromptParts(modules, opts)` returns the prompt in two pieces:
+`stable` (intro + protocol — the only part independent of the selected modules) and `variable`
+(read-tool catalog + action catalog + rules). `buildSystemPrompt()` is the glued form and stays as the
+proof that the split changes no content. The agent route passes both to `chatComplete` as
+`ChatOptions.systemBlocks`, and `toAnthropicSystem` marks `cache_control: ephemeral` **only on the
+stable block** — previously the whole (module-dependent) prompt was marked, so every call paid 1.25×
+input for a cache write that essentially never hit. `SystemPromptOptions`: `includeActions:false`
+drops the write-action + navigation catalogs (used for small talk and for pure reads — with a retry
+path that re-runs with the full catalog if the agent returns `step:"plan"` anyway), `followups:false`
+drops the follow-up request from the `answer` step. **Careful:** `buildReadToolsPrompt([])` treats an
+empty module list as "give everything" — pass the primary module, not `[]`, when trimming the prompt.
+`SMALL_TALK_RE` (`lib/ai/fastPath.ts`, anchored `^…$`) skips `classifyIntent` **and** `routeModules`
+for a message that is nothing but a greeting.
 
 **The "magic icon" / AI assistant** (`home/AICommandSheet.tsx`): a global Sparkles
 floating action button (bottom-right, in `AppShell`) opening a **conversational chat
@@ -570,7 +583,7 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 - **`/admin/audit`** — audit log viewer (RBAC + config changes; `AuditLog`).
 - **`/admin/health`** — system health dashboard (DB/migrations/API diagnostics; live, no model).
 - **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, `brave_search_api_key`, masked + encrypted at rest; plus the plain-text `feedback_project_id` — which task project acts as the **user-report inbox**; empty = the admin's „Omnia" project).
-- **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type **+ effort / temperature / max-tokens**; the panel states outright which knobs the chosen provider/model ignores).
+- **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type **+ effort / temperature / max-tokens**; the panel states outright which knobs the chosen provider/model ignores). Also the **follow-up switch** (036): `Config.assistant_followups_enabled` (`1`/`0`, seeded by migration 0214, missing row = on) decides whether the agent prompt asks for follow-up suggestion chips at all — they cost tokens on *every* answer. Read without a session via `lib/ai/followups.ts` `readFollowupsEnabled()`; admin side is `actions/llmConfig.ts` `getFollowupsEnabled`/`setFollowupsEnabled` (audited).
 - **`/admin/ai-coverage`** — **Pokrycie akcji przez AI**: pełna lista akcji użytkownika (mutacje **i** odczyty z `src/actions/*`) z informacją, czy asystent AI ma do nich dostęp (`ai`/`pending`/`excluded`+powód). Źródło = manifest `src/lib/ai/action-coverage.json` (via `getAiCoverage()` w `src/lib/ai/coverage.ts`), którego kompletność wymusza bramka `scripts/check-ai-coverage.js` (wpięta w `build`) — więc lista jest **zawsze aktualna** wobec wdrożonego kodu. Nowa mutująca/odczytowa Server Action bez wpisu w manifeście = build pada. Filtry po statusie/rodzaju + wyszukiwarka.
 - **`/admin/skins`** — system skins manager.
 - **`/admin/categories`** — global system categories (name/color/icon).

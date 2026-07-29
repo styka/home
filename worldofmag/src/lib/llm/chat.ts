@@ -80,6 +80,14 @@ export interface ChatOptions {
    * ukryta w kodzie (C-40: dobór modelu zostaje po stronie konfiguracji).
    */
   level?: AssistantWorkLevel;
+  /**
+   * 036: podział promptu systemowego na prefiks STAŁY i resztę ZMIENNĄ (tylko Anthropic).
+   * Gdy podane, `cache_control` trafia WYŁĄCZNIE na blok stały — bo pamięć podręczna dostawcy działa
+   * na prefiksie i oznaczanie zmiennego ogona oznaczało płacenie 1,25× ceny wejścia za zapis, z
+   * którego nigdy nie korzystaliśmy. Sklejenie `stable + variable` musi być równe treści wiadomości
+   * `system` z `messages` — inaczej podział jest ignorowany (bezpieczny fallback).
+   */
+  systemBlocks?: { stable: string; variable: string };
 }
 
 /**
@@ -232,7 +240,7 @@ export function anthropicBody(cfg: ResolvedLlm, opts: ChatOptions, stream: boole
   const body: Record<string, unknown> = {
     model: cfg.model,
     max_tokens: opts.maxTokens ?? cfg.maxTokens ?? 1024,
-    ...(system ? { system: toAnthropicSystem(system) } : {}),
+    ...(system ? { system: toAnthropicSystem(system, opts.systemBlocks) } : {}),
     messages,
   };
   // 033: rozszerzone myślenie Anthropic. `applyEffort` podnosi też `max_tokens` ponad budżet
@@ -427,15 +435,30 @@ interface AnthropicContent {
 }
 
 // Buduje pole `system` dla Anthropic Messages API. Gdy jest treść — zwraca ją
-// jako pojedynczy blok tekstu z `cache_control: ephemeral`, żeby stały prefiks
-// promptu (instrukcja systemowa + katalog narzędzi) był cache'owany (niższy koszt
+// jako blok tekstu z `cache_control: ephemeral`, żeby stały prefiks promptu
+// (instrukcja systemowa + katalog narzędzi) był cache'owany (niższy koszt
 // i szybsza odpowiedź). To GA — bez beta-headera; działa na `anthropic-version`.
 // Dla poprawnego trafienia w cache prefiks musi być stabilny między wywołaniami —
 // trasy wstrzykują zmienne (data/kontekst) do wiadomości user, nie do `system`.
-function toAnthropicSystem(
-  system: string | undefined
-): Array<{ type: "text"; text: string; cache_control: { type: "ephemeral" } }> | undefined {
+//
+// 036: prompt agenta stabilny NIE jest (zawiera katalog akcji wybranych modułów), więc wołający może
+// podać `systemBlocks` — wtedy budujemy DWA bloki i oznaczamy tylko pierwszy. Reszta idzie zwykłym
+// wejściem, zamiast być zapisywana do pamięci po 1,25× ceny przy każdym wywołaniu.
+type AnthropicSystemBlock = { type: "text"; text: string; cache_control?: { type: "ephemeral" } };
+
+export function toAnthropicSystem(
+  system: string | undefined,
+  blocks?: { stable: string; variable: string }
+): AnthropicSystemBlock[] | undefined {
   if (!system) return undefined;
+  // Podział przyjmujemy tylko wtedy, gdy odtwarza DOKŁADNIE wysyłaną treść — inaczej po cichu
+  // zmienilibyśmy prompt. Pusty prefiks też odrzucamy (nie ma czego cache'ować).
+  if (blocks?.stable && blocks.stable + blocks.variable === system) {
+    return [
+      { type: "text", text: blocks.stable, cache_control: { type: "ephemeral" } },
+      ...(blocks.variable ? [{ type: "text" as const, text: blocks.variable }] : []),
+    ];
+  }
   return [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
 }
 
