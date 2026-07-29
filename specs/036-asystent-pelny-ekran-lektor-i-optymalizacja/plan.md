@@ -122,6 +122,12 @@ Zmiana w `src/lib/llm/chat.ts` + `src/lib/ai/agentPrompt.ts`:
   co do znaku z dotychczasowym promptem (AC-17 spełnione dosłownie, nie „co do zbioru").
   Zysk pozostaje realny: prefiks jest czytany zamiast zapisywany, a **reszta promptu przestaje być
   zapisywana do pamięci po 1,25× ceny** — to drugie daje więcej niż samo trafienie w prefiks.
+- **Uczciwe zastrzeżenie (pomiar T-15).** Prefiks stały to **2541 znaków ≈ 636 tokenów**, a dostawca
+  cache'uje dopiero prefiksy powyżej progu (u Anthropic 1024 tok. dla większości modeli). Poniżej progu
+  blok po prostu **nie trafia** do pamięci — bez błędu. Oznacza to, że przy dzisiejszej treści promptu
+  realnym zyskiem jest **zaprzestanie nadpłaty 1,25×** za zapisywanie zmiennego ogona, a nie trafienia
+  w prefiks; te pojawią się dopiero, gdy część stała urośnie ponad próg. Nie „naciągamy" jej sztucznie
+  przestawianiem bloków — powód w akapicie wyżej.
 
 ### 6.2 P2 — zwykła uprzejmość bez klasyfikatora i routera
 
@@ -133,8 +139,14 @@ wiadomość (kotwice `^…$`), bez żadnej dodatkowej treści:
 Kotwica `$` jest kluczowa: „cześć, dodaj mleko" **nie** pasuje (AC-16).
 
 `src/app/api/llm/home/agent/route.ts`: gdy `SMALL_TALK_RE` pasuje → pomijamy `classifyIntent`
-**i** `routeModules`, wchodzimy prosto w pętlę agenta z **pustą listą modułów** (czyli bez katalogu
-akcji — patrz P4). Oszczędność: 2 wywołania modelu (~1748 tokenów, AC-12, AC-13).
+**i** `routeModules`, wchodzimy prosto w pętlę agenta bez katalogu akcji (`includeActions:false`,
+patrz P4). Oszczędność: 2 wywołania modelu (~1748 tokenów, AC-12, AC-13).
+
+**Korekta z implementacji (C-54).** Plan mówił „z **pustą listą modułów**". Pomiar pokazał, że to
+działa ODWROTNIE niż zakładano: `buildReadToolsPrompt([])` traktuje pustą listę jako „nie wiem, daj
+wszystko" i zwraca **pełny** katalog narzędzi odczytu — tura „cześć" wychodziła wtedy o 108 tokenów
+**droższa** niż przed zmianą. Przyjęte rozwiązanie: przekazujemy **moduł podstawowy** (`context[0]`,
+znany bez routera). Zmierzona oszczędność: **4441 → 2673 tokenów (−1768, 40%)**, zgodnie z AC-12/AC-13.
 
 ### 6.3 P4 — katalog akcji tylko wtedy, gdy może być potrzebny
 

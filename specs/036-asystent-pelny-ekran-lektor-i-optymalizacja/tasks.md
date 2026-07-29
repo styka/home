@@ -58,19 +58,19 @@
 
 ## Faza 2 — Przełącznik follow-upów (Z3)
 
-- [ ] **T-7** — **Migracja z wartością startową** (plan §2): `prisma/migrations/0214_asystent_followups_config/`
+- [x] **T-7** — **Migracja z wartością startową** (plan §2): `prisma/migrations/0214_asystent_followups_config/`
   — `INSERT … ON CONFLICT ("key") DO NOTHING` dla `assistant_followups_enabled` = `'1'`.
   *Gotowe, gdy:* `npm run check:migrations` przechodzi, migracja aplikuje się lokalnie i **powtórne
   uruchomienie nie nadpisuje** wartości ustawionej przez admina. **(AC-22)**
 
-- [ ] **T-8** — **Odczyt bez sesji + akcje admina** (plan §3): nowy `src/lib/ai/followups.ts`
+- [x] **T-8** — **Odczyt bez sesji + akcje admina** (plan §3): nowy `src/lib/ai/followups.ts`
   (`readFollowupsEnabled()` — czysty odczyt `Config`, brak wiersza → `true`); w
   `src/actions/llmConfig.ts` `getFollowupsEnabled` / `setFollowupsEnabled` z `requireAdmin`,
   `logAudit` i `revalidatePath("/admin/llm")`; wpisy w `action-coverage.json`.
   *Gotowe, gdy:* `npm run check:ai-coverage` przechodzi, a zmiana ustawienia zostawia ślad w
   `AuditLog`. **(AC-21)**
 
-- [ ] **T-9** — **Przełącznik w panelu admina** (plan §5.2): sekcja w `LlmConfigPanel.tsx` z
+- [x] **T-9** — **Przełącznik w panelu admina** (plan §5.2): sekcja w `LlmConfigPanel.tsx` z
   wyjaśnieniem, że propozycje kolejnych pytań kosztują tokeny; `page.tsx` dociąga wartość.
   *Gotowe, gdy:* przełącznik zapisuje się i po odświeżeniu pokazuje aktualny stan. **(AC-18, AC-20)**
 
@@ -93,24 +93,24 @@
   *Gotowe, gdy:* prefiks stały nie zależy od wybranych modułów, więc powtarza się między poleceniami.
   **(AC-14)**
 
-- [ ] **T-12** — **Strażnik uprzejmości** (plan §6.2): `SMALL_TALK_RE` w `fastPath.ts` z kotwicami
+- [x] **T-12** — **Strażnik uprzejmości** (plan §6.2): `SMALL_TALK_RE` w `fastPath.ts` z kotwicami
   `^…$`; w `agent/route.ts` dopasowanie pomija `classifyIntent` **i** `routeModules`.
   *Gotowe, gdy:* „hej", „cześć", „dzięki" pomijają dwa wywołania, a „cześć, dodaj mleko" **nie**
   wpada w skrót. **(AC-12, AC-13, AC-16)**
 
-- [ ] **T-13** — **Katalog akcji warunkowo + ścieżka odwrotu** (plan §6.3):
+- [x] **T-13** — **Katalog akcji warunkowo + ścieżka odwrotu** (plan §6.3):
   `buildSystemPrompt(modules, { includeActions })`; wyłączamy katalog dla uprzejmości i czystego
   odczytu; gdy agent mimo to zwróci `step: "plan"` — **ponów** przebieg z pełnym katalogiem.
   *Gotowe, gdy:* rozmowa nie dostaje katalogu akcji, a polecenie zmiany danych działa jak wcześniej
   (w razie pomyłki klasyfikacji — po ponowieniu). **(AC-15, AC-16)**
 
-- [ ] **T-14** — **Follow-upy sterowane ustawieniem** (plan §6.4): `buildSystemPrompt(..., { followups })`
+- [x] **T-14** — **Follow-upy sterowane ustawieniem** (plan §6.4): `buildSystemPrompt(..., { followups })`
   — przy wyłączonych fragment o `followups` znika z opisu kroku `answer`; `POST` czyta wartość przez
   `readFollowupsEnabled()`.
   *Gotowe, gdy:* przy wyłączonym ustawieniu instrukcja ich nie zamawia, a przy włączonym wracają.
   **(AC-19, AC-20)**
 
-- [ ] **T-15** — **Pomiar oszczędności** (plan §9): tymczasowy skrypt (`npx tsx`, kasowany po użyciu)
+- [x] **T-15** — **Pomiar oszczędności** (plan §9): tymczasowy skrypt (`npx tsx`, kasowany po użyciu)
   liczy tokeny promptów dla „cześć" **przed i po** zmianach oraz sprawdza `SMALL_TALK_RE` na zestawie
   zdań (w tym „cześć, dodaj mleko").
   *Gotowe, gdy:* liczby trafiają do `verify.md`, a zestaw testowy nie ma fałszywych trafień.

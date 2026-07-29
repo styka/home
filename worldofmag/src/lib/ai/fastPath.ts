@@ -92,6 +92,20 @@ function extractJson(content: string): RawParsed | null {
 export const READ_INTENT_RE =
   /^\s*(podaj|pokaż|pokaz|wyświetl|wyswietl|wylistuj|wypisz|listuj|znajdź|znajdz|wyszukaj|poszukaj|ile\b|jak(ie|i|a|ich)\b|któr\w+|co (mam|mogę|moge|powinien|powinienem|jest|robić|zrobić|warto)|masz|czy (mam|jest|są|sa|mogę|moge)|zaproponuj|zasugeruj|doradź|doradz|poradź|poradz|przypomnij|kiedy|gdzie|sprawdź|sprawdz)\b/i;
 
+/**
+ * 036: zwykła uprzejmość („cześć", „dzięki", „ok") — CAŁA wiadomość jest powitaniem/podziękowaniem.
+ *
+ * Taka tura nie potrzebuje ani klasyfikatora intencji, ani routera modułów: nie ma czego klasyfikować
+ * i nie ma modułu do wybrania. Dotąd kosztowała dwa wywołania modelu (~1748 tokenów) tylko po to, żeby
+ * oba orzekły „to rozmowa".
+ *
+ * Kotwica `$` jest tu KLUCZOWA: „cześć, dodaj mleko" ma NIE pasować — inaczej odcięlibyśmy katalog
+ * akcji poleceniu, które go potrzebuje. Dlatego po słowie dopuszczamy wyłącznie znaki interpunkcyjne
+ * i spacje, nic więcej.
+ */
+export const SMALL_TALK_RE =
+  /^\s*(hej|cześć|czesc|siema|witaj|dzień dobry|dzien dobry|dobry wieczór|dobry wieczor|hello|hi|yo|dzięki|dzieki|dziękuję|dziekuje|dziękuje|ok|okej|spoko|pa|do zobaczenia|dobranoc)[\s!.,…]*$/i;
+
 // Wskazanie nazwanej listy zakupów (np. „do listy Apteka", „na listę Tygodniowe") — fast-path
 // add_item gubi nazwę listy (buduje tylko rawText), więc oddajemy takie polecenie agentowi, który
 // wypełni listName (executor go respektuje). Sygnałem jest rdzeń słowa „lista".
