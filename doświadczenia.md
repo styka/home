@@ -9,13 +9,19 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 znalazł się POD systemowym zegarem i wycięciem na przednią kamerkę — akcje były nieklikalne.
 **Rozwiązanie:** Aplikacja deklaruje `viewportFit: "cover"` (`layout.tsx`), więc treść sięga fizycznej
 krawędzi ekranu — każdy element przyklejony do góry musi sam dołożyć `env(safe-area-inset-top)`.
-Mobilny top bar w `AppShell` robił to od dawna; nowe okno pełnoekranowe o tym „zapomniało". Dodany
-`paddingTop: max(0px, calc(env(safe-area-inset-top) - <offsetTop>px))` — odjęcie `offsetTop`
-z `visualViewport` jest istotne, bo gdy system przewinie stronę pod klawiaturę, górna krawędź okna
-jest już poniżej wycięcia i stały margines tylko zabierałby miejsce.
+Mobilny top bar w `AppShell` robił to od dawna; nowe okno pełnoekranowe o tym „zapomniało".
+**Poprawka drugiego podejścia (ta sama sesja):** pierwsza wersja dawała
+`max(0px, calc(env(safe-area-inset-top) - <offsetTop>px))`, w przekonaniu, że po przewinięciu strony
+pod klawiaturę górna krawędź okna schodzi poniżej wycięcia. **Błąd.** Widoczny obszar
+(`visualViewport`) zawsze renderuje się od FIZYCZNEJ góry ekranu — `offsetTop` mówi tylko, jak daleko
+w dokumencie znajduje się ta krawędź, a nie że odsunęła się od wycięcia. Objaw był dokładnie taki:
+bez klawiatury nagłówek w porządku, po jej wysunięciu zegar znów go zasłaniał. Margines musi być
+BEZWARUNKOWY: `paddingTop: env(safe-area-inset-top)`.
 **Lekcja:** Przy `viewport-fit=cover` każdy nowy element pełnoekranowy potrzebuje marginesów
-bezpiecznej strefy — góra i dół osobno. Zanim napiszesz własny, sprawdź, jak robi to sąsiedni
-komponent przyklejony do tej samej krawędzi (tu: `AppShell`), i skopiuj wzorzec.
+bezpiecznej strefy — góra i dół osobno, i **bez „optymalizowania" ich pod stan klawiatury**. Wycięcie
+jest własnością EKRANU, nie dokumentu, więc żadne przewinięcie ani zmiana `visualViewport` go nie
+przesuwa. Zanim napiszesz własny element pełnoekranowy, sprawdź sąsiedni przyklejony do tej samej
+krawędzi (tu: `AppShell`) i skopiuj wzorzec zamiast wymyślać arytmetykę.
 
 ## 2026-07-29 — Lektor serwerowy milczy na iPhonie, bo `new Audio()` po `await` traci zgodę użytkownika
 **Problem:** W trybie rozmowy asystent czytał odpowiedzi głosem przeglądarki, ale głos serwerowy
