@@ -774,6 +774,12 @@
     "reason": "admin",
     "access": "admin"
   },
+  "llmConfig:getFollowupsEnabled": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
   "llmConfig:getLlmProviders": {
     "kind": "read",
     "status": "excluded",
@@ -810,6 +816,11 @@
     "access": "admin"
   },
   "llmConfig:setCostAlertThreshold": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "llmConfig:setFollowupsEnabled": {
     "status": "excluded",
     "reason": "admin",
     "access": "admin"

@@ -50,12 +50,21 @@ function warmVoices(): void {
 }
 
 /**
- * „Odblokowuje" syntezę mowy na iOS/Safari. **Musi być wywołana w geście użytkownika** (klik/dotknięcie),
- * bo WebKit po cichu odrzuca `speak()` wywołane poza gestem. Wypowiada cichą (volume=0) wypowiedź, żeby
- * dalsze programowe `speak()` (np. w pętli rozmowy) były już słyszalne. Idempotentna, bezpieczna bez
- * wsparcia. Wywołaj przy włączaniu trybu rozmowy głosowej.
+ * „Odblokowuje" odczyt na głos na iOS/Safari. **Musi być wywołana w geście użytkownika**
+ * (klik/dotknięcie), bo WebKit po cichu odrzuca zarówno `speechSynthesis.speak()`, jak i
+ * `audio.play()` wywołane poza gestem.
+ *
+ * 036: odblokowuje OBIE ścieżki naraz — syntezę przeglądarki (cicha wypowiedź) i współdzielony
+ * element audio głosu serwerowego. Wcześniej odblokowywana była tylko przeglądarka, więc w trybie
+ * rozmowy na telefonie lektor serwerowy milkł i odzywał się głos systemowy. Jedno wywołanie w
+ * jednym miejscu = nie da się zapomnieć o którejś ścieżce.
+ *
+ * Idempotentna, bezpieczna bez wsparcia. Wywołaj przy włączaniu trybu rozmowy głosowej.
  */
 export function primeSpeech(): void {
+  // Głos serwerowy nie zależy od `speechSynthesis`, więc odblokowujemy go ZAWSZE — także tam,
+  // gdzie przeglądarka nie ma własnej syntezy.
+  primeSpeechPlayback();
   if (!ttsSupported()) return;
   try {
     warmVoices();
@@ -172,7 +181,19 @@ export type SpeakOptions = { onEnd?: () => void };
 // Każda awaria (brak konfiguracji, 429, sieć) po cichu SPADA na syntezę przeglądarki, więc
 // „odczytaj na głos" nigdy nie przestaje działać.
 let serverVoiceId: string | null = null;
-let currentAudio: HTMLAudioElement | null = null;
+/**
+ * 036: JEDEN, współdzielony element audio zamiast `new Audio()` przy każdej wypowiedzi.
+ *
+ * Dlaczego: iOS pozwala odtwarzać dźwięk tylko elementowi, który został „odblokowany" w geście
+ * użytkownika. Przy przycisku „czytaj" gest jest tuż obok, więc świeży `Audio` przechodził — ale
+ * w TRYBIE ROZMOWY mowa startuje długo po ostatnim dotknięciu (użytkownik mówił, potem szło
+ * żądanie), więc `play()` było odrzucane, `catch` zwracał `false` i lektor serwerowy po cichu
+ * spadał na głos systemowy. Element odblokowany raz (`primeSpeechPlayback`) gra już zawsze.
+ */
+let sharedAudio: HTMLAudioElement | null = null;
+/** URL bieżącego dźwięku — zwalniany po zakończeniu/zatrzymaniu (element zostaje). */
+let currentObjectUrl: string | null = null;
+let audioUnlocked = false;
 // Znacznik „generacji" wypowiedzi: każde `stopSpeaking()`/nowe `speak()` go zwiększa. Bez tego
 // odpowiedź `/api/tts`, która dotarła PO zatrzymaniu odczytu, i tak zaczynała grać — użytkownik
 // widział stan „zatrzymane", a słyszał lektora.
@@ -183,15 +204,63 @@ export function setServerVoiceId(id: string | null): void {
   serverVoiceId = id && id.trim() ? id.trim() : null;
 }
 
-function stopServerAudio(): void {
-  if (!currentAudio) return;
+/** Współdzielony element audio (tworzony leniwie, NIGDY nie niszczony — patrz komentarz wyżej). */
+function getSharedAudio(): HTMLAudioElement | null {
+  if (typeof window === "undefined") return null;
+  if (!sharedAudio) sharedAudio = new Audio();
+  return sharedAudio;
+}
+
+/**
+ * 036: „Odblokowuje" odtwarzanie dźwięku — wołaj SYNCHRONICZNIE w geście użytkownika (kliknięcie
+ * przycisku trybu rozmowy), przed jakimkolwiek `await`. Po tym element może grać także później,
+ * gdy gestu już nie ma. Bezpieczne do wielokrotnego wywołania.
+ */
+export function primeSpeechPlayback(): void {
+  if (audioUnlocked) return;
+  const audio = getSharedAudio();
+  if (!audio) return;
   try {
-    currentAudio.pause();
-    currentAudio.src = "";
+    // Najkrótszy poprawny plik WAV (cisza) — nie wymaga sieci, więc odtworzy się w tym samym geście.
+    audio.src =
+      "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+    const played = audio.play();
+    if (played && typeof played.then === "function") {
+      void played.then(() => { audio.pause(); audioUnlocked = true; }).catch(() => { /* zostaje zablokowane */ });
+    } else {
+      audio.pause();
+      audioUnlocked = true;
+    }
+  } catch {
+    /* ignore — przy niepowodzeniu zostaje głos przeglądarki */
+  }
+}
+
+function releaseObjectUrl(): void {
+  if (!currentObjectUrl) return;
+  URL.revokeObjectURL(currentObjectUrl);
+  currentObjectUrl = null;
+}
+
+function stopServerAudio(): void {
+  const audio = sharedAudio;
+  if (!audio) return;
+  try {
+    // Element jest WSPÓŁDZIELONY, więc uchwyty poprzedniej wypowiedzi wiszą na nim dalej. Zdejmujemy
+    // je PRZED `load()`, bo przeładowanie bez źródła potrafi wywołać zdarzenie `error` — a to
+    // uruchomiłoby `onEnd` już zatrzymanej wypowiedzi (w trybie rozmowy: przedwczesny powrót do
+    // nasłuchu). Nowa wypowiedź i tak ustawia własne uchwyty tuż po tym wywołaniu.
+    audio.onended = null;
+    audio.onerror = null;
+    audio.pause();
+    // `removeAttribute` zamiast `src = ""` — pusty `src` bywa interpretowany jako adres strony
+    // i generuje błąd sieci w konsoli.
+    audio.removeAttribute("src");
+    audio.load();
   } catch {
     /* ignore */
   }
-  currentAudio = null;
+  releaseObjectUrl();
 }
 
 /** Czy jakakolwiek synteza jest dostępna (przeglądarka LUB serwer). */
@@ -211,18 +280,20 @@ async function speakViaServer(text: string, generation: number, opts?: SpeakOpti
     const blob = await res.blob();
     // Odczyt zatrzymany (albo zaczęła się nowa wypowiedź) w czasie oczekiwania na dźwięk — nie graj.
     if (generation !== speechGeneration) return true;
+    const audio = getSharedAudio();
+    if (!audio) return false;
     stopServerAudio();
     const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    currentAudio = audio;
+    currentObjectUrl = url;
     const done = () => {
-      URL.revokeObjectURL(url);
-      if (currentAudio === audio) currentAudio = null;
+      if (currentObjectUrl === url) releaseObjectUrl();
       opts?.onEnd?.();
     };
     audio.onended = done;
     audio.onerror = done;
+    audio.src = url;
     await audio.play();
+    audioUnlocked = true; // udane odtworzenie też odblokowuje element na przyszłość
     return true;
   } catch {
     return false;

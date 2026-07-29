@@ -5,16 +5,16 @@ import { auth } from "@/lib/auth";
 import { READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentTools";
 import {
   ACTION_CATALOG_BY_MODULE,
-  NAVIGATION_CATALOG,
   buildRouterPrompt,
-  buildSystemPrompt,
+  buildSystemPromptParts,
 } from "@/lib/ai/agentPrompt";
+import { readFollowupsEnabled } from "@/lib/ai/followups";
 import { partialRunFallbackMessage } from "@/lib/ai/agentPartialRun";
 import { webSearch } from "@/lib/news/webSearch";
 import { chatComplete, classifyRateLimitKind, rateLimitUserMessage } from "@/lib/llm/chat";
 import { checkRateLimit, acquireSlot } from "@/lib/ai/rateLimit";
 import { checkAiBudget, recordAiUsage, newUsageMeter, accrueUsage, type UsageMeter } from "@/lib/ai/usage";
-import { classifyIntent, READ_INTENT_RE } from "@/lib/ai/fastPath";
+import { classifyIntent, READ_INTENT_RE, SMALL_TALK_RE } from "@/lib/ai/fastPath";
 import { extractJsonLoose, salvageAnswerText } from "@/lib/ai/agentProtocol";
 import { compactToolResults, collapseUsedToolData, TOOL_DATA_HEADER } from "@/lib/ai/agentContext";
 import { humanizeAssistantText } from "@/lib/ai/humanize";
@@ -136,7 +136,9 @@ async function callAgent(
   maxTokens = AGENT_MAX_TOKENS,
   conversationId?: string | null,
   op: AgentOp = "reasoning",
-  level?: AssistantWorkLevel
+  level?: AssistantWorkLevel,
+  // 036: podział promptu systemowego na stały prefiks i zmienny ogon — cache tylko na prefiksie.
+  systemBlocks?: { stable: string; variable: string }
 ): Promise<{ content: string; truncated: boolean }> {
   const result = await chatComplete({
     op,
@@ -148,6 +150,7 @@ async function callAgent(
     conversationId,
     // 034: poziom pracy asystenta — model, wysiłek i temperatura wynikają z konfiguracji poziomu.
     level,
+    systemBlocks,
   });
   if (!result.ok) {
     const err = new Error(result.message) as Error & { status?: number };
@@ -270,11 +273,12 @@ async function runAgentLoop(
   conversationId?: string | null,
   op: AgentOp = "reasoning",
   isFinalRun = true,
-  level?: AssistantWorkLevel
+  level?: AssistantWorkLevel,
+  systemBlocks?: { stable: string; variable: string }
 ): Promise<LoopResult> {
   // Myśli lecą do klienta NA ŻYWO (SSE) — humanizujemy je po drodze, nie tylko na końcu.
   const humanThought = onThought ? (t: string) => onThought(humanizeAssistantText(t)) : undefined;
-  const result = await runAgentLoopRaw(messages, userId, humanThought, meta, maxTokens, conversationId, op, isFinalRun, level);
+  const result = await runAgentLoopRaw(messages, userId, humanThought, meta, maxTokens, conversationId, op, isFinalRun, level, systemBlocks);
   const body = result.body as Record<string, unknown>;
   for (const key of ["answer", "question", "content", "thought", "label", "title"]) {
     if (typeof body[key] === "string") body[key] = humanizeAssistantText(body[key] as string);
@@ -310,7 +314,9 @@ async function runAgentLoopRaw(
   // z jego wynikiem — a to płatne wywołanie modelu. Wtedy je pomijamy.
   isFinalRun = true,
   // 034: poziom pracy asystenta (wybiera zestaw ustawień modelu z konfiguracji).
-  level?: AssistantWorkLevel
+  level?: AssistantWorkLevel,
+  // 036: prompt systemowy w dwóch częściach — `cache_control` trafi tylko na stały prefiks.
+  systemBlocks?: { stable: string; variable: string }
 ): Promise<LoopResult> {
   const log: LogEntry[] = [];
   // 030: pamięć wywołań narzędzi w obrębie tury — identyczne wywołanie (tool+args) nie
@@ -338,7 +344,7 @@ async function runAgentLoopRaw(
       let content: string;
       let truncated = false;
       try {
-        const res = await callAgent(messages, meta, maxTokens, conversationId, op, level);
+        const res = await callAgent(messages, meta, maxTokens, conversationId, op, level, systemBlocks);
         content = res.content;
         truncated = res.truncated;
       } catch (e) {
@@ -658,6 +664,23 @@ export async function POST(req: NextRequest) {
   // przy wznawianiu (clarify/refine) dajemy pełny zestaw aktywnych modułów.
   const messages: ChatMessage[] = [];
   let selectedModules: string[] = CATALOG_MODULES;
+  // 036: pełny zestaw modułów dostępnych w tej turze — potrzebny do ŚCIEŻKI ODWROTU, gdy pierwszy
+  // przebieg poszedł bez katalogu akcji, a agent mimo to chce coś zmienić (AC-15).
+  let activeModules: string[] = CATALOG_MODULES;
+
+  // 030/036: rozpoznanie rodzaju tury liczone RAZ, bo decyduje i o pominięciu wywołań modelu
+  // (uprzejmość), i o kształcie promptu (katalog akcji), i o wyborze typu operacji niżej.
+  const freshText = body.messages?.length ? "" : (body.text ?? "").trim();
+  const isSmallTalk = !!freshText && SMALL_TALK_RE.test(freshText);
+  // 030: PROSTA TURA ODCZYTOWA → tańszy model (op "dispatch", przydział w /admin/llm — C-40)
+  // z jednorazowym fallbackiem do "reasoning". Klasyfikacja konserwatywna (wątpliwość →
+  // reasoning): tylko świeże polecenie (nie wznowienie clarify/refine), intencja odczytu
+  // (READ_INTENT_RE), krótki tekst, bez słów analitycznych/raportowych.
+  const isSimpleRead =
+    !!freshText && freshText.length <= 160 && READ_INTENT_RE.test(freshText) && !SIMPLE_READ_ANALYTIC_RE.test(freshText);
+  // 036: katalog akcji ZAPISU (i nawigacji) dokładamy tylko wtedy, gdy tura może ich potrzebować.
+  // Uprzejmość i czysty odczyt ich nie użyją, a to ~1450 tokenów na każde wywołanie modelu.
+  const includeActions = !isSmallTalk && !isSimpleRead;
   // 028: jeden akumulator zużycia na całą turę — dokładają do niego fast-path, router
   // modułów i pętla agenta, żeby wskaźnik kosztu w oknie czatu był realny.
   const meta: AgentMeta = newUsageMeter();
@@ -695,6 +718,7 @@ export async function POST(req: NextRequest) {
     const ctx = body.context?.length ? body.context : CATALOG_MODULES;
     selectedModules = ctx.filter((m) => CATALOG_MODULES.includes(m));
     if (selectedModules.length === 0) selectedModules = CATALOG_MODULES;
+    activeModules = selectedModules;
     // Wznowienie po doprecyzowaniu: dołącz dialog klienta (pomijając ewentualny system) + odpowiedź użytkownika.
     for (const m of body.messages) {
       if (m.role !== "system" && typeof m.content === "string") {
@@ -722,30 +746,42 @@ export async function POST(req: NextRequest) {
     const today = body.today ?? new Date().toISOString();
     const context = body.context?.length ? body.context : [...MODULES];
     const primary = context[0] ?? "shopping";
+    activeModules = context.filter((m) => CATALOG_MODULES.includes(m));
+    if (activeModules.length === 0) activeModules = CATALOG_MODULES;
 
-    // 002-ai-architecture — FAST-PATH: proste polecenie ("dodaj mleko", "zanotuj X")
-    // rozstrzygamy tanim klasyfikatorem (op:"dispatch") i budujemy gotową AIAction
-    // BEZ uruchamiania dużego modelu (op:"reasoning"). Zwracamy krok "plan" w tym
-    // samym kształcie co pętla agenta → panel potwierdzenia (ActionDrawer) bez zmian.
-    // Każda niepewność → complex → dotychczasowa pełna pętla poniżej.
-    const fast = await classifyIntent(text, context, conversationId, meta, assistantLevel, userId);
-    if (fast.kind === "simple") {
-      const thought = fast.action.description || "Przygotowano akcję.";
-      // 028: ścieżka „simple" zwraca wcześnie (omija finally z recordAiUsage), więc
-      // rozlicz tu tokeny klasyfikacji do dziennego budżetu — JEDEN punkt rozliczania.
-      void recordAiUsage(userId, meta.tokens).catch(() => {});
-      return NextResponse.json({
-        step: "plan",
-        actions: [fast.action],
-        thought,
-        log: [{ iter: 0, step: "plan", thought, actionsCount: 1 }],
-        messages: [{ role: "user", content: text }],
-        meta: { source: "fast_path", model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd, calls: meta.calls },
-      });
+    // 036 — ZWYKŁA UPRZEJMOŚĆ („cześć", „dzięki"): cała wiadomość jest powitaniem, więc nie ma czego
+    // klasyfikować ani jakiego modułu wybierać. Pomijamy fast-path ORAZ router — dwa wywołania modelu
+    // mniej na turę, która i tak skończy się zwykłą odpowiedzią. Katalogu akcji nie dołączamy
+    // (`includeActions:false`); gdyby agent mimo to zwrócił „plan", zadziała ścieżka odwrotu niżej.
+    // Moduł podstawowy podajemy mimo wszystko, bo PUSTA lista oznacza dla `buildReadToolsPrompt`
+    // „nie wiem, daj wszystko" — czyli PEŁNY katalog narzędzi odczytu, większy niż to, co zastąpił.
+    if (isSmallTalk) {
+      selectedModules = [primary];
+    } else {
+      // 002-ai-architecture — FAST-PATH: proste polecenie ("dodaj mleko", "zanotuj X")
+      // rozstrzygamy tanim klasyfikatorem (op:"dispatch") i budujemy gotową AIAction
+      // BEZ uruchamiania dużego modelu (op:"reasoning"). Zwracamy krok "plan" w tym
+      // samym kształcie co pętla agenta → panel potwierdzenia (ActionDrawer) bez zmian.
+      // Każda niepewność → complex → dotychczasowa pełna pętla poniżej.
+      const fast = await classifyIntent(text, context, conversationId, meta, assistantLevel, userId);
+      if (fast.kind === "simple") {
+        const thought = fast.action.description || "Przygotowano akcję.";
+        // 028: ścieżka „simple" zwraca wcześnie (omija finally z recordAiUsage), więc
+        // rozlicz tu tokeny klasyfikacji do dziennego budżetu — JEDEN punkt rozliczania.
+        void recordAiUsage(userId, meta.tokens).catch(() => {});
+        return NextResponse.json({
+          step: "plan",
+          actions: [fast.action],
+          thought,
+          log: [{ iter: 0, step: "plan", thought, actionsCount: 1 }],
+          messages: [{ role: "user", content: text }],
+          meta: { source: "fast_path", model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd, calls: meta.calls },
+        });
+      }
+
+      // KROK 1 (router): zawęź katalog akcji do modułów istotnych dla polecenia.
+      selectedModules = await routeModules(text, context, primary, conversationId, meta);
     }
-
-    // KROK 1 (router): zawęź katalog akcji do modułów istotnych dla polecenia.
-    selectedModules = await routeModules(text, context, primary, conversationId, meta);
 
     // Nazwa bieżącego projektu (jeśli użytkownik jest na jego widoku)
     let currentProjectName: string | null = null;
@@ -782,7 +818,11 @@ export async function POST(req: NextRequest) {
   }
 
   // System prompt (z katalogiem tylko wybranych modułów) na początek konwersacji.
-  messages.unshift({ role: "system", content: buildSystemPrompt(selectedModules) });
+  // 036: budowany w dwóch częściach — stały prefiks trafia do pamięci podręcznej dostawcy,
+  // zmienny ogon (katalogi) już nie. Follow-upy zamawiamy tylko, gdy administrator je włączył.
+  const followupsEnabled = await readFollowupsEnabled();
+  const promptParts = buildSystemPromptParts(selectedModules, { includeActions, followups: followupsEnabled });
+  messages.unshift({ role: "system", content: promptParts.stable + promptParts.variable });
 
   // Rezerwacja tokenów odpowiedzi: duża TYLKO gdy użytkownik prosi o raport/obszerne
   // zestawienie (step "report" bywa długi). Dla zwykłych zapytań mała rezerwacja tnie
@@ -792,15 +832,12 @@ export async function POST(req: NextRequest) {
   const wantsReport = /\braport\w*|podsumow\w*|zestawieni\w*|streść\w*|streszcz\w*/i.test(intentText);
   const agentMaxTokens = wantsReport ? REPORT_MAX_TOKENS : AGENT_MAX_TOKENS;
 
-  // 030: PROSTA TURA ODCZYTOWA → tańszy model (op "dispatch", przydział w /admin/llm — C-40)
-  // z jednorazowym fallbackiem do "reasoning". Klasyfikacja konserwatywna (wątpliwość →
-  // reasoning): tylko świeże polecenie (nie wznowienie clarify/refine), intencja odczytu
-  // (READ_INTENT_RE), krótki tekst, bez słów analitycznych/raportowych.
-  const freshText = body.messages?.length ? "" : (body.text ?? "").trim();
-  const isSimpleRead =
-    !!freshText && freshText.length <= 160 && READ_INTENT_RE.test(freshText) && !SIMPLE_READ_ANALYTIC_RE.test(freshText);
   // Kopia wyjściowych wiadomości do ewentualnego ponowienia na "reasoning" (pętla mutuje messages).
   const baselineMessages: ChatMessage[] | null = isSimpleRead ? messages.map((m) => ({ ...m })) : null;
+  // 036 (AC-15) — ŚCIEŻKA ODWROTU: gdy prompt poszedł BEZ katalogu akcji, a agent mimo to zwrócił
+  // „plan", ponawiamy przebieg z pełnym katalogiem. Kosztuje jedno dodatkowe wywołanie w rzadkim
+  // przypadku, ale gwarantuje, że oszczędność nigdy nie odbiera asystentowi możliwości działania.
+  const noCatalogBaseline: ChatMessage[] | null = includeActions ? null : messages.map((m) => ({ ...m }));
 
   // Fallback obejmuje: błąd LLM (status), degradację formatu i niedokończenie w limicie kroków.
   const loopNeedsFallback = (r: LoopResult): boolean =>
@@ -819,10 +856,22 @@ export async function POST(req: NextRequest) {
     // 032: pierwszy przebieg jest OSTATECZNY tylko wtedy, gdy nie mamy w zapasie ponowienia na
     // „reasoning" — inaczej jego podsumowanie i tak poszłoby do kosza (patrz `isFinalRun`).
     const canFallback = !economy && !wantsBestQuality && !!baselineMessages;
-    const first = await runAgentLoop(messages, userId, onThought, meta, agentMaxTokens, conversationId, primaryOp, !canFallback, assistantLevel);
-    if (!canFallback || !loopNeedsFallback(first)) return first;
-    return runAgentLoop(baselineMessages!, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning", true, assistantLevel);
+    const first = await runAgentLoop(messages, userId, onThought, meta, agentMaxTokens, conversationId, primaryOp, !canFallback, assistantLevel, promptParts);
+    const result =
+      !canFallback || !loopNeedsFallback(first)
+        ? first
+        : await runAgentLoop(baselineMessages!, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning", true, assistantLevel, promptParts);
+    return withActionCatalogRetry(result, onThought);
   };
+
+  // AC-15: ponowienie z pełnym katalogiem akcji, gdy tura bez katalogu skończyła się krokiem „plan".
+  async function withActionCatalogRetry(result: LoopResult, onThought?: (t: string) => void): Promise<LoopResult> {
+    if (!noCatalogBaseline || (result.body as { step?: string }).step !== "plan") return result;
+    const fullParts = buildSystemPromptParts(activeModules, { followups: followupsEnabled });
+    const retryMessages = noCatalogBaseline.map((m) => ({ ...m }));
+    retryMessages[0] = { role: "system", content: fullParts.stable + fullParts.variable };
+    return runAgentLoop(retryMessages, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning", true, assistantLevel, fullParts);
+  }
 
   // H4: strażnik współbieżności — nie pozwól odpalić zbyt wielu ciężkich operacji naraz.
   const release = acquireSlot(userId);

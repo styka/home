@@ -29,6 +29,7 @@ import { isDestructiveAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executors/shared";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
 import { useOverlayState } from "@/hooks/useOverlayState";
+import { useIsNarrowScreen, useVisualViewport } from "@/hooks/useVisualViewport";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AssistantLevelSettings } from "@/components/home/AssistantLevelSettings";
 
@@ -359,6 +360,14 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
    * a nie w trzech niezależnych flagach. Dzięki temu z definicji nie da się otworzyć dwóch naraz,
    * a każda ikona działa tak samo: klik otwiera, ponowny klik zamyka i wraca do rozmowy.
    */
+  // 036: na telefonie okno asystenta zajmuje CAŁY widoczny obszar i jest do niego przypięte. `85vh`
+  // liczyło się z layout viewport, który przy klawiaturze się nie kurczy — system przewijał więc całą
+  // stronę, żeby odsłonić pole (stąd „okno ucieka w górę" i karetka w złym miejscu). Na komputerze
+  // wszystko zostaje po staremu: wyśrodkowany arkusz `max-w-lg` z przyciemnionym tłem.
+  const isNarrow = useIsNarrowScreen();
+  const viewport = useVisualViewport(isNarrow && isOpen);
+  const fullScreen = isNarrow && !!viewport;
+
   const [headerPanel, setHeaderPanel] = useState<HeaderPanel>("none");
   const showPrefs = headerPanel === "prefs";
   const showReport = headerPanel === "report";
@@ -524,8 +533,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   function toggleVoice() {
     if (voiceStateRef.current !== "off") { stopVoice(); return; }
     if (!voiceSupported) return;
-    // KRYTYCZNE dla iOS/Safari: „odblokuj" syntezę mowy TERAZ, w geście dotknięcia — inaczej WebKit
-    // wycisza późniejsze (programowe) wypowiedzi Asystenta. Pierwszy nasłuch też startuje w geście.
+    // KRYTYCZNE dla iOS/Safari: „odblokuj" odczyt TERAZ, w geście dotknięcia — inaczej WebKit wycisza
+    // późniejsze (programowe) wypowiedzi Asystenta. 036: dotyczy to OBU ścieżek — syntezy przeglądarki
+    // i głosu serwerowego (element audio); `primeSpeech` odblokowuje obie. Musi być przed jakimkolwiek
+    // `await`, bo aktywacja użytkownika wygasa. Pierwszy nasłuch też startuje w geście.
     primeSpeech();
     spokenIdRef.current = turns.length ? turns[turns.length - 1].id : null;
     voiceStateRef.current = "listening";
@@ -1496,7 +1507,12 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
         <div
           data-omnia-overlay="assistant"
           className="fixed inset-0 flex items-end md:items-center md:justify-center"
-          style={{ zIndex: 9990, backgroundColor: "rgba(0,0,0,0.6)" }}
+          style={{
+            zIndex: 9990,
+            // Na pełnym ekranie tło i tak jest całkowicie zasłonięte — przezroczystość oszczędza
+            // jedną warstwę do złożenia i usuwa „przebłysk" przy animacji klawiatury.
+            backgroundColor: fullScreen ? "transparent" : "rgba(0,0,0,0.6)",
+          }}
           onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
         >
           <div
@@ -1505,12 +1521,38 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
             aria-modal="true"
             aria-label="Asystent AI"
             className="w-full md:max-w-lg md:mx-4"
-            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "16px 16px 0 0", height: "85vh", maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              ...(fullScreen
+                ? {
+                    // Telefon: okno przypięte do WIDOCZNEGO obszaru. Klawiatura zmniejsza `height`,
+                    // więc miejsce oddaje wyłącznie przewijana lista wiadomości — nagłówek zostaje
+                    // u góry, a kompozytor tuż nad klawiaturą.
+                    position: "fixed",
+                    left: 0,
+                    top: viewport!.offsetTop,
+                    width: "100%",
+                    height: viewport!.height,
+                    border: "none",
+                    borderRadius: 0,
+                  }
+                : {
+                    border: "1px solid var(--border)",
+                    borderRadius: "16px 16px 0 0",
+                    height: "85vh",
+                    maxHeight: "85vh",
+                  }),
+            }}
           >
-            {/* Handle bar (mobile) */}
-            <div className="md:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)" }} />
-            </div>
+            {/* Uchwyt „arkusza" — tylko wtedy, gdy okno NIE jest na pełny ekran (036). */}
+            {!fullScreen && (
+              <div className="md:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)" }} />
+              </div>
+            )}
 
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)", minWidth: 0, gap: 8 }}>
