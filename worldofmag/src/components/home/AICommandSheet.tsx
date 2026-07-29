@@ -1538,6 +1538,12 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     height: viewport!.height,
                     border: "none",
                     borderRadius: 0,
+                    // Strefa systemowa u góry (zegar, wycięcie na kamerkę). Aplikacja działa z
+                    // `viewportFit: "cover"`, więc treść sięga fizycznej krawędzi ekranu i bez tego
+                    // marginesu nagłówek asystenta ląduje POD zegarem — jego przyciski są nieklikalne.
+                    // Odejmujemy `offsetTop`: gdy system przewinie stronę (klawiatura), górna krawędź
+                    // okna jest już poniżej wycięcia i dodatkowy margines tylko zabierałby miejsce.
+                    paddingTop: `max(0px, calc(env(safe-area-inset-top) - ${viewport!.offsetTop}px))`,
                   }
                 : {
                     border: "1px solid var(--border)",
