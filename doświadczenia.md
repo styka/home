@@ -4,6 +4,19 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-29 — Pełny ekran przy `viewport-fit=cover` wchodzi pod zegar i wycięcie na kamerkę
+**Problem:** Po przestawieniu okna asystenta na pełny ekran telefonu nagłówek wraz z przyciskami
+znalazł się POD systemowym zegarem i wycięciem na przednią kamerkę — akcje były nieklikalne.
+**Rozwiązanie:** Aplikacja deklaruje `viewportFit: "cover"` (`layout.tsx`), więc treść sięga fizycznej
+krawędzi ekranu — każdy element przyklejony do góry musi sam dołożyć `env(safe-area-inset-top)`.
+Mobilny top bar w `AppShell` robił to od dawna; nowe okno pełnoekranowe o tym „zapomniało". Dodany
+`paddingTop: max(0px, calc(env(safe-area-inset-top) - <offsetTop>px))` — odjęcie `offsetTop`
+z `visualViewport` jest istotne, bo gdy system przewinie stronę pod klawiaturę, górna krawędź okna
+jest już poniżej wycięcia i stały margines tylko zabierałby miejsce.
+**Lekcja:** Przy `viewport-fit=cover` każdy nowy element pełnoekranowy potrzebuje marginesów
+bezpiecznej strefy — góra i dół osobno. Zanim napiszesz własny, sprawdź, jak robi to sąsiedni
+komponent przyklejony do tej samej krawędzi (tu: `AppShell`), i skopiuj wzorzec.
+
 ## 2026-07-29 — Lektor serwerowy milczy na iPhonie, bo `new Audio()` po `await` traci zgodę użytkownika
 **Problem:** W trybie rozmowy asystent czytał odpowiedzi głosem przeglądarki, ale głos serwerowy
 (`/api/tts`) na telefonie po prostu milczał — bez błędu w konsoli, `play()` odrzucane cicho.
