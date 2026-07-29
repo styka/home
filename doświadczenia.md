@@ -4,6 +4,27 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-29 — Okno „skacze" przy klawiaturze, bo korekta układu idzie przez stan Reacta
+**Problem:** Po przypięciu okna asystenta do `visualViewport` przy rozwijaniu i zwijaniu klawiatury
+było widać przeskok: okno najpierw wyjeżdżało w górę ponad ekran, a chwilę później wracało na miejsce
+i poprawiało wysokość. W innych aplikacjach z czatem nic takiego się nie dzieje.
+**Rozwiązanie:** Element `position: fixed` jest pozycjonowany względem UKŁADU strony, a iOS przy
+klawiaturze przesuwa **widoczny obszar** względem tego układu — więc okno realnie wyjeżdża nad ekran
+i musi zostać skorygowane. Korekta szła przez `requestAnimationFrame` → `setState` → render, czyli
+trafiała do stylu **klatkę (albo więcej) później** — dokładnie tyle, ile trwa widoczny przeskok.
+Naprawa: geometrię pisze do elementu sam hook, **synchronicznie w obsłudze zdarzenia**
+`visualViewport` (`usePinToVisualViewport`). Żeby React nie nadpisywał świeżych wartości przy
+kolejnych renderach, `top`/`height` idą przez **zmienne CSS** (`--vv-top`, `--vv-height`): komponent
+deklaruje `top: var(--vv-top, 0px)` raz (stały napis, nie ma czego diffować), a hook zmienia tylko
+wartość zmiennej. Wsparcie dla API liczone jest w `ref` podczas renderu, nie w stanie — inaczej
+pierwsza klatka po otwarciu pokazywała jeszcze stary układ (`85vh`). Dorzucone też utrzymywanie dołu
+rozmowy: gdy obszar wiadomości maleje, najnowsza wiadomość inaczej wyjeżdża poza widok (z tolerancją,
+by nie szarpać kogoś, kto czyta historię wyżej).
+**Lekcja:** Reakcja na `visualViewport` to **korekta układu, nie zmiana stanu aplikacji** — musi
+trafić do DOM w tym samym zdarzeniu. Stan Reacta i `rAF` są tu o klatkę za późno i użytkownik to
+widzi. Gdy imperatywny zapis miałby konkurować z Reactem o tę samą właściwość CSS, rozdziel role
+zmienną CSS: React deklaruje `var()`, kod pisze wartość.
+
 ## 2026-07-29 — Pełny ekran przy `viewport-fit=cover` wchodzi pod zegar i wycięcie na kamerkę
 **Problem:** Po przestawieniu okna asystenta na pełny ekran telefonu nagłówek wraz z przyciskami
 znalazł się POD systemowym zegarem i wycięciem na przednią kamerkę — akcje były nieklikalne.

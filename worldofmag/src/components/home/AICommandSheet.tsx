@@ -29,7 +29,7 @@ import { isDestructiveAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executors/shared";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
 import { useOverlayState } from "@/hooks/useOverlayState";
-import { useIsNarrowScreen, useVisualViewport } from "@/hooks/useVisualViewport";
+import { useIsNarrowScreen, usePinToVisualViewport, VV_HEIGHT_VAR, VV_TOP_VAR } from "@/hooks/useVisualViewport";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AssistantLevelSettings } from "@/components/home/AssistantLevelSettings";
 
@@ -365,8 +365,6 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   // stronę, żeby odsłonić pole (stąd „okno ucieka w górę" i karetka w złym miejscu). Na komputerze
   // wszystko zostaje po staremu: wyśrodkowany arkusz `max-w-lg` z przyciemnionym tłem.
   const isNarrow = useIsNarrowScreen();
-  const viewport = useVisualViewport(isNarrow && isOpen);
-  const fullScreen = isNarrow && !!viewport;
 
   const [headerPanel, setHeaderPanel] = useState<HeaderPanel>("none");
   const showPrefs = headerPanel === "prefs";
@@ -378,6 +376,19 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
+  // Czy rozmowa jest przewinięta do dołu. Aktualizowane przy przewijaniu, żeby przy zmianie
+  // dostępnego obszaru (klawiatura) wiedzieć, czy wolno dociągnąć widok do najnowszej wiadomości —
+  // kogoś, kto czyta historię wyżej, nie wolno szarpać w dół.
+  const atBottomRef = useRef(true);
+  const keepConversationBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (el && atBottomRef.current) el.scrollTop = el.scrollHeight;
+  }, []);
+
+  // Geometrię okna pełnoekranowego pisze do elementu hook — SYNCHRONICZNIE, w obsłudze zdarzenia
+  // `visualViewport`. Gdyby szła przez stan Reacta, korekta trafiałaby klatkę po tym, jak iOS
+  // przesunie widoczny obszar pod klawiaturę, i okno na moment wyjeżdżałoby nad ekran.
+  const fullScreen = usePinToVisualViewport(sheetRef, isNarrow && isOpen, keepConversationBottom);
   const convoIdRef = useRef<string | null>(null);
   convoIdRef.current = conversationId;
   // Anulowanie generowania (Stop) + ostatni payload do „Generuj ponownie".
@@ -1528,14 +1539,17 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
               overflow: "hidden",
               ...(fullScreen
                 ? {
-                    // Telefon: okno przypięte do WIDOCZNEGO obszaru. Klawiatura zmniejsza `height`,
-                    // więc miejsce oddaje wyłącznie przewijana lista wiadomości — nagłówek zostaje
-                    // u góry, a kompozytor tuż nad klawiaturą.
+                    // Telefon: okno przypięte do WIDOCZNEGO obszaru. Wartości zmiennych `--vv-*`
+                    // ustawia `usePinToVisualViewport` synchronicznie na elemencie (patrz komentarz
+                    // przy `sheetRef`); tutaj deklarujemy je RAZ, więc kolejne rendery Reacta nie mają
+                    // czego nadpisać. Domyślne wartości w `var()` obsługują pierwszą klatkę.
+                    // Klawiatura zmniejsza wysokość okna, a miejsce oddaje wyłącznie przewijana lista
+                    // wiadomości: nagłówek zostaje u góry, kompozytor tuż nad klawiaturą.
                     position: "fixed",
                     left: 0,
-                    top: viewport!.offsetTop,
+                    top: `var(${VV_TOP_VAR}, 0px)`,
                     width: "100%",
-                    height: viewport!.height,
+                    height: `var(${VV_HEIGHT_VAR}, 100dvh)`,
                     border: "none",
                     borderRadius: 0,
                     // Strefa systemowa u góry (zegar, wycięcie na kamerkę). Aplikacja działa z
@@ -1776,7 +1790,17 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 ))}
               </div>
             ) : headerPanel !== "none" ? null : (
-              <div ref={scrollRef} aria-live="polite" className="flex-1 overflow-y-auto px-4 py-4" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div
+                ref={scrollRef}
+                aria-live="polite"
+                className="flex-1 overflow-y-auto px-4 py-4"
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                onScroll={(e) => {
+                  // Tolerancja, bo przy podpikselowych wysokościach „dół" rzadko wypada dokładnie na 0.
+                  const el = e.currentTarget;
+                  atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+                }}
+              >
                 {/* Pusty wątek → sugestie startowe */}
                 {turns.length === 0 && !busy && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
