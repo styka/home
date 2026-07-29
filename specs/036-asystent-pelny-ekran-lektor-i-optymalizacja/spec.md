@@ -50,63 +50,63 @@ przestać być bezwarunkowe: administrator ma móc je wyłączyć, bo kosztują 
 
 **Okno na telefonie (Z1)**
 
-- [ ] **AC-1** — Given jestem na telefonie, when otwieram asystenta, then zajmuje on **całą szerokość
+- [x] **AC-1** — Given jestem na telefonie, when otwieram asystenta, then zajmuje on **całą szerokość
       i całą wysokość** ekranu (bez przyciemnionego tła po bokach i bez paska nad oknem).
-- [ ] **AC-2** — Given asystent jest otwarty, when tapnę w pole wiadomości i wysunie się klawiatura,
+- [x] **AC-2** — Given asystent jest otwarty, when tapnę w pole wiadomości i wysunie się klawiatura,
       then okno **nie przesuwa się w górę** — nadal wypełnia widoczny obszar ekranu, a miejsce oddaje
       wyłącznie obszar wiadomości.
-- [ ] **AC-3** — Given klawiatura jest otwarta, when patrzę na okno, then nagłówek jest widoczny u góry,
+- [x] **AC-3** — Given klawiatura jest otwarta, when patrzę na okno, then nagłówek jest widoczny u góry,
       a pole wiadomości tuż nad klawiaturą — żadne z nich nie jest przesłonięte ani wypchnięte poza ekran.
-- [ ] **AC-4** — Given klawiatura się chowa, when wracam do rozmowy, then okno płynnie odzyskuje pełną
+- [x] **AC-4** — Given klawiatura się chowa, when wracam do rozmowy, then okno płynnie odzyskuje pełną
       wysokość, bez przeskoku i bez pozostawionej pustej przestrzeni.
-- [ ] **AC-5** — Given tapnę w puste pole wiadomości, when pojawia się klawiatura, then kursor jest
+- [x] **AC-5** — Given tapnę w puste pole wiadomości, when pojawia się klawiatura, then kursor jest
       **w polu**, we właściwej wysokości, i nie zmienia położenia po wpisaniu pierwszego znaku.
-- [ ] **AC-6** — Given jestem na komputerze, when otwieram asystenta, then wygląda i zachowuje się jak
+- [x] **AC-6** — Given jestem na komputerze, when otwieram asystenta, then wygląda i zachowuje się jak
       dotąd (wyśrodkowane okno o ograniczonej szerokości, przyciemnione tło, zamykanie kliknięciem obok).
-- [ ] **AC-7** — Given właściciel pyta, co w kodzie „kombinuje" z kursorem, when kończymy wdrożenie,
+- [x] **AC-7** — Given właściciel pyta, co w kodzie „kombinuje" z kursorem, when kończymy wdrożenie,
       then dostaje **jednoznaczną odpowiedź**: czy zostały jakiekolwiek zabiegi dotyczące fokusu lub
       karetki, a jeśli tak — jakie i dlaczego.
 
 **Lektor w trybie rozmowy (Z2)**
 
-- [ ] **AC-8** — Given ustawiłem lektora serwerowego, when uruchamiam tryb rozmowy **na telefonie**,
+- [x] **AC-8** — Given ustawiłem lektora serwerowego, when uruchamiam tryb rozmowy **na telefonie**,
       then odpowiedzi asystenta czyta ten sam głos co po kliknięciu ikony „czytaj" — nie głos systemowy.
-- [ ] **AC-9** — Given jestem w trybie rozmowy, when asystent wypowiada kolejne odpowiedzi w tej samej
+- [x] **AC-9** — Given jestem w trybie rozmowy, when asystent wypowiada kolejne odpowiedzi w tej samej
       sesji, then **każda** z nich idzie wybranym głosem (nie tylko pierwsza).
-- [ ] **AC-10** — Given lektor serwerowy jest niedostępny (brak konfiguracji, błąd sieci, odmowa
+- [x] **AC-10** — Given lektor serwerowy jest niedostępny (brak konfiguracji, błąd sieci, odmowa
       odtwarzania), when asystent ma coś powiedzieć, then nadal odzywa się głosem przeglądarki —
       tryb rozmowy **nigdy nie milknie**.
-- [ ] **AC-11** — Given przerwałem wypowiedź asystenta, when zaczyna się kolejna, then nie słychać
+- [x] **AC-11** — Given przerwałem wypowiedź asystenta, when zaczyna się kolejna, then nie słychać
       dwóch głosów naraz ani resztki poprzedniej wypowiedzi.
 
 **Optymalizacja kosztów (Z3)**
 
-- [ ] **AC-12** — Given wysyłam zwykłe powitanie („cześć", „hej", „dzięki"), when asystent odpowiada,
+- [x] **AC-12** — Given wysyłam zwykłe powitanie („cześć", „hej", „dzięki"), when asystent odpowiada,
       then w dzienniku diagnostycznym widać **mniej wywołań modelu** niż dotychczasowe trzy.
-- [ ] **AC-13** — Given wysyłam powitanie, when patrzę na rozbicie kosztu, then łączna liczba tokenów
+- [x] **AC-13** — Given wysyłam powitanie, when patrzę na rozbicie kosztu, then łączna liczba tokenów
       jest **istotnie niższa** niż 7734 z audytu, a różnicę da się wskazać w rozbiciu.
 - [ ] **AC-14** — Given asystent wykonuje wiele poleceń pod rząd, when patrzę na kolumnę pamięci
       podręcznej w diagnostyce, then widać **odczyty**, a nie wyłącznie zapisy — czyli część promptu
       jest faktycznie ponownie wykorzystywana.
-- [ ] **AC-15** — Given polecenie jest zwykłą rozmową (nie prośbą o zmianę danych), when asystent
+- [x] **AC-15** — Given polecenie jest zwykłą rozmową (nie prośbą o zmianę danych), when asystent
       je obsługuje, then nie wysyła do modelu katalogu akcji zapisu — a mimo to potrafi wykonać akcję,
       gdy okaże się, że jednak jest potrzebna.
-- [ ] **AC-16** — Given proszę o zmianę danych („dodaj zadanie…"), when asystent odpowiada, then
+- [x] **AC-16** — Given proszę o zmianę danych („dodaj zadanie…"), when asystent odpowiada, then
       **wszystko działa jak wcześniej** — akcja jest proponowana i wykonywalna.
-- [ ] **AC-17** — Given porównuję treść instrukcji dla modelu sprzed i po zmianie, when sprawdzam
+- [x] **AC-17** — Given porównuję treść instrukcji dla modelu sprzed i po zmianie, when sprawdzam
       zasady zachowania asystenta, then **są identyczne** — optymalizacje nie ruszają treści promptów.
 
 **Przełącznik follow-upów (Z3)**
 
-- [ ] **AC-18** — Given jestem administratorem, when otwieram konfigurację modeli, then widzę
+- [x] **AC-18** — Given jestem administratorem, when otwieram konfigurację modeli, then widzę
       przełącznik propozycji kolejnych pytań wraz z wyjaśnieniem, że kosztują tokeny.
-- [ ] **AC-19** — Given wyłączam follow-upy, when asystent odpowiada, then pod odpowiedzią **nie ma**
+- [x] **AC-19** — Given wyłączam follow-upy, when asystent odpowiada, then pod odpowiedzią **nie ma**
       propozycji kolejnych pytań, a instrukcja wysyłana do modelu ich nie zamawia.
-- [ ] **AC-20** — Given włączam follow-upy z powrotem, when asystent odpowiada, then propozycje
+- [x] **AC-20** — Given włączam follow-upy z powrotem, when asystent odpowiada, then propozycje
       wracają — bez wdrażania nowej wersji aplikacji.
-- [ ] **AC-21** — Given zmieniam ten przełącznik, when sprawdzam dziennik zmian konfiguracji, then
+- [x] **AC-21** — Given zmieniam ten przełącznik, when sprawdzam dziennik zmian konfiguracji, then
       zmiana jest w nim odnotowana.
-- [ ] **AC-22** — Given wdrożenie właśnie się zakończyło i nikt nic nie zmieniał, when korzystam
+- [x] **AC-22** — Given wdrożenie właśnie się zakończyło i nikt nic nie zmieniał, when korzystam
       z asystenta, then follow-upy **działają jak dotąd** (wartość startowa nie zmienia zachowania).
 
 ## 5. Zakres

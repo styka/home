@@ -40,6 +40,20 @@ zgadywać wysokość.
 `prisma migrate deploy` na LOKALNYM Postgresie — ten błąd jest niewidoczny dla `tsc` i dla lintera,
 a na produkcji przerwałby deploy.
 
+## 2026-07-29 — „Coś kombinuje z kursorem" — inwentarz zamiast zgadywania
+**Problem:** Właściciel pytał wprost, co w kodzie manipuluje karetką w polu wiadomości asystenta,
+bo kursor zachowywał się dziwnie na iPhonie. Wcześniejsze próby „poprawiania fokusu" tylko mnożyły
+hipotezy.
+**Rozwiązanie:** Zamiast zgadywać — pełne przeszukanie komponentu pod `focus`, `blur`, `caret`,
+`setSelectionRange`, `scrollIntoView`, `pointerdown`+`preventDefault`. Wynik: **cztery** miejsca,
+z czego żadne nie ustawia pozycji karetki w pustym polu (`caretColor` = sam kolor; `focus()` +
+`setSelectionRange(end,end)` tylko przy przywracaniu szkicu; `blur()` po wysłaniu; `autoFocus`
+w zmianie nazwy rozmowy). Prawdziwą przyczyną był UKŁAD: zmienny `padding-bottom` kompozytora
+i wysokość `85vh`. Inwentarz trafił do `specs/036-*/verify.md`.
+**Lekcja:** Gdy objaw dotyczy „czegoś, co kombinuje", zrób najpierw **kompletny inwentarz** miejsc,
+które mogłyby to robić, i wypisz go z uzasadnieniem. Pusta lista jest równie cenną odpowiedzią jak
+znaleziony winowajca — i zamyka temat na przyszłe zgłoszenia.
+
 ## 2026-07-29 — „Pusta lista = daj wszystko" zamieniło oszczędność w nadpłatę
 **Problem:** Optymalizacja miała pomijać katalog akcji dla zwykłej uprzejmości („cześć") i zaczynała
 od przekazania **pustej** listy modułów. Pomiar pokazał, że tura wychodzi o 108 tokenów **droższa**
