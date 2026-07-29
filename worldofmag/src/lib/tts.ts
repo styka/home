@@ -246,6 +246,12 @@ function stopServerAudio(): void {
   const audio = sharedAudio;
   if (!audio) return;
   try {
+    // Element jest WSPÓŁDZIELONY, więc uchwyty poprzedniej wypowiedzi wiszą na nim dalej. Zdejmujemy
+    // je PRZED `load()`, bo przeładowanie bez źródła potrafi wywołać zdarzenie `error` — a to
+    // uruchomiłoby `onEnd` już zatrzymanej wypowiedzi (w trybie rozmowy: przedwczesny powrót do
+    // nasłuchu). Nowa wypowiedź i tak ustawia własne uchwyty tuż po tym wywołaniu.
+    audio.onended = null;
+    audio.onerror = null;
     audio.pause();
     // `removeAttribute` zamiast `src = ""` — pusty `src` bywa interpretowany jako adres strony
     // i generuje błąd sieci w konsoli.
