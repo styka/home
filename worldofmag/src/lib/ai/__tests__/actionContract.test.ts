@@ -36,12 +36,26 @@ describe("actionContract — etykiety dla użytkownika", () => {
     assert.equal(fieldSpec("delete_note", "noteId", "abc").control, "hidden");
   });
 
-  it("dobiera kontrolkę do rodzaju wartości, gdy pole nie jest opisane", () => {
+  // 034 wprowadziło zasadę: parametr BEZ polskiej etykiety jest przed użytkownikiem UKRYWANY (bo nie
+  // umiemy go opisać), a heurystyka po typie wartości działa tylko dla parametrów ETYKIETOWANYCH,
+  // którym kontrakt nie nadał jawnej kontrolki. Test poniżej sprawdza właśnie tę heurystykę, więc
+  // używa par (akcja, parametr) BEZ jawnego wpisu w kontrakcie.
+  it("dobiera kontrolkę do rodzaju wartości, gdy kontrakt nie opisuje pola wprost", () => {
     assert.equal(fieldSpec("create_list", "name", "Tygodniowe").control, "text");
     assert.equal(fieldSpec("create_contact", "phone", 123).control, "number");
-    assert.equal(fieldSpec("create_contact", "vip", true).control, "boolean");
-    assert.equal(fieldSpec("create_vehicle", "boughtAt", "2026-07-30").control, "date");
-    assert.equal(fieldSpec("create_vehicle", "seenAt", "2026-07-30T15:27:09.719Z").control, "datetime");
+    assert.equal(fieldSpec("archive_recipe", "archived", true).control, "boolean");
+    // Gałąź daty jest DEFENSYWNA: dziś każde realne pole daty ma w kontrakcie jawną kontrolkę, więc
+    // heurystyka zabezpiecza tylko parametry dopisane do słownika etykiet bez wpisu w kontrakcie.
+    assert.equal(fieldSpec("create_project", "dueDate", "2026-07-30").control, "date");
+    assert.equal(fieldSpec("create_project", "scheduledAt", "2026-07-30T15:27:09.719Z").control, "datetime");
+  });
+
+  it("ukrywa parametry, których nie umie opisać po polsku (034)", () => {
+    // Model potrafi wymyślić parametr, którego nie ma w katalogu (przypadek `groupName` z 034).
+    // Takiego pola NIE pokazujemy w panelu potwierdzenia — inaczej użytkownik edytowałby wartość,
+    // która zostanie zignorowana przez egzekutor.
+    assert.equal(fieldSpec("create_contact", "vip", true).control, "hidden");
+    assert.equal(fieldSpec("create_vehicle", "boughtAt", "2026-07-30").control, "hidden");
   });
 
   it("pola opisane w kontrakcie mają kontrolkę wyboru z pełną listą wartości", () => {
