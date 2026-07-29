@@ -4,6 +4,52 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-29 — Lektor serwerowy milczy na iPhonie, bo `new Audio()` po `await` traci zgodę użytkownika
+**Problem:** W trybie rozmowy asystent czytał odpowiedzi głosem przeglądarki, ale głos serwerowy
+(`/api/tts`) na telefonie po prostu milczał — bez błędu w konsoli, `play()` odrzucane cicho.
+**Rozwiązanie:** iOS przyznaje prawo do odtwarzania dźwięku **elementowi**, który powstał i dostał
+`play()` w geście użytkownika. Nasz kod robił `await fetch("/api/tts")`, a dopiero potem
+`new Audio(url).play()` — do tego momentu „zgoda" z kliknięcia już wygasła i dotyczyła elementu, który
+wtedy jeszcze nie istniał. Naprawa: JEDEN współdzielony element `<audio>` odblokowywany w geście
+(`primeSpeechPlayback()` — cichy WAV jako data-URI, `play()` + `pause()`), a potem tylko podmiana
+`src` na kolejne nagrania. `stopServerAudio()` zwalnia objectURL przez `removeAttribute("src")` +
+`load()`, **nie niszcząc** elementu — inaczej trzeba by odblokowywać go od nowa.
+**Lekcja:** Na iOS nie twórz elementu audio/wideo po `await`. Odblokuj jeden trwały element w samym
+geście użytkownika i później tylko podmieniaj mu źródło.
+
+## 2026-07-29 — `vh`/`dvh` nie kurczą się przy klawiaturze — okno „ucieka" w górę
+**Problem:** Arkusz asystenta na telefonie miał `height: 85vh`. Po wysunięciu klawiatury ekranowej
+okno zostawało tej samej wysokości, system przewijał całą stronę, żeby odsłonić pole tekstowe, i
+efekt był taki, że okno uciekało w górę, a nagłówek znikał.
+**Rozwiązanie:** `vh` (a na iOS także `dvh`) liczy się z *layout viewport*, który przy klawiaturze się
+NIE zmienia. Miarą tego, co realnie widać, jest `window.visualViewport` (`height` + `offsetTop`).
+Nowy hook `useVisualViewport()` czyta je z throttlingiem na `requestAnimationFrame` (zdarzenia
+`resize`/`scroll` sypią się seriami w trakcie animacji klawiatury), a arkusz jest do nich przypięty
+inline — dzięki temu po prostu maleje, oddając miejsce klawiaturze.
+**Lekcja:** Do elementów pełnoekranowych współistniejących z klawiaturą używaj `visualViewport`, nie
+jednostek `vh`/`dvh`. Brak API (starsza przeglądarka) = zostań przy dotychczasowym układzie, zamiast
+zgadywać wysokość.
+
+## 2026-07-29 — `INSERT` w migracji pada na `id`, bo Prisma nadaje `cuid` w aplikacji, nie w bazie
+**Problem:** Migracja 0214 dopisywała jeden wiersz do `Config` i wywaliła deploy:
+`null value in column "id" of relation "Config" violates not-null constraint`.
+**Rozwiązanie:** `@default(cuid())` w `schema.prisma` to domyślna wartość **klienta Prisma**, a nie
+`DEFAULT` w bazie — surowy `INSERT` w SQL-u musi podać `id` sam:
+`gen_random_uuid()::text` (tak jak robią to migracje seedujące uprawnienia i raporty).
+**Lekcja:** W każdej ręcznej migracji seedującej wypisuj kolumnę `id` jawnie. I sprawdzaj migracje
+`prisma migrate deploy` na LOKALNYM Postgresie — ten błąd jest niewidoczny dla `tsc` i dla lintera,
+a na produkcji przerwałby deploy.
+
+## 2026-07-29 — „Pusta lista = daj wszystko" zamieniło oszczędność w nadpłatę
+**Problem:** Optymalizacja miała pomijać katalog akcji dla zwykłej uprzejmości („cześć") i zaczynała
+od przekazania **pustej** listy modułów. Pomiar pokazał, że tura wychodzi o 108 tokenów **droższa**
+niż przed zmianą.
+**Rozwiązanie:** `buildReadToolsPrompt([])` traktuje pustą listę jako bezpieczny fallback „nie wiem,
+które moduły — daj pełny katalog", więc zamiast uciąć prompt, rozdmuchaliśmy go. Przekazanie modułu
+podstawowego (`context[0]`, znany bez wywoływania routera) dało zmierzone **4441 → 2673 tokenów**.
+**Lekcja:** Zanim potraktujesz „puste" jako „nic", sprawdź, co robi z tym funkcja po drugiej stronie —
+bezpieczne fallbacki bywają odwrotnością oszczędności. I mierz efekt optymalizacji, zamiast go zakładać.
+
 ## 2026-07-28 — Karetka na iPhonie skacze, bo układ zmienia się w momencie pojawienia klawiatury
 **Problem:** Po kliknięciu w pole wiadomości asystenta na iPhonie kursor pojawiał się raz PONAD polem,
 raz bardzo nisko, a po wpisaniu pierwszego znaku wskakiwał na właściwe miejsce.

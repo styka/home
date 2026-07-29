@@ -120,16 +120,16 @@
 
 ## Faza 4 — Bramki i domknięcie
 
-- [ ] **T-16** — **Bramki**: `npm run check:migrations`, `npm run check:actions`,
+- [x] **T-16** — **Bramki**: `npm run check:migrations`, `npm run check:actions`,
   `npm run check:ai-coverage`, `npx next lint --dir src`, `npx next build` na **lokalnym** Postgresie
   (C-13, bez `scripts/migrate.js`).
   *Gotowe, gdy:* wszystkie zielone.
 
-- [ ] **T-17** — **Dokumentacja**: `CLAUDE.md` — przełącznik follow-upów, podział promptu na część
+- [x] **T-17** — **Dokumentacja**: `CLAUDE.md` — przełącznik follow-upów, podział promptu na część
   stałą/zmienną i skrót przy uprzejmości.
   *Gotowe, gdy:* opis odpowiada stanowi kodu.
 
-- [ ] **T-18** — **Lekcje** (C-51): wpis do `doświadczenia.md` — (a) dlaczego lektor serwerowy milkł
+- [x] **T-18** — **Lekcje** (C-51): wpis do `doświadczenia.md` — (a) dlaczego lektor serwerowy milkł
   na telefonie w trybie rozmowy (aktywacja użytkownika a `new Audio()`), (b) dlaczego `vh`/`dvh` nie
   wystarcza przy klawiaturze i co daje przypięcie do visual viewport.
 
