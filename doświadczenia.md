@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-30 — Wniosek z jednej klatki okazał się fałszywy: kompensacja `offsetTop` jest KONIECZNA
+**Problem:** Na podstawie jednej klatki (strona widoczna NAD oknem asystenta) uznałem, że winna jest
+nasza kompensacja `top: visualViewport.offsetTop`, i ją usunąłem. Efekt: znacznie gorzej. Drugie
+nagranie pokazało, że przy otwartej klawiaturze okno stoi **~360 px za wysoko** — widać z niego tylko
+pole tekstowe, a pod spodem całą stronę z kafelkami i dolnym paskiem zakładek. I to nie w trakcie
+animacji, tylko w stanie USTALONYM.
+**Rozwiązanie:** Kompensacja wróciła. iOS potrafi zostawić widoczny obszar przesunięty na stałe przy
+otwartej klawiaturze, a element `position: fixed` liczy się względem UKŁADU strony — bez `top:
+offsetTop` renderuje się o to przesunięcie za wysoko. To, co widziałem na tamtej klatce, było
+zjawiskiem PRZEJŚCIOWYM (zdarzenie `visualViewport` wyprzedza realne przesunięcie o kilka klatek),
+a nie dowodem, że kompensacja jest zbędna.
+**Lekcja:** Nie uogólniaj z **jednej klatki animacji** na stan ustalony — to dwa różne reżimy.
+Zanim usuniesz istniejącą kompensację, sprawdź osobno, jak wygląda stan SPOCZYNKU bez niej; „skoro
+w trakcie animacji przeszkadza, to jest zbędna" jest błędem wnioskowania. Przy diagnozie z nagrania
+rozdzielaj klatki przejściowe od ustalonych i opisuj każdy reżim osobno.
+
 ## 2026-07-30 — To nasza „kompensacja" spychała okno, a nie przeglądarka — rozstrzygnięte z nagrania ekranu
 **Problem:** Mimo dwóch podejść okno asystenta nadal przeskakiwało przy rozwijaniu i zwijaniu
 klawiatury. Opis słowny („wyjeżdża ponad ekran i się poprawia") pasował do kilku różnych przyczyn.

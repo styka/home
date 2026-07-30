@@ -31,21 +31,24 @@ export function useIsNarrowScreen(): boolean {
   return narrow;
 }
 
-/** Nazwa zmiennej CSS, przez którą hook podaje wysokość. Wołający używa jej w swoim stylu. */
+/** Nazwy zmiennych CSS, przez które hook podaje geometrię. Wołający używa ich w swoim stylu. */
+export const VV_TOP_VAR = "--vv-top";
 export const VV_HEIGHT_VAR = "--vv-height";
 
 /**
  * Przypina element (`position: fixed`) do WIDOCZNEGO obszaru — pisząc geometrię PROSTO do elementu,
  * synchronicznie w obsłudze zdarzenia `visualViewport`.
  *
- * **Tylko WYSOKOŚĆ — pozycji nie ruszamy (wniosek z analizy nagrania ekranu).** Wcześniejsza wersja
- * ustawiała też `top: offsetTop`, żeby „skompensować" przesunięcie widocznego obszaru. To był błąd:
- * na klatkach animacji klawiatury widać, jak okno zjeżdża w dół i **odsłania stronę pod sobą** (widać
- * kartę pulpitu NAD oknem asystenta) — czego samo przesunięcie widocznego obszaru zrobić nie może,
- * bo rusza okno i stronę razem. Robił to nasz `top`: `offsetTop` skacze na czas animacji do wartości
- * rzędu wysokości klawiatury, a my posłusznie spychaliśmy okno o tyle w dół. Przeglądarka i tak
- * utrzymuje element `fixed` przy widocznym obszarze, a w stanach spoczynku `offsetTop` wraca do zera
- * — więc kompensacja nic nie dawała, a generowała przeskok.
+ * **`top` MUSI być kompensowany przez `offsetTop`** — sprawdzone dwoma nagraniami ekranu, w obie
+ * strony. iOS przy otwartej klawiaturze potrafi ZOSTAWIĆ widoczny obszar przesunięty (mierzone
+ * ~360 px) na stałe, nie tylko na czas animacji. Element `fixed` jest pozycjonowany względem UKŁADU
+ * strony, więc bez kompensacji renderuje się o te 360 px za wysoko: z okna widać wtedy tylko pole
+ * tekstowe, a pod nim całą stronę i dolny pasek zakładek.
+ *
+ * Próba usunięcia kompensacji („skoro przeglądarka i tak trzyma element przy widocznym obszarze")
+ * była błędem i pogorszyła sprawę — trzyma go tylko czasami. Zostaje, a osobnym problemem pozostaje
+ * SYNCHRONIZACJA w trakcie animacji klawiatury (zdarzenie potrafi wyprzedzić realne przesunięcie
+ * widocznego obszaru, co widać jako krótki przeskok).
  *
  * **Dlaczego zmienne CSS, a nie `style.top` / `style.height`.** Gdyby hook pisał te właściwości
  * wprost, każdy kolejny render Reacta nadpisywałby świeżą geometrię wartością z propsów (albo — gdyby
@@ -94,6 +97,7 @@ export function usePinToVisualViewport(
     const apply = () => {
       // Bez zaokrąglania: `visualViewport` zwraca wartości podpikselowe, a obcinanie zostawiałoby
       // pod oknem szparę na tle strony.
+      el.style.setProperty(VV_TOP_VAR, `${vv.offsetTop}px`);
       el.style.setProperty(VV_HEIGHT_VAR, `${vv.height}px`);
       onChangeRef.current?.();
     };
@@ -106,6 +110,7 @@ export function usePinToVisualViewport(
       vv.removeEventListener("scroll", apply);
       // Wyjście z trybu pełnoekranowego (np. obrót na szeroki ekran) — oddaj sterowanie CSS-owi,
       // inaczej zostałyby wpisane na sztywno piksele z telefonu.
+      el.style.removeProperty(VV_TOP_VAR);
       el.style.removeProperty(VV_HEIGHT_VAR);
     };
   }, [pinned, ref]);

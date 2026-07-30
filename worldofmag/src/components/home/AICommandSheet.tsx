@@ -29,7 +29,7 @@ import { isDestructiveAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executors/shared";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
 import { useOverlayState } from "@/hooks/useOverlayState";
-import { useIsNarrowScreen, usePinToVisualViewport, VV_HEIGHT_VAR } from "@/hooks/useVisualViewport";
+import { useIsNarrowScreen, usePinToVisualViewport, VV_HEIGHT_VAR, VV_TOP_VAR } from "@/hooks/useVisualViewport";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AssistantLevelSettings } from "@/components/home/AssistantLevelSettings";
 import { ViewportProbe } from "@/components/home/ViewportProbe";
@@ -1548,17 +1548,16 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     // rendery Reacta nie mają czego nadpisać, a domyślna wartość w `var()` obsługuje
                     // pierwszą klatkę.
                     //
-                    // `top` zostaje ZEROWY. Kompensowanie go przez `visualViewport.offsetTop` było
-                    // źródłem przeskoku: na czas animacji klawiatury `offsetTop` skacze do wartości
-                    // rzędu jej wysokości, więc spychaliśmy okno w dół tak mocno, że odsłaniało stronę
-                    // pod sobą (widać to na nagraniu ekranu). Przeglądarka sama trzyma element `fixed`
-                    // przy widocznym obszarze, a w spoczynku `offsetTop` i tak wraca do zera.
+                    // `top` MUSI kompensować `visualViewport.offsetTop`: iOS przy otwartej klawiaturze
+                    // potrafi zostawić widoczny obszar przesunięty (mierzone ~360 px) na stałe, a
+                    // element `fixed` liczy się względem UKŁADU strony — bez kompensacji okno renderuje
+                    // się o tyle za wysoko i spod niego widać stronę z dolnym paskiem zakładek.
                     //
                     // Klawiatura zmniejsza wysokość okna, a miejsce oddaje wyłącznie przewijana lista
                     // wiadomości: nagłówek zostaje u góry, kompozytor tuż nad klawiaturą.
                     position: "fixed",
                     left: 0,
-                    top: 0,
+                    top: `var(${VV_TOP_VAR}, 0px)`,
                     width: "100%",
                     height: `var(${VV_HEIGHT_VAR}, 100dvh)`,
                     border: "none",
