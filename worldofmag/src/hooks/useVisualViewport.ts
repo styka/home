@@ -31,19 +31,21 @@ export function useIsNarrowScreen(): boolean {
   return narrow;
 }
 
-/** Nazwy zmiennych CSS, przez które hook podaje geometrię. Wołający używa ich w swoim stylu. */
-export const VV_TOP_VAR = "--vv-top";
+/** Nazwa zmiennej CSS, przez którą hook podaje wysokość. Wołający używa jej w swoim stylu. */
 export const VV_HEIGHT_VAR = "--vv-height";
 
 /**
  * Przypina element (`position: fixed`) do WIDOCZNEGO obszaru — pisząc geometrię PROSTO do elementu,
  * synchronicznie w obsłudze zdarzenia `visualViewport`.
  *
- * **Dlaczego nie przez stan Reacta i `requestAnimationFrame`.** iOS przy wysuwaniu klawiatury
- * przesuwa widoczny obszar w górę względem układu strony, a element `fixed` jest pozycjonowany
- * względem UKŁADU — więc na moment „wyjeżdża" nad ekran. Korekta musi trafić do stylu w tym samym
- * zdarzeniu, które o przesunięciu informuje. Przez stan Reacta (albo przez `rAF`) trafiała klatkę
- * PÓŹNIEJ i użytkownik widział przeskok: okno skakało w górę i dopiero potem wracało na miejsce.
+ * **Tylko WYSOKOŚĆ — pozycji nie ruszamy (wniosek z analizy nagrania ekranu).** Wcześniejsza wersja
+ * ustawiała też `top: offsetTop`, żeby „skompensować" przesunięcie widocznego obszaru. To był błąd:
+ * na klatkach animacji klawiatury widać, jak okno zjeżdża w dół i **odsłania stronę pod sobą** (widać
+ * kartę pulpitu NAD oknem asystenta) — czego samo przesunięcie widocznego obszaru zrobić nie może,
+ * bo rusza okno i stronę razem. Robił to nasz `top`: `offsetTop` skacze na czas animacji do wartości
+ * rzędu wysokości klawiatury, a my posłusznie spychaliśmy okno o tyle w dół. Przeglądarka i tak
+ * utrzymuje element `fixed` przy widocznym obszarze, a w stanach spoczynku `offsetTop` wraca do zera
+ * — więc kompensacja nic nie dawała, a generowała przeskok.
  *
  * **Dlaczego zmienne CSS, a nie `style.top` / `style.height`.** Gdyby hook pisał te właściwości
  * wprost, każdy kolejny render Reacta nadpisywałby świeżą geometrię wartością z propsów (albo — gdyby
@@ -92,7 +94,6 @@ export function usePinToVisualViewport(
     const apply = () => {
       // Bez zaokrąglania: `visualViewport` zwraca wartości podpikselowe, a obcinanie zostawiałoby
       // pod oknem szparę na tle strony.
-      el.style.setProperty(VV_TOP_VAR, `${vv.offsetTop}px`);
       el.style.setProperty(VV_HEIGHT_VAR, `${vv.height}px`);
       onChangeRef.current?.();
     };
@@ -105,7 +106,6 @@ export function usePinToVisualViewport(
       vv.removeEventListener("scroll", apply);
       // Wyjście z trybu pełnoekranowego (np. obrót na szeroki ekran) — oddaj sterowanie CSS-owi,
       // inaczej zostałyby wpisane na sztywno piksele z telefonu.
-      el.style.removeProperty(VV_TOP_VAR);
       el.style.removeProperty(VV_HEIGHT_VAR);
     };
   }, [pinned, ref]);

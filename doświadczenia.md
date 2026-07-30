@@ -4,6 +4,23 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-30 — To nasza „kompensacja" spychała okno, a nie przeglądarka — rozstrzygnięte z nagrania ekranu
+**Problem:** Mimo dwóch podejść okno asystenta nadal przeskakiwało przy rozwijaniu i zwijaniu
+klawiatury. Opis słowny („wyjeżdża ponad ekran i się poprawia") pasował do kilku różnych przyczyn.
+**Rozwiązanie:** Właściciel nagrał ekran iPhone'a. Film rozłożony na klatki (ffmpeg z pakietu
+`imageio-ffmpeg`, bo w obrazie nie ma ffmpeg) + analiza dopasowaniem wzorca pokazały: stany spoczynku
+są POPRAWNE, a cała wada mieści się w ~0,3–0,5 s animacji. Rozstrzygająca była jedna klatka: nad
+oknem asystenta widać **kartę pulpitu ze strony pod spodem**. Przesunięcie widocznego obszaru przez
+przeglądarkę nie może tego zrobić — rusza okno i stronę RAZEM. Odsłonić stronę nad oknem mógł tylko
+nasz własny `top: visualViewport.offsetTop`: na czas animacji `offsetTop` skacze do wartości rzędu
+wysokości klawiatury, a my posłusznie spychaliśmy okno o tyle w dół. Naprawa: sterujemy **wyłącznie
+wysokością** (`--vv-height`), `top` zostaje zerowy. Przeglądarka sama trzyma element `fixed` przy
+widocznym obszarze, a w spoczynku `offsetTop` wraca do zera — kompensacja nic nie dawała, a psuła.
+**Lekcja:** Przy błędach widocznych tylko na urządzeniu **poproś o nagranie ekranu i analizuj klatki**
+— to tańsze niż kolejne podejście „na wyczucie" (tu: trzy nieudane). I nie „kompensuj" tego, co
+przeglądarka robi sama: zanim dodasz korektę pozycji, sprawdź, czy bez niej cokolwiek jest nie tak.
+Odruch „skoro API podaje `offsetTop`, to trzeba go odjąć/dodać" jest tu wprost szkodliwy.
+
 ## 2026-07-29 — Okno „skacze" przy klawiaturze, bo korekta układu idzie przez stan Reacta
 **Problem:** Po przypięciu okna asystenta do `visualViewport` przy rozwijaniu i zwijaniu klawiatury
 było widać przeskok: okno najpierw wyjeżdżało w górę ponad ekran, a chwilę później wracało na miejsce
