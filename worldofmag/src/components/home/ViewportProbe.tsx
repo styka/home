@@ -48,6 +48,7 @@ export function ViewportProbe({ sheetRef }: { sheetRef: RefObject<HTMLElement | 
           `docTop ${(document.scrollingElement?.scrollTop ?? -1).toFixed(1)}`,
           `okno.top ${rect ? rect.top.toFixed(1) : "-"}`,
           `okno.h ${rect ? rect.height.toFixed(1) : "-"}`,
+          `--vv-top ${cs?.getPropertyValue("--vv-top").trim() || "-"}`,
           `--vv-h ${cs?.getPropertyValue("--vv-height").trim() || "-"}`,
         ].join("\n");
       }
