@@ -29,9 +29,10 @@ import { isDestructiveAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executors/shared";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
 import { useOverlayState } from "@/hooks/useOverlayState";
-import { useIsNarrowScreen, usePinToVisualViewport, VV_HEIGHT_VAR, VV_TOP_VAR } from "@/hooks/useVisualViewport";
+import { useIsNarrowScreen, usePinToVisualViewport, VV_HEIGHT_VAR } from "@/hooks/useVisualViewport";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AssistantLevelSettings } from "@/components/home/AssistantLevelSettings";
+import { ViewportProbe } from "@/components/home/ViewportProbe";
 
 interface RouteContext {
   context: string[];
@@ -1514,6 +1515,8 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
         </button>
       )}
 
+      {/* Diagnostyka geometrii — widoczna tylko z `?vvdebug=1` w adresie (patrz ViewportProbe). */}
+      {isOpen && <ViewportProbe sheetRef={sheetRef} />}
       {isOpen && (
         <div
           data-omnia-overlay="assistant"
@@ -1539,15 +1542,23 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
               overflow: "hidden",
               ...(fullScreen
                 ? {
-                    // Telefon: okno przypięte do WIDOCZNEGO obszaru. Wartości zmiennych `--vv-*`
-                    // ustawia `usePinToVisualViewport` synchronicznie na elemencie (patrz komentarz
-                    // przy `sheetRef`); tutaj deklarujemy je RAZ, więc kolejne rendery Reacta nie mają
-                    // czego nadpisać. Domyślne wartości w `var()` obsługują pierwszą klatkę.
+                    // Telefon: okno wypełnia WIDOCZNY obszar. Sterujemy WYŁĄCZNIE wysokością —
+                    // `--vv-height` ustawia `usePinToVisualViewport` synchronicznie na elemencie
+                    // (patrz komentarz przy `sheetRef`); tutaj deklarujemy zmienną RAZ, więc kolejne
+                    // rendery Reacta nie mają czego nadpisać, a domyślna wartość w `var()` obsługuje
+                    // pierwszą klatkę.
+                    //
+                    // `top` zostaje ZEROWY. Kompensowanie go przez `visualViewport.offsetTop` było
+                    // źródłem przeskoku: na czas animacji klawiatury `offsetTop` skacze do wartości
+                    // rzędu jej wysokości, więc spychaliśmy okno w dół tak mocno, że odsłaniało stronę
+                    // pod sobą (widać to na nagraniu ekranu). Przeglądarka sama trzyma element `fixed`
+                    // przy widocznym obszarze, a w spoczynku `offsetTop` i tak wraca do zera.
+                    //
                     // Klawiatura zmniejsza wysokość okna, a miejsce oddaje wyłącznie przewijana lista
                     // wiadomości: nagłówek zostaje u góry, kompozytor tuż nad klawiaturą.
                     position: "fixed",
                     left: 0,
-                    top: `var(${VV_TOP_VAR}, 0px)`,
+                    top: 0,
                     width: "100%",
                     height: `var(${VV_HEIGHT_VAR}, 100dvh)`,
                     border: "none",
