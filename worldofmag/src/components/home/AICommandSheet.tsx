@@ -32,7 +32,6 @@ import { useOverlayState } from "@/hooks/useOverlayState";
 import { useIsNarrowScreen, usePinToVisualViewport, VV_HEIGHT_VAR, VV_TOP_VAR } from "@/hooks/useVisualViewport";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AssistantLevelSettings } from "@/components/home/AssistantLevelSettings";
-import { ViewportProbe } from "@/components/home/ViewportProbe";
 
 interface RouteContext {
   context: string[];
@@ -1523,8 +1522,6 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
         </button>
       )}
 
-      {/* Diagnostyka geometrii — widoczna tylko z `?vvdebug=1` w adresie (patrz ViewportProbe). */}
-      {isOpen && <ViewportProbe sheetRef={sheetRef} />}
       {isOpen && (
         <div
           data-omnia-overlay="assistant"
