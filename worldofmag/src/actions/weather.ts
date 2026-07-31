@@ -206,75 +206,9 @@ function digestHours(hours: HourPoint[]): string {
     .join("\n");
 }
 
-/**
- * Generuje poradę „co robić" dla wskazanego dnia i pory dnia (domyślnie: pierwszy
- * dzień prognozy + pora przekazana przez klienta). `variation` losuje inną odpowiedź.
- */
-export async function describeDay(
-  lat: number,
-  lon: number,
-  label: string,
-  opts?: { date?: string; part?: DayPart; variation?: boolean }
-): Promise<string> {
-  await requireAuth();
-  const f = await fetchForecast(lat, lon);
-  if (!f) throw new Error("Brak danych pogodowych.");
-
-  const date =
-    opts?.date && f.daily.some((d) => d.date === opts.date)
-      ? opts.date
-      : f.daily[0]?.date ?? new Date().toISOString().slice(0, 10);
-  const partKey: DayPart = opts?.part ?? "morning";
-  const part = DAY_PARTS.find((p) => p.key === partKey) ?? DAY_PARTS[0];
-  const variation = opts?.variation ?? false;
-
-  // Godziny wskazanego dnia w zakresie wybranej pory; jeśli pora już minęła
-  // (brak godzin), bierzemy wszystkie pozostałe godziny tego dnia.
-  let hours = f.hourly.filter((h) => {
-    if (!h.time.startsWith(date)) return false;
-    const hour = Number(h.time.slice(11, 13));
-    return hour >= part.from && hour < part.to;
-  });
-  if (hours.length === 0) hours = f.hourly.filter((h) => h.time.startsWith(date));
-
-  const dayInfo = f.daily.find((d) => d.date === date);
-
-  const system =
-    "Jesteś asystentem pogodowym. Na podstawie prognozy godzinowej dla wskazanego dnia i pory dnia " +
-    "oraz lokalizacji napisz krótką, konkretną poradę po polsku: co dobrze zrobić w tym czasie, jak " +
-    "się ubrać, na co uważać. Bez lania wody, maks. 5 zdań, można 1–2 emoji." +
-    (variation
-      ? " Zaproponuj INNE, świeże, mniej oczywiste pomysły niż zwykle — bądź kreatywny."
-      : "");
-  const userPrompt =
-    `Lokalizacja: ${label}\nDzień: ${weekday(date)} ${date}, pora dnia: ${part.label} (${part.from}:00–${part.to}:00)\n` +
-    (dayInfo
-      ? `Podsumowanie dnia: ${wmo(dayInfo.code).label}, ${Math.round(dayInfo.tMin)}–${Math.round(
-          dayInfo.tMax
-        )}°C, opady ${dayInfo.precipProbMax}%, wiatr do ${Math.round(dayInfo.windMaxKph)} km/h, UV ${dayInfo.uvMax.toFixed(
-          0
-        )}\n`
-      : "") +
-    `\nPROGNOZA GODZINOWA (${part.label}):\n${
-      digestHours(hours) || "(brak danych godzinowych dla tej pory)"
-    }` +
-    (variation ? `\n\n[wariant ${Math.random().toString(36).slice(2, 8)}]` : "");
-
-  const res = await chatComplete({
-    op: "generation",
-    temperature: variation ? 0.95 : 0.5,
-    maxTokens: 350,
-    // Z-330: porada deterministyczna per lokalizacja/dzień/pora/prognoza (prompt je
-    // zawiera) — cache eliminuje powtórny koszt tokenów. Wariant ma być świeży → bez cache.
-    cache: !variation,
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: userPrompt },
-    ],
-  });
-  if (!res.ok) throw new Error(res.message);
-  return res.content.trim();
-}
+// 037: `describeDay` (jeden wygenerowany akapit porady) został usunięty — zastąpiła go lista
+// propozycji `getIdeas` niżej w tym pliku. Trzymanie obu wariantów oznaczałoby dwa prompty na tę
+// samą potrzebę i dwa razy większy koszt sekcji „Co robić?".
 
 // ─── Watchers ──────────────────────────────────────────────────────────────
 
@@ -458,6 +392,8 @@ export interface IdeasResult {
 }
 
 export interface IdeaDetailResult {
+  /** Id wiersza w bazie — klient potrzebuje go do zapisu/„dodaj do zadań" bez dodatkowej rundy. */
+  id: string;
   fingerprint: string;
   title: string;
   detail: string | null;
@@ -475,7 +411,7 @@ export interface IdeaContext {
   part?: DayPart;
 }
 
-/** Wspólne rozstrzygnięcie „który dzień i która pora" — identyczne jak w `describeDay`. */
+/** Wspólne rozstrzygnięcie „który dzień i która pora" dla listy propozycji i ich szczegółów. */
 function resolveWhen(f: Forecast, opts?: { date?: string; part?: DayPart }) {
   const date =
     opts?.date && f.daily.some((d) => d.date === opts.date)
@@ -629,6 +565,7 @@ export async function getIdeaDetail(fingerprint: string): Promise<IdeaDetailResu
     data: { viewCount: { increment: 1 }, lastSeenAt: new Date() },
   });
   return {
+    id: row.id,
     fingerprint: row.fingerprint,
     title: row.title,
     detail: row.detail,
@@ -660,6 +597,7 @@ export async function generateIdeaDetail(
   // Bez wymuszenia zapisany plan wygrywa z nową generacją — użytkownik ma dostać to, co już czytał.
   if (existing?.detail && !opts?.force) {
     return {
+      id: existing.id,
       fingerprint,
       title: existing.title,
       detail: existing.detail,
@@ -741,6 +679,7 @@ export async function generateIdeaDetail(
   revalidatePath("/pogoda");
   revalidatePath("/pogoda/pomysly");
   return {
+    id: row.id,
     fingerprint,
     title: row.title,
     detail: row.detail,

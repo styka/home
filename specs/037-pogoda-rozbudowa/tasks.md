@@ -139,21 +139,21 @@
       *Gotowe, gdy:* po kliknięciu zadanie jest w `/tasks`, a przycisk nie renderuje się bez
       uprawnienia. **(AC-20)**
 
-- [ ] **T-20** — **`IdeasPanel.tsx`** — zastępuje dotychczasowy blok „Co robić?": chipy dnia/pory i
+- [x] **T-20** — **`IdeasPanel.tsx`** — zastępuje dotychczasowy blok „Co robić?": chipy dnia/pory i
       „Wylosuj inną" zostają, kafelek propozycji ma tytuł, ikonę kategorii, uzasadnienie, znacznik
       **„Już rozważana"** i akcje *Szczegóły / Zapisz / Nie proponuj*. Stany pusty i błędu po polsku
       z „Spróbuj ponownie". Link „Pomysły" do biblioteki w nagłówku kafla.
       *Gotowe, gdy:* lista renderuje się na desktopie i mobile, blokowanie działa prosto z kafelka.
       **(AC-10, AC-15, AC-16, AC-21)**
 
-- [ ] **T-21** — **`IdeaDetailSheet.tsx`** — desktop: panel obok listy; mobile: pełnoekranowy arkusz
+- [x] **T-21** — **`IdeaDetailSheet.tsx`** — desktop: panel obok listy; mobile: pełnoekranowy arkusz
       (`fixed inset-0`, `env(safe-area-inset-bottom)`, „Wróć", `Esc` zamyka). Treść przez
       `markdownToHtml` + `MARKDOWN_STYLES`. Stopka: „Generuj ponownie", „Dodaj do zadań", „Zapisz",
       `AiCostBadge`.
       *Gotowe, gdy:* szczegóły otwierają się jednym dotknięciem i wracają po restarcie aplikacji.
       **(AC-12, AC-13, AC-14)**
 
-- [ ] **T-22** — **Biblioteka pomysłów** — `src/app/pogoda/pomysly/page.tsx` (server wrapper) +
+- [x] **T-22** — **Biblioteka pomysłów** — `src/app/pogoda/pomysly/page.tsx` (server wrapper) +
       `IdeaLibraryPage.tsx` (client): filtry Wszystkie / Zapisane / Rozważane / Zablokowane, filtr
       lokalizacji, akcje otwórz / zapisz / przywróć / zablokuj / usuń. Chroniona przez istniejące
       `permissionForPath("/pogoda")`.
@@ -200,7 +200,7 @@
       *Gotowe, gdy:* celowo „gołe" wywołanie modelu wywala bramkę, a czyste repo ją przechodzi.
       **(AC-28)**
 
-- [ ] **T-30** — **`src/lib/ai/action-coverage.json`** — klasyfikacja wszystkich nowych akcji
+- [x] **T-30** — **`src/lib/ai/action-coverage.json`** — klasyfikacja wszystkich nowych akcji
       (`access` + faktyczny guard): odczyty pomysłów, mutacje pomysłów, `addLocationByPoint`,
       `addIdeaToTasks`; `get/setCostBadgeEnabled` jako `excluded` z powodem „admin".
       *Gotowe, gdy:* `npm run check:ai-coverage` przechodzi.

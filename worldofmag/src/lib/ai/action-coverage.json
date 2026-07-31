@@ -774,6 +774,11 @@
     "reason": "admin",
     "access": "admin"
   },
+  "llmConfig:getCostBadgeEnabled": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
   "llmConfig:getFollowupsEnabled": {
     "kind": "read",
     "status": "excluded",
@@ -816,6 +821,11 @@
     "access": "admin"
   },
   "llmConfig:setCostAlertThreshold": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "llmConfig:setCostBadgeEnabled": {
     "status": "excluded",
     "reason": "admin",
     "access": "admin"
@@ -2526,6 +2536,11 @@
     "action": "add_custom_watcher",
     "access": "owner"
   },
+  "weather:addIdeaToTasks": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
   "weather:addLocation": {
     "status": "excluded",
     "reason": "redundant",
@@ -2535,8 +2550,23 @@
     "status": "ai",
     "access": "owner"
   },
+  "weather:addLocationByPoint": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
   "weather:addPresetWatcher": {
     "status": "ai",
+    "access": "owner"
+  },
+  "weather:blockIdea": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "weather:deleteIdea": {
+    "status": "excluded",
+    "reason": "interactive",
     "access": "owner"
   },
   "weather:deleteLocation": {
@@ -2545,6 +2575,22 @@
   },
   "weather:deleteWatcher": {
     "status": "ai",
+    "access": "owner"
+  },
+  "weather:generateIdeaDetail": {
+    "status": "pending",
+    "access": "owner"
+  },
+  "weather:getIdeaDetail": {
+    "status": "pending",
+    "access": "owner"
+  },
+  "weather:getIdeaLibrary": {
+    "status": "pending",
+    "access": "owner"
+  },
+  "weather:getIdeas": {
+    "status": "pending",
     "access": "owner"
   },
   "weather:getLocations": {
@@ -2566,6 +2612,11 @@
   },
   "weather:setDefaultLocation": {
     "status": "ai",
+    "access": "owner"
+  },
+  "weather:setIdeaState": {
+    "status": "excluded",
+    "reason": "interactive",
     "access": "owner"
   },
   "weather:updateWatcher": {
