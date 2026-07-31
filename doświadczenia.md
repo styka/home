@@ -4,6 +4,35 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-31 — iOS nie wysyła zdarzeń `visualViewport` co klatkę: korektę trzeba domknąć pętlą `rAF`
+**Problem:** Nagłówek asystenta drgał przy animacji klawiatury mimo poprawnej geometrii — sonda
+pokazywała `okno.top` równe 0.0 w KAŻDEJ klatce, także tam, gdzie na ekranie widać przesunięcie.
+Wniosek „to kompozytor rysuje w złym miejscu, z JavaScriptu się tego nie dogoni" był przedwczesny.
+**Rozwiązanie:** iOS wysyła zdarzenia `visualViewport` na POCZĄTKU i KOŃCU ruchu, a nie co klatkę.
+Korekta wpięta wyłącznie w zdarzenia zostawia więc cały środek animacji z geometrią sprzed ruchu — a
+`okno.top` wychodziło 0.0 dlatego, że między zdarzeniami po prostu nie było czego zmieniać, nie
+dlatego, że wszystko było dobrze. Po każdym zdarzeniu (oraz po `focusin`/`focusout` w oknie) domykamy
+ruch ograniczoną w czasie pętlą `requestAnimationFrame` (500 ms, z pominięciem klatek bez zmiany
+wartości, żeby nie pisać stylu i nie wołać `onGeometryChange` 60 razy na sekundę bez potrzeby).
+**Lekcja:** Zanim ogłosisz „przeglądarka rysuje źle, nic nie zrobimy", sprawdź, czy Twój kod w ogóle
+miał szansę cokolwiek zrobić w tych klatkach. Dowód leżał pod ręką przez cały czas: sonda
+diagnostyczna czyta w `rAF` **z komentarzem, że zdarzenia mogą nie pokryć klatek animacji** — i ten
+sam wniosek nie został zastosowany do samej korekty. Druga rzecz: cudza podpowiedź potrafi w 90%
+opisywać stan już wdrożony; wartość jest w tych 10%, więc zestaw ją punkt po punkcie z kodem, zamiast
+wdrażać w całości („przebuduj architekturę") albo odrzucać w całości.
+
+## 2026-07-31 — Sprawdź `min-height` flexa, ZANIM go dodasz: `overflow: auto` już to załatwia
+**Problem:** Podejrzenie, że wiersz wiadomości w oknie asystenta nie kurczy się przy klawiaturze, bo
+brakuje mu `min-h-0` (klasyczna pułapka: element flexa ma domyślnie `min-height: auto` i odmawia
+zejścia poniżej rozmiaru treści, przez co rozpycha kontener).
+**Rozwiązanie:** Nie było czego naprawiać. Specyfikacja flexboxa (§4.5) stosuje automatyczny rozmiar
+minimalny **tylko wtedy, gdy `overflow` w danej osi jest `visible`** — a lista ma `overflow-y: auto`,
+co samo zeruje to minimum. `min-h-0` byłoby tu martwym kodem udającym naprawę.
+**Lekcja:** `min-h-0` obok `overflow-auto` to odruch przepisywany z poradników. Zanim dołożysz „na
+wszelki wypadek" regułę pod diagnozę, sprawdź, czy warunek z definicji w ogóle zachodzi — inaczej
+zostaje w kodzie linijka, która niczego nie robi, a przy następnym błędzie sugeruje, że temat jest
+już obsłużony.
+
 ## 2026-07-31 — `height: 100%` też nie pomogło: układ kurczy się, ale blok bazowy już nie
 **Problem:** Zamiana `h-screen` na `h-full` w powłoce aplikacji miała odebrać dokumentowi
 przewijalność przy klawiaturze. Pomiar po zmianie: `scrollY` spadło z 335 tylko do **291** — dokument

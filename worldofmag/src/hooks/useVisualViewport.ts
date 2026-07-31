@@ -46,9 +46,12 @@ export const VV_HEIGHT_VAR = "--vv-height";
  * tekstowe, a pod nim całą stronę i dolny pasek zakładek.
  *
  * Próba usunięcia kompensacji („skoro przeglądarka i tak trzyma element przy widocznym obszarze")
- * była błędem i pogorszyła sprawę — trzyma go tylko czasami. Zostaje, a osobnym problemem pozostaje
- * SYNCHRONIZACJA w trakcie animacji klawiatury (zdarzenie potrafi wyprzedzić realne przesunięcie
- * widocznego obszaru, co widać jako krótki przeskok).
+ * była błędem i pogorszyła sprawę — trzyma go tylko czasami. Zostaje.
+ *
+ * Osobną sprawą jest SYNCHRONIZACJA w trakcie animacji klawiatury: iOS nie wysyła zdarzeń
+ * `visualViewport` co klatkę, więc sama obsługa zdarzeń zostawia środek animacji z geometrią sprzed
+ * ruchu. Dlatego po każdym zdarzeniu (oraz po `focusin`/`focusout` w oknie) domykamy ruch krótką,
+ * ograniczoną w czasie pętlą `requestAnimationFrame` — szczegóły przy `FOLLOW_MS` niżej.
  *
  * **Dlaczego zmienne CSS, a nie `style.top` / `style.height`.** Gdyby hook pisał te właściwości
  * wprost, każdy kolejny render Reacta nadpisywałby świeżą geometrię wartością z propsów (albo — gdyby
@@ -94,20 +97,69 @@ export function usePinToVisualViewport(
     const el = ref.current;
     if (!vv || !el) return;
 
+    // Ostatnio ZAPISANE wartości — żeby nie pisać stylu i nie wołać `onGeometryChange` 60 razy na
+    // sekundę, gdy nic się nie rusza (pętla niżej chodzi przez całą animację, także w jej ciszy).
+    let lastTop = Number.NaN;
+    let lastHeight = Number.NaN;
+
     const apply = () => {
       // Bez zaokrąglania: `visualViewport` zwraca wartości podpikselowe, a obcinanie zostawiałoby
       // pod oknem szparę na tle strony.
+      if (vv.offsetTop === lastTop && vv.height === lastHeight) return;
+      lastTop = vv.offsetTop;
+      lastHeight = vv.height;
       el.style.setProperty(VV_TOP_VAR, `${vv.offsetTop}px`);
       el.style.setProperty(VV_HEIGHT_VAR, `${vv.height}px`);
       onChangeRef.current?.();
     };
 
+    // Nadążanie za ANIMACJĄ klawiatury (`rAF`), a nie tylko za jej krańcami.
+    //
+    // iOS nie wysyła zdarzeń `visualViewport` co klatkę — dostajemy je na początku i na końcu ruchu.
+    // Korekta wpięta wyłącznie w zdarzenia zostawia więc cały środek animacji z geometrią sprzed
+    // ruchu, i dokładnie to widać jako drgnięcie nagłówka. (Zmierzyliśmy to już wcześniej sondą
+    // `ViewportProbe`, która właśnie dlatego czyta w `rAF` — ale wniosek nie trafił do samej korekty.)
+    //
+    // Pętla jest OGRANICZONA W CZASIE: startuje na zdarzeniu i chodzi jeszcze przez `FOLLOW_MS`,
+    // czyli tyle, ile trwa animacja klawiatury na iOS z zapasem. Stała pętla `rAF` przez cały czas
+    // otwarcia okna byłaby podatkiem na baterię za nic — poza animacją nie ma czego nadążać.
+    const FOLLOW_MS = 500;
+    let raf = 0;
+    let followUntil = 0;
+
+    const followFrame = () => {
+      apply();
+      if (performance.now() < followUntil) {
+        raf = window.requestAnimationFrame(followFrame);
+      } else {
+        raf = 0;
+      }
+    };
+
+    const startFollowing = () => {
+      followUntil = performance.now() + FOLLOW_MS;
+      if (!raf) raf = window.requestAnimationFrame(followFrame);
+    };
+
+    const onViewportEvent = () => {
+      apply();          // natychmiast, w tej samej turze zdarzenia
+      startFollowing(); // i dalej co klatkę, przez resztę animacji
+    };
+
     apply();
-    vv.addEventListener("resize", apply);
-    vv.addEventListener("scroll", apply);
+    vv.addEventListener("resize", onViewportEvent);
+    vv.addEventListener("scroll", onViewportEvent);
+    // Klawiatura zaczyna wyjeżdżać na `focusin`, a chować się na `focusout` — czasem ZANIM przyjdzie
+    // pierwsze zdarzenie `visualViewport`. Bez tego pierwsze klatki ruchu byłyby nieobsłużone.
+    el.addEventListener("focusin", startFollowing);
+    el.addEventListener("focusout", startFollowing);
+
     return () => {
-      vv.removeEventListener("resize", apply);
-      vv.removeEventListener("scroll", apply);
+      vv.removeEventListener("resize", onViewportEvent);
+      vv.removeEventListener("scroll", onViewportEvent);
+      el.removeEventListener("focusin", startFollowing);
+      el.removeEventListener("focusout", startFollowing);
+      if (raf) window.cancelAnimationFrame(raf);
       // Wyjście z trybu pełnoekranowego (np. obrót na szeroki ekran) — oddaj sterowanie CSS-owi,
       // inaczej zostałyby wpisane na sztywno piksele z telefonu.
       el.style.removeProperty(VV_TOP_VAR);
