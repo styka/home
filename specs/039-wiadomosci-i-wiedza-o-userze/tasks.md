@@ -29,14 +29,14 @@
 
 ## Faza 1 — Fundament danych
 
-- [ ] **T-4** — **Migracja `0217_wiadomosci_pula_linia_czasu_wiedza_o_userze`.** DDL wg planu §2.6:
+- [x] **T-4** — **Migracja `0217_wiadomosci_pula_linia_czasu_wiedza_o_userze`.** DDL wg planu §2.6:
       `NewsArticle`, `NewsTimelineEntry`, `NewsHiddenTopic`, `UserFact`; `NewsItem.articleId`;
       `NewsPref.lastFetchedAt`; na końcu **`DROP TABLE "NewsKnowledge"`** z komentarzem o
       nieodwracalności i wskazaniem Neon PITR.
       *Gotowe, gdy:* `npm run check:migrations` przechodzi, `migrate deploy` na lokalnym Postgresie
       kończy się czysto. **(AC-11)**
 
-- [ ] **T-5** — **`schema.prisma`** zgodnie z migracją: cztery nowe modele, dwie kolumny, relacje
+- [x] **T-5** — **`schema.prisma`** zgodnie z migracją: cztery nowe modele, dwie kolumny, relacje
       w `User` i `NewsSource`, **usunięcie `NewsKnowledge`**. Rodzaje jako `String` (C-12).
       *Gotowe, gdy:* `prisma generate` przechodzi, `migrate diff` bez rozjazdu dla nowych obiektów.
 
