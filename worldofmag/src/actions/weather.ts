@@ -5,7 +5,14 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-utils";
 import { chatComplete } from "@/lib/llm/chat";
 import { parseJsonLoose } from "@/lib/llm/json";
-import { fetchForecast, geocode, wmo, type Forecast, type HourPoint } from "@/lib/weather/openMeteo";
+import {
+  fetchForecast,
+  geocode,
+  reverseGeocode,
+  wmo,
+  type Forecast,
+  type HourPoint,
+} from "@/lib/weather/openMeteo";
 import { presetByKey, DAY_PARTS, type Horizon, type DayPart } from "@/lib/weather/presets";
 
 export interface LocationDTO {
@@ -81,6 +88,23 @@ export async function addLocation(data: {
   });
   revalidatePath("/pogoda");
   return { id: l.id, label: l.label, lat: l.lat, lon: l.lon, isDefault: l.isDefault };
+}
+
+/**
+ * 037: zapis lokalizacji wskazanej PALCEM NA MAPIE.
+ *
+ * Powód istnienia: wyszukiwarka nazw nie zna części małych miejscowości, a geolokalizacja urządzenia
+ * bywa niedostępna albo odmówiona. Punkt na mapie omija oba ograniczenia — nazwa jest wtedy wygodą,
+ * nie warunkiem, więc jej brak degraduje do współrzędnych zamiast blokować zapis.
+ */
+export async function addLocationByPoint(lat: number, lon: number): Promise<LocationDTO> {
+  await requireAuth();
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error("Nieprawidłowe współrzędne");
+  if (lat < -90 || lat > 90) throw new Error("Szerokość geograficzna poza zakresem");
+  if (lon < -180 || lon > 180) throw new Error("Długość geograficzna poza zakresem");
+  const name = await reverseGeocode(lat, lon);
+  const label = name ?? `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  return addLocation({ label, lat, lon });
 }
 
 export async function setDefaultLocation(id: string): Promise<void> {

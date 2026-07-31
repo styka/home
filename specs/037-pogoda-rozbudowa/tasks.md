@@ -72,22 +72,22 @@
 
 ## Faza 3 — Mapa i lokalizacje
 
-- [ ] **T-10** — **`reverseGeocode(lat, lon)`** w `src/lib/weather/openMeteo.ts` — Nominatim
+- [x] **T-10** — **`reverseGeocode(lat, lon)`** w `src/lib/weather/openMeteo.ts` — Nominatim
       (`format=jsonv2`, `zoom=10`, `accept-language=pl`), nagłówek `User-Agent`, timeout, `null`
       przy błędzie.
       *Gotowe, gdy:* dla współrzędnych Ślemienia zwraca nazwę miejscowości, a przy braku sieci `null`
       bez rzucania wyjątku.
 
-- [ ] **T-11** — **Akcja `addLocationByPoint(lat, lon)`** w `actions/weather.ts` — walidacja zakresów,
+- [x] **T-11** — **Akcja `addLocationByPoint(lat, lon)`** w `actions/weather.ts` — walidacja zakresów,
       nazwa z `reverseGeocode` z degradacją do sformatowanych współrzędnych, delegacja do `addLocation`,
       `revalidatePath("/pogoda")`.
       *Gotowe, gdy:* zapis punktu bez nazwy w wyszukiwarce tworzy lokalizację z sensowną etykietą. **(AC-2)**
 
-- [ ] **T-12** — **Zależność `leaflet`.** `npm i leaflet` + `npm i -D @types/leaflet`.
+- [x] **T-12** — **Zależność `leaflet`.** `npm i leaflet` + `npm i -D @types/leaflet`.
       *Gotowe, gdy:* `package.json`/`package-lock.json` zaktualizowane, `next build` nie zgłasza
       brakujących typów. **Bez `react-leaflet`** (C-53).
 
-- [ ] **T-13** — **`LocationMapPicker.tsx`** — `"use client"`, ładowany `dynamic(..., { ssr:false })`;
+- [x] **T-13** — **`LocationMapPicker.tsx`** — `"use client"`, ładowany `dynamic(..., { ssr:false })`;
       kafelki OSM + wymagana atrybucja; znacznik jako `L.divIcon` w kolorach `var(--accent-blue)`
       (żadnych PNG z paczki); start na bieżącej lokalizacji; klik/tap przestawia znacznik; podgląd
       współrzędnych; przycisk „Zapisz tę lokalizację". `scrollWheelZoom` **wyłączony**, `touchZoom`
@@ -96,7 +96,7 @@
       zablokowanych kafelkach widać komunikat i pozostałe drogi wyboru działają.
       **(AC-1, AC-3, AC-4, AC-5)**
 
-- [ ] **T-14** — **Wpięcie mapy w `LocationsModal`** (`WeatherPage.tsx`) obok wyszukiwania po nazwie i
+- [x] **T-14** — **Wpięcie mapy w `LocationsModal`** (`WeatherPage.tsx`) obok wyszukiwania po nazwie i
       GPS; po zapisie odświeżenie listy i wybór nowej lokalizacji.
       *Gotowe, gdy:* pełna ścieżka „otwórz wybór → wskaż punkt → zapisz" mieści się w ≤3 interakcjach.
       **(AC-1, AC-2)**

@@ -52,6 +52,7 @@
     "cmdk": "^1.0.4",
     "date-fns": "^4.2.1",
     "emoji-picker-react": "^4.19.1",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.468.0",
     "next": "14.2.29",
     "next-auth": "^5.0.0-beta.25",
@@ -62,6 +63,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^20.17.10",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^18.3.18",

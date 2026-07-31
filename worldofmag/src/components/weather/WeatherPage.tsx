@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   CloudSun,
   MapPin,
@@ -12,6 +13,7 @@ import {
   LocateFixed,
   Star,
   Trash2,
+  Map,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -26,6 +28,7 @@ import {
   getWeather,
   describeDay,
   addLocationByName,
+  addLocationByPoint,
   setDefaultLocation,
   deleteLocation,
   type LocationDTO,
@@ -240,6 +243,7 @@ export function WeatherPage({
       {showLocations && (
         <LocationsModal
           locations={locations}
+          current={coords}
           onClose={() => setShowLocations(false)}
           onUseGeo={() => {
             requestGeolocation();
@@ -295,14 +299,23 @@ function AdviceChip({
   );
 }
 
+// 037: mapa ładowana leniwie i wyłącznie po stronie klienta — Leaflet dotyka `window` już przy
+// imporcie, a paczka nie ma po co obciążać pierwszego wejścia na /pogoda.
+const LocationMapPicker = dynamic(
+  () => import("./LocationMapPicker").then((m) => m.LocationMapPicker),
+  { ssr: false, loading: () => <p className="text-xs text-[var(--text-muted)]">Wczytuję mapę…</p> }
+);
+
 function LocationsModal({
   locations,
+  current,
   onClose,
   onUseGeo,
   onPick,
   run,
 }: {
   locations: LocationDTO[];
+  current: Coords | null;
   onClose: () => void;
   onUseGeo: () => void;
   onPick: (l: LocationDTO) => void;
@@ -311,6 +324,7 @@ function LocationsModal({
   const { showToast } = useToast();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   function add() {
     if (!name.trim()) return;
@@ -325,14 +339,44 @@ function LocationsModal({
       .finally(() => setBusy(false));
   }
 
+  function savePoint(p: { lat: number; lon: number }) {
+    setBusy(true);
+    addLocationByPoint(p.lat, p.lon)
+      .then((l) => {
+        showToast(`Dodano lokalizację „${l.label}"`, "success");
+        onPick(l);
+      })
+      .catch((e) => showToast(e.message ?? "Nie udało się zapisać punktu", "error"))
+      .finally(() => setBusy(false));
+  }
+
   return (
-    <Modal onClose={onClose} title="Lokalizacje">
+    <Modal onClose={onClose} title="Lokalizacje" wide={showMap}>
       <button
         onClick={onUseGeo}
         className="flex w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
       >
         <LocateFixed size={15} className="text-[var(--accent-blue)]" /> Użyj mojej lokalizacji (GPS)
       </button>
+
+      {/* Trzecia droga obok nazwy i GPS: wskazanie punktu na mapie. Potrzebna, bo wyszukiwarka nazw
+          nie zna części małych wsi, a GPS bywa niedostępny. */}
+      <button
+        onClick={() => setShowMap((v) => !v)}
+        aria-expanded={showMap}
+        className="flex w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+      >
+        <Map size={15} className="text-[var(--accent-green)]" />
+        {showMap ? "Ukryj mapę" : "Wskaż na mapie"}
+      </button>
+
+      {showMap && (
+        <LocationMapPicker
+          initial={current ? { lat: current.lat, lon: current.lon } : null}
+          busy={busy}
+          onSave={savePoint}
+        />
+      )}
 
       <div className="space-y-1">
         {locations.map((l) => (
