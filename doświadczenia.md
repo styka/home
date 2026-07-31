@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-31 — `height: 100%` też nie pomogło: układ kurczy się, ale blok bazowy już nie
+**Problem:** Zamiana `h-screen` na `h-full` w powłoce aplikacji miała odebrać dokumentowi
+przewijalność przy klawiaturze. Pomiar po zmianie: `scrollY` spadło z 335 tylko do **291** — dokument
+nadal przewijalny — a przy schowanej klawiaturze pojawił się jasny pasek u dołu ekranu, bo
+`visualViewport.height` zaczęło zaniżać wysokość o ~44 px.
+**Rozwiązanie:** Liczby tłumaczą, dlaczego: przy `interactive-widget=resizes-content` Safari zmniejsza
+`window.innerHeight` (812 → 477), ale **blok bazowy (ICB) zostaje przy dawnej wysokości**, więc
+`html { height: 100% }` to nadal 768 px. Nadwyżka 768 − 477 = **291** — dokładnie zmierzone `scrollY`.
+Sama wysokość procentowa więc nie wystarczy. Zamiast tego blokujemy przewijanie wprost: `overflow:
+hidden` na elemencie `html` na czas otwartego okna pełnoekranowego (przywracane przy zamknięciu).
+**Lekcja:** „Zmniejszony układ" nie znaczy „zmniejszony blok bazowy" — `innerHeight`, `100vh`, `100%`
+i `visualViewport.height` potrafią rozjechać się we WSZYSTKICH kombinacjach. Nie licz na to, że jedna
+jednostka załatwi sprawę; jeśli celem jest „dokument ma się nie przewijać", powiedz to wprost przez
+`overflow`, zamiast liczyć na arytmetykę wysokości. I mierz po każdej zmianie — ta „naprawa" wyglądała
+poprawnie w rozumowaniu, a wprowadziła nowy defekt widoczny gołym okiem.
+
 ## 2026-07-31 — `100vh` nie kurczy się przy `resizes-content`, więc dokument stawał się przewijalny
 **Problem:** Nagłówek asystenta wciąż drgał przy klawiaturze, mimo ustawienia
 `interactive-widget=resizes-content`. Pięć podejść „na wyczucie" nie trafiło w przyczynę.

@@ -390,6 +390,23 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   // `visualViewport`. Gdyby szła przez stan Reacta, korekta trafiałaby klatkę po tym, jak iOS
   // przesunie widoczny obszar pod klawiaturę, i okno na moment wyjeżdżałoby nad ekran.
   const fullScreen = usePinToVisualViewport(sheetRef, isNarrow && isOpen, keepConversationBottom);
+
+  // 036: na czas otwartego okna pełnoekranowego BLOKUJEMY przewijanie dokumentu.
+  //
+  // Zmierzone na urządzeniu: przy wysuniętej klawiaturze `window.scrollY` = 291 (a wcześniej 335),
+  // czyli iOS PRZEWIJA dokument, żeby odsłonić pole tekstowe — dokładnie o nadwyżkę wysokości strony
+  // ponad skurczony układ. Na iOS przewijanie ciągnie za sobą elementy `position: fixed`, więc okno
+  // asystenta jedzie razem z nim, a nasza korekta z `visualViewport` nie ma szans tego dogonić
+  // (robi to kompozytor, nie JavaScript). Gdy dokumentu nie da się przewinąć, nie ma czego ciągnąć.
+  useEffect(() => {
+    if (!fullScreen) return;
+    const html = document.documentElement;
+    const prev = html.style.overflow;
+    html.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prev;
+    };
+  }, [fullScreen]);
   const convoIdRef = useRef<string | null>(null);
   convoIdRef.current = conversationId;
   // Anulowanie generowania (Stop) + ostatni payload do „Generuj ponownie".
