@@ -49,24 +49,24 @@
 
 ## Faza 2 — Warstwa wspólna kosztów AI
 
-- [ ] **T-6** — **`src/lib/ai/usage.ts`** — dołóż `AI_COST_BADGE_CONFIG_KEY`, typ `AiUsageInfo` i
+- [x] **T-6** — **`src/lib/ai/usage.ts`** — dołóż `AI_COST_BADGE_CONFIG_KEY`, typ `AiUsageInfo` i
       `usageFromChat(entries)` budujące zużycie z wyników `chatComplete` przez **istniejące**
       `newUsageMeter`/`accrueUsage` (bez drugiego liczydła).
       *Gotowe, gdy:* `usageFromChat` dla dwóch wyników zwraca sumę zgodną z `AiCall` i listę `calls`.
 
-- [ ] **T-7** — **`src/lib/ai/costVisibility.ts`** (nowy) — `readCostBadgeEnabled()` (brak wiersza =
+- [x] **T-7** — **`src/lib/ai/costVisibility.ts`** (nowy) — `readCostBadgeEnabled()` (brak wiersza =
       włączone, wzorzec `readFollowupsEnabled`) i `visibleUsage(usage)` zwracające `undefined`, gdy
       licznik wyłączony **albo** użytkownik nie ma `module.admin`.
       *Gotowe, gdy:* plik nie jest importowany przez `lib/llm/chat.ts` (brak cyklu z `@/lib/auth`), a
       dla konta bez uprawnień admina `visibleUsage` zawsze zwraca `undefined`. **(AC-24)**
 
-- [ ] **T-8** — **Przełącznik admina.** `actions/llmConfig.ts`: `getCostBadgeEnabled` /
+- [x] **T-8** — **Przełącznik admina.** `actions/llmConfig.ts`: `getCostBadgeEnabled` /
       `setCostBadgeEnabled` (`requireAdmin`, `logAudit("config", "ai_cost_badge.set", …)`,
       `revalidatePath("/admin/llm")`) + przełącznik w `LlmConfigPanel.tsx` obok follow-upów.
       *Gotowe, gdy:* przełączenie zapisuje `Config`, zostawia wpis w `/admin/audit` i wraca po
       odświeżeniu strony. **(AC-25)**
 
-- [ ] **T-9** `[P]` — **`AiCostBadge` — prop `align`.** Domyślnie `"right"` (dzisiejsze
+- [x] **T-9** `[P]` — **`AiCostBadge` — prop `align`.** Domyślnie `"right"` (dzisiejsze
       `marginLeft:"auto"`), `"left"` dla nagłówków kafli.
       *Gotowe, gdy:* okno asystenta wygląda identycznie jak przed zmianą.
 
