@@ -113,7 +113,7 @@
 
 ## Faza 5 — Propozycje „Co robić?"
 
-- [ ] **T-16** — **Akcje listy propozycji.** `getIdeas(lat, lon, label, {date, part, variation})`:
+- [x] **T-16** — **Akcje listy propozycji.** `getIdeas(lat, lon, label, {date, part, variation})`:
       prompt `op:"reasoning"`, JSON, `cache: !variation`, wymaga 5–7 pozycji w tym ≥2 z nazwą własną
       miejsca w promieniu ~30 km; do promptu trafia lista zablokowanych tytułów, a **serwer i tak
       filtruje** po `fingerprint`; dołącza stan z `WeatherIdea` (już rozważana / zapisana). Zwraca
@@ -121,20 +121,20 @@
       *Gotowe, gdy:* lista ma ≥4 pozycje, ≥1 miejscową, a zablokowane nie wracają nawet przy
       `variation:true`. **(AC-10, AC-11, AC-16 — część serwerowa)**
 
-- [ ] **T-17** — **Akcje szczegółów.** `getIdeaDetail` (zwraca zapis **bez** wołania modelu, podbija
+- [x] **T-17** — **Akcje szczegółów.** `getIdeaDetail` (zwraca zapis **bez** wołania modelu, podbija
       `viewCount`/`lastSeenAt`), `generateIdeaDetail` (`op:"generation"`, `upsert` po
       `[ownerId, fingerprint]`, zapis `detail`/`detailAt`/`detailRuns+1`/`detailUsage`, `force` =
       „Generuj ponownie" z `cache:false`).
       *Gotowe, gdy:* ponowne otwarcie szczegółów nie tworzy nowego wpisu w `AiCall`, a „Generuj
       ponownie" podbija `detailRuns` i zmienia treść. **(AC-13, AC-14)**
 
-- [ ] **T-18** — **Akcje biblioteki.** `getIdeaLibrary(filter)`, `setIdeaState(id, state)`,
+- [x] **T-18** — **Akcje biblioteki.** `getIdeaLibrary(filter)`, `setIdeaState(id, state)`,
       `blockIdea(idea, ctx)` (upsert, gdy wiersza jeszcze nie ma), `deleteIdea(id)` przez
       `recordTrash` + `delete`. Rozszerz `TrashModule` o `"weather"` i dołóż gałąź przywracania w
       `actions/trash.ts`. Wszystko z `requireAuth` + kontrolą `ownerId` i `revalidatePath`.
       *Gotowe, gdy:* usunięcie pomysłu widać w `/trash` i da się go przywrócić. **(AC-17, AC-18, AC-19)**
 
-- [ ] **T-19** — **`addIdeaToTasks(id)`** — zadanie w domyślnym projekcie użytkownika z tytułem
+- [x] **T-19** — **`addIdeaToTasks(id)`** — zadanie w domyślnym projekcie użytkownika z tytułem
       propozycji i odsyłaczem `/pogoda/pomysly?idea=<id>` w opisie; wymaga `module.tasks`.
       *Gotowe, gdy:* po kliknięciu zadanie jest w `/tasks`, a przycisk nie renderuje się bez
       uprawnienia. **(AC-20)**

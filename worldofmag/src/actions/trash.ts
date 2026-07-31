@@ -39,12 +39,14 @@ export async function restoreTrashItem(id: string): Promise<void> {
   const data = JSON.parse(item.payload) as Record<string, unknown>;
   if (item.module === "notes") await restoreNote(data);
   else if (item.module === "tasks") await restoreTask(data);
+  else if (item.module === "weather") await restoreWeatherIdea(data);
   else throw new Error("Nieobsługiwany typ pozycji");
 
   await prisma.trashItem.delete({ where: { id } });
   revalidatePath("/trash");
   revalidatePath("/notes");
   revalidatePath("/tasks");
+  revalidatePath("/pogoda/pomysly");
 }
 
 export async function purgeTrashItem(id: string): Promise<void> {
@@ -158,4 +160,60 @@ async function restoreTask(d: Record<string, unknown>): Promise<void> {
       });
     }
   }
+}
+
+/**
+ * 037: propozycja „co robić" z modułu Pogoda.
+ *
+ * Uwaga na `[ownerId, fingerprint]`: to klucz unikalny, więc jeśli po usunięciu użytkownik zdążył
+ * ponownie zablokować lub obejrzeć propozycję o tej samej nazwie, wiersz już istnieje. Przywracamy
+ * wtedy tylko treść, której nowy wiersz nie ma (szczegóły) — twarde `create` wywaliłoby się na
+ * naruszeniu unikalności.
+ */
+async function restoreWeatherIdea(d: Record<string, unknown>): Promise<void> {
+  const id = d.id as string;
+  const ownerId = d.ownerId as string;
+  const fingerprint = d.fingerprint as string;
+  if (!ownerId || !fingerprint) throw new Error("Uszkodzona migawka propozycji");
+
+  const clash = await prisma.weatherIdea.findUnique({
+    where: { ownerId_fingerprint: { ownerId, fingerprint } },
+    select: { id: true, detail: true },
+  });
+  if (clash) {
+    if (!clash.detail && d.detail) {
+      await prisma.weatherIdea.update({
+        where: { id: clash.id },
+        data: {
+          detail: d.detail as string,
+          detailAt: asDate(d.detailAt),
+          detailRuns: (d.detailRuns as number) ?? 0,
+          detailUsage: (d.detailUsage as string | null) ?? null,
+        },
+      });
+    }
+    return;
+  }
+
+  await prisma.weatherIdea.create({
+    data: {
+      id,
+      ownerId,
+      fingerprint,
+      title: (d.title as string) ?? "Przywrócony pomysł",
+      summary: (d.summary as string) ?? "",
+      category: (d.category as string) ?? "other",
+      state: (d.state as string) ?? "considered",
+      locationLabel: (d.locationLabel as string) ?? "",
+      lat: (d.lat as number) ?? 0,
+      lon: (d.lon as number) ?? 0,
+      detail: (d.detail as string | null) ?? null,
+      detailAt: asDate(d.detailAt),
+      detailRuns: (d.detailRuns as number) ?? 0,
+      detailUsage: (d.detailUsage as string | null) ?? null,
+      viewCount: (d.viewCount as number) ?? 0,
+      lastSeenAt: asDate(d.lastSeenAt) ?? new Date(),
+      createdAt: asDate(d.createdAt) ?? new Date(),
+    },
+  });
 }

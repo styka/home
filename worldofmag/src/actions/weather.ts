@@ -14,6 +14,19 @@ import {
   type HourPoint,
 } from "@/lib/weather/openMeteo";
 import { presetByKey, DAY_PARTS, type Horizon, type DayPart } from "@/lib/weather/presets";
+import {
+  fingerprintOf,
+  parseIdeaCategory,
+  parseIdeaState,
+  type IdeaDTO,
+  type IdeaState,
+} from "@/lib/weather/ideas";
+import { usageFromChat, parseStoredUsage, type AiUsageInfo } from "@/lib/ai/usage";
+import { visibleUsage } from "@/lib/ai/costVisibility";
+import { recordTrash } from "@/lib/trash";
+import { auth } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { createTask } from "@/actions/tasks";
 
 export interface LocationDTO {
   id: string;
@@ -427,4 +440,424 @@ export async function evaluateWatchers(
         : "unknown";
       return { id: w.id, title: w.title, status, verdict: v.verdict ?? "", detail: v.detail ?? "" };
     });
+}
+
+// ─── 037: propozycje „Co robić?" ────────────────────────────────────────────
+//
+// Sekcja „Co robić?" dawała jeden ogólny akapit. Teraz daje LISTĘ nazwanych propozycji, z których
+// każdą można rozwinąć w szczegółowy plan, zapisać na później albo zablokować na zawsze.
+//
+// Świadoma decyzja: sama wygenerowana lista NIE trafia do bazy. Prompt jest deterministyczny per
+// lokalizacja/dzień/pora/prognoza, więc pamięć podręczna w `chatComplete` (`cache: true`) sprawia,
+// że ponowne wejście na /pogoda tego samego dnia nic nie kosztuje. W bazie lądują wyłącznie
+// propozycje, z którymi użytkownik COŚ ZROBIŁ — to one mają go przeżyć.
+
+export interface IdeasResult {
+  ideas: IdeaDTO[];
+  usage?: AiUsageInfo;
+}
+
+export interface IdeaDetailResult {
+  fingerprint: string;
+  title: string;
+  detail: string | null;
+  detailRuns: number;
+  detailAt: string | null;
+  usage?: AiUsageInfo;
+}
+
+/** Kontekst pogodowy propozycji — potrzebny i do listy, i do szczegółów. */
+export interface IdeaContext {
+  lat: number;
+  lon: number;
+  label: string;
+  date?: string;
+  part?: DayPart;
+}
+
+/** Wspólne rozstrzygnięcie „który dzień i która pora" — identyczne jak w `describeDay`. */
+function resolveWhen(f: Forecast, opts?: { date?: string; part?: DayPart }) {
+  const date =
+    opts?.date && f.daily.some((d) => d.date === opts.date)
+      ? opts.date
+      : f.daily[0]?.date ?? new Date().toISOString().slice(0, 10);
+  const partKey: DayPart = opts?.part ?? "morning";
+  const part = DAY_PARTS.find((p) => p.key === partKey) ?? DAY_PARTS[0];
+  let hours = f.hourly.filter((h) => {
+    if (!h.time.startsWith(date)) return false;
+    const hour = Number(h.time.slice(11, 13));
+    return hour >= part.from && hour < part.to;
+  });
+  if (hours.length === 0) hours = f.hourly.filter((h) => h.time.startsWith(date));
+  const day = f.daily.find((d) => d.date === date);
+  return { date, part, hours, day };
+}
+
+/** Skrót pogody dla promptów propozycji — dzień + wybrana pora, bez lania wody. */
+function weatherBrief(f: Forecast, when: ReturnType<typeof resolveWhen>): string {
+  const d = when.day;
+  const head = d
+    ? `Dzień ${weekday(when.date)} ${when.date}: ${wmo(d.code).label}, ${Math.round(d.tMin)}–${Math.round(
+        d.tMax
+      )}°C, opady ${d.precipProbMax}% (${d.precipSum.toFixed(1)} mm), wiatr do ${Math.round(
+        d.windMaxKph
+      )} km/h, UV ${d.uvMax.toFixed(0)}`
+    : `Dzień ${when.date}`;
+  return `${head}\nPora: ${when.part.label} (${when.part.from}:00–${when.part.to}:00)\n${
+    digestHours(when.hours) || "(brak danych godzinowych)"
+  }`;
+}
+
+/**
+ * Lista propozycji „co robić" dla lokalizacji, dnia i pory dnia.
+ *
+ * `variation` = „Wylosuj inne": wymusza świeżą listę (bez pamięci podręcznej i z wyższą temperaturą).
+ */
+export async function getIdeas(
+  lat: number,
+  lon: number,
+  label: string,
+  opts?: { date?: string; part?: DayPart; variation?: boolean }
+): Promise<IdeasResult> {
+  const user = await requireAuth();
+  const f = await fetchForecast(lat, lon);
+  if (!f) throw new Error("Brak danych pogodowych.");
+  const when = resolveWhen(f, opts);
+  const variation = opts?.variation ?? false;
+
+  const known = await prisma.weatherIdea.findMany({ where: { ownerId: user.id } });
+  const blocked = known.filter((k) => k.state === "blocked");
+  const byFingerprint = new Map(known.map((k) => [k.fingerprint, k]));
+
+  const system =
+    "Jesteś przewodnikiem po okolicy i doradcą rekreacyjnym. Na podstawie prognozy dla wskazanego " +
+    "dnia i pory dnia proponujesz KONKRETNE pomysły, co robić w danej lokalizacji.\n" +
+    "Zasady:\n" +
+    "- Zwróć 5–7 propozycji.\n" +
+    "- CO NAJMNIEJ 2 muszą dotyczyć konkretnego miejsca lub atrakcji w promieniu ok. 30 km od " +
+    "lokalizacji, z NAZWĄ WŁASNĄ (np. szczyt, szlak, jezioro, muzeum, zabytek). Takie pozycje mają " +
+    "\"nearby\": true, a w \"summary\" krótko: dlaczego akurat to i jak blisko.\n" +
+    "- Pozostałe mogą być ogólnymi czynnościami pasującymi do tej pogody.\n" +
+    "- Jeśli pogoda wyklucza rekreację na zewnątrz, przewagę mają propozycje domowe (category: home).\n" +
+    "- Nie wymyślaj miejsc, których nie ma. Jeśli nie znasz okolicy na tyle dobrze, daj mniej " +
+    "propozycji miejscowych, ale nie zmyślaj nazw.\n" +
+    "- \"title\" to zwięzła nazwa propozycji (do 60 znaków), \"summary\" to JEDNO zdanie uzasadnienia " +
+    "odnoszące się do pogody.\n" +
+    "- category: outdoor (aktywność na zewnątrz), trip (wycieczka/wyjazd do miejsca), home (w domu), other.\n" +
+    "Pisz po polsku. Zwróć WYŁĄCZNIE JSON." +
+    (variation ? "\nZaproponuj INNE, mniej oczywiste pomysły niż zwykle — bądź kreatywny." : "");
+
+  const blockedHint =
+    blocked.length > 0
+      ? `\n\nNIE PROPONUJ tych pozycji (użytkownik je odrzucił):\n${blocked
+          .map((b) => `- ${b.title}`)
+          .join("\n")}`
+      : "";
+
+  const userPrompt =
+    `Lokalizacja: ${label} (${lat.toFixed(3)}, ${lon.toFixed(3)})\n\n` +
+    `PROGNOZA:\n${weatherBrief(f, when)}${blockedHint}\n\n` +
+    `Zwróć JSON: {"ideas":[{"title":"...","summary":"...","category":"outdoor|trip|home|other","nearby":true}]}` +
+    (variation ? `\n\n[wariant ${Math.random().toString(36).slice(2, 8)}]` : "");
+
+  const res = await chatComplete({
+    op: "reasoning",
+    json: true,
+    temperature: variation ? 0.95 : 0.6,
+    maxTokens: 1200,
+    // Lista jest deterministyczna per lokalizacja/dzień/pora/prognoza (prompt je zawiera), więc
+    // powtórne wejście na stronę nie kosztuje. Wariant ma być świeży → bez pamięci podręcznej.
+    cache: !variation,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: userPrompt },
+    ],
+  });
+  if (!res.ok) throw new Error(res.message);
+
+  const parsed = parseJsonLoose<{
+    ideas: Array<{ title: string; summary?: string; category?: string; nearby?: boolean }>;
+  }>(res.content);
+
+  const seen = new Set<string>();
+  const ideas: IdeaDTO[] = [];
+  for (const raw of parsed?.ideas ?? []) {
+    const title = (raw.title ?? "").trim();
+    if (!title) continue;
+    const fingerprint = fingerprintOf(title);
+    if (!fingerprint || seen.has(fingerprint)) continue;
+    const row = byFingerprint.get(fingerprint);
+    // Blokada jest EGZEKWOWANA tutaj, po stronie serwera. Podpowiedź w prompcie bywa ignorowana
+    // przez model — sam prompt nie może być gwarancją, że odrzucona propozycja nie wróci.
+    if (row?.state === "blocked") continue;
+    seen.add(fingerprint);
+    ideas.push({
+      id: row?.id ?? null,
+      fingerprint,
+      title,
+      summary: (raw.summary ?? "").trim(),
+      category: parseIdeaCategory(raw.category),
+      state: row ? parseIdeaState(row.state) : null,
+      nearby: raw.nearby === true,
+      hasDetail: !!row?.detail,
+      locationLabel: row?.locationLabel ?? label,
+      detailAt: row?.detailAt ? row.detailAt.toISOString() : null,
+      detailRuns: row?.detailRuns ?? 0,
+    });
+  }
+
+  return {
+    ideas,
+    usage: await visibleUsage(usageFromChat([{ res, label: "propozycje", op: "reasoning" }])),
+  };
+}
+
+/**
+ * Zapisane szczegóły propozycji — BEZ wołania modelu.
+ *
+ * To jest sedno wymagania „użytkownik wraca do informacji po ponownym uruchomieniu aplikacji":
+ * raz wygenerowany plan jest trwały i darmowy przy każdym kolejnym otwarciu.
+ */
+export async function getIdeaDetail(fingerprint: string): Promise<IdeaDetailResult | null> {
+  const user = await requireAuth();
+  const row = await prisma.weatherIdea.findUnique({
+    where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
+  });
+  if (!row) return null;
+  await prisma.weatherIdea.update({
+    where: { id: row.id },
+    data: { viewCount: { increment: 1 }, lastSeenAt: new Date() },
+  });
+  return {
+    fingerprint: row.fingerprint,
+    title: row.title,
+    detail: row.detail,
+    detailRuns: row.detailRuns,
+    detailAt: row.detailAt ? row.detailAt.toISOString() : null,
+    usage: await visibleUsage(parseStoredUsage(row.detailUsage)),
+  };
+}
+
+/**
+ * Generuje szczegółowy plan propozycji i zapisuje go na stałe.
+ *
+ * Szczegóły powstają NA ŻĄDANIE (po otwarciu pozycji), a nie z góry dla całej listy — inaczej każde
+ * wejście na /pogoda kosztowałoby wielokrotność ceny samej listy. `force` = „Generuj ponownie".
+ */
+export async function generateIdeaDetail(
+  idea: { title: string; summary?: string; category?: string },
+  ctx: IdeaContext,
+  opts?: { force?: boolean }
+): Promise<IdeaDetailResult> {
+  const user = await requireAuth();
+  const title = idea.title.trim();
+  if (!title) throw new Error("Propozycja bez nazwy");
+  const fingerprint = fingerprintOf(title);
+
+  const existing = await prisma.weatherIdea.findUnique({
+    where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
+  });
+  // Bez wymuszenia zapisany plan wygrywa z nową generacją — użytkownik ma dostać to, co już czytał.
+  if (existing?.detail && !opts?.force) {
+    return {
+      fingerprint,
+      title: existing.title,
+      detail: existing.detail,
+      detailRuns: existing.detailRuns,
+      detailAt: existing.detailAt ? existing.detailAt.toISOString() : null,
+      usage: await visibleUsage(parseStoredUsage(existing.detailUsage)),
+    };
+  }
+
+  const f = await fetchForecast(ctx.lat, ctx.lon);
+  if (!f) throw new Error("Brak danych pogodowych.");
+  const when = resolveWhen(f, { date: ctx.date, part: ctx.part });
+
+  const system =
+    "Rozpisujesz KONKRETNY plan wykonania jednego pomysłu na spędzenie czasu, dopasowany do pogody " +
+    "i lokalizacji. Pisz po polsku, w markdownie, zwięźle (do ~250 słów). Struktura:\n" +
+    "- jedno zdanie wstępu (na czym rzecz polega),\n" +
+    "- **Jak to zrobić** — kroki lub przebieg (przy trasach: punkty, orientacyjny dystans i czas),\n" +
+    "- **Co zabrać** — lista pod tę konkretną pogodę,\n" +
+    "- **Na co uważać** — ryzyka wynikające z prognozy,\n" +
+    "- **Plan awaryjny** — co zrobić, jeśli pogoda się popsuje.\n" +
+    "Nie zmyślaj nazw miejsc, godzin otwarcia, cen ani danych kontaktowych. Bez nagłówka z tytułem — " +
+    "tytuł jest już pokazany nad treścią.";
+
+  const userPrompt =
+    `Lokalizacja: ${ctx.label} (${ctx.lat.toFixed(3)}, ${ctx.lon.toFixed(3)})\n` +
+    `Propozycja: ${title}\n` +
+    (idea.summary ? `Uzasadnienie z listy: ${idea.summary}\n` : "") +
+    `\nPROGNOZA:\n${weatherBrief(f, when)}` +
+    (opts?.force ? `\n\n[nowe ujęcie ${Math.random().toString(36).slice(2, 8)}]` : "");
+
+  const res = await chatComplete({
+    op: "generation",
+    temperature: 0.7,
+    maxTokens: 900,
+    // Ponowna generacja ma dać INNY plan, więc omija pamięć podręczną.
+    cache: !opts?.force,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: userPrompt },
+    ],
+  });
+  if (!res.ok) throw new Error(res.message);
+
+  const detail = res.content.trim();
+  const usage = usageFromChat([{ res, label: "szczegóły propozycji", op: "generation" }]);
+  const now = new Date();
+  const row = await prisma.weatherIdea.upsert({
+    where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
+    create: {
+      ownerId: user.id,
+      fingerprint,
+      title,
+      summary: (idea.summary ?? "").trim(),
+      category: parseIdeaCategory(idea.category),
+      state: "considered",
+      locationLabel: ctx.label,
+      lat: ctx.lat,
+      lon: ctx.lon,
+      detail,
+      detailAt: now,
+      detailRuns: 1,
+      detailUsage: usage ? JSON.stringify(usage) : null,
+      viewCount: 1,
+      lastSeenAt: now,
+    },
+    update: {
+      detail,
+      detailAt: now,
+      detailRuns: { increment: 1 },
+      detailUsage: usage ? JSON.stringify(usage) : null,
+      lastSeenAt: now,
+      // Wejście w szczegóły odblokowuje propozycję: jeśli była zablokowana, to znaczy, że użytkownik
+      // zmienił zdanie — świadomie ją otworzył.
+      state: existing?.state === "blocked" ? "considered" : undefined,
+    },
+  });
+
+  revalidatePath("/pogoda");
+  revalidatePath("/pogoda/pomysly");
+  return {
+    fingerprint,
+    title: row.title,
+    detail: row.detail,
+    detailRuns: row.detailRuns,
+    detailAt: row.detailAt ? row.detailAt.toISOString() : null,
+    usage: await visibleUsage(usage),
+  };
+}
+
+/** Biblioteka pomysłów — wszystko, co użytkownik kiedykolwiek rozważał lub odrzucił. */
+export async function getIdeaLibrary(filter?: {
+  state?: IdeaState | "all";
+  location?: string;
+}): Promise<IdeaDTO[]> {
+  const user = await requireAuth();
+  const rows = await prisma.weatherIdea.findMany({
+    where: {
+      ownerId: user.id,
+      ...(filter?.state && filter.state !== "all" ? { state: filter.state } : {}),
+      ...(filter?.location ? { locationLabel: filter.location } : {}),
+    },
+    orderBy: [{ lastSeenAt: "desc" }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    fingerprint: r.fingerprint,
+    title: r.title,
+    summary: r.summary,
+    category: parseIdeaCategory(r.category),
+    state: parseIdeaState(r.state),
+    nearby: false,
+    hasDetail: !!r.detail,
+    locationLabel: r.locationLabel,
+    detailAt: r.detailAt ? r.detailAt.toISOString() : null,
+    detailRuns: r.detailRuns,
+  }));
+}
+
+/** Zmiana stanu istniejącej pozycji: zapisz / przywróć proponowanie / zablokuj. */
+export async function setIdeaState(id: string, state: IdeaState): Promise<void> {
+  const user = await requireAuth();
+  const row = await prisma.weatherIdea.findUnique({ where: { id } });
+  if (!row || row.ownerId !== user.id) throw new Error("Propozycja nie istnieje");
+  await prisma.weatherIdea.update({ where: { id }, data: { state, lastSeenAt: new Date() } });
+  revalidatePath("/pogoda");
+  revalidatePath("/pogoda/pomysly");
+}
+
+/**
+ * Blokada propozycji PROSTO Z LISTY — także takiej, która nie ma jeszcze wiersza w bazie.
+ *
+ * Dzięki temu „nie proponuj mi tego" nie wymaga wcześniejszego wchodzenia w szczegóły; pozycja trafia
+ * do biblioteki bez planu i można ją stamtąd przywrócić.
+ */
+export async function blockIdea(
+  idea: { title: string; summary?: string; category?: string },
+  ctx: { label: string; lat: number; lon: number }
+): Promise<void> {
+  const user = await requireAuth();
+  const title = idea.title.trim();
+  if (!title) throw new Error("Propozycja bez nazwy");
+  const fingerprint = fingerprintOf(title);
+  await prisma.weatherIdea.upsert({
+    where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
+    create: {
+      ownerId: user.id,
+      fingerprint,
+      title,
+      summary: (idea.summary ?? "").trim(),
+      category: parseIdeaCategory(idea.category),
+      state: "blocked",
+      locationLabel: ctx.label,
+      lat: ctx.lat,
+      lon: ctx.lon,
+    },
+    update: { state: "blocked", lastSeenAt: new Date() },
+  });
+  revalidatePath("/pogoda");
+  revalidatePath("/pogoda/pomysly");
+}
+
+/** Usunięcie z biblioteki — przez kosz (C-24), żeby dało się cofnąć pomyłkę. */
+export async function deleteIdea(id: string): Promise<void> {
+  const user = await requireAuth();
+  const row = await prisma.weatherIdea.findUnique({ where: { id } });
+  if (!row || row.ownerId !== user.id) throw new Error("Propozycja nie istnieje");
+  await recordTrash(user.id, {
+    module: "weather",
+    entityId: row.id,
+    title: row.title,
+    payload: row,
+  });
+  await prisma.weatherIdea.delete({ where: { id } });
+  revalidatePath("/pogoda");
+  revalidatePath("/pogoda/pomysly");
+  revalidatePath("/trash");
+}
+
+/**
+ * „Dodaj do zadań" — pomysł, który użytkownik chce naprawdę zrealizować, trafia do modułu Zadania
+ * z odsyłaczem do zapisanych szczegółów.
+ */
+export async function addIdeaToTasks(id: string): Promise<void> {
+  const user = await requireAuth();
+  const session = await auth();
+  if (!hasPermission(session, PERMISSIONS.TASKS)) throw new Error("Brak dostępu do modułu Zadania");
+  const row = await prisma.weatherIdea.findUnique({ where: { id } });
+  if (!row || row.ownerId !== user.id) throw new Error("Propozycja nie istnieje");
+
+  const description =
+    (row.summary ? `${row.summary}\n\n` : "") +
+    `Pomysł z modułu Pogoda (${row.locationLabel}).\n` +
+    `Szczegóły: /pogoda/pomysly?idea=${row.id}`;
+  await createTask({ title: row.title, description });
+
+  // Pozycja przestaje być „rozważana" — użytkownik podjął decyzję, że to robi.
+  await prisma.weatherIdea.update({ where: { id }, data: { state: "saved" } });
+  revalidatePath("/tasks");
+  revalidatePath("/pogoda/pomysly");
 }
