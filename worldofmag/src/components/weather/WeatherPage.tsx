@@ -227,6 +227,9 @@ function LocationsModal({
     addLocationByPoint(p.lat, p.lon)
       .then((l) => {
         showToast(`Dodano lokalizację „${l.label}"`, "success");
+        // `run` odświeża dane serwerowe — bez tego nowa lokalizacja nie pojawiłaby się na liście
+        // w oknie aż do przeładowania strony (props `locations` przychodzi z serwera).
+        run(async () => {});
         onPick(l);
       })
       .catch((e) => showToast(e.message ?? "Nie udało się zapisać punktu", "error"))

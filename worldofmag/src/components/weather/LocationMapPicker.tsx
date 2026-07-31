@@ -49,6 +49,7 @@ export function LocationMapPicker({
     const host = hostRef.current;
     if (!host || mapRef.current) return;
     let cancelled = false;
+    let sizeTimer: ReturnType<typeof setTimeout> | undefined;
 
     // Import dynamiczny także wewnątrz efektu: nawet z `ssr:false` chcemy, żeby paczka mapy
     // dociągała się dopiero, gdy modal faktycznie się otworzy — a nie przy wejściu na /pogoda.
@@ -100,11 +101,14 @@ export function LocationMapPicker({
       setReady(true);
       // Modal animuje wejście, więc kontener potrafi mieć w chwili montażu zerowy rozmiar —
       // bez tego mapa renderuje się jako szary prostokąt do pierwszego przesunięcia.
-      setTimeout(() => map.invalidateSize(), 60);
+      sizeTimer = setTimeout(() => map.invalidateSize(), 60);
     });
 
     return () => {
       cancelled = true;
+      // Bez tego odmierzony timer trafiłby w mapę już usuniętą przez `remove()` (Leaflet zeruje
+      // wtedy kontener) — czyli błąd w konsoli przy zamknięciu okna w pierwszych 60 ms.
+      if (sizeTimer) clearTimeout(sizeTimer);
       mapRef.current?.remove();
       mapRef.current = null;
       markerRef.current = null;

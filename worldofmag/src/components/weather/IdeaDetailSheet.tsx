@@ -54,10 +54,13 @@ export function IdeaDetailSheet({
     // Jedno drzewo DOM, dwa układy sterowane klasami — renderowanie treści dwa razy (raz dla
     // telefonu, raz dla komputera) dublowałoby markdown i psuło odczyt przez czytniki ekranu.
     // Mobile: pełny ekran. Desktop: panel w kolumnie obok listy.
+    // `z-50` (nie `z-40`) celowo: dolny pasek zakładek w `AppShell` ma `z-40`, a przy równym
+    // z-index wygrywa element renderowany później w DOM — czyli pasek przykryłby stopkę arkusza
+    // z przyciskami. Tyle samo ma `Modal`, więc zachowanie jest spójne z resztą aplikacji.
     <div
       role="dialog"
       aria-label={`Szczegóły propozycji: ${idea.title}`}
-      className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-[var(--bg-base)] md:static md:z-auto md:max-h-[70vh] md:rounded-xl md:border md:border-[var(--border)] md:bg-[var(--bg-surface)]"
+      className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[var(--bg-base)] md:static md:z-auto md:max-h-[70vh] md:rounded-xl md:border md:border-[var(--border)] md:bg-[var(--bg-surface)]"
     >
       <div className="flex items-start justify-between gap-2 border-b border-[var(--border)] px-4 py-3">
         <div className="min-w-0">
