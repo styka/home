@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { stashImportDraft } from "@/lib/kitchen/recipeImportDraft";
 import type { CreateRecipeInput, MealType, Difficulty } from "@/types/kitchen";
+import type { AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface ImportFromAIDialogProps {
   open: boolean;
@@ -38,7 +39,7 @@ export function ImportFromAIDialog({ open, onClose }: ImportFromAIDialogProps) {
         ingredients: { name: string; quantity: number | null; unit: string | null; note: string | null; isOptional?: boolean }[];
         steps: { text: string }[];
       };
-      const res = await runJob<{ recipe: GenRecipe }>("kitchen.generateRecipe", { prompt: trimmed });
+      const res = await runJob<{ recipe: GenRecipe; usage?: AiCostUsage }>("kitchen.generateRecipe", { prompt: trimmed });
       if (!res?.recipe) {
         showToast("Nie udało się wygenerować", "error");
         return;

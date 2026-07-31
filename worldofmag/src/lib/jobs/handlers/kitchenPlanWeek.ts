@@ -6,6 +6,8 @@ import { chatComplete } from "@/lib/llm/chat";
 import { getUserTeamIds } from "@/lib/server-utils";
 import { addDays, format } from "date-fns";
 import { JobError, type JobContext } from "@/lib/jobs/types";
+import { usageFromChat } from "@/lib/ai/usage";
+import type { AiUsageInfo } from "@/lib/ai/usage";
 
 const VALID_SLOTS = new Set(["breakfast", "lunch", "dinner", "snack"]);
 type Slot = "breakfast" | "lunch" | "dinner" | "snack";
@@ -31,7 +33,7 @@ Zasady: wybieraj TYLKO recipeId z "recipes"; honoruj preferencje (avoid, cuisine
 noRepeats=true → bez powtórek w tygodniu; mustUsePantry=true → priorytet przepisów z większym "matchedPantry";
 slot pasujący do mealType ma pierwszeństwo; jeśli nic nie pasuje — pomiń parę (nie wymyślaj id).`;
 
-export async function kitchenPlanWeekHandler(payload: PlanWeekPayload, ctx: JobContext): Promise<{ suggestions: Suggestion[] }> {
+export async function kitchenPlanWeekHandler(payload: PlanWeekPayload, ctx: JobContext): Promise<{ suggestions: Suggestion[]; usage?: AiUsageInfo }> {
   const ownerId = ctx.ownerId;
   if (!ownerId) throw new JobError("Brak użytkownika", 401);
   if (!payload.weekStart || !/^\d{4}-\d{2}-\d{2}$/.test(payload.weekStart)) throw new JobError("weekStart YYYY-MM-DD wymagany", 400);
@@ -124,5 +126,5 @@ export async function kitchenPlanWeekHandler(payload: PlanWeekPayload, ctx: JobC
       servings: people, reason: (p.reason ?? "").slice(0, 100),
     });
   }
-  return { suggestions };
+  return { suggestions, usage: usageFromChat([{ res: result, label: "plan tygodnia" }]) };
 }

@@ -2,30 +2,21 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import {
-  CloudSun,
-  MapPin,
-  Plus,
-  Loader2,
-  Sparkles,
-  Shuffle,
-  LocateFixed,
-  Star,
-  Trash2,
-} from "lucide-react";
+import dynamic from "next/dynamic";
+import { CloudSun, MapPin, Plus, Loader2, LocateFixed, Star, Trash2, Map } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
-import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
-import { FALLBACK_LOCATION, DAY_PARTS, currentDayPart, type DayPart } from "@/lib/weather/presets";
+import { FALLBACK_LOCATION } from "@/lib/weather/presets";
 import type { Forecast } from "@/lib/weather/openMeteo";
-import { ForecastView } from "./ForecastView";
+import { ForecastNow, ForecastHours, ForecastDays } from "./ForecastView";
 import { WatchersPanel } from "./WatchersPanel";
+import { IdeasPanel } from "./IdeasPanel";
 import {
   getWeather,
-  describeDay,
   addLocationByName,
+  addLocationByPoint,
   setDefaultLocation,
   deleteLocation,
   type LocationDTO,
@@ -41,19 +32,21 @@ interface Coords {
 export function WeatherPage({
   locations,
   watchers,
+  usdPlnRate,
+  canAddToTasks,
 }: {
   locations: LocationDTO[];
   watchers: WatcherDTO[];
+  /** Przelicznik USD→PLN dla licznika kosztu AI (ustawiany przez administratora). */
+  usdPlnRate?: number;
+  /** Czy pokazywać „Dodaj do zadań" — zależy od uprawnienia do modułu Zadania. */
+  canAddToTasks: boolean;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
   const [coords, setCoords] = useState<Coords | null>(null);
   const [forecast, setForecast] = useState<Forecast | null>(null);
   const [loading, setLoading] = useState(true);
-  const [aiText, setAiText] = useState<string | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [adviceDate, setAdviceDate] = useState<string | null>(null);
-  const [advicePart, setAdvicePart] = useState<DayPart>(() => currentDayPart());
   const [showLocations, setShowLocations] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -84,7 +77,6 @@ export function WeatherPage({
   const loadForecast = useCallback(
     (c: Coords) => {
       setLoading(true);
-      setAiText(null);
       getWeather(c.lat, c.lon)
         .then(setForecast)
         .catch((e) => {
@@ -99,32 +91,6 @@ export function WeatherPage({
   useEffect(() => {
     if (coords) loadForecast(coords);
   }, [coords, loadForecast]);
-
-  // Domyślny dzień porady = pierwszy dzień prognozy (dziś), gdy jeszcze nieustawiony.
-  useEffect(() => {
-    if (forecast && !adviceDate) setAdviceDate(forecast.daily[0]?.date ?? null);
-  }, [forecast, adviceDate]);
-
-  const loadAdvice = useCallback(
-    (opts?: { variation?: boolean }) => {
-      if (!coords || !adviceDate) return;
-      setAiLoading(true);
-      describeDay(coords.lat, coords.lon, coords.label, {
-        date: adviceDate,
-        part: advicePart,
-        variation: opts?.variation,
-      })
-        .then(setAiText)
-        .catch((e) => showToast(e.message ?? "AI niedostępne", "error"))
-        .finally(() => setAiLoading(false));
-    },
-    [coords, adviceDate, advicePart, showToast]
-  );
-
-  // Auto-ładowanie porady po wejściu / zmianie lokalizacji / dnia / pory dnia.
-  useEffect(() => {
-    loadAdvice();
-  }, [loadAdvice]);
 
   function requestGeolocation() {
     if (!navigator.geolocation) {
@@ -155,7 +121,7 @@ export function WeatherPage({
         </button>
       </div>
 
-      {loading || !forecast ? (
+      {loading || !forecast || !coords ? (
         <div className="flex flex-col items-center gap-2 py-16 text-[var(--text-muted)]">
           {loading ? <Loader2 className="animate-spin" /> : <CloudSun />}
           <span className="text-sm">{loading ? "Pobieram prognozę…" : "Brak danych pogodowych."}</span>
@@ -163,78 +129,32 @@ export function WeatherPage({
       ) : (
         <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0 space-y-5">
-            {/* Porada AI */}
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <h3 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--text-primary)]">
-                  <Sparkles size={15} className="text-[var(--accent-purple)]" /> Co robić?
-                </h3>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => loadAdvice({ variation: true })}
-                  disabled={aiLoading || !adviceDate}
-                >
-                  {aiLoading ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <>
-                      <Shuffle size={14} /> Wylosuj inną
-                    </>
-                  )}
-                </Button>
-              </div>
+            {/* 037: kolejność sekcji wg zgłoszenia właściciela — najpierw pogoda na teraz, potem
+                „Co robić?", a dopiero pod tym najbliższe godziny i prognoza tygodniowa. */}
+            <ForecastNow forecast={forecast} />
 
-              {/* Wybór dnia */}
-              <div className="mb-2 flex flex-wrap gap-1">
-                {forecast.daily.map((d, i) => (
-                  <AdviceChip
-                    key={d.date}
-                    active={adviceDate === d.date}
-                    label={i === 0 ? "Dziś" : i === 1 ? "Jutro" : weekdayShort(d.date)}
-                    onClick={() => setAdviceDate(d.date)}
-                  />
-                ))}
-              </div>
-              {/* Wybór pory dnia */}
-              <div className="mb-3 flex flex-wrap gap-1">
-                {DAY_PARTS.map((p) => (
-                  <AdviceChip
-                    key={p.key}
-                    active={advicePart === p.key}
-                    label={p.label}
-                    onClick={() => setAdvicePart(p.key)}
-                  />
-                ))}
-              </div>
+            {/* 037: „Co robić?" to teraz LISTA propozycji z trwałymi szczegółami, a nie jeden
+                wygenerowany akapit. Cała logika (generowanie, blokowanie, biblioteka) mieszka w
+                IdeasPanel — WeatherPage odpowiada wyłącznie za układ strony. */}
+            <IdeasPanel
+              forecast={forecast}
+              coords={coords}
+              usdPlnRate={usdPlnRate}
+              canAddToTasks={canAddToTasks}
+            />
 
-              {aiLoading ? (
-                <p className="text-sm text-[var(--text-muted)]">Analizuję prognozę godzinową…</p>
-              ) : aiText ? (
-                <>
-                  <style>{MARKDOWN_STYLES}</style>
-                  <div
-                    className="markdown-body text-sm text-[var(--text-secondary)]"
-                    dangerouslySetInnerHTML={{ __html: markdownToHtml(aiText) }}
-                  />
-                </>
-              ) : (
-                <p className="text-sm text-[var(--text-muted)]">
-                  Porada wczyta się automatycznie dla wybranego dnia i pory.
-                </p>
-              )}
-            </div>
-
-            <ForecastView forecast={forecast} />
+            <ForecastHours forecast={forecast} />
+            <ForecastDays forecast={forecast} />
           </div>
 
-          <WatchersPanel watchers={watchers} coords={coords} />
+          <WatchersPanel watchers={watchers} coords={coords} usdPlnRate={usdPlnRate} />
         </div>
       )}
 
       {showLocations && (
         <LocationsModal
           locations={locations}
+          current={coords}
           onClose={() => setShowLocations(false)}
           onUseGeo={() => {
             requestGeolocation();
@@ -262,42 +182,23 @@ export function WeatherPage({
   );
 }
 
-function weekdayShort(dateIso: string): string {
-  return new Date(dateIso + "T12:00:00").toLocaleDateString("pl-PL", { weekday: "short" });
-}
-
-function AdviceChip({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "rounded-full border px-2.5 py-1 text-xs capitalize transition-colors",
-        active
-          ? "border-transparent bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-[inset_0_0_0_1px_var(--accent-purple)]"
-          : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-      )}
-    >
-      {label}
-    </button>
-  );
-}
+// 037: mapa ładowana leniwie i wyłącznie po stronie klienta — Leaflet dotyka `window` już przy
+// imporcie, a paczka nie ma po co obciążać pierwszego wejścia na /pogoda.
+const LocationMapPicker = dynamic(
+  () => import("./LocationMapPicker").then((m) => m.LocationMapPicker),
+  { ssr: false, loading: () => <p className="text-xs text-[var(--text-muted)]">Wczytuję mapę…</p> }
+);
 
 function LocationsModal({
   locations,
+  current,
   onClose,
   onUseGeo,
   onPick,
   run,
 }: {
   locations: LocationDTO[];
+  current: Coords | null;
   onClose: () => void;
   onUseGeo: () => void;
   onPick: (l: LocationDTO) => void;
@@ -306,6 +207,7 @@ function LocationsModal({
   const { showToast } = useToast();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   function add() {
     if (!name.trim()) return;
@@ -320,14 +222,47 @@ function LocationsModal({
       .finally(() => setBusy(false));
   }
 
+  function savePoint(p: { lat: number; lon: number }) {
+    setBusy(true);
+    addLocationByPoint(p.lat, p.lon)
+      .then((l) => {
+        showToast(`Dodano lokalizację „${l.label}"`, "success");
+        // `run` odświeża dane serwerowe — bez tego nowa lokalizacja nie pojawiłaby się na liście
+        // w oknie aż do przeładowania strony (props `locations` przychodzi z serwera).
+        run(async () => {});
+        onPick(l);
+      })
+      .catch((e) => showToast(e.message ?? "Nie udało się zapisać punktu", "error"))
+      .finally(() => setBusy(false));
+  }
+
   return (
-    <Modal onClose={onClose} title="Lokalizacje">
+    <Modal onClose={onClose} title="Lokalizacje" wide={showMap}>
       <button
         onClick={onUseGeo}
         className="flex w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
       >
         <LocateFixed size={15} className="text-[var(--accent-blue)]" /> Użyj mojej lokalizacji (GPS)
       </button>
+
+      {/* Trzecia droga obok nazwy i GPS: wskazanie punktu na mapie. Potrzebna, bo wyszukiwarka nazw
+          nie zna części małych wsi, a GPS bywa niedostępny. */}
+      <button
+        onClick={() => setShowMap((v) => !v)}
+        aria-expanded={showMap}
+        className="flex w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+      >
+        <Map size={15} className="text-[var(--accent-green)]" />
+        {showMap ? "Ukryj mapę" : "Wskaż na mapie"}
+      </button>
+
+      {showMap && (
+        <LocationMapPicker
+          initial={current ? { lat: current.lat, lon: current.lon } : null}
+          busy={busy}
+          onSave={savePoint}
+        />
+      )}
 
       <div className="space-y-1">
         {locations.map((l) => (

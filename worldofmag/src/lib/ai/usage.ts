@@ -96,6 +96,58 @@ export function accrueUsage(
   });
 }
 
+// ─── 037: zużycie do pokazania PRZY TREŚCI (licznik kosztu poza asystentem) ──
+//
+// Asystent budował `UsageMeter` ręcznie w swojej pętli. Moduły (pogoda, kuchnia, magazyn…) wołają
+// model raz albo dwa razy i potrzebują tego samego kształtu — bez przepisywania akumulatora u siebie.
+// `usageFromChat` jest jedynym mostem `ChatResult[] → UsageMeter`, więc kwota pokazana użytkownikowi
+// liczy się dokładnie tak samo jak wpisy w `AiCall` (ten sam `estimateCost` pod spodem).
+
+/** Klucz w `Config` sterujący widocznością licznika kosztu w całej aplikacji (patrz `costVisibility.ts`). */
+export const AI_COST_BADGE_CONFIG_KEY = "ai_cost_badge_enabled";
+
+/**
+ * Zużycie jednej operacji AI w postaci nadającej się do przesłania na klienta i zapisania w bazie.
+ * Świadomie ten sam kształt co `UsageMeter` — komponent `AiCostBadge` przyjmuje go bez tłumaczenia.
+ */
+export type AiUsageInfo = UsageMeter;
+
+/** Wynik `chatComplete` w kształcie, którego potrzebuje licznik (bez wariantu błędu). */
+type ChatUsageSource = {
+  ok: boolean;
+  model?: string;
+  usage?: TokenUsage;
+};
+
+/**
+ * Buduje zużycie z jednego lub kilku wywołań modelu. Wywołania nieudane i takie, w których dostawca
+ * nie zwrócił zużycia, są pomijane — pokazanie „0 zł" za nieudaną próbę byłoby myleniem użytkownika.
+ * Gdy nie ma czego pokazać, zwraca `undefined`, żeby `AiCostBadge` po prostu się nie renderował.
+ */
+export function usageFromChat(
+  entries: Array<{ res: ChatUsageSource; label?: string; op?: string }>
+): AiUsageInfo | undefined {
+  const meter = newUsageMeter();
+  let counted = 0;
+  for (const e of entries) {
+    if (!e.res?.ok || !e.res.usage) continue;
+    accrueUsage(meter, e.res.usage, e.res.model, e.label, e.op);
+    counted++;
+  }
+  return counted > 0 ? meter : undefined;
+}
+
+/** Bezpieczny odczyt zużycia zapisanego w bazie (kolumna JSON) — uszkodzony wpis nie może wysypać strony. */
+export function parseStoredUsage(raw: string | null | undefined): AiUsageInfo | undefined {
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as AiUsageInfo;
+    return parsed && Array.isArray(parsed.calls) ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Z-130/Z-511: trwały budżet AI per użytkownik/plan (kontrola kosztów).
  *

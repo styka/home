@@ -1,6 +1,7 @@
 // Z-131 (T-17) — handler: porady dobrostanu zwierząt. Z `/api/llm/pets/insights`. Łagodna degradacja.
 import { chatComplete } from "@/lib/llm/chat";
 import { type JobContext } from "@/lib/jobs/types";
+import { usageFromChat } from "@/lib/ai/usage";
 
 interface InsightsPayload {
   pets?: Array<{ name: string; species: string; presetKey?: string }>;
@@ -33,7 +34,10 @@ export async function petsInsightsHandler(payload: InsightsPayload, ctx: JobCont
   try {
     const cleaned = (result.content || "{}").trim().replace(/^```json\n?/, "").replace(/\n?```$/, "").replace(/^```\n?/, "");
     const parsed = JSON.parse(cleaned) as { tips?: string[] };
-    return { tips: Array.isArray(parsed.tips) ? parsed.tips.filter((t) => typeof t === "string").slice(0, 4) : [] };
+    return {
+      tips: Array.isArray(parsed.tips) ? parsed.tips.filter((t) => typeof t === "string").slice(0, 4) : [],
+      usage: usageFromChat([{ res: result, label: "wnioski o zwierzętach" }]),
+    };
   } catch {
     return { tips: [], unavailable: true };
   }

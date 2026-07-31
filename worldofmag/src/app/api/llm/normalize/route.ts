@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/lib/llm/chat";
+import { usageField } from "@/lib/ai/costVisibility";
 
 const SYSTEM_PROMPT = `Jesteś asystentem listy zakupów. Użytkownik poda Ci tekst (mówiony lub pisany) opisujący produkty do kupienia.
 Przekształć go w tablicę JSON obiektów produktów.
@@ -44,5 +45,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "LLM zwrócił nieprawidłowy format" }, { status: 502 });
   }
 
-  return NextResponse.json({ items });
+  return NextResponse.json({ items, ...(await usageField(result, "normalizacja zakupów")) });
 }

@@ -72,9 +72,16 @@ const PANEL_MAX_WIDTH = 360;
 export function AiCostBadge({
   usage,
   rate = DEFAULT_USD_PLN_RATE,
+  align = "right",
 }: {
   usage?: AiCostUsage;
   rate?: number;
+  /**
+   * 037: w bąblu czatu wskaźnik dociska się do prawej (`marginLeft:auto`) i tak zostaje domyślnie.
+   * Moduły wpinają go w nagłówki i stopki kafli, gdzie to samo dociskanie rozpychało układ — stąd
+   * wariant `left`.
+   */
+  align?: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -144,7 +151,7 @@ export function AiCostBadge({
   const totalBillable = calls.reduce((n, c) => n + billableTokens(c), 0) || usage.tokens || 0;
 
   return (
-    <div ref={wrapRef} style={{ marginLeft: "auto", position: "relative" }}>
+    <div ref={wrapRef} style={{ marginLeft: align === "right" ? "auto" : undefined, position: "relative" }}>
       <button
         onClick={() => setOpen((v) => !v)}
         title="Szczegóły kosztu i modelu (kliknij, by rozwinąć)"

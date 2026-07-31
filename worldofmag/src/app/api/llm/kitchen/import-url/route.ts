@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { chatComplete } from "@/lib/llm/chat";
+import { usageField } from "@/lib/ai/costVisibility";
 
 interface ParsedRecipe {
   title: string;
@@ -141,7 +142,12 @@ function extractFromJsonLd(html: string): ParsedRecipe | null {
   return null;
 }
 
-type LlmExtractResult = { recipe: ParsedRecipe | null; llmError?: { status: number; message: string } };
+type LlmExtractResult = {
+  recipe: ParsedRecipe | null;
+  llmError?: { status: number; message: string };
+  /** 037: wynik wywołania modelu — trasa liczy z niego koszt pokazywany przy zaimportowanym przepisie. */
+  llmRes?: Awaited<ReturnType<typeof chatComplete>>;
+};
 
 async function extractWithLLM(html: string, sourceUrl: string): Promise<LlmExtractResult> {
   // Strip tags to keep token budget lean
@@ -182,11 +188,13 @@ Nazwy składników i kroki po polsku. Jeśli tekst nie wygląda jak przepis, zwr
   // od „strona nie jest przepisem" (ok, ale brak treści) — inaczej wszystko mapowało się na
   // generyczny 422 i nie dało się poznać, że wystarczy skonfigurować model w Admin → LLM.
   if (!result.ok) return { recipe: null, llmError: { status: result.status, message: result.message } };
+  // 037: wynik wywołania wędruje na zewnątrz, żeby trasa mogła doliczyć koszt do odpowiedzi.
+  const llmRes = result;
   const content: string = result.content || "{}";
   try {
     const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "");
     const parsed = JSON.parse(cleaned);
-    if (parsed.error) return { recipe: null };
+    if (parsed.error) return { recipe: null, llmRes };
     return {
       recipe: {
         title: String(parsed.title ?? "Bez nazwy"),
@@ -201,9 +209,10 @@ Nazwy składników i kroki po polsku. Jeśli tekst nie wygląda jak przepis, zwr
         ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : [],
         steps: Array.isArray(parsed.steps) ? parsed.steps : [],
       },
+      llmRes,
     };
   } catch {
-    return { recipe: null };
+    return { recipe: null, llmRes };
   }
 }
 
@@ -240,10 +249,14 @@ export async function POST(req: NextRequest) {
 
   let recipe = extractFromJsonLd(html);
   let llmError: { status: number; message: string } | undefined;
+  // 037: gdy przepis dało się wyjąć z JSON-LD, model w ogóle nie był wołany — wtedy nie ma kosztu
+  // do pokazania i licznik się nie renderuje.
+  let llmRes: Awaited<ReturnType<typeof extractWithLLM>>["llmRes"];
   if (!recipe || recipe.ingredients.length === 0) {
     const r = await extractWithLLM(html, parsed.toString());
     if (r.recipe) recipe = r.recipe;
     llmError = r.llmError;
+    llmRes = r.llmRes;
   }
   if (!recipe) {
     // Gdy strona nie miała JSON-LD i LLM był niedostępny — powiedz to wprost (a nie „nie
@@ -263,5 +276,5 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ recipe, sourceUrl: parsed.toString() });
+  return NextResponse.json({ recipe, sourceUrl: parsed.toString(), ...(llmRes ? await usageField(llmRes, "import przepisu") : {}) });
 }

@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Plus, Trash2, Loader2, RefreshCw } from "lucide-react";
+import { Bell, Plus, Trash2, Loader2, RefreshCw, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { WEATHER_PRESETS, HORIZON_META, type Horizon } from "@/lib/weather/presets";
 import {
   evaluateWatchers,
@@ -18,26 +19,55 @@ import {
   type WatcherVerdict,
 } from "@/actions/weather";
 
-const STATUS_STYLE: Record<WatcherVerdict["status"], { color: string; label: string }> = {
-  good: { color: "var(--accent-green)", label: "Sprzyja" },
-  warn: { color: "var(--accent-amber)", label: "Uwaga" },
-  bad: { color: "var(--accent-red)", label: "Odradzane" },
-  info: { color: "var(--text-secondary)", label: "Info" },
+/**
+ * 037: etykiety mówią o SPEŁNIENIU WARUNKU obserwatora, nie o urodzie pogody.
+ *
+ * Uwaga na odczytanie koloru: zieleń oznacza „to, o co pytałeś, się dzieje" — dla obserwatora
+ * ostrzegawczego („Burze") spełnienie jest złą wiadomością, mimo zielonego znacznika. Stąd `title`
+ * przy każdym statusie: bez niego zieleń przy nadchodzącej burzy byłaby myląca tak samo jak dawne
+ * „Sprzyja" przy obserwatorze mokrego weekendu.
+ */
+const STATUS_STYLE: Record<WatcherVerdict["status"], { color: string; label: string; hint: string }> = {
+  met: {
+    color: "var(--accent-green)",
+    label: "Spełnione",
+    hint: "Warunek opisany w obserwatorze zachodzi",
+  },
+  partial: {
+    color: "var(--accent-amber)",
+    label: "Częściowo",
+    hint: "Warunek zachodzi częściowo lub niepewnie",
+  },
+  unmet: {
+    color: "var(--text-secondary)",
+    label: "Niespełnione",
+    hint: "Warunek opisany w obserwatorze nie zachodzi",
+  },
+  unknown: {
+    color: "var(--text-muted)",
+    label: "Brak danych",
+    hint: "Prognoza nie daje podstaw do rozstrzygnięcia",
+  },
 };
 
 export function WatchersPanel({
   watchers,
   coords,
+  usdPlnRate,
 }: {
   watchers: WatcherDTO[];
   coords: { lat: number; lon: number; label: string } | null;
+  usdPlnRate?: number;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
   const [verdicts, setVerdicts] = useState<WatcherVerdict[] | null>(null);
+  const [usage, setUsage] = useState<AiCostUsage | undefined>();
   const [loading, setLoading] = useState(false);
   const [, startTransition] = useTransition();
   const [adding, setAdding] = useState(false);
+  // 037: ten sam formularz obsługuje dodawanie i edycję — `editing` trzyma obserwatora do poprawy.
+  const [editing, setEditing] = useState<WatcherDTO | null>(null);
 
   const evaluate = useCallback(() => {
     if (!coords || watchers.filter((w) => w.enabled).length === 0) {
@@ -46,7 +76,10 @@ export function WatchersPanel({
     }
     setLoading(true);
     evaluateWatchers(coords.lat, coords.lon, coords.label)
-      .then(setVerdicts)
+      .then((r) => {
+        setVerdicts(r.verdicts);
+        setUsage(r.usage);
+      })
       .catch((e) => {
         showToast(e.message ?? "Nie udało się ocenić obserwatorów", "error");
         setVerdicts([]);
@@ -67,6 +100,28 @@ export function WatchersPanel({
         router.refresh();
       } catch (e: any) {
         showToast(e.message ?? "Błąd", "error");
+      }
+    });
+  }
+
+  /**
+   * 037: zapis EDYCJI obserwatora musi unieważnić dotychczasową ocenę. Werdykty nie są trzymane w
+   * bazie, tylko liczone z definicji obserwatora — po zmianie warunku poprzedni status opisywałby
+   * już nieistniejące pytanie. Automatyczne przeliczenie z `useEffect` tu nie zadziała: jego zależność
+   * to `watchers.length`, a edycja liczby obserwatorów nie zmienia. Dlatego gasimy oceny i liczymy
+   * je jawnie po zapisie.
+   */
+  function saveEdit(fn: () => Promise<void>) {
+    setVerdicts(null);
+    startTransition(async () => {
+      try {
+        await fn();
+        showToast("Zapisano obserwator", "success");
+        router.refresh();
+        evaluate();
+      } catch (e: any) {
+        showToast(e.message ?? "Błąd", "error");
+        evaluate();
       }
     });
   }
@@ -124,6 +179,7 @@ export function WatchersPanel({
                       <span
                         className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
                         style={{ color: style.color, border: `1px solid ${style.color}` }}
+                        title={style.hint}
                       >
                         {style.label}
                       </span>
@@ -141,8 +197,18 @@ export function WatchersPanel({
                       {w.enabled ? "Wyłącz" : "Włącz"}
                     </button>
                     <button
+                      onClick={() => setEditing(w)}
+                      className="text-[var(--text-muted)] hover:text-[var(--accent-blue)]"
+                      title="Edytuj obserwator"
+                      aria-label={`Edytuj obserwator ${w.title}`}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
                       onClick={() => run(() => deleteWatcher(w.id))}
                       className="text-[var(--text-muted)] hover:text-[var(--accent-red)]"
+                      title="Usuń obserwator"
+                      aria-label={`Usuń obserwator ${w.title}`}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -160,8 +226,14 @@ export function WatchersPanel({
         </div>
       )}
 
+      {usage && (
+        <div className="mt-3 flex justify-end border-t border-[var(--border)] pt-2">
+          <AiCostBadge usage={usage} rate={usdPlnRate} />
+        </div>
+      )}
+
       {adding && (
-        <AddWatcherModal
+        <WatcherFormModal
           existingPresets={watchers.filter((w) => w.kind === "preset").map((w) => w.presetKey ?? "")}
           onClose={() => setAdding(false)}
           onAddPreset={(key) =>
@@ -169,85 +241,104 @@ export function WatchersPanel({
               await addPresetWatcher(key);
             }, "Dodano obserwator")
           }
-          onAddCustom={(d) =>
+          onSubmit={(d) =>
             run(async () => {
               await addCustomWatcher(d);
             }, "Dodano obserwator")
           }
         />
       )}
+
+      {editing && (
+        <WatcherFormModal
+          initial={editing}
+          onClose={() => setEditing(null)}
+          onSubmit={(d) => saveEdit(() => updateWatcher(editing.id, d))}
+        />
+      )}
     </div>
   );
 }
 
-function AddWatcherModal({
+/**
+ * 037: JEDEN formularz obserwatora dla dodawania i edycji (C-53 — zamiast dwóch bliźniaczych modali).
+ * Bez `initial` zachowuje się jak dotychczasowy „Dodaj" (z galerią presetów); z `initial` jest
+ * formularzem edycji, w którym galeria presetów nie ma sensu — obserwator już istnieje, zmieniamy
+ * tylko jego definicję. Edycja obserwatora z presetu też jest dozwolona: `presetKey` zostaje, więc
+ * ten sam preset nadal nie da się dodać drugi raz, ale treść i horyzont są własnością użytkownika.
+ */
+function WatcherFormModal({
+  initial,
   existingPresets,
   onClose,
   onAddPreset,
-  onAddCustom,
+  onSubmit,
 }: {
-  existingPresets: string[];
+  initial?: WatcherDTO;
+  existingPresets?: string[];
   onClose: () => void;
-  onAddPreset: (key: string) => void;
-  onAddCustom: (d: { title: string; query: string; horizon: Horizon }) => void;
+  onAddPreset?: (key: string) => void;
+  onSubmit: (d: { title: string; query: string; horizon: Horizon }) => void;
 }) {
-  const [title, setTitle] = useState("");
-  const [query, setQuery] = useState("");
-  const [horizon, setHorizon] = useState<Horizon>("weekend");
-  const has = new Set(existingPresets);
+  const isEdit = !!initial;
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [query, setQuery] = useState(initial?.query ?? "");
+  const [horizon, setHorizon] = useState<Horizon>(initial?.horizon ?? "weekend");
+  const has = new Set(existingPresets ?? []);
+
+  function submit() {
+    if (!title.trim() || !query.trim()) return;
+    onSubmit({ title: title.trim(), query: query.trim(), horizon });
+    onClose();
+  }
 
   return (
     <Modal
       onClose={onClose}
-      title="Dodaj obserwator pogody"
+      title={isEdit ? "Edytuj obserwator pogody" : "Dodaj obserwator pogody"}
       wide
       footer={
         <>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Anuluj
           </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              if (!title.trim() || !query.trim()) return;
-              onAddCustom({ title, query, horizon });
-              onClose();
-            }}
-          >
-            Dodaj własny
+          <Button size="sm" onClick={submit} disabled={!title.trim() || !query.trim()}>
+            {isEdit ? "Zapisz zmiany" : "Dodaj własny"}
           </Button>
         </>
       }
     >
-      <div>
-        <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-          Gotowe presety
-        </h4>
-        <div className="flex flex-wrap gap-2">
-          {WEATHER_PRESETS.map((p) => (
-            <button
-              key={p.key}
-              disabled={has.has(p.key)}
-              onClick={() => {
-                onAddPreset(p.key);
-                onClose();
-              }}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-sm",
-                has.has(p.key)
-                  ? "cursor-not-allowed border-[var(--border)] text-[var(--text-muted)] opacity-50"
-                  : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-              )}
-            >
-              {p.emoji} {p.title}
-            </button>
-          ))}
+      {!isEdit && onAddPreset && (
+        <div>
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Gotowe presety
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {WEATHER_PRESETS.map((p) => (
+              <button
+                key={p.key}
+                disabled={has.has(p.key)}
+                onClick={() => {
+                  onAddPreset(p.key);
+                  onClose();
+                }}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-sm",
+                  has.has(p.key)
+                    ? "cursor-not-allowed border-[var(--border)] text-[var(--text-muted)] opacity-50"
+                    : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                )}
+              >
+                {p.emoji} {p.title}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
         <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-          Własny obserwator (opisany naturalnym językiem)
+          {isEdit ? "Definicja obserwatora" : "Własny obserwator (opisany naturalnym językiem)"}
         </h4>
         <input
           value={title}
@@ -276,6 +367,11 @@ function AddWatcherModal({
             ))}
           </select>
         </div>
+        {isEdit && (
+          <p className="mt-2 text-xs text-[var(--text-muted)]">
+            Po zapisaniu ocena zostanie policzona od nowa dla zmienionej definicji.
+          </p>
+        )}
       </div>
     </Modal>
   );

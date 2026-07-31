@@ -13,6 +13,7 @@ import {
   setModelPrice,
   deleteModelPrice,
   setFollowupsEnabled,
+  setCostBadgeEnabled,
   type ProviderDTO,
   type AssignmentDTO,
   type AiCostBreakdown,
@@ -537,6 +538,63 @@ function FollowupsSection({ enabled }: { enabled: boolean }) {
 }
 
 /**
+ * 037: widoczność licznika kosztu przy treściach generowanych przez AI — w asystencie i we
+ * wszystkich modułach. Przełącznik siedzi obok follow-upów, czyli tam, gdzie patrzy się na koszty.
+ */
+function CostBadgeSection({ enabled }: { enabled: boolean }) {
+  const [isPending, startTransition] = useTransition();
+  const [value, setValue] = useState(enabled);
+  const [error, setError] = useState<string | null>(null);
+
+  function toggle(next: boolean) {
+    setValue(next);
+    setError(null);
+    startTransition(async () => {
+      try {
+        await setCostBadgeEnabled(next);
+      } catch (e) {
+        setValue(!next);
+        setError(e instanceof Error ? e.message : "Nie udało się zapisać ustawienia.");
+      }
+    });
+  }
+
+  return (
+    <section style={{ marginBottom: 32 }}>
+      <SectionTitle>Licznik kosztu przy treściach AI</SectionTitle>
+      <label
+        className="py-3"
+        style={{
+          display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer",
+          padding: "12px", border: "1px solid var(--border)", borderRadius: 8,
+          background: "var(--bg-surface)",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={value}
+          disabled={isPending}
+          onChange={(e) => toggle(e.target.checked)}
+          style={{ width: 20, height: 20, flexShrink: 0, accentColor: "var(--accent-blue)", cursor: "pointer" }}
+        />
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 13, color: "var(--text-primary)" }}>
+            Pokazuj koszt przy treściach wygenerowanych przez AI
+          </span>
+          <span style={{ display: "block", fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.5, marginTop: 2 }}>
+            Ten sam wskaźnik co w oknie asystenta pojawia się przy każdej treści generowanej przez
+            model — w Pogodzie, Kuchni, Notatkach, Magazynie i pozostałych modułach. Rozwinięcie
+            (modele, tokeny, koszt każdego promptu) widzi <strong>wyłącznie administrator</strong>.
+            Wyłączenie gasi wskaźnik w całej aplikacji, łącznie z asystentem.
+          </span>
+        </span>
+      </label>
+      {error && <p style={{ fontSize: 12, color: "var(--accent-red)", marginTop: 8 }}>{error}</p>}
+    </section>
+  );
+}
+
+/**
  * 034: cennik modeli. Wcześniej stawki były zaszyte w kodzie — model spoza listy „kosztował 0",
  * a aktualizacja ceny wymagała wdrożenia. Dopasowanie idzie po POCZĄTKU nazwy modelu, bo
  * identyfikatory bywają z sufiksami wersji („claude-haiku-4-5-20251001").
@@ -810,6 +868,7 @@ export function LlmConfigPanel({
   speech,
   prices,
   followupsEnabled,
+  costBadgeEnabled,
 }: {
   providers: ProviderDTO[];
   assignmentsByLevel: Record<ConfigLevel, AssignmentDTO[]>;
@@ -819,6 +878,7 @@ export function LlmConfigPanel({
   speech: SpeechConfigDTO;
   prices: ModelPriceDTO[];
   followupsEnabled: boolean;
+  costBadgeEnabled: boolean;
 }) {
   // 034: poziom pracy asystenta wybierany zakładką nad siatką typów operacji. Wcześniej admin
   // konfigurował wyłącznie poziom standardowy, a dwa pozostałe były regułami zaszytymi w kodzie.
@@ -875,6 +935,8 @@ export function LlmConfigPanel({
       </section>
 
       <FollowupsSection enabled={followupsEnabled} />
+
+      <CostBadgeSection enabled={costBadgeEnabled} />
 
       <ModelPricesSection prices={prices} />
 

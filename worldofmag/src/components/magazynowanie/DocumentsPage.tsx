@@ -8,6 +8,7 @@ import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import type { StorageSupplier } from "@prisma/client";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 const inputStyle: React.CSSProperties = { backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" };
 
@@ -26,6 +27,7 @@ export function DocumentsPage({
   const { showToast } = useToast();
   const [editorOpen, setEditorOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [type, setType] = useState<DocType>("faktura");
@@ -51,13 +53,14 @@ export function DocumentsPage({
     try {
       const dataUrl = await fileToDownscaledDataUrl(file);
       // Z-131 (T-17): OCR dokumentu przez kolejkę zadań. Błędy rzuca → catch niżej.
-      const res = await runJob<{ number: string | null; supplier: string | null; lines: Array<{ name: string; quantity: number; unit: string | null; unitPrice: number | null }> }>(
+      const res = await runJob<{ number: string | null; supplier: string | null; lines: Array<{ name: string; quantity: number; unit: string | null; unitPrice: number | null }>; usage?: AiCostUsage }>(
         "magazyn.document", { image: dataUrl }
       );
       setType("faktura");
       setNumber(res.number ?? "");
       const matched = res.supplier ? suppliers.find((s) => s.name.toLowerCase() === res.supplier!.toLowerCase()) : null;
       setSupplierId(matched?.id ?? "");
+      setAiUsage(res.usage);
       const docLines = res.lines ?? [];
       setLines(
         docLines.length > 0
@@ -181,6 +184,11 @@ export function DocumentsPage({
             <div className="grid grid-cols-[1fr_3.5rem_3rem_4rem] gap-1.5 text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
               <span>Nazwa</span><span className="text-right">Ilość</span><span>Jedn.</span><span className="text-right">Cena</span>
             </div>
+            {aiUsage && (
+              <div className="flex justify-end">
+                <AiCostBadge usage={aiUsage} />
+              </div>
+            )}
             {lines.map((l, i) => (
               <div key={i} className="grid grid-cols-[1fr_3.5rem_3rem_4rem] gap-1.5">
                 <input value={l.name} onChange={(e) => setLine(i, { name: e.target.value })} placeholder="Nazwa" className="px-2 py-1.5 rounded border text-sm" style={inputStyle} />

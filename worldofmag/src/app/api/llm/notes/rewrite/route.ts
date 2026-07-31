@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/lib/llm/chat";
+import { usageField } from "@/lib/ai/costVisibility";
 
 const PROMPTS: Record<string, string | ((instruction: string) => string)> = {
   correct: `Popraw błędy ortograficzne, gramatyczne i interpunkcyjne w tym tekście. Zachowaj oryginalny styl i strukturę. Odpowiedz TYLKO poprawionym tekstem bez żadnych wyjaśnień.`,
@@ -37,5 +38,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: result.message }, { status: result.status });
   }
 
-  return NextResponse.json({ result: result.content || "" });
+  return NextResponse.json({ result: result.content || "", ...(await usageField(result, "przepisanie tekstu")) });
 }

@@ -20,6 +20,7 @@ import type {
   MealType,
 } from "@/types/kitchen";
 import { MEAL_TYPE_LABELS, DIFFICULTY_LABELS } from "@/types/kitchen";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface RecipeEditorProps {
   recipe?: RecipeFull;
@@ -49,6 +50,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
   const [aiOpen, setAiOpen] = useState(false);
   const [aiText, setAiText] = useState("");
   const [aiPending, setAiPending] = useState(false);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [categorizePending, setCategorizePending] = useState(false);
 
   // K5: gdy nie edytujemy istniejącego przepisu, seed z importowanego szkicu (do rewizji).
@@ -142,6 +144,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
         showToast(res.error, "error");
         return;
       }
+      setAiUsage(res.usage);
       const parsed = res.ingredients ?? [];
       if (parsed.length === 0) {
         showToast("AI nie znalazło składników", "info");
@@ -513,6 +516,11 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
                   {aiPending ? "Parsuję…" : "Parsuj"}
                 </button>
               </div>
+              {aiUsage && (
+                <div className="flex justify-end">
+                  <AiCostBadge usage={aiUsage} />
+                </div>
+              )}
             </div>
           ) : null}
           <div className="flex flex-col gap-1.5">

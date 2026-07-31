@@ -5,6 +5,8 @@
 import { chatComplete } from "@/lib/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
 import { JobError, type JobContext } from "@/lib/jobs/types";
+import { usageFromChat } from "@/lib/ai/usage";
+import type { AiUsageInfo } from "@/lib/ai/usage";
 
 const TRANSCRIBE_PROMPT = `Jesteś precyzyjnym OCR-em. Przepisz CAŁY czytelny tekst ze zdjęcia
 (kartka, strona książki kucharskiej, notatka albo ekran z przepisem). Zachowaj składniki i kroki
@@ -44,6 +46,8 @@ function approxBase64Bytes(s: string): number {
 }
 
 export interface OcrRecipeResult {
+  /** 037: zużycie modelu — bramkę widoczności stosuje odczyt wyniku (`GET /api/jobs/[id]`). */
+  usage?: AiUsageInfo;
   recipe: {
     title: string;
     description: string | null;
@@ -112,6 +116,11 @@ export async function kitchenOcrImageHandler(payload: OcrImagePayload, ctx: JobC
         ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : [],
         steps: Array.isArray(parsed.steps) ? parsed.steps : [],
       },
+      // Dwa wywołania: odczyt obrazu + ustrukturyzowanie. Licznik pokazuje oba.
+      usage: usageFromChat([
+        { res: vision, label: "odczyt zdjęcia", op: "vision" },
+        { res: structured, label: "struktura przepisu" },
+      ]),
     };
   } catch {
     throw new JobError("LLM zwrócił nieprawidłowy format", 502);

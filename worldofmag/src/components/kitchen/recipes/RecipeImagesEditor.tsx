@@ -8,6 +8,7 @@ import { runJob } from "@/lib/jobs/client";
 import { addRecipeImage, updateRecipeImage, deleteRecipeImage } from "@/actions/recipes";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import type { RecipeImage } from "@/types/kitchen";
+import type { AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface RecipeImagesEditorProps {
   recipeId: string;
@@ -62,7 +63,7 @@ export function RecipeImagesEditor({ recipeId, images, hasAI }: RecipeImagesEdit
     setOcrBusyId(id);
     try {
       // Z-131 (T-17): OCR przez kolejkę (bez timeoutów żądania). Błędy rzuca → catch niżej.
-      const res = await runJob<{ hasText: boolean; markdown: string }>("kitchen.ocrText", { image: item.url });
+      const res = await runJob<{ hasText: boolean; markdown: string; usage?: AiCostUsage }>("kitchen.ocrText", { image: item.url });
       const markdown = res.hasText && res.markdown ? res.markdown : "";
       const updated = await updateRecipeImage(id, { ocrMarkdown: markdown });
       setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));

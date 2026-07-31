@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getJob } from "@/lib/jobs/queue";
 import { startJobWorker } from "@/lib/jobs/worker";
+import { visibleUsage } from "@/lib/ai/costVisibility";
+import type { AiUsageInfo } from "@/lib/ai/usage";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -16,10 +18,21 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const job = await getJob(params.id, session.user.id);
   if (!job) return NextResponse.json({ error: "Nie znaleziono zadania" }, { status: 404 });
 
+  // 037: bramka widoczności licznika kosztu działa TUTAJ, a nie w handlerze zadania. Handlery
+  // chodzą w workerze bez sesji użytkownika, więc `auth()` zwróciłoby tam null i licznik nigdy nie
+  // zapaliłby się dla modułów opartych o kolejkę (analityka magazynu, plan tygodnia, OCR…).
+  // Handler zapisuje zużycie surowe, a my dopiero przy odczycie decydujemy, czy je pokazać.
+  const result = job.result ? (JSON.parse(job.result) as Record<string, unknown>) : null;
+  if (result && result.usage) {
+    const allowed = await visibleUsage(result.usage as AiUsageInfo);
+    if (allowed) result.usage = allowed;
+    else delete result.usage;
+  }
+
   return NextResponse.json({
     id: job.id,
     status: job.status,
-    result: job.result ? JSON.parse(job.result) : null,
+    result,
     error: job.error,
     attempts: job.attempts,
   });

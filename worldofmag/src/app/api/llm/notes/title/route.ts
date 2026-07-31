@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/lib/llm/chat";
+import { usageField } from "@/lib/ai/costVisibility";
 
 export async function POST(req: NextRequest) {
   const { content } = await req.json() as { content: string };
@@ -27,5 +28,5 @@ export async function POST(req: NextRequest) {
 
   const title = (result.content || "").trim().replace(/^["']|["']$/g, "");
 
-  return NextResponse.json({ title });
+  return NextResponse.json({ title, ...(await usageField(result, "tytuł notatki")) });
 }

@@ -5,6 +5,7 @@ import { getUserTeamIds } from "@/lib/server-utils";
 import { getCalendarEvents } from "@/actions/calendar";
 import { chatComplete } from "@/lib/llm/chat";
 import { checkAiBudget, recordAiUsage } from "@/lib/ai/usage";
+import { usageField } from "@/lib/ai/costVisibility";
 
 // Poranny briefing — krótkie, ciepłe podsumowanie dnia generowane na żądanie
 // (przycisk na stronie głównej, klient cache'uje per-dzień). Reużywa agregatu
@@ -102,5 +103,8 @@ export async function POST() {
 
   if (!result.ok) return NextResponse.json({ error: result.message }, { status: result.status });
   void recordAiUsage(userId, result.usage?.total ?? 0).catch(() => {});
-  return NextResponse.json({ briefing: result.content || "## Dzień dobry!\n\nMiłego dnia!" });
+  return NextResponse.json({
+    briefing: result.content || "## Dzień dobry!\n\nMiłego dnia!",
+    ...(await usageField(result, "poranne podsumowanie", "reasoning")),
+  });
 }

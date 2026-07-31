@@ -91,6 +91,7 @@ model User {
   newsPref               NewsPref?             @relation("NewsPref")
   weatherLocations       WeatherLocation[]     @relation("OwnedWeatherLocations")
   weatherWatchers        WeatherWatcher[]      @relation("OwnedWeatherWatchers")
+  weatherIdeas           WeatherIdea[]         @relation("OwnedWeatherIdeas")
   projectGroups          ProjectGroup[]        @relation("OwnedProjectGroups")
   skins                  Skin[]                @relation("SkinOwner")
   skinPref               UserSkinPref?
@@ -2559,6 +2560,44 @@ model WeatherWatcher {
   owner User @relation("OwnedWeatherWatchers", fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
+}
+
+// 037: propozycja „co robić", z którą użytkownik COŚ ZROBIŁ — obejrzał szczegóły, zapisał ją albo
+// zablokował („nie proponuj"). Sama wygenerowana lista NIE ląduje w bazie: powtórne wejście na
+// /pogoda tego samego dnia obsługuje pamięć podręczna promptu w `chatComplete`, więc trzymamy tu
+// wyłącznie decyzje użytkownika i wygenerowane szczegóły, które mają go przeżyć.
+model WeatherIdea {
+  id      String @id @default(cuid())
+  ownerId String
+  // Odcisk tytułu (małe litery, bez diakrytyków i interpunkcji) — klucz naturalny propozycji.
+  // Po nim rozpoznajemy powtórkę („już rozważana") i egzekwujemy blokadę.
+  fingerprint String
+  title       String
+  summary     String @default("")
+  // "outdoor" | "trip" | "home" | "other" — String + union TS (C-12), nigdy enum Prisma.
+  category String @default("other")
+  // "considered" | "saved" | "blocked".
+  state String @default("considered")
+  // Kontekst powstania — pozwala filtrować bibliotekę po lokalizacji.
+  locationLabel String @default("")
+  lat           Float  @default(0)
+  lon           Float  @default(0)
+  // Wygenerowany szczegółowy plan (markdown); null = propozycja tylko zapisana/zablokowana.
+  detail     String?
+  detailAt   DateTime?
+  detailRuns Int       @default(0)
+  // Zużycie ostatniej generacji szczegółów (JSON) — licznik kosztu przy ZAPISANEJ treści musi
+  // działać także wtedy, gdy nie ma już świeżego wyniku z modelu.
+  detailUsage String?
+  viewCount   Int      @default(0)
+  lastSeenAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  owner User @relation("OwnedWeatherIdeas", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, fingerprint])
+  @@index([ownerId, state])
 }
 
 // ─── Warsztaty (Workshop) ───────────────────────────────────────────────────

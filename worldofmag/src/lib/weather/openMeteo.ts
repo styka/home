@@ -99,6 +99,49 @@ export async function geocode(name: string): Promise<GeoResult | null> {
   }
 }
 
+/**
+ * 037: geokodowanie ODWROTNE — nazwa miejsca dla punktu wskazanego na mapie.
+ *
+ * Open-Meteo geokoduje tylko „nazwa → współrzędne", więc do drogi powrotnej używamy Nominatim (OSM),
+ * tego samego źródła, z którego pochodzą kafelki mapy. `zoom=10` celuje w poziom miejscowości/gminy —
+ * dokładniejszy zwracałby numery domów, ogólniejszy samo województwo.
+ *
+ * `User-Agent` jest wymagany regulaminem Nominatim (zapytania bez niego są odrzucane). Wołamy to
+ * WYŁĄCZNIE przy zapisie lokalizacji, nie przy renderze — jedno zapytanie na świadomą akcję
+ * użytkownika mieści się w limitach usługi.
+ *
+ * Zwraca `null` przy dowolnym niepowodzeniu — brak nazwy nie może zablokować zapisu punktu.
+ */
+export async function reverseGeocode(lat: number, lon: number): Promise<string | null> {
+  try {
+    const url =
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=pl` +
+      `&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+    const res = await resilientFetch(url, {
+      cache: "no-store",
+      timeoutMs: 8_000,
+      headers: { "User-Agent": "Omnia/1.0 (worldofmag)" },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      name?: string;
+      address?: Record<string, string>;
+      display_name?: string;
+    };
+    const a = data.address ?? {};
+    // Od najbardziej konkretnego do najogólniejszego — mała wieś ma `village`, miasto `city`.
+    const place = a.village ?? a.hamlet ?? a.town ?? a.city ?? a.municipality ?? data.name ?? null;
+    const region = a.state ?? a.county ?? null;
+    if (place && region) return `${place}, ${region}`;
+    if (place) return place;
+    // Ostatnia deska ratunku: pierwszy człon pełnej nazwy (Nominatim zwraca ją „od szczegółu").
+    const first = data.display_name?.split(",")[0]?.trim();
+    return first || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchForecast(lat: number, lon: number): Promise<Forecast | null> {
   try {
     const params = new URLSearchParams({

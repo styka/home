@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { stashImportDraft } from "@/lib/kitchen/recipeImportDraft";
 import type { CreateRecipeInput, MealType, Difficulty } from "@/types/kitchen";
+import type { AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface ImportFromImageDialogProps {
   open: boolean;
@@ -73,7 +74,7 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
         ingredients: { name: string; quantity: number | null; unit: string | null; note: string | null; isOptional?: boolean }[];
         steps: { text: string }[];
       };
-      const res = await runJob<{ recipe: OcrRecipe }>("kitchen.ocrImage", { image: preview }, {
+      const res = await runJob<{ recipe: OcrRecipe; usage?: AiCostUsage }>("kitchen.ocrImage", { image: preview }, {
         onStatus: (s) => setStatusText(s === "RUNNING" ? "Rozpoznaję zdjęcie…" : "W kolejce…"),
       });
       if (!res?.recipe) {

@@ -4,6 +4,8 @@ import { chatComplete } from "@/lib/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { assertValidImage } from "@/lib/jobs/handlers/imageInput";
+import { usageFromChat } from "@/lib/ai/usage";
+import type { AiUsageInfo } from "@/lib/ai/usage";
 
 const SYSTEM_PROMPT = `Jesteś OCR-em. Otrzymasz zdjęcie (np. kartka z przepisem, strona książki, notatka).
 Przepisz CAŁY widoczny, czytelny tekst i zwróć go jako czysty Markdown — zachowaj nagłówki,
@@ -14,7 +16,12 @@ Zwróć WYŁĄCZNIE obiekt JSON (bez markdown-fence, bez komentarza):
 hasText=false i markdown="" tylko gdy na zdjęciu nie ma żadnego czytelnego tekstu.`;
 
 export interface OcrTextPayload { image?: string }
-export interface OcrTextResult { hasText: boolean; markdown: string }
+export interface OcrTextResult {
+  hasText: boolean;
+  markdown: string;
+  /** 037: zużycie modelu — bramkę widoczności stosuje odczyt wyniku (`GET /api/jobs/[id]`). */
+  usage?: AiUsageInfo;
+}
 
 export async function kitchenOcrTextHandler(payload: OcrTextPayload, ctx: JobContext): Promise<OcrTextResult> {
   const image = assertValidImage(payload?.image);
@@ -36,7 +43,11 @@ export async function kitchenOcrTextHandler(payload: OcrTextPayload, ctx: JobCon
     const parsed = JSON.parse(stripJsonFence(content));
     const markdown = typeof parsed.markdown === "string" ? parsed.markdown.trim() : "";
     const hasText = parsed.hasText === true && markdown.length > 0;
-    return { hasText, markdown: hasText ? markdown : "" };
+    return {
+      hasText,
+      markdown: hasText ? markdown : "",
+      usage: usageFromChat([{ res: groq, label: "odczyt tekstu", op: "vision" }]),
+    };
   } catch {
     const fallback = content.trim();
     if (fallback && fallback !== "{}") return { hasText: true, markdown: fallback };

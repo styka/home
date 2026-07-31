@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Mic, MicOff, Wand2, Loader2 } from "lucide-react";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface ISpeechResult {
   resultIndex: number;
@@ -48,6 +49,7 @@ export function SmartTextarea({
 }: SmartTextareaProps) {
   const [state, setState] = useState<TextareaState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const transcriptRef = useRef("");
   const modifyTranscriptRef = useRef("");
@@ -128,10 +130,11 @@ export function SmartTextarea({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: value, mode: "voice_edit", instruction }),
       });
-      const data = await res.json() as { result?: string; error?: string };
+      const data = await res.json() as { result?: string; error?: string; usage?: AiCostUsage };
       if (!res.ok) {
         setError(data.error ?? "Błąd modyfikacji");
       } else if (data.result) {
+        setAiUsage(data.usage);
         onChange(data.result);
       }
     } catch {
@@ -352,6 +355,11 @@ export function SmartTextarea({
         )}
       </div>
 
+      {aiUsage && (
+        <div className="flex justify-end">
+          <AiCostBadge usage={aiUsage} />
+        </div>
+      )}
       {error && (
         <p style={{ fontSize: 11, color: "var(--accent-red)", marginTop: 4 }}>{error}</p>
       )}

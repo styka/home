@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { chatComplete } from "@/lib/llm/chat";
+import { usageField } from "@/lib/ai/costVisibility";
 
 const SYSTEM_PROMPT = `Jesteś parserem składników kulinarnych po polsku.
 Otrzymasz blok tekstu z listą składników (jeden na linię lub po przecinkach).
@@ -75,5 +76,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "LLM zwrócił nieprawidłowy format" }, { status: 502 });
   }
 
-  return NextResponse.json({ ingredients });
+  return NextResponse.json({ ingredients, ...(await usageField(result, "składniki")) });
 }

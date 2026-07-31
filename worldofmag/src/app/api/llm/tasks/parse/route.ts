@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/lib/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
+import { usageField } from "@/lib/ai/costVisibility";
 
 const SYSTEM_PROMPT = `Jesteś asystentem zarządzania zadaniami. Użytkownik poda dane opisujące jedno
 lub więcej zadań — w DOWOLNEJ formie: luźny tekst, lista (myślniki/numery/nowe linie), CSV
@@ -130,5 +131,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "LLM zwrócił nieprawidłowy format" }, { status: 502 });
   }
 
-  return NextResponse.json({ tasks });
+  return NextResponse.json({ tasks, ...(await usageField(result, "parsowanie zadań")) });
 }

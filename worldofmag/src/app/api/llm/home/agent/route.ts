@@ -21,6 +21,7 @@ import { humanizeAssistantText } from "@/lib/ai/humanize";
 import type { AssistantWorkLevel } from "@/lib/llm/operationTypes";
 import { isAccessError, toUserFacingError } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
+import { readCostBadgeEnabled } from "@/lib/ai/costVisibility";
 
 const MAX_ITERATIONS = 6;
 const MAX_TOOLS_PER_TURN = 4;
@@ -684,6 +685,11 @@ export async function POST(req: NextRequest) {
   // 028: jeden akumulator zużycia na całą turę — dokładają do niego fast-path, router
   // modułów i pętla agenta, żeby wskaźnik kosztu w oknie czatu był realny.
   const meta: AgentMeta = newUsageMeter();
+  // 037: przełącznik administratora gasi licznik kosztu także w oknie asystenta.
+  // Świadomie bramkujemy SAMYM przełącznikiem, bez warunku „tylko administrator": w asystencie
+  // wskaźnik istniał wcześniej dla każdego użytkownika i zawężenie go tutaj byłoby cofnięciem
+  // istniejącej funkcji, a nie realizacją zgłoszenia.
+  const costBadgeOn = await readCostBadgeEnabled();
 
   // Higiena kontekstu: wstrzykujemy tylko ostatnie N wiadomości historii (user/assistant),
   // żeby długie rozmowy nie rozsadziły okna tokenów modelu.
@@ -775,7 +781,7 @@ export async function POST(req: NextRequest) {
           thought,
           log: [{ iter: 0, step: "plan", thought, actionsCount: 1 }],
           messages: [{ role: "user", content: text }],
-          meta: { source: "fast_path", model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd, calls: meta.calls },
+          meta: costBadgeOn ? { source: "fast_path", model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd, calls: meta.calls } : undefined,
         });
       }
 
@@ -890,7 +896,7 @@ export async function POST(req: NextRequest) {
         try {
           const result = await runLoop((t) => send({ type: "thought", text: t }));
           if (result.body && typeof result.body === "object" && !result.body.error) {
-            result.body.meta = { model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd, calls: meta.calls };
+            if (costBadgeOn) result.body.meta = { model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd, calls: meta.calls };
           }
           send({ type: "final", status: result.status ?? 200, body: result.body });
         } catch (e) {
@@ -912,7 +918,7 @@ export async function POST(req: NextRequest) {
   try {
     const result = await runLoop();
     if (result.body && typeof result.body === "object" && !result.body.error) {
-      result.body.meta = { model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd, calls: meta.calls };
+      if (costBadgeOn) result.body.meta = { model: meta.model, tokens: meta.tokens, costUsd: meta.costUsd, calls: meta.calls };
     }
     return NextResponse.json(result.body, result.status ? { status: result.status } : undefined);
   } finally {

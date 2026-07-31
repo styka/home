@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 
 const RETENTION_DAYS = 30;
 
-export type TrashModule = "notes" | "tasks";
+// 037: „weather" = propozycje „co robić" z modułu Pogoda (biblioteka pomysłów).
+export type TrashModule = "notes" | "tasks" | "weather";
 
 /** Zapisuje migawkę usuwanej encji do kosza i przy okazji czyści wpisy starsze niż 30 dni. */
 export async function recordTrash(
