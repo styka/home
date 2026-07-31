@@ -391,22 +391,13 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   // przesunie widoczny obszar pod klawiaturę, i okno na moment wyjeżdżałoby nad ekran.
   const fullScreen = usePinToVisualViewport(sheetRef, isNarrow && isOpen, keepConversationBottom);
 
-  // 036: na czas otwartego okna pełnoekranowego BLOKUJEMY przewijanie dokumentu.
+  // 036 — USUNIĘTE: blokada przewijania dokumentu (`overflow: hidden` na `html`).
   //
-  // Zmierzone na urządzeniu: przy wysuniętej klawiaturze `window.scrollY` = 291 (a wcześniej 335),
-  // czyli iOS PRZEWIJA dokument, żeby odsłonić pole tekstowe — dokładnie o nadwyżkę wysokości strony
-  // ponad skurczony układ. Na iOS przewijanie ciągnie za sobą elementy `position: fixed`, więc okno
-  // asystenta jedzie razem z nim, a nasza korekta z `visualViewport` nie ma szans tego dogonić
-  // (robi to kompozytor, nie JavaScript). Gdy dokumentu nie da się przewinąć, nie ma czego ciągnąć.
-  useEffect(() => {
-    if (!fullScreen) return;
-    const html = document.documentElement;
-    const prev = html.style.overflow;
-    html.style.overflow = "hidden";
-    return () => {
-      html.style.overflow = prev;
-    };
-  }, [fullScreen]);
+  // Pomiar po wdrożeniu pokazał, że nie działa: `scrollY` przy klawiaturze wynosiło nadal 335. Powód:
+  // ta liczba NIE jest przewinięciem dokumentu, tylko przesunięciem widocznego obszaru względem
+  // strony (`visualViewport.pageTop` = 335 = ta sama wartość). Blokowanie `overflow` nie ma więc na
+  // co działać. Zostawione jako ostrzeżenie: na iOS `window.scrollY` przy klawiaturze mówi o
+  // widocznym obszarze, a nie o przewinięciu dokumentu.
   const convoIdRef = useRef<string | null>(null);
   convoIdRef.current = conversationId;
   // Anulowanie generowania (Stop) + ostatni payload do „Generuj ponownie".
