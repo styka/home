@@ -217,9 +217,10 @@ rozbijanie ich na osobne wdrożenia oznaczałoby czterokrotne przechodzenie po t
   `module.admin`. Wpięcie „dodaj do zadań" respektuje `module.tasks` (przycisk tylko dla użytkownika
   z dostępem). Por. C-22.
 - **Własność danych:** propozycje, ich szczegóły i decyzje użytkownika („zablokowana", „ulubiona")
-  są **prywatne dla użytkownika** — jak dotychczasowe lokalizacje i obserwatory Pogody. Nie wprowadzamy
-  współwłasności zespołowej (świadomie, patrz „poza zakresem"), ale przyjmujemy wzorzec ownershipu
-  zgodny z C-21, żeby dołożenie zespołu było później możliwe bez migracji danych.
+  są **prywatne dla użytkownika** — dokładnie jak dotychczasowe lokalizacje i obserwatory Pogody, które
+  mają **wyłącznie `ownerId`** (bez `ownerTeamId`). Naśladujemy ten wzorzec sąsiedniego kodu w obrębie
+  tego samego modułu (C-21, C-53): dokładanie dziś kolumny zespołowej, która zawsze byłaby pusta, to
+  martwy balast. Współwłasność zespołowa jest świadomie poza zakresem.
 - **Asystent AI:** funkcja nie wymaga nowych akcji zapisujących. Asystent ma już odczyt pogody; jeśli
   w planie okaże się, że sensowne jest udostępnienie mu listy propozycji jako odczytu — dokładamy
   wyłącznie read-tool, bez `AIAction`. Każda ewentualna nowa akcja musi mieć egzekutor (C-23) i wpis
