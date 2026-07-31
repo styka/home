@@ -170,15 +170,25 @@ export function usePinToVisualViewport(
     // ani pętla `rAF` sama w sobie.
     //
     // Skoro brakujących klatek nie dostaniemy, musimy je dorysować sami: przejście CSS zamienia
-    // jeden skok w płynny ruch. To świadomy kompromis — ruch jest gładki, ale dochodzi do celu
-    // własnym tempem, a nie idealnie klatka w klatkę z klawiaturą. Czas dobrany do animacji
-    // klawiatury iOS (~0,3 s); krzywa wyhamowująca, bo tak zachowuje się klawiatura.
+    // jeden skok w płynny ruch. Czas dobrany do animacji klawiatury iOS (~0,3 s), krzywa
+    // wyhamowująca, bo tak zachowuje się klawiatura.
+    //
+    // ANIMUJEMY WYŁĄCZNIE `height`. `top` MUSI zmieniać się natychmiast i to jest wniosek z pomiaru,
+    // a nie ostrożność: gdy animowany był również `top`, dopasowanie klatek z nagrania pokazało
+    // wahadło o amplitudzie 80–130 px trwające ~14 klatek i sumujące się do ZERA (treść wracała
+    // dokładnie tam, gdzie zaczęła). Powód: przeglądarka SAMA przesuwa element `position: fixed`,
+    // gdy jedzie widoczny obszar. Nasza 280-milisekundowa animacja `top` ciągnęła go równolegle w tę
+    // samą stronę, więc obie korekty się sumowały i nawzajem znosiły — jeden skok zamienił się w
+    // dłuższe dzwonienie. Przy natychmiastowym `top` starcie trwa jedną klatkę, tak jak wcześniej.
+    //
+    // `height` jest wolne od tego konfliktu: przeglądarka nie zmienia wysokości elementu za nas,
+    // a treść okna jest wyrównana do góry, więc animacja wysokości nie przesuwa nagłówka ani listy —
+    // oddaje tylko miejsce klawiaturze, płynnie prowadząc dolną krawędź z kompozytorem.
     //
     // Włączane DOPIERO PO pierwszym zapisie geometrii (w kolejnej klatce): inaczej samo otwarcie
     // okna byłoby animowane od wartości domyślnych i widać by było, jak okno „dojeżdża" do ekranu.
-    const KEYBOARD_TRANSITION = "280ms cubic-bezier(0.22, 0.61, 0.36, 1)";
     const transitionRaf = window.requestAnimationFrame(() => {
-      el.style.transition = `top ${KEYBOARD_TRANSITION}, height ${KEYBOARD_TRANSITION}`;
+      el.style.transition = "height 280ms cubic-bezier(0.22, 0.61, 0.36, 1)";
     });
 
     vv.addEventListener("resize", onViewportEvent);

@@ -4,6 +4,24 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-31 — Nie animuj `top` elementu `fixed` przy klawiaturze: przeglądarka robi to sama
+**Problem:** Po wygładzeniu przejścia CSS okno asystenta nadal „szarpało", choć skoku już nie było.
+Pierwsza miara z nagrania (najciemniejszy wiersz w pasie) pokazała oscylację — ale ta miara potrafi
+przeskakiwać między sąsiednimi liniami tekstu i udawać ruch, więc nie nadawała się na dowód.
+**Rozwiązanie:** Powtórzony pomiar korelacją znormalizowaną między kolejnymi klatkami (z oceną
+jakości dopasowania, ufamy tylko wynikom ≥0,97): treść wykonuje wahadło o amplitudzie 80–130 px przez
+~14 klatek i **sumuje się do zera** (+1 px na koniec). Skoro treść okna jest wyrównana do góry,
+animacja `height` nie może nią ruszać — oscylowała więc górna krawędź, czyli `top`. Przyczyna:
+przeglądarka SAMA przesuwa element `position: fixed`, gdy jedzie widoczny obszar; nasza
+280-milisekundowa animacja `top` ciągnęła go równolegle, obie korekty się sumowały i znosiły. Naprawa:
+animujemy WYŁĄCZNIE `height`, `top` wraca do zapisu natychmiastowego.
+**Lekcja:** Zanim zaczniesz animować właściwość elementu `position: fixed` na mobile, sprawdź, czy
+przeglądarka już jej nie animuje za Ciebie — dwie korekty tej samej wielkości nie dodają płynności,
+tylko tworzą dzwonienie. I metodycznie: **suma przesunięć równa zeru to sygnatura konfliktu**, nie
+niedokończonego ruchu; jeśli element wraca dokładnie tam, gdzie zaczął, szukaj drugiej siły, a nie
+złego czasu trwania. Trzecia rzecz: pierwszą wersję pomiaru trzeba było odrzucić — miara oparta na
+„najciemniejszym wierszu" nie odróżnia ruchu od zmiany treści, korelacja z oceną jakości odróżnia.
+
 ## 2026-07-31 — „Płynna" dolna część okna była złudzeniem: obraz czasoprzestrzenny zamiast wrażeń
 **Problem:** Zgłoszenie brzmiało: kompozytor (dół okna asystenta) przesuwa się przy klawiaturze
 płynnie, a nagłówek skacze — więc może da się zadokować nagłówek „tak samo, pasywnie". Trop wyglądał
