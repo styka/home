@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 
 /**
  * 036 — NARZĘDZIE DIAGNOSTYCZNE (tymczasowe). Nakładka z liczbami opisującymi geometrię widocznego
@@ -11,7 +11,9 @@ import { useEffect, useRef, useState, type RefObject } from "react";
  * (`visualViewport.offsetTop`), czy przewija się dokument (`scrollY`), czy nasza korekta po prostu
  * nie zdąża. Te trzy przyczyny mają różne naprawy, więc zgadywanie kosztuje kolejne podejście.
  *
- * Włączane WYŁĄCZNIE parametrem `?vvdebug=1` w adresie — bez niego komponent nic nie renderuje.
+ * **Widoczna ZAWSZE, na czas diagnozy.** Pierwotnie właczana parametrem `?vvdebug=1`, ale aplikacja
+ * jest uruchamiana z ikony skrótu (PWA), gdzie nie ma jak dopisać parametru do adresu. Do usunięcia
+ * razem z całym plikiem, gdy sprawa drgającego nagłówka zostanie zamknięta.
  *
  * Odczyt leci w pętli `requestAnimationFrame`, a NIE na zdarzeniach: właśnie klatki animacji
  * klawiatury są tu interesujące, a zdarzenia `visualViewport` mogą ich nie pokryć. `rAF` jest tu na
@@ -19,16 +21,9 @@ import { useEffect, useRef, useState, type RefObject } from "react";
  * `usePinToVisualViewport`).
  */
 export function ViewportProbe({ sheetRef }: { sheetRef: RefObject<HTMLElement | null> }) {
-  const [on, setOn] = useState(false);
   const boxRef = useRef<HTMLPreElement | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    setOn(new URLSearchParams(window.location.search).get("vvdebug") === "1");
-  }, []);
-
-  useEffect(() => {
-    if (!on) return;
     let raf = 0;
     let frame = 0;
     const tick = () => {
@@ -56,9 +51,7 @@ export function ViewportProbe({ sheetRef }: { sheetRef: RefObject<HTMLElement | 
     };
     raf = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(raf);
-  }, [on, sheetRef]);
-
-  if (!on) return null;
+  }, [sheetRef]);
 
   return (
     <pre
@@ -67,7 +60,9 @@ export function ViewportProbe({ sheetRef }: { sheetRef: RefObject<HTMLElement | 
       style={{
         position: "fixed",
         left: 4,
-        top: 4,
+        // Środek ekranu, NIE góra: nakładka nie może zasłaniać ani nagłówka, ani pola tekstowego —
+        // to właśnie ich ruch oglądamy na nagraniu.
+        top: "38%",
         zIndex: 10000,
         margin: 0,
         padding: "4px 6px",
