@@ -21,7 +21,7 @@
       *Gotowe, gdy:* na `/pogoda` (desktop i mobile) sekcje idą w tej kolejności, `ForecastView` nie
       ma już nieużywanego eksportu. **(AC-29)**
 
-- [ ] **T-2** — **Edycja obserwatora — UI.** Przemianuj `AddWatcherModal` na `WatcherFormModal` z
+- [x] **T-2** — **Edycja obserwatora — UI.** Przemianuj `AddWatcherModal` na `WatcherFormModal` z
       opcjonalnym propem `initial?: WatcherDTO`; jeden formularz obsługuje dodawanie i edycję. Dodaj
       ikonę ołówka przy kafelku obserwatora. Zapis przez **istniejącą** akcję `updateWatcher`; po
       zapisie `router.refresh()` + ponowne `evaluate()`.
