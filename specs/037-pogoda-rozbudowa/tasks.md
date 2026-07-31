@@ -103,7 +103,7 @@
 
 ## Faza 4 — Obserwatory: semantyka statusu
 
-- [ ] **T-15** — **Nowa skala statusu.** `WatcherVerdict["status"]` → `"met" | "partial" | "unmet" |
+- [x] **T-15** — **Nowa skala statusu.** `WatcherVerdict["status"]` → `"met" | "partial" | "unmet" |
       "unknown"`; przepisany prompt systemowy w `evaluateWatchers` („oceniasz WYŁĄCZNIE, czy warunek
       obserwatora zachodzi — nie czy pogoda jest ładna"); nieznana wartość degraduje do `"unknown"`.
       `STATUS_STYLE` w `WatchersPanel`: Spełnione / Częściowo / Niespełnione / Brak danych + `title`

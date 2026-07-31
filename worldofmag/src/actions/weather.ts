@@ -33,13 +33,26 @@ export interface WatcherDTO {
   enabled: boolean;
 }
 
+/**
+ * 037: status obserwatora mówi, CZY JEGO WARUNEK ZACHODZI — nie czy pogoda jest ładna.
+ *
+ * Poprzednia skala (`good`/`warn`/`bad`/`info`, w UI „Sprzyja/Uwaga/Odradzane/Info") kazała modelowi
+ * ocenić urodę pogody. Dla obserwatora opisującego zjawisko NEGATYWNE („Bardzo mokry weekend",
+ * presety „Przymrozki", „Burze", „Upały") sucha, słoneczna prognoza jest oczywiście „dobra" — więc
+ * model poprawnie odpowiadał `good`, a użytkownik czytał „Sprzyja: weekend suchy" na obserwatorze
+ * mokrego weekendu. To nie była halucynacja, tylko źle postawione pytanie.
+ */
+export type WatcherStatus = "met" | "partial" | "unmet" | "unknown";
+
 export interface WatcherVerdict {
   id: string;
   title: string;
-  status: "good" | "warn" | "bad" | "info";
+  status: WatcherStatus;
   verdict: string;
   detail: string;
 }
+
+const WATCHER_STATUSES: WatcherStatus[] = ["met", "partial", "unmet", "unknown"];
 
 // ─── Locations ─────────────────────────────────────────────────────────────
 
@@ -363,10 +376,19 @@ export async function evaluateWatchers(
   if (!f) throw new Error("Brak danych pogodowych.");
 
   const system =
-    "Oceniasz prognozę pogody pod kątem konkretnych obserwatorów (alertów) zdefiniowanych przez " +
-    "użytkownika. Dla każdego zdecyduj status: good (warunki sprzyjające), warn (uwaga/ryzyko), " +
-    "bad (zła wiadomość / odradzane), info (neutralna informacja). verdict = krótkie hasło, " +
-    "detail = 1–2 zdania z konkretami (dni, godziny, wartości). Pisz po polsku. Zwróć WYŁĄCZNIE JSON.";
+    "Sprawdzasz prognozę pogody pod kątem obserwatorów (warunków) zdefiniowanych przez użytkownika.\n" +
+    "NIE oceniasz, czy pogoda jest ładna, dobra ani przyjemna. Oceniasz WYŁĄCZNIE jedno: czy warunek " +
+    "opisany przez obserwatora ZACHODZI w jego horyzoncie czasowym.\n" +
+    "Status:\n" +
+    "- met = warunek zachodzi (to, o co pyta obserwator, faktycznie się dzieje),\n" +
+    "- partial = zachodzi częściowo albo niepewnie (np. tylko jeden z dwóch dni, niska szansa),\n" +
+    "- unmet = nie zachodzi,\n" +
+    "- unknown = prognoza nie daje podstaw do rozstrzygnięcia.\n" +
+    "Przykład: obserwator „Bardzo mokry weekend” przy suchej prognozie ma status unmet — mimo że " +
+    "sucha pogoda jest przyjemna. Obserwator „Burze” przy nadchodzącej burzy ma status met — mimo " +
+    "że to zła wiadomość.\n" +
+    "verdict = krótkie hasło nawiązujące do TREŚCI obserwatora, detail = 1–2 zdania z konkretami " +
+    "(dni, godziny, wartości). Pisz po polsku. Zwróć WYŁĄCZNIE JSON.";
   const watcherList = watchers
     .map((w, i) => `${i}. [${w.horizon}] ${w.title}: ${w.query ?? w.title}`)
     .join("\n");
@@ -374,7 +396,7 @@ export async function evaluateWatchers(
     `Lokalizacja: ${label}\n\nPROGNOZA 7-DNIOWA:\n${dailyDigest(f)}\n\n` +
     `NAJBLIŻSZE GODZINY:\n${hourlyDigest(f, 24)}\n\n` +
     `OBSERWATORZY (z horyzontem czasowym):\n${watcherList}\n\n` +
-    `Zwróć JSON: {"verdicts":[{"index":0,"status":"good","verdict":"...","detail":"..."}]}`;
+    `Zwróć JSON: {"verdicts":[{"index":0,"status":"met|partial|unmet|unknown","verdict":"...","detail":"..."}]}`;
 
   const res = await chatComplete({
     op: "reasoning",
@@ -399,9 +421,10 @@ export async function evaluateWatchers(
     .filter((v) => watchers[v.index])
     .map((v) => {
       const w = watchers[v.index];
-      const status = ["good", "warn", "bad", "info"].includes(v.status)
-        ? (v.status as WatcherVerdict["status"])
-        : "info";
+      // Nieznana wartość degraduje do „brak danych", a nie do udawania rozstrzygnięcia.
+      const status = WATCHER_STATUSES.includes(v.status as WatcherStatus)
+        ? (v.status as WatcherStatus)
+        : "unknown";
       return { id: w.id, title: w.title, status, verdict: v.verdict ?? "", detail: v.detail ?? "" };
     });
 }

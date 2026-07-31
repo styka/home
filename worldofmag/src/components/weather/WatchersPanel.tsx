@@ -18,11 +18,35 @@ import {
   type WatcherVerdict,
 } from "@/actions/weather";
 
-const STATUS_STYLE: Record<WatcherVerdict["status"], { color: string; label: string }> = {
-  good: { color: "var(--accent-green)", label: "Sprzyja" },
-  warn: { color: "var(--accent-amber)", label: "Uwaga" },
-  bad: { color: "var(--accent-red)", label: "Odradzane" },
-  info: { color: "var(--text-secondary)", label: "Info" },
+/**
+ * 037: etykiety mówią o SPEŁNIENIU WARUNKU obserwatora, nie o urodzie pogody.
+ *
+ * Uwaga na odczytanie koloru: zieleń oznacza „to, o co pytałeś, się dzieje" — dla obserwatora
+ * ostrzegawczego („Burze") spełnienie jest złą wiadomością, mimo zielonego znacznika. Stąd `title`
+ * przy każdym statusie: bez niego zieleń przy nadchodzącej burzy byłaby myląca tak samo jak dawne
+ * „Sprzyja" przy obserwatorze mokrego weekendu.
+ */
+const STATUS_STYLE: Record<WatcherVerdict["status"], { color: string; label: string; hint: string }> = {
+  met: {
+    color: "var(--accent-green)",
+    label: "Spełnione",
+    hint: "Warunek opisany w obserwatorze zachodzi",
+  },
+  partial: {
+    color: "var(--accent-amber)",
+    label: "Częściowo",
+    hint: "Warunek zachodzi częściowo lub niepewnie",
+  },
+  unmet: {
+    color: "var(--text-secondary)",
+    label: "Niespełnione",
+    hint: "Warunek opisany w obserwatorze nie zachodzi",
+  },
+  unknown: {
+    color: "var(--text-muted)",
+    label: "Brak danych",
+    hint: "Prognoza nie daje podstaw do rozstrzygnięcia",
+  },
 };
 
 export function WatchersPanel({
@@ -148,6 +172,7 @@ export function WatchersPanel({
                       <span
                         className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
                         style={{ color: style.color, border: `1px solid ${style.color}` }}
+                        title={style.hint}
                       >
                         {style.label}
                       </span>
