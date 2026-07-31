@@ -65,21 +65,21 @@
 
 ## Faza 3 — Pogoda: pamięć, nasiona, jeden przycisk
 
-- [ ] **T-8** — **`getIdeas` przez pamięć treści.** `variation` → `force`; `scopeKey` z lokalizacji,
+- [x] **T-8** — **`getIdeas` przez pamięć treści.** `variation` → `force`; `scopeKey` z lokalizacji,
       dnia i pory; `inputHash` z **zaokrąglonej** prognozy + list zablokowanych i zapisanych;
       zwracane `generatedAt`, `stale`, `fromMemory`. Do promptu dołóż `AssistantPref.instructions` i
       tytuły zapisanych pomysłów (namiastka bazy wiedzy).
       *Gotowe, gdy:* powrót na stronę i przełączenie na znane parametry nie tworzą wpisu w `AiCall`.
       **(AC-4, AC-5, AC-6)**
 
-- [ ] **T-9** — **Nasiona propozycji + zapis z listy bez kosztu.** `saveIdeaFromList(idea, ctx)` —
+- [x] **T-9** — **Nasiona propozycji + zapis z listy bez kosztu.** `saveIdeaFromList(idea, ctx)` —
       `upsert` ze `state:"saved"` i zapisem `seedDate`/`seedPart`/`seedWeather`, **zero** wywołań
       modelu. `generateIdeaDetail` korzysta z `seedWeather`, gdy istnieje, zamiast bieżącej prognozy,
       i przechodzi przez pamięć treści (`weather.ideaDetail`).
       *Gotowe, gdy:* zapis z listy nie kosztuje, a opis wygenerowany później opisuje pogodę z chwili
       zaproponowania. **(AC-10, AC-11, AC-12)**
 
-- [ ] **T-10** — **Jeden przycisk generowania w kaflu „Co robić?".** Jeden przycisk „Nowe
+- [x] **T-10** — **Jeden przycisk generowania w kaflu „Co robić?".** Jeden przycisk „Nowe
       propozycje" (`RefreshCw`) wołający `force`; biblioteka jako odnośnik tekstowy „Zapisane
       pomysły →" w stopce; linijka stanu „wygenerowano <kiedy>" + znacznik „nieaktualne — prognoza
       się zmieniła"; przycisk zapisu przy każdej pozycji listy.

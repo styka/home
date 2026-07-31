@@ -23,6 +23,7 @@ import {
 } from "@/lib/weather/ideas";
 import { usageFromChat, parseStoredUsage, type AiUsageInfo } from "@/lib/ai/usage";
 import { visibleUsage } from "@/lib/ai/costVisibility";
+import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
 import { recordTrash } from "@/lib/trash";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
@@ -399,6 +400,19 @@ export async function evaluateWatchers(
 export interface IdeasResult {
   ideas: IdeaDTO[];
   usage?: AiUsageInfo;
+  /** 038: kiedy lista powstała — UI mówi wprost, że treść pochodzi z pamięci. */
+  generatedAt: string;
+  /** Prognoza lub listy pomysłów zmieniły się od czasu wygenerowania. Sygnał, nie polecenie. */
+  stale: boolean;
+  fromMemory: boolean;
+}
+
+/** Surowa propozycja prosto od modelu — to JĄ zapamiętujemy, bez stanu użytkownika. */
+interface RawIdea {
+  title: string;
+  summary?: string;
+  category?: string;
+  nearby?: boolean;
 }
 
 export interface IdeaDetailResult {
@@ -439,6 +453,24 @@ function resolveWhen(f: Forecast, opts?: { date?: string; part?: DayPart }) {
   return { date, part, hours, day };
 }
 
+/**
+ * 038: ZAOKRĄGLONY skrót pogody — wyłącznie do liczenia odcisku warunków, nigdy do promptu.
+ *
+ * Odcisk liczony z surowych wartości zmieniałby się przy każdej korekcie o jedną dziesiątą stopnia
+ * i unieważniał zapamiętaną treść bez powodu — czyli niweczył oszczędność, dla której ta pamięć
+ * powstała. Temperatura do pełnego stopnia, szansa opadów do 5 punktów procentowych.
+ */
+function roundedBrief(f: Forecast, when: ReturnType<typeof resolveWhen>): string {
+  const d = when.day;
+  const head = d
+    ? `${d.code}|${Math.round(d.tMin)}|${Math.round(d.tMax)}|${Math.round(d.precipProbMax / 5) * 5}`
+    : "";
+  const hours = when.hours
+    .map((h) => `${h.code}|${Math.round(h.temp)}|${Math.round(h.precipProb / 5) * 5}`)
+    .join(";");
+  return `${head}#${hours}`;
+}
+
 /** Skrót pogody dla promptów propozycji — dzień + wybrana pora, bez lania wody. */
 function weatherBrief(f: Forecast, when: ReturnType<typeof resolveWhen>): string {
   const d = when.day;
@@ -463,94 +495,133 @@ export async function getIdeas(
   lat: number,
   lon: number,
   label: string,
-  opts?: { date?: string; part?: DayPart; variation?: boolean }
+  opts?: { date?: string; part?: DayPart; force?: boolean }
 ): Promise<IdeasResult> {
   const user = await requireAuth();
   const f = await fetchForecast(lat, lon);
   if (!f) throw new Error("Brak danych pogodowych.");
   const when = resolveWhen(f, opts);
-  const variation = opts?.variation ?? false;
+  // 038: jedna nazwa dla jednej intencji. „variation" sugerowało losowanie dla rozrywki, a to jest
+  // wymuszenie nowej generacji — jedyny moment, w którym wolno wołać model mimo zapamiętanej treści.
+  const force = opts?.force ?? false;
 
   const known = await prisma.weatherIdea.findMany({ where: { ownerId: user.id } });
   const blocked = known.filter((k) => k.state === "blocked");
+  const saved = known.filter((k) => k.state === "saved");
   const byFingerprint = new Map(known.map((k) => [k.fingerprint, k]));
 
-  const system =
-    "Jesteś przewodnikiem po okolicy i doradcą rekreacyjnym. Na podstawie prognozy dla wskazanego " +
-    "dnia i pory dnia proponujesz KONKRETNE pomysły, co robić w danej lokalizacji.\n" +
-    "Zasady:\n" +
-    "- Zwróć 5–7 propozycji.\n" +
-    "- CO NAJMNIEJ 2 muszą dotyczyć konkretnego miejsca lub atrakcji w promieniu ok. 30 km od " +
-    "lokalizacji, z NAZWĄ WŁASNĄ (np. szczyt, szlak, jezioro, muzeum, zabytek). Takie pozycje mają " +
-    "\"nearby\": true, a w \"summary\" krótko: dlaczego akurat to i jak blisko.\n" +
-    "- Pozostałe mogą być ogólnymi czynnościami pasującymi do tej pogody.\n" +
-    "- Jeśli pogoda wyklucza rekreację na zewnątrz, przewagę mają propozycje domowe (category: home).\n" +
-    "- Nie wymyślaj miejsc, których nie ma. Jeśli nie znasz okolicy na tyle dobrze, daj mniej " +
-    "propozycji miejscowych, ale nie zmyślaj nazw.\n" +
-    "- \"title\" to zwięzła nazwa propozycji (do 60 znaków), \"summary\" to JEDNO zdanie uzasadnienia " +
-    "odnoszące się do pogody.\n" +
-    "- category: outdoor (aktywność na zewnątrz), trip (wycieczka/wyjazd do miejsca), home (w domu), other.\n" +
-    "Pisz po polsku. Zwróć WYŁĄCZNIE JSON." +
-    (variation ? "\nZaproponuj INNE, mniej oczywiste pomysły niż zwykle — bądź kreatywny." : "");
+  // 038: pamiętamy SUROWĄ listę od modelu, bez stanu użytkownika. Stan (zapisana/zablokowana)
+  // dokładamy przy każdym odczycie z bazy — dzięki temu zablokowanie propozycji usuwa ją z listy
+  // natychmiast, bez generowania czegokolwiek od nowa.
+  const scopeKey = `${lat.toFixed(3)}|${lon.toFixed(3)}|${when.date}|${when.part.key}`;
+  const brief = weatherBrief(f, when);
+  const inputHash = hashInputs(
+    // Zaokrąglony skrót pogody: korekta o jedną dziesiątą stopnia nie może unieważniać treści,
+    // bo zniweczyłaby całą oszczędność, dla której ta pamięć powstała.
+    roundedBrief(f, when),
+    blocked.map((b) => b.fingerprint).sort().join(","),
+    saved.map((b) => b.fingerprint).sort().join(",")
+  );
 
-  const blockedHint =
-    blocked.length > 0
-      ? `\n\nNIE PROPONUJ tych pozycji (użytkownik je odrzucił):\n${blocked
-          .map((b) => `- ${b.title}`)
-          .join("\n")}`
-      : "";
+  // Namiastka bazy wiedzy o użytkowniku (pełny mechanizm to osobne zgłoszenie): stałe preferencje
+  // z ustawień asystenta + to, co użytkownik już sobie zapisał.
+  const prefs = await prisma.assistantPref.findUnique({ where: { userId: user.id } });
+  const personalHint =
+    (prefs?.instructions?.trim()
+      ? `\n\nO UŻYTKOWNIKU (uwzględnij przy doborze propozycji):\n${prefs.instructions.trim()}`
+      : "") +
+    (saved.length > 0
+      ? `\n\nPodobały mu się wcześniej:\n${saved.slice(0, 10).map((k) => `- ${k.title}`).join("\n")}`
+      : "");
 
-  const userPrompt =
-    `Lokalizacja: ${label} (${lat.toFixed(3)}, ${lon.toFixed(3)})\n\n` +
-    `PROGNOZA:\n${weatherBrief(f, when)}${blockedHint}\n\n` +
-    `Zwróć JSON: {"ideas":[{"title":"...","summary":"...","category":"outdoor|trip|home|other","nearby":true}]}` +
-    (variation ? `\n\n[wariant ${Math.random().toString(36).slice(2, 8)}]` : "");
+  const remembered = await rememberedContent<RawIdea[]>({
+    ownerId: user.id,
+    kind: "weather.ideas",
+    scopeKey,
+    inputHash,
+    force,
+    generate: async () => {
+      const system =
+        "Jesteś przewodnikiem po okolicy i doradcą rekreacyjnym. Na podstawie prognozy dla wskazanego " +
+        "dnia i pory dnia proponujesz KONKRETNE pomysły, co robić w danej lokalizacji.\n" +
+        "Zasady:\n" +
+        "- Zwróć 5–7 propozycji.\n" +
+        "- CO NAJMNIEJ 2 muszą dotyczyć konkretnego miejsca lub atrakcji w promieniu ok. 30 km od " +
+        "lokalizacji, z NAZWĄ WŁASNĄ (np. szczyt, szlak, jezioro, muzeum, zabytek). Takie pozycje mają " +
+        "\"nearby\": true, a w \"summary\" krótko: dlaczego akurat to i jak blisko.\n" +
+        "- Pozostałe mogą być ogólnymi czynnościami pasującymi do tej pogody.\n" +
+        "- Jeśli pogoda wyklucza rekreację na zewnątrz, przewagę mają propozycje domowe (category: home).\n" +
+        "- Pora nocna NIE jest powodem, by nie proponować niczego: wtedy proponuj zajęcia domowe albo " +
+        "nocne (obserwacja nieba, spacer przy oświetleniu). Pusta lista jest ZAWSZE złą odpowiedzią.\n" +
+        "- Nie wymyślaj miejsc, których nie ma. Jeśli nie znasz okolicy na tyle dobrze, daj mniej " +
+        "propozycji miejscowych, ale nie zmyślaj nazw.\n" +
+        "- \"title\" to zwięzła nazwa propozycji (do 60 znaków), \"summary\" to JEDNO zdanie uzasadnienia " +
+        "odnoszące się do pogody.\n" +
+        "- category: outdoor (aktywność na zewnątrz), trip (wycieczka/wyjazd do miejsca), home (w domu), other.\n" +
+        "Pisz po polsku. Zwróć WYŁĄCZNIE JSON." +
+        (force ? "\nZaproponuj INNE, mniej oczywiste pomysły niż zwykle — bądź kreatywny." : "");
 
-  const res = await chatComplete({
-    op: "reasoning",
-    json: true,
-    temperature: variation ? 0.95 : 0.6,
-    // 038: 1200 tokenów było na styk dla 5–7 propozycji po polsku w JSON — a gdy typ operacji
-    // „reasoning" ma przypisany model rozumujący, tokeny rozumowania wliczają się do tego samego
-    // limitu i treść bywała ucinana w połowie struktury.
-    maxTokens: 2000,
-    // Lista jest deterministyczna per lokalizacja/dzień/pora/prognoza (prompt je zawiera), więc
-    // powtórne wejście na stronę nie kosztuje. Wariant ma być świeży → bez pamięci podręcznej.
-    cache: !variation,
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: userPrompt },
-    ],
+      const blockedHint =
+        blocked.length > 0
+          ? `\n\nNIE PROPONUJ tych pozycji (użytkownik je odrzucił):\n${blocked
+              .map((b) => `- ${b.title}`)
+              .join("\n")}`
+          : "";
+
+      const userPrompt =
+        `Lokalizacja: ${label} (${lat.toFixed(3)}, ${lon.toFixed(3)})\n\n` +
+        `PROGNOZA:\n${brief}${blockedHint}${personalHint}\n\n` +
+        `Zwróć JSON: {"ideas":[{"title":"...","summary":"...","category":"outdoor|trip|home|other","nearby":true}]}` +
+        (force ? `\n\n[wariant ${Math.random().toString(36).slice(2, 8)}]` : "");
+
+      const res = await chatComplete({
+        op: "reasoning",
+        json: true,
+        temperature: force ? 0.95 : 0.6,
+        // 038: 1200 tokenów było na styk dla 5–7 propozycji po polsku w JSON — a gdy typ operacji
+        // „reasoning" ma przypisany model rozumujący, tokeny rozumowania wliczają się do tego samego
+        // limitu i treść bywała ucinana w połowie struktury.
+        maxTokens: 2000,
+        // Pamięć treści (`AiContent`) zastępuje tu pamięć podręczną wywołań: skoro do modelu idziemy
+        // wyłącznie przy braku zapisu albo na wyraźne żądanie, drugi poziom cache nie ma czego oszczędzić.
+        cache: false,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: userPrompt },
+        ],
+      });
+      if (!res.ok) throw new Error(res.message);
+      // 038: odpowiedź UCIĘTA to awaria, nie „model nic nie wymyślił". Wcześniej obie sytuacje
+      // kończyły się tym samym pustym ekranem, więc użytkownik nie miał jak rozpoznać, że coś się
+      // zepsuło — i ponawiał w nieskończoność.
+      if (res.truncated) {
+        throw new Error(
+          "Odpowiedź modelu została ucięta, zanim zdążył wypisać propozycje. Spróbuj ponownie albo " +
+            "zwiększ limit tokenów dla operacji typu „reasoning” w panelu LLM."
+        );
+      }
+      const parsed = parseJsonLoose<{ ideas: RawIdea[] }>(res.content);
+      // Nieparsowalna odpowiedź też jest awarią — `?? []` zamieniało ją w cichy pusty wynik.
+      if (parsed == null) {
+        throw new Error("Nie udało się odczytać odpowiedzi modelu (niepoprawny format). Spróbuj ponownie.");
+      }
+      return {
+        value: parsed.ideas ?? [],
+        usage: usageFromChat([{ res, label: "propozycje", op: "reasoning" }]),
+      };
+    },
   });
-  if (!res.ok) throw new Error(res.message);
-  // 038: odpowiedź UCIĘTA to awaria, nie „model nic nie wymyślił". Wcześniej obie sytuacje kończyły
-  // się tym samym pustym ekranem („Brak propozycji na tę porę"), więc użytkownik nie miał jak
-  // rozpoznać, że coś się zepsuło — i ponawiał w nieskończoność.
-  if (res.truncated) {
-    throw new Error(
-      "Odpowiedź modelu została ucięta, zanim zdążył wypisać propozycje. Spróbuj ponownie albo " +
-        "zwiększ limit tokenów dla operacji typu „reasoning” w panelu LLM."
-    );
-  }
-
-  const parsed = parseJsonLoose<{
-    ideas: Array<{ title: string; summary?: string; category?: string; nearby?: boolean }>;
-  }>(res.content);
-  // Nieparsowalna odpowiedź też jest awarią — `?? []` zamieniało ją w cichy pusty wynik.
-  if (parsed == null) {
-    throw new Error("Nie udało się odczytać odpowiedzi modelu (niepoprawny format). Spróbuj ponownie.");
-  }
 
   const seen = new Set<string>();
   const ideas: IdeaDTO[] = [];
-  for (const raw of parsed.ideas ?? []) {
+  for (const raw of remembered.value) {
     const title = (raw.title ?? "").trim();
     if (!title) continue;
     const fingerprint = fingerprintOf(title);
     if (!fingerprint || seen.has(fingerprint)) continue;
     const row = byFingerprint.get(fingerprint);
-    // Blokada jest EGZEKWOWANA tutaj, po stronie serwera. Podpowiedź w prompcie bywa ignorowana
-    // przez model — sam prompt nie może być gwarancją, że odrzucona propozycja nie wróci.
+    // Blokada jest EGZEKWOWANA tutaj, po stronie serwera — także dla treści z pamięci. Podpowiedź
+    // w prompcie bywa ignorowana przez model, więc sam prompt nie może być gwarancją.
     if (row?.state === "blocked") continue;
     seen.add(fingerprint);
     ideas.push({
@@ -570,8 +641,68 @@ export async function getIdeas(
 
   return {
     ideas,
-    usage: await visibleUsage(usageFromChat([{ res, label: "propozycje", op: "reasoning" }])),
+    usage: await visibleUsage(remembered.usage),
+    generatedAt: remembered.generatedAt,
+    stale: remembered.stale,
+    fromMemory: remembered.fromMemory,
   };
+}
+
+/**
+ * 038: zapis propozycji prosto z listy — BEZ generowania opisu i BEZ kosztu.
+ *
+ * Powód: opis czyta się rzadko, a generowanie go dla każdej zapisanej pozycji byłoby płaceniem za
+ * treść, której nikt nie otworzy. Zapisujemy więc same NASIONA (dzień, pora, skrót prognozy z chwili
+ * zaproponowania) — opis powstanie później, przy pierwszym wejściu w szczegóły, i będzie opisywał
+ * pogodę z dnia, dla którego pomysł powstał, a nie z dnia czytania.
+ */
+export async function saveIdeaFromList(
+  idea: { title: string; summary?: string; category?: string },
+  ctx: IdeaContext
+): Promise<{ id: string }> {
+  const user = await requireAuth();
+  const title = idea.title.trim();
+  if (!title) throw new Error("Propozycja bez nazwy");
+  const fingerprint = fingerprintOf(title);
+
+  const seed = await buildSeed(ctx);
+  const row = await prisma.weatherIdea.upsert({
+    where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
+    create: {
+      ownerId: user.id,
+      fingerprint,
+      title,
+      summary: (idea.summary ?? "").trim(),
+      category: parseIdeaCategory(idea.category),
+      state: "saved",
+      locationLabel: ctx.label,
+      lat: ctx.lat,
+      lon: ctx.lon,
+      seedDate: seed.date,
+      seedPart: seed.part,
+      seedWeather: seed.weather,
+    },
+    update: {
+      state: "saved",
+      lastSeenAt: new Date(),
+      // Nasiona uzupełniamy tylko, gdy ich jeszcze nie ma — pierwsze zaproponowanie jest tym
+      // momentem, do którego plan ma się odnosić.
+      seedDate: seed.date,
+      seedPart: seed.part,
+      seedWeather: seed.weather,
+    },
+  });
+  revalidatePath("/pogoda");
+  revalidatePath("/pogoda/pomysly");
+  return { id: row.id };
+}
+
+/** Warunki z chwili zaproponowania — zapisywane razem z pomysłem, nie odtwarzane później. */
+async function buildSeed(ctx: IdeaContext): Promise<{ date: string; part: string; weather: string }> {
+  const f = await fetchForecast(ctx.lat, ctx.lon);
+  if (!f) return { date: ctx.date ?? "", part: ctx.part ?? "morning", weather: "" };
+  const when = resolveWhen(f, { date: ctx.date, part: ctx.part });
+  return { date: when.date, part: when.part.key, weather: weatherBrief(f, when) };
 }
 
 /**
@@ -633,9 +764,20 @@ export async function generateIdeaDetail(
     };
   }
 
-  const f = await fetchForecast(ctx.lat, ctx.lon);
-  if (!f) throw new Error("Brak danych pogodowych.");
-  const when = resolveWhen(f, { date: ctx.date, part: ctx.part });
+  // 038: plan opisuje pogodę Z CHWILI ZAPROPONOWANIA, a nie z chwili czytania. Pomysł zapisany
+  // w niedzielę i otwarty w czwartek dotyczy niedzieli — pobranie bieżącej prognozy dawałoby plan
+  // na zupełnie inny dzień, wyglądający przy tym całkowicie wiarygodnie.
+  let brief = existing?.seedWeather ?? "";
+  let planDate = existing?.seedDate ?? ctx.date ?? "";
+  let planPart = existing?.seedPart ?? ctx.part ?? "";
+  if (!brief) {
+    const f = await fetchForecast(ctx.lat, ctx.lon);
+    if (!f) throw new Error("Brak danych pogodowych.");
+    const when = resolveWhen(f, { date: ctx.date, part: ctx.part });
+    brief = weatherBrief(f, when);
+    planDate = when.date;
+    planPart = when.part.key;
+  }
 
   const system =
     "Rozpisujesz KONKRETNY plan wykonania jednego pomysłu na spędzenie czasu, dopasowany do pogody " +
@@ -652,7 +794,7 @@ export async function generateIdeaDetail(
     `Lokalizacja: ${ctx.label} (${ctx.lat.toFixed(3)}, ${ctx.lon.toFixed(3)})\n` +
     `Propozycja: ${title}\n` +
     (idea.summary ? `Uzasadnienie z listy: ${idea.summary}\n` : "") +
-    `\nPROGNOZA:\n${weatherBrief(f, when)}` +
+    `\nPROGNOZA:\n${brief}` +
     (opts?.force ? `\n\n[nowe ujęcie ${Math.random().toString(36).slice(2, 8)}]` : "");
 
   const res = await chatComplete({
@@ -683,6 +825,9 @@ export async function generateIdeaDetail(
       locationLabel: ctx.label,
       lat: ctx.lat,
       lon: ctx.lon,
+      seedDate: planDate,
+      seedPart: planPart,
+      seedWeather: brief,
       detail,
       detailAt: now,
       detailRuns: 1,

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Sparkles,
-  Shuffle,
+  RefreshCw,
   Loader2,
   ChevronRight,
   AlertTriangle,
@@ -15,6 +15,7 @@ import {
   Mountain,
   Compass,
   Eye,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -31,6 +32,7 @@ import {
   blockIdea,
   setIdeaState,
   addIdeaToTasks,
+  saveIdeaFromList,
 } from "@/actions/weather";
 
 const CATEGORY_ICON: Record<IdeaCategory, typeof Compass> = {
@@ -62,6 +64,7 @@ export function IdeasPanel({
   const [part, setPart] = useState<DayPart>(() => currentDayPart());
   const [ideas, setIdeas] = useState<IdeaDTO[] | null>(null);
   const [listUsage, setListUsage] = useState<AiCostUsage | undefined>();
+  const [memory, setMemory] = useState<{ generatedAt: string; stale: boolean; fromMemory: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,14 +76,15 @@ export function IdeasPanel({
   const [regenerating, setRegenerating] = useState(false);
 
   const load = useCallback(
-    (opts?: { variation?: boolean }) => {
+    (opts?: { force?: boolean }) => {
       if (!date) return;
       setLoading(true);
       setError(null);
-      getIdeas(coords.lat, coords.lon, coords.label, { date, part, variation: opts?.variation })
+      getIdeas(coords.lat, coords.lon, coords.label, { date, part, force: opts?.force })
         .then((r) => {
           setIdeas(r.ideas);
           setListUsage(r.usage);
+          setMemory({ generatedAt: r.generatedAt, stale: r.stale, fromMemory: r.fromMemory });
         })
         .catch((e) => {
           setIdeas(null);
@@ -194,6 +198,30 @@ export function IdeasPanel({
       .catch((e) => showToast(e?.message ?? "Nie udało się zapisać", "error"));
   }
 
+  /**
+   * 038: zapis prosto z listy — bez otwierania szczegółów i bez generowania opisu. Opis powstanie
+   * dopiero przy pierwszym wejściu w pozycję, na podstawie warunków zapisanych teraz.
+   */
+  function saveFromList(idea: IdeaDTO) {
+    setIdeas((prev) =>
+      prev ? prev.map((i) => (i.fingerprint === idea.fingerprint ? { ...i, state: "saved" as const } : i)) : prev
+    );
+    saveIdeaFromList(
+      { title: idea.title, summary: idea.summary, category: idea.category },
+      { lat: coords.lat, lon: coords.lon, label: coords.label, date, part }
+    )
+      .then((r) => {
+        setIdeas((prev) =>
+          prev ? prev.map((i) => (i.fingerprint === idea.fingerprint ? { ...i, id: r.id } : i)) : prev
+        );
+        showToast("Zapisano — opis powstanie przy wejściu w szczegóły", "success");
+      })
+      .catch((e) => {
+        showToast(e?.message ?? "Nie udało się zapisać", "error");
+        load();
+      });
+  }
+
   function addToTasks() {
     if (!open?.id) return;
     addIdeaToTasks(open.id)
@@ -207,18 +235,13 @@ export function IdeasPanel({
         <h3 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--text-primary)]">
           <Sparkles size={15} className="text-[var(--accent-purple)]" /> Co robić?
         </h3>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/pogoda/pomysly"
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-          >
-            <Library size={13} /> Pomysły
-          </Link>
-          <Button size="sm" variant="secondary" onClick={() => load({ variation: true })} disabled={loading}>
-            {loading ? <Loader2 size={14} className="animate-spin" /> : <Shuffle size={14} />}
-            Wylosuj inne
-          </Button>
-        </div>
+        {/* 038: DOKŁADNIE JEDEN przycisk generujący. Wcześniej stały tu obok siebie „Pomysły"
+            (odnośnik do biblioteki) i „Wylosuj inne" (generowanie) — oba wyglądały jak przycisk,
+            więc trzeba było zgadywać, który tworzy nową treść. */}
+        <Button size="sm" variant="secondary" onClick={() => load({ force: true })} disabled={loading}>
+          {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+          Nowe propozycje
+        </Button>
       </div>
 
       <div className="mb-2 flex flex-wrap gap-1">
@@ -237,6 +260,21 @@ export function IdeasPanel({
         ))}
       </div>
 
+      {memory && ideas && ideas.length > 0 && (
+        <p className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[var(--text-muted)]">
+          <span>Wygenerowano {formatWhen(memory.generatedAt)}</span>
+          {memory.stale && (
+            <span
+              className="rounded px-1 py-0.5 text-[var(--accent-amber)]"
+              style={{ border: "1px solid var(--accent-amber)" }}
+              title="Prognoza zmieniła się od czasu wygenerowania tych propozycji"
+            >
+              nieaktualne — prognoza się zmieniła
+            </span>
+          )}
+        </p>
+      )}
+
       {loading && ideas === null ? (
         <p className="py-4 text-sm text-[var(--text-muted)]">Szukam pomysłów na tę pogodę…</p>
       ) : error ? (
@@ -251,14 +289,20 @@ export function IdeasPanel({
               <span className="text-[var(--text-secondary)]">{error}</span>
             </span>
           </p>
-          <Button size="sm" variant="secondary" className="py-3" onClick={() => load({ variation: true })}>
+          <Button size="sm" variant="secondary" className="py-3" onClick={() => load({ force: true })}>
             Spróbuj ponownie
           </Button>
         </div>
       ) : ideas && ideas.length > 0 ? (
         <div className="space-y-2">
           {ideas.map((idea) => (
-            <IdeaCard key={idea.fingerprint} idea={idea} onOpen={() => openIdea(idea)} onBlock={() => block(idea)} />
+            <IdeaCard
+              key={idea.fingerprint}
+              idea={idea}
+              onOpen={() => openIdea(idea)}
+              onBlock={() => block(idea)}
+              onSave={() => saveFromList(idea)}
+            />
           ))}
         </div>
       ) : (
@@ -267,17 +311,21 @@ export function IdeasPanel({
             Model nie zaproponował nic na tę porę. Spróbuj innego dnia lub pory albo poproś o nowe
             propozycje.
           </p>
-          <Button size="sm" variant="secondary" className="py-3" onClick={() => load({ variation: true })}>
+          <Button size="sm" variant="secondary" className="py-3" onClick={() => load({ force: true })}>
             Nowe propozycje
           </Button>
         </div>
       )}
 
-      {listUsage && (
-        <div className="mt-3 flex justify-end border-t border-[var(--border)] pt-2">
-          <AiCostBadge usage={listUsage} rate={usdPlnRate} />
-        </div>
-      )}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border)] pt-2">
+        <Link
+          href="/pogoda/pomysly"
+          className="inline-flex items-center gap-1 text-xs text-[var(--text-muted)] underline-offset-2 hover:text-[var(--text-primary)] hover:underline"
+        >
+          <Library size={13} /> Zapisane pomysły →
+        </Link>
+        {listUsage && <AiCostBadge usage={listUsage} rate={usdPlnRate} />}
+      </div>
 
       {open && (
         <div className="mt-3">
@@ -305,10 +353,12 @@ function IdeaCard({
   idea,
   onOpen,
   onBlock,
+  onSave,
 }: {
   idea: IdeaDTO;
   onOpen: () => void;
   onBlock: () => void;
+  onSave: () => void;
 }) {
   const Icon = CATEGORY_ICON[idea.category];
   return (
@@ -341,6 +391,15 @@ function IdeaCard({
         )}
       </button>
       <div className="flex shrink-0 items-center gap-1">
+        <button
+          onClick={onSave}
+          disabled={idea.state === "saved"}
+          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-amber)] disabled:opacity-40"
+          title={idea.state === "saved" ? "Już zapisana" : "Zapisz na później (bez generowania opisu)"}
+          aria-label={`Zapisz: ${idea.title}`}
+        >
+          <Star size={14} className={idea.state === "saved" ? "fill-[var(--accent-amber)]" : ""} />
+        </button>
         <button
           onClick={onBlock}
           className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-red)]"
@@ -376,6 +435,19 @@ function Chip({ active, label, onClick }: { active: boolean; label: string; onCl
       {label}
     </button>
   );
+}
+
+/** „dziś 14:20" / „wczoraj 9:05" / „12.07, 18:30" — krótko, bo to podpis, nie treść. */
+function formatWhen(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const time = d.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
+  const today = new Date();
+  const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+  if (sameDay(d, today)) return `dziś ${time}`;
+  const yesterday = new Date(today.getTime() - 86_400_000);
+  if (sameDay(d, yesterday)) return `wczoraj ${time}`;
+  return `${d.toLocaleDateString("pl-PL", { day: "2-digit", month: "2-digit" })}, ${time}`;
 }
 
 function weekdayShort(dateIso: string): string {
