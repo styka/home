@@ -17,6 +17,20 @@ export const viewport: Viewport = {
   initialScale: 1,
   minimumScale: 1,
   viewportFit: "cover",
+  /**
+   * 036: klawiatura ekranowa ma ZMNIEJSZAĆ układ strony, a nie przesuwać widoczny obszar.
+   *
+   * Domyślnie (`resizes-visual`) po wysunięciu klawiatury układ strony zostaje tej samej wysokości,
+   * a przeglądarka PRZESUWA widoczny obszar, żeby odsłonić pole tekstowe. Element `position: fixed`
+   * liczy się względem układu, więc nagłówek asystenta wyjeżdża wtedy poza ekran i musimy go ścigać
+   * korektą z `visualViewport` — a ta z natury spóźnia się o kilka klatek (stąd widoczne drgnięcie).
+   *
+   * Przy `resizes-content` kurczy się sam układ: `100dvh` maleje, pole tekstowe nigdy nie jest pod
+   * klawiaturą, więc przeglądarka nie ma po co niczego przesuwać. Nagłówek stoi nieruchomo, a nasza
+   * korekta staje się zerowa (`offsetTop` = 0) — zostaje wyłącznie jako zabezpieczenie dla
+   * przeglądarek, które tej wskazówki nie znają (wtedy jest po prostu ignorowana, bez szkody).
+   */
+  interactiveWidget: "resizes-content",
 };
 
 export const metadata: Metadata = {
