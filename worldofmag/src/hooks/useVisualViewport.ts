@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { pickAppHeight } from "@/lib/viewportHeight";
 
 /**
  * 036: przypięcie okna pełnoekranowego do **widocznego** obszaru strony (`window.visualViewport`).
@@ -36,58 +35,6 @@ export function useIsNarrowScreen(): boolean {
 export const VV_TOP_VAR = "--vv-top";
 export const VV_HEIGHT_VAR = "--vv-height";
 
-/** Wysokość CAŁEJ powłoki aplikacji — ustawiana na `<html>` przez `useAppHeightVar`. */
-export const APP_HEIGHT_VAR = "--app-height";
-
-/**
- * 036: ustawia `--app-height` na `<html>` — wysokość, jaką ma mieć powłoka aplikacji.
- *
- * **Po co, skoro jest `100vh`.** Bo źródłem drgającego nagłówka asystenta jest przewijanie dokumentu,
- * a przewijanie bierze się z jednej różnicy: `wysokość powłoki − widoczna wysokość`. Dwa niezależne
- * pomiary na urządzeniu trafiają w tę regułę co do piksela:
- *
- * | powłoka        | wysokość | widać | różnica | zmierzone `scrollY` |
- * |----------------|----------|-------|---------|---------------------|
- * | `h-screen`     | 812      | 477   | 335     | **335**             |
- * | `h-full` (ICB) | 768      | 477   | 291     | **291**             |
- *
- * Żadna jednostka CSS nie daje tu zera — `vh`, `dvh` i `%` zostały sprawdzone i wszystkie trzy chybiły
- * (`vh`/`dvh` liczą się z dużego widoku, `%` z bloku bazowego, a ten też się nie kurczy). Wysokość
- * trzeba więc wpisać z pomiaru. Gdy powłoka ma dokładnie tyle, ile widać, dokument nie ma się jak
- * przewinąć, przeglądarka nie przesuwa widocznego obszaru, a okno `fixed` nie ma czego gonić — czyli
- * znika przyczyna, a nie objaw.
- *
- * Zapis idzie SYNCHRONICZNIE w obsłudze zdarzenia i przez zmienną CSS — z tego samego powodu, co w
- * `usePinToVisualViewport`: korekta układu przepuszczona przez stan Reacta trafia do DOM klatkę za
- * późno i użytkownik to widzi.
- */
-export function useAppHeightVar(): void {
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const root = document.documentElement;
-
-    const apply = () => {
-      const h = pickAppHeight(window.visualViewport?.height ?? null, window.innerHeight);
-      root.style.setProperty(APP_HEIGHT_VAR, `${h}px`);
-    };
-
-    apply();
-    const vv = window.visualViewport;
-    vv?.addEventListener("resize", apply);
-    vv?.addEventListener("scroll", apply);
-    window.addEventListener("resize", apply);
-    window.addEventListener("orientationchange", apply);
-    return () => {
-      vv?.removeEventListener("resize", apply);
-      vv?.removeEventListener("scroll", apply);
-      window.removeEventListener("resize", apply);
-      window.removeEventListener("orientationchange", apply);
-      // Oddaj sterowanie CSS-owi (fallback `100vh` w `var()`), zamiast zostawiać piksele na sztywno.
-      root.style.removeProperty(APP_HEIGHT_VAR);
-    };
-  }, []);
-}
-
 /**
  * Przypina element (`position: fixed`) do WIDOCZNEGO obszaru — pisząc geometrię PROSTO do elementu,
  * synchronicznie w obsłudze zdarzenia `visualViewport`.
@@ -99,9 +46,12 @@ export function useAppHeightVar(): void {
  * tekstowe, a pod nim całą stronę i dolny pasek zakładek.
  *
  * Próba usunięcia kompensacji („skoro przeglądarka i tak trzyma element przy widocznym obszarze")
- * była błędem i pogorszyła sprawę — trzyma go tylko czasami. Zostaje, a osobnym problemem pozostaje
- * SYNCHRONIZACJA w trakcie animacji klawiatury (zdarzenie potrafi wyprzedzić realne przesunięcie
- * widocznego obszaru, co widać jako krótki przeskok).
+ * była błędem i pogorszyła sprawę — trzyma go tylko czasami. Zostaje.
+ *
+ * Osobną sprawą jest SYNCHRONIZACJA w trakcie animacji klawiatury: iOS nie wysyła zdarzeń
+ * `visualViewport` co klatkę, więc sama obsługa zdarzeń zostawia środek animacji z geometrią sprzed
+ * ruchu. Dlatego po każdym zdarzeniu (oraz po `focusin`/`focusout` w oknie) domykamy ruch krótką,
+ * ograniczoną w czasie pętlą `requestAnimationFrame` — szczegóły przy `FOLLOW_MS` niżej.
  *
  * **Dlaczego zmienne CSS, a nie `style.top` / `style.height`.** Gdyby hook pisał te właściwości
  * wprost, każdy kolejny render Reacta nadpisywałby świeżą geometrię wartością z propsów (albo — gdyby
@@ -147,20 +97,69 @@ export function usePinToVisualViewport(
     const el = ref.current;
     if (!vv || !el) return;
 
+    // Ostatnio ZAPISANE wartości — żeby nie pisać stylu i nie wołać `onGeometryChange` 60 razy na
+    // sekundę, gdy nic się nie rusza (pętla niżej chodzi przez całą animację, także w jej ciszy).
+    let lastTop = Number.NaN;
+    let lastHeight = Number.NaN;
+
     const apply = () => {
       // Bez zaokrąglania: `visualViewport` zwraca wartości podpikselowe, a obcinanie zostawiałoby
       // pod oknem szparę na tle strony.
+      if (vv.offsetTop === lastTop && vv.height === lastHeight) return;
+      lastTop = vv.offsetTop;
+      lastHeight = vv.height;
       el.style.setProperty(VV_TOP_VAR, `${vv.offsetTop}px`);
       el.style.setProperty(VV_HEIGHT_VAR, `${vv.height}px`);
       onChangeRef.current?.();
     };
 
+    // Nadążanie za ANIMACJĄ klawiatury (`rAF`), a nie tylko za jej krańcami.
+    //
+    // iOS nie wysyła zdarzeń `visualViewport` co klatkę — dostajemy je na początku i na końcu ruchu.
+    // Korekta wpięta wyłącznie w zdarzenia zostawia więc cały środek animacji z geometrią sprzed
+    // ruchu, i dokładnie to widać jako drgnięcie nagłówka. (Zmierzyliśmy to już wcześniej sondą
+    // `ViewportProbe`, która właśnie dlatego czyta w `rAF` — ale wniosek nie trafił do samej korekty.)
+    //
+    // Pętla jest OGRANICZONA W CZASIE: startuje na zdarzeniu i chodzi jeszcze przez `FOLLOW_MS`,
+    // czyli tyle, ile trwa animacja klawiatury na iOS z zapasem. Stała pętla `rAF` przez cały czas
+    // otwarcia okna byłaby podatkiem na baterię za nic — poza animacją nie ma czego nadążać.
+    const FOLLOW_MS = 500;
+    let raf = 0;
+    let followUntil = 0;
+
+    const followFrame = () => {
+      apply();
+      if (performance.now() < followUntil) {
+        raf = window.requestAnimationFrame(followFrame);
+      } else {
+        raf = 0;
+      }
+    };
+
+    const startFollowing = () => {
+      followUntil = performance.now() + FOLLOW_MS;
+      if (!raf) raf = window.requestAnimationFrame(followFrame);
+    };
+
+    const onViewportEvent = () => {
+      apply();          // natychmiast, w tej samej turze zdarzenia
+      startFollowing(); // i dalej co klatkę, przez resztę animacji
+    };
+
     apply();
-    vv.addEventListener("resize", apply);
-    vv.addEventListener("scroll", apply);
+    vv.addEventListener("resize", onViewportEvent);
+    vv.addEventListener("scroll", onViewportEvent);
+    // Klawiatura zaczyna wyjeżdżać na `focusin`, a chować się na `focusout` — czasem ZANIM przyjdzie
+    // pierwsze zdarzenie `visualViewport`. Bez tego pierwsze klatki ruchu byłyby nieobsłużone.
+    el.addEventListener("focusin", startFollowing);
+    el.addEventListener("focusout", startFollowing);
+
     return () => {
-      vv.removeEventListener("resize", apply);
-      vv.removeEventListener("scroll", apply);
+      vv.removeEventListener("resize", onViewportEvent);
+      vv.removeEventListener("scroll", onViewportEvent);
+      el.removeEventListener("focusin", startFollowing);
+      el.removeEventListener("focusout", startFollowing);
+      if (raf) window.cancelAnimationFrame(raf);
       // Wyjście z trybu pełnoekranowego (np. obrót na szeroki ekran) — oddaj sterowanie CSS-owi,
       // inaczej zostałyby wpisane na sztywno piksele z telefonu.
       el.style.removeProperty(VV_TOP_VAR);
