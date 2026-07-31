@@ -102,14 +102,16 @@ export function usePinToVisualViewport(
     let lastTop = Number.NaN;
     let lastHeight = Number.NaN;
 
-    const apply = () => {
+    /** Zwraca `true`, gdy geometria faktycznie się zmieniła (a nie tylko była sprawdzana). */
+    const apply = (): boolean => {
       // Bez zaokrąglania: `visualViewport` zwraca wartości podpikselowe, a obcinanie zostawiałoby
       // pod oknem szparę na tle strony.
-      if (vv.offsetTop === lastTop && vv.height === lastHeight) return;
+      if (vv.offsetTop === lastTop && vv.height === lastHeight) return false;
       lastTop = vv.offsetTop;
       lastHeight = vv.height;
       el.style.setProperty(VV_TOP_VAR, `${vv.offsetTop}px`);
       el.style.setProperty(VV_HEIGHT_VAR, `${vv.height}px`);
+      return true;
     };
 
     // Nadążanie za ANIMACJĄ klawiatury (`rAF`), a nie tylko za jej krańcami.
@@ -128,15 +130,20 @@ export function usePinToVisualViewport(
     let followUntil = 0;
 
     const followFrame = () => {
-      apply();
-      // `onGeometryChange` (utrzymanie dołu rozmowy) wołamy CO KLATKĘ, a nie tylko przy zmianie
-      // wartości: geometria zmienia się jednym skokiem, ale okno dochodzi do niej przez cały czas
-      // trwania przejścia CSS — przez te ~280 ms lista wiadomości realnie się kurczy.
-      onChangeRef.current?.();
+      // `onGeometryChange` (utrzymanie dołu rozmowy) wołamy TYLKO przy realnej zmianie geometrii oraz
+      // RAZ po zakończeniu przejścia — nie co klatkę.
+      //
+      // Wersja „co klatkę" była błędem: przez 280 ms trwania przejścia wymuszała ~17 przewinięć listy
+      // do dołu, podczas gdy pudełko dopiero się kurczyło. Treść przeskakiwała w innym rytmie niż
+      // ramka okna i właśnie to widać było jako nierówne rozciąganie. Jedno przewinięcie na starcie
+      // (skok geometrii) i jedno na końcu (gdy wysokość już się ustaliła) daje ten sam efekt bez
+      // szarpania w środku.
+      if (apply()) onChangeRef.current?.();
       if (performance.now() < followUntil) {
         raf = window.requestAnimationFrame(followFrame);
       } else {
         raf = 0;
+        onChangeRef.current?.(); // domknięcie: wysokość już docelowa, dosuń rozmowę do dołu
       }
     };
 
