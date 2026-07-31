@@ -26,10 +26,37 @@ export function ViewportProbe({ sheetRef }: { sheetRef: RefObject<HTMLElement | 
   useEffect(() => {
     let raf = 0;
     let frame = 0;
+
+    // ROZSTRZYGNIĘCIE: czy iOS podaje geometrię PŁYNNIE, czy SKOKAMI.
+    //
+    // To jedno pytanie decyduje o kierunku naprawy, a z samego filmu nie da się go odczytać (liczby
+    // lecą za szybko). Dlatego zliczamy przebieg ostatniego ruchu klawiatury:
+    //   `kroki` — ile RÓŻNYCH wartości `offsetTop` pojawiło się podczas ruchu,
+    //   `maxSkok` — największa różnica między dwoma kolejnymi wartościami.
+    // Odczyt: `kroki 2 / maxSkok 291` = dane skokowe, u nas nie ma czego poprawiać i zostaje
+    // wygładzanie przejścia. `kroki 20 / maxSkok 25` = dane płynne, więc przeskok bierze się z tego,
+    // co robimy z nimi dalej. Ruch uznajemy za zakończony po 600 ms bez zmiany.
+    let lastTop = Number.NaN;
+    let lastChangeAt = 0;
+    let steps = 0;
+    let maxJump = 0;
+
+    const sampleMovement = (top: number) => {
+      const now = performance.now();
+      if (top === lastTop) return;
+      // Nowy ruch? Zacznij liczyć od zera, żeby odczyt dotyczył JEDNEJ animacji, a nie całej sesji.
+      if (now - lastChangeAt > 600) { steps = 0; maxJump = 0; }
+      if (Number.isFinite(lastTop)) maxJump = Math.max(maxJump, Math.abs(top - lastTop));
+      steps++;
+      lastTop = top;
+      lastChangeAt = now;
+    };
+
     const tick = () => {
       frame++;
       const el = boxRef.current;
       const vv = window.visualViewport;
+      if (vv) sampleMovement(vv.offsetTop);
       if (el) {
         const rect = sheetRef.current?.getBoundingClientRect();
         const cs = sheetRef.current ? getComputedStyle(sheetRef.current) : null;
@@ -45,6 +72,8 @@ export function ViewportProbe({ sheetRef }: { sheetRef: RefObject<HTMLElement | 
           `okno.h ${rect ? rect.height.toFixed(1) : "-"}`,
           `--vv-top ${cs?.getPropertyValue("--vv-top").trim() || "-"}`,
           `--vv-h ${cs?.getPropertyValue("--vv-height").trim() || "-"}`,
+          `kroki ${steps}`,
+          `maxSkok ${maxJump.toFixed(1)}`,
         ].join("\n");
       }
       raf = window.requestAnimationFrame(tick);
