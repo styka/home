@@ -92,6 +92,7 @@ model User {
   weatherLocations       WeatherLocation[]     @relation("OwnedWeatherLocations")
   weatherWatchers        WeatherWatcher[]      @relation("OwnedWeatherWatchers")
   weatherIdeas           WeatherIdea[]         @relation("OwnedWeatherIdeas")
+  aiContents             AiContent[]           @relation("OwnedAiContent")
   projectGroups          ProjectGroup[]        @relation("OwnedProjectGroups")
   skins                  Skin[]                @relation("SkinOwner")
   skinPref               UserSkinPref?
@@ -2589,6 +2590,12 @@ model WeatherIdea {
   // Zużycie ostatniej generacji szczegółów (JSON) — licznik kosztu przy ZAPISANEJ treści musi
   // działać także wtedy, gdy nie ma już świeżego wyniku z modelu.
   detailUsage String?
+  // 038: warunki z CHWILI ZAPROPONOWANIA — opis może powstać wiele dni później (leniwe
+  // generowanie), a bez nich opisywałby pogodę z dnia czytania zamiast z dnia, dla którego
+  // pomysł powstał. Opcjonalne: pomysły sprzed tej zmiany nasion nie mają.
+  seedDate    String?
+  seedPart    String?
+  seedWeather String?
   viewCount   Int      @default(0)
   lastSeenAt  DateTime @default(now())
   createdAt   DateTime @default(now())
@@ -2598,6 +2605,33 @@ model WeatherIdea {
 
   @@unique([ownerId, fingerprint])
   @@index([ownerId, state])
+}
+
+// 038: przekrojowa PAMIĘĆ TREŚCI generowanych przez AI — jedno miejsce dla wszystkich modułów.
+// Treść AI znikała po odświeżeniu strony i powstawała od nowa, choć użytkownik o to nie prosił.
+// Jeden generyczny model zamiast kolumn w każdym module: logika nieaktualności jest wszędzie taka
+// sama (co to jest / dla jakiego zakresu / w jakich warunkach powstało / kiedy).
+model AiContent {
+  id      String @id @default(cuid())
+  ownerId String
+  // "weather.ideas" | "weather.ideaDetail" | "storage.insights" | … — String + union TS (C-12).
+  kind String
+  // Co identyfikuje TĘ treść w obrębie rodzaju (np. lokalizacja|dzień|pora).
+  scopeKey String
+  // Odcisk warunków powstania; różnica względem bieżących = treść nieaktualna, nie nieważna.
+  inputHash String
+  // Treść w postaci JSON (kształt zależy od rodzaju).
+  content String
+  // Zużycie modelu (JSON) — licznik kosztu działa też przy treści z pamięci.
+  usage     String?
+  refreshes Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  owner User @relation("OwnedAiContent", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, kind, scopeKey])
+  @@index([ownerId, kind])
 }
 
 // ─── Warsztaty (Workshop) ───────────────────────────────────────────────────

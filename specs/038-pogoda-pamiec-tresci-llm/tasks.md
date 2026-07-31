@@ -35,21 +35,21 @@
 
 ## Faza 1 — Fundament danych
 
-- [ ] **T-4** — **Migracja `0216_pamiec_tresci_ai_i_nasiona_pomyslow`.** DDL wg planu §2.3: tabela
+- [x] **T-4** — **Migracja `0216_pamiec_tresci_ai_i_nasiona_pomyslow`.** DDL wg planu §2.3: tabela
       `AiContent` (FK do `User` `ON DELETE CASCADE`, `UNIQUE (ownerId, kind, scopeKey)`,
       `INDEX (ownerId, kind)`) + trzy kolumny `NULL` w `WeatherIdea` (`seedDate`, `seedPart`,
       `seedWeather`).
       *Gotowe, gdy:* `npm run check:migrations` przechodzi, `npx prisma migrate deploy` na lokalnym
       Postgresie kończy się czysto.
 
-- [ ] **T-5** — **`schema.prisma`** zgodnie z migracją: model `AiContent` + relacja `aiContents`
+- [x] **T-5** — **`schema.prisma`** zgodnie z migracją: model `AiContent` + relacja `aiContents`
       w `User` + kolumny nasion w `WeatherIdea`. Rodzaje jako `String` (C-12).
       *Gotowe, gdy:* `prisma generate` przechodzi, a `migrate diff` nie pokazuje rozjazdu dla nowych
       obiektów.
 
 ## Faza 2 — Mechanizm pamięci treści
 
-- [ ] **T-6** — **`src/lib/ai/contentMemory.ts`** — typ `AiContentKind` (String+union),
+- [x] **T-6** — **`src/lib/ai/contentMemory.ts`** — typ `AiContentKind` (String+union),
       `hashInputs(...)` (stabilny skrót), `rememberedContent({ownerId, kind, scopeKey, inputHash,
       force, generate})` zwracające `{value, generatedAt, stale, fromMemory, refreshes, usage}`.
       Uszkodzony wpis JSON traktowany jak brak wpisu.
