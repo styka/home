@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/lib/llm/chat";
+import { usageField } from "@/lib/ai/costVisibility";
 
 export async function POST(req: NextRequest) {
   const { content, existingTags, existingGroups } = await req.json() as {
@@ -49,6 +50,7 @@ ${content.slice(0, 2000)}`;
       suggested: (parsed.suggested ?? []).filter((t: string) => existingTags.includes(t)),
       new: parsed.new ?? [],
       suggestedGroup: existingGroups?.includes(suggestedGroup ?? "") ? suggestedGroup : null,
+      ...(await usageField(result, "propozycje tagów")),
     });
   } catch {
     return NextResponse.json({ suggested: [], new: [], suggestedGroup: null });

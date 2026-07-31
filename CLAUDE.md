@@ -71,7 +71,7 @@ soft-delete trash, per-user Google Drive storage, and an AI assistant.
 | Portfel (personal finance) | `/portfel` | `module.portfel` | Done — wallet elements/entries + **budgets & savings goals** (`/portfel/budzety`), **monthly reports** (`/portfel/raporty`), **settings + multi-currency/exchange rates** (`/portfel/ustawienia`), and **auto-expense booking** from other modules (`WalletEntry.sourceModule/sourceId`) |
 | Languages (SRS flashcards) | `/languages` | `module.languages` | Done — SuperMemo-2 + TTS/pronunciation, writing mode, study series |
 | Wiadomości (news + knowledge base) | `/wiadomosci` | `module.news` | Done — RSS+LLM filtering, per-topic/per-source versioned knowledge base, web-search baseline bootstrap (Brave/DDG), hot topics, 24h freshness |
-| Pogoda (weather) | `/pogoda` | `module.weather` | Done — Open-Meteo, LLM day advice, preset + custom watchers |
+| Pogoda (weather) | `/pogoda` | `module.weather` | Done — Open-Meteo, **location picking on a map** (Leaflet+OSM, reverse geocoding), watchers (preset + custom, **editable**, status = *is the watcher's condition met* — `met/partial/unmet/unknown`, never a judgement of "nice weather"), **„Co robić?" as a list of AI proposals** with on-demand persistent detail plans + an idea library (`/pogoda/pomysly`, `WeatherIdea`) |
 | Magazynowanie (storage/inventory) | `/magazynowanie` | `module.magazynowanie` | Done — **two modes (Dom/Pro, per-user `StorageSettings`)**. Shared: items by warehouse+location, SKU/EAN, min-stock replenishment→shopping, stocktake, AI photo inventory, movement log. **Dom:** "where is it?" (AI search), QR labels (print+scan), warranties/expiry, value+photos (CSV export). **Pro:** barcode in/out scan (`@zxing`), suppliers, PZ/WZ/invoice documents (OCR), purchase orders (LLM draft), analytics (value/ABC/dead-stock/trend + AI takeaways), batches/lots + FEFO. AI in assistant (`add_storage_item`/`adjust_storage` + read-tool `list_storage_items`) |
 | Warsztaty (workshop/studio) | `/warsztaty` | `module.warsztaty` | Done — **two modes (Dom/Pro, per-user `WarsztatSettings`)**. Any workshop type (woodworking/automotive/painting/electronics/metalworking/ceramics/sewing/jewelry/general). Equipment register (`WorkshopItem`: kind tool/machine/material/PPE, condition, qty+min-stock, service `nextServiceAt`), **static equipment-suggestion catalog by profile** (`src/lib/warsztat/catalog.ts`, basic/recommended/advanced tiers) as an "add to equipment" checklist. **Pro:** team ownership, tool assignment (who has / station), service + low-stock agenda (`/warsztaty/przeglady`), project journal (`WorkshopProject`). AI: read-tool `list_workshops` + actions `create_workshop`/`add_workshop_item` |
 | Usługi (service marketplace) | `/services` | `module.services` | Done — provider profiles (admin-set **verified** badge, public profile + slug/tagline at `/providers/[id]`), listings (categories, advanced filters/sort), service requests with a status workflow, **in-app chat** (`ServiceMessage`), **quotes** (`ServiceQuote`), **portfolio** images (`ServiceImage`), **availability + slot booking** (`ServiceAvailability`, `lib/serviceSlots.ts`, `lib/serviceGeo.ts`), ratings/reviews (`ServiceReview`), **payments/invoices** (`ServicePayment`, Portfel integration), **favorites** (`ServiceFavorite`), **promo codes** (`ServicePromoCode`), **multi-worker firms** (`ServiceStaff`), **disputes + admin moderation** (`ServiceDispute`, `/services/moderation`) |
@@ -215,7 +215,7 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /portfel/ [elementId]    # Personal finance (wallet elements + entries); + /budzety (budgets & savings goals), /raporty (monthly reports), /ustawienia (multi-currency / exchange rates / settings)
 /languages/ [deckId]     # SRS vocabulary decks; + /[deckId]/study
 /wiadomosci/             # News: monitored topics (semantic filters), per-source versioned knowledge base, hot topics
-/pogoda/                 # Weather: Open-Meteo forecast + LLM "what to do" advice + watchers (presets + custom)
+/pogoda/                 # Weather: forecast (Teraz → „Co robić?" → hours → days), map location picker, watchers; + /pogoda/pomysly (idea library: saved/considered/blocked proposals, soft-delete to /trash)
 /magazynowanie/          # Storage: items by warehouse+location (mode-aware sub-nav). Dom+Pro: /szukaj (AI "where is it?"), /etykiety (QR), /scan (AI photo), /stocktake, /ustawienia (Dom/Pro + currency). Pro: /przeplyw (in/out scan), /analityka, /dostawcy, /zamowienia, /dokumenty (OCR PZ/WZ/invoice)
 /warsztaty/ [workshopId] # Workshops: list + detail with tabs (Equipment / Suggestions-by-profile / Projects-Pro). Mode-aware sub-nav: /przeglady (Pro: service + low-stock agenda), /ustawienia (Dom/Pro)
 /services/ [listingId]   # Service marketplace: listings; + /requests (my requests, both sides), /provider (my provider profile + listings + availability), /providers/[providerId] (public profile), /moderation (admin-only dispute panel)
@@ -334,7 +334,7 @@ Never add manual cache invalidation elsewhere. Action files:
 - **Kitchen**: `recipes`, `cookbooks`, `mealPlans`, `pantry`
 - **Pets**: `pets`, `petCare`, `petHusbandry`, `petBreeding`
 - **Health**: `health`, `medications`
-- **Other modules**: `habits`, `flota`, `portfel`, `portfelBudgets`, `portfelReports`, `portfelCurrency`, `portfelAuto` (Portfel: budgets/reports/multi-currency/auto-expense), `languageDecks`, `news`, `weather`, `qa`, `truck`, `storage` (Magazynowanie), `warsztat` (Warsztaty), `services` (marketplace; incl. `getModerationDisputes`), `calendar`, `contacts`
+- **Other modules**: `habits`, `flota`, `portfel`, `portfelBudgets`, `portfelReports`, `portfelCurrency`, `portfelAuto` (Portfel: budgets/reports/multi-currency/auto-expense), `languageDecks`, `news`, `weather` (incl. `addLocationByPoint`, `getIdeas`/`generateIdeaDetail`/`getIdeaLibrary`/`setIdeaState`/`blockIdea`/`deleteIdea`/`addIdeaToTasks`), `qa`, `truck`, `storage` (Magazynowanie), `warsztat` (Warsztaty), `services` (marketplace; incl. `getModerationDisputes`), `calendar`, `contacts`
 - **Collaboration / system / UX**: `teams`, `invitations`, `access` (incl. `getAuditLog`), `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `aiConversations` (chat persistence), `notifications`, `menuPrefs` (sidebar customization), `dashboardPrefs` (home dashboard personalization), `skins`, `trash` (soft-delete recovery), `systemHealth`, `drive` (Google Drive), `assistantPrefs` (per-user assistant settings + `getSpeechOptions`), `feedback` (`submitFeedbackTask`/`getFeedbackInboxInfo` — the user-report inbox)
 
 ### Authentication & Authorization
@@ -394,6 +394,7 @@ ExchangeRate                                  — Portfel multi-currency exchang
 LanguageDeck, Vocabulary                      — Languages (SRS)
 NewsSource, NewsTopic, NewsKnowledge, NewsItem, NewsPref — Wiadomości (news + versioned knowledge base)
 WeatherLocation, WeatherWatcher               — Pogoda (locations + alert watchers)
+WeatherIdea                                   — Pogoda „Co robić?" — proposals the user acted on (unique [ownerId, fingerprint]; state considered|saved|blocked; persistent `detail` plan + `detailUsage`)
 StorageItem, StorageMovement                  — Magazynowanie (items + movement log; item has barcode/unitPrice/photoUrl/expiresAt/warrantyUntil/supplierId)
 StorageSettings, StorageSupplier, StorageBatch — Magazynowanie pro (Dom/Pro per-user; suppliers; batches/lots FEFO)
 StorageDocument, StorageDocumentLine          — Magazynowanie pro (PZ/WZ/invoice documents + lines)
@@ -583,7 +584,7 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 - **`/admin/audit`** — audit log viewer (RBAC + config changes; `AuditLog`).
 - **`/admin/health`** — system health dashboard (DB/migrations/API diagnostics; live, no model).
 - **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, `brave_search_api_key`, masked + encrypted at rest; plus the plain-text `feedback_project_id` — which task project acts as the **user-report inbox**; empty = the admin's „Omnia" project).
-- **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type **+ effort / temperature / max-tokens**; the panel states outright which knobs the chosen provider/model ignores). Also the **follow-up switch** (036): `Config.assistant_followups_enabled` (`1`/`0`, seeded by migration 0214, missing row = on) decides whether the agent prompt asks for follow-up suggestion chips at all — they cost tokens on *every* answer. Read without a session via `lib/ai/followups.ts` `readFollowupsEnabled()`; admin side is `actions/llmConfig.ts` `getFollowupsEnabled`/`setFollowupsEnabled` (audited).
+- **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type **+ effort / temperature / max-tokens**; the panel states outright which knobs the chosen provider/model ignores). Also the **follow-up switch** (036): `Config.assistant_followups_enabled` (`1`/`0`, seeded by migration 0214, missing row = on) decides whether the agent prompt asks for follow-up suggestion chips at all — they cost tokens on *every* answer. Read without a session via `lib/ai/followups.ts` `readFollowupsEnabled()`; admin side is `actions/llmConfig.ts` `getFollowupsEnabled`/`setFollowupsEnabled` (audited). Also the **AI cost badge switch** (037): `Config.ai_cost_badge_enabled` (`1`/`0`, seeded by migration 0215, missing row = on) decides whether the cost indicator shows anywhere in the app. Read without a session via `lib/ai/costVisibility.ts` `readCostBadgeEnabled()`; admin side is `getCostBadgeEnabled`/`setCostBadgeEnabled` (audited).
 - **`/admin/ai-coverage`** — **Pokrycie akcji przez AI**: pełna lista akcji użytkownika (mutacje **i** odczyty z `src/actions/*`) z informacją, czy asystent AI ma do nich dostęp (`ai`/`pending`/`excluded`+powód). Źródło = manifest `src/lib/ai/action-coverage.json` (via `getAiCoverage()` w `src/lib/ai/coverage.ts`), którego kompletność wymusza bramka `scripts/check-ai-coverage.js` (wpięta w `build`) — więc lista jest **zawsze aktualna** wobec wdrożonego kodu. Nowa mutująca/odczytowa Server Action bez wpisu w manifeście = build pada. Filtry po statusie/rodzaju + wyszukiwarka.
 - **`/admin/skins`** — system skins manager.
 - **`/admin/categories`** — global system categories (name/color/icon).
@@ -656,7 +657,7 @@ survives) — do **not** move escaping into `inlineFormat` (it opened an XSS hol
 the table/paragraph merge).
 
 **Build pipeline**: `npm run build` runs
-`node scripts/copy-docs.js && node scripts/check-action-coverage.js && node scripts/check-migrations.js && prisma generate && next build && node scripts/migrate.js`.
+`node scripts/copy-docs.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-migrations.js && next lint --dir src && prisma generate && next build && node scripts/migrate.js`.
 - `copy-docs.js` bundles `docs/` for `/admin/docs`.
 - `check-action-coverage.js` (also `npm run check:actions`) verifies **every AI
   `AIAction` has an executor** in `/api/llm/home/execute` — the build **fails**
@@ -674,6 +675,15 @@ the table/paragraph merge).
 - **Never export a non-function from a `"use server"` file** — `next build` fails ("Only async
   functions are allowed to be exported"), and `tsc --noEmit` does *not* catch it. Shared constants
   belong in `src/lib/*`.
+- **`check-cost-badge.js`** (also `npm run check:cost-badge`) — 037: enforces that every file calling
+  `chatComplete`/`chatStream` **passes the model usage on** (imports `usageFromChat`/`usageField`/
+  `visibleUsage`/`accrueUsage`), so the cost indicator can be rendered next to the generated content.
+  A file that genuinely cannot (a pure `chatStream` response) needs a reasoned entry in
+  `src/lib/ai/cost-badge-coverage.json`. **When you add a new LLM-backed feature, wire the badge in** —
+  the build fails otherwise. Visibility itself is one choke point: `visibleUsage()` (admin +
+  `Config.ai_cost_badge_enabled`), so a non-admin never receives model/token data over the wire.
+  Background jobs are the exception to *where* the gate runs: handlers have no session, so they store
+  raw usage in `Job.result` and `GET /api/jobs/[id]` applies `visibleUsage` on read.
 - `check-migrations.js` (also `npm run check:migrations`) **fails** on a *new*
   duplicate migration-number prefix (legacy duplicates grandfathered).
 - `migrate.js` runs `prisma migrate deploy` (with retries for Neon cold-start) then

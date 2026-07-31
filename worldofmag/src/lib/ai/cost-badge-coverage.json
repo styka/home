@@ -1,0 +1,8 @@
+{
+  "src/app/api/llm/notes/qa/route.ts": {
+    "reason": "Odpowiedź jest czystym strumieniem (chatStream) — zużycie nie istnieje w chwili wysyłania treści, więc nie ma czego doliczyć do odpowiedzi."
+  },
+  "src/lib/ai/fastPath.ts": {
+    "reason": "Klasyfikacja intencji wewnątrz tury asystenta; jej zużycie dolicza akumulator tury w trasie agenta i pokazuje wskaźnik pod odpowiedzią."
+  }
+}

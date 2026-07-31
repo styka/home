@@ -2,6 +2,7 @@
 // Degradacja łagodna: przy niedostępnym LLM zwraca {unavailable:true} (NIE rzuca).
 import { chatComplete } from "@/lib/llm/chat";
 import { JobError, type JobContext } from "@/lib/jobs/types";
+import { usageFromChat } from "@/lib/ai/usage";
 
 const SYSTEM_PROMPT = `Jesteś asystentem zaopatrzenia. Napisz po polsku krótką, uprzejmą i rzeczową
 treść e-maila z zamówieniem do dostawcy. Zacznij od zwrotu grzecznościowego, podaj listę pozycji
@@ -30,5 +31,5 @@ export async function magazynOrderDraftHandler(payload: OrderDraftPayload, ctx: 
     temperature: 0.5, maxTokens: 600,
   });
   if (!result.ok) return { unavailable: true };
-  return { text: result.content.trim() };
+  return { text: result.content.trim(), usage: usageFromChat([{ res: result, label: "projekt zamówienia" }]) };
 }

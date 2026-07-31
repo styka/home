@@ -7,6 +7,7 @@ import { runJob } from "@/lib/jobs/client";
 import { bulkAddStorageItems } from "@/actions/storage";
 import { useToast } from "@/components/ui/Toast";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface ScannedItem {
   name: string;
@@ -28,6 +29,7 @@ export function StorageScan() {
   const [scanning, setScanning] = useState(false);
   const [saving, startSaving] = useTransition();
   const [rows, setRows] = useState<ScannedItem[] | null>(null);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [warehouse, setWarehouse] = useState("");
   const [location, setLocation] = useState("");
 
@@ -38,9 +40,10 @@ export function StorageScan() {
     try {
       const dataUrl = await fileToDownscaledDataUrl(file);
       // Z-131 (T-17): skan przez kolejkę zadań (bez timeoutów). Błędy rzuca → catch niżej.
-      const res = await runJob<{ items: Array<{ name: string; quantity: number | null; unit: string | null; category: string | null }> }>(
+      const res = await runJob<{ items: Array<{ name: string; quantity: number | null; unit: string | null; category: string | null }>; usage?: AiCostUsage }>(
         "magazyn.scan", { image: dataUrl }
       );
+      setAiUsage(res.usage);
       const items = res.items ?? [];
       if (items.length === 0) {
         showToast("Nie rozpoznano żadnych przedmiotów", "info");
@@ -179,6 +182,11 @@ export function StorageScan() {
           </div>
 
           <div className="flex flex-col gap-1">
+            {aiUsage && (
+              <div className="flex justify-end">
+                <AiCostBadge usage={aiUsage} />
+              </div>
+            )}
             {rows.map((r, idx) => (
               <div
                 key={idx}

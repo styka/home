@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, X, ChefHat } from "lucide-react";
 import { llm } from "@/lib/llm-client";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface Suggestion {
   recipeId: string;
@@ -18,6 +19,7 @@ const DISMISS_HOURS = 4;
 
 export function PantrySuggestionsPanel() {
   const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
@@ -34,6 +36,7 @@ export function PantrySuggestionsPanel() {
     llm.kitchen.suggestFromPantry().then((res) => {
       if (cancelled) return;
       setSuggestions(res.suggestions ?? []);
+      setAiUsage(res.usage);
     }).catch(() => {
       if (!cancelled) setSuggestions([]);
     });
@@ -77,6 +80,11 @@ export function PantrySuggestionsPanel() {
           <X size={14} />
         </button>
       </div>
+      {aiUsage && (
+        <div className="flex justify-end">
+          <AiCostBadge usage={aiUsage} />
+        </div>
+      )}
       <div className="flex gap-2 overflow-x-auto">
         {suggestions.map((s) => (
           <Link

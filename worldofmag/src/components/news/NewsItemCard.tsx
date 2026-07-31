@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn";
 import { LEANING_META } from "@/lib/news/sources";
 import { timeAgo, SUMMARY_LENGTHS } from "@/lib/news/format";
 import { useToast } from "@/components/ui/Toast";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import {
   acknowledgeItem,
   dismissItem,
@@ -20,6 +21,7 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
   const [summary, setSummary] = useState(item.summary);
   const [length, setLength] = useState<SummaryLength>(item.summaryLength);
   const [resummarizing, setResummarizing] = useState(false);
+  const [usage, setUsage] = useState<AiCostUsage | undefined>();
   const [imgError, setImgError] = useState(false);
   const leaning = LEANING_META[item.leaning];
 
@@ -27,8 +29,9 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
     if (next === length || resummarizing) return;
     setResummarizing(true);
     resummarizeItem(item.id, next)
-      .then((s) => {
-        setSummary(s);
+      .then((r) => {
+        setSummary(r.summary);
+        setUsage(r.usage);
         setLength(next);
       })
       .catch((e) => showToast(e.message ?? "Nie udało się zmienić streszczenia", "error"))
@@ -94,6 +97,11 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
       )}
 
       <p className="mt-2 [overflow-wrap:anywhere] text-sm leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+      {usage && (
+        <div className="mt-1 flex justify-end">
+          <AiCostBadge usage={usage} />
+        </div>
+      )}
 
       {item.noveltyNote && (
         <div className="mt-2 flex items-start gap-1.5 rounded-md bg-[var(--bg-elevated)] px-2.5 py-1.5 text-xs text-[var(--text-secondary)]">

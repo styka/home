@@ -1,6 +1,7 @@
 // Z-131 (T-17) — handler: wygeneruj przepis z opisu. Z `/api/llm/kitchen/generate-recipe`.
 import { chatComplete } from "@/lib/llm/chat";
 import { JobError, type JobContext } from "@/lib/jobs/types";
+import { usageFromChat } from "@/lib/ai/usage";
 
 const SYSTEM_PROMPT = `Jesteś szefem kuchni. Otrzymasz krótki opis dania po polsku (np. "spaghetti carbonara dla 2 osób", "szybki obiad z kurczakiem w 30 minut", "wegański deser bez piekarnika").
 Wygeneruj kompletny, realistyczny przepis. Zwróć WYŁĄCZNIE JSON (bez markdown, bez komentarza) w schemacie:
@@ -41,7 +42,7 @@ export async function kitchenGenerateRecipeHandler(payload: GenerateRecipePayloa
       cuisine: parsed.cuisine ?? null, mealType: parsed.mealType ?? null,
       ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : [],
       steps: Array.isArray(parsed.steps) ? parsed.steps : [],
-    } };
+    }, usage: usageFromChat([{ res: result, label: "wygenerowany przepis" }]) };
   } catch (e) {
     if (e instanceof JobError) throw e;
     throw new JobError("LLM zwrócił nieprawidłowy format", 502);

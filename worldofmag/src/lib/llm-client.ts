@@ -1,11 +1,19 @@
-async function post<T>(path: string, body: unknown): Promise<T> {
+import type { AiUsageInfo } from "@/lib/ai/usage";
+
+/**
+ * 037: KAŻDA odpowiedź typowanego klienta może nieść `usage` — zużycie modelu do pokazania przy
+ * wygenerowanej treści. Jedna zmiana tutaj wystarcza dla wszystkich namespace'ów; gdyby dopisywać
+ * to pole do kilkudziesięciu deklaracji osobno, o część na pewno byśmy się potknęli. Pole jest
+ * opcjonalne, bo serwer pomija je dla użytkownika, któremu licznika pokazywać nie wolno.
+ */
+async function post<T>(path: string, body: unknown): Promise<T & { usage?: AiUsageInfo }> {
   const res = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`LLM request failed: ${res.status}`);
-  return res.json() as Promise<T>;
+  return res.json() as Promise<T & { usage?: AiUsageInfo }>;
 }
 
 export const llm = {

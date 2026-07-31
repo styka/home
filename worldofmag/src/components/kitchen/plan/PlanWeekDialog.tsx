@@ -12,6 +12,7 @@ import type { MealSlot } from "@/types/kitchen";
 import { MEAL_SLOTS, MEAL_SLOT_LABELS } from "@/types/kitchen";
 import { dateKey, formatDayShort, getWeekDays } from "@/lib/kitchenDate";
 import { polishPlural } from "@/lib/polishPlural";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface PlanWeekDialogProps {
   open: boolean;
@@ -54,6 +55,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
   const [replace, setReplace] = useState(false);
 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
 
@@ -78,7 +80,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
     setStep("loading");
     try {
       // Z-131 (T-17): plan tygodnia przez kolejkę zadań. Błędy rzuca → catch niżej.
-      const res = await runJob<{ suggestions: Suggestion[] }>("kitchen.planWeek", {
+      const res = await runJob<{ suggestions: Suggestion[]; usage?: AiCostUsage }>("kitchen.planWeek", {
         weekStart: dateKey(weekStart),
         slots: Array.from(selectedSlots),
         people,
@@ -99,6 +101,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
         return;
       }
       setSuggestions(res.suggestions);
+      setAiUsage(res.usage);
       setExcluded(new Set());
       setStep("review");
     } catch (e) {
@@ -338,6 +341,11 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
           <div className="flex flex-col gap-3">
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               AI zaproponowało {suggestions.length} {polishPlural(suggestions.length, ["posiłek", "posiłki", "posiłków"])}. Odznacz te których nie chcesz.
+              {aiUsage && (
+                <span className="ml-2 inline-flex align-middle">
+                  <AiCostBadge usage={aiUsage} align="left" />
+                </span>
+              )}
             </p>
             <div className="flex flex-col gap-2">
               {weekDays.map((d) => {

@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { stashImportDraft } from "@/lib/kitchen/recipeImportDraft";
 import type { CreateRecipeInput, MealType, Difficulty } from "@/types/kitchen";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface ImportFromUrlDialogProps {
   open: boolean;
@@ -20,6 +21,7 @@ export function ImportFromUrlDialog({ open, onClose }: ImportFromUrlDialogProps)
   const router = useRouter();
   const [url, setUrl] = useState("");
   const [pending, setPending] = useState(false);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const { showToast } = useToast();
 
   async function handleImport() {
@@ -30,6 +32,7 @@ export function ImportFromUrlDialog({ open, onClose }: ImportFromUrlDialogProps)
     setPending(true);
     try {
       const res = await llm.kitchen.importFromUrl(url.trim());
+      setAiUsage(res.usage);
       if (res.error || !res.recipe) {
         showToast(res.error ?? "Nie udało się zaimportować", "error");
         return;
@@ -97,6 +100,11 @@ export function ImportFromUrlDialog({ open, onClose }: ImportFromUrlDialogProps)
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>
         Wklej link do przepisu. AI pobierze stronę i wyciągnie składniki + kroki (najpierw spróbuje schema.org JSON-LD, potem LLM).
       </p>
+      {aiUsage && (
+        <div className="flex justify-end">
+          <AiCostBadge usage={aiUsage} />
+        </div>
+      )}
       <input
         type="url"
         value={url}

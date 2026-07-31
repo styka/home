@@ -9,6 +9,8 @@ import { fetchRss } from "@/lib/news/rss";
 import { fetchArticle } from "@/lib/news/article";
 import { webSearch } from "@/lib/news/webSearch";
 import { DEFAULT_SOURCES, type Leaning } from "@/lib/news/sources";
+import { usageFromChat, type AiUsageInfo } from "@/lib/ai/usage";
+import { visibleUsage } from "@/lib/ai/costVisibility";
 
 export type SummaryLength = "short" | "medium" | "long";
 export type ItemStatus = "PENDING" | "ACKNOWLEDGED" | "DISMISSED";
@@ -373,11 +375,20 @@ class LlmError extends Error {
   }
 }
 
+/**
+ * 037: `sink` zbiera wyniki wywołań modelu, żeby akcja mogła pokazać koszt przy wygenerowanej
+ * treści. Świadomie jako opcjonalny parametr wyjściowy, a nie zmiana typu zwracanego — inaczej
+ * wszystkie pięć miejsc wołających ten helper musiałoby rozpakowywać krotkę bez żadnego zysku.
+ */
+type LlmSink = Array<{ res: Awaited<ReturnType<typeof chatComplete>>; label?: string }>;
+
 async function llmJson<T>(
   op: "reasoning" | "generation",
   system: string,
   user: string,
-  maxTokens = 2000
+  maxTokens = 2000,
+  sink?: LlmSink,
+  label?: string
 ): Promise<T> {
   const res = await chatComplete({
     op,
@@ -389,6 +400,7 @@ async function llmJson<T>(
       { role: "user", content: user },
     ],
   });
+  sink?.push({ res, label });
   if (!res.ok) throw new LlmError(res.status, res.message);
   const parsed = parseJsonLoose<T>(res.content);
   if (parsed == null) throw new Error("Nie udało się odczytać odpowiedzi LLM (niepoprawny JSON).");
@@ -707,7 +719,15 @@ export async function refreshTopic(
 
 // ─── Item actions ──────────────────────────────────────────────────────────
 
-export async function resummarizeItem(itemId: string, length: SummaryLength): Promise<string> {
+export interface ResummarizeResult {
+  summary: string;
+  usage?: AiUsageInfo;
+}
+
+export async function resummarizeItem(
+  itemId: string,
+  length: SummaryLength
+): Promise<ResummarizeResult> {
   const user = await requireAuth();
   const item = await prisma.newsItem.findUnique({
     where: { id: itemId },
@@ -721,7 +741,8 @@ export async function resummarizeItem(itemId: string, length: SummaryLength): Pr
     "Streszczasz artykuł prasowy po polsku. Zwróć WYŁĄCZNIE JSON {\"summary\":\"...\"}.";
   const userPrompt =
     `Tytuł: ${item.title}\nTreść: ${body.slice(0, 4000)}\n\n${lengthInstruction(length)}`;
-  const out = await llmJson<{ summary: string }>("generation", system, userPrompt);
+  const sink: LlmSink = [];
+  const out = await llmJson<{ summary: string }>("generation", system, userPrompt, 2000, sink, "streszczenie");
   const summary = out.summary?.trim();
   if (!summary) throw new Error("Pusta odpowiedź LLM");
 
@@ -730,7 +751,7 @@ export async function resummarizeItem(itemId: string, length: SummaryLength): Pr
     data: { summary, summaryLength: length },
   });
   revalidatePath("/wiadomosci");
-  return summary;
+  return { summary, usage: await visibleUsage(usageFromChat(sink)) };
 }
 
 /**

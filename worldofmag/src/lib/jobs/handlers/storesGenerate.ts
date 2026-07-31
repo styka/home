@@ -1,6 +1,7 @@
 // Z-131 (T-17) — handler: wygeneruj mapę (graf) sklepu. Z `/api/llm/stores/generate`.
 import { chatComplete } from "@/lib/llm/chat";
 import { JobError, type JobContext } from "@/lib/jobs/types";
+import { usageFromChat } from "@/lib/ai/usage";
 
 const CATEGORIES = [
   "Warzywa i owoce", "Nabiał i jaja", "Mięso i ryby", "Piekarnia",
@@ -42,7 +43,7 @@ export async function storesGenerateHandler(payload: StoreGeneratePayload, ctx: 
     const cleaned = (result.content || "{}").trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
     const parsed = JSON.parse(cleaned);
     if (!parsed.nodes || !parsed.edges) throw new Error("missing fields");
-    return parsed;
+    return { ...parsed, usage: usageFromChat([{ res: result, label: "układ sklepu" }]) };
   } catch {
     throw new JobError("LLM zwrócił nieprawidłowy format", 502);
   }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Sparkles, Loader2, Download, TrendingUp, PackageX, Boxes, Wallet, AlertTriangle } from "lucide-react";
 import { runJob } from "@/lib/jobs/client";
 import type { StorageAnalytics as Analytics } from "@/actions/storage";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface Props {
   analytics: Analytics;
@@ -17,13 +18,14 @@ function fmt(n: number, currency: string) {
 export function StorageAnalytics({ analytics, exportRows }: Props) {
   const a = analytics;
   const [tips, setTips] = useState<string[] | null>(null);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [loadingTips, setLoadingTips] = useState(false);
 
   async function loadTips() {
     setLoadingTips(true);
     try {
       // Z-131 (T-17): wnioski przez kolejkę zadań (degradacja łagodna).
-      const res = await runJob<{ tips: string[] }>("magazyn.insights", {
+      const res = await runJob<{ tips: string[]; usage?: AiCostUsage }>("magazyn.insights", {
         currency: a.currency,
         totalValue: a.totalValue,
         itemCount: a.itemCount,
@@ -33,6 +35,7 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
         deadStock: a.deadStock.slice(0, 5).map((x) => ({ name: x.name, value: x.value })),
       });
       setTips(res.tips ?? []);
+      setAiUsage(res.usage);
     } finally {
       setLoadingTips(false);
     }
@@ -96,6 +99,11 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
             ))}
           </ul>
         )}
+          {aiUsage && (
+            <div className="flex justify-end mt-2">
+              <AiCostBadge usage={aiUsage} />
+            </div>
+          )}
       </section>
 
       {/* Trend ruchów */}

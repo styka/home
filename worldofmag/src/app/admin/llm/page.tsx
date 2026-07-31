@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { getLlmProviders, getAssignments, getAiCostBreakdown, getCostAlertThreshold, getUsdPlnRate, getSpeechConfig, getModelPrices, getFollowupsEnabled } from "@/actions/llmConfig";
+import { getLlmProviders, getAssignments, getAiCostBreakdown, getCostAlertThreshold, getUsdPlnRate, getSpeechConfig, getModelPrices, getFollowupsEnabled, getCostBadgeEnabled } from "@/actions/llmConfig";
 import { CONFIG_LEVELS, type ConfigLevel } from "@/lib/llm/operationTypes";
 import { LlmConfigPanel } from "@/components/admin/LlmConfigPanel";
 import { ChevronLeft, Cpu } from "lucide-react";
@@ -15,7 +15,7 @@ export default async function AdminLlmPage() {
 
   // 034: pobieramy komplet trzech poziomów naraz — przełącznik w panelu jest wtedy natychmiastowy
   // i nie potrzebuje dociągania po stronie klienta.
-  const [providers, levelSets, cost, costThreshold, usdPlnRate, speech, prices, followupsEnabled] = await Promise.all([
+  const [providers, levelSets, cost, costThreshold, usdPlnRate, speech, prices, followupsEnabled, costBadgeEnabled] = await Promise.all([
     getLlmProviders(),
     Promise.all(CONFIG_LEVELS.map((lvl) => getAssignments(lvl))),
     getAiCostBreakdown(30),
@@ -24,6 +24,7 @@ export default async function AdminLlmPage() {
     getSpeechConfig(),
     getModelPrices(),
     getFollowupsEnabled(),
+    getCostBadgeEnabled(),
   ]);
   const assignmentsByLevel = Object.fromEntries(
     CONFIG_LEVELS.map((lvl, i) => [lvl, levelSets[i]])
@@ -60,6 +61,7 @@ export default async function AdminLlmPage() {
           speech={speech}
           prices={prices}
           followupsEnabled={followupsEnabled}
+          costBadgeEnabled={costBadgeEnabled}
         />
       </div>
     </div>

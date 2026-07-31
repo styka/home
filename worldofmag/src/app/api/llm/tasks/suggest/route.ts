@@ -1,5 +1,6 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { chatComplete, chatStream } from "@/lib/llm/chat";
+import { usageField } from "@/lib/ai/costVisibility";
 
 export async function POST(req: NextRequest) {
   const { task, mode } = await req.json() as {
@@ -51,8 +52,10 @@ Zwróć TYLKO JSON.`;
   const content = result.content || "{}";
   try {
     const cleaned = content.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
-    return new Response(cleaned, { headers: { "Content-Type": "application/json" } });
+    // 037: j.w. — koszt doklejamy do sparsowanej odpowiedzi. Tryb „description" zostaje
+    // strumieniem i z natury nie może nieść zużycia w treści.
+    return NextResponse.json({ ...JSON.parse(cleaned), ...(await usageField(result, "sugestia do zadania")) });
   } catch {
-    return new Response("{}", { headers: { "Content-Type": "application/json" } });
+    return NextResponse.json({});
   }
 }

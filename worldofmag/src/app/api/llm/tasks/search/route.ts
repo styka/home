@@ -1,5 +1,6 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/lib/llm/chat";
+import { usageField } from "@/lib/ai/costVisibility";
 
 export async function POST(req: NextRequest) {
   const { query, tasks } = await req.json() as {
@@ -35,8 +36,10 @@ Zwróć TYLKO JSON.`;
   const content = result.content || '{"matches":[]}';
   try {
     const cleaned = content.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
-    return new Response(cleaned, { headers: { "Content-Type": "application/json" } });
+    // 037: doklejamy koszt do odpowiedzi, więc treść modelu musi przejść przez parsowanie —
+    // wcześniej szła do klienta w postaci surowej.
+    return NextResponse.json({ ...JSON.parse(cleaned), ...(await usageField(result, "wyszukiwanie zadań")) });
   } catch {
-    return new Response('{"matches":[]}', { headers: { "Content-Type": "application/json" } });
+    return NextResponse.json({ matches: [] });
   }
 }

@@ -7,6 +7,7 @@ import { addItemStructured } from "@/actions/items";
 import { upsertUserProduct, getProductSuggestions } from "@/actions/products";
 import { categorize } from "@/lib/categorize";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface ParsedRow {
   name: string;
@@ -29,6 +30,7 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [isPending, startTransition] = useTransition();
   const unitDatalistId = useId();
   const categoryDatalistId = useId();
@@ -53,6 +55,7 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
         return;
       }
 
+      setAiUsage(data.usage);
       const parsed: Array<{ name: string; quantity: number | null; unit: string | null }> = data.items;
 
       const withNew: ParsedRow[] = await Promise.all(
@@ -155,6 +158,11 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
             Przetwórz
           </button>
 
+          {aiUsage && (
+            <div className="flex justify-end">
+              <AiCostBadge usage={aiUsage} />
+            </div>
+          )}
           {error && (
             <p className="text-xs mt-1.5" style={{ color: "var(--accent-red)" }}>{error}</p>
           )}

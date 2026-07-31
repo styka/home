@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/lib/llm/chat";
+import { usageField } from "@/lib/ai/costVisibility";
 
 const GROQ_ITEMS_SYSTEM = `You are a shopping assistant for a Polish app. The app supports any shopping category (food, pets, cleaning, tools, etc.). Return ONLY a JSON array of exactly 6 English item names (1-3 words each) that are visually distinct and typical for the given category. No markdown, no explanation.`;
 
-async function getEnglishItems(category: string, additionalText: string): Promise<string[]> {
+async function getEnglishItems(
+  category: string,
+  additionalText: string
+): Promise<{ items: string[]; res: Awaited<ReturnType<typeof chatComplete>> }> {
   const userMsg = additionalText
     ? `Polish shopping category: "${category}". The user also described these items in Polish: "${additionalText}". Translate the described items to English (1-3 words each). If fewer than 6, add similar items from the same category. Return exactly 6 as a JSON array.`
     : `Polish shopping category: "${category}" (interpret this as a Polish word). List 6 specific, visually distinct typical items from this category in English. Return exactly 6 as a JSON array.`;
@@ -20,7 +24,9 @@ async function getEnglishItems(category: string, additionalText: string): Promis
   if (!match) throw new Error("bad format");
   const parsed = JSON.parse(match[0]);
   if (!Array.isArray(parsed)) throw new Error("not array");
-  return parsed.filter((s): s is string => typeof s === "string").slice(0, 6);
+  // 037: obok nazw zwracamy wynik wywołania — trasa liczy z niego koszt. Świadomie NIE przez
+  // zmienną modułową: dwa równoległe żądania nadpisywałyby sobie zużycie nawzajem.
+  return { items: parsed.filter((s): s is string => typeof s === "string").slice(0, 6), res: result };
 }
 
 async function generateImage(item: string): Promise<string> {
@@ -52,8 +58,11 @@ export async function POST(req: NextRequest) {
 
   // Step 1: translate to English item names
   let items: string[];
+  let itemsCall: Awaited<ReturnType<typeof chatComplete>> | undefined;
   try {
-    items = await getEnglishItems(category, additionalText);
+    const r = await getEnglishItems(category, additionalText);
+    items = r.items;
+    itemsCall = r.res;
     if (items.length === 0) throw new Error("empty");
   } catch {
     return NextResponse.json({ error: "Nie udało się wygenerować listy elementów" }, { status: 500 });
@@ -69,5 +78,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Generowanie obrazów nie powiodło się. Spróbuj ponownie." }, { status: 500 });
   }
 
-  return NextResponse.json({ svgs });
+  return NextResponse.json({ svgs, ...(itemsCall ? await usageField(itemsCall, "lista elementów") : {}) });
 }

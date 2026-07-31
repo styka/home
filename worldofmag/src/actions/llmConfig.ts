@@ -21,7 +21,8 @@ import { TTS_CATALOG, findTtsProvider, findTtsProviderById, providerMatchesSpec,
 import { encryptSecret, decryptSecret, maskSecret } from "@/lib/crypto/secrets";
 import { logAudit } from "@/lib/audit";
 import { LLM_EFFORT_LABELS, LLM_EFFORT_LEVELS, parseEffort, type LlmEffort } from "@/lib/llm/effort";
-import { COST_ALERT_CONFIG_KEY, getDailyCostUsd } from "@/lib/ai/usage";
+import { COST_ALERT_CONFIG_KEY, getDailyCostUsd, AI_COST_BADGE_CONFIG_KEY } from "@/lib/ai/usage";
+import { readCostBadgeEnabled } from "@/lib/ai/costVisibility";
 import { USD_PLN_CONFIG_KEY, DEFAULT_USD_PLN_RATE, parseUsdPlnRate } from "@/lib/usdPln";
 
 async function requireAdmin() {
@@ -595,6 +596,34 @@ export async function setFollowupsEnabled(enabled: boolean): Promise<void> {
     "assistant_followups.set",
     FOLLOWUPS_CONFIG_KEY,
     `${enabled ? "Włączono" : "Wyłączono"} propozycje kolejnych pytań w odpowiedziach asystenta`
+  );
+  revalidatePath("/admin/llm");
+}
+
+// ─── 037: widoczność licznika kosztu AI w aplikacji ─────────────────────────
+//
+// Licznik pokazuje się przy KAŻDEJ treści wygenerowanej przez model — w asystencie i we wszystkich
+// modułach. Dla właściciela to przejrzystość wydatku, ale w niektórych sytuacjach (pokaz, praca z
+// kimś przy ekranie) lepiej go zgasić. Wartość żyje w `Config`, wzorzec 1:1 z follow-upami.
+
+export async function getCostBadgeEnabled(): Promise<boolean> {
+  await requireAdmin();
+  return readCostBadgeEnabled();
+}
+
+export async function setCostBadgeEnabled(enabled: boolean): Promise<void> {
+  await requireAdmin();
+  const value = enabled ? "1" : "0";
+  await prisma.config.upsert({
+    where: { key: AI_COST_BADGE_CONFIG_KEY },
+    update: { value },
+    create: { key: AI_COST_BADGE_CONFIG_KEY, value },
+  });
+  await logAudit(
+    "config",
+    "ai_cost_badge.set",
+    AI_COST_BADGE_CONFIG_KEY,
+    `${enabled ? "Włączono" : "Wyłączono"} licznik kosztu AI w aplikacji`
   );
   revalidatePath("/admin/llm");
 }
