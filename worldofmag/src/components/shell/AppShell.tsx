@@ -90,14 +90,12 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
     <ToastProvider>
     <DataFreshness />
     <div
-      // 036: `h-full` (=100% wysokości `body`), a NIE `h-screen` (=100vh). Powód zmierzony na
-      // nagraniu z nakładką: przy wysuniętej klawiaturze `interactive-widget=resizes-content`
-      // zmniejsza UKŁAD strony (`win.h` 812 → 477), ale `100vh` odnosi się do „dużego" widoku i
-      // zostaje 812. Powłoka aplikacji wystawała wtedy 335 px poza układ, dokument stawał się
-      // przewijalny i iOS przewijał go dokładnie o te 335 px (zmierzone `scrollY` = 335 = 812 − 477).
-      // To przewinięcie ciągnęło za sobą elementy `position: fixed` — stąd drgnięcie nagłówka.
-      // `100%` śledzi układ (`html, body { height: 100% }`), więc nie ma czego przewijać.
-      className="flex flex-col md:flex-row h-full overflow-hidden"
+      // 036: `h-screen`, NIE `h-full`. Próba z `h-full` (=100% wysokości `body`) miała zapobiec
+      // przewijaniu dokumentu przy klawiaturze, ale pomiar na urządzeniu pokazał, że nie zapobiega
+      // (`scrollY` spadło tylko 335 → 291), a przy schowanej klawiaturze zaniżała wysokość okna
+      // o ~44 px — na dole ekranu robił się jasny pasek. Przewijanie blokujemy inaczej: `overflow`
+      // na elemencie `html` na czas otwartego okna pełnoekranowego (patrz `AICommandSheet`).
+      className="flex flex-col md:flex-row h-screen overflow-hidden"
       style={{
         backgroundColor: "var(--bg-base)",
         paddingBottom: "env(safe-area-inset-bottom)",
