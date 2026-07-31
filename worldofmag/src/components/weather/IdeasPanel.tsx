@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import { AiContentMeta } from "@/components/ui/AiContentMeta";
 import { DAY_PARTS, currentDayPart, type DayPart } from "@/lib/weather/presets";
 import type { Forecast } from "@/lib/weather/openMeteo";
 import type { IdeaCategory, IdeaDTO } from "@/lib/weather/ideas";
@@ -261,18 +262,13 @@ export function IdeasPanel({
       </div>
 
       {memory && ideas && ideas.length > 0 && (
-        <p className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[var(--text-muted)]">
-          <span>Wygenerowano {formatWhen(memory.generatedAt)}</span>
-          {memory.stale && (
-            <span
-              className="rounded px-1 py-0.5 text-[var(--accent-amber)]"
-              style={{ border: "1px solid var(--accent-amber)" }}
-              title="Prognoza zmieniła się od czasu wygenerowania tych propozycji"
-            >
-              nieaktualne — prognoza się zmieniła
-            </span>
-          )}
-        </p>
+        <div className="mb-2">
+          <AiContentMeta
+            generatedAt={memory.generatedAt}
+            stale={memory.stale}
+            staleHint="Prognoza zmieniła się od czasu wygenerowania tych propozycji"
+          />
+        </div>
       )}
 
       {loading && ideas === null ? (
@@ -435,19 +431,6 @@ function Chip({ active, label, onClick }: { active: boolean; label: string; onCl
       {label}
     </button>
   );
-}
-
-/** „dziś 14:20" / „wczoraj 9:05" / „12.07, 18:30" — krótko, bo to podpis, nie treść. */
-function formatWhen(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const time = d.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
-  const today = new Date();
-  const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
-  if (sameDay(d, today)) return `dziś ${time}`;
-  const yesterday = new Date(today.getTime() - 86_400_000);
-  if (sameDay(d, yesterday)) return `wczoraj ${time}`;
-  return `${d.toLocaleDateString("pl-PL", { day: "2-digit", month: "2-digit" })}, ${time}`;
 }
 
 function weekdayShort(dateIso: string): string {

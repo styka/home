@@ -1,7 +1,7 @@
 # Zadania: Pogoda — dopracowanie + przekrojowa pamięć treści AI
 
 - **Plan:** ./plan.md (038-pogoda-pamiec-tresci-llm)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-07-31
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami.
@@ -56,7 +56,7 @@
       *Gotowe, gdy:* zapamiętana treść wraca **bez** wywołania modelu, a `force` wymusza nową i
       podbija `refreshes`. **(AC-4, AC-5, AC-6)**
 
-- [ ] **T-7** `[P]` — **Manifest + bramka.** `src/lib/ai/content-memory-coverage.json`
+- [x] **T-7** `[P]` — **Manifest + bramka.** `src/lib/ai/content-memory-coverage.json`
       (klasyfikacja każdego pliku wołającego model: `remembered` / `on-demand` + powód) oraz
       `scripts/check-content-memory.js` (wzorzec `check-cost-badge.js`), wpięte w `build` i jako
       `npm run check:content-memory`.
@@ -122,36 +122,36 @@
 
 ## Faza 6 — Pamięć treści w pozostałych modułach
 
-- [ ] **T-17** — **Wnioski Magazynu i Petów przez pamięć treści** (`storage.insights`,
+- [x] **T-17** — **Wnioski Magazynu i Petów przez pamięć treści** (`storage.insights`,
       `pets.insights`) + w UI data powstania i przycisk odświeżenia.
       *Gotowe, gdy:* powrót na ekran pokazuje zapamiętane wnioski bez nowego wywołania modelu.
       **(AC-8)**
 
-- [ ] **T-18** — **Plan tygodnia Kuchni przez pamięć treści** (`kitchen.planWeek`), analogicznie.
+- [x] **T-18** — **Plan tygodnia Kuchni przez pamięć treści** (`kitchen.planWeek`), analogicznie.
       *Gotowe, gdy:* jw. **(AC-8)**
 
-- [ ] **T-19** — **Klasyfikacja w manifestach.** `content-memory-coverage.json` — komplet wywołań
+- [x] **T-19** — **Klasyfikacja w manifestach.** `content-memory-coverage.json` — komplet wywołań
       modelu; `action-coverage.json` — nowe akcje (`saveIdeaFromList`, `getWeatherAstro`) z `access`
       i guardem.
       *Gotowe, gdy:* `npm run check:content-memory` i `npm run check:ai-coverage` przechodzą.
 
 ## Faza 7 — Domknięcie
 
-- [ ] **T-20** — **Pełna sekwencja bramek na lokalnym Postgresie (C-13):** `copy-docs →
+- [x] **T-20** — **Pełna sekwencja bramek na lokalnym Postgresie (C-13):** `copy-docs →
       check:actions → check:ai-coverage → check:cost-badge → check:content-memory →
       check:migrations → next lint → prisma generate → next build` + `npm run test:unit`.
       **Bez** `scripts/migrate.js`.
       *Gotowe, gdy:* wszystkie kroki zielone. **(C-50)**
 
-- [ ] **T-21** — **Dokumentacja** — `CLAUDE.md`: tabela modułów (Pogoda), schemat bazy (`AiContent`),
+- [x] **T-21** — **Dokumentacja** — `CLAUDE.md`: tabela modułów (Pogoda), schemat bazy (`AiContent`),
       lista Server Actions, opis nowej bramki w build pipeline.
       *Gotowe, gdy:* dokumentacja opisuje stan po zmianie.
 
-- [ ] **T-22** — **`doświadczenia.md` (C-51)** — wpis o utrwalaniu uciętej odpowiedzi w pamięci
+- [x] **T-22** — **`doświadczenia.md` (C-51)** — wpis o utrwalaniu uciętej odpowiedzi w pamięci
       podręcznej (dlaczego „ponad 5 razy, za każdym razem pusto" wyglądało na deterministyczny brak
       pomysłów) oraz o zamienianiu awarii w pusty wynik; plus wszystko, co wyjdzie po drodze.
 
-- [ ] **T-23** — **Mapowanie AC → wynik** jako wejście do `/verify`.
+- [x] **T-23** — **Mapowanie AC → wynik** jako wejście do `/verify`.
 
 ---
 

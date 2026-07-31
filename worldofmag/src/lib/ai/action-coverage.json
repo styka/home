@@ -2610,6 +2610,11 @@
     "action": "get_weather",
     "access": "owner"
   },
+  "weather:saveIdeaFromList": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
   "weather:setDefaultLocation": {
     "status": "ai",
     "access": "owner"

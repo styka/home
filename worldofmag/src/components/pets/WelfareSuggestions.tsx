@@ -5,6 +5,7 @@ import { Sparkles, Info, AlertTriangle, ShieldAlert, Loader2 } from "lucide-reac
 import { runJob } from "@/lib/jobs/client";
 import type { WelfareSuggestion, CareAgendaItem } from "@/types";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import { AiContentMeta } from "@/components/ui/AiContentMeta";
 
 const SEVERITY_META = {
   info: { color: "var(--accent-blue)", Icon: Info },
@@ -21,6 +22,7 @@ interface Props {
 export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
   const [tips, setTips] = useState<string[] | null>(null);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
+  const [aiMemory, setAiMemory] = useState<{ generatedAt?: string; stale?: boolean }>({});
   const [loadingTips, setLoadingTips] = useState(false);
 
   useEffect(() => {
@@ -28,12 +30,12 @@ export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
     let cancelled = false;
     setLoadingTips(true);
     // Z-131 (T-17): porady przez kolejkę zadań (degradacja łagodna — brak AI → [] tips).
-    runJob<{ tips: string[]; usage?: AiCostUsage }>("pets.insights", {
+    runJob<{ tips: string[]; usage?: AiCostUsage; generatedAt?: string; stale?: boolean }>("pets.insights", {
       pets,
       agenda: agenda.map((a) => ({ petName: a.petName, title: a.title, bucket: a.bucket, dueAt: a.dueAt })),
       ruleSuggestions: suggestions.map((s) => ({ title: s.title, detail: s.detail })),
     })
-      .then((res) => { if (!cancelled) { setTips(res.tips ?? []); setAiUsage(res.usage); } })
+      .then((res) => { if (!cancelled) { setTips(res.tips ?? []); setAiUsage(res.usage); setAiMemory({ generatedAt: res.generatedAt, stale: res.stale }); } })
       .catch(() => { if (!cancelled) setTips([]); })
       .finally(() => { if (!cancelled) setLoadingTips(false); });
     return () => { cancelled = true; };
@@ -87,11 +89,14 @@ export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
               ))}
             </ul>
           )}
-          {aiUsage && (
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-              <AiCostBadge usage={aiUsage} />
-            </div>
-          )}
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
+            <AiContentMeta
+              generatedAt={aiMemory.generatedAt}
+              stale={aiMemory.stale}
+              staleHint="Zwierzęta lub zadania opieki zmieniły się od czasu wygenerowania tych porad"
+            />
+            {aiUsage && <AiCostBadge usage={aiUsage} />}
+          </div>
         </div>
       )}
     </div>

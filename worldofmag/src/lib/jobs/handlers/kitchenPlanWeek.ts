@@ -7,6 +7,7 @@ import { getUserTeamIds } from "@/lib/server-utils";
 import { addDays, format } from "date-fns";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { usageFromChat } from "@/lib/ai/usage";
+import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
 import type { AiUsageInfo } from "@/lib/ai/usage";
 
 const VALID_SLOTS = new Set(["breakfast", "lunch", "dinner", "snack"]);
@@ -21,6 +22,8 @@ interface PlanWeekPayload {
   maxMinutes?: number | null;
   mustUsePantry?: boolean;
   noRepeats?: boolean;
+  /** 038: użytkownik jawnie poprosił o nowy plan. Bez tego wraca zapamiętany. */
+  force?: boolean;
 }
 interface Suggestion {
   date: string; slot: Slot; recipeId: string; slug: string; title: string; servings: number; reason: string;
@@ -33,9 +36,47 @@ Zasady: wybieraj TYLKO recipeId z "recipes"; honoruj preferencje (avoid, cuisine
 noRepeats=true → bez powtórek w tygodniu; mustUsePantry=true → priorytet przepisów z większym "matchedPantry";
 slot pasujący do mealType ma pierwszeństwo; jeśli nic nie pasuje — pomiń parę (nie wymyślaj id).`;
 
-export async function kitchenPlanWeekHandler(payload: PlanWeekPayload, ctx: JobContext): Promise<{ suggestions: Suggestion[]; usage?: AiUsageInfo }> {
+export async function kitchenPlanWeekHandler(
+  payload: PlanWeekPayload,
+  ctx: JobContext
+): Promise<{ suggestions: Suggestion[]; usage?: AiUsageInfo; generatedAt?: string; stale?: boolean }> {
   const ownerId = ctx.ownerId;
   if (!ownerId) throw new JobError("Brak użytkownika", 401);
+
+  // 038: plan tygodnia to treść do czytania, więc pamiętamy go dla danego tygodnia i ustawień —
+  // powrót na ekran nie może kosztować kolejnego wywołania modelu.
+  const remembered = await rememberedContent<{ suggestions: Suggestion[] }>({
+    ownerId,
+    kind: "kitchen.planWeek",
+    scopeKey: payload.weekStart ?? "",
+    inputHash: hashInputs(
+      (payload.slots ?? []).slice().sort().join(","),
+      payload.people,
+      (payload.avoid ?? []).slice().sort().join(","),
+      (payload.cuisines ?? []).slice().sort().join(","),
+      payload.maxMinutes,
+      payload.mustUsePantry ? 1 : 0,
+      payload.noRepeats ? 1 : 0
+    ),
+    force: payload.force,
+    generate: async () => {
+      const r = await runPlanWeek(payload, ctx, ownerId);
+      return { value: { suggestions: r.suggestions }, usage: r.usage };
+    },
+  });
+  return {
+    suggestions: remembered.value.suggestions,
+    usage: remembered.usage,
+    generatedAt: remembered.generatedAt,
+    stale: remembered.stale,
+  };
+}
+
+async function runPlanWeek(
+  payload: PlanWeekPayload,
+  ctx: JobContext,
+  ownerId: string
+): Promise<{ suggestions: Suggestion[]; usage?: AiUsageInfo }> {
   if (!payload.weekStart || !/^\d{4}-\d{2}-\d{2}$/.test(payload.weekStart)) throw new JobError("weekStart YYYY-MM-DD wymagany", 400);
   const slots = (payload.slots ?? ["lunch", "dinner"]).filter((s) => VALID_SLOTS.has(s)) as Slot[];
   if (slots.length === 0) throw new JobError("Wybierz co najmniej jeden slot", 400);
