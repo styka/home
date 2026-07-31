@@ -162,7 +162,8 @@ export function usePinToVisualViewport(
 
     // WYGŁADZENIE PRZEJŚCIA — jedyne, co zostało po zmierzeniu źródła danych.
     //
-    // Sonda (`ViewportProbe`, pomiar z urządzenia) pokazała: `kroki 1`, `maxSkok 291`. iOS zmienia
+    // Sonda diagnostyczna (nakładka `ViewportProbe`, usunięta po zamknięciu sprawy — jest w historii
+    // repozytorium, gdyby trzeba było powtórzyć pomiar) pokazała: `kroki 1`, `maxSkok 291`. iOS zmienia
     // `offsetTop` DOKŁADNIE RAZ, od razu o pełne 291 px, i nie podaje żadnych wartości pośrednich —
     // przez cały czas, gdy klawiatura płynnie wyjeżdża. Nasze okno dostaje więc końcową geometrię
     // w jednej klatce i teleportuje się do niej, podczas gdy klawiatura jeszcze jedzie. To właśnie
