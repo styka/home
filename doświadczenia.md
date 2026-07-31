@@ -4,6 +4,27 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-31 — iOS podaje ruch klawiatury JEDNYM skokiem: brakujące klatki trzeba dorysować samemu
+**Problem:** Osiem podejść do drgającego nagłówka asystenta (kompensacja `offsetTop`, zapis w
+zdarzeniu, `resizes-content`, `h-full`, `overflow: hidden`, wysokość powłoki z pomiaru, pętla `rAF`)
+i za każdym razem to samo pytanie bez odpowiedzi: czy problem jest w danych, które dostajemy, czy w
+tym, co z nimi robimy. Rozważano nawet próbkowanie co 10 ms zamiast co klatkę.
+**Rozwiązanie:** Sonda dostała dwa liczniki dla pojedynczego ruchu klawiatury: `kroki` (ile RÓŻNYCH
+wartości `offsetTop` przyszło) i `maxSkok` (największa różnica między kolejnymi). Odczyt z urządzenia:
+**`kroki 1`, `maxSkok 291`** — iOS zmienia geometrię DOKŁADNIE RAZ, od razu o pełne 291 px, i nie
+podaje ani jednej wartości pośredniej, choć klawiatura jedzie płynnie ~0,3 s. Nasze okno dostawało
+więc końcową geometrię w jednej klatce i teleportowało się do niej w trakcie jazdy klawiatury. Skoro
+brakujących klatek nikt nam nie da, dorysowujemy je sami: przejście CSS (280 ms, krzywa
+wyhamowująca) na `top`/`height`, włączane dopiero po pierwszym zapisie geometrii, żeby nie animować
+samego otwarcia okna. Pętla `rAF` zostaje, ale w innej roli: utrzymuje dół rozmowy przez czas trwania
+przejścia i obsłuży przeglądarki raportujące ruch stopniowo.
+**Lekcja:** Zanim zaczniesz stroić CZĘSTOTLIWOŚĆ (co klatkę? co 10 ms?), zmierz **rozdzielczość
+źródła** — ile różnych wartości w ogóle przychodzi. Przy `kroki 1` każde próbkowanie, od 1 ms do 16 ms,
+zwraca ten sam wynik, więc cała dyskusja o szybkości jest bezprzedmiotowa. Dwa liczniki (ile zmian,
+jak duży skok) kosztowały kilkanaście linii i rozstrzygnęły to, czego osiem prób nie rozstrzygnęło.
+Ogólniej: gdy nie wiadomo, czy winne są dane, czy ich obsługa, tanim pomiarem jest policzenie zdarzeń
+na wejściu — nie kolejna zmiana na wyjściu.
+
 ## 2026-07-31 — iOS nie wysyła zdarzeń `visualViewport` co klatkę: korektę trzeba domknąć pętlą `rAF`
 **Problem:** Nagłówek asystenta drgał przy animacji klawiatury mimo poprawnej geometrii — sonda
 pokazywała `okno.top` równe 0.0 w KAŻDEJ klatce, także tam, gdzie na ekranie widać przesunięcie.
