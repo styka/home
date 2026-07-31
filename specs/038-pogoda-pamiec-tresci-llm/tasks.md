@@ -88,34 +88,35 @@
 
 ## Faza 4 — Pogoda: dane i ikony
 
-- [ ] **T-11** `[P]` — **`src/lib/weather/moon.ts` + test.** Czysta `moonPhase(date)` →
+- [x] **T-11** `[P]` — **`src/lib/weather/moon.ts` + test.** Czysta `moonPhase(date)` →
       `{fraction, name, emoji}`, osiem polskich nazw faz; `moon.test.ts` na znanych datach nowiu i
       pełni (`npm run test:unit`).
       *Gotowe, gdy:* test przechodzi dla co najmniej dwóch nowiów i dwóch pełni. **(AC-13)**
 
-- [ ] **T-12** — **Ikony dnia i nocy.** `is_day` w parametrach godzinowych zapytania,
+- [x] **T-12** — **Ikony dnia i nocy.** `is_day` w parametrach godzinowych zapytania,
       `HourPoint.isDay`, `wmo(code, isNight?)` z wariantami nocnymi **tylko** dla kodów słonecznych
       (0–2). `ForecastNow` używa istniejącego, dziś nieużywanego `current.isDay`.
       *Gotowe, gdy:* godzina nocna ma ikonę nocną, a deszcz i śnieg wyglądają tak samo o każdej porze.
       **(AC-15, AC-16)**
 
-- [ ] **T-13** — **Pasek astronomiczny.** Akcja `getWeatherAstro` (wschód/zachód z danych **już
-      pobieranych** + faza księżyca) i kompaktowy pasek w `ForecastNow`, zawijający się na telefonie.
+- [x] **T-13** — **Pasek astronomiczny** w `ForecastNow`, zawijający się na telefonie. *(Korekta
+      z implementacji, C-54: zapowiadana akcja `getWeatherAstro` okazała się zbędna — `sunrise`/
+      `sunset` są już w pobranym obiekcie prognozy, a faza księżyca to czysta funkcja z daty.)*
       *Gotowe, gdy:* widać godziny wschodu i zachodu oraz polską nazwę fazy, bez przewijania w
       poziomie na telefonie. **(AC-13, AC-14)**
 
 ## Faza 5 — Mobile
 
-- [ ] **T-14** `[P]` — **Kafelek obserwatora na telefonie.** Tytuł w osobnym wierszu z zawijaniem,
+- [x] **T-14** `[P]` — **Kafelek obserwatora na telefonie.** Tytuł w osobnym wierszu z zawijaniem,
       pod nim wiersz znaczników (status + horyzont), akcje z celami `p-2`.
       *Gotowe, gdy:* długi tytuł obserwatora jest czytelny w całości na wąskim ekranie. **(AC-17)**
 
-- [ ] **T-15** `[P]` — **Górny margines bezpieczny arkusza szczegółów.** Nagłówek
+- [x] **T-15** `[P]` — **Górny margines bezpieczny arkusza szczegółów.** Nagłówek
       `IdeaDetailSheet` dostaje `pt-[max(0.75rem,env(safe-area-inset-top))]` (dolny już jest —
       brakowało wyłącznie górnego).
       *Gotowe, gdy:* „Wróć do listy" i tytuł są w całości pod paskiem systemowym. **(AC-18)**
 
-- [ ] **T-16** `[P]` — **Spójność biblioteki pomysłów** ze wzorcem podstron modułu (szerokość,
+- [x] **T-16** `[P]` — **Spójność biblioteki pomysłów** ze wzorcem podstron modułu (szerokość,
       odstępy, nagłówek z powrotem) — porównanie z `/portfel/budzety` i `/warsztaty/przeglady`.
       *Gotowe, gdy:* strona wygląda jak reszta podstron, także na telefonie. **(AC-19)**
 

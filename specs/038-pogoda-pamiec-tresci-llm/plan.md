@@ -153,7 +153,7 @@ uszkodzony wpis traktujemy jak brak wpisu (najwyżej treść powstanie ponownie)
 | `getIdeas(lat, lon, label, {date, part, force})` | `variation` → **`force`** (jedna nazwa dla jednej intencji). Przechodzi przez `rememberedContent` (`kind: "weather.ideas"`, `scopeKey` = lokalizacja\|dzień\|pora, `inputHash` = skrót prognozy + listy zablokowanych/zapisanych). Zwraca dodatkowo `generatedAt`, `stale`, `fromMemory`. **Truncated albo nieparsowalny JSON → `throw`**, nie pusta lista. `maxTokens` podniesione do 2000. |
 | `saveIdeaFromList(idea, ctx)` | **Nowa** — zapis propozycji z listy **bez generowania opisu** (AC-10). `upsert` ze `state: "saved"`, zapisuje `seedDate`/`seedPart`/`seedWeather`. Zero wywołań modelu. |
 | `generateIdeaDetail(...)` | Używa **nasion** (`seedWeather`) gdy istnieją, zamiast bieżącej prognozy (AC-12); przechodzi przez `rememberedContent` (`kind: "weather.ideaDetail"`). |
-| `getWeatherAstro(lat, lon, date)` | **Nowa** — wschód/zachód z danych, które dostawca **już zwraca** (`DayPoint.sunrise/sunset`), + faza księżyca z `lib/weather/moon.ts`. **Bez LLM i bez nowej usługi.** |
+| ~~`getWeatherAstro(lat, lon, date)`~~ | **Skreślona na etapie implementacji (C-54).** Okazała się zbędna: `sunrise`/`sunset` są już w obiekcie `Forecast`, który klient ma w ręku, a faza księżyca to czysta funkcja z daty. Osobna akcja serwerowa oznaczałaby dodatkową rundę do serwera po dane, które już są na miejscu. Pasek astronomiczny liczy się w `ForecastNow`. |
 
 Guardy bez zmian: `requireAuth()` + `ownerId` (C-21). Każda mutacja kończy `revalidatePath`.
 
