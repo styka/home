@@ -4,6 +4,46 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-31 — „Sprzyja" przy mokrym weekendzie: zły status to był efekt źle postawionego pytania
+**Problem:** Obserwator pogody „Bardzo mokry weekend" pokazywał status **Sprzyja** z uzasadnieniem
+„weekend suchy". Wyglądało to na halucynację modelu — dwa zdania na kafelku wprost sobie przeczyły.
+**Rozwiązanie:** Model nie zmyślał. Prompt kazał mu ocenić skalę `good (warunki sprzyjające) / warn /
+bad / info`, więc dla obserwatora opisującego zjawisko **negatywne** (mokry weekend, przymrozki,
+burze, upały) sucha prognoza to poprawnie „good" — a UI tłumaczyło `good` na „Sprzyja". Naprawa nie
+polegała na dokręceniu promptu w tej samej skali, tylko na zmianie **pytania**: status opisuje teraz
+`met/partial/unmet/unknown` („czy warunek obserwatora zachodzi"), a prompt dostał dwa przykłady
+graniczne — mokry weekend przy suchej prognozie to `unmet`, burza przy obserwatorze burz to `met`,
+„mimo że to zła wiadomość".
+**Lekcja:** Gdy odpowiedź modelu przeczy sama sobie, najpierw sprawdź, **o co go pytasz**, a nie jak
+mocno go prosisz. Skala wartościująca („sprzyja/odradzane") nałożona na obiekt, który sam bywa
+negatywny, produkuje sprzeczność przy każdej poprawnej odpowiedzi. Druga rzecz: neutralna skala
+wymaga podpowiedzi w UI — zielone „Spełnione" przy nadchodzącej burzy myli tak samo, dopóki nie
+napiszesz wprost, że zieleń znaczy „zgodnie z Twoim pytaniem", a nie „dobrze".
+
+## 2026-07-31 — Bramka widoczności kosztu AI nie może żyć tam, gdzie nie ma sesji
+**Problem:** Licznik kosztu miał się pokazywać wszędzie, gdzie moduł woła model. Naturalne wydawało
+się wpięcie bramki (`visibleUsage`, pytającej `auth()` o uprawnienie admina) tam, gdzie zużycie
+powstaje — czyli również w handlerach zadań w tle (`lib/jobs/handlers/*`).
+**Rozwiązanie:** Handlery chodzą w workerze **bez sesji użytkownika**, więc `auth()` zwraca tam
+`null` i bramka zawsze zgasiłaby licznik — analityka magazynu, plan tygodnia i OCR nigdy nie
+pokazałyby kosztu, bez żadnego błędu w logach. Rozdzieliliśmy więc **wytwarzanie** zużycia od
+**decyzji o pokazaniu**: handler zapisuje surowe zużycie w `Job.result`, a `GET /api/jobs/[id]` —
+jedyne miejsce z sesją — stosuje `visibleUsage` przy odczycie i usuwa pole, gdy pokazać go nie wolno.
+**Lekcja:** Zanim wpniesz kontrolę dostępu w jakiś punkt kodu, sprawdź, **czy w tym punkcie w ogóle
+istnieje tożsamość użytkownika**. Kod w tle jej nie ma, a bramka bez sesji nie wywala się głośno —
+po prostu zawsze odmawia, co wygląda jak „funkcja nie działa". Reguła praktyczna: dane wytwarzaj przy
+źródle, filtruj na granicy odczytu.
+
+## 2026-07-31 — Zwykły cudzysłów w polskim tekście zamyka literał JS
+**Problem:** Dwa razy pod rząd `tsc` sypnął serią błędów składni („Unterminated string literal") po
+dopisaniu polskiego tekstu do promptu i do stanu pustego w JSX.
+**Rozwiązanie:** Polskie cudzysłowy to para **„…”** (U+201E i U+201D). Otwierający „ jest bezpieczny,
+ale jako zamykający łatwo wpisać zwykłe `"` — i wtedy w literale `"...„Co robić?" ..."` ten znak
+kończy string, a reszta zdania staje się kodem. Poprawka: konsekwentnie ” jako zamykający.
+**Lekcja:** W tym repo teksty są po polsku i cudzysłowy trafiają do stringów TS oraz do JSX. Pisząc
+cytat wewnątrz literału, użyj pary typograficznej „…” — nie mieszaj jej z `"`. Ten sam znak w treści
+JSX dodatkowo zapala `react/no-unescaped-entities`, więc pomyłkę widać dopiero na lincie.
+
 ## 2026-07-31 — Nie animuj `top` elementu `fixed` przy klawiaturze: przeglądarka robi to sama
 **Problem:** Po wygładzeniu przejścia CSS okno asystenta nadal „szarpało", choć skoku już nie było.
 Pierwsza miara z nagrania (najciemniejszy wiersz w pasie) pokazała oscylację — ale ta miara potrafi

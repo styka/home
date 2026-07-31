@@ -1,7 +1,7 @@
 # Zadania: Pogoda — mapa, obserwatory, propozycje „Co robić?" i widoczne koszty AI
 
 - **Plan:** ./plan.md (037-pogoda-rozbudowa)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-07-31
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami.
@@ -212,17 +212,17 @@
       next lint → prisma generate → next build`. **Bez** `scripts/migrate.js`.
       *Gotowe, gdy:* wszystkie kroki zielone. **(C-50)**
 
-- [ ] **T-32** — **Dokumentacja** — aktualizacja `CLAUDE.md` (tabela modułów: Pogoda; sekcja LLM:
+- [x] **T-32** — **Dokumentacja** — aktualizacja `CLAUDE.md` (tabela modułów: Pogoda; sekcja LLM:
       przełącznik licznika i nowa bramka; lista Server Actions; Route Structure o `/pogoda/pomysly`;
       schemat bazy o `WeatherIdea`).
       *Gotowe, gdy:* tabele i listy w `CLAUDE.md` opisują stan po zmianie.
 
-- [ ] **T-33** — **`doświadczenia.md` (C-51)** — wpisy po polsku: (a) dlaczego obserwator „mokry
+- [x] **T-33** — **`doświadczenia.md` (C-51)** — wpisy po polsku: (a) dlaczego obserwator „mokry
       weekend" pokazywał „Sprzyja" (źle postawione pytanie w prompcie, nie halucynacja modelu),
       (b) pułapka domyślnych ikon Leafletu po zbundlowaniu i `divIcon` jako rozwiązanie —
       **o ile problem faktycznie wystąpi**; plus wszystko, co wyjdzie po drodze.
 
-- [ ] **T-34** — **Mapowanie AC → wynik** jako wejście do `/verify` (patrz tabela poniżej).
+- [x] **T-34** — **Mapowanie AC → wynik** jako wejście do `/verify` (patrz tabela poniżej).
 
 ---
 
