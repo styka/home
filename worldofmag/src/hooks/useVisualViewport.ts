@@ -97,8 +97,8 @@ export function usePinToVisualViewport(
     const el = ref.current;
     if (!vv || !el) return;
 
-    // Ostatnio ZAPISANE wartości — żeby nie pisać stylu i nie wołać `onGeometryChange` 60 razy na
-    // sekundę, gdy nic się nie rusza (pętla niżej chodzi przez całą animację, także w jej ciszy).
+    // Ostatnio ZAPISANE wartości — żeby nie pisać stylu w klatkach, w których nic się nie zmieniło
+    // (pętla niżej chodzi przez całą animację, a przy danych ze skokiem to niemal wszystkie klatki).
     let lastTop = Number.NaN;
     let lastHeight = Number.NaN;
 
@@ -110,25 +110,29 @@ export function usePinToVisualViewport(
       lastHeight = vv.height;
       el.style.setProperty(VV_TOP_VAR, `${vv.offsetTop}px`);
       el.style.setProperty(VV_HEIGHT_VAR, `${vv.height}px`);
-      onChangeRef.current?.();
     };
 
     // Nadążanie za ANIMACJĄ klawiatury (`rAF`), a nie tylko za jej krańcami.
     //
-    // iOS nie wysyła zdarzeń `visualViewport` co klatkę — dostajemy je na początku i na końcu ruchu.
-    // Korekta wpięta wyłącznie w zdarzenia zostawia więc cały środek animacji z geometrią sprzed
-    // ruchu, i dokładnie to widać jako drgnięcie nagłówka. (Zmierzyliśmy to już wcześniej sondą
-    // `ViewportProbe`, która właśnie dlatego czyta w `rAF` — ale wniosek nie trafił do samej korekty.)
+    // UWAGA na oczekiwania: pomiar z urządzenia (sonda, `kroki 1`) pokazał, że na iOS ta pętla sama
+    // z siebie NIE usuwa przeskoku — nie ma czego dogonić, bo wartości pośrednich po prostu nie ma.
+    // Za płynność odpowiada przejście CSS ustawiane niżej. Pętla zostaje z dwóch innych powodów:
+    // utrzymuje dół rozmowy przez cały czas trwania tego przejścia, a na przeglądarkach, które
+    // raportują ruch stopniowo (Android, przyszłe wersje iOS), pozwala nadążyć za każdym krokiem.
     //
     // Pętla jest OGRANICZONA W CZASIE: startuje na zdarzeniu i chodzi jeszcze przez `FOLLOW_MS`,
-    // czyli tyle, ile trwa animacja klawiatury na iOS z zapasem. Stała pętla `rAF` przez cały czas
-    // otwarcia okna byłaby podatkiem na baterię za nic — poza animacją nie ma czego nadążać.
+    // czyli dłużej niż trwa przejście CSS. Stała pętla `rAF` przez cały czas otwarcia okna byłaby
+    // podatkiem na baterię za nic — poza animacją nie ma czego nadążać.
     const FOLLOW_MS = 500;
     let raf = 0;
     let followUntil = 0;
 
     const followFrame = () => {
       apply();
+      // `onGeometryChange` (utrzymanie dołu rozmowy) wołamy CO KLATKĘ, a nie tylko przy zmianie
+      // wartości: geometria zmienia się jednym skokiem, ale okno dochodzi do niej przez cały czas
+      // trwania przejścia CSS — przez te ~280 ms lista wiadomości realnie się kurczy.
+      onChangeRef.current?.();
       if (performance.now() < followUntil) {
         raf = window.requestAnimationFrame(followFrame);
       } else {
@@ -147,6 +151,29 @@ export function usePinToVisualViewport(
     };
 
     apply();
+    onChangeRef.current?.();
+
+    // WYGŁADZENIE PRZEJŚCIA — jedyne, co zostało po zmierzeniu źródła danych.
+    //
+    // Sonda (`ViewportProbe`, pomiar z urządzenia) pokazała: `kroki 1`, `maxSkok 291`. iOS zmienia
+    // `offsetTop` DOKŁADNIE RAZ, od razu o pełne 291 px, i nie podaje żadnych wartości pośrednich —
+    // przez cały czas, gdy klawiatura płynnie wyjeżdża. Nasze okno dostaje więc końcową geometrię
+    // w jednej klatce i teleportuje się do niej, podczas gdy klawiatura jeszcze jedzie. To właśnie
+    // widać jako przeskok, i dlatego NIE pomaga ani częstsze próbkowanie (nie ma czego próbkować),
+    // ani pętla `rAF` sama w sobie.
+    //
+    // Skoro brakujących klatek nie dostaniemy, musimy je dorysować sami: przejście CSS zamienia
+    // jeden skok w płynny ruch. To świadomy kompromis — ruch jest gładki, ale dochodzi do celu
+    // własnym tempem, a nie idealnie klatka w klatkę z klawiaturą. Czas dobrany do animacji
+    // klawiatury iOS (~0,3 s); krzywa wyhamowująca, bo tak zachowuje się klawiatura.
+    //
+    // Włączane DOPIERO PO pierwszym zapisie geometrii (w kolejnej klatce): inaczej samo otwarcie
+    // okna byłoby animowane od wartości domyślnych i widać by było, jak okno „dojeżdża" do ekranu.
+    const KEYBOARD_TRANSITION = "280ms cubic-bezier(0.22, 0.61, 0.36, 1)";
+    const transitionRaf = window.requestAnimationFrame(() => {
+      el.style.transition = `top ${KEYBOARD_TRANSITION}, height ${KEYBOARD_TRANSITION}`;
+    });
+
     vv.addEventListener("resize", onViewportEvent);
     vv.addEventListener("scroll", onViewportEvent);
     // Klawiatura zaczyna wyjeżdżać na `focusin`, a chować się na `focusout` — czasem ZANIM przyjdzie
@@ -160,8 +187,10 @@ export function usePinToVisualViewport(
       el.removeEventListener("focusin", startFollowing);
       el.removeEventListener("focusout", startFollowing);
       if (raf) window.cancelAnimationFrame(raf);
+      window.cancelAnimationFrame(transitionRaf);
       // Wyjście z trybu pełnoekranowego (np. obrót na szeroki ekran) — oddaj sterowanie CSS-owi,
       // inaczej zostałyby wpisane na sztywno piksele z telefonu.
+      el.style.removeProperty("transition");
       el.style.removeProperty(VV_TOP_VAR);
       el.style.removeProperty(VV_HEIGHT_VAR);
     };
