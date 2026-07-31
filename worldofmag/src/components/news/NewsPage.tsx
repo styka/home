@@ -198,9 +198,14 @@ export function NewsPage({
                   </Button>
                 </div>
 
-                {/* Przełącznik źródeł */}
-                <div className="mb-4 flex flex-wrap gap-1.5">
-                  <SourceTab label="Wszystkie" active={sourceFilter === "all"} onClick={() => pickSource("all")} />
+                {/* 039: „Wszystkie" bez opisu wyglądało na zbędne. Licznik i podpis mówią wprost,
+                    że to widok zbiorczy, a pozostałe zakładki zawężają do jednego portalu. */}
+                <div className="mb-1 flex flex-wrap gap-1.5">
+                  <SourceTab
+                    label={`Wszystkie (${enabledSources.length})`}
+                    active={sourceFilter === "all"}
+                    onClick={() => pickSource("all")}
+                  />
                   {enabledSources.map((s) => (
                     <SourceTab
                       key={s.id}
@@ -211,6 +216,11 @@ export function NewsPage({
                     />
                   ))}
                 </div>
+                <p className="mb-4 text-[11px] text-[var(--text-muted)]">
+                  {sourceFilter === "all"
+                    ? "Widok zbiorczy ze wszystkich źródeł. Wybierz portal, żeby zobaczyć, jak ujmuje temat."
+                    : "Widok jednego portalu. Wróć do „Wszystkie”, żeby porównać ujęcia."}
+                </p>
 
                 {loadingView ? (
                   <div className="flex justify-center py-12">

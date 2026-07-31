@@ -15,11 +15,11 @@
 
 ## Faza 0 — Rzeczy niezależne od przebudowy
 
-- [ ] **T-1** `[P]` — **Czytelny filtr źródeł.** „Wszystkie" dostaje licznik źródeł i podpis
+- [x] **T-1** `[P]` — **Czytelny filtr źródeł.** „Wszystkie" dostaje licznik źródeł i podpis
       wyjaśniający, że pozostałe zakładki zawężają do jednego portalu.
       *Gotowe, gdy:* z samego ekranu widać, co robi ten przycisk. **(AC-20)**
 
-- [ ] **T-2** `[P]` — **`src/lib/textKey.ts` + test.** Przeniesienie `fingerprintOf` z
+- [x] **T-2** `[P]` — **`src/lib/textKey.ts` + test.** Przeniesienie `fingerprintOf` z
       `lib/weather/ideas.ts` (re-eksport, zero zmiany zachowania) — będzie używane w trzech miejscach.
       *Gotowe, gdy:* `npm run test:unit` przechodzi, a Pogoda działa bez zmian.
 
