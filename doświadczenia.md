@@ -4,6 +4,25 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-31 — Nie ścigaj przesunięcia widocznego obszaru — powiedz przeglądarce, żeby go nie robiła
+**Problem:** Nagłówek asystenta drgał przy każdym wysunięciu klawiatury. Trzy podejścia (kompensacja
+przez `rAF`, kompensacja synchroniczna, brak kompensacji) nie usunęły drgnięcia, bo wszystkie
+próbowały ŚCIGAĆ zmianę, która dzieje się poza nami. Porównanie z aplikacją, gdzie nagłówek stoi jak
+wmurowany, pokazało skalę różnicy: u nas znikał na ~8 klatek.
+**Rozwiązanie:** Źródłem kłopotu jest domyślne zachowanie `interactive-widget=resizes-visual`: układ
+strony zostaje tej samej wysokości, a przeglądarka PRZESUWA widoczny obszar, żeby odsłonić pole
+tekstowe. Element `position: fixed` liczy się względem układu, więc wyjeżdża poza ekran, a każda
+korekta z `visualViewport` spóźnia się o kilka klatek. Ustawienie `interactiveWidget:
+"resizes-content"` (Next: `export const viewport`) sprawia, że kurczy się sam UKŁAD — pole tekstowe
+nigdy nie jest pod klawiaturą, więc przeglądarka nie ma po co niczego przesuwać, a `offsetTop`
+zostaje zerem. Wskazówka jest ignorowana przez przeglądarki, które jej nie znają, więc dotychczasowa
+kompensacja zostaje jako zabezpieczenie.
+**Lekcja:** Zanim napiszesz kod kompensujący zachowanie przeglądarki, sprawdź, czy nie da się tego
+zachowania **wyłączyć deklaratywnie**. Ściganie animacji przeglądarki z JS zawsze przegrywa o klatkę.
+Uwaga metodyczna: porównanie „u nich działa" bywa mylące — referencyjna aplikacja okazała się
+NATYWNA, więc dostaje geometrię klawiatury od systemu i nie ma tego problemu w ogóle. Warto to
+najpierw ustalić, żeby wiedzieć, czy porównanie jest uczciwe.
+
 ## 2026-07-30 — Wniosek z jednej klatki okazał się fałszywy: kompensacja `offsetTop` jest KONIECZNA
 **Problem:** Na podstawie jednej klatki (strona widoczna NAD oknem asystenta) uznałem, że winna jest
 nasza kompensacja `top: visualViewport.offsetTop`, i ją usunąłem. Efekt: znacznie gorzej. Drugie
