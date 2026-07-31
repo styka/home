@@ -12,6 +12,7 @@ import { runJob } from "@/lib/jobs/client";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import type { StorageSupplier } from "@prisma/client";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 const inputStyle: React.CSSProperties = { backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" };
 
@@ -73,13 +74,14 @@ function OrderRow({
 }) {
   const [draft, setDraft] = useState(order.draftText ?? "");
   const [drafting, setDrafting] = useState(false);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [pending, startTransition] = useTransition();
 
   async function generate() {
     setDrafting(true);
     try {
       // Z-131 (T-17): redakcja zamówienia przez kolejkę zadań (degradacja łagodna).
-      const res = await runJob<{ text?: string; unavailable?: boolean }>("magazyn.orderDraft", {
+      const res = await runJob<{ text?: string; unavailable?: boolean; usage?: AiCostUsage }>("magazyn.orderDraft", {
         supplier: order.supplier?.name,
         lines: order.lines.map((l) => ({ name: l.name, quantity: l.quantity, unit: l.unit })),
       });
@@ -88,6 +90,7 @@ function OrderRow({
         return;
       }
       setDraft(res.text);
+      setAiUsage(res.usage);
       startTransition(async () => {
         await updatePurchaseOrder(order.id, { draftText: res.text });
       });
@@ -168,6 +171,7 @@ function OrderRow({
                     <Mail size={12} /> Wyślij mailem
                   </a>
                 ) : null}
+                {aiUsage && <AiCostBadge usage={aiUsage} />}
               </div>
             </div>
           ) : null}

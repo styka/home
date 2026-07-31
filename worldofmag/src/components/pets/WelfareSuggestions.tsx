@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Sparkles, Info, AlertTriangle, ShieldAlert, Loader2 } from "lucide-react";
 import { runJob } from "@/lib/jobs/client";
 import type { WelfareSuggestion, CareAgendaItem } from "@/types";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 const SEVERITY_META = {
   info: { color: "var(--accent-blue)", Icon: Info },
@@ -19,6 +20,7 @@ interface Props {
 
 export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
   const [tips, setTips] = useState<string[] | null>(null);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [loadingTips, setLoadingTips] = useState(false);
 
   useEffect(() => {
@@ -26,12 +28,12 @@ export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
     let cancelled = false;
     setLoadingTips(true);
     // Z-131 (T-17): porady przez kolejkę zadań (degradacja łagodna — brak AI → [] tips).
-    runJob<{ tips: string[] }>("pets.insights", {
+    runJob<{ tips: string[]; usage?: AiCostUsage }>("pets.insights", {
       pets,
       agenda: agenda.map((a) => ({ petName: a.petName, title: a.title, bucket: a.bucket, dueAt: a.dueAt })),
       ruleSuggestions: suggestions.map((s) => ({ title: s.title, detail: s.detail })),
     })
-      .then((res) => { if (!cancelled) setTips(res.tips ?? []); })
+      .then((res) => { if (!cancelled) { setTips(res.tips ?? []); setAiUsage(res.usage); } })
       .catch(() => { if (!cancelled) setTips([]); })
       .finally(() => { if (!cancelled) setLoadingTips(false); });
     return () => { cancelled = true; };
@@ -84,6 +86,11 @@ export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
                 <li key={i} style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t}</li>
               ))}
             </ul>
+          )}
+          {aiUsage && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+              <AiCostBadge usage={aiUsage} />
+            </div>
           )}
         </div>
       )}
