@@ -39,7 +39,10 @@ export function ViewportProbe({ sheetRef }: { sheetRef: RefObject<HTMLElement | 
           `vv.top ${vv ? vv.offsetTop.toFixed(1) : "-"}`,
           `vv.pgTop ${vv ? vv.pageTop.toFixed(1) : "-"}`,
           `win.h ${window.innerHeight}`,
+          // `scrollY` to TEST tej zmiany: przy poprawnej wysokości powłoki ma zostać 0 także przy
+          // rozwiniętej klawiaturze (dotąd było 335). `app.h` pokazuje wysokość, którą wpisał pomiar.
           `scrollY ${window.scrollY.toFixed(1)}`,
+          `app.h ${getComputedStyle(document.documentElement).getPropertyValue("--app-height").trim() || "-"}`,
           `docTop ${(document.scrollingElement?.scrollTop ?? -1).toFixed(1)}`,
           `okno.top ${rect ? rect.top.toFixed(1) : "-"}`,
           `okno.h ${rect ? rect.height.toFixed(1) : "-"}`,
