@@ -7,6 +7,7 @@ import {
   Shuffle,
   Loader2,
   ChevronRight,
+  AlertTriangle,
   Ban,
   Library,
   MapPin,
@@ -239,9 +240,18 @@ export function IdeasPanel({
       {loading && ideas === null ? (
         <p className="py-4 text-sm text-[var(--text-muted)]">Szukam pomysłów na tę pogodę…</p>
       ) : error ? (
-        <div className="py-3">
-          <p className="mb-2 text-sm text-[var(--text-muted)]">{error}</p>
-          <Button size="sm" variant="secondary" className="py-3" onClick={() => load()}>
+        /* 038: awaria musi WYGLĄDAĆ inaczej niż brak pomysłów. Wcześniej oba stany były jednakowo
+           szarym zdaniem, więc nieudane generowanie użytkownik czytał jako „nie ma co robić" i
+           ponawiał w nieskończoność. */
+        <div className="rounded-lg border border-[var(--accent-amber)] bg-[var(--bg-base)] p-3">
+          <p className="mb-2 flex items-start gap-1.5 text-sm text-[var(--text-primary)]">
+            <AlertTriangle size={15} className="mt-0.5 shrink-0 text-[var(--accent-amber)]" />
+            <span>
+              <span className="font-medium">Nie udało się przygotować propozycji.</span>{" "}
+              <span className="text-[var(--text-secondary)]">{error}</span>
+            </span>
+          </p>
+          <Button size="sm" variant="secondary" className="py-3" onClick={() => load({ variation: true })}>
             Spróbuj ponownie
           </Button>
         </div>
@@ -254,10 +264,11 @@ export function IdeasPanel({
       ) : (
         <div className="py-3">
           <p className="mb-2 text-sm text-[var(--text-muted)]">
-            Brak propozycji na tę porę. Spróbuj innego dnia albo wylosuj inne pomysły.
+            Model nie zaproponował nic na tę porę. Spróbuj innego dnia lub pory albo poproś o nowe
+            propozycje.
           </p>
-          <Button size="sm" variant="secondary" className="py-3" onClick={() => load()}>
-            Spróbuj ponownie
+          <Button size="sm" variant="secondary" className="py-3" onClick={() => load({ variation: true })}>
+            Nowe propozycje
           </Button>
         </div>
       )}

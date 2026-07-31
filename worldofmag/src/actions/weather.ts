@@ -510,7 +510,10 @@ export async function getIdeas(
     op: "reasoning",
     json: true,
     temperature: variation ? 0.95 : 0.6,
-    maxTokens: 1200,
+    // 038: 1200 tokenów było na styk dla 5–7 propozycji po polsku w JSON — a gdy typ operacji
+    // „reasoning" ma przypisany model rozumujący, tokeny rozumowania wliczają się do tego samego
+    // limitu i treść bywała ucinana w połowie struktury.
+    maxTokens: 2000,
     // Lista jest deterministyczna per lokalizacja/dzień/pora/prognoza (prompt je zawiera), więc
     // powtórne wejście na stronę nie kosztuje. Wariant ma być świeży → bez pamięci podręcznej.
     cache: !variation,
@@ -520,14 +523,27 @@ export async function getIdeas(
     ],
   });
   if (!res.ok) throw new Error(res.message);
+  // 038: odpowiedź UCIĘTA to awaria, nie „model nic nie wymyślił". Wcześniej obie sytuacje kończyły
+  // się tym samym pustym ekranem („Brak propozycji na tę porę"), więc użytkownik nie miał jak
+  // rozpoznać, że coś się zepsuło — i ponawiał w nieskończoność.
+  if (res.truncated) {
+    throw new Error(
+      "Odpowiedź modelu została ucięta, zanim zdążył wypisać propozycje. Spróbuj ponownie albo " +
+        "zwiększ limit tokenów dla operacji typu „reasoning” w panelu LLM."
+    );
+  }
 
   const parsed = parseJsonLoose<{
     ideas: Array<{ title: string; summary?: string; category?: string; nearby?: boolean }>;
   }>(res.content);
+  // Nieparsowalna odpowiedź też jest awarią — `?? []` zamieniało ją w cichy pusty wynik.
+  if (parsed == null) {
+    throw new Error("Nie udało się odczytać odpowiedzi modelu (niepoprawny format). Spróbuj ponownie.");
+  }
 
   const seen = new Set<string>();
   const ideas: IdeaDTO[] = [];
-  for (const raw of parsed?.ideas ?? []) {
+  for (const raw of parsed.ideas ?? []) {
     const title = (raw.title ?? "").trim();
     if (!title) continue;
     const fingerprint = fingerprintOf(title);

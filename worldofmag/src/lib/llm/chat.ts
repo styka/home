@@ -310,7 +310,13 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
     }
     const latencyMs = Date.now() - started;
     if (res.ok) {
-      if (cacheKey) setCached(cacheKey, res.content, res.model);
+      // 038: odpowiedzi UCIĘTEJ (skończył się budżet tokenów) NIE zapisujemy do pamięci podręcznej.
+      // Powód z prawdziwego zgłoszenia: ucięty JSON nie daje się sparsować, więc wywołujący dostaje
+      // pusty wynik — a skoro uszkodzona treść siedziała w cache, KAŻDA kolejna próba dostawała ją
+      // natychmiast z powrotem. Awaria utrwalała się i wyglądała na deterministyczne „nic nie ma"
+      // (użytkownik: „ponad 5 razy, za każdym razem pusto"). Cache ma przyspieszać powtórzenia
+      // udanych wywołań, nie betonować nieudanych.
+      if (cacheKey && !res.truncated) setCached(cacheKey, res.content, res.model);
       if (opts.userId) void recordAiUsage(opts.userId, res.usage?.total ?? 0).catch(() => {});
       // 002-ai-architecture: log per-wywołanie (koszt/tokeny/czas). Fire-and-forget.
       void recordAiCall({

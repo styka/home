@@ -15,19 +15,19 @@
 
 ## Faza 0 — Naprawa u źródła (bez zmian schematu)
 
-- [ ] **T-1** — **Nie zapisuj do pamięci podręcznej odpowiedzi uciętej.** W `lib/llm/chat.ts` zmień
+- [x] **T-1** — **Nie zapisuj do pamięci podręcznej odpowiedzi uciętej.** W `lib/llm/chat.ts` zmień
       zapis na warunkowy (`if (cacheKey && !res.truncated)`). To jedna linijka, ale naprawia klasę
       błędów u wszystkich konsumentów `cache: true` — bez niej każda ucięta odpowiedź utrwala się i
       wraca w nieskończoność.
       *Gotowe, gdy:* ucięta odpowiedź nie trafia do cache, a kolejne wywołanie idzie ponownie do modelu.
 
-- [ ] **T-2** — **Awaria generowania propozycji przestaje udawać pustą listę.** W `getIdeas`:
+- [x] **T-2** — **Awaria generowania propozycji przestaje udawać pustą listę.** W `getIdeas`:
       podnieś `maxTokens` do 2000, potraktuj `res.truncated` **i** `parsed === null` jako błąd
       (`throw` z czytelnym komunikatem po polsku), zamiast `parsed?.ideas ?? []`.
       *Gotowe, gdy:* nieparsowalna albo ucięta odpowiedź kończy się komunikatem o niepowodzeniu.
       **(AC-2)**
 
-- [ ] **T-3** — **UI rozróżnia awarię od autentycznie pustej listy.** W `IdeasPanel` osobny stan
+- [x] **T-3** — **UI rozróżnia awarię od autentycznie pustej listy.** W `IdeasPanel` osobny stan
       błędu (z przyciskiem ponowienia) i osobny stan „model nie zaproponował nic" — dziś oba
       pokazują „Brak propozycji na tę porę".
       *Gotowe, gdy:* przy błędzie widać, że coś się nie powiodło, a nie że nie ma pomysłów.
