@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { chatComplete } from "@/lib/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
+import { usageField } from "@/lib/ai/costVisibility";
 
 // Wzbogacenie pozycji przy skanie nieznanego kodu: na podstawie kodu kreskowego
 // i/lub wpisanej nazwy LLM podpowiada polską nazwę, kategorię i jednostkę.
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
       name: parsed.name != null ? String(parsed.name).trim() : name || "",
       category: parsed.category != null ? String(parsed.category) : null,
       unit: parsed.unit != null ? String(parsed.unit) : null,
+      ...(await usageField(result, "uzupełnienie pozycji")),
     });
   } catch {
     return NextResponse.json({ unavailable: true }, { status: 200 });

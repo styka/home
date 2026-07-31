@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/lib/llm/chat";
+import { usageField } from "@/lib/ai/costVisibility";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
@@ -31,5 +32,5 @@ export async function POST(req: NextRequest) {
 
   const hints: string = (result.content || "").trim();
 
-  return NextResponse.json({ hints });
+  return NextResponse.json({ hints, ...(await usageField(result, "podpowiedzi kategorii")) });
 }

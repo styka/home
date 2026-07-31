@@ -157,6 +157,10 @@ rozbijanie ich na osobne wdrożenia oznaczałoby czterokrotne przechodzenie po t
 - [ ] **AC-25** — Given jestem administratorem w ustawieniach LLM, when przełączam „pokazuj licznik
       kosztów w aplikacji" na wyłączony, then wskaźnik znika ze wszystkich modułów (asystent zachowuje
       się zgodnie z tym samym ustawieniem), a zmiana trafia do dziennika zmian konfiguracji (C-25).
+      **Doprecyzowanie z implementacji (C-54):** w oknie **asystenta** wskaźnik istniał już wcześniej i
+      był widoczny dla **każdego** użytkownika. Zawężenie go teraz do administratora byłoby cofnięciem
+      istniejącej funkcji, a nie realizacją zgłoszenia — dlatego asystent słucha **samego przełącznika**,
+      a reguła „tylko administrator" obowiązuje w miejscach, w których licznik dopiero powstaje.
 - [ ] **AC-26** — Given inne moduły generujące treść przez AI (m.in. Kuchnia, Notatki, Zadania,
       Magazynowanie, Języki, Wiadomości, Pety, Sklepy), when treść zostaje wygenerowana, then przy niej
       również widać ten sam wskaźnik kosztu — miejsca te są wypisane w planie na podstawie analizy kodu.

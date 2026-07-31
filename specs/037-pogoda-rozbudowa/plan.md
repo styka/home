@@ -260,6 +260,11 @@ Po zapisie: `router.refresh()` + `evaluate()` — nowe werdykty, żaden stary st
   `/api/llm/*` dokładają do odpowiedzi `usage: await visibleUsage(usageFromChat([{res:result}]))`.
 - Handlery zadań (`src/lib/jobs/handlers/*`) zapisują `usage` w `Job.result` — licznik pokazuje się
   przy wyniku zadania w UI modułu.
+  **Korekta z etapu implementacji (C-54):** handlery działają w workerze **bez sesji użytkownika**,
+  więc `visibleUsage` (które pyta `auth()` o uprawnienie admina) zwracałoby tam zawsze `undefined` i
+  licznik nigdy nie zapaliłby się dla modułów opartych o kolejkę. Dlatego handler zapisuje zużycie
+  **surowe** (`usageFromChat`, bez bramki), a bramkę stosuje **odczyt wyniku** — `GET /api/jobs/[id]`,
+  czyli jedyne miejsce, w którym sesja istnieje. Nie-admin nadal nie dostaje danych na drut.
 - **Miejsca do wpięcia** (z analizy `grep chatComplete|chatStream`, 30 wywołań w 26 plikach):
 
   | Obszar | Pliki | UI licznika |

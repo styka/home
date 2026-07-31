@@ -9,6 +9,7 @@ import { addWord, bulkAddWords, deleteWord, updateWord, deleteDeck } from "@/act
 import { llm } from "@/lib/llm-client";
 import { SpeakButton } from "./SpeakButton";
 import type { LanguageDeck, Vocabulary } from "@/types";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -30,6 +31,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
   const [translation, setTranslation] = useState("");
   const [genText, setGenText] = useState("");
   const [genBusy, setGenBusy] = useState(false);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [showGen, setShowGen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editTerm, setEditTerm] = useState("");
@@ -55,6 +57,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
         targetLang: deck.targetLang,
         max: 25,
       });
+      setAiUsage(res.usage);
       if (res.words?.length) {
         await bulkAddWords(deck.id, res.words);
         setGenText("");
@@ -143,6 +146,11 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
               </button>
               <button onClick={() => setShowGen(false)} disabled={genBusy} className="px-3 py-2 rounded text-sm" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)" }}>Anuluj</button>
             </div>
+            {aiUsage && (
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <AiCostBadge usage={aiUsage} />
+              </div>
+            )}
           </div>
         ) : (
           <button onClick={() => setShowGen(true)} className="flex items-center gap-2 px-3 py-2 rounded text-sm self-start" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "none" }}>

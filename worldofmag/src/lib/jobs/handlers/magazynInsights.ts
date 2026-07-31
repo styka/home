@@ -1,6 +1,7 @@
 // Z-131 (T-17) — handler: wnioski z analityki magazynu. Z `/api/llm/magazynowanie/insights`. Łagodna degradacja.
 import { chatComplete } from "@/lib/llm/chat";
 import { type JobContext } from "@/lib/jobs/types";
+import { usageFromChat } from "@/lib/ai/usage";
 
 interface InsightsPayload {
   currency?: string; totalValue?: number; itemCount?: number;
@@ -33,7 +34,10 @@ export async function magazynInsightsHandler(payload: InsightsPayload, ctx: JobC
   try {
     const cleaned = (result.content || "{}").trim().replace(/^```json\n?/, "").replace(/\n?```$/, "").replace(/^```\n?/, "");
     const parsed = JSON.parse(cleaned) as { tips?: string[] };
-    return { tips: Array.isArray(parsed.tips) ? parsed.tips.filter((t) => typeof t === "string").slice(0, 4) : [] };
+    return {
+      tips: Array.isArray(parsed.tips) ? parsed.tips.filter((t) => typeof t === "string").slice(0, 4) : [],
+      usage: usageFromChat([{ res: result, label: "analityka magazynu" }]),
+    };
   } catch {
     return { tips: [], unavailable: true };
   }

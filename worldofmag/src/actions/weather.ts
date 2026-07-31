@@ -306,18 +306,23 @@ export async function deleteWatcher(id: string): Promise<void> {
   revalidatePath("/pogoda");
 }
 
+export interface WatchersResult {
+  verdicts: WatcherVerdict[];
+  usage?: AiUsageInfo;
+}
+
 /** Ocenia włączone obserwatory względem aktualnej prognozy (LLM). */
 export async function evaluateWatchers(
   lat: number,
   lon: number,
   label: string
-): Promise<WatcherVerdict[]> {
+): Promise<WatchersResult> {
   const user = await requireAuth();
   const watchers = await prisma.weatherWatcher.findMany({
     where: { ownerId: user.id, enabled: true },
     orderBy: { sortOrder: "asc" },
   });
-  if (watchers.length === 0) return [];
+  if (watchers.length === 0) return { verdicts: [] };
 
   const f = await fetchForecast(lat, lon);
   if (!f) throw new Error("Brak danych pogodowych.");
@@ -364,7 +369,7 @@ export async function evaluateWatchers(
   }>(res.content);
   const verdicts = parsed?.verdicts ?? [];
 
-  return verdicts
+  const mapped = verdicts
     .filter((v) => watchers[v.index])
     .map((v) => {
       const w = watchers[v.index];
@@ -374,6 +379,11 @@ export async function evaluateWatchers(
         : "unknown";
       return { id: w.id, title: w.title, status, verdict: v.verdict ?? "", detail: v.detail ?? "" };
     });
+
+  return {
+    verdicts: mapped,
+    usage: await visibleUsage(usageFromChat([{ res, label: "obserwatory", op: "reasoning" }])),
+  };
 }
 
 // ─── 037: propozycje „Co robić?" ────────────────────────────────────────────

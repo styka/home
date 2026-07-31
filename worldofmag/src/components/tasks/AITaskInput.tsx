@@ -8,6 +8,7 @@ import type { TaskPriority, TaskTagDef, RecurringRule } from "@/types";
 import { TASK_PRIORITY_LABELS } from "@/types";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import { cn } from "@/lib/cn";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface ParsedTask {
   title: string;
@@ -45,6 +46,7 @@ declare global {
 export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
   const [text, setText] = useState("");
   const [tasks, setTasks] = useState<ParsedTask[]>([]);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
@@ -102,6 +104,7 @@ export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Błąd przetwarzania"); return; }
+      setAiUsage(data.usage);
       const list = (data.tasks as ParsedTask[]).map((t) => ({ ...t, selected: true }));
       if (list.length === 0) { setError("Nie rozpoznano żadnych zadań."); return; }
       setTasks(list);
@@ -250,6 +253,11 @@ export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
               </span>
             )}
           </div>
+          {aiUsage && (
+            <div className="flex justify-end mt-1.5">
+              <AiCostBadge usage={aiUsage} />
+            </div>
+          )}
           {error && <p className="text-xs mt-1.5" style={{ color: "var(--accent-red)" }}>{error}</p>}
           <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Ctrl+Enter aby przetworzyć</p>
         </div>

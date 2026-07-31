@@ -162,39 +162,39 @@
 
 ## Faza 6 — Licznik kosztów w całej aplikacji
 
-- [ ] **T-23** — **Pogoda.** `describeDay` i `evaluateWatchers` zwracają `{…, usage}`; `getIdeas`,
+- [x] **T-23** — **Pogoda.** `describeDay` i `evaluateWatchers` zwracają `{…, usage}`; `getIdeas`,
       `generateIdeaDetail`, `getIdeaDetail` (z `detailUsage`) też. Wpięcie `AiCostBadge` pod poradą,
       pod listą propozycji, w stopce szczegółów i w nagłówku panelu obserwatorów.
       *Gotowe, gdy:* każda treść AI w Pogodzie ma licznik, a jego rozwinięcie pokazuje model, tokeny i
       koszt. **(AC-22, AC-23)**
 
-- [ ] **T-24** — **Jeden punkt w typowanym kliencie.** `post<T>` w `src/lib/llm-client.ts` zwraca
+- [x] **T-24** — **Jeden punkt w typowanym kliencie.** `post<T>` w `src/lib/llm-client.ts` zwraca
       `Promise<T & { usage?: AiUsageInfo }>`.
       *Gotowe, gdy:* wszystkie namespace'y klienta widzą `usage` bez zmian w swoich definicjach.
 
-- [ ] **T-25** — **Trasy `/api/llm/*` (17 plików)** — dołóż do odpowiedzi
+- [x] **T-25** — **Trasy `/api/llm/*` (17 plików)** — dołóż do odpowiedzi
       `usage: await visibleUsage(usageFromChat([{ res }]))`: notatki (4), zadania (4), kuchnia (3),
       magazynowanie (2), normalize, category-icons, category-hints, languages/extract.
       *Gotowe, gdy:* każda trasa zwraca `usage` dla admina i pomija je dla nie-admina.
 
-- [ ] **T-26** — **Handlery zadań (9 plików)** — `usage` w `Job.result` dla kuchni (3), magazynu (4),
+- [x] **T-26** — **Handlery zadań (9 plików)** — `usage` w `Job.result` dla kuchni (3), magazynu (4),
       `storesGenerate`, `petsInsights`; plus `actions/news.ts`.
       *Gotowe, gdy:* wynik zadania niesie zużycie, które UI może pokazać.
 
-- [ ] **T-27** — **UI pozostałych modułów** — `AiCostBadge` przy treściach generowanych: Notatki
+- [x] **T-27** — **UI pozostałych modułów** — `AiCostBadge` przy treściach generowanych: Notatki
       (tagi, tytuł, przepisywanie, Q&A), Zadania (parsowanie, sugestie, tytuł, wyszukiwanie), Kuchnia
       (import/OCR, plan tygodnia, wygenerowany przepis), Magazyn (szukaj, wzbogacanie, dokument,
       analityka, zamówienie), Zakupy (normalizacja, ikony, podpowiedzi), Języki (ekstrakcja), Sklepy
       (układ), Pety (wnioski), Wiadomości.
       *Gotowe, gdy:* tabela z planu §5.5 jest odhaczona co do pozycji. **(AC-26)**
 
-- [ ] **T-28** — **Asystent słucha przełącznika.** `/api/llm/home/{agent,briefing}` i `fastPath`
+- [x] **T-28** — **Asystent słucha przełącznika.** `/api/llm/home/{agent,briefing}` i `fastPath`
       przepuszczają zużycie przez `visibleUsage`, żeby wyłączenie licznika gasiło go także w czacie.
       *Gotowe, gdy:* po wyłączeniu przełącznika licznik znika również w oknie asystenta. **(AC-25)**
 
 ## Faza 7 — Bramka jakości
 
-- [ ] **T-29** — **`scripts/check-cost-badge.js` + `src/lib/ai/cost-badge-coverage.json`** — skan
+- [x] **T-29** — **`scripts/check-cost-badge.js` + `src/lib/ai/cost-badge-coverage.json`** — skan
       `src/**` po `chatComplete(`/`chatStream(`; plik musi importować `visibleUsage`/`usageFromChat`
       albo mieć wpis z powodem w manifeście. Wpięcie w `build` i `npm run check:cost-badge`.
       *Gotowe, gdy:* celowo „gołe" wywołanie modelu wywala bramkę, a czyste repo ją przechodzi.
@@ -207,7 +207,7 @@
 
 ## Faza 8 — Domknięcie
 
-- [ ] **T-31** — **Pełna sekwencja bramek na lokalnym Postgresie (C-13):**
+- [x] **T-31** — **Pełna sekwencja bramek na lokalnym Postgresie (C-13):**
       `copy-docs → check:actions → check:ai-coverage → check:cost-badge → check:migrations →
       next lint → prisma generate → next build`. **Bez** `scripts/migrate.js`.
       *Gotowe, gdy:* wszystkie kroki zielone. **(C-50)**

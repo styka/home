@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { chatComplete } from "@/lib/llm/chat";
+import { usageField } from "@/lib/ai/costVisibility";
 
 // Generowanie listy słówek do nauki na podstawie dowolnego tekstu (np. kodu,
 // artykułu, opisu projektu). Zwraca słówka w języku docelowym wraz z
@@ -63,7 +64,7 @@ Maksymalnie ${limit} słówek. „term" w języku ${target}, „translation" w j
         example: w.example ? String(w.example).trim() : null,
         partOfSpeech: w.partOfSpeech ? String(w.partOfSpeech).trim() : null,
       }));
-    return NextResponse.json({ words });
+    return NextResponse.json({ words, ...(await usageField(result, "ekstrakcja słownictwa")) });
   } catch {
     return NextResponse.json({ error: "LLM zwrócił nieprawidłowy format" }, { status: 502 });
   }

@@ -4,6 +4,8 @@ import { chatComplete } from "@/lib/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { assertValidImage } from "@/lib/jobs/handlers/imageInput";
+import { usageFromChat } from "@/lib/ai/usage";
+import type { AiUsageInfo } from "@/lib/ai/usage";
 
 const VISION_PROMPT = `To zdjęcie dokumentu magazynowego lub faktury zakupu. Odczytaj dokładnie
 wszystkie POZYCJE z tabeli (nazwa towaru, ilość, jednostka, cena jednostkowa). Wypisz też numer
@@ -21,7 +23,13 @@ Nie wymyślaj pozycji, których nie ma w odczycie.`;
 
 export interface DocumentPayload { image?: string }
 export interface DocumentLine { name: string; quantity: number; unit: string | null; unitPrice: number | null }
-export interface DocumentResult { number: string | null; supplier: string | null; lines: DocumentLine[] }
+export interface DocumentResult {
+  number: string | null;
+  supplier: string | null;
+  lines: DocumentLine[];
+  /** 037: zużycie modelu — bramkę widoczności stosuje odczyt wyniku (`GET /api/jobs/[id]`). */
+  usage?: AiUsageInfo;
+}
 
 export async function magazynDocumentHandler(payload: DocumentPayload, ctx: JobContext): Promise<DocumentResult> {
   const image = assertValidImage(payload?.image);
@@ -73,6 +81,10 @@ export async function magazynDocumentHandler(payload: DocumentPayload, ctx: JobC
       number: parsed.number != null ? String(parsed.number) : null,
       supplier: parsed.supplier != null ? String(parsed.supplier) : null,
       lines,
+      usage: usageFromChat([
+        { res: vision, label: "odczyt dokumentu", op: "vision" },
+        { res: structured, label: "struktura dokumentu" },
+      ]),
     };
   } catch {
     throw new JobError("LLM zwrócił nieprawidłowy format", 502);

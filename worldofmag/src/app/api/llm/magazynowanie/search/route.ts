@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { chatComplete } from "@/lib/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
+import { usageField } from "@/lib/ai/costVisibility";
 
 // Semantyczne „gdzie to jest?": z zapytania w języku naturalnym i listy pozycji
 // (id + nazwa + kategoria) LLM wybiera najbardziej pasujące id. Aplikacja sama
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
     const ids = Array.isArray(parsed.ids)
       ? parsed.ids.map((x) => String(x)).filter((id) => valid.has(id)).slice(0, 12)
       : [];
-    return NextResponse.json({ ids });
+    return NextResponse.json({ ids, ...(await usageField(result, "wyszukiwanie w magazynie")) });
   } catch {
     return NextResponse.json({ ids: [], unavailable: true }, { status: 200 });
   }

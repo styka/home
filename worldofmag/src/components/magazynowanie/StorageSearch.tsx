@@ -5,6 +5,7 @@ import { Search, Sparkles, MapPin, Loader2, PackageSearch } from "lucide-react";
 import { llm } from "@/lib/llm-client";
 import { useToast } from "@/components/ui/Toast";
 import type { StorageItemWithMovements } from "@/actions/storage";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface StorageSearchProps {
   items: StorageItemWithMovements[];
@@ -16,6 +17,7 @@ export function StorageSearch({ items, initialLocation }: StorageSearchProps) {
   const [query, setQuery] = useState(initialLocation ?? "");
   const [aiIds, setAiIds] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
 
   // Zwykłe dopasowanie tekstowe (natychmiastowe).
   const textMatches = useMemo(() => {
@@ -48,6 +50,7 @@ export function StorageSearch({ items, initialLocation }: StorageSearchProps) {
         return;
       }
       setAiIds(res.ids ?? []);
+      setAiUsage(res.usage);
     } catch {
       showToast("Błąd wyszukiwania AI", "error");
     } finally {
@@ -97,6 +100,12 @@ export function StorageSearch({ items, initialLocation }: StorageSearchProps) {
           Wyniki AI ({aiMatches.length}). <button type="button" className="underline" onClick={() => setAiIds(null)}>pokaż dopasowanie tekstowe</button>
         </p>
       ) : null}
+
+      {aiUsage && (
+        <div className="flex justify-end">
+          <AiCostBadge usage={aiUsage} />
+        </div>
+      )}
 
       {results.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center gap-2">

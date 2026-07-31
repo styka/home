@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { chatComplete } from "@/lib/llm/chat";
+import { usageField } from "@/lib/ai/costVisibility";
 
 const SYSTEM_PROMPT = `Jesteś asystentem kulinarnym. Otrzymasz tytuł, opis, składniki i kroki przepisu.
 Zwróć WYŁĄCZNIE obiekt JSON (bez markdown, bez komentarza) w schemacie:
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
           .slice(0, 5)
       : [];
 
-    return NextResponse.json({ cuisine, mealType, difficulty, tags });
+    return NextResponse.json({ cuisine, mealType, difficulty, tags, ...(await usageField(result, "kategoryzacja przepisu")) });
   } catch {
     return NextResponse.json({ error: "LLM zwrócił nieprawidłowy format" }, { status: 502 });
   }

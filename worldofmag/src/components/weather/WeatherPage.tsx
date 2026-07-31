@@ -147,7 +147,7 @@ export function WeatherPage({
             <ForecastDays forecast={forecast} />
           </div>
 
-          <WatchersPanel watchers={watchers} coords={coords} />
+          <WatchersPanel watchers={watchers} coords={coords} usdPlnRate={usdPlnRate} />
         </div>
       )}
 

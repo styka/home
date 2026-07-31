@@ -92,7 +92,7 @@ export function IdeaLibraryPage({
           <Library size={20} className="text-[var(--accent-purple)]" /> Pomysły
         </h1>
         <p className="mb-4 text-sm text-[var(--text-muted)]">
-          Propozycje, które rozważałeś albo odrzuciłeś. Zablokowane nie wrócą w sekcji „Co robić?",
+          Propozycje, które rozważałeś albo odrzuciłeś. Zablokowane nie wrócą w sekcji „Co robić?”,
           dopóki nie przywrócisz ich proponowania.
         </p>
 

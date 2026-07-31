@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
+import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { WEATHER_PRESETS, HORIZON_META, type Horizon } from "@/lib/weather/presets";
 import {
   evaluateWatchers,
@@ -52,13 +53,16 @@ const STATUS_STYLE: Record<WatcherVerdict["status"], { color: string; label: str
 export function WatchersPanel({
   watchers,
   coords,
+  usdPlnRate,
 }: {
   watchers: WatcherDTO[];
   coords: { lat: number; lon: number; label: string } | null;
+  usdPlnRate?: number;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
   const [verdicts, setVerdicts] = useState<WatcherVerdict[] | null>(null);
+  const [usage, setUsage] = useState<AiCostUsage | undefined>();
   const [loading, setLoading] = useState(false);
   const [, startTransition] = useTransition();
   const [adding, setAdding] = useState(false);
@@ -72,7 +76,10 @@ export function WatchersPanel({
     }
     setLoading(true);
     evaluateWatchers(coords.lat, coords.lon, coords.label)
-      .then(setVerdicts)
+      .then((r) => {
+        setVerdicts(r.verdicts);
+        setUsage(r.usage);
+      })
       .catch((e) => {
         showToast(e.message ?? "Nie udało się ocenić obserwatorów", "error");
         setVerdicts([]);
@@ -216,6 +223,12 @@ export function WatchersPanel({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {usage && (
+        <div className="mt-3 flex justify-end border-t border-[var(--border)] pt-2">
+          <AiCostBadge usage={usage} rate={usdPlnRate} />
         </div>
       )}
 

@@ -11,7 +11,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { AI_COST_BADGE_CONFIG_KEY, type AiUsageInfo } from "@/lib/ai/usage";
+import { AI_COST_BADGE_CONFIG_KEY, usageFromChat, type AiUsageInfo } from "@/lib/ai/usage";
 
 /**
  * Czy licznik kosztu jest w ogóle włączony w systemie.
@@ -44,4 +44,21 @@ export async function visibleUsage(
   if (!hasPermission(session, PERMISSIONS.ADMIN)) return undefined;
   if (!(await readCostBadgeEnabled())) return undefined;
   return usage;
+}
+
+/**
+ * Skrót dla tras `/api/llm/*` i handlerów zadań: gotowe pole `usage` do wstawienia w odpowiedź.
+ *
+ * Zwraca pusty obiekt, gdy licznika nie wolno pokazać, więc w trasie wystarczy jedna linia:
+ * `return NextResponse.json({ ...wynik, ...(await usageField(result)) })`. Bez tego każda z
+ * kilkunastu tras musiałaby powtarzać ten sam warunek — a jedna zapomniana znaczyłaby moduł bez
+ * licznika (bramka `check:cost-badge` pilnuje, żeby o żadnej nie zapomnieć).
+ */
+export async function usageField(
+  res: { ok: boolean; model?: string; usage?: { prompt: number; completion: number; total: number; cacheRead?: number; cacheWrite?: number } },
+  label?: string,
+  op?: string
+): Promise<{ usage?: AiUsageInfo }> {
+  const usage = await visibleUsage(usageFromChat([{ res, label, op }]));
+  return usage ? { usage } : {};
 }

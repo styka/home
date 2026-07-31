@@ -3,6 +3,8 @@ import { chatComplete } from "@/lib/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { assertValidImage } from "@/lib/jobs/handlers/imageInput";
+import { usageFromChat } from "@/lib/ai/usage";
+import type { AiUsageInfo } from "@/lib/ai/usage";
 
 const VISION_PROMPT = `Jesteś asystentem inwentaryzacji magazynu. Na zdjęciu jest półka, regał,
 szafa, garaż albo skrzynia z rzeczami. Wypisz po polsku WSZYSTKIE rozróżnialne przedmioty/produkty,
@@ -23,7 +25,11 @@ podano — użyj null. Nie wymyślaj przedmiotów, których nie ma na liście.`;
 
 export interface ScanPayload { image?: string }
 export interface ScanItem { name: string; quantity: number | null; unit: string | null; category: string | null; notes: string | null }
-export interface ScanResult { items: ScanItem[] }
+export interface ScanResult {
+  items: ScanItem[];
+  /** 037: zużycie modelu — bramkę widoczności stosuje odczyt wyniku (`GET /api/jobs/[id]`). */
+  usage?: AiUsageInfo;
+}
 
 export async function magazynScanHandler(payload: ScanPayload, ctx: JobContext): Promise<ScanResult> {
   const image = assertValidImage(payload?.image);
@@ -71,7 +77,13 @@ export async function magazynScanHandler(payload: ScanPayload, ctx: JobContext):
           notes: i.notes != null ? String(i.notes) : null,
         })).filter((i) => i.name)
       : [];
-    return { items };
+    return {
+      items,
+      usage: usageFromChat([
+        { res: vision, label: "odczyt zdjęcia", op: "vision" },
+        { res: structured, label: "rozpoznane pozycje" },
+      ]),
+    };
   } catch {
     throw new JobError("LLM zwrócił nieprawidłowy format", 502);
   }
