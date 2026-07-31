@@ -15,7 +15,7 @@
 
 ## Faza 0 — Szybkie wygrane (bez zmian schematu)
 
-- [ ] **T-1** — **Kolejność sekcji na `/pogoda`.** Rozbij `ForecastView.tsx` na trzy eksporty z tego
+- [x] **T-1** — **Kolejność sekcji na `/pogoda`.** Rozbij `ForecastView.tsx` na trzy eksporty z tego
       samego pliku (`ForecastNow`, `ForecastHours`, `ForecastDays`) i złóż w `WeatherPage` kolumnę
       główną w kolejności: Teraz → „Co robić?" → Najbliższe godziny → Najbliższe dni.
       *Gotowe, gdy:* na `/pogoda` (desktop i mobile) sekcje idą w tej kolejności, `ForecastView` nie

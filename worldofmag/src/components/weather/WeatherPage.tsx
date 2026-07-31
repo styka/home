@@ -20,7 +20,7 @@ import { cn } from "@/lib/cn";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { FALLBACK_LOCATION, DAY_PARTS, currentDayPart, type DayPart } from "@/lib/weather/presets";
 import type { Forecast } from "@/lib/weather/openMeteo";
-import { ForecastView } from "./ForecastView";
+import { ForecastNow, ForecastHours, ForecastDays } from "./ForecastView";
 import { WatchersPanel } from "./WatchersPanel";
 import {
   getWeather,
@@ -163,6 +163,10 @@ export function WeatherPage({
       ) : (
         <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0 space-y-5">
+            {/* 037: kolejność sekcji wg zgłoszenia właściciela — najpierw pogoda na teraz, potem
+                „Co robić?", a dopiero pod tym najbliższe godziny i prognoza tygodniowa. */}
+            <ForecastNow forecast={forecast} />
+
             {/* Porada AI */}
             <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
               <div className="mb-2 flex items-center justify-between gap-2">
@@ -225,7 +229,8 @@ export function WeatherPage({
               )}
             </div>
 
-            <ForecastView forecast={forecast} />
+            <ForecastHours forecast={forecast} />
+            <ForecastDays forecast={forecast} />
           </div>
 
           <WatchersPanel watchers={watchers} coords={coords} />
