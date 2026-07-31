@@ -4,26 +4,6 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
-## 2026-07-31 — Przewinięcie = wysokość powłoki − widoczna wysokość (arytmetyka zamiast siódmej próby)
-**Problem:** Nagłówek asystenta drgał przy klawiaturze na iOS. Sześć podejść „na wyczucie" (kompensacja
-`offsetTop`, zapis w zdarzeniu zamiast w stanie, `resizes-content`, `h-full`, `overflow: hidden` na
-`html`, cofnięcia) nie trafiło w przyczynę, a jedno wprowadziło regres (jasny pasek u dołu ekranu).
-**Rozwiązanie:** Zestawienie DWÓCH pomiarów z urządzenia obok siebie dało regułę trafiającą co do
-piksela: `zmierzone scrollY = wysokość powłoki − widoczna wysokość`. Dla `h-screen` (100vh = 812) przy
-widocznych 477 → 335, i zmierzono 335. Dla `h-full` (100% bloku bazowego = 768) → 291, i zmierzono 291.
-Cały łańcuch: powłoka wyższa niż to, co widać → dokument daje się przewinąć → Safari przewija go, żeby
-odsłonić pole tekstowe → widoczny obszar się przesuwa → okno `position: fixed` musi to gonić →
-kompozytor się spóźnia → widać drgnięcie. Naprawa uderza w pierwsze ogniwo: wysokość powłoki wpisywana
-z POMIARU (`--app-height` z `visualViewport.height`, `Math.max` z `innerHeight` jako zabezpieczenie
-przed paskiem tła), bo żadna jednostka CSS tego nie daje — `vh`/`dvh` liczą się z dużego widoku, `%` z
-bloku bazowego, a ten też się nie kurczy. Reguła wydzielona do `lib/viewportHeight.ts` i objęta testami.
-**Lekcja:** Gdy kolejne „naprawy" chybiają, przestań proponować następną i **zestaw dotychczasowe
-pomiary w tabelę** — dwa nietrafione podejścia opisane liczbami wystarczyły, by wyprowadzić regułę,
-której żadne z nich nie widziało z osobna. Nietrafiona próba nie jest odpadem, tylko punktem pomiarowym.
-Druga rzecz: sprawdź, czy diagnoza tłumaczy KAŻDĄ zaobserwowaną liczbę — tamte „44 px" jasnego paska
-przypisano zaniżaniu `visualViewport.height`, a to była zwykła różnica 812 − 768 między oknem a blokiem
-bazowym. Błędna atrybucja jednej liczby zamknęła na sześć podejść właściwy kierunek.
-
 ## 2026-07-31 — `height: 100%` też nie pomogło: układ kurczy się, ale blok bazowy już nie
 **Problem:** Zamiana `h-screen` na `h-full` w powłoce aplikacji miała odebrać dokumentowi
 przewijalność przy klawiaturze. Pomiar po zmianie: `scrollY` spadło z 335 tylko do **291** — dokument

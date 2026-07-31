@@ -17,7 +17,6 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { isPathLocked } from "@/lib/permissions";
 import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
-import { APP_HEIGHT_VAR, useAppHeightVar } from "@/hooks/useVisualViewport";
 import { DEFAULT_USD_PLN_RATE } from "@/lib/usdPln";
 
 interface AppShellProps {
@@ -44,9 +43,6 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
   const [, startTransition] = useTransition();
   const pathname = usePathname();
   const router = useRouter();
-
-  // Wysokość powłoki z pomiaru widocznego obszaru — patrz komentarz przy `height` niżej.
-  useAppHeightVar();
 
   const { enabled, more } = resolveMenu(userPermissions, menuPrefs);
 
@@ -94,16 +90,13 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
     <ToastProvider>
     <DataFreshness />
     <div
-      // 036: wysokość powłoki idzie z POMIARU (`--app-height`, patrz `useAppHeightVar`), nie z
-      // jednostki CSS. Powód: przewijanie dokumentu przy klawiaturze — źródło drgającego nagłówka
-      // asystenta — to dokładnie różnica `wysokość powłoki − widoczna wysokość`. Sprawdzone i
-      // chybione: `h-screen` (100vh → różnica 335, zmierzone `scrollY` 335) oraz `h-full` (100% ICB →
-      // różnica 291, zmierzone `scrollY` 291; dodatkowo pasek tła u dołu, bo 100% ICB jest o 44 px
-      // NIŻSZE niż okno). Pomiar daje różnicę zero, więc dokument nie ma się jak przewinąć.
-      // `100vh` w `var()` to zachowanie do pierwszej klatki i dla renderu po stronie serwera.
-      className="flex flex-col md:flex-row overflow-hidden"
+      // 036: `h-screen`, NIE `h-full`. Próba z `h-full` (=100% wysokości `body`) miała zapobiec
+      // przewijaniu dokumentu przy klawiaturze, ale pomiar na urządzeniu pokazał, że nie zapobiega
+      // (`scrollY` spadło tylko 335 → 291), a przy schowanej klawiaturze zaniżała wysokość okna
+      // o ~44 px — na dole ekranu robił się jasny pasek. Przewijanie blokujemy inaczej: `overflow`
+      // na elemencie `html` na czas otwartego okna pełnoekranowego (patrz `AICommandSheet`).
+      className="flex flex-col md:flex-row h-screen overflow-hidden"
       style={{
-        height: `var(${APP_HEIGHT_VAR}, 100vh)`,
         backgroundColor: "var(--bg-base)",
         paddingBottom: "env(safe-area-inset-bottom)",
         paddingLeft: "env(safe-area-inset-left)",
