@@ -152,6 +152,22 @@ model UserFact {
 - Zero enumów Prisma (C-12): `dateConfidence`, `category`, `confidence`, `origin`, `status` to `TEXT`
   + union w TypeScript.
 
+### 2.7 Migracja `0218` — postęp zadania (dopisane na etapie `/implement`, C-54)
+
+Plan zakładał, że etapy przebiegu „raportują postęp przez `ctx`", ale nie rozstrzygał, **gdzie ten
+postęp mieszka**. Przy pisaniu handlera okazało się to niedopowiedzeniem, którego nie da się obejść:
+AC-6 wymaga, żeby po powrocie na stronę stan przebiegu odtworzył się **z kolejki**, a `Job` nie ma
+dziś na to miejsca (`result` wypełnia się dopiero na końcu). Stąd:
+
+- `prisma/migrations/0218_postep_zadania/migration.sql`: `ALTER TABLE "Job" ADD COLUMN "progress" TEXT;`
+- `JobContext` dostaje `progress(text)` — handler woła to między etapami, a zapis idzie do `Job.progress`.
+- `GET /api/jobs/[id]` zwraca `progress`; `runJob` przekazuje je przez nowe `onProgress`.
+
+Osobna migracja zamiast dopisania do 0217, bo 0217 jest już zastosowana — przepisanie zastosowanego
+pliku rozjeżdża sumę kontrolną i `migrate deploy` odpala go po raz drugi (CLAUDE.md, „Migration
+numbering"). Kolumna jest w `Job`, nie w module Wiadomości, bo to brak w warstwie kolejki — każdy
+wieloetapowy handler ma ten sam problem.
+
 ## 3. Warstwa serwera (Server Actions — C-20)
 
 ### 3.1 Nowy handler zadania `news.refresh` (`src/lib/jobs/handlers/newsRefresh.ts`)

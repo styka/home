@@ -896,6 +896,9 @@ model Job {
   payload     String    @default("{}") // JSON wejścia
   result      String? // JSON wyniku (gdy DONE)
   error       String? // komunikat (gdy FAILED)
+  // 039: etap wieloetapowego zadania („Pobieram źródła (3/5)…"). Stan musi być w kolejce, a nie w
+  // przeglądarce — inaczej odświeżenie strony gubi informację, na czym stoi trwający przebieg.
+  progress    String?
   attempts    Int       @default(0)
   maxAttempts Int       @default(3)
   runAfter    DateTime  @default(now()) // backoff / harmonogram

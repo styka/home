@@ -11,6 +11,11 @@ export interface RunJobOptions {
   timeoutMs?: number;
   /** Callback statusu (np. do pokazania „przetwarzanie…"). */
   onStatus?: (status: string) => void;
+  /**
+   * 039: callback etapu wieloetapowego zadania („Pobieram źródła (3/5)…"). Wołany tylko przy
+   * ZMIANIE etapu, żeby nie przerysowywać UI przy każdym odpytaniu.
+   */
+  onProgress?: (progress: string) => void;
   signal?: AbortSignal;
 }
 
@@ -23,7 +28,8 @@ const sleep = (ms: number, signal?: AbortSignal) =>
 
 /** Zakolejkuj zadanie `type` z `payload` i poczekaj na wynik (typ R). Rzuca Error na porażce. */
 export async function runJob<R = unknown>(type: string, payload: unknown, opts: RunJobOptions = {}): Promise<R> {
-  const { pollMs = 1500, timeoutMs = 5 * 60 * 1000, onStatus, signal } = opts;
+  const { pollMs = 1500, timeoutMs = 5 * 60 * 1000, onStatus, onProgress, signal } = opts;
+  let lastProgress: string | null = null;
 
   const enqRes = await fetch("/api/jobs", {
     method: "POST",
@@ -46,6 +52,10 @@ export async function runJob<R = unknown>(type: string, payload: unknown, opts: 
     }
     const s = await res.json();
     onStatus?.(s.status);
+    if (s.progress && s.progress !== lastProgress) {
+      lastProgress = s.progress;
+      onProgress?.(s.progress);
+    }
     if (s.status === "DONE") return s.result as R;
     if (s.status === "FAILED") throw new Error(s.error || "Zadanie nie powiodło się");
     if (s.status === "CANCELLED") throw new Error("Zadanie anulowane");
