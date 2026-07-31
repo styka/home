@@ -5,6 +5,7 @@ import { Sparkles, Loader2, Download, TrendingUp, PackageX, Boxes, Wallet, Alert
 import { runJob } from "@/lib/jobs/client";
 import type { StorageAnalytics as Analytics } from "@/actions/storage";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import { AiContentMeta } from "@/components/ui/AiContentMeta";
 
 interface Props {
   analytics: Analytics;
@@ -19,13 +20,14 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
   const a = analytics;
   const [tips, setTips] = useState<string[] | null>(null);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
+  const [aiMemory, setAiMemory] = useState<{ generatedAt?: string; stale?: boolean }>({});
   const [loadingTips, setLoadingTips] = useState(false);
 
-  async function loadTips() {
+  async function loadTips(force = false) {
     setLoadingTips(true);
     try {
       // Z-131 (T-17): wnioski przez kolejkę zadań (degradacja łagodna).
-      const res = await runJob<{ tips: string[]; usage?: AiCostUsage }>("magazyn.insights", {
+      const res = await runJob<{ tips: string[]; usage?: AiCostUsage; generatedAt?: string; stale?: boolean }>("magazyn.insights", {
         currency: a.currency,
         totalValue: a.totalValue,
         itemCount: a.itemCount,
@@ -33,9 +35,11 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
         deadStockCount: a.deadStockCount,
         topValue: a.abc.slice(0, 5).map((x) => ({ name: x.name, value: x.value })),
         deadStock: a.deadStock.slice(0, 5).map((x) => ({ name: x.name, value: x.value })),
+        force,
       });
       setTips(res.tips ?? []);
       setAiUsage(res.usage);
+      setAiMemory({ generatedAt: res.generatedAt, stale: res.stale });
     } finally {
       setLoadingTips(false);
     }
@@ -81,7 +85,7 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
             <button type="button" onClick={exportCsv} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border" style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
               <Download size={12} /> CSV
             </button>
-            <button type="button" onClick={loadTips} disabled={loadingTips} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded disabled:opacity-50" style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}>
+            <button type="button" onClick={() => loadTips()} disabled={loadingTips} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded disabled:opacity-50" style={{ backgroundColor: "var(--accent-purple)", color: "var(--on-accent)" }}>
               {loadingTips ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Analizuj
             </button>
           </div>
@@ -99,11 +103,17 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
             ))}
           </ul>
         )}
-          {aiUsage && (
-            <div className="flex justify-end mt-2">
-              <AiCostBadge usage={aiUsage} />
-            </div>
-          )}
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <AiContentMeta
+              generatedAt={aiMemory.generatedAt}
+              stale={aiMemory.stale}
+              busy={loadingTips}
+              onRefresh={() => loadTips(true)}
+              refreshLabel="Nowe wnioski"
+              staleHint="Stan magazynu zmienił się od czasu wygenerowania tych wniosków"
+            />
+            {aiUsage && <AiCostBadge usage={aiUsage} />}
+          </div>
       </section>
 
       {/* Trend ruchów */}

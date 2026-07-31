@@ -4,6 +4,38 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-31 — Awaria zapisana do pamięci podręcznej udaje deterministyczny brak wyników
+**Problem:** Sekcja „Co robić?" w Pogodzie zwracała „Brak propozycji na tę porę". Właściciel próbował
+ponad pięć razy — za każdym razem to samo. Powtarzalność sugerowała, że model po prostu nic nie
+wymyśla dla tych warunków, czyli błąd w prompcie albo w danych pogodowych.
+**Rozwiązanie:** Powtarzalność była **objawem, nie wskazówką**. Łańcuch: budżet 1200 tokenów
+okazał się za mały (przy modelu rozumującym tokeny rozumowania wliczają się do tego samego limitu),
+więc odpowiedź była **ucięta** w połowie JSON-a → `parseJsonLoose` zwracał `null` → kod robił
+`parsed?.ideas ?? []`, zamieniając awarię w pustą listę → UI pokazywało „Brak propozycji". A kluczowe:
+`chatComplete` zapisywał odpowiedź do pamięci podręcznej **bez sprawdzenia flagi `truncated`, którą
+sam wystawia**. Uszkodzona treść wracała więc z cache przy każdej kolejnej próbie — natychmiast i
+identycznie. Naprawa trzywarstwowa: nie cache'ujemy odpowiedzi uciętych (to naprawia WSZYSTKICH
+konsumentów `cache: true`, nie tylko Pogodę), `truncated` i nieparsowalny JSON rzucają błąd zamiast
+zwracać pustkę, a UI ma osobny, wyraźny stan awarii.
+**Lekcja:** Gdy błąd jest **idealnie powtarzalny**, sprawdź najpierw, czy nie patrzysz na zapamiętany
+wynik — cache potrafi zamienić jednorazową awarię w pozornie deterministyczne zachowanie i wysłać cię
+w pościg za nieistniejącą przyczyną. Druga rzecz, ważniejsza: `?? []` na wyniku parsowania to
+**zamiatanie awarii pod dywan**. Pusty wynik i nieudany odczyt muszą być rozróżnialne, bo dla
+użytkownika „nie ma pomysłów" i „coś się zepsuło" to dwa zupełnie różne komunikaty — a pierwszy
+skłania go do bezsensownego ponawiania.
+
+## 2026-07-31 — `onClick={fn}` przekazuje zdarzenie jako pierwszy argument
+**Problem:** Po dodaniu opcjonalnego parametru `force` do funkcji ładującej treść
+(`loadTips(force = false)`) TypeScript zaczął protestować na istniejącym `onClick={loadTips}`.
+**Rozwiązanie:** React przekazuje do handlera obiekt zdarzenia, więc `onClick={loadTips}` wołało
+`loadTips(mouseEvent)` — a obiekt zdarzenia jest **prawdziwy**, więc `force` byłby zawsze włączony i
+każde kliknięcie wymuszałoby generowanie od nowa, niwecząc całą oszczędność. Poprawka:
+`onClick={() => loadTips()}`.
+**Lekcja:** Dokładając opcjonalny parametr do funkcji używanej jako handler zdarzenia, przejrzyj
+wszystkie miejsca przekazane „przez referencję". Ten błąd nie objawia się wywaleniem, tylko cichym
+włączeniem opcji — tutaj wykrył go kompilator, ale gdyby parametr był typu `unknown` albo `any`,
+przeszedłby niezauważony aż do rachunku za tokeny.
+
 ## 2026-07-31 — „Sprzyja" przy mokrym weekendzie: zły status to był efekt źle postawionego pytania
 **Problem:** Obserwator pogody „Bardzo mokry weekend" pokazywał status **Sprzyja** z uzasadnieniem
 „weekend suchy". Wyglądało to na halucynację modelu — dwa zdania na kafelku wprost sobie przeczyły.

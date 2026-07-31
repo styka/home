@@ -2,11 +2,14 @@
 import { chatComplete } from "@/lib/llm/chat";
 import { type JobContext } from "@/lib/jobs/types";
 import { usageFromChat } from "@/lib/ai/usage";
+import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
 
 interface InsightsPayload {
   pets?: Array<{ name: string; species: string; presetKey?: string }>;
   agenda?: Array<{ petName: string; title: string; bucket: string; dueAt: string }>;
   ruleSuggestions?: Array<{ title: string; detail?: string }>;
+  /** 038: użytkownik jawnie poprosił o nowe porady. Bez tego wracają zapamiętane. */
+  force?: boolean;
 }
 const SYSTEM_PROMPT = `Jesteś doświadczonym doradcą ds. dobrostanu zwierząt domowych i egzotycznych.
 Na podstawie listy zwierząt, gatunków i zadań opieki formułujesz krótkie, konkretne porady po polsku.
@@ -16,6 +19,32 @@ konkretna i wykonalna; priorytet zaległe/zdrowie; uwzględnij specyfikę gatunk
 export async function petsInsightsHandler(payload: InsightsPayload, ctx: JobContext) {
   const pets = payload?.pets ?? [];
   if (pets.length === 0) return { tips: [] };
+  if (!ctx.ownerId) return runPetsInsights(payload, ctx);
+
+  const remembered = await rememberedContent<{ tips: string[]; unavailable?: boolean }>({
+    ownerId: ctx.ownerId,
+    kind: "pets.insights",
+    scopeKey: "default",
+    inputHash: hashInputs(
+      pets.map((p) => `${p.name}|${p.species}`).sort().join(","),
+      (payload.agenda ?? []).map((a) => `${a.petName}|${a.title}|${a.bucket}`).sort().join(",")
+    ),
+    force: payload.force,
+    generate: async () => {
+      const r = await runPetsInsights(payload, ctx);
+      return { value: { tips: r.tips, unavailable: r.unavailable }, usage: r.usage };
+    },
+  });
+  return {
+    ...remembered.value,
+    usage: remembered.usage,
+    generatedAt: remembered.generatedAt,
+    stale: remembered.stale,
+  };
+}
+
+async function runPetsInsights(payload: InsightsPayload, ctx: JobContext) {
+  const pets = payload?.pets ?? [];
 
   const userMsg = [
     `Zwierzęta: ${pets.map((p) => `${p.name} (${p.species})`).join(", ")}`,

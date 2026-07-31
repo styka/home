@@ -1,0 +1,130 @@
+{
+  "src/actions/news.ts": {
+    "mode": "on-demand",
+    "reason": "Streszczenie pozycji generowane po wyborze innej długości przez użytkownika — kliknięcie JEST wyraźną akcją, a wynik zależy od wybranej długości."
+  },
+  "src/actions/weather.ts": {
+    "mode": "remembered",
+    "reason": "Lista propozycji „Co robić?\" i szczegółowe plany pomysłów — treść do czytania, wracająca przy każdym wejściu na stronę."
+  },
+  "src/app/api/llm/category-hints/route.ts": {
+    "mode": "on-demand",
+    "reason": "Podpowiedzi do kategorii zamawiane kliknięciem, zależne od wpisywanego tekstu."
+  },
+  "src/app/api/llm/category-icons/route.ts": {
+    "mode": "on-demand",
+    "reason": "Generowanie ikon uruchamiane kliknięciem, dla każdorazowo innego opisu."
+  },
+  "src/app/api/llm/home/agent/route.ts": {
+    "mode": "on-demand",
+    "reason": "Asystent odpowiada na konkretne pytanie użytkownika; historia rozmowy jest już trwała w AiConversation."
+  },
+  "src/app/api/llm/home/briefing/route.ts": {
+    "mode": "on-demand",
+    "reason": "Poranne podsumowanie jest zamawiane przyciskiem i klient buforuje je per dzień po swojej stronie."
+  },
+  "src/app/api/llm/kitchen/categorize/route.ts": {
+    "mode": "on-demand",
+    "reason": "Kategoryzacja przepisu odpalana przy zapisie — wynik zależy od bieżącej treści formularza."
+  },
+  "src/app/api/llm/kitchen/import-url/route.ts": {
+    "mode": "on-demand",
+    "reason": "Import z adresu — inny adres to inny wynik, pamięć zwracałaby cudzy przepis."
+  },
+  "src/app/api/llm/kitchen/parse-ingredients/route.ts": {
+    "mode": "on-demand",
+    "reason": "Parsowanie wklejonego tekstu — pamięć zwracałaby wynik dla poprzedniej wklejki."
+  },
+  "src/app/api/llm/languages/extract/route.ts": {
+    "mode": "on-demand",
+    "reason": "Ekstrakcja słownictwa z wklejonego tekstu, uruchamiana kliknięciem."
+  },
+  "src/app/api/llm/magazynowanie/enrich/route.ts": {
+    "mode": "on-demand",
+    "reason": "Uzupełnianie pozycji po kodzie kreskowym — narzędzie wołane w trakcie skanowania."
+  },
+  "src/app/api/llm/magazynowanie/search/route.ts": {
+    "mode": "on-demand",
+    "reason": "Wyszukiwanie „gdzie to jest\" — odpowiedź na konkretne zapytanie użytkownika."
+  },
+  "src/app/api/llm/normalize/route.ts": {
+    "mode": "on-demand",
+    "reason": "Normalizacja wpisanej listy zakupów — wynik zależy od bieżącego tekstu."
+  },
+  "src/app/api/llm/notes/qa/route.ts": {
+    "mode": "on-demand",
+    "reason": "Pytanie do notatek — odpowiedź na konkretne pytanie, dodatkowo strumieniowa."
+  },
+  "src/app/api/llm/notes/rewrite/route.ts": {
+    "mode": "on-demand",
+    "reason": "Przepisanie zaznaczonego tekstu — narzędzie uruchamiane świadomym kliknięciem."
+  },
+  "src/app/api/llm/notes/tags/route.ts": {
+    "mode": "on-demand",
+    "reason": "Propozycje tagów dla bieżącej treści notatki."
+  },
+  "src/app/api/llm/notes/title/route.ts": {
+    "mode": "on-demand",
+    "reason": "Propozycja tytułu dla bieżącej treści notatki."
+  },
+  "src/app/api/llm/tasks/parse/route.ts": {
+    "mode": "on-demand",
+    "reason": "Parsowanie wklejonego tekstu na zadania."
+  },
+  "src/app/api/llm/tasks/search/route.ts": {
+    "mode": "on-demand",
+    "reason": "Wyszukiwanie zadań — odpowiedź na konkretne zapytanie."
+  },
+  "src/app/api/llm/tasks/suggest/route.ts": {
+    "mode": "on-demand",
+    "reason": "Sugestia do konkretnego zadania, zamawiana kliknięciem."
+  },
+  "src/app/api/llm/tasks/title/route.ts": {
+    "mode": "on-demand",
+    "reason": "Propozycja tytułu dla bieżącej treści zadania."
+  },
+  "src/lib/ai/fastPath.ts": {
+    "mode": "on-demand",
+    "reason": "Klasyfikacja intencji wewnątrz tury asystenta — nie jest treścią pokazywaną użytkownikowi."
+  },
+  "src/lib/jobs/handlers/kitchenGenerateRecipe.ts": {
+    "mode": "on-demand",
+    "reason": "Przepis generowany z podanego opisu — inny opis to inny przepis; wynik i tak zapisuje się jako przepis."
+  },
+  "src/lib/jobs/handlers/kitchenOcrImage.ts": {
+    "mode": "on-demand",
+    "reason": "Odczyt konkretnego zdjęcia; wynik trafia do edytora przepisu."
+  },
+  "src/lib/jobs/handlers/kitchenOcrText.ts": {
+    "mode": "on-demand",
+    "reason": "Odczyt tekstu z konkretnego zdjęcia; wynik zapisuje się przy zdjęciu."
+  },
+  "src/lib/jobs/handlers/kitchenPlanWeek.ts": {
+    "mode": "remembered",
+    "reason": "Plan tygodnia — treść do czytania, przypisana do konkretnego tygodnia i ustawień."
+  },
+  "src/lib/jobs/handlers/magazynDocument.ts": {
+    "mode": "on-demand",
+    "reason": "Odczyt konkretnego dokumentu; wynik zapisuje się jako dokument magazynowy."
+  },
+  "src/lib/jobs/handlers/magazynInsights.ts": {
+    "mode": "remembered",
+    "reason": "Wnioski z analityki magazynu — treść do czytania, niezmieniająca się między wejściami przy tym samym stanie magazynu."
+  },
+  "src/lib/jobs/handlers/magazynOrderDraft.ts": {
+    "mode": "on-demand",
+    "reason": "Projekt zamówienia dla konkretnego zamówienia; wynik zapisuje się w polu draftText."
+  },
+  "src/lib/jobs/handlers/magazynScan.ts": {
+    "mode": "on-demand",
+    "reason": "Rozpoznanie pozycji z konkretnego zdjęcia; wynik trafia do formularza."
+  },
+  "src/lib/jobs/handlers/petsInsights.ts": {
+    "mode": "remembered",
+    "reason": "Porady dobrostanu zwierząt — treść do czytania, zależna od stałego zestawu zwierząt i zadań opieki."
+  },
+  "src/lib/jobs/handlers/storesGenerate.ts": {
+    "mode": "on-demand",
+    "reason": "Układ sklepu generowany raz dla nowego sklepu; wynik zapisuje się jako graf sklepu."
+  }
+}

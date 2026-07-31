@@ -71,7 +71,7 @@ soft-delete trash, per-user Google Drive storage, and an AI assistant.
 | Portfel (personal finance) | `/portfel` | `module.portfel` | Done — wallet elements/entries + **budgets & savings goals** (`/portfel/budzety`), **monthly reports** (`/portfel/raporty`), **settings + multi-currency/exchange rates** (`/portfel/ustawienia`), and **auto-expense booking** from other modules (`WalletEntry.sourceModule/sourceId`) |
 | Languages (SRS flashcards) | `/languages` | `module.languages` | Done — SuperMemo-2 + TTS/pronunciation, writing mode, study series |
 | Wiadomości (news + knowledge base) | `/wiadomosci` | `module.news` | Done — RSS+LLM filtering, per-topic/per-source versioned knowledge base, web-search baseline bootstrap (Brave/DDG), hot topics, 24h freshness |
-| Pogoda (weather) | `/pogoda` | `module.weather` | Done — Open-Meteo, **location picking on a map** (Leaflet+OSM, reverse geocoding), watchers (preset + custom, **editable**, status = *is the watcher's condition met* — `met/partial/unmet/unknown`, never a judgement of "nice weather"), **„Co robić?" as a list of AI proposals** with on-demand persistent detail plans + an idea library (`/pogoda/pomysly`, `WeatherIdea`) |
+| Pogoda (weather) | `/pogoda` | `module.weather` | Done — Open-Meteo (sunrise/sunset + moon phase, day/night icons), **location picking on a map** (Leaflet+OSM, reverse geocoding), watchers (preset + custom, **editable**, status = *is the watcher's condition met* — `met/partial/unmet/unknown`, never a judgement of "nice weather"), **„Co robić?" as a list of AI proposals** with on-demand persistent detail plans + an idea library (`/pogoda/pomysly`, `WeatherIdea`) |
 | Magazynowanie (storage/inventory) | `/magazynowanie` | `module.magazynowanie` | Done — **two modes (Dom/Pro, per-user `StorageSettings`)**. Shared: items by warehouse+location, SKU/EAN, min-stock replenishment→shopping, stocktake, AI photo inventory, movement log. **Dom:** "where is it?" (AI search), QR labels (print+scan), warranties/expiry, value+photos (CSV export). **Pro:** barcode in/out scan (`@zxing`), suppliers, PZ/WZ/invoice documents (OCR), purchase orders (LLM draft), analytics (value/ABC/dead-stock/trend + AI takeaways), batches/lots + FEFO. AI in assistant (`add_storage_item`/`adjust_storage` + read-tool `list_storage_items`) |
 | Warsztaty (workshop/studio) | `/warsztaty` | `module.warsztaty` | Done — **two modes (Dom/Pro, per-user `WarsztatSettings`)**. Any workshop type (woodworking/automotive/painting/electronics/metalworking/ceramics/sewing/jewelry/general). Equipment register (`WorkshopItem`: kind tool/machine/material/PPE, condition, qty+min-stock, service `nextServiceAt`), **static equipment-suggestion catalog by profile** (`src/lib/warsztat/catalog.ts`, basic/recommended/advanced tiers) as an "add to equipment" checklist. **Pro:** team ownership, tool assignment (who has / station), service + low-stock agenda (`/warsztaty/przeglady`), project journal (`WorkshopProject`). AI: read-tool `list_workshops` + actions `create_workshop`/`add_workshop_item` |
 | Usługi (service marketplace) | `/services` | `module.services` | Done — provider profiles (admin-set **verified** badge, public profile + slug/tagline at `/providers/[id]`), listings (categories, advanced filters/sort), service requests with a status workflow, **in-app chat** (`ServiceMessage`), **quotes** (`ServiceQuote`), **portfolio** images (`ServiceImage`), **availability + slot booking** (`ServiceAvailability`, `lib/serviceSlots.ts`, `lib/serviceGeo.ts`), ratings/reviews (`ServiceReview`), **payments/invoices** (`ServicePayment`, Portfel integration), **favorites** (`ServiceFavorite`), **promo codes** (`ServicePromoCode`), **multi-worker firms** (`ServiceStaff`), **disputes + admin moderation** (`ServiceDispute`, `/services/moderation`) |
@@ -394,7 +394,8 @@ ExchangeRate                                  — Portfel multi-currency exchang
 LanguageDeck, Vocabulary                      — Languages (SRS)
 NewsSource, NewsTopic, NewsKnowledge, NewsItem, NewsPref — Wiadomości (news + versioned knowledge base)
 WeatherLocation, WeatherWatcher               — Pogoda (locations + alert watchers)
-WeatherIdea                                   — Pogoda „Co robić?" — proposals the user acted on (unique [ownerId, fingerprint]; state considered|saved|blocked; persistent `detail` plan + `detailUsage`)
+WeatherIdea                                   — Pogoda „Co robić?" — proposals the user acted on (unique [ownerId, fingerprint]; state considered|saved|blocked; persistent `detail` plan + `detailUsage`; `seedDate`/`seedPart`/`seedWeather` = conditions at the moment the idea was proposed, so a lazily-generated plan describes THAT day)
+AiContent                                     — 038: cross-cutting MEMORY of AI-generated content (unique [ownerId, kind, scopeKey]; `inputHash` = conditions it was generated under → drives the „nieaktualne" badge; `refreshes` counts explicit regenerations)
 StorageItem, StorageMovement                  — Magazynowanie (items + movement log; item has barcode/unitPrice/photoUrl/expiresAt/warrantyUntil/supplierId)
 StorageSettings, StorageSupplier, StorageBatch — Magazynowanie pro (Dom/Pro per-user; suppliers; batches/lots FEFO)
 StorageDocument, StorageDocumentLine          — Magazynowanie pro (PZ/WZ/invoice documents + lines)
@@ -657,7 +658,7 @@ survives) — do **not** move escaping into `inlineFormat` (it opened an XSS hol
 the table/paragraph merge).
 
 **Build pipeline**: `npm run build` runs
-`node scripts/copy-docs.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-migrations.js && next lint --dir src && prisma generate && next build && node scripts/migrate.js`.
+`node scripts/copy-docs.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && next lint --dir src && prisma generate && next build && node scripts/migrate.js`.
 - `copy-docs.js` bundles `docs/` for `/admin/docs`.
 - `check-action-coverage.js` (also `npm run check:actions`) verifies **every AI
   `AIAction` has an executor** in `/api/llm/home/execute` — the build **fails**
@@ -675,6 +676,16 @@ the table/paragraph merge).
 - **Never export a non-function from a `"use server"` file** — `next build` fails ("Only async
   functions are allowed to be exported"), and `tsc --noEmit` does *not* catch it. Shared constants
   belong in `src/lib/*`.
+- **`check-content-memory.js`** (also `npm run check:content-memory`) — 038: enforces the owner's rule
+  that **AI-generated content is remembered and regenerated only on an explicit click**. Every file
+  calling `chatComplete`/`chatStream` needs an entry in `src/lib/ai/content-memory-coverage.json`
+  classified as **`remembered`** (content to read — must wrap the call in `rememberedContent(...)`
+  from `src/lib/ai/contentMemory.ts`) or **`on-demand`** (a tool fired by a click, where memory would
+  return a stale result for changed input), each with a `reason`. The gate cannot infer which is
+  which, so it demands an explicit decision — same pattern as `action-coverage.json`.
+  `rememberedContent` returns `{value, generatedAt, stale, fromMemory, refreshes, usage}`; **`stale`
+  is information, never a trigger** — it only lights the „nieaktualne" badge. UI side is the shared
+  `src/components/ui/AiContentMeta.tsx` (generated-at + stale badge + refresh button).
 - **`check-cost-badge.js`** (also `npm run check:cost-badge`) — 037: enforces that every file calling
   `chatComplete`/`chatStream` **passes the model usage on** (imports `usageFromChat`/`usageField`/
   `visibleUsage`/`accrueUsage`), so the cost indicator can be rendered next to the generated content.

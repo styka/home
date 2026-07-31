@@ -173,32 +173,38 @@ export function WatchersPanel({
                   !w.enabled && "opacity-50"
                 )}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    {style && (
-                      <span
-                        className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
-                        style={{ color: style.color, border: `1px solid ${style.color}` }}
-                        title={style.hint}
-                      >
-                        {style.label}
-                      </span>
-                    )}
-                    <span className="font-medium text-[var(--text-primary)]">{w.title}</span>
-                    <span className="text-[10px] text-[var(--text-muted)]">
-                      {HORIZON_META[w.horizon].label}
+                {/* 038: na telefonie tytuł, status i horyzont nie mieszczą się w jednym wierszu —
+                    tytuł jest teraz osobno i zawija się, a znaczniki idą pod nim. */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <span className="block break-words font-medium text-[var(--text-primary)]">
+                      {w.title}
                     </span>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {style && (
+                        <span
+                          className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                          style={{ color: style.color, border: `1px solid ${style.color}` }}
+                          title={style.hint}
+                        >
+                          {style.label}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-[var(--text-muted)]">
+                        {HORIZON_META[w.horizon].label}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex shrink-0 items-center gap-0.5">
                     <button
                       onClick={() => run(() => updateWatcher(w.id, { enabled: !w.enabled }))}
-                      className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                      className="rounded p-2 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
                     >
                       {w.enabled ? "Wyłącz" : "Włącz"}
                     </button>
                     <button
                       onClick={() => setEditing(w)}
-                      className="text-[var(--text-muted)] hover:text-[var(--accent-blue)]"
+                      className="rounded p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-blue)]"
                       title="Edytuj obserwator"
                       aria-label={`Edytuj obserwator ${w.title}`}
                     >
@@ -206,7 +212,7 @@ export function WatchersPanel({
                     </button>
                     <button
                       onClick={() => run(() => deleteWatcher(w.id))}
-                      className="text-[var(--text-muted)] hover:text-[var(--accent-red)]"
+                      className="rounded p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-red)]"
                       title="Usuń obserwator"
                       aria-label={`Usuń obserwator ${w.title}`}
                     >
