@@ -4,6 +4,23 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-31 — „Płynna" dolna część okna była złudzeniem: obraz czasoprzestrzenny zamiast wrażeń
+**Problem:** Zgłoszenie brzmiało: kompozytor (dół okna asystenta) przesuwa się przy klawiaturze
+płynnie, a nagłówek skacze — więc może da się zadokować nagłówek „tak samo, pasywnie". Trop wyglądał
+bardzo sensownie i prowadziłby do szukania nieistniejącego mechanizmu.
+**Rozwiązanie:** Z nagrania ekranu zbudowany **obraz czasoprzestrzenny**: z każdej klatki wycięty ten
+sam wąski pionowy pasek, sklejone w poziomie (oś X = czas, Y = pozycja na ekranie). Tor każdej
+poziomej krawędzi staje się wtedy linią, którą widać gołym okiem. Wynik: gładkie łuki rysuje
+WYŁĄCZNIE sama klawiatura; linie kompozytora urywają się i pojawiają na nowej wysokości dokładnie tak
+samo skokowo jak nagłówek. Wrażenie płynności brało się stąd, że skok kompozytora ląduje tam, gdzie
+dojeżdża klawiatura — oko śledzi klawiaturę i scala oba ruchy. Nie było czego kopiować.
+**Lekcja:** Gdy dwa elementy „zachowują się inaczej", nie szukaj różnicy w kodzie, zanim nie
+zmierzysz, czy ta różnica w ogóle istnieje. Obraz czasoprzestrzenny z nagrania (ffmpeg + kilkanaście
+linii w PIL) kosztuje minuty i zamienia „widzę, że tamto jest płynne" w twardy tor ruchu. Druga
+lekcja, z tej samej tury: utrzymywanie dołu listy CO KLATKĘ podczas animowanej zmiany wysokości samo
+tworzy artefakt (~17 wymuszonych przewinięć w trakcie 280 ms) — treść przeskakuje w innym rytmie niż
+ramka. Pinowanie ma sens na starcie zmiany i po jej zakończeniu, nie w środku.
+
 ## 2026-07-31 — iOS podaje ruch klawiatury JEDNYM skokiem: brakujące klatki trzeba dorysować samemu
 **Problem:** Osiem podejść do drgającego nagłówka asystenta (kompensacja `offsetTop`, zapis w
 zdarzeniu, `resizes-content`, `h-full`, `overflow: hidden`, wysokość powłoki z pomiaru, pętla `rAF`)
