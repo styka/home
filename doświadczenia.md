@@ -4,6 +4,29 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-07-31 — `100vh` nie kurczy się przy `resizes-content`, więc dokument stawał się przewijalny
+**Problem:** Nagłówek asystenta wciąż drgał przy klawiaturze, mimo ustawienia
+`interactive-widget=resizes-content`. Pięć podejść „na wyczucie" nie trafiło w przyczynę.
+**Rozwiązanie:** Nakładka diagnostyczna z odczytem geometrii co klatkę (`ViewportProbe`) dała liczby,
+które rozstrzygnęły sprawę **co do piksela**:
+```
+spoczynek:   vv.h 812  vv.top 0    win.h 812  scrollY 0
+klawiatura:  vv.h 477  vv.top 291  win.h 477  scrollY 335
+```
+`win.h` spadło z 812 na 477 — czyli **Safari HONORUJE `resizes-content`** i zmniejsza układ strony.
+Ale powłoka aplikacji (`AppShell`) miała `h-screen`, czyli `100vh`, a `vh` odnosi się do „dużego"
+widoku i **zostaje 812**. Powłoka wystawała więc 335 px poza układ, dokument stawał się przewijalny
+i iOS przewijał go dokładnie o tę nadwyżkę: `scrollY` = 335 = 812 − 477. To przewinięcie ciągnęło za
+sobą elementy `position: fixed` — stąd drgnięcie. Naprawa: `h-screen` → `h-full` (`height: 100%`),
+bo `%` śledzi układ (`html, body { height: 100% }`), więc nie ma czego przewijać.
+**Lekcja:** `100vh` i `100%` to NIE to samo, gdy układ strony może się kurczyć. Przy
+`interactive-widget=resizes-content` (albo dowolnej zmianie układu) `vh` zostaje przy „dużym" widoku
+i cicho robi z dokumentu element przewijalny — a na iOS przewijanie ciągnie za sobą `position: fixed`.
+Dla powłok pełnoekranowych używaj `height: 100%` (albo `100dvh`), nigdy `100vh`.
+**Lekcja metodyczna:** trzy zgadywanki kosztowały jeden regres; jedna nakładka wypisująca liczby co
+klatkę rozstrzygnęła wszystko w pięć minut. Przy błędach widocznych tylko na urządzeniu **najpierw
+zbuduj pomiar**, potem naprawiaj.
+
 ## 2026-07-31 — Nie ścigaj przesunięcia widocznego obszaru — powiedz przeglądarce, żeby go nie robiła
 **Problem:** Nagłówek asystenta drgał przy każdym wysunięciu klawiatury. Trzy podejścia (kompensacja
 przez `rAF`, kompensacja synchroniczna, brak kompensacji) nie usunęły drgnięcia, bo wszystkie
