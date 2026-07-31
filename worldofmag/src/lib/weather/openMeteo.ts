@@ -4,6 +4,8 @@ import { resilientFetch } from "@/lib/integrations/resilientFetch"; // Z-157: ti
 
 export interface HourPoint {
   time: string; // ISO local
+  /** 038: czy o tej godzinie jest dzień — z API, nie z naszego liczenia wschodu/zachodu. */
+  isDay: boolean;
   temp: number;
   apparent: number;
   precipProb: number; // %
@@ -49,11 +51,27 @@ export interface WmoMeta {
   color: string;
 }
 
-export function wmo(code: number): WmoMeta {
+/**
+ * 038: `isNight` podmienia ikonę tylko tam, gdzie w wariancie dziennym świeci SŁOŃCE.
+ *
+ * Zgłoszenie właściciela: o 23:00 i 02:00 pasek godzinowy pokazywał ☀️. Deszcz, śnieg i mgła
+ * wyglądają w nocy tak samo jak w dzień, więc świadomie NIE dorabiamy im sztucznych wariantów —
+ * byłoby to mnożenie ikon bez informacji (C-53).
+ */
+export function wmo(code: number, isNight = false): WmoMeta {
   const c = code;
-  if (c === 0) return { label: "Bezchmurnie", emoji: "☀️", color: "var(--accent-amber)" };
-  if (c === 1) return { label: "Przeważnie słonecznie", emoji: "🌤️", color: "var(--accent-amber)" };
-  if (c === 2) return { label: "Częściowe zachmurzenie", emoji: "⛅", color: "var(--accent-amber)" };
+  if (c === 0)
+    return isNight
+      ? { label: "Bezchmurna noc", emoji: "🌙", color: "var(--accent-blue)" }
+      : { label: "Bezchmurnie", emoji: "☀️", color: "var(--accent-amber)" };
+  if (c === 1)
+    return isNight
+      ? { label: "Niemal bezchmurna noc", emoji: "🌙", color: "var(--accent-blue)" }
+      : { label: "Przeważnie słonecznie", emoji: "🌤️", color: "var(--accent-amber)" };
+  if (c === 2)
+    return isNight
+      ? { label: "Częściowe zachmurzenie", emoji: "☁️", color: "var(--text-secondary)" }
+      : { label: "Częściowe zachmurzenie", emoji: "⛅", color: "var(--accent-amber)" };
   if (c === 3) return { label: "Pochmurno", emoji: "☁️", color: "var(--text-secondary)" };
   if (c === 45 || c === 48) return { label: "Mgła", emoji: "🌫️", color: "var(--text-muted)" };
   if (c >= 51 && c <= 55) return { label: "Mżawka", emoji: "🌦️", color: "var(--accent-blue)" };
@@ -149,7 +167,7 @@ export async function fetchForecast(lat: number, lon: number): Promise<Forecast 
       longitude: String(lon),
       current: "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,is_day",
       hourly:
-        "temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m",
+        "temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,is_day",
       daily:
         "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,sunrise,sunset,uv_index_max",
       timezone: "auto",
@@ -165,6 +183,7 @@ export async function fetchForecast(lat: number, lon: number): Promise<Forecast 
 
     const hourly: HourPoint[] = (d.hourly?.time ?? []).map((t: string, i: number) => ({
       time: t,
+      isDay: d.hourly.is_day?.[i] !== 0,
       temp: d.hourly.temperature_2m[i],
       apparent: d.hourly.apparent_temperature[i],
       precipProb: d.hourly.precipitation_probability?.[i] ?? 0,

@@ -19,6 +19,8 @@ import {
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
+import { PageHeader } from "@/components/ui/home/PageHeader";
+import { pageContainerStyle, pageInnerStyle } from "@/components/ui/home/styles";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { IDEA_CATEGORY_LABELS, IDEA_STATE_LABELS, type IdeaDTO, type IdeaState } from "@/lib/weather/ideas";
@@ -79,24 +81,29 @@ export function IdeaLibraryPage({
   }
 
   return (
-    <div className="min-w-0 flex-1 overflow-y-auto">
-      <div className="mx-auto min-w-0 max-w-3xl px-4 py-6">
+    /* 038: strona korzysta z tych samych elementów układu co pozostałe podstrony działów
+       (`pageContainerStyle` + `pageInnerStyle` + `PageHeader`), zamiast własnego nagłówka —
+       właściciel słusznie zauważył, że odstawała stylistycznie od reszty aplikacji. */
+    <div style={pageContainerStyle}>
+      <div style={pageInnerStyle}>
         <Link
           href="/pogoda"
-          className="mb-4 inline-flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12,
+            color: "var(--text-muted)", textDecoration: "none", marginBottom: -12,
+          }}
         >
           <ChevronLeft size={14} /> Pogoda
         </Link>
+        <PageHeader
+          icon={<Library size={22} />}
+          iconColor="var(--accent-purple)"
+          title="Pomysły"
+          href="/pogoda/pomysly"
+          subtitle="Propozycje, które rozważałeś albo odrzuciłeś. Zablokowane nie wrócą w „Co robić?”, dopóki ich nie przywrócisz."
+        />
 
-        <h1 className="mb-1 flex items-center gap-2 text-xl font-bold text-[var(--text-primary)]">
-          <Library size={20} className="text-[var(--accent-purple)]" /> Pomysły
-        </h1>
-        <p className="mb-4 text-sm text-[var(--text-muted)]">
-          Propozycje, które rozważałeś albo odrzuciłeś. Zablokowane nie wrócą w sekcji „Co robić?”,
-          dopóki nie przywrócisz ich proponowania.
-        </p>
-
-        <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap gap-1">
             {FILTERS.map((f) => (
               <button

@@ -1,6 +1,7 @@
 "use client";
 
 import { wmo, type Forecast } from "@/lib/weather/openMeteo";
+import { moonPhase } from "@/lib/weather/moon";
 
 const PL_DAYS = ["niedz.", "pon.", "wt.", "śr.", "czw.", "pt.", "sob."];
 
@@ -20,23 +21,53 @@ export function ForecastNow({ forecast }: { forecast: Forecast }) {
   const today = forecast.daily[0];
   if (!cur) return null;
 
+  // 038: `isDay` było pobierane, ale nieużywane — stąd słońce po zmroku.
+  const meta = wmo(cur.code, !cur.isDay);
+  const moon = moonPhase();
+
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
-      <span className="text-5xl">{wmo(cur.code).emoji}</span>
-      <div>
-        <div className="text-3xl font-bold text-[var(--text-primary)]">{Math.round(cur.temp)}°C</div>
-        <div className="text-sm text-[var(--text-secondary)]">
-          {wmo(cur.code).label} · odczuwalna {Math.round(cur.apparent)}°C · wiatr{" "}
-          {Math.round(cur.windKph)} km/h
-        </div>
-        {today && (
-          <div className="text-xs text-[var(--text-muted)]">
-            Dziś {Math.round(today.tMin)}–{Math.round(today.tMax)}°C · opady {today.precipProbMax}%
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
+      <div className="flex items-center gap-4">
+        <span className="text-5xl">{meta.emoji}</span>
+        <div className="min-w-0">
+          <div className="text-3xl font-bold text-[var(--text-primary)]">{Math.round(cur.temp)}°C</div>
+          <div className="text-sm text-[var(--text-secondary)]">
+            {meta.label} · odczuwalna {Math.round(cur.apparent)}°C · wiatr {Math.round(cur.windKph)} km/h
           </div>
-        )}
+          {today && (
+            <div className="text-xs text-[var(--text-muted)]">
+              Dziś {Math.round(today.tMin)}–{Math.round(today.tMax)}°C · opady {today.precipProbMax}%
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* 038: wschód/zachód i faza księżyca. Zawija się na wąskim ekranie zamiast wymuszać
+          przewijanie w poziomie (C-31). */}
+      {today && (today.sunrise || today.sunset) && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[var(--border)] pt-3 text-xs text-[var(--text-secondary)]">
+          {today.sunrise && (
+            <span className="whitespace-nowrap" title="Wschód słońca">
+              🌅 {hhmm(today.sunrise)}
+            </span>
+          )}
+          {today.sunset && (
+            <span className="whitespace-nowrap" title="Zachód słońca">
+              🌇 {hhmm(today.sunset)}
+            </span>
+          )}
+          <span className="whitespace-nowrap" title="Faza księżyca">
+            {moon.emoji} {moon.name}
+          </span>
+        </div>
+      )}
     </div>
   );
+}
+
+/** „2026-07-31T20:15" → „20:15". Open-Meteo zwraca czas lokalny lokalizacji, więc bez przeliczeń. */
+function hhmm(iso: string): string {
+  return iso.length >= 16 ? iso.slice(11, 16) : iso;
 }
 
 /** „Najbliższe godziny" — poziomy pasek najbliższych 24 godzin. */
@@ -56,7 +87,7 @@ export function ForecastHours({ forecast }: { forecast: Forecast }) {
             className="flex min-w-[64px] flex-col items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-2 py-2 text-center"
           >
             <span className="text-xs text-[var(--text-muted)]">{h.time.slice(11, 16)}</span>
-            <span className="text-xl">{wmo(h.code).emoji}</span>
+            <span className="text-xl">{wmo(h.code, !h.isDay).emoji}</span>
             <span className="text-sm font-medium text-[var(--text-primary)]">
               {Math.round(h.temp)}°
             </span>

@@ -62,7 +62,9 @@ export function IdeaDetailSheet({
       aria-label={`Szczegóły propozycji: ${idea.title}`}
       className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[var(--bg-base)] md:static md:z-auto md:max-h-[70vh] md:rounded-xl md:border md:border-[var(--border)] md:bg-[var(--bg-surface)]"
     >
-      <div className="flex items-start justify-between gap-2 border-b border-[var(--border)] px-4 py-3">
+      {/* 038: górny margines bezpieczny. Dolny był od początku, górnego brakowało — dlatego na
+          telefonie z wcięciem zegar i kamerka zasłaniały „Wróć do listy" i tytuł. */}
+      <div className="flex items-start justify-between gap-2 border-b border-[var(--border)] px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:pt-3">
         <div className="min-w-0">
           <button
             onClick={onClose}
