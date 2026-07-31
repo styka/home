@@ -23,7 +23,7 @@
       `lib/weather/ideas.ts` (re-eksport, zero zmiany zachowania) — będzie używane w trzech miejscach.
       *Gotowe, gdy:* `npm run test:unit` przechodzi, a Pogoda działa bez zmian.
 
-- [ ] **T-3** `[P]` — **`src/lib/speech/sentences.ts` + test.** `splitSentences(text)` dla polskiego:
+- [x] **T-3** `[P]` — **`src/lib/speech/sentences.ts` + test.** `splitSentences(text)` dla polskiego:
       skróty („np.", „tzn.", „r.", „godz."), liczby z kropką i cudzysłowy nie kończą zdania.
       *Gotowe, gdy:* test pokrywa przypadki graniczne i przechodzi. **(podstawa AC-14..AC-16)**
 
