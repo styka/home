@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { pickAppHeight } from "@/lib/viewportHeight";
 
 /**
  * 036: przypięcie okna pełnoekranowego do **widocznego** obszaru strony (`window.visualViewport`).
@@ -34,6 +35,58 @@ export function useIsNarrowScreen(): boolean {
 /** Nazwy zmiennych CSS, przez które hook podaje geometrię. Wołający używa ich w swoim stylu. */
 export const VV_TOP_VAR = "--vv-top";
 export const VV_HEIGHT_VAR = "--vv-height";
+
+/** Wysokość CAŁEJ powłoki aplikacji — ustawiana na `<html>` przez `useAppHeightVar`. */
+export const APP_HEIGHT_VAR = "--app-height";
+
+/**
+ * 036: ustawia `--app-height` na `<html>` — wysokość, jaką ma mieć powłoka aplikacji.
+ *
+ * **Po co, skoro jest `100vh`.** Bo źródłem drgającego nagłówka asystenta jest przewijanie dokumentu,
+ * a przewijanie bierze się z jednej różnicy: `wysokość powłoki − widoczna wysokość`. Dwa niezależne
+ * pomiary na urządzeniu trafiają w tę regułę co do piksela:
+ *
+ * | powłoka        | wysokość | widać | różnica | zmierzone `scrollY` |
+ * |----------------|----------|-------|---------|---------------------|
+ * | `h-screen`     | 812      | 477   | 335     | **335**             |
+ * | `h-full` (ICB) | 768      | 477   | 291     | **291**             |
+ *
+ * Żadna jednostka CSS nie daje tu zera — `vh`, `dvh` i `%` zostały sprawdzone i wszystkie trzy chybiły
+ * (`vh`/`dvh` liczą się z dużego widoku, `%` z bloku bazowego, a ten też się nie kurczy). Wysokość
+ * trzeba więc wpisać z pomiaru. Gdy powłoka ma dokładnie tyle, ile widać, dokument nie ma się jak
+ * przewinąć, przeglądarka nie przesuwa widocznego obszaru, a okno `fixed` nie ma czego gonić — czyli
+ * znika przyczyna, a nie objaw.
+ *
+ * Zapis idzie SYNCHRONICZNIE w obsłudze zdarzenia i przez zmienną CSS — z tego samego powodu, co w
+ * `usePinToVisualViewport`: korekta układu przepuszczona przez stan Reacta trafia do DOM klatkę za
+ * późno i użytkownik to widzi.
+ */
+export function useAppHeightVar(): void {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const root = document.documentElement;
+
+    const apply = () => {
+      const h = pickAppHeight(window.visualViewport?.height ?? null, window.innerHeight);
+      root.style.setProperty(APP_HEIGHT_VAR, `${h}px`);
+    };
+
+    apply();
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", apply);
+    vv?.addEventListener("scroll", apply);
+    window.addEventListener("resize", apply);
+    window.addEventListener("orientationchange", apply);
+    return () => {
+      vv?.removeEventListener("resize", apply);
+      vv?.removeEventListener("scroll", apply);
+      window.removeEventListener("resize", apply);
+      window.removeEventListener("orientationchange", apply);
+      // Oddaj sterowanie CSS-owi (fallback `100vh` w `var()`), zamiast zostawiać piksele na sztywno.
+      root.style.removeProperty(APP_HEIGHT_VAR);
+    };
+  }, []);
+}
 
 /**
  * Przypina element (`position: fixed`) do WIDOCZNEGO obszaru — pisząc geometrię PROSTO do elementu,
