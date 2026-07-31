@@ -112,7 +112,7 @@ Nowe kolumny (wszystkie opcjonalne, więc migracja jest addytywna i bezpieczna):
 ### 3.1 `src/lib/ai/contentMemory.ts` (nowy) — serce mechanizmu
 
 ```ts
-export type AiContentKind = "weather.ideas" | "weather.ideaDetail" | "storage.insights"
+export type AiContentKind = "weather.ideas" | "storage.insights"
   | "pets.insights" | "kitchen.planWeek";          // String + union (C-12)
 
 export interface RememberedContent<T> {
@@ -141,6 +141,7 @@ export async function rememberedContent<T>(args: {
 
 /** Stabilny odcisk warunków — te same dane wejściowe dają ten sam skrót. */
 export function hashInputs(...parts: (string | number | null | undefined)[]): string;
+// (`forgetContent` z pierwotnego szkicu usunięty w recenzji — nie miał ani jednego wywołującego.)
 ```
 
 Zapis treści jako JSON (`JSON.stringify(value)`), odczyt przez `JSON.parse` w bezpiecznym `try` —
@@ -152,7 +153,7 @@ uszkodzony wpis traktujemy jak brak wpisu (najwyżej treść powstanie ponownie)
 |---|---|
 | `getIdeas(lat, lon, label, {date, part, force})` | `variation` → **`force`** (jedna nazwa dla jednej intencji). Przechodzi przez `rememberedContent` (`kind: "weather.ideas"`, `scopeKey` = lokalizacja\|dzień\|pora, `inputHash` = skrót prognozy + listy zablokowanych/zapisanych). Zwraca dodatkowo `generatedAt`, `stale`, `fromMemory`. **Truncated albo nieparsowalny JSON → `throw`**, nie pusta lista. `maxTokens` podniesione do 2000. |
 | `saveIdeaFromList(idea, ctx)` | **Nowa** — zapis propozycji z listy **bez generowania opisu** (AC-10). `upsert` ze `state: "saved"`, zapisuje `seedDate`/`seedPart`/`seedWeather`. Zero wywołań modelu. |
-| `generateIdeaDetail(...)` | Używa **nasion** (`seedWeather`) gdy istnieją, zamiast bieżącej prognozy (AC-12); przechodzi przez `rememberedContent` (`kind: "weather.ideaDetail"`). |
+| `generateIdeaDetail(...)` | Używa **nasion** (`seedWeather`) gdy istnieją, zamiast bieżącej prognozy (AC-12). **Korekta z recenzji (C-54):** zapowiadane przepuszczenie przez `rememberedContent` zostało **odrzucone** — szczegółowy plan ma własną trwałość od 037 (kolumny `detail`/`detailAt`/`detailRuns` w `WeatherIdea`), która realizuje AC-11 i AC-13 w komplecie. Dołożenie drugiej warstwy pamięci na tę samą treść byłoby duplikatem mechanizmu (C-53), a przy okazji rozjazdem: dwa miejsca prawdy o tym samym planie. Wariant `weather.ideaDetail` usunięty z `AiContentKind`. |
 | ~~`getWeatherAstro(lat, lon, date)`~~ | **Skreślona na etapie implementacji (C-54).** Okazała się zbędna: `sunrise`/`sunset` są już w obiekcie `Forecast`, który klient ma w ręku, a faza księżyca to czysta funkcja z daty. Osobna akcja serwerowa oznaczałaby dodatkową rundę do serwera po dane, które już są na miejscu. Pasek astronomiczny liczy się w `ForecastNow`. |
 
 Guardy bez zmian: `requireAuth()` + `ownerId` (C-21). Każda mutacja kończy `revalidatePath`.
