@@ -30,18 +30,18 @@
 
 ## Faza 1 — Fundament danych
 
-- [ ] **T-3** — **Migracja `0215_pogoda_pomysly_i_licznik_kosztow`.** DDL wg planu §2: tabela
+- [x] **T-3** — **Migracja `0215_pogoda_pomysly_i_licznik_kosztow`.** DDL wg planu §2: tabela
       `WeatherIdea` (FK do `User` `ON DELETE CASCADE`, `UNIQUE (ownerId, fingerprint)`,
       `INDEX (ownerId, state)`) + idempotentny seed `Config('ai_cost_badge_enabled','1')`.
       *Gotowe, gdy:* `npm run check:migrations` przechodzi, `npx prisma migrate deploy` na lokalnym
       Postgresie kończy się czysto.
 
-- [ ] **T-4** — **`schema.prisma`** — model `WeatherIdea` + relacja `weatherIdeas` w `User`, zgodnie
+- [x] **T-4** — **`schema.prisma`** — model `WeatherIdea` + relacja `weatherIdeas` w `User`, zgodnie
       z DDL z T-3. Statusy jako `String` (C-12).
       *Gotowe, gdy:* `npx prisma generate` przechodzi, a `prisma migrate diff` nie wykazuje rozjazdu
       schematu z migracją.
 
-- [ ] **T-5** `[P]` — **`src/lib/weather/ideas.ts`** — typy `IdeaState`/`IdeaCategory`/`IdeaDTO`,
+- [x] **T-5** `[P]` — **`src/lib/weather/ideas.ts`** — typy `IdeaState`/`IdeaCategory`/`IdeaDTO`,
       `fingerprintOf(title)` (małe litery, bez diakrytyków i interpunkcji) i polskie etykiety stanów
       oraz kategorii. Plik **poza** `"use server"`, bo eksportuje wartości runtime.
       *Gotowe, gdy:* `fingerprintOf("Wycieczka piesza: Skrzyczne → Malinowska Skała")` daje stabilny,

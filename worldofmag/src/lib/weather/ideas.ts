@@ -1,0 +1,77 @@
+// 037: typy i helpery propozycji „co robić" z modułu Pogoda.
+//
+// Plik celowo NIE jest częścią `actions/weather.ts`: z pliku `"use server"` wolno eksportować
+// wyłącznie funkcje async, a tutaj mieszkają stałe i czysta funkcja `fingerprintOf`. Trzymanie ich
+// razem z akcjami wywaliłoby `next build` („Only async functions are allowed to be exported").
+
+/** Stan propozycji w bibliotece pomysłów. String + union (C-12) — nigdy enum Prisma. */
+export type IdeaState = "considered" | "saved" | "blocked";
+
+/** Rodzaj propozycji — steruje ikoną i filtrem, nie logiką. */
+export type IdeaCategory = "outdoor" | "trip" | "home" | "other";
+
+export const IDEA_STATES: IdeaState[] = ["considered", "saved", "blocked"];
+export const IDEA_CATEGORIES: IdeaCategory[] = ["outdoor", "trip", "home", "other"];
+
+export const IDEA_STATE_LABELS: Record<IdeaState, string> = {
+  considered: "Rozważana",
+  saved: "Zapisana",
+  blocked: "Zablokowana",
+};
+
+export const IDEA_CATEGORY_LABELS: Record<IdeaCategory, string> = {
+  outdoor: "Na zewnątrz",
+  trip: "Wycieczka",
+  home: "W domu",
+  other: "Inne",
+};
+
+/** Propozycja pokazywana użytkownikowi — wspólny kształt dla listy „Co robić?" i biblioteki. */
+export interface IdeaDTO {
+  /** Id wiersza w bazie; `null`, gdy propozycja istnieje tylko na świeżo wygenerowanej liście. */
+  id: string | null;
+  fingerprint: string;
+  title: string;
+  summary: string;
+  category: IdeaCategory;
+  state: IdeaState | null;
+  /** Czy propozycja dotyczy konkretnego miejsca w okolicy (a nie ogólnej czynności). */
+  nearby: boolean;
+  /** Czy użytkownik oglądał już jej szczegóły — znacznik „Już rozważana" na liście. */
+  hasDetail: boolean;
+  locationLabel: string;
+  detailAt: string | null;
+  detailRuns: number;
+}
+
+export function parseIdeaState(value: string | null | undefined): IdeaState {
+  return IDEA_STATES.includes(value as IdeaState) ? (value as IdeaState) : "considered";
+}
+
+export function parseIdeaCategory(value: string | null | undefined): IdeaCategory {
+  return IDEA_CATEGORIES.includes(value as IdeaCategory) ? (value as IdeaCategory) : "other";
+}
+
+/**
+ * Odcisk tytułu propozycji — klucz naturalny, po którym rozpoznajemy, że model zaproponował coś,
+ * co użytkownik już rozważał albo zablokował.
+ *
+ * Model nie powtórzy tytułu znak w znak („Wycieczka rowerowa" vs „wycieczka rowerowa doliną"), więc
+ * odcisk musi znosić różnice, które dla człowieka są nieistotne: wielkość liter, polskie znaki,
+ * interpunkcję i wielokrotne spacje. Świadomie NIE próbujemy dopasowania rozmytego — cichy fałszywy
+ * alarm („zablokowałeś to kiedyś") byłby gorszy od pokazania propozycji drugi raz.
+ */
+export function fingerprintOf(title: string): string {
+  return title
+    .normalize("NFD")
+    // Znaki diakrytyczne rozłożone przez NFD — usuwamy same ogonki, litera bazowa zostaje.
+    .replace(/[̀-ͯ]/g, "")
+    // `ł`/`Ł` nie rozkłada się przez NFD (to osobna litera, nie l z diakrytykiem).
+    .replace(/ł/g, "l")
+    .replace(/Ł/g, "L")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 120);
+}
