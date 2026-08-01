@@ -91,7 +91,7 @@ export const READ_TOOLS_PROMPT = `Dostępne narzędzia ODCZYTU (step "query"). W
 - list_enclosures: args {} → [{ id, name, type, location }]. Zbiorniki/terraria/klatki (husbandry).
 - get_pet_welfare: args {} → { agenda:[…], suggestions:[…] }. Dobrostan zwierząt: zaległa opieka + sugestie.
 - list_care_history: args { petName, limit? } → [{ date, kind, note }]. Historia opieki nad wskazanym zwierzęciem (searchowane po imieniu).
-- list_news_sources: args {} → [{ id, name, leaning, enabled }]. Skonfigurowane źródła RSS wiadomości.
+- list_news_sources: args {} → [{ id, name, descriptor, enabled }]. Skonfigurowane źródła RSS wiadomości (descriptor = krótki opis od użytkownika).
 - get_news_topic_view: args { topicName } → { items:[…], knowledge:[…] }. Świeże pozycje i baza wiedzy dla wskazanego monitorowanego tematu.
 - list_suppliers: args {} → [{ id, name, contact, email, phone }]. Dostawcy (magazyn Pro).
 - list_low_stock: args {} → [{ id, name, quantity, minQuantity, warehouse }]. Pozycje magazynu poniżej stanu minimalnego.
@@ -1161,7 +1161,7 @@ export async function runReadTool(
 
     case "list_news_sources": {
       const sources = await getSources();
-      return sources.map((s) => ({ id: s.id, name: s.name, leaning: s.leaning, enabled: s.enabled }));
+      return sources.map((s) => ({ id: s.id, name: s.name, descriptor: s.descriptor, enabled: s.enabled }));
     }
 
     case "get_news_topic_view": {

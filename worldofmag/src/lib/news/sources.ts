@@ -1,16 +1,17 @@
 // Domyślne źródła wiadomości seedowane per użytkownik przy pierwszym wejściu.
-// Świadomie dobrany rozrzut światopoglądowy (centrum / lewica / prawica), wszystkie
-// z oficjalnymi feedami RSS. Adresy są edytowalne w UI — gdyby portal zmienił feed,
-// użytkownik poprawia go bez zmian w kodzie.
-
-export type Leaning = "left" | "center" | "right";
+// Świadomie dobrany rozrzut światopoglądowy, wszystkie z oficjalnymi feedami RSS. Adresy są
+// edytowalne w UI — gdyby portal zmienił feed, użytkownik poprawia go bez zmian w kodzie.
+//
+// 040: `leaning` (left|center|right) ustąpił dowolnemu opisowi. Opisy poniżej są te same, które
+// migracja 0219 nadaje istniejącym źródłom — nowy użytkownik dostaje więc dokładnie to samo co
+// zmigrowany. Kolor liczy z nich `sourceColor` (`lib/news/sourceColor.ts`).
 
 export interface DefaultSource {
   key: string;
   name: string;
   rssUrl: string;
   homepageUrl: string;
-  leaning: Leaning;
+  descriptor: string;
   sortOrder: number;
 }
 
@@ -20,7 +21,7 @@ export const DEFAULT_SOURCES: DefaultSource[] = [
     name: "Onet Wiadomości",
     rssUrl: "https://wiadomosci.onet.pl/.feed",
     homepageUrl: "https://wiadomosci.onet.pl",
-    leaning: "center",
+    descriptor: "Centrum",
     sortOrder: 0,
   },
   {
@@ -28,7 +29,7 @@ export const DEFAULT_SOURCES: DefaultSource[] = [
     name: "OKO.press",
     rssUrl: "https://oko.press/feed",
     homepageUrl: "https://oko.press",
-    leaning: "left",
+    descriptor: "Lewica",
     sortOrder: 1,
   },
   {
@@ -36,13 +37,7 @@ export const DEFAULT_SOURCES: DefaultSource[] = [
     name: "Niezależna",
     rssUrl: "https://niezalezna.pl/rss",
     homepageUrl: "https://niezalezna.pl",
-    leaning: "right",
+    descriptor: "Prawica",
     sortOrder: 2,
   },
 ];
-
-export const LEANING_META: Record<Leaning, { label: string; color: string }> = {
-  left: { label: "Lewica", color: "var(--accent-red)" },
-  center: { label: "Centrum", color: "var(--accent-blue)" },
-  right: { label: "Prawica", color: "var(--accent-purple)" },
-};

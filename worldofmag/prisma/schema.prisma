@@ -2438,8 +2438,10 @@ model NewsSource {
   name        String
   rssUrl      String
   homepageUrl String
-  // Profil światopoglądowy do oznaczania widoku: "left" | "center" | "right".
-  leaning     String   @default("center")
+  // 040: krótki opis źródła własnymi słowami („pop-science", „nature", „lewica"). Zastąpił zamknięty
+  // zbiór left|center|right — zestaw kanałów dawno wyszedł poza politykę. Pusty = bez opisu
+  // (dozwolone); kolor w UI liczony jest z tej wartości (`lib/news/sourceColor.ts`).
+  descriptor  String   @default("")
   enabled     Boolean  @default(true)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())

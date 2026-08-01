@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { Flame, Plus, Loader2, EyeOff, Undo2 } from "lucide-react";
+import { Flame, Plus, Loader2, EyeOff, Undo2, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { AiContentMeta } from "@/components/ui/AiContentMeta";
@@ -17,13 +17,16 @@ import {
   type HiddenTopicDTO,
 } from "@/actions/news";
 
-export function HotTopics({ onAdded }: { onAdded: () => void }) {
+/** `onTopicsChanged` odświeża listę tematów w module — bez zmiany widoku (040). */
+export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) {
   const { showToast } = useToast();
   const [data, setData] = useState<HotTopicsResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [hidden, setHidden] = useState<HiddenTopicDTO[] | null>(null);
   const [showHidden, setShowHidden] = useState(false);
+  // Odciski tematów oznaczonych jako monitorowane w TEJ sesji przeglądu.
+  const [monitored, setMonitored] = useState<Set<string>>(new Set());
   const [busy, startBusy] = useTransition();
 
   // 038: `force` tylko z jawnego kliknięcia. Samo wejście na widok czyta zapamiętaną listę —
@@ -55,12 +58,24 @@ export function HotTopics({ onAdded }: { onAdded: () => void }) {
     loadHidden();
   }, [load, loadHidden]);
 
+  /**
+   * 040: dodanie tematu do monitorowanych **nie opuszcza listy**.
+   *
+   * Wcześniej `onAdded()` przerzucało na widok główny po pierwszym kliknięciu — a przeglądanie
+   * gorących tematów polega właśnie na tym, żeby przejść całą listę i pooznaczać pozycje (monitoruj
+   * / nie proponuj). Wyrzucanie po każdym oznaczeniu zamieniało jedną sesję przeglądu w tyle
+   * powrotów, ile tematów.
+   */
   function add(t: HotTopic) {
     startBusy(async () => {
       try {
         await createTopic({ title: t.title, semanticFilter: t.suggestedFilter });
-        showToast(`Dodano temat „${t.title}”`, "success");
-        onAdded();
+        showToast(`Dodano „${t.title}” do monitorowanych`, "success");
+        // Karta zostaje na liście, ale wie już, że jest obsłużona — bez tego jedynym śladem po
+        // kliknięciu byłby znikający komunikat.
+        setMonitored((prev) => new Set(prev).add(t.fingerprint));
+        // Lista tematów w module jest teraz nieaktualna; odświeżamy ją BEZ zmiany widoku.
+        onTopicsChanged();
       } catch (e: any) {
         showToast(e.message ?? "Błąd", "error");
       }
@@ -89,8 +104,8 @@ export function HotTopics({ onAdded }: { onAdded: () => void }) {
         await unhideHotTopic(h.id);
         if (monitor) {
           await createTopic({ title: h.title, semanticFilter: h.title });
-          showToast(`Dodano temat „${h.title}”`, "success");
-          onAdded();
+          showToast(`Dodano „${h.title}” do monitorowanych`, "success");
+          onTopicsChanged();
         }
         loadHidden();
         load();
@@ -187,9 +202,15 @@ export function HotTopics({ onAdded }: { onAdded: () => void }) {
                 Źródła: {t.sources?.join(", ") || "—"}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Button size="sm" onClick={() => add(t)} disabled={busy}>
-                  <Plus size={14} /> Monitoruj ten temat
-                </Button>
+                {monitored.has(t.fingerprint) ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-[var(--bg-elevated)] px-2.5 py-1 text-xs text-[var(--accent-green)]">
+                    <Check size={14} /> Monitorowany
+                  </span>
+                ) : (
+                  <Button size="sm" onClick={() => add(t)} disabled={busy}>
+                    <Plus size={14} /> Monitoruj ten temat
+                  </Button>
+                )}
                 <Button variant="ghost" size="sm" onClick={() => hide(t)} disabled={busy}>
                   <EyeOff size={14} /> Nie proponuj
                 </Button>

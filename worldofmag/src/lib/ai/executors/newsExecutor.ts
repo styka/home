@@ -56,8 +56,8 @@ export async function executeNewsAction(action: AIAction, userId: string): Promi
     if (!name || !rssUrl) throw new Error("Podaj nazwę i adres RSS źródła");
     let homepageUrl = asStr(params.homepageUrl);
     if (!homepageUrl) { try { homepageUrl = new URL(rssUrl).origin; } catch { homepageUrl = rssUrl; } }
-    const leaning = (["left", "center", "right"].includes(String(params.leaning)) ? String(params.leaning) : "center") as "left" | "center" | "right";
-    await createSource({ name, rssUrl, homepageUrl, leaning });
+    // 040: opis źródła to dowolny tekst, więc nie ma czego walidować względem listy wartości.
+    await createSource({ name, rssUrl, homepageUrl, descriptor: asStr(params.descriptor) });
     return `Dodano źródło wiadomości „${name}"`;
   }
   if (type === "update_news_source" || type === "delete_news_source") {
@@ -68,12 +68,11 @@ export async function executeNewsAction(action: AIAction, userId: string): Promi
       : await prisma.newsSource.findFirst({ where: { ownerId: userId, name: { contains: q ?? "", mode: "insensitive" } }, select: { id: true } });
     if (!src) throw new Error(`Nie znaleziono źródła: „${q ?? sid ?? ""}"`);
     if (type === "delete_news_source") { await deleteSource(src.id); return `Usunięto źródło wiadomości`; }
-    const leaningRaw = asStr(params.leaning);
     await updateSource(src.id, {
       name: asStr(params.newName),
       rssUrl: asStr(params.rssUrl),
       homepageUrl: asStr(params.homepageUrl),
-      ...(leaningRaw && ["left", "center", "right"].includes(leaningRaw) ? { leaning: leaningRaw as "left" | "center" | "right" } : {}),
+      ...(params.descriptor !== undefined ? { descriptor: asStr(params.descriptor) ?? "" } : {}),
       ...(params.enabled !== undefined ? { enabled: params.enabled === true } : {}),
     });
     return `Zaktualizowano źródło wiadomości`;

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { ExternalLink, Check, X, Sparkles, Loader2, Headphones } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { LEANING_META } from "@/lib/news/sources";
+import { sourceColor } from "@/lib/news/sourceColor";
 import { timeAgo, SUMMARY_LENGTHS } from "@/lib/news/format";
 import { useToast } from "@/components/ui/Toast";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
@@ -25,7 +25,7 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
   const [usage, setUsage] = useState<AiCostUsage | undefined>();
   const [imgError, setImgError] = useState(false);
   const [reading, setReading] = useState(false);
-  const leaning = LEANING_META[item.leaning];
+  const color = sourceColor(item.sourceDescriptor);
 
   function changeLength(next: SummaryLength) {
     if (next === length || resummarizing) return;
@@ -68,10 +68,14 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
       <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
         <span
           className="rounded px-1.5 py-0.5 font-medium"
-          style={{ color: leaning.color, border: `1px solid ${leaning.color}` }}
+          style={{ color, border: `1px solid ${color}` }}
+          // 040: opis w podpowiedzi, a nie obok nazwy — badge ma zostać krótki, a opis bywa
+          // dowolnym tekstem użytkownika. Brak opisu = brak podpowiedzi, bez pustej plamy.
+          title={item.sourceDescriptor || undefined}
         >
           {item.sourceName}
         </span>
+        {item.sourceDescriptor && <span>· {item.sourceDescriptor}</span>}
         <span>· {timeAgo(item.publishedAt)}</span>
       </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarClock, ExternalLink } from "lucide-react";
-import { LEANING_META } from "@/lib/news/sources";
+import { sourceColor } from "@/lib/news/sourceColor";
 import type { TimelineEntryDTO } from "@/actions/news";
 
 /**
@@ -29,7 +29,7 @@ export function NewsTimeline({ entries }: { entries: TimelineEntryDTO[] }) {
           {/* Kropka na osi — pozycjonowana na linii, nie obok niej. */}
           <span
             className="absolute -left-[21px] top-2 h-2 w-2 rounded-full"
-            style={{ background: e.leaning ? LEANING_META[e.leaning].color : "var(--text-muted)" }}
+            style={{ background: sourceColor(e.sourceDescriptor) }}
             aria-hidden
           />
           <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-3">
