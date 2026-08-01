@@ -39,14 +39,14 @@
 
 ## Faza 1 — Fundament danych (opis źródła)
 
-- [ ] **T-4** — **Migracja `0219_opis_zrodla_wiadomosci`.** DDL wg planu §2.2 w kolejności:
+- [x] **T-4** — **Migracja `0219_opis_zrodla_wiadomosci`.** DDL wg planu §2.2 w kolejności:
       `ADD COLUMN "descriptor"` → `UPDATE` mapujący `left/center/right` na „Lewica"/„Centrum"/
       „Prawica" → `DROP COLUMN "leaning"`. Komentarz wprost o nieodwracalności `DROP` i o tym, że
       `UPDATE` musi go poprzedzać.
       *Gotowe, gdy:* `npm run check:migrations` przechodzi, `migrate deploy` na lokalnym Postgresie
       kończy się czysto, a żaden wiersz nie ma pustego `descriptor`. **(AC-4)**
 
-- [ ] **T-5** — **`schema.prisma`** zgodnie z migracją: `NewsSource.descriptor String @default("")`,
+- [x] **T-5** — **`schema.prisma`** zgodnie z migracją: `NewsSource.descriptor String @default("")`,
       `leaning` usunięte. Rodzaj jako `String` (C-12).
       *Gotowe, gdy:* `prisma generate` przechodzi bez rozjazdu ze schematem bazy.
 
