@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Sparkles,
   RefreshCw,
   Loader2,
-  ChevronRight,
   AlertTriangle,
   Ban,
   Library,
@@ -76,6 +75,8 @@ export function IdeasPanel({
   const [detailUsage, setDetailUsage] = useState<AiCostUsage | undefined>();
   const [detailLoading, setDetailLoading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  /** Odcisk aktualnie otwartej propozycji — unieważnia spóźnione odpowiedzi (patrz `openIdea`). */
+  const openFingerprintRef = useRef<string | null>(null);
 
   const load = useCallback(
     (opts?: { force?: boolean }) => {
@@ -111,9 +112,17 @@ export function IdeasPanel({
     setDetailUsage(undefined);
     setDetailRuns(0);
     setDetailLoading(true);
+    // 040: znacznik „która propozycja jest teraz otwarta". Generowanie planu trwa kilkanaście
+    // sekund, a od 040 szczegóły stoją przy kartach, więc klikanie kolejnych propozycji w trakcie
+    // jest naturalne. Bez tego guardu spóźniona odpowiedź dla A wpisywała swój opis i swoje `id`
+    // pod otwartą już kartę B — a „Zapisz" zapisywałoby wtedy A pod pozorem B.
+    openFingerprintRef.current = idea.fingerprint;
+    const isStillOpen = () => openFingerprintRef.current === idea.fingerprint;
+
     getIdeaDetail(idea.fingerprint)
       .then((saved) => {
         if (saved?.detail) {
+          if (!isStillOpen()) return null;
           setDetail(saved.detail);
           setDetailRuns(saved.detailRuns);
           setDetailUsage(saved.usage);
@@ -124,16 +133,32 @@ export function IdeasPanel({
           { title: idea.title, summary: idea.summary, category: idea.category },
           { lat: coords.lat, lon: coords.lon, label: coords.label, date, part }
         ).then((r) => {
+          // Plan i tak zapisał się w bazie, więc `markConsidered` wykonujemy ZAWSZE — praca modelu
+          // nie może przepaść tylko dlatego, że użytkownik w międzyczasie zajrzał gdzie indziej.
+          markConsidered(idea.fingerprint, r.id);
+          if (!isStillOpen()) return null;
           setDetail(r.detail);
           setDetailRuns(r.detailRuns);
           setDetailUsage(r.usage);
           setOpen((o) => (o ? { ...o, id: r.id, hasDetail: true } : o));
-          markConsidered(idea.fingerprint, r.id);
           return null;
         });
       })
-      .catch((e) => showToast(e?.message ?? "Nie udało się otworzyć szczegółów", "error"))
-      .finally(() => setDetailLoading(false));
+      .catch((e) => {
+        if (isStillOpen()) showToast(e?.message ?? "Nie udało się otworzyć szczegółów", "error");
+      })
+      .finally(() => {
+        // Spinner gasi tylko ta propozycja, która jest otwarta — inaczej spóźniona odpowiedź dla A
+        // pokazywałaby kartę B jako gotową, choć jej treść dopiero leci.
+        if (isStillOpen()) setDetailLoading(false);
+      });
+  }
+
+  /** Zamknięcie szczegółów unieważnia trwające zapytanie — inaczej wróciłoby do zamkniętej karty. */
+  function closeIdea() {
+    openFingerprintRef.current = null;
+    setOpen(null);
+    setDetailLoading(false);
   }
 
   function regenerate() {
@@ -168,7 +193,9 @@ export function IdeasPanel({
   function block(idea: IdeaDTO) {
     // Znika z listy od razu — czekanie na serwer sprawiałoby wrażenie, że kliknięcie nie zadziałało.
     setIdeas((prev) => (prev ? prev.filter((i) => i.fingerprint !== idea.fingerprint) : prev));
-    if (open?.fingerprint === idea.fingerprint) setOpen(null);
+    // `closeIdea`, a nie `setOpen(null)` — zablokowana propozycja musi też unieważnić trwające
+    // zapytanie o swoje szczegóły, inaczej odpowiedź wróciłaby do karty, której już nie ma.
+    if (open?.fingerprint === idea.fingerprint) closeIdea();
     blockIdea(
       { title: idea.title, summary: idea.summary, category: idea.category },
       { label: coords.label, lat: coords.lat, lon: coords.lon }
@@ -292,15 +319,41 @@ export function IdeasPanel({
         </div>
       ) : ideas && ideas.length > 0 ? (
         <div className="space-y-2">
-          {ideas.map((idea) => (
-            <IdeaCard
-              key={idea.fingerprint}
-              idea={idea}
-              onOpen={() => openIdea(idea)}
-              onBlock={() => block(idea)}
-              onSave={() => saveFromList(idea)}
-            />
-          ))}
+          {/* 040: szczegóły rozwijają się PRZY klikniętej propozycji, a nie pod całą listą.
+              Wcześniej sheet renderował się na końcu panelu — na desktopie, przy 7 propozycjach,
+              wypadał poza ekran, więc kliknięcie wyglądało, jakby nic nie zrobiło. */}
+          {ideas.map((idea) => {
+            const isOpen = open?.fingerprint === idea.fingerprint;
+            return (
+              <div key={idea.fingerprint}>
+                <IdeaCard
+                  idea={idea}
+                  expanded={isOpen}
+                  onOpen={() => (isOpen ? closeIdea() : openIdea(idea))}
+                  onBlock={() => block(idea)}
+                  onSave={() => saveFromList(idea)}
+                />
+                {isOpen && open && (
+                  <div className="mt-2">
+                    <IdeaDetailSheet
+                      idea={open}
+                      detail={detail}
+                      detailRuns={detailRuns}
+                      loading={detailLoading}
+                      regenerating={regenerating}
+                      usage={detailUsage}
+                      usdPlnRate={usdPlnRate}
+                      canAddToTasks={canAddToTasks}
+                      onClose={closeIdea}
+                      onRegenerate={regenerate}
+                      onSave={save}
+                      onAddToTasks={addToTasks}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="py-3">
@@ -324,25 +377,6 @@ export function IdeasPanel({
         {listUsage && <AiCostBadge usage={listUsage} rate={usdPlnRate} />}
       </div>
 
-      {open && (
-        <div className="mt-3">
-          <IdeaDetailSheet
-            idea={open}
-            detail={detail}
-            detailRuns={detailRuns}
-            loading={detailLoading}
-            regenerating={regenerating}
-            usage={detailUsage}
-            usdPlnRate={usdPlnRate}
-            canAddToTasks={canAddToTasks}
-            onClose={() => setOpen(null)}
-            onRegenerate={regenerate}
-            onSave={save}
-            onAddToTasks={addToTasks}
-          />
-        </div>
-      )}
-
       {/* 039: hipoteza o użytkowniku pod listą propozycji — czyli dokładnie tam, gdzie widać, po co
           ona jest. Jedna karta, bez modala i bez blokowania czegokolwiek. */}
       <UserFactHypothesisCard />
@@ -352,18 +386,24 @@ export function IdeasPanel({
 
 function IdeaCard({
   idea,
+  expanded,
   onOpen,
   onBlock,
   onSave,
 }: {
   idea: IdeaDTO;
+  /** Czy pod tą kartą rozwinięte są szczegóły — karta ma to pokazywać, nie tylko sheet poniżej. */
+  expanded: boolean;
   onOpen: () => void;
   onBlock: () => void;
   onSave: () => void;
 }) {
   const Icon = CATEGORY_ICON[idea.category];
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-base)] p-3">
+    <div
+      className="flex items-start gap-2 rounded-lg border bg-[var(--bg-base)] p-3"
+      style={{ borderColor: expanded ? "var(--accent-purple)" : "var(--border)" }}
+    >
       <Icon size={16} className="mt-0.5 shrink-0 text-[var(--accent-purple)]" />
       <button onClick={onOpen} className="min-w-0 flex-1 text-left">
         <span className="flex flex-wrap items-center gap-1.5">
@@ -408,14 +448,6 @@ function IdeaCard({
           aria-label={`Nie proponuj: ${idea.title}`}
         >
           <Ban size={14} />
-        </button>
-        <button
-          onClick={onOpen}
-          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-          title="Pokaż szczegółowy plan"
-          aria-label={`Szczegóły: ${idea.title}`}
-        >
-          <ChevronRight size={16} />
         </button>
       </div>
     </div>

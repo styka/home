@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
-import { LEANING_META } from "@/lib/news/sources";
+import { sourceColor } from "@/lib/news/sourceColor";
 import { AiCostBadge } from "@/components/ui/AiCostBadge";
 import { NewsItemCard } from "./NewsItemCard";
 import { NewsTimeline } from "./NewsTimeline";
@@ -39,6 +39,8 @@ import {
 } from "@/actions/news";
 
 type View = "feed" | "hot" | "settings";
+/** 040: co pokazujemy w wybranym temacie. Domyślnie nowe wiadomości — po nie użytkownik tu wchodzi. */
+type ContentTabKey = "items" | "timeline";
 
 export function NewsPage({
   topics,
@@ -54,6 +56,9 @@ export function NewsPage({
   const router = useRouter();
   const { showToast } = useToast();
   const [view, setView] = useState<View>("feed");
+  // Wybór treści jest CELOWO trzymany poza tematem: przełączenie na linię czasu przeżywa zmianę
+  // tematu, bo użytkownik, który nadrabia kontekst, robi to zwykle w kilku tematach pod rząd.
+  const [contentTab, setContentTab] = useState<ContentTabKey>("items");
   const [selectedId, setSelectedId] = useState<string | null>(topics[0]?.id ?? null);
   const [sourceFilter, setSourceFilter] = useState<string>(activeSourceKey ?? "all");
   const [data, setData] = useState<{ items: NewsItemDTO[]; timeline: TimelineEntryDTO[] } | null>(null);
@@ -168,41 +173,26 @@ export function NewsPage({
         <h1 className="flex items-center gap-2 text-xl font-bold text-[var(--text-primary)]">
           <Newspaper size={22} className="text-[var(--accent-blue)]" /> Wiadomości
         </h1>
-        <div className="flex items-center gap-2">
-          {/* 039: „Odśwież" stoi w nagłówku MODUŁU, a nie przy temacie — bo jeden przebieg pobiera
-              wspólne kanały i obsługuje wszystkie tematy naraz. Przycisk przy temacie sugerowałby,
-              że da się odświeżyć jeden temat osobno, a tak już nie jest. */}
-          <Button size="sm" onClick={startRefresh} disabled={starting || refreshRunning}>
-            <RefreshCw size={15} className={starting || refreshRunning ? "animate-spin" : ""} />
-            {refreshRunning ? "Odświeżam…" : "Odśwież"}
-          </Button>
-          <Button
-            variant={view === "hot" ? "primary" : "secondary"}
-            size="sm"
-            onClick={() => setView(view === "hot" ? "feed" : "hot")}
-          >
-            <Flame size={15} /> Gorące tematy
-          </Button>
-          <Button
-            variant={view === "settings" ? "primary" : "secondary"}
-            size="sm"
-            onClick={() => setView(view === "settings" ? "feed" : "settings")}
-          >
-            <Settings2 size={15} /> Źródła
-          </Button>
-        </div>
+        {/* 039: „Odśwież" stoi w nagłówku MODUŁU, a nie przy temacie — bo jeden przebieg pobiera
+            wspólne kanały i obsługuje wszystkie tematy naraz. Przycisk przy temacie sugerowałby,
+            że da się odświeżyć jeden temat osobno, a tak już nie jest. */}
+        <Button size="sm" onClick={startRefresh} disabled={starting || refreshRunning}>
+          <RefreshCw size={15} className={starting || refreshRunning ? "animate-spin" : ""} />
+          {refreshRunning ? "Odświeżam…" : "Odśwież"}
+        </Button>
       </div>
+
+      {/* 040: pasek widoków modułu — obecny w KAŻDYM trybie, także na telefonie.
+          Wcześniej „Gorące tematy" i „Źródła" były przełącznikami w nagłówku: po wejściu w któryś z
+          nich nic nie wskazywało drogi powrotnej, bo przycisk zmieniał tylko swój wariant. Pasek z
+          trzema równorzędnymi zakładkami mówi jednocześnie, gdzie jestem i jak wrócić. */}
+      <ViewTabs view={view} onChange={setView} />
 
       <RefreshStatus state={refresh} running={refreshRunning} />
 
-      {view === "hot" && (
-        <HotTopics
-          onAdded={() => {
-            setView("feed");
-            router.refresh();
-          }}
-        />
-      )}
+      {/* 040: dodanie tematu odświeża listę, ale NIE przerzuca na widok główny — przegląd gorących
+          tematów ma dać się zrobić za jednym posiedzeniem. */}
+      {view === "hot" && <HotTopics onTopicsChanged={() => router.refresh()} />}
 
       {view === "settings" && (
         <NewsSettings
@@ -212,94 +202,134 @@ export function NewsPage({
         />
       )}
 
+      {/* 040: pionowy stos zamiast dwóch kolumn. Kolumna tematów zjadała jedną trzecią szerokości i
+          i tak ucinała dłuższe nazwy — teraz tematy są zakładkami nad treścią, a treść dostaje całą
+          stronę. Ten sam układ działa na telefonie, więc nie ma dwóch osobnych nawigacji. */}
       {view === "feed" && (
-        <div className="grid gap-5 md:grid-cols-[240px_1fr]">
-          {/* Lista tematów */}
-          <TopicList
+        <div className="min-w-0">
+          <TopicTabs
             topics={topics}
             selectedId={selectedId}
             onSelect={setSelectedId}
-            onRefreshList={() => router.refresh()}
+            onChanged={() => router.refresh()}
           />
 
-          {/* Treść tematu — min-w-0: track 1fr ma domyślnie min-width:auto, więc bez tego
-              szeroki obraz lub długi link rozpychałby całą stronę w poziomie. */}
-          <div className="min-w-0">
-            {!selectedTopic ? (
-              <div className="rounded-lg border border-dashed border-[var(--border)] p-8 text-center text-[var(--text-muted)]">
-                Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.
-              </div>
-            ) : (
-              <>
-                <div className="mb-3">
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                    {selectedTopic.title}
-                  </h2>
-                  <p className="text-xs text-[var(--text-muted)]">{selectedTopic.semanticFilter}</p>
-                </div>
+          {!selectedTopic ? (
+            <div className="rounded-lg border border-dashed border-[var(--border)] p-8 text-center text-[var(--text-muted)]">
+              Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.
+            </div>
+          ) : (
+            <>
+              <p className="mb-3 text-xs text-[var(--text-muted)]">{selectedTopic.semanticFilter}</p>
 
-                {/* 039: „Wszystkie" bez opisu wyglądało na zbędne. Licznik i podpis mówią wprost,
-                    że to widok zbiorczy, a pozostałe zakładki zawężają do jednego portalu. */}
-                <div className="mb-1 flex flex-wrap gap-1.5">
+              {/* 040: najpierw NOWE WIADOMOŚCI — po to użytkownik tu wchodzi. Linia czasu jest do
+                  nadrabiania kontekstu, więc stoi za przełącznikiem, a nie nad wiadomościami. */}
+              <div className="mb-3 flex gap-1">
+                <ContentTab
+                  label={`Nowe wiadomości (${filteredItems.length})`}
+                  active={contentTab === "items"}
+                  onClick={() => setContentTab("items")}
+                />
+                <ContentTab
+                  label={`Linia czasu (${filteredTimeline.length})`}
+                  active={contentTab === "timeline"}
+                  onClick={() => setContentTab("timeline")}
+                />
+              </div>
+
+              {/* 039: „Wszystkie" bez opisu wyglądało na zbędne. Licznik i podpis mówią wprost,
+                  że to widok zbiorczy, a pozostałe zakładki zawężają do jednego portalu. */}
+              <div className="mb-1 flex flex-wrap gap-1.5">
+                <SourceTab
+                  label={`Wszystkie (${enabledSources.length})`}
+                  active={sourceFilter === "all"}
+                  onClick={() => pickSource("all")}
+                />
+                {enabledSources.map((s) => (
                   <SourceTab
-                    label={`Wszystkie (${enabledSources.length})`}
-                    active={sourceFilter === "all"}
-                    onClick={() => pickSource("all")}
+                    key={s.id}
+                    label={s.name}
+                    color={sourceColor(s.descriptor)}
+                    active={sourceFilter === s.key}
+                    onClick={() => pickSource(s.key)}
                   />
-                  {enabledSources.map((s) => (
-                    <SourceTab
-                      key={s.id}
-                      label={s.name}
-                      color={LEANING_META[s.leaning].color}
-                      active={sourceFilter === s.key}
-                      onClick={() => pickSource(s.key)}
-                    />
+                ))}
+              </div>
+              <p className="mb-4 text-[11px] text-[var(--text-muted)]">
+                {sourceFilter === "all"
+                  ? "Widok zbiorczy ze wszystkich źródeł. Wybierz portal, żeby zobaczyć, jak ujmuje temat."
+                  : "Widok jednego portalu. Wróć do „Wszystkie”, żeby porównać ujęcia."}
+              </p>
+
+              {loadingView ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="animate-spin text-[var(--text-muted)]" />
+                </div>
+              ) : contentTab === "timeline" ? (
+                <NewsTimeline entries={filteredTimeline} />
+              ) : filteredItems.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--text-muted)]">
+                  Brak nowych, istotnych wiadomości. Kliknij „Odśwież” w nagłówku, żeby pobrać
+                  najświeższe materiały (tylko z ostatnich 24 godzin).
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {filteredItems.map((item) => (
+                    <NewsItemCard key={item.id} item={item} onChanged={onItemChanged} />
                   ))}
                 </div>
-                <p className="mb-4 text-[11px] text-[var(--text-muted)]">
-                  {sourceFilter === "all"
-                    ? "Widok zbiorczy ze wszystkich źródeł. Wybierz portal, żeby zobaczyć, jak ujmuje temat."
-                    : "Widok jednego portalu. Wróć do „Wszystkie”, żeby porównać ujęcia."}
-                </p>
-
-                {loadingView ? (
-                  <div className="flex justify-center py-12">
-                    <Loader2 className="animate-spin text-[var(--text-muted)]" />
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <section>
-                      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                        Linia czasu · {filteredTimeline.length}
-                      </h3>
-                      <NewsTimeline entries={filteredTimeline} />
-                    </section>
-
-                    <section>
-                      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                        Nowe wiadomości (ostatnie 24h) · {filteredItems.length}
-                      </h3>
-                      {filteredItems.length === 0 ? (
-                        <p className="rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--text-muted)]">
-                          Brak nowych, istotnych wiadomości. Kliknij „Odśwież” w nagłówku, żeby
-                          pobrać najświeższe materiały (tylko z ostatnich 24 godzin).
-                        </p>
-                      ) : (
-                        <div className="space-y-3">
-                          {filteredItems.map((item) => (
-                            <NewsItemCard key={item.id} item={item} onChanged={onItemChanged} />
-                          ))}
-                        </div>
-                      )}
-                    </section>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+              )}
+            </>
+          )}
         </div>
       )}
       </div>
+    </div>
+  );
+}
+
+const VIEW_TABS: Array<{ key: View; label: string; icon: typeof Newspaper }> = [
+  { key: "feed", label: "Tematy", icon: Newspaper },
+  { key: "hot", label: "Gorące tematy", icon: Flame },
+  { key: "settings", label: "Źródła", icon: Settings2 },
+];
+
+/**
+ * 040: nawigacja po widokach modułu — jedna dla desktopu i telefonu (C-31).
+ *
+ * Zakładki są równorzędne i zawsze widoczne, więc powrót do wiadomości to jedno dotknięcie z
+ * każdego miejsca. Aktywna zakładka jest wyróżniona, więc z samego ekranu widać, gdzie się jest —
+ * czego brakowało, gdy widoki przełączały się przyciskami zmieniającymi tylko swój wariant.
+ */
+function ViewTabs({ view, onChange }: { view: View; onChange: (v: View) => void }) {
+  return (
+    <div
+      className="mb-4 flex gap-1 border-b border-[var(--border)]"
+      role="tablist"
+      aria-label="Widoki modułu Wiadomości"
+    >
+      {VIEW_TABS.map((t) => {
+        const Icon = t.icon;
+        const active = view === t.key;
+        return (
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(t.key)}
+            className={cn(
+              // `py-3` = cel dotyku na telefonie (C-31); `-mb-px` wsuwa podkreślenie w krawędź paska.
+              "-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-3 text-sm transition-colors",
+              active
+                ? "border-[var(--accent-blue)] text-[var(--text-primary)]"
+                : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            )}
+          >
+            <Icon size={15} />
+            {t.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -389,28 +419,39 @@ function SourceTab({
   );
 }
 
-function TopicList({
+/**
+ * 040: tematy jako poziomy pasek zakładek zamiast osobnej kolumny.
+ *
+ * Kolumna zabierała jedną trzecią szerokości strony i mimo to ucinała dłuższe nazwy. Zakładki biorą
+ * tylko jeden wiersz, pokazują nazwę w CAŁOŚCI, a przy nadmiarze przewijają się **we własnym
+ * kontenerze** — nie stroną (to była osobna usterka: poziomy scroll całego widoku).
+ *
+ * Zarządzanie tematami przeniosło się tutaj: „+" dodaje nowy, a edycja i usunięcie dotyczą tematu
+ * aktywnego — bo tylko on jest w danej chwili na ekranie.
+ */
+function TopicTabs({
   topics,
   selectedId,
   onSelect,
-  onRefreshList,
+  onChanged,
 }: {
   topics: TopicDTO[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  onRefreshList: () => void;
+  onChanged: () => void;
 }) {
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const [editing, setEditing] = useState<TopicDTO | null>(null);
   const [creating, setCreating] = useState(false);
+  const selected = topics.find((t) => t.id === selectedId) ?? null;
 
   function remove(t: TopicDTO) {
-    if (!confirm(`Usunąć temat „${t.title}" wraz z bazą wiedzy?`)) return;
+    if (!confirm(`Usunąć temat „${t.title}" wraz z linią czasu?`)) return;
     startTransition(async () => {
       try {
         await deleteTopic(t.id);
-        onRefreshList();
+        onChanged();
       } catch (e: any) {
         showToast(e.message ?? "Błąd", "error");
       }
@@ -418,57 +459,68 @@ function TopicList({
   }
 
   return (
-    <div>
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-semibold text-[var(--text-secondary)]">Tematy</span>
-        <button
-          onClick={() => setCreating(true)}
-          className="rounded-md p-1 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-          title="Nowy temat"
-        >
-          <Plus size={16} />
-        </button>
-      </div>
-      <div className="space-y-1">
-        {topics.map((t) => (
-          <div
-            key={t.id}
-            className={cn(
-              "group flex items-center gap-1 rounded-md px-2 py-1.5",
-              selectedId === t.id ? "bg-[var(--bg-elevated)]" : "hover:bg-[var(--bg-hover)]"
-            )}
+    <div className="mb-3">
+      <div className="flex items-center gap-2">
+        {/* `overflow-x-auto` + `min-w-0` NA TYM kontenerze: przewija się pasek zakładek, a nie
+            strona. Bez `min-w-0` element flex nie zwęziłby się poniżej treści i rozepchnąłby
+            widok — dokładnie ten mechanizm, który naprawiamy w ustawieniach źródeł. */}
+        <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-1">
+          {topics.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => onSelect(t.id)}
+              // `whitespace-nowrap`: zakładka ma zostać w jednym kawałku i raczej wyjechać poza
+              // przewijalny pasek, niż złamać nazwę na dwie linie.
+              className={cn(
+                "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition-colors",
+                selectedId === t.id
+                  ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                  : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+              )}
+            >
+              {t.title}
+              {t.pendingCount > 0 && (
+                <span className="rounded-full bg-[var(--accent-blue)] px-1.5 text-[10px] font-medium text-[var(--on-accent)]">
+                  {t.pendingCount}
+                </span>
+              )}
+            </button>
+          ))}
+          {topics.length === 0 && (
+            <span className="py-2 text-xs text-[var(--text-muted)]">Brak tematów.</span>
+          )}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1">
+          {selected && (
+            <>
+              <button
+                onClick={() => setEditing(selected)}
+                className="rounded-md p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                title="Edytuj temat"
+                aria-label={`Edytuj temat: ${selected.title}`}
+              >
+                <Pencil size={16} />
+              </button>
+              <button
+                onClick={() => remove(selected)}
+                className="rounded-md p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-red)]"
+                title="Usuń temat"
+                aria-label={`Usuń temat: ${selected.title}`}
+              >
+                <Trash2 size={16} />
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setCreating(true)}
+            className="rounded-md p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+            title="Nowy temat"
+            aria-label="Nowy temat"
           >
-            <button onClick={() => onSelect(t.id)} className="flex-1 text-left py-1">
-              <div className="truncate text-sm text-[var(--text-primary)]">{t.title}</div>
-            </button>
-            {t.pendingCount > 0 && (
-              <span className="rounded-full bg-[var(--accent-blue)] px-1.5 text-[10px] font-medium text-white">
-                {t.pendingCount}
-              </span>
-            )}
-            {/* Na dotyku (brak hover) akcje są zawsze widoczne i większe (cel dotyku, C-31);
-                na desktopie (md+) chowają się i pokazują na hover jak dotąd. */}
-            <button
-              onClick={() => setEditing(t)}
-              className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] md:hidden md:group-hover:block"
-              title="Edytuj"
-              aria-label={`Edytuj temat: ${t.title}`}
-            >
-              <Pencil size={16} />
-            </button>
-            <button
-              onClick={() => remove(t)}
-              className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent-red)] md:hidden md:group-hover:block"
-              title="Usuń"
-              aria-label={`Usuń temat: ${t.title}`}
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
-        ))}
-        {topics.length === 0 && (
-          <p className="px-2 py-4 text-xs text-[var(--text-muted)]">Brak tematów.</p>
-        )}
+            <Plus size={16} />
+          </button>
+        </div>
       </div>
 
       {(creating || editing) && (
@@ -481,7 +533,7 @@ function TopicList({
           onSaved={(id) => {
             setCreating(false);
             setEditing(null);
-            onRefreshList();
+            onChanged();
             if (id) onSelect(id);
           }}
         />
@@ -489,6 +541,33 @@ function TopicList({
     </div>
   );
 }
+
+/** Przełącznik treści tematu: nowe wiadomości (domyślnie) albo linia czasu. */
+function ContentTab({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "rounded-md px-3 py-2 text-sm transition-colors",
+        active
+          ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+          : "text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
 
 function TopicModal({
   topic,

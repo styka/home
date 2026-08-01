@@ -4,6 +4,21 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-01 — `flex-1` z `truncate`, ale bez `min-w-0` — czyli poziomy scroll „nie wiadomo skąd"
+**Problem:** Na telefonie moduł Wiadomości dawał się przewijać w bok, choć po prawej stronie nic nie
+było widać. Zgłoszenie brzmiało: „może coś rozciąga stronę za daleko w prawo, ale nie widać nawet
+co". Szukanie „co wystaje" na oko nie dawało nic, bo faktycznie nic nie wystawało.
+**Rozwiązanie:** Winowajcą był `<span className="flex-1 truncate">` z adresem RSS w ustawieniach
+źródeł. Element `flex-1` dostaje `min-width: auto`, więc **nie potrafi zwęzić się poniżej swojej
+treści** — długi adres ustawiał minimalną szerokość wiersza, a ten rozpychał całą stronę. `truncate`
+(`overflow: hidden` + `text-overflow`) nigdy nie miał czego przycinać, bo element zawsze był dokładnie
+tak szeroki jak tekst. Naprawą jest jedno `min-w-0` na tym elemencie — nie `overflow-x-hidden` na
+kontenerze strony, bo to zamiata przyczynę pod dywan i psuje przewijanie czegokolwiek w środku.
+**Lekcja:** `truncate` na dziecku flexa **nie działa bez `min-w-0`** — to nie jest ozdoba, tylko
+warunek konieczny. I druga rzecz, diagnostyczna: gdy strona przewija się w bok, a „nic nie wystaje",
+podejrzewaj element, który sam się nie pokazuje, tylko **ustawia minimalną szerokość** rodzicowi.
+Tekst ucina wtedy krawędź ekranu, a nie CSS — więc wzrokowo wszystko wygląda poprawnie.
+
 ## 2026-08-01 — Postgres w piaskownicy nie przeżywa restartu procesu sesji
 **Problem:** Po restarcie procesu roboczego sesji `npm run test:unit` pokazał 30 czerwonych testów,
 których wcześniej nie było. Wyglądało to na regresję po zmianach w kolejce zadań i module Wiadomości

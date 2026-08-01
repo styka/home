@@ -168,11 +168,6 @@ export const WORKSHOP_PROJECT_STATUS_OPTIONS = optionsFrom({
   active: "W toku",
   done: "Zakończony",
 });
-export const NEWS_LEANING_OPTIONS = optionsFrom({
-  left: "Lewa strona",
-  center: "Centrum",
-  right: "Prawa strona",
-});
 export const WATCHER_HORIZON_OPTIONS = optionsFrom({
   today: "Dziś",
   tomorrow: "Jutro",
@@ -234,7 +229,7 @@ export const PARAM_LABELS: Record<string, string> = {
   interval: "Co ile",
   isOptional: "Opcjonalny",
   kind: "Rodzaj",
-  leaning: "Profil / nastawienie źródła",
+  descriptor: "Opis źródła",
   lengthCm: "Długość (cm)",
   limitAmount: "Limit",
   listName: "Lista",
@@ -518,8 +513,8 @@ export const ACTION_CONTRACTS: Record<string, ActionContract> = {
   delete_news_topic: { label: "Usuń monitorowany temat" },
   update_news_topic: { label: "Zmień monitorowany temat", fields: { semanticFilter: longText("Filtr tematu") } },
   refresh_news: { label: "Odśwież wiadomości" },
-  create_news_source: { label: "Dodaj źródło wiadomości", fields: { leaning: sel("Profil źródła", NEWS_LEANING_OPTIONS) } },
-  update_news_source: { label: "Zmień źródło wiadomości", fields: { leaning: sel("Profil źródła", NEWS_LEANING_OPTIONS), enabled: bool("Włączone") } },
+  create_news_source: { label: "Dodaj źródło wiadomości", fields: { descriptor: f("Opis źródła") } },
+  update_news_source: { label: "Zmień źródło wiadomości", fields: { descriptor: f("Opis źródła"), enabled: bool("Włączone") } },
   delete_news_source: { label: "Usuń źródło wiadomości" },
 
   // ── POGODA ────────────────────────────────────────────────────────────────
