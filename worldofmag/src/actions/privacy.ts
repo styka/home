@@ -83,6 +83,9 @@ export async function exportMyData(): Promise<UserDataExport> {
     // news / weather
     newsSources,
     newsTopics,
+    newsArticles,
+    newsHiddenTopics,
+    userFacts,
     newsPref,
     weatherLocations,
     weatherWatchers,
@@ -170,7 +173,12 @@ export async function exportMyData(): Promise<UserDataExport> {
     prisma.languageDeck.findMany({ where: own, include: { cards: true } }),
     // news / weather
     prisma.newsSource.findMany({ where: own }),
-    prisma.newsTopic.findMany({ where: own, include: { knowledge: true } }),
+    // 039: wersjonowana wiedza ustąpiła linii czasu — eksportujemy fakty, nie stare wersje opisów.
+    prisma.newsTopic.findMany({ where: own, include: { timeline: true } }),
+    prisma.newsArticle.findMany({ where: own }),
+    prisma.newsHiddenTopic.findMany({ where: own }),
+    // 039: wiedza o użytkowniku to dane osobowe jak każde inne — musi być w eksporcie RODO.
+    prisma.userFact.findMany({ where: own }),
     prisma.newsPref.findUnique({ where: { ownerId: userId } }),
     prisma.weatherLocation.findMany({ where: own }),
     prisma.weatherWatcher.findMany({ where: own }),
@@ -225,7 +233,14 @@ export async function exportMyData(): Promise<UserDataExport> {
     flota: { vehicles, vehicleProfile },
     portfel: { walletElements, budgets, financeGoals, financeSettings, exchangeRates },
     languages: { decks: languageDecks },
-    news: { sources: newsSources, topics: newsTopics, pref: newsPref },
+    news: {
+      sources: newsSources,
+      topics: newsTopics,
+      articles: newsArticles,
+      hiddenTopics: newsHiddenTopics,
+      pref: newsPref,
+    },
+    userFacts,
     weather: { locations: weatherLocations, watchers: weatherWatchers },
     magazynowanie: { items: storageItems, suppliers: storageSuppliers, documents: storageDocuments, orders: storageOrders, settings: storageSettings },
     warsztaty: { workshops, settings: warsztatSettings },

@@ -66,24 +66,24 @@
       `ENQUEUABLE_TYPES`; każdy etap raportuje stan („Pobieram źródła (3/5)…").
       *Gotowe, gdy:* zadanie da się zakolejkować z klienta i widać jego etap. **(AC-5)**
 
-- [ ] **T-10** — **Akcje modułu.** Usunięcie `refreshTopic`; `getHotTopics(force?)` z **puli** i przez
+- [x] **T-10** — **Akcje modułu.** Usunięcie `refreshTopic`; `getHotTopics(force?)` z **puli** i przez
       pamięć treści (`news.hotTopics`); `hideHotTopic`/`unhideHotTopic`/`getHiddenTopics`;
       `getTopicTimeline`; `getTopicView` zwraca linię czasu.
       *Gotowe, gdy:* wejście na gorące tematy nie woła `fetchRss`. **(AC-3, AC-18, AC-19)**
 
 ## Faza 3 — UI Wiadomości
 
-- [ ] **T-11** — **Przeniesiony „Odśwież" + pasek stanu przebiegu.** Przycisk w nagłówku modułu (bo
+- [x] **T-11** — **Przeniesiony „Odśwież" + pasek stanu przebiegu.** Przycisk w nagłówku modułu (bo
       odświeżenie dotyczy całego modułu, nie tematu); stan przebiegu odtwarzany **z kolejki** po
       powrocie na stronę; niepowodzenie pokazuje komunikat błędu, nie pustkę.
       *Gotowe, gdy:* zamknięcie i ponowne otwarcie strony pokazuje trwający przebieg albo jego wynik.
       **(AC-5, AC-6, AC-7)**
 
-- [ ] **T-12** — **`NewsTimeline.tsx`** zastępuje `KnowledgePanel`: pozycje z datą, faktem i źródłem,
+- [x] **T-12** — **`NewsTimeline.tsx`** zastępuje `KnowledgePanel`: pozycje z datą, faktem i źródłem,
       od najnowszej; znacznik „data przybliżona" przy niepewnej dacie. Usunięcie `KnowledgePanel.tsx`.
       *Gotowe, gdy:* widok tematu pokazuje linię czasu, a stary panel nie istnieje. **(AC-8, AC-9)**
 
-- [ ] **T-13** — **Gorące tematy: odrzucanie i przywracanie.** Przycisk „Nie proponuj" przy każdym
+- [x] **T-13** — **Gorące tematy: odrzucanie i przywracanie.** Przycisk „Nie proponuj" przy każdym
       temacie; `HiddenTopicsPanel.tsx` z przywracaniem do proponowanych **albo od razu do
       monitorowanych**.
       *Gotowe, gdy:* odrzucony temat nie wraca, a z listy odrzuconych da się go przywrócić na oba

@@ -174,7 +174,7 @@ export const ACTION_CATALOG_BY_MODULE: Record<string, string> = {
 - create_news_topic { title, semanticFilter? } — nowy monitorowany temat.
 - delete_news_topic { topicId? } (searchQuery = tytuł) — DESTRUKCYJNE
 - update_news_topic { title?, semanticFilter?, topicId? } (searchQuery = tytuł)
-- refresh_news_topic { topicId? } (searchQuery = tytuł)
+- refresh_news {} — uruchamia odświeżenie CAŁEGO modułu (kanały są wspólne dla tematów); przebieg leci w tle
 - create_news_source { name, rssUrl, homepageUrl?, leaning?("left"|"center"|"right") } — dodaje źródło RSS.
 - update_news_source { newName?, rssUrl?, homepageUrl?, leaning?, enabled?, sourceId? } (searchQuery = nazwa źródła)
 - delete_news_source { sourceId? } (searchQuery = nazwa źródła) — DESTRUKCYJNE`,

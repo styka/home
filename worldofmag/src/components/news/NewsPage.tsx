@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Newspaper,
@@ -17,13 +17,15 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { LEANING_META } from "@/lib/news/sources";
+import { AiCostBadge } from "@/components/ui/AiCostBadge";
 import { NewsItemCard } from "./NewsItemCard";
-import { KnowledgePanel } from "./KnowledgePanel";
+import { NewsTimeline } from "./NewsTimeline";
 import { HotTopics } from "./HotTopics";
 import { NewsSettings } from "./NewsSettings";
 import {
   getTopicView,
-  refreshTopic,
+  startNewsRefresh,
+  getNewsRefreshState,
   createTopic,
   updateTopic,
   deleteTopic,
@@ -32,7 +34,8 @@ import {
   type SourceDTO,
   type SummaryLength,
   type NewsItemDTO,
-  type KnowledgeDTO,
+  type TimelineEntryDTO,
+  type NewsRefreshState,
 } from "@/actions/news";
 
 type View = "feed" | "hot" | "settings";
@@ -53,18 +56,20 @@ export function NewsPage({
   const [view, setView] = useState<View>("feed");
   const [selectedId, setSelectedId] = useState<string | null>(topics[0]?.id ?? null);
   const [sourceFilter, setSourceFilter] = useState<string>(activeSourceKey ?? "all");
-  const [data, setData] = useState<{ items: NewsItemDTO[]; knowledge: KnowledgeDTO[] } | null>(null);
+  const [data, setData] = useState<{ items: NewsItemDTO[]; timeline: TimelineEntryDTO[] } | null>(null);
   const [loadingView, setLoadingView] = useState(false);
-  const [refreshing, startRefresh] = useTransition();
+  const [refresh, setRefresh] = useState<NewsRefreshState | null>(null);
+  const [starting, startRefreshing] = useTransition();
 
   const enabledSources = sources.filter((s) => s.enabled);
   const selectedTopic = topics.find((t) => t.id === selectedId) ?? null;
+  const refreshRunning = refresh?.status === "QUEUED" || refresh?.status === "RUNNING";
 
   const loadView = useCallback((topicId: string) => {
     setLoadingView(true);
     getTopicView(topicId)
       .then(setData)
-      .catch(() => setData({ items: [], knowledge: [] }))
+      .catch(() => setData({ items: [], timeline: [] }))
       .finally(() => setLoadingView(false));
   }, []);
 
@@ -86,27 +91,59 @@ export function NewsPage({
     setActiveSource(key === "all" ? null : key).catch(() => {});
   }
 
-  function refresh() {
-    if (!selectedId) return;
-    startRefresh(async () => {
+  // 039: stan przebiegu czytamy z KOLEJKI, nie z pamięci komponentu — dzięki temu powrót na stronę
+  // (albo jej odświeżenie) pokazuje trwający przebieg zamiast udawać, że nic się nie dzieje.
+  const loadRefreshState = useCallback(() => {
+    getNewsRefreshState()
+      .then(setRefresh)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadRefreshState();
+  }, [loadRefreshState]);
+
+  // Odpytujemy tylko wtedy, gdy przebieg faktycznie trwa — skończony nie ma czego zgłaszać.
+  useEffect(() => {
+    if (!refreshRunning) return;
+    const t = setInterval(loadRefreshState, 2000);
+    return () => clearInterval(t);
+  }, [refreshRunning, loadRefreshState]);
+
+  // Domknięcie przebiegu = czas odświeżyć widok i listę tematów.
+  const wasRunning = useRef(false);
+  useEffect(() => {
+    if (refreshRunning) {
+      wasRunning.current = true;
+      return;
+    }
+    if (!wasRunning.current) return;
+    wasRunning.current = false;
+
+    const r = refresh?.result;
+    if (refresh?.status === "FAILED") {
+      showToast(refresh.error || "Odświeżanie nie powiodło się", "error");
+    } else if (r?.llmUnconfigured) {
+      showToast("Model nie jest skonfigurowany — ustaw go w Admin → LLM.", "error");
+    } else if (r) {
+      showToast(
+        r.assigned > 0
+          ? `Nowych wiadomości: ${r.assigned}`
+          : "Brak nowych, istotnych wiadomości",
+        r.assigned > 0 ? "success" : "info"
+      );
+    }
+    if (selectedId) loadView(selectedId);
+    router.refresh();
+  }, [refreshRunning, refresh, selectedId, loadView, router, showToast]);
+
+  function startRefresh() {
+    startRefreshing(async () => {
       try {
-        const r = await refreshTopic(selectedId);
-        if (r.llmUnconfigured && r.added === 0 && r.initialized === 0) {
-          showToast("LLM nie jest skonfigurowany — ustaw model w Admin → LLM.", "error");
-        } else if (r.added > 0) {
-          showToast(`Dodano ${r.added} nowych wiadomości`, "success");
-        } else if (r.initialized > 0) {
-          showToast(
-            `Zainicjowano bazę wiedzy (${r.initialized} ${r.initialized === 1 ? "źródło" : "źródła"})`,
-            "success"
-          );
-        } else {
-          showToast("Brak nowych istotnych wiadomości", "info");
-        }
-        loadView(selectedId);
-        router.refresh();
+        await startNewsRefresh();
+        loadRefreshState();
       } catch (e: any) {
-        showToast(e.message ?? "Nie udało się odświeżyć", "error");
+        showToast(e.message ?? "Nie udało się uruchomić odświeżania", "error");
       }
     });
   }
@@ -119,8 +156,8 @@ export function NewsPage({
   const filteredItems = (data?.items ?? []).filter(
     (i) => sourceFilter === "all" || i.sourceKey === sourceFilter
   );
-  const filteredKnowledge = (data?.knowledge ?? []).filter(
-    (k) => sourceFilter === "all" || k.sourceKey === sourceFilter
+  const filteredTimeline = (data?.timeline ?? []).filter(
+    (t) => sourceFilter === "all" || t.sourceKey === null || t.sourceKey === sourceFilter
   );
 
   return (
@@ -132,6 +169,13 @@ export function NewsPage({
           <Newspaper size={22} className="text-[var(--accent-blue)]" /> Wiadomości
         </h1>
         <div className="flex items-center gap-2">
+          {/* 039: „Odśwież" stoi w nagłówku MODUŁU, a nie przy temacie — bo jeden przebieg pobiera
+              wspólne kanały i obsługuje wszystkie tematy naraz. Przycisk przy temacie sugerowałby,
+              że da się odświeżyć jeden temat osobno, a tak już nie jest. */}
+          <Button size="sm" onClick={startRefresh} disabled={starting || refreshRunning}>
+            <RefreshCw size={15} className={starting || refreshRunning ? "animate-spin" : ""} />
+            {refreshRunning ? "Odświeżam…" : "Odśwież"}
+          </Button>
           <Button
             variant={view === "hot" ? "primary" : "secondary"}
             size="sm"
@@ -148,6 +192,8 @@ export function NewsPage({
           </Button>
         </div>
       </div>
+
+      <RefreshStatus state={refresh} running={refreshRunning} />
 
       {view === "hot" && (
         <HotTopics
@@ -185,17 +231,11 @@ export function NewsPage({
               </div>
             ) : (
               <>
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                      {selectedTopic.title}
-                    </h2>
-                    <p className="text-xs text-[var(--text-muted)]">{selectedTopic.semanticFilter}</p>
-                  </div>
-                  <Button size="sm" onClick={refresh} disabled={refreshing}>
-                    <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-                    {refreshing ? "Pobieram…" : "Odśwież teraz"}
-                  </Button>
+                <div className="mb-3">
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                    {selectedTopic.title}
+                  </h2>
+                  <p className="text-xs text-[var(--text-muted)]">{selectedTopic.semanticFilter}</p>
                 </div>
 
                 {/* 039: „Wszystkie" bez opisu wyglądało na zbędne. Licznik i podpis mówią wprost,
@@ -230,9 +270,9 @@ export function NewsPage({
                   <div className="space-y-6">
                     <section>
                       <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                        Aktualny stan wiedzy
+                        Linia czasu · {filteredTimeline.length}
                       </h3>
-                      <KnowledgePanel topicId={selectedTopic.id} knowledge={filteredKnowledge} />
+                      <NewsTimeline entries={filteredTimeline} />
                     </section>
 
                     <section>
@@ -241,8 +281,8 @@ export function NewsPage({
                       </h3>
                       {filteredItems.length === 0 ? (
                         <p className="rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--text-muted)]">
-                          Brak nowych, istotnych wiadomości. Kliknij „Odśwież teraz”, aby pobrać
-                          najświeższe materiały (tylko z ostatnich 24 godzin).
+                          Brak nowych, istotnych wiadomości. Kliknij „Odśwież” w nagłówku, żeby
+                          pobrać najświeższe materiały (tylko z ostatnich 24 godzin).
                         </p>
                       ) : (
                         <div className="space-y-3">
@@ -262,6 +302,63 @@ export function NewsPage({
       </div>
     </div>
   );
+}
+
+/**
+ * 039: pasek stanu przebiegu odświeżania.
+ *
+ * Pokazuje ETAP („Pobieram źródła (3/5)…") czytany z kolejki, a nie z pamięci komponentu — więc
+ * wraca po odświeżeniu strony i po powrocie z innej zakładki. Niepowodzenie ma własny, czerwony
+ * komunikat: „nic nie znaleziono" i „coś się zepsuło" to dla użytkownika dwie różne wiadomości, a
+ * mylenie ich każe mu bez sensu ponawiać (lekcja z 038).
+ */
+function RefreshStatus({ state, running }: { state: NewsRefreshState | null; running: boolean }) {
+  if (!state) return null;
+
+  if (running) {
+    return (
+      <div className="mb-4 flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+        <Loader2 size={15} className="animate-spin text-[var(--accent-blue)]" />
+        <span>{state.progress || "Przygotowuję odświeżanie…"}</span>
+      </div>
+    );
+  }
+
+  if (state.status === "FAILED") {
+    return (
+      <div
+        className="mb-4 rounded-lg border bg-[var(--bg-surface)] px-3 py-2 text-sm"
+        style={{ borderColor: "var(--accent-red)" }}
+      >
+        <span className="text-[var(--text-primary)]">Ostatnie odświeżanie nie powiodło się.</span>
+        {state.error && <span className="ml-2 text-xs text-[var(--text-muted)]">{state.error}</span>}
+      </div>
+    );
+  }
+
+  const r = state.result;
+  if (state.status !== "DONE" || !r) return null;
+
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
+      <span>
+        Ostatnie odświeżanie: {formatWhen(state.startedAt)} · źródeł: {r.sources} · nowych
+        materiałów: {r.fetched} · pozycji: {r.assigned} · faktów na osi: {r.timelineAdded}
+      </span>
+      {r.llmUnconfigured && (
+        <span className="text-[var(--accent-amber)]">
+          model nieskonfigurowany — materiał pobrany, analiza pominięta
+        </span>
+      )}
+      <AiCostBadge usage={r.usage} align="left" />
+    </div>
+  );
+}
+
+function formatWhen(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("pl-PL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 function SourceTab({

@@ -982,16 +982,16 @@
     "reason": "interactive",
     "access": "owner"
   },
+  "news:getHiddenTopics": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
   "news:getHotTopics": {
     "kind": "read",
     "status": "ai",
     "action": "list_hot_topics",
-    "access": "owner"
-  },
-  "news:getKnowledgeHistory": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "niche",
     "access": "owner"
   },
   "news:getNewsPref": {
@@ -1000,10 +1000,22 @@
     "reason": "settings",
     "access": "self"
   },
+  "news:getNewsRefreshState": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
   "news:getSources": {
     "kind": "read",
     "status": "ai",
     "action": "list_news_sources",
+    "access": "owner"
+  },
+  "news:getTopicTimeline": {
+    "kind": "read",
+    "status": "ai",
+    "action": "get_news_topic_view",
     "access": "owner"
   },
   "news:getTopicView": {
@@ -1017,8 +1029,9 @@
     "status": "ai",
     "access": "owner"
   },
-  "news:refreshTopic": {
-    "status": "ai",
+  "news:hideHotTopic": {
+    "status": "excluded",
+    "reason": "interactive",
     "access": "owner"
   },
   "news:resummarizeItem": {
@@ -1035,6 +1048,16 @@
     "status": "excluded",
     "reason": "admin",
     "access": "admin"
+  },
+  "news:startNewsRefresh": {
+    "status": "ai",
+    "action": "refresh_news",
+    "access": "owner"
+  },
+  "news:unhideHotTopic": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
   },
   "news:updateSource": {
     "status": "ai",
