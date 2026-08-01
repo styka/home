@@ -52,7 +52,7 @@
 
 ## Faza 2 — Warstwa serwera
 
-- [ ] **T-6** `[P]` — **`src/lib/news/sourceColor.ts` + test.** `sourceColor(descriptor)` → nazwa
+- [x] **T-6** `[P]` — **`src/lib/news/sourceColor.ts` + test.** `sourceColor(descriptor)` → nazwa
       zmiennej CSS z palety akcentów, wybierana stabilnie z tekstu znormalizowanego przez
       `fingerprintOf` (`lib/textKey.ts`); pusty opis → `--text-muted`.
       *Gotowe, gdy:* test pokrywa stabilność (ten sam opis → ten sam kolor), niewrażliwość na
