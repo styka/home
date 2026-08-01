@@ -128,7 +128,7 @@
 
 ## Faza 6 — Koszty, pamięć, manifesty
 
-- [ ] **T-20** — **Licznik kosztu i pamięć treści.** Suma zużycia z etapów przebiegu pokazywana przy
+- [x] **T-20** — **Licznik kosztu i pamięć treści.** Suma zużycia z etapów przebiegu pokazywana przy
       wyniku odświeżenia i przy gorących tematach; wpisy w `content-memory-coverage.json`,
       `cost-badge-coverage.json` i `action-coverage.json` dla wszystkich nowych plików i akcji.
       *Gotowe, gdy:* `check:cost-badge`, `check:content-memory` i `check:ai-coverage` przechodzą.
@@ -136,22 +136,22 @@
 
 ## Faza 7 — Domknięcie
 
-- [ ] **T-21** — **Pełna sekwencja bramek na lokalnym Postgresie (C-13):** `copy-docs →
+- [x] **T-21** — **Pełna sekwencja bramek na lokalnym Postgresie (C-13):** `copy-docs →
       check:actions → check:ai-coverage → check:cost-badge → check:content-memory →
       check:migrations → next lint → prisma generate → next build` + `npm run test:unit`.
       **Bez** `scripts/migrate.js`.
       *Gotowe, gdy:* wszystkie kroki zielone. **(C-50)**
 
-- [ ] **T-22** — **Dokumentacja** — `CLAUDE.md`: moduł Wiadomości (nowy przebieg, linia czasu,
+- [x] **T-22** — **Dokumentacja** — `CLAUDE.md`: moduł Wiadomości (nowy przebieg, linia czasu,
       lektor), schemat bazy (4 nowe modele, usunięty `NewsKnowledge`), lista Server Actions, nowy
       typ zadania w kolejce.
       *Gotowe, gdy:* dokumentacja opisuje stan po zmianie.
 
-- [ ] **T-23** — **`doświadczenia.md` (C-51)** — wpisy o tym, co wyszło nieoczywistego (spodziewane:
+- [x] **T-23** — **`doświadczenia.md` (C-51)** — wpisy o tym, co wyszło nieoczywistego (spodziewane:
       koszt pobierania per temat vs pula, podział zdań po polsku, odtwarzanie stanu zadania po
       przeładowaniu strony).
 
-- [ ] **T-24** — **Mapowanie AC → wynik** jako wejście do `/verify`.
+- [x] **T-24** — **Mapowanie AC → wynik** jako wejście do `/verify`.
 
 ---
 
@@ -185,6 +185,7 @@
 | AC-24 przegląd i edycja w ustawieniach | T-16, T-18 |
 | AC-25 wgląd administratora | T-16, T-18 |
 | AC-26 Pogoda korzysta z faktów | T-19 |
+| AC-27 brak faktów niczego nie psuje | T-19 |
 | AC-27 brak faktów niczego nie blokuje | T-16, T-19 |
 
 ## Ścieżka krytyczna

@@ -4,6 +4,50 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-01 — Postgres w piaskownicy nie przeżywa restartu procesu sesji
+**Problem:** Po restarcie procesu roboczego sesji `npm run test:unit` pokazał 30 czerwonych testów,
+których wcześniej nie było. Wyglądało to na regresję po zmianach w kolejce zadań i module Wiadomości
+— akurat tam, gdzie dotykałem schematu bazy.
+**Rozwiązanie:** To nie była regresja. Testy DB-gated pomijają się po cichu, gdy `DATABASE_URL` nie
+jest ustawiony (`skip: !HAS_DB`), więc wcześniejsze „514 passed, 0 failed" oznaczało 27 testów
+**pominiętych**, a nie przechodzących. Gdy wyeksportowałem `DATABASE_URL` do bramek, testy się
+odpaliły — ale lokalny Postgres nie żył po restarcie procesu (`pg_isready` → „no response",
+`pg_ctlcluster 16 main start` zgłosił „Removed stale pid file"). Po podniesieniu bazy: 560/560.
+**Lekcja:** Przy nagłej fali czerwonych testów sprawdź NAJPIERW, czy zmieniło się środowisko, a nie
+kod — zwłaszcza gdy liczba testów w podsumowaniu też się zmieniła (514 → 517 → 560). Rosnąca liczba
+testów przy tym samym drzewie kodu znaczy, że coś, co dotąd było pomijane, właśnie zaczęło się
+wykonywać. I drugie: „0 failed" przy niezerowym „skipped" to nie jest zielony wynik, tylko wynik
+częściowy — podsumowanie trzeba czytać w całości.
+
+## 2026-08-01 — Pobieranie per temat zamiast wspólnej puli mnoży koszt przez liczbę tematów
+**Problem:** Moduł Wiadomości odświeżał się „per temat": dla każdego tematu przechodził po wszystkich
+źródłach i pobierał każdy kanał RSS. Przy 3 tematach i 5 źródłach to 15 pobrań tego samego materiału,
+a gorące tematy pobierały wszystko jeszcze raz przy każdym wejściu na zakładkę — łącznie ~20 pobrań
+na cykl. Do tego każde źródło szło osobnym wywołaniem modelu z całym stanem wiedzy w prompcie.
+**Rozwiązanie:** Rozcięcie „pobrania" od „analizy". Każde źródło pobierane RAZ do wspólnej puli
+(`NewsArticle`), potem JEDNO tanie wywołanie (`dispatch`) przypisuje całą pulę do wszystkich tematów
+naraz, a droższe modele pracują dopiero na wybranym materiale. Gorące tematy czytają pulę, więc
+wejście na widok nie kosztuje ani jednego żądania do portali.
+**Lekcja:** Gdy pętla wygląda jak `dla każdego X: dla każdego Y: pobierz Y`, sprawdź, czy Y naprawdę
+zależy od X. Jeśli nie — to nie jest pętla, tylko ten sam zasób pobierany N razy. Koszt takiego
+układu rośnie iloczynem, a nie sumą, i widać go dopiero przy kilku pozycjach w każdym wymiarze.
+
+## 2026-08-01 — Wskaźnik postępu w pamięci komponentu znika przy odświeżeniu strony
+**Problem:** Wieloetapowe odświeżanie ma pokazywać, na czym stoi („Pobieram źródła (3/5)…"). Stan
+etapu naturalnie ląduje w `useState` komponentu — i wtedy odświeżenie strony albo przejście na inną
+zakładkę kasuje go, choć przebieg leci dalej. Użytkownik wraca i widzi ekran, który udaje, że nic
+się nie dzieje.
+**Rozwiązanie:** Etap musi mieszkać tam, gdzie mieszka sama praca — w kolejce. Kolumna `Job.progress`
+(migracja 0218), `ctx.progress(text)` w handlerze, zwrot etapu przez `GET /api/jobs/[id]`. Kolumna
+trafiła do `Job`, a nie do tabel modułu, bo to brak warstwy kolejki: każdy wieloetapowy handler ma
+ten sam problem. Zapis etapu jest świadomie nieblokujący i połyka błąd — utrata podpisu pod paskiem
+postępu nie jest powodem, żeby zmarnować całą, kosztowną pracę handlera.
+**Lekcja:** Jeśli praca przeżywa zamknięcie strony, to jej stan też musi. Odwrotnie: stan trzymany w
+komponencie jest obietnicą, że praca kończy się razem z widokiem — a przy zadaniach w tle to
+nieprawda. I jeszcze: dopisanie kolumny do już zastosowanej migracji rozjeżdża sumę kontrolną
+(`migrate deploy` odpali plik drugi raz), więc korekta idzie NOWĄ migracją, nawet gdy stara jest
+sprzed kilku minut.
+
 ## 2026-07-31 — Awaria zapisana do pamięci podręcznej udaje deterministyczny brak wyników
 **Problem:** Sekcja „Co robić?" w Pogodzie zwracała „Brak propozycji na tę porę". Właściciel próbował
 ponad pięć razy — za każdym razem to samo. Powtarzalność sugerowała, że model po prostu nic nie
