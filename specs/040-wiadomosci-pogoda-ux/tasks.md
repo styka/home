@@ -111,21 +111,21 @@
 
 ## Faza 6 — Bramki i domknięcie
 
-- [ ] **T-14** — **Pełna sekwencja bramek na lokalnym Postgresie (C-13):** `copy-docs →
+- [x] **T-14** — **Pełna sekwencja bramek na lokalnym Postgresie (C-13):** `copy-docs →
       check:actions → check:ai-coverage → check:cost-badge → check:content-memory →
       check:migrations → next lint → prisma generate → next build` + `npm run test:unit`.
       **Bez** `scripts/migrate.js`.
       *Gotowe, gdy:* wszystkie kroki zielone. **(C-50)**
 
-- [ ] **T-15** — **Dokumentacja** — `CLAUDE.md`: moduł Wiadomości po zmianie układu (pasek widoków,
+- [x] **T-15** — **Dokumentacja** — `CLAUDE.md`: moduł Wiadomości po zmianie układu (pasek widoków,
       zakładki tematów, przełącznik treści), `NewsSource.descriptor` w schemacie zamiast `leaning`.
       *Gotowe, gdy:* dokumentacja opisuje stan po zmianie.
 
-- [ ] **T-16** — **`doświadczenia.md` (C-51)** — lekcja o `flex-1 truncate` bez `min-w-0` jako
+- [x] **T-16** — **`doświadczenia.md` (C-51)** — lekcja o `flex-1 truncate` bez `min-w-0` jako
       przyczynie poziomego przewijania („nie widać nawet co", bo tekst ucina krawędź ekranu, a nie
       `truncate`).
 
-- [ ] **T-17** — **Mapowanie AC → wynik** jako wejście do `/verify`.
+- [x] **T-17** — **Mapowanie AC → wynik** jako wejście do `/verify`.
 
 ---
 
