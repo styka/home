@@ -34,6 +34,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     status: job.status,
     result,
     error: job.error,
+    // 039: etap wieloetapowego zadania — dzięki niemu powrót na stronę odtwarza stan trwającego
+    // przebiegu z kolejki, a nie z pamięci komponentu.
+    progress: job.progress,
     attempts: job.attempts,
   });
 }

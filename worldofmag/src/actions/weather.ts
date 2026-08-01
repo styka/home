@@ -24,6 +24,7 @@ import {
 import { usageFromChat, parseStoredUsage, type AiUsageInfo } from "@/lib/ai/usage";
 import { visibleUsage } from "@/lib/ai/costVisibility";
 import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
+import { buildUserContext, userContextStamp } from "@/lib/userContext";
 import { recordTrash } from "@/lib/trash";
 import { auth } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
@@ -520,16 +521,21 @@ export async function getIdeas(
     // bo zniweczyłaby całą oszczędność, dla której ta pamięć powstała.
     roundedBrief(f, when),
     blocked.map((b) => b.fingerprint).sort().join(","),
-    saved.map((b) => b.fingerprint).sort().join(",")
+    saved.map((b) => b.fingerprint).sort().join(","),
+    // 039: wiedza o użytkowniku też jest warunkiem powstania treści. Bez tego potwierdzenie „nie
+    // jeżdżę na rowerze" zostawiłoby zapamiętane propozycje rowerowe bez śladu, że coś się zmieniło.
+    await userContextStamp(user.id)
   );
 
-  // Namiastka bazy wiedzy o użytkowniku (pełny mechanizm to osobne zgłoszenie): stałe preferencje
-  // z ustawień asystenta + to, co użytkownik już sobie zapisał.
+  // 039: namiastkę wiedzy o użytkowniku zastąpił mechanizm przekrojowy (`lib/userContext.ts`).
+  // Stałe instrukcje z ustawień asystenta zostają — to jawna wola użytkownika, a nie hipoteza —
+  // i tak samo to, co sam sobie zapisał.
   const prefs = await prisma.assistantPref.findUnique({ where: { userId: user.id } });
   const personalHint =
     (prefs?.instructions?.trim()
-      ? `\n\nO UŻYTKOWNIKU (uwzględnij przy doborze propozycji):\n${prefs.instructions.trim()}`
+      ? `\n\nSTAŁE WSKAZÓWKI OD UŻYTKOWNIKA:\n${prefs.instructions.trim()}`
       : "") +
+    (await buildUserContext(user.id)) +
     (saved.length > 0
       ? `\n\nPodobały mu się wcześniej:\n${saved.slice(0, 10).map((k) => `- ${k.title}`).join("\n")}`
       : "");

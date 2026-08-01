@@ -1,7 +1,7 @@
 // Z-010: handler akcji asystenta dla modułu Wiadomości (tematy + odświeżanie).
 // Scala oba dawne bloki `module === "news"` z execute/route.ts.
 import { prisma } from "@/lib/prisma";
-import { createTopic, updateTopic, deleteTopic, refreshTopic, createSource, updateSource, deleteSource } from "@/actions/news";
+import { createTopic, updateTopic, deleteTopic, startNewsRefresh, createSource, updateSource, deleteSource } from "@/actions/news";
 import { asStr, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 
@@ -42,10 +42,12 @@ export async function executeNewsAction(action: AIAction, userId: string): Promi
     await updateTopic(id, { title: asStr(params.title), semanticFilter: asStr(params.semanticFilter) });
     return `Zaktualizowano temat wiadomości`;
   }
-  if (type === "refresh_news_topic") {
-    const id = await resolveTopic();
-    const r = await refreshTopic(id);
-    return `Odświeżono temat — nowych pozycji: ${r.added}`;
+  // 039: odświeżenie dotyczy CAŁEGO modułu (kanały są wspólne dla tematów), więc akcja nie bierze
+  // już tematu. Przebieg idzie przez kolejkę, czyli kończy się po odpowiedzi asystenta — mówimy
+  // wprost, że został uruchomiony, zamiast udawać, że mamy już jego wynik.
+  if (type === "refresh_news") {
+    await startNewsRefresh();
+    return "Uruchomiłem odświeżanie wiadomości — postęp widać w module Wiadomości";
   }
 
   if (type === "create_news_source") {

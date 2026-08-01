@@ -56,22 +56,8 @@ export function parseIdeaCategory(value: string | null | undefined): IdeaCategor
  * Odcisk tytułu propozycji — klucz naturalny, po którym rozpoznajemy, że model zaproponował coś,
  * co użytkownik już rozważał albo zablokował.
  *
- * Model nie powtórzy tytułu znak w znak („Wycieczka rowerowa" vs „wycieczka rowerowa doliną"), więc
- * odcisk musi znosić różnice, które dla człowieka są nieistotne: wielkość liter, polskie znaki,
- * interpunkcję i wielokrotne spacje. Świadomie NIE próbujemy dopasowania rozmytego — cichy fałszywy
- * alarm („zablokowałeś to kiedyś") byłby gorszy od pokazania propozycji drugi raz.
+ * 039: implementacja przeniosła się do `@/lib/textKey`, bo dokładnie tego samego odcisku potrzebują
+ * teraz odrzucone gorące tematy i fakty o użytkowniku. Re-eksport zostaje, żeby dotychczasowe
+ * importy z modułu Pogoda działały bez zmian.
  */
-export function fingerprintOf(title: string): string {
-  return title
-    .normalize("NFD")
-    // Znaki diakrytyczne rozłożone przez NFD — usuwamy same ogonki, litera bazowa zostaje.
-    .replace(/[̀-ͯ]/g, "")
-    // `ł`/`Ł` nie rozkłada się przez NFD (to osobna litera, nie l z diakrytykiem).
-    .replace(/ł/g, "l")
-    .replace(/Ł/g, "L")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim()
-    .replace(/\s+/g, "-")
-    .slice(0, 120);
-}
+export { fingerprintOf } from "@/lib/textKey";

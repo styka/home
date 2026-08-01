@@ -15,6 +15,12 @@ export class JobError extends Error {
 export interface JobContext {
   ownerId: string | null;
   jobId: string;
+  /**
+   * 039: zgłoszenie etapu wieloetapowego zadania („Pobieram źródła (3/5)…"). Trafia do `Job.progress`,
+   * więc przeżywa odświeżenie strony — komponent odczytuje etap z kolejki, nie z własnej pamięci.
+   * Opcjonalne, bo zadania jednoetapowe nie mają czego zgłaszać, a testy nie muszą tego podstawiać.
+   */
+  progress?: (text: string) => void;
 }
 
 /** Handler zadania: dostaje payload (odparsowany JSON) i kontekst, zwraca wynik (JSON-owalny). */

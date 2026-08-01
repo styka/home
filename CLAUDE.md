@@ -70,7 +70,7 @@ soft-delete trash, per-user Google Drive storage, and an AI assistant.
 | Flota (vehicles/fuel/service) | `/flota` | `module.flota` | Done — vehicles/fuel/service + attachments (`VehicleAttachment`: invoices, registration, insurance) |
 | Portfel (personal finance) | `/portfel` | `module.portfel` | Done — wallet elements/entries + **budgets & savings goals** (`/portfel/budzety`), **monthly reports** (`/portfel/raporty`), **settings + multi-currency/exchange rates** (`/portfel/ustawienia`), and **auto-expense booking** from other modules (`WalletEntry.sourceModule/sourceId`) |
 | Languages (SRS flashcards) | `/languages` | `module.languages` | Done — SuperMemo-2 + TTS/pronunciation, writing mode, study series |
-| Wiadomości (news + knowledge base) | `/wiadomosci` | `module.news` | Done — RSS+LLM filtering, per-topic/per-source versioned knowledge base, web-search baseline bootstrap (Brave/DDG), hot topics, 24h freshness |
+| Wiadomości (news + timeline) | `/wiadomosci` | `module.news` | Done — **one `news.refresh` job for the whole module** (shared article pool `NewsArticle` → cheap classification → summaries → timeline), **event timeline** (`NewsTimelineEntry`) replacing the old versioned knowledge base, hot topics read **from the pool** (no re-fetch) with per-topic **hiding/restoring**, sentence-by-sentence **reader** (`NewsReader`), 24h freshness |
 | Pogoda (weather) | `/pogoda` | `module.weather` | Done — Open-Meteo (sunrise/sunset + moon phase, day/night icons), **location picking on a map** (Leaflet+OSM, reverse geocoding), watchers (preset + custom, **editable**, status = *is the watcher's condition met* — `met/partial/unmet/unknown`, never a judgement of "nice weather"), **„Co robić?" as a list of AI proposals** with on-demand persistent detail plans + an idea library (`/pogoda/pomysly`, `WeatherIdea`) |
 | Magazynowanie (storage/inventory) | `/magazynowanie` | `module.magazynowanie` | Done — **two modes (Dom/Pro, per-user `StorageSettings`)**. Shared: items by warehouse+location, SKU/EAN, min-stock replenishment→shopping, stocktake, AI photo inventory, movement log. **Dom:** "where is it?" (AI search), QR labels (print+scan), warranties/expiry, value+photos (CSV export). **Pro:** barcode in/out scan (`@zxing`), suppliers, PZ/WZ/invoice documents (OCR), purchase orders (LLM draft), analytics (value/ABC/dead-stock/trend + AI takeaways), batches/lots + FEFO. AI in assistant (`add_storage_item`/`adjust_storage` + read-tool `list_storage_items`) |
 | Warsztaty (workshop/studio) | `/warsztaty` | `module.warsztaty` | Done — **two modes (Dom/Pro, per-user `WarsztatSettings`)**. Any workshop type (woodworking/automotive/painting/electronics/metalworking/ceramics/sewing/jewelry/general). Equipment register (`WorkshopItem`: kind tool/machine/material/PPE, condition, qty+min-stock, service `nextServiceAt`), **static equipment-suggestion catalog by profile** (`src/lib/warsztat/catalog.ts`, basic/recommended/advanced tiers) as an "add to equipment" checklist. **Pro:** team ownership, tool assignment (who has / station), service + low-stock agenda (`/warsztaty/przeglady`), project journal (`WorkshopProject`). AI: read-tool `list_workshops` + actions `create_workshop`/`add_workshop_item` |
@@ -214,7 +214,7 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /flota/ [vehicleId]      # Vehicles (fuel logs, service records)
 /portfel/ [elementId]    # Personal finance (wallet elements + entries); + /budzety (budgets & savings goals), /raporty (monthly reports), /ustawienia (multi-currency / exchange rates / settings)
 /languages/ [deckId]     # SRS vocabulary decks; + /[deckId]/study
-/wiadomosci/             # News: monitored topics (semantic filters), per-source versioned knowledge base, hot topics
+/wiadomosci/             # News: monitored topics (semantic filters), per-topic event timeline, hot topics (from the pool, hideable), reader
 /pogoda/                 # Weather: forecast (Teraz → „Co robić?" → hours → days), map location picker, watchers; + /pogoda/pomysly (idea library: saved/considered/blocked proposals, soft-delete to /trash)
 /magazynowanie/          # Storage: items by warehouse+location (mode-aware sub-nav). Dom+Pro: /szukaj (AI "where is it?"), /etykiety (QR), /scan (AI photo), /stocktake, /ustawienia (Dom/Pro + currency). Pro: /przeplyw (in/out scan), /analityka, /dostawcy, /zamowienia, /dokumenty (OCR PZ/WZ/invoice)
 /warsztaty/ [workshopId] # Workshops: list + detail with tabs (Equipment / Suggestions-by-profile / Projects-Pro). Mode-aware sub-nav: /przeglady (Pro: service + low-stock agenda), /ustawienia (Dom/Pro)
@@ -334,7 +334,7 @@ Never add manual cache invalidation elsewhere. Action files:
 - **Kitchen**: `recipes`, `cookbooks`, `mealPlans`, `pantry`
 - **Pets**: `pets`, `petCare`, `petHusbandry`, `petBreeding`
 - **Health**: `health`, `medications`
-- **Other modules**: `habits`, `flota`, `portfel`, `portfelBudgets`, `portfelReports`, `portfelCurrency`, `portfelAuto` (Portfel: budgets/reports/multi-currency/auto-expense), `languageDecks`, `news`, `weather` (incl. `addLocationByPoint`, `getIdeas`/`generateIdeaDetail`/`getIdeaLibrary`/`setIdeaState`/`blockIdea`/`deleteIdea`/`addIdeaToTasks`), `qa`, `truck`, `storage` (Magazynowanie), `warsztat` (Warsztaty), `services` (marketplace; incl. `getModerationDisputes`), `calendar`, `contacts`
+- **Other modules**: `habits`, `flota`, `portfel`, `portfelBudgets`, `portfelReports`, `portfelCurrency`, `portfelAuto` (Portfel: budgets/reports/multi-currency/auto-expense), `languageDecks`, `news` (incl. `startNewsRefresh`/`getNewsRefreshState` — the module-wide refresh job; `getTopicTimeline`; `hideHotTopic`/`unhideHotTopic`/`getHiddenTopics`; **`refreshTopic` is gone**), `userFacts` (knowledge about the user; `buildUserContext` lives in `lib/userContext.ts` — a helper, not an action), `weather` (incl. `addLocationByPoint`, `getIdeas`/`generateIdeaDetail`/`getIdeaLibrary`/`setIdeaState`/`blockIdea`/`deleteIdea`/`addIdeaToTasks`), `qa`, `truck`, `storage` (Magazynowanie), `warsztat` (Warsztaty), `services` (marketplace; incl. `getModerationDisputes`), `calendar`, `contacts`
 - **Collaboration / system / UX**: `teams`, `invitations`, `access` (incl. `getAuditLog`), `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `aiConversations` (chat persistence), `notifications`, `menuPrefs` (sidebar customization), `dashboardPrefs` (home dashboard personalization), `skins`, `trash` (soft-delete recovery), `systemHealth`, `drive` (Google Drive), `assistantPrefs` (per-user assistant settings + `getSpeechOptions`), `feedback` (`submitFeedbackTask`/`getFeedbackInboxInfo` — the user-report inbox)
 
 ### Authentication & Authorization
@@ -392,7 +392,9 @@ WalletElement, WalletEntry                    — Portfel (finance; WalletEntry 
 Budget, FinanceGoal, FinanceSettings          — Portfel budgets + savings goals + per-user finance settings
 ExchangeRate                                  — Portfel multi-currency exchange rates (manual | nbp source)
 LanguageDeck, Vocabulary                      — Languages (SRS)
-NewsSource, NewsTopic, NewsKnowledge, NewsItem, NewsPref — Wiadomości (news + versioned knowledge base)
+NewsSource, NewsTopic, NewsItem, NewsPref          — Wiadomości (sources/topics/items; `NewsPref.lastFetchedAt` = last POOL fetch, shared by all topics)
+NewsArticle, NewsTimelineEntry, NewsHiddenTopic    — 039: shared article pool (each source fetched ONCE per run), per-topic event timeline (unique [topicId, fingerprint]), rejected hot topics (keyed by title fingerprint)
+UserFact                                           — 039: cross-cutting KNOWLEDGE ABOUT THE USER (category/confidence/origin/status; `rejected` stays in the table so inference never re-proposes it; `lib/userContext.ts` `buildUserContext` feeds it into prompts)
 WeatherLocation, WeatherWatcher               — Pogoda (locations + alert watchers)
 WeatherIdea                                   — Pogoda „Co robić?" — proposals the user acted on (unique [ownerId, fingerprint]; state considered|saved|blocked; persistent `detail` plan + `detailUsage`; `seedDate`/`seedPart`/`seedWeather` = conditions at the moment the idea was proposed, so a lazily-generated plan describes THAT day)
 AiContent                                     — 038: cross-cutting MEMORY of AI-generated content (unique [ownerId, kind, scopeKey]; `inputHash` = conditions it was generated under → drives the „nieaktualne" badge; `refreshes` counts explicit regenerations)
@@ -557,6 +559,13 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 
 ### Cross-cutting systems
 
+- **Job queue with progress** (`Job`, `lib/jobs/*`, `/admin/jobs`): handlers are registered in
+  `JOB_HANDLERS` (that map is also the allowlist of what a client may enqueue). Multi-stage handlers
+  report their stage through `ctx.progress(text)` → **`Job.progress`** (039), so a UI reading it back
+  from the queue survives a page reload; `completeJob` clears it. Types include `news.refresh`
+  (whole Wiadomości module: pool → classify → summarise → timeline) and `user.facts` (infer
+  knowledge about the user from their own actions).
+
 - **Soft-delete / Trash** (`TrashItem`, `lib/trash.ts`, `actions/trash.ts`,
   `/trash`): deletes across modules write a JSON snapshot to `TrashItem` with a
   retention-day countdown; users restore from a unified `/trash` page
@@ -575,6 +584,16 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
   `DriveFile` registry. **Reports** can store content on Drive
   (`Report.storage` = `db|drive`, hydrated transparently on read); falls back to DB
   when no Drive account is connected.
+- **Knowledge about the user** (`UserFact`, `actions/userFacts.ts`, `lib/userFacts.ts` types,
+  `lib/userContext.ts`): facts inferred from the user's OWN actions (saved/blocked weather ideas,
+  monitored topics, rejected hot topics) by the `user.facts` job, shown in full at
+  `/settings` ("Co system o Tobie wie") and at `/admin/user-facts`. Any module that generates
+  content for the user calls `buildUserContext(userId)` — confidence reaches the prompt as a WORD
+  ("przypuszczenie"/"potwierdzone"), no facts returns an empty string (never an error), and
+  `userContextStamp(userId)` goes into `hashInputs` so changing a fact marks remembered content
+  stale. A **rejected fact is never deleted** (`status: "rejected"`) — deleting the row would let
+  inference re-derive and re-propose it; rejected facts are fed back as "don't assume this".
+  `origin: "admin"` is never overwritten by inference.
 - **Home dashboard personalization** (`DashboardPref`, `actions/dashboardPrefs.ts`):
   per-user section order/visibility on the Home dashboard.
 

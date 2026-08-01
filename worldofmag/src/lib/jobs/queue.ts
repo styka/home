@@ -15,6 +15,7 @@ export interface JobRecord {
   payload: string;
   result: string | null;
   error: string | null;
+  progress: string | null;
   attempts: number;
   maxAttempts: number;
   runAfter: Date;
@@ -126,8 +127,34 @@ export async function claimNext(visibilityTimeoutMs = DEFAULT_VISIBILITY_TIMEOUT
 export async function completeJob(id: string, result: unknown): Promise<void> {
   await prisma.job.update({
     where: { id },
-    data: { status: "DONE", result: JSON.stringify(result ?? null), error: null, lockedAt: null },
+    data: {
+      status: "DONE",
+      result: JSON.stringify(result ?? null),
+      error: null,
+      lockedAt: null,
+      // Etap przestaje być prawdą w chwili zakończenia — zostawiony myliłby („Streszczam…" przy
+      // gotowym wyniku).
+      progress: null,
+    },
   });
+}
+
+/**
+ * 039: zapisuje etap wieloetapowego zadania („Pobieram źródła (3/5)…").
+ *
+ * Zapis jest CELOWO nieblokujący dla samego zadania: jeśli aktualizacja się nie powiedzie, przebieg
+ * leci dalej bez informacji o etapie. Utrata podpisu pod paskiem postępu nie jest powodem, żeby
+ * zmarnować całą, kosztowną pracę handlera.
+ */
+export async function setJobProgress(id: string, progress: string | null): Promise<void> {
+  try {
+    await prisma.job.update({
+      where: { id },
+      data: { progress: progress ? progress.slice(0, 300) : null },
+    });
+  } catch {
+    /* etap to informacja poboczna — nie przerywamy przebiegu */
+  }
 }
 
 /**
