@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Plus, Trash2, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
-import { LEANING_META } from "@/lib/news/sources";
 import { SUMMARY_LENGTHS } from "@/lib/news/format";
 import {
   createSource,
@@ -15,9 +14,6 @@ import {
   type SourceDTO,
   type SummaryLength,
 } from "@/actions/news";
-import type { Leaning } from "@/lib/news/sources";
-
-const LEANINGS: Leaning[] = ["left", "center", "right"];
 
 export function NewsSettings({
   sources,
@@ -34,7 +30,7 @@ export function NewsSettings({
   const [name, setName] = useState("");
   const [rssUrl, setRssUrl] = useState("");
   const [homepageUrl, setHomepageUrl] = useState("");
-  const [leaning, setLeaning] = useState<Leaning>("center");
+  const [descriptor, setDescriptor] = useState("");
 
   function run(fn: () => Promise<void>, ok?: string) {
     startTransition(async () => {
@@ -54,12 +50,12 @@ export function NewsSettings({
       return;
     }
     run(async () => {
-      await createSource({ name, rssUrl, homepageUrl, leaning });
+      await createSource({ name, rssUrl, homepageUrl, descriptor });
       setShowAdd(false);
       setName("");
       setRssUrl("");
       setHomepageUrl("");
-      setLeaning("center");
+      setDescriptor("");
     }, "Dodano źródło");
   }
 
@@ -84,17 +80,13 @@ export function NewsSettings({
                 />
                 <span className="font-medium text-[var(--text-primary)]">{s.name}</span>
               </label>
-              <select
-                value={s.leaning}
-                onChange={(e) => run(() => updateSource(s.id, { leaning: e.target.value as Leaning }))}
-                className="rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-1 text-xs text-[var(--text-primary)]"
-              >
-                {LEANINGS.map((l) => (
-                  <option key={l} value={l}>
-                    {LEANING_META[l].label}
-                  </option>
-                ))}
-              </select>
+              {/* 040: dowolny opis zamiast wyboru z trzech kategorii — zestaw kanałów dawno
+                  wyszedł poza politykę. Zapis na `blur`, żeby nie strzelać akcją przy każdej
+                  wpisanej literze. */}
+              <SourceDescriptorInput
+                value={s.descriptor}
+                onSave={(next) => run(() => updateSource(s.id, { descriptor: next }))}
+              />
               {/* 040: `min-w-0` jest tu WARUNKIEM działania `truncate`, nie ozdobą. Element `flex-1`
                   ma domyślnie `min-width: auto`, więc nie potrafi zwęzić się poniżej swojej treści —
                   długi adres RSS rozpychał wiersz, a przez niego całą stronę (poziomy scroll na
@@ -133,17 +125,13 @@ export function NewsSettings({
               className="w-full rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
             />
             <div className="flex items-center gap-2">
-              <select
-                value={leaning}
-                onChange={(e) => setLeaning(e.target.value as Leaning)}
-                className="rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-2 text-sm text-[var(--text-primary)]"
-              >
-                {LEANINGS.map((l) => (
-                  <option key={l} value={l}>
-                    {LEANING_META[l].label}
-                  </option>
-                ))}
-              </select>
+              <input
+                value={descriptor}
+                onChange={(e) => setDescriptor(e.target.value)}
+                maxLength={60}
+                placeholder="Opis (np. pop-science)"
+                className="min-w-0 flex-1 rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
+              />
               <Button size="sm" onClick={add}>
                 Dodaj
               </Button>
@@ -181,5 +169,49 @@ export function NewsSettings({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * 040: pole opisu źródła zapisywane na `blur` (albo Enterem), nie przy każdej literze.
+ *
+ * Zapis „na zmianę" wysyłałby Server Action po każdym znaku, a przy okazji `revalidatePath` —
+ * czyli kilkadziesiąt round-tripów na jeden wpisany opis. Trzymamy więc wartość lokalnie i
+ * zapisujemy dopiero, gdy użytkownik skończy pisać i faktycznie coś zmienił.
+ */
+function SourceDescriptorInput({
+  value,
+  onSave,
+}: {
+  value: string;
+  onSave: (next: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+
+  // Wartość z serwera wygrywa, gdy zmieni się poza tym polem (np. po odświeżeniu listy).
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  function commit() {
+    const next = draft.trim();
+    if (next === value.trim()) return;
+    onSave(next);
+  }
+
+  return (
+    <input
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+        if (e.key === "Escape") setDraft(value);
+      }}
+      maxLength={60}
+      placeholder="Opis źródła"
+      aria-label="Opis źródła"
+      className="w-32 min-w-0 rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-1 text-xs text-[var(--text-primary)]"
+    />
   );
 }

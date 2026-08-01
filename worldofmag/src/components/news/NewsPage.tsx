@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
-import { LEANING_META } from "@/lib/news/sources";
+import { sourceColor } from "@/lib/news/sourceColor";
 import { AiCostBadge } from "@/components/ui/AiCostBadge";
 import { NewsItemCard } from "./NewsItemCard";
 import { NewsTimeline } from "./NewsTimeline";
@@ -245,7 +245,7 @@ export function NewsPage({
                     <SourceTab
                       key={s.id}
                       label={s.name}
-                      color={LEANING_META[s.leaning].color}
+                      color={sourceColor(s.descriptor)}
                       active={sourceFilter === s.key}
                       onClick={() => pickSource(s.key)}
                     />

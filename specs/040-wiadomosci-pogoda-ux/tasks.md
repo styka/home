@@ -76,13 +76,13 @@
 
 ## Faza 4 — UI opisu źródła
 
-- [ ] **T-9** — **`NewsSettings`: pole tekstowe zamiast listy wyboru.** `<input type="text">` z
+- [x] **T-9** — **`NewsSettings`: pole tekstowe zamiast listy wyboru.** `<input type="text">` z
       `maxLength={60}` i podpowiedzią „np. pop-science, lewica", w wierszu źródła i w formularzu
       dodawania. Zapis jak dotąd.
       *Gotowe, gdy:* na ekranie nie ma już listy „Lewica/Centrum/Prawica", a wpisany opis zapisuje
       się i wraca po odświeżeniu. **(AC-1)**
 
-- [ ] **T-10** — **Opis i kolor w trzech miejscach prezentacji:** badge na karcie wiadomości
+- [x] **T-10** — **Opis i kolor w trzech miejscach prezentacji:** badge na karcie wiadomości
       (`NewsItemCard`), kropka przy zakładce źródła (`NewsPage`), kropka na osi czasu
       (`NewsTimeline`) — wszystkie przez `sourceColor(descriptor)`. Puste opisy nie zostawiają pustej
       plamy.
