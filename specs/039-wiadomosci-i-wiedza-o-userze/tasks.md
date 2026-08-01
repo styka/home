@@ -42,27 +42,27 @@
 
 ## Faza 2 — Warstwa serwera: pula i przebieg odświeżania
 
-- [ ] **T-6** — **Handler `news.refresh` — etap pobrania puli.** Dla każdego włączonego źródła
+- [x] **T-6** — **Handler `news.refresh` — etap pobrania puli.** Dla każdego włączonego źródła
       **jedno** `fetchRss`; zapis do `NewsArticle` z pominięciem duplikatów; próg czasu z
       `NewsPref.lastFetchedAt` (przy pierwszym uruchomieniu 24 h); ustawienie `lastFetchedAt` na końcu.
       *Gotowe, gdy:* liczba wywołań `fetchRss` = liczba źródeł, niezależnie od liczby tematów.
       **(AC-1, AC-4)**
 
-- [ ] **T-7** — **Etap klasyfikacji.** Jedno wywołanie `op: "dispatch"` na porcję puli (~40 pozycji):
+- [x] **T-7** — **Etap klasyfikacji.** Jedno wywołanie `op: "dispatch"` na porcję puli (~40 pozycji):
       tytuły + skróty × tematy z filtrami semantycznymi → mapa artykuł → tematy. Zapis jako `NewsItem`
       z `articleId`, bez streszczenia. **`truncated` i nieparsowalny JSON = błąd, nie pustka**
       (lekcja z 038).
       *Gotowe, gdy:* jedno wywołanie obsługuje wszystkie tematy naraz, a awaria jest jawna.
       **(AC-2, AC-12)**
 
-- [ ] **T-8** — **Etap streszczeń i linii czasu.** Streszczenia w domyślnej długości (`generation`)
+- [x] **T-8** — **Etap streszczeń i linii czasu.** Streszczenia w domyślnej długości (`generation`)
       dla nowych przypisań; linia czasu (`reasoning`) per temat — model dostaje nowe materiały i
       **istniejące pozycje z tego samego okresu**, zwraca wyłącznie brakujące fakty z datą zdarzenia
       i jej pewnością. Zapis z pominięciem duplikatów po `[topicId, fingerprint]`.
       *Gotowe, gdy:* daty pochodzą z treści, a powtórzona informacja nie tworzy drugiej pozycji.
       **(AC-8, AC-9, AC-10)**
 
-- [ ] **T-9** — **Rejestracja zadania + raportowanie postępu.** `news.refresh` w `JOB_HANDLERS` i
+- [x] **T-9** — **Rejestracja zadania + raportowanie postępu.** `news.refresh` w `JOB_HANDLERS` i
       `ENQUEUABLE_TYPES`; każdy etap raportuje stan („Pobieram źródła (3/5)…").
       *Gotowe, gdy:* zadanie da się zakolejkować z klienta i widać jego etap. **(AC-5)**
 
