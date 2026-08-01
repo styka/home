@@ -91,7 +91,7 @@
 
 ## Faza 5 — Układ i nawigacja Wiadomości
 
-- [ ] **T-11** — **Pasek widoków modułu.** `Tematy` · `Gorące tematy` · `Źródła` jako poziomy pasek
+- [x] **T-11** — **Pasek widoków modułu.** `Tematy` · `Gorące tematy` · `Źródła` jako poziomy pasek
       pod nagłówkiem, obecny w **każdym** trybie i wyraźnie oznaczający aktywny. Zastępuje dzisiejsze
       przyciski-przełączniki w nagłówku (nie dublujemy).
       *Gotowe, gdy:* z „Źródeł" i „Gorących tematów" wraca się jednym dotknięciem, także na telefonie,

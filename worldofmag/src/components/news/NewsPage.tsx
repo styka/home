@@ -168,30 +168,20 @@ export function NewsPage({
         <h1 className="flex items-center gap-2 text-xl font-bold text-[var(--text-primary)]">
           <Newspaper size={22} className="text-[var(--accent-blue)]" /> Wiadomości
         </h1>
-        <div className="flex items-center gap-2">
-          {/* 039: „Odśwież" stoi w nagłówku MODUŁU, a nie przy temacie — bo jeden przebieg pobiera
-              wspólne kanały i obsługuje wszystkie tematy naraz. Przycisk przy temacie sugerowałby,
-              że da się odświeżyć jeden temat osobno, a tak już nie jest. */}
-          <Button size="sm" onClick={startRefresh} disabled={starting || refreshRunning}>
-            <RefreshCw size={15} className={starting || refreshRunning ? "animate-spin" : ""} />
-            {refreshRunning ? "Odświeżam…" : "Odśwież"}
-          </Button>
-          <Button
-            variant={view === "hot" ? "primary" : "secondary"}
-            size="sm"
-            onClick={() => setView(view === "hot" ? "feed" : "hot")}
-          >
-            <Flame size={15} /> Gorące tematy
-          </Button>
-          <Button
-            variant={view === "settings" ? "primary" : "secondary"}
-            size="sm"
-            onClick={() => setView(view === "settings" ? "feed" : "settings")}
-          >
-            <Settings2 size={15} /> Źródła
-          </Button>
-        </div>
+        {/* 039: „Odśwież" stoi w nagłówku MODUŁU, a nie przy temacie — bo jeden przebieg pobiera
+            wspólne kanały i obsługuje wszystkie tematy naraz. Przycisk przy temacie sugerowałby,
+            że da się odświeżyć jeden temat osobno, a tak już nie jest. */}
+        <Button size="sm" onClick={startRefresh} disabled={starting || refreshRunning}>
+          <RefreshCw size={15} className={starting || refreshRunning ? "animate-spin" : ""} />
+          {refreshRunning ? "Odświeżam…" : "Odśwież"}
+        </Button>
       </div>
+
+      {/* 040: pasek widoków modułu — obecny w KAŻDYM trybie, także na telefonie.
+          Wcześniej „Gorące tematy" i „Źródła" były przełącznikami w nagłówku: po wejściu w któryś z
+          nich nic nie wskazywało drogi powrotnej, bo przycisk zmieniał tylko swój wariant. Pasek z
+          trzema równorzędnymi zakładkami mówi jednocześnie, gdzie jestem i jak wrócić. */}
+      <ViewTabs view={view} onChange={setView} />
 
       <RefreshStatus state={refresh} running={refreshRunning} />
 
@@ -295,6 +285,52 @@ export function NewsPage({
         </div>
       )}
       </div>
+    </div>
+  );
+}
+
+const VIEW_TABS: Array<{ key: View; label: string; icon: typeof Newspaper }> = [
+  { key: "feed", label: "Tematy", icon: Newspaper },
+  { key: "hot", label: "Gorące tematy", icon: Flame },
+  { key: "settings", label: "Źródła", icon: Settings2 },
+];
+
+/**
+ * 040: nawigacja po widokach modułu — jedna dla desktopu i telefonu (C-31).
+ *
+ * Zakładki są równorzędne i zawsze widoczne, więc powrót do wiadomości to jedno dotknięcie z
+ * każdego miejsca. Aktywna zakładka jest wyróżniona, więc z samego ekranu widać, gdzie się jest —
+ * czego brakowało, gdy widoki przełączały się przyciskami zmieniającymi tylko swój wariant.
+ */
+function ViewTabs({ view, onChange }: { view: View; onChange: (v: View) => void }) {
+  return (
+    <div
+      className="mb-4 flex gap-1 border-b border-[var(--border)]"
+      role="tablist"
+      aria-label="Widoki modułu Wiadomości"
+    >
+      {VIEW_TABS.map((t) => {
+        const Icon = t.icon;
+        const active = view === t.key;
+        return (
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(t.key)}
+            className={cn(
+              // `py-3` = cel dotyku na telefonie (C-31); `-mb-px` wsuwa podkreślenie w krawędź paska.
+              "-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-3 text-sm transition-colors",
+              active
+                ? "border-[var(--accent-blue)] text-[var(--text-primary)]"
+                : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            )}
+          >
+            <Icon size={15} />
+            {t.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
