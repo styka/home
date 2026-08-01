@@ -23,7 +23,7 @@
       *Gotowe, gdy:* `grep` na `flex-1 truncate` bez `min-w-0` w module nie daje trafień, a w diffie
       nie ma nowego globalnego ukrycia przewijania. **(AC-15, AC-16)**
 
-- [ ] **T-2** `[P]` — **„Monitoruj temat" bez wyrzucania z listy.** `HotTopics.add()` przestaje
+- [x] **T-2** `[P]` — **„Monitoruj temat" bez wyrzucania z listy.** `HotTopics.add()` przestaje
       wołać `onAdded()`; zamiast tego komunikat „Dodano temat „X" do monitorowanych" i lokalne
       oznaczenie karty jako monitorowanej (przycisk nieaktywny „Monitorowany"). Lista tematów w
       rodzicu odświeża się bez zmiany widoku.

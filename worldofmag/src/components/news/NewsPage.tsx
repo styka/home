@@ -195,14 +195,9 @@ export function NewsPage({
 
       <RefreshStatus state={refresh} running={refreshRunning} />
 
-      {view === "hot" && (
-        <HotTopics
-          onAdded={() => {
-            setView("feed");
-            router.refresh();
-          }}
-        />
-      )}
+      {/* 040: dodanie tematu odświeża listę, ale NIE przerzuca na widok główny — przegląd gorących
+          tematów ma dać się zrobić za jednym posiedzeniem. */}
+      {view === "hot" && <HotTopics onTopicsChanged={() => router.refresh()} />}
 
       {view === "settings" && (
         <NewsSettings
