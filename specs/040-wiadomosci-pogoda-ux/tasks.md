@@ -97,14 +97,14 @@
       *Gotowe, gdy:* z „Źródeł" i „Gorących tematów" wraca się jednym dotknięciem, także na telefonie,
       a z ekranu widać, gdzie się jest. **(AC-13, AC-14)**
 
-- [ ] **T-12** — **Zakładki tematów zamiast kolumny.** Usunięcie `md:grid-cols-[240px_1fr]`; tematy
+- [x] **T-12** — **Zakładki tematów zamiast kolumny.** Usunięcie `md:grid-cols-[240px_1fr]`; tematy
       jako poziomy pasek zakładek z pełnymi nazwami (bez `truncate`) i licznikiem nowych, przewijany
       **we własnym kontenerze** (`overflow-x-auto`), nie stroną. Zarządzanie tematami (dodaj/edytuj/
       usuń) przenosi się do tego paska i do akcji przy aktywnym temacie.
       *Gotowe, gdy:* treść zajmuje pełną szerokość, długie nazwy są czytelne w całości, a strona
       nadal nie przewija się w poziomie. **(AC-8, AC-9, AC-12, AC-15)**
 
-- [ ] **T-13** — **Przełącznik treści tematu.** Dwa segmenty: `Nowe wiadomości (N)` /
+- [x] **T-13** — **Przełącznik treści tematu.** Dwa segmenty: `Nowe wiadomości (N)` /
       `Linia czasu (M)`, domyślnie wiadomości. Wybór trzymany niezależnie od wybranego tematu.
       *Gotowe, gdy:* po wejściu w temat pierwsze widać nowe wiadomości, a przełączenie na linię czasu
       przeżywa zmianę tematu. **(AC-10, AC-11)**
