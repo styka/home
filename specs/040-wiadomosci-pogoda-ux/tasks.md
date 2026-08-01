@@ -16,7 +16,7 @@
 
 ## Faza 0 — Zgłoszenia niezależne od zmiany danych
 
-- [ ] **T-1** `[P]` — **Poziomy scroll na telefonie.** `min-w-0` na `<span className="flex-1
+- [x] **T-1** `[P]` — **Poziomy scroll na telefonie.** `min-w-0` na `<span className="flex-1
       truncate">` z adresem RSS (`NewsSettings.tsx:98`) — `flex-1` daje `min-width:auto`, więc
       element nie może zwęzić się poniżej treści i `truncate` nigdy nie działa. Przegląd trzech
       widoków modułu pod tym samym wzorcem. **Bez** `overflow-x-hidden` na kontenerze strony.

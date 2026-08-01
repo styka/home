@@ -95,7 +95,12 @@ export function NewsSettings({
                   </option>
                 ))}
               </select>
-              <span className="flex-1 truncate text-xs text-[var(--text-muted)]">{s.rssUrl}</span>
+              {/* 040: `min-w-0` jest tu WARUNKIEM działania `truncate`, nie ozdobą. Element `flex-1`
+                  ma domyślnie `min-width: auto`, więc nie potrafi zwęzić się poniżej swojej treści —
+                  długi adres RSS rozpychał wiersz, a przez niego całą stronę (poziomy scroll na
+                  telefonie). `truncate` nigdy nie dostawał szansy zadziałać, bo nie było czego
+                  przycinać: tekst ucinała dopiero krawędź ekranu. */}
+              <span className="min-w-0 flex-1 truncate text-xs text-[var(--text-muted)]">{s.rssUrl}</span>
               <button
                 onClick={() => run(() => deleteSource(s.id), "Usunięto źródło")}
                 className="text-[var(--text-muted)] hover:text-[var(--accent-red)]"
