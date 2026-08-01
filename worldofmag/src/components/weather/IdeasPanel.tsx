@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -75,6 +75,8 @@ export function IdeasPanel({
   const [detailUsage, setDetailUsage] = useState<AiCostUsage | undefined>();
   const [detailLoading, setDetailLoading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  /** Odcisk aktualnie otwartej propozycji — unieważnia spóźnione odpowiedzi (patrz `openIdea`). */
+  const openFingerprintRef = useRef<string | null>(null);
 
   const load = useCallback(
     (opts?: { force?: boolean }) => {
@@ -110,9 +112,17 @@ export function IdeasPanel({
     setDetailUsage(undefined);
     setDetailRuns(0);
     setDetailLoading(true);
+    // 040: znacznik „która propozycja jest teraz otwarta". Generowanie planu trwa kilkanaście
+    // sekund, a od 040 szczegóły stoją przy kartach, więc klikanie kolejnych propozycji w trakcie
+    // jest naturalne. Bez tego guardu spóźniona odpowiedź dla A wpisywała swój opis i swoje `id`
+    // pod otwartą już kartę B — a „Zapisz" zapisywałoby wtedy A pod pozorem B.
+    openFingerprintRef.current = idea.fingerprint;
+    const isStillOpen = () => openFingerprintRef.current === idea.fingerprint;
+
     getIdeaDetail(idea.fingerprint)
       .then((saved) => {
         if (saved?.detail) {
+          if (!isStillOpen()) return null;
           setDetail(saved.detail);
           setDetailRuns(saved.detailRuns);
           setDetailUsage(saved.usage);
@@ -123,16 +133,32 @@ export function IdeasPanel({
           { title: idea.title, summary: idea.summary, category: idea.category },
           { lat: coords.lat, lon: coords.lon, label: coords.label, date, part }
         ).then((r) => {
+          // Plan i tak zapisał się w bazie, więc `markConsidered` wykonujemy ZAWSZE — praca modelu
+          // nie może przepaść tylko dlatego, że użytkownik w międzyczasie zajrzał gdzie indziej.
+          markConsidered(idea.fingerprint, r.id);
+          if (!isStillOpen()) return null;
           setDetail(r.detail);
           setDetailRuns(r.detailRuns);
           setDetailUsage(r.usage);
           setOpen((o) => (o ? { ...o, id: r.id, hasDetail: true } : o));
-          markConsidered(idea.fingerprint, r.id);
           return null;
         });
       })
-      .catch((e) => showToast(e?.message ?? "Nie udało się otworzyć szczegółów", "error"))
-      .finally(() => setDetailLoading(false));
+      .catch((e) => {
+        if (isStillOpen()) showToast(e?.message ?? "Nie udało się otworzyć szczegółów", "error");
+      })
+      .finally(() => {
+        // Spinner gasi tylko ta propozycja, która jest otwarta — inaczej spóźniona odpowiedź dla A
+        // pokazywałaby kartę B jako gotową, choć jej treść dopiero leci.
+        if (isStillOpen()) setDetailLoading(false);
+      });
+  }
+
+  /** Zamknięcie szczegółów unieważnia trwające zapytanie — inaczej wróciłoby do zamkniętej karty. */
+  function closeIdea() {
+    openFingerprintRef.current = null;
+    setOpen(null);
+    setDetailLoading(false);
   }
 
   function regenerate() {
@@ -167,7 +193,9 @@ export function IdeasPanel({
   function block(idea: IdeaDTO) {
     // Znika z listy od razu — czekanie na serwer sprawiałoby wrażenie, że kliknięcie nie zadziałało.
     setIdeas((prev) => (prev ? prev.filter((i) => i.fingerprint !== idea.fingerprint) : prev));
-    if (open?.fingerprint === idea.fingerprint) setOpen(null);
+    // `closeIdea`, a nie `setOpen(null)` — zablokowana propozycja musi też unieważnić trwające
+    // zapytanie o swoje szczegóły, inaczej odpowiedź wróciłaby do karty, której już nie ma.
+    if (open?.fingerprint === idea.fingerprint) closeIdea();
     blockIdea(
       { title: idea.title, summary: idea.summary, category: idea.category },
       { label: coords.label, lat: coords.lat, lon: coords.lon }
@@ -301,7 +329,7 @@ export function IdeasPanel({
                 <IdeaCard
                   idea={idea}
                   expanded={isOpen}
-                  onOpen={() => (isOpen ? setOpen(null) : openIdea(idea))}
+                  onOpen={() => (isOpen ? closeIdea() : openIdea(idea))}
                   onBlock={() => block(idea)}
                   onSave={() => saveFromList(idea)}
                 />
@@ -316,7 +344,7 @@ export function IdeasPanel({
                       usage={detailUsage}
                       usdPlnRate={usdPlnRate}
                       canAddToTasks={canAddToTasks}
-                      onClose={() => setOpen(null)}
+                      onClose={closeIdea}
                       onRegenerate={regenerate}
                       onSave={save}
                       onAddToTasks={addToTasks}
