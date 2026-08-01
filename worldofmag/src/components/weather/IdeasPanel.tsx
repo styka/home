@@ -22,6 +22,7 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AiContentMeta } from "@/components/ui/AiContentMeta";
+import { UserFactHypothesisCard } from "@/components/ui/UserFactHypothesisCard";
 import { DAY_PARTS, currentDayPart, type DayPart } from "@/lib/weather/presets";
 import type { Forecast } from "@/lib/weather/openMeteo";
 import type { IdeaCategory, IdeaDTO } from "@/lib/weather/ideas";
@@ -341,6 +342,10 @@ export function IdeasPanel({
           />
         </div>
       )}
+
+      {/* 039: hipoteza o użytkowniku pod listą propozycji — czyli dokładnie tam, gdzie widać, po co
+          ona jest. Jedna karta, bez modala i bez blokowania czegokolwiek. */}
+      <UserFactHypothesisCard />
     </div>
   );
 }

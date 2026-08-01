@@ -13,6 +13,8 @@ import { magazynInsightsHandler } from "@/lib/jobs/handlers/magazynInsights";
 import { magazynOrderDraftHandler } from "@/lib/jobs/handlers/magazynOrderDraft";
 import { petsInsightsHandler } from "@/lib/jobs/handlers/petsInsights";
 import { storesGenerateHandler } from "@/lib/jobs/handlers/storesGenerate";
+import { newsRefreshHandler } from "@/lib/jobs/handlers/newsRefresh";
+import { userFactsHandler } from "@/lib/jobs/handlers/userFacts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const JOB_HANDLERS: Record<string, JobHandler<any, any>> = {
@@ -26,6 +28,8 @@ export const JOB_HANDLERS: Record<string, JobHandler<any, any>> = {
   "magazyn.orderDraft": magazynOrderDraftHandler,
   "pets.insights": petsInsightsHandler,
   "stores.generate": storesGenerateHandler,
+  "news.refresh": newsRefreshHandler,
+  "user.facts": userFactsHandler,
 };
 
 /** Typy, które wolno zakolejkować z klienta (przez POST /api/jobs). */

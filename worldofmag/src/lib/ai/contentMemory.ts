@@ -25,7 +25,9 @@ export type AiContentKind =
   | "weather.ideas"
   | "storage.insights"
   | "pets.insights"
-  | "kitchen.planWeek";
+  | "kitchen.planWeek"
+  // 039: gorące tematy — wejście na widok Wiadomości nie może kosztować za każdym razem.
+  | "news.hotTopics";
 
 export interface RememberedContent<T> {
   value: T;

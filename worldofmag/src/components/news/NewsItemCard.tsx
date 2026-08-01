@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ExternalLink, Check, X, Sparkles, Loader2 } from "lucide-react";
+import { ExternalLink, Check, X, Sparkles, Loader2, Headphones } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { LEANING_META } from "@/lib/news/sources";
 import { timeAgo, SUMMARY_LENGTHS } from "@/lib/news/format";
 import { useToast } from "@/components/ui/Toast";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import { NewsReader } from "./NewsReader";
 import {
   acknowledgeItem,
   dismissItem,
@@ -23,6 +24,7 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
   const [resummarizing, setResummarizing] = useState(false);
   const [usage, setUsage] = useState<AiCostUsage | undefined>();
   const [imgError, setImgError] = useState(false);
+  const [reading, setReading] = useState(false);
   const leaning = LEANING_META[item.leaning];
 
   function changeLength(next: SummaryLength) {
@@ -42,7 +44,7 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
     startTransition(async () => {
       try {
         await acknowledgeItem(item.id);
-        showToast("Dodano do bazy wiedzy tematu", "success");
+        showToast("Oznaczono jako przeczytane", "success");
         onChanged();
       } catch (e: any) {
         showToast(e.message ?? "Błąd", "error");
@@ -96,7 +98,17 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
         />
       )}
 
-      <p className="mt-2 [overflow-wrap:anywhere] text-sm leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+      {/* 039: streszczenie albo lektor — nie oba naraz. Podwójny tekst na ekranie każe czytelnikowi
+          zgadywać, który z nich jest „ten właściwy". */}
+      {reading ? (
+        <div className="mt-2">
+          <NewsReader title={item.title} text={summary} />
+        </div>
+      ) : (
+        <p className="mt-2 [overflow-wrap:anywhere] text-sm leading-relaxed text-[var(--text-secondary)]">
+          {summary}
+        </p>
+      )}
       {usage && (
         <div className="mt-1 flex justify-end">
           <AiCostBadge usage={usage} />
@@ -137,6 +149,18 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setReading((v) => !v)}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs",
+              reading
+                ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
+                : "text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+            )}
+            aria-pressed={reading}
+          >
+            <Headphones size={13} /> {reading ? "Zamknij lektora" : "Słuchaj"}
+          </button>
+          <button
             onClick={dismiss}
             disabled={pending}
             className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
@@ -148,7 +172,7 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
             disabled={pending}
             className="inline-flex items-center gap-1 rounded-md bg-[var(--accent-green)] px-2.5 py-1 text-xs font-medium text-white hover:opacity-90"
           >
-            <Check size={13} /> Przyjmij do wiedzy
+            <Check size={13} /> Przeczytane
           </button>
         </div>
       </div>

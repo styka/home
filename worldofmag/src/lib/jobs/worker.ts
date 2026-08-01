@@ -3,7 +3,7 @@
 // nie śpi. Ten sam kod można później uruchomić jako OSOBNY worker na Render — logika
 // pobierania (`claimNext`, SKIP LOCKED) jest wieloworkerowo-bezpieczna.
 
-import { claimNext, completeJob, failJob, failJobPermanent, cleanupOldJobs, type JobRecord } from "@/lib/jobs/queue";
+import { claimNext, completeJob, failJob, failJobPermanent, cleanupOldJobs, setJobProgress, type JobRecord } from "@/lib/jobs/queue";
 import { getHandler } from "@/lib/jobs/handlers";
 import { reportServerError } from "@/lib/observability/report";
 
@@ -23,7 +23,12 @@ async function processOne(job: JobRecord): Promise<void> {
   }
   try {
     const payload = JSON.parse(job.payload || "{}");
-    const result = await handler(payload, { ownerId: job.ownerId, jobId: job.id });
+    // 039: zgłoszenie etapu jest „wystrzel i zapomnij" — handler nie czeka na zapis, bo etap to
+    // informacja dla użytkownika, a nie część wyniku. Błąd zapisu połykamy w `setJobProgress`.
+    const progress = (text: string) => {
+      void setJobProgress(job.id, text);
+    };
+    const result = await handler(payload, { ownerId: job.ownerId, jobId: job.id, progress });
     await completeJob(job.id, result);
   } catch (e) {
     await failJob(job.id, e instanceof Error ? e.message : String(e));

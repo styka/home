@@ -517,7 +517,7 @@ export const ACTION_CONTRACTS: Record<string, ActionContract> = {
   create_news_topic: { label: "Dodaj monitorowany temat", fields: { semanticFilter: longText("Filtr tematu") } },
   delete_news_topic: { label: "Usuń monitorowany temat" },
   update_news_topic: { label: "Zmień monitorowany temat", fields: { semanticFilter: longText("Filtr tematu") } },
-  refresh_news_topic: { label: "Odśwież temat wiadomości" },
+  refresh_news: { label: "Odśwież wiadomości" },
   create_news_source: { label: "Dodaj źródło wiadomości", fields: { leaning: sel("Profil źródła", NEWS_LEANING_OPTIONS) } },
   update_news_source: { label: "Zmień źródło wiadomości", fields: { leaning: sel("Profil źródła", NEWS_LEANING_OPTIONS), enabled: bool("Włączone") } },
   delete_news_source: { label: "Usuń źródło wiadomości" },

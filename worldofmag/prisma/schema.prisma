@@ -22,88 +22,91 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
 
-  accounts               Account[]
-  sessions               Session[]
-  driveConnection        DriveConnection?      @relation("UserDriveConnection")
-  driveFiles             DriveFile[]           @relation("UserDriveFiles")
-  ownedTeams             Team[]                @relation("TeamOwner")
-  teamMemberships        TeamMember[]
-  sentInvitations        TeamInvitation[]      @relation("InvitedBy")
-  receivedInvitations    TeamInvitation[]      @relation("InvitedUser")
-  ownedLists             ShoppingList[]
-  products               Product[]
-  units                  Unit[]
-  categories             Category[]
-  ownedTaskProjects      TaskProject[]         @relation("OwnedTaskProjects")
-  taskProjectMemberships TaskProjectMember[]   @relation("TaskProjectMemberships")
-  tasksCreated           Task[]                @relation("TasksCreatedBy")
-  tasksAssigned          Task[]                @relation("TasksAssignedTo")
-  taskComments           TaskComment[]         @relation("TaskComments")
-  taskShares             TaskShare[]           @relation("TaskShares")
-  activities             UserActivity[]
-  stores                 Store[]
-  categoryIconVariants   CategoryIconVariant[]
-  userRoles              UserRole[]
-  ownedNotes             Note[]                @relation("OwnedNotes")
-  ownedNoteGroups        NoteGroup[]           @relation("OwnedNoteGroups")
-  ownedTags              Tag[]                 @relation("OwnedTags")
-  ownedItemHistory       ItemHistory[]         @relation("OwnedItemHistory")
-  llmPrefs               UserLlmPref[]         @relation("UserLlmPrefs")
-  reports                Report[]              @relation("AuthoredReports")
-  aiConversations        AiConversation[]      @relation("AiConversations")
-  qaScenarios            QaTestScenario[]      @relation("QaAuthored")
-  recipes                Recipe[]              @relation("OwnedRecipes")
-  cookbooks              Cookbook[]            @relation("OwnedCookbooks")
-  mealPlans              MealPlanEntry[]       @relation("OwnedMealPlans")
-  pantryItems            PantryItem[]          @relation("OwnedPantryItems")
-  storageItems           StorageItem[]         @relation("OwnedStorageItems")
-  storageSuppliers       StorageSupplier[]     @relation("OwnedStorageSuppliers")
-  storageDocuments       StorageDocument[]     @relation("OwnedStorageDocuments")
-  storageOrders          StoragePurchaseOrder[] @relation("OwnedStorageOrders")
-  storageSettings        StorageSettings?
-  recipeRatings          RecipeRating[]
-  vehicleProfile         VehicleProfile?
-  ownedPets              Pet[]                 @relation("OwnedPets")
-  petShares              PetShare[]            @relation("PetShares")
-  ownedEnclosures        PetEnclosure[]        @relation("OwnedEnclosures")
-  ownedBreedingPairs     PetBreedingPair[]     @relation("OwnedPairs")
-  petSales               PetSale[]             @relation("OwnedPetSales")
-  vehicles               Vehicle[]             @relation("OwnedVehicles")
-  walletElements         WalletElement[]       @relation("OwnedWalletElements")
-  budgets                Budget[]              @relation("OwnedBudgets")
-  financeGoals           FinanceGoal[]         @relation("OwnedFinanceGoals")
-  financeSettings        FinanceSettings?      @relation("UserFinanceSettings")
-  exchangeRates          ExchangeRate[]        @relation("UserExchangeRates")
-  trashItems             TrashItem[]           @relation("UserTrashItems")
-  dashboardPref          DashboardPref?        @relation("UserDashboardPref")
-  assistantPref          AssistantPref?        @relation("UserAssistantPref")
-  languageDecks          LanguageDeck[]        @relation("OwnedLanguageDecks")
-  healthEvents           HealthEvent[]         @relation("OwnedHealthEvents")
-  medicationSchedules    MedicationSchedule[]  @relation("OwnedMedicationSchedules")
-  habits                 Habit[]               @relation("OwnedHabits")
-  serviceProvider        ServiceProvider?      @relation("UserServiceProvider")
-  serviceCategories      ServiceCategory[]     @relation("OwnedServiceCategories")
-  serviceRequestsAsClient ServiceRequest[]     @relation("ClientServiceRequests")
-  serviceReviews         ServiceReview[]       @relation("AuthoredServiceReviews")
-  menuPref               UserMenuPref?
-  newsSources            NewsSource[]          @relation("OwnedNewsSources")
-  newsTopics             NewsTopic[]           @relation("OwnedNewsTopics")
-  newsPref               NewsPref?             @relation("NewsPref")
-  weatherLocations       WeatherLocation[]     @relation("OwnedWeatherLocations")
-  weatherWatchers        WeatherWatcher[]      @relation("OwnedWeatherWatchers")
-  weatherIdeas           WeatherIdea[]         @relation("OwnedWeatherIdeas")
-  aiContents             AiContent[]           @relation("OwnedAiContent")
-  projectGroups          ProjectGroup[]        @relation("OwnedProjectGroups")
-  skins                  Skin[]                @relation("SkinOwner")
-  skinPref               UserSkinPref?
-  warsztatSettings       WarsztatSettings?
-  ownedWorkshops         Workshop[]            @relation("OwnedWorkshops")
-  notifications          Notification[]        @relation("UserNotifications")
-  serviceMessages        ServiceMessage[]      @relation("SentServiceMessages")
-  consents               UserConsent[]         @relation("UserConsents")
-  aiUsage                AiUsage[]             @relation("UserAiUsage")
-  healthSettings         HealthSettings?       @relation("UserHealthSettings")
-  subscription           Subscription?         @relation("UserSubscription")
+  accounts                Account[]
+  sessions                Session[]
+  driveConnection         DriveConnection?       @relation("UserDriveConnection")
+  driveFiles              DriveFile[]            @relation("UserDriveFiles")
+  ownedTeams              Team[]                 @relation("TeamOwner")
+  teamMemberships         TeamMember[]
+  sentInvitations         TeamInvitation[]       @relation("InvitedBy")
+  receivedInvitations     TeamInvitation[]       @relation("InvitedUser")
+  ownedLists              ShoppingList[]
+  products                Product[]
+  units                   Unit[]
+  categories              Category[]
+  ownedTaskProjects       TaskProject[]          @relation("OwnedTaskProjects")
+  taskProjectMemberships  TaskProjectMember[]    @relation("TaskProjectMemberships")
+  tasksCreated            Task[]                 @relation("TasksCreatedBy")
+  tasksAssigned           Task[]                 @relation("TasksAssignedTo")
+  taskComments            TaskComment[]          @relation("TaskComments")
+  taskShares              TaskShare[]            @relation("TaskShares")
+  activities              UserActivity[]
+  stores                  Store[]
+  categoryIconVariants    CategoryIconVariant[]
+  userRoles               UserRole[]
+  ownedNotes              Note[]                 @relation("OwnedNotes")
+  ownedNoteGroups         NoteGroup[]            @relation("OwnedNoteGroups")
+  ownedTags               Tag[]                  @relation("OwnedTags")
+  ownedItemHistory        ItemHistory[]          @relation("OwnedItemHistory")
+  llmPrefs                UserLlmPref[]          @relation("UserLlmPrefs")
+  reports                 Report[]               @relation("AuthoredReports")
+  aiConversations         AiConversation[]       @relation("AiConversations")
+  qaScenarios             QaTestScenario[]       @relation("QaAuthored")
+  recipes                 Recipe[]               @relation("OwnedRecipes")
+  cookbooks               Cookbook[]             @relation("OwnedCookbooks")
+  mealPlans               MealPlanEntry[]        @relation("OwnedMealPlans")
+  pantryItems             PantryItem[]           @relation("OwnedPantryItems")
+  storageItems            StorageItem[]          @relation("OwnedStorageItems")
+  storageSuppliers        StorageSupplier[]      @relation("OwnedStorageSuppliers")
+  storageDocuments        StorageDocument[]      @relation("OwnedStorageDocuments")
+  storageOrders           StoragePurchaseOrder[] @relation("OwnedStorageOrders")
+  storageSettings         StorageSettings?
+  recipeRatings           RecipeRating[]
+  vehicleProfile          VehicleProfile?
+  ownedPets               Pet[]                  @relation("OwnedPets")
+  petShares               PetShare[]             @relation("PetShares")
+  ownedEnclosures         PetEnclosure[]         @relation("OwnedEnclosures")
+  ownedBreedingPairs      PetBreedingPair[]      @relation("OwnedPairs")
+  petSales                PetSale[]              @relation("OwnedPetSales")
+  vehicles                Vehicle[]              @relation("OwnedVehicles")
+  walletElements          WalletElement[]        @relation("OwnedWalletElements")
+  budgets                 Budget[]               @relation("OwnedBudgets")
+  financeGoals            FinanceGoal[]          @relation("OwnedFinanceGoals")
+  financeSettings         FinanceSettings?       @relation("UserFinanceSettings")
+  exchangeRates           ExchangeRate[]         @relation("UserExchangeRates")
+  trashItems              TrashItem[]            @relation("UserTrashItems")
+  dashboardPref           DashboardPref?         @relation("UserDashboardPref")
+  assistantPref           AssistantPref?         @relation("UserAssistantPref")
+  languageDecks           LanguageDeck[]         @relation("OwnedLanguageDecks")
+  healthEvents            HealthEvent[]          @relation("OwnedHealthEvents")
+  medicationSchedules     MedicationSchedule[]   @relation("OwnedMedicationSchedules")
+  habits                  Habit[]                @relation("OwnedHabits")
+  serviceProvider         ServiceProvider?       @relation("UserServiceProvider")
+  serviceCategories       ServiceCategory[]      @relation("OwnedServiceCategories")
+  serviceRequestsAsClient ServiceRequest[]       @relation("ClientServiceRequests")
+  serviceReviews          ServiceReview[]        @relation("AuthoredServiceReviews")
+  menuPref                UserMenuPref?
+  newsSources             NewsSource[]           @relation("OwnedNewsSources")
+  newsTopics              NewsTopic[]            @relation("OwnedNewsTopics")
+  newsPref                NewsPref?              @relation("NewsPref")
+  newsArticles            NewsArticle[]          @relation("OwnedNewsArticles")
+  newsHiddenTopics        NewsHiddenTopic[]      @relation("OwnedNewsHiddenTopics")
+  userFacts               UserFact[]             @relation("OwnedUserFacts")
+  weatherLocations        WeatherLocation[]      @relation("OwnedWeatherLocations")
+  weatherWatchers         WeatherWatcher[]       @relation("OwnedWeatherWatchers")
+  weatherIdeas            WeatherIdea[]          @relation("OwnedWeatherIdeas")
+  aiContents              AiContent[]            @relation("OwnedAiContent")
+  projectGroups           ProjectGroup[]         @relation("OwnedProjectGroups")
+  skins                   Skin[]                 @relation("SkinOwner")
+  skinPref                UserSkinPref?
+  warsztatSettings        WarsztatSettings?
+  ownedWorkshops          Workshop[]             @relation("OwnedWorkshops")
+  notifications           Notification[]         @relation("UserNotifications")
+  serviceMessages         ServiceMessage[]       @relation("SentServiceMessages")
+  consents                UserConsent[]          @relation("UserConsents")
+  aiUsage                 AiUsage[]              @relation("UserAiUsage")
+  healthSettings          HealthSettings?        @relation("UserHealthSettings")
+  subscription            Subscription?          @relation("UserSubscription")
 }
 
 // Z-471 (monetyzacja): plan handlowy użytkownika. Definicje planów (limity/funkcje)
@@ -137,8 +140,8 @@ model HealthSettings {
 model UserConsent {
   id          String   @id @default(cuid())
   userId      String
-  documentKey String   // "privacy" | "terms" (klucz dokumentu z lib/legal/documents)
-  version     String   // wersja zaakceptowanego dokumentu
+  documentKey String // "privacy" | "terms" (klucz dokumentu z lib/legal/documents)
+  version     String // wersja zaakceptowanego dokumentu
   acceptedAt  DateTime @default(now())
   user        User     @relation("UserConsents", fields: [userId], references: [id], onDelete: Cascade)
 
@@ -152,7 +155,7 @@ model UserConsent {
 model AiUsage {
   id        String   @id @default(cuid())
   userId    String
-  day       String   // YYYY-MM-DD (UTC) — okno dzienne
+  day       String // YYYY-MM-DD (UTC) — okno dzienne
   requests  Int      @default(0)
   tokens    Int      @default(0)
   updatedAt DateTime @updatedAt
@@ -182,7 +185,7 @@ model Skin {
   description String?
   isSystem    Boolean  @default(false)
   colorScheme String   @default("dark") // "dark" | "light" — schemat natywnych kontrolek
-  tokens      String   @default("{}")   // JSON: { "--bg-base":"#..", "--radius":"8px", ... }
+  tokens      String   @default("{}") // JSON: { "--bg-base":"#..", "--radius":"8px", ... }
   ownerId     String?
   ownerTeamId String?
   isPublic    Boolean  @default(false)
@@ -322,59 +325,59 @@ model Team {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now()) @updatedAt
 
-  owner                User                  @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Restrict)
-  parentTeam           Team?                 @relation("SubTeams", fields: [parentTeamId], references: [id], onDelete: SetNull)
-  subTeams             Team[]                @relation("SubTeams")
+  owner                User                   @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  parentTeam           Team?                  @relation("SubTeams", fields: [parentTeamId], references: [id], onDelete: SetNull)
+  subTeams             Team[]                 @relation("SubTeams")
   members              TeamMember[]
   invitations          TeamInvitation[]
-  lists                ShoppingList[]        @relation("TeamLists")
+  lists                ShoppingList[]         @relation("TeamLists")
   products             Product[]
   units                Unit[]
   categories           Category[]
-  taskProjects         TaskProject[]         @relation("TeamTaskProjects")
-  taskShares           TaskShare[]           @relation("TeamTaskShares")
-  notes                Note[]                @relation("TeamNotes")
-  noteGroups           NoteGroup[]           @relation("TeamNoteGroups")
-  tags                 Tag[]                 @relation("TeamTags")
-  categoryIconVariants CategoryIconVariant[] @relation("TeamIconVariants")
-  reports              Report[]              @relation("TeamReports")
-  recipes              Recipe[]              @relation("TeamRecipes")
-  cookbooks            Cookbook[]            @relation("TeamCookbooks")
-  mealPlans            MealPlanEntry[]       @relation("TeamMealPlans")
-  pantryItems          PantryItem[]          @relation("TeamPantryItems")
-  storageItems         StorageItem[]         @relation("TeamStorageItems")
-  storageSuppliers     StorageSupplier[]     @relation("TeamStorageSuppliers")
-  storageDocuments     StorageDocument[]     @relation("TeamStorageDocuments")
+  taskProjects         TaskProject[]          @relation("TeamTaskProjects")
+  taskShares           TaskShare[]            @relation("TeamTaskShares")
+  notes                Note[]                 @relation("TeamNotes")
+  noteGroups           NoteGroup[]            @relation("TeamNoteGroups")
+  tags                 Tag[]                  @relation("TeamTags")
+  categoryIconVariants CategoryIconVariant[]  @relation("TeamIconVariants")
+  reports              Report[]               @relation("TeamReports")
+  recipes              Recipe[]               @relation("TeamRecipes")
+  cookbooks            Cookbook[]             @relation("TeamCookbooks")
+  mealPlans            MealPlanEntry[]        @relation("TeamMealPlans")
+  pantryItems          PantryItem[]           @relation("TeamPantryItems")
+  storageItems         StorageItem[]          @relation("TeamStorageItems")
+  storageSuppliers     StorageSupplier[]      @relation("TeamStorageSuppliers")
+  storageDocuments     StorageDocument[]      @relation("TeamStorageDocuments")
   storageOrders        StoragePurchaseOrder[] @relation("TeamStorageOrders")
-  pets                 Pet[]                 @relation("TeamPets")
-  petShares            PetShare[]            @relation("TeamPetShares")
-  enclosures           PetEnclosure[]        @relation("TeamEnclosures")
-  breedingPairs        PetBreedingPair[]     @relation("TeamPairs")
-  petSales             PetSale[]             @relation("TeamPetSales")
-  vehicles             Vehicle[]             @relation("TeamVehicles")
-  walletElements       WalletElement[]       @relation("TeamWalletElements")
-  budgets              Budget[]              @relation("TeamBudgets")
-  financeGoals         FinanceGoal[]         @relation("TeamFinanceGoals")
-  languageDecks        LanguageDeck[]        @relation("TeamLanguageDecks")
-  healthEvents         HealthEvent[]         @relation("TeamHealthEvents")
-  medicationSchedules  MedicationSchedule[]  @relation("TeamMedicationSchedules")
-  habits               Habit[]               @relation("TeamHabits")
-  serviceCategories    ServiceCategory[]     @relation("TeamServiceCategories")
-  skins                Skin[]                @relation("SkinTeam")
-  workshops            Workshop[]            @relation("TeamWorkshops")
+  pets                 Pet[]                  @relation("TeamPets")
+  petShares            PetShare[]             @relation("TeamPetShares")
+  enclosures           PetEnclosure[]         @relation("TeamEnclosures")
+  breedingPairs        PetBreedingPair[]      @relation("TeamPairs")
+  petSales             PetSale[]              @relation("TeamPetSales")
+  vehicles             Vehicle[]              @relation("TeamVehicles")
+  walletElements       WalletElement[]        @relation("TeamWalletElements")
+  budgets              Budget[]               @relation("TeamBudgets")
+  financeGoals         FinanceGoal[]          @relation("TeamFinanceGoals")
+  languageDecks        LanguageDeck[]         @relation("TeamLanguageDecks")
+  healthEvents         HealthEvent[]          @relation("TeamHealthEvents")
+  medicationSchedules  MedicationSchedule[]   @relation("TeamMedicationSchedules")
+  habits               Habit[]                @relation("TeamHabits")
+  serviceCategories    ServiceCategory[]      @relation("TeamServiceCategories")
+  skins                Skin[]                 @relation("SkinTeam")
+  workshops            Workshop[]             @relation("TeamWorkshops")
 
   @@index([ownerId])
 }
 
 model TeamMember {
-  teamId   String
-  userId   String
-  role     String   @default("MEMBER") // "MEMBER" | "ADMIN" | "OWNER"
+  teamId       String
+  userId       String
+  role         String   @default("MEMBER") // "MEMBER" | "ADMIN" | "OWNER"
   // Z-194 (T-12): granularne role rodzic/dziecko. JSON string[] dozwolonych modułów
   // do WSPÓŁDZIELONYCH zasobów zespołu, albo NULL = brak ograniczeń (pełny dostęp).
   // "[]" = brak dostępu do żadnego współdzielonego modułu. OWNER/ADMIN ignorują to pole.
   moduleAccess String?
-  joinedAt DateTime @default(now())
+  joinedAt     DateTime @default(now())
 
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -496,8 +499,8 @@ model Config {
 model VehicleProfile {
   id        String   @id @default(cuid())
   userId    String   @unique
-  weight    Float    @default(40)   // tony (DMC)
-  height    Float    @default(4.0)  // metry
+  weight    Float    @default(40) // tony (DMC)
+  height    Float    @default(4.0) // metry
   length    Float    @default(16.5) // metry
   width     Float    @default(2.55) // metry
   axleload  Float    @default(11.5) // tony / oś
@@ -598,19 +601,19 @@ model Tag {
 }
 
 model Note {
-  id          String     @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
-  content     String     @default("")
-  isMarkdown  Boolean    @default(false)
-  pinned      Boolean    @default(false)
+  content     String           @default("")
+  isMarkdown  Boolean          @default(false)
+  pinned      Boolean          @default(false)
   groupId     String?
   ownerId     String?
   ownerTeamId String?
-  group       NoteGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  owner       User?      @relation("OwnedNotes", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam   Team?      @relation("TeamNotes", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  group       NoteGroup?       @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  owner       User?            @relation("OwnedNotes", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam   Team?            @relation("TeamNotes", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   tags        NoteTag[]
   attachments NoteAttachment[]
   revisions   NoteRevision[]
@@ -657,18 +660,18 @@ model NoteTag {
 // ─── Tasks ────────────────────────────────────────────────────────────────
 
 model TaskProject {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  color       String   @default("#6b7280")
-  emoji       String   @default("📋")
-  isInbox     Boolean  @default(false)
-  ownerId     String?
-  ownerTeamId String?
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  color        String   @default("#6b7280")
+  emoji        String   @default("📋")
+  isInbox      Boolean  @default(false)
+  ownerId      String?
+  ownerTeamId  String?
   // JSON ProjectStatusConfig ({ enabled, chain }); null = domyślne statusy systemowe.
   statusConfig String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   owner     User?               @relation("OwnedTaskProjects", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerTeam Team?               @relation("TeamTaskProjects", fields: [ownerTeamId], references: [id], onDelete: Cascade)
@@ -721,37 +724,37 @@ model TaskTagDef {
 }
 
 model Task {
-  id            String    @id @default(cuid())
-  title         String
-  description   String?
-  status        String    @default("TODO") // TODO | IN_PROGRESS | DONE | CANCELLED | DEFERRED
-  priority      String    @default("NONE") // NONE | LOW | MEDIUM | HIGH | URGENT
-  dueDate       DateTime?
-  startDate     DateTime?
-  completedAt   DateTime?
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  status          String    @default("TODO") // TODO | IN_PROGRESS | DONE | CANCELLED | DEFERRED
+  priority        String    @default("NONE") // NONE | LOW | MEDIUM | HIGH | URGENT
+  dueDate         DateTime?
+  startDate       DateTime?
+  completedAt     DateTime?
   lastCompletedAt DateTime? // data ostatniego wykonania (cykliczne: przenoszona na kolejne wystąpienie)
-  estimatedMins Int?
-  recurring     String? // JSON: RecurringRule
-  category      String    @default("Other")
-  order         Float     @default(0)
-  projectId     String?
-  parentTaskId  String?
-  previousTaskId String?  // 022: domknięte wystąpienie cykliczne, które utworzyło to zadanie
-  createdById   String?
-  assigneeId    String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  estimatedMins   Int?
+  recurring       String? // JSON: RecurringRule
+  category        String    @default("Other")
+  order           Float     @default(0)
+  projectId       String?
+  parentTaskId    String?
+  previousTaskId  String? // 022: domknięte wystąpienie cykliczne, które utworzyło to zadanie
+  createdById     String?
+  assigneeId      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  project   TaskProject?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  parent    Task?         @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
-  subtasks  Task[]        @relation("TaskSubtasks")
-  previous        Task?   @relation("TaskRecurrence", fields: [previousTaskId], references: [id], onDelete: SetNull)
-  nextOccurrences Task[]  @relation("TaskRecurrence")
-  createdBy User?         @relation("TasksCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  assignee  User?         @relation("TasksAssignedTo", fields: [assigneeId], references: [id], onDelete: SetNull)
-  tags      TaskTaskTag[]
-  comments  TaskComment[]
-  shares    TaskShare[]
+  project         TaskProject?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  parent          Task?         @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subtasks        Task[]        @relation("TaskSubtasks")
+  previous        Task?         @relation("TaskRecurrence", fields: [previousTaskId], references: [id], onDelete: SetNull)
+  nextOccurrences Task[]        @relation("TaskRecurrence")
+  createdBy       User?         @relation("TasksCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  assignee        User?         @relation("TasksAssignedTo", fields: [assigneeId], references: [id], onDelete: SetNull)
+  tags            TaskTaskTag[]
+  comments        TaskComment[]
+  shares          TaskShare[]
 
   // Z-031: indeksy pod realne zapytania list zadań (model nie miał żadnych).
   // (projectId, parentTaskId) pokrywa główny widok listy (WHERE projectId=… AND
@@ -863,19 +866,19 @@ model StoreEdge {
 // ─── Reports ──────────────────────────────────────────────────────────────
 
 model Report {
-  id        String   @id @default(cuid())
-  title     String
-  slug      String   @unique
-  content   String // markdown content (pusty gdy storage="drive" — treść żyje na Dysku)
-  category  String   @default("general")
-  storage   String   @default("db") // "db" | "drive" — gdzie trzymana jest treść
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String // markdown content (pusty gdy storage="drive" — treść żyje na Dysku)
+  category    String   @default("general")
+  storage     String   @default("db") // "db" | "drive" — gdzie trzymana jest treść
   driveFileId String? // id pliku .md na Dysku Google (gdy storage="drive")
-  authorId  String?
-  teamId    String?
-  author    User?    @relation("AuthoredReports", fields: [authorId], references: [id], onDelete: SetNull)
-  team      Team?    @relation("TeamReports", fields: [teamId], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  authorId    String?
+  teamId      String?
+  author      User?    @relation("AuthoredReports", fields: [authorId], references: [id], onDelete: SetNull)
+  team        Team?    @relation("TeamReports", fields: [teamId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([category, createdAt])
   @@index([authorId])
@@ -893,6 +896,9 @@ model Job {
   payload     String    @default("{}") // JSON wejścia
   result      String? // JSON wyniku (gdy DONE)
   error       String? // komunikat (gdy FAILED)
+  // 039: etap wieloetapowego zadania („Pobieram źródła (3/5)…"). Stan musi być w kolejce, a nie w
+  // przeglądarce — inaczej odświeżenie strony gubi informację, na czym stoi trwający przebieg.
+  progress    String?
   attempts    Int       @default(0)
   maxAttempts Int       @default(3)
   runAfter    DateTime  @default(now()) // backoff / harmonogram
@@ -941,17 +947,17 @@ model AiCall {
 
 // Asystent AI ("magiczna ikona") — trwała pamięć rozmów per-user.
 model AiConversation {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   userId    String
-  title     String   @default("Nowa rozmowa")
+  title     String      @default("Nowa rozmowa")
   // Krótkie podsumowanie starszych tur — wysyłane do LLM zamiast pełnej historii
   // (higiena kontekstu w długich rozmowach).
   summary   String?
   // 032: niewysłany tekst z pola wiadomości tej rozmowy (brudnopis). Trzymany na koncie, więc
   // wraca też na innym urządzeniu. NULL/"" = brak brudnopisu.
   draft     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @default(now()) @updatedAt
   user      User        @relation("AiConversations", fields: [userId], references: [id], onDelete: Cascade)
   messages  AiMessage[]
 
@@ -959,14 +965,14 @@ model AiConversation {
 }
 
 model AiMessage {
-  id             String   @id @default(cuid())
+  id             String         @id @default(cuid())
   conversationId String
   role           String // "user" | "assistant" (TS union — bez enuma, zgodnie z regułą SQLite)
   content        String // markdown (asystent) / tekst (użytkownik)
   // Sidecar do odtworzenia kart w UI bez ponownego uruchamiania agenta.
-  kind           String   @default("text") // "text" | "plan" | "report" | "navigate" | "clarify" | "results"
+  kind           String         @default("text") // "text" | "plan" | "report" | "navigate" | "clarify" | "results"
   data           Json? // actions[] | szkic raportu | cel nawigacji | log rozumowania
-  createdAt      DateTime @default(now())
+  createdAt      DateTime       @default(now())
   conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
@@ -1030,7 +1036,7 @@ model RecipeIngredient {
   name       String
   quantity   Float?
   unit       String?
-  unitPrice  Float?  // Z-252: cena za jednostkę składnika (do kosztu przepisu / porcji)
+  unitPrice  Float? // Z-252: cena za jednostkę składnika (do kosztu przepisu / porcji)
   groupName  String?
   order      Int     @default(0)
   note       String?
@@ -1169,26 +1175,26 @@ model PantryItem {
 // spiżarni nie jest food-centric (brak dat ważności/produktów), za to ma SKU,
 // magazyn nadrzędny (warehouse) oraz dziennik ruchów (przyjęcie/wydanie/korekta).
 model StorageItem {
-  id           String    @id @default(cuid())
-  name         String
-  sku          String?
-  barcode      String?
-  category     String?
-  warehouse    String?
-  location     String?
-  quantity     Float?
-  unit         String?
-  minQuantity  Float?
-  unitPrice    Float?
-  photoUrl     String?
-  expiresAt    DateTime?
+  id            String    @id @default(cuid())
+  name          String
+  sku           String?
+  barcode       String?
+  category      String?
+  warehouse     String?
+  location      String?
+  quantity      Float?
+  unit          String?
+  minQuantity   Float?
+  unitPrice     Float?
+  photoUrl      String?
+  expiresAt     DateTime?
   warrantyUntil DateTime?
-  supplierId   String?
-  notes        String?
-  ownerId      String?
-  ownerTeamId  String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  supplierId    String?
+  notes         String?
+  ownerId       String?
+  ownerTeamId   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   owner     User?             @relation("OwnedStorageItems", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerTeam Team?             @relation("TeamStorageItems", fields: [ownerTeamId], references: [id], onDelete: Cascade)
@@ -1535,22 +1541,22 @@ model PetVetVisit {
 }
 
 model PetTreatment {
-  id        String    @id @default(cuid())
-  petId     String
-  kind      String    @default("MEDICATION") // MEDICATION|VACCINE|DEWORMER|PARASITE|SUPPLEMENT
-  name      String
-  dosage    String?
-  route     String? // oral|injection|topical|...
-  batch     String? // numer serii (szczepionki)
-  startDate DateTime  @default(now())
-  endDate   DateTime?
-  recurring String? // JSON: RecurringRule
+  id         String    @id @default(cuid())
+  petId      String
+  kind       String    @default("MEDICATION") // MEDICATION|VACCINE|DEWORMER|PARASITE|SUPPLEMENT
+  name       String
+  dosage     String?
+  route      String? // oral|injection|topical|...
+  batch      String? // numer serii (szczepionki)
+  startDate  DateTime  @default(now())
+  endDate    DateTime?
+  recurring  String? // JSON: RecurringRule
   lastDoneAt DateTime?
-  nextDueAt DateTime?
-  active    Boolean   @default(true)
-  notes     String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  nextDueAt  DateTime?
+  active     Boolean   @default(true)
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   pet  Pet          @relation(fields: [petId], references: [id], onDelete: Cascade)
   logs PetCareLog[]
@@ -1654,23 +1660,23 @@ model PetEnvironmentReading {
 // ─── Pets · Faza 3: Hodowla, rodowody, genetyka, sprzedaż ───────────────────
 
 model PetBreedingPair {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
-  species     String   @default("other")
+  species     String    @default("other")
   maleId      String?
   femaleId    String?
-  status      String   @default("PLANNED") // PLANNED|PAIRED|COOLING|PRODUCTIVE|RETIRED
+  status      String    @default("PLANNED") // PLANNED|PAIRED|COOLING|PRODUCTIVE|RETIRED
   startedAt   DateTime?
   notes       String?
   ownerId     String?
   ownerTeamId String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  male      Pet?         @relation("PairMale", fields: [maleId], references: [id], onDelete: SetNull)
-  female    Pet?         @relation("PairFemale", fields: [femaleId], references: [id], onDelete: SetNull)
-  owner     User?        @relation("OwnedPairs", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?        @relation("TeamPairs", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  male      Pet?        @relation("PairMale", fields: [maleId], references: [id], onDelete: SetNull)
+  female    Pet?        @relation("PairFemale", fields: [femaleId], references: [id], onDelete: SetNull)
+  owner     User?       @relation("OwnedPairs", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?       @relation("TeamPairs", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   clutches  PetClutch[]
 
   @@index([ownerId])
@@ -1743,10 +1749,10 @@ model Vehicle {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  owner     User?           @relation("OwnedVehicles", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?           @relation("TeamVehicles", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  fuelLogs  FuelLog[]
-  services  ServiceRecord[]
+  owner       User?               @relation("OwnedVehicles", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam   Team?               @relation("TeamVehicles", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  fuelLogs    FuelLog[]
+  services    ServiceRecord[]
   attachments VehicleAttachment[]
 
   @@index([ownerId])
@@ -1821,17 +1827,17 @@ model WalletElement {
 }
 
 model WalletEntry {
-  id          String   @id @default(cuid())
-  elementId   String
-  date        DateTime @default(now())
+  id           String   @id @default(cuid())
+  elementId    String
+  date         DateTime @default(now())
   balanceAfter Float // saldo po zmianie — szereg czasowy do wykresów
-  delta       Float // zmiana (+/-)
-  kind        String   @default("adjustment") // income|expense|adjustment
-  category    String?
-  note        String?
+  delta        Float // zmiana (+/-)
+  kind         String   @default("adjustment") // income|expense|adjustment
+  category     String?
+  note         String?
   sourceModule String? // W4: moduł źródłowy auto-wydatku (np. "flota")
   sourceId     String? // W4: id rekordu źródłowego (FuelLog/ServiceRecord) — idempotencja + usuwanie
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
 
   element WalletElement @relation(fields: [elementId], references: [id], onDelete: Cascade)
 
@@ -1912,6 +1918,7 @@ model TrashItem {
 
   @@index([userId, deletedAt])
 }
+
 model ExchangeRate {
   id        String   @id @default(cuid())
   userId    String
@@ -2062,13 +2069,13 @@ model LanguageDeck {
 }
 
 model Vocabulary {
-  id           String    @id @default(cuid())
-  deckId       String
-  term         String // słówko w języku uczonym
-  translation  String // tłumaczenie w języku znanym
-  example      String?
-  partOfSpeech String?
-  notes        String?
+  id             String    @id @default(cuid())
+  deckId         String
+  term           String // słówko w języku uczonym
+  translation    String // tłumaczenie w języku znanym
+  example        String?
+  partOfSpeech   String?
+  notes          String?
   // SRS (SuperMemo-2)
   easeFactor     Float     @default(2.5)
   intervalDays   Int       @default(0)
@@ -2089,29 +2096,29 @@ model Vocabulary {
 // kind: "VISIT" (wizyta u lekarza) | "TEST" (badanie)
 // status: "PLANNED" | "DONE" | "CANCELLED"
 model HealthEvent {
-  id          String    @id @default(cuid())
-  kind        String    @default("VISIT")
-  title       String // specjalizacja/cel wizyty lub nazwa badania
-  doctorName  String?
-  specialty   String?
-  facility    String? // placówka / laboratorium
-  location    String?
-  scheduledAt DateTime
-  status      String    @default("PLANNED")
-  notes       String?
-  result      String? // wynik badania / podsumowanie wizyty
+  id           String    @id @default(cuid())
+  kind         String    @default("VISIT")
+  title        String // specjalizacja/cel wizyty lub nazwa badania
+  doctorName   String?
+  specialty    String?
+  facility     String? // placówka / laboratorium
+  location     String?
+  scheduledAt  DateTime
+  status       String    @default("PLANNED")
+  notes        String?
+  result       String? // wynik badania / podsumowanie wizyty
   // Z2: wartość liczbowa wyniku badania + jednostka — do trendów w czasie.
   numericValue Float?
-  unit        String?
-  referral    String? // skierowanie
-  reminderAt  DateTime?
-  ownerId     String?
-  ownerTeamId String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  unit         String?
+  referral     String? // skierowanie
+  reminderAt   DateTime?
+  ownerId      String?
+  ownerTeamId  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  owner     User? @relation("OwnedHealthEvents", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team? @relation("TeamHealthEvents", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  owner       User?              @relation("OwnedHealthEvents", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam   Team?              @relation("TeamHealthEvents", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   attachments HealthAttachment[]
 
   @@index([ownerId, scheduledAt])
@@ -2187,26 +2194,26 @@ model MedicationLog {
 // Tracker nawyków: definicja + dziennik wykonań (HabitEntry, jeden wpis na dzień).
 // Wzorzec ownerId/ownerTeamId taki sam jak HealthEvent — wsparcie kont i zespołów.
 model Habit {
-  id          String  @id @default(cuid())
-  name        String
-  description String?
-  icon        String  @default("✅") // emoji
-  color       String  @default("var(--accent-orange)") // token CSS motywu
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  icon         String   @default("✅") // emoji
+  color        String   @default("var(--accent-orange)") // token CSS motywu
   // CSV dni tygodnia 0=niedz..6=sob, np. "1,2,3,4,5". null/"" = codziennie.
-  daysOfWeek  String?
+  daysOfWeek   String?
   // HA2: cel tygodniowy (np. 3×/tydzień, dowolne dni). null = tryb dni tygodnia (daysOfWeek).
-  weeklyGoal  Int?
+  weeklyGoal   Int?
   // Godzina przypomnienia w formacie "HH:MM" (czas lokalny). null = bez przypomnienia.
   reminderTime String?
-  archived    Boolean @default(false)
-  sortOrder   Int     @default(0)
-  ownerId     String?
-  ownerTeamId String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  archived     Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  ownerId      String?
+  ownerTeamId  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  owner     User? @relation("OwnedHabits", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team? @relation("TeamHabits", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  owner     User?        @relation("OwnedHabits", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team?        @relation("TeamHabits", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   entries   HabitEntry[]
 
   @@index([ownerId, archived])
@@ -2214,10 +2221,10 @@ model Habit {
 }
 
 model HabitEntry {
-  id      String @id @default(cuid())
-  habitId String
+  id        String   @id @default(cuid())
+  habitId   String
   // Dzień wykonania jako "YYYY-MM-DD" (lokalny) — bez strefy czasowej, stabilne dla heatmapy.
-  date    String
+  date      String
   createdAt DateTime @default(now())
 
   habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
@@ -2234,19 +2241,19 @@ model HabitEntry {
 
 // Słownik kategorii usług, trójpoziomowy (system/user/team) wzorem Category.
 model ServiceCategory {
-  id          String  @id @default(cuid())
-  name        String
-  icon        String  @default("🛠️") // emoji
-  color       String  @default("var(--accent-blue)")
-  sortOrder   Int     @default(0)
+  id        String   @id @default(cuid())
+  name      String
+  icon      String   @default("🛠️") // emoji
+  color     String   @default("var(--accent-blue)")
+  sortOrder Int      @default(0)
   // null/null = systemowa (widoczna dla wszystkich); userId = prywatna; teamId = zespołowa.
-  userId      String?
-  teamId      String?
-  createdAt   DateTime @default(now())
+  userId    String?
+  teamId    String?
+  createdAt DateTime @default(now())
 
-  user      User? @relation("OwnedServiceCategories", fields: [userId], references: [id], onDelete: Cascade)
-  team      Team? @relation("TeamServiceCategories", fields: [teamId], references: [id], onDelete: Cascade)
-  listings  ServiceListing[]
+  user     User?            @relation("OwnedServiceCategories", fields: [userId], references: [id], onDelete: Cascade)
+  team     Team?            @relation("TeamServiceCategories", fields: [teamId], references: [id], onDelete: Cascade)
+  listings ServiceListing[]
 
   @@index([userId])
   @@index([teamId])
@@ -2254,11 +2261,11 @@ model ServiceCategory {
 
 // Profil wykonawcy — jeden na użytkownika (rola „zleceniobiorca").
 model ServiceProvider {
-  id          String  @id @default(cuid())
-  userId      String  @unique
+  id          String   @id @default(cuid())
+  userId      String   @unique
   displayName String
   // M19: czytelny, stabilny slug do udostępniania profilu (/services/providers/<slug>).
-  slug        String? @unique
+  slug        String?  @unique
   // M19: krótkie hasło/tagline na profil publiczny (meta-opis + nagłówek).
   tagline     String?
   bio         String?
@@ -2266,24 +2273,24 @@ model ServiceProvider {
   area        String?
   phone       String?
   // "1" widoczny w katalogu, "0" ukryty (np. wstrzymany).
-  visible     Boolean @default(true)
+  visible     Boolean  @default(true)
   // Średnia ocen (denormalizowana dla szybkiego listowania) + liczba ocen.
-  ratingAvg   Float   @default(0)
-  ratingCount Int     @default(0)
+  ratingAvg   Float    @default(0)
+  ratingCount Int      @default(0)
   // M7: weryfikacja wykonawcy (badge zaufania). NIP podaje wykonawca, verified ustawia admin.
   nip         String?
-  verified    Boolean @default(false)
+  verified    Boolean  @default(false)
   // M5: lokalizacja (filtr „w promieniu X km" + dystans). Ustawiana przez przeglądarkę.
   lat         Float?
   lon         Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user     User             @relation("UserServiceProvider", fields: [userId], references: [id], onDelete: Cascade)
-  listings ServiceListing[]
-  requests ServiceRequest[] @relation("ProviderServiceRequests")
-  quotes   ServiceQuote[]
-  images   ServiceImage[]
+  user         User                  @relation("UserServiceProvider", fields: [userId], references: [id], onDelete: Cascade)
+  listings     ServiceListing[]
+  requests     ServiceRequest[]      @relation("ProviderServiceRequests")
+  quotes       ServiceQuote[]
+  images       ServiceImage[]
   availability ServiceAvailability[]
   favorites    ServiceFavorite[]
   promoCodes   ServicePromoCode[]
@@ -2307,22 +2314,22 @@ model ServiceFavorite {
 
 // Pojedyncza oferta usługi wystawiona przez wykonawcę.
 model ServiceListing {
-  id          String  @id @default(cuid())
-  providerId  String
-  categoryId  String?
-  title       String
-  description String?
+  id             String   @id @default(cuid())
+  providerId     String
+  categoryId     String?
+  title          String
+  description    String?
   // Model ceny: "fixed" | "hourly" | "quote" (wycena indywidualna).
-  priceModel  String  @default("quote")
+  priceModel     String   @default("quote")
   // Cena w groszach (gdy fixed/hourly); null dla "quote".
-  priceAmount Int?
-  currency    String  @default("PLN")
-  active      Boolean @default(true)
+  priceAmount    Int?
+  currency       String   @default("PLN")
+  active         Boolean  @default(true)
   // M8/M2: czas trwania usługi (min) + czy klient może rezerwować sloty (Booksy).
   durationMin    Int?
-  bookingEnabled Boolean @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  bookingEnabled Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   provider ServiceProvider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
   category ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
@@ -2334,7 +2341,7 @@ model ServiceListing {
 
 // Zlecenie/rezerwacja: klient → wykonawca. Cykl życia w polu status.
 model ServiceRequest {
-  id          String  @id @default(cuid())
+  id          String    @id @default(cuid())
   clientId    String
   providerId  String
   listingId   String?
@@ -2345,16 +2352,16 @@ model ServiceRequest {
   // Ustalony termin po akceptacji przez wykonawcę.
   scheduledAt DateTime?
   // "REQUESTED" | "ACCEPTED" | "DECLINED" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"
-  status      String  @default("REQUESTED")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      String    @default("REQUESTED")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  staffId     String? // M14: przypisany pracownik (null = solo/cała firma)
+  staffId String? // M14: przypisany pracownik (null = solo/cała firma)
 
-  client   User            @relation("ClientServiceRequests", fields: [clientId], references: [id], onDelete: Cascade)
-  provider ServiceProvider @relation("ProviderServiceRequests", fields: [providerId], references: [id], onDelete: Cascade)
-  listing  ServiceListing? @relation("ListingServiceRequests", fields: [listingId], references: [id], onDelete: SetNull)
-  staff    ServiceStaff?   @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  client   User             @relation("ClientServiceRequests", fields: [clientId], references: [id], onDelete: Cascade)
+  provider ServiceProvider  @relation("ProviderServiceRequests", fields: [providerId], references: [id], onDelete: Cascade)
+  listing  ServiceListing?  @relation("ListingServiceRequests", fields: [listingId], references: [id], onDelete: SetNull)
+  staff    ServiceStaff?    @relation(fields: [staffId], references: [id], onDelete: SetNull)
   review   ServiceReview?
   messages ServiceMessage[]
   quotes   ServiceQuote[]
@@ -2407,10 +2414,10 @@ model ServicePayment {
 
 // Ocena wystawiana przez klienta po zakończeniu zlecenia (1 na zlecenie).
 model ServiceReview {
-  id        String  @id @default(cuid())
-  requestId String  @unique
+  id        String   @id @default(cuid())
+  requestId String   @unique
   authorId  String
-  rating    Int     // 1–5
+  rating    Int // 1–5
   comment   String?
   createdAt DateTime @default(now())
 
@@ -2437,9 +2444,10 @@ model NewsSource {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
 
-  owner     User            @relation("OwnedNewsSources", fields: [ownerId], references: [id], onDelete: Cascade)
-  items     NewsItem[]
-  knowledge NewsKnowledge[]
+  owner    User                @relation("OwnedNewsSources", fields: [ownerId], references: [id], onDelete: Cascade)
+  items    NewsItem[]
+  articles NewsArticle[]
+  timeline NewsTimelineEntry[]
 
   @@unique([ownerId, key])
   @@index([ownerId])
@@ -2457,36 +2465,74 @@ model NewsTopic {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  owner     User            @relation("OwnedNewsTopics", fields: [ownerId], references: [id], onDelete: Cascade)
-  items     NewsItem[]
-  knowledge NewsKnowledge[]
+  owner    User                @relation("OwnedNewsTopics", fields: [ownerId], references: [id], onDelete: Cascade)
+  items    NewsItem[]
+  timeline NewsTimelineEntry[]
 
   @@index([ownerId])
 }
 
-// Wersjonowany stan wiedzy dla (temat × źródło). Bieżący stan = najwyższy version.
-model NewsKnowledge {
-  id        String   @id @default(cuid())
-  topicId   String
-  sourceId  String
-  version   Int
-  // Markdown — narastający opis stanu wiedzy na temat (z perspektywy źródła).
-  content   String
-  // Jednozdaniowy nagłówek „aktualny stan" do podglądu.
-  headline  String?
-  // Markdown — opis CO SIĘ ZMIENIŁO w tej wersji względem poprzedniej
-  // (dla wersji bazowej: jak zbudowano bazę + jaka była ostatnia znana informacja).
-  changeNote String?
-  // Znacznik świeżości: najnowsza DATA PUBLIKACJI materiału wchłoniętego w tej
-  // wersji. Kolejne odświeżenia pobierają tylko wiadomości nowsze niż ten znacznik.
-  lastPublishedAt DateTime?
-  createdAt DateTime @default(now())
+// 039: wspólna pula materiału — każde źródło pobierane RAZ na przebieg, niezależnie od tematów.
+// Przypisanie do tematów (`NewsItem`) jest osobnym etapem, a gorące tematy czytają pulę zamiast
+// pobierać kanały jeszcze raz.
+model NewsArticle {
+  id          String   @id @default(cuid())
+  ownerId     String
+  sourceId    String
+  url         String
+  title       String
+  // Skrót z kanału RSS — materiał wejściowy do klasyfikacji i streszczeń.
+  description String   @default("")
+  imageUrl    String?
+  // Data publikacji wg kanału.
+  publishedAt DateTime
+  fetchedAt   DateTime @default(now())
 
-  topic  NewsTopic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  owner  User       @relation("OwnedNewsArticles", fields: [ownerId], references: [id], onDelete: Cascade)
   source NewsSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  items  NewsItem[]
 
-  @@unique([topicId, sourceId, version])
-  @@index([topicId, sourceId])
+  @@unique([ownerId, sourceId, url])
+  @@index([ownerId, publishedAt])
+}
+
+// 039: linia czasu tematu — zastąpiła wersjonowaną wiedzę (`NewsKnowledge`, usuniętą w 0217).
+// Zamiast narastającego opisu stanu wiedzy per źródło: lista suchych faktów z datą ZDARZENIA.
+model NewsTimelineEntry {
+  id             String   @id @default(cuid())
+  topicId        String
+  // Data ZDARZENIA z treści materiału, nie data pobrania.
+  eventDate      DateTime
+  // "exact" | "approx" | "published" — skąd wzięliśmy datę (String + union, C-12).
+  dateConfidence String   @default("published")
+  // Jedno zdanie suchego faktu.
+  fact           String
+  // Odcisk faktu — zapora przed zapisaniem tej samej informacji drugi raz innymi słowami.
+  fingerprint    String
+  sourceId       String?
+  articleId      String?
+  createdAt      DateTime @default(now())
+
+  topic  NewsTopic   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  source NewsSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  @@unique([topicId, fingerprint])
+  @@index([topicId, eventDate])
+}
+
+// 039: gorący temat odrzucony przez użytkownika („Nie proponuj"). Kluczem jest odcisk tytułu
+// (`lib/textKey.ts`), bo gorący temat nie ma własnego wiersza — powstaje na nowo przy każdym
+// przebiegu i model nie powtórzy tytułu znak w znak.
+model NewsHiddenTopic {
+  id          String   @id @default(cuid())
+  ownerId     String
+  fingerprint String
+  title       String
+  createdAt   DateTime @default(now())
+
+  owner User @relation("OwnedNewsHiddenTopics", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, fingerprint])
 }
 
 model NewsItem {
@@ -2503,26 +2549,62 @@ model NewsItem {
   noveltyNote   String?
   imageUrl      String?
   publishedAt   DateTime
-  // "PENDING" | "ACKNOWLEDGED" | "DISMISSED". Tylko ACKNOWLEDGED trafia do bazy wiedzy.
+  // "PENDING" | "ACKNOWLEDGED" | "DISMISSED".
   status        String   @default("PENDING")
+  // 039: artykuł z puli, z którego powstała ta pozycja. Opcjonalny — pozycje sprzed puli nie mają
+  // czego wskazywać.
+  articleId     String?
   createdAt     DateTime @default(now())
 
-  topic  NewsTopic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  source NewsSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  topic   NewsTopic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  source  NewsSource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  article NewsArticle? @relation(fields: [articleId], references: [id], onDelete: SetNull)
 
   @@unique([topicId, sourceId, url])
   @@index([topicId, status])
+  @@index([articleId])
 }
 
 model NewsPref {
-  ownerId              String   @id
+  ownerId              String    @id
   // Domyślna długość streszczeń: "short" | "medium" | "long".
-  defaultSummaryLength String   @default("medium")
+  defaultSummaryLength String    @default("medium")
   // Ostatnio wybrane źródło w widoku (klucz NewsSource).
   activeSourceKey      String?
-  updatedAt            DateTime @updatedAt
+  // 039: moment ostatniego pobrania PULI — wspólny dla wszystkich tematów, bo pobranie przestało
+  // być czynnością pojedynczego tematu. NULL = nigdy (pierwszy przebieg bierze okno 24 h).
+  lastFetchedAt        DateTime?
+  updatedAt            DateTime  @updatedAt
 
   owner User @relation("NewsPref", fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+// 039: przekrojowa wiedza o użytkowniku — fakty, z których korzysta każdy moduł generujący treść
+// „pod niego" (dziś Pogoda). Odrzucony fakt zostaje ze statusem "rejected", żeby nie wrócił przy
+// kolejnym wnioskowaniu.
+model UserFact {
+  id          String   @id @default(cuid())
+  ownerId     String
+  // "interests" | "activity" | "lifestyle" | "constraints" | "content" (String + union, C-12).
+  category    String
+  // Treść faktu jednym zdaniem, po polsku.
+  text        String
+  // "guess" | "likely" | "confirmed" — trafia do promptu jako słowo, nie liczba.
+  confidence  String   @default("guess")
+  // "inferred" | "confirmed" | "admin" — fakt administratora nie jest nadpisywany automatycznie.
+  origin      String   @default("inferred")
+  // "active" | "rejected" — odrzucony nie wraca.
+  status      String   @default("active")
+  // Skąd konkretnie wyciągnięty (np. „zapisane pomysły pogodowe") — dla wglądu, nie dla logiki.
+  evidence    String?
+  fingerprint String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  owner User @relation("OwnedUserFacts", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, fingerprint])
+  @@index([ownerId, status])
 }
 
 // ─── Pogoda (Weather) ─────────────────────────────────────────────────────
@@ -2568,38 +2650,38 @@ model WeatherWatcher {
 // /pogoda tego samego dnia obsługuje pamięć podręczna promptu w `chatComplete`, więc trzymamy tu
 // wyłącznie decyzje użytkownika i wygenerowane szczegóły, które mają go przeżyć.
 model WeatherIdea {
-  id      String @id @default(cuid())
-  ownerId String
+  id            String    @id @default(cuid())
+  ownerId       String
   // Odcisk tytułu (małe litery, bez diakrytyków i interpunkcji) — klucz naturalny propozycji.
   // Po nim rozpoznajemy powtórkę („już rozważana") i egzekwujemy blokadę.
-  fingerprint String
-  title       String
-  summary     String @default("")
+  fingerprint   String
+  title         String
+  summary       String    @default("")
   // "outdoor" | "trip" | "home" | "other" — String + union TS (C-12), nigdy enum Prisma.
-  category String @default("other")
+  category      String    @default("other")
   // "considered" | "saved" | "blocked".
-  state String @default("considered")
+  state         String    @default("considered")
   // Kontekst powstania — pozwala filtrować bibliotekę po lokalizacji.
-  locationLabel String @default("")
-  lat           Float  @default(0)
-  lon           Float  @default(0)
+  locationLabel String    @default("")
+  lat           Float     @default(0)
+  lon           Float     @default(0)
   // Wygenerowany szczegółowy plan (markdown); null = propozycja tylko zapisana/zablokowana.
-  detail     String?
-  detailAt   DateTime?
-  detailRuns Int       @default(0)
+  detail        String?
+  detailAt      DateTime?
+  detailRuns    Int       @default(0)
   // Zużycie ostatniej generacji szczegółów (JSON) — licznik kosztu przy ZAPISANEJ treści musi
   // działać także wtedy, gdy nie ma już świeżego wyniku z modelu.
-  detailUsage String?
+  detailUsage   String?
   // 038: warunki z CHWILI ZAPROPONOWANIA — opis może powstać wiele dni później (leniwe
   // generowanie), a bez nich opisywałby pogodę z dnia czytania zamiast z dnia, dla którego
   // pomysł powstał. Opcjonalne: pomysły sprzed tej zmiany nasion nie mają.
-  seedDate    String?
-  seedPart    String?
-  seedWeather String?
-  viewCount   Int      @default(0)
-  lastSeenAt  DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  seedDate      String?
+  seedPart      String?
+  seedWeather   String?
+  viewCount     Int       @default(0)
+  lastSeenAt    DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
 
   owner User @relation("OwnedWeatherIdeas", fields: [ownerId], references: [id], onDelete: Cascade)
 
@@ -2612,16 +2694,16 @@ model WeatherIdea {
 // Jeden generyczny model zamiast kolumn w każdym module: logika nieaktualności jest wszędzie taka
 // sama (co to jest / dla jakiego zakresu / w jakich warunkach powstało / kiedy).
 model AiContent {
-  id      String @id @default(cuid())
-  ownerId String
+  id        String   @id @default(cuid())
+  ownerId   String
   // "weather.ideas" | "weather.ideaDetail" | "storage.insights" | … — String + union TS (C-12).
-  kind String
+  kind      String
   // Co identyfikuje TĘ treść w obrębie rodzaju (np. lokalizacja|dzień|pora).
-  scopeKey String
+  scopeKey  String
   // Odcisk warunków powstania; różnica względem bieżących = treść nieaktualna, nie nieważna.
   inputHash String
   // Treść w postaci JSON (kształt zależy od rodzaju).
-  content String
+  content   String
   // Zużycie modelu (JSON) — licznik kosztu działa też przy treści z pamięci.
   usage     String?
   refreshes Int      @default(0)
@@ -2680,17 +2762,17 @@ model WorkshopItem {
   category      String?
   quantity      Float?
   unit          String?
-  minQuantity   Float?    // próg low-stock (głównie materiały eksploatacyjne)
+  minQuantity   Float? // próg low-stock (głównie materiały eksploatacyjne)
   condition     String    @default("good") // "new" | "good" | "worn" | "broken"
   status        String    @default("owned") // "owned" | "wishlist"
   brand         String?
-  station       String?   // stanowisko / miejsce w warsztacie
-  assignedTo    String?   // Pro: kto aktualnie ma narzędzie / komu wypożyczone
+  station       String? // stanowisko / miejsce w warsztacie
+  assignedTo    String? // Pro: kto aktualnie ma narzędzie / komu wypożyczone
   purchasePrice Float?
   purchaseDate  DateTime?
   lastServiceAt DateTime?
   nextServiceAt DateTime? // termin następnego przeglądu/serwisu
-  suggestionKey String?   // powiązanie z pozycją katalogu podpowiedzi
+  suggestionKey String? // powiązanie z pozycją katalogu podpowiedzi
   photoUrl      String?
   notes         String?
   createdAt     DateTime  @default(now())
