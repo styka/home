@@ -91,13 +91,13 @@
 
 ## Faza 4 — Lektor
 
-- [ ] **T-14** — **`NewsReader.tsx`.** Odtwarzanie zdanie po zdaniu przez istniejące
+- [x] **T-14** — **`NewsReader.tsx`.** Odtwarzanie zdanie po zdaniu przez istniejące
       `speak(text, "pl", { onEnd })`; podświetlenie bieżącego zdania + automatyczne przewinięcie do
       widoku; klik w zdanie = przeskok; sterowanie: wstecz/pauza-wznów/dalej/stop.
       *Gotowe, gdy:* odsłuch działa z głosem przeglądarki i serwerowym, a podświetlenie nadąża.
       **(AC-14, AC-15, AC-16)**
 
-- [ ] **T-15** — **Lektor na telefonie.** Pasek sterowania przyklejony do dołu karty,
+- [x] **T-15** — **Lektor na telefonie.** Pasek sterowania przyklejony do dołu karty,
       `pb-[max(...,env(safe-area-inset-bottom))]`, cele `py-3`, nie zasłania czytanego tekstu.
       *Gotowe, gdy:* sterowanie jest osiągalne kciukiem i nie przykrywa treści. **(AC-17)**
 
