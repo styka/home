@@ -30,7 +30,7 @@
       *Gotowe, gdy:* można oznaczyć kilka tematów pod rząd bez ani jednego powrotu do listy.
       **(AC-6, AC-7)**
 
-- [ ] **T-3** `[P]` — **Szczegóły propozycji w Pogodzie w miejscu kliknięcia.** Usunięcie przycisku
+- [x] **T-3** `[P]` — **Szczegóły propozycji w Pogodzie w miejscu kliknięcia.** Usunięcie przycisku
       `ChevronRight` („Pokaż szczegółowy plan") — klik w kartę robi to samo. `IdeaDetailSheet`
       renderowany bezpośrednio pod kliknięta pozycją zamiast pod całą listą; rozwinięta karta
       wyróżniona obramowaniem akcentem.

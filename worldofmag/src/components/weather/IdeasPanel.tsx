@@ -6,7 +6,6 @@ import {
   Sparkles,
   RefreshCw,
   Loader2,
-  ChevronRight,
   AlertTriangle,
   Ban,
   Library,
@@ -292,15 +291,41 @@ export function IdeasPanel({
         </div>
       ) : ideas && ideas.length > 0 ? (
         <div className="space-y-2">
-          {ideas.map((idea) => (
-            <IdeaCard
-              key={idea.fingerprint}
-              idea={idea}
-              onOpen={() => openIdea(idea)}
-              onBlock={() => block(idea)}
-              onSave={() => saveFromList(idea)}
-            />
-          ))}
+          {/* 040: szczegóły rozwijają się PRZY klikniętej propozycji, a nie pod całą listą.
+              Wcześniej sheet renderował się na końcu panelu — na desktopie, przy 7 propozycjach,
+              wypadał poza ekran, więc kliknięcie wyglądało, jakby nic nie zrobiło. */}
+          {ideas.map((idea) => {
+            const isOpen = open?.fingerprint === idea.fingerprint;
+            return (
+              <div key={idea.fingerprint}>
+                <IdeaCard
+                  idea={idea}
+                  expanded={isOpen}
+                  onOpen={() => (isOpen ? setOpen(null) : openIdea(idea))}
+                  onBlock={() => block(idea)}
+                  onSave={() => saveFromList(idea)}
+                />
+                {isOpen && open && (
+                  <div className="mt-2">
+                    <IdeaDetailSheet
+                      idea={open}
+                      detail={detail}
+                      detailRuns={detailRuns}
+                      loading={detailLoading}
+                      regenerating={regenerating}
+                      usage={detailUsage}
+                      usdPlnRate={usdPlnRate}
+                      canAddToTasks={canAddToTasks}
+                      onClose={() => setOpen(null)}
+                      onRegenerate={regenerate}
+                      onSave={save}
+                      onAddToTasks={addToTasks}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="py-3">
@@ -324,25 +349,6 @@ export function IdeasPanel({
         {listUsage && <AiCostBadge usage={listUsage} rate={usdPlnRate} />}
       </div>
 
-      {open && (
-        <div className="mt-3">
-          <IdeaDetailSheet
-            idea={open}
-            detail={detail}
-            detailRuns={detailRuns}
-            loading={detailLoading}
-            regenerating={regenerating}
-            usage={detailUsage}
-            usdPlnRate={usdPlnRate}
-            canAddToTasks={canAddToTasks}
-            onClose={() => setOpen(null)}
-            onRegenerate={regenerate}
-            onSave={save}
-            onAddToTasks={addToTasks}
-          />
-        </div>
-      )}
-
       {/* 039: hipoteza o użytkowniku pod listą propozycji — czyli dokładnie tam, gdzie widać, po co
           ona jest. Jedna karta, bez modala i bez blokowania czegokolwiek. */}
       <UserFactHypothesisCard />
@@ -352,18 +358,24 @@ export function IdeasPanel({
 
 function IdeaCard({
   idea,
+  expanded,
   onOpen,
   onBlock,
   onSave,
 }: {
   idea: IdeaDTO;
+  /** Czy pod tą kartą rozwinięte są szczegóły — karta ma to pokazywać, nie tylko sheet poniżej. */
+  expanded: boolean;
   onOpen: () => void;
   onBlock: () => void;
   onSave: () => void;
 }) {
   const Icon = CATEGORY_ICON[idea.category];
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-base)] p-3">
+    <div
+      className="flex items-start gap-2 rounded-lg border bg-[var(--bg-base)] p-3"
+      style={{ borderColor: expanded ? "var(--accent-purple)" : "var(--border)" }}
+    >
       <Icon size={16} className="mt-0.5 shrink-0 text-[var(--accent-purple)]" />
       <button onClick={onOpen} className="min-w-0 flex-1 text-left">
         <span className="flex flex-wrap items-center gap-1.5">
@@ -408,14 +420,6 @@ function IdeaCard({
           aria-label={`Nie proponuj: ${idea.title}`}
         >
           <Ban size={14} />
-        </button>
-        <button
-          onClick={onOpen}
-          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-          title="Pokaż szczegółowy plan"
-          aria-label={`Szczegóły: ${idea.title}`}
-        >
-          <ChevronRight size={16} />
         </button>
       </div>
     </div>
