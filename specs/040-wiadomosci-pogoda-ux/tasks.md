@@ -58,7 +58,7 @@
       *Gotowe, gdy:* test pokrywa stabilność (ten sam opis → ten sam kolor), niewrażliwość na
       wielkość liter i diakrytyki, pusty opis i przynależność wyniku do palety. **(AC-3, AC-5)**
 
-- [ ] **T-7** — **`sources.ts` + `actions/news.ts` na `descriptor`.** Usunięcie `Leaning` i
+- [x] **T-7** — **`sources.ts` + `actions/news.ts` na `descriptor`.** Usunięcie `Leaning` i
       `LEANING_META`; `DEFAULT_SOURCES` z opisami po polsku (spójnie z migracją). W akcjach:
       `SourceDTO.descriptor`, `NewsItemDTO.sourceDescriptor`, `TimelineEntryDTO.sourceDescriptor`,
       `createSource`/`updateSource` przyjmują opis (przycięty do 60 znaków). `revalidatePath` bez
@@ -67,7 +67,7 @@
 
 ## Faza 3 — Warstwa AI
 
-- [ ] **T-8** — **Cztery miejsca warstwy AI na `descriptor`:** `agentPrompt.ts` (katalog akcji),
+- [x] **T-8** — **Cztery miejsca warstwy AI na `descriptor`:** `agentPrompt.ts` (katalog akcji),
       `actionContract.ts` (`sel(...)` → kontrolka `text`, usunięcie `NEWS_LEANING_OPTIONS`),
       `executors/newsExecutor.ts` (walidacja z trzech wartości → dowolny tekst), `agentTools.ts`
       (`list_news_sources` zwraca opis).

@@ -6,7 +6,7 @@ import { requireAuth } from "@/lib/server-utils";
 import { chatComplete } from "@/lib/llm/chat";
 import { parseJsonLoose } from "@/lib/llm/json";
 import { fetchArticle } from "@/lib/news/article";
-import { DEFAULT_SOURCES, type Leaning } from "@/lib/news/sources";
+import { DEFAULT_SOURCES } from "@/lib/news/sources";
 import { fingerprintOf } from "@/lib/textKey";
 import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
 import { usageFromChat, type AiUsageInfo } from "@/lib/ai/usage";
@@ -26,7 +26,8 @@ export interface SourceDTO {
   name: string;
   rssUrl: string;
   homepageUrl: string;
-  leaning: Leaning;
+  /** 040: krótki opis własnymi słowami; pusty = bez opisu. */
+  descriptor: string;
   enabled: boolean;
   sortOrder: number;
 }
@@ -45,7 +46,7 @@ export interface NewsItemDTO {
   sourceId: string;
   sourceName: string;
   sourceKey: string;
-  leaning: Leaning;
+  sourceDescriptor: string;
   url: string;
   title: string;
   summary: string;
@@ -66,7 +67,7 @@ export interface TimelineEntryDTO {
   fact: string;
   sourceName: string | null;
   sourceKey: string | null;
-  leaning: Leaning | null;
+  sourceDescriptor: string | null;
   /** Adres materiału źródłowego, jeśli znany — pozwala kliknąć w fakt i sprawdzić go u źródła. */
   url: string | null;
 }
@@ -103,7 +104,7 @@ export async function getSources(): Promise<SourceDTO[]> {
     name: s.name,
     rssUrl: s.rssUrl,
     homepageUrl: s.homepageUrl,
-    leaning: s.leaning as Leaning,
+    descriptor: s.descriptor,
     enabled: s.enabled,
     sortOrder: s.sortOrder,
   }));
@@ -170,7 +171,7 @@ export async function getTopicView(topicId: string): Promise<{
       sourceId: i.sourceId,
       sourceName: i.source.name,
       sourceKey: i.source.key,
-      leaning: i.source.leaning as Leaning,
+      sourceDescriptor: i.source.descriptor,
       url: i.url,
       title: i.title,
       summary: i.summary,
@@ -216,7 +217,7 @@ export async function getTopicTimeline(topicId: string): Promise<TimelineEntryDT
     fact: r.fact,
     sourceName: r.source?.name ?? null,
     sourceKey: r.source?.key ?? null,
-    leaning: (r.source?.leaning as Leaning) ?? null,
+    sourceDescriptor: r.source?.descriptor ?? null,
     url: r.articleId ? urlById.get(r.articleId) ?? null : null,
   }));
 }
@@ -277,11 +278,14 @@ export async function deleteTopic(id: string): Promise<void> {
   revalidatePath("/wiadomosci");
 }
 
+/** 040: maksymalna długość opisu źródła — etykieta na karcie, nie miejsce na notatkę. */
+const MAX_DESCRIPTOR_LEN = 60;
+
 export async function createSource(data: {
   name: string;
   rssUrl: string;
   homepageUrl: string;
-  leaning: Leaning;
+  descriptor?: string;
 }): Promise<void> {
   const user = await requireAuth();
   const name = data.name.trim();
@@ -299,7 +303,7 @@ export async function createSource(data: {
       name,
       rssUrl: data.rssUrl.trim(),
       homepageUrl: data.homepageUrl.trim() || data.rssUrl.trim(),
-      leaning: data.leaning,
+      descriptor: (data.descriptor ?? "").trim().slice(0, MAX_DESCRIPTOR_LEN),
       sortOrder: (max._max.sortOrder ?? 0) + 1,
     },
   });
@@ -308,7 +312,7 @@ export async function createSource(data: {
 
 export async function updateSource(
   id: string,
-  patch: { name?: string; rssUrl?: string; homepageUrl?: string; leaning?: Leaning; enabled?: boolean }
+  patch: { name?: string; rssUrl?: string; homepageUrl?: string; descriptor?: string; enabled?: boolean }
 ): Promise<void> {
   const user = await requireAuth();
   const s = await prisma.newsSource.findUnique({ where: { id } });
@@ -317,7 +321,9 @@ export async function updateSource(
   if (patch.name !== undefined) data.name = patch.name.trim();
   if (patch.rssUrl !== undefined) data.rssUrl = patch.rssUrl.trim();
   if (patch.homepageUrl !== undefined) data.homepageUrl = patch.homepageUrl.trim();
-  if (patch.leaning !== undefined) data.leaning = patch.leaning;
+  // Pusty opis jest dozwolony (AC-5) — dlatego sprawdzamy `undefined`, a nie prawdziwość.
+  if (patch.descriptor !== undefined)
+    data.descriptor = patch.descriptor.trim().slice(0, MAX_DESCRIPTOR_LEN);
   if (patch.enabled !== undefined) data.enabled = patch.enabled;
   await prisma.newsSource.update({ where: { id }, data });
   revalidatePath("/wiadomosci");
