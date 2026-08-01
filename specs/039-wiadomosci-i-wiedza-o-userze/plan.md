@@ -175,8 +175,16 @@ wieloetapowy handler ma ten sam problem.
 Cztery etapy w jednym przebiegu, raportujące postęp przez `ctx` (AC-5):
 
 1. **Pobranie puli** — dla każdego włączonego źródła **jedno** `fetchRss`; zapis nowych pozycji do
-   `NewsArticle` (`skipDuplicates` po `[ownerId, sourceId, url]`); próg czasu = `NewsPref.lastFetchedAt`
-   albo 24 h przy pierwszym uruchomieniu (AC-4). Na końcu ustawiamy `lastFetchedAt`.
+   `NewsArticle` (`skipDuplicates` po `[ownerId, sourceId, url]`); próg czasu **per źródło** =
+   najnowszy `publishedAt` tego źródła w puli, a przy pierwszym uruchomieniu 24 h (AC-4).
+   `NewsPref.lastFetchedAt` zostaje jako informacja „kiedy ostatnio pobieraliśmy", ale **nie steruje
+   progiem**.
+
+   > **Poprawione na etapie `/review` (C-54).** Plan zakładał wspólny próg z `lastFetchedAt`. To
+   > cicho gubi materiał: `fetchRss` połyka błędy sieci i zwraca pustą listę, więc jeden timeout
+   > portalu przesuwałby próg **wszystkim** źródłom i okno awarii nie wróciłoby już nigdy. Znacznik
+   > liczony z tego, co faktycznie mamy w puli, przesuwa się tylko dla źródeł, które coś dostarczyły
+   > — i nie wymaga nowej kolumny.
 2. **Klasyfikacja** — **jedno** wywołanie `op: "dispatch"` (tanie) na całą pulę: lista tytułów ze
    skrótami + lista tematów z filtrami semantycznymi → mapa `artykuł → tematy[]` (AC-2, AC-12).
    Wynik zapisujemy jako `NewsItem` (bez streszczenia; `summary` = skrót z kanału).
@@ -187,6 +195,12 @@ Cztery etapy w jednym przebiegu, raportujące postęp przez `ctx` (AC-5):
    `[topicId, fingerprint]`.
 
 Handler rejestrowany w `JOB_HANDLERS` i `ENQUEUABLE_TYPES` jako `news.refresh`.
+
+> **Dopisane na etapie `/review` (C-54).** Worker kolejki startuje **leniwie i tylko z tras
+> `/api/jobs`** (`instrumentation.ts` nie może go wystartować, bo bundluje się także dla runtime
+> edge). Ścieżka „Server Action kolejkuje zadanie" omija te trasy, więc `startNewsRefresh` i
+> `getNewsRefreshState` muszą same wywołać `startJobWorker()` (idempotentne) — inaczej zadanie
+> zostaje w `QUEUED`, a pasek stanu pokazuje „Odświeżam…" bez końca.
 
 ### 3.2 `src/actions/news.ts` (zmiany)
 

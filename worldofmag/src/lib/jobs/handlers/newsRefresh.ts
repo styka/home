@@ -108,15 +108,32 @@ async function fetchPool(ownerId: string, force: boolean, ctx: JobContext): Prom
   });
   if (sources.length === 0) return { sources: 0, fetched: 0 };
 
-  const pref = await prisma.newsPref.findUnique({ where: { ownerId } });
   const firstRunFloor = new Date(Date.now() - FIRST_RUN_WINDOW_MS);
-  const since = force || !pref?.lastFetchedAt ? firstRunFloor : pref.lastFetchedAt;
+
+  /**
+   * Próg czasu liczymy **per źródło**, z najnowszego artykułu tego źródła W PULI — a nie ze
+   * wspólnego znacznika „kiedy ostatnio pobieraliśmy".
+   *
+   * Powód: `fetchRss` połyka błędy sieci i zwraca pustą listę. Przy wspólnym znaczniku jeden
+   * timeout portalu przesuwałby próg wszystkim, więc materiał z okna awarii nie wróciłby już
+   * NIGDY — cicho, bez śladu w interfejsie. Znacznik wyliczony z tego, co faktycznie mamy,
+   * przesuwa się wyłącznie dla źródeł, które naprawdę coś dostarczyły.
+   */
+  const watermarks = await prisma.newsArticle.groupBy({
+    by: ["sourceId"],
+    where: { ownerId },
+    _max: { publishedAt: true },
+  });
+  const sinceBySource = new Map(
+    watermarks.map((w) => [w.sourceId, w._max.publishedAt ?? firstRunFloor])
+  );
 
   let fetched = 0;
   for (let i = 0; i < sources.length; i++) {
     const source = sources[i];
     ctx.progress?.(`Pobieram źródła (${i + 1}/${sources.length})…`);
     const feed = await fetchRss(source.rssUrl);
+    const since = force ? firstRunFloor : sinceBySource.get(source.id) ?? firstRunFloor;
 
     const rows = feed
       .slice(0, MAX_ITEMS_PER_SOURCE)
@@ -139,6 +156,8 @@ async function fetchPool(ownerId: string, force: boolean, ctx: JobContext): Prom
     fetched += res.count;
   }
 
+  // `lastFetchedAt` nie steruje już progiem (robi to znacznik per źródło powyżej) — zostaje jako
+  // informacja „kiedy ostatnio pobieraliśmy", pokazywana użytkownikowi.
   await prisma.newsPref.upsert({
     where: { ownerId },
     create: { ownerId, lastFetchedAt: new Date() },

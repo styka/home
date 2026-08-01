@@ -12,6 +12,7 @@ import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
 import { usageFromChat, type AiUsageInfo } from "@/lib/ai/usage";
 import { visibleUsage } from "@/lib/ai/costVisibility";
 import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/lib/jobs/queue";
+import { startJobWorker } from "@/lib/jobs/worker";
 import type { DateConfidence, NewsRefreshResult } from "@/lib/jobs/handlers/newsRefresh";
 
 export type SummaryLength = "short" | "medium" | "long";
@@ -434,6 +435,11 @@ export async function startNewsRefresh(force?: boolean): Promise<{ jobId: string
     { force: force === true },
     { ownerId: user.id, dedupeKey: `news.refresh:${user.id}`, maxActivePerOwner: MAX_ACTIVE_JOBS_PER_OWNER }
   );
+  // Worker kolejki startuje LENIWIE i tylko z tras `/api/jobs` (patrz `instrumentation.ts` — nie da
+  // się go wystartować globalnie, bo instrumentacja bundluje się też dla runtime edge). Ta ścieżka
+  // omija te trasy w całości, więc bez tego wywołania zadanie zostałoby w QUEUED, a pasek stanu
+  // pokazywałby „Odświeżam…" w nieskończoność. Wywołanie jest idempotentne.
+  startJobWorker();
   return { jobId: job.id };
 }
 
@@ -445,6 +451,9 @@ export async function startNewsRefresh(force?: boolean): Promise<{ jobId: string
  */
 export async function getNewsRefreshState(): Promise<NewsRefreshState | null> {
   const user = await requireAuth();
+  // Powrót na stronę też musi ruszyć workera: jeśli proces zdążył się w międzyczasie zrestartować
+  // (na wolnym tierze usypia po 15 min), zaległe zadanie czekałoby, aż ktoś trafi w `/api/jobs`.
+  startJobWorker();
   const job = await prisma.job.findFirst({
     where: { ownerId: user.id, type: "news.refresh" },
     orderBy: { createdAt: "desc" },
