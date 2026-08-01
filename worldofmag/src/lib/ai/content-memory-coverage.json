@@ -130,5 +130,9 @@
   "src/lib/jobs/handlers/storesGenerate.ts": {
     "mode": "on-demand",
     "reason": "Układ sklepu generowany raz dla nowego sklepu; wynik zapisuje się jako graf sklepu."
+  },
+  "src/lib/jobs/handlers/userFacts.ts": {
+    "mode": "on-demand",
+    "reason": "Wnioskowanie faktow o uzytkowniku odpalane jawnie i pracujace za kazdym razem na INNYM materiale (nowe zapisane/zablokowane pomysly, nowe tematy). Trwalosc daje tabela UserFact — hipotezy zostaja zapisane, wiec nic nie powstaje dwa razy; pamiec tresci zwrocilaby tu wynik sprzed zmiany zachowan, czyli dokladnie to, czego ten mechanizm ma nie robic."
   }
 }

@@ -103,25 +103,25 @@
 
 ## Faza 5 — Wiedza o użytkowniku
 
-- [ ] **T-16** — **`src/actions/userFacts.ts`.** `getUserFacts`, `confirmUserFact`, `rejectUserFact`,
+- [x] **T-16** — **`src/actions/userFacts.ts`.** `getUserFacts`, `confirmUserFact`, `rejectUserFact`,
       `upsertUserFact`, `deleteUserFact`, `getPendingHypothesis`, akcje administratora
       (`module.admin`) oraz serwerowy helper **`buildUserContext(userId)`** (brak faktów → pusty
       string, nigdy błąd).
       *Gotowe, gdy:* odrzucony fakt nie wraca, a konto bez faktów działa bez zmian. **(AC-22..AC-25, AC-27)**
 
-- [ ] **T-17** — **Handler `user.facts`.** Czyta zachowania (zapisane i zablokowane pomysły pogodowe,
+- [x] **T-17** — **Handler `user.facts`.** Czyta zachowania (zapisane i zablokowane pomysły pogodowe,
       monitorowane tematy, odrzucone gorące tematy), jednym wywołaniem `reasoning` proponuje fakty z
       kategorią, pewnością i uzasadnieniem; odrzucone trafiają do promptu jako „nie proponuj ponownie".
       *Gotowe, gdy:* po użyciu aplikacji powstają fakty, których użytkownik nigdzie nie wpisywał.
       **(AC-21, AC-23)**
 
-- [ ] **T-18** — **UI wiedzy o użytkowniku.** `UserFactsSection` w `/settings` (fakty w kategoriach,
+- [x] **T-18** — **UI wiedzy o użytkowniku.** `UserFactsSection` w `/settings` (fakty w kategoriach,
       edycja, usuwanie), `UserFactHypothesisCard` (jedna karta, rzadko, przy okazji — nigdy jako
       przerywnik), `UserFactsPanel` dla administratora.
       *Gotowe, gdy:* użytkownik widzi, co aplikacja o nim wie, i poprawia to jednym dotknięciem.
       **(AC-22, AC-24, AC-25)**
 
-- [ ] **T-19** — **Wpięcie w Pogodę.** Prompt propozycji korzysta z `buildUserContext` w miejsce
+- [x] **T-19** — **Wpięcie w Pogodę.** Prompt propozycji korzysta z `buildUserContext` w miejsce
       dzisiejszej namiastki (`AssistantPref.instructions` + tytuły zapisanych pomysłów).
       *Gotowe, gdy:* propozycje uwzględniają fakty o użytkowniku, a brak faktów niczego nie psuje.
       **(AC-26, AC-27)**

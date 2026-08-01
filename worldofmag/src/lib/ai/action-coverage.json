@@ -2474,6 +2474,54 @@
     "reason": "dictionary",
     "access": "owner"
   },
+  "userFacts:confirmUserFact": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "userFacts:deleteUserFact": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "owner"
+  },
+  "userFacts:deleteUserFactByAdmin": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "userFacts:getPendingHypothesis": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "userFacts:getUserFacts": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings",
+    "access": "owner"
+  },
+  "userFacts:getUserFactsForAdmin": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "userFacts:rejectUserFact": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "userFacts:setUserFactByAdmin": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "userFacts:upsertUserFact": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "owner"
+  },
   "warsztat:addSuggestedItems": {
     "status": "excluded",
     "reason": "interactive",

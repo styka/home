@@ -248,6 +248,11 @@ export default async function AdminPage() {
               <span style={{ fontSize: 13 }}>Pokrycie akcji przez AI (mutacje + odczyty)</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
+            <Link href="/admin/user-facts" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <Sparkles size={15} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Wiedza o użytkownikach (fakty do podpowiedzi)</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
             <Link href="/admin/ai-calls" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Bug size={15} style={{ color: "var(--accent-amber)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Diagnostyka asystenta AI (log wywołań / rozmowa)</span>

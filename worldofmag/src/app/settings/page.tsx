@@ -13,6 +13,7 @@ import { DriveSettings } from "@/components/settings/DriveSettings"
 import { IcalFeedCard } from "@/components/calendar/IcalFeedCard"
 import { getDriveStatus } from "@/actions/drive"
 import { PrivacySettings } from "@/components/settings/PrivacySettings"
+import { UserFactsSection } from "@/components/settings/UserFactsSection"
 import { getActivePlan } from "@/lib/plans"
 
 export default async function SettingsPage({
@@ -218,6 +219,15 @@ export default async function SettingsPage({
           </div>
         </section>
       )}
+
+      {/* 039: wiedza o użytkowniku stoi tuż nad sekcją prywatności — bo to jest sekcja o tym, co
+          system o nim wie, i tam użytkownik będzie jej szukał. */}
+      <section>
+        <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+          Wiedza o Tobie
+        </h2>
+        <UserFactsSection />
+      </section>
 
       {/* Prywatność i dane (RODO) */}
       <section>
