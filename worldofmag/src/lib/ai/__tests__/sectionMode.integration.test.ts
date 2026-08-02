@@ -134,6 +134,41 @@ test(
 );
 
 test(
+  "własne i systemowe to dwa rozłączne zapisy — żaden nie nadpisuje drugiego",
+  { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
+  async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { AI_SECTION_MODES_CONFIG_KEY, resolveSectionMode } = await import("@/lib/ai/sectionMode");
+    await withConfig('{"weather.ideas":"onChange"}', async () => {
+      await withUser(async (userId) => {
+        // Użytkownik wybiera swoje — konfiguracja systemowa ma zostać nietknięta.
+        await prisma.aiSectionPref.create({
+          data: { ownerId: userId, sectionKind: "weather.ideas", mode: "always" },
+        });
+        const cfg = await prisma.config.findUnique({ where: { key: AI_SECTION_MODES_CONFIG_KEY } });
+        assert.equal(cfg?.value, '{"weather.ideas":"onChange"}', "Config nietknięty");
+        assert.equal(await resolveSectionMode(userId, "weather.ideas"), "always");
+
+        // Administrator zmienia domyślne — świadomy wybór użytkownika ma przetrwać.
+        await prisma.config.update({
+          where: { key: AI_SECTION_MODES_CONFIG_KEY },
+          data: { value: '{"weather.ideas":"onDemand"}' },
+        });
+        assert.equal(await resolveSectionMode(userId, "weather.ideas"), "always", "wybór przetrwał");
+        const pref = await prisma.aiSectionPref.findUnique({
+          where: { ownerId_sectionKind: { ownerId: userId, sectionKind: "weather.ideas" } },
+        });
+        assert.equal(pref?.mode, "always", "preferencja nietknięta");
+
+        // Dopiero rezygnacja z własnego wyboru przywraca dziedziczenie.
+        await prisma.aiSectionPref.deleteMany({ where: { ownerId: userId } });
+        assert.equal(await resolveSectionMode(userId, "weather.ideas"), "onDemand");
+      });
+    });
+  }
+);
+
+test(
   "resolveSectionModes zwraca komplet sekcji i zgadza się z pojedynczym rozstrzygnięciem",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {

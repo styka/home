@@ -128,6 +128,33 @@
     "reason": "internal",
     "access": "self"
   },
+  "aiSections:clearSectionMode": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
+  "aiSections:getDefaultSectionModes": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "aiSections:getSectionModes": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
+  "aiSections:setDefaultSectionModes": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "aiSections:setSectionMode": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
   "assistantPrefs:getAssistantLevelConfig": {
     "kind": "read",
     "status": "excluded",

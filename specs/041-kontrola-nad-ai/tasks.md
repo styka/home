@@ -53,7 +53,7 @@
       zgodny / zapis+hash inny) × trzy tryby × `force`, licząc **wywołania `generate`** — bo to one,
       a nie wynik, decydują o koszcie. **(AC-1..AC-4, AC-8, AC-9)**
 
-- [ ] **T-6** — **`src/actions/aiSections.ts`.** `getSectionModes`, `setSectionMode(kind, mode)`
+- [x] **T-6** — **`src/actions/aiSections.ts`.** `getSectionModes`, `setSectionMode(kind, mode)`
       (użytkownik), `getDefaultSectionModes`/`setDefaultSectionModes` (**administrator**, z
       `logAudit` kategorii `config` — C-25). Guardy: `requireAuth` + `ownerId`; admin przez
       `hasPermission(...ADMIN)`. `revalidatePath` na końcu każdej mutacji.
