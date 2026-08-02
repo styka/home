@@ -40,13 +40,13 @@
 
 ## Faza 2 — Tryb sekcji AI (rdzeń)
 
-- [ ] **T-4** — **`src/lib/ai/sectionMode.ts` + test.** `AiSectionMode` (`onDemand|onChange|always`)
+- [x] **T-4** — **`src/lib/ai/sectionMode.ts` + test.** `AiSectionMode` (`onDemand|onChange|always`)
       z etykietami PL, `resolveSectionMode(ownerId, kind)` (preferencja → `Config` → `onDemand`),
       `readDefaultSectionModes()` bez sesji (wzorzec `readCostBadgeEnabled`).
       *Gotowe, gdy:* test pokrywa **całą kolejność rozstrzygania**, w tym brak obu źródeł i
       uszkodzony JSON w `Config` (ma degradować do `onDemand`, nie wysypywać strony). **(AC-10)**
 
-- [ ] **T-5** — **`rememberedContent` z trybem i stanem `pending`.** Nowy, **opcjonalny** parametr
+- [x] **T-5** — **`rememberedContent` z trybem i stanem `pending`.** Nowy, **opcjonalny** parametr
       `mode`; brak trybu = dzisiejsze zachowanie. Tabela decyzyjna wg planu §3.2; wynik zyskuje
       `pending: boolean`.
       *Gotowe, gdy:* test na żywej bazie sprawdza **wszystkie** kombinacje (brak zapisu / zapis+hash

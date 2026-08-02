@@ -13,6 +13,9 @@
 import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { parseStoredUsage, type AiUsageInfo } from "@/lib/ai/usage";
+// Import WYŁĄCZNIE typu — `sectionMode.ts` importuje stąd `AiContentKind`, więc import wartości
+// zrobiłby cykl w czasie wykonania. Typy znikają przy kompilacji, więc ten kierunek jest bezpieczny.
+import type { AiSectionMode } from "@/lib/ai/sectionMode";
 
 /**
  * Rodzaj zapamiętanej treści. String + union (C-12) — nigdy enum Prisma.
@@ -43,7 +46,28 @@ export interface RememberedContent<T> {
   /** Ile razy użytkownik jawnie odświeżył tę treść. */
   refreshes: number;
   usage?: AiUsageInfo;
+  /** Zawsze `false` — treść istnieje. Pole rozróżnia oba warianty wyniku (patrz `PendingContent`). */
+  pending: false;
 }
+
+/**
+ * 041: sekcja CZEKA na kliknięcie — nie ma jeszcze żadnej treści, a tryb zabrania generować
+ * samoczynnie.
+ *
+ * To **nie** jest błąd i **nie** jest pusta treść. Rozróżnienie ma własne pole, a nie „puste
+ * `value`", bo w 038 dokładnie ta pomyłka kosztowała nas dzień: użytkownik widział to samo, co po
+ * awarii, i ponawiał w nieskończoność. Typ wymusza obsłużenie tego stanu — `value` po prostu nie
+ * istnieje, dopóki kod nie sprawdzi `pending`.
+ */
+export interface PendingContent {
+  pending: true;
+  stale: false;
+  fromMemory: false;
+  refreshes: 0;
+}
+
+/** Wynik odczytu z pamięci, gdy tryb sekcji może wstrzymać generowanie. */
+export type RememberedOrPending<T> = RememberedContent<T> | PendingContent;
 
 /**
  * Separator pól w odcisku: znak NUL, bo nie wystąpi w żadnej sensownej wartości wejściowej — dzięki
@@ -66,40 +90,82 @@ export function hashInputs(...parts: (string | number | null | undefined)[]): st
   return createHash("sha256").update(joined).digest("hex").slice(0, 32);
 }
 
-/**
- * Jedyne wejście do mechanizmu.
- *
- * `generate` jest wołane **tylko** wtedy, gdy nie ma zapisu albo gdy użytkownik wymusił odświeżenie
- * (`force`). Zapamiętana treść wraca bez żadnego wywołania modelu — to jest cały sens.
- */
-export async function rememberedContent<T>(args: {
+interface RememberArgs<T> {
   ownerId: string;
   kind: AiContentKind;
   scopeKey: string;
   inputHash: string;
   force?: boolean;
+  /**
+   * 041: tryb odświeżania sekcji (`resolveSectionMode`). **Pominięty = zachowanie sprzed 041**:
+   * brak zapisu → generuj. Dzięki temu sekcje przechodzą na tryb pojedynczo, a nie wszystkie naraz.
+   */
+  mode?: AiSectionMode;
   generate: () => Promise<{ value: T; usage?: AiUsageInfo }>;
-}): Promise<RememberedContent<T>> {
-  const { ownerId, kind, scopeKey, inputHash, force } = args;
+}
+
+/**
+ * Jedyne wejście do mechanizmu.
+ *
+ * `generate` jest wołane **tylko** wtedy, gdy pozwala na to tryb sekcji albo gdy użytkownik wymusił
+ * odświeżenie (`force`). Zapamiętana treść wraca bez żadnego wywołania modelu — to jest cały sens.
+ *
+ * Tabela decyzyjna (041):
+ * | stan | `onDemand` | `onChange` | `always` | bez trybu |
+ * |---|---|---|---|---|
+ * | brak zapisu | czeka | czeka | generuj | generuj |
+ * | zapis, odcisk zgodny | z pamięci | z pamięci | generuj | z pamięci |
+ * | zapis, odcisk inny | z pamięci + „nieaktualne" | generuj | generuj | z pamięci + „nieaktualne" |
+ * | `force` | generuj | generuj | generuj | generuj |
+ *
+ * Dwa warianty zwracanego typu są rozdzielone **przeciążeniami**: wywołanie bez trybu nigdy nie
+ * zwróci stanu oczekiwania, więc dotychczasowi wołający nie muszą go obsługiwać.
+ */
+export async function rememberedContent<T>(
+  args: RememberArgs<T> & { mode: AiSectionMode }
+): Promise<RememberedOrPending<T>>;
+export async function rememberedContent<T>(
+  args: RememberArgs<T> & { mode?: undefined }
+): Promise<RememberedContent<T>>;
+export async function rememberedContent<T>(
+  args: RememberArgs<T>
+): Promise<RememberedOrPending<T>> {
+  const { ownerId, kind, scopeKey, inputHash, force, mode } = args;
 
   const existing = await prisma.aiContent.findUnique({
     where: { ownerId_kind_scopeKey: { ownerId, kind, scopeKey } },
   });
 
-  if (existing && !force) {
+  // `always` znaczy „model odpowiada przy każdym wejściu" — nie ma po co czytać pamięci.
+  if (existing && !force && mode !== "always") {
     const value = decode<T>(existing.content);
     // Uszkodzony wpis traktujemy jak brak wpisu: najwyżej treść powstanie ponownie. Wysypanie
     // strony przez jeden zepsuty JSON byłoby znacznie gorsze niż jedno dodatkowe wywołanie modelu.
     if (value !== undefined) {
-      return {
-        value,
-        generatedAt: existing.updatedAt.toISOString(),
-        stale: existing.inputHash !== inputHash,
-        fromMemory: true,
-        refreshes: existing.refreshes,
-        usage: parseStoredUsage(existing.usage),
-      };
+      const stale = existing.inputHash !== inputHash;
+      // `onChange` to jedyny tryb, w którym rozjazd warunków sam sięga po model. W pozostałych
+      // treść zostaje na ekranie ze znacznikiem „nieaktualne" — bo znikająca treść jest gorsza od
+      // treści sprzed godziny, a o wywołaniu modelu decyduje użytkownik.
+      if (!(mode === "onChange" && stale)) {
+        return {
+          value,
+          generatedAt: existing.updatedAt.toISOString(),
+          stale,
+          fromMemory: true,
+          refreshes: existing.refreshes,
+          usage: parseStoredUsage(existing.usage),
+          pending: false,
+        };
+      }
     }
+  }
+
+  // Nie ma czego pokazać, a tryb zabrania generować samoczynnie — sekcja czeka na kliknięcie.
+  // Dotyczy to również wpisu, którego nie dało się odczytać: skoro treści nie ma, użytkownik i tak
+  // musi zdecydować, czy warto za nią zapłacić.
+  if (!force && (mode === "onDemand" || mode === "onChange")) {
+    const readable = existing ? decode<T>(existing.content) !== undefined : false;
+    if (!readable) return { pending: true, stale: false, fromMemory: false, refreshes: 0 };
   }
 
   const fresh = await args.generate();
@@ -132,6 +198,7 @@ export async function rememberedContent<T>(args: {
     fromMemory: false,
     refreshes: row.refreshes,
     usage: fresh.usage,
+    pending: false,
   };
 }
 
