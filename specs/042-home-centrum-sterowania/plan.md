@@ -490,6 +490,21 @@ npm run check:migrations && npm run check:actions && npm run check:ai-coverage \
 
 ---
 
+## 9a. Zmiana zakresu wprowadzona po weryfikacji (C-54)
+
+**Naprawa błędu hydratacji `MARKDOWN_STYLES`** (15 plików: `<style>{MARKDOWN_STYLES}</style>` →
+`<style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />`).
+
+Plan nie przewidywał tej zmiany i świadomie stawiał ją poza zakresem. Weryfikacja wykazała jednak, że
+React escapuje cudzysłowy w tekstowym dziecku `<style>` **tylko** przy renderowaniu na serwerze, co
+tworzy rozjazd hydratacji i przełącza cały korzeń na renderowanie po stronie klienta. Skutkiem było
+przemontowywanie drzewa, gubienie stanu lokalnego (popover gwiazdki) i bezczynne `router.push`
+z natywnego listenera — czyli **blokada AC-1, AC-5, AC-6 i AC-7**. Dowód: po samej tej poprawce,
+bez żadnej zmiany w kodzie skrótu, `Alt+1` zaczął nawigować.
+
+Zmiana jest mechaniczna i nie zmienia zachowania (treść to statyczna stała autorstwa dewelopera),
+a bez niej feature nie przechodzi własnych kryteriów akceptacji.
+
 ## 10. Zgodność z konstytucją — checklista
 
 - [x] **C-10..C-14** — ręczny plik migracji `0221_ulubione_widoki` (numer z `npm run next:migration`,

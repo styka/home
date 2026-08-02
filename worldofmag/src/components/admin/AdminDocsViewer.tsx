@@ -34,7 +34,7 @@ export function AdminDocsViewer({ docs, generatedAt }: { docs: AdminDoc[]; gener
 
   return (
     <div>
-      <style>{MARKDOWN_STYLES}</style>
+      <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>

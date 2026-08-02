@@ -42,7 +42,7 @@ export default async function UserReportPage({ params }: { params: { slug: strin
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)" }}>
-      <style>{MARKDOWN_STYLES}</style>
+      <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
 
       {/* Top bar */}
       <div style={{

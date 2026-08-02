@@ -18,7 +18,7 @@ export default async function LegalDocPage({ params }: { params: { key: string }
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)" }}>
-      <style>{MARKDOWN_STYLES}</style>
+      <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
 
       <div style={{
         padding: "12px 16px", borderBottom: "1px solid var(--border)",

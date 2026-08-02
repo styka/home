@@ -1540,7 +1540,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
 
   return (
     <>
-      <style>{MARKDOWN_STYLES}</style>
+      <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
 
       {/* FAB — akcja główna (najwyższy z-index wśród pływających przycisków, by
           ewentualnie zasłaniać przycisk admina, nigdy odwrotnie). Chowany, gdy

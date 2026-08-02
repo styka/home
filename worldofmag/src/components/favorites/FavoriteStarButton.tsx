@@ -36,10 +36,22 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
   // Pełny adres (ze `?query`) czytamy z przeglądarki, a NIE przez `useSearchParams`.
   // `useSearchParams` w komponencie powłoki wymusza granicę Suspense i potrafi zepchnąć
   // całą aplikację w renderowanie po stronie klienta — a powłoka opakowuje każdą stronę.
+  //
+  // 042/T-22: stan z efektu służy WYŁĄCZNIE do wyglądu (gwiazdka pełna/pusta). Przycisk NIE jest
+  // przez niego blokowany, bo `disabled={!fullPath}` sprawiało, że przy pierwszym renderze — i przy
+  // każdym ponownym zamontowaniu drzewa — gwiazdka była nieklikalna. Weryfikacja E2E wielokrotnie
+  // trafiała wtedy na `<button disabled>`. Adres do zapisu wyliczamy synchronicznie w momencie
+  // kliknięcia (`currentPath()`), więc poprawność nie zależy od tego, czy efekt zdążył się wykonać.
   const [fullPath, setFullPath] = useState<string | null>(null);
   useEffect(() => {
     setFullPath(normalizeFavoritePath(window.location.pathname + window.location.search));
   }, [pathname]);
+
+  /** Bieżący adres liczony na żądanie — jedyne źródło prawdy przy zapisie/usuwaniu. */
+  function currentPath(): string | null {
+    if (typeof window === "undefined") return null;
+    return normalizeFavoritePath(window.location.pathname + window.location.search);
+  }
 
   const [open, setOpen] = useState(false);
   const [label, setLabel] = useState("");
@@ -69,19 +81,23 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.select(), 20); }, [open]);
 
   function handleClick() {
-    if (!fullPath) return;
+    const path = currentPath();
+    if (!path) return;
     setError(null);
+    // Stan „zapisane" liczymy tu ponownie z aktualnego adresu, a nie z `isSaved` — to ostatnie
+    // pochodzi z efektu i przy świeżym montowaniu może być jeszcze nieustawione.
+    const alreadySaved = favorites.some((f) => f.path === path);
 
-    if (isSaved) {
+    if (alreadySaved) {
       startTransition(async () => {
-        await removeFavoriteViewByPath(fullPath);
+        await removeFavoriteViewByPath(path);
         router.refresh();
       });
       return;
     }
 
     const activeModule = MODULES.find((m) => (m.exact ? pathname === m.href : pathname.startsWith(m.href)));
-    setLabel(suggestFavoriteLabel(fullPath, activeModule?.label));
+    setLabel(suggestFavoriteLabel(path, activeModule?.label));
     setIcon(DEFAULT_FAVORITE_ICON);
     setColor(activeModule?.color && (FAVORITE_COLORS as readonly string[]).includes(activeModule.color)
       ? activeModule.color
@@ -90,10 +106,11 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
   }
 
   function handleSave() {
-    if (!fullPath) return;
+    const path = currentPath();
+    if (!path) return;
     startTransition(async () => {
       try {
-        await addFavoriteView({ label, path: fullPath, icon, color });
+        await addFavoriteView({ label, path, icon, color });
         setOpen(false);
         router.refresh();
       } catch (e) {
@@ -107,7 +124,7 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
   const trigger = (
     <button
       onClick={handleClick}
-      disabled={!fullPath || isPending}
+      disabled={isPending}
       title={title}
       aria-label={title}
       aria-pressed={isSaved}
@@ -120,8 +137,7 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
         color: isSaved ? "var(--accent-amber)" : "var(--text-muted)",
         background: "transparent",
         border: "none",
-        cursor: fullPath ? "pointer" : "default",
-        opacity: fullPath ? 1 : 0.4,
+        cursor: "pointer",
         // Cel dotyku ≥32 px (C-31).
         ...(placement === "topbar" ? { width: 32, height: 32 } : null),
       }}

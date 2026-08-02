@@ -4,6 +4,26 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-02 — `<style>{CSS}</style>` w Reakcie psuje hydratację CAŁEJ aplikacji
+**Problem:** Nowa funkcja (ulubione widoki) zachowywała się losowo: gwiazdka bywała nieklikalna,
+popover znikał zaraz po otwarciu, a skrót `Alt+1` nie nawigował, mimo że zdarzenie docierało
+z poprawnymi flagami, a `Alt+0` działał. Wyglądało to na błąd w nowym kodzie — nie było nim.
+W konsoli przeglądarki siedziało: `Text content does not match server-rendered HTML` ze stosu
+`at style at AICommandSheet`, a zaraz po nim `There was an error while hydrating. … the entire root
+will switch to client rendering`.
+**Rozwiązanie:** Przyczyną było `<style>{MARKDOWN_STYLES}</style>`. React **escapuje cudzysłowy
+w tekstowym dziecku** przy renderowaniu na serwerze (`content: &quot;•&quot;`), a na kliencie już nie
+(`content: "•"`) — powstaje rozjazd, React porzuca drzewo z serwera i przemontowuje cały korzeń.
+Każde przemontowanie kasowało stan lokalny komponentów (otwarty popover) i psuło instancję routera
+(`router.push` z natywnego listenera stawał się bezczynny). Poprawka: `<style
+dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />` w 15 miejscach — treść jest statyczną stałą
+autorstwa dewelopera, więc jest to bezpieczne, a serwer i klient generują identyczny HTML.
+**Lekcja:** Nie wstawiaj CSS jako **tekstowego dziecka** `<style>` w Reakcie, jeśli reguły zawierają
+cudzysłowy (`content:`, `font-family: "…"`). Używaj `dangerouslySetInnerHTML` albo trzymaj CSS
+w prawdziwym arkuszu. I szerzej: **zanim zaczniesz debugować własny nowy kod, sprawdź konsolę pod
+kątem błędu hydratacji** — jeden taki błąd degraduje całą aplikację (traci renderowanie serwerowe,
+gubi stan, rozstraja router), a objawy pojawiają się w zupełnie niezwiązanych miejscach.
+
 ## 2026-08-02 — Dotyk udaje najechanie i ZOSTAWIA ślad (`:hover` na ekranie dotykowym)
 **Problem:** Checkbox zaznaczania zadania był ujawniany klasą `opacity-0 group-hover:opacity-100`.
 Na telefonie dotknięcie wiersza w celu **przewinięcia listy** zapalało checkbox — i zostawiało go

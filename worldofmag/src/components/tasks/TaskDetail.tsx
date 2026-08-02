@@ -473,7 +473,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
 
         {/* Description — Markdown: klik = edycja, blur = render */}
         <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <style>{MARKDOWN_STYLES}</style>
+          <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
           {editingDesc ? (
             <textarea
               autoFocus

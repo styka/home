@@ -24,7 +24,7 @@ export function ScenarioPage({ scenario, contentHtml }: ScenarioPageProps) {
 
   return (
     <div style={pageContainerStyle}>
-      <style>{MARKDOWN_STYLES}</style>
+      <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
       <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
         {/* Breadcrumb */}
         <nav

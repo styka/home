@@ -302,7 +302,7 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
 
       {recipe.images.length > 0 ? (
         <section className="mt-6">
-          <style>{MARKDOWN_STYLES}</style>
+          <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
           <h2 className="text-sm font-semibold mb-2 uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
             Zdjęcia z przepisu
           </h2>

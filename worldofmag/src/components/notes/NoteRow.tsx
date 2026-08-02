@@ -275,7 +275,7 @@ export function NoteRow({
               placeholder="Treść notatki (markdown)..."
             />
             <div style={{ border: "1px solid var(--border)", borderRadius: 6, padding: 8, overflow: "auto", maxHeight: 240 }}>
-              <style>{MARKDOWN_STYLES}</style>
+              <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
               <div
                 className="markdown-body"
                 style={{ fontSize: 13 }}

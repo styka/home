@@ -221,7 +221,7 @@
 
 ## Faza 7 — Poprawki po weryfikacji (wejście z `verify.md`)
 
-- [ ] **T-22** — **D-1: gwiazdka nie może być wyłączona przez czas wykonania efektu** (blokuje AC-1,
+- [x] **T-22** — **D-1: gwiazdka nie może być wyłączona przez czas wykonania efektu** (blokuje AC-1,
   a pośrednio AC-6/AC-7/AC-24).
   `FavoriteStarButton` ma dziś `disabled={!fullPath || isPending}`, a `fullPath` powstaje w `useEffect`.
   Przy ponownym montowaniu drzewa (realnie zachodzi — D-3) przycisk bywa nieklikalny; Playwright
@@ -232,7 +232,7 @@
   *Gotowe, gdy:* gwiazdka jest klikalna natychmiast po wejściu na stronę, a zapis nadal zachowuje
   parametry zapytania.
 
-- [ ] **T-23** — **D-2: `Alt+1..9` musi faktycznie nawigować** (AC-5).
+- [x] **T-23** — **D-2: `Alt+1..9` musi faktycznie nawigować** (AC-5).
   Stan ustalony w weryfikacji: zdarzenie dociera poprawnie (`code:"Digit1"`, `alt:true`,
   `ctrl:false`), `Alt+0` otwiera przełącznik, ale `router.push` nie zmienia adresu — także w
   wariantach `setTimeout(…,0)` i `startTransition`. Ta sama metoda działa z reactowego handlera
@@ -243,20 +243,21 @@
   *Gotowe, gdy:* test `[fav-AC5]` przechodzi — `Alt+1` przenosi pod adres pierwszego ulubionego,
   a `Control+Alt+Digit1` (AltGr) **nie** nawiguje.
 
-- [ ] **T-24** — **Dokończyć przebieg E2E** `e2e/specs/favorites.spec.ts` (AC-6, AC-7, AC-24).
+- [x] **T-24** — **Dokończyć przebieg E2E** `e2e/specs/favorites.spec.ts` (AC-6, AC-7, AC-24).
   Testy są napisane, ale tryb `serial` przerywał serię po pierwszym błędzie.
   *Gotowe, gdy:* cały plik jest zielony, a spec dodany do repo.
 
-- [ ] **T-25** `[P]` — **Pomiary AC-16 i AC-17 w przeglądarce.**
+- [x] **T-25** `[P]` — **Pomiary AC-16 i AC-17 w przeglądarce.**
   AC-16: `document.scrollingElement.scrollWidth === clientWidth` przy 390 / 900 / 1440 px.
   AC-17: przełączenie skórki jasnej i ciemnej bez utraty czytelności.
   *Gotowe, gdy:* oba pomiary mają odnotowany wynik w `verify.md`.
 
-> **Poza zakresem 042 (do osobnego specu):** preegzystujący błąd hydratacji z `MARKDOWN_STYLES`
-> w `AICommandSheet` (`content: "•"` serializowane inaczej na serwerze i kliencie) — powoduje
-> „the entire root will switch to client rendering", czyli **cała aplikacja traci renderowanie
-> serwerowe**. Nie jest to regresja tej zmiany (kod z `76451ea`, `lib/markdown.ts` ostatnio ruszany
-> 2026-07-20 na `master`), ale skutek jest poważny i zasługuje na własne rozpoznanie.
+> **ROZSZERZENIE ZAKRESU (C-54) — błąd hydratacji `MARKDOWN_STYLES` naprawiony w tym specu.**
+> Pierwotnie zakwalifikowany jako „poza zakresem", ale weryfikacja wykazała, że **blokuje AC-1, AC-5,
+> AC-6 i AC-7**: przemontowanie korzenia kasowało stan popovera gwiazdki i unieruchamiało
+> `router.push` z natywnego listenera. Po naprawie (`<style dangerouslySetInnerHTML>` w 15 miejscach)
+> `Alt+1` zaczął nawigować **bez żadnej zmiany w kodzie skrótu** — czyli D-2 nigdy nie był defektem
+> ulubionych. To przestało być „refaktorem przy okazji" (C-53), a stało się warunkiem odbioru.
 
 ## Mapowanie kryteriów akceptacji → zadania
 

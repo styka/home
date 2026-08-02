@@ -15,15 +15,34 @@ test.describe.configure({ mode: "serial" });
 const STAR_SAVE = /Zapisz to miejsce w ulubionych/i;
 const STAR_REMOVE = /Usuń to miejsce z ulubionych/i;
 
+/**
+ * Otwiera popover gwiazdki na BIEZACEJ stronie i zapisuje widok pod podana nazwa.
+ *
+ * `waitForLoadState("networkidle")` przed klikiem jest istotny: po `router.refresh()` z poprzedniego
+ * kroku drzewo bywa jeszcze przemontowywane, a popover trzyma stan lokalnie — klik trafiony w to
+ * okno gubil otwarty popover.
+ */
+async function saveCurrentAs(page: import("@playwright/test").Page, name: string) {
+  await page.waitForLoadState("networkidle").catch(() => {});
+  await page.getByRole("button", { name: /Zapisz to miejsce w ulubionych/i }).click();
+  await page.getByPlaceholder("Nazwa widoku…").fill(name);
+  await page.getByRole("button", { name: "Zapisz", exact: true }).click();
+  await page.getByRole("button", { name: /Usuń to miejsce z ulubionych/i }).waitFor({ timeout: 15_000 });
+}
+
 /** Sprząta ulubione przez interfejs ustawień, żeby testy nie zależały od kolejności. */
 async function clearFavorites(page: import("@playwright/test").Page) {
-  await page.goto("/settings");
+  const sel = 'button[aria-label^="Usu"][aria-label$="z ulubionych"]';
   for (let i = 0; i < 40; i++) {
-    const del = page.locator('button[aria-label^="Usu"][aria-label$="z ulubionych"]').first();
-    if (!(await del.isVisible().catch(() => false))) break;
-    await del.click();
-    await page.waitForTimeout(250);
+    await page.goto("/settings");
+    await page.waitForLoadState("networkidle").catch(() => {});
+    const n = await page.locator(sel).count();
+    if (n === 0) return;
+    await page.locator(sel).first().click();
+    // Kasowanie idzie przez Server Action + router.refresh() — czekamy, az lista sie przeliczy.
+    await expect(page.locator(sel)).toHaveCount(n - 1, { timeout: 15_000 });
   }
+  throw new Error("Nie udalo sie wyczyscic ulubionych w 40 iteracjach");
 }
 
 test.describe("042 — ulubione widoki", () => {
@@ -34,15 +53,8 @@ test.describe("042 — ulubione widoki", () => {
   test("[fav-AC1-AC2-AC3] zapis z filtrami, powrót pod ten sam adres, przełącznik", async ({ page }) => {
     // AC-1: zapisujemy miejsce WRAZ z parametrami zapytania.
     await page.goto("/tasks?status=DONE&x=1");
-    await page.getByRole("button", { name: STAR_SAVE }).click();
-
-    const nameInput = page.getByPlaceholder("Nazwa widoku…");
-    await expect(nameInput).toBeVisible();
-    await nameInput.fill("Zrobione zadania");
-    await page.getByRole("button", { name: "Zapisz", exact: true }).click();
-
     // Po zapisie gwiazdka przechodzi w stan „w ulubionych" (AC-3, pierwsza połowa).
-    await expect(page.getByRole("button", { name: STAR_REMOVE })).toBeVisible({ timeout: 10_000 });
+    await saveCurrentAs(page, "Zrobione zadania");
 
     // AC-2: wejście z ulubionych wraca DOKŁADNIE pod ten sam adres z filtrami.
     await page.goto("/notes");
@@ -56,24 +68,20 @@ test.describe("042 — ulubione widoki", () => {
 
   test("[fav-AC9] ponowny zapis tego samego adresu nie tworzy duplikatu", async ({ page }) => {
     await page.goto("/notes");
-    await page.getByRole("button", { name: STAR_SAVE }).click();
-    await page.getByPlaceholder("Nazwa widoku…").fill("Notatki raz");
-    await page.getByRole("button", { name: "Zapisz", exact: true }).click();
-    await expect(page.getByRole("button", { name: STAR_REMOVE })).toBeVisible({ timeout: 10_000 });
+    await saveCurrentAs(page, "Notatki raz");
 
     // Wymuszamy drugi zapis tej samej ścieżki bezpośrednio przez akcję serwera:
     // interfejs pokazuje już „usuń", więc duplikat mógłby powstać tylko tędy.
     await page.goto("/settings");
-    const rows = page.locator('button[aria-label^="Usu"][aria-label$="z ulubionych"]');
+    // AC-9 mowi o BRAKU DUPLIKATU TEGO SAMEGO widoku — liczymy wiec wpisy o tej nazwie,
+    // a nie wszystkie ulubione (te moga zostac po innych testach w tej samej bazie).
+    const rows = page.locator('button[aria-label*="Notatki raz"][aria-label$="z ulubionych"]');
     await expect(rows).toHaveCount(1);
   });
 
   test("[fav-AC4] przełącznik z wyszukiwaniem działa z dowolnej strony", async ({ page }) => {
     await page.goto("/kitchen");
-    await page.getByRole("button", { name: STAR_SAVE }).click();
-    await page.getByPlaceholder("Nazwa widoku…").fill("Kuchnia moja");
-    await page.getByRole("button", { name: "Zapisz", exact: true }).click();
-    await expect(page.getByRole("button", { name: STAR_REMOVE })).toBeVisible({ timeout: 10_000 });
+    await saveCurrentAs(page, "Kuchnia moja");
 
     // Ze strony NIEBĘDĄCEJ pulpitem otwieramy pełną listę i filtrujemy ją.
     await page.goto("/portfel");
@@ -90,10 +98,7 @@ test.describe("042 — ulubione widoki", () => {
 
   test("[fav-AC5] Alt+1 skacze do pierwszego ulubionego, AltGr nie przechwytuje pisania", async ({ page }) => {
     await page.goto("/notes");
-    await page.getByRole("button", { name: STAR_SAVE }).click();
-    await page.getByPlaceholder("Nazwa widoku…").fill("Notatki skrót");
-    await page.getByRole("button", { name: "Zapisz", exact: true }).click();
-    await expect(page.getByRole("button", { name: STAR_REMOVE })).toBeVisible({ timeout: 10_000 });
+    await saveCurrentAs(page, "Notatki skrót");
 
     await page.goto("/kitchen");
     await page.keyboard.press("Alt+Digit1");
@@ -114,15 +119,13 @@ test.describe("042 — ulubione widoki", () => {
   });
 
   test("[fav-AC7] zarządzanie: zmiana nazwy i usunięcie", async ({ page }) => {
-    await page.goto("/habits");
-    await page.getByRole("button", { name: STAR_SAVE }).click();
-    await page.getByPlaceholder("Nazwa widoku…").fill("Nawyki stare");
-    await page.getByRole("button", { name: "Zapisz", exact: true }).click();
-    await expect(page.getByRole("button", { name: STAR_REMOVE })).toBeVisible({ timeout: 10_000 });
+    await page.goto("/shopping");
+    await saveCurrentAs(page, "Nawyki stare");
 
     await page.goto("/settings");
     await page.locator('button[aria-label^="Zmie"][aria-label*="Nawyki stare"]').click();
-    const editor = page.locator('input[value="Nawyki stare"]');
+    // Kontrolowany input Reacta nie ma atrybutu `value` w DOM — bierzemy pole, ktore dostalo focus.
+    const editor = page.locator("input:focus");
     await editor.fill("Nawyki nowe");
     await editor.press("Enter");
     await expect(page.getByText("Nawyki nowe")).toBeVisible({ timeout: 10_000 });
@@ -133,10 +136,7 @@ test.describe("042 — ulubione widoki", () => {
 
   test("[fav-AC10] ulubione żyją przy koncie, nie w przeglądarce", async ({ page, context }) => {
     await page.goto("/notes");
-    await page.getByRole("button", { name: STAR_SAVE }).click();
-    await page.getByPlaceholder("Nazwa widoku…").fill("Trwałe notatki");
-    await page.getByRole("button", { name: "Zapisz", exact: true }).click();
-    await expect(page.getByRole("button", { name: STAR_REMOVE })).toBeVisible({ timeout: 10_000 });
+    await saveCurrentAs(page, "Trwałe notatki");
 
     // Czyścimy CAŁY magazyn przeglądarki — zostają tylko ciasteczka sesji.
     await context.clearCookies({ name: "nonexistent" }).catch(() => {});
@@ -147,37 +147,43 @@ test.describe("042 — ulubione widoki", () => {
 });
 
 test.describe("042 — poprawki UX", () => {
-  test("[ux-AC24] czyszczenie kupionych pozycji wymaga potwierdzenia", async ({ page, shopping }) => {
-    // Budujemy własne dane: lista + pozycja przestawiona w stan kupione (DONE),
-    // żeby przycisk „Wyczyść" w ogóle się pojawił.
-    const listName = `AC24 ${Date.now()}`;
-    await shopping.open();
-    await shopping.createList(listName);
-    await expect(page).toHaveURL(/\/shopping\/.+/);
-    await shopping.addItem("mleko");
+  test("[ux-AC24] czyszczenie kupionych pozycji wymaga potwierdzenia", async ({ page }) => {
+    // Dane przygotowujemy w bazie, a nie klikaniem — testujemy POTWIERDZENIE, nie zakladanie listy.
+    const { PrismaClient } = await import("@prisma/client");
+    const { E2E_ADMIN } = await import("../fixtures/users");
+    const prisma = new PrismaClient();
+    let listId = "";
+    try {
+      const user = await prisma.user.findUniqueOrThrow({ where: { email: E2E_ADMIN.email } });
+      const list = await prisma.shoppingList.create({
+        data: { name: `AC24 ${Date.now()}`, ownerId: user.id },
+      });
+      listId = list.id;
+      await prisma.item.create({ data: { listId: list.id, name: "mleko", status: "DONE" } });
+    } finally {
+      await prisma.$disconnect();
+    }
 
-    const row = page.getByText("mleko", { exact: false }).first();
-    await expect(row).toBeVisible({ timeout: 10_000 });
-
-    // `x` przechodzi przez cykl statusów: NEEDED → IN_CART → DONE.
-    await row.click();
-    await page.keyboard.press("x");
-    await page.waitForTimeout(400);
-    await page.keyboard.press("x");
-    await page.waitForTimeout(800);
+    await page.goto(`/shopping/${listId}`);
+    await page.waitForLoadState("networkidle").catch(() => {});
 
     const clear = page.getByTitle(/Wyczyść zakończone elementy/);
-    await expect(clear).toBeVisible({ timeout: 10_000 });
+    await expect(clear).toBeVisible({ timeout: 15_000 });
     await clear.click();
 
-    // Kluczowe: pozycje NIE znikają bez potwierdzenia — `clearDoneItems` kasuje twardo, bez kosza.
+    // Kluczowe: pozycje NIE znikaja bez potwierdzenia — clearDoneItems kasuje twardo, bez kosza.
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText(/nie da się cofnąć/i)).toBeVisible();
+    await expect(dialog.getByText(/1 kupiona pozycja/)).toBeVisible();
 
     await dialog.getByRole("button", { name: "Anuluj" }).click();
     await expect(page.getByTitle(/Wyczyść zakończone elementy/)).toBeVisible();
-    await expect(page.getByText("mleko", { exact: false }).first()).toBeVisible();
+
+    // Dopiero potwierdzenie kasuje.
+    await page.getByTitle(/Wyczyść zakończone elementy/).click();
+    await page.getByRole("dialog").getByRole("button", { name: /^Usuń/ }).click();
+    await expect(page.getByTitle(/Wyczyść zakończone elementy/)).toHaveCount(0, { timeout: 15_000 });
   });
 
   test("[ux-AC25-AC26] Notatki maja Foldery, Zadania zostaja przy Grupach", async ({ page }) => {
