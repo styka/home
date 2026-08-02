@@ -74,7 +74,12 @@ export function AiContentMeta({
   return (
     <div className="text-[11px] text-[var(--text-muted)]">
       {/* Jedna linia w spoczynku (AC-5, AC-13). `flex-wrap` jest tu po to, żeby na wąskim ekranie
-          pasek złamał się na dwie linie zamiast rozepchnąć stronę w bok. */}
+          pasek złamał się na dwie linie zamiast rozepchnąć stronę w bok.
+
+          041/T-21: przyciski mają `py-3` — cel dotyku z C-31. Subtelność bierze się z ROZMIARU I
+          KOLORU tekstu (11 px, `--text-muted`), a nie z ciasnego obszaru klikalnego; pasek zostaje
+          jedną linią, tylko wyższą o kilkanaście pikseli. Ciasny przycisk nie jest „subtelny",
+          tylko trudny do trafienia kciukiem. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         {generatedAt && <span>Wygenerowano {formatWhen(generatedAt)}</span>}
         {stale && (
@@ -91,7 +96,7 @@ export function AiContentMeta({
           <button
             onClick={onRefresh}
             disabled={busy}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded px-2 py-3 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-50"
             title="Wygeneruj treść na nowo"
           >
             {busy ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
@@ -102,7 +107,7 @@ export function AiContentMeta({
           <button
             onClick={() => setShowModes((v) => !v)}
             aria-expanded={showModes}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+            className="inline-flex items-center gap-1 rounded px-2 py-3 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
             title="Kiedy ta sekcja ma się odświeżać"
           >
             <Settings2 size={11} />

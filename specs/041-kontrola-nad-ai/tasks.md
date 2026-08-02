@@ -123,7 +123,7 @@
 
 ## Faza 8 — Nawrót z `/verify` (2026-08-02)
 
-- [ ] **T-21** — **Cele dotyku w pasku sekcji AI (C-31, AC-13).** W stanie spoczynku przycisk
+- [x] **T-21** — **Cele dotyku w pasku sekcji AI (C-31, AC-13).** W stanie spoczynku przycisk
       odświeżania i przycisk trybu mają `px-1.5 py-1` przy tekście 11 px (≈23 px), a wyzwalacz kosztu
       `padding: 0` przy 10,5 px (≈14 px) — poniżej minimum `py-3`. Powiększyć **obszar dotyku**, nie
       wagę wizualną: pasek ma zostać jedną linią i pozostać subtelny (prośba właściciela, spec §9).

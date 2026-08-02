@@ -159,7 +159,14 @@ export function AiCostBadge({
         style={{
           display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10.5,
           color: "var(--text-muted)", background: "none", border: "none",
-          cursor: "pointer", padding: 0, opacity: 0.85,
+          cursor: "pointer", opacity: 0.85,
+          // 041: `padding: 0` dawało cel dotyku ~14 px wysokości — poniżej minimum z C-31, a to jest
+          // reguła globalna, więc wskaźnik łamał ją wszędzie, nie tylko w pasku sekcji AI. Rośnie
+          // WYŁĄCZNIE obszar klikalny: rozmiar i kolor tekstu zostają, więc waga wizualna też.
+          // Świadomie bez ujemnego marginesu „kompensującego" — wyciągnięty obszar dotyku zachodziłby
+          // wtedy na sąsiedni wiersz, gdy pasek się zawinie, a nakładające się cele dotyku są gorsze
+          // od paska wyższego o kilkanaście pikseli.
+          padding: "11px 6px",
         }}
       >
         {label} {open ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
