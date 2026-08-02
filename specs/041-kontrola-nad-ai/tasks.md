@@ -1,7 +1,7 @@
 # Zadania: Kontrola nad AI — kiedy generuje, ile kosztuje, co robi bez pytania
 
 - **Plan:** ./plan.md (041-kontrola-nad-ai)
-- **Status:** todo
+- **Status:** zaimplementowane (wejście do `/verify`)
 - **Data:** 2026-08-01
 
 > **Zasada listy:** od najłatwiejszego do najtrudniejszego, zgodnie z zależnościami. Trzy zgłoszenia
@@ -123,19 +123,19 @@
 
 ## Faza 7 — Bramki i domknięcie
 
-- [ ] **T-17** — **Pełna sekwencja bramek na lokalnym Postgresie (C-13):** `copy-docs →
+- [x] **T-17** — **Pełna sekwencja bramek na lokalnym Postgresie (C-13):** `copy-docs →
       check:actions → check:ai-coverage → check:cost-badge → check:content-memory →
       check:migrations → next lint → prisma generate → next build` + `npm run test:unit`.
       **Bez** `scripts/migrate.js`.
       *Gotowe, gdy:* wszystkie kroki zielone. **(C-50)**
 
-- [ ] **T-18** — **Dokumentacja** — `CLAUDE.md`: tryby sekcji AI (nowy mechanizm przekrojowy),
+- [x] **T-18** — **Dokumentacja** — `CLAUDE.md`: tryby sekcji AI (nowy mechanizm przekrojowy),
       historia przebiegów Wiadomości, auto-zatwierdzanie, selektor tematów; nowe modele w schemacie.
 
-- [ ] **T-19** — **`doświadczenia.md` (C-51)** — wpisy o tym, co wyszło nieoczywistego (spodziewane:
+- [x] **T-19** — **`doświadczenia.md` (C-51)** — wpisy o tym, co wyszło nieoczywistego (spodziewane:
       `NULL != NULL` w unique PostgreSQL jako powód wyboru `Config` zamiast wiersza systemowego).
 
-- [ ] **T-20** — **Mapowanie AC → wynik** jako wejście do `/verify`.
+- [x] **T-20** — **Mapowanie AC → wynik** jako wejście do `/verify`.
 
 ---
 
@@ -197,3 +197,55 @@ T-1 (nawigacja)  — bez żadnych zależności, może iść pierwsza
 - **T-14 dotyka ścieżki wykonywania akcji asystenta** — najbardziej wrażliwego miejsca w tym wydaniu.
   Klasyfikacja niszczących musi pochodzić z `DESTRUCTIVE_ACTION_TYPES`; druga lista byłaby cichą
   luką przy dodaniu kolejnej akcji usuwającej.
+
+---
+
+## Wynik implementacji — mapowanie AC na dowód (wejście do `/verify`)
+
+| AC | Zadanie(a) | Dowód |
+|---|---|---|
+| AC-1 brak generowania bez kliknięcia | T-5, T-8 | test `contentMemoryMode` liczy wywołania `generate` = 0 przy „na żądanie" bez zapisu |
+| AC-2 zapamiętana treść widoczna od razu | T-5, T-8 | test „powrót na stronę NIC nie kosztuje" |
+| AC-3 znacznik „aktualne" | T-5, T-7 | `stale: false` przy zgodnym odcisku; pasek bez znacznika |
+| AC-4 znacznik „nieaktualne", treść nie znika | T-5, T-7 | test „na żądanie: brak wywołania mimo zmiany warunków" + `pending: false` |
+| AC-5 komplet w jednym miejscu | T-7..T-10 | `AiCostBadge` renderowany **wewnątrz** `AiContentMeta`; osobne badge'e usunięte z pięciu miejsc |
+| AC-6 rozbicie kosztu per sekcja | T-7 | `usage` przekazywane per sekcja do paska |
+| AC-7 wybór jednego z trzech trybów | T-6, T-7 | `setSectionMode` + rozwijany wybór pod „⚙" |
+| AC-8 „na żądanie" nie woła modelu | T-5, T-8 | jw. AC-1 |
+| AC-9 „przy zmianie danych" reaguje na hash | T-5 | test „przy zmianie: dokładnie jedno wywołanie" |
+| AC-10 dziedziczenie po administratorze | T-4, T-16 | test „brak preferencji → dziedziczenie po administratorze (Config)" |
+| AC-11 własne ≠ systemowe | T-6, T-16 | test „własne i systemowe to dwa rozłączne zapisy" |
+| AC-12 trwałość ustawienia | T-6 | `AiSectionPref` (upsert po `[ownerId, sectionKind]`) |
+| AC-13 subtelność i dostępność kciukiem | T-7 | jedna linia w spoczynku, wybór zwinięty, pozycje `py-3` |
+| AC-14 koszt czytelny po fakcie | T-11, T-12 | `NewsRefreshRun` + „Historia odświeżeń" w `NewsPage` |
+| AC-15 szczegóły dla administratora | T-12 | `visibleUsage` przy odczycie → `AiCostBadge` w wierszu historii |
+| AC-16 nie-administrator bez danych kosztowych | T-12 | `getNewsRefreshHistory` przepuszcza `usage` przez `visibleUsage` **po stronie serwera** |
+| AC-17 rozróżnialne przebiegi | T-11 | test „dwa przebiegi = dwa wiersze" + „skasowanie zadania NIE usuwa historii" |
+| AC-18 bezpieczne bez klikania | T-14 | `autoApproveRef` + `!actions.some(isDestructiveAction)` → `handleExecute` |
+| AC-19 niszczące nadal pytają | T-14 | jedna akcja niszcząca kieruje **cały** plan do szuflady |
+| AC-20 trwałość między sesjami | T-13 | `AssistantPref.autoApprove` (migracja 0220) |
+| AC-21 przełączanie bez opuszczania czatu | T-15 | przełącznik na dole menu poziomu pracy (nad kompozytorem) |
+| AC-22 widoczny stan trybu | T-15 | znacznik „auto" w nagłówku czatu, dopóki tryb jest włączony |
+| AC-23 pełne nazwy, dwa kroki | T-1 | `TopicPicker` — lista bez `truncate`, `break-words` |
+| AC-24 wyszukiwanie tematów | T-1 | pole wyszukiwania nad listą (tytuł + filtr semantyczny) |
+| AC-25 jeden mechanizm na obu szerokościach | T-1 | brak wariantów `hidden md:*` w komponencie |
+| AC-26 widoczny temat aktywny + licznik | T-1 | zwinięty przycisk: nazwa aktywnego tematu + licznik nowych |
+
+### Stan bramek (lokalny Postgres, C-13 — bez `scripts/migrate.js`)
+
+| Bramka | Wynik |
+|---|---|
+| `check:actions` | ✓ 160 akcji, komplet egzekutorów i kontraktów |
+| `check:ai-coverage` | ✓ 539 akcji sklasyfikowanych, komplet guardów |
+| `check:cost-badge` | ✓ 34 pliki wołające model |
+| `check:content-memory` | ✓ 34 pliki (5 z pamięcią treści) |
+| `check:migrations` | ✓ następny wolny numer 0221 |
+| `next lint --dir src` | ✓ bez błędów (zostają znane ostrzeżenia kosmetyczne) |
+| `next build` | ✓ przechodzi |
+| `npm run test:unit` | ✓ **585/585** (przed 041: 567) |
+
+### Odstępstwa od planu (C-54, oba udokumentowane w `plan.md`)
+
+1. **`sectionMode.ts` rozbity na dwa pliki** — komponent kliencki nie może zaciągnąć Prismy (§3.1).
+2. **Przełącznik auto-zatwierdzania trafił do menu poziomu pracy**, a nie do panelu `prefs` — poziom
+   pracy nigdy nie mieszkał w `prefs`, a właściciel prosił o sąsiedztwo „jakości asystenta" (§5.4).
