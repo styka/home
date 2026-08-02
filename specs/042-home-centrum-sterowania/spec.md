@@ -91,7 +91,8 @@ działać. Bez skrótów do własnych miejsc system jest odbierany jako wolniejs
 - [ ] **AC-3** — Given jestem na stronie, którą już zapisałem, when ponownie użyję tej samej akcji,
   then widok zostaje usunięty z ulubionych (przełącznik działa w obie strony).
 - [ ] **AC-4** — Given mam zapisane ulubione, when jestem na **dowolnej** stronie aplikacji, then mam
-  dostęp do pełnej listy ulubionych bez wracania na stronę główną.
+  dostęp do pełnej listy ulubionych bez wracania na stronę główną — z możliwością odfiltrowania jej
+  wpisaniem fragmentu nazwy, gdy lista urośnie.
 - [ ] **AC-5** — Given mam co najmniej jeden ulubiony widok, when użyję przypisanego mu skrótu
   klawiszowego, then aplikacja natychmiast przechodzi pod ten adres.
 - [ ] **AC-6** — Given nie mam żadnego ulubionego widoku, when otwieram stronę główną i pozostałe
@@ -147,9 +148,10 @@ działać. Bez skrótów do własnych miejsc system jest odbierany jako wolniejs
 - [ ] **AC-23** — Given otwieram szczegóły zadania z opisem dłuższym niż domyślna wysokość pola, when
   wchodzę w edycję opisu, then pole **samo rozciąga się w pionie** do wysokości tekstu — bez
   wewnętrznego paska przewijania — i rośnie dalej w miarę dopisywania, do rozsądnej granicy.
-- [ ] **AC-24** — Given mam na liście zakupów pozycję kupioną/zakończoną, when kliknę ikonę usuwania,
-  then dostaję pytanie o potwierdzenie z nazwą pozycji, a usunięcie następuje **dopiero** po
-  potwierdzeniu; rezygnacja zostawia pozycję nietkniętą.
+- [ ] **AC-24** — Given mam na liście zakupów pozycje kupione/zakończone, when kliknę ikonę usuwania
+  tych pozycji w pasku listy, then dostaję pytanie o potwierdzenie **z liczbą pozycji, które znikną**,
+  i wyraźną informacją, że operacja jest nieodwracalna; usunięcie następuje **dopiero** po
+  potwierdzeniu, a rezygnacja zostawia listę nietkniętą.
 - [ ] **AC-25** — Given w module Notatki korzystam z pojemników na notatki, when patrzę na interfejs,
   then wszędzie (nawigacja, nagłówki, przyciski, komunikaty, formularze) nazywają się **„Foldery"**,
   spójnie w liczbie pojedynczej i mnogiej — nigdzie nie zostaje słowo „Grupy" w tym znaczeniu.
@@ -166,8 +168,8 @@ działać. Bez skrótów do własnych miejsc system jest odbierany jako wolniejs
 1. **Ulubione widoki jako globalny system nawigacyjny** (zadania 1.3 i 2 — ta sama funkcja z dwóch
    stron):
    - zapis dowolnego miejsca aplikacji wraz z filtrami, jednym kliknięciem z paska bieżącej strony;
-   - dostęp do ulubionych z **każdej** strony (a nie tylko z pulpitu) oraz z globalnej wyszukiwarki
-     poleceń;
+   - dostęp do ulubionych z **każdej** strony (a nie tylko z pulpitu) przez globalny przełącznik
+     ulubionych z wyszukiwaniem;
    - skróty klawiszowe do kilku pierwszych ulubionych;
    - karty ulubionych jako sekcja strony głównej;
    - zarządzanie (kolejność, nazwa, ikona/kolor, usunięcie) w jednym miejscu;
@@ -220,6 +222,11 @@ Reszta nazw jest dziedzinowa i adekwatna — zmiana na siłę pogorszyłaby UX (
   technicznych byłaby ryzykiem bez korzyści dla użytkownika (C-53).
 - **Przeprojektowanie stron wewnętrznych modułów** — ten spec dotyka strony głównej i powłoki
   nawigacyjnej; wygląd stron modułowych zostaje.
+- **Rozszerzenie istniejącej palety poleceń (`Ctrl+K`) na całą aplikację** — *korekta wprowadzona na
+  etapie planu (C-54)*. W kodzie nie ma globalnej palety poleceń: istniejąca paleta jest osadzona
+  wyłącznie w module Zakupy (i w powłoce Usług) i operuje na listach zakupowych. Uczynienie jej
+  globalną to osobny, samodzielny feature. Ulubione dostają **własny, lekki przełącznik** z polem
+  wyszukiwania — realizuje AC-4 bez przebudowy cudzego komponentu (C-53).
 
 ## 6. Wpływ na Omnia
 
