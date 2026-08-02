@@ -115,7 +115,7 @@
 
 ## Faza 6 — Ustawienia administratora
 
-- [ ] **T-16** — **Systemowe domyślne w `/admin/llm`.** Sekcja z listą sekcji AI i wyborem trybu
+- [x] **T-16** — **Systemowe domyślne w `/admin/llm`.** Sekcja z listą sekcji AI i wyborem trybu
       domyślnego; sąsiedztwo istniejących przełączników (`assistant_followups_enabled`,
       `ai_cost_badge_enabled`).
       *Gotowe, gdy:* zmiana domyślnych wpływa na użytkowników **bez** własnej preferencji i trafia do
