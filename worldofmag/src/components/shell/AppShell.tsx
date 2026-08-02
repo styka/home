@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, Calendar, Settings, Mail, Shield, Map, Image as ImageIcon, Lock, MoreHorizontal, Plus, Star } from "lucide-react";
+import { Menu, X, Calendar, Settings, Mail, Shield, Map, Image as ImageIcon, Lock, MoreHorizontal, Plus, ArrowLeftRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
@@ -152,7 +152,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               aria-label="Ulubione widoki"
               title="Ulubione widoki"
             >
-              <Star size={17} />
+              <ArrowLeftRight size={16} />
             </button>
             <NotificationBell placement="topbar" />
           </div>

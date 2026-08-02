@@ -773,6 +773,14 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
           "\n\nOpisz teraz **błąd lub sugestię** — utworzę na tej podstawie zadanie w projekcie **Omnia** (tytuł wygeneruję automatycznie z opisu).";
         setTurns([{ id: newId(), role: "assistant", kind: "answer", content: info }]);
       }
+      // 042: pytanie zadane z zewnątrz (dokowana kolumna na stronie głównej) wysyłamy tak,
+      // jakby użytkownik wpisał je tutaj. `setTimeout` daje panelowi jedną klatkę na otwarcie,
+      // zanim ruszy zapytanie — inaczej pierwsze „myślę…" renderuje się w zamkniętym oknie.
+      const prompt = detail.prompt?.trim();
+      if (prompt) {
+        setInputText("");
+        setTimeout(() => { void handleSendRef.current(prompt); }, 0);
+      }
     }
     window.addEventListener(ASSISTANT_OPEN_EVENT, onOpen);
     return () => window.removeEventListener(ASSISTANT_OPEN_EVENT, onOpen);

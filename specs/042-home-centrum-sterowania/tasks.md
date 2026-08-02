@@ -160,7 +160,7 @@
 
 ## Faza 5 — Strona główna (plan §5.4–5.5)
 
-- [ ] **T-16** — **`prompt` w magistrali asystenta** (plan §5.5).
+- [x] **T-16** — **`prompt` w magistrali asystenta** (plan §5.5).
   `src/lib/ai/assistantBus.ts`: `AssistantOpenDetail` zyskuje `prompt?: string`.
   `src/components/home/AICommandSheet.tsx` (~l. 760–779, istniejący handler `onOpen`): gdy `prompt`
   jest ustawiony — otwórz panel i wyślij tę wiadomość jak wpisaną przez użytkownika.
@@ -169,14 +169,14 @@
   *Gotowe, gdy:* `openAssistant({ prompt: "test" })` z konsoli otwiera asystenta z wysłanym pytaniem,
   a dotychczasowe otwarcie bez `prompt` działa jak wcześniej.
 
-- [ ] **T-17** — **`src/components/home/HomeAssistantColumn.tsx`** (AC-11).
+- [x] **T-17** — **`src/components/home/HomeAssistantColumn.tsx`** (AC-11).
   Nagłówek z dużą ikoną `Sparkles`, **prawdziwe pole tekstowe gotowe do pisania od razu**
   (bez autofokusa — przewijałby stronę i przechwytywał skróty), kontekstowe podpowiedzi startowe,
   przycisk wysłania → `openAssistant({ prompt })`. Kolumna `position: sticky; top: 0`.
   *Gotowe, gdy:* na `/` przy ≥1280 px da się pisać bez żadnego kliknięcia, a panel nie znika przy
   przewijaniu strony.
 
-- [ ] **T-18** — **Układ 3 / 2 / 1 kolumny na stronie głównej** (AC-16, AC-17, AC-12) — najtrudniejsze.
+- [x] **T-18** — **Układ 3 / 2 / 1 kolumny na stronie głównej** (AC-16, AC-17, AC-12) — najtrudniejsze.
   `HomePage.tsx`: kontener sekcji jako siatka `grid-cols-1 md:grid-cols-2`, kolumna asystenta jako
   **osobny** element siatki na `xl:` (`xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_360px]`), poniżej
   `xl` znikająca (asystent zostaje pod pływającym przyciskiem — AC-12).
@@ -190,7 +190,7 @@
 
 ## Faza 6 — Bramki i domknięcie (plan §8)
 
-- [ ] **T-19** — **Bramki jakości** na lokalnym Postgresie (C-13 — **nigdy** prod `DATABASE_URL`;
+- [x] **T-19** — **Bramki jakości** na lokalnym Postgresie (C-13 — **nigdy** prod `DATABASE_URL`;
   pełne `npm run build` odpala na końcu `scripts/migrate.js`, więc kroki uruchamiamy osobno):
   ```
   npm run check:migrations && npm run check:actions && npm run check:ai-coverage \
@@ -206,7 +206,7 @@
   `#rrggbb` ani `rgba(` z liczbami.
   *Gotowe, gdy:* każde AC ma odnotowany wynik.
 
-- [ ] **T-21** — **Wpisy do `doświadczenia.md`** (C-51, po polsku, format `## YYYY-MM-DD — tytuł` /
+- [x] **T-21** — **Wpisy do `doświadczenia.md`** (C-51, po polsku, format `## YYYY-MM-DD — tytuł` /
   `**Problem:**` / `**Rozwiązanie:**` / `**Lekcja:**`). Trzy są znane już z etapu planowania:
   1. sticky `:hover` na ekranie dotykowym zapala i **zostawia** zapalony element ujawniany przy
      najechaniu → wariant `[@media(hover:hover)]:`;
