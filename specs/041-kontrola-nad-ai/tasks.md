@@ -121,6 +121,15 @@
       *Gotowe, gdy:* zmiana domyślnych wpływa na użytkowników **bez** własnej preferencji i trafia do
       dziennika zmian. **(AC-10, AC-11)**
 
+## Faza 8 — Nawrót z `/verify` (2026-08-02)
+
+- [ ] **T-21** — **Cele dotyku w pasku sekcji AI (C-31, AC-13).** W stanie spoczynku przycisk
+      odświeżania i przycisk trybu mają `px-1.5 py-1` przy tekście 11 px (≈23 px), a wyzwalacz kosztu
+      `padding: 0` przy 10,5 px (≈14 px) — poniżej minimum `py-3`. Powiększyć **obszar dotyku**, nie
+      wagę wizualną: pasek ma zostać jedną linią i pozostać subtelny (prośba właściciela, spec §9).
+      *Gotowe, gdy:* wszystkie trzy kontrolki mają cel dotyku ≥ `py-3`, a pasek nadal mieści się w
+      jednej linii na telefonie i nie przytłacza treści. **(AC-13)**
+
 ## Faza 7 — Bramki i domknięcie
 
 - [x] **T-17** — **Pełna sekwencja bramek na lokalnym Postgresie (C-13):** `copy-docs →
@@ -155,7 +164,7 @@
 | AC-10 dziedziczenie po administratorze | T-4, T-16 |
 | AC-11 własne ≠ systemowe | T-6, T-16 |
 | AC-12 trwałość ustawienia | T-6 |
-| AC-13 subtelność i dostępność kciukiem | T-7 |
+| AC-13 subtelność i dostępność kciukiem | T-7, **T-21** |
 | AC-14 koszt czytelny po fakcie | T-11 |
 | AC-15 szczegóły dla administratora | T-12 |
 | AC-16 nie-administrator bez danych kosztowych | T-12 |
@@ -216,7 +225,7 @@ T-1 (nawigacja)  — bez żadnych zależności, może iść pierwsza
 | AC-10 dziedziczenie po administratorze | T-4, T-16 | test „brak preferencji → dziedziczenie po administratorze (Config)" |
 | AC-11 własne ≠ systemowe | T-6, T-16 | test „własne i systemowe to dwa rozłączne zapisy" |
 | AC-12 trwałość ustawienia | T-6 | `AiSectionPref` (upsert po `[ownerId, sectionKind]`) |
-| AC-13 subtelność i dostępność kciukiem | T-7 | jedna linia w spoczynku, wybór zwinięty, pozycje `py-3` |
+| AC-13 subtelność i dostępność kciukiem | T-7, **T-21** | jedna linia w spoczynku, wybór zwinięty, pozycje `py-3` |
 | AC-14 koszt czytelny po fakcie | T-11, T-12 | `NewsRefreshRun` + „Historia odświeżeń" w `NewsPage` |
 | AC-15 szczegóły dla administratora | T-12 | `visibleUsage` przy odczycie → `AiCostBadge` w wierszu historii |
 | AC-16 nie-administrator bez danych kosztowych | T-12 | `getNewsRefreshHistory` przepuszcza `usage` przez `visibleUsage` **po stronie serwera** |
