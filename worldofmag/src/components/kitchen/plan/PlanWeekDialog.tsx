@@ -12,7 +12,8 @@ import type { MealSlot } from "@/types/kitchen";
 import { MEAL_SLOTS, MEAL_SLOT_LABELS } from "@/types/kitchen";
 import { dateKey, formatDayShort, getWeekDays } from "@/lib/kitchenDate";
 import { polishPlural } from "@/lib/polishPlural";
-import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import type { AiCostUsage } from "@/components/ui/AiCostBadge";
+import type { AiSectionMode } from "@/lib/ai/sectionMode";
 import { AiContentMeta } from "@/components/ui/AiContentMeta";
 
 interface PlanWeekDialogProps {
@@ -58,6 +59,8 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [aiMemory, setAiMemory] = useState<{ generatedAt?: string; stale?: boolean }>({});
+  /** 041: obowiązujący tryb sekcji — do przełącznika w pasku pod planem. */
+  const [aiMode, setAiMode] = useState<AiSectionMode | undefined>();
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
 
@@ -87,17 +90,31 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
     setStep("loading");
     try {
       // Z-131 (T-17): plan tygodnia przez kolejkę zadań. Błędy rzuca → catch niżej.
-      const res = await runJob<{ suggestions: Suggestion[]; usage?: AiCostUsage; generatedAt?: string; stale?: boolean }>("kitchen.planWeek", {
-        weekStart: dateKey(weekStart),
-        slots: Array.from(selectedSlots),
-        people,
-        avoid: avoid.split(",").map((s) => s.trim()).filter(Boolean),
-        cuisines: cuisines.split(",").map((s) => s.trim()).filter(Boolean),
-        maxMinutes: maxMinutes ? Number(maxMinutes) : null,
-        mustUsePantry,
-        noRepeats,
-        force,
-      });
+      const plan = (f: boolean) =>
+        runJob<{
+          suggestions: Suggestion[];
+          usage?: AiCostUsage;
+          generatedAt?: string;
+          stale?: boolean;
+          pending?: boolean;
+          mode?: AiSectionMode;
+        }>("kitchen.planWeek", {
+          weekStart: dateKey(weekStart),
+          slots: Array.from(selectedSlots),
+          people,
+          avoid: avoid.split(",").map((s) => s.trim()).filter(Boolean),
+          cuisines: cuisines.split(",").map((s) => s.trim()).filter(Boolean),
+          maxMinutes: maxMinutes ? Number(maxMinutes) : null,
+          mustUsePantry,
+          noRepeats,
+          force: f,
+        });
+
+      // 041: `pending` znaczy „brak zapamiętanego planu, a tryb zabrania generować samoczynnie".
+      // Tutaj samoczynnie nic się nie dzieje — użytkownik kliknął „Zaplanuj tydzień" — więc
+      // ponawiamy z `force` w tym samym geście, zamiast wymagać drugiego kliknięcia.
+      let res = await plan(force);
+      if (res?.pending) res = await plan(true);
       if (!res?.suggestions) {
         showToast("Brak odpowiedzi AI", "error");
         setStep("prefs");
@@ -111,6 +128,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
       setSuggestions(res.suggestions);
       setAiUsage(res.usage);
       setAiMemory({ generatedAt: res.generatedAt, stale: res.stale });
+      if (res.mode) setAiMode(res.mode);
       setExcluded(new Set());
       setStep("review");
     } catch (e) {
@@ -351,14 +369,18 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               AI zaproponowało {suggestions.length} {polishPlural(suggestions.length, ["posiłek", "posiłki", "posiłków"])}. Odznacz te których nie chcesz.
               <span className="ml-2 inline-flex flex-wrap items-center gap-2 align-middle">
+                {/* 041: koszt stoi wewnątrz paska — „kiedy powstało" i „ile kosztowało" to jedna
+                    informacja o tej samej treści, więc nie rozdzielamy ich na dwa elementy. */}
                 <AiContentMeta
                   generatedAt={aiMemory.generatedAt}
                   stale={aiMemory.stale}
                   onRefresh={() => handleGenerate(true)}
                   refreshLabel="Nowy plan"
                   staleHint="Ustawienia planu zmieniły się od czasu wygenerowania tych propozycji"
+                  usage={aiUsage}
+                  sectionKind="kitchen.planWeek"
+                  mode={aiMode}
                 />
-                {aiUsage && <AiCostBadge usage={aiUsage} align="left" />}
               </span>
             </p>
             <div className="flex flex-col gap-2">

@@ -74,10 +74,10 @@
       *Gotowe, gdy:* wejście na `/pogoda` przy trybie „na żądanie" **nie woła modelu ani razu**.
       **(AC-1, AC-2, AC-8)**
 
-- [ ] **T-9** `[P]` — **Wiadomości: `HotTopics` na tryb.** Jak wyżej, dla gorących tematów.
+- [x] **T-9** `[P]` — **Wiadomości: `HotTopics` na tryb.** Jak wyżej, dla gorących tematów.
       *Gotowe, gdy:* wejście na zakładkę nie generuje bez kliknięcia.
 
-- [ ] **T-10** `[P]` — **Pozostałe trzy sekcje na tryb:** wnioski Magazynu, wnioski Petów, plan
+- [x] **T-10** `[P]` — **Pozostałe trzy sekcje na tryb:** wnioski Magazynu, wnioski Petów, plan
       tygodnia Kuchni.
       *Gotowe, gdy:* wszystkie pięć sekcji przechodzi przez ten sam mechanizm, a `check:content-memory`
       jest zielony.
