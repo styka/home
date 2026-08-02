@@ -1,7 +1,7 @@
 # Zadania: Strona główna jako centrum sterowania — ulubione widoki, briefing, asystent AI + porządki UX
 
 - **Plan:** ./plan.md (042-home-centrum-sterowania)
-- **Status:** todo
+- **Status:** done (implementacja) — wejscie dla `/verify`
 - **Data:** 2026-08-02
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -198,7 +198,7 @@
   ```
   *Gotowe, gdy:* wszystkie kroki do `next build` włącznie są zielone.
 
-- [ ] **T-20** — **Kontrola pokrycia kryteriów akceptacji** — przejście po tabeli z planu §8
+- [x] **T-20** — **Kontrola pokrycia kryteriów akceptacji** — przejście po tabeli z planu §8
   i odnotowanie wyniku dla AC-1…AC-27 (wejście dla `/verify`).
   Osobno sprawdzić dwie rzeczy, o których łatwo zapomnieć:
   **AC-19** — wejście na `/` bez klikania **nie** generuje briefingu (brak zapytania do
@@ -266,7 +266,33 @@ powłoki i jako jedyne dotyka `AppShell.tsx` oraz `ModuleSidebar.tsx` — te sam
 
 ## Notatki / blokady
 
-- Brak blokad na starcie.
+- Brak blokad — wszystkie 21 zadań zamknięte.
+- **Odchylenia od planu (drobne, odnotowane):**
+  - `FavoritesOverlay` + `favoritesBus` to pliki ponad plan §5.2. Powód: oba wyzwalacze (pasek
+    boczny i górny) są ZAWSZE w drzewie — ukrywa je wyłącznie CSS — więc montowanie przełącznika
+    i skrótów w każdym z nich dawałoby dwie nakładki i podwójne `Alt+1`. Wzorzec magistrali
+    skopiowany z istniejącego `lib/ai/assistantBus.ts`.
+  - Kolumna asystenta jest elementem **flexa**, nie siatki (plan §5.4 zakładał `xl:grid-cols-[…]`).
+    Powód: `grid-row: "1 / span 99"` tworzy 99 wierszy domyślnych, których odstępy sumują się
+    w pustą przestrzeń pod treścią.
+  - Dołożone `pointer-events-none` do ukrytego checkboxa (poza literalnym zakresem T-1): `opacity-0`
+    nie wyłącza zdarzeń wskaźnika, więc dotknięcie „pustego" miejsca obok tytułu zaznaczało zadanie
+    bez żadnego sygnału — to ta sama zgłoszona usterka.
+  - `Alt+0` (otwarcie pełnej listy) dołożone obok `Alt+1..9` — naturalne dopełnienie skrótów.
+
+## Stan bramek (T-19)
+
+| Bramka | Wynik |
+|---|---|
+| `check:migrations` | ✔ następny wolny numer 0222 |
+| `check:actions` | ✔ 160 akcji, wszystkie z egzekutorem i kontraktem |
+| `check:ai-coverage` | ✔ 545 akcji, kontrola dostępu i klasyfikacja kompletne |
+| `check:cost-badge` | ✔ 34 pliki wołające model |
+| `check:content-memory` | ✔ 34 pliki sklasyfikowane |
+| `next lint --dir src` | ✔ 0 błędów (ostrzeżenia wyłącznie preegzystujące) |
+| `next build` | ✔ EXIT=0, „Compiled successfully" |
+| Migracja na lokalnym Postgresie | ✔ tabela, 2 indeksy, FK z kaskadą |
+| Test dymny (`next start`) | ✔ powłoka renderuje się bez błędu serwera |
 - **Uwaga na kolejność:** T-4 i T-13 dotykają `AppShell.tsx` oraz `ModuleSidebar.tsx`. T-4 jest
   wcześniej w kolejności właśnie z tego powodu.
 - Weryfikacja lokalna wymaga uruchomionego Postgresa (`pg_ctlcluster 16 main start`) i wyeksportowanych
