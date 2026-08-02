@@ -70,7 +70,7 @@ soft-delete trash, per-user Google Drive storage, and an AI assistant.
 | Flota (vehicles/fuel/service) | `/flota` | `module.flota` | Done — vehicles/fuel/service + attachments (`VehicleAttachment`: invoices, registration, insurance) |
 | Portfel (personal finance) | `/portfel` | `module.portfel` | Done — wallet elements/entries + **budgets & savings goals** (`/portfel/budzety`), **monthly reports** (`/portfel/raporty`), **settings + multi-currency/exchange rates** (`/portfel/ustawienia`), and **auto-expense booking** from other modules (`WalletEntry.sourceModule/sourceId`) |
 | Languages (SRS flashcards) | `/languages` | `module.languages` | Done — SuperMemo-2 + TTS/pronunciation, writing mode, study series |
-| Wiadomości (news + timeline) | `/wiadomosci` | `module.news` | Done — **single-column layout** (view tabs + horizontal topic tabs + content switch), **one `news.refresh` job for the whole module** (shared article pool `NewsArticle` → cheap classification → summaries → timeline), **event timeline** (`NewsTimelineEntry`) replacing the old versioned knowledge base, hot topics read **from the pool** (no re-fetch) with per-topic **hiding/restoring**, sentence-by-sentence **reader** (`NewsReader`), 24h freshness |
+| Wiadomości (news + timeline) | `/wiadomosci` | `module.news` | Done — **single-column layout** (view tabs + **topic picker with search** + content switch), **refresh cost history** (`NewsRefreshRun`, last 30 runs, survives job cleanup), **one `news.refresh` job for the whole module** (shared article pool `NewsArticle` → cheap classification → summaries → timeline), **event timeline** (`NewsTimelineEntry`) replacing the old versioned knowledge base, hot topics read **from the pool** (no re-fetch) with per-topic **hiding/restoring**, sentence-by-sentence **reader** (`NewsReader`), 24h freshness |
 | Pogoda (weather) | `/pogoda` | `module.weather` | Done — Open-Meteo (sunrise/sunset + moon phase, day/night icons), **location picking on a map** (Leaflet+OSM, reverse geocoding), watchers (preset + custom, **editable**, status = *is the watcher's condition met* — `met/partial/unmet/unknown`, never a judgement of "nice weather"), **„Co robić?" as a list of AI proposals** with on-demand persistent detail plans + an idea library (`/pogoda/pomysly`, `WeatherIdea`) |
 | Magazynowanie (storage/inventory) | `/magazynowanie` | `module.magazynowanie` | Done — **two modes (Dom/Pro, per-user `StorageSettings`)**. Shared: items by warehouse+location, SKU/EAN, min-stock replenishment→shopping, stocktake, AI photo inventory, movement log. **Dom:** "where is it?" (AI search), QR labels (print+scan), warranties/expiry, value+photos (CSV export). **Pro:** barcode in/out scan (`@zxing`), suppliers, PZ/WZ/invoice documents (OCR), purchase orders (LLM draft), analytics (value/ABC/dead-stock/trend + AI takeaways), batches/lots + FEFO. AI in assistant (`add_storage_item`/`adjust_storage` + read-tool `list_storage_items`) |
 | Warsztaty (workshop/studio) | `/warsztaty` | `module.warsztaty` | Done — **two modes (Dom/Pro, per-user `WarsztatSettings`)**. Any workshop type (woodworking/automotive/painting/electronics/metalworking/ceramics/sewing/jewelry/general). Equipment register (`WorkshopItem`: kind tool/machine/material/PPE, condition, qty+min-stock, service `nextServiceAt`), **static equipment-suggestion catalog by profile** (`src/lib/warsztat/catalog.ts`, basic/recommended/advanced tiers) as an "add to equipment" checklist. **Pro:** team ownership, tool assignment (who has / station), service + low-stock agenda (`/warsztaty/przeglady`), project journal (`WorkshopProject`). AI: read-tool `list_workshops` + actions `create_workshop`/`add_workshop_item` |
@@ -214,7 +214,7 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 /flota/ [vehicleId]      # Vehicles (fuel logs, service records)
 /portfel/ [elementId]    # Personal finance (wallet elements + entries); + /budzety (budgets & savings goals), /raporty (monthly reports), /ustawienia (multi-currency / exchange rates / settings)
 /languages/ [deckId]     # SRS vocabulary decks; + /[deckId]/study
-/wiadomosci/             # News: view tabs (Tematy/Gorące tematy/Źródła — also the mobile back-path), topics as a horizontal tab strip, per-topic content switch (Nowe wiadomości ⇄ Linia czasu), hot topics (from the pool, hideable), reader
+/wiadomosci/             # News: view tabs (Tematy/Gorące tematy/Źródła — also the mobile back-path), topic picker (collapsed = active topic; expanded = full names + search), per-topic content switch (Nowe wiadomości ⇄ Linia czasu), refresh cost history, hot topics (from the pool, hideable), reader
 /pogoda/                 # Weather: forecast (Teraz → „Co robić?" → hours → days), map location picker, watchers; + /pogoda/pomysly (idea library: saved/considered/blocked proposals, soft-delete to /trash)
 /magazynowanie/          # Storage: items by warehouse+location (mode-aware sub-nav). Dom+Pro: /szukaj (AI "where is it?"), /etykiety (QR), /scan (AI photo), /stocktake, /ustawienia (Dom/Pro + currency). Pro: /przeplyw (in/out scan), /analityka, /dostawcy, /zamowienia, /dokumenty (OCR PZ/WZ/invoice)
 /warsztaty/ [workshopId] # Workshops: list + detail with tabs (Equipment / Suggestions-by-profile / Projects-Pro). Mode-aware sub-nav: /przeglady (Pro: service + low-stock agenda), /ustawienia (Dom/Pro)
@@ -301,7 +301,13 @@ pantry, vehicles, workshops, decks, news, weather, and an aggregated calendar) a
 **create/edit/delete across all modules** — a typed `AIAction[]` (the `AIAction`
 type lives in **`lib/ai/aiAction.ts`**) mapped to existing Server Actions in
 `/api/llm/home/execute`, reviewed in `ActionDrawer` before running with
-**destructive actions opt-in** (unchecked by default). Analytical results render as
+**destructive actions opt-in** (unchecked by default). **041 — auto-approve:** with
+`AssistantPref.autoApprove` on, a plan whose actions are **all** non-destructive runs immediately and
+shows its result, skipping the drawer; a single destructive action sends the whole plan to the drawer
+as before. Classification comes solely from `DESTRUCTIVE_ACTION_TYPES` (`lib/ai/aiAction.ts`) — a
+second list would be a silent gap the next time a deleting action is added. The toggle sits at the
+bottom of the work-level menu above the composer, and while it is on the chat header carries a
+permanent „auto" marker — the mode must never operate silently. Analytical results render as
 markdown with clickable deep-links (internal → SPA nav, external → new tab) and
 proactive **follow-up suggestion chips**; the agent can also propose a **report**
 (full markdown with summary + facts) saved to `/reports` via `createUserReport`
@@ -335,7 +341,7 @@ Never add manual cache invalidation elsewhere. Action files:
 - **Pets**: `pets`, `petCare`, `petHusbandry`, `petBreeding`
 - **Health**: `health`, `medications`
 - **Other modules**: `habits`, `flota`, `portfel`, `portfelBudgets`, `portfelReports`, `portfelCurrency`, `portfelAuto` (Portfel: budgets/reports/multi-currency/auto-expense), `languageDecks`, `news` (incl. `startNewsRefresh`/`getNewsRefreshState` — the module-wide refresh job; `getTopicTimeline`; `hideHotTopic`/`unhideHotTopic`/`getHiddenTopics`; **`refreshTopic` is gone**), `userFacts` (knowledge about the user; `buildUserContext` lives in `lib/userContext.ts` — a helper, not an action), `weather` (incl. `addLocationByPoint`, `getIdeas`/`generateIdeaDetail`/`getIdeaLibrary`/`setIdeaState`/`blockIdea`/`deleteIdea`/`addIdeaToTasks`), `qa`, `truck`, `storage` (Magazynowanie), `warsztat` (Warsztaty), `services` (marketplace; incl. `getModerationDisputes`), `calendar`, `contacts`
-- **Collaboration / system / UX**: `teams`, `invitations`, `access` (incl. `getAuditLog`), `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `aiConversations` (chat persistence), `notifications`, `menuPrefs` (sidebar customization), `dashboardPrefs` (home dashboard personalization), `skins`, `trash` (soft-delete recovery), `systemHealth`, `drive` (Google Drive), `assistantPrefs` (per-user assistant settings + `getSpeechOptions`), `feedback` (`submitFeedbackTask`/`getFeedbackInboxInfo` — the user-report inbox)
+- **Collaboration / system / UX**: `teams`, `invitations`, `access` (incl. `getAuditLog`), `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `aiConversations` (chat persistence), `notifications`, `menuPrefs` (sidebar customization), `dashboardPrefs` (home dashboard personalization), `skins`, `trash` (soft-delete recovery), `systemHealth`, `drive` (Google Drive), `assistantPrefs` (per-user assistant settings incl. `autoApprove` + `getSpeechOptions`), `aiSections` (041: per-user AI-section refresh mode + admin system defaults), `feedback` (`submitFeedbackTask`/`getFeedbackInboxInfo` — the user-report inbox)
 
 ### Authentication & Authorization
 
@@ -363,7 +369,7 @@ Team, TeamMember, TeamInvitation              — Collaboration
 Skin, UserSkinPref                            — Skins/themes (system/user/team; tokens=JSON CSS-var map; isPublic to share; UserSkinPref = per-user choice)
 UserMenuPref                                  — Per-user sidebar/menu customization (order/disabled/tabBar = JSON string[] of module ids)
 DashboardPref                                 — Per-user Home dashboard personalization (section order/visibility = JSON string[])
-AssistantPref                                 — Per-user AI assistant settings (standing instructions, work level standard|economy|max, reader voice browser|server + voiceId)
+AssistantPref                                 — Per-user AI assistant settings (standing instructions, work level standard|economy|max, reader voice browser|server + voiceId, **`autoApprove`** = 041 auto-run of SAFE assistant actions; destructive ones always ask)
 Notification                                  — Notification engine (per-user; bell in chrome; reminders synced from agenda/deadlines)
 AuditLog                                      — Audit trail for RBAC + config changes (category rbac|config; NO FK to User — snapshots actor email)
 TrashItem                                     — Soft-delete recovery (JSON entity snapshot + retention days; surfaced at /trash)
@@ -398,6 +404,8 @@ UserFact                                           — 039: cross-cutting KNOWLE
 WeatherLocation, WeatherWatcher               — Pogoda (locations + alert watchers)
 WeatherIdea                                   — Pogoda „Co robić?" — proposals the user acted on (unique [ownerId, fingerprint]; state considered|saved|blocked; persistent `detail` plan + `detailUsage`; `seedDate`/`seedPart`/`seedWeather` = conditions at the moment the idea was proposed, so a lazily-generated plan describes THAT day)
 AiContent                                     — 038: cross-cutting MEMORY of AI-generated content (unique [ownerId, kind, scopeKey]; `inputHash` = conditions it was generated under → drives the „nieaktualne" badge; `refreshes` counts explicit regenerations)
+AiSectionPref                                 — 041: per-user REFRESH MODE of an AI section (unique [ownerId, sectionKind]; mode `onDemand|onChange|always`, String+union). System defaults live in `Config.ai_section_default_modes`, NOT in a NULL-owner row — in PostgreSQL `NULL != NULL`, so the unique index would not protect system rows
+NewsRefreshRun                                — 041: durable history of Wiadomości refresh runs (counts + raw `usage`, retention 30). Cannot be read from `Job`: `cleanupOldJobs` deletes finished jobs after 24 h and `Job.result` only ever holds the last run
 StorageItem, StorageMovement                  — Magazynowanie (items + movement log; item has barcode/unitPrice/photoUrl/expiresAt/warrantyUntil/supplierId)
 StorageSettings, StorageSupplier, StorageBatch — Magazynowanie pro (Dom/Pro per-user; suppliers; batches/lots FEFO)
 StorageDocument, StorageDocumentLine          — Magazynowanie pro (PZ/WZ/invoice documents + lines)
@@ -604,7 +612,7 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 - **`/admin/audit`** — audit log viewer (RBAC + config changes; `AuditLog`).
 - **`/admin/health`** — system health dashboard (DB/migrations/API diagnostics; live, no model).
 - **`/admin/config`** — key-value `Config` (e.g. `groq_api_key`, `brave_search_api_key`, masked + encrypted at rest; plus the plain-text `feedback_project_id` — which task project acts as the **user-report inbox**; empty = the admin's „Omnia" project).
-- **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type **+ effort / temperature / max-tokens**; the panel states outright which knobs the chosen provider/model ignores). Also the **follow-up switch** (036): `Config.assistant_followups_enabled` (`1`/`0`, seeded by migration 0214, missing row = on) decides whether the agent prompt asks for follow-up suggestion chips at all — they cost tokens on *every* answer. Read without a session via `lib/ai/followups.ts` `readFollowupsEnabled()`; admin side is `actions/llmConfig.ts` `getFollowupsEnabled`/`setFollowupsEnabled` (audited). Also the **AI cost badge switch** (037): `Config.ai_cost_badge_enabled` (`1`/`0`, seeded by migration 0215, missing row = on) decides whether the cost indicator shows anywhere in the app. Read without a session via `lib/ai/costVisibility.ts` `readCostBadgeEnabled()`; admin side is `getCostBadgeEnabled`/`setCostBadgeEnabled` (audited).
+- **`/admin/llm`** — `LlmProvider` (groq/anthropic/openai) + `LlmAssignment` (model per operation type **+ effort / temperature / max-tokens**; the panel states outright which knobs the chosen provider/model ignores). Also the **follow-up switch** (036): `Config.assistant_followups_enabled` (`1`/`0`, seeded by migration 0214, missing row = on) decides whether the agent prompt asks for follow-up suggestion chips at all — they cost tokens on *every* answer. Read without a session via `lib/ai/followups.ts` `readFollowupsEnabled()`; admin side is `actions/llmConfig.ts` `getFollowupsEnabled`/`setFollowupsEnabled` (audited). Also the **AI cost badge switch** (037): `Config.ai_cost_badge_enabled` (`1`/`0`, seeded by migration 0215, missing row = on) decides whether the cost indicator shows anywhere in the app. Read without a session via `lib/ai/costVisibility.ts` `readCostBadgeEnabled()`; admin side is `getCostBadgeEnabled`/`setCostBadgeEnabled` (audited). Also the **default AI-section refresh modes** (041): `Config.ai_section_default_modes` (JSON `{kind: onDemand|onChange|always}`, seeded by migration 0220) — the fallback for users who never picked their own mode; a user's own choice lives in `AiSectionPref` and is never overwritten from here (two disjoint writes). Admin side is `actions/aiSections.ts` `getDefaultSectionModes`/`setDefaultSectionModes` (audited).
 - **`/admin/ai-coverage`** — **Pokrycie akcji przez AI**: pełna lista akcji użytkownika (mutacje **i** odczyty z `src/actions/*`) z informacją, czy asystent AI ma do nich dostęp (`ai`/`pending`/`excluded`+powód). Źródło = manifest `src/lib/ai/action-coverage.json` (via `getAiCoverage()` w `src/lib/ai/coverage.ts`), którego kompletność wymusza bramka `scripts/check-ai-coverage.js` (wpięta w `build`) — więc lista jest **zawsze aktualna** wobec wdrożonego kodu. Nowa mutująca/odczytowa Server Action bez wpisu w manifeście = build pada. Filtry po statusie/rodzaju + wyszukiwarka.
 - **`/admin/skins`** — system skins manager.
 - **`/admin/categories`** — global system categories (name/color/icon).
@@ -704,7 +712,22 @@ the table/paragraph merge).
   which, so it demands an explicit decision — same pattern as `action-coverage.json`.
   `rememberedContent` returns `{value, generatedAt, stale, fromMemory, refreshes, usage}`; **`stale`
   is information, never a trigger** — it only lights the „nieaktualne" badge. UI side is the shared
-  `src/components/ui/AiContentMeta.tsx` (generated-at + stale badge + refresh button).
+  `src/components/ui/AiContentMeta.tsx` (generated-at + stale badge + cost + refresh button + mode).
+  **041 — section refresh MODE.** `rememberedContent` takes an optional `mode`
+  (`onDemand|onChange|always`, resolved by `resolveSectionMode`) and can return a second variant,
+  `PendingContent` (`{pending: true}`), meaning *the section is waiting for a click* — not an error
+  and not empty content. The two variants are split by **overloads**: a call without `mode` keeps the
+  pre-041 behaviour (no record → generate), so sections were migrated one at a time. Decision table:
+  no record → `onDemand`/`onChange` wait, `always` generates · record + matching hash → memory
+  (except `always`) · record + different hash → memory + „nieaktualne", but `onChange` regenerates ·
+  `force` always generates. Mode resolution order lives in ONE place —
+  `src/lib/ai/sectionModeResolver.ts` (`AiSectionPref` → `Config.ai_section_default_modes` →
+  `onDemand`); the client-safe dictionary of labels/kinds is `src/lib/ai/sectionMode.ts` (it must not
+  import Prisma — `AiContentMeta` is a client component). Sections that only ever run **after a
+  click** (storage insights, kitchen week plan) re-issue with `force` in the same gesture when the
+  server answers `pending`: the click *is* the explicit request, and the mode there governs only
+  automatic generation. Waiting state UI = `AiContentPending` — deliberately different from the
+  error state (lesson from 038).
 - **`check-cost-badge.js`** (also `npm run check:cost-badge`) — 037: enforces that every file calling
   `chatComplete`/`chatStream` **passes the model usage on** (imports `usageFromChat`/`usageField`/
   `visibleUsage`/`accrueUsage`), so the cost indicator can be rendered next to the generated content.

@@ -11,6 +11,7 @@ import {
   Loader2,
   Trash2,
   Pencil,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -22,10 +23,12 @@ import { NewsItemCard } from "./NewsItemCard";
 import { NewsTimeline } from "./NewsTimeline";
 import { HotTopics } from "./HotTopics";
 import { NewsSettings } from "./NewsSettings";
+import { TopicPicker } from "./TopicPicker";
 import {
   getTopicView,
   startNewsRefresh,
   getNewsRefreshState,
+  getNewsRefreshHistory,
   createTopic,
   updateTopic,
   deleteTopic,
@@ -36,6 +39,7 @@ import {
   type NewsItemDTO,
   type TimelineEntryDTO,
   type NewsRefreshState,
+  type NewsRefreshRunDTO,
 } from "@/actions/news";
 
 type View = "feed" | "hot" | "settings";
@@ -190,6 +194,8 @@ export function NewsPage({
 
       <RefreshStatus state={refresh} running={refreshRunning} />
 
+      <RefreshHistory />
+
       {/* 040: dodanie tematu odświeża listę, ale NIE przerzuca na widok główny — przegląd gorących
           tematów ma dać się zrobić za jednym posiedzeniem. */}
       {view === "hot" && <HotTopics onTopicsChanged={() => router.refresh()} />}
@@ -202,12 +208,13 @@ export function NewsPage({
         />
       )}
 
-      {/* 040: pionowy stos zamiast dwóch kolumn. Kolumna tematów zjadała jedną trzecią szerokości i
-          i tak ucinała dłuższe nazwy — teraz tematy są zakładkami nad treścią, a treść dostaje całą
-          stronę. Ten sam układ działa na telefonie, więc nie ma dwóch osobnych nawigacji. */}
+      {/* 040/041: pionowy stos zamiast dwóch kolumn. Kolumna tematów zjadała jedną trzecią
+          szerokości i i tak ucinała dłuższe nazwy — teraz wybór tematu to jeden wiersz nad treścią,
+          a treść dostaje całą stronę. Ten sam układ działa na telefonie, więc nie ma dwóch osobnych
+          nawigacji. */}
       {view === "feed" && (
         <div className="min-w-0">
-          <TopicTabs
+          <TopicBar
             topics={topics}
             selectedId={selectedId}
             onSelect={setSelectedId}
@@ -385,6 +392,78 @@ function RefreshStatus({ state, running }: { state: NewsRefreshState | null; run
   );
 }
 
+/**
+ * 041: historia przebiegów odświeżania — koszt DA SIĘ odczytać po fakcie.
+ *
+ * Do 040 licznik kosztu widniał wyłącznie przy ostatnim przebiegu i znikał razem z zadaniem
+ * sprzątanym z kolejki po 24 godzinach. Zwinięta w spoczynku, bo to informacja, po którą się sięga,
+ * a nie taka, którą się śledzi.
+ */
+function RefreshHistory() {
+  const [open, setOpen] = useState(false);
+  const [runs, setRuns] = useState<NewsRefreshRunDTO[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    // Czytamy dopiero przy rozwinięciu — lista przebiegów nie jest potrzebna do niczego innego.
+    if (next && runs === null) {
+      setLoading(true);
+      getNewsRefreshHistory(10)
+        .then(setRuns)
+        .catch(() => setRuns([]))
+        .finally(() => setLoading(false));
+    }
+  }
+
+  return (
+    <div className="mb-4">
+      <button
+        onClick={toggle}
+        aria-expanded={open}
+        className="inline-flex items-center gap-1 py-1 text-[11px] text-[var(--text-muted)] underline-offset-2 hover:text-[var(--text-primary)] hover:underline"
+      >
+        <History size={12} /> Historia odświeżeń
+      </button>
+
+      {open && (
+        <div className="mt-2 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-2">
+          {loading ? (
+            <p className="px-1 py-2 text-[11px] text-[var(--text-muted)]">Wczytuję…</p>
+          ) : !runs || runs.length === 0 ? (
+            <p className="px-1 py-2 text-[11px] text-[var(--text-muted)]">
+              Brak zapisanych przebiegów. Pierwszy pojawi się tu po najbliższym odświeżeniu.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {runs.map((r) => (
+                <li
+                  key={r.id}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded px-1 py-2 text-[11px] text-[var(--text-muted)]"
+                >
+                  <span className="text-[var(--text-secondary)]">{formatWhen(r.startedAt)}</span>
+                  {r.status === "failed" ? (
+                    <span style={{ color: "var(--accent-red)" }}>
+                      nie powiodło się{r.error ? ` — ${r.error}` : ""}
+                    </span>
+                  ) : (
+                    <span>
+                      źródeł: {r.sources} · materiałów: {r.fetched} · pozycji: {r.assigned} ·
+                      streszczeń: {r.summarized} · faktów: {r.timelineAdded}
+                    </span>
+                  )}
+                  <AiCostBadge usage={r.usage} align="left" />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function formatWhen(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
@@ -420,16 +499,17 @@ function SourceTab({
 }
 
 /**
- * 040: tematy jako poziomy pasek zakładek zamiast osobnej kolumny.
+ * 041: pasek tematu — rozwijany selektor (`TopicPicker`) plus akcje tematu aktywnego.
  *
- * Kolumna zabierała jedną trzecią szerokości strony i mimo to ucinała dłuższe nazwy. Zakładki biorą
- * tylko jeden wiersz, pokazują nazwę w CAŁOŚCI, a przy nadmiarze przewijają się **we własnym
- * kontenerze** — nie stroną (to była osobna usterka: poziomy scroll całego widoku).
+ * Poprzednia wersja (040) trzymała tematy w poziomym pasku zakładek. Pasek pokazywał pełne nazwy,
+ * ale mieścił tylko kilka pierwszych tematów, a o pozostałych z ekranu nic nie mówiło — trzeba było
+ * odgadnąć, że da się go przewinąć. Selektor pokazuje w spoczynku wyłącznie temat aktywny, a po
+ * rozwinięciu **wszystkie** tematy z pełnymi nazwami i wyszukiwarką.
  *
- * Zarządzanie tematami przeniosło się tutaj: „+" dodaje nowy, a edycja i usunięcie dotyczą tematu
+ * Zarządzanie tematami zostaje tutaj: „+" dodaje nowy, a edycja i usunięcie dotyczą tematu
  * aktywnego — bo tylko on jest w danej chwili na ekranie.
  */
-function TopicTabs({
+function TopicBar({
   topics,
   selectedId,
   onSelect,
@@ -461,35 +541,7 @@ function TopicTabs({
   return (
     <div className="mb-3">
       <div className="flex items-center gap-2">
-        {/* `overflow-x-auto` + `min-w-0` NA TYM kontenerze: przewija się pasek zakładek, a nie
-            strona. Bez `min-w-0` element flex nie zwęziłby się poniżej treści i rozepchnąłby
-            widok — dokładnie ten mechanizm, który naprawiamy w ustawieniach źródeł. */}
-        <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-1">
-          {topics.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => onSelect(t.id)}
-              // `whitespace-nowrap`: zakładka ma zostać w jednym kawałku i raczej wyjechać poza
-              // przewijalny pasek, niż złamać nazwę na dwie linie.
-              className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition-colors",
-                selectedId === t.id
-                  ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                  : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-              )}
-            >
-              {t.title}
-              {t.pendingCount > 0 && (
-                <span className="rounded-full bg-[var(--accent-blue)] px-1.5 text-[10px] font-medium text-[var(--on-accent)]">
-                  {t.pendingCount}
-                </span>
-              )}
-            </button>
-          ))}
-          {topics.length === 0 && (
-            <span className="py-2 text-xs text-[var(--text-muted)]">Brak tematów.</span>
-          )}
-        </div>
+        <TopicPicker topics={topics} selectedId={selectedId} onSelect={onSelect} />
 
         <div className="flex shrink-0 items-center gap-1">
           {selected && (

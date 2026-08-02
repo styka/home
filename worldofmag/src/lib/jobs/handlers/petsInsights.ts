@@ -3,6 +3,7 @@ import { chatComplete } from "@/lib/llm/chat";
 import { type JobContext } from "@/lib/jobs/types";
 import { usageFromChat } from "@/lib/ai/usage";
 import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
+import { resolveSectionMode } from "@/lib/ai/sectionModeResolver";
 
 interface InsightsPayload {
   pets?: Array<{ name: string; species: string; presetKey?: string }>;
@@ -21,6 +22,9 @@ export async function petsInsightsHandler(payload: InsightsPayload, ctx: JobCont
   if (pets.length === 0) return { tips: [] };
   if (!ctx.ownerId) return runPetsInsights(payload, ctx);
 
+  // 041: sekcja startuje przy wejściu na stronę, więc to tryb decyduje, czy wolno zawołać model.
+  const mode = await resolveSectionMode(ctx.ownerId, "pets.insights");
+
   const remembered = await rememberedContent<{ tips: string[]; unavailable?: boolean }>({
     ownerId: ctx.ownerId,
     kind: "pets.insights",
@@ -30,16 +34,23 @@ export async function petsInsightsHandler(payload: InsightsPayload, ctx: JobCont
       (payload.agenda ?? []).map((a) => `${a.petName}|${a.title}|${a.bucket}`).sort().join(",")
     ),
     force: payload.force,
+    mode,
     generate: async () => {
       const r = await runPetsInsights(payload, ctx);
       return { value: { tips: r.tips, unavailable: r.unavailable }, usage: r.usage };
     },
   });
+
+  // Brak porad + `pending` to co innego niż „model nic nie wymyślił" — klient ma dla tego własny stan.
+  if (remembered.pending) return { tips: [], pending: true, mode };
+
   return {
     ...remembered.value,
     usage: remembered.usage,
     generatedAt: remembered.generatedAt,
     stale: remembered.stale,
+    pending: false,
+    mode,
   };
 }
 

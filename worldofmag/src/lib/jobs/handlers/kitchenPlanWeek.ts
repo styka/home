@@ -8,6 +8,7 @@ import { addDays, format } from "date-fns";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { usageFromChat } from "@/lib/ai/usage";
 import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
+import { resolveSectionMode } from "@/lib/ai/sectionModeResolver";
 import type { AiUsageInfo } from "@/lib/ai/usage";
 
 const VALID_SLOTS = new Set(["breakfast", "lunch", "dinner", "snack"]);
@@ -39,9 +40,20 @@ slot pasujący do mealType ma pierwszeństwo; jeśli nic nie pasuje — pomiń p
 export async function kitchenPlanWeekHandler(
   payload: PlanWeekPayload,
   ctx: JobContext
-): Promise<{ suggestions: Suggestion[]; usage?: AiUsageInfo; generatedAt?: string; stale?: boolean }> {
+): Promise<{
+  suggestions: Suggestion[];
+  usage?: AiUsageInfo;
+  generatedAt?: string;
+  stale?: boolean;
+  pending?: boolean;
+  mode?: string;
+}> {
   const ownerId = ctx.ownerId;
   if (!ownerId) throw new JobError("Brak użytkownika", 401);
+
+  // 041: plan powstaje po kliknięciu „Zaplanuj tydzień", więc tryb rozstrzyga tu tylko, czy klik
+  // korzysta z pamięci. Klient, dostawszy `pending`, ponawia z `force` w tym samym geście.
+  const mode = await resolveSectionMode(ownerId, "kitchen.planWeek");
 
   // 038: plan tygodnia to treść do czytania, więc pamiętamy go dla danego tygodnia i ustawień —
   // powrót na ekran nie może kosztować kolejnego wywołania modelu.
@@ -59,16 +71,22 @@ export async function kitchenPlanWeekHandler(
       payload.noRepeats ? 1 : 0
     ),
     force: payload.force,
+    mode,
     generate: async () => {
       const r = await runPlanWeek(payload, ctx, ownerId);
       return { value: { suggestions: r.suggestions }, usage: r.usage };
     },
   });
+
+  if (remembered.pending) return { suggestions: [], pending: true, mode };
+
   return {
     suggestions: remembered.value.suggestions,
     usage: remembered.usage,
     generatedAt: remembered.generatedAt,
     stale: remembered.stale,
+    pending: false,
+    mode,
   };
 }
 

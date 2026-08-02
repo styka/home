@@ -4,8 +4,9 @@ import { useState } from "react";
 import { Sparkles, Loader2, Download, TrendingUp, PackageX, Boxes, Wallet, AlertTriangle } from "lucide-react";
 import { runJob } from "@/lib/jobs/client";
 import type { StorageAnalytics as Analytics } from "@/actions/storage";
-import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import type { AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AiContentMeta } from "@/components/ui/AiContentMeta";
+import type { AiSectionMode } from "@/lib/ai/sectionMode";
 
 interface Props {
   analytics: Analytics;
@@ -21,25 +22,44 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
   const [tips, setTips] = useState<string[] | null>(null);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [aiMemory, setAiMemory] = useState<{ generatedAt?: string; stale?: boolean }>({});
+  /** 041: obowiązujący tryb sekcji — do przełącznika w pasku pod wnioskami. */
+  const [aiMode, setAiMode] = useState<AiSectionMode | undefined>();
   const [loadingTips, setLoadingTips] = useState(false);
+
+  /** Z-131 (T-17): wnioski przez kolejkę zadań (degradacja łagodna). */
+  function runInsights(force: boolean) {
+    return runJob<{
+      tips: string[];
+      usage?: AiCostUsage;
+      generatedAt?: string;
+      stale?: boolean;
+      pending?: boolean;
+      mode?: AiSectionMode;
+    }>("magazyn.insights", {
+      currency: a.currency,
+      totalValue: a.totalValue,
+      itemCount: a.itemCount,
+      lowStockCount: a.lowStockCount,
+      deadStockCount: a.deadStockCount,
+      topValue: a.abc.slice(0, 5).map((x) => ({ name: x.name, value: x.value })),
+      deadStock: a.deadStock.slice(0, 5).map((x) => ({ name: x.name, value: x.value })),
+      force,
+    });
+  }
 
   async function loadTips(force = false) {
     setLoadingTips(true);
     try {
-      // Z-131 (T-17): wnioski przez kolejkę zadań (degradacja łagodna).
-      const res = await runJob<{ tips: string[]; usage?: AiCostUsage; generatedAt?: string; stale?: boolean }>("magazyn.insights", {
-        currency: a.currency,
-        totalValue: a.totalValue,
-        itemCount: a.itemCount,
-        lowStockCount: a.lowStockCount,
-        deadStockCount: a.deadStockCount,
-        topValue: a.abc.slice(0, 5).map((x) => ({ name: x.name, value: x.value })),
-        deadStock: a.deadStock.slice(0, 5).map((x) => ({ name: x.name, value: x.value })),
-        force,
-      });
+      // 041: `pending` z serwera znaczy „nie ma zapamiętanych wniosków, a tryb zabrania generować
+      // SAMOCZYNNIE". Tutaj samoczynnie nic się nie dzieje — użytkownik właśnie kliknął — więc
+      // ponawiamy raz z `force` w TYM SAMYM geście, zamiast kazać mu klikać drugi raz. Dzięki temu
+      // tryb pilnuje tego, co ma pilnować, a pamięć treści z 038 dalej działa przy kolejnych wejściach.
+      let res = await runInsights(force);
+      if (res?.pending) res = await runInsights(true);
       setTips(res.tips ?? []);
       setAiUsage(res.usage);
       setAiMemory({ generatedAt: res.generatedAt, stale: res.stale });
+      if (res.mode) setAiMode(res.mode);
     } finally {
       setLoadingTips(false);
     }
@@ -103,7 +123,8 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
             ))}
           </ul>
         )}
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          {/* 041: koszt wewnątrz paska — to jedna informacja o tej samej treści, a nie dwie. */}
+          <div className="mt-2">
             <AiContentMeta
               generatedAt={aiMemory.generatedAt}
               stale={aiMemory.stale}
@@ -111,8 +132,10 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
               onRefresh={() => loadTips(true)}
               refreshLabel="Nowe wnioski"
               staleHint="Stan magazynu zmienił się od czasu wygenerowania tych wniosków"
+              usage={aiUsage}
+              sectionKind="storage.insights"
+              mode={aiMode}
             />
-            {aiUsage && <AiCostBadge usage={aiUsage} />}
           </div>
       </section>
 

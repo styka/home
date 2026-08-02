@@ -9,7 +9,9 @@ import { fetchArticle } from "@/lib/news/article";
 import { DEFAULT_SOURCES } from "@/lib/news/sources";
 import { fingerprintOf } from "@/lib/textKey";
 import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
-import { usageFromChat, type AiUsageInfo } from "@/lib/ai/usage";
+import { resolveSectionMode } from "@/lib/ai/sectionModeResolver";
+import type { AiSectionMode } from "@/lib/ai/sectionMode";
+import { usageFromChat, parseStoredUsage, type AiUsageInfo } from "@/lib/ai/usage";
 import { visibleUsage } from "@/lib/ai/costVisibility";
 import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/lib/jobs/queue";
 import { startJobWorker } from "@/lib/jobs/worker";
@@ -488,6 +490,54 @@ export async function getNewsRefreshState(): Promise<NewsRefreshState | null> {
   };
 }
 
+/** 041: jeden zakończony przebieg odświeżania — do historii kosztów. */
+export interface NewsRefreshRunDTO {
+  id: string;
+  startedAt: string;
+  finishedAt: string;
+  status: "done" | "failed";
+  sources: number;
+  fetched: number;
+  assigned: number;
+  summarized: number;
+  timelineAdded: number;
+  error: string | null;
+  usage?: AiUsageInfo;
+}
+
+/**
+ * 041: historia przebiegów odświeżania — „ile mnie to kosztowało" DA SIĘ odczytać po fakcie.
+ *
+ * Do 040 koszt widniał wyłącznie przy ostatnim przebiegu i znikał razem z zadaniem sprzątanym po
+ * 24 godzinach. Tu czytamy trwałą tabelę, a zużycie przepuszczamy przez `visibleUsage` — czyli
+ * konto bez uprawnień administratora nie dostaje danych kosztowych PO STRONIE SERWERA, a nie tylko
+ * ich nie widzi w interfejsie.
+ */
+export async function getNewsRefreshHistory(limit = 10): Promise<NewsRefreshRunDTO[]> {
+  const user = await requireAuth();
+  const rows = await prisma.newsRefreshRun.findMany({
+    where: { ownerId: user.id },
+    orderBy: { finishedAt: "desc" },
+    take: Math.min(Math.max(1, limit), 30),
+  });
+
+  return Promise.all(
+    rows.map(async (r) => ({
+      id: r.id,
+      startedAt: r.startedAt.toISOString(),
+      finishedAt: r.finishedAt.toISOString(),
+      status: (r.status === "failed" ? "failed" : "done") as "done" | "failed",
+      sources: r.sources,
+      fetched: r.fetched,
+      assigned: r.assigned,
+      summarized: r.summarized,
+      timelineAdded: r.timelineAdded,
+      error: r.error,
+      usage: await visibleUsage(parseStoredUsage(r.usage)),
+    }))
+  );
+}
+
 // ─── Item actions ──────────────────────────────────────────────────────────
 
 export interface ResummarizeResult {
@@ -573,6 +623,10 @@ export interface HotTopicsResult {
   /** Materiał się zmienił od czasu wygenerowania — informacja, nie powód do regeneracji. */
   stale: boolean;
   usage?: AiUsageInfo;
+  /** 041: lista czeka na kliknięcie — tryb sekcji zabrania generować przy wejściu na zakładkę. */
+  pending: boolean;
+  /** 041: obowiązujący tryb odświeżania tej sekcji (do przełącznika w pasku). */
+  mode: AiSectionMode;
 }
 
 export interface HiddenTopicDTO {
@@ -601,8 +655,12 @@ export async function getHotTopics(force?: boolean): Promise<HotTopicsResult> {
     take: 60,
     include: { source: { select: { name: true } } },
   });
+  // 041: tryb rozstrzygamy PRZED sprawdzeniem materiału, bo trafia do wyniku w obu ścieżkach —
+  // przełącznik w pasku ma działać także wtedy, gdy nie ma jeszcze z czego budować listy.
+  const mode = await resolveSectionMode(user.id, "news.hotTopics");
+
   if (articles.length === 0) {
-    return { topics: [], generatedAt: null, stale: false };
+    return { topics: [], generatedAt: null, stale: false, pending: false, mode };
   }
 
   const hidden = await prisma.newsHiddenTopic.findMany({
@@ -621,6 +679,7 @@ export async function getHotTopics(force?: boolean): Promise<HotTopicsResult> {
     // ale NIE generują listy od nowa — o tym decyduje kliknięcie użytkownika.
     inputHash: hashInputs(articles.length, articles[0]?.id ?? "", articles[articles.length - 1]?.id ?? ""),
     force,
+    mode,
     generate: async () => {
       const system =
         "Analizujesz nagłówki wiadomości z ostatnich 24h z kilku polskich portali. Pogrupuj je w " +
@@ -647,6 +706,11 @@ export async function getHotTopics(force?: boolean): Promise<HotTopicsResult> {
     },
   });
 
+  // Lista jeszcze nie powstała, a tryb zabrania generować samoczynnie.
+  if (remembered.pending) {
+    return { topics: [], generatedAt: null, stale: false, pending: true, mode };
+  }
+
   return {
     // Odrzucone odfiltrowujemy PO odczycie z pamięci, a nie przed zapisem — dzięki temu cofnięcie
     // odrzucenia przywraca temat od razu, bez płacenia za ponowne wygenerowanie listy.
@@ -654,6 +718,8 @@ export async function getHotTopics(force?: boolean): Promise<HotTopicsResult> {
     generatedAt: remembered.generatedAt,
     stale: remembered.stale,
     usage: await visibleUsage(remembered.usage),
+    pending: false,
+    mode,
   };
 }
 

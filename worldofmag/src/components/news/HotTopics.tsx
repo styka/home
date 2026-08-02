@@ -4,8 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { Flame, Plus, Loader2, EyeOff, Undo2, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { AiContentMeta } from "@/components/ui/AiContentMeta";
-import { AiCostBadge } from "@/components/ui/AiCostBadge";
+import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
 import {
   getHotTopics,
   createTopic,
@@ -135,17 +134,24 @@ export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) 
         )}
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
-        <AiContentMeta
-          generatedAt={data?.generatedAt ?? undefined}
-          stale={data?.stale}
-          busy={loading}
-          onRefresh={() => load(true)}
-          refreshLabel="Przeanalizuj na nowo"
-          staleHint="Od czasu tej analizy przybyło świeżych materiałów"
-        />
-        <AiCostBadge usage={data?.usage} align="left" />
-      </div>
+      {/* 041: koszt stoi WEWNĄTRZ paska, a nie obok — to jedna informacja o tej samej treści.
+          Przy stanie oczekiwania pasek się nie pokazuje: nie ma jeszcze czego opisywać. */}
+      {!data?.pending && (
+        <div className="mb-4">
+          <AiContentMeta
+            generatedAt={data?.generatedAt ?? undefined}
+            stale={data?.stale}
+            busy={loading}
+            onRefresh={() => load(true)}
+            refreshLabel="Przeanalizuj na nowo"
+            staleHint="Od czasu tej analizy przybyło świeżych materiałów"
+            usage={data?.usage}
+            sectionKind="news.hotTopics"
+            mode={data?.mode}
+            onModeChange={() => load()}
+          />
+        </div>
+      )}
 
       {showHidden && hidden && hidden.length > 0 && (
         <div className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-3">
@@ -184,6 +190,21 @@ export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) 
             Spróbuj ponownie
           </Button>
         </div>
+      ) : data?.pending ? (
+        /* 041: analiza nie rusza sama. To NIE jest „brak materiałów" ani awaria — obie te sytuacje
+           mają obok własne, wyraźnie inne komunikaty. */
+        <AiContentPending
+          busy={loading}
+          onGenerate={() => load(true)}
+          title="Gorące tematy powstaną po kliknięciu"
+          hint="Ta sekcja jest ustawiona na „na żądanie”, więc wejście na zakładkę nic nie kosztuje."
+          actionLabel="Przeanalizuj nagłówki"
+          sectionKind="news.hotTopics"
+          mode={data.mode}
+          // Po zmianie trybu czytamy jeszcze raz — „zawsze świeże" da wtedy treść od ręki, a
+          // pozostałe tryby zostaną przy oczekiwaniu, bo pierwsza treść wymaga decyzji.
+          onModeChange={() => load()}
+        />
       ) : topics.length === 0 ? (
         <p className="py-8 text-center text-sm text-[var(--text-muted)]">
           Brak świeżych materiałów do analizy. Odśwież wiadomości, żeby napełnić pulę, albo sprawdź

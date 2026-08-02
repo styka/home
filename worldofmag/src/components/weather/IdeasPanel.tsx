@@ -19,8 +19,9 @@ import {
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
-import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
-import { AiContentMeta } from "@/components/ui/AiContentMeta";
+import type { AiCostUsage } from "@/components/ui/AiCostBadge";
+import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
+import type { AiSectionMode } from "@/lib/ai/sectionMode";
 import { UserFactHypothesisCard } from "@/components/ui/UserFactHypothesisCard";
 import { DAY_PARTS, currentDayPart, type DayPart } from "@/lib/weather/presets";
 import type { Forecast } from "@/lib/weather/openMeteo";
@@ -66,6 +67,13 @@ export function IdeasPanel({
   const [ideas, setIdeas] = useState<IdeaDTO[] | null>(null);
   const [listUsage, setListUsage] = useState<AiCostUsage | undefined>();
   const [memory, setMemory] = useState<{ generatedAt: string; stale: boolean; fromMemory: boolean } | null>(null);
+  /**
+   * 041: sekcja czeka na kliknięcie, bo tryb zabrania generować przy wejściu na stronę. Stan jest
+   * osobny od `ideas === null` (jeszcze nie wczytano) i od `error` (awaria) — te trzy sytuacje
+   * wyglądają dla użytkownika zupełnie inaczej.
+   */
+  const [pending, setPending] = useState(false);
+  const [mode, setMode] = useState<AiSectionMode>("onDemand");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,9 +93,19 @@ export function IdeasPanel({
       setError(null);
       getIdeas(coords.lat, coords.lon, coords.label, { date, part, force: opts?.force })
         .then((r) => {
+          setMode(r.mode);
+          setPending(r.pending);
+          if (r.pending) {
+            // Nie zerujemy `ideas` na pustą tablicę — pusta lista znaczy „model nic nie wymyślił",
+            // a tu po prostu jeszcze o nic nie pytaliśmy.
+            setIdeas(null);
+            setListUsage(undefined);
+            setMemory(null);
+            return;
+          }
           setIdeas(r.ideas);
           setListUsage(r.usage);
-          setMemory({ generatedAt: r.generatedAt, stale: r.stale, fromMemory: r.fromMemory });
+          setMemory(r.generatedAt ? { generatedAt: r.generatedAt, stale: r.stale, fromMemory: r.fromMemory } : null);
         })
         .catch((e) => {
           setIdeas(null);
@@ -294,12 +312,36 @@ export function IdeasPanel({
           <AiContentMeta
             generatedAt={memory.generatedAt}
             stale={memory.stale}
+            busy={loading}
+            onRefresh={() => load({ force: true })}
+            refreshLabel="Nowe propozycje"
             staleHint="Prognoza zmieniła się od czasu wygenerowania tych propozycji"
+            usage={listUsage}
+            sectionKind="weather.ideas"
+            mode={mode}
+            onModeChange={setMode}
           />
         </div>
       )}
 
-      {loading && ideas === null ? (
+      {pending ? (
+        /* 041: nic nie powstaje samo. To NIE jest awaria ani „brak pomysłów" — dlatego ma własny,
+           zachęcający stan zamiast szarego zdania. */
+        <AiContentPending
+          busy={loading}
+          onGenerate={() => load({ force: true })}
+          title="Propozycje powstaną po kliknięciu"
+          hint="Ta sekcja jest ustawiona na „na żądanie”, więc samo wejście na stronę nic nie kosztuje."
+          actionLabel="Zaproponuj, co robić"
+          sectionKind="weather.ideas"
+          mode={mode}
+          onModeChange={(m) => {
+            setMode(m);
+            // Zmiana na tryb generujący ma dać efekt od razu, bez dodatkowego kliknięcia.
+            if (m !== "onDemand") load();
+          }}
+        />
+      ) : loading && ideas === null ? (
         <p className="py-4 text-sm text-[var(--text-muted)]">Szukam pomysłów na tę pogodę…</p>
       ) : error ? (
         /* 038: awaria musi WYGLĄDAĆ inaczej niż brak pomysłów. Wcześniej oba stany były jednakowo
@@ -374,7 +416,9 @@ export function IdeasPanel({
         >
           <Library size={13} /> Zapisane pomysły →
         </Link>
-        {listUsage && <AiCostBadge usage={listUsage} rate={usdPlnRate} />}
+        {/* 041: licznik kosztu przeniósł się do paska nad listą (`AiContentMeta`). Stał tu osobno,
+            w stopce, więc „kiedy powstało" i „ile kosztowało" czytało się w dwóch różnych miejscach
+            ekranu — a to jest jedna informacja o tej samej treści. */}
       </div>
 
       {/* 039: hipoteza o użytkowniku pod listą propozycji — czyli dokładnie tam, gdzie widać, po co
