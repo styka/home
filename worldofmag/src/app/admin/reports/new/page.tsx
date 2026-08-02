@@ -205,7 +205,7 @@ export default function NewReportPage() {
                 ))}
               </div>
             </div>
-            <style>{MARKDOWN_STYLES}</style>
+            <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
             <div style={{ display: "flex", gap: 12 }}>
               {previewMode !== "preview" && (
                 <textarea

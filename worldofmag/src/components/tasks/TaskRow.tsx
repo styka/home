@@ -125,11 +125,16 @@ export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, 
       onMouseEnter={(e) => { if (!isFocused && !isChecked) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
       onMouseLeave={(e) => { if (!isFocused && !isChecked) e.currentTarget.style.backgroundColor = ""; }}
     >
-      {/* Checkbox zaznaczania (bulk): w trybie zaznaczania zawsze widoczny; poza nim pojawia się przy najechaniu. */}
+      {/* Checkbox zaznaczania (bulk): w trybie zaznaczania zawsze widoczny; poza nim pojawia się przy najechaniu.
+          042: ujawnianie przy najechaniu TYLKO na urządzeniach z prawdziwym wskaźnikiem. Ekran dotykowy
+          emuluje `:hover` po dotknięciu i TRZYMA go do dotknięcia gdzie indziej, więc dotknięcie wiersza
+          w celu przewinięcia listy zapalało checkbox i zostawiało go zapalonym. Dodatkowo, gdy jest
+          niewidoczny, nie może być klikalny — `opacity-0` samo w sobie nie wyłącza zdarzeń wskaźnika,
+          więc dotknięcie „pustego" miejsca obok tytułu zaznaczało zadanie bez żadnego sygnału. */}
       {onToggleSelect && (
         <button
           onClick={(e) => { e.stopPropagation(); onToggleSelect(e.shiftKey); }}
-          className={`flex-shrink-0 self-center flex items-center justify-center rounded focus:outline-none transition-opacity ${selectionMode ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+          className={`flex-shrink-0 self-center flex items-center justify-center rounded focus:outline-none transition-opacity ${selectionMode ? "opacity-100" : "opacity-0 pointer-events-none [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:pointer-events-auto"}`}
           style={{
             width: 20, height: 20,
             border: `2px solid ${isChecked ? "var(--accent-blue)" : "var(--border)"}`,

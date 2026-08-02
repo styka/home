@@ -93,7 +93,7 @@ export function IdeaDetailSheet({
           </p>
         ) : detail ? (
           <>
-            <style>{MARKDOWN_STYLES}</style>
+            <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
             <div
               className="markdown-body text-sm text-[var(--text-secondary)]"
               dangerouslySetInnerHTML={{ __html: markdownToHtml(detail) }}

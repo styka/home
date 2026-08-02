@@ -59,7 +59,7 @@ export function GroupsManager({ groups }: GroupsManagerProps) {
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
       >
         <h1 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-          Grupy notatek
+          Foldery notatek
         </h1>
         <button
           onClick={() => setCreating(true)}
@@ -67,7 +67,7 @@ export function GroupsManager({ groups }: GroupsManagerProps) {
           style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
         >
           <Plus size={13} />
-          Nowa grupa
+          Nowy folder
         </button>
       </div>
 
@@ -82,7 +82,7 @@ export function GroupsManager({ groups }: GroupsManagerProps) {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); if (e.key === "Escape") setCreating(false); }}
-              placeholder="Nazwa grupy..."
+              placeholder="Nazwa folderu…"
               className="bg-transparent text-sm focus:outline-none"
               style={{ color: "var(--text-primary)" }}
             />
@@ -118,7 +118,7 @@ export function GroupsManager({ groups }: GroupsManagerProps) {
           <div className="flex flex-col items-center justify-center py-12 gap-2">
             <FolderOpen size={32} style={{ color: "var(--text-muted)" }} />
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              Brak grup. Utwórz pierwszą.
+              Brak folderów. Utwórz pierwszy.
             </p>
           </div>
         )}

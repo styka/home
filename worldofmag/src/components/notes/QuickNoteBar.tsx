@@ -251,7 +251,7 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
                 className="bg-transparent text-xs focus:outline-none rounded px-2 py-1 border"
                 style={{ borderColor: "var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-elevated)" }}
               >
-                <option value="">Bez grupy</option>
+                <option value="">Bez folderu</option>
                 {groups.map((g) => (
                   <option key={g.id} value={g.id}
                     style={{ backgroundColor: "#1c1c1c", color: "var(--text-primary)" }}>

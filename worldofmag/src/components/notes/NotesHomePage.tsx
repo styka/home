@@ -84,7 +84,7 @@ export function NotesHomePage({
             icon={<Pin size={14} />}
             href="/notes/all?pinned=1"
           />
-          <StatTile value={groupCount} label="Grupy" color="var(--accent-green)" href="/notes/groups" />
+          <StatTile value={groupCount} label="Foldery" color="var(--accent-green)" href="/notes/groups" />
           <StatTile value={tagCount} label="Tagi" color="var(--accent-purple)" href="/notes/tags" />
         </div>
 
@@ -150,7 +150,7 @@ export function NotesHomePage({
           <ManagementGrid
             items={[
               { href: "/notes/all", icon: <LayoutList size={16} />, label: "Wszystkie", color: "var(--accent-amber)" },
-              { href: "/notes/groups", icon: <FolderOpen size={16} />, label: "Grupy", color: "var(--accent-amber)" },
+              { href: "/notes/groups", icon: <FolderOpen size={16} />, label: "Foldery", color: "var(--accent-amber)" },
               { href: "/notes/tags", icon: <Tag size={16} />, label: "Tagi", color: "var(--accent-amber)" },
             ]}
           />

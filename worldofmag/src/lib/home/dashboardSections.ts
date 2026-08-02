@@ -3,13 +3,17 @@
 // preferencji przyjmowała DOWOLNE stringi — literówka w JSON tworzyła „martwą"
 // pozycję. Tu jest wspólny whitelist używany i przez UI, i przez Server Action.
 
+// 042: kolejność domyślna to jednocześnie kolejność PIONOWA na wąskim ekranie (AC-16),
+// więc zaczyna się od tego, co pilne, a kończy na tym, co historyczne. Użytkownicy z własną
+// zapisaną kolejnością zachowują swoją — `HomePage` dokleja nowe klucze na końcu (AC-18).
 export const DASHBOARD_SECTIONS = [
-  "recently",
   "briefing",
-  "modules",
+  "favorites",
   "today",
+  "modules",
   "quickActions",
   "suggestions",
+  "recently",
 ] as const;
 
 export type DashboardSection = (typeof DASHBOARD_SECTIONS)[number];
