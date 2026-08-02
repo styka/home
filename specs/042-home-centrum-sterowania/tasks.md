@@ -219,6 +219,45 @@
 
 ---
 
+## Faza 7 — Poprawki po weryfikacji (wejście z `verify.md`)
+
+- [ ] **T-22** — **D-1: gwiazdka nie może być wyłączona przez czas wykonania efektu** (blokuje AC-1,
+  a pośrednio AC-6/AC-7/AC-24).
+  `FavoriteStarButton` ma dziś `disabled={!fullPath || isPending}`, a `fullPath` powstaje w `useEffect`.
+  Przy ponownym montowaniu drzewa (realnie zachodzi — D-3) przycisk bywa nieklikalny; Playwright
+  wielokrotnie trafiał na `<button disabled …>` + „element was detached from the DOM".
+  **Naprawa:** ścieżkę liczyć **synchronicznie w handlerze kliknięcia** z `window.location`
+  (`normalizeFavoritePath`), a stan z efektu zostawić wyłącznie do wyglądu (gwiazdka pełna/pusta).
+  `disabled` może zależeć już tylko od `isPending`.
+  *Gotowe, gdy:* gwiazdka jest klikalna natychmiast po wejściu na stronę, a zapis nadal zachowuje
+  parametry zapytania.
+
+- [ ] **T-23** — **D-2: `Alt+1..9` musi faktycznie nawigować** (AC-5).
+  Stan ustalony w weryfikacji: zdarzenie dociera poprawnie (`code:"Digit1"`, `alt:true`,
+  `ctrl:false`), `Alt+0` otwiera przełącznik, ale `router.push` nie zmienia adresu — także w
+  wariantach `setTimeout(…,0)` i `startTransition`. Ta sama metoda działa z reactowego handlera
+  w przełączniku.
+  **Do zrobienia:** dokończyć diagnozę na czystych danych (po T-22) i doprowadzić do działającej
+  nawigacji; jeśli `router.push` z natywnego listenera okaże się nieskuteczny, wybrać wariant
+  odporny i **uzasadnić go w kodzie**.
+  *Gotowe, gdy:* test `[fav-AC5]` przechodzi — `Alt+1` przenosi pod adres pierwszego ulubionego,
+  a `Control+Alt+Digit1` (AltGr) **nie** nawiguje.
+
+- [ ] **T-24** — **Dokończyć przebieg E2E** `e2e/specs/favorites.spec.ts` (AC-6, AC-7, AC-24).
+  Testy są napisane, ale tryb `serial` przerywał serię po pierwszym błędzie.
+  *Gotowe, gdy:* cały plik jest zielony, a spec dodany do repo.
+
+- [ ] **T-25** `[P]` — **Pomiary AC-16 i AC-17 w przeglądarce.**
+  AC-16: `document.scrollingElement.scrollWidth === clientWidth` przy 390 / 900 / 1440 px.
+  AC-17: przełączenie skórki jasnej i ciemnej bez utraty czytelności.
+  *Gotowe, gdy:* oba pomiary mają odnotowany wynik w `verify.md`.
+
+> **Poza zakresem 042 (do osobnego specu):** preegzystujący błąd hydratacji z `MARKDOWN_STYLES`
+> w `AICommandSheet` (`content: "•"` serializowane inaczej na serwerze i kliencie) — powoduje
+> „the entire root will switch to client rendering", czyli **cała aplikacja traci renderowanie
+> serwerowe**. Nie jest to regresja tej zmiany (kod z `76451ea`, `lib/markdown.ts` ostatnio ruszany
+> 2026-07-20 na `master`), ale skutek jest poważny i zasługuje na własne rozpoznanie.
+
 ## Mapowanie kryteriów akceptacji → zadania
 
 | AC | Zadanie(a) |
