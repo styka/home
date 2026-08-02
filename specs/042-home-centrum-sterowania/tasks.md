@@ -62,7 +62,7 @@
 
 ## Faza 2 — Fundament danych ulubionych (plan §2)
 
-- [ ] **T-5** — **Migracja `0221_ulubione_widoki`** (plan §2.2).
+- [x] **T-5** — **Migracja `0221_ulubione_widoki`** (plan §2.2).
   `prisma/migrations/0221_ulubione_widoki/migration.sql` — DDL 1:1 z planu: `CREATE TABLE IF NOT
   EXISTS "FavoriteView"`, unikalny indeks `[ownerId, path]`, indeks `[ownerId, order]`, FK do `User`
   z `ON DELETE CASCADE`. Numer `0221` potwierdzony (ostatni katalog: `0220_kontrola_nad_ai`).
@@ -70,7 +70,7 @@
   *Gotowe, gdy:* `check:migrations` przechodzi, a `npx prisma migrate deploy` na **lokalnym**
   Postgresie (C-13 — nigdy prod) tworzy tabelę i oba indeksy.
 
-- [ ] **T-6** — **`schema.prisma`: model `FavoriteView`** zgodny z migracją + relacja
+- [x] **T-6** — **`schema.prisma`: model `FavoriteView`** zgodny z migracją + relacja
   `favoriteViews FavoriteView[] @relation("OwnedFavoriteViews")` w modelu `User`.
   Zero enumów Prisma — `icon`/`color` to `String` (C-12).
   *Gotowe, gdy:* `npx prisma generate` przechodzi czysto, a wygenerowany klient zna `FavoriteView`.
