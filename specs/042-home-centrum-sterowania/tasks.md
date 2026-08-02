@@ -88,7 +88,7 @@
 
 ## Faza 3 — Warstwa serwera (plan §3)
 
-- [ ] **T-8** — **`src/actions/favoriteViews.ts`** — 6 Server Actions wg tabeli z planu §3:
+- [x] **T-8** — **`src/actions/favoriteViews.ts`** — 6 Server Actions wg tabeli z planu §3:
   `getFavoriteViews`, `addFavoriteView`, `removeFavoriteView`, `removeFavoriteViewByPath`,
   `updateFavoriteView`, `reorderFavoriteViews`. Wzorzec: `src/actions/menuPrefs.ts`.
   Twarde reguły: `requireAuth()` w każdej; `update`/`delete` **wyłącznie** przez
@@ -98,7 +98,7 @@
   *Gotowe, gdy:* żaden identyfikator bez dopasowania `ownerId` nie zmienia cudzego wiersza, a próba
   zapisu istniejącej ścieżki nie tworzy duplikatu (chroni `@@unique`, AC-9).
 
-- [ ] **T-9** — **Wpisy w `src/lib/ai/action-coverage.json`** dla wszystkich 6 akcji
+- [x] **T-9** — **Wpisy w `src/lib/ai/action-coverage.json`** dla wszystkich 6 akcji
   (`favoriteViews:*`), wzorzec `menuPrefs:*`: `"status": "excluded"`, `"reason": "settings"`,
   `"access": "self"`, a odczyt dodatkowo `"kind": "read"`.
   **To nie jest formalność — brak wpisu wywala `npm run build`.**

@@ -387,6 +387,37 @@
     "reason": "settings",
     "access": "self"
   },
+  "favoriteViews:addFavoriteView": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
+  "favoriteViews:getFavoriteViews": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
+  "favoriteViews:removeFavoriteView": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
+  "favoriteViews:removeFavoriteViewByPath": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
+  "favoriteViews:reorderFavoriteViews": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
+  "favoriteViews:updateFavoriteView": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
   "feedback:getFeedbackInboxInfo": {
     "kind": "read",
     "status": "excluded",
