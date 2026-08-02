@@ -60,6 +60,9 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>({ type: "category" });
   const [completeOpen, setCompleteOpen] = useState(false);
+  // 042: „Wyczyść" kasuje kupione pozycje TWARDO (`deleteMany`, bez zapisu do kosza), więc jedno
+  // przypadkowe dotknięcie ikony było nieodwracalne. Pytamy o potwierdzenie przed wykonaniem.
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   // 009-shopping-offline-sync: źródłem pozycji jest stan kliencki — online z propsów serwera
@@ -257,7 +260,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
         {/* Operacje na LIŚCIE są online-only (spec 009): offline wyłączone z tooltipem. */}
         {counts.DONE > 0 && (
           <button
-            onClick={() => { if (online) startTransition(() => clearDoneItems(effListId)); }}
+            onClick={() => { if (online) setConfirmClearOpen(true); }}
             disabled={!online}
             className="flex items-center gap-1.5 text-xs px-2 py-1 rounded disabled:opacity-40"
             style={{ color: "var(--accent-red)", backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}
@@ -322,6 +325,48 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
         allLists={switcherLists}
         onFocusQuickAdd={() => {}}
       />
+
+      {confirmClearOpen && (
+        <Modal
+          onClose={() => setConfirmClearOpen(false)}
+          title={
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Trash2 size={18} style={{ color: "var(--accent-red)" }} />
+              Usunąć kupione pozycje?
+            </span>
+          }
+          footer={
+            <>
+              <button
+                onClick={() => setConfirmClearOpen(false)}
+                className="text-sm px-3 py-1.5 rounded"
+                style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={() => { setConfirmClearOpen(false); startTransition(() => clearDoneItems(effListId)); }}
+                disabled={isPending}
+                className="text-sm px-3 py-1.5 rounded"
+                style={{ background: "var(--accent-red)", color: "var(--on-accent)", fontWeight: 600, border: "none", opacity: isPending ? 0.6 : 1 }}
+              >
+                Usuń {counts.DONE}
+              </button>
+            </>
+          }
+        >
+          <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>
+            Z listy „{effName}” zniknie{" "}
+            <strong style={{ color: "var(--text-primary)" }}>
+              {counts.DONE} {counts.DONE === 1 ? "kupiona pozycja" : "kupionych pozycji"}
+            </strong>
+            .
+          </p>
+          <p style={{ fontSize: 12, color: "var(--accent-amber)", margin: 0 }}>
+            Tej operacji nie da się cofnąć — usunięte pozycje nie trafiają do kosza.
+          </p>
+        </Modal>
+      )}
 
       {completeOpen && (
         <CompleteShoppingModal

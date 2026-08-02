@@ -73,6 +73,26 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recurringSavedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /**
+   * 042: pole opisu rośnie w pionie razem z treścią.
+   *
+   * Wcześniej wysokość wynikała z `rows={Math.max(3, description.split("\n").length)}`, czyli z
+   * LICZBY ZNAKÓW NOWEJ LINII — jeden długi akapit bez `\n` zawijający się na kilkanaście wierszy
+   * dostawał `rows=3` i wewnętrzny pasek przewijania. Mierzymy więc rzeczywistą wysokość treści.
+   *
+   * Reset do `"auto"` przed odczytem `scrollHeight` jest OBOWIĄZKOWY: `scrollHeight` nigdy nie jest
+   * mniejszy niż bieżąca wysokość elementu, więc bez resetu pole rosłoby przy pisaniu, ale nigdy nie
+   * malało przy kasowaniu tekstu.
+   *
+   * Sufit (60% wysokości okna) chroni przed wypchnięciem reszty panelu poza ekran przy bardzo długim
+   * opisie — powyżej niego przewijanie wewnątrz pola wraca i to jest zachowanie pożądane.
+   */
+  function autoSizeDescription(el: HTMLTextAreaElement | null) {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, Math.round(window.innerHeight * 0.6))}px`;
+  }
+
   // Helper: wrap async server actions for startTransition
   function run(fn: () => Promise<unknown>) {
     startTransition(async () => { await fn(); });
@@ -457,13 +477,16 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
           {editingDesc ? (
             <textarea
               autoFocus
+              // Ref-callback dopasowuje wysokość SYNCHRONICZNIE po zamontowaniu (przed odmalowaniem),
+              // więc wejście w edycję długiego opisu nie mruga najpierw trzema wierszami.
+              ref={autoSizeDescription}
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => { setDescription(e.target.value); autoSizeDescription(e.currentTarget); }}
               onBlur={handleDescriptionBlur}
-              rows={Math.max(3, description.split("\n").length)}
+              rows={3}
               placeholder="Dodaj opis (Markdown obsługiwany)…"
               className="w-full bg-transparent text-sm focus:outline-none resize-none"
-              style={{ color: "var(--text-secondary)", lineHeight: 1.6 }}
+              style={{ color: "var(--text-secondary)", lineHeight: 1.6, overflowY: "auto" }}
             />
           ) : description.trim() ? (
             <div

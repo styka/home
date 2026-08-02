@@ -20,14 +20,14 @@
 
 ## Faza 0 — Punktowe poprawki UX (plan §5.6–5.8)
 
-- [ ] **T-1** `[P]` — **Checkboxy zadań nie reagują na dotyk** (plan §5.6).
+- [x] **T-1** `[P]` — **Checkboxy zadań nie reagują na dotyk** (plan §5.6).
   `src/components/tasks/TaskRow.tsx` (~l. 132): gałąź poza trybem zaznaczania zmienia się z
   `opacity-0 group-hover:opacity-100` na `opacity-0 [@media(hover:hover)]:group-hover:opacity-100`.
   Gałęzi `selectionMode ? "opacity-100"` **nie ruszamy**.
   *Gotowe, gdy:* w emulacji dotyku dotknięcie i przeciągnięcie wiersza nie zapala checkboxa (AC-20),
   na myszy najechanie nadal go pokazuje (AC-21), a w trybie zaznaczania jest widoczny na obu (AC-22).
 
-- [ ] **T-2** `[P]` — **Pole opisu zadania rozciąga się w pionie** (plan §5.7).
+- [x] **T-2** `[P]` — **Pole opisu zadania rozciąga się w pionie** (plan §5.7).
   `src/components/tasks/TaskDetail.tsx` (~l. 458–465): `ref` na `<textarea>`, `rows={3}` na stałe,
   `useLayoutEffect` zależny od `description` ustawiający
   `el.style.height = "auto"` → `el.style.height = Math.min(el.scrollHeight, MAX) + "px"`,
@@ -36,7 +36,7 @@
   *Gotowe, gdy:* opis złożony z jednego akapitu ~1500 znaków **bez** znaków nowej linii rozciąga pole
   bez wewnętrznego paska przewijania, a powyżej 60vh przewijanie wraca (AC-23).
 
-- [ ] **T-3** `[P]` — **Potwierdzenie przed wyczyszczeniem kupionych pozycji** (plan §5.8).
+- [x] **T-3** `[P]` — **Potwierdzenie przed wyczyszczeniem kupionych pozycji** (plan §5.8).
   `src/components/shopping/ShoppingPage.tsx` (~l. 262): przycisk „Wyczyść (n)" nie woła już
   `clearDoneItems` bezpośrednio, tylko otwiera `Modal` (wzorzec: sąsiedni `completeOpen` w tym samym
   pliku). Treść po polsku, z **liczbą pozycji** i informacją, że operacja jest nieodwracalna (bo
