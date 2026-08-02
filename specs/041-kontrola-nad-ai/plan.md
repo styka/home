@@ -205,8 +205,14 @@ zwróciło — czyli dla administratora (AC-15, AC-16).
 
 ### 5.4 Auto-zatwierdzanie w czacie
 
-- Przełącznik w **rozwijanej sekcji ustawień asystenta** (`headerPanel === "prefs"`), obok poziomu
-  pracy — zgodnie z decyzją właściciela.
+- Przełącznik **na dole menu poziomu pracy asystenta** (rozwijane nad kompozytorem, ikona miernika)
+  — zgodnie z decyzją właściciela: „przy akcjach ustawiania jakości asystenta na dole".
+
+> **Korekta z etapu `/implement` (C-54).** Plan pisał „w rozwijanej sekcji ustawień asystenta
+> (`headerPanel === "prefs"`), obok poziomu pracy" — ale poziom pracy **nie mieszka** w panelu
+> `prefs`, tylko we własnym menu przy kompozytorze (w `prefs` są stałe instrukcje i głos lektora).
+> Umieszczenie przełącznika w `prefs` spełniałoby literalnie pierwszą połowę zdania właściciela i
+> łamało obie pozostałe („przy jakości", „na dole"). Przełącznik trafia więc do menu poziomu.
 - Stan widoczny **stale**: gdy włączone, w nagłówku czatu mały znacznik (AC-22) — bo tryb nie może
   działać po cichu.
 - Logika w `AICommandSheet`: gdy `autoApprove` i **żadna** akcja nie jest niszcząca → wykonaj od

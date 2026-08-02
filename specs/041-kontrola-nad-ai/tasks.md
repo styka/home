@@ -96,19 +96,20 @@
 
 ## Faza 5 — Auto-zatwierdzanie akcji asystenta (zgłoszenie 3)
 
-- [ ] **T-13** — **`AssistantPref.autoApprove` + akcja.** Rozszerzenie istniejącego
+- [x] **T-13** — **`AssistantPref.autoApprove` + akcja.** Rozszerzenie istniejącego
       `updateAssistantPrefs`.
       *Gotowe, gdy:* ustawienie przeżywa ponowne wejście. **(AC-20)**
 
-- [ ] **T-14** — **Logika pomijania szuflady.** Gdy `autoApprove` **i żadna** akcja nie należy do
+- [x] **T-14** — **Logika pomijania szuflady.** Gdy `autoApprove` **i żadna** akcja nie należy do
       `DESTRUCTIVE_ACTION_TYPES` → wykonaj od razu i pokaż wynik; w przeciwnym razie `ActionDrawer`
       jak dotąd. Klasyfikacja **wyłącznie** z `lib/ai/aiAction.ts` — zero drugiej listy.
       *Gotowe, gdy:* zestaw akcji bezpiecznych idzie bez kliknięcia, a zestaw z jedną niszczącą
       **nadal otwiera szufladę**. **(AC-18, AC-19)**
 
-- [ ] **T-15** — **UI przełącznika.** Przełącznik w rozwijanej sekcji ustawień asystenta (panel
-      `prefs`), obok poziomu pracy — zgodnie z decyzją właściciela. Stan widoczny **stale** w
-      nagłówku czatu, gdy włączony.
+- [x] **T-15** — **UI przełącznika.** Przełącznik **na dole menu poziomu pracy asystenta** (nad
+      kompozytorem) — zgodnie z decyzją właściciela „przy akcjach ustawiania jakości asystenta na
+      dole". *(Korekta z `/implement`: poziom pracy nie mieszka w panelu `prefs`, tylko we własnym
+      menu — patrz plan §5.4.)* Stan widoczny **stale** w nagłówku czatu, gdy włączony.
       *Gotowe, gdy:* da się przełączyć bez opuszczania czatu, a z ekranu widać, że tryb działa.
       **(AC-21, AC-22)**
 
