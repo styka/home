@@ -24,6 +24,8 @@ import {
 import { usageFromChat, parseStoredUsage, type AiUsageInfo } from "@/lib/ai/usage";
 import { visibleUsage } from "@/lib/ai/costVisibility";
 import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
+import { resolveSectionMode } from "@/lib/ai/sectionModeResolver";
+import type { AiSectionMode } from "@/lib/ai/sectionMode";
 import { buildUserContext, userContextStamp } from "@/lib/userContext";
 import { recordTrash } from "@/lib/trash";
 import { auth } from "@/lib/auth";
@@ -401,11 +403,15 @@ export async function evaluateWatchers(
 export interface IdeasResult {
   ideas: IdeaDTO[];
   usage?: AiUsageInfo;
-  /** 038: kiedy lista powstała — UI mówi wprost, że treść pochodzi z pamięci. */
-  generatedAt: string;
+  /** 038: kiedy lista powstała — UI mówi wprost, że treść pochodzi z pamięci. `null` = jeszcze nie powstała. */
+  generatedAt: string | null;
   /** Prognoza lub listy pomysłów zmieniły się od czasu wygenerowania. Sygnał, nie polecenie. */
   stale: boolean;
   fromMemory: boolean;
+  /** 041: lista czeka na kliknięcie — tryb sekcji zabrania generować przy samym wejściu na stronę. */
+  pending: boolean;
+  /** 041: obowiązujący tryb odświeżania tej sekcji (do przełącznika w pasku). */
+  mode: AiSectionMode;
 }
 
 /** Surowa propozycja prosto od modelu — to JĄ zapamiętujemy, bez stanu użytkownika. */
@@ -540,12 +546,17 @@ export async function getIdeas(
       ? `\n\nPodobały mu się wcześniej:\n${saved.slice(0, 10).map((k) => `- ${k.title}`).join("\n")}`
       : "");
 
+  // 041: to tryb decyduje, czy samo wejście na stronę woła model. Domyślnie („na żądanie") NIE woła
+  // — lista czeka na kliknięcie, zamiast kosztować przy każdej zmianie dnia albo pory.
+  const mode = await resolveSectionMode(user.id, "weather.ideas");
+
   const remembered = await rememberedContent<RawIdea[]>({
     ownerId: user.id,
     kind: "weather.ideas",
     scopeKey,
     inputHash,
     force,
+    mode,
     generate: async () => {
       const system =
         "Jesteś przewodnikiem po okolicy i doradcą rekreacyjnym. Na podstawie prognozy dla wskazanego " +
@@ -618,6 +629,12 @@ export async function getIdeas(
     },
   });
 
+  // Nic jeszcze nie powstało i tryb zabrania generować samoczynnie. To NIE jest pusta lista
+  // („nie ma co robić") ani awaria — UI ma dla tego osobny stan.
+  if (remembered.pending) {
+    return { ideas: [], generatedAt: null, stale: false, fromMemory: false, pending: true, mode };
+  }
+
   const seen = new Set<string>();
   const ideas: IdeaDTO[] = [];
   for (const raw of remembered.value) {
@@ -651,6 +668,8 @@ export async function getIdeas(
     generatedAt: remembered.generatedAt,
     stale: remembered.stale,
     fromMemory: remembered.fromMemory,
+    pending: false,
+    mode,
   };
 }
 

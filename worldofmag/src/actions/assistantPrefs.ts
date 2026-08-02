@@ -39,6 +39,11 @@ export interface AssistantPrefsDTO {
   level: AssistantLevel;
   voiceKind: AssistantVoiceKind;
   voiceId: string | null;
+  /**
+   * 041: auto-zatwierdzanie BEZPIECZNYCH akcji asystenta. Akcje niszczące pytają zawsze —
+   * klasyfikacja idzie z `DESTRUCTIVE_ACTION_TYPES`, tego samego zbioru, którego używa szuflada.
+   */
+  autoApprove: boolean;
 }
 
 export interface AssistantPrefsInput {
@@ -46,6 +51,7 @@ export interface AssistantPrefsInput {
   level?: string;
   voiceKind?: string;
   voiceId?: string | null;
+  autoApprove?: boolean;
 }
 
 const DEFAULTS: AssistantPrefsDTO = {
@@ -53,6 +59,7 @@ const DEFAULTS: AssistantPrefsDTO = {
   level: "standard",
   voiceKind: "browser",
   voiceId: null,
+  autoApprove: false,
 };
 
 function parseLevel(value: string | null | undefined): AssistantLevel {
@@ -79,6 +86,7 @@ export async function getAssistantPrefs(): Promise<AssistantPrefsDTO> {
     level: parseLevel(row.level),
     voiceKind: parseVoiceKind(row.voiceKind),
     voiceId: row.voiceId ?? null,
+    autoApprove: row.autoApprove,
   };
 }
 
@@ -95,7 +103,10 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
     level?: AssistantLevel;
     voiceKind?: AssistantVoiceKind;
     voiceId?: string | null;
+    autoApprove?: boolean;
   } = {};
+
+  if (input.autoApprove !== undefined) data.autoApprove = input.autoApprove === true;
 
   if (input.instructions !== undefined) {
     if (input.instructions.length > ASSISTANT_INSTRUCTIONS_MAX) {
@@ -144,6 +155,7 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
     level: parseLevel(row.level),
     voiceKind: parseVoiceKind(row.voiceKind),
     voiceId: row.voiceId ?? null,
+    autoApprove: row.autoApprove,
   };
 }
 

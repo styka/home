@@ -36,6 +36,13 @@ import {
   CONFIG_LEVEL_LABELS,
   type ConfigLevel,
 } from "@/lib/llm/operationTypes";
+import {
+  AI_SECTION_KINDS,
+  AI_SECTION_LABELS,
+  AI_SECTION_MODE_LABELS,
+  type AiSectionMode,
+} from "@/lib/ai/sectionMode";
+import { setDefaultSectionModes } from "@/actions/aiSections";
 
 const KIND_LABELS: Record<string, string> = {
   openai_compat: "OpenAI-compatible (Groq, OpenAI, xAI, OpenRouter…)",
@@ -595,6 +602,77 @@ function CostBadgeSection({ enabled }: { enabled: boolean }) {
 }
 
 /**
+ * 041: systemowe domyślne trybów odświeżania sekcji AI.
+ *
+ * Dotyczy WYŁĄCZNIE użytkowników bez własnego wyboru — czyjś świadomy wybór w module zostaje
+ * nietknięty (preferencja mieszka w `AiSectionPref`, domyślne w `Config`, to dwa rozłączne zapisy).
+ * Sekcja stoi obok pozostałych przełączników AI, bo odpowiada na to samo pytanie: ile model robi
+ * sam z siebie i ile to kosztuje.
+ */
+function SectionModesSection({ modes }: { modes: Record<string, AiSectionMode> }) {
+  const [isPending, startTransition] = useTransition();
+  const [value, setValue] = useState(modes);
+  const [error, setError] = useState<string | null>(null);
+
+  function change(kind: string, mode: AiSectionMode) {
+    const next = { ...value, [kind]: mode };
+    setValue(next);
+    setError(null);
+    startTransition(async () => {
+      try {
+        await setDefaultSectionModes(next);
+      } catch (e) {
+        setValue(value);
+        setError(e instanceof Error ? e.message : "Nie udało się zapisać ustawienia.");
+      }
+    });
+  }
+
+  return (
+    <section style={{ marginBottom: 32 }}>
+      <SectionTitle>Domyślne odświeżanie sekcji AI</SectionTitle>
+      <p style={{ fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.5, margin: "0 0 10px" }}>
+        Dotyczy użytkowników, którzy <strong>nie wybrali</strong> własnego trybu w module. Kto raz
+        wybrał swój, przestaje dziedziczyć stąd — zmiana poniżej go nie dotknie.
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {AI_SECTION_KINDS.map((kind) => (
+          <div
+            key={kind}
+            style={{
+              display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between",
+              gap: 8, padding: 12, border: "1px solid var(--border)", borderRadius: 8,
+              background: "var(--bg-surface)",
+            }}
+          >
+            <span style={{ minWidth: 0, fontSize: 13, color: "var(--text-primary)" }}>
+              {AI_SECTION_LABELS[kind]}
+            </span>
+            <select
+              value={value[kind] ?? "onDemand"}
+              disabled={isPending}
+              onChange={(e) => change(kind, e.target.value as AiSectionMode)}
+              className="py-3"
+              style={{
+                fontSize: 12.5, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)",
+                background: "var(--bg-elevated)", color: "var(--text-primary)", outline: "none",
+              }}
+            >
+              {(Object.keys(AI_SECTION_MODE_LABELS) as AiSectionMode[]).map((m) => (
+                <option key={m} value={m}>
+                  {AI_SECTION_MODE_LABELS[m].label}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
+      {error && <p style={{ fontSize: 12, color: "var(--accent-red)", marginTop: 8 }}>{error}</p>}
+    </section>
+  );
+}
+
+/**
  * 034: cennik modeli. Wcześniej stawki były zaszyte w kodzie — model spoza listy „kosztował 0",
  * a aktualizacja ceny wymagała wdrożenia. Dopasowanie idzie po POCZĄTKU nazwy modelu, bo
  * identyfikatory bywają z sufiksami wersji („claude-haiku-4-5-20251001").
@@ -869,6 +947,7 @@ export function LlmConfigPanel({
   prices,
   followupsEnabled,
   costBadgeEnabled,
+  sectionModes,
 }: {
   providers: ProviderDTO[];
   assignmentsByLevel: Record<ConfigLevel, AssignmentDTO[]>;
@@ -879,6 +958,7 @@ export function LlmConfigPanel({
   prices: ModelPriceDTO[];
   followupsEnabled: boolean;
   costBadgeEnabled: boolean;
+  sectionModes: Record<string, AiSectionMode>;
 }) {
   // 034: poziom pracy asystenta wybierany zakładką nad siatką typów operacji. Wcześniej admin
   // konfigurował wyłącznie poziom standardowy, a dwa pozostałe były regułami zaszytymi w kodzie.
@@ -937,6 +1017,8 @@ export function LlmConfigPanel({
       <FollowupsSection enabled={followupsEnabled} />
 
       <CostBadgeSection enabled={costBadgeEnabled} />
+
+      <SectionModesSection modes={sectionModes} />
 
       <ModelPricesSection prices={prices} />
 

@@ -416,6 +416,12 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   // urządzeniu), nie w pamięci przeglądarki. Serwer i tak czyta go z bazy; ten stan służy UI.
   const [level, setLevel] = useState<AssistantLevel>("standard");
   const [showLevelMenu, setShowLevelMenu] = useState(false);
+  // 041: auto-zatwierdzanie BEZPIECZNYCH akcji — z pominięciem szuflady przeglądu. Akcje niszczące
+  // pytają ZAWSZE, niezależnie od tego ustawienia. Ref, bo czyta to funkcja wywoływana z odpowiedzi
+  // agenta (stale-closure zjadłoby świeżą wartość zaraz po przełączeniu).
+  const [autoApprove, setAutoApprove] = useState(false);
+  const autoApproveRef = useRef(false);
+  autoApproveRef.current = autoApprove;
   // Zgłaszanie problemu z czatem (admin-only): panel z opcjonalnym opisem → zadanie w projekcie „Omnia".
   const [reportDesc, setReportDesc] = useState("");
   const [reportBusy, setReportBusy] = useState(false);
@@ -694,6 +700,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
         const p = await getAssistantPrefs();
         if (cancelled) return;
         setLevel(p.level);
+        setAutoApprove(p.autoApprove);
         if (p.voiceKind === "server" && p.voiceId) {
           setServerVoiceId(p.voiceId);
           setVoiceURIState(toServerVoiceValue(p.voiceId));
@@ -853,6 +860,19 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     setLevel(next);
     setShowLevelMenu(false);
     void updateAssistantPrefs({ level: next }).catch(() => {});
+  }
+
+  /**
+   * 041: auto-zatwierdzanie bezpiecznych akcji. Menu zostaje otwarte — to przełącznik, a nie wybór
+   * z listy, więc zamknięcie po kliknięciu odbierałoby potwierdzenie, że stan faktycznie się zmienił.
+   */
+  function toggleAutoApprove() {
+    const next = !autoApprove;
+    setAutoApprove(next);
+    void updateAssistantPrefs({ autoApprove: next }).catch(() => {
+      // Zapis się nie udał — cofamy, żeby ekran nie obiecywał trybu, którego serwer nie zna.
+      setAutoApprove(!next);
+    });
   }
 
   // Autofokus pola wejścia po otwarciu (desktop) — natychmiast piszesz.
@@ -1061,8 +1081,17 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     }
     if (data.step === "plan") {
       const actions = data.actions ?? [];
-      setTurns((t) => [...t, { id, role: "assistant", kind: "plan", content: `Zaproponowano ${actions.length} ${actions.length === 1 ? "akcję" : "akcji"}`, actions, messages: data.messages, log: data.log ?? log, meta }]);
+      const planTurn: Extract<Turn, { kind: "plan" }> = { id, role: "assistant", kind: "plan", content: `Zaproponowano ${actions.length} ${actions.length === 1 ? "akcję" : "akcji"}`, actions, messages: data.messages, log: data.log ?? log, meta };
+      setTurns((t) => [...t, planTurn]);
       void persist("assistant", `Zaproponowano ${actions.length} akcji`, "plan", { actions });
+      // 041: auto-zatwierdzanie. Warunek jest CELOWO ostry: wystarczy JEDNA akcja niszcząca w
+      // zestawie, żeby cały plan poszedł do szuflady — bo użytkownik i tak musiałby ją tam
+      // potwierdzić, a rozbijanie planu na „to wykonam, a o to zapytam" zostawiałoby go w połowie
+      // zrobionej rzeczy. Klasyfikacja wyłącznie przez `isDestructiveAction` (jeden zbiór wspólny
+      // z szufladą) — druga lista byłaby cichą luką przy dodaniu kolejnej akcji usuwającej.
+      if (autoApproveRef.current && actions.length > 0 && !actions.some(isDestructiveAction)) {
+        void handleExecute(planTurn, actions);
+      }
       return;
     }
     setError("Nieoczekiwana odpowiedź asystenta.");
@@ -1600,6 +1629,21 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                 <Sparkles size={15} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap" }}>Asystent AI</span>
+                {/* 041: tryb automatyczny nie może działać po cichu. Znacznik stoi w nagłówku, czyli
+                    tam, gdzie widać go PRZEZ CAŁĄ rozmowę — a nie tylko w chwili przełączania. */}
+                {autoApprove && (
+                  <span
+                    title="Bezpieczne akcje wykonują się bez pytania. Akcje nieodwracalne nadal wymagają potwierdzenia."
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 3, flexShrink: 0,
+                      fontSize: 10.5, padding: "2px 6px", borderRadius: 999,
+                      border: "1px solid var(--accent-green)", color: "var(--accent-green)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <Zap size={10} /> auto
+                  </span>
+                )}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                 <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
@@ -2044,6 +2088,33 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                                 )}
                               </div>
                             ))}
+
+                            {/* 041: auto-zatwierdzanie siedzi TUTAJ — przy ustawieniach jakości
+                                asystenta, na dole (decyzja właściciela). Blisko poziomu pracy, bo
+                                obie rzeczy odpowiadają na to samo pytanie: ile asystent robi sam.
+                                Da się to przełączyć bez opuszczania rozmowy. */}
+                            <div style={{ borderTop: "1px solid var(--border)", marginTop: 4, paddingTop: 4 }}>
+                              <button
+                                role="menuitemcheckbox"
+                                aria-checked={autoApprove}
+                                onClick={() => toggleAutoApprove()}
+                                style={{
+                                  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2,
+                                  width: "100%", padding: "8px 10px", borderRadius: 8, border: "none",
+                                  background: autoApprove ? "var(--bg-hover)" : "transparent",
+                                  cursor: "pointer", textAlign: "left",
+                                }}
+                              >
+                                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-primary)" }}>
+                                  <Zap size={13} style={{ color: autoApprove ? "var(--accent-green)" : "var(--text-muted)" }} />
+                                  Wykonuj bezpieczne akcje bez pytania
+                                  {autoApprove && <Check size={12} style={{ color: "var(--accent-green)" }} />}
+                                </span>
+                                <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
+                                  Akcje nieodwracalne (usuwanie, czyszczenie) nadal wymagają potwierdzenia.
+                                </span>
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>

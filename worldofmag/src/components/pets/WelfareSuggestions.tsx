@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { Sparkles, Info, AlertTriangle, ShieldAlert, Loader2 } from "lucide-react";
 import { runJob } from "@/lib/jobs/client";
 import type { WelfareSuggestion, CareAgendaItem } from "@/types";
-import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
-import { AiContentMeta } from "@/components/ui/AiContentMeta";
+import type { AiCostUsage } from "@/components/ui/AiCostBadge";
+import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
+import type { AiSectionMode } from "@/lib/ai/sectionMode";
 
 const SEVERITY_META = {
   info: { color: "var(--accent-blue)", Icon: Info },
@@ -24,25 +25,53 @@ export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [aiMemory, setAiMemory] = useState<{ generatedAt?: string; stale?: boolean }>({});
   const [loadingTips, setLoadingTips] = useState(false);
+  /** 041: porady czekają na kliknięcie — stan osobny od „jeszcze się ładuje" i od „brak porad". */
+  const [pending, setPending] = useState(false);
+  const [mode, setMode] = useState<AiSectionMode>("onDemand");
 
-  useEffect(() => {
-    if (pets.length === 0) return;
-    let cancelled = false;
-    setLoadingTips(true);
-    // Z-131 (T-17): porady przez kolejkę zadań (degradacja łagodna — brak AI → [] tips).
-    runJob<{ tips: string[]; usage?: AiCostUsage; generatedAt?: string; stale?: boolean }>("pets.insights", {
+  // Z-131 (T-17): porady przez kolejkę zadań (degradacja łagodna — brak AI → [] tips).
+  function runTips(force: boolean) {
+    return runJob<{
+      tips: string[];
+      usage?: AiCostUsage;
+      generatedAt?: string;
+      stale?: boolean;
+      pending?: boolean;
+      mode?: AiSectionMode;
+    }>("pets.insights", {
       pets,
       agenda: agenda.map((a) => ({ petName: a.petName, title: a.title, bucket: a.bucket, dueAt: a.dueAt })),
       ruleSuggestions: suggestions.map((s) => ({ title: s.title, detail: s.detail })),
-    })
-      .then((res) => { if (!cancelled) { setTips(res.tips ?? []); setAiUsage(res.usage); setAiMemory({ generatedAt: res.generatedAt, stale: res.stale }); } })
-      .catch(() => { if (!cancelled) setTips([]); })
-      .finally(() => { if (!cancelled) setLoadingTips(false); });
-    return () => { cancelled = true; };
+      force,
+    });
+  }
+
+  function load(force = false) {
+    if (pets.length === 0) return;
+    setLoadingTips(true);
+    runTips(force)
+      .then((res) => {
+        if (res.mode) setMode(res.mode);
+        // 041: sekcja startuje przy wejściu na stronę, więc `pending` NIE jest tu ponawiane w tle —
+        // to jest dokładnie ta sytuacja, w której model ma milczeć do czasu decyzji użytkownika.
+        setPending(!!res.pending);
+        if (res.pending) return;
+        setTips(res.tips ?? []);
+        setAiUsage(res.usage);
+        setAiMemory({ generatedAt: res.generatedAt, stale: res.stale });
+      })
+      .catch(() => setTips([]))
+      .finally(() => setLoadingTips(false));
+  }
+
+  useEffect(() => {
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (suggestions.length === 0 && !loadingTips && (!tips || tips.length === 0)) {
+  // 041: `pending` musi przetrwać ten warunek — bez porad i bez sygnałów sekcja znikałaby całkowicie,
+  // więc użytkownik nie miałby czego kliknąć, żeby je w ogóle dostać.
+  if (suggestions.length === 0 && !loadingTips && !pending && (!tips || tips.length === 0)) {
     return null;
   }
 
@@ -68,7 +97,23 @@ export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
         );
       })}
 
-      {(loadingTips || (tips && tips.length > 0)) && (
+      {pending && (
+        <AiContentPending
+          busy={loadingTips}
+          onGenerate={() => load(true)}
+          title="Porady AI powstaną po kliknięciu"
+          hint="Ta sekcja jest ustawiona na „na żądanie”, więc wejście na stronę nic nie kosztuje."
+          actionLabel="Poproś o porady"
+          sectionKind="pets.insights"
+          mode={mode}
+          onModeChange={(m) => {
+            setMode(m);
+            if (m !== "onDemand") load();
+          }}
+        />
+      )}
+
+      {!pending && (loadingTips || (tips && tips.length > 0)) && (
         <div
           style={{
             padding: "12px 14px", borderRadius: 8,
@@ -89,13 +134,19 @@ export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
               ))}
             </ul>
           )}
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
+          <div style={{ marginTop: 8 }}>
             <AiContentMeta
               generatedAt={aiMemory.generatedAt}
               stale={aiMemory.stale}
+              busy={loadingTips}
+              onRefresh={() => load(true)}
+              refreshLabel="Nowe porady"
               staleHint="Zwierzęta lub zadania opieki zmieniły się od czasu wygenerowania tych porad"
+              usage={aiUsage}
+              sectionKind="pets.insights"
+              mode={mode}
+              onModeChange={(m) => setMode(m)}
             />
-            {aiUsage && <AiCostBadge usage={aiUsage} />}
           </div>
         </div>
       )}

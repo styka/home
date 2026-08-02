@@ -3,6 +3,7 @@ import { chatComplete } from "@/lib/llm/chat";
 import { type JobContext } from "@/lib/jobs/types";
 import { usageFromChat } from "@/lib/ai/usage";
 import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
+import { resolveSectionMode } from "@/lib/ai/sectionModeResolver";
 
 interface InsightsPayload {
   currency?: string; totalValue?: number; itemCount?: number;
@@ -23,6 +24,11 @@ export async function magazynInsightsHandler(payload: InsightsPayload, ctx: JobC
   // Zadanie w tle nie ma sesji, ale ma właściciela — to wystarczy, żeby pamiętać jego treść.
   if (!ctx.ownerId) return runMagazynInsights(b, ctx);
 
+  // 041: ta sekcja rusza dopiero po kliknięciu, więc tryb rozstrzyga tu tylko jedno — czy klik ma
+  // korzystać z pamięci, czy liczyć od nowa. Klient, dostawszy `pending`, ponawia z `force` w tym
+  // samym geście: kliknięcie JEST jawną prośbą, a tryb pilnuje wyłącznie generowania samoczynnego.
+  const mode = await resolveSectionMode(ctx.ownerId, "storage.insights");
+
   const remembered = await rememberedContent<{ tips: string[]; unavailable?: boolean }>({
     ownerId: ctx.ownerId,
     kind: "storage.insights",
@@ -35,16 +41,22 @@ export async function magazynInsightsHandler(payload: InsightsPayload, ctx: JobC
       Math.round((b.totalValue ?? 0) / 100)
     ),
     force: b.force,
+    mode,
     generate: async () => {
       const r = await runMagazynInsights(b, ctx);
       return { value: { tips: r.tips, unavailable: r.unavailable }, usage: r.usage };
     },
   });
+
+  if (remembered.pending) return { tips: [], pending: true, mode };
+
   return {
     ...remembered.value,
     usage: remembered.usage,
     generatedAt: remembered.generatedAt,
     stale: remembered.stale,
+    pending: false,
+    mode,
   };
 }
 

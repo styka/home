@@ -4,6 +4,45 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-02 — `NULL != NULL` w PostgreSQL, czyli „systemowy" wiersz bez ochrony
+**Problem:** Tryb odświeżania sekcji AI miał mieć wartość domyślną systemową (ustawianą przez
+administratora) i wartość per użytkownik. Naturalny wzorzec z tego repo („Dictionary Ownership
+Levels") mówi: wiersz z pustym właścicielem = rekord systemowy. Tabela ma `@@unique([ownerId,
+sectionKind])`, więc wyglądało to na rozwiązane.
+**Rozwiązanie:** W PostgreSQL `NULL` nie jest równy `NULL`, więc indeks unikalny **nie chroni**
+wierszy, w których kolumna jest `NULL` — dałoby się wstawić dowolnie wiele „systemowych" wierszy dla
+tej samej sekcji, a odczyt brałby losowy. Zamiast obchodzić to indeksem częściowym, domyślne
+systemowe poszły do jednego klucza w `Config` (`ai_section_default_modes`, JSON) — tą samą drogą, co
+`assistant_followups_enabled` (0214) i `ai_cost_badge_enabled` (0215). Efekt uboczny jest zaletą:
+zapis użytkownika i zapis administratora to dwie **rozłączne** tabele, więc „moje" nigdy nie nadpisuje
+„systemowego" z konstrukcji, a nie przez warunek, który łatwo zgubić przy kolejnej sekcji.
+**Lekcja:** Zanim oprzesz „rekord systemowy" na `NULL` w kluczu unikalnym, sprawdź, czy ten klucz w
+ogóle działa dla `NULL`. W PostgreSQL nie działa. Dla pojedynczej wartości globalnej `Config` jest
+prostszy i uczciwszy niż wiersz-widmo w tabeli użytkowników.
+
+## 2026-08-02 — Komponent kliencki nie może zaimportować pliku, który dotyka Prismy
+**Problem:** `sectionMode.ts` powstał jako jeden plik: typ trybu, etykiety po polsku i funkcje
+czytające bazę (`resolveSectionMode`). Etykiet potrzebował `AiContentMeta` — komponent `"use client"`.
+Import etykiety ciągnie CAŁY moduł, więc do przeglądarki poszłaby też Prisma.
+**Rozwiązanie:** Podział na dwa pliki: `sectionMode.ts` (czysty słownik pojęć — typ, etykiety, lista
+sekcji, strażnik typu) i `sectionModeResolver.ts` (wszystko, co czyta bazę). Ten sam podział, który
+w repo już istnieje: `lib/llm/effort.ts` kontra `lib/llm/resolver.ts`.
+**Lekcja:** Przy nowym module pomocniczym od razu zadaj pytanie „czy klient będzie tego potrzebował".
+Jeśli tak — stałe i typy idą do osobnego, czystego pliku. Import **typu** (`import type`) jest
+bezpieczny w obie strony, bo znika przy kompilacji; import **wartości** przenosi cały graf zależności.
+
+## 2026-08-02 — „Czeka na kliknięcie" musi być osobnym typem, nie pustym wynikiem
+**Problem:** Sekcje AI miały przestać generować treść przy samym wejściu na stronę. Najprostsze
+podejście to zwracać pustą treść i pozwolić UI się domyślić. Dokładnie ten skrót zemścił się w 038:
+awaria i „nic nie znaleziono" wyglądały tak samo, więc użytkownik ponawiał w nieskończoność.
+**Rozwiązanie:** `rememberedContent` zwraca **drugi wariant typu** (`PendingContent` z `pending:
+true`), który w ogóle nie ma pola `value`. Kompilator wymusza obsłużenie tego stanu, zanim ktokolwiek
+sięgnie po treść. Oba warianty rozdzielają **przeciążenia**: wywołanie bez trybu nigdy nie zwróci
+oczekiwania, więc pięć istniejących miejsc dało się przełączać pojedynczo, a nie jednym commitem.
+**Lekcja:** Gdy dokładasz do wyniku nowy STAN (a nie nową wartość), zrób z niego osobny wariant typu.
+Flaga obok pustej wartości pozwala go zignorować; brak pola `value` — nie pozwala. A przeciążenia są
+tanim sposobem, żeby zmiana sygnatury nie wymusiła jednego wielkiego commita.
+
 ## 2026-08-01 — `flex-1` z `truncate`, ale bez `min-w-0` — czyli poziomy scroll „nie wiadomo skąd"
 **Problem:** Na telefonie moduł Wiadomości dawał się przewijać w bok, choć po prawej stronie nic nie
 było widać. Zgłoszenie brzmiało: „może coś rozciąga stronę za daleko w prawo, ale nie widać nawet
