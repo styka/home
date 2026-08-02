@@ -11,6 +11,7 @@ import {
   Loader2,
   Trash2,
   Pencil,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -27,6 +28,7 @@ import {
   getTopicView,
   startNewsRefresh,
   getNewsRefreshState,
+  getNewsRefreshHistory,
   createTopic,
   updateTopic,
   deleteTopic,
@@ -37,6 +39,7 @@ import {
   type NewsItemDTO,
   type TimelineEntryDTO,
   type NewsRefreshState,
+  type NewsRefreshRunDTO,
 } from "@/actions/news";
 
 type View = "feed" | "hot" | "settings";
@@ -190,6 +193,8 @@ export function NewsPage({
       <ViewTabs view={view} onChange={setView} />
 
       <RefreshStatus state={refresh} running={refreshRunning} />
+
+      <RefreshHistory />
 
       {/* 040: dodanie tematu odświeża listę, ale NIE przerzuca na widok główny — przegląd gorących
           tematów ma dać się zrobić za jednym posiedzeniem. */}
@@ -383,6 +388,78 @@ function RefreshStatus({ state, running }: { state: NewsRefreshState | null; run
         </span>
       )}
       <AiCostBadge usage={r.usage} align="left" />
+    </div>
+  );
+}
+
+/**
+ * 041: historia przebiegów odświeżania — koszt DA SIĘ odczytać po fakcie.
+ *
+ * Do 040 licznik kosztu widniał wyłącznie przy ostatnim przebiegu i znikał razem z zadaniem
+ * sprzątanym z kolejki po 24 godzinach. Zwinięta w spoczynku, bo to informacja, po którą się sięga,
+ * a nie taka, którą się śledzi.
+ */
+function RefreshHistory() {
+  const [open, setOpen] = useState(false);
+  const [runs, setRuns] = useState<NewsRefreshRunDTO[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    // Czytamy dopiero przy rozwinięciu — lista przebiegów nie jest potrzebna do niczego innego.
+    if (next && runs === null) {
+      setLoading(true);
+      getNewsRefreshHistory(10)
+        .then(setRuns)
+        .catch(() => setRuns([]))
+        .finally(() => setLoading(false));
+    }
+  }
+
+  return (
+    <div className="mb-4">
+      <button
+        onClick={toggle}
+        aria-expanded={open}
+        className="inline-flex items-center gap-1 py-1 text-[11px] text-[var(--text-muted)] underline-offset-2 hover:text-[var(--text-primary)] hover:underline"
+      >
+        <History size={12} /> Historia odświeżeń
+      </button>
+
+      {open && (
+        <div className="mt-2 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-2">
+          {loading ? (
+            <p className="px-1 py-2 text-[11px] text-[var(--text-muted)]">Wczytuję…</p>
+          ) : !runs || runs.length === 0 ? (
+            <p className="px-1 py-2 text-[11px] text-[var(--text-muted)]">
+              Brak zapisanych przebiegów. Pierwszy pojawi się tu po najbliższym odświeżeniu.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {runs.map((r) => (
+                <li
+                  key={r.id}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded px-1 py-2 text-[11px] text-[var(--text-muted)]"
+                >
+                  <span className="text-[var(--text-secondary)]">{formatWhen(r.startedAt)}</span>
+                  {r.status === "failed" ? (
+                    <span style={{ color: "var(--accent-red)" }}>
+                      nie powiodło się{r.error ? ` — ${r.error}` : ""}
+                    </span>
+                  ) : (
+                    <span>
+                      źródeł: {r.sources} · materiałów: {r.fetched} · pozycji: {r.assigned} ·
+                      streszczeń: {r.summarized} · faktów: {r.timelineAdded}
+                    </span>
+                  )}
+                  <AiCostBadge usage={r.usage} align="left" />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }

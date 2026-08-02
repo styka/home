@@ -11,7 +11,7 @@ import { fingerprintOf } from "@/lib/textKey";
 import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
 import { resolveSectionMode } from "@/lib/ai/sectionModeResolver";
 import type { AiSectionMode } from "@/lib/ai/sectionMode";
-import { usageFromChat, type AiUsageInfo } from "@/lib/ai/usage";
+import { usageFromChat, parseStoredUsage, type AiUsageInfo } from "@/lib/ai/usage";
 import { visibleUsage } from "@/lib/ai/costVisibility";
 import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/lib/jobs/queue";
 import { startJobWorker } from "@/lib/jobs/worker";
@@ -488,6 +488,54 @@ export async function getNewsRefreshState(): Promise<NewsRefreshState | null> {
     result,
     startedAt: job.createdAt.toISOString(),
   };
+}
+
+/** 041: jeden zakończony przebieg odświeżania — do historii kosztów. */
+export interface NewsRefreshRunDTO {
+  id: string;
+  startedAt: string;
+  finishedAt: string;
+  status: "done" | "failed";
+  sources: number;
+  fetched: number;
+  assigned: number;
+  summarized: number;
+  timelineAdded: number;
+  error: string | null;
+  usage?: AiUsageInfo;
+}
+
+/**
+ * 041: historia przebiegów odświeżania — „ile mnie to kosztowało" DA SIĘ odczytać po fakcie.
+ *
+ * Do 040 koszt widniał wyłącznie przy ostatnim przebiegu i znikał razem z zadaniem sprzątanym po
+ * 24 godzinach. Tu czytamy trwałą tabelę, a zużycie przepuszczamy przez `visibleUsage` — czyli
+ * konto bez uprawnień administratora nie dostaje danych kosztowych PO STRONIE SERWERA, a nie tylko
+ * ich nie widzi w interfejsie.
+ */
+export async function getNewsRefreshHistory(limit = 10): Promise<NewsRefreshRunDTO[]> {
+  const user = await requireAuth();
+  const rows = await prisma.newsRefreshRun.findMany({
+    where: { ownerId: user.id },
+    orderBy: { finishedAt: "desc" },
+    take: Math.min(Math.max(1, limit), 30),
+  });
+
+  return Promise.all(
+    rows.map(async (r) => ({
+      id: r.id,
+      startedAt: r.startedAt.toISOString(),
+      finishedAt: r.finishedAt.toISOString(),
+      status: (r.status === "failed" ? "failed" : "done") as "done" | "failed",
+      sources: r.sources,
+      fetched: r.fetched,
+      assigned: r.assigned,
+      summarized: r.summarized,
+      timelineAdded: r.timelineAdded,
+      error: r.error,
+      usage: await visibleUsage(parseStoredUsage(r.usage)),
+    }))
+  );
 }
 
 // ─── Item actions ──────────────────────────────────────────────────────────

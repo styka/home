@@ -505,12 +505,81 @@ async function buildTimeline(
 
 // ─── Handler ────────────────────────────────────────────────────────────────
 
+/**
+ * 041: TRWAŁY ślad przebiegu — osobna tabela, a nie odczyt z kolejki.
+ *
+ * `cleanupOldJobs` kasuje zakończone zadania po 24 godzinach, a `Job.result` i tak trzyma wyłącznie
+ * ostatni przebieg. Zgłoszenie mówi wprost o odczytaniu kosztu „po fakcie", więc historia musi
+ * przeżyć sprzątanie kolejki.
+ *
+ * Zużycie zapisujemy SUROWE: handler nie ma sesji, więc bramka widoczności kosztu działa dopiero
+ * przy odczycie (ten sam podział co dla `Job.result` od 039).
+ */
+export const RUN_HISTORY_LIMIT = 30;
+
+/** Eksportowane dla testu retencji — nieograniczony wzrost tabeli jest tu jedynym realnym ryzykiem. */
+export async function recordRun(
+  ownerId: string,
+  startedAt: Date,
+  status: "done" | "failed",
+  result: NewsRefreshResult | null,
+  error?: string
+): Promise<void> {
+  try {
+    await prisma.newsRefreshRun.create({
+      data: {
+        ownerId,
+        startedAt,
+        status,
+        sources: result?.sources ?? 0,
+        fetched: result?.fetched ?? 0,
+        assigned: result?.assigned ?? 0,
+        summarized: result?.summarized ?? 0,
+        timelineAdded: result?.timelineAdded ?? 0,
+        usage: result?.usage ? JSON.stringify(result.usage) : null,
+        error: error ?? null,
+      },
+    });
+
+    // Przycinamy do ostatnich 30 przebiegów. Zgłoszenie prosi o możliwość odczytania kosztu, nie o
+    // wieczyste archiwum — a bez przycinania tabela rosłaby w nieskończoność.
+    const old = await prisma.newsRefreshRun.findMany({
+      where: { ownerId },
+      orderBy: { finishedAt: "desc" },
+      skip: RUN_HISTORY_LIMIT,
+      select: { id: true },
+    });
+    if (old.length > 0) {
+      await prisma.newsRefreshRun.deleteMany({ where: { id: { in: old.map((r) => r.id) } } });
+    }
+  } catch {
+    // Zapis historii to KRONIKA, nie część przebiegu. Awaria kroniki nie może zabrać użytkownikowi
+    // wyniku odświeżania, na który właśnie czekał.
+  }
+}
+
 export async function newsRefreshHandler(
   payload: NewsRefreshPayload,
   ctx: JobContext
 ): Promise<NewsRefreshResult> {
   if (!ctx.ownerId) throw new JobError("Zadanie bez właściciela", 400);
   const ownerId = ctx.ownerId;
+  const startedAt = new Date();
+  try {
+    const result = await runNewsRefresh(payload, ctx, ownerId);
+    await recordRun(ownerId, startedAt, "done", result);
+    return result;
+  } catch (e) {
+    await recordRun(ownerId, startedAt, "failed", null, e instanceof Error ? e.message : String(e));
+    throw e;
+  }
+}
+
+async function runNewsRefresh(
+  payload: NewsRefreshPayload,
+  ctx: JobContext,
+  ownerId: string
+): Promise<NewsRefreshResult> {
   const sink: LlmSink = [];
 
   // ── Etap 1: pobranie puli ────────────────────────────────────────────────

@@ -84,12 +84,12 @@
 
 ## Faza 4 — Historia kosztów Wiadomości (zgłoszenie 4)
 
-- [ ] **T-11** — **Zapis przebiegu.** Handler `news.refresh` na końcu tworzy `NewsRefreshRun`
+- [x] **T-11** — **Zapis przebiegu.** Handler `news.refresh` na końcu tworzy `NewsRefreshRun`
       (liczby + **surowe** zużycie, bo handler nie ma sesji) i przycina historię do 30 ostatnich.
       *Gotowe, gdy:* dwa przebiegi = dwa wiersze, a skasowanie zadania z kolejki **nie usuwa**
       historii. **(AC-14, AC-17)**
 
-- [ ] **T-12** — **Odczyt i widok.** `getNewsRefreshHistory(limit)` z `visibleUsage` przy odczycie;
+- [x] **T-12** — **Odczyt i widok.** `getNewsRefreshHistory(limit)` z `visibleUsage` przy odczycie;
       w `NewsPage` odnośnik „Historia odświeżeń" → rozwijana lista (czas, liczby, koszt).
       *Gotowe, gdy:* administrator widzi szczegóły kosztu, a nie-administrator **nie dostaje danych
       kosztowych po stronie serwera**. **(AC-15, AC-16)**

@@ -1027,6 +1027,12 @@
     "reason": "settings",
     "access": "self"
   },
+  "news:getNewsRefreshHistory": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
   "news:getNewsRefreshState": {
     "kind": "read",
     "status": "excluded",
