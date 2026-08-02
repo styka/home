@@ -248,7 +248,7 @@ export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
           className="bg-transparent text-xs focus:outline-none flex-shrink-0"
           style={{ color: selectedGroupId ? "var(--text-primary)" : "var(--text-muted)" }}
         >
-          <option value="">Wszystkie grupy</option>
+          <option value="">Wszystkie foldery</option>
           {groups.map((g) => (
             <option key={g.id} value={g.id}
               style={{ backgroundColor: "#1c1c1c", color: "var(--text-primary)" }}>

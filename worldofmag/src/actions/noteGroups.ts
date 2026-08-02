@@ -20,7 +20,7 @@ async function assertNoteGroupAccess(id: string, userId: string): Promise<void> 
     where: { id },
     select: { ownerId: true, ownerTeamId: true },
   });
-  await assertDictionaryAccess(group, userId, "grupa notatek");
+  await assertDictionaryAccess(group, userId, "folder notatek");
 }
 
 export async function getNoteGroups(): Promise<NoteGroup[]> {

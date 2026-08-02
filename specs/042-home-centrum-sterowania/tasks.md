@@ -47,7 +47,7 @@
 
 ## Faza 1 — Nazewnictwo (plan §5.9)
 
-- [ ] **T-4** — **„Grupy" → „Foldery" w Notatkach** — wyłącznie warstwa widoczna.
+- [x] **T-4** — **„Grupy" → „Foldery" w Notatkach** — wyłącznie warstwa widoczna.
   13 miejsc z tabeli w planie §5.9: `ModuleSidebar.tsx:45`, `AppShell.tsx:287`,
   `NotesHomePage.tsx:87,153`, `GroupsManager.tsx:62,70,85,121`, `QuickNoteBar.tsx:254`,
   `NoteRow.tsx:368`, `NoteList.tsx:43,51,52`, `NotesPage.tsx:251`, `noteGroups.ts:23`.

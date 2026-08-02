@@ -284,7 +284,7 @@ function MobileModuleSubNav({ id, pathname }: { id: string; pathname: string }) 
   if (id === "notes") {
     return (
       <div className="mb-1">
-        {[{ href: "/notes/all", label: "Wszystkie" }, { href: "/notes/groups", label: "Grupy" }, { href: "/notes/tags", label: "Tagi" }].map(({ href, label }) => (
+        {[{ href: "/notes/all", label: "Wszystkie" }, { href: "/notes/groups", label: "Foldery" }, { href: "/notes/tags", label: "Tagi" }].map(({ href, label }) => (
           <MobileSub key={href} href={href} pathname={pathname}>{label}</MobileSub>
         ))}
       </div>

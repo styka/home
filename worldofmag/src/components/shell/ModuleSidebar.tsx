@@ -42,7 +42,7 @@ function ModuleSubNav({ id, pathname }: { id: string; pathname: string }) {
       return (
         <div className="mb-1">
           <NavSubItem href="/notes/all" label="Wszystkie" pathname={pathname} />
-          <NavSubItem href="/notes/groups" label="Grupy" icon={<FolderOpen size={12} />} pathname={pathname} />
+          <NavSubItem href="/notes/groups" label="Foldery" icon={<FolderOpen size={12} />} pathname={pathname} />
           <NavSubItem href="/notes/tags" label="Tagi" icon={<Tag size={12} />} pathname={pathname} />
         </div>
       );

@@ -365,7 +365,7 @@ export function NoteRow({
             className="bg-transparent text-xs border rounded px-1.5 py-0.5 focus:outline-none"
             style={{ borderColor: "var(--border)", color: "var(--text-secondary)", backgroundColor: "var(--bg-elevated)" }}
           >
-            <option value="">Bez grupy</option>
+            <option value="">Bez folderu</option>
             {allGroups.map((g) => (
               <option key={g.id} value={g.id}
                 style={{ backgroundColor: "#1c1c1c", color: "var(--text-primary)" }}>

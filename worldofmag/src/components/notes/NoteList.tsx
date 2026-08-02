@@ -3,6 +3,12 @@
 import { NoteGroupSection } from "./NoteGroupSection";
 import type { Note, Tag, NoteGroup } from "@/types";
 
+// 042: etykieta notatek bez przypisanego folderu. Jest jednocześnie KLUCZEM grupowania
+// i kluczem sortowania (ta sekcja ma zawsze lądować na końcu listy), więc musi być stałą —
+// przy zmianie nazewnictwa „grupy" → „foldery" rozjechanie tych wystąpień po cichu zepsułoby
+// kolejność sekcji, bez żadnego błędu kompilacji.
+const UNGROUPED_LABEL = "Bez folderu";
+
 interface NoteListProps {
   notes: Note[];
   allNotes?: Note[];
@@ -40,7 +46,7 @@ export function NoteList({
 
   const groupMap = new Map<string, { color: string | null | undefined; notes: Note[] }>();
   for (const note of unpinned) {
-    const key = note.group?.name ?? "Bez grupy";
+    const key = note.group?.name ?? UNGROUPED_LABEL;
     if (!groupMap.has(key)) {
       groupMap.set(key, { color: note.group?.color, notes: [] });
     }
@@ -48,8 +54,8 @@ export function NoteList({
   }
 
   const groupEntries = Array.from(groupMap.entries()).sort(([a], [b]) => {
-    if (a === "Bez grupy") return 1;
-    if (b === "Bez grupy") return -1;
+    if (a === UNGROUPED_LABEL) return 1;
+    if (b === UNGROUPED_LABEL) return -1;
     return a.localeCompare(b, "pl");
   });
 
