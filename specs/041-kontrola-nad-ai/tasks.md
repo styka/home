@@ -69,7 +69,7 @@
       *Gotowe, gdy:* `AiCostBadge` stoi **wewnątrz** paska (nie obok), a stan oczekiwania nie da się
       pomylić z awarią. **(AC-5, AC-6, AC-13)**
 
-- [ ] **T-8** — **Pogoda: `IdeasPanel` na tryb.** `useEffect` przestaje wołać generowanie
+- [x] **T-8** — **Pogoda: `IdeasPanel` na tryb.** `useEffect` przestaje wołać generowanie
       bezwarunkowo; odczyt przez `rememberedContent` z rozwiązanym trybem; obsługa `pending`.
       *Gotowe, gdy:* wejście na `/pogoda` przy trybie „na żądanie" **nie woła modelu ani razu**.
       **(AC-1, AC-2, AC-8)**
