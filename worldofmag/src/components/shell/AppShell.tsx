@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, Calendar, Settings, Mail, Shield, Map, Image as ImageIcon, Lock, MoreHorizontal, Plus } from "lucide-react";
+import { Menu, X, Calendar, Settings, Mail, Shield, Map, Image as ImageIcon, Lock, MoreHorizontal, Plus, ArrowLeftRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
@@ -17,6 +17,10 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { isPathLocked } from "@/lib/permissions";
 import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
+import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
+import { FavoritesOverlay } from "@/components/favorites/FavoritesOverlay";
+import { openFavoritesSwitcher } from "@/lib/favorites/favoritesBus";
+import type { FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
 import { DEFAULT_USD_PLN_RATE } from "@/lib/usdPln";
 
 interface AppShellProps {
@@ -27,6 +31,7 @@ interface AppShellProps {
   userPermissions?: string[];
   menuPrefs?: MenuPrefs;
   usdPlnRate?: number;
+  favoriteViews?: FavoriteViewDTO[];
 }
 
 // Pozycje dolne (stałe, niepodlegające konfiguracji) — do wykrywania aktywnego modułu i paska górnego.
@@ -37,7 +42,7 @@ const BOTTOM_ITEMS: BottomItem[] = [
   { id: "admin",       label: "Admin",       href: "/admin",       Icon: Shield,   color: "var(--accent-purple)" },
 ];
 
-export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs(), usdPlnRate = DEFAULT_USD_PLN_RATE }: AppShellProps) {
+export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs(), usdPlnRate = DEFAULT_USD_PLN_RATE, favoriteViews = [] }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [, startTransition] = useTransition();
@@ -138,6 +143,17 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               jest pływającym przyciskiem (FeedbackInspector) — działa też nad
               modalem, czego przycisk w pasku (pod modalem) nie potrafił. */}
           <div className="ml-auto flex items-center flex-shrink-0">
+            {/* 042: zapis bieżącego miejsca i skok do ulubionych — dostępne z KAŻDEJ strony (AC-4). */}
+            <FavoriteStarButton favorites={favoriteViews} placement="topbar" />
+            <button
+              onClick={openFavoritesSwitcher}
+              className="flex items-center justify-center rounded"
+              style={{ width: 32, height: 32, color: "var(--text-secondary)", background: "none", border: "none" }}
+              aria-label="Ulubione widoki"
+              title="Ulubione widoki"
+            >
+              <ArrowLeftRight size={16} />
+            </button>
             <NotificationBell placement="topbar" />
           </div>
         </div>
@@ -228,7 +244,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         </div>
       )}
 
-      <ModuleSidebar invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} />
+      <ModuleSidebar invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} favoriteViews={favoriteViews} />
 
       <main className="flex-1 overflow-hidden flex flex-col min-w-0 pb-14 md:pb-0">
         {children}
@@ -262,6 +278,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         </nav>
       )}
 
+      <FavoritesOverlay favorites={favoriteViews} userPermissions={userPermissions} />
       <AICommandSheet isAdmin={isAdmin} usdPlnRate={usdPlnRate} />
       <ConsentBanner />
       {isAdmin && <FeedbackInspector />}
@@ -284,7 +301,7 @@ function MobileModuleSubNav({ id, pathname }: { id: string; pathname: string }) 
   if (id === "notes") {
     return (
       <div className="mb-1">
-        {[{ href: "/notes/all", label: "Wszystkie" }, { href: "/notes/groups", label: "Grupy" }, { href: "/notes/tags", label: "Tagi" }].map(({ href, label }) => (
+        {[{ href: "/notes/all", label: "Wszystkie" }, { href: "/notes/groups", label: "Foldery" }, { href: "/notes/tags", label: "Tagi" }].map(({ href, label }) => (
           <MobileSub key={href} href={href} pathname={pathname}>{label}</MobileSub>
         ))}
       </div>

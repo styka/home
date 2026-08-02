@@ -210,7 +210,7 @@ export function AudytBookReader({
         background: "var(--bg-base)",
       }}
     >
-      <style>{MARKDOWN_STYLES}</style>
+      <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
       <style>{READING_THEME_CSS}</style>
       <style>{`.audyt-toc-link:hover { background: var(--bg-hover) !important; }`}</style>
 

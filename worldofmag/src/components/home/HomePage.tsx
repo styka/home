@@ -14,6 +14,9 @@ import { DailyBriefingCard } from "@/components/home/DailyBriefingCard";
 import { QuickActions } from "@/components/home/QuickActions";
 import { RecentlyUsed } from "@/components/home/RecentlyUsed";
 import { AdminDashboardWidget } from "@/components/home/AdminDashboardWidget";
+import { FavoriteCards } from "@/components/favorites/FavoriteCards";
+import { HomeAssistantColumn } from "@/components/home/HomeAssistantColumn";
+import type { FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
 import { SectionHeading, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import type { TaskPriority, CareAgendaItem } from "@/types";
 
@@ -98,10 +101,12 @@ interface HomePageProps {
   recentActivity: ActivityItem[];
   adminStats: AdminStats | null;
   dashboardPrefs?: { order: string[]; hidden: string[] };
+  favoriteViews?: FavoriteViewDTO[];
 }
 
 // H1: sekcje pulpitu, które użytkownik może przestawiać/ukrywać.
 const SECTION_LABELS: Record<string, string> = {
+  favorites: "Ulubione widoki",
   recently: "Ostatnio używane",
   briefing: "Briefing dnia",
   modules: "Twoje moduły",
@@ -177,6 +182,7 @@ export function HomePage({
   recentActivity,
   adminStats,
   dashboardPrefs,
+  favoriteViews = [],
 }: HomePageProps) {
   const has = (slug: string) => userPermissions.includes(slug);
   const hasAnyModule =
@@ -226,8 +232,23 @@ export function HomePage({
     persist(order, next);
   }
 
+  // 042: podpowiedzi startowe dla dokowanego asystenta — dobrane do tego, co użytkownik
+  // FAKTYCZNIE ma w danych, a nie do stałej listy przykładów. Pusta lista jest w porządku:
+  // kolumna pokazuje wtedy samo pole wejściowe.
+  const assistantStarters: string[] = [];
+  if (overdueTasks > 0) assistantStarters.push("Co powinienem zrobić w pierwszej kolejności?");
+  if (todayMeals.length === 0 && has("module.kitchen")) assistantStarters.push("Zaproponuj obiad na dziś");
+  if (pendingItems > 0) assistantStarters.push("Co mam jeszcze do kupienia?");
+  if (assistantStarters.length < 3) assistantStarters.push("Podsumuj mój tydzień");
+
   // Węzły sekcji — budowane raz, renderowane wg kolejności użytkownika.
   const sectionNodes: Record<string, React.ReactNode> = {
+    favorites: (
+      <div>
+        <SectionHeading>Ulubione widoki</SectionHeading>
+        <FavoriteCards favorites={favoriteViews} permissions={userPermissions} />
+      </div>
+    ),
     recently: <RecentlyUsed activities={recentActivity} permissions={userPermissions} />,
     briefing: hasAnyModule ? <DailyBriefingCard /> : null,
     modules: hasAnyModule ? (
@@ -383,26 +404,52 @@ export function HomePage({
         {/* Pending invitations banner */}
         <InvitationsBanner count={pendingInvitations} />
 
-        {/* H1: sekcje pulpitu w kolejności użytkownika (z ukrywaniem) */}
-        {order.map((key, idx) => {
-          const node = sectionNodes[key];
-          const isHidden = hidden.includes(key);
-          if (!node && !editing) return null;
-          if (isHidden && !editing) return null;
-          return (
-            <div key={key} style={{ position: "relative", opacity: isHidden && editing ? 0.45 : 1 }}>
-              {editing && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, color: "var(--text-muted)", flex: 1 }}>{SECTION_LABELS[key] ?? key}</span>
-                  <button onClick={() => moveSection(key, -1)} disabled={idx === 0} title="W górę" style={ctlBtn(idx === 0)}><ChevronUp size={13} /></button>
-                  <button onClick={() => moveSection(key, 1)} disabled={idx === order.length - 1} title="W dół" style={ctlBtn(idx === order.length - 1)}><ChevronDown size={13} /></button>
-                  <button onClick={() => toggleHidden(key)} title={isHidden ? "Pokaż" : "Ukryj"} style={ctlBtn(false)}>{isHidden ? <EyeOff size={13} /> : <Eye size={13} />}</button>
-                </div>
-              )}
-              {node ?? (editing ? <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic", padding: "8px 0" }}>(sekcja pusta — brak danych)</div> : null)}
+        {/* 042: układ 3 / 2 / 1 kolumny (AC-16).
+            - sekcje treści płyną w siatce `grid-cols-1 md:grid-cols-2`, zachowując LINIOWĄ
+              kolejność użytkownika — personalizacja z H1 znaczy dokładnie to samo co wcześniej,
+            - kolumna asystenta jest OSOBNYM elementem siatki dopiero od `xl` (≥1280 px); niżej
+              znika, a asystent zostaje pod pływającym przyciskiem (AC-12),
+            - `minmax(0, 1fr)` jest konieczne: domyślne `1fr` ma `min-width: auto`, więc długi
+              nieprzełamywalny tekst rozpychałby siatkę w poziome przewijanie.
+            W trybie personalizacji wracamy do jednej kolumny — strzałki „w górę/w dół" są wtedy
+            czytelne tylko przy liniowym ułożeniu. */}
+        <div className="flex flex-col xl:flex-row" style={{ gap: 16, alignItems: "flex-start" }}>
+        <div
+          className={editing ? "grid grid-cols-1" : "grid grid-cols-1 md:grid-cols-2"}
+          style={{ gap: 16, alignItems: "start", flex: 1, minWidth: 0, width: "100%" }}
+        >
+          {order.map((key, idx) => {
+            const node = sectionNodes[key];
+            const isHidden = hidden.includes(key);
+            if (!node && !editing) return null;
+            if (isHidden && !editing) return null;
+            return (
+              <div key={key} style={{ position: "relative", minWidth: 0, opacity: isHidden && editing ? 0.45 : 1 }}>
+                {editing && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, color: "var(--text-muted)", flex: 1 }}>{SECTION_LABELS[key] ?? key}</span>
+                    <button onClick={() => moveSection(key, -1)} disabled={idx === 0} title="W górę" style={ctlBtn(idx === 0)}><ChevronUp size={13} /></button>
+                    <button onClick={() => moveSection(key, 1)} disabled={idx === order.length - 1} title="W dół" style={ctlBtn(idx === order.length - 1)}><ChevronDown size={13} /></button>
+                    <button onClick={() => toggleHidden(key)} title={isHidden ? "Pokaż" : "Ukryj"} style={ctlBtn(false)}>{isHidden ? <EyeOff size={13} /> : <Eye size={13} />}</button>
+                  </div>
+                )}
+                {node ?? (editing ? <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic", padding: "8px 0" }}>(sekcja pusta — brak danych)</div> : null)}
+              </div>
+            );
+          })}
+
+        </div>
+
+          {/* Trzecia kolumna: asystent stale widoczny (AC-11). Poza `xl` w ogóle się nie renderuje,
+              więc na telefonie nie powstaje druga, konkurencyjna droga do czatu.
+              Świadomie NIE jest elementem siatki sekcji: przy `grid-row: span N` puste wiersze
+              domyślne nadal dokładałyby odstępy i robiły pustą przestrzeń pod treścią. */}
+          {!editing && (
+            <div className="hidden xl:block" style={{ width: 340, flexShrink: 0 }}>
+              <HomeAssistantColumn starters={assistantStarters} />
             </div>
-          );
-        })}
+          )}
+        </div>
 
         {/* Admin widget */}
         {isAdmin && adminStats && (

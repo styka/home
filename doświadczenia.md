@@ -4,6 +4,118 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-02 — `<style>{CSS}</style>` w Reakcie psuje hydratację CAŁEJ aplikacji
+**Problem:** Nowa funkcja (ulubione widoki) zachowywała się losowo: gwiazdka bywała nieklikalna,
+popover znikał zaraz po otwarciu, a skrót `Alt+1` nie nawigował, mimo że zdarzenie docierało
+z poprawnymi flagami, a `Alt+0` działał. Wyglądało to na błąd w nowym kodzie — nie było nim.
+W konsoli przeglądarki siedziało: `Text content does not match server-rendered HTML` ze stosu
+`at style at AICommandSheet`, a zaraz po nim `There was an error while hydrating. … the entire root
+will switch to client rendering`.
+**Rozwiązanie:** Przyczyną było `<style>{MARKDOWN_STYLES}</style>`. React **escapuje cudzysłowy
+w tekstowym dziecku** przy renderowaniu na serwerze (`content: &quot;•&quot;`), a na kliencie już nie
+(`content: "•"`) — powstaje rozjazd, React porzuca drzewo z serwera i przemontowuje cały korzeń.
+Każde przemontowanie kasowało stan lokalny komponentów (otwarty popover) i psuło instancję routera
+(`router.push` z natywnego listenera stawał się bezczynny). Poprawka: `<style
+dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />` w 15 miejscach — treść jest statyczną stałą
+autorstwa dewelopera, więc jest to bezpieczne, a serwer i klient generują identyczny HTML.
+**Lekcja:** Nie wstawiaj CSS jako **tekstowego dziecka** `<style>` w Reakcie, jeśli reguły zawierają
+cudzysłowy (`content:`, `font-family: "…"`). Używaj `dangerouslySetInnerHTML` albo trzymaj CSS
+w prawdziwym arkuszu. I szerzej: **zanim zaczniesz debugować własny nowy kod, sprawdź konsolę pod
+kątem błędu hydratacji** — jeden taki błąd degraduje całą aplikację (traci renderowanie serwerowe,
+gubi stan, rozstraja router), a objawy pojawiają się w zupełnie niezwiązanych miejscach.
+
+## 2026-08-02 — Dotyk udaje najechanie i ZOSTAWIA ślad (`:hover` na ekranie dotykowym)
+**Problem:** Checkbox zaznaczania zadania był ujawniany klasą `opacity-0 group-hover:opacity-100`.
+Na telefonie dotknięcie wiersza w celu **przewinięcia listy** zapalało checkbox — i zostawiało go
+zapalonym aż do dotknięcia gdzie indziej. Właściciel zgłosił to jako „checkboxy pojawiają się
+i znikają w dziwnych momentach", co brzmi jak błąd stanu Reacta, a jest czystym CSS.
+**Rozwiązanie:** Ujawnianie ograniczone do urządzeń z prawdziwym wskaźnikiem — wariant arbitralny
+Tailwinda `[@media(hover:hover)]:group-hover:opacity-100`. Przy okazji wyszło drugie, cichsze
+zachowanie: `opacity-0` **nie wyłącza zdarzeń wskaźnika**, więc niewidoczny checkbox był nadal
+klikalny i dotknięcie „pustego" miejsca obok tytułu zaznaczało zadanie bez żadnego sygnału.
+Doszło `pointer-events-none` w tej samej gałęzi.
+**Lekcja:** Przeglądarka mobilna emuluje `:hover` po dotknięciu i **trzyma go**. Każde
+`group-hover`/`hover:` ujawniające element interaktywny musi być zamknięte w `@media (hover: hover)`,
+inaczej na telefonie zachowuje się losowo. I zawsze: element ukryty przez `opacity` nadal łapie
+kliknięcia — ukrywanie wizualne to nie to samo co wyłączenie.
+
+## 2026-08-02 — `rows` liczone po `\n` nie widzi zawijania tekstu
+**Problem:** Pole edycji opisu zadania miało wysokość `rows={Math.max(3, description.split("\n").length)}`.
+Wyglądało to na „rośnie razem z treścią", ale liczyło **wyłącznie znaki nowej linii**. Jeden długi
+akapit bez `\n`, zawijający się na kilkanaście wierszy, dostawał `rows=3` i wewnętrzny pasek
+przewijania — dokładnie to, na co narzekał właściciel.
+**Rozwiązanie:** Pomiar rzeczywistej wysokości treści: `el.style.height = "auto"` i dopiero potem
+`el.style.height = min(el.scrollHeight, 60vh)`. Reset do `"auto"` jest **obowiązkowy** —
+`scrollHeight` nigdy nie jest mniejszy niż bieżąca wysokość elementu, więc bez niego pole rośnie
+przy pisaniu, ale **nigdy nie maleje** przy kasowaniu tekstu. Dopasowanie odpalane z ref-callbacku
+(synchronicznie po zamontowaniu, bez mrugnięcia) i z `onChange`.
+**Lekcja:** Liczba wierszy tekstu ≠ liczba znaków nowej linii. Jedyne wiarygodne źródło wysokości
+zawijanego tekstu to `scrollHeight` — i zawsze z resetem wysokości przed odczytem.
+
+## 2026-08-02 — Nieodwracalne kasowanie pod ikoną bez potwierdzenia
+**Problem:** Przycisk „Wyczyść (n)" na liście zakupów wołał `clearDoneItems`, które robi
+`prisma.item.deleteMany({ where: { listId, status: "DONE" } })` — **twarde usunięcie, bez zapisu do
+`TrashItem`**. Jedno przypadkowe dotknięcie ikony kosza kasowało bezpowrotnie wszystkie kupione
+pozycje listy, bez pytania i bez możliwości odzyskania.
+**Rozwiązanie:** Potwierdzenie w istniejącym `Modal` (wzorzec sąsiedniego „Zakończ zakupy" w tym
+samym pliku), z **liczbą pozycji** i wprost napisaną informacją, że operacji nie da się cofnąć.
+**Lekcja:** Zanim uznasz brak potwierdzenia za drobiazg UX, sprawdź, co akcja robi po stronie
+serwera. Operacja zbiorcza + `deleteMany` + brak wpięcia w kosz = zmiana nieodwracalna, a przy
+nieodwracalnych potwierdzenie jest wymogiem, nie ozdobą. Warto też traktować to jako sygnał: skoro
+moduł ma kosz (`lib/trash.ts`), to akcja masowo kasująca dane jest kandydatem do soft-delete.
+
+## 2026-08-02 — `useSearchParams` w powłoce aplikacji zabiera renderowanie po stronie serwera
+**Problem:** Gwiazdka „dodaj do ulubionych" musi znać **pełny** adres bieżącej strony, razem
+z `?query` (bo ulubiony widok to „projekt X w statusie Y"). Naturalny odruch to `useSearchParams()`.
+Komponent siedzi jednak w `AppShell`, czyli **opakowuje każdą stronę aplikacji** — a w Next.js
+App Router `useSearchParams` bez granicy Suspense spycha całe poddrzewo w renderowanie po stronie
+klienta.
+**Rozwiązanie:** Adres czytany z `window.location.pathname + window.location.search` w `useEffect`
+zależnym od `usePathname()`. Pierwszy render nie zna query (gwiazdka jest wtedy nieaktywna przez
+ułamek sekundy), co jest w pełni akceptowalne dla przycisku, a powłoka zostaje renderowana na
+serwerze.
+**Lekcja:** `useSearchParams` jest w porządku w liściu drzewa, ale w komponencie powłoki jest
+kosztowny. Gdy potrzebujesz query wyłącznie do reakcji na zdarzenie użytkownika (a nie do
+pierwszego renderu), przeczytaj je z `window.location` w efekcie.
+
+## 2026-08-02 — Skrót z Altem zjada polskie znaki, bo AltGr to Ctrl+Alt
+**Problem:** Ulubione widoki miały dostać skróty `Alt+1..9`. Naiwny warunek `if (e.altKey)`
+przechwytywałby **wpisywanie polskich znaków**: na klawiaturze polskiej (programisty) `AltGr`
+jest raportowany jako `ctrlKey && altKey`, więc `ą ć ę ł ń ó ś ź ż` to technicznie „Alt + litera".
+W aplikacji, której cały interfejs jest po polsku, byłby to błąd trafiający w każdego użytkownika.
+**Rozwiązanie:** Warunek `e.altKey && !e.ctrlKey && !e.metaKey` (czysty Alt) plus pominięcie
+zdarzeń, gdy aktywny element to `input`/`textarea`/`contenteditable`. Dodatkowo cyfra czytana
+z `e.code` (`"Digit1"`), a nie z `e.key` — przy wciśniętym Alt układ klawiatury potrafi zwrócić
+w `key` znak specjalny zamiast cyfry.
+**Lekcja:** `Alt` nie jest bezpiecznym modyfikatorem dla skrótów w aplikacji pisanej po polsku,
+dopóki jawnie nie wykluczysz `ctrlKey`. Do identyfikacji klawisza fizycznego używaj `e.code`,
+a nie `e.key`, który zależy od układu i modyfikatorów.
+
+## 2026-08-02 — Nazwa ma opisywać zachowanie, nie „być jednolita"
+**Problem:** Właściciel poprosił o ujednolicenie nazewnictwa: w Notatkach pojemniki nazywają się
+„Grupy", więc może wszędzie powinny być „Foldery"? Kuszące było zamienić słowo w całej aplikacji.
+**Rozwiązanie:** Rozstrzygnął **model danych**, nie estetyka. `Note.groupId` to pojedynczy klucz —
+notatka leży w dokładnie jednym pojemniku, czyli w **folderze**. `ProjectGroup.projectIds` to lista —
+projekt może należeć do wielu pojemników naraz, czyli do **grup**. Zmieniono więc tylko Notatki
+(„Grupy" → „Foldery"), a Zadania zostały przy „Grupach projektów". Kuchnia („Książki kucharskie")
+i Języki („Talie") zostały bez zmian jako nazwy dziedzinowe.
+**Lekcja:** „Jednolite nazewnictwo" to jednolita **zasada**, a nie jedno słowo wszędzie. Jeśli
+„folder" i „grupa" zachowują się inaczej (jedno miejsce vs wiele), użycie jednego słowa na oba
+uczy użytkownika fałszywego modelu. Przed zmianą nazwy sprawdź kardynalność w schemacie.
+
+## 2026-08-02 — Trzecia kolumna w siatce: `grid-row: span N` robi puste wiersze
+**Problem:** Strona główna miała mieć układ 3 kolumn, gdzie trzecia (asystent) jest ciągła, a sekcje
+płyną w dwóch pierwszych. Odruchowe rozwiązanie — `gridColumn: 3; gridRow: "1 / span 99"` —
+kompiluje się i wygląda sensownie, ale tworzy 99 **wierszy domyślnych**; przy `gap` odstępy między
+nimi sumują się w wielką pustą przestrzeń pod treścią.
+**Rozwiązanie:** Asystent wyjęty z siatki: kontener to `flex` (`flex-col xl:flex-row`), w którym
+pierwszym dzieckiem jest siatka sekcji (`flex: 1`), a drugim kolumna asystenta o stałej szerokości.
+Siatka sekcji dostała `minmax(0, 1fr)`/`minWidth: 0`, bo domyślne `1fr` ma `min-width: auto` i długi
+nieprzełamywalny tekst rozpycha ją w przewijanie poziome.
+**Lekcja:** Do „jednej ciągłej kolumny obok płynącej treści" używaj flexa, nie `grid-row: span`.
+A przy każdej siatce z treścią tekstową pamiętaj o `minmax(0, 1fr)` — inaczej `min-width: auto`
+cicho psuje responsywność.
+
 ## 2026-08-02 — `NULL != NULL` w PostgreSQL, czyli „systemowy" wiersz bez ochrony
 **Problem:** Tryb odświeżania sekcji AI miał mieć wartość domyślną systemową (ustawianą przez
 administratora) i wartość per użytkownik. Naturalny wzorzec z tego repo („Dictionary Ownership

@@ -15,6 +15,7 @@ import { getDecks } from "@/actions/languageDecks";
 import { getHealthEvents } from "@/actions/health";
 import { getLowStock, getExpiringStorage } from "@/actions/storage";
 import { getDashboardPrefs } from "@/actions/dashboardPrefs";
+import { readFavoriteViews } from "@/actions/favoriteViews";
 import { HomePage } from "@/components/home/HomePage";
 import type { TaskPriority, CareAgendaItem } from "@/types";
 
@@ -284,10 +285,12 @@ export default async function HomePageRoute() {
   }));
 
   const dashboardPrefs = await getDashboardPrefs();
+  const favoriteViews = await readFavoriteViews(userId).catch(() => []);
 
   return (
     <HomePage
       dashboardPrefs={dashboardPrefs}
+      favoriteViews={favoriteViews}
       userName={session.user.name ?? null}
       userRoles={userRoles}
       userPermissions={userPermissions}

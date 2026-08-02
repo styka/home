@@ -7,6 +7,8 @@ import Link from "next/link"
 import { Settings } from "lucide-react"
 import { ActivityFeed } from "@/components/home/ActivityFeed"
 import { MenuPrefsEditor } from "@/components/settings/MenuPrefsEditor"
+import { FavoriteViewsEditor } from "@/components/settings/FavoriteViewsEditor"
+import { getFavoriteViews } from "@/actions/favoriteViews"
 import { SkinPicker } from "@/components/settings/SkinPicker"
 import { listAvailableSkins, getActiveSkinId } from "@/actions/skins"
 import { DriveSettings } from "@/components/settings/DriveSettings"
@@ -27,6 +29,7 @@ export default async function SettingsPage({
   const recentActivity = await getRecentActivity(30)
   const userPermissions: string[] = session?.user?.permissions ?? []
   const menuPrefs = await getMenuPrefs()
+  const favoriteViews = await getFavoriteViews().catch(() => [])
   const skins = await listAvailableSkins()
   const activeSkinId = await getActiveSkinId()
   const teamOpts = teams.map((t) => ({ id: t.id, name: t.name }))
@@ -174,6 +177,14 @@ export default async function SettingsPage({
           Menu
         </h2>
         <MenuPrefsEditor permissions={userPermissions} prefs={menuPrefs} />
+      </section>
+
+      {/* Ulubione widoki */}
+      <section>
+        <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+          Nawigacja
+        </h2>
+        <FavoriteViewsEditor favorites={favoriteViews} />
       </section>
 
       {/* Dysk Google */}

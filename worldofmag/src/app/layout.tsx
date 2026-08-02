@@ -5,6 +5,7 @@ import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistratio
 import { auth } from "@/lib/auth";
 import { getPendingInvitationsCount } from "@/actions/invitations";
 import { readMenuPrefs } from "@/actions/menuPrefs";
+import { readFavoriteViews } from "@/actions/favoriteViews";
 import { readActiveSkin } from "@/actions/skins";
 import { defaultMenuPrefs } from "@/lib/modules";
 import { tokensToStyle } from "@/lib/skins";
@@ -58,6 +59,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? await readMenuPrefs(session.user.id).catch(() => defaultMenuPrefs())
     : defaultMenuPrefs();
 
+  // 042: ulubione widoki żyją w POWŁOCE (pasek boczny, pasek górny, skróty), więc czytamy je
+  // tutaj — raz na render layoutu — zamiast w każdej stronie z osobna.
+  const favoriteViews = session?.user?.id
+    ? await readFavoriteViews(session.user.id).catch(() => [])
+    : [];
+
   // Aktywna skórka: tokeny aplikowane inline na <html> (nadpisują :root z globals.css,
   // bez migotania bo renderowane po stronie serwera). data-skin-scheme steruje m.in.
   // widocznością natywnych ikon pól date/time.
@@ -81,7 +88,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-icon" href={`/apple-touch-icon/${ICON_VERSION}`} />
       </head>
       <body>
-        <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} usdPlnRate={usdPlnRate}>{children}</AppShell>
+        <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} usdPlnRate={usdPlnRate} favoriteViews={favoriteViews}>{children}</AppShell>
         <ServiceWorkerRegistration />
       </body>
     </html>

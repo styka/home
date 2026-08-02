@@ -76,6 +76,7 @@ model User {
   exchangeRates           ExchangeRate[]         @relation("UserExchangeRates")
   trashItems              TrashItem[]            @relation("UserTrashItems")
   dashboardPref           DashboardPref?         @relation("UserDashboardPref")
+  favoriteViews           FavoriteView[]         @relation("OwnedFavoriteViews")
   assistantPref           AssistantPref?         @relation("UserAssistantPref")
   languageDecks           LanguageDeck[]         @relation("OwnedLanguageDecks")
   healthEvents            HealthEvent[]          @relation("OwnedHealthEvents")
@@ -1889,6 +1890,27 @@ model DashboardPref {
   updatedAt DateTime @updatedAt
 
   user User @relation("UserDashboardPref", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// 042: ulubiony widok = prywatna zakładka nawigacyjna użytkownika (adres w aplikacji wraz
+// z filtrami w query). Świadomie BEZ `ownerTeamId` — to preferencja, nie zasób do dzielenia
+// (wzorzec: UserMenuPref / DashboardPref). `icon` i `color` to zwykłe Stringi; zbiór
+// dopuszczalnych kolorów zawęża unia TS w `lib/favorites/favoriteViews.ts` (C-12 — zero enumów).
+model FavoriteView {
+  id        String   @id @default(cuid())
+  ownerId   String
+  label     String
+  path      String // ścieżka wewnętrzna z parametrami, np. "/tasks/abc?status=IN_PROGRESS"
+  icon      String   @default("⭐")
+  color     String? // token motywu, np. "var(--accent-blue)" — nigdy hex (C-30)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  owner User @relation("OwnedFavoriteViews", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, path]) // AC-9: ponowny zapis tego samego adresu nie tworzy duplikatu
+  @@index([ownerId, order])
 }
 
 // A1: dziennik audytu zmian RBAC i konfiguracji (kto / co / kiedy). Bez FK do User —

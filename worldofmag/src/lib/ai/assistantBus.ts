@@ -8,6 +8,10 @@ export interface AssistantOpenDetail {
   // Gdy ustawione, asystent startuje w „trybie zgłoszenia": pokazuje kontekst
   // wskazanego miejsca i z opisu admina tworzy zadanie w projekcie „Omnia".
   feedbackContext?: string;
+  // 042: gdy ustawione, asystent otwiera się i OD RAZU wysyła tę wiadomość — tak jakby
+  // użytkownik wpisał ją w oknie czatu. Dzięki temu dokowana kolumna na stronie głównej
+  // jest tylko polem wejściowym, a cały stan rozmowy zostaje w jednym komponencie.
+  prompt?: string;
 }
 
 export function openAssistant(detail: AssistantOpenDetail = {}): void {
