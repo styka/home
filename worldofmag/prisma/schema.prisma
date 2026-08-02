@@ -96,6 +96,8 @@ model User {
   weatherWatchers         WeatherWatcher[]       @relation("OwnedWeatherWatchers")
   weatherIdeas            WeatherIdea[]          @relation("OwnedWeatherIdeas")
   aiContents              AiContent[]            @relation("OwnedAiContent")
+  aiSectionPrefs          AiSectionPref[]        @relation("OwnedAiSectionPrefs")
+  newsRefreshRuns         NewsRefreshRun[]       @relation("OwnedNewsRefreshRuns")
   projectGroups           ProjectGroup[]         @relation("OwnedProjectGroups")
   skins                   Skin[]                 @relation("SkinOwner")
   skinPref                UserSkinPref?
@@ -1869,6 +1871,9 @@ model AssistantPref {
   level        String   @default("standard") // AssistantLevel: "standard" | "economy"
   voiceKind    String   @default("browser") // AssistantVoiceKind: "browser" | "server"
   voiceId      String? // id głosu serwerowego (gdy voiceKind = "server")
+  // 041: auto-zatwierdzanie BEZPIECZNYCH akcji asystenta. Akcje niszczące pytają zawsze —
+  // klasyfikacja idzie z `DESTRUCTIVE_ACTION_TYPES`, nie z osobnej listy.
+  autoApprove  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -2716,6 +2721,52 @@ model AiContent {
 
   @@unique([ownerId, kind, scopeKey])
   @@index([ownerId, kind])
+}
+
+// 041: tryb odświeżania sekcji AI — per użytkownik i rodzaj sekcji.
+//
+// Osobna tabela, a nie kolumny w `AssistantPref`: sekcji jest dziś pięć i przybywa ich z każdym
+// modułem korzystającym z modelu. Kolumna per sekcja oznaczałaby migrację przy każdym dołożeniu.
+// Domyślne SYSTEMOWE nie mieszkają tutaj (patrz `Config.ai_section_default_modes`) — wiersz z
+// pustym właścicielem nie byłby chroniony przez indeks unikalny, bo w PostgreSQL `NULL != NULL`.
+model AiSectionPref {
+  id      String @id @default(cuid())
+  ownerId String
+  // Te same wartości co `AiContentKind` w kodzie (weather.ideas, news.hotTopics, …).
+  sectionKind String
+  // "onDemand" | "onChange" | "always" — String + union TS (C-12).
+  mode      String   @default("onDemand")
+  updatedAt DateTime @default(now()) @updatedAt
+
+  owner User @relation("OwnedAiSectionPrefs", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, sectionKind])
+}
+
+// 041: trwała historia przebiegów odświeżania Wiadomości.
+//
+// Nie da się jej odczytać z `Job`: `cleanupOldJobs` kasuje zakończone zadania po 24 godzinach, a
+// `Job.result` trzyma wyłącznie ostatni przebieg. `usage` zapisujemy SUROWE (handler nie ma sesji);
+// bramka widoczności kosztu działa przy odczycie — ten sam podział co dla `Job.result` od 039.
+model NewsRefreshRun {
+  id         String   @id @default(cuid())
+  ownerId    String
+  startedAt  DateTime
+  finishedAt DateTime @default(now())
+  // "done" | "failed" — String + union TS (C-12).
+  status String @default("done")
+  // Liczby z wyniku — pozwalają odróżnić przebiegi od siebie, a nie tylko po godzinie.
+  sources       Int     @default(0)
+  fetched       Int     @default(0)
+  assigned      Int     @default(0)
+  summarized    Int     @default(0)
+  timelineAdded Int     @default(0)
+  usage         String?
+  error         String?
+
+  owner User @relation("OwnedNewsRefreshRuns", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, finishedAt])
 }
 
 // ─── Warsztaty (Workshop) ───────────────────────────────────────────────────

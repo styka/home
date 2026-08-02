@@ -26,7 +26,7 @@
 
 ## Faza 1 — Fundament danych
 
-- [ ] **T-2** — **Migracja `0220_kontrola_nad_ai`.** DDL wg planu §2.4: `CREATE TABLE
+- [x] **T-2** — **Migracja `0220_kontrola_nad_ai`.** DDL wg planu §2.4: `CREATE TABLE
       "AiSectionPref"` (+ unique `[ownerId, sectionKind]`, FK cascade), `CREATE TABLE
       "NewsRefreshRun"` (+ index `[ownerId, finishedAt]`, FK cascade), `ALTER TABLE "AssistantPref"
       ADD COLUMN "autoApprove"`, idempotentny seed `Config.ai_section_default_modes`
@@ -34,7 +34,7 @@
       *Gotowe, gdy:* `npm run check:migrations` przechodzi, `migrate deploy` na lokalnym Postgresie
       kończy się czysto, a wiersz `Config` istnieje z poprawnym JSON-em.
 
-- [ ] **T-3** — **`schema.prisma`** zgodnie z migracją: dwa nowe modele, kolumna `autoApprove`,
+- [x] **T-3** — **`schema.prisma`** zgodnie z migracją: dwa nowe modele, kolumna `autoApprove`,
       relacje w `User`. Tryby jako `String` (C-12).
       *Gotowe, gdy:* `prisma generate` przechodzi, `migrate diff` nie pokazuje rozjazdu.
 
