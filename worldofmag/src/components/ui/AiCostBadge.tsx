@@ -166,7 +166,7 @@ export function AiCostBadge({
           // Świadomie bez ujemnego marginesu „kompensującego" — wyciągnięty obszar dotyku zachodziłby
           // wtedy na sąsiedni wiersz, gdy pasek się zawinie, a nakładające się cele dotyku są gorsze
           // od paska wyższego o kilkanaście pikseli.
-          padding: "11px 6px",
+          padding: "12px 6px",
         }}
       >
         {label} {open ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
