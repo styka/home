@@ -358,7 +358,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
           <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>
             Z listy „{effName}” zniknie{" "}
             <strong style={{ color: "var(--text-primary)" }}>
-              {counts.DONE} {counts.DONE === 1 ? "kupiona pozycja" : "kupionych pozycji"}
+              {counts.DONE} {pluralizePolish(counts.DONE, "kupiona pozycja", "kupione pozycje", "kupionych pozycji")}
             </strong>
             .
           </p>
@@ -462,4 +462,15 @@ function CompleteShoppingModal({ listName, items, pending, financeReady, onConfi
       )}
     </Modal>
   );
+}
+
+// Polska odmiana liczebnika: 1 → „kupiona pozycja", 2–4 → „kupione pozycje", reszta → „kupionych
+// pozycji". Bez tego okno potwierdzenia mówiło „2 kupionych pozycji". Lokalna kopia, jak w
+// ShoppingHomePage.tsx i KitchenHomePage.tsx.
+function pluralizePolish(n: number, one: string, few: string, many: string): string {
+  if (n === 1) return one;
+  const last = n % 10;
+  const last2 = n % 100;
+  if (last >= 2 && last <= 4 && (last2 < 12 || last2 > 14)) return few;
+  return many;
 }
