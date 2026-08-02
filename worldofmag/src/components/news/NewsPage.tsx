@@ -22,6 +22,7 @@ import { NewsItemCard } from "./NewsItemCard";
 import { NewsTimeline } from "./NewsTimeline";
 import { HotTopics } from "./HotTopics";
 import { NewsSettings } from "./NewsSettings";
+import { TopicPicker } from "./TopicPicker";
 import {
   getTopicView,
   startNewsRefresh,
@@ -202,12 +203,13 @@ export function NewsPage({
         />
       )}
 
-      {/* 040: pionowy stos zamiast dwóch kolumn. Kolumna tematów zjadała jedną trzecią szerokości i
-          i tak ucinała dłuższe nazwy — teraz tematy są zakładkami nad treścią, a treść dostaje całą
-          stronę. Ten sam układ działa na telefonie, więc nie ma dwóch osobnych nawigacji. */}
+      {/* 040/041: pionowy stos zamiast dwóch kolumn. Kolumna tematów zjadała jedną trzecią
+          szerokości i i tak ucinała dłuższe nazwy — teraz wybór tematu to jeden wiersz nad treścią,
+          a treść dostaje całą stronę. Ten sam układ działa na telefonie, więc nie ma dwóch osobnych
+          nawigacji. */}
       {view === "feed" && (
         <div className="min-w-0">
-          <TopicTabs
+          <TopicBar
             topics={topics}
             selectedId={selectedId}
             onSelect={setSelectedId}
@@ -420,16 +422,17 @@ function SourceTab({
 }
 
 /**
- * 040: tematy jako poziomy pasek zakładek zamiast osobnej kolumny.
+ * 041: pasek tematu — rozwijany selektor (`TopicPicker`) plus akcje tematu aktywnego.
  *
- * Kolumna zabierała jedną trzecią szerokości strony i mimo to ucinała dłuższe nazwy. Zakładki biorą
- * tylko jeden wiersz, pokazują nazwę w CAŁOŚCI, a przy nadmiarze przewijają się **we własnym
- * kontenerze** — nie stroną (to była osobna usterka: poziomy scroll całego widoku).
+ * Poprzednia wersja (040) trzymała tematy w poziomym pasku zakładek. Pasek pokazywał pełne nazwy,
+ * ale mieścił tylko kilka pierwszych tematów, a o pozostałych z ekranu nic nie mówiło — trzeba było
+ * odgadnąć, że da się go przewinąć. Selektor pokazuje w spoczynku wyłącznie temat aktywny, a po
+ * rozwinięciu **wszystkie** tematy z pełnymi nazwami i wyszukiwarką.
  *
- * Zarządzanie tematami przeniosło się tutaj: „+" dodaje nowy, a edycja i usunięcie dotyczą tematu
+ * Zarządzanie tematami zostaje tutaj: „+" dodaje nowy, a edycja i usunięcie dotyczą tematu
  * aktywnego — bo tylko on jest w danej chwili na ekranie.
  */
-function TopicTabs({
+function TopicBar({
   topics,
   selectedId,
   onSelect,
@@ -461,35 +464,7 @@ function TopicTabs({
   return (
     <div className="mb-3">
       <div className="flex items-center gap-2">
-        {/* `overflow-x-auto` + `min-w-0` NA TYM kontenerze: przewija się pasek zakładek, a nie
-            strona. Bez `min-w-0` element flex nie zwęziłby się poniżej treści i rozepchnąłby
-            widok — dokładnie ten mechanizm, który naprawiamy w ustawieniach źródeł. */}
-        <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-1">
-          {topics.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => onSelect(t.id)}
-              // `whitespace-nowrap`: zakładka ma zostać w jednym kawałku i raczej wyjechać poza
-              // przewijalny pasek, niż złamać nazwę na dwie linie.
-              className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition-colors",
-                selectedId === t.id
-                  ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                  : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-              )}
-            >
-              {t.title}
-              {t.pendingCount > 0 && (
-                <span className="rounded-full bg-[var(--accent-blue)] px-1.5 text-[10px] font-medium text-[var(--on-accent)]">
-                  {t.pendingCount}
-                </span>
-              )}
-            </button>
-          ))}
-          {topics.length === 0 && (
-            <span className="py-2 text-xs text-[var(--text-muted)]">Brak tematów.</span>
-          )}
-        </div>
+        <TopicPicker topics={topics} selectedId={selectedId} onSelect={onSelect} />
 
         <div className="flex shrink-0 items-center gap-1">
           {selected && (

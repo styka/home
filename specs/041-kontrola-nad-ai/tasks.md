@@ -16,7 +16,7 @@
 
 ## Faza 0 — Nawigacja po tematach (zgłoszenie 1, bez zależności)
 
-- [ ] **T-1** `[P]` — **`TopicPicker` zamiast `TopicTabs`.** Zwinięty: jeden przycisk na pełną
+- [x] **T-1** `[P]` — **`TopicPicker` zamiast `TopicTabs`.** Zwinięty: jeden przycisk na pełną
       szerokość (nazwa aktywnego tematu + licznik nowych + `⌄`). Rozwinięty: pionowa lista wszystkich
       tematów z **pełnymi nazwami** (bez `truncate`), pole wyszukiwania nad listą, liczniki przy
       pozycjach, `Esc` zamyka. Jeden komponent na obu szerokościach — **bez** wariantów `hidden md:*`.
