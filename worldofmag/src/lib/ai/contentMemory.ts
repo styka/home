@@ -136,36 +136,35 @@ export async function rememberedContent<T>(
     where: { ownerId_kind_scopeKey: { ownerId, kind, scopeKey } },
   });
 
+  // Uszkodzony wpis traktujemy jak brak wpisu: najwyżej treść powstanie ponownie. Wysypanie strony
+  // przez jeden zepsuty JSON byłoby znacznie gorsze niż jedno dodatkowe wywołanie modelu.
+  // Odczytujemy RAZ — obie decyzje niżej pytają o to samo.
+  const stored = existing ? decode<T>(existing.content) : undefined;
+
   // `always` znaczy „model odpowiada przy każdym wejściu" — nie ma po co czytać pamięci.
-  if (existing && !force && mode !== "always") {
-    const value = decode<T>(existing.content);
-    // Uszkodzony wpis traktujemy jak brak wpisu: najwyżej treść powstanie ponownie. Wysypanie
-    // strony przez jeden zepsuty JSON byłoby znacznie gorsze niż jedno dodatkowe wywołanie modelu.
-    if (value !== undefined) {
-      const stale = existing.inputHash !== inputHash;
-      // `onChange` to jedyny tryb, w którym rozjazd warunków sam sięga po model. W pozostałych
-      // treść zostaje na ekranie ze znacznikiem „nieaktualne" — bo znikająca treść jest gorsza od
-      // treści sprzed godziny, a o wywołaniu modelu decyduje użytkownik.
-      if (!(mode === "onChange" && stale)) {
-        return {
-          value,
-          generatedAt: existing.updatedAt.toISOString(),
-          stale,
-          fromMemory: true,
-          refreshes: existing.refreshes,
-          usage: parseStoredUsage(existing.usage),
-          pending: false,
-        };
-      }
+  if (existing && stored !== undefined && !force && mode !== "always") {
+    const stale = existing.inputHash !== inputHash;
+    // `onChange` to jedyny tryb, w którym rozjazd warunków sam sięga po model. W pozostałych
+    // treść zostaje na ekranie ze znacznikiem „nieaktualne" — bo znikająca treść jest gorsza od
+    // treści sprzed godziny, a o wywołaniu modelu decyduje użytkownik.
+    if (!(mode === "onChange" && stale)) {
+      return {
+        value: stored,
+        generatedAt: existing.updatedAt.toISOString(),
+        stale,
+        fromMemory: true,
+        refreshes: existing.refreshes,
+        usage: parseStoredUsage(existing.usage),
+        pending: false,
+      };
     }
   }
 
   // Nie ma czego pokazać, a tryb zabrania generować samoczynnie — sekcja czeka na kliknięcie.
   // Dotyczy to również wpisu, którego nie dało się odczytać: skoro treści nie ma, użytkownik i tak
   // musi zdecydować, czy warto za nią zapłacić.
-  if (!force && (mode === "onDemand" || mode === "onChange")) {
-    const readable = existing ? decode<T>(existing.content) !== undefined : false;
-    if (!readable) return { pending: true, stale: false, fromMemory: false, refreshes: 0 };
+  if (!force && stored === undefined && (mode === "onDemand" || mode === "onChange")) {
+    return { pending: true, stale: false, fromMemory: false, refreshes: 0 };
   }
 
   const fresh = await args.generate();

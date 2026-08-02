@@ -65,6 +65,11 @@ export function AiContentMeta({
       try {
         await setSectionMode(sectionKind, next);
         onModeChange?.(next);
+      } catch {
+        // Nieudany zapis zostawia poprzedni tryb — `onModeChange` się nie wykona, więc ekran nie
+        // obieca ustawienia, którego serwer nie zna. Wyjątek MUSI być tu złapany: funkcja async
+        // oddana do `startTransition` nie ma innego właściciela, więc odrzucenie poszłoby dalej
+        // jako nieobsłużone.
       } finally {
         setShowModes(false);
       }
