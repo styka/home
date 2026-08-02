@@ -1,7 +1,7 @@
 # Weryfikacja: Kontrola nad AI — kiedy generuje, ile kosztuje, co robi bez pytania
 
 - **Spec:** ./spec.md · **Plan:** ./plan.md · **Zadania:** ./tasks.md
-- **Data:** 2026-08-02
+- **Data:** 2026-08-02 (przebieg drugi, po nawrocie do `/implement` z zadaniem T-21)
 - **Środowisko:** lokalny PostgreSQL 16 (`127.0.0.1:5432/omnia_dev`) — **nigdy prod DB** (C-13);
   sekwencja zatrzymana przed `scripts/migrate.js`.
 
@@ -18,7 +18,12 @@
 | `npx next build` | ✅ „Compiled successfully" |
 | `npm run test:unit` | ✅ **585/585** (przed 041: 567 — +18 nowych) |
 | `prisma migrate deploy` | ✅ `0220_kontrola_nad_ai` zaaplikowana czysto |
-| `prisma migrate diff` | ✅ brak rozjazdu dla `AiSectionPref`/`NewsRefreshRun`/`autoApprove` (widoczne wyłącznie znane, zastane różnice: domyślne `updatedAt` i indeksy `pg_trgm`) |
+| `prisma migrate diff` | ✅ brak rozjazdu dla `AiSectionPref`/`NewsRefreshRun`/`autoApprove` |
+
+> **Uwaga metodyczna.** Jeden przebieg `test:unit` pokazał 48 czerwonych. To **nie była regresja**:
+> lokalny Postgres padł między uruchomieniami, a testy DB-gated przy ustawionym `DATABASE_URL` i
+> martwym serwerze **wywalają się**, zamiast się pominąć. Po `pg_ctlcluster 16 main start` wynik
+> wrócił do 585/585. Dokładnie ta pułapka jest już opisana w `doświadczenia.md` (2026-08-01).
 
 ## 2. Kryteria akceptacji
 
@@ -26,52 +31,54 @@
 
 | AC | Werdykt | Dowód |
 |---|---|---|
-| **AC-1** brak generowania bez kliknięcia | ✅ | `contentMemory.ts:150` zwraca `{pending:true}` bez dotknięcia `generate`. Test „brak zapisu: „na żądanie" i „przy zmianie" CZEKAJĄ" **liczy wywołania `generate` i wymaga 0**. UI: `IdeasPanel` → `AiContentPending`, `HotTopics` → jw. |
-| **AC-2** zapamiętana treść od razu | ✅ | Test „powrót na stronę NIC nie kosztuje": po `force` drugi odczyt daje `fromMemory:true` i licznik `generate` zostaje na 1 |
-| **AC-3** znacznik „aktualne" | ✅ | `stale:false` przy zgodnym `inputHash` (test „zapis + odcisk zgodny"); pasek nie renderuje wtedy znacznika (`AiContentMeta.tsx:82`), a „⟳ Odśwież" jest zwykłym przyciskiem, bez oznaczeń ostrzegawczych |
-| **AC-4** „nieaktualne" + treść nie znika | ✅ | Test „na żądanie: brak wywołania mimo zmiany warunków" → `pending:false`, `stale:true`, `generate` wołane **0 razy**; znacznik bursztynowy `AiContentMeta.tsx:83-91` |
-| **AC-5** komplet w jednym miejscu | ✅ | `AiCostBadge` renderowany **wewnątrz** `AiContentMeta` (`AiContentMeta.tsx:92`); osobne badge'e usunięte z `IdeasPanel`, `HotTopics`, `StorageAnalytics`, `WelfareSuggestions`, `PlanWeekDialog` (`grep AiCostBadge` w tych plikach: brak) |
-| **AC-6** rozbicie per sekcja | ✅ | do paska trafia `usage` **tej** treści (z `AiContent.usage` albo świeżej generacji), nie suma modułu; rozwinięcie `AiCostBadge` pokazuje `calls[]` |
+| **AC-1** brak generowania bez kliknięcia | ✅ | `contentMemory.ts` zwraca `{pending:true}` bez dotknięcia `generate`. Test „brak zapisu: „na żądanie" i „przy zmianie" CZEKAJĄ" **liczy wywołania `generate` i wymaga 0**. UI: `IdeasPanel`/`HotTopics`/`WelfareSuggestions` → `AiContentPending` |
+| **AC-2** zapamiętana treść od razu | ✅ | Test „powrót na stronę NIC nie kosztuje": po `force` drugi odczyt daje `fromMemory:true`, licznik `generate` zostaje na 1 |
+| **AC-3** znacznik „aktualne" | ✅ | `stale:false` przy zgodnym `inputHash` (test „zapis + odcisk zgodny"); pasek nie renderuje wtedy znacznika, a „⟳ Odśwież" jest zwykłym przyciskiem bez oznaczeń ostrzegawczych |
+| **AC-4** „nieaktualne" + treść nie znika | ✅ | Test „na żądanie: brak wywołania mimo zmiany warunków" → `pending:false`, `stale:true`, `generate` wołane **0 razy**; znacznik bursztynowy w `AiContentMeta` |
+| **AC-5** komplet w jednym miejscu | ✅ | `AiCostBadge` renderowany **wewnątrz** `AiContentMeta:94`; osobne badge'e usunięte z `IdeasPanel`, `HotTopics`, `StorageAnalytics`, `WelfareSuggestions`, `PlanWeekDialog` |
+| **AC-6** rozbicie per sekcja | ✅ | do paska trafia `usage` **tej** treści (z `AiContent.usage` albo świeżej generacji), nie suma modułu; rozwinięcie pokazuje `calls[]` |
 
 ### Sekcje AI: ustawienia trybu
 
 | AC | Werdykt | Dowód |
 |---|---|---|
-| **AC-7** trzy tryby | ✅ | `AI_SECTION_MODE_LABELS` (`sectionMode.ts`) = `onDemand`/`onChange`/`always`; wybór pod „⚙" (`AiContentMeta.tsx:116-138`) → `setSectionMode` |
-| **AC-8** „na żądanie" nie woła modelu | ✅ | jw. AC-1; test wielokrotnego wejścia („powrót na stronę") potwierdza brak wywołań przy kolejnych odczytach |
+| **AC-7** trzy tryby | ✅ | `AI_SECTION_MODE_LABELS` = `onDemand`/`onChange`/`always`; wybór pod „⚙" (`AiContentMeta:119-143`) → `setSectionMode` |
+| **AC-8** „na żądanie" nie woła modelu | ✅ | jw. AC-1; test wielokrotnego wejścia potwierdza brak wywołań przy kolejnych odczytach |
 | **AC-9** „przy zmianie danych" | ✅ | Test „przy zmianie: dokładnie jedno wywołanie" (hash inny) **oraz** „zapis + odcisk zgodny → ZERO wywołań" (hash ten sam) |
-| **AC-10** dziedziczenie po administratorze | ✅ | Test „brak preferencji → dziedziczenie po administratorze (Config)"; sekcja nieopisana w `Config` spada do `onDemand`, a nie do sąsiedniej |
+| **AC-10** dziedziczenie po administratorze | ✅ | Test „brak preferencji → dziedziczenie po administratorze (Config)"; sekcja nieopisana w `Config` spada do `onDemand` |
 | **AC-11** własne ≠ systemowe | ✅ | Test „własne i systemowe to dwa rozłączne zapisy": po zapisie preferencji `Config` jest bit w bit ten sam, a po zmianie `Config` preferencja zostaje `always` |
-| **AC-12** trwałość | ✅ | `AiSectionPref` (upsert po `[ownerId, sectionKind]`, migracja 0220); odczyt bezstanowy przez `resolveSectionMode` |
-| **AC-13** dostępne kciukiem, subtelne | ⚠️ **częściowo** | **Subtelność ✅** (jedna linia w spoczynku, wybór trybu zwinięty). **Kciuk ❌** dla paska w spoczynku: „⟳ Odśwież" i „⚙" mają `px-1.5 py-1` przy tekście 11 px (`AiContentMeta.tsx:94,105`) ≈ 23 px wysokości, a wyzwalacz kosztu ma `padding: 0` przy 10,5 px (`AiCostBadge.tsx:159-163`) ≈ 14 px — poniżej minimum `py-3` z C-31. Rozwinięta lista trybów i przycisk generowania **spełniają** `py-3` (`AiContentMeta.tsx:125,183`) |
+| **AC-12** trwałość | ✅ | `AiSectionPref` (upsert po `[ownerId, sectionKind]`, migracja 0220) |
+| **AC-13** dostępne kciukiem, subtelne | ✅ **(naprawione w T-21)** | **Kciuk:** „⟳ Odśwież" i „⚙" mają `px-2 py-3` (`AiContentMeta:99,110`) → ≈40 px; wyzwalacz kosztu `padding: "12px 6px"` (`AiCostBadge:159-168`) → ≈37 px; lista trybów i przycisk generowania `py-3` (`:130`, `:190`). **Subtelność:** pasek nadal **jedna linia**, tekst 11 px w `--text-muted`, wybór trybu i rozbicie kosztu zwinięte |
 
 ### Koszt przebiegu wiadomości
 
 | AC | Werdykt | Dowód |
 |---|---|---|
-| **AC-14** koszt czytelny po fakcie | ✅ | `NewsRefreshRun` (migracja 0220) + `recordRun` na obu ścieżkach handlera; test „skasowanie zadania z kolejki NIE usuwa historii" odtwarza dokładnie to, co robi `cleanupOldJobs` po 24 h |
+| **AC-14** koszt czytelny po fakcie | ✅ | `NewsRefreshRun` + `recordRun` na obu ścieżkach handlera; test „skasowanie zadania z kolejki NIE usuwa historii" odtwarza dokładnie to, co robi `cleanupOldJobs` po 24 h |
 | **AC-15** szczegóły dla administratora | ✅ | `usage` zapisywane jako pełny `AiUsageInfo` z tablicą `calls` (etykiety etapów z `sink`), `parseStoredUsage` odrzuca wpis bez `calls`; `AiCostBadge` rozwija rozbicie per wywołanie |
-| **AC-16** nie-administrator bez danych kosztowych | ✅ | `getNewsRefreshHistory` przepuszcza każdy wiersz przez `visibleUsage` (`news.ts`) — kontrola jest **serwerowa**, dane nie idą na drut |
+| **AC-16** nie-administrator bez danych kosztowych | ✅ | `getNewsRefreshHistory` przepuszcza każdy wiersz przez `visibleUsage` — kontrola **serwerowa**, dane nie idą na drut |
 | **AC-17** rozróżnialne przebiegi | ✅ | Test „dwa przebiegi = dwa wiersze, każdy z własnymi liczbami"; widok listuje czas + liczby + koszt per wiersz, nieudane mają czerwony komunikat |
 
 ### Auto-zatwierdzanie akcji asystenta
 
 | AC | Werdykt | Dowód |
 |---|---|---|
-| **AC-18** bezpieczne bez klikania | ✅ | `AICommandSheet.tsx` (gałąź `data.step === "plan"`): `autoApproveRef.current && actions.length > 0 && !actions.some(isDestructiveAction)` → `handleExecute(planTurn, actions)`; wynik ląduje w **tej samej** turze planu (`done:true, results`), więc widać, co zostało zrobione |
-| **AC-19** niszczące nadal pytają | ✅ | Warunek `!actions.some(...)` — **jedna** akcja niszcząca kieruje cały plan do szuflady. Klasyfikacja wyłącznie przez `isDestructiveAction` → `DESTRUCTIVE_ACTION_TYPES` (`lib/ai/aiAction.ts:36,74`), tego samego zbioru używa `ActionDrawer.tsx:25`. `grep` nie pokazuje drugiej listy |
+| **AC-18** bezpieczne bez klikania | ✅ | `AICommandSheet` (gałąź `data.step === "plan"`): `autoApproveRef.current && actions.length > 0 && !actions.some(isDestructiveAction)` → `handleExecute(planTurn, actions)`; wynik ląduje w **tej samej** turze planu (`done:true, results`) |
+| **AC-19** niszczące nadal pytają | ✅ | Warunek `!actions.some(...)` — **jedna** akcja niszcząca kieruje cały plan do szuflady. Klasyfikacja przez `isDestructiveAction` → `DESTRUCTIVE_ACTION_TYPES` (`aiAction.ts:36,74`), tego samego zbioru używa `ActionDrawer.tsx:25`. `grep` nie pokazuje drugiej listy |
 | **AC-20** trwałość między sesjami | ✅ | Kolumna `AssistantPref.autoApprove` (migracja 0220, `DEFAULT false`); odczyt w `getAssistantPrefs`, zapis w `updateAssistantPrefs` |
-| **AC-21** przełączanie bez opuszczania czatu | ✅ | Przełącznik na dole menu poziomu pracy, nad kompozytorem, `role="menuitemcheckbox"`; menu zostaje otwarte po kliknięciu (potwierdzenie zmiany stanu) |
-| **AC-22** widoczny stan trybu | ✅ | Znacznik „auto" w nagłówku czatu renderowany dopóki `autoApprove` (`AICommandSheet.tsx`, sekcja Header) — widoczny przez całą rozmowę, nie tylko przy przełączaniu |
+| **AC-21** przełączanie bez opuszczania czatu | ✅ | Przełącznik na dole menu poziomu pracy, nad kompozytorem, `role="menuitemcheckbox"`; menu zostaje otwarte po kliknięciu — zgodnie z odpowiedzią właściciela „przy akcjach ustawiania jakości asystenta na dole" |
+| **AC-22** widoczny stan trybu | ✅ | Znacznik „auto" w nagłówku czatu renderowany dopóki `autoApprove` — widoczny przez całą rozmowę, nie tylko przy przełączaniu |
 
 ### Nawigacja po tematach
 
 | AC | Werdykt | Dowód |
 |---|---|---|
-| **AC-23** pełne nazwy, dwa kroki | ✅ | `TopicPicker.tsx`: pozycja listy ma `break-words`, **bez** `truncate`; wybór = rozwiń + kliknij. Lista przewija się pionowo (`max-h-[60vh] overflow-y-auto`), poziomo nie ma czego przewijać |
+| **AC-23** pełne nazwy, dwa kroki | ✅ | `TopicPicker.tsx`: pozycja listy ma `break-words`, **bez** `truncate`; wybór = rozwiń + kliknij. Lista przewija się pionowo (`max-h-[60vh]`), poziomo nie ma czego przewijać |
 | **AC-24** wyszukiwanie | ✅ | Pole nad listą, filtr po tytule **i** filtrze semantycznym; autofokus po rozwinięciu |
-| **AC-25** jeden mechanizm | ✅ | `grep "hidden md:"` w `TopicPicker.tsx` → brak dopasowań; jeden komponent na obu szerokościach |
-| **AC-26** aktywny temat + licznik | ✅ | Zwinięty przycisk: nazwa aktywnego tematu + `pendingCount` + `⌄`. *(Nazwa aktywnego ma tu `truncate` — świadomie: AC-23 wymaga pełnych nazw przy WYBORZE, a zwinięty stan ma zostać jedną linią; `min-w-0` chroni przed poziomym rozpychaniem strony.)* |
+| **AC-25** jeden mechanizm | ✅ | `grep "hidden md:"` w `TopicPicker.tsx` → brak dopasowań |
+| **AC-26** aktywny temat + licznik | ✅ | Zwinięty przycisk: nazwa aktywnego tematu + `pendingCount` + `⌄`. *(Nazwa aktywnego ma `truncate` — świadomie: AC-23 wymaga pełnych nazw przy WYBORZE, a zwinięty stan ma zostać jedną linią; `min-w-0` chroni przed poziomym rozpychaniem strony.)* |
+
+**Wynik: 26/26 spełnionych.**
 
 ## 3. Zgodność z konstytucją
 
@@ -86,20 +93,27 @@
 | **C-22** | ✅ bez nowych slugów; administrator przez `hasPermission(..., PERMISSIONS.ADMIN)` |
 | **C-23** | ✅ zero nowych `AIAction`; zmienia się sposób ZATWIERDZANIA, nie katalog |
 | **C-25** | ✅ `setDefaultSectionModes` → `logAudit("config", "ai_section_modes.set", …)` |
-| **C-30** | ✅ wyłącznie zmienne CSS (`var(--accent-*)`, `var(--on-accent)` na przycisku generowania); brak hexów w nowym kodzie |
-| **C-31** | ⚠️ patrz AC-13 — rozwinięte kontrolki mają `py-3`, pasek w spoczynku nie |
+| **C-30** | ✅ wyłącznie zmienne CSS; `var(--on-accent)` na przycisku generowania |
+| **C-31** | ✅ **po T-21** — wszystkie kontrolki sekcji AI mają cel dotyku ≥ `py-3` |
 | **C-32** | ✅ wszystkie nowe teksty po polsku |
 | **C-40** | ✅ routing modeli nietknięty — sterujemy momentem wywołania |
-| **C-53** | ✅ zero nowych zależności; `rememberedContent` i `AiContentMeta` rozszerzone zamiast dublowane; `TopicPicker` **zastępuje** `TopicTabs`, nie stoi obok |
-| **C-54** | ✅ dwa odstępstwa od planu naniesione w `plan.md` (§3.1 podział `sectionMode`, §5.4 miejsce przełącznika) i w `tasks.md` (T-15) |
+| **C-53** | ✅ zero nowych zależności; `rememberedContent` i `AiContentMeta` rozszerzone zamiast dublowane; `TopicPicker` **zastępuje** `TopicTabs` |
+| **C-54** | ✅ trzy ślady: `plan.md` §3.1 (podział `sectionMode`), `plan.md` §5.4 (miejsce przełącznika), `tasks.md` Faza 8 (T-21 z nawrotu) |
 
 ## 4. Regresje
 
 - **Migracja** — w całości addytywna (brak `DROP`), więc poprzednia wersja kodu działa na nowym
-  schemacie; `migrate deploy` na czystej bazie przeszedł, `migrate diff` nie pokazuje rozjazdu.
+  schemacie; `migrate deploy` przeszedł, `migrate diff` nie pokazuje rozjazdu.
+- **`AiCostBadge` — zmiana o zasięgu całej aplikacji.** T-21 dołożył wskaźnikowi realny padding, więc
+  urósł jego obszar klikalny w **~20 miejscach** (asystent, Kuchnia, Magazyn, Zakupy, Języki, Pogoda,
+  Wiadomości, Zadania). To **zamierzone**: `padding: 0` łamało C-31 wszędzie, nie tylko w pasku sekcji.
+  Rozmiar i kolor tekstu bez zmian, więc waga wizualna została; rośnie wyłącznie wysokość wiersza,
+  w którym wskaźnik stoi. Świadomie **bez** ujemnego marginesu kompensującego — wyciągnięty obszar
+  dotyku zachodziłby wtedy na sąsiedni wiersz przy zawinięciu paska, a nakładające się cele dotyku są
+  gorsze od paska wyższego o kilkanaście pikseli. Pozycjonowanie rozwijanego panelu kosztu jest liczone
+  z **opakowania** (`wrapRef`), nie z przycisku, więc padding go nie rusza.
 - **Wspólny komponent `AiContentMeta`** — używany w 5 miejscach; wszystkie przebudowane i objęte
-  `next build`. Nowe pola (`usage`, `sectionKind`, `mode`) są **opcjonalne**, więc brak któregoś nie
-  wyłącza paska.
+  `next build`. Nowe pola (`usage`, `sectionKind`, `mode`) są **opcjonalne**.
 - **`rememberedContent`** — sygnatura rozszerzona przez **przeciążenia**: wywołanie bez `mode`
   zachowuje zachowanie sprzed 041 (test „brak trybu = zachowanie sprzed 041"). Żaden dotychczasowy
   wołający nie musiał obsłużyć nowego stanu.
@@ -112,19 +126,13 @@
 
 ## 5. Werdykt końcowy
 
-**DO POPRAWY** — jeden brak, wąski i konkretny.
+**GOTOWE.**
 
-Dwadzieścia pięć z dwudziestu sześciu kryteriów jest spełnionych z dowodem, wszystkie bramki są
-zielone, a testy przeszły w komplecie. Nie schodzi **AC-13** w części „dostępne kciukiem": trzy
-kontrolki paska sekcji AI w stanie spoczynku (odśwież / tryb / koszt) mają cele dotyku rzędu 14–23 px,
-przy minimum `py-3` z C-31. To nie jest kwestia gustu — AC wymienia dokładnie te trzy kontrolki, a
-C-31 podaje twardą wartość.
+Wszystkie **26 kryteriów akceptacji** spełnione z dowodem, wszystkie bramki zielone, testy w
+komplecie (585/585). Jedyny brak z pierwszego przebiegu (AC-13 — cele dotyku poniżej `py-3`) został
+domknięty zadaniem T-21 i zweryfikowany ponownie.
 
-Brak **nie** wynika z błędnego speca ani planu (plan §5.1 przewidywał `py-3`), więc poprawka dotyczy
-wyłącznie kodu — bez zawracania do `spec.md`/`plan.md`.
-
-### Braki dopisane do `tasks.md`
-
-- **T-21** — powiększyć cele dotyku w pasku sekcji AI w stanie spoczynku (przycisk odświeżania,
-  przycisk trybu, wyzwalacz kosztu) do minimum z C-31, **nie rozbijając** paska na dwie linie i nie
-  tracąc subtelności, o którą właściciel prosił wprost (spec §9).
+Czego **nie** dało się sprawdzić automatycznie i co zostaje do oceny wzrokowej na środowisku
+testowym: rzeczywisty odbiór proporcji paska sekcji AI po powiększeniu przycisków (jedna linia
+zgodnie z prośbą o subtelność — sprawdzone w kodzie, nie na ekranie) oraz wygląd wskaźnika kosztu w
+~20 miejscach, gdzie wiersz urósł o kilkanaście pikseli.
