@@ -75,7 +75,7 @@
   Zero enumów Prisma — `icon`/`color` to `String` (C-12).
   *Gotowe, gdy:* `npx prisma generate` przechodzi czysto, a wygenerowany klient zna `FavoriteView`.
 
-- [ ] **T-7** — **`src/lib/favorites/favoriteViews.ts`** — jedyne miejsce z logiką współdzieloną:
+- [x] **T-7** — **`src/lib/favorites/favoriteViews.ts`** — jedyne miejsce z logiką współdzieloną:
   typ `FavoriteViewDTO`, unia `FavoriteColor` (tokeny motywu), `MAX_FAVORITE_VIEWS = 30`,
   `normalizeFavoritePath(raw)` oraz `filterAccessibleFavorites(views, permissions)`.
   `normalizeFavoritePath` musi: wymusić pojedynczy wiodący `/`, **odrzucić** `//` i `/\` (otwarte
