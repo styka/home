@@ -14,6 +14,8 @@ import { DailyBriefingCard } from "@/components/home/DailyBriefingCard";
 import { QuickActions } from "@/components/home/QuickActions";
 import { RecentlyUsed } from "@/components/home/RecentlyUsed";
 import { AdminDashboardWidget } from "@/components/home/AdminDashboardWidget";
+import { FavoriteCards } from "@/components/favorites/FavoriteCards";
+import type { FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
 import { SectionHeading, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import type { TaskPriority, CareAgendaItem } from "@/types";
 
@@ -98,10 +100,12 @@ interface HomePageProps {
   recentActivity: ActivityItem[];
   adminStats: AdminStats | null;
   dashboardPrefs?: { order: string[]; hidden: string[] };
+  favoriteViews?: FavoriteViewDTO[];
 }
 
 // H1: sekcje pulpitu, które użytkownik może przestawiać/ukrywać.
 const SECTION_LABELS: Record<string, string> = {
+  favorites: "Ulubione widoki",
   recently: "Ostatnio używane",
   briefing: "Briefing dnia",
   modules: "Twoje moduły",
@@ -177,6 +181,7 @@ export function HomePage({
   recentActivity,
   adminStats,
   dashboardPrefs,
+  favoriteViews = [],
 }: HomePageProps) {
   const has = (slug: string) => userPermissions.includes(slug);
   const hasAnyModule =
@@ -228,6 +233,12 @@ export function HomePage({
 
   // Węzły sekcji — budowane raz, renderowane wg kolejności użytkownika.
   const sectionNodes: Record<string, React.ReactNode> = {
+    favorites: (
+      <div>
+        <SectionHeading>Ulubione widoki</SectionHeading>
+        <FavoriteCards favorites={favoriteViews} permissions={userPermissions} />
+      </div>
+    ),
     recently: <RecentlyUsed activities={recentActivity} permissions={userPermissions} />,
     briefing: hasAnyModule ? <DailyBriefingCard /> : null,
     modules: hasAnyModule ? (

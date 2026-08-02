@@ -108,7 +108,7 @@
 
 ## Faza 4 — UI ulubionych (plan §5.1–5.3, §5.10)
 
-- [ ] **T-10** — **`src/components/favorites/FavoriteStarButton.tsx`** (AC-1, AC-3).
+- [x] **T-10** — **`src/components/favorites/FavoriteStarButton.tsx`** (AC-1, AC-3).
   Ikona `Star` (pusta/wypełniona), popover z **proponowaną, edytowalną** nazwą + wybór emoji i koloru
   z presetów. Bieżący adres: `usePathname()` + `window.location.search` czytane w `useEffect`
   zależnym od `pathname` — **bez `useSearchParams`**, żeby nie zepchnąć powłoki w renderowanie po
@@ -116,14 +116,14 @@
   ≥32×32 px (C-31).
   *Gotowe, gdy:* zapis z `/tasks/<id>?status=…` zachowuje parametry, a ponowny klik usuwa wpis.
 
-- [ ] **T-11** `[P]` — **`src/components/favorites/FavoritesSwitcher.tsx`** (AC-4).
+- [x] **T-11** `[P]` — **`src/components/favorites/FavoritesSwitcher.tsx`** (AC-4).
   Nakładka na `cmdk` (zależność już obecna, `^1.0.4`), wizualnie wzorowana na
   `command-palette/CommandPalette.tsx`, ale **niezależna** — tamta jest osadzona wyłącznie w Zakupach.
   Pole filtrowania po nazwie, lista z emoji/kolorem i numerem skrótu, stopka z linkiem do `/settings`.
   Renderuje wyłącznie wpisy po `filterAccessibleFavorites` (AC-8). `Esc` zamyka (C-31).
   *Gotowe, gdy:* otwiera się z `/portfel`, `/notes`, `/kitchen` i filtruje po fragmencie nazwy.
 
-- [ ] **T-12** `[P]` — **`src/components/favorites/FavoritesShortcuts.tsx`** (AC-5).
+- [x] **T-12** `[P]` — **`src/components/favorites/FavoritesShortcuts.tsx`** (AC-5).
   Globalny listener `Alt+1..9` → nawigacja do n-tego **dostępnego** ulubionego.
   **Warunek obowiązkowy:** `e.altKey && !e.ctrlKey && !e.metaKey` — na klawiaturze polskiej
   AltGr = Ctrl+Alt i służy do wpisywania `ą ć ę ł ń ó ś ź ż`; bez wykluczenia `ctrlKey` skrót
@@ -132,7 +132,7 @@
   *Gotowe, gdy:* `Alt+1` przechodzi do pierwszego wpisu, a wpisanie `ą ć ę` przez AltGr w polu
   tekstowym **nie** wyzwala nawigacji.
 
-- [ ] **T-13** — **Wpięcie ulubionych w powłokę** (AC-4, AC-8) — zadanie scalające T-10..T-12.
+- [x] **T-13** — **Wpięcie ulubionych w powłokę** (AC-4, AC-8) — zadanie scalające T-10..T-12.
   `ModuleSidebar.tsx` (desktop): gwiazdka + sekcja listy ulubionych w dolnej części, obok dzwonka.
   `AppShell.tsx` (mobile): gwiazdka w kontenerze `ml-auto` obok `NotificationBell`;
   `FavoritesShortcuts` montowany raz. Dane ulubionych dostarczane do powłoki z warstwy serwerowej
@@ -141,7 +141,7 @@
   *Gotowe, gdy:* ulubione są dostępne z dowolnej strony, a odebranie `module.portfel` w
   `/admin/access` sprawia, że wpis do `/portfel` przestaje być klikalny we **wszystkich** miejscach.
 
-- [ ] **T-14** `[P]` — **Sekcja ulubionych na pulpicie** (AC-6, AC-18).
+- [x] **T-14** `[P]` — **Sekcja ulubionych na pulpicie** (AC-6, AC-18).
   `src/lib/home/dashboardSections.ts`: nowy klucz `favorites` w `DASHBOARD_SECTIONS` (dzięki temu
   `sanitizeSectionKeys` go przepuszcza) + nowa **kolejność domyślna**
   `briefing → favorites → today → modules → quickActions → suggestions → recently` (AC-16).
@@ -152,7 +152,7 @@
   *Gotowe, gdy:* konto z zapisanym `DashboardPref` zachowuje swoją kolejność i ukrycia, a `favorites`
   doklejone na końcu daje się przestawić i ukryć.
 
-- [ ] **T-15** `[P]` — **`src/components/settings/FavoriteViewsEditor.tsx`** (AC-7) + wpięcie
+- [x] **T-15** `[P]` — **`src/components/settings/FavoriteViewsEditor.tsx`** (AC-7) + wpięcie
   w `src/app/settings/page.tsx` obok `MenuPrefsEditor` (wzorzec 1:1: strzałki góra/dół, edycja
   inline, usuwanie).
   *Gotowe, gdy:* zmiana kolejności, nazwy, ikony i usunięcie odbijają się w sidebarze, przełączniku

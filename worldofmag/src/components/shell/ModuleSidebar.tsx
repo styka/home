@@ -17,6 +17,9 @@ import { PortfelSideNav } from "@/components/portfel/PortfelSideNav";
 import { isPathLocked } from "@/lib/permissions";
 import { resolveMenu, defaultMenuPrefs, type MenuPrefs, type ModuleDef } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
+import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
+import { FavoritesSidebarSection } from "@/components/favorites/FavoritesSidebarSection";
+import type { FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
 
 interface ModuleSidebarProps {
   invitationCount?: number;
@@ -24,6 +27,7 @@ interface ModuleSidebarProps {
   userRoles?: string[];
   userPermissions?: string[];
   menuPrefs?: MenuPrefs;
+  favoriteViews?: FavoriteViewDTO[];
 }
 
 /** Sub-nawigacja danego modułu (renderowana, gdy moduł jest aktywny). */
@@ -195,7 +199,7 @@ function NavSubItem({
   );
 }
 
-export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs() }: ModuleSidebarProps) {
+export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs(), favoriteViews = [] }: ModuleSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -251,6 +255,10 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
 
       {/* Modules — tylko dostępne i włączone, w kolejności użytkownika */}
       <nav className="flex-1 py-2 overflow-y-auto">
+        {/* 042: własne miejsca użytkownika stoją NAD nawigacją modułów — to do nich wraca
+            najczęściej, a sekcja znika całkowicie, gdy nie ma ani jednego ulubionego (AC-6). */}
+        <FavoritesSidebarSection favorites={favoriteViews} userPermissions={userPermissions} />
+
         {enabled.map(renderModule)}
 
         {/* „Więcej…" — działy dostępne, ale wyłączone przez użytkownika */}
@@ -284,6 +292,8 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
 
       {/* Bottom: Powiadomienia + Invitations + Settings + Admin */}
       <div className="py-2 border-t" style={{ borderColor: "var(--border)" }}>
+        <FavoriteStarButton favorites={favoriteViews} placement="sidebar" />
+
         <NotificationBell placement="sidebar" />
 
         <NavItem href="/invitations" label="Zaproszenia" icon={<Mail size={18} />} pathname={pathname} locked={isLocked("/invitations")}>
