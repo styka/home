@@ -17,10 +17,9 @@ import {
   AI_SECTION_MODES_CONFIG_KEY,
   DEFAULT_SECTION_MODE,
   isSectionMode,
-  readDefaultSectionModes,
-  resolveSectionModes,
   type AiSectionMode,
 } from "@/lib/ai/sectionMode";
+import { readDefaultSectionModes, resolveSectionModes } from "@/lib/ai/sectionModeResolver";
 import type { AiContentKind } from "@/lib/ai/contentMemory";
 
 export interface SectionModeDTO {

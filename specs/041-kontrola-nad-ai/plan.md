@@ -110,13 +110,22 @@ Zgłoszenie prosi o możliwość odczytania kosztu, nie o wieczyste archiwum (za
 
 ## 3. Warstwa serwera (Server Actions — C-20)
 
-### 3.1 Tryb sekcji — `src/lib/ai/sectionMode.ts` (nowy, ~40 linii)
+### 3.1 Tryb sekcji — dwa pliki (podział wymuszony granicą klient/serwer)
 
-- `export type AiSectionMode = "onDemand" | "onChange" | "always"` + etykiety PL.
-- `resolveSectionMode(ownerId, kind)` — helper serwerowy (nie akcja): preferencja użytkownika →
-  `Config` → `"onDemand"`. Jedno miejsce, w którym mieszka ta kolejność.
-- `readDefaultSectionModes()` — odczyt `Config` **bez sesji** (wzorzec `readCostBadgeEnabled`
-  z 037), bo woła to także handler zadania.
+> **Korekta z etapu `/implement` (C-54).** Plan zakładał jeden plik. Etykiety trybów są potrzebne w
+> komponencie klienckim (`AiContentMeta`), a ten nie może zaciągnąć `@/lib/prisma` — Prisma nie
+> działa w przeglądarce i wywaliłaby build. Stąd podział, analogiczny do `lib/llm/effort.ts`
+> (czysty) kontra `lib/llm/resolver.ts` (baza).
+
+- **`src/lib/ai/sectionMode.ts`** — słownik pojęć, **bez bazy**: `AiSectionMode`
+  (`"onDemand" | "onChange" | "always"`), etykiety PL sekcji i trybów, `AI_SECTION_KINDS`,
+  `isSectionMode`, `DEFAULT_SECTION_MODE`, klucz `Config`.
+- **`src/lib/ai/sectionModeResolver.ts`** — część serwerowa:
+  - `resolveSectionMode(ownerId, kind)` — preferencja użytkownika → `Config` → `"onDemand"`. Jedno
+    miejsce, w którym mieszka ta kolejność.
+  - `resolveSectionModes(ownerId)` — komplet sekcji jednym zapytaniem.
+  - `readDefaultSectionModes()` — odczyt `Config` **bez sesji** (wzorzec `readCostBadgeEnabled`
+    z 037), bo woła to także handler zadania.
 
 ### 3.2 `rememberedContent` — nowy tryb (`src/lib/ai/contentMemory.ts`)
 
@@ -226,7 +235,8 @@ Manifesty: nowe akcje z `actions/aiSections.ts` i `getNewsRefreshHistory` wymaga
 |------|-------|-------|
 | `prisma/migrations/0220_kontrola_nad_ai/migration.sql` | nowy | dwie tabele, kolumna, seed `Config` |
 | `prisma/schema.prisma` | edycja | `AiSectionPref`, `NewsRefreshRun`, `AssistantPref.autoApprove` |
-| `src/lib/ai/sectionMode.ts` | nowy | typ trybu, `resolveSectionMode`, odczyt domyślnych bez sesji |
+| `src/lib/ai/sectionMode.ts` | nowy | typ trybu + etykiety PL (czysty, używany też po stronie klienta) |
+| `src/lib/ai/sectionModeResolver.ts` | nowy | `resolveSectionMode(s)`, odczyt domyślnych bez sesji |
 | `src/lib/ai/contentMemory.ts` | edycja | tryb + `pending` |
 | `src/actions/aiSections.ts` | nowy | tryby użytkownika i systemowe (admin) |
 | `src/actions/news.ts` | edycja | `getNewsRefreshHistory` |

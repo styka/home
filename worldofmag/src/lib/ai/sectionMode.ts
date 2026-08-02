@@ -1,15 +1,14 @@
-// 041: TRYB ODŚWIEŻANIA sekcji AI — jedno miejsce, w którym mieszka odpowiedź na pytanie
-// „kiedy ta sekcja ma zawołać model".
+// 041: TRYB ODŚWIEŻANIA sekcji AI — słownik pojęć: typ trybu, etykiety, lista sekcji.
 //
-// Do 040 odpowiedź brzmiała „zawsze, gdy nie ma zapisu" i była zaszyta w `rememberedContent`.
-// Skutek: pierwsze wejście na stronę kosztowało, a użytkownik nie miał nad tym żadnej kontroli.
-// Teraz decyduje tryb: preferencja użytkownika → domyślne systemowe (`Config`) → „na żądanie".
+// Do 040 odpowiedź na pytanie „kiedy ta sekcja ma zawołać model" brzmiała „zawsze, gdy nie ma
+// zapisu" i była zaszyta w `rememberedContent`. Skutek: pierwsze wejście na stronę kosztowało, a
+// użytkownik nie miał nad tym żadnej kontroli. Teraz decyduje tryb.
 //
-// Kolejność rozstrzygania jest w JEDNEJ funkcji celowo. Rozsypana po komponentach dawałaby sekcje,
-// które „prawie" tak samo dziedziczą po administratorze — a różnice wychodziłyby dopiero u
-// użytkownika.
+// Ten plik jest CZYSTY (bez bazy), bo etykiety trybów są potrzebne w komponencie klienckim.
+// Rozstrzyganie kolejności — preferencja → `Config` → „na żądanie" — mieszka w
+// `sectionModeResolver.ts` i jest tam w JEDNEJ funkcji celowo: rozsypane po komponentach dałoby
+// sekcje, które „prawie" tak samo dziedziczą po administratorze.
 
-import { prisma } from "@/lib/prisma";
 import type { AiContentKind } from "@/lib/ai/contentMemory";
 
 /** String + union TS (C-12) — nigdy enum Prisma. */
@@ -61,68 +60,4 @@ export const AI_SECTION_MODE_LABELS: Record<AiSectionMode, { label: string; hint
 
 export function isSectionMode(v: unknown): v is AiSectionMode {
   return v === "onDemand" || v === "onChange" || v === "always";
-}
-
-/**
- * Domyślne systemowe z `Config` — **bez sesji**, bo woła to również handler zadania w kolejce
- * (wzorzec `readCostBadgeEnabled` z 037).
- *
- * Każda awaria (brak wiersza, uszkodzony JSON, nieznana nazwa trybu) kończy się pustą mapą, czyli
- * trybem „na żądanie" dla wszystkich sekcji. Wysypanie strony przez jeden zepsuty wpis w
- * konfiguracji byłoby nieproporcjonalne do szkody.
- */
-export async function readDefaultSectionModes(): Promise<Partial<Record<AiContentKind, AiSectionMode>>> {
-  try {
-    const row = await prisma.config.findUnique({ where: { key: AI_SECTION_MODES_CONFIG_KEY } });
-    if (!row) return {};
-    const parsed = JSON.parse(row.value) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-
-    const out: Partial<Record<AiContentKind, AiSectionMode>> = {};
-    for (const kind of AI_SECTION_KINDS) {
-      const v = (parsed as Record<string, unknown>)[kind];
-      if (isSectionMode(v)) out[kind] = v;
-    }
-    return out;
-  } catch {
-    return {};
-  }
-}
-
-/**
- * Tryb JEDNEJ sekcji dla danego użytkownika: preferencja → `Config` → „na żądanie".
- *
- * Preferencja użytkownika i domyślne systemowe to dwa ROZŁĄCZNE zapisy (`AiSectionPref` kontra
- * `Config`), więc zmiana jednego nigdy nie nadpisuje drugiego — a użytkownik, który raz wybrał
- * swoje, przestaje dziedziczyć po administratorze.
- */
-export async function resolveSectionMode(
-  ownerId: string,
-  kind: AiContentKind
-): Promise<AiSectionMode> {
-  const pref = await prisma.aiSectionPref.findUnique({
-    where: { ownerId_sectionKind: { ownerId, sectionKind: kind } },
-  });
-  if (pref && isSectionMode(pref.mode)) return pref.mode;
-
-  const defaults = await readDefaultSectionModes();
-  return defaults[kind] ?? DEFAULT_SECTION_MODE;
-}
-
-/** Tryby WSZYSTKICH sekcji naraz — jedno zapytanie zamiast pięciu (ustawienia, strona modułu). */
-export async function resolveSectionModes(
-  ownerId: string
-): Promise<Record<AiContentKind, AiSectionMode>> {
-  const [prefs, defaults] = await Promise.all([
-    prisma.aiSectionPref.findMany({ where: { ownerId } }),
-    readDefaultSectionModes(),
-  ]);
-  const byKind = new Map(prefs.map((p) => [p.sectionKind, p.mode]));
-
-  const out = {} as Record<AiContentKind, AiSectionMode>;
-  for (const kind of AI_SECTION_KINDS) {
-    const own = byKind.get(kind);
-    out[kind] = isSectionMode(own) ? own : defaults[kind] ?? DEFAULT_SECTION_MODE;
-  }
-  return out;
 }

@@ -56,7 +56,7 @@ test(
   "brak preferencji i brak konfiguracji → „na żądanie”",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { resolveSectionMode } = await import("@/lib/ai/sectionMode");
+    const { resolveSectionMode } = await import("@/lib/ai/sectionModeResolver");
     await withConfig(null, async () => {
       await withUser(async (userId) => {
         assert.equal(await resolveSectionMode(userId, "weather.ideas"), "onDemand");
@@ -69,7 +69,7 @@ test(
   "brak preferencji → dziedziczenie po administratorze (Config)",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { resolveSectionMode } = await import("@/lib/ai/sectionMode");
+    const { resolveSectionMode } = await import("@/lib/ai/sectionModeResolver");
     await withConfig('{"weather.ideas":"always","news.hotTopics":"onChange"}', async () => {
       await withUser(async (userId) => {
         assert.equal(await resolveSectionMode(userId, "weather.ideas"), "always");
@@ -86,7 +86,7 @@ test(
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
     const { prisma } = await import("@/lib/prisma");
-    const { resolveSectionMode } = await import("@/lib/ai/sectionMode");
+    const { resolveSectionMode } = await import("@/lib/ai/sectionModeResolver");
     await withConfig('{"weather.ideas":"always"}', async () => {
       await withUser(async (userId) => {
         await prisma.aiSectionPref.create({
@@ -102,7 +102,7 @@ test(
   "uszkodzony JSON w konfiguracji degraduje do „na żądanie”, nie rzuca",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { resolveSectionMode, readDefaultSectionModes } = await import("@/lib/ai/sectionMode");
+    const { resolveSectionMode, readDefaultSectionModes } = await import("@/lib/ai/sectionModeResolver");
     await withConfig("{to nie jest JSON", async () => {
       await withUser(async (userId) => {
         assert.deepEqual(await readDefaultSectionModes(), {});
@@ -117,7 +117,7 @@ test(
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
     const { prisma } = await import("@/lib/prisma");
-    const { resolveSectionMode } = await import("@/lib/ai/sectionMode");
+    const { resolveSectionMode } = await import("@/lib/ai/sectionModeResolver");
     await withConfig('{"weather.ideas":"codziennie","pets.insights":"always"}', async () => {
       await withUser(async (userId) => {
         // Śmieć w konfiguracji → domyślne, a nie wysyp.
@@ -138,7 +138,8 @@ test(
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
     const { prisma } = await import("@/lib/prisma");
-    const { AI_SECTION_MODES_CONFIG_KEY, resolveSectionMode } = await import("@/lib/ai/sectionMode");
+    const { AI_SECTION_MODES_CONFIG_KEY } = await import("@/lib/ai/sectionMode");
+    const { resolveSectionMode } = await import("@/lib/ai/sectionModeResolver");
     await withConfig('{"weather.ideas":"onChange"}', async () => {
       await withUser(async (userId) => {
         // Użytkownik wybiera swoje — konfiguracja systemowa ma zostać nietknięta.
@@ -173,9 +174,8 @@ test(
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
     const { prisma } = await import("@/lib/prisma");
-    const { resolveSectionMode, resolveSectionModes, AI_SECTION_KINDS } = await import(
-      "@/lib/ai/sectionMode"
-    );
+    const { AI_SECTION_KINDS } = await import("@/lib/ai/sectionMode");
+    const { resolveSectionMode, resolveSectionModes } = await import("@/lib/ai/sectionModeResolver");
     await withConfig('{"news.hotTopics":"onChange"}', async () => {
       await withUser(async (userId) => {
         await prisma.aiSectionPref.create({

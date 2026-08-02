@@ -62,7 +62,7 @@
 
 ## Faza 3 — Wspólny pasek sekcji AI
 
-- [ ] **T-7** — **`AiContentMeta` wchłania koszt i tryb.** Jedna linia w spoczynku: „wygenerowano …
+- [x] **T-7** — **`AiContentMeta` wchłania koszt i tryb.** Jedna linia w spoczynku: „wygenerowano …
       · [nieaktualne] · koszt · ⟳ Odśwież · ⚙"; `⚙` rozwija wybór trybu (`py-3`, zwinięty domyślnie).
       Osobny stan `pending`: zdanie „Treść powstanie po kliknięciu" + przycisk — **wyraźnie inny** od
       pustego stanu po błędzie.
