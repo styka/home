@@ -1,6 +1,6 @@
 # Weryfikacja: Nawigacja po widokach, widget asystenta i układ strony głównej
 
-- **Spec:** ./spec.md · **Plan:** ./plan.md · **Zadania:** ./tasks.md (26/26 odhaczonych)
+- **Spec:** ./spec.md · **Plan:** ./plan.md · **Zadania:** ./tasks.md (27/27 odhaczonych — 26 z planu + T-27 z zawrotu)
 - **Data:** 2026-08-03
 - **Werdykt:** **GOTOWE Z UWAGAMI** — po zawrocie do `/implement` (T-27) domknięty jedyny brak.
 - **Historia:** przebieg 1 → **DO POPRAWY** (AC-7 zweryfikowane tylko dla Notatek) → `/implement`
