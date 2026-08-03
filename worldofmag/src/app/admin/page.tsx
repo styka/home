@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { hasPermission, PERMISSIONS } from "@/lib/permissions"
-import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes, Palette, ClipboardList, LineChart, Sparkles, Bug } from "lucide-react"
+import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes, Palette, ClipboardList, LineChart, Sparkles, Bug, Compass } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { FeedbackTriggerButton } from "@/components/admin/FeedbackTriggerButton"
@@ -291,6 +291,11 @@ export default async function AdminPage() {
             <Link href="/admin/audyt-podsumowanie" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <ClipboardList size={15} style={{ color: "var(--accent-green)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Audyt — podsumowanie zmian (wykonane / pozostałe)</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
+            <Link href="/admin/architektura-docelowa" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <Compass size={15} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>Omnia 🧐 — architektura docelowa (plan przebudowy)</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/admin/spec-pipeline" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>

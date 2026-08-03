@@ -16,6 +16,8 @@ import {
   Sun,
   Moon,
   Coffee,
+  ClipboardCopy,
+  Check,
 } from "lucide-react";
 
 type Status = "done" | "draft" | "planned";
@@ -70,6 +72,8 @@ export function AudytBookReader({
   generatedAt,
   basePath = "/admin/audyt",
   sourceLabel = "content/audyt/*.md",
+  copyPrompt,
+  copyPromptLabel = "Kopiuj jako prompt dla Claude Code",
 }: {
   meta: Meta;
   toc: TocItem[];
@@ -81,8 +85,16 @@ export function AudytBookReader({
   basePath?: string;
   /** Etykieta źródła w stopce (skąd pochodzi treść). */
   sourceLabel?: string;
+  /**
+   * Gdy podany — w nagłówku pojawia się ikona kopiowania CAŁEJ książki opakowanej w prompt
+   * uruchamiający spec-driven pipeline. Budowany na etapie `build` (skrypt bakujący), żeby
+   * nie wozić 14 rozdziałów drugi raz do przeglądarki bez potrzeby.
+   */
+  copyPrompt?: string;
+  copyPromptLabel?: string;
 }) {
   const [theme, setTheme] = useState<ReadingTheme>("dark");
+  const [copied, setCopied] = useState(false);
   const [tocOpen, setTocOpen] = useState(false); // mobile drawer
   const [scrollPct, setScrollPct] = useState(0);
   const mainRef = useRef<HTMLDivElement>(null);
@@ -96,6 +108,25 @@ export function AudytBookReader({
       /* ignore */
     }
   }, []);
+
+  async function handleCopyPrompt() {
+    if (!copyPrompt) return;
+    try {
+      await navigator.clipboard.writeText(copyPrompt);
+    } catch {
+      // Starsze przeglądarki i konteksty bez HTTPS nie mają Clipboard API — awaryjnie
+      // przez ukryte pole tekstowe, żeby przycisk nigdy nie był „martwy".
+      const ta = document.createElement("textarea");
+      ta.value = copyPrompt;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } finally { document.body.removeChild(ta); }
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2200);
+  }
 
   function pickTheme(t: ReadingTheme) {
     setTheme(t);
@@ -296,6 +327,26 @@ export function AudytBookReader({
           >
             Rozdz. {activeIndex + 1}/{toc.length} · {pctDone}% gotowe
           </span>
+
+          {/* 🧐 Kopiowanie całego dokumentu jako promptu uruchamiającego pipeline. */}
+          {copyPrompt && (
+            <button
+              onClick={handleCopyPrompt}
+              title={copyPromptLabel}
+              aria-label={copyPromptLabel}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                minHeight: 30, padding: "0 10px", fontSize: 12, fontWeight: 600,
+                borderRadius: "var(--radius, 8px)", border: "1px solid var(--border)",
+                background: copied ? "var(--accent-green)" : "var(--bg-elevated)",
+                color: copied ? "var(--on-accent)" : "var(--text-secondary)",
+                cursor: "pointer", whiteSpace: "nowrap",
+              }}
+            >
+              {copied ? <Check size={13} /> : <ClipboardCopy size={13} />}
+              <span className="hidden sm:inline">{copied ? "Skopiowano" : "Kopiuj prompt"}</span>
+            </button>
+          )}
 
           {/* reading theme toggle */}
           <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
