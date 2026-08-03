@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo, useCallback } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { oneOf, type RawParams } from "@/lib/viewState/viewState";
 import Link from "next/link";
 import { ChevronLeft, ShieldAlert, Check, X, Loader2 } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
@@ -9,9 +11,13 @@ import type { ModerationDisputeDTO } from "@/lib/services";
 
 type Tab = "OPEN" | "RESOLVED" | "REJECTED";
 
-export function ModerationPage({ disputes: initial }: { disputes: ModerationDisputeDTO[] }) {
+export function ModerationPage({ disputes: initial, viewParams = {} }: { disputes: ModerationDisputeDTO[]; viewParams?: RawParams }) {
   const [disputes, setDisputes] = useState(initial);
-  const [tab, setTab] = useState<Tab>("OPEN");
+  // 043: zakładka statusu sporu w adresie (AC-8a).
+  const viewSpec = useMemo(() => ({ tab: oneOf(["OPEN", "RESOLVED", "REJECTED"] as const, "OPEN") }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+  const tab = view.tab;
+  const setTab = useCallback((value: Tab) => setView({ tab: value }), [setView]);
   const [pending, startTransition] = useTransition();
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [note, setNote] = useState("");

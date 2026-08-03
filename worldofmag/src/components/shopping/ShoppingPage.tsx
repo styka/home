@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useTransition, useEffect } from "react";
+import { useState, useMemo, useCallback, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Trash2, CheckCircle2 } from "lucide-react";
@@ -22,6 +22,8 @@ import { getSnapshot, upsertListSnapshot, onOfflineChanged } from "@/lib/shoppin
 import { mutSetStatus, mutRemove } from "@/lib/shopping/offlineMutations";
 import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus, SortMode, StoreWithGraph } from "@/types";
 import { FILTER_TABS, STATUS_CYCLE } from "@/types";
+import { useViewState } from "@/hooks/useViewState";
+import { oneOf, text, type RawParams } from "@/lib/viewState/viewState";
 
 const SORT_STORAGE_KEY = "wom_shopping_sort";
 
@@ -32,6 +34,11 @@ interface ShoppingPageProps {
   categoryNames?: string[];
   stores: StoreWithGraph[];
   financeReady?: boolean; // S6: czy użytkownik ma skonfigurowane konto Portfela do księgowania
+  /**
+   * 043: parametry adresu z serwera — stan widoku (zakładka filtra, sortowanie) czytamy stąd,
+   * a nie z `window`, żeby nie powstał rozjazd hydratacji.
+   */
+  viewParams?: RawParams;
 }
 
 function loadSortMode(): SortMode {
@@ -49,16 +56,44 @@ function loadSortMode(): SortMode {
   return { type: "category" };
 }
 
-export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames = [], stores, financeReady = false }: ShoppingPageProps) {
+/** Sortowanie w adresie: "category" | "product" | "store:<id>". */
+function encodeSortMode(mode: SortMode): string {
+  return mode.type === "store" ? `store:${mode.storeId}` : mode.type;
+}
+
+/** Nieznany sklep (usunięty albo obcy identyfikator) → sortowanie po kategoriach, nigdy błąd. */
+function decodeSortMode(raw: string, stores: StoreWithGraph[]): SortMode {
+  if (raw === "product") return { type: "product" };
+  if (raw.startsWith("store:")) {
+    const storeId = raw.slice("store:".length);
+    const store = stores.find((s) => s.id === storeId);
+    if (store) return { type: "store", storeId: store.id, storeName: store.name };
+  }
+  return { type: "category" };
+}
+
+export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames = [], stores, financeReady = false, viewParams = {} }: ShoppingPageProps) {
   const router = useRouter();
   const { toggle: togglePalette } = useCommandPalette();
   const online = useOnlineStatus();
-  const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
+  // 043: zakładka filtra i sortowanie żyją w ADRESIE — zapisany ulubiony widok Zakupów wraca
+  // z tym samym filtrem i tym samym sortowaniem (AC-7).
+  const viewSpec = useMemo(() => ({
+    filter: oneOf(FILTER_TABS, "ALL" as FilterTab),
+    // Sortowanie kodujemy jednym parametrem: "category" | "product" | "store:<id>".
+    // Nazwę sklepu odtwarzamy z propsa `stores`, więc adres nie nosi zbędnych danych.
+    sort: text("category"),
+  }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+
+  const activeFilter = view.filter;
+  // `useCallback`, bo setter trafia do zależności `useMemo` z obsługą skrótów klawiszowych.
+  const setActiveFilter = useCallback((value: FilterTab) => setView({ filter: value }), [setView]);
+  const sortMode = useMemo<SortMode>(() => decodeSortMode(view.sort, stores), [view.sort, stores]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [sortMode, setSortMode] = useState<SortMode>({ type: "category" });
   const [completeOpen, setCompleteOpen] = useState(false);
   // 042: „Wyczyść" kasuje kupione pozycje TWARDO (`deleteMany`, bez zapisu do kosza), więc jedno
   // przypadkowe dotknięcie ikony było nieodwracalne. Pytamy o potwierdzenie przed wykonaniem.
@@ -72,8 +107,14 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
   const [items, setItems] = useState<Item[]>(list.items as Item[]);
   const [snapshotLists, setSnapshotLists] = useState<ShoppingListWithItems[]>([]);
 
+  // Sortowanie odtwarzane z pamięci przeglądarki TYLKO wtedy, gdy adres go nie niesie —
+  // adres ma pierwszeństwo, inaczej otwarcie zapisanego widoku dawałoby inne sortowanie niż
+  // zapisane. `replace`, żeby przywrócenie nie dokładało wpisu do historii.
   useEffect(() => {
-    setSortMode(loadSortMode());
+    if (viewParams.sort !== undefined) return;
+    const saved = encodeSortMode(loadSortMode());
+    if (saved !== "category") setView({ sort: saved }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Online: propsy serwera to źródło prawdy — odśwież pozycje i zapisz świeżą kopię listy do snapshotu.
@@ -105,7 +146,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
   const switcherLists: ShoppingList[] = online ? allLists : (snapshotLists as unknown as ShoppingList[]);
 
   function handleSortChange(mode: SortMode) {
-    setSortMode(mode);
+    setView({ sort: encodeSortMode(mode) });
     try {
       localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify(mode));
     } catch {
@@ -190,7 +231,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
         setFocusedItemId(null);
       },
     }),
-    [focusedItemId, filteredItems, navigateDown, navigateUp, togglePalette, isSearchOpen, editingItemId, effListId]
+    [focusedItemId, filteredItems, navigateDown, navigateUp, togglePalette, isSearchOpen, editingItemId, effListId, setActiveFilter]
   );
 
   useKeyboardShortcuts(handlers);

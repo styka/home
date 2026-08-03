@@ -7,7 +7,7 @@ import { getListings, getServiceCategories, getMyProviderProfile } from "@/actio
 import { getMyFavoriteProviders } from "@/actions/services/favorites";
 import { ServicesCatalogPage } from "@/components/services/ServicesCatalogPage";
 
-export default async function ServicesRootPage() {
+export default async function ServicesRootPage({ searchParams }: { searchParams?: { q?: string; cat?: string; sort?: string } }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
   if (!hasPermission(session, PERMISSIONS.SERVICES)) redirect("/");
@@ -25,6 +25,7 @@ export default async function ServicesRootPage() {
       categories={categories}
       hasProviderProfile={provider != null}
       favorites={favorites}
+      viewParams={searchParams ?? {}}
     />
   );
 }

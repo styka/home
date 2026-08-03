@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, useCallback } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { oneOf, type RawParams } from "@/lib/viewState/viewState";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -22,9 +24,13 @@ type Tab = "equipment" | "suggestions" | "projects";
 const KIND_ORDER: EquipmentKind[] = ["tool", "machine", "consumable", "safety", "material"];
 const TIER_ORDER: EquipmentTier[] = ["essential", "recommended", "advanced"];
 
-export function WorkshopDetail({ workshop, mode }: { workshop: WorkshopDetailType; mode: WarsztatMode }) {
+export function WorkshopDetail({ workshop, mode, viewParams = {} }: { workshop: WorkshopDetailType; mode: WarsztatMode; viewParams?: RawParams }) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("equipment");
+  // 043: zakładka w adresie (AC-8a) — zapisany widok warsztatu wraca na tę samą zakładkę.
+  const viewSpec = useMemo(() => ({ tab: oneOf(["equipment", "suggestions", "projects"] as const, "equipment") }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+  const tab = view.tab;
+  const setTab = useCallback((value: Tab) => setView({ tab: value }), [setView]);
   const wt = getWorkshopType(workshop.type);
 
   const tabs: Array<{ id: Tab; label: string; icon: typeof Wrench }> = [

@@ -2813,3 +2813,45 @@ dla modelu szum, który generuje kosztowne pętle. Odpowiedzi LLM parsuj toleran
 ścieżkę degradacji do tekstu: użytkownik ma dostać treść, nie kod błędu. Powtórzone wywołania
 narzędzi w jednej turze to sygnał zgubionego kontekstu — deduplikuj je i mów modelowi wprost,
 że to powtórka.
+
+## 2026-08-03 — Rejestr ze stanem = pętla renderów, która gubi kliknięcia w innym module
+**Problem:** Po wpięciu wspólnego rejestru skrótów (`ShortcutsProvider`) padł klikacz zupełnie
+niezwiązanej funkcji: przełącznik ulubionych zamykał się po kliknięciu pozycji, ale `router.push`
+nie nawigował. Objawy wyglądały jak awaria nawigacji, nie skrótów. Dopiero podpięcie
+`page.on("console")` w teście pokazało prawdziwą przyczynę: `Warning: Maximum update depth
+exceeded`. Prowider trzymał listę zarejestrowanych skrótów w `useState` i publikował ją przy każdej
+(wy)rejestracji. Komponent przekazujący **niestabilną tablicę** wpadał wtedy w pętlę:
+rejestracja → `setState` → render prowidera → render dzieci → nowa tablica → rejestracja…
+Aplikacja renderowała się bez końca i gubiła kliknięcia.
+**Rozwiązanie:** Prowider **nie ma stanu**. Rejestr trzyma **referencje** do tablic
+(`{ current: RegisteredShortcut[] }`), a `useShortcuts` odświeża `ref.current` przy każdym renderze
+i rejestruje się **raz**, przy montowaniu. Lista do ściągawki liczy się **na żądanie**
+(`getShortcuts()`), w momencie jej otwarcia. Wartość kontekstu jest stała, więc zmiana rejestru
+nigdy nie przerysowuje konsumentów.
+**Lekcja:** Rejestr, do którego komponenty się zapisują, **nie powinien trzymać zawartości
+w stanie Reacta** — inaczej każdy niestabilny argument staje się pętlą renderów. Trzymaj referencje,
+rejestruj raz, licz migawkę na żądanie. I szerzej: gdy pada test funkcji, której nie dotykałeś,
+**najpierw zajrzyj do konsoli przeglądarki** — pętla renderów i rozjazd hydratacji objawiają się
+w zupełnie niezwiązanych miejscach (por. wpis z 2026-08-02).
+
+## 2026-08-03 — Skróty na gołe cyfry bez sprawdzania modyfikatorów
+**Problem:** `Alt+1` (skok do ulubionego) jednocześnie przełączał zakładkę filtra. `useKeyboardShortcuts`
+miał `switch (e.key)` z `case "1".."5"` za samym `if (typing) return;` — **bez sprawdzania
+modyfikatorów** — a skróty ulubionych żyły w osobnym listenerze na `window`.
+**Rozwiązanie:** Jedno miejsce prawdy (`lib/shortcuts/registry.ts`): goły klawisz pasuje **tylko**
+gdy `!altKey && !ctrlKey && !metaKey`; `Shift` NIE blokuje (bez niego nie da się wpisać `?`);
+skrót `Alt+…` wymaga `!ctrlKey`, bo na polskiej klawiaturze **AltGr = Ctrl+Alt**. Pierwszeństwo
+skrótów strony przed globalnymi wymagało JEDNEGO dyspozytora — dwa listenery na `window` go nie dają,
+bo komponent strony montuje się po powłoce i jego listener odpala się jako drugi.
+**Lekcja:** Skrót na goły klawisz zawsze wymaga jawnego „i żadnego modyfikatora". Gdy w aplikacji
+są dwa niezależne listenery klawiatury, kolizja jest kwestią czasu — potrzebny jest jeden dyspozytor
+z jawną kolejnością.
+
+## 2026-08-03 — CSS Grid wyrównuje wiersze, więc zostawia dziury na pulpicie
+**Problem:** Kafelki pulpitu o różnej wysokości w `grid-cols-2` zostawiały pod niższym kafelkiem
+pustą przestrzeń na całą różnicę wysokości wiersza — właściciel zgłosił to jako „dziwny układ
+komponentów", zauważając, że w trybie edycji (jedna kolumna) wygląda lepiej.
+**Rozwiązanie:** Układ wielokolumnowy CSS (`columns-1 md:columns-2`) + `break-inside: avoid`
+na kafelkach. W kolumnach `gap` nie działa w pionie, więc odstęp daje `margin-bottom`.
+**Lekcja:** Siatka jest do układów, w których wiersze mają się wyrównywać. Do „ciasnego pakowania"
+kafelków o różnej wysokości służy układ wielokolumnowy — bez JavaScriptu i bez biblioteki masonry.

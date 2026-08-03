@@ -201,3 +201,39 @@ test.describe("042 — poprawki UX", () => {
     await expect(page.getByText(/Grupy/).first()).toBeVisible();
   });
 });
+
+/**
+ * 043 — odkrywalność ulubionych na desktopie (AC-1, AC-2, AC-3).
+ *
+ * W 042 sekcja ulubionych zwracała `null` przy zerze wpisów, więc na komputerze funkcja
+ * praktycznie nie istniała. Te testy pilnują, że pusty stan JEST widoczny.
+ */
+test.describe("043 — ulubione widoczne od pierwszego wejścia", () => {
+  test.beforeEach(async ({ page }) => {
+    await clearFavorites(page);
+  });
+
+  test("[fav043-AC1-AC2] sekcja, zachęta i punkt zapisu widoczne bez ani jednego ulubionego", async ({ page }) => {
+    await page.goto("/tasks/all");
+    await page.waitForLoadState("networkidle").catch(() => {});
+
+    // AC-1: nagłówek sekcji jest w nawigacji mimo pustej listy.
+    await expect(page.getByText("Ulubione", { exact: true })).toBeVisible({ timeout: 15_000 });
+    // …wraz z zachętą mówiącą, co zrobić.
+    await expect(page.getByText(/Nie masz jeszcze zapisanych widoków/i)).toBeVisible();
+
+    // AC-2: punkt zapisu ma ETYKIETĘ, nie jest samą ikoną schowaną na dole nawigacji.
+    await expect(page.getByText("Zapisz ten widok", { exact: true })).toBeVisible();
+  });
+
+  test("[fav043-AC3] zarządzanie ulubionymi dostępne wprost z nawigacji", async ({ page }) => {
+    await page.goto("/tasks/all");
+    await page.waitForLoadState("networkidle").catch(() => {});
+
+    await page.getByRole("link", { name: /Zarządzaj ulubionymi/i }).click();
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe("/settings");
+
+    // Edytor z 042 (nazwa / ikona / kolor / kolejność) jest na miejscu, pod kotwicą.
+    await expect(page.locator("#ulubione")).toBeVisible({ timeout: 10_000 });
+  });
+});

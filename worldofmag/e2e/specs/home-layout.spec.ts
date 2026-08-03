@@ -29,27 +29,30 @@ test.describe("042 — układ strony głównej", () => {
     });
   }
 
-  test("[home-AC11] kolumna asystenta widoczna i przyklejona przy 1440px", async ({ page }) => {
+  /**
+   * 043 ZASTĄPIŁO kryteria AC-11 i AC-12 z 042. Właściciel zgłosił, że dokowana kolumna asystenta
+   * (a) nie istniała na telefonie, bo siedziała pod `hidden xl:block`, i (b) miała pole tekstowe,
+   * którego tam nie chciał. Stara asercja („kolumna z polem `Pytanie do asystenta` przy 1440px")
+   * opisuje więc zachowanie CELOWO usunięte — testy poniżej pilnują nowego kontraktu.
+   * Pełne pokrycie widgetu jest w `home-assistant.spec.ts` (AC-13..AC-16).
+   */
+  test("[home-AC11→043] widget asystenta zamiast dokowanej kolumny przy 1440px", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/");
     await page.waitForLoadState("networkidle").catch(() => {});
 
-    const assistant = page.getByRole("complementary", { name: "Asystent AI" });
-    await expect(assistant).toBeVisible();
-    // Pole gotowe do pisania BEZ zadnego klikniecia w przycisk otwierajacy.
-    await expect(assistant.getByRole("textbox", { name: "Pytanie do asystenta" })).toBeVisible();
-
-    // Nie znika przy przewinieciu strony.
-    await page.evaluate(() => window.scrollTo(0, 600));
-    await page.waitForTimeout(300);
-    await expect(assistant).toBeInViewport();
+    await expect(page.locator("[data-omnia-assistant-widget]")).toBeVisible({ timeout: 15_000 });
+    // Dokowana kolumna z 042 ma NIE istnieć — zastąpił ją widget bez pola tekstowego.
+    await expect(page.getByRole("complementary", { name: "Asystent AI" })).toHaveCount(0);
   });
 
-  test("[home-AC12] przy 390px kolumna asystenta sie nie renderuje", async ({ page }) => {
+  test("[home-AC12→043] przy 390px widget asystenta JEST widoczny", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
     await page.waitForLoadState("networkidle").catch(() => {});
-    await expect(page.getByRole("complementary", { name: "Asystent AI" })).toBeHidden();
+
+    // Odwrotnie niż w 042: na telefonie widget musi być, i to nad zgięciem.
+    await expect(page.locator("[data-omnia-assistant-widget]")).toBeVisible({ timeout: 15_000 });
   });
 
   test("[home-AC17] czytelnosc na skorce jasnej i ciemnej", async ({ page }) => {

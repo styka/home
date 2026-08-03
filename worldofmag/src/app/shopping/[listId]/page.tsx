@@ -11,9 +11,11 @@ export const dynamic = "force-dynamic";
 
 interface Props {
   params: { listId: string };
+  /** 043: stan widoku (zakładka filtra, sortowanie) czytany przez `useViewState` po stronie klienta. */
+  searchParams?: { filter?: string; sort?: string };
 }
 
-export default async function ListPage({ params }: Props) {
+export default async function ListPage({ params, searchParams }: Props) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
 
@@ -40,5 +42,5 @@ export default async function ListPage({ params }: Props) {
 
   if (!list) notFound();
 
-  return <ShoppingPage list={list as unknown as ShoppingListWithItems} allLists={allLists} categoryEmojiMap={categoryEmojiMap} categoryNames={categoryNames} stores={stores} financeReady={!!finance?.autoExpenseElementId} />;
+  return <ShoppingPage list={list as unknown as ShoppingListWithItems} allLists={allLists} categoryEmojiMap={categoryEmojiMap} categoryNames={categoryNames} stores={stores} financeReady={!!finance?.autoExpenseElementId} viewParams={searchParams ?? {}} />;
 }

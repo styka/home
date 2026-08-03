@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo, useTransition, useEffect } from "react";
+import { useState, useRef, useMemo, useCallback, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
@@ -14,6 +14,8 @@ import { ProjectActionsMenu } from "./ProjectActionsMenu";
 import { TaskListClipboardButton } from "./TaskListClipboardButton";
 import { BulkActionBar, type BulkPatch } from "./BulkActionBar";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useViewState } from "@/hooks/useViewState";
+import { idList, oneOf, type RawParams } from "@/lib/viewState/viewState";
 import { deleteTask, toggleTaskStatus, bulkUpdateTasks, bulkDeleteTasks } from "@/actions/tasks";
 import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode, ProjectStatusConfig } from "@/types";
 import { resolveStatuses, statusMetaFor, DEFAULT_STATUS_CONFIG } from "@/types";
@@ -27,7 +29,6 @@ interface TasksPageProps {
   viewMode: ViewMode;
   projectName: string;
   teamMembers: Array<{ id: string; name: string | null; email: string | null; image: string | null }>;
-  initialFilter?: TaskStatusFilter;
   initialOpenTaskId?: string;
   statusConfig?: ProjectStatusConfig;
   canEditStatuses?: boolean;
@@ -36,13 +37,50 @@ interface TasksPageProps {
   scopeProjects?: Array<{ id: string; name: string; emoji: string; isInbox: boolean }>;
   /** Id zapisanej grupy projektów (gdy widok otwarty z grupy) — do edycji. */
   multiGroupId?: string;
+  /**
+   * 043: parametry adresu przekazane z serwera (`page.tsx` → `searchParams`). Stan widoku czytamy
+   * stąd, a NIE z `window` w pierwszym renderze — inaczej serwer wyrenderowałby widok domyślny,
+   * klient przefiltrowany i powstałby rozjazd hydratacji (patrz `doświadczenia.md`, 2026-08-02).
+   */
+  viewParams?: RawParams;
 }
 
-export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialFilter, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId }: TasksPageProps) {
+export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId, viewParams = {} }: TasksPageProps) {
   const [statusConfigOpen, setStatusConfigOpen] = useState(false);
-  // Klucz aktywnej zakładki: "ALL" | status systemowy | klucz własnego statusu.
-  const [activeFilter, setActiveFilter] = useState<string>(initialFilter ?? "ALL");
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+
+  // 043: filtr, tagi, grupowanie i układ żyją w ADRESIE strony — dzięki temu zapisany ulubiony
+  // widok wraca z tymi samymi ustawieniami, adres da się skopiować, a „wstecz" cofa filtr.
+  // Klucz filtra to zwykły tekst (`text`), a nie zamknięta lista: projekty mają WŁASNE statusy,
+  // więc dopuszczalnych wartości nie da się wypisać z góry.
+  //
+  // Klucze parametrów dobrane pod TO, co adres Zadań już niesie: `status` jest istniejącym
+  // parametrem (wejście z asystenta/linku `?status=…`), więc go REUŻYWAMY zamiast dokładać drugi
+  // o tym samym znaczeniu. `group` i `view` są zajęte przez grupy projektów, stąd `groupBy`.
+  // Dopuszczalne wartości filtra to „Wszystkie" + statusy WŁĄCZONE w tej liście — projekty mają
+  // własne statusy, więc listy nie da się zapisać na sztywno; wartość spoza niej wraca do „ALL",
+  // dokładnie jak dotychczasowa walidacja `initialFilter` na serwerze.
+  // Wartością domyślną jest zawsze „ALL", NIE `initialFilter`. To nie jest drobiazg: `serialize`
+  // pomija wartość równą domyślnej, więc gdyby domyślną było `initialFilter` (np. „DONE" z linku
+  // `?status=DONE`), parametr wypadłby z adresu i po odświeżeniu widok wróciłby do „Wszystkie".
+  // `initialFilter` i tak pochodzi z tego samego parametru, więc nic nie tracimy.
+  const viewSpec = useMemo(() => ({
+    status: oneOf(["ALL", ...statusConfig.enabled], "ALL"),
+    tags: idList(),
+    groupBy: oneOf(["default", "priority"] as const, "default"),
+    layout: oneOf(["list", "kanban", "timeline"] as const, "list"),
+  }), [statusConfig]);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+
+  // Settery owinięte w `useCallback`, bo trafiają do zależności `useMemo` z obsługą skrótów —
+  // niestabilna referencja przeliczałaby ten memo przy każdym renderze.
+  const activeFilter = view.status;
+  const setActiveFilter = useCallback((value: string) => setView({ status: value }), [setView]);
+  const selectedTagIds = view.tags;
+  const setSelectedTagIds = useCallback(
+    (next: string[] | ((prev: string[]) => string[])) =>
+      setView((prev) => ({ tags: typeof next === "function" ? next(prev.tags) : next })),
+    [setView],
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAISearching, setIsAISearching] = useState(false);
@@ -62,8 +100,10 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   // Prezentacja listy: "default" = naturalne grupowanie widoku (dni/projekty), "priority" = po priorytetach.
   // Dotyczy widoków „Nadchodzące/Zaległe/Wszystkie" (Dziś i projekty są zawsze po priorytetach).
-  const [groupBy, setGroupBy] = useState<"default" | "priority">("default");
-  const [layout, setLayout] = useState<"list" | "kanban" | "timeline">("list");
+  const groupBy = view.groupBy;
+  const setGroupBy = useCallback((value: "default" | "priority") => setView({ groupBy: value }), [setView]);
+  const layout = view.layout;
+  const setLayout = useCallback((value: "list" | "kanban" | "timeline") => setView({ layout: value }), [setView]);
   const canToggleGrouping = viewMode === "upcoming" || viewMode === "overdue" || viewMode === "all" || viewMode === "multi";
   const [, startTransition] = useTransition();
   // Bulkowa (zbiorcza) edycja — tryb zaznaczania + zaznaczone id + kotwica zakresu (Shift).
@@ -125,9 +165,14 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   }, [viewMode, layout, canEditStatuses, isAdmin, selectionMode]);
 
   // Preferencja grupowania przeżywa nawigację między widokami (localStorage).
+  // 043: ADRES MA PIERWSZEŃSTWO — gdy w adresie jest `group`, zapamiętana preferencja go nie
+  // nadpisuje (inaczej otwarcie zapisanego ulubionego widoku dawałoby inne grupowanie niż zapisane).
+  // Przywrócenie z pamięci idzie przez `replace`, żeby nie dokładać wpisu do historii przeglądarki.
   useEffect(() => {
+    if (viewParams.groupBy !== undefined) return;
     const saved = localStorage.getItem("tasks.groupBy");
-    if (saved === "priority" || saved === "default") setGroupBy(saved);
+    if (saved === "priority" || saved === "default") setView({ groupBy: saved }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     localStorage.setItem("tasks.groupBy", groupBy);

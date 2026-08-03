@@ -10,7 +10,7 @@ import {
 import { getLists } from "@/actions/lists";
 import { StorageList } from "@/components/magazynowanie/StorageList";
 
-export default async function MagazynowaniePage() {
+export default async function MagazynowaniePage({ searchParams }: { searchParams?: { q?: string } }) {
   const [items, lowStock, lists, settings, suppliers, expiring] = await Promise.all([
     getStorageItems(),
     getLowStock(),
@@ -29,6 +29,7 @@ export default async function MagazynowaniePage() {
       suppliers={suppliers}
       currency={settings.currency}
       pro={settings.mode === "pro"}
+      viewParams={searchParams ?? {}}
     />
   );
 }

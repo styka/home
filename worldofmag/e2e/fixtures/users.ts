@@ -32,6 +32,23 @@ export const ALL_PERMISSIONS: { slug: string; name: string }[] = [
   { slug: "kitchen.mealplan.edit", name: "Kuchnia: edycja planu" },
   { slug: "kitchen.pantry.edit", name: "Kuchnia: edycja spiżarni" },
   { slug: "kitchen.ai", name: "Kuchnia: funkcje AI" },
+  // 043: pozostałe moduły — potrzebne, żeby klikacze fazy B mogły w ogóle wejść na te strony
+  // (bez uprawnienia `page.tsx` przekierowuje na pulpit i test nie ma czego sprawdzać).
+  // `E2E_LIMITED` zostaje przy samym `module.home`, więc testy gatingu są nienaruszone.
+  { slug: "module.calendar", name: "Kalendarz" },
+  { slug: "module.contacts", name: "Kontakty" },
+  { slug: "module.health", name: "Zdrowie" },
+  { slug: "module.weather", name: "Pogoda" },
+  { slug: "module.news", name: "Wiadomości" },
+  { slug: "module.services", name: "Usługi" },
+  { slug: "module.pets", name: "Zwierzęta" },
+  { slug: "module.habits", name: "Nawyki" },
+  { slug: "module.flota", name: "Flota" },
+  { slug: "module.portfel", name: "Portfel" },
+  { slug: "module.languages", name: "Nauka języków" },
+  { slug: "module.magazynowanie", name: "Magazynowanie" },
+  { slug: "module.warsztaty", name: "Warsztaty" },
+  { slug: "module.truck", name: "Trasy TIR" },
 ];
 
 // E2E_ALL gets everything; E2E_LIMITED only the home module.

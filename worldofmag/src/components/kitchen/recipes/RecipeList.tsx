@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useCallback } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { text, type RawParams } from "@/lib/viewState/viewState";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Search, ChefHat, Globe, ChevronDown, Camera, Sparkles } from "lucide-react";
@@ -15,6 +17,8 @@ import type { Tag } from "@prisma/client";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface RecipeListProps {
+  /** 043: parametry adresu z serwera — szukajka listy. */
+  viewParams?: RawParams;
   recipes: RecipeListItem[];
   tags: Tag[];
   cookbooks: Array<{ id: string; name: string; emoji: string }>;
@@ -29,8 +33,13 @@ const EMPTY_FILTERS: RecipeFilterState = {
   cookbookId: null,
 };
 
-export function RecipeList({ recipes, tags, cookbooks, hasAI }: RecipeListProps) {
-  const [search, setSearch] = useState("");
+export function RecipeList({ recipes, tags, cookbooks, hasAI, viewParams = {} }: RecipeListProps) {
+  // 043: szukajka w adresie (AC-8a). Zapis przez `replace` — inaczej każda wpisana litera
+  // byłaby osobnym wpisem w historii i „wstecz" trzeba by naciskać kilkanaście razy.
+  const viewSpec = useMemo(() => ({ q: text("") }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+  const search = view.q;
+  const setSearch = useCallback((value: string) => setView({ q: value }, { replace: true }), [setView]);
   const [filters, setFilters] = useState<RecipeFilterState>(EMPTY_FILTERS);
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition, useMemo, useRef, useLayoutEffect } from "react";
+import { useState, useTransition, useMemo, useRef, useLayoutEffect, useCallback } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { text, type RawParams } from "@/lib/viewState/viewState";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Users, Search, Plus, Pencil, Trash2, Check, X, Phone, Mail, Building2 } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
@@ -15,9 +17,14 @@ const labelStyle: React.CSSProperties = { fontSize: 11, color: "var(--text-muted
 const primaryBtn: React.CSSProperties = { padding: "8px 14px", borderRadius: 8, background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer" };
 const secondaryBtn: React.CSSProperties = { padding: "7px 12px", borderRadius: 8, background: "var(--bg-elevated)", color: "var(--text-secondary)", fontSize: 13, fontWeight: 500, border: "1px solid var(--border)", cursor: "pointer" };
 
-export function ContactsPage({ initialContacts }: { initialContacts: ContactDTO[] }) {
+export function ContactsPage({ initialContacts, viewParams = {} }: { initialContacts: ContactDTO[]; viewParams?: RawParams }) {
   const [contacts, setContacts] = useState<ContactDTO[]>(initialContacts);
-  const [query, setQuery] = useState("");
+  // 043: szukajka w adresie (AC-8a). Zapis przez `replace` — inaczej każda wpisana litera
+  // byłaby osobnym wpisem w historii i „wstecz" trzeba by naciskać kilkanaście razy.
+  const viewSpec = useMemo(() => ({ q: text("") }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+  const query = view.q;
+  const setQuery = useCallback((value: string) => setView({ q: value }, { replace: true }), [setView]);
   const [adding, setAdding] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);

@@ -6,7 +6,7 @@ import { ReportsHomePage, type ReportSummary } from "@/components/reports/Report
 
 export const dynamic = "force-dynamic";
 
-export default async function UserReportsPage() {
+export default async function UserReportsPage({ searchParams }: { searchParams?: { q?: string } }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
 
@@ -34,7 +34,6 @@ export default async function UserReportsPage() {
       reports={summaries}
       myCount={myCount}
       teamCount={teamCount}
-      isAdmin={isAdmin}
-    />
+      isAdmin={isAdmin} viewParams={searchParams ?? {}} />
   );
 }

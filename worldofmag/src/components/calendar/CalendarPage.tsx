@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useMemo, useCallback, useTransition } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { text, type RawParams } from "@/lib/viewState/viewState";
 import Link from "next/link";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle } from "@/components/ui/home";
@@ -14,15 +16,25 @@ interface Props {
   initialYear: number;
   initialMonth0: number;
   initialEvents: CalendarEvent[];
-  initialModule?: CalendarModule | null; // P4: wstępny filtr (np. ?module=pets)
+  /**
+   * 043: parametry adresu z serwera. Zastąpiły prop `initialModule` — filtr `?module=` czyta
+   * i waliduje teraz `useViewState` po stronie klienta, więc serwer nie musi go liczyć drugi raz.
+   */
+  viewParams?: RawParams;
 }
 
-export function CalendarPage({ initialYear, initialMonth0, initialEvents, initialModule = null }: Props) {
+export function CalendarPage({ initialYear, initialMonth0, initialEvents, viewParams = {} }: Props) {
   const [year, setYear] = useState(initialYear);
   const [month0, setMonth0] = useState(initialMonth0);
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [selected, setSelected] = useState<string>(isoDay(new Date()));
-  const [filter, setFilter] = useState<CalendarModule | null>(initialModule);
+  // 043: filtr modułu w adresie. Reużywamy ISTNIEJĄCEGO parametru `module` (wejście z linku
+  // `/calendar?module=pets`), zamiast dokładać drugi o tym samym znaczeniu. Pusty tekst = brak
+  // filtra, więc adres bez parametru zostaje adresem bez parametru (AC-8).
+  const viewSpec = useMemo(() => ({ module: text("") }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+  const filter: CalendarModule | null = view.module in MODULE_META ? (view.module as CalendarModule) : null;
+  const setFilter = useCallback((value: CalendarModule | null) => setView({ module: value ?? "" }), [setView]);
   const [pending, startTransition] = useTransition();
 
   function go(deltaMonths: number) {

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo, useCallback } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { oneOf, text, type RawParams } from "@/lib/viewState/viewState";
 import Link from "next/link";
 import { Handshake, Search, Briefcase, ClipboardList, MapPin, SlidersHorizontal, Navigation, Heart } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle, cardHoverHandlers } from "@/components/ui/home";
@@ -13,21 +15,38 @@ import { RatingStars, formatPrice, fieldInputStyle, fieldLabelStyle, primaryButt
 type FavProvider = { id: string; displayName: string; area: string | null; ratingAvg: number; ratingCount: number; verified: boolean };
 
 interface Props {
+  /** 043: parametry adresu z serwera — szukajka, kategoria i sortowanie. */
+  viewParams?: RawParams;
   initialListings: ListingDTO[];
   categories: ServiceCategoryDTO[];
   hasProviderProfile: boolean;
   favorites?: FavProvider[];
 }
 
-export function ServicesCatalogPage({ initialListings, categories, hasProviderProfile, favorites = [] }: Props) {
+export function ServicesCatalogPage({ initialListings, categories, hasProviderProfile, favorites = [], viewParams = {} }: Props) {
   const [listings, setListings] = useState<ListingDTO[]>(initialListings);
-  const [query, setQuery] = useState("");
-  const [activeCat, setActiveCat] = useState<string | null>(null);
+  // 043: szukajka, kategoria i sortowanie w adresie (AC-8a). Panel filtrów zaawansowanych
+  // (ocena, ceny, rezerwacja, weryfikacja, geolokalizacja) zostaje poza adresem — jego wartości
+  // znikają razem ze zwinięciem panelu, a pozycja z GPS zależy od zgody urządzenia, więc
+  // zapisany adres i tak nie odtworzyłby jej wiernie.
+  const viewSpec = useMemo(() => ({
+    q: text(""),
+    cat: text(""),
+    sort: oneOf(["rating", "priceAsc", "priceDesc", "newest", "distance"] as const, "rating"),
+  }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+
+  const query = view.q;
+  // Szukajka przez `replace`, żeby każda literka nie była osobnym wpisem w historii.
+  const setQuery = useCallback((value: string) => setView({ q: value }, { replace: true }), [setView]);
+  const activeCat = view.cat === "" ? null : view.cat;
+  const setActiveCat = useCallback((value: string | null) => setView({ cat: value ?? "" }), [setView]);
   const [pending, startTransition] = useTransition();
 
   // M10 — filtry zaawansowane
   const [showFilters, setShowFilters] = useState(false);
-  const [sort, setSort] = useState<ListingSort>("rating");
+  const sort = view.sort as ListingSort;
+  const setSort = useCallback((value: ListingSort) => setView({ sort: value }), [setView]);
   const [minRating, setMinRating] = useState(0);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");

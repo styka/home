@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { oneOf, type RawParams } from "@/lib/viewState/viewState";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Pencil, Trash2, PawPrint, Printer, Download } from "lucide-react";
 import { pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { speciesEmoji, speciesLabel, ageFromBirth, STATUS_LABELS, SEX_LABELS } from "@/lib/petSpecies";
-import { resolveFeatures, PET_FEATURE_PHASE, type PetFeatureKey } from "@/lib/petPresets";
+import { resolveFeatures, PET_FEATURE_PHASE, PET_FEATURE_KEYS, type PetFeatureKey } from "@/lib/petPresets";
 import { buildVetCardHtml, buildMeasurementsCsv } from "@/lib/petExport";
 import { deletePet } from "@/actions/pets";
 import { PetForm } from "./PetForm";
@@ -42,10 +44,17 @@ const FEATURE_ORDER: PetFeatureKey[] = [
   "HUSBANDRY", "AQUARIUM", "BREEDING", "GENETICS", "FINANCE", "DOCUMENTS",
 ];
 
-export function PetDetailPage({ pet, teams }: { pet: PetWithRelations; teams: Array<{ id: string; name: string }> }) {
+export function PetDetailPage({ pet, teams, viewParams = {} }: { pet: PetWithRelations; teams: Array<{ id: string; name: string }>; viewParams?: RawParams }) {
   const router = useRouter();
   const { showToast } = useToast();
-  const [tab, setTab] = useState<TabKey>("profile");
+  // 043: zakładka profilu zwierzęcia w adresie (AC-8a). Lista dopuszczalnych wartości bierze się
+  // z cech włączonych dla gatunku (`PET_FEATURE_KEYS`) — wartość spoza niej wraca do „profile".
+  const viewSpec = useMemo(() => ({
+    tab: oneOf(["profile", ...PET_FEATURE_KEYS, "sharing", "settings"] as const, "profile"),
+  }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+  const tab = view.tab as TabKey;
+  const setTab = useCallback((value: TabKey) => setView({ tab: value }), [setView]);
   const [editing, setEditing] = useState(false);
 
   const features = resolveFeatures(pet);
