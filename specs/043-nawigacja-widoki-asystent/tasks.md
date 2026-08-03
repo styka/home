@@ -111,30 +111,30 @@
 
 ## Faza 4 — Stan widoku w adresie: faza A (tor B)
 
-- [ ] **T-11** — **Czysty moduł `src/lib/viewState/viewState.ts`** (plan §5.2). Kodeki `oneOf`,
+- [x] **T-11** — **Czysty moduł `src/lib/viewState/viewState.ts`** (plan §5.2). Kodeki `oneOf`,
   `text`, `idList`, `flag`; `parseViewParams`, `buildViewQuery`. Reguły: do adresu trafiają **tylko**
   wartości różne od domyślnych, kolejność parametrów stabilna (kolejność kluczy w `spec`),
   niepoprawna wartość → wartość domyślna (nigdy wyjątek).
   **Gotowe, gdy:** moduł nie importuje Reacta ani Prismy; ten sam stan widoku daje zawsze ten sam
   adres (warunek konieczny dla `@@unique([ownerId, path])` w ulubionych).
 
-- [ ] **T-12** — **Hook `src/hooks/useViewState.ts`** (plan §5.2). Wartość startowa **z propsa
+- [x] **T-12** — **Hook `src/hooks/useViewState.ts`** (plan §5.2). Wartość startowa **z propsa
   serwerowego** (zero odczytu `window` w pierwszym renderze — lekcja o rozjeździe hydratacji),
   zapis przez `window.history.pushState` (domyślnie) / `replaceState` (opcja dla pól tekstowych),
   odczyt cofnięcia przez listener `popstate`. **Nie używamy `useSearchParams`.**
   **Gotowe, gdy:** hook nie powoduje rozjazdu hydratacji ani pobrania RSC przy zmianie filtra.
   Zależy od: **T-11**.
 
-- [ ] **T-13** — **Zadania: stan widoku w adresie** (plan §5.2, tabela fazy A). Klucze `filter`,
+- [x] **T-13** — **Zadania: stan widoku w adresie** (plan §5.2, tabela fazy A). Klucze `filter`,
   `tags`, `group`, `layout`. `page.tsx` czyta `searchParams` i przekazuje je propsem; `TasksPage`
   zamienia cztery `useState` na `useViewState`; `initialFilter` staje się wartością domyślną w `spec`.
   **Gotowe, gdy:** ustawienia trafiają do adresu, wejście bez parametrów daje dotychczasowy widok
   (AC-8), a przycisk „wstecz" przywraca poprzedni stan (AC-6). Zależy od: **T-12**.
 
-- [ ] **T-14** `[P]` — **Zakupy: stan widoku w adresie**. Klucz `filter` (`ShoppingPage`).
+- [x] **T-14** `[P]` — **Zakupy: stan widoku w adresie**. Klucz `filter` (`ShoppingPage`).
   **Gotowe, gdy:** j.w. dla Zakupów (AC-7, AC-8). Zależy od: **T-12**.
 
-- [ ] **T-15** `[P]` — **Notatki: stan widoku w adresie**. Klucze `filter`, `view`; `initialPinnedOnly`
+- [x] **T-15** `[P]` — **Notatki: stan widoku w adresie**. Klucze `filter`, `view`; `initialPinnedOnly`
   staje się wartością domyślną. Uwaga: `NotesPage` używa dziś `useSearchParams` — zastępujemy je
   propsem z serwera, zgodnie z planem.
   **Gotowe, gdy:** j.w. dla Notatek (AC-7, AC-8). Zależy od: **T-12**.

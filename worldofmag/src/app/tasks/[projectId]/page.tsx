@@ -26,7 +26,10 @@ const VIRTUAL_LABELS: Record<VirtualView, string> = {
 
 interface Props {
   params: { projectId: string };
-  searchParams?: { status?: string; task?: string; projects?: string; group?: string; view?: string };
+  // 043: `tags`, `groupBy` i `layout` to stan widoku czytany przez `useViewState` po stronie
+  // klienta — serwer tylko podaje je dalej. `status` służy obu rzeczom naraz (wejście z linku
+  // ORAZ zapamiętany filtr), dlatego nie dokładamy drugiego parametru o tym samym znaczeniu.
+  searchParams?: { status?: string; task?: string; projects?: string; group?: string; view?: string; tags?: string; groupBy?: string; layout?: string };
 }
 
 /** Projekt w „pasku zakresu” widoku wielu projektów (chip pod nagłówkiem). */
@@ -158,6 +161,7 @@ export default async function TaskProjectPage({ params, searchParams }: Props) {
       isAdmin={hasPermission(session, PERMISSIONS.ADMIN)}
       scopeProjects={scopeProjects}
       multiGroupId={multiGroupId}
+      viewParams={searchParams ?? {}}
     />
   );
 }
