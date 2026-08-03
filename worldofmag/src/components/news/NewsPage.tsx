@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition, useMemo } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { oneOf, type RawParams } from "@/lib/viewState/viewState";
 import { useRouter } from "next/navigation";
 import {
   Newspaper,
@@ -51,15 +53,23 @@ export function NewsPage({
   sources,
   defaultLength,
   activeSourceKey,
+  viewParams = {},
 }: {
   topics: TopicDTO[];
   sources: SourceDTO[];
   defaultLength: SummaryLength;
   activeSourceKey: string | null;
+  /** 043: parametry adresu z serwera — zakładkę widoku czytamy stąd, nie z `window`. */
+  viewParams?: RawParams;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
-  const [view, setView] = useState<View>("feed");
+  // 043: zakładka widoku w adresie (AC-8a). Klucz `widok`, bo `view` bywa w Omnii zajęte przez
+  // inne znaczenia — tu chodzi wprost o zakładkę Wiadomości.
+  const viewSpec = useMemo(() => ({ widok: oneOf(["feed", "hot", "settings"] as const, "feed") }), []);
+  const [viewState, setViewState] = useViewState(viewSpec, viewParams);
+  const view = viewState.widok;
+  const setView = useCallback((value: View) => setViewState({ widok: value }), [setViewState]);
   // Wybór treści jest CELOWO trzymany poza tematem: przełączenie na linię czasu przeżywa zmianę
   // tematu, bo użytkownik, który nadrabia kontekst, robi to zwykle w kilku tematach pod rząd.
   const [contentTab, setContentTab] = useState<ContentTabKey>("items");

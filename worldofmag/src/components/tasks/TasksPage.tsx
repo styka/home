@@ -29,7 +29,6 @@ interface TasksPageProps {
   viewMode: ViewMode;
   projectName: string;
   teamMembers: Array<{ id: string; name: string | null; email: string | null; image: string | null }>;
-  initialFilter?: TaskStatusFilter;
   initialOpenTaskId?: string;
   statusConfig?: ProjectStatusConfig;
   canEditStatuses?: boolean;
@@ -46,7 +45,7 @@ interface TasksPageProps {
   viewParams?: RawParams;
 }
 
-export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialFilter, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId, viewParams = {} }: TasksPageProps) {
+export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId, viewParams = {} }: TasksPageProps) {
   const [statusConfigOpen, setStatusConfigOpen] = useState(false);
 
   // 043: filtr, tagi, grupowanie i układ żyją w ADRESIE strony — dzięki temu zapisany ulubiony

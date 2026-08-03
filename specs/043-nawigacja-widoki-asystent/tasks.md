@@ -150,14 +150,14 @@
 
 ## Faza 5 — Stan widoku w adresie: faza B (tor B, ciąg dalszy)
 
-- [ ] **T-17** — **Artefakt pokrycia `specs/043-nawigacja-widoki-asystent/pokrycie-widokow.md`**
+- [x] **T-17** — **Artefakt pokrycia `specs/043-nawigacja-widoki-asystent/pokrycie-widokow.md`**
   (plan §5.2, faza B). Zweryfikowany **w kodzie** przegląd wszystkich modułów: kolumny
   *moduł · plik · stan widoku · decyzja (pokryty / pominięty) · uzasadnienie*. Pominięcia dopuszczalne
   dla paneli administracyjnych i dla stanu formularzy/okien dialogowych — każde z powodem.
   **Gotowe, gdy:** żaden moduł z listy `src/lib/modules.tsx` nie zostaje bez wiersza (AC-8b).
   Zależy od: **T-16**.
 
-- [ ] **T-18** — **Faza B, grupa 1: Zdrowie, Kalendarz, Wiadomości.** Wpięcie `useViewState` wg
+- [x] **T-18** — **Faza B, grupa 1: Zdrowie, Kalendarz, Wiadomości.** Wpięcie `useViewState` wg
   artefaktu z T-17 (`tab`, filtr modułu, `view`).
   **Gotowe, gdy:** dla każdego z trzech: zapis widoku odtwarza ustawienia, wejście bez parametrów
   bez regresji (AC-8a). Zależy od: **T-17**.

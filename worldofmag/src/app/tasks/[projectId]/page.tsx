@@ -8,8 +8,8 @@ import { getProjectGroup } from "@/actions/projectGroups";
 import { userTomorrowStart } from "@/lib/userTime";
 import { prisma } from "@/lib/prisma";
 import { TasksPage } from "@/components/tasks/TasksPage";
-import type { Task, ViewMode, TaskStatusFilter } from "@/types";
-import { TASK_STATUS_FILTERS, parseStatusConfig, aggregateStatusConfig } from "@/types";
+import type { Task, ViewMode } from "@/types";
+import { parseStatusConfig, aggregateStatusConfig } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -41,12 +41,9 @@ export default async function TaskProjectPage({ params, searchParams }: Props) {
 
   const { projectId } = params;
 
-  // Wejście z asystenta/linka: ?status=… ustawia filtr, ?task=… otwiera szczegóły.
-  const statusParam = searchParams?.status;
-  const initialFilter: TaskStatusFilter | undefined =
-    statusParam && (TASK_STATUS_FILTERS as string[]).includes(statusParam)
-      ? (statusParam as TaskStatusFilter)
-      : undefined;
+  // Wejście z asystenta/linka: ?task=… otwiera szczegóły. Parametr ?status=… ustawiający filtr
+  // czyta i waliduje teraz `useViewState` po stronie klienta (043) — dzięki temu działa też dla
+  // WŁASNYCH statusów listy, których serwerowa lista `TASK_STATUS_FILTERS` nie zna.
   const initialOpenTaskId = searchParams?.task;
   const isVirtual = VIRTUAL_VIEWS.includes(projectId as VirtualView);
 
@@ -154,7 +151,6 @@ export default async function TaskProjectPage({ params, searchParams }: Props) {
       viewMode={viewMode}
       projectName={projectName}
       teamMembers={teamMembers.map((m: TeamMemberRow) => m.user)}
-      initialFilter={initialFilter}
       initialOpenTaskId={initialOpenTaskId}
       statusConfig={statusConfig}
       canEditStatuses={canEditStatuses}
