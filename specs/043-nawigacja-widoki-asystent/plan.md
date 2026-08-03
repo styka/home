@@ -267,16 +267,22 @@ Szkielet wymuszony przez kryteria akceptacji:
 
 1. **Stan faktyczny** — czy Omnia jest sterowana zdarzeniami: nie w sensie event-sourcingu; mutacje to
    Server Actions + `revalidatePath`, jedyne kolejkowanie to `Job` + `JOB_HANDLERS`, jedyny „strumień"
-   to SSE agenta AI. Odświeżanie międzyurządzeniowe: brak (rewalidacja dotyczy tylko sesji, która
-   zrobiła zmianę).
+   to SSE agenta AI.
+   > **Korekta po rekonesansie (C-54, 2026-08-03).** Pierwotny szkic planu zakładał, że odświeżanie
+   > międzyurządzeniowe nie istnieje. **Istnieje częściowo:** `src/components/shell/DataFreshness.tsx`
+   > (montowany w `AppShell`) robi `router.refresh()` przy `visibilitychange`/`focus`/`pageshow`
+   > oraz cyklicznie co 45 s, gdy karta jest widoczna. Raport **musi** to nazwać wprost — inaczej
+   > sprzedawałby właścicielowi jako „nowość" coś, co ma od dawna. Konsekwencja dla pkt. 3: warianty
+   > (a) i (b) są **już wdrożone**, więc realna oś decyzji zaczyna się dopiero od (c).
 2. **Cofalność zmian** — co dziś jest cofalne (`TrashItem` — miękkie kasowanie z retencją;
    `NoteRevision` — historia wersji notatek; `AuditLog` — ślad zmian RBAC/konfiguracji), a co nie
    (każda edycja pola poza notatkami). Wprost: to jest cofanie **usunięć**, a nie historia **edycji**
    jak w dokumentach Google.
-3. **Warianty dojścia** z kosztem i ryzykiem — od najtańszego: (a) rewalidacja na żądanie + odświeżanie
-   przy powrocie do karty, (b) polling wybranych widoków, (c) SSE/WebSocket dla wybranych modułów,
-   (d) dziennik zmian per encja (`*Revision`) jako fundament cofania, (e) pełny event sourcing / CRDT
-   dla edycji współbieżnej.
+3. **Warianty dojścia** z kosztem i ryzykiem — od najtańszego: (a) rewalidacja na żądanie
+   + odświeżanie przy powrocie do karty i (b) polling wybranych widoków — **oba już wdrożone**
+   w `DataFreshness` (opisujemy je jako punkt wyjścia i podajemy realne opóźnienie ≤45 s);
+   (c) SSE/WebSocket dla wybranych modułów, (d) dziennik zmian per encja (`*Revision`) jako fundament
+   cofania, (e) pełny event sourcing / CRDT dla edycji współbieżnej.
 4. **Czego nie da się osiągnąć tanio (AC-23)** — edycja współbieżna w stylu Google Docs wymaga CRDT/OT
    i trwałego połączenia; darmowy plan Rendera **usypia usługę testową po 15 min**, więc trwałe
    połączenia są tam z definicji zawodne; koszt utrzymania rośnie liniowo z liczbą modułów, a Omnia ma

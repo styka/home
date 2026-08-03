@@ -15,7 +15,7 @@
 
 ## Faza 0 — Fundament danych (tor F)
 
-- [ ] **T-1** — **Migracja `0222_raport_architektura_zdarzeniowa`** (plan §2, §5.6). Jeden
+- [x] **T-1** — **Migracja `0222_raport_architektura_zdarzeniowa`** (plan §2, §5.6). Jeden
   `INSERT INTO "Report"` z dollar-quotingiem, `gen_random_uuid()::text`, kategoria `'general'`,
   `ON CONFLICT ("slug") DO UPDATE`. Slug: `omnia-architektura-zdarzeniowa-cofanie-live-2026-08-03`.
   Treść po polsku wg szkieletu z planu §5.6 — z **weryfikowalnymi odwołaniami do kodu**
