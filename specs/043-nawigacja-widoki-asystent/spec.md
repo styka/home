@@ -90,6 +90,12 @@ sterowana zdarzeniami, czy zmiany danych da się cofać jak w dokumentach Google
   filtrem/sortowaniem, then powrót odtwarza ten sam stan.
 - [ ] **AC-8** — Given wchodzę na adres modułu **bez** parametrów, when strona się załaduje, then
   widok zachowuje się dokładnie jak przed zmianą (domyślne ustawienia, brak regresji).
+- [ ] **AC-8a** — Given mechanizm sprawdził się na trzech pierwszych modułach, when zostanie wpięty
+  w **pozostałe moduły z widokami filtrowanymi**, then w każdym z nich zapisany widok odtwarza
+  ustawienia, a wejście bez parametrów nie zmienia dotychczasowego zachowania.
+- [ ] **AC-8b** — Given przeglądam listę modułów aplikacji, when sprawdzam pokrycie, then **każdy
+  moduł mający filtry, zakładki lub przełączany układ** albo obsługuje stan widoku w adresie, albo ma
+  odnotowane w artefaktach uzasadnienie, dlaczego go nie potrzebuje (np. widok bez żadnych filtrów).
 
 ### Skróty klawiszowe
 - [ ] **AC-9** — Given jestem na stronie z zakładkami filtrów, when użyję skrótu do ulubionego, then
@@ -136,8 +142,12 @@ sterowana zdarzeniami, czy zmiany danych da się cofać jak w dokumentach Google
 **W zakresie:**
 1. Ulubione widoki: stale widoczna sekcja w nawigacji (z zachętą przy zerze wpisów), wyraźny punkt
    zapisu w pasku widoku, punkt zarządzania dostępny z nawigacji.
-2. Stan widoku w adresie strony dla **Zadań, Zakupów i Notatek** + zapisywanie i odtwarzanie go przez
-   ulubione.
+2. Stan widoku w adresie strony + zapisywanie i odtwarzanie go przez ulubione — **w dwóch fazach**
+   (decyzja właściciela):
+   - **faza A:** wspólny mechanizm + wpięcie w **Zadania, Zakupy, Notatki** (moduły używane
+     najczęściej — na nich mechanizm się weryfikuje),
+   - **faza B:** wpięcie w **wszystkie pozostałe moduły** mające filtry, zakładki lub przełączany
+     układ; moduł bez żadnych filtrów jest pomijany z odnotowanym uzasadnieniem.
 3. Uporządkowanie skrótów: usunięcie kolizji, pierwszeństwo skrótów strony, ściągawka skrótów.
 4. Widget asystenta: widoczny na wszystkich szerokościach, pierwszy na pulpicie, bez pola tekstowego,
    z akcjami uruchamianymi natychmiast po otwarciu asystenta.
@@ -145,10 +155,10 @@ sterowana zdarzeniami, czy zmiany danych da się cofać jak w dokumentach Google
 6. Raport administracyjny o architekturze zdarzeniowej, cofaniu zmian i podglądzie na żywo.
 
 **Poza zakresem (świadomie):**
-- **Stan widoku w adresie dla pozostałych ~17 modułów** — mechanizm powstaje raz i jest wspólny, ale
-  wpinamy go w trzy moduły używane najczęściej. Rozszerzenie na resztę to praca mechaniczna do
-  osobnego przebiegu; robienie tego naraz oznacza kilkadziesiąt plików bez szans na rzetelne
-  przetestowanie w jednym podejściu.
+- **Nic z zakresu stanu widoku nie jest pomijane** — właściciel zdecydował, że po trzech pierwszych
+  modułach mechanizm ma objąć **wszystkie pozostałe**. Fazowanie jest kolejnością pracy, nie
+  ograniczeniem zakresu: faza B kończy się dopiero, gdy każdy moduł z filtrami jest pokryty albo ma
+  odnotowane uzasadnienie pominięcia (AC-8b).
 - **Wdrożenie architektury zdarzeniowej, cofania zmian i podglądu na żywo** — w tym specu powstaje
   **raport**, a nie implementacja. To zmiana u podstaw aplikacji i musi mieć własny spec po decyzji
   właściciela.
@@ -181,13 +191,15 @@ sterowana zdarzeniami, czy zmiany danych da się cofać jak w dokumentach Google
 
 ## 8. Otwarte pytania / decyzje właściciela
 
-> **Pytania zostały zadane, ale okno wyboru czterokrotnie wróciło bez odpowiedzi** (problem po stronie
-> interfejsu). Poniższe to **założenia przyjęte przeze mnie** jako rekomendowane domyślne — nie są to
-> decyzje właściciela. Każde da się zmienić; zmiana zawraca pipeline zgodnie z C-54.
+> **Decyzje właściciela z 2026-08-03.** Pierwsze cztery próby wysłania formularza wróciły bez
+> odpowiedzi (problem interfejsu); piąta się powiodła i poniższe są **rzeczywistymi decyzjami**, a nie
+> moimi założeniami. Punkt 1 **rozszerzył zakres** względem mojej rekomendacji — spec został
+> poprawiony zgodnie z C-54 (§4, §5, §9).
 
-- [x] **Zasięg stanu widoku w adresie** → **Zadania + Zakupy + Notatki**. Powód: dziś nie ma tego
-  nigdzie, więc to i tak nowy mechanizm; trzy moduły dają realną wartość i dają się przetestować.
-  *Alternatywa właściciela: wszystkie moduły naraz albo tylko Zadania.*
+- [x] **Zasięg stanu widoku w adresie** → *„To co zalecane najpierw, a potem wszystkie pozostałe."*
+  Czyli **dwie fazy**: najpierw Zadania + Zakupy + Notatki (na nich weryfikujemy wspólny mechanizm),
+  następnie **wszystkie pozostałe moduły** z filtrami. To rozszerzenie mojej rekomendacji — celem jest
+  pełne pokrycie, a fazowanie ma tylko zmniejszyć ryzyko regresji.
 - [x] **Kolizja skrótów** → **wspólny rejestr z pierwszeństwem skrótów strony + ściągawka**. Powód:
   naprawia przyczynę (brak sprawdzania modyfikatorów i brak jednego miejsca prawdy), a nie objaw.
   *Alternatywa: sekwencja „g" + cyfra albo rezygnacja ze skrótów do ulubionych.*
@@ -208,6 +220,10 @@ sterowana zdarzeniami, czy zmiany danych da się cofać jak w dokumentach Google
   do poprawienia zamiast trzech.
 - **Adres puchnie od parametrów** i staje się nieczytelny. → Do adresu trafiają **tylko ustawienia
   różne od domyślnych**.
+- **Faza B dotyka kilkunastu modułów naraz** — to największe ryzyko regresji w tym specu. → Faza B
+  rusza dopiero po zielonej fazie A, moduł po module, każdy z osobnym sprawdzeniem „wejście bez
+  parametrów działa jak dotąd" (AC-8). Wspólny mechanizm oznacza jedno miejsce do poprawki, a nie
+  kilkanaście kopii.
 - **Rejestr skrótów to zmiana u podstaw nawigacji klawiaturowej** — łatwo zepsuć działające skróty
   w wielu modułach. → AC-10 i AC-12 pilnują, że dotychczasowe zachowanie zostaje; ściągawka (AC-11)
   daje narzędzie do samodzielnego sprawdzenia.
