@@ -7,7 +7,7 @@ import { getCookbooks } from "@/actions/cookbooks";
 import { getTags } from "@/actions/tags";
 import { RecipeList } from "@/components/kitchen/recipes/RecipeList";
 
-export default async function KitchenRecipesPage() {
+export default async function KitchenRecipesPage({ searchParams }: { searchParams?: { q?: string } }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
 
@@ -24,6 +24,7 @@ export default async function KitchenRecipesPage() {
       tags={tags}
       cookbooks={cookbooks.map((cb) => ({ id: cb.id, name: cb.name, emoji: cb.emoji }))}
       hasAI={hasAI}
+      viewParams={searchParams ?? {}}
     />
   );
 }

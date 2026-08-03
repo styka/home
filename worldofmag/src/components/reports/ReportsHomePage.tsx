@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, useMemo, useCallback } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { text, type RawParams } from "@/lib/viewState/viewState";
 import Link from "next/link";
 import { BookOpen, ChevronRight, Calendar, User, Plus, Layers, Search, HardDrive } from "lucide-react";
 import { PageHeader, StatTile, SectionHeading, ManagementGrid, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
@@ -20,14 +22,21 @@ export interface ReportSummary {
 }
 
 interface ReportsHomePageProps {
+  /** 043: parametry adresu z serwera — szukajka listy. */
+  viewParams?: RawParams;
   reports: ReportSummary[];
   myCount: number;
   teamCount: number;
   isAdmin: boolean;
 }
 
-export function ReportsHomePage({ reports, myCount, teamCount, isAdmin }: ReportsHomePageProps) {
-  const [query, setQuery] = useState("");
+export function ReportsHomePage({ reports, myCount, teamCount, isAdmin, viewParams = {} }: ReportsHomePageProps) {
+  // 043: szukajka w adresie (AC-8a). Zapis przez `replace` — inaczej każda wpisana litera
+  // byłaby osobnym wpisem w historii i „wstecz" trzeba by naciskać kilkanaście razy.
+  const viewSpec = useMemo(() => ({ q: text("") }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+  const query = view.q;
+  const setQuery = useCallback((value: string) => setView({ q: value }, { replace: true }), [setView]);
   const [results, setResults] = useState<ReportSummary[] | null>(null);
   const [pending, startTransition] = useTransition();
 
