@@ -91,6 +91,53 @@ test.describe("043 — stan widoku w adresie", () => {
     expect(new URL(page.url()).searchParams.get("view")).toBe("grid");
   });
 
+
+  /**
+   * AC-7 dla Zakupów. `/verify` słusznie wytknął, że spec wymienia Zakupy z nazwy, a testy
+   * pokrywały tylko Notatki — kod był wpięty w ten sam mechanizm, ale to nie to samo co sprawdzony.
+   */
+  test("[vs-AC7-zakupy] Zakupy: zakładka filtra i sortowanie w adresie", async ({ page }) => {
+    // `domcontentloaded`, NIE `networkidle`: powłoka odświeża dane w tle (`DataFreshness` co 45 s),
+    // więc sieć w Omnii bywa „nigdy cicha" i czekanie na nią zjadało cały limit czasu testu.
+    // Linki do list są renderowane serwerowo, więc są w dokumencie już na tym etapie.
+    await page.goto("/shopping", { waitUntil: "domcontentloaded" });
+
+    // Bierzemy ISTNIEJĄCĄ listę zamiast tworzyć nową: formularz „Nowa lista" jest w tym środowisku
+    // niestabilny (te same kroki wywracają `shopping.spec.ts`), a ten test ma sprawdzać stan widoku,
+    // nie zakładanie list. Bez żadnej listy nie ma czego weryfikować — wtedy pomijamy z powodem.
+    const listLinks = page.locator('a[href^="/shopping/"]');
+    const paths: string[] = [];
+    for (const href of await listLinks.evaluateAll((els) => els.map((e) => e.getAttribute("href") ?? ""))) {
+      const path = href.split("?")[0];
+      if (/^\/shopping\/[A-Za-z0-9_-]{20,}$/.test(path)) paths.push(path);
+    }
+    test.skip(paths.length === 0, "Brak listy zakupowej w bazie testowej — nie ma czego weryfikować");
+    const listPath = paths[0];
+
+    // AC-8: wejście na listę bez parametrów nie dokłada niczego do adresu.
+    await page.goto(listPath, { waitUntil: "domcontentloaded" });
+    expect(new URL(page.url()).search).toBe("");
+
+    // AC-7: zmiana zakładki filtra trafia do adresu. Klikamy zakładkę zamiast wciskać cyfrę —
+    // klik w przycisk Reacta wymusza czekanie na hydratację, a skrót klawiszowy poszedłby
+    // w próżnię, gdyby nasłuchiwacz powłoki nie był jeszcze podpięty.
+    // `FILTER_TABS` to stała (`ALL`, `NEEDED`, …), a zakładki mają w `title` swój numer.
+    // Klik ponawiany w `poll`, bo `domcontentloaded` nie gwarantuje HYDRATACJI — Playwright czeka
+    // na widoczność i klikalność przycisku, ale nie na to, aż React podepnie do niego handler.
+    // Pierwszy klik potrafi więc trafić w martwy jeszcze element.
+    await expect
+      .poll(async () => {
+        await page.getByTitle(/\(2\)/).first().click().catch(() => {});
+        return new URL(page.url()).searchParams.get("filter");
+      }, { timeout: 20_000 })
+      .toBe("NEEDED");
+
+    // …i wraca po ponownym otwarciu tego samego adresu, razem z sortowaniem.
+    await page.goto(`${listPath}?filter=DONE&sort=product`, { waitUntil: "domcontentloaded" });
+    await expect.poll(() => new URL(page.url()).searchParams.get("filter"), { timeout: 10_000 }).toBe("DONE");
+    expect(new URL(page.url()).searchParams.get("sort")).toBe("product");
+  });
+
   test("[vs-AC4] ulubiony zapisany z filtrami wraca z filtrami", async ({ page }) => {
     await clearFavorites(page);
 

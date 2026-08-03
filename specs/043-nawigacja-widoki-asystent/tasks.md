@@ -215,7 +215,7 @@
 
 ## Faza 7 — zawrót z `/verify` (2026-08-03)
 
-- [ ] **T-27** — **Klikacz Zakupów dla AC-7.** `/verify` uznał AC-7 za spełnione tylko częściowo:
+- [x] **T-27** — **Klikacz Zakupów dla AC-7.** `/verify` uznał AC-7 za spełnione tylko częściowo:
   spec wymienia Zakupy z nazwy, a klikacze pokrywały wyłącznie Notatki. Dopisz do
   `e2e/specs/view-state.spec.ts` test dla listy zakupowej: ustaw zakładkę filtra i sortowanie,
   sprawdź, że trafiają do adresu, że ponowne otwarcie tego adresu daje ten sam widok i że wejście
