@@ -213,6 +213,17 @@
 
 ---
 
+## Faza 7 — zawrót z `/verify` (2026-08-03)
+
+- [ ] **T-27** — **Klikacz Zakupów dla AC-7.** `/verify` uznał AC-7 za spełnione tylko częściowo:
+  spec wymienia Zakupy z nazwy, a klikacze pokrywały wyłącznie Notatki. Dopisz do
+  `e2e/specs/view-state.spec.ts` test dla listy zakupowej: ustaw zakładkę filtra i sortowanie,
+  sprawdź, że trafiają do adresu, że ponowne otwarcie tego adresu daje ten sam widok i że wejście
+  bez parametrów zostaje czyste.
+  **Gotowe, gdy:** test zielony, a AC-7 ma dowód dla OBU modułów. Zależy od: **T-14**.
+
+---
+
 ## Mapowanie kryteriów akceptacji → zadania
 
 | AC | Zadania |
@@ -220,7 +231,7 @@
 | AC-1, AC-2, AC-3 | T-2, T-3 · weryfikacja T-22 |
 | AC-4 | T-3, T-13 · weryfikacja T-16 |
 | AC-5, AC-6 | T-11, T-12, T-13 · weryfikacja T-16 |
-| AC-7 | T-14, T-15 · weryfikacja T-16 |
+| AC-7 | T-14, T-15 · weryfikacja T-16 (Notatki) i **T-27** (Zakupy) |
 | AC-8 | T-11, T-13, T-14, T-15, T-18..T-21 · weryfikacja T-16, T-23 |
 | AC-8a | T-18, T-19, T-20, T-21 · weryfikacja T-23 |
 | AC-8b | T-17 |
