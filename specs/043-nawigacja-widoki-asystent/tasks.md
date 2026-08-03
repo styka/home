@@ -191,14 +191,14 @@
   objęty T-18..T-21 (AC-8a) oraz „wejście bez parametrów" (AC-8).
   **Gotowe, gdy:** komplet zielony. Zależy od: **T-18**..**T-21**.
 
-- [ ] **T-24** — **Bramki repo (C-50)**: `npm run check:migrations`, `check:actions`,
+- [x] **T-24** — **Bramki repo (C-50)**: `npm run check:migrations`, `check:actions`,
   `check:ai-coverage`, `check:cost-badge`, `check:content-memory`, `next lint --dir src`,
   `next build` na **lokalnym Postgresie** (C-13 — nigdy prod DB).
   **Gotowe, gdy:** wszystko zielone **bez modyfikacji manifestów pokrycia** — plan §3 zakłada, że
   feature nie dodaje ani akcji, ani wywołań LLM; żądanie wpisu = rozjazd z planem i sygnał do
   zawrócenia wg C-54. Zależy od: **T-1**..**T-23**.
 
-- [ ] **T-25** — **Mapowanie AC → wynik** (wejście do `/verify`): tabela AC-1..AC-23 (+AC-8a, AC-8b)
+- [x] **T-25** — **Mapowanie AC → wynik** (wejście do `/verify`): tabela AC-1..AC-23 (+AC-8a, AC-8b)
   z dowodem weryfikacji. Osobno **odnotowanie interpretacji AC-2** z planu §5.1 (brak wspólnego
   górnego paska na desktopie → punkt zapisu na górze nawigacji) do oceny na etapie `/verify`.
   Zależy od: **T-24**.
@@ -251,4 +251,38 @@ Trzy tory (skróty, ulubione, asystent+pulpit) są wzajemnie niezależne i mogą
 pierwszych modułach — to główna mitygacja ryzyka „faza B dotyka kilkunastu modułów" (plan §9).
 
 ## Notatki / blokady
-- Brak na start.
+
+### Wynik bramek (T-24, lokalny Postgres — C-13, nigdy prod DB)
+
+| Bramka | Wynik |
+|--------|-------|
+| `check:migrations` | ✅ numeracja OK, następny wolny numer 0223 |
+| `check:actions` | ✅ 160 akcji, wszystkie z egzekutorem i kontraktem |
+| `check:ai-coverage` | ✅ 545 akcji z zakresem dostępu i guardem |
+| `check:cost-badge` | ✅ 34 pliki wołające model |
+| `check:content-memory` | ✅ 34 pliki sklasyfikowane |
+| `next lint --dir src` | ✅ 0 błędów, **16 ostrzeżeń = dokładnie tyle, co przed zmianami** (sprawdzone przez `git stash`) |
+| `next build` | ✅ przechodzi |
+
+**Manifesty pokrycia nie wymagały ANI JEDNEJ zmiany** — dokładnie tak, jak zakładał plan §3
+(feature nie dodaje Server Actions ani wywołań LLM). To był wbudowany sygnał rozjazdu z planem
+i nie zadziałał, co potwierdza, że zakres się nie rozjechał.
+
+### Wynik klikaczy
+
+| Zestaw | Wynik |
+|--------|-------|
+| `view-state.spec.ts` (faza A, AC-4..AC-8) | ✅ 6/6 |
+| `view-state-faza-b.spec.ts` (AC-8a) | ✅ 23/23, **zero pominięć** |
+| `shortcuts.spec.ts` (AC-9..AC-12) | ✅ 4/4 |
+| `home-assistant.spec.ts` (AC-13..AC-16, AC-18, AC-20) | ✅ 5/5 |
+| `favorites.spec.ts` — nowe testy 043 (AC-1..AC-3) | ✅ 2/2 |
+| `home-layout.spec.ts` (przepisane AC-11/AC-12 z 042) | ✅ |
+| `favorites.spec.ts` — `[fav-AC7]` | ❌ **pada także na kodzie sprzed 043** (sprawdzone przez `git checkout 9e34ee6 -- src`) — wada wcześniejsza, nie regresja tego specu |
+
+### Defekt znaleziony i naprawiony w trakcie
+
+`ShortcutsProvider` w pierwszej wersji trzymał listę skrótów w `useState` → pętla renderów przy
+niestabilnej tablicy wpisów → aplikacja gubiła kliknięcia w **niezwiązanym** module (przełącznik
+ulubionych). Naprawione u przyczyny: prowider bez stanu, rejestr trzyma referencje, migawka liczona
+na żądanie. Wpis w `doświadczenia.md`.
