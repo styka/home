@@ -178,7 +178,7 @@
 
 ## Faza 6 — Bramki i domknięcie
 
-- [ ] **T-22** — **Klikacze torów A, C, D, E** — nowe `e2e/specs/shortcuts.spec.ts`,
+- [x] **T-22** — **Klikacze torów A, C, D, E** — nowe `e2e/specs/shortcuts.spec.ts`,
   `e2e/specs/home-assistant.spec.ts` + rozszerzenie `e2e/specs/favorites.spec.ts`:
   pusty stan ulubionych i nowe położenie gwiazdki (AC-1, AC-2, AC-3), `Alt+1` bez zmiany zakładki
   (AC-9), goła cyfra przełącza zakładkę (AC-10), ściągawka `?` (AC-11), pisanie nie wyzwala skrótów
@@ -187,7 +187,7 @@
   (AC-18, AC-19, AC-20).
   **Gotowe, gdy:** komplet zielony. Zależy od: **T-3**, **T-6**, **T-10**.
 
-- [ ] **T-23** — **Klikacze fazy B** — po jednym przejściu „zapisz widok → wyjdź → wróć" na moduł
+- [x] **T-23** — **Klikacze fazy B** — po jednym przejściu „zapisz widok → wyjdź → wróć" na moduł
   objęty T-18..T-21 (AC-8a) oraz „wejście bez parametrów" (AC-8).
   **Gotowe, gdy:** komplet zielony. Zależy od: **T-18**..**T-21**.
 
@@ -203,7 +203,7 @@
   górnego paska na desktopie → punkt zapisu na górze nawigacji) do oceny na etapie `/verify`.
   Zależy od: **T-24**.
 
-- [ ] **T-26** — **Wpisy do `doświadczenia.md`** (C-51), po polsku, w formacie repo:
+- [x] **T-26** — **Wpisy do `doświadczenia.md`** (C-51), po polsku, w formacie repo:
   (1) kolizja `Alt+cyfra` — `switch (e.key)` bez sprawdzania modyfikatorów i dlaczego pierwszeństwa
   strony nie da się uzyskać dwoma listenerami na `window`;
   (2) puste dziury na pulpicie — CSS Grid wyrównuje wiersze do najwyższego elementu, układ

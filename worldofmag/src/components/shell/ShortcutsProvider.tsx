@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import { isTypingTarget, matchShortcut, type ShortcutDef } from "@/lib/shortcuts/registry";
 
 /** Handler zwracający `false` = „nie obsłużyłem" → dyspozytor szuka dalej i nie blokuje klawisza. */
@@ -14,10 +14,13 @@ export interface RegisteredShortcut extends ShortcutDef {
   hidden?: boolean;
 }
 
+/** Rejestrujemy REFERENCJĘ do tablicy, nie tablicę — patrz komentarz przy `useShortcuts`. */
+type EntriesRef = { current: RegisteredShortcut[] };
+
 interface ShortcutsContextValue {
-  register: (entries: RegisteredShortcut[]) => () => void;
-  /** Migawka zarejestrowanych skrótów — źródło ściągawki (AC-11). */
-  shortcuts: ShortcutDef[];
+  register: (entries: EntriesRef) => () => void;
+  /** Migawka zarejestrowanych skrótów, liczona NA ŻĄDANIE — źródło ściągawki (AC-11). */
+  getShortcuts: () => ShortcutDef[];
 }
 
 const ShortcutsContext = createContext<ShortcutsContextValue | null>(null);
@@ -31,19 +34,27 @@ let nextRegistrationId = 0;
  * jego listener odpalałby się jako drugi — pierwszeństwa strony nie da się w ten sposób uzyskać.
  * Przy jednym dyspozytorze kolejność jest jawna: `scope: "page"` przed `scope: "global"`.
  *
- * Drugi powód istnienia rejestru: ściągawka (`ShortcutsCheatSheet`) czyta listę stąd, więc
- * nie może się rozjechać z tym, co faktycznie działa.
+ * **Prowider świadomie NIE MA STANU.** Pierwsza wersja trzymała listę skrótów w `useState` i
+ * publikowała ją przy każdej (wy)rejestracji — co przy komponencie przekazującym niestabilną
+ * tablicę dawało pętlę „rejestracja → nowy stan → render → nowa tablica → rejestracja…". Objaw był
+ * mylący: aplikacja renderowała się bez końca i **gubiła kliknięcia** (w klikaczach padał zupełnie
+ * niezwiązany test przełącznika ulubionych). Skoro ściągawka potrzebuje listy tylko w momencie
+ * otwarcia, liczymy ją na żądanie — i cała klasa błędu znika.
  */
 export function ShortcutsProvider({ children }: { children: React.ReactNode }) {
-  const registry = useRef(new Map<number, RegisteredShortcut[]>());
-  const [shortcuts, setShortcuts] = useState<ShortcutDef[]>([]);
+  const registry = useRef(new Map<number, EntriesRef>());
 
-  /** Migawka do ściągawki — trzymana w stanie, żeby nakładka przerysowała się po zmianie strony. */
-  const publish = useCallback(() => {
+  const register = useCallback((entries: EntriesRef) => {
+    const id = nextRegistrationId++;
+    registry.current.set(id, entries);
+    return () => { registry.current.delete(id); };
+  }, []);
+
+  const getShortcuts = useCallback((): ShortcutDef[] => {
     const flat: ShortcutDef[] = [];
     const seen = new Set<string>();
-    for (const entries of Array.from(registry.current.values())) {
-      for (const entry of entries) {
+    for (const ref of Array.from(registry.current.values())) {
+      for (const entry of ref.current) {
         if (entry.hidden) continue;
         const key = `${entry.scope}:${entry.keys}`;
         if (seen.has(key)) continue;
@@ -51,18 +62,8 @@ export function ShortcutsProvider({ children }: { children: React.ReactNode }) {
         flat.push({ id: entry.id, keys: entry.keys, label: entry.label, group: entry.group, scope: entry.scope });
       }
     }
-    setShortcuts(flat);
+    return flat;
   }, []);
-
-  const register = useCallback((entries: RegisteredShortcut[]) => {
-    const id = nextRegistrationId++;
-    registry.current.set(id, entries);
-    publish();
-    return () => {
-      registry.current.delete(id);
-      publish();
-    };
-  }, [publish]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -70,16 +71,9 @@ export function ShortcutsProvider({ children }: { children: React.ReactNode }) {
 
       // Strona przed globalnymi — to jest cała reguła pierwszeństwa.
       const candidates: RegisteredShortcut[] = [];
-      for (const entries of Array.from(registry.current.values())) {
-        for (const entry of entries) {
-          if (entry.scope === "page") candidates.push(entry);
-        }
-      }
-      for (const entries of Array.from(registry.current.values())) {
-        for (const entry of entries) {
-          if (entry.scope === "global") candidates.push(entry);
-        }
-      }
+      const refs = Array.from(registry.current.values());
+      for (const ref of refs) for (const entry of ref.current) if (entry.scope === "page") candidates.push(entry);
+      for (const ref of refs) for (const entry of ref.current) if (entry.scope === "global") candidates.push(entry);
 
       for (const entry of candidates) {
         if (typing && !entry.whileTyping) continue;
@@ -94,7 +88,9 @@ export function ShortcutsProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const value = useMemo<ShortcutsContextValue>(() => ({ register, shortcuts }), [register, shortcuts]);
+  // Wartość kontekstu jest STAŁA (obie funkcje z pustą listą zależności) — zmiana rejestru nigdy
+  // nie przerysowuje konsumentów.
+  const value = useMemo<ShortcutsContextValue>(() => ({ register, getShortcuts }), [register, getShortcuts]);
 
   return <ShortcutsContext.Provider value={value}>{children}</ShortcutsContext.Provider>;
 }
@@ -107,16 +103,19 @@ export function useShortcutsRegistry(): ShortcutsContextValue | null {
 /**
  * Rejestruje zestaw skrótów na czas życia komponentu.
  *
- * `entries` musi być stabilne między renderami (`useMemo`) — inaczej rejestracja odtwarzałaby się
- * przy każdym renderze. Wszystkie wywołania w repo idą przez `useKeyboardShortcuts`, który już
- * przyjmuje zmemoizowany obiekt handlerów.
+ * `entries` **nie musi być stabilne** — trzymamy je w referencji odświeżanej przy każdym renderze,
+ * a rejestracja dzieje się raz (przy montowaniu). Dzięki temu handlery zawsze widzą aktualne
+ * domknięcia, a niestabilna tablica nie powoduje ani ponownych rejestracji, ani pętli renderów.
  */
 export function useShortcuts(entries: RegisteredShortcut[]): void {
   const ctx = useContext(ShortcutsContext);
   const register = ctx?.register;
 
+  const entriesRef = useRef(entries);
+  entriesRef.current = entries;
+
   useEffect(() => {
-    if (!register || entries.length === 0) return;
-    return register(entries);
-  }, [register, entries]);
+    if (!register) return;
+    return register(entriesRef);
+  }, [register]);
 }

@@ -47,7 +47,8 @@ export function ShortcutsCheatSheet() {
 
   if (!open) return null;
 
-  const all = registry?.shortcuts ?? [];
+  // Liczone w momencie otwarcia — prowider nie trzyma stanu (patrz `ShortcutsProvider`).
+  const all = registry?.getShortcuts() ?? [];
   const page = all.filter((s) => s.scope === "page");
   const global = all.filter((s) => s.scope === "global");
 

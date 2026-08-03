@@ -7,8 +7,6 @@ import {
   type RegisteredShortcut,
 } from "@/components/shell/ShortcutsProvider";
 
-const NO_ENTRIES: RegisteredShortcut[] = [];
-
 /**
  * Skróty klawiszowe strony modułu.
  *
@@ -102,9 +100,9 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
   }, [handlers]);
 
   // Ścieżka podstawowa: rejestracja w powłoce (pierwszeństwo strony + ściągawka).
-  // Stała `NO_ENTRIES` zamiast literału `[]` — inaczej każdy render tworzyłby nową tablicę
-  // i efekt rejestrujący odpalałby się w kółko.
-  useShortcuts(registry ? entries : NO_ENTRIES);
+  // `useShortcuts` trzyma wpisy w referencji i rejestruje je raz, więc niestabilna tablica
+  // niczego nie psuje — a bez prowidera hook i tak nic nie robi.
+  useShortcuts(entries);
 
   // Ścieżka awaryjna: brak prowidera → własny nasłuchiwacz z tą samą logiką dopasowania.
   useEffect(() => {
