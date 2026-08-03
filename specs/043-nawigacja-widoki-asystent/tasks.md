@@ -167,7 +167,7 @@
   zakładki przez `push`.
   **Gotowe, gdy:** j.w. (AC-8a). Zależy od: **T-17**.
 
-- [ ] **T-20** `[P]` — **Faza B, grupa 3: Warsztaty, Zwierzęta** (zakładki widoku szczegółów).
+- [x] **T-20** `[P]` — **Faza B, grupa 3: Warsztaty, Zwierzęta** (zakładki widoku szczegółów).
   **Gotowe, gdy:** j.w. (AC-8a). Zależy od: **T-17**.
 
 - [ ] **T-21** `[P]` — **Faza B, grupa 4: Magazynowanie, Kontakty, Raporty, Kuchnia** (szukajki list —

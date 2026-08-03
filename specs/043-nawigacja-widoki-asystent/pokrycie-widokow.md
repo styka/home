@@ -35,8 +35,8 @@ zaczyna się od nowa), a zaśmieca adres i historię przeglądarki.
 | Moduł | Plik | Stan w adresie | Klucze | Zadanie |
 |-------|------|----------------|--------|---------|
 | Zdrowie | `components/health/HealthHomePage.tsx` | zakładka (wszystko/wizyty/badania) | `tab` | T-18 |
-| Kalendarz | `components/calendar/CalendarPage.tsx` | filtr modułu | `mod` | T-18 |
-| Wiadomości | `components/news/NewsPage.tsx` | zakładka widoku | `widok` → `view` | T-18 |
+| Kalendarz | `components/calendar/CalendarPage.tsx` | filtr modułu | `module` (istniejący) | T-18 |
+| Wiadomości | `components/news/NewsPage.tsx` | zakładka widoku | `widok` | T-18 |
 | Usługi — katalog | `components/services/ServicesCatalogPage.tsx` | szukajka, kategoria, sortowanie | `q`, `cat`, `sort` | T-19 |
 | Usługi — moje zlecenia | `components/services/MyRequestsPage.tsx` | zakładka (klient/wykonawca) | `tab` | T-19 |
 | Usługi — moderacja | `components/services/ModerationPage.tsx` | zakładka statusu sporu | `tab` | T-19 |
