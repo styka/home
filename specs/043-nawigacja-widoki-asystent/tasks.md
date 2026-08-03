@@ -139,7 +139,7 @@
   propsem z serwera, zgodnie z planem.
   **Gotowe, gdy:** j.w. dla Notatek (AC-7, AC-8). Zależy od: **T-12**.
 
-- [ ] **T-16** — **Klikacze fazy A** — nowy `e2e/specs/view-state.spec.ts`: adres odzwierciedla filtry
+- [x] **T-16** — **Klikacze fazy A** — nowy `e2e/specs/view-state.spec.ts`: adres odzwierciedla filtry
   (AC-5), „wstecz" wraca do poprzedniego stanu (AC-6), Zakupy i Notatki odtwarzają stan (AC-7),
   wejście bez parametrów = widok domyślny (AC-8), zapis widoku z filtrami przez ulubione i powrót
   (AC-4).
