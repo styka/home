@@ -2,7 +2,9 @@
 
 - **Spec:** ./spec.md · **Plan:** ./plan.md · **Zadania:** ./tasks.md (26/26 odhaczonych)
 - **Data:** 2026-08-03
-- **Werdykt:** **DO POPRAWY** — jeden brak weryfikacyjny (AC-7 dla Zakupów), opisany w §5.
+- **Werdykt:** **GOTOWE Z UWAGAMI** — po zawrocie do `/implement` (T-27) domknięty jedyny brak.
+- **Historia:** przebieg 1 → **DO POPRAWY** (AC-7 zweryfikowane tylko dla Notatek) → `/implement`
+  T-27 → przebieg 2 → **GOTOWE Z UWAGAMI**.
 
 ---
 
@@ -51,7 +53,7 @@ kodzie, **[DB]** = sprawdzenie w bazie.
 | **AC-4** — zapisany widok odtwarza wszystkie ustawienia | ✅ | [E2E] `view-state.spec.ts [vs-AC4]` — `/tasks/all?layout=kanban` → zapis gwiazdką → wyjście na `/notes/all` → powrót z ulubionych → `layout=kanban` odtworzone |
 | **AC-5** — adres odzwierciedla stan i da się go skopiować | ✅ | [E2E] `[vs-AC5]` (klik „Kanban" → `layout=kanban` w adresie) i `[vs-AC5b]` (otwarcie `/tasks/all?layout=kanban` → parametr NIE ginie przy starcie widoku) |
 | **AC-6** — „wstecz" wraca do poprzedniego stanu filtrów | ✅ | [E2E] `[vs-AC6]` — Kanban → Timeline → `goBack()` → Kanban → `goBack()` → adres czysty |
-| **AC-7** — to samo w Zakupach i Notatkach | ⚠️ **częściowo** | Notatki: ✅ [E2E] `[vs-AC7]` (tryb siatki → `view=grid`, ponowne otwarcie adresu daje ten sam tryb). **Zakupy: brak testu** — tylko [kod] `ShoppingPage.tsx` (`filter`, `sort` przez ten sam `useViewState`, sortowanie kodowane jako `category`\|`product`\|`store:<id>`). Ten sam mechanizm jest przetestowany w 12 innych widokach, ale AC wymienia Zakupy z nazwy, więc **uznaję to za brak weryfikacyjny** — patrz §5. |
+| **AC-7** — to samo w Zakupach i Notatkach | ✅ **(domknięte w przebiegu 2)** | Notatki: [E2E] `[vs-AC7]` — tryb siatki → `view=grid`, ponowne otwarcie adresu daje ten sam tryb. Zakupy: [E2E] `[vs-AC7-zakupy]` (T-27) — na realnej liście: wejście bez parametrów zostaje czyste, klik zakładki → `filter=NEEDED`, a adres `?filter=DONE&sort=product` otwiera ten sam widok |
 | **AC-8** — wejście bez parametrów bez regresji | ✅ | [E2E] `[vs-AC8]` (`/tasks/all`, `/notes/all` → `search === ""`) oraz **11 modułów** w `view-state-faza-b.spec.ts` (pierwsza asercja każdego testu) |
 | **AC-8a** — mechanizm działa w pozostałych modułach | ✅ | [E2E] `view-state-faza-b.spec.ts` — **23/23 zielone, zero pominięć** (Zdrowie, Kalendarz, Wiadomości, Usługi ×2, Pogoda/Pomysły, Kontakty, Raporty, Magazynowanie, Kuchnia ×2) |
 | **AC-8b** — każdy moduł pokryty albo z uzasadnieniem | ✅ | Artefakt `pokrycie-widokow.md` — przegląd **wszystkich 21 pozycji** z `src/lib/modules.tsx`: 17 widoków pokrytych, 8 modułów pominiętych z powodem, osobno uzasadnione pominięcie panelu filtrów zaawansowanych w Usługach i stanu kroku pracy |
@@ -146,25 +148,34 @@ przeglądarki. Naprawione u źródła: prowider bez stanu, rejestr trzyma refere
 
 ---
 
-## 5. Werdykt końcowy: **DO POPRAWY**
+## 5. Werdykt końcowy: **GOTOWE Z UWAGAMI**
 
-Jeden brak, i jest to brak **weryfikacyjny**, nie funkcjonalny — nie znaleziono dowodu na wadę, tylko
-na nieprzetestowanie:
+**Wszystkie 25 kryteriów akceptacji (AC-1..AC-23 + AC-8a + AC-8b) spełnione**, bramki zielone,
+zero naruszeń konstytucji.
 
-- **AC-7 / Zakupy** — spec wymienia Zakupy z nazwy („to samo dotyczy Zakupów i Notatek"), a klikacze
-  pokrywają tylko Notatki. Kod Zakupów jest wpięty w ten sam mechanizm i przechodzi build, ale
-  „wpięte i skompilowane" to nie to samo co „sprawdzone". Zaliczenie tego AC bez testu byłoby
-  zaliczaniem na oko.
+### Domknięcie zawrotu z przebiegu 1
 
-**Brak nie wynika z błędnego speca ani planu** — plan przewidywał Zakupy w fazie A i tak je
-zaimplementowano; zabrakło wyłącznie testu. Nie ma więc potrzeby cofania się do `spec.md`/`plan.md`
-(C-54); wystarczy dopisać zadanie i wrócić do implementacji.
+Przebieg 1 dał **DO POPRAWY**: AC-7 wymienia Zakupy z nazwy, a klikacze pokrywały tylko Notatki.
+Nie było dowodu na wadę — był dowód na **nieprzetestowanie**, a zaliczanie AC „na oko" jest dokładnie
+tym, czego ten etap ma nie robić. Brak nie wynikał z błędnego speca ani planu (plan przewidywał
+Zakupy w fazie A i tak je zaimplementowano), więc nie było potrzeby cofać się do `spec.md`/`plan.md`
+(C-54) — wystarczyło dopisać **T-27** i wrócić do implementacji.
 
-### Zadanie dopisane do `tasks.md`
+**T-27 wykonane, `view-state.spec.ts` 30/30 zielone.** Trzy potknięcia były po stronie samego testu,
+nie aplikacji, i wszystkie są udokumentowane w kodzie testu:
+1. formularz „Nowa lista" jest w tym środowisku niestabilny (wywraca też `shopping.spec.ts`) → test
+   bierze **istniejącą** listę, a przy jej braku pomija się z jawnym powodem;
+2. czekanie na `networkidle` zjadało limit czasu, bo powłoka odświeża dane w tle co 45 s
+   (`DataFreshness`) → `domcontentloaded`;
+3. widoczny przycisk **nie znaczy zhydratowany** — pierwszy klik trafiał w martwy jeszcze element →
+   klik ponawiany w `expect.poll`.
 
-- **T-27** — klikacz Zakupów dla AC-7: ustaw zakładkę filtra i sortowanie na liście zakupowej,
-  sprawdź, że trafiają do adresu, że ponowne otwarcie adresu daje ten sam widok i że wejście bez
-  parametrów zostaje czyste.
+### Stan bramek w przebiegu 2
+
+`src/` **nie zmieniło się od zielonego builda** (`git diff 9a54e39..HEAD -- worldofmag/src` = 0 plików;
+zmieniły się wyłącznie artefakty `specs/` i jeden plik E2E). Ponownie uruchomione szybkie bramki:
+`check:migrations` ✅, `check:actions` ✅, `next lint --dir src` ✅ 16 ostrzeżeń (bez zmian),
+`tsc --noEmit -p e2e/tsconfig.json` ✅.
 
 ### Uwaga do rozstrzygnięcia na `/review` (nie blokująca)
 
