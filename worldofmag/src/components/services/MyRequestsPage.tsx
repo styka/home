@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, useMemo, useCallback } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { oneOf, type RawParams } from "@/lib/viewState/viewState";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ClipboardList, ArrowLeft, Star, X, MessagesSquare, CalendarClock } from "lucide-react";
@@ -18,8 +20,12 @@ function todayISO(): string {
 
 type Tab = "client" | "provider";
 
-export function MyRequestsPage({ asClient, asProvider }: { asClient: RequestDTO[]; asProvider: RequestDTO[] }) {
-  const [tab, setTab] = useState<Tab>("client");
+export function MyRequestsPage({ asClient, asProvider, viewParams = {} }: { asClient: RequestDTO[]; asProvider: RequestDTO[]; viewParams?: RawParams }) {
+  // 043: zakładka w adresie (AC-8a).
+  const viewSpec = useMemo(() => ({ tab: oneOf(["client", "provider"] as const, "client") }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+  const tab = view.tab;
+  const setTab = useCallback((value: Tab) => setView({ tab: value }), [setView]);
   const router = useRouter();
   const list = tab === "client" ? asClient : asProvider;
 

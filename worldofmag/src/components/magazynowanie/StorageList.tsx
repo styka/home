@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition, useCallback } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { text, type RawParams } from "@/lib/viewState/viewState";
 import Link from "next/link";
 import { Plus, Search, Warehouse, AlertTriangle, ClipboardList, Camera, ShoppingCart, CalendarClock, ShieldCheck } from "lucide-react";
 import { StorageEditSheet } from "./StorageEditSheet";
@@ -11,6 +13,8 @@ import type { StorageSupplier } from "@prisma/client";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface StorageListProps {
+  /** 043: parametry adresu z serwera — szukajka listy. */
+  viewParams?: RawParams;
   items: StorageItemWithMovements[];
   lowStock: StorageItemWithMovements[];
   expiring?: ExpiringEntry[];
@@ -22,9 +26,14 @@ interface StorageListProps {
 
 const NO_WAREHOUSE = "Bez magazynu";
 
-export function StorageList({ items, lowStock, expiring = [], shoppingLists, suppliers = [], currency = "PLN", pro = false }: StorageListProps) {
+export function StorageList({ items, lowStock, expiring = [], shoppingLists, suppliers = [], currency = "PLN", pro = false, viewParams = {} }: StorageListProps) {
   const { showToast } = useToast();
-  const [search, setSearch] = useState("");
+  // 043: szukajka w adresie (AC-8a). Zapis przez `replace` — inaczej każda wpisana litera
+  // byłaby osobnym wpisem w historii i „wstecz" trzeba by naciskać kilkanaście razy.
+  const viewSpec = useMemo(() => ({ q: text("") }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+  const search = view.q;
+  const setSearch = useCallback((value: string) => setView({ q: value }, { replace: true }), [setView]);
   const [activeWarehouse, setActiveWarehouse] = useState<string>("");
   const [editing, setEditing] = useState<{ item: StorageItemWithMovements | null; warehouse?: string } | null>(null);
   const [replenishList, setReplenishList] = useState<string>(shoppingLists[0]?.id ?? "");

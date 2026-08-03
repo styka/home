@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useTransition, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useMemo, useCallback, useRef, useTransition, useEffect } from "react";
 import { MessageCircle, X, Search, ChevronLeft, LayoutGrid, List, ArchiveRestore } from "lucide-react";
 import Link from "next/link";
 import { NoteList } from "./NoteList";
@@ -9,6 +8,8 @@ import { QuickNoteBar, type QuickNoteBarHandle } from "./QuickNoteBar";
 import { NotesQA } from "./NotesQA";
 import { TagChip } from "./TagChip";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useViewState } from "@/hooks/useViewState";
+import { idList, oneOf, text, type RawParams } from "@/lib/viewState/viewState";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
 import type { Note, Tag as TagType, NoteGroup, NoteFilter } from "@/types";
 import { NOTE_FILTER_LABELS } from "@/types";
@@ -20,34 +21,68 @@ interface NotesPageProps {
   groups: NoteGroup[];
   tags: TagType[];
   backHref?: string;
+  /**
+   * 043: parametry adresu z serwera. Zastąpiły `useSearchParams` — hook wymusza granicę
+   * `Suspense`, a wartość startową i tak trzeba mieć w PIERWSZYM renderze, żeby serwer i klient
+   * wyrenderowały to samo (rozjazd hydratacji, `doświadczenia.md` 2026-08-02).
+   */
+  viewParams?: RawParams;
 }
 
-export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
-  const searchParams = useSearchParams();
-  const initialPinnedOnly = searchParams?.get("pinned") === "1";
-  const focusFromQuery = searchParams?.get("focus") ?? null;
-  const openNewFromQuery = searchParams?.get("new") === "1";
+export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: NotesPageProps) {
+  const param = (key: string): string | undefined => {
+    const raw = viewParams[key];
+    return Array.isArray(raw) ? raw[0] : raw;
+  };
+  const initialPinnedOnly = param("pinned") === "1";
+  const focusFromQuery = param("focus") ?? null;
+  const openNewFromQuery = param("new") === "1";
 
-  const [activeFilter, setActiveFilter] = useState<NoteFilter>(initialPinnedOnly ? "PINNED" : "ALL");
-  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  // 043: filtr, folder, tagi i tryb widoku żyją w ADRESIE (AC-7).
+  // Domyślną filtra jest „PINNED", gdy w adresie stoi `pinned=1` — a że ten parametr zostaje
+  // w adresie, po odświeżeniu wyjdzie ta sama wartość. Zmiana na inną zakładkę dopisze `filter=…`,
+  // który przy odczycie wygrywa.
+  const viewSpec = useMemo(() => ({
+    filter: oneOf(NOTE_FILTERS, initialPinnedOnly ? "PINNED" : "ALL"),
+    group: text(""),
+    tags: idList(),
+    view: oneOf(["list", "grid"] as const, "list"),
+  }), [initialPinnedOnly]);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+
+  // Settery owinięte w `useCallback` — trafiają do zależności `useMemo` z obsługą skrótów.
+  const activeFilter = view.filter;
+  const setActiveFilter = useCallback((value: NoteFilter) => setView({ filter: value }), [setView]);
+  const selectedGroupId = view.group;
+  const setSelectedGroupId = useCallback((value: string) => setView({ group: value }), [setView]);
+  const selectedTagIds = view.tags;
+  const setSelectedTagIds = useCallback(
+    (next: string[] | ((prev: string[]) => string[])) =>
+      setView((prev) => ({ tags: typeof next === "function" ? next(prev.tags) : next })),
+    [setView],
+  );
+  const viewMode = view.view;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [focusedNoteId, setFocusedNoteId] = useState<string | null>(focusFromQuery);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [isQAOpen, setIsQAOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [, startTransition] = useTransition();
 
+  // Tryb widoku odtwarzany z pamięci przeglądarki TYLKO gdy adres go nie niesie — adres ma
+  // pierwszeństwo, żeby zapisany ulubiony widok otwierał się dokładnie tak, jak go zapisano.
   useEffect(() => {
+    if (viewParams.view !== undefined) return;
     try {
       const saved = localStorage.getItem("wom_notes_view");
-      if (saved === "grid" || saved === "list") setViewMode(saved);
+      if (saved === "grid") setView({ view: "grid" }, { replace: true });
     } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function toggleViewMode() {
     const next = viewMode === "list" ? "grid" : "list";
-    setViewMode(next);
+    setView({ view: next });
     try { localStorage.setItem("wom_notes_view", next); } catch { /* ignore */ }
   }
   const quickNoteRef = useRef<QuickNoteBarHandle>(null);
@@ -150,7 +185,7 @@ export function NotesPage({ notes, groups, tags, backHref }: NotesPageProps) {
         setFocusedNoteId(null);
       },
     }),
-    [focusedNoteId, filteredNotes, navigateDown, navigateUp, isSearchOpen, editingNoteId, startTransition]
+    [focusedNoteId, filteredNotes, navigateDown, navigateUp, isSearchOpen, editingNoteId, startTransition, setActiveFilter]
   );
 
   useKeyboardShortcuts(handlers);

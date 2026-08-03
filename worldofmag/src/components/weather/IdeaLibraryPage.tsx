@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition, useCallback } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { oneOf, type RawParams } from "@/lib/viewState/viewState";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -46,16 +48,23 @@ export function IdeaLibraryPage({
   usdPlnRate,
   canAddToTasks,
   initialIdeaId,
+  viewParams = {},
 }: {
   ideas: IdeaDTO[];
   usdPlnRate?: number;
   canAddToTasks: boolean;
   /** Id z adresu (`?idea=`) — wejście z zadania utworzonego przyciskiem „Dodaj do zadań". */
   initialIdeaId?: string;
+  /** 043: parametry adresu z serwera — filtr czytamy stąd, nie z `window`. */
+  viewParams?: RawParams;
 }) {
   const router = useRouter();
   const { showToast } = useToast();
-  const [filter, setFilter] = useState<Filter>("all");
+  // 043: filtr stanu pomysłu w adresie (AC-8a).
+  const viewSpec = useMemo(() => ({ filter: oneOf(["all", "considered", "saved", "blocked"] as const, "all") }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+  const filter = view.filter as Filter;
+  const setFilter = useCallback((value: Filter) => setView({ filter: value }), [setView]);
   const [location, setLocation] = useState<string>("all");
   const [, startTransition] = useTransition();
 

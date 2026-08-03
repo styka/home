@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { text, type RawParams } from "@/lib/viewState/viewState";
 import Link from "next/link";
 import { Plus, Search, Package, AlertTriangle, ClipboardList } from "lucide-react";
 import { PantryEditSheet } from "./PantryEditSheet";
 import type { PantryItemWithProduct } from "@/actions/pantry";
 
 interface PantryListProps {
+  /** 043: parametry adresu z serwera — szukajka listy. */
+  viewParams?: RawParams;
   items: PantryItemWithProduct[];
   expiringSoon: PantryItemWithProduct[];
 }
@@ -33,8 +37,13 @@ function formatExpiry(date: Date | null): { text: string; color: string } | null
   return { text: d.toLocaleDateString("pl-PL"), color: "var(--text-muted)" };
 }
 
-export function PantryList({ items, expiringSoon }: PantryListProps) {
-  const [search, setSearch] = useState("");
+export function PantryList({ items, expiringSoon, viewParams = {} }: PantryListProps) {
+  // 043: szukajka w adresie (AC-8a). Zapis przez `replace` — inaczej każda wpisana litera
+  // byłaby osobnym wpisem w historii i „wstecz" trzeba by naciskać kilkanaście razy.
+  const viewSpec = useMemo(() => ({ q: text("") }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+  const search = view.q;
+  const setSearch = useCallback((value: string) => setView({ q: value }, { replace: true }), [setView]);
   const [activeLocation, setActiveLocation] = useState<string>("");
   const [editing, setEditing] = useState<{ item: PantryItemWithProduct | null; location?: string } | null>(null);
 

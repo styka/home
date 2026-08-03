@@ -6,7 +6,7 @@ import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { ensureNewsSetup, getTopics, getSources, getNewsPref } from "@/actions/news";
 import { NewsPage } from "@/components/news/NewsPage";
 
-export default async function WiadomosciRootPage() {
+export default async function WiadomosciRootPage({ searchParams }: { searchParams?: { widok?: string } }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
   if (!hasPermission(session, PERMISSIONS.NEWS)) redirect("/");
@@ -20,6 +20,7 @@ export default async function WiadomosciRootPage() {
       sources={sources}
       defaultLength={pref.defaultSummaryLength}
       activeSourceKey={pref.activeSourceKey}
+      viewParams={searchParams ?? {}}
     />
   );
 }

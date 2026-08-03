@@ -6,12 +6,12 @@ import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { getContacts } from "@/actions/contacts";
 import { ContactsPage } from "@/components/contacts/ContactsPage";
 
-export default async function ContactsRootPage() {
+export default async function ContactsRootPage({ searchParams }: { searchParams?: { q?: string } }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
   if (!hasPermission(session, PERMISSIONS.CONTACTS)) redirect("/");
 
   const contacts = await getContacts();
 
-  return <ContactsPage initialContacts={contacts} />;
+  return <ContactsPage initialContacts={contacts} viewParams={searchParams ?? {}} />;
 }

@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { oneOf, type RawParams } from "@/lib/viewState/viewState";
 import { useRouter } from "next/navigation";
 import { HeartPulse, Plus, Stethoscope, FlaskConical, Trash2, Pencil, Check, X, MapPin, CalendarClock, Paperclip } from "lucide-react";
 import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
@@ -198,9 +200,13 @@ function EventCard({ ev, focused, onEdit, onCycleStatus, onDelete, onFocus }: { 
 
 type Tab = "ALL" | "VISIT" | "TEST";
 
-export function HealthHomePage({ events, trends = [] }: { events: HealthEvent[]; trends?: TestTrend[] }) {
+export function HealthHomePage({ events, trends = [], viewParams = {} }: { events: HealthEvent[]; trends?: TestTrend[]; viewParams?: RawParams }) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("ALL");
+  // 043: zakładka w adresie — zapisany ulubiony widok Zdrowia wraca na tę samą zakładkę (AC-8a).
+  const viewSpec = useMemo(() => ({ tab: oneOf(["ALL", "VISIT", "TEST"] as const, "ALL") }), []);
+  const [view, setView] = useViewState(viewSpec, viewParams);
+  const tab = view.tab;
+  const setTab = useCallback((value: Tab) => setView({ tab: value }), [setView]);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<HealthEvent | null>(null);
   const [focused, setFocused] = useState<number>(-1);
