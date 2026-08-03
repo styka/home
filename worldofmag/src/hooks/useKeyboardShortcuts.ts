@@ -1,88 +1,125 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import type { ShortcutHandlers } from "@/types";
+import { isTypingTarget, matchShortcut } from "@/lib/shortcuts/registry";
+import {
+  useShortcuts,
+  useShortcutsRegistry,
+  type RegisteredShortcut,
+} from "@/components/shell/ShortcutsProvider";
 
-function isTypingTarget(el: Element | null): boolean {
-  if (!el) return false;
-  const tag = el.tagName.toLowerCase();
-  return (
-    tag === "input" ||
-    tag === "textarea" ||
-    el.getAttribute("contenteditable") === "true"
-  );
-}
+const NO_ENTRIES: RegisteredShortcut[] = [];
 
+/**
+ * Skróty klawiszowe strony modułu.
+ *
+ * 043: sygnatura (`ShortcutHandlers`) jest **niezmieniona** — żaden z kilkunastu modułów wołających
+ * ten hook nie wymagał zmian (C-53). Zmieniło się wnętrze: zamiast własnego `switch (e.key)` hook
+ * **rejestruje skróty w `ShortcutsProvider`**. Powody:
+ *
+ *  1. Stary `switch` nie sprawdzał modyfikatorów, więc `Alt+1` przełączał zakładkę filtra
+ *     RÓWNOCZEŚNIE ze skokiem do ulubionego (błąd zgłoszony przez właściciela). Teraz dopasowanie
+ *     idzie przez `matchShortcut`, gdzie goły klawisz wymaga braku Alt/Ctrl/Meta.
+ *  2. Skróty strony mają **pierwszeństwo** przed globalnymi — czego dwa niezależne listenery na
+ *     `window` nie potrafią zapewnić (strona montuje się po powłoce, więc odpalałaby się druga).
+ *  3. Ściągawka (`?`) czyta listę z rejestru, więc pokazuje to, co naprawdę działa.
+ *
+ * Gdy prowidera nie ma (izolowany render, test jednostkowy), hook degraduje się do własnego
+ * nasłuchiwacza z **tą samą** logiką dopasowania — zachowanie nie zależy od obecności powłoki.
+ */
 export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      const typing = isTypingTarget(document.activeElement);
+  const registry = useShortcutsRegistry();
 
-      // Always-active shortcuts. Każdy handler jest opcjonalny — gdy go nie ma,
-      // klawisz NIE jest blokowany (przechodzi do innych listenerów / domyślnej
-      // akcji), więc nie „połykamy" np. Ctrl+K, gdy moduł nie ma własnej palety.
-      if (e.key === "Escape") {
-        handlers.onEscape?.();
-        return;
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        // Zawsze return: Ctrl+K nie może wpaść w case "k" (= nawigacja w górę).
-        if (handlers.onCommandPalette) {
-          e.preventDefault();
-          handlers.onCommandPalette();
-        }
-        return;
-      }
+  const entries = useMemo<RegisteredShortcut[]>(() => {
+    const out: RegisteredShortcut[] = [];
+    const add = (
+      id: string,
+      keys: string,
+      label: string,
+      group: string,
+      handler: () => boolean | void,
+      opts?: { whileTyping?: boolean; hidden?: boolean },
+    ) => {
+      out.push({ id, keys, label, group, scope: "page", handler, ...opts });
+    };
 
-      // Blocked while typing
-      if (typing) return;
+    // Klawisze aktywne także podczas pisania — muszą działać z fokusem w polu tekstowym.
+    if (handlers.onEscape) {
+      add("esc", "Escape", "Zamknij / anuluj", "Ogólne", () => { handlers.onEscape?.(); }, { whileTyping: true });
+    }
+    if (handlers.onCommandPalette) {
+      add("palette", "Ctrl+K", "Paleta poleceń", "Ogólne", () => { handlers.onCommandPalette?.(); }, { whileTyping: true });
+      // macOS — właściciel pracuje na Macu, więc Cmd musi działać tak samo. Ukryte w ściągawce,
+      // żeby nie dublować tego samego wiersza.
+      add("palette-meta", "Meta+K", "Paleta poleceń", "Ogólne", () => { handlers.onCommandPalette?.(); }, { whileTyping: true, hidden: true });
+    }
 
-      switch (e.key) {
-        case "a":
-        case "n":
-          if (handlers.onQuickAdd) { e.preventDefault(); handlers.onQuickAdd(); }
-          break;
-        case "j":
-        case "ArrowDown":
-          if (handlers.onNavigateDown) { e.preventDefault(); handlers.onNavigateDown(); }
-          break;
-        case "k":
-        case "ArrowUp":
-          if (handlers.onNavigateUp) { e.preventDefault(); handlers.onNavigateUp(); }
-          break;
-        case " ":
-        case "x":
-          if (handlers.onToggleStatus) { e.preventDefault(); handlers.onToggleStatus(); }
-          break;
-        case "d":
-        case "Delete":
-        case "Backspace":
-          // Backspace poza polem tekstowym (typing już odsiane wyżej) = usuń.
-          if (handlers.onDelete) { e.preventDefault(); handlers.onDelete(); }
-          break;
-        case "e":
-          if (handlers.onEdit) { e.preventDefault(); handlers.onEdit(); }
-          break;
-        case "Enter": {
-          // Enter = „otwórz" zogniskowany element listy nawigacyjnej. Nie przejmuj,
-          // gdy fokus jest na realnej kontrolce (przycisk/link/select) — niech zadziała natywnie.
-          const ae = document.activeElement;
-          const aeTag = ae?.tagName.toLowerCase();
-          const interactive = aeTag === "button" || aeTag === "a" || aeTag === "select" || ae?.getAttribute("role") === "button";
-          if (handlers.onEnter && !interactive) { e.preventDefault(); handlers.onEnter(); }
-          break;
-        }
-        case "/":
-        case "f":
-          if (handlers.onSearch) { e.preventDefault(); handlers.onSearch(); }
-          break;
-        case "1": handlers.onFilterTab?.(0); break;
-        case "2": handlers.onFilterTab?.(1); break;
-        case "3": handlers.onFilterTab?.(2); break;
-        case "4": handlers.onFilterTab?.(3); break;
-        case "5": handlers.onFilterTab?.(4); break;
+    if (handlers.onQuickAdd) {
+      add("add", "a", "Dodaj nowy element", "Działanie", () => { handlers.onQuickAdd?.(); });
+      add("add-n", "n", "Dodaj nowy element", "Działanie", () => { handlers.onQuickAdd?.(); }, { hidden: true });
+    }
+    if (handlers.onNavigateDown) {
+      add("down", "j", "Następny element", "Nawigacja", () => { handlers.onNavigateDown?.(); });
+      add("down-arrow", "ArrowDown", "Następny element", "Nawigacja", () => { handlers.onNavigateDown?.(); }, { hidden: true });
+    }
+    if (handlers.onNavigateUp) {
+      add("up", "k", "Poprzedni element", "Nawigacja", () => { handlers.onNavigateUp?.(); });
+      add("up-arrow", "ArrowUp", "Poprzedni element", "Nawigacja", () => { handlers.onNavigateUp?.(); }, { hidden: true });
+    }
+    if (handlers.onToggleStatus) {
+      add("toggle", "x", "Zmień status", "Działanie", () => { handlers.onToggleStatus?.(); });
+      add("toggle-space", "Space", "Zmień status", "Działanie", () => { handlers.onToggleStatus?.(); }, { hidden: true });
+    }
+    if (handlers.onDelete) {
+      add("delete", "d", "Usuń", "Działanie", () => { handlers.onDelete?.(); });
+      add("delete-key", "Delete", "Usuń", "Działanie", () => { handlers.onDelete?.(); }, { hidden: true });
+      // Backspace poza polem tekstowym = usuń (pisanie odsiewa `whileTyping`).
+      add("delete-back", "Backspace", "Usuń", "Działanie", () => { handlers.onDelete?.(); }, { hidden: true });
+    }
+    if (handlers.onEdit) {
+      add("edit", "e", "Edytuj", "Działanie", () => { handlers.onEdit?.(); });
+    }
+    if (handlers.onEnter) {
+      add("open", "Enter", "Otwórz zaznaczony element", "Nawigacja", () => {
+        // Nie przejmujemy Entera, gdy fokus jest na realnej kontrolce — niech zadziała natywnie.
+        const ae = document.activeElement;
+        const tag = ae?.tagName.toLowerCase();
+        const interactive = tag === "button" || tag === "a" || tag === "select" || ae?.getAttribute("role") === "button";
+        if (interactive) return false;
+        handlers.onEnter?.();
+      });
+    }
+    if (handlers.onSearch) {
+      add("search", "/", "Szukaj", "Widok", () => { handlers.onSearch?.(); });
+      add("search-f", "f", "Szukaj", "Widok", () => { handlers.onSearch?.(); }, { hidden: true });
+    }
+    if (handlers.onFilterTab) {
+      for (let i = 0; i < 5; i++) {
+        add(`tab-${i}`, String(i + 1), `Zakładka filtra ${i + 1}`, "Widok", () => { handlers.onFilterTab?.(i); });
       }
     }
 
+    return out;
+  }, [handlers]);
+
+  // Ścieżka podstawowa: rejestracja w powłoce (pierwszeństwo strony + ściągawka).
+  // Stała `NO_ENTRIES` zamiast literału `[]` — inaczej każdy render tworzyłby nową tablicę
+  // i efekt rejestrujący odpalałby się w kółko.
+  useShortcuts(registry ? entries : NO_ENTRIES);
+
+  // Ścieżka awaryjna: brak prowidera → własny nasłuchiwacz z tą samą logiką dopasowania.
+  useEffect(() => {
+    if (registry) return;
+    function onKeyDown(e: KeyboardEvent) {
+      const typing = isTypingTarget(document.activeElement);
+      for (const entry of entries) {
+        if (typing && !entry.whileTyping) continue;
+        if (!matchShortcut(e, entry.keys)) continue;
+        if (entry.handler(e) === false) continue;
+        e.preventDefault();
+        return;
+      }
+    }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handlers]);
+  }, [registry, entries]);
 }

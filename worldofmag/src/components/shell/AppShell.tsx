@@ -14,6 +14,8 @@ import { ConsentBanner } from "@/components/legal/ConsentBanner";
 import { FeedbackInspector } from "./FeedbackInspector";
 import { NotificationBell } from "./NotificationBell";
 import { ToastProvider } from "@/components/ui/Toast";
+import { ShortcutsProvider } from "./ShortcutsProvider";
+import { ShortcutsCheatSheet } from "@/components/shortcuts/ShortcutsCheatSheet";
 import { isPathLocked } from "@/lib/permissions";
 import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
@@ -93,6 +95,10 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
 
   return (
     <ToastProvider>
+    {/* 043: JEDEN nasłuchiwacz klawiatury dla całej aplikacji, z rejestrem skrótów.
+        Musi opakowywać `children`, bo to strony modułów rejestrują swoje skróty (i mają
+        pierwszeństwo przed globalnymi). */}
+    <ShortcutsProvider>
     <DataFreshness />
     <div
       // 036: `h-screen`, NIE `h-full`. Próba z `h-full` (=100% wysokości `body`) miała zapobiec
@@ -279,10 +285,12 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
       )}
 
       <FavoritesOverlay favorites={favoriteViews} userPermissions={userPermissions} />
+      <ShortcutsCheatSheet />
       <AICommandSheet isAdmin={isAdmin} usdPlnRate={usdPlnRate} />
       <ConsentBanner />
       {isAdmin && <FeedbackInspector />}
     </div>
+    </ShortcutsProvider>
     </ToastProvider>
   );
 }

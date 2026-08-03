@@ -79,14 +79,14 @@
 
 ## Faza 3 — Rejestr skrótów (tor C)
 
-- [ ] **T-7** `[P]` — **Czysty moduł `src/lib/shortcuts/registry.ts`** (plan §5.3 pkt 1):
+- [x] **T-7** `[P]` — **Czysty moduł `src/lib/shortcuts/registry.ts`** (plan §5.3 pkt 1):
   typ `ShortcutDef { id, keys, label, group, scope }`, `matchShortcut(e, keys)`, `formatKeys(keys)`.
   Reguły: goły klawisz pasuje **tylko** przy `!altKey && !ctrlKey && !metaKey`; `Shift` **nie**
   blokuje; skrót `Alt+…` wymaga `altKey && !ctrlKey` (AltGr = Ctrl+Alt na polskiej klawiaturze).
   **Gotowe, gdy:** moduł nie importuje Reacta ani Prismy, a reguły modyfikatorów są w **jednym**
   miejscu.
 
-- [ ] **T-8** — **`ShortcutsProvider` + refaktor `useKeyboardShortcuts`** (plan §5.3 pkt 2, 3).
+- [x] **T-8** — **`ShortcutsProvider` + refaktor `useKeyboardShortcuts`** (plan §5.3 pkt 2, 3).
   Nowy `src/components/shell/ShortcutsProvider.tsx`: kontekst + **jeden** listener `keydown`,
   dyspozytor sortuje `scope: "page"` przed `"global"`, pierwszy pasujący wygrywa i robi
   `preventDefault`. Montaż w `AppShell`. `useKeyboardShortcuts` **zachowuje sygnaturę**
@@ -95,12 +95,12 @@
   **Gotowe, gdy:** żaden moduł używający hooka nie wymagał zmian, gołe `1`–`5` nadal przełączają
   zakładki (AC-10), a pisanie w polach nie wyzwala skrótów (AC-12). Zależy od: **T-7**.
 
-- [ ] **T-9** — **Skróty ulubionych przez rejestr** (plan §5.3 pkt 4). `FavoritesShortcuts.tsx`
+- [x] **T-9** — **Skróty ulubionych przez rejestr** (plan §5.3 pkt 4). `FavoritesShortcuts.tsx`
   przestaje mieć własny listener; rejestruje `Alt+1..9` i `Alt+0` jako `scope: "global"`.
   **Gotowe, gdy:** `Alt+1` na stronie z zakładkami wykonuje **wyłącznie** skok do ulubionego, a
   zakładka filtra się nie zmienia (AC-9). Zależy od: **T-8**.
 
-- [ ] **T-10** — **Ściągawka skrótów** (plan §5.3 pkt 5). Nowy
+- [x] **T-10** — **Ściągawka skrótów** (plan §5.3 pkt 5). Nowy
   `src/components/shortcuts/ShortcutsCheatSheet.tsx` — nakładka pod klawiszem `?` i pozycją w palecie
   poleceń, listująca **zarejestrowane** skróty: sekcja „Ta strona", potem „Globalne". Oprawa na
   zmiennych motywu, `Esc` zamyka, teksty PL.

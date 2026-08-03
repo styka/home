@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useShortcuts, type RegisteredShortcut } from "@/components/shell/ShortcutsProvider";
 import type { FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
 
 interface FavoritesShortcutsProps {
@@ -11,53 +12,54 @@ interface FavoritesShortcutsProps {
   onOpenSwitcher: () => void;
 }
 
-/** To samo kryterium co `isTypingTarget` w `useKeyboardShortcuts` — nie przechwytujemy pisania. */
-function isTypingTarget(el: Element | null): boolean {
-  if (!el) return false;
-  const tag = el.tagName.toLowerCase();
-  return tag === "input" || tag === "textarea" || el.getAttribute("contenteditable") === "true";
-}
-
 /**
  * 042: `Alt+1..9` skacze do n-tego ulubionego, `Alt+0` otwiera pełną listę.
  *
- * Listener jest globalny i montowany raz w powłoce — istniejący `useKeyboardShortcuts` jest
- * wołany per strona modułu, więc nie nadaje się do skrótu działającego wszędzie.
+ * 043: skróty nie mają już własnego nasłuchiwacza — **rejestrują się we wspólnym rejestrze**
+ * (`ShortcutsProvider`) jako `scope: "global"`. Dwie rzeczy z tego wynikają i obie były błędami
+ * zgłoszonymi przez właściciela:
  *
- * KLUCZOWY WARUNEK: `!e.ctrlKey`. Na klawiaturze polskiej **AltGr to Ctrl+Alt** i służy do
- * wpisywania `ą ć ę ł ń ó ś ź ż`. Bez wykluczenia `ctrlKey` skrót przechwytywałby wpisywanie
- * polskich znaków — w aplikacji, której cały interfejs jest po polsku (C-32). Dlatego reagujemy
- * wyłącznie na czysty Alt, a dodatkowo milczymy, gdy użytkownik pisze w polu tekstowym.
+ *  1. **Koniec kolizji.** Wcześniej `Alt+1` odpalał ten listener ORAZ `switch (e.key)` w
+ *     `useKeyboardShortcuts`, który nie sprawdzał modyfikatorów — skok do ulubionego i zmiana
+ *     zakładki filtra naraz. Teraz dopasowanie idzie przez `matchShortcut`, gdzie goły klawisz
+ *     wymaga braku Alt/Ctrl/Meta, a skróty strony mają pierwszeństwo przed globalnymi.
+ *  2. **Widać je w ściągawce** (`?`), bo ściągawka czyta rejestr.
+ *
+ * Warunek `!ctrlKey` (AltGr = Ctrl+Alt na polskiej klawiaturze, wpisywanie `ą ć ę ł ń ó ś ź ż`)
+ * i pomijanie pisania w polach są teraz regułami rejestru — nie trzeba ich powtarzać tutaj.
  */
 export function FavoritesShortcuts({ favorites, onOpenSwitcher }: FavoritesShortcutsProps) {
   const router = useRouter();
 
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (!e.altKey || e.ctrlKey || e.metaKey) return;
-      if (isTypingTarget(document.activeElement)) return;
+  const entries = useMemo<RegisteredShortcut[]>(() => {
+    const out: RegisteredShortcut[] = [];
 
-      // `e.code` ("Digit1"), nie `e.key` — przy wciśniętym Alt układ klawiatury potrafi zwrócić
-      // w `key` znak specjalny zamiast cyfry.
-      const match = /^Digit([0-9])$/.exec(e.code);
-      if (!match) return;
+    out.push({
+      id: "fav-switcher",
+      keys: "Alt+0",
+      label: "Wszystkie ulubione (wyszukiwarka)",
+      group: "Ulubione",
+      scope: "global",
+      handler: () => { onOpenSwitcher(); },
+    });
 
-      const digit = Number(match[1]);
-      if (digit === 0) {
-        e.preventDefault();
-        onOpenSwitcher();
-        return;
-      }
-
-      const target = favorites[digit - 1];
-      if (!target) return;
-      e.preventDefault();
-      router.push(target.path);
+    for (let i = 0; i < 9; i++) {
+      const target = favorites[i];
+      if (!target) break;
+      out.push({
+        id: `fav-${i + 1}`,
+        keys: `Alt+${i + 1}`,
+        label: target.label,
+        group: "Ulubione",
+        scope: "global",
+        handler: () => { router.push(target.path); },
+      });
     }
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return out;
   }, [favorites, router, onOpenSwitcher]);
+
+  useShortcuts(entries);
 
   return null;
 }
