@@ -50,14 +50,14 @@
 
 ## Faza 2 — Widget asystenta i układ pulpitu (tory D, E)
 
-- [ ] **T-4** `[P]` — **Jedno źródło akcji asystenta** (plan §5.4 pkt 1). Nowy
+- [x] **T-4** `[P]` — **Jedno źródło akcji asystenta** (plan §5.4 pkt 1). Nowy
   `src/lib/ai/assistantStarters.ts`: przeniesione `STARTER_CHIPS` z `AICommandSheet.tsx:232`
   + `buildAssistantStarters(ctx)` z logiką kontekstową dziś liczoną w `HomePage.tsx:238`.
   `AICommandSheet` importuje stąd, przestaje mieć własną listę.
   **Gotowe, gdy:** w kodzie istnieje dokładnie **jedna** lista akcji startowych, asystent działa jak
   dotąd (AC-17).
 
-- [ ] **T-5** — **Widget `HomeAssistantCard` zamiast kolumny z polem tekstowym** (plan §5.4 pkt 2, 3).
+- [x] **T-5** — **Widget `HomeAssistantCard` zamiast kolumny z polem tekstowym** (plan §5.4 pkt 2, 3).
   Nowy `src/components/home/HomeAssistantCard.tsx` (nagłówek + zawijany wiersz przycisków-akcji
   z T-4 + wejście „Otwórz asystenta", **bez `textarea`/`input`**), akcje przez
   `openAssistant({ prompt })`. Usunięcie `HomeAssistantColumn.tsx`. W `HomePage.tsx`: karta
@@ -67,7 +67,7 @@
   nie zawiera pola tekstowego (AC-15), a klik akcji otwiera asystenta z **od razu wysłaną**
   wiadomością (AC-16). Zależy od: **T-4**.
 
-- [ ] **T-6** — **Układ pulpitu bez dziur** (plan §5.5). W `HomePage.tsx` zamiana
+- [x] **T-6** — **Układ pulpitu bez dziur** (plan §5.5). W `HomePage.tsx` zamiana
   `grid grid-cols-1 md:grid-cols-2` na układ wielokolumnowy CSS (`columns-1 md:columns-2`,
   `column-gap: 16px`); kafelki dostają `break-inside: avoid`, `width: 100%`, `margin-bottom: 16px`,
   `min-width: 0`. Tryb personalizacji zostaje jednokolumnowy.

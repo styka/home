@@ -28,6 +28,7 @@ import type { AIAction } from "@/lib/ai/aiAction";
 import { isDestructiveAction } from "@/lib/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executors/shared";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
+import { DEFAULT_ASSISTANT_STARTERS } from "@/lib/ai/assistantStarters";
 import { useOverlayState } from "@/hooks/useOverlayState";
 import { useIsNarrowScreen, usePinToVisualViewport, VV_HEIGHT_VAR, VV_TOP_VAR } from "@/hooks/useVisualViewport";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
@@ -229,12 +230,6 @@ function buildChatProblemReport(opts: {
   return out.join("\n");
 }
 
-const STARTER_CHIPS = [
-  "Co mam dziś najważniejszego do zrobienia?",
-  "Podsumuj mój tydzień",
-  "Znajdź 5 obowiązków pasujących do mojego nastroju i posortuj priorytetami",
-  "Zrób raport z tej rozmowy",
-];
 
 // 031: log rozumowania w DWÓCH warstwach.
 //  • „Pokaż log rozumowania" (dla wszystkich) — kroki opisane po ludzku, ZWINIĘTE. Wcześniej cała
@@ -1875,8 +1870,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                       Cześć! Mam dostęp do wszystkich Twoich danych i internetu. Zapytaj o cokolwiek, wydaj polecenie albo poproś o raport.
                     </p>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                      {STARTER_CHIPS.map((chip) => (
-                        <button key={chip} onClick={() => handleSend(chip)} style={chipBtn}>{chip}</button>
+                      {/* 043: akcje pochodzą ze wspólnego katalogu — ta sama lista zasila widget
+                          na pulpicie, więc nie da się ich rozjechać (AC-17). */}
+                      {DEFAULT_ASSISTANT_STARTERS.map((starter) => (
+                        <button key={starter.id} onClick={() => handleSend(starter.prompt)} style={chipBtn}>{starter.prompt}</button>
                       ))}
                     </div>
                   </div>
