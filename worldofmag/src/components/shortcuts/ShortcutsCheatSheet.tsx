@@ -36,6 +36,19 @@ export function ShortcutsCheatSheet() {
 
   useShortcuts(entries);
 
+  // Lista skrótów liczona PO otwarciu, a nie w trakcie renderu. Powód: strona rejestruje swoje
+  // skróty w efekcie, więc otwarcie ściągawki tuż po wejściu na stronę potrafiło złapać moment,
+  // w którym w rejestrze były jeszcze same skróty globalne — a raz policzona lista nigdy by się
+  // nie odświeżyła. Ponowny odczyt po chwili domyka ten wyścig.
+  const [list, setList] = useState<ShortcutDef[]>([]);
+  useEffect(() => {
+    if (!open) return;
+    const read = () => setList(registry?.getShortcuts() ?? []);
+    read();
+    const t = setTimeout(read, 150);
+    return () => clearTimeout(t);
+  }, [open, registry]);
+
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -47,10 +60,8 @@ export function ShortcutsCheatSheet() {
 
   if (!open) return null;
 
-  // Liczone w momencie otwarcia — prowider nie trzyma stanu (patrz `ShortcutsProvider`).
-  const all = registry?.getShortcuts() ?? [];
-  const page = all.filter((s) => s.scope === "page");
-  const global = all.filter((s) => s.scope === "global");
+  const page = list.filter((s) => s.scope === "page");
+  const global = list.filter((s) => s.scope === "global");
 
   return (
     <div

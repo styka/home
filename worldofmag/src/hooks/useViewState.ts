@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   buildViewQuery,
   parseViewParams,
@@ -78,6 +79,21 @@ export function useViewState<S extends ViewSpec>(
 
     setValues(next);
   }, []);
+
+  // Przejście na INNY adres bez przemontowania komponentu (np. przełączenie listy zakupowej albo
+  // projektu zadań linkiem w pasku bocznym — Next reużywa ten sam komponent trasy) zostawiało stan
+  // widoku z poprzedniej strony, podczas gdy adres był już czysty. Widok pokazywał wtedy filtr,
+  // którego w adresie nie było — a zapis do ulubionych brał adres, więc gubił ten filtr.
+  // Po zmianie ścieżki przeliczamy stan z adresu, dzięki czemu widok i adres zawsze się zgadzają.
+  const pathname = usePathname();
+  const lastPathRef = useRef(pathname);
+  useEffect(() => {
+    if (lastPathRef.current === pathname) return;
+    lastPathRef.current = pathname;
+    const restored = parseViewParams(specRef.current, rawParamsFromSearch(window.location.search));
+    valuesRef.current = restored;
+    setValues(restored);
+  }, [pathname]);
 
   useEffect(() => {
     function onPopState() {
