@@ -179,8 +179,8 @@ export default async function SettingsPage({
         <MenuPrefsEditor permissions={userPermissions} prefs={menuPrefs} />
       </section>
 
-      {/* Ulubione widoki */}
-      <section>
+      {/* Ulubione widoki — kotwica dla linku „Zarządzaj" z sekcji ulubionych w pasku (043/AC-3). */}
+      <section id="ulubione" style={{ scrollMarginTop: 16 }}>
         <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
           Nawigacja
         </h2>

@@ -30,13 +30,13 @@
 
 ## Faza 1 — Ulubione: odkrywalność i zarządzanie (tor A)
 
-- [ ] **T-2** `[P]` — **Wariant `placement="viewbar"` w `FavoriteStarButton`** (plan §5.1 pkt 2):
+- [x] **T-2** `[P]` — **Wariant `placement="viewbar"` w `FavoriteStarButton`** (plan §5.1 pkt 2):
   pełna szerokość, ikona + etykieta tekstowa („Zapisz ten widok" / „Zapisano — kliknij, by edytować").
   Istniejące warianty `"sidebar" | "topbar"` bez zmian zachowania.
   **Gotowe, gdy:** nowy wariant renderuje się poprawnie, a logika zapisu/edycji (w tym synchroniczne
   wyliczenie adresu w handlerze kliknięcia) jest ta sama co dotąd.
 
-- [ ] **T-3** — **Sekcja ulubionych zawsze widoczna + punkt zapisu i zarządzania na górze**
+- [x] **T-3** — **Sekcja ulubionych zawsze widoczna + punkt zapisu i zarządzania na górze**
   (plan §5.1 pkt 1, 3, 4). W `FavoritesSidebarSection.tsx`: usunięcie
   `if (accessible.length === 0) return null;`, zachęta przy zerze wpisów, wiersz `FavoriteStarButton
   placement="viewbar"` jako pierwszy element sekcji, ikona koła zębatego → `/settings#ulubione`.

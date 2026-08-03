@@ -17,7 +17,6 @@ import { PortfelSideNav } from "@/components/portfel/PortfelSideNav";
 import { isPathLocked } from "@/lib/permissions";
 import { resolveMenu, defaultMenuPrefs, type MenuPrefs, type ModuleDef } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
-import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
 import { FavoritesSidebarSection } from "@/components/favorites/FavoritesSidebarSection";
 import type { FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
 
@@ -292,8 +291,8 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
 
       {/* Bottom: Powiadomienia + Invitations + Settings + Admin */}
       <div className="py-2 border-t" style={{ borderColor: "var(--border)" }}>
-        <FavoriteStarButton favorites={favoriteViews} placement="sidebar" />
-
+        {/* 043: gwiazdka „zapisz ten widok" przeniesiona STĄD na górę paska, do sekcji ulubionych
+            (AC-2). Na dole, wśród Zaproszeń i Ustawień, była nie do znalezienia. */}
         <NotificationBell placement="sidebar" />
 
         <NavItem href="/invitations" label="Zaproszenia" icon={<Mail size={18} />} pathname={pathname} locked={isLocked("/invitations")}>

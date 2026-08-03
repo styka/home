@@ -18,7 +18,11 @@ const ICON_CHOICES = ["⭐", "📌", "🔥", "✅", "📝", "🛒", "💡", "�
 
 interface FavoriteStarButtonProps {
   favorites: FavoriteViewDTO[];
-  placement: "sidebar" | "topbar";
+  /**
+   * `sidebar` — wiersz na liście nawigacji · `topbar` — sama ikona w pasku mobilnym ·
+   * `viewbar` — 043: wyeksponowany wiersz na SAMEJ GÓRZE sekcji ulubionych (desktop).
+   */
+  placement: "sidebar" | "topbar" | "viewbar";
 }
 
 /**
@@ -27,6 +31,12 @@ interface FavoriteStarButtonProps {
  * Montowana RAZ w powłoce (pasek boczny na desktopie, górny na telefonie), a nie w nagłówku
  * każdego modułu — powłoka i tak zna bieżący adres, więc kilkanaście osobnych przycisków byłoby
  * kopiowaniem tego samego kodu (C-53).
+ *
+ * 043: wariant `viewbar` odpowiada na zgłoszenie „ulubionych nie ma na komputerze". Punkt zapisu
+ * przestaje być ostatnią pozycją nawigacji, a staje się pierwszym elementem sekcji ulubionych —
+ * z etykietą tekstową, nie samą ikoną. Wspólnego górnego paska na desktopie w Omnii nie ma
+ * (`AppShell` renderuje `<main>{children}</main>`, nagłówek należy do modułu), a dokładanie go
+ * oznaczałoby podwójne nagłówki w ~20 modułach — stąd góra nawigacji zamiast nagłówka strony.
  */
 export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonProps) {
   const pathname = usePathname();
@@ -120,6 +130,16 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
   }
 
   const title = isSaved ? "Usuń to miejsce z ulubionych" : "Zapisz to miejsce w ulubionych";
+  // 043/AC-2: w wariancie `viewbar` etykieta mówi wprost, co przycisk zrobi z BIEŻĄCYM widokiem —
+  // „Dodaj do ulubionych" nie niosło informacji, że chodzi o miejsce, w którym właśnie jesteś.
+  const viewbarLabel = isSaved ? "Zapisano — kliknij, by usunąć" : "Zapisz ten widok";
+
+  const triggerClassName =
+    placement === "sidebar"
+      ? "flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm w-[calc(100%-1rem)] focus:outline-none"
+      : placement === "viewbar"
+        ? "flex items-center gap-2 px-4 py-2 mx-2 rounded text-xs w-[calc(100%-1rem)] focus:outline-none"
+        : "flex items-center justify-center rounded focus:outline-none";
 
   const trigger = (
     <button
@@ -128,22 +148,20 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
       title={title}
       aria-label={title}
       aria-pressed={isSaved}
-      className={
-        placement === "sidebar"
-          ? "flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm w-[calc(100%-1rem)] focus:outline-none"
-          : "flex items-center justify-center rounded focus:outline-none"
-      }
+      className={triggerClassName}
       style={{
-        color: isSaved ? "var(--accent-amber)" : "var(--text-muted)",
-        background: "transparent",
-        border: "none",
+        color: isSaved ? "var(--accent-amber)" : "var(--text-secondary)",
+        background: placement === "viewbar" ? "var(--bg-elevated)" : "transparent",
+        border: placement === "viewbar" ? "1px solid var(--border)" : "none",
         cursor: "pointer",
+        fontWeight: placement === "viewbar" ? 600 : undefined,
         // Cel dotyku ≥32 px (C-31).
         ...(placement === "topbar" ? { width: 32, height: 32 } : null),
       }}
     >
-      <Star size={placement === "sidebar" ? 18 : 18} fill={isSaved ? "var(--accent-amber)" : "none"} />
+      <Star size={placement === "viewbar" ? 14 : 18} fill={isSaved ? "var(--accent-amber)" : "none"} style={{ flexShrink: 0 }} />
       {placement === "sidebar" && <span>{isSaved ? "W ulubionych" : "Dodaj do ulubionych"}</span>}
+      {placement === "viewbar" && <span className="truncate">{viewbarLabel}</span>}
     </button>
   );
 
@@ -160,9 +178,13 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
             position: "absolute",
             zIndex: 60,
             width: 268,
+            // `sidebar` siedzi na dole paska → popover otwiera się w GÓRĘ; `viewbar` jest na
+            // samej górze nawigacji, więc musi otwierać się w DÓŁ, inaczej wyjechałby poza ekran.
             ...(placement === "sidebar"
               ? { bottom: "100%", left: 8, marginBottom: 6 }
-              : { top: "100%", right: 0, marginTop: 6 }),
+              : placement === "viewbar"
+                ? { top: "100%", left: 8, marginTop: 6 }
+                : { top: "100%", right: 0, marginTop: 6 }),
             background: "var(--bg-elevated)",
             border: "1px solid var(--border)",
             borderRadius: "var(--radius-lg, 10px)",
