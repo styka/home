@@ -162,7 +162,7 @@
   **Gotowe, gdy:** dla każdego z trzech: zapis widoku odtwarza ustawienia, wejście bez parametrów
   bez regresji (AC-8a). Zależy od: **T-17**.
 
-- [ ] **T-19** `[P]` — **Faza B, grupa 2: Usługi (katalog, moje zlecenia, moderacja) + Pogoda →
+- [x] **T-19** `[P]` — **Faza B, grupa 2: Usługi (katalog, moje zlecenia, moderacja) + Pogoda →
   Pomysły.** Szukajka/sortowanie/filtry katalogu przez `replace: true` (żeby nie zaśmiecać historii),
   zakładki przez `push`.
   **Gotowe, gdy:** j.w. (AC-8a). Zależy od: **T-17**.

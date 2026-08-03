@@ -37,7 +37,7 @@ zaczyna się od nowa), a zaśmieca adres i historię przeglądarki.
 | Zdrowie | `components/health/HealthHomePage.tsx` | zakładka (wszystko/wizyty/badania) | `tab` | T-18 |
 | Kalendarz | `components/calendar/CalendarPage.tsx` | filtr modułu | `mod` | T-18 |
 | Wiadomości | `components/news/NewsPage.tsx` | zakładka widoku | `widok` → `view` | T-18 |
-| Usługi — katalog | `components/services/ServicesCatalogPage.tsx` | szukajka, sortowanie, kategoria | `q`, `sort`, `cat` | T-19 |
+| Usługi — katalog | `components/services/ServicesCatalogPage.tsx` | szukajka, kategoria, sortowanie | `q`, `cat`, `sort` | T-19 |
 | Usługi — moje zlecenia | `components/services/MyRequestsPage.tsx` | zakładka (klient/wykonawca) | `tab` | T-19 |
 | Usługi — moderacja | `components/services/ModerationPage.tsx` | zakładka statusu sporu | `tab` | T-19 |
 | Pogoda → Pomysły | `components/weather/IdeaLibraryPage.tsx` | filtr stanu pomysłu | `filter` | T-19 |
@@ -68,6 +68,14 @@ w historii i „wstecz" trzeba by naciskać kilkanaście razy.
 | Trasy TIR (`/truck`) | Formularz trasy — całość to stan kroku pracy. |
 | QA (`/qa`) | Nawigacja po epikach/historiach idzie **ścieżką** (`/qa/[module]`, `/qa/scenariusz/[slug]`), więc widok już jest w adresie. |
 | Kalendarz — miesiąc | Miesiąc jest już parametrem trasy/stanem serwerowym; do adresu dokładamy tylko filtr modułu. |
+
+### Panel filtrów zaawansowanych w Usługach — poza adresem
+
+`ServicesCatalogPage` ma dodatkowo zwijany panel (minimalna ocena, widełki cen, „tylko z rezerwacją",
+„tylko zweryfikowani", promień od mojej pozycji). Zostaje poza adresem z dwóch powodów: wartości
+znikają razem ze zwinięciem panelu (to filtr doraźny, nie zapisywany widok), a pozycja z GPS zależy
+od zgody urządzenia — adres i tak nie odtworzyłby jej wiernie, więc zapisany widok kłamałby.
+Podstawowe filtry katalogu (szukajka, kategoria, sortowanie) są w adresie.
 
 ### Stan kroku pracy (świadomie poza adresem)
 

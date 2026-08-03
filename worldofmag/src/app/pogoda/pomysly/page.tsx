@@ -14,7 +14,7 @@ import { IdeaLibraryPage } from "@/components/weather/IdeaLibraryPage";
 export default async function PogodaPomyslyPage({
   searchParams,
 }: {
-  searchParams?: { idea?: string };
+  searchParams?: { idea?: string; filter?: string };
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
@@ -28,6 +28,7 @@ export default async function PogodaPomyslyPage({
       usdPlnRate={usdPlnRate}
       canAddToTasks={hasPermission(session, PERMISSIONS.TASKS)}
       initialIdeaId={searchParams?.idea}
+      viewParams={searchParams ?? {}}
     />
   );
 }
