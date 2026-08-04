@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useTransition, useEffect } from "react";
-import { MessageCircle, X, Search, ChevronLeft, LayoutGrid, List, ArchiveRestore } from "lucide-react";
+import { FileText, MessageCircle, X, Search, ChevronLeft, LayoutGrid, List, ArchiveRestore } from "lucide-react";
 import Link from "next/link";
 import { NoteList } from "./NoteList";
 import { QuickNoteBar, type QuickNoteBarHandle } from "./QuickNoteBar";
@@ -11,6 +11,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useViewState } from "@/hooks/useViewState";
 import { idList, oneOf, text, type RawParams } from "@/lib/viewState/viewState";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
+import { ModuleView } from "@/components/ui/view";
 import type { Note, Tag as TagType, NoteGroup, NoteFilter } from "@/types";
 import { NOTE_FILTER_LABELS } from "@/types";
 
@@ -197,22 +198,24 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div
-        className="flex items-center justify-between px-4 h-12 border-b flex-shrink-0"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
-      >
-        {backHref ? (
+    <ModuleView
+      layout="fill"
+      density="compact"
+      state="ready"
+      icon={<FileText size={16} />}
+      iconColor="var(--accent-purple)"
+      title="Notatki"
+      href="/notes"
+      breadcrumb={
+        backHref ? (
           <Link href={backHref} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none" }}>
             <ChevronLeft size={14} />
             Notatki
           </Link>
-        ) : (
-          <h1 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-            Notatki
-          </h1>
-        )}
+        ) : undefined
+      }
+      filters={
+        <>
         <div className="flex items-center gap-2">
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {filteredNotes.length} / {notes.length}
@@ -249,7 +252,9 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
             <span className="hidden sm:inline">Pytaj AI</span>
           </button>
         </div>
-      </div>
+        </>
+      }
+    >
 
       {/* Filter tabs */}
       <div
@@ -387,6 +392,6 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
           />
         )}
       </div>
-    </div>
+    </ModuleView>
   );
 }

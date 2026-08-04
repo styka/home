@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { useViewChrome } from "./ViewChrome";
 
 /**
@@ -26,9 +27,15 @@ export interface ViewBarProps {
   actions?: ReactNode;
   /** Ukrycie chromu — dla widoków osadzonych, np. w playgroundzie. */
   hideChrome?: boolean;
+  /** Wariant gęsty: tytuł widoku wchodzi do paska zamiast osobnego nagłówka. */
+  compact?: boolean;
+  title?: string;
+  titleHref?: string;
+  icon?: ReactNode;
+  iconColor?: string;
 }
 
-export function ViewBar({ filters, actions, hideChrome }: ViewBarProps) {
+export function ViewBar({ filters, actions, hideChrome, compact, title, titleHref, icon, iconColor }: ViewBarProps) {
   const chrome = useViewChrome();
   const chromeItems = hideChrome
     ? []
@@ -36,7 +43,7 @@ export function ViewBar({ filters, actions, hideChrome }: ViewBarProps) {
 
   // Pusty pasek nie zajmuje miejsca — moduł bez filtrów i akcji, renderowany poza
   // powłoką, nie powinien dostawać pustej listwy z obramowaniem.
-  if (!filters && !actions && chromeItems.length === 0) return null;
+  if (!compact && !filters && !actions && chromeItems.length === 0) return null;
 
   return (
     <div
@@ -44,12 +51,28 @@ export function ViewBar({ filters, actions, hideChrome }: ViewBarProps) {
         display: "flex",
         alignItems: "center",
         gap: 8,
-        minHeight: 44,
-        paddingTop: 8,
-        paddingBottom: 8,
+        minHeight: compact ? 48 : 44,
+        paddingTop: compact ? 0 : 8,
+        paddingBottom: compact ? 0 : 8,
         borderBottom: "var(--border-width) var(--border-style) var(--border)",
       }}
     >
+      {/* Wariant gęsty: tytuł w pasku, nie nad nim. */}
+      {compact && title && (
+        <h1
+          className="hidden md:flex items-center gap-2 text-sm font-semibold truncate min-w-0"
+          style={{ color: "var(--text-primary)", margin: 0, flexShrink: 0, maxWidth: "40%" }}
+        >
+          {icon && <span style={{ color: iconColor, display: "flex", flexShrink: 0 }}>{icon}</span>}
+          {titleHref ? (
+            <Link href={titleHref} className="truncate" style={{ color: "inherit", textDecoration: "none" }}>
+              {title}
+            </Link>
+          ) : (
+            <span className="truncate">{title}</span>
+          )}
+        </h1>
+      )}
       {/* Filtry — jedyna strefa, która się kurczy i przewija. */}
       <div
         style={{

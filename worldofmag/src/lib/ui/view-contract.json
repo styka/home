@@ -70,12 +70,11 @@
       ]
     },
     "notes": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/notes/NotesHomePage.tsx",
         "src/components/notes/NotesPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "pets": {
       "status": "done",
@@ -134,20 +133,18 @@
       "reason": "Ustawienia konta — element powłoki, nie moduł z rejestru MODULES."
     },
     "shopping": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/shopping/ShoppingHomePage.tsx",
         "src/components/shopping/ShoppingPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "tasks": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/tasks/TasksHomePage.tsx",
         "src/components/tasks/TasksPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "trash": {
       "status": "done",

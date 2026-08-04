@@ -89,6 +89,19 @@ export interface ModuleViewProps {
   layout?: "column" | "fill";
 
   /**
+   * Gęstość nagłówka.
+   *
+   * `comfortable` (domyślna) — tytuł 22 px w osobnym wierszu, jak dotąd.
+   *
+   * `compact` — tytuł wchodzi INLINE do paska widoku, w jednym wierszu z filtrami
+   * i akcjami. Dla widoków, które mają własny gęsty pasek narzędzi (Zadania, Zakupy,
+   * Notatki): tam duży nagłówek dołożyłby drugi wiersz chromu na ekranie, na którym
+   * liczy się każdy piksel listy. Kontrakt ma bronić UX, a nie narzucać jeden rozmiar
+   * wszystkim — stąd wariant zamiast wyjątku.
+   */
+  density?: "comfortable" | "compact";
+
+  /**
    * Odstęp między blokami treści. Domyślnie 24 px — dokładnie tyle, ile miał
    * `pageInnerStyle`, z którego migrują moduły. Dzięki temu podmiana opakowania nie
    * przesuwa ani jednego piksela, a „zero zmian zachowania" jest sprawdzalne wzrokiem.
@@ -127,11 +140,13 @@ export function ModuleView({
   loadingRows,
   width = "full",
   layout = "column",
+  density = "comfortable",
   contentGap = 24,
   scrollRef,
   children,
 }: ModuleViewProps) {
   const fill = layout === "fill";
+  const compact = density === "compact";
 
   return (
     <div
@@ -159,7 +174,7 @@ export function ModuleView({
           width: "100%",
           maxWidth: width === "narrow" ? 640 : undefined,
           margin: width === "narrow" ? "0 auto" : undefined,
-          padding: fill ? "8px var(--view-padding) 0" : "var(--view-padding)",
+          padding: compact ? "0 12px" : fill ? "8px var(--view-padding) 0" : "var(--view-padding)",
           display: "flex",
           flexDirection: "column",
           gap: fill ? 8 : 12,
@@ -168,16 +183,32 @@ export function ModuleView({
       >
         {breadcrumb && <div style={{ marginBottom: -4 }}>{breadcrumb}</div>}
 
-        <PageHeader
-          icon={icon}
-          iconColor={iconColor}
-          title={title}
-          subtitle={subtitle}
-          href={href}
-          action={headerAction}
-        />
+        {!compact && (
+          <PageHeader
+            icon={icon}
+            iconColor={iconColor}
+            title={title}
+            subtitle={subtitle}
+            href={href}
+            action={headerAction}
+          />
+        )}
 
-        <ViewBar filters={filters} actions={actions} hideChrome={hideChrome} />
+        <ViewBar
+          compact={compact}
+          title={compact ? title : undefined}
+          titleHref={compact ? href : undefined}
+          icon={compact ? icon : undefined}
+          iconColor={iconColor}
+          filters={filters}
+          actions={compact && headerAction ? (
+            <>
+              {actions}
+              {headerAction}
+            </>
+          ) : actions}
+          hideChrome={hideChrome}
+        />
       </div>
 
       {/* Treść. W `fill` dostaje resztę wysokości i własne przewijanie; w `column`
