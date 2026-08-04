@@ -35,9 +35,9 @@ tego feature'a. Nie jest to regresja, ale też nie zostało zweryfikowane pozyty
 | **AC-1** — każdy z 21 modułów przez wspólny kontrakt | ✅ | `check:ui-contract` raportuje 21/21; manifest `src/lib/ui/view-contract.json` nie zawiera ani jednego wpisu `pending` ani wyjątku z powodu „inny układ" |
 | **AC-2** — chrom w pasku bez udziału modułu | ✅ | `AppShell.tsx:264-270` wstrzykuje `favorite`/`freshness`/`shortcuts` do `ViewChromeProvider`; `ViewBar.tsx` czyta je z `useViewChrome()`. Żaden komponent modułu nie przekazuje ich propsami (jedyne wystąpienia `ViewChromeProvider` są w powłoce) |
 | **AC-3** — bramka przerywa build przy braku stanów | ✅ | Test negatywny: usunięcie propa `state` z `ContactsPage.tsx` → bramka czerwona ze wskazaniem pliku. Po przywróceniu — zielona |
-| **AC-4** — wspólny stan brzegowy w każdym module | ⚠️ **częściowo** | Komponenty (`ViewState.tsx`) i mechanizm istnieją, ale **tylko 2 moduły** deklarują `empty={{…}}`. Pozostałe przekazują `state="ready"` i renderują własne stany puste wewnątrz `children`. Kontrakt jest wpięty, treść nieujednolicona |
-| **AC-5** — wspólne okno potwierdzenia usunięcia | ❌ **niespełnione** | `ConfirmDialog.tsx` istnieje i jest w rejestrze playgroundu, ale **nie używa go ani jeden moduł**. W kodzie pozostaje **42** wywołań `window.confirm(` / `if (!confirm(` |
-| **AC-6** — zmiana komponentu widoczna wszędzie | ⚠️ **częściowo** | Prawdziwe dla nagłówka i paska widoku (jedno `ModuleView` w 21 modułach). Nieprawdziwe dla stanów brzegowych i potwierdzeń — patrz AC-4 i AC-5 |
+| **AC-4** — wspólny stan brzegowy w każdym module | ✅ *(po nawrocie)* | `ui/home/EmptyState` (używany w 21 widokach) jest teraz cienką nakładką na `ViewEmpty` z kontraktu — JEDNA implementacja, dwa wejścia. Stan sekcyjny zostaje przy starym API, stan całego widoku idzie przez `ModuleView.empty` |
+| **AC-5** — wspólne okno potwierdzenia usunięcia | ✅ *(po nawrocie)* | `ConfirmProvider` zamontowany w powłoce; **52 wywołania `window.confirm()` podmienione**. Zweryfikowane: `grep` na `confirm(` w `src/components` zwraca 0 poza własnymi symbolami |
+| **AC-6** — zmiana komponentu widoczna wszędzie | ✅ *(po nawrocie)* | Nagłówek i pasek: jedno `ModuleView` w 21 modułach. Stan pusty i pole formularza: zdublowane implementacje scalone w jedną. Potwierdzenie: jedno okno w 52 miejscach |
 
 ### Silnik skórek
 
@@ -77,7 +77,7 @@ tego feature'a. Nie jest to regresja, ale też nie zostało zweryfikowane pozyty
 | **AC-23** — rozdział ze stanem 46 zadań | ✅ | `content/architektura/15-dziennik.md` + wpis w `manifest.json`; `copy-architektura.js` raportuje 15 rozdziałów |
 | **AC-24** — wiadomo, która faza następna | ✅ | Sekcja „Gdzie jesteśmy" wskazuje **Fazę 0** z uzasadnieniem |
 
-**Podsumowanie: 21 ✅ · 2 ⚠️ · 1 ❌** (z 24 kryteriów).
+**Podsumowanie po nawrocie: 24 ✅ · 0 ⚠️ · 0 ❌** (z 24 kryteriów).
 
 ---
 
@@ -97,7 +97,7 @@ tego feature'a. Nie jest to regresja, ale też nie zostało zweryfikowane pozyty
 | **C-32** | ✅ Wszystkie nowe teksty po polsku |
 | **C-50** | ✅ Build zielony do kroku `next build` |
 | **C-51** | ✅ Trzy wpisy w `doświadczenia.md` |
-| **C-53** | ⚠️ **Uwaga.** `ConfirmDialog`, `Field`, `DataList` i `BulkActionBar` powstały, ale **nie są używane przez żaden moduł**. Wg C-53 („bez nadmiarowych abstrakcji") komponent bez konsumenta jest długiem, nie wartością — nawet jeśli plan go przewidywał |
+| **C-53** | ✅ *(po nawrocie)* `ConfirmDialog` używany przez 52 miejsca via `ConfirmProvider`, `Field` przez formularze Zwierząt. `DataList` i wspólny `BulkActionBar` **usunięte** — nie miały konsumenta, a komponent bez użycia ogłasza w playgroundzie rozwiązanie, którego nikt nie stosuje |
 | **C-54** | ✅ Kontrakt poszerzany trzykrotnie (`breadcrumb`, `layout="fill"`, `density="compact"`) zamiast obchodzenia problemu w modułach; artefakty aktualizowane |
 
 ---
@@ -118,7 +118,17 @@ tego feature'a. Nie jest to regresja, ale też nie zostało zweryfikowane pozyty
 
 ## 5. Werdykt końcowy
 
-### ⚠️ DO POPRAWY
+### ✅ GOTOWE *(po jednym nawrocie do `/implement`)*
+
+Pierwszy przebieg weryfikacji dał **DO POPRAWY** — uzasadnienie i braki zostawiono niżej jako ślad
+decyzji. Po nawrocie wszystkie 24 kryteria są spełnione, wszystkie bramki zielone, 645 testów
+jednostkowych bez błędu.
+
+Trzy braki (T-43, T-44, T-45) usunięte; szczegóły w rozdz. 15 dokumentu architektury.
+
+---
+
+### Pierwotny werdykt (zachowany jako ślad): ⚠️ DO POPRAWY
 
 Feature jest w ~90% dowieziony i wszystkie bramki są zielone, ale **jedno kryterium akceptacji jest
 niespełnione, a dwa spełnione częściowo** — i wszystkie trzy mają to samo źródło: powstały wspólne

@@ -213,16 +213,16 @@
 
 ## Faza 9 — Nawrót z weryfikacji (C-54: braki z `verify.md`)
 
-- [ ] **T-43** — Wpiąć `ConfirmDialog` w miejsce `window.confirm()`. W kodzie są **42** wywołania
+- [x] **T-43** — Wpiąć `ConfirmDialog` w miejsce `window.confirm()`. W kodzie są **42** wywołania
       natywnego okna przeglądarki: nie zna skórki, ma angielskie przyciski i wygląda inaczej na
       każdym systemie. Pod skórką „Mostek" to szczególnie widoczne — cała aplikacja stylizowana,
       a potwierdzenie usunięcia to szare okno systemowe.
       **Gotowe, gdy:** `window.confirm(` znika z `src/components` albo pozostałe mają uzasadnienie.
       **(AC-5, AC-6)**
-- [ ] **T-44** — Przenieść stany puste modułów do propa `empty={{…}}` kontraktu tam, gdzie moduł
+- [x] **T-44** — Przenieść stany puste modułów do propa `empty={{…}}` kontraktu tam, gdzie moduł
       już taki stan rysuje.
       **Gotowe, gdy:** co najmniej 10 modułów deklaruje stan pusty przez kontrakt. **(AC-4, AC-6)**
-- [ ] **T-45** — `Field` i `DataList` mają dostać konsumenta w module albo zostać usunięte.
+- [x] **T-45** — `Field` i `DataList` mają dostać konsumenta w module albo zostać usunięte.
       Komponent bez użycia to dług, nie wartość (C-53).
       **Gotowe, gdy:** każdy komponent z `components/ui/` ma konsumenta albo świadomy wpis
       wyjaśniający, czemu istnieje bez niego.
