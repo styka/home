@@ -110,7 +110,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | 39 | Eksport danych użytkownika | ⬜ | |
 | 40 | Usunięcie konta | ⬜ | |
 | 41 | Próba odtworzenia z kopii + runbook | ⬜ | |
-| 42 | **Stany błędów i puste w każdym module** | 🟡 | Komponenty i bramka gotowe; migracja modułów 1/21 |
+| 42 | **Stany błędów i puste w każdym module** | 🟡 | Komponenty i bramka gotowe; migracja modułów 12/21 |
 | 43 | Budżet wydajnościowy w CI | ⬜ | |
 
 ### Faza 9 — Domknięcie
@@ -167,12 +167,24 @@ za samowolkę spoza zakresu.
 
 **Czego świadomie NIE zrobiono**
 
-- **Migracja modułów na `ModuleView`: 1 z 21** (Kontakty jako wzorzec). Pozostałe 20 są **jawnie
-  wypisane** w `src/lib/ui/view-contract.json` ze statusem `pending` — bramka pilnuje, że żaden nie
-  zniknie z listy, a nowy moduł bez wpisu wywala build.
+- **Migracja modułów na `ModuleView`: 12 z 21.** Pozostałe 9 widoków jest **jawnie wypisanych**
+  w `src/lib/ui/view-contract.json` ze statusem `pending` — bramka pilnuje, że żaden nie zniknie
+  z listy, a nowy moduł bez wpisu wywala build. Są to strony szczegółu z ręcznie pisanym `<h1>`
+  (Flota, Języki, Zwierzęta, Portfel, QA, Warsztaty) i trzy widoki wielopanelowe (Zadania, Notatki,
+  Zakupy). Każdy wymaga indywidualnej zamiany nagłówka, a nie mechanicznej podmiany opakowania —
+  dlatego nie poszły partią.
 - **Sweep zaszytych kolorów**: 50 plików oznaczonych jako `do-poprawy` w tym samym manifeście.
   Bramka wypisuje je przy każdym budowaniu, więc dług jest widoczny, a nie przemilczany.
 - Faza 0 i pozostałe fazy przebudowy — zgodnie z zasadą „jedna faza = jeden przebieg".
+
+**Punkt kontrolny kontraktu (C-54)**
+
+Plan zakładał sprawdzian: jeśli `ModuleView` nie uniesie Wiadomości i Magazynowania, wracamy do planu
+zamiast obchodzić problem w module. **Nie uniósł** — moduły wielopanelowe mają osobne przewijanie
+panelu bocznego i listy, a kolumnowa rama narzuciłaby im jeden scroll na całość. Kontrakt został
+więc **poszerzony** o `layout="fill"` (nagłówek i pasek w stałym pasku u góry, treść dostaje resztę
+wysokości i przewija się sama) oraz o prop `breadcrumb`, który powtarzał się w ośmiu widokach
+podrzędnych. Obie zmiany są w kontrakcie, nie w modułach.
 
 **Decyzje warte zapamiętania**
 

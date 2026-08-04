@@ -167,14 +167,14 @@
 > Po każdym module: ręczne przejście widoku (wejście, dodanie, edycja, usunięcie).
 
 - [x] **T-29** — Kontakty · Kosz · Truck (3 moduły, 3 commity).
-- [!] **T-30** — Raporty · QA · Kalendarz (3 commity).
-- [!] **T-31** — Nawyki · Zdrowie (+ Leki) · Flota (3 commity).
-- [!] **T-32** — Notatki · Języki · Pogoda (3 commity).
-- [!] **T-33** — Kuchnia · Zwierzęta · Warsztaty (3 commity; Warsztaty **nie mają** `*Page.tsx` —
+- [~] **T-30** — Raporty · QA · Kalendarz (3 commity).
+- [~] **T-31** — Nawyki · Zdrowie (+ Leki) · Flota (3 commity).
+- [~] **T-32** — Notatki · Języki · Pogoda (3 commity).
+- [~] **T-33** — Kuchnia · Zwierzęta · Warsztaty (3 commity; Warsztaty **nie mają** `*Page.tsx` —
       wejściami są `WorkshopsList.tsx`/`WorkshopDetail.tsx`).
-- [!] **T-34** — Portfel (5 widoków) · Usługi (6 widoków) — 2 commity.
-- [!] **T-35** — Home (pulpit) · Zakupy · Zadania (3 commity).
-- [!] **T-36** — **Wiadomości i Magazynowanie — sprawdzian kontraktu.** To najbardziej nietypowe
+- [~] **T-34** — Portfel (5 widoków) · Usługi (6 widoków) — 2 commity.
+- [~] **T-35** — Home (pulpit) · Zakupy · Zadania (3 commity).
+- [~] **T-36** — **Wiadomości i Magazynowanie — sprawdzian kontraktu.** To najbardziej nietypowe
       widoki w aplikacji. Jeśli `ModuleView` ich nie unosi — **wróć do `plan.md` i `spec.md`**
       (C-54), popraw kontrakt i przelicz zadania w dół; **nie** obchodź problemu w kodzie modułu.
       **Gotowe, gdy:** oba moduły korzystają z kontraktu bez wyjątków w manifeście.
