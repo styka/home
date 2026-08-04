@@ -32,20 +32,20 @@
       `expression(`, `@import`, przekroczone limity, klucz spoza whitelisty, poprawne wartości każdego
       nowego rodzaju, skórka częściowa → `resolveTokens` uzupełnia domyślne.
       **Gotowe, gdy:** testy zielone i pokrywają **każdy** nowy rodzaj. **(AC-12, AC-13)**
-- [ ] **T-4** `[P]` — `src/app/globals.css`: wartości domyślne wszystkich nowych zmiennych + blok
+- [x] **T-4** `[P]` — `src/app/globals.css`: wartości domyślne wszystkich nowych zmiennych + blok
       `@media (prefers-reduced-motion: reduce)`.
       **Gotowe, gdy:** aplikacja bez skórki wygląda identycznie jak przed zmianą, a symulacja
       ograniczonego ruchu zatrzymuje animacje. **(AC-10, AC-13)**
 
 ## Faza 1 — Warstwa serwera (skórki)
 
-- [ ] **T-5** — `exportSkin(id)` i `importSkin(json, name?)` w `src/actions/skins.ts`;
+- [x] **T-5** — `exportSkin(id)` i `importSkin(json, name?)` w `src/actions/skins.ts`;
       `importSkin` **zawsze** tworzy skórkę użytkownika (`ownerId = session.user.id`,
       `isSystem = false`) i przepuszcza wejście przez `validateTokens()`; obie kończą
       `revalidatePath("/settings")` + `revalidatePath("/admin/skins")`.
       **Gotowe, gdy:** eksport→import odtwarza tokeny 1:1, a złośliwy JSON traci wyłącznie złe
       wartości. **(AC-11, AC-12)**
-- [ ] **T-6** — Wpisy dla obu akcji w `src/lib/ai/action-coverage.json` (ekspozycja `excluded`
+- [x] **T-6** — Wpisy dla obu akcji w `src/lib/ai/action-coverage.json` (ekspozycja `excluded`
       + powód, `access: "owner"`).
       **Gotowe, gdy:** `npm run check:actions` i `npm run check:ai-coverage` przechodzą.
 

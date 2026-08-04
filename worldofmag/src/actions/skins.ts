@@ -215,6 +215,88 @@ export async function deleteSkin(id: string): Promise<void> {
   revalidatePath("/", "layout");
 }
 
+/** Format pliku skórki (045). Wersjonowany, żeby przyszła zmiana kształtu dała się
+ *  rozpoznać, zamiast po cichu zaimportować śmieci. */
+export type SkinFile = {
+  omniaSkin: 1;
+  name: string;
+  description: string | null;
+  colorScheme: "light" | "dark";
+  tokens: SkinTokens;
+};
+
+/** Eksport skórki do JSON-a (do pobrania jako plik).
+ *  Przepuszczamy tylko skórki, które użytkownik i tak widzi w pickerze. */
+export async function exportSkin(id: string): Promise<string> {
+  const available = await listAvailableSkins();
+  const skin = available.find((s) => s.id === id);
+  if (!skin) throw new Error("Skin not available");
+
+  const file: SkinFile = {
+    omniaSkin: 1,
+    name: skin.name,
+    description: skin.description,
+    colorScheme: skin.colorScheme,
+    tokens: skin.tokens,
+  };
+  return JSON.stringify(file, null, 2);
+}
+
+export type SkinImportResult = {
+  id: string;
+  /** Ile tokenów przyjęto. */
+  accepted: number;
+  /** Klucze odrzucone przy walidacji — pokazujemy je użytkownikowi, zamiast milczeć. */
+  rejected: string[];
+};
+
+/** Import skórki z JSON-a. ZAWSZE tworzy skórkę użytkownika — nigdy systemową —
+ *  więc plik z `isSystem: true` nie jest drogą do podniesienia uprawnień.
+ *
+ *  Wejście jest OBCE: cała mapa tokenów przechodzi przez `validateTokens`, które
+ *  odrzuca klucz spoza whitelisty i wartość niezgodną z rodzajem. Odrzucone klucze
+ *  wracają do UI — cicha utrata połowy skórki byłaby gorsza niż błąd. */
+export async function importSkin(json: string, name?: string): Promise<SkinImportResult> {
+  const user = await requireAuth();
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(json);
+  } catch {
+    throw new Error("To nie jest poprawny plik JSON");
+  }
+  if (!raw || typeof raw !== "object") throw new Error("Plik skórki musi być obiektem JSON");
+
+  const src = raw as Record<string, unknown>;
+  const rawTokens = (src.tokens ?? {}) as Record<string, unknown>;
+  if (typeof rawTokens !== "object" || rawTokens === null) {
+    throw new Error("Plik skórki nie zawiera mapy tokenów");
+  }
+
+  const tokens = validateTokens(rawTokens);
+  const rejected = Object.keys(rawTokens).filter((k) => !(k in tokens));
+
+  const importedName =
+    (typeof name === "string" && name.trim()) ||
+    (typeof src.name === "string" && src.name.trim()) ||
+    "Zaimportowana skórka";
+
+  const skin = await prisma.skin.create({
+    data: {
+      name: importedName.slice(0, 60),
+      description: typeof src.description === "string" ? src.description.trim().slice(0, 200) || null : null,
+      isSystem: false,
+      isPublic: false,
+      colorScheme: src.colorScheme === "light" ? "light" : "dark",
+      tokens: JSON.stringify(tokens),
+      ownerId: user.id,
+    },
+  });
+
+  revalidatePath("/", "layout");
+  return { id: skin.id, accepted: Object.keys(tokens).length, rejected };
+}
+
 /** Duplikuje skórkę jako nową, edytowalną skórkę użytkownika. */
 export async function duplicateSkin(id: string, name?: string): Promise<string> {
   const user = await requireAuth();
