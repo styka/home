@@ -4,8 +4,8 @@ import type { VehicleProfile } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import { geocode, routeHgv, OrsError, type OrsRestrictions } from "@/lib/ors";
-import { fetchRoadworks } from "@/lib/overpass";
+import { geocode, routeHgv, OrsError, type OrsRestrictions } from "@/modules/truck/lib/ors";
+import { fetchRoadworks } from "@/modules/truck/lib/overpass";
 import {
   bufferBboxAroundLine,
   pointToAvoidPolygon,
@@ -13,7 +13,7 @@ import {
   buildGoogleMapsDirUrl,
   buildMapsPin,
   type PolygonCoords,
-} from "@/lib/googleMaps";
+} from "@/modules/truck/lib/googleMaps";
 
 export type VehicleInput = OrsRestrictions;
 

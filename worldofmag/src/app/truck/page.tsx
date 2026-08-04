@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getVehicleProfile } from "@/actions/truck";
-import { TruckPlannerPage } from "@/components/truck/TruckPlannerPage";
+import { getVehicleProfile } from "@/modules/truck/actions/truck";
+import { TruckPlannerPage } from "@/modules/truck/ui/TruckPlannerPage";
 
 export default async function TruckRootPage() {
   const session = await auth();

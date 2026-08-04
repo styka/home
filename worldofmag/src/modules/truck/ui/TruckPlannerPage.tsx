@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Truck, MapPin, ExternalLink, Loader2, AlertTriangle, Save, Check, Info } from "lucide-react";
 import { SectionHeading } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { saveVehicleProfile, planTruckRoute, type VehicleInput, type PlanResult } from "@/actions/truck";
+import { saveVehicleProfile, planTruckRoute, type VehicleInput, type PlanResult } from "@/modules/truck/actions/truck";
 
 const DEFAULTS: VehicleInput = { weight: 40, height: 4.0, length: 16.5, width: 2.55, axleload: 11.5 };
 

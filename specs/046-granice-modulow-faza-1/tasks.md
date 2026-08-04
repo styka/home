@@ -44,7 +44,7 @@
 
 ## Faza C — Moduły pilotażowe (osobny commit na moduł)
 
-- [ ] **T-10a** — **Bramki muszą widzieć akcje i widoki modułów.** (Dopisane w trakcie `/implement`
+- [x] **T-10a** — **Bramki muszą widzieć akcje i widoki modułów.** (Dopisane w trakcie `/implement`
       wg C-54 — plan tego nie przewidział, a wyszło przy pierwszym przeniesieniu.)
       `check-ai-coverage.js` skanuje dziś wyłącznie `src/actions/`, a `check-ui-contract.js`
       wyłącznie `src/components/` — więc przeniesienie modułu **wypisuje jego akcje z pokrycia AI
@@ -54,7 +54,7 @@
       akcji (klucz manifestu to nazwa pliku).
       **Gotowe, gdy:** po przeniesieniu Trucka liczba sklasyfikowanych akcji wraca do 550.
       **(AC-11)**
-- [ ] **T-10** — **Truck** → `src/modules/truck/` (`actions/`, `ui/`, `lib/{ors,overpass,googleMaps}`).
+- [x] **T-10** — **Truck** → `src/modules/truck/` (`actions/`, `ui/`, `lib/{ors,overpass,googleMaps}`).
       Trasa `app/truck/` cienka. `contract.ts` — dziś pusty eksport typów, bo **nikt go nie importuje**;
       istnieje jako granica, nie jako spis życzeń.
       **Gotowe, gdy:** `tsc` czysty, `/truck` otwiera się w klikaczu. **(AC-3, AC-12)**

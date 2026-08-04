@@ -155,7 +155,7 @@
     "truck": {
       "status": "done",
       "entries": [
-        "src/components/truck/TruckPlannerPage.tsx"
+        "src/modules/truck/ui/TruckPlannerPage.tsx"
       ]
     },
     "warsztaty": {
