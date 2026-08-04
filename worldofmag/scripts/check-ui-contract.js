@@ -31,6 +31,7 @@ const path = require("path");
 const root = path.join(__dirname, "..");
 const appDir = path.join(root, "src/app");
 const componentsDir = path.join(root, "src/components");
+const modulesDir = path.join(root, "src/modules");
 const manifestPath = path.join(root, "src/lib/ui/view-contract.json");
 
 /** Katalogi w `src/app`, które nie są modułami użytkownika. */
@@ -121,8 +122,11 @@ for (const [name, def] of Object.entries(modules)) {
 
 // ─── 3. Zaszyte kolory motywu ────────────────────────────────────────────────
 
+// 046: skanujemy `src/components` ORAZ `src/modules/*/ui` — po przeniesieniu modułu jego widok
+// mieszka u niego, a nie we wspólnym katalogu komponentów. Bez tego przenosiny po cichu
+// zwalniałyby moduł z zakazu zaszytych kolorów, czyli refaktor organizacyjny rozszczelniałby skórki.
 const HEX_RE = /#[0-9a-fA-F]{6}\b/;
-for (const file of walk(componentsDir)) {
+for (const file of [...walk(componentsDir), ...walk(modulesDir)]) {
   const rel = path.relative(root, file).replace(/\\/g, "/");
   const src = fs.readFileSync(file, "utf8");
   if (!HEX_RE.test(src)) continue;

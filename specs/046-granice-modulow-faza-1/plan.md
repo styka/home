@@ -235,6 +235,14 @@ musi być unikalne w scalonym rejestrze. Wpięta w `build`.
 osobno** (`export A=…; export B=$A` — jedna instrukcja nie widzi jeszcze `$A`; ta pułapka kosztowała
 czas w 045). Weryfikacja do kroku `next build`; `migrate.js` nieuruchamiany.
 
+**Uzupełnienie z `/implement` (C-54).** Istniejące bramki mają **zaszyte korzenie skanowania**:
+`check-ai-coverage.js` czyta wyłącznie `src/actions/`, a kontrola kolorów w `check-ui-contract.js`
+wyłącznie `src/components/`. Przeniesienie modułu do `src/modules/<x>/` wypisywało więc jego akcje
+z pokrycia AI **i z kontroli dostępu**, a widok z zakazu zaszytych kolorów — bez jednego czerwonego
+komunikatu. Obie bramki dostają dodatkowy korzeń (`src/modules/*/actions`, `src/modules/*/ui`),
+a bramka pokrycia dodatkowo wykrywa kolizję nazw plików akcji, bo klucz manifestu to sama nazwa
+pliku. Zadanie **T-10a**.
+
 | AC | Jak sprawdzamy |
 |----|----------------|
 | AC-1 | Przegląd zawartości `platform/` — wyłącznie zdolności bez wiedzy o modułach |
