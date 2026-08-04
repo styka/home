@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getModuleStats } from "@/actions/qa";
-import { QaHomePage } from "@/components/qa/QaHomePage";
+import { getModuleStats } from "@/modules/qa/contract";
+import { QaHomePage } from "@/modules/qa/ui/QaHomePage";
 
 export default async function QaRootPage() {
   const session = await auth();

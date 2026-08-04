@@ -107,8 +107,8 @@
     "qa": {
       "status": "done",
       "entries": [
-        "src/components/qa/QaHomePage.tsx",
-        "src/components/qa/ScenarioPage.tsx"
+        "src/modules/qa/ui/QaHomePage.tsx",
+        "src/modules/qa/ui/ScenarioPage.tsx"
       ]
     },
     "reports": {

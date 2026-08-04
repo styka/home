@@ -6,7 +6,7 @@ import { getModuleInfo } from "@/lib/qaModules";
 import { getScenarioTypeLabel, getScenarioTypeColor, getPriorityColor, getPriorityLabel } from "@/lib/qaConstants";
 import { MARKDOWN_STYLES } from "@/lib/markdown";
 
-import type { ScenarioWithContext } from "@/actions/qa";
+import type { ScenarioWithContext } from "@/modules/qa/actions/qa";
 import { ModuleView } from "@/components/ui/view";
 
 interface ScenarioPageProps {

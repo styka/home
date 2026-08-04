@@ -64,7 +64,7 @@
 - [x] **T-12** — **Raporty** → `src/modules/reports/`. Konsumenci: panel admina, `AICommandSheet`,
       `agentTools`, `reportExecutor` — wszyscy przez `contract.ts`.
       **Gotowe, gdy:** żaden konsument nie sięga do wnętrza. **(AC-3, AC-5)**
-- [ ] **T-13** — **QA** → `src/modules/qa/`. Konsumenci w `app/admin/qa/*` i `components/admin/qa/*`.
+- [x] **T-13** — **QA** → `src/modules/qa/`. Konsumenci w `app/admin/qa/*` i `components/admin/qa/*`.
       **Gotowe, gdy:** granica moduł ↔ powierzchnia administracyjna trzyma. **(AC-3, AC-5)**
 
 ## Faza D — Egzekwowanie granic (zadanie 6 — **nieopcjonalne**)
@@ -99,7 +99,7 @@
 
 ## Faza F — Domknięcie
 
-- [ ] **T-22** — Aktualizacja `src/lib/ui/view-contract.json` o nowe ścieżki modułów pilotażowych.
+- [x] **T-22** — Aktualizacja `src/lib/ui/view-contract.json` o nowe ścieżki modułów pilotażowych.
       **Gotowe, gdy:** `check:ui-contract` zielony (wywala się na nieistniejącym pliku, więc to jest
       realna weryfikacja przenosin).
 - [ ] **T-23** — Komplet bramek na lokalnym Postgresie (C-13; `export` osobno dla `DATABASE_URL`

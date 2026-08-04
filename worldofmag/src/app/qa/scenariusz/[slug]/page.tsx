@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getScenarioWithContext } from "@/actions/qa";
-import { ScenarioPage } from "@/components/qa/ScenarioPage";
+import { getScenarioWithContext } from "@/modules/qa/contract";
+import { ScenarioPage } from "@/modules/qa/ui/ScenarioPage";
 import { markdownToHtml } from "@/lib/markdown";
 
 interface PageProps {

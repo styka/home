@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getEpicForAdmin } from "@/actions/qa";
+import { getEpicForAdmin } from "@/modules/qa/contract";
 import { EditEpicForm } from "@/components/admin/qa/EditEpicForm";
 
 export const dynamic = "force-dynamic";

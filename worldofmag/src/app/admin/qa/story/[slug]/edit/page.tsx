@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getStoryForAdmin } from "@/actions/qa";
+import { getStoryForAdmin } from "@/modules/qa/contract";
 import { EditStoryForm } from "@/components/admin/qa/EditStoryForm";
 
 export const dynamic = "force-dynamic";

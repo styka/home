@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getModuleTree } from "@/actions/qa";
-import { QaModuleBrowser } from "@/components/qa/QaModuleBrowser";
+import { getModuleTree } from "@/modules/qa/contract";
+import { QaModuleBrowser } from "@/modules/qa/ui/QaModuleBrowser";
 import { QA_MODULES } from "@/lib/qaModules";
 
 interface PageProps {

@@ -6,7 +6,7 @@ import { ChevronRight, ChevronDown, FlaskConical, FileText, Layers, ShoppingCart
 import { PageHeader, SectionHeading, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { getModuleInfo } from "@/lib/qaModules";
 import { getScenarioTypeLabel, getScenarioTypeColor, getPriorityColor } from "@/lib/qaConstants";
-import type { ModuleTree } from "@/actions/qa";
+import type { ModuleTree } from "@/modules/qa/actions/qa";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   ShoppingCart, CheckSquare, FileText, ChefHat, Home, BookOpen, Users, Settings, Lock, Shield, Sparkles, FlaskConical,

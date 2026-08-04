@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronRight, ChevronDown, Plus, Pencil, Trash2, FlaskConical, FileText, Layers, ExternalLink } from "lucide-react";
-import { deleteEpic, deleteStory, deleteScenario } from "@/actions/qa";
+import { deleteEpic, deleteStory, deleteScenario } from "@/modules/qa/contract";
 import { QA_MODULES, getModuleInfo } from "@/lib/qaModules";
 import { getScenarioTypeColor, getPriorityColor } from "@/lib/qaConstants";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
