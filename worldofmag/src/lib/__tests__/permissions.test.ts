@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { hasPermission, permissionForPath, isPathLocked, PERMISSIONS } from "../permissions";
+import { hasPermission, permissionForPath, isPathLocked, PERMISSIONS } from "@/platform/auth/permissions";
 import type { Session } from "next-auth";
 
 // Z-174: rdzeń RBAC (kontrola dostępu) — pure, security-critical.
