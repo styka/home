@@ -11,6 +11,11 @@ import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Field, fieldControlStyle } from "@/components/ui/Field";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { LineChart } from "@/components/ui/LineChart";
+import { ImageUrlInput } from "@/components/ui/ImageUrlInput";
+import { AiCostBadge } from "@/components/ui/AiCostBadge";
+import { useToast } from "@/components/ui/Toast";
 import { ViewEmpty, ViewLoading, ViewError, ViewNoAccess } from "@/components/ui/view/ViewState";
 import { ViewBar } from "@/components/ui/view/ViewBar";
 import { ModuleView } from "@/components/ui/view/ModuleView";
@@ -138,6 +143,26 @@ function FieldDemo({ error, required }: { error: boolean; required: boolean }) {
           <input {...props} value={value} onChange={(e) => setValue(e.target.value)} style={fieldControlStyle} />
         )}
       </Field>
+    </div>
+  );
+}
+
+function ToastDemo() {
+  const { showToast } = useToast();
+  return (
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <Button size="sm" onClick={() => showToast("Zapisano zmiany")}>Zwykły</Button>
+      <Button size="sm" variant="secondary" onClick={() => showToast("Zapisano", "success")}>Sukces</Button>
+      <Button size="sm" variant="danger" onClick={() => showToast("Nie udało się zapisać", "error")}>Błąd</Button>
+    </div>
+  );
+}
+
+function ImageUrlInputDemo() {
+  const [url, setUrl] = useState("");
+  return (
+    <div style={{ maxWidth: 420 }}>
+      <ImageUrlInput value={url} onChange={setUrl} module="playground" />
     </div>
   );
 }
@@ -351,6 +376,61 @@ export const PLAYGROUND_ENTRIES: PlaygroundEntryDef[] = [
         </ModuleView>
       </div>
     ),
+  },
+  {
+    id: "toast",
+    name: "Toast",
+    category: "prymitywy",
+    summary: "Krótki komunikat zwrotny. Montowany raz w powłoce; komponenty wołają `useToast().showToast(…)`.",
+    importPath: 'import { useToast } from "@/components/ui/Toast";',
+    render: () => <ToastDemo />,
+  },
+  {
+    id: "ai-cost-badge",
+    name: "AiCostBadge",
+    category: "prymitywy",
+    summary: "Koszt wywołania modelu przy wygenerowanej treści. Widoczny wyłącznie dla administratora i tylko gdy wskaźnik jest włączony w konfiguracji.",
+    importPath: 'import { AiCostBadge } from "@/components/ui/AiCostBadge";',
+    render: () => (
+      <AiCostBadge usage={{ model: "demo/model", tokens: 1620, costUsd: 0.0042, costKnown: true }} />
+    ),
+  },
+  {
+    id: "image-url-input",
+    name: "ImageUrlInput",
+    category: "formularze",
+    summary: "Pole obrazu przyjmujące wklejony adres albo wgranie na Dysk Google użytkownika. Zwraca adres w tym samym polu tekstowym, więc moduł nie potrzebuje zmian w schemacie.",
+    importPath: 'import { ImageUrlInput } from "@/components/ui/ImageUrlInput";',
+    render: () => <ImageUrlInputDemo />,
+  },
+  {
+    id: "line-chart",
+    name: "LineChart",
+    category: "dane-i-listy",
+    summary: "Lekki wykres liniowy bez zewnętrznej biblioteki. Kolor bierze z tokenu, więc reaguje na skórkę.",
+    importPath: 'import { LineChart } from "@/components/ui/LineChart";',
+    controls: [{ key: "fill", label: "Wypełnienie", kind: "boolean", default: true }],
+    render: (v) => (
+      <LineChart
+        points={[1200, 1480, 1310, 1720, 1650, 2040, 2310].map((y, i) => ({ x: i, y }))}
+        height={160}
+        fill={v.fill as boolean}
+        formatY={(y) => `${y.toFixed(0)} zł`}
+      />
+    ),
+    variants: [
+      { label: "Dwa punkty (minimum)", render: () => (
+        <LineChart points={[{ x: 0, y: 10 }, { x: 1, y: 40 }]} height={110} />
+      ) },
+    ],
+  },
+  {
+    id: "error-state",
+    name: "ErrorState",
+    category: "stany-brzegowe",
+    summary: "Stan błędu granicy segmentu (`app/error.tsx`). Różni się od stanu pustego celowo — użytkownik ma wiedzieć, czy dodać treść, czy odświeżyć.",
+    importPath: 'import { ErrorState } from "@/components/ui/ErrorState";',
+    render: () => <ErrorState onRetry={() => {}} digest="demo-1a2b3c" />,
   },
 ];
 

@@ -1,0 +1,13 @@
+{
+  "$opis": "Świadome wyjątki bramki rozjazdu schematu (Faza 0, zadanie 3). Każdy wpis to różnica, którą Prisma raportuje, a która NIE jest rozjazdem — tylko granicą tego, co `schema.prisma` potrafi wyrazić. Wzorzec to wyrażenie regularne dopasowywane do pojedynczej instrukcji SQL z `migrate diff`.",
+  "patterns": [
+    {
+      "pattern": "DROP INDEX .*(note_title_trgm|note_content_trgm)",
+      "reason": "Indeksy pg_trgm dla wyszukiwania pełnotekstowego w Notatkach są tworzone surowym SQL-em w migracji. `schema.prisma` nie umie wyrazić indeksu GIN z operatorem trigramowym, więc `migrate diff` zawsze zgłosi ich usunięcie. Usunięcie ich naprawdę zepsułoby ranking trafności."
+    },
+    {
+      "pattern": "ALTER COLUMN \"updatedAt\" DROP DEFAULT",
+      "reason": "`@updatedAt` w Prismie jest realizowane po stronie klienta, a migracje nadały kolumnie DEFAULT now() dla bezpieczeństwa przy zapisach surowym SQL-em. Prisma widzi tu różnicę, choć zachowanie aplikacji jest identyczne."
+    }
+  ]
+}

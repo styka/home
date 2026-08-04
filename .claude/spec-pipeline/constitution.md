@@ -68,6 +68,23 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   top bar + overlay + dolny tab bar. **Nigdy dwa sidebary na mobile.** Respektuj
   `env(safe-area-inset-bottom)`. Min. cel dotyku `py-3`, checkboxy 20×20px. Skróty: `j/k`, `x/Space`,
   `e`, `d`, `a/n`, `/`, `Ctrl+K`, `Esc`.
+- **C-33 — Widok modułu deklaruje się przez `ModuleView`, nie rysuje własnego nagłówka.**
+  Moduł podaje `title`/`icon`/`filters`/`actions`/`state`; ramę i chrom (gwiazdka „zapisz widok",
+  świeżość danych, ściągawka skrótów) dokłada powłoka przez `ViewChromeProvider`. Stany brzegowe
+  (pusty / ładowanie / błąd / brak dostępu) idą **wyłącznie** przez prop `state` — nigdy rysowane
+  ręcznie. Wymusza to `npm run check:ui-contract` (w `build`): katalog trasy bez wpisu w manifeście
+  albo `ModuleView` bez `state` = build pada. **Gdy rama nie pasuje do widoku — poszerz ramę
+  (`layout`, `density`, `breadcrumb`), a nie rób wyjątku w module.** Wyjątek w module to dług
+  w dwudziestu miejscach; poszerzenie kontraktu jest jednorazowe.
+- **C-34 — Potwierdzenia przez `confirmDialog`, nigdy `window.confirm()`.**
+  `if (!(await confirmDialog("Usunąć listę?"))) return;`. Natywne okno nie zna skórki, ma przyciski
+  w języku systemu i blokuje wątek, więc nie pokaże, CO zostanie usunięte.
+- **C-35 — Nowy wspólny komponent dowozimy razem z pierwszym konsumentem.**
+  „Gotowe" znaczy **wpięte**, nie „istnieje". Komponent bez konsumenta jest gorszy niż jego brak:
+  w galerii ogłasza wspólne rozwiązanie, którego nikt nie stosuje, więc następna osoba i tak napisze
+  swoje. Gdy migracja istniejących wywołań jest droga — zrób **cienką nakładkę na stare API**
+  (wzorzec `ui/home/EmptyState` → `ViewEmpty`), zamiast przepisywać dwadzieścia plików.
+
 - **C-32 — Teksty UI po polsku** (to prywatny system Szymona). Nazwy kategorii w promptach LLM
   traktujemy jako **polskie słowa**, nie angielskie.
 
@@ -136,7 +153,7 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
 ### Jak używać w pipeline
 - `/specify` — sekcja *Zgodność z konstytucją* w spec musi wskazać, które reguły dotyczą feature'a;
   to główny (i domyślnie jedyny) moment pytań (C-55).
-- `/plan` — plan musi jawnie zaadresować C-10..C-14 (migracje), C-20..C-25 (warstwa app), C-30..C-32 (UX).
+- `/plan` — plan musi jawnie zaadresować C-10..C-14 (migracje), C-20..C-25 (warstwa app), C-30..C-35 (UX).
 - `/tasks` — bramki C-50 wpięte jako kroki (`check:migrations`, `check:actions`, `build`).
 - `/verify` i `/review` — weryfikują zgodność z tą konstytucją punkt po punkcie i raportują naruszenia;
   przy brakach zawracają do `/implement` (C-54).

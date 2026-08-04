@@ -4,6 +4,19 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-04 — Bramka pilnuje kodu, ale nie podpowiada, czego użyć
+**Problem:** Po 045 aplikacja miała kontrakt widoku wymuszany bramką `check:ui-contract`: nowy moduł
+bez `ModuleView` nie przechodził builda. Mimo to `CLAUDE.md` — jedyny dokument, który czyta każda
+kolejna sesja — nie zawierał ani jednej wzmianki o `ModuleView`, `ConfirmProvider` czy nowych
+rodzinach tokenów skórki. Bramka mówiła „nie tak", ale nic nie mówiło „a jak".
+**Rozwiązanie:** Opis kontraktu widoku, zakazu `window.confirm()` i silnika skórek trafił do
+`CLAUDE.md`, a twarde reguły — do konstytucji pipeline'u jako `C-33`/`C-34`/`C-35`. Bramka i dokument
+to teraz para: jedno wykrywa naruszenie, drugie tłumaczy właściwą drogę.
+**Lekcja:** Bramka bez dokumentacji zamienia się w przeszkodę, którą się obchodzi, a nie w regułę,
+którą się rozumie. Dodając bramkę wymuszającą nowy wzorzec, w tym samym zadaniu dopisz do dokumentu
+architektury, CO ma być użyte zamiast — inaczej następna osoba pozna regułę dopiero z czerwonego
+builda i najtańszym wyjściem będzie dla niej wpis wyjątku w manifeście.
+
 ## 2026-08-04 — Wspólny komponent bez konsumenta wygląda w raporcie jak zrobiony
 **Problem:** Przebieg 045 dowiózł `ConfirmDialog`, `Field`, `DataList` i `BulkActionBar` — wszystkie
 zgodne z planem, otypowane, w playgroundzie, build zielony. Etap `/verify` odrzucił to jednak jako

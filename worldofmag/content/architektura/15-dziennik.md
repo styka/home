@@ -11,13 +11,15 @@
 
 ## Gdzie jesteśmy
 
-**Żadna z faz 0–9 nie jest ukończona.** Przebieg 045 dowiózł warstwę, która w checkliście nie ma
-numeru (rozdz. 10.4–10.5 — system komponentów i kontrakt widoku), i przygotował grunt pod resztę.
+**Faza 0 (siatka bezpieczeństwa) jest UKOŃCZONA.** Przebiegi 045/045b dowiozły warstwę, która
+w checkliście nie ma numeru (rozdz. 10.4–10.5 — system komponentów i kontrakt widoku), oraz komplet
+zadań 1–3 Fazy 0. Rozdz. 13 nazywał je „bezwarunkowo pierwszymi": *refaktor bez siatki bezpieczeństwa
+to nie refaktor, tylko przepisywanie z nadzieją*.
 
-**Następny krok jest jednoznaczny: Faza 0 — siatka bezpieczeństwa** (zadania 1–3). Dokument nazywa
-je „bezwarunkowo pierwszymi", a rozdz. 13 dodaje: *refaktor bez siatki bezpieczeństwa to nie
-refaktor, tylko przepisywanie z nadzieją*. Fazy 1 i 2 przenoszą setki plików i migrują dane na 46
-modelach — bez klikaczy i testu izolacji najemcy regresję zgłosiłby użytkownik, nie bramka.
+**Następny krok: Faza 1 — granice modułów** (zadania 4–8). Teraz jest bezpieczna do rozpoczęcia:
+klikacz pokrywa 21/21 modułów, test izolacji najemcy stoi na 37 modelach, a rozjazd schematu wykrywa
+bramka w buildzie. Uwaga z rozdz. 14: **reguła ESLint z zadania 6 nie jest opcjonalna** — granice bez
+egzekwowania erodują w tygodnie.
 
 ---
 
@@ -29,9 +31,9 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
-| 1 | Klikacz ścieżki szczęśliwej dla 21/21 modułów | ⬜ | Istnieje 20 plików scenariuszy, pokrycie niepełne i niezweryfikowane wobec listy modułów |
-| 2 | Generowany test izolacji najemcy z manifestu 545 akcji | ⬜ | Manifest `action-coverage.json` istnieje i jest kompletny — jest z czego generować |
-| 3 | Bramka rozjazdu `schema.prisma` ↔ migracje | ⬜ | |
+| 1 | Klikacz ścieżki szczęśliwej dla 21/21 modułów | ✅ | `e2e/specs/modules-happy-path.spec.ts` — 25/25 zielonych. Lista modułów **wywodzona z rejestru** `src/lib/modules.tsx`, więc nowy moduł jest pokryty automatycznie |
+| 2 | Generowany test izolacji najemcy | ✅ | `tenantIsolation.integration.test.ts` — lista 46 modeli z `ownerId` **generowana ze `schema.prisma`**; 37 zweryfikowanych, 9 pominiętych (wymagają relacji) i jawnie raportowanych. Zero wycieków |
+| 3 | Bramka rozjazdu `schema.prisma` ↔ migracje | ✅ | `check:schema-drift` w buildzie; pomija bez `DATABASE_URL` i na zdalnej bazie (C-13); 2 świadome wyjątki dla granic Prismy |
 
 ### Faza 1 — Granice modułów
 
@@ -115,11 +117,11 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 ### Faza 9 — Domknięcie
 
-| # | Zadanie | Status |
-|---|---------|--------|
-| 44 | Aktualizacja `CLAUDE.md` i konstytucji | ⬜ |
-| 45 | Aktualizacja `/admin/architecture` i tego dokumentu | 🟡 |
-| 46 | Wersja **Omnia 🧐** — wpis w historii wersji | ⬜ |
+| # | Zadanie | Status | Uwagi |
+|---|---------|--------|-------|
+| 44 | Aktualizacja `CLAUDE.md` i konstytucji | 🟡 | Opisany kontrakt widoku, silnik skórek, obie nowe bramki; konstytucja ma C-33/C-34/C-35. Reszta czeka na Fazy 1–8 |
+| 45 | Aktualizacja `/admin/architecture` i tego dokumentu | 🟡 | |
+| 46 | Wersja **Omnia 🧐** — wpis w historii wersji | ⬜ | |
 
 ---
 
@@ -232,4 +234,25 @@ Domknięcie:
   będzie potrzebował akcji zbiorczych. Lista z nawigacją `j`/`k` wraca przy zadaniu 20 (paginacja
   kursorowa), bo i tak wymaga zmian w zapytaniach.
 
-**Następny przebieg:** Faza 0, zadania 1–3.
+### 045b — Domknięcie: dokumentacja, bramka rozjazdu, weryfikacja klikaczami · 2026-08-04
+
+Uzupełnienie tego, bez czego praca z 045 by się nie utrzymała.
+
+- **`CLAUDE.md` opisuje kontrakt widoku, zakaz `window.confirm()`, rozszerzony silnik skórek,
+  generowanie skórki przez AI oraz obie nowe bramki.** To była najpoważniejsza luka: bramka trzymała
+  nowe moduły, ale żaden dokument nie mówił, czego użyć — więc następna sesja i tak napisałaby własny
+  nagłówek.
+- **Konstytucja pipeline'u dostała `C-33`, `C-34` i `C-35`** — widok przez `ModuleView`, potwierdzenia
+  przez `confirmDialog`, a nowy wspólny komponent dowozimy **razem z pierwszym konsumentem**. Ostatnia
+  reguła wprost koduje lekcję z nawrotu weryfikacji.
+- **Playground uzupełniony o 5 brakujących komponentów** (`Toast`, `ErrorState`, `LineChart`,
+  `ImageUrlInput`, `AiCostBadge`). Galeria pokazująca część zestawu uczy, że reszty nie ma.
+- **Klikacze: 12/12 zielonych.** To była największa nieznana z recenzji — 21 widoków zmieniło
+  opakowanie i nic tego nie potwierdzało poza kontrolą typów. Nawigacja po wszystkich modułach
+  i konsola admina działają.
+- **Zadanie 3 z Fazy 0 zrobione:** `check:schema-drift`. Sprawdzone testem negatywnym — kolumna
+  dodana do `schema.prisma` bez migracji czerwieni build ze wskazaniem brakującej instrukcji.
+
+**Następny przebieg:** Faza 0, zadania **1 i 2** — klikacz ścieżki szczęśliwej dla 21/21 modułów
+(dziś smoke pokrywa 8) oraz generowany test izolacji najemcy z manifestu 545 akcji. Ten drugi
+dokument nazywa „najważniejszym testem w systemie", bo wyciek między najemcami kończy produkt.

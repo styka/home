@@ -265,6 +265,28 @@ Each module typically has a `*Page.tsx` (client entry) and `*HomePage.tsx` (serv
 wrapper). The `AppShell` (`shell/`) wraps all pages with `ModuleSidebar` (desktop),
 a mobile top bar + bottom tab bar, the notification bell, and the global AI assistant.
 
+**View contract (045) — a module DECLARES a view; the shell draws the frame.** Every module view
+renders `ModuleView` (`src/components/ui/view/`) instead of hand-rolling a header. The module passes
+`title`/`icon`/`filters`/`actions`/`state`; the shell injects the rest through `ViewChromeProvider`
+(mounted once in `AppShell`): the "save this view" star, the data-freshness indicator and the
+shortcuts cheat-sheet entry. **This is why the shell cannot draw the bar itself** — `AppShell`
+renders `<main>{children}</main>` and does not know the module's title, so a bar drawn there would
+produce double headers in ~20 modules (the exact reason the 043 request could not be met).
+Variants: `layout="fill"` (multi-pane modules whose side panel and list scroll separately),
+`density="compact"` (Tasks/Shopping/Notes, whose deliberately dense 48 px toolbar must not gain a
+second row of chrome), `breadcrumb` (back link above the title), `width="narrow"`, `scrollRef`
+(virtualised lists), and `resource` — **reserved and inert**, so sharing, conflict dialogs and
+presence avatars (rebuild phases 2 and 4) can be added without revisiting 21 modules.
+Edge states go through `state` + `empty`/`error`/`noAccess` — never hand-drawn.
+Enforced by `npm run check:ui-contract` (in `build`): a route directory without a manifest entry, or
+a view rendering `ModuleView` without `state`, fails the build. Manifest: `src/lib/ui/view-contract.json`.
+
+**Confirmations: never `window.confirm()`.** `ConfirmProvider` (mounted in `AppShell`) exposes a
+promise-based `useConfirm()`, used as `if (!(await confirmDialog("Usunąć listę?"))) return;`.
+The native dialog does not know the skin, labels its buttons in the SYSTEM language and blocks the
+thread, so it cannot show *what* is about to be deleted. Outside the provider it degrades to
+`window.confirm` rather than throwing, so a component used in isolation still works.
+
 **Assistant prompts live in `src/lib/ai/agentPrompt.ts`** (035) — action catalog per module,
 navigation catalog, `buildSystemPrompt()` and the module-router prompt. They were moved out of
 `api/llm/home/agent/route.ts` because a route file cannot export anything but handlers, which made the
@@ -622,7 +644,7 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 - **`/admin/audyt`** — **Analiza/Audyt stanu projektu + wskazania**: admin-only multi-chapter "book" (deep project audit as a two-team debate + numbered `Z-NNN` recommendations + per-area implementation plans + a ready Claude-Code prompt). Source = `content/audyt/*.md` + `manifest.json`, baked by `scripts/copy-audyt.js` → `src/generated/audyt-book.ts` (wired into `build`), rendered via `markdownToHtml` in `AudytBookReader` (TOC, prev/next, progress, dark/light/sepia). Chapter status is derived from file presence (add a `.md` → it shows as done). Extend it across sessions; never store this in the DB.
 - **`/admin/audyt-podsumowanie`** — **Audyt — podsumowanie zmian**: admin-only 2-chapter book ("Co zostało wykonane" / "Co pozostało na przyszłość") — a self-contained working base for resuming post-audit work without opening the old audit or other reports. Source = `content/audyt-podsumowanie/*.md` + `manifest.json`, baked by `scripts/copy-audyt-podsumowanie.js` → `src/generated/audyt-podsumowanie-book.ts` (wired into `build`), rendered via the same `AudytBookReader` (`basePath="/admin/audyt-podsumowanie"`). Keep it updated as post-audit work progresses.
 - **`/admin/spec-pipeline`** — **Spec-Driven Pipeline (przewodnik)**: admin-only guide to how new Omnia features are built with Claude Code as a spec-driven pipeline (`/specify → /plan → /tasks → /implement → /verify → /review`), modeled on **GitHub Spec Kit** and adapted to Omnia. The pipeline itself lives in `.claude/` (repo root): `commands/*.md` (6 slash commands), `agents/*.md` (`omnia-planner`/`omnia-implementer`/`omnia-reviewer` subagents), and `spec-pipeline/` (the `constitution.md` of hard rules `C-NN`, the `README.md` guide, and `spec/plan/tasks` templates). **Interaction model:** the whole run is kicked off by a **single** `/specify` command; the owner is asked questions **only once** (up front, via one `AskUserQuestion` with the recommended option first and marked `(zalecane)`), and every later stage **auto-advances** (invokes the next stage's skill) through to the `develop` merge without further commands — Spec Kit's `/clarify` step is folded into that single `/specify` question moment. `/review` reaches its own verdict **without the owner's approval** and, on APPROVE, auto-merges to `develop`; a narrow escape hatch (`C-55`) lets a later stage ask one batched question only for a genuinely material/unforeseeable decision, and stages keep the `spec→plan→tasks→code` artifacts consistent, backtracking to fix the right file when a later finding invalidates an earlier one (`C-54`). The run ends with **no closing question**: promotion `develop → master` (production) at the very end is **pre-authorized** by the owner and performed **automatically** after the `develop` push — only on APPROVE + green build and after an integrity check (never rewinds production; on a failed check or a rejected `master` push the pipeline stops and reports instead of forcing `master`) (`C-52`). Feature artifacts land in `specs/<NNN-slug>/`. Guide + constitution are baked by `scripts/copy-spec-pipeline.js` → `src/generated/spec-pipeline.ts` (wired into `build`) and rendered via `AdminDocsViewer`. Keep `constitution.md` in sync when CLAUDE.md conventions change.
-- **`/admin/playground`** — interactive UI component sandbox.
+- **`/admin/playground`** — **component gallery** (045, rewritten): categories (Prymitywy / Formularze / Dane i listy / Powłoka / Stany brzegowe / Wzorce widoku), side nav on desktop and a drawer on mobile, search, live prop controls, edge-case variants and a **local skin switcher** that restyles only the demo area — so you can check a skin does not break a component *before* enabling it. The list is derived from `src/lib/ui/playground/registry.tsx`, so a component added to the registry shows up by itself.
 - **`/admin/architecture`** — app-structure overview (currently minimal; the full architecture lives in a system report).
 - **`/admin/e2e`** + **`/admin/qa`** — Playwright run guide; QA scenario authoring.
 
@@ -646,12 +668,31 @@ variables** (`Skin.tokens` JSON) applied **inline on `<html>`** in `layout.tsx`
 without FOUC; omitted variables inherit the default (dark) values, and the "Dark"
 skin = `{}`. The list of controllable variables, editor controls, and **validation**
 (`sanitizeTokenValue` — whitelist + regex, CSS-injection guard) live in
-`src/lib/skins.ts`. Skin-controlled tokens beyond colors: `--color-scheme`
-(light/dark for native controls + `data-skin-scheme` on `<html>`),
-`--radius`/`--radius-lg` (rounding), `--font-size-base` (density), `--on-accent`
-(text on accent colors — **use it instead of `#fff`** on colored buttons). 5 system
-skins are seeded by migration (Dark/Light/Casual/Blue/Pink). Models: `Skin`
-(system/user/team, `isPublic` to share), `UserSkinPref` (per-user choice); actions
+`src/lib/skins.ts`. **045 — a skin is no longer a colour map.** Nine token families:
+colours, typography (`--font-family-*`, weight, tracking, `--text-transform-heading`,
+line-height), density/spacing, radii, borders, shadows and glows, background (CSS gradients),
+motion (`--motion-duration`, `--motion-easing`) and shell chrome (`--chrome-bg`,
+`--chrome-frame`). **No schema change was needed** — `Skin.tokens` is JSON.
+Three rules that are easy to break:
+- **`--font-family-*` is a KEYWORD from a closed list** (`system|mono|serif|condensed|rounded`),
+  never a free font stack: quotes and commas are legal inside `font-family`, so any sanitising rule
+  comes out either leaky or useless — and system stacks issue no network request.
+- **`sanitizeTokenValue` uses per-kind function whitelists**, it does NOT relax the global block to
+  let gradients through: `linear-gradient(` passes, `url(`, `paint(`, `element(`, `attr(` do not.
+  This matters because a skin can now be **imported from a file** or **generated by a model** —
+  both are foreign input and go through the same validation.
+- **`--on-accent` instead of `#fff`** on coloured buttons. White on saturated amber is ~1.9:1.
+9 system skins seeded by migration: Dark/Light/Casual/Blue/Pink + the four flagships
+**Mostek / Papier / Terminal / Zen** (`src/lib/skins/flagship.ts`, migrations 0224/0225).
+Their contrast is **computed in tests** (`skinContrast.test.ts`), not eyeballed: body text ≥ 7:1,
+secondary/muted ≥ 4.5:1, text on **each** of six accents ≥ 4.5:1, visible borders and focus ring,
+no animation over 300 ms. A styled skin is **never** the default.
+**AI skin generation**: describe a theme in words → `/api/llm/skins/generate`
+(`lib/jobs/handlers/skinGenerate.ts`, op `generation`). The token catalogue in the prompt is
+**generated from `ALL_CONTROLS`**, not hand-copied, so it cannot drift. The model **proposes, never
+saves**; its output passes the same `validateTokens` as an imported file, and rejected keys are
+shown, not silently dropped. Export/import: `exportSkin`/`importSkin`, versioned `omniaSkin: 1`.
+Models: `Skin` (system/user/team, `isPublic` to share), `UserSkinPref` (per-user choice); actions
 in `src/actions/skins.ts`.
 
 **Mobile responsiveness**: The desktop `ModuleSidebar` is `hidden md:flex`. Mobile
@@ -686,7 +727,7 @@ survives) — do **not** move escaping into `inlineFormat` (it opened an XSS hol
 the table/paragraph merge).
 
 **Build pipeline**: `npm run build` runs
-`node scripts/copy-docs.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && next lint --dir src && prisma generate && next build && node scripts/migrate.js`.
+`node scripts/copy-docs.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && next lint --dir src && prisma generate && next build && node scripts/migrate.js`.
 - `copy-docs.js` bundles `docs/` for `/admin/docs`.
 - `check-action-coverage.js` (also `npm run check:actions`) verifies **every AI
   `AIAction` has an executor** in `/api/llm/home/execute` — the build **fails**
@@ -738,6 +779,25 @@ the table/paragraph merge).
   `Config.ai_cost_badge_enabled`), so a non-admin never receives model/token data over the wire.
   Background jobs are the exception to *where* the gate runs: handlers have no session, so they store
   raw usage in `Job.result` and `GET /api/jobs/[id]` applies `visibleUsage` on read.
+- **`check-ui-contract.js`** (also `npm run check:ui-contract`) — 045: enforces the **view contract**.
+  Chapter 10.4 of the target-architecture book says it outright: merely *having* a shared component is
+  not enough — `components/ui/home` existed and was not used everywhere. Three checks: (1) every route
+  directory under `src/app/` has an entry in `src/lib/ui/view-contract.json` — keyed by **module**, not
+  filename, because the `*Page.tsx` convention is not universal (Warsztaty has `WorkshopsList.tsx`);
+  (2) a view marked `done` renders `<ModuleView>` **with** a `state` prop; (3) no hard-coded `#rrggbb`
+  in `src/components` without a declared role. The script cannot tell a THEME colour from a colour that
+  is DATA (a tag palette the user picked, a chart series, a printed QR label), so — like the other
+  gates — it demands an explicit decision: `paleta-danych` / `ilustracja` / `do-poprawy` plus a reason.
+- **`check-schema-drift.js`** (also `npm run check:schema-drift`) — Faza 0 / task 3 of the rebuild:
+  `schema.prisma` and the migrations directory are TWO sources of truth about the database shape, and
+  nothing compared them. Editing a model without writing a migration passes locally (`prisma generate`
+  reads the schema) and breaks in production, where `migrate deploy` applies only migration files.
+  The gate runs `prisma migrate diff` from migrations to schema; a non-empty diff fails the build.
+  **Skips (does not fail) without `DATABASE_URL`** — a clean checkout has nothing to replay migrations
+  on, and blocking the build there would just get the gate switched off. Also skips on a remote/prod
+  connection: it creates and drops a shadow database (C-13). Conscious exceptions (things Prisma
+  cannot express, e.g. `pg_trgm` GIN indexes created in raw SQL) live in
+  `src/lib/db/schema-drift-allowed.json` with a reason each.
 - `check-migrations.js` (also `npm run check:migrations`) **fails** on a *new*
   duplicate migration-number prefix (legacy duplicates grandfathered).
 - `migrate.js` runs `prisma migrate deploy` (with retries for Neon cold-start) then
