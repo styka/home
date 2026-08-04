@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import { PageHeader } from "@/components/ui/home/PageHeader";
 import { ViewBar } from "./ViewBar";
 import { ChromeFrame } from "./ChromeFrame";
@@ -61,6 +61,17 @@ export interface ModuleViewProps {
   /** Szerokość treści; `narrow` = kolumna czytelnicza (jak `pageInnerStyle`). */
   width?: "full" | "narrow";
 
+  /**
+   * Referencja do kontenera PRZEWIJANIA widoku.
+   *
+   * Potrzebna modułom, które wirtualizują długie listy (Kontakty, Magazynowanie):
+   * `@tanstack/react-virtual` musi znać element, który faktycznie się przewija, a od
+   * kontraktu widoku należy on do ramy, nie do modułu. Bez tego moduł musiałby
+   * zbudować własny kontener przewijania wewnątrz ramy — czyli dwa zagnieżdżone
+   * scrolle i sklejony pasek na telefonie.
+   */
+  scrollRef?: RefObject<HTMLDivElement>;
+
   children?: ReactNode;
 }
 
@@ -80,10 +91,12 @@ export function ModuleView({
   noAccess,
   loadingRows,
   width = "full",
+  scrollRef,
   children,
 }: ModuleViewProps) {
   return (
     <div
+      ref={scrollRef}
       style={{
         position: "relative",
         flex: 1,

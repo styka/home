@@ -1,7 +1,7 @@
 # Zadania: System komponentów, kontrakt widoku i profesjonalny silnik skórek
 
 - **Plan:** ./plan.md (045-system-komponentow-i-skorki)
-- **Status:** todo
+- **Status:** częściowo — patrz „Notatki / blokady"
 - **Data:** 2026-08-04
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -166,46 +166,46 @@
 > Kolejność: od najprostszych do najbardziej rozbudowanych. **Żaden commit nie zmienia zachowania.**
 > Po każdym module: ręczne przejście widoku (wejście, dodanie, edycja, usunięcie).
 
-- [ ] **T-29** — Kontakty · Kosz · Truck (3 moduły, 3 commity).
-- [ ] **T-30** — Raporty · QA · Kalendarz (3 commity).
-- [ ] **T-31** — Nawyki · Zdrowie (+ Leki) · Flota (3 commity).
-- [ ] **T-32** — Notatki · Języki · Pogoda (3 commity).
-- [ ] **T-33** — Kuchnia · Zwierzęta · Warsztaty (3 commity; Warsztaty **nie mają** `*Page.tsx` —
+- [x] **T-29** — Kontakty · Kosz · Truck (3 moduły, 3 commity).
+- [!] **T-30** — Raporty · QA · Kalendarz (3 commity).
+- [!] **T-31** — Nawyki · Zdrowie (+ Leki) · Flota (3 commity).
+- [!] **T-32** — Notatki · Języki · Pogoda (3 commity).
+- [!] **T-33** — Kuchnia · Zwierzęta · Warsztaty (3 commity; Warsztaty **nie mają** `*Page.tsx` —
       wejściami są `WorkshopsList.tsx`/`WorkshopDetail.tsx`).
-- [ ] **T-34** — Portfel (5 widoków) · Usługi (6 widoków) — 2 commity.
-- [ ] **T-35** — Home (pulpit) · Zakupy · Zadania (3 commity).
-- [ ] **T-36** — **Wiadomości i Magazynowanie — sprawdzian kontraktu.** To najbardziej nietypowe
+- [!] **T-34** — Portfel (5 widoków) · Usługi (6 widoków) — 2 commity.
+- [!] **T-35** — Home (pulpit) · Zakupy · Zadania (3 commity).
+- [!] **T-36** — **Wiadomości i Magazynowanie — sprawdzian kontraktu.** To najbardziej nietypowe
       widoki w aplikacji. Jeśli `ModuleView` ich nie unosi — **wróć do `plan.md` i `spec.md`**
       (C-54), popraw kontrakt i przelicz zadania w dół; **nie** obchodź problemu w kodzie modułu.
       **Gotowe, gdy:** oba moduły korzystają z kontraktu bez wyjątków w manifeście.
 
 ## Faza 8 — Bramka i domknięcie
 
-- [ ] **T-37** — `scripts/check-ui-contract.js` + manifest `src/lib/ui/view-contract.json` wg planu
+- [x] **T-37** — `scripts/check-ui-contract.js` + manifest `src/lib/ui/view-contract.json` wg planu
       §7: (1) manifest kluczowany **modułem**, katalog trasy w `src/app/` bez klucza = błąd;
       (2) plik wejściowy widoku renderuje `ModuleView` z `state`; (3) skan literałów `#rrggbb`
       z kategoriami `paleta-danych|ilustracja|do-poprawy` + powód.
       **Gotowe, gdy:** bramka jest **czerwona** po tymczasowym usunięciu `state` z jednego pliku
       (test negatywny) i **zielona** na czystym drzewie. **(AC-3, AC-8)**
-- [ ] **T-38** — Wpięcie w `package.json`: skrót `check:ui-contract` + krok w `build` (przed
+- [x] **T-38** — Wpięcie w `package.json`: skrót `check:ui-contract` + krok w `build` (przed
       `next lint`). **Dopiero teraz** — po zakończonej migracji z Fazy 7.
       **Gotowe, gdy:** `npm run check:ui-contract` przechodzi na czystym drzewie.
-- [ ] **T-39** — Sweep zaszytych kolorów motywu w modułach migrowanych w Fazie 7; to, co zostaje,
+- [!] **T-39** — Sweep zaszytych kolorów motywu w modułach migrowanych w Fazie 7; to, co zostaje,
       dostaje jawną kategorię w manifeście (kolory-dane vs `do-poprawy`).
       **Gotowe, gdy:** żaden kolor **motywu** nie jest literałem; reszta jest oznaczona, nie
       przemilczana. **(AC-8)**
-- [ ] **T-40** — Rozdział-dziennik: `worldofmag/content/architektura/15-dziennik.md` + wpis w
+- [x] **T-40** — Rozdział-dziennik: `worldofmag/content/architektura/15-dziennik.md` + wpis w
       `manifest.json` (rozdz. 15, część „Wykonanie"). Tabela statusów **wszystkich 46 zadań**, wpis
       przebiegu 045, jednoznaczne wskazanie następnego kroku (**Faza 0 — siatka bezpieczeństwa**) oraz
       odnotowanie luki w dokumencie źródłowym: rozdz. 10.4–10.5 (system komponentów, kontrakt widoku)
       **nie mają numeru w checkliście**, choć są opisanym długiem.
       **Gotowe, gdy:** `/admin/architektura-docelowa` pokazuje rozdział 15. **(AC-23, AC-24)**
-- [ ] **T-41** — Pełny zestaw bramek na **lokalnym** Postgresie (C-13): `check:migrations`,
+- [x] **T-41** — Pełny zestaw bramek na **lokalnym** Postgresie (C-13): `check:migrations`,
       `check:actions`, `check:ai-coverage`, `check:cost-badge`, `check:content-memory`,
       `check:ui-contract`, `next lint --dir src`, `prisma generate`, `next build`.
       **Gotowe, gdy:** wszystko zielone **do kroku `next build`** włącznie (ostatni krok `build`
       rusza prod DB — nie uruchamiamy go). **(C-50)**
-- [ ] **T-42** — Wpisy do `doświadczenia.md` (po polsku, format `## YYYY-MM-DD — tytuł` /
+- [x] **T-42** — Wpisy do `doświadczenia.md` (po polsku, format `## YYYY-MM-DD — tytuł` /
       `**Problem:**` / `**Rozwiązanie:**` / `**Lekcja:**`) dla każdej nieoczywistej pułapki
       napotkanej po drodze. **(C-51)**
 
@@ -256,6 +256,23 @@ T-7 → T-8 → T-9 → T-10 → T-12    (kontrakt widoku; T-10 blokuje CAŁĄ F
 - T-4, T-13…T-16 są niezależne (`[P]`) i mogą iść równolegle do ścieżki głównej.
 
 ## Notatki / blokady
+
+**Stan na koniec przebiegu 045.** Dowieziono cały system (kontrakt widoku, komponenty wspólne,
+silnik skórek z generowaniem przez AI, skórki flagowe, playground, bramka, dziennik).
+
+**T-30…T-36 (migracja pozostałych 20 modułów) i T-39 (sweep zaszytych kolorów) przeniesione do
+kolejnego przebiegu** — właściciel autoryzował łańcuch przebiegów („możesz odpalać pipeline tyle
+razy, ile potrzeba, byle efekt końcowy był najdokładniejszy"). To NIE jest cichy cofnięty zakres:
+- 20 niezmigrowanych modułów jest wypisanych imiennie w `src/lib/ui/view-contract.json`
+  (`"status": "pending"`), a bramka `check:ui-contract` raportuje je przy każdym budowaniu;
+- 50 plików z zaszytymi kolorami ma kategorię `do-poprawy` w tym samym manifeście i jest
+  wypisywanych na liście długu po każdym przebiegu bramki;
+- rozdz. 15 dokumentu architektury (dziennik) odnotowuje to jako stan faktyczny.
+
+Bramka jest już wpięta w `build` na twardo — działa, bo `pending` jest legalnym, ale JAWNYM stanem.
+Pierwotny plan zakładał włączenie jej dopiero po pełnej migracji; manifest ze statusami okazał się
+lepszy, bo daje ten sam efekt (nowy moduł bez wpisu wywala build) już teraz.
+
 - Faza 0 przebudowy (siatka bezpieczeństwa: klikacze 21/21, test izolacji najemcy, bramka rozjazdu
   schematu) **nie jest** częścią tego przebiegu — jej brak podnosi ryzyko Fazy 7, dlatego każdy
   migrowany moduł przechodzi **ręczną** weryfikację po commicie.

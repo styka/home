@@ -1,0 +1,395 @@
+{
+  "$opis": "Manifest kontraktu widoku (045). Kluczowany MODUŁEM, nie nazwą pliku — konwencja *Page.tsx nie jest powszechna. status: done | pending | exempt. Wpisy 'pending' to JAWNA lista długu, nie cisza.",
+  "modules": {
+    "apple-touch-icon": {
+      "status": "pending",
+      "entries": [],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "calendar": {
+      "status": "pending",
+      "entries": [
+        "src/components/calendar/CalendarPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "contacts": {
+      "status": "done",
+      "entries": [
+        "src/components/contacts/ContactsPage.tsx"
+      ]
+    },
+    "flota": {
+      "status": "pending",
+      "entries": [
+        "src/components/flota/FlotaHomePage.tsx",
+        "src/components/flota/VehicleDetailPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "guide": {
+      "status": "pending",
+      "entries": [],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "habits": {
+      "status": "pending",
+      "entries": [
+        "src/components/habits/HabitsPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "health": {
+      "status": "pending",
+      "entries": [
+        "src/components/health/HealthHomePage.tsx",
+        "src/components/health/MedicationsPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "invitations": {
+      "status": "pending",
+      "entries": [],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "kitchen": {
+      "status": "pending",
+      "entries": [
+        "src/components/kitchen/KitchenHomePage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "languages": {
+      "status": "pending",
+      "entries": [
+        "src/components/languages/DeckPage.tsx",
+        "src/components/languages/LanguagesHomePage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "legal": {
+      "status": "pending",
+      "entries": [],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "magazynowanie": {
+      "status": "pending",
+      "entries": [
+        "src/components/magazynowanie/DocumentsPage.tsx",
+        "src/components/magazynowanie/SuppliersPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "notes": {
+      "status": "pending",
+      "entries": [
+        "src/components/notes/NotesHomePage.tsx",
+        "src/components/notes/NotesPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "pets": {
+      "status": "pending",
+      "entries": [
+        "src/components/pets/PetDetailPage.tsx",
+        "src/components/pets/PetsHomePage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "pogoda": {
+      "status": "pending",
+      "entries": [],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "portfel": {
+      "status": "pending",
+      "entries": [
+        "src/components/portfel/BudgetsPage.tsx",
+        "src/components/portfel/ElementDetailPage.tsx",
+        "src/components/portfel/MonthlyReportPage.tsx",
+        "src/components/portfel/PortfelHomePage.tsx",
+        "src/components/portfel/PortfelSettingsPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "pwa-icon": {
+      "status": "pending",
+      "entries": [],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "qa": {
+      "status": "pending",
+      "entries": [
+        "src/components/qa/QaHomePage.tsx",
+        "src/components/qa/ScenarioPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "reports": {
+      "status": "pending",
+      "entries": [
+        "src/components/reports/ReportsHomePage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "services": {
+      "status": "pending",
+      "entries": [
+        "src/components/services/ListingDetailPage.tsx",
+        "src/components/services/ModerationPage.tsx",
+        "src/components/services/MyRequestsPage.tsx",
+        "src/components/services/ProviderPanelPage.tsx",
+        "src/components/services/ProviderPublicPage.tsx",
+        "src/components/services/ServicesCatalogPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "settings": {
+      "status": "pending",
+      "entries": [],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "shopping": {
+      "status": "pending",
+      "entries": [
+        "src/components/shopping/ShoppingHomePage.tsx",
+        "src/components/shopping/ShoppingPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "tasks": {
+      "status": "pending",
+      "entries": [
+        "src/components/tasks/TasksHomePage.tsx",
+        "src/components/tasks/TasksPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "trash": {
+      "status": "pending",
+      "entries": [
+        "src/components/trash/TrashPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "truck": {
+      "status": "pending",
+      "entries": [
+        "src/components/truck/TruckPlannerPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "warsztaty": {
+      "status": "pending",
+      "entries": [],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    },
+    "wiadomosci": {
+      "status": "pending",
+      "entries": [],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+    }
+  },
+  "colorExceptions": {
+    "src/components/shopping/StoreGraphView.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/shopping/StoreMapEditor.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/shopping/StoreWizard.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/shopping/StoresManager.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/recipes/CookMode.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/recipes/RecipeEditor.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/recipes/RecipeFilters.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/recipes/RecipeList.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/recipes/RecipeView.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/recipes/ShopForRecipeDialog.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/plan/MealPlanWeek.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/plan/PlanWeekDialog.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/plan/ShoppingFromPlanDialog.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/plan/SlotEditorSheet.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/cookbooks/CookbookEditDialog.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/cookbooks/CookbookList.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/cookbooks/CookbookView.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/pantry/PantryEditSheet.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/pantry/PantryList.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/kitchen/pantry/StockTakeMode.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/admin/AudytBookReader.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/teams/InvitationsList.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/teams/InviteMemberForm.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/tasks/QuickAddTask.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/tasks/TaskDetail.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/tasks/TaskTagBadge.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/tasks/TaskTagsManager.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/tasks/TasksGuide.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/brand/BrandLogo.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/skins/SkinEditor.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/notes/GroupsManager.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/notes/NoteGroupSection.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/notes/NoteRow.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/notes/NotesPage.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/notes/QuickNoteBar.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/notes/TagChip.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/shell/ModuleSidebar.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/portfel/MonthlyReportPage.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/magazynowanie/BatchesManager.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/magazynowanie/DocumentsPage.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/magazynowanie/PurchaseOrders.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/magazynowanie/QrLabels.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/magazynowanie/ScanFlow.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/magazynowanie/StockTakeMode.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/magazynowanie/StorageAnalytics.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/magazynowanie/StorageEditSheet.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/magazynowanie/StorageList.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/magazynowanie/StorageScan.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/magazynowanie/StorageSettingsForm.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    },
+    "src/components/magazynowanie/SuppliersPage.tsx": {
+      "kind": "do-poprawy",
+      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+    }
+  }
+}

@@ -5,7 +5,8 @@ import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/lib/viewState/viewState";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Users, Search, Plus, Pencil, Trash2, Check, X, Phone, Mail, Building2 } from "lucide-react";
-import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
+import { cardStyle } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
 import { getContacts, createContact, updateContact, deleteContact, type ContactDTO } from "@/actions/contacts";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
@@ -113,28 +114,36 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
   useKeyboardShortcuts(handlers);
 
   return (
-    <div ref={scrollRef} style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
-        <PageHeader
-          icon={<Users size={22} />}
-          iconColor="var(--accent-blue)"
-          title="Kontakty"
-          subtitle="Osobisty CRM — klienci, wykonawcy, znajomi"
-          action={
-            <button onClick={() => { setAdding((v) => !v); setEditId(null); }} style={{ ...primaryBtn, display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <Plus size={15} /> Nowy kontakt
-            </button>
-          }
-        />
-
-        <form onSubmit={(e) => { e.preventDefault(); reload(); }} style={{ display: "flex", gap: 8 }}>
-          <div style={{ position: "relative", flex: 1 }}>
+    <ModuleView
+      scrollRef={scrollRef}
+      width="narrow"
+      icon={<Users size={22} />}
+      iconColor="var(--accent-blue)"
+      title="Kontakty"
+      subtitle="Osobisty CRM — klienci, wykonawcy, znajomi"
+      state={contacts.length === 0 && !adding ? "empty" : "ready"}
+      empty={{
+        icon: <Users size={22} />,
+        title: "Brak kontaktów",
+        description: "Dodaj pierwszy kontakt, by zbudować swoją bazę relacji.",
+        action: { label: "Nowy kontakt", onClick: () => setAdding(true) },
+      }}
+      headerAction={
+        <button onClick={() => { setAdding((v) => !v); setEditId(null); }} style={{ ...primaryBtn, display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <Plus size={15} /> Nowy kontakt
+        </button>
+      }
+      filters={
+        <form onSubmit={(e) => { e.preventDefault(); reload(); }} style={{ display: "flex", gap: 8, flex: 1, minWidth: 0 }}>
+          <div style={{ position: "relative", flex: 1, minWidth: 140 }}>
             <Search size={15} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
             <input ref={searchRef} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Szukaj po nazwie, telefonie, e-mailu, tagu…" style={{ ...inputStyle, paddingLeft: 32 }} />
           </div>
           <button type="submit" style={primaryBtn} disabled={pending}>Szukaj</button>
         </form>
-
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {adding && (
           <ContactForm
             onDone={() => { setAdding(false); reload(); }}
@@ -142,9 +151,7 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
           />
         )}
 
-        {contacts.length === 0 ? (
-          <EmptyState icon={<Users size={28} />} message="Brak kontaktów" hint="Dodaj pierwszy kontakt, by zbudować swoją bazę relacji." />
-        ) : (
+        {contacts.length > 0 && (
           // Wrapper o wysokości całej listy (getTotalSize) z absolutnie pozycjonowanymi,
           // dynamicznie mierzonymi wierszami — renderujemy tylko okno widoczne (+overscan).
           <div ref={listRef} style={{ position: "relative", height: virtualizer.getTotalSize(), opacity: pending ? 0.6 : 1 }}>
@@ -179,7 +186,7 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
           </div>
         )}
       </div>
-    </div>
+    </ModuleView>
   );
 }
 
