@@ -39,6 +39,12 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
   const confirm = useCallback<ConfirmFn>((input) => {
     const opts: ConfirmOptions = typeof input === "string" ? { title: input } : input;
+    // Drugie wywołanie, zanim pierwsze zostało rozstrzygnięte, nadpisywałoby `resolveRef`
+    // i PIERWSZA obietnica nigdy by się nie domknęła — a jej `await` siedzi w handlerze
+    // usuwania. Efekt: kliknięcie „Usuń" w dwóch miejscach pod rząd i pierwszy handler
+    // wisi na zawsze, razem z ewentualnym `startTransition`. Domykamy poprzednie
+    // odmową — użytkownik i tak widzi już inne pytanie.
+    resolveRef.current?.(false);
     setOptions(opts);
     return new Promise<boolean>((resolve) => {
       resolveRef.current = resolve;

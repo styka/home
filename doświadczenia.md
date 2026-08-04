@@ -4,6 +4,38 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-04 — Wspólny komponent bez konsumenta wygląda w raporcie jak zrobiony
+**Problem:** Przebieg 045 dowiózł `ConfirmDialog`, `Field`, `DataList` i `BulkActionBar` — wszystkie
+zgodne z planem, otypowane, w playgroundzie, build zielony. Etap `/verify` odrzucił to jednak jako
+DO POPRAWY, bo **żadnego z nich nie używał ani jeden moduł**: w kodzie nadal siedziały 52 wywołania
+natywnego `window.confirm()`, a stan pusty istniał w dwóch implementacjach obok siebie. Bramki tego
+nie łapały, bo bramka sprawdza istnienie i poprawność, a nie ADOPCJĘ.
+**Rozwiązanie:** Trzy różne odpowiedzi zależnie od przypadku. `ConfirmDialog` dostał `ConfirmProvider`
+z API obietnicowym (`if (!(await confirmDialog(…))) return;`), bo podmiana MUSIAŁA być jednolinijkowa
+w miejscu wywołania — inaczej nikt nie zrobiłby jej w 52 plikach. Zdublowane `EmptyState` i `Field`
+zamieniono w cienkie nakładki na wspólne implementacje: jedna implementacja, dwa wejścia, zero
+przepisywania 21 wywołań. `DataList` i wspólny `BulkActionBar` po prostu **usunięto** — nie miały
+konsumenta i nie było go w zasięgu.
+**Lekcja:** Przy budowie systemu komponentów „gotowe" znaczy **wpięte**, nie „istnieje". Komponent
+bez konsumenta jest gorszy niż jego brak: w galerii ogłasza wspólne rozwiązanie, którego nikt nie
+stosuje, więc następna osoba i tak napisze swoje. Planując taki system, zaplanuj MIGRACJĘ pierwszego
+konsumenta w tym samym zadaniu — a jeśli migracja jest droga, przewidź nakładkę na stare API zamiast
+nowego wywołania w każdym pliku.
+
+## 2026-08-04 — Obietnica bez rozstrzygnięcia przy współdzielonym oknie dialogowym
+**Problem:** `ConfirmProvider` trzymał `resolve` bieżącej obietnicy w jednym `useRef`. Drugie
+wywołanie `confirm()`, zanim pierwsze zostało rozstrzygnięte, nadpisywało tę referencję — i pierwsza
+obietnica **nigdy się nie domykała**. Handler usuwania zostawał na `await` na zawsze, razem
+z otwartym `startTransition`, więc widok wisiał w stanie oczekiwania do przeładowania strony.
+Scenariusz nie jest teoretyczny: skróty klawiszowe działają dalej pod modalem.
+**Rozwiązanie:** Przed nadpisaniem referencji domykamy poprzednią obietnicę odmową
+(`resolveRef.current?.(false)`). Użytkownik i tak widzi już inne pytanie, więc „nie" jest jedyną
+bezpieczną odpowiedzią dla porzuconego wywołania.
+**Lekcja:** Każde API obietnicowe oparte na POJEDYNCZYM `useRef` z `resolve` ma tę pułapkę. Zawsze
+pytaj: „co się stanie przy drugim wywołaniu przed rozstrzygnięciem pierwszego?". Odpowiedź „to się nie
+zdarzy" jest fałszywa wszędzie tam, gdzie istnieją skróty klawiszowe, podwójne kliknięcia albo
+odświeżanie w tle.
+
 ## 2026-08-04 — Wspólny pasek widoku: powłoka nie może go narysować, ale może go wypełnić
 **Problem:** W 043 właściciel poprosił, żeby przycisk zapisu widoku był „wyraźnie widoczny w pasku
 bieżącego widoku". Odpowiedź brzmiała „nie da się" — `AppShell` renderuje `<main>{children}</main>`
