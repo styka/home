@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getUnitEconomics } from "@/actions/metrics";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
 import { withPln } from "@/lib/usdPln";

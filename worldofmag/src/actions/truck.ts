@@ -2,8 +2,8 @@
 
 import type { VehicleProfile } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { geocode, routeHgv, OrsError, type OrsRestrictions } from "@/lib/ors";
 import { fetchRoadworks } from "@/lib/overpass";
 import {

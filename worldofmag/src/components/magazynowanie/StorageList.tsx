@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
-import { text, type RawParams } from "@/lib/viewState/viewState";
+import { text, type RawParams } from "@/platform/viewState/viewState";
 import Link from "next/link";
 import { Plus, Search, Warehouse, AlertTriangle, ClipboardList, Camera, ShoppingCart, CalendarClock, ShieldCheck } from "lucide-react";
 import { StorageEditSheet } from "./StorageEditSheet";

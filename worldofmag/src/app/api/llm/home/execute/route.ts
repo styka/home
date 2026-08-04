@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { prisma } from "@/platform/db/prisma";
+import { auth } from "@/platform/auth/session";
 import { executePetAction } from "@/lib/ai/executors/petExecutor";
 import { executeHealthAction } from "@/lib/ai/executors/healthExecutor";
 import { executeLanguageAction } from "@/lib/ai/executors/languageExecutor";

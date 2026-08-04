@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { pickTeamSuccessor } from "@/lib/teams/ownership";
 
 type PurgeTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];

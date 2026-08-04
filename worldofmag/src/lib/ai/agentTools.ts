@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/prisma";
-import { getUserTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { matchNamedRef, unresolvedRefMessage, type NamedCandidate, type RefResolution } from "@/lib/ai/refResolve";
 import { getCalendarEvents } from "@/actions/calendar";
 import { getBudgetsWithSpending, getFinanceGoals } from "@/actions/portfelBudgets";

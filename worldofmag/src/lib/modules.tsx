@@ -4,7 +4,7 @@ import {
   HeartPulse, Flame, FlaskConical, Truck, Car, Wallet, BookOpen, Handshake, Calendar,
   Newspaper, CloudSun, Warehouse, Wrench, Users,
 } from "lucide-react";
-import { PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS } from "@/platform/auth/permissions";
 
 // Definicja górnego (konfigurowalnego) modułu menu. Pozycje dolne (Ustawienia,
 // Zaproszenia, Admin) NIE są tutaj — pozostają na stałe w komponentach paska.

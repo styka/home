@@ -1,7 +1,7 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { requireAuth, getAccessibleTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
 
 export type CategorySlice = { category: string; amount: number; pct: number };
 

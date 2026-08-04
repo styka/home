@@ -8,7 +8,7 @@
 // Wynik to HIPOTEZY, nie prawdy: zapisujemy je z pewnością „guess"/„likely", a użytkownik potwierdza
 // albo odrzuca. Odrzucone wracają do promptu jako „tego nie proponuj ponownie".
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { chatComplete } from "@/lib/llm/chat";
 import { parseJsonLoose } from "@/lib/llm/json";
 import { fingerprintOf } from "@/lib/textKey";

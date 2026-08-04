@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Star, Search, Settings2 } from "lucide-react";
-import { openFavoritesSwitcher } from "@/lib/favorites/favoritesBus";
+import { openFavoritesSwitcher } from "@/platform/favorites/favoritesBus";
 import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
-import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
+import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 
 interface FavoritesSidebarSectionProps {
   favorites: FavoriteViewDTO[];

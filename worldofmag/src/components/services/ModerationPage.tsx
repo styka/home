@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
-import { oneOf, type RawParams } from "@/lib/viewState/viewState";
+import { oneOf, type RawParams } from "@/platform/viewState/viewState";
 import Link from "next/link";
 import { ChevronLeft, ShieldAlert, Check, X, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/home";

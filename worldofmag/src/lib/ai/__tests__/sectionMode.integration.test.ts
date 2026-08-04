@@ -11,7 +11,7 @@ const rnd = () => Math.random().toString(36).slice(2, 10);
 
 /** Zakłada użytkownika na czas testu — `AiSectionPref` ma FK do `User`. */
 async function withUser(fn: (userId: string) => Promise<void>) {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const user = await prisma.user.create({
     data: { email: `sectionmode-${rnd()}@test.local`, name: "Test trybu sekcji" },
   });
@@ -25,7 +25,7 @@ async function withUser(fn: (userId: string) => Promise<void>) {
 
 /** Podmienia wartość klucza konfiguracji na czas testu i przywraca poprzednią. */
 async function withConfig(value: string | null, fn: () => Promise<void>) {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const { AI_SECTION_MODES_CONFIG_KEY } = await import("@/lib/ai/sectionMode");
   const before = await prisma.config.findUnique({ where: { key: AI_SECTION_MODES_CONFIG_KEY } });
   try {
@@ -85,7 +85,7 @@ test(
   "preferencja użytkownika wygrywa z domyślnym systemowym",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/platform/db/prisma");
     const { resolveSectionMode } = await import("@/lib/ai/sectionModeResolver");
     await withConfig('{"weather.ideas":"always"}', async () => {
       await withUser(async (userId) => {
@@ -116,7 +116,7 @@ test(
   "nieznana nazwa trybu jest ignorowana — i w konfiguracji, i w preferencji",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/platform/db/prisma");
     const { resolveSectionMode } = await import("@/lib/ai/sectionModeResolver");
     await withConfig('{"weather.ideas":"codziennie","pets.insights":"always"}', async () => {
       await withUser(async (userId) => {
@@ -137,7 +137,7 @@ test(
   "własne i systemowe to dwa rozłączne zapisy — żaden nie nadpisuje drugiego",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/platform/db/prisma");
     const { AI_SECTION_MODES_CONFIG_KEY } = await import("@/lib/ai/sectionMode");
     const { resolveSectionMode } = await import("@/lib/ai/sectionModeResolver");
     await withConfig('{"weather.ideas":"onChange"}', async () => {
@@ -173,7 +173,7 @@ test(
   "resolveSectionModes zwraca komplet sekcji i zgadza się z pojedynczym rozstrzygnięciem",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/platform/db/prisma");
     const { AI_SECTION_KINDS } = await import("@/lib/ai/sectionMode");
     const { resolveSectionMode, resolveSectionModes } = await import("@/lib/ai/sectionModeResolver");
     await withConfig('{"news.hotTopics":"onChange"}', async () => {

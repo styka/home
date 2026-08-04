@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { getPantry, getExpiringSoon } from "@/actions/pantry";
 import { PantryList } from "@/components/kitchen/pantry/PantryList";
 

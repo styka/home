@@ -3,7 +3,7 @@
 // wstecznej zgodności. Domyślnie klient używa kolejki (Z-131/T-17): runJob("kitchen.ocrImage").
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { kitchenOcrImageHandler } from "@/lib/jobs/handlers/kitchenOcrImage";
 import { JobError } from "@/lib/jobs/types";
 

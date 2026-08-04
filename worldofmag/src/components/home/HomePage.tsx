@@ -17,7 +17,7 @@ import { AdminDashboardWidget } from "@/components/home/AdminDashboardWidget";
 import { FavoriteCards } from "@/components/favorites/FavoriteCards";
 import { HomeAssistantCard } from "@/components/home/HomeAssistantCard";
 import { buildAssistantStarters } from "@/lib/ai/assistantStarters";
-import type { FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
+import type { FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 import { SectionHeading, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import type { TaskPriority, CareAgendaItem } from "@/types";
 

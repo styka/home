@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { Map, Package, Database, Layers, Server, Cpu, Code, Shield, Globe, GitBranch, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 

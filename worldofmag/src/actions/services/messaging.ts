@@ -2,8 +2,8 @@
 
 // Z-213/361: akcje modułu Usługi — oceny + wątek zlecenia (czat M1 + wyceny M3).
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { notifyUser } from "@/lib/notify";
 import { loadRequestAccess } from "@/lib/services/access";
 import type { RequestStatus, RequestThreadDTO, QuoteStatus, PaymentMethod, PaymentStatus } from "@/lib/services";

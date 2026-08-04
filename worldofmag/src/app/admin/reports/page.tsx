@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getReportsMeta } from "@/actions/reports";
 import { BookOpen, ChevronRight, ChevronLeft, Calendar, Plus, User, HardDrive, Database } from "lucide-react";
 

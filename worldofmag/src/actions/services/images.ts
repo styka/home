@@ -2,8 +2,8 @@
 
 // Z-213/361: akcje modułu Usługi — portfolio zdjęć wykonawcy (M4).
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { requireOwnProvider } from "@/lib/services/helpers";
 
 /** Dodaje zdjęcie do portfolio wykonawcy. url = data-URL (limit ~2MB) lub link. */

@@ -63,7 +63,7 @@ test(
   "izolacja najemcy: użytkownik B nie widzi ŻADNEGO rekordu użytkownika A",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/platform/db/prisma");
     const client = prisma as unknown as Record<string, { create: Function; findMany: Function; deleteMany: Function }>;
 
     const userA = await prisma.user.create({ data: { email: `iso-a-${rnd()}@test.local` } });

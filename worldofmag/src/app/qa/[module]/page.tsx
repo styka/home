@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getModuleTree } from "@/actions/qa";
 import { QaModuleBrowser } from "@/components/qa/QaModuleBrowser";
 import { QA_MODULES } from "@/lib/qaModules";

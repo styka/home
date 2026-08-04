@@ -9,7 +9,7 @@ import {
   type RawParams,
   type ViewSpec,
   type ViewValues,
-} from "@/lib/viewState/viewState";
+} from "@/platform/viewState/viewState";
 
 export interface SetViewOptions {
   /**

@@ -11,7 +11,7 @@ const rnd = () => Math.random().toString(36).slice(2, 10);
 const PAGE_ORDER_BY = [{ order: "asc" as const }, { priority: "desc" as const }, { createdAt: "asc" as const }];
 
 test("Z-221 sort pozycji: order ASC > priority DESC > createdAt ASC", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const user = await prisma.user.create({ data: { email: `shop-${rnd()}@test.local` } });
   const list = await prisma.shoppingList.create({ data: { name: `L-${rnd()}`, ownerId: user.id } });
 

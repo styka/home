@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
-import { text, type RawParams } from "@/lib/viewState/viewState";
+import { text, type RawParams } from "@/platform/viewState/viewState";
 import Link from "next/link";
 import { Plus, Search, Package, AlertTriangle, ClipboardList } from "lucide-react";
 import { PantryEditSheet } from "./PantryEditSheet";

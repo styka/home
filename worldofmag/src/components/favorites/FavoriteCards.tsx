@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { Star } from "lucide-react";
-import { openFavoritesSwitcher } from "@/lib/favorites/favoritesBus";
-import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
+import { openFavoritesSwitcher } from "@/platform/favorites/favoritesBus";
+import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 
 interface FavoriteCardsProps {
   favorites: FavoriteViewDTO[];

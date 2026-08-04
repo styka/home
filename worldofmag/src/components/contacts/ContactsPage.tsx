@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo, useRef, useLayoutEffect, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
-import { text, type RawParams } from "@/lib/viewState/viewState";
+import { text, type RawParams } from "@/platform/viewState/viewState";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Users, Search, Plus, Pencil, Trash2, Check, X, Phone, Mail, Building2 } from "lucide-react";
 import { cardStyle } from "@/components/ui/home";

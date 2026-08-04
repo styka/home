@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { prisma } from "@/platform/db/prisma";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import type { QaEpic, QaUserStory, QaTestScenario } from "@prisma/client";
 
 async function requireQaAccess() {

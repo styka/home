@@ -7,8 +7,8 @@ const HAS_DB = !!process.env.DATABASE_URL;
 const rnd = () => Math.random().toString(36).slice(2, 10);
 
 test("Z-194 getAccessibleTeamIds: dziecko z ograniczeniem nie widzi zespołu dla zablokowanego modułu", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
-  const { prisma } = await import("@/lib/prisma");
-  const { getAccessibleTeamIds, getUserTeamIds } = await import("@/lib/server-utils");
+  const { prisma } = await import("@/platform/db/prisma");
+  const { getAccessibleTeamIds, getUserTeamIds } = await import("@/platform/auth/serverUtils");
   const { serializeModuleAccess } = await import("@/lib/teams/memberAccess");
 
   const parent = await prisma.user.create({ data: { email: `acc-p-${rnd()}@test.local` } });

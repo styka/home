@@ -1,4 +1,4 @@
-import { getUserTeamIds, requireAuth } from "@/lib/server-utils"
+import { getUserTeamIds, requireAuth } from "@/platform/auth/serverUtils"
 
 export { getUserTeamIds }
 

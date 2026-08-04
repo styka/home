@@ -2,7 +2,7 @@
 // (notes.ts, tasks.ts…), nie eksponowany do klienta. Zapisuje migawkę encji przed twardym
 // usunięciem, by dało się ją przywrócić.
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 
 const RETENTION_DAYS = 30;
 

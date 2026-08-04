@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FavoritesSwitcher } from "./FavoritesSwitcher";
 import { FavoritesShortcuts } from "./FavoritesShortcuts";
-import { FAVORITES_OPEN_EVENT } from "@/lib/favorites/favoritesBus";
-import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
+import { FAVORITES_OPEN_EVENT } from "@/platform/favorites/favoritesBus";
+import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 
 interface FavoritesOverlayProps {
   favorites: FavoriteViewDTO[];

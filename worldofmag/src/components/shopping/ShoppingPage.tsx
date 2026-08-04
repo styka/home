@@ -23,7 +23,7 @@ import { mutSetStatus, mutRemove } from "@/lib/shopping/offlineMutations";
 import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus, SortMode, StoreWithGraph } from "@/types";
 import { FILTER_TABS, STATUS_CYCLE } from "@/types";
 import { useViewState } from "@/hooks/useViewState";
-import { oneOf, text, type RawParams } from "@/lib/viewState/viewState";
+import { oneOf, text, type RawParams } from "@/platform/viewState/viewState";
 import { ModuleView } from "@/components/ui/view";
 
 const SORT_STORAGE_KEY = "wom_shopping_sort";

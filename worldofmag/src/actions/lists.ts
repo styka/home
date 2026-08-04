@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth, getAccessibleTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
 import { bookAutoExpense } from "@/lib/portfel/autoExpense";
 import type { ShoppingList, ShoppingListWithItems } from "@/types";
 

@@ -1,10 +1,10 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { hasPermission, PERMISSIONS } from "@/lib/permissions"
-import { logAudit } from "@/lib/audit"
+import { auth } from "@/platform/auth/session"
+import { prisma } from "@/platform/db/prisma"
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions"
+import { logAudit } from "@/platform/audit/audit"
 import { keysetQuery, keysetResult, type KeysetPage } from "@/lib/pagination"
 import { countDistinctAdminHolders } from "@/lib/access/adminLockout"
 

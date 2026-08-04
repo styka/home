@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { getUserReport } from "@/actions/reports";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { BookOpen, ArrowLeft, Calendar, Tag } from "lucide-react";

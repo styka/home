@@ -7,7 +7,7 @@
 // and ~2000/day; geocoding ~1000/day. planTruckRoute makes at most 2 geocode +
 // 2 directions calls per plan — do not loop these.
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { decryptSecret } from "@/lib/crypto/secrets";
 import type { PolygonCoords } from "@/lib/googleMaps";
 

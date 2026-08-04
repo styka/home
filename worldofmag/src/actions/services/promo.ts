@@ -2,8 +2,8 @@
 
 // Z-213/361: akcje modułu Usługi — kody rabatowe (M16, wyodrębnione z actions/services.ts).
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { requireMyProvider } from "@/lib/services/helpers";
 import { loadRequestAccess } from "@/lib/services/access";
 import type { PromoKind, ServicePromoCodeDTO } from "@/lib/services";

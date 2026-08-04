@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getReport } from "@/actions/reports";
 import { EditReportForm } from "./EditReportForm";
 

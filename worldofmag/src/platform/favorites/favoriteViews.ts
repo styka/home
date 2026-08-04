@@ -4,7 +4,7 @@
 // Server Actions, jak i komponenty `"use client"` (gwiazdka w pasku, przełącznik, karty pulpitu).
 // Dołożenie tu czegokolwiek, co dotyka bazy, wciągnęłoby Prismę do paczki przeglądarki.
 
-import { isPathLocked } from "@/lib/permissions";
+import { isPathLocked } from "@/platform/auth/permissions";
 
 /** Maksymalna liczba ulubionych na użytkownika — proste zabezpieczenie przed „śmietnikiem". */
 export const MAX_FAVORITE_VIEWS = 30;

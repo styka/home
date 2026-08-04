@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition, useMemo } from "react";
 import { useViewState } from "@/hooks/useViewState";
-import { oneOf, type RawParams } from "@/lib/viewState/viewState";
+import { oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { useRouter } from "next/navigation";
 import {
   Newspaper,

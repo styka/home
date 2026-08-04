@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/platform/auth/session";
+import { prisma } from "@/platform/db/prisma";
 import { exchangeCode, fetchAccountEmail, DRIVE_CALLBACK_PATH } from "@/lib/drive/oauth";
 import { ensureRootFolder } from "@/lib/drive/client";
 

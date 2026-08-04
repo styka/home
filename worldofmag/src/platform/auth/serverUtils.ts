@@ -1,7 +1,7 @@
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/platform/auth/session";
+import { prisma } from "@/platform/db/prisma";
 import { canMemberAccessModule } from "@/lib/teams/memberAccess";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 
 export async function requireAuth() {
   const session = await auth();

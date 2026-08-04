@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getEpicForAdmin } from "@/actions/qa";
 import { EditEpicForm } from "@/components/admin/qa/EditEpicForm";
 

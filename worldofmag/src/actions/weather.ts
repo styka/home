@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { chatComplete } from "@/lib/llm/chat";
 import { parseJsonLoose } from "@/lib/llm/json";
 import {
@@ -28,9 +28,9 @@ import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
 import { resolveSectionMode } from "@/lib/ai/sectionModeResolver";
 import type { AiSectionMode } from "@/lib/ai/sectionMode";
 import { buildUserContext, userContextStamp } from "@/lib/userContext";
-import { recordTrash } from "@/lib/trash";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { recordTrash } from "@/platform/trash/trash";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { createTask } from "@/actions/tasks";
 
 export interface LocationDTO {

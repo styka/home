@@ -1,6 +1,6 @@
 // Z-010: handler akcji asystenta dla modułu Zadania (zadania + projekty).
 // Scala oba dawne bloki `module === "tasks"` z execute/route.ts.
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { createTask, updateTask, deleteTask, updateTaskTags, addTaskComment } from "@/actions/tasks";
 import { createTaskProject, updateTaskProject, deleteTaskProject } from "@/actions/taskProjects";
 import { createTaskTag } from "@/actions/taskTags";

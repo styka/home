@@ -1,8 +1,8 @@
 // A1: dziennik audytu zmian RBAC i konfiguracji. Helper server-side (NIE "use server")
 // wołany przez akcje admina po wykonaniu mutacji. Sam pobiera aktora z sesji.
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/platform/auth/session";
+import { prisma } from "@/platform/db/prisma";
 
 export type AuditCategory = "rbac" | "config";
 

@@ -9,7 +9,7 @@
 // na cykl. Teraz każde źródło pobieramy RAZ do wspólnej puli (`NewsArticle`), a przypisanie do
 // tematów jest osobnym, tanim etapem na całej puli naraz.
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { chatComplete } from "@/lib/llm/chat";
 import { parseJsonLoose } from "@/lib/llm/json";
 import { fetchRss } from "@/lib/news/rss";

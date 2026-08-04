@@ -1,6 +1,6 @@
 // 045: wygeneruj skórkę z opisu słownego. Logika w handlerze; cienka trasa sync.
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { skinGenerateHandler } from "@/lib/jobs/handlers/skinGenerate";
 import { JobError } from "@/lib/jobs/types";
 

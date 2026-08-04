@@ -7,11 +7,11 @@
 // trzeba tego pilnować dodatkowym warunkiem, którego łatwo zapomnieć przy kolejnej sekcji.
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { requireAuth } from "@/lib/server-utils";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { logAudit } from "@/lib/audit";
+import { prisma } from "@/platform/db/prisma";
+import { auth } from "@/platform/auth/session";
+import { requireAuth } from "@/platform/auth/serverUtils";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+import { logAudit } from "@/platform/audit/audit";
 import {
   AI_SECTION_KINDS,
   AI_SECTION_MODES_CONFIG_KEY,

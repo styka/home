@@ -1,8 +1,8 @@
 "use server"
 
-import { prisma } from "@/lib/prisma"
+import { prisma } from "@/platform/db/prisma"
 import { revalidatePath } from "next/cache"
-import { requireAuth } from "@/lib/server-utils"
+import { requireAuth } from "@/platform/auth/serverUtils"
 
 export async function inviteUser(teamId: string, targetEmail: string) {
   const user = await requireAuth()

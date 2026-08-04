@@ -1,8 +1,8 @@
 "use server"
 
-import { prisma } from "@/lib/prisma"
+import { prisma } from "@/platform/db/prisma"
 import { revalidatePath } from "next/cache"
-import { requireAuth } from "@/lib/server-utils"
+import { requireAuth } from "@/platform/auth/serverUtils"
 import { serializeModuleAccess } from "@/lib/teams/memberAccess"
 
 async function requireTeamRole(

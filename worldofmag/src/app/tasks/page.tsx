@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/platform/auth/session";
+import { prisma } from "@/platform/db/prisma";
 import { getTaskProjects } from "@/actions/taskProjects";
 import { userDayBounds } from "@/lib/userTime";
 import { TasksHomePage } from "@/components/tasks/TasksHomePage";

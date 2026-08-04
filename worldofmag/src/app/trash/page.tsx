@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { getTrash } from "@/actions/trash";
 import { TrashPage } from "@/components/trash/TrashPage";
 

@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth, ownedOrSystemWhere } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth, ownedOrSystemWhere } from "@/platform/auth/serverUtils";
 import { categorize } from "@/lib/categorize";
 import { parseQuantity } from "@/lib/parseQuantity";
 import { assertListAccess } from "@/actions/lists";

@@ -20,13 +20,13 @@ import { ShortcutsCheatSheet } from "@/components/shortcuts/ShortcutsCheatSheet"
 import { ShortcutsButton } from "@/components/shortcuts/ShortcutsButton";
 import { ViewChromeProvider } from "@/components/ui/view";
 import { FreshnessIndicator } from "./FreshnessIndicator";
-import { isPathLocked } from "@/lib/permissions";
+import { isPathLocked } from "@/platform/auth/permissions";
 import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
 import { FavoritesOverlay } from "@/components/favorites/FavoritesOverlay";
-import { openFavoritesSwitcher } from "@/lib/favorites/favoritesBus";
-import type { FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
+import { openFavoritesSwitcher } from "@/platform/favorites/favoritesBus";
+import type { FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 import { DEFAULT_USD_PLN_RATE } from "@/lib/usdPln";
 
 interface AppShellProps {

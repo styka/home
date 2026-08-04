@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition, useMemo, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
-import { text, type RawParams } from "@/lib/viewState/viewState";
+import { text, type RawParams } from "@/platform/viewState/viewState";
 import Link from "next/link";
 import { BookOpen, ChevronRight, Calendar, User, Plus, Layers, Search, HardDrive } from "lucide-react";
 import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";

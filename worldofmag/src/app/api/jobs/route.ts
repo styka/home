@@ -3,7 +3,7 @@
 // (ownerId = użytkownik). Payload trafia do handlera dopiero w workerze.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { enqueue, QuotaError, MAX_ACTIVE_JOBS_PER_OWNER } from "@/lib/jobs/queue";
 import { ENQUEUABLE_TYPES } from "@/lib/jobs/handlers";
 import { startJobWorker } from "@/lib/jobs/worker";

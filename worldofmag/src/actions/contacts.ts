@@ -1,8 +1,8 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { revalidatePath } from "next/cache";
-import { getUserScope, ownedByWhere, assertOwnership } from "@/lib/ownership";
+import { getUserScope, ownedByWhere, assertOwnership } from "@/platform/auth/ownership";
 
 export type ContactDTO = {
   id: string;

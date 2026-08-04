@@ -1,6 +1,6 @@
 // Z-010: handler akcji asystenta dla modułu Warsztaty (warsztat + wyposażenie).
-import { prisma } from "@/lib/prisma";
-import { getUserTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import {
   createWorkshop, addWorkshopItem, updateWorkshop, deleteWorkshop,
   updateWorkshopItem, deleteWorkshopItem, adjustWorkshopItemQuantity,

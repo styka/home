@@ -11,7 +11,7 @@ import {
   normalizeFavoritePath,
   suggestFavoriteLabel,
   type FavoriteViewDTO,
-} from "@/lib/favorites/favoriteViews";
+} from "@/platform/favorites/favoriteViews";
 import { MODULES } from "@/lib/modules";
 
 const ICON_CHOICES = ["⭐", "📌", "🔥", "✅", "📝", "🛒", "💡", "📊", "🐾", "🍳"];

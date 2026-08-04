@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { getUserTeamIds } from "@/lib/server-utils";
+import { auth } from "@/platform/auth/session";
+import { prisma } from "@/platform/db/prisma";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { getRecentActivity } from "@/actions/activity";
 import { getTodaysMeals } from "@/actions/mealPlans";
 import { getExpiringSoon } from "@/actions/pantry";

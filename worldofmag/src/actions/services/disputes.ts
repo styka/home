@@ -2,10 +2,10 @@
 
 // Z-213/361: akcje modułu Usługi — spory/moderacja (wyodrębnione z actions/services.ts).
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { notifyUser } from "@/lib/notify";
 import { loadRequestAccess } from "@/lib/services/access";
 import type { ServiceDisputeDTO, DisputeStatus, ModerationDisputeDTO } from "@/lib/services";

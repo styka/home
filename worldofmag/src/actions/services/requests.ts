@@ -2,8 +2,8 @@
 
 // Z-213/361: akcje modułu Usługi — zlecenia (tworzenie, status, anulowanie, lista, zmiana terminu).
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { notifyUser } from "@/lib/notify";
 import { REQUEST_STATUS_LABELS } from "@/lib/services";
 import { PROVIDER_TRANSITIONS, mapRequest, computeSlots } from "@/lib/services/helpers";

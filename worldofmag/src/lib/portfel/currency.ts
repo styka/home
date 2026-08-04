@@ -1,7 +1,7 @@
 // W5: przeliczanie majątku na walutę sprawozdawczą. Helper server-side (nie "use server").
 // rates[c] = ile jednostek baseCurrency kosztuje 1 jednostka waluty c (kurs „1 c = rate × base").
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 
 export type RateInfo = { base: string; rates: Record<string, number> };
 

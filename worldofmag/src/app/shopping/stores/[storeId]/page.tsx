@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { getStore } from "@/actions/stores";
 import { StoreEditorClient } from "@/components/shopping/StoreEditorClient";
 import type { StoreWithGraph } from "@/types";

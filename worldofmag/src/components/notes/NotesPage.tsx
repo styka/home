@@ -9,7 +9,7 @@ import { NotesQA } from "./NotesQA";
 import { TagChip } from "./TagChip";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useViewState } from "@/hooks/useViewState";
-import { idList, oneOf, text, type RawParams } from "@/lib/viewState/viewState";
+import { idList, oneOf, text, type RawParams } from "@/platform/viewState/viewState";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
 import { ModuleView } from "@/components/ui/view";
 import type { Note, Tag as TagType, NoteGroup, NoteFilter } from "@/types";

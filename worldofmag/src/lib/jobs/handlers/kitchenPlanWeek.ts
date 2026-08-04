@@ -1,9 +1,9 @@
 // Z-131 (T-17) — handler: plan posiłków na tydzień. Z `/api/llm/kitchen/plan-week`.
 // Czyta bibliotekę przepisów + spiżarnię po `ownerId` (nie po sesji — worker) i prosi
 // LLM o dobór przepisów do par (dzień, slot). Rzuca JobError przy błędach.
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { chatComplete } from "@/lib/llm/chat";
-import { getUserTeamIds } from "@/lib/server-utils";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { addDays, format } from "date-fns";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { usageFromChat } from "@/lib/ai/usage";
