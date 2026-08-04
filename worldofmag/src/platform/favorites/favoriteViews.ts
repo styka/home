@@ -4,8 +4,6 @@
 // Server Actions, jak i komponenty `"use client"` (gwiazdka w pasku, przełącznik, karty pulpitu).
 // Dołożenie tu czegokolwiek, co dotyka bazy, wciągnęłoby Prismę do paczki przeglądarki.
 
-import { isPathLocked } from "@/platform/auth/permissions";
-
 /** Maksymalna liczba ulubionych na użytkownika — proste zabezpieczenie przed „śmietnikiem". */
 export const MAX_FAVORITE_VIEWS = 30;
 
@@ -102,12 +100,19 @@ export function pathnameOf(path: string): string {
  * ma nadal działać. Ta funkcja musi być używana w KAŻDYM miejscu renderowania ulubionych
  * (karty pulpitu, pasek boczny, przełącznik, skróty klawiszowe), inaczej ulubione stałyby się
  * obejściem RBAC.
+ *
+ * 046: `isLocked` przychodzi PARAMETREM (zwykle `isPathLocked` z `@/lib/pathPermissions`), zamiast
+ * być tu zaimportowane. Powód jest ustrojowy: po przeniesieniu modułów pełna wiedza o tym, która
+ * ścieżka jakiego uprawnienia wymaga, mieszka w korzeniu kompozycji, a platformie nie wolno
+ * importować modułów. Parametr jest **wymagany** — gdyby był opcjonalny z domyślnym wariantem
+ * „historycznym", zapomniane przekazanie dawałoby cichy przeciek RBAC zamiast błędu kompilacji.
  */
 export function filterAccessibleFavorites<T extends { path: string }>(
   views: T[],
-  permissions: string[]
+  permissions: string[],
+  isLocked: (permissions: string[], path: string) => boolean
 ): T[] {
-  return views.filter((v) => !isPathLocked(permissions, pathnameOf(v.path)));
+  return views.filter((v) => !isLocked(permissions, pathnameOf(v.path)));
 }
 
 /**

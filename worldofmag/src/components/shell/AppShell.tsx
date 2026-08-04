@@ -20,7 +20,7 @@ import { ShortcutsCheatSheet } from "@/components/shortcuts/ShortcutsCheatSheet"
 import { ShortcutsButton } from "@/components/shortcuts/ShortcutsButton";
 import { ViewChromeProvider } from "@/components/ui/view";
 import { FreshnessIndicator } from "./FreshnessIndicator";
-import { isPathLocked } from "@/platform/auth/permissions";
+import { isPathLocked } from "@/lib/pathPermissions";
 import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";

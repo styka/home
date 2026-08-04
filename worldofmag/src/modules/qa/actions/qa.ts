@@ -4,12 +4,13 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+import qaModule from "../module";
 import type { QaEpic, QaUserStory, QaTestScenario } from "@prisma/client";
 
 async function requireQaAccess() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-  if (!hasPermission(session, PERMISSIONS.QA) && !hasPermission(session, PERMISSIONS.ADMIN)) {
+  if (!hasPermission(session, qaModule.permission) && !hasPermission(session, PERMISSIONS.ADMIN)) {
     throw new Error("Forbidden");
   }
   return session.user;

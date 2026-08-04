@@ -97,19 +97,30 @@
 
 ## Faza E — Jedna deklaracja zamiast ośmiu list
 
-- [ ] **T-17** — `src/platform/defineModule.ts` — typ deklaracji + funkcja pomocnicza
+- [x] **T-17** — `src/platform/defineModule.ts` — typ deklaracji + funkcja pomocnicza
       (`String` + unia, zero enumów — C-12).
-- [ ] **T-18** — `module.ts` dla czterech modułów pilotażowych.
-- [ ] **T-19** — `src/platform/registry.ts` — scalanie deklaracji z tablicą przejściową
+- [x] **T-18** — `module.ts` dla czterech modułów pilotażowych.
+- [x] **T-19** — `src/platform/registry.ts` — scalanie deklaracji z tablicą przejściową
       `lib/modules.tsx`, plus test jednostkowy: żaden moduł nie ginie, brak duplikatów id.
       **Gotowe, gdy:** rejestr ma dokładnie 21 modułów. **(AC-8)**
-- [ ] **T-20** — **Usunięcie** wpisów modułów pilotażowych z `lib/modules.tsx` i `lib/permissions.ts`.
+- [x] **T-20** — **Usunięcie** wpisów modułów pilotażowych z `lib/modules.tsx` i `lib/permissions.ts`.
       To jest sedno: deklaracja ma **zastąpić** listy, nie dołożyć dziewiątą.
       **Gotowe, gdy:** build i klikacz zielone przy usuniętych wpisach. **(AC-7)**
-- [ ] **T-21** — Bramka `scripts/check-module-registry.js`: katalog w `src/modules/` bez `module.ts`
+- [x] **T-21** — Bramka `scripts/check-module-registry.js`: katalog w `src/modules/` bez `module.ts`
       lub `contract.ts` = błąd; deklaracja niekompletna = błąd; zduplikowane id = błąd.
       Wpięcie w `build` + skrót w `package.json`.
+      **Rozszerzenie wobec planu:** czwarta kontrola — **wpięcie deklaracji w korzeń kompozycji**.
+      Moduł z kompletnym `module.ts`, którego nikt nie importuje, istnieje na dysku i nie istnieje
+      w aplikacji, przy zielonym buildzie.
       **Gotowe, gdy:** test negatywny (usunięty `module.ts`) czerwieni build. **(AC-6, AC-9)**
+- [x] **T-21a** — **Kontrola typów obejmuje pliki testowe** (`tsconfig.test.json` +
+      `npm run check:test-types`, wpięte w `build`). (Dopisane w trakcie `/implement` wg C-54.)
+      `tsconfig.json` wyklucza `src/**/*.test.ts`, więc `tsc --noEmit` nie widzi testów — w tym
+      przebiegu dwa razy zdarzyło się, że test importował plik przeniesiony do `platform/`,
+      typecheck był czysty, a wykrywał to dopiero 40-sekundowy `test:unit`. Testy potrzebują
+      własnego `target` (Node, iteracja po Set/Map), stąd osobna konfiguracja, a nie zdjęcie
+      wykluczenia.
+      **Gotowe, gdy:** zerwany import w pliku testowym czerwieni `check:test-types`.
 
 ## Faza F — Domknięcie
 

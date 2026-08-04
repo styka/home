@@ -206,6 +206,23 @@ i **scala** je z dotychczasową tablicą. To jest świadomy kompromis okresu prz
 17 modułów nie ma deklaracji, tablica musi zostać. Scalanie jest jawne i ma test sprawdzający, że
 żaden moduł nie wypadł ani się nie zdublował.
 
+
+**Poprawki z `/implement` (C-54) w tej sekcji:**
+
+1. **Scalanie deklaracji NIE mieszka w `platform/registry.ts`.** Plan umieszczał je tam, ale
+   platformie nie wolno importować modułów (ta sama reguła, którą sami wprowadzamy w tej fazie).
+   `platform/registry.ts` daje więc **typ deklaracji, `defineModule` i czyste funkcje scalające**,
+   a samo złożenie robi **korzeń kompozycji** poza platformą: `src/lib/modules.tsx`.
+2. **Mapowanie ścieżka → uprawnienie rozpada się na dwa poziomy.** Platforma zna tylko moduły
+   jeszcze nieprzeniesione i powierzchnie spoza rejestru (`legacyPermissionForPath`), a pełny obraz
+   składa `src/lib/pathPermissions.ts`. `filterAccessibleFavorites` (platforma) dostaje predykat
+   **parametrem wymaganym** — gdyby był opcjonalny z „historycznym" domyślnym, zapomniane
+   przekazanie dawałoby cichy przeciek RBAC zamiast błędu kompilacji.
+3. **Bramka rejestru sprawdza także wpięcie w korzeń kompozycji** — moduł z kompletną deklaracją,
+   którego nikt nie importuje, istnieje na dysku i nie istnieje w aplikacji, przy zielonym buildzie.
+4. **Kontrola typów obejmuje testy** (`tsconfig.test.json`, `check:test-types`, T-21a) — patrz
+   sekcja bramek.
+
 **Bramka `check:module-registry`** (nowa, wzorem `check:ui-contract`): każdy katalog w
 `src/modules/` musi mieć `module.ts` i `contract.ts`; deklaracja musi mieć komplet pól; id modułu
 musi być unikalne w scalonym rejestrze. Wpięta w `build`.
@@ -271,7 +288,7 @@ pliku. Zadanie **T-10a**.
 | AC-8 | Zmiana etykiety w deklaracji → widoczna w nawigacji bez edycji drugiego pliku |
 | AC-9 | `check:module-registry` z niekompletną deklaracją → czerwony |
 | AC-10 | `e2e/specs/modules-happy-path.spec.ts` — **25/25** |
-| AC-11 | Komplet bramek: `check:actions`, `check:ai-coverage`, `check:cost-badge`, `check:content-memory`, `check:migrations`, `check:ui-contract`, `check:schema-drift`, `check:boundaries`, `check:module-registry` + `next lint` + `next build` + `test:unit` |
+| AC-11 | Komplet bramek: `check:actions`, `check:ai-coverage`, `check:cost-badge`, `check:content-memory`, `check:migrations`, `check:ui-contract`, `check:schema-drift`, `check:boundaries`, `check:module-registry`, `check:test-types` + `next lint` + `next build` + `test:unit` |
 | AC-12 | Diff każdego commita przenoszącego zawiera **wyłącznie** przenosiny i przepisane importy |
 | AC-13 | Rozdz. 15 dokumentu architektury po przebiegu |
 

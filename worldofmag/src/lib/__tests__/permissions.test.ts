@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { hasPermission, permissionForPath, isPathLocked, PERMISSIONS } from "@/platform/auth/permissions";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+// 046: mapowanie ścieżka → uprawnienie mieszka w korzeniu kompozycji, bo część modułów niesie je
+// we własnej deklaracji, a platformie nie wolno importować modułów. Test celowo sprawdza wariant
+// APLIKACYJNY — to on decyduje o dostępie w interfejsie.
+import { permissionForPath, isPathLocked } from "@/lib/pathPermissions";
 import type { Session } from "next-auth";
 
 // Z-174: rdzeń RBAC (kontrola dostępu) — pure, security-critical.

@@ -14,7 +14,7 @@ import { PetsSideNav } from "@/components/pets/PetsSideNav";
 import { LanguagesSideNav } from "@/components/languages/LanguagesSideNav";
 import { FlotaSideNav } from "@/components/flota/FlotaSideNav";
 import { PortfelSideNav } from "@/components/portfel/PortfelSideNav";
-import { isPathLocked } from "@/platform/auth/permissions";
+import { isPathLocked } from "@/lib/pathPermissions";
 import { resolveMenu, defaultMenuPrefs, type MenuPrefs, type ModuleDef } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { FavoritesSidebarSection } from "@/components/favorites/FavoritesSidebarSection";

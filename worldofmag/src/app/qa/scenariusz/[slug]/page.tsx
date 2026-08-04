@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+import qaModule from "@/modules/qa/module";
 import { getScenarioWithContext } from "@/modules/qa/contract";
 import { ScenarioPage } from "@/modules/qa/ui/ScenarioPage";
 import { markdownToHtml } from "@/lib/markdown";
@@ -14,7 +15,7 @@ interface PageProps {
 export default async function ScenarioRoute({ params }: PageProps) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.QA) && !hasPermission(session, PERMISSIONS.ADMIN)) {
+  if (!hasPermission(session, qaModule.permission) && !hasPermission(session, PERMISSIONS.ADMIN)) {
     redirect("/");
   }
 

@@ -9,8 +9,6 @@ export const PERMISSIONS = {
   SETTINGS:    "module.settings",
   ADMIN:       "module.admin",
   INVITATIONS: "module.invitations",
-  QA:          "module.qa",
-  TRUCK:       "module.truck",
   PETS:        "module.pets",
   FLOTA:       "module.flota",
   PORTFEL:     "module.portfel",
@@ -23,7 +21,6 @@ export const PERMISSIONS = {
   WEATHER:     "module.weather",
   MAGAZYNOWANIE: "module.magazynowanie",
   WARSZTATY:   "module.warsztaty",
-  CONTACTS:    "module.contacts",
   // Kitchen sub-permissions
   KITCHEN_RECIPE_CREATE: "kitchen.recipe.create",
   KITCHEN_RECIPE_EDIT:   "kitchen.recipe.edit",
@@ -39,8 +36,16 @@ export function hasPermission(session: Session | null | undefined, slug: string)
   return session?.user?.permissions?.includes(slug) ?? false
 }
 
-/** Maps a path prefix to its required permission slug */
-export function permissionForPath(path: string): string | null {
+/**
+ * Mapowanie prefiksu ścieżki na wymagane uprawnienie — dla modułów JESZCZE NIEPRZENIESIONYCH
+ * do `src/modules/` oraz dla powierzchni spoza rejestru modułów (ustawienia, admin, zaproszenia).
+ *
+ * 046: moduły przeniesione (Trasy TIR, Kontakty, Raporty, QA) NIE mają tu wpisu — ich ścieżka
+ * i uprawnienie wynikają z `module.ts`. Platforma nie może ich odczytać sama, bo nie wolno jej
+ * importować modułów (asymetria z rozdz. 7.1), więc składa to korzeń kompozycji:
+ * `src/lib/pathPermissions.ts`. **Używaj tamtej funkcji, nie tej** — ta widzi tylko część aplikacji.
+ */
+export function legacyPermissionForPath(path: string): string | null {
   if (path === "/" || path === "") return PERMISSIONS.HOME
   if (path.startsWith("/shopping")) return PERMISSIONS.SHOPPING
   if (path.startsWith("/tasks")) return PERMISSIONS.TASKS
@@ -49,8 +54,6 @@ export function permissionForPath(path: string): string | null {
   if (path.startsWith("/settings")) return PERMISSIONS.SETTINGS
   if (path.startsWith("/admin")) return PERMISSIONS.ADMIN
   if (path.startsWith("/invitations")) return PERMISSIONS.INVITATIONS
-  if (path.startsWith("/qa")) return PERMISSIONS.QA
-  if (path.startsWith("/truck")) return PERMISSIONS.TRUCK
   if (path.startsWith("/pets")) return PERMISSIONS.PETS
   if (path.startsWith("/flota")) return PERMISSIONS.FLOTA
   if (path.startsWith("/portfel")) return PERMISSIONS.PORTFEL
@@ -63,13 +66,16 @@ export function permissionForPath(path: string): string | null {
   if (path.startsWith("/pogoda")) return PERMISSIONS.WEATHER
   if (path.startsWith("/magazynowanie")) return PERMISSIONS.MAGAZYNOWANIE
   if (path.startsWith("/warsztaty")) return PERMISSIONS.WARSZTATY
-  if (path.startsWith("/contacts")) return PERMISSIONS.CONTACTS
   return null
 }
 
-/** Returns true if the user lacks permission to access the given path */
-export function isPathLocked(permissions: string[], path: string): boolean {
-  const required = permissionForPath(path)
+/**
+ * Czy użytkownikowi brakuje uprawnienia do ścieżki — wariant WIDZĄCY TYLKO część aplikacji
+ * (patrz `legacyPermissionForPath`). W kodzie aplikacji używaj `isPathLocked`
+ * z `@/lib/pathPermissions`, które zna także moduły zadeklarowane.
+ */
+export function legacyIsPathLocked(permissions: string[], path: string): boolean {
+  const required = legacyPermissionForPath(path)
   if (!required) return false
   return !permissions.includes(required)
 }

@@ -3,13 +3,14 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+import qaModule from "@/modules/qa/module";
 import { getModuleStats } from "@/modules/qa/contract";
 import { QaHomePage } from "@/modules/qa/ui/QaHomePage";
 
 export default async function QaRootPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.QA) && !hasPermission(session, PERMISSIONS.ADMIN)) {
+  if (!hasPermission(session, qaModule.permission) && !hasPermission(session, PERMISSIONS.ADMIN)) {
     redirect("/");
   }
 
