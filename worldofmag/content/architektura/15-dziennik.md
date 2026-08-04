@@ -11,13 +11,15 @@
 
 ## Gdzie jesteśmy
 
-**Żadna z faz 0–9 nie jest ukończona.** Przebieg 045 dowiózł warstwę, która w checkliście nie ma
-numeru (rozdz. 10.4–10.5 — system komponentów i kontrakt widoku), i przygotował grunt pod resztę.
+**Faza 0 (siatka bezpieczeństwa) jest UKOŃCZONA.** Przebiegi 045/045b dowiozły warstwę, która
+w checkliście nie ma numeru (rozdz. 10.4–10.5 — system komponentów i kontrakt widoku), oraz komplet
+zadań 1–3 Fazy 0. Rozdz. 13 nazywał je „bezwarunkowo pierwszymi": *refaktor bez siatki bezpieczeństwa
+to nie refaktor, tylko przepisywanie z nadzieją*.
 
-**Następny krok jest jednoznaczny: Faza 0 — siatka bezpieczeństwa** (zadania 1–3). Dokument nazywa
-je „bezwarunkowo pierwszymi", a rozdz. 13 dodaje: *refaktor bez siatki bezpieczeństwa to nie
-refaktor, tylko przepisywanie z nadzieją*. Fazy 1 i 2 przenoszą setki plików i migrują dane na 46
-modelach — bez klikaczy i testu izolacji najemcy regresję zgłosiłby użytkownik, nie bramka.
+**Następny krok: Faza 1 — granice modułów** (zadania 4–8). Teraz jest bezpieczna do rozpoczęcia:
+klikacz pokrywa 21/21 modułów, test izolacji najemcy stoi na 37 modelach, a rozjazd schematu wykrywa
+bramka w buildzie. Uwaga z rozdz. 14: **reguła ESLint z zadania 6 nie jest opcjonalna** — granice bez
+egzekwowania erodują w tygodnie.
 
 ---
 
@@ -29,8 +31,8 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
-| 1 | Klikacz ścieżki szczęśliwej dla 21/21 modułów | ⬜ | Istnieje 20 plików scenariuszy, pokrycie niepełne i niezweryfikowane wobec listy modułów |
-| 2 | Generowany test izolacji najemcy z manifestu 545 akcji | ⬜ | Manifest `action-coverage.json` istnieje i jest kompletny — jest z czego generować |
+| 1 | Klikacz ścieżki szczęśliwej dla 21/21 modułów | ✅ | `e2e/specs/modules-happy-path.spec.ts` — 25/25 zielonych. Lista modułów **wywodzona z rejestru** `src/lib/modules.tsx`, więc nowy moduł jest pokryty automatycznie |
+| 2 | Generowany test izolacji najemcy | ✅ | `tenantIsolation.integration.test.ts` — lista 46 modeli z `ownerId` **generowana ze `schema.prisma`**; 37 zweryfikowanych, 9 pominiętych (wymagają relacji) i jawnie raportowanych. Zero wycieków |
 | 3 | Bramka rozjazdu `schema.prisma` ↔ migracje | ✅ | `check:schema-drift` w buildzie; pomija bez `DATABASE_URL` i na zdalnej bazie (C-13); 2 świadome wyjątki dla granic Prismy |
 
 ### Faza 1 — Granice modułów
