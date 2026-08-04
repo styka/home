@@ -2,9 +2,8 @@
   "$opis": "Manifest kontraktu widoku (045). Kluczowany MODUŁEM, nie nazwą pliku — konwencja *Page.tsx nie jest powszechna. status: done | pending | exempt. Wpisy 'pending' to JAWNA lista długu, nie cisza.",
   "modules": {
     "apple-touch-icon": {
-      "status": "pending",
-      "entries": [],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      "status": "exempt",
+      "reason": "Trasa generująca ikonę PWA — zwraca obraz, nie widok."
     },
     "calendar": {
       "status": "pending",
@@ -28,9 +27,8 @@
       "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
     },
     "guide": {
-      "status": "pending",
-      "entries": [],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      "status": "exempt",
+      "reason": "Dokumentacja pomocy — własny układ czytelniczy, nie widok listowy modułu."
     },
     "habits": {
       "status": "done",
@@ -46,9 +44,8 @@
       ]
     },
     "invitations": {
-      "status": "pending",
-      "entries": [],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      "status": "exempt",
+      "reason": "Zaproszenia do zespołów — element powłoki, nie moduł z rejestru MODULES."
     },
     "kitchen": {
       "status": "done",
@@ -65,9 +62,8 @@
       "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
     },
     "legal": {
-      "status": "pending",
-      "entries": [],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      "status": "exempt",
+      "reason": "Strony prawne (zgody, polityka) — treść statyczna bez nagłówka modułu."
     },
     "magazynowanie": {
       "status": "pending",
@@ -95,8 +91,11 @@
     },
     "pogoda": {
       "status": "pending",
-      "entries": [],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      "entries": [
+        "src/components/weather/WeatherPage.tsx",
+        "src/components/weather/IdeaLibraryPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej."
     },
     "portfel": {
       "status": "pending",
@@ -110,9 +109,8 @@
       "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
     },
     "pwa-icon": {
-      "status": "pending",
-      "entries": [],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      "status": "exempt",
+      "reason": "Trasa generująca ikonę PWA — zwraca obraz, nie widok."
     },
     "qa": {
       "status": "pending",
@@ -140,9 +138,8 @@
       ]
     },
     "settings": {
-      "status": "pending",
-      "entries": [],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      "status": "exempt",
+      "reason": "Ustawienia konta — element powłoki, nie moduł z rejestru MODULES."
     },
     "shopping": {
       "status": "pending",
@@ -174,13 +171,18 @@
     },
     "warsztaty": {
       "status": "pending",
-      "entries": [],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      "entries": [
+        "src/components/warsztaty/WorkshopsList.tsx",
+        "src/components/warsztaty/WorkshopDetail.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej."
     },
     "wiadomosci": {
       "status": "pending",
-      "entries": [],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      "entries": [
+        "src/components/news/NewsPage.tsx"
+      ],
+      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej."
     }
   },
   "colorExceptions": {

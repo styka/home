@@ -71,6 +71,24 @@ export interface ModuleViewProps {
   width?: "full" | "narrow";
 
   /**
+   * Układ treści.
+   *
+   * `column` (domyślny) — treść płynie w pionie, rama przewija całość. Tak działa
+   * większość widoków listowych.
+   *
+   * `fill` — treść dostaje CAŁĄ pozostałą wysokość i przewija się sama. Potrzebne
+   * modułom wielopanelowym (Zadania, Notatki, Zakupy, Wiadomości, Pogoda,
+   * Magazynowanie), gdzie panel boczny i lista mają osobne przewijanie. Bez tego
+   * wariantu rama musiałaby narzucić im jeden scroll na całość — czyli przebudowę
+   * układu, a nie migrację nagłówka.
+   *
+   * To jest odpowiedź na punkt kontrolny z planu: kontrakt ma unieść najbardziej
+   * nietypowe widoki, a jeśli nie unosi — poszerzamy kontrakt, nie obchodzimy go
+   * w module.
+   */
+  layout?: "column" | "fill";
+
+  /**
    * Odstęp między blokami treści. Domyślnie 24 px — dokładnie tyle, ile miał
    * `pageInnerStyle`, z którego migrują moduły. Dzięki temu podmiana opakowania nie
    * przesuwa ani jednego piksela, a „zero zmian zachowania" jest sprawdzalne wzrokiem.
@@ -108,10 +126,13 @@ export function ModuleView({
   noAccess,
   loadingRows,
   width = "full",
+  layout = "column",
   contentGap = 24,
   scrollRef,
   children,
 }: ModuleViewProps) {
+  const fill = layout === "fill";
+
   return (
     <div
       ref={scrollRef}
@@ -119,7 +140,11 @@ export function ModuleView({
         position: "relative",
         flex: 1,
         minWidth: 0,
-        overflowY: "auto",
+        display: "flex",
+        flexDirection: "column",
+        // W układzie `fill` przewijanie należy do TREŚCI, nie do ramy — inaczej
+        // panel boczny modułu przewijałby się razem z listą.
+        overflowY: fill ? "hidden" : "auto",
         backgroundColor: "var(--bg-base)",
         backgroundImage: "var(--bg-image-base)",
       }}
@@ -131,12 +156,14 @@ export function ModuleView({
       <div
         style={{
           position: "relative",
+          width: "100%",
           maxWidth: width === "narrow" ? 640 : undefined,
           margin: width === "narrow" ? "0 auto" : undefined,
-          padding: "var(--view-padding)",
+          padding: fill ? "8px var(--view-padding) 0" : "var(--view-padding)",
           display: "flex",
           flexDirection: "column",
-          gap: 12,
+          gap: fill ? 8 : 12,
+          flexShrink: 0,
         }}
       >
         {breadcrumb && <div style={{ marginBottom: -4 }}>{breadcrumb}</div>}
@@ -151,14 +178,31 @@ export function ModuleView({
         />
 
         <ViewBar filters={filters} actions={actions} hideChrome={hideChrome} />
+      </div>
 
+      {/* Treść. W `fill` dostaje resztę wysokości i własne przewijanie; w `column`
+          płynie w ramie razem z nagłówkiem. */}
+      <div
+        style={
+          fill
+            ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }
+            : {
+                position: "relative",
+                width: "100%",
+                maxWidth: width === "narrow" ? 640 : undefined,
+                margin: width === "narrow" ? "0 auto" : undefined,
+                padding: "0 var(--view-padding) var(--view-padding)",
+              }
+        }
+      >
         <ViewContent
           state={state}
           empty={empty}
           error={error}
           noAccess={noAccess}
           loadingRows={loadingRows}
-          contentGap={contentGap}
+          contentGap={fill ? 0 : contentGap}
+          fill={fill}
         >
           {children}
         </ViewContent>
@@ -174,8 +218,11 @@ function ViewContent({
   noAccess,
   loadingRows,
   contentGap,
+  fill,
   children,
-}: Pick<ModuleViewProps, "state" | "empty" | "error" | "noAccess" | "loadingRows" | "contentGap" | "children">) {
+}: Pick<ModuleViewProps, "state" | "empty" | "error" | "noAccess" | "loadingRows" | "contentGap" | "children"> & {
+  fill?: boolean;
+}) {
   switch (state) {
     case "loading":
       return <ViewLoading rows={loadingRows} />;
@@ -186,6 +233,16 @@ function ViewContent({
     case "empty":
       return <ViewEmpty {...empty} />;
     default:
-      return <div style={{ display: "flex", flexDirection: "column", gap: contentGap }}>{children}</div>;
+      return (
+        <div
+          style={
+            fill
+              ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }
+              : { display: "flex", flexDirection: "column", gap: contentGap }
+          }
+        >
+          {children}
+        </div>
+      );
   }
 }

@@ -7,6 +7,7 @@ import { CloudSun, MapPin, Plus, Loader2, LocateFixed, Star, Trash2, Map } from 
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { ModuleView } from "@/components/ui/view";
 import { cn } from "@/lib/cn";
 import { FALLBACK_LOCATION } from "@/lib/weather/presets";
 import type { Forecast } from "@/lib/weather/openMeteo";
@@ -106,12 +107,20 @@ export function WeatherPage({
   }
 
   return (
-    <div className="min-w-0 flex-1 overflow-y-auto">
-      <div className="mx-auto min-w-0 max-w-5xl px-4 py-6">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex items-center gap-2 text-xl font-bold text-[var(--text-primary)]">
-          <CloudSun size={22} className="text-[var(--accent-amber)]" /> Pogoda
-        </h1>
+    <ModuleView
+      icon={<CloudSun size={22} />}
+      iconColor="var(--accent-amber)"
+      title="Pogoda"
+      href="/pogoda"
+      state={loading ? "loading" : !forecast || !coords ? "empty" : "ready"}
+      loadingRows={3}
+      empty={{
+        icon: <CloudSun size={22} />,
+        title: "Brak danych pogodowych",
+        description: "Wskaż lokalizację, żeby pobrać prognozę.",
+        action: { label: "Wybierz lokalizację", onClick: () => setShowLocations(true) },
+      }}
+      headerAction={
         <button
           onClick={() => setShowLocations(true)}
           className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
@@ -119,14 +128,10 @@ export function WeatherPage({
           <MapPin size={15} className="text-[var(--accent-blue)]" />
           {coords?.label ?? "Lokalizacja"}
         </button>
-      </div>
-
-      {loading || !forecast || !coords ? (
-        <div className="flex flex-col items-center gap-2 py-16 text-[var(--text-muted)]">
-          {loading ? <Loader2 className="animate-spin" /> : <CloudSun />}
-          <span className="text-sm">{loading ? "Pobieram prognozę…" : "Brak danych pogodowych."}</span>
-        </div>
-      ) : (
+      }
+    >
+      <div className="mx-auto min-w-0 w-full max-w-5xl">
+      {forecast && coords && (
         <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0 space-y-5">
             {/* 037: kolejność sekcji wg zgłoszenia właściciela — najpierw pogoda na teraz, potem
@@ -178,7 +183,7 @@ export function WeatherPage({
         />
       )}
       </div>
-    </div>
+    </ModuleView>
   );
 }
 
