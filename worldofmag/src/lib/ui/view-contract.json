@@ -14,7 +14,7 @@
     "contacts": {
       "status": "done",
       "entries": [
-        "src/components/contacts/ContactsPage.tsx"
+        "src/modules/contacts/ui/ContactsPage.tsx"
       ]
     },
     "flota": {

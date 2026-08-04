@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getContacts } from "@/actions/contacts";
-import { ContactsPage } from "@/components/contacts/ContactsPage";
+import { getContacts } from "@/modules/contacts/actions/contacts";
+import { ContactsPage } from "@/modules/contacts/ui/ContactsPage";
 
 export default async function ContactsRootPage({ searchParams }: { searchParams?: { q?: string } }) {
   const session = await auth();

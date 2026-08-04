@@ -58,7 +58,7 @@
       Trasa `app/truck/` cienka. `contract.ts` — dziś pusty eksport typów, bo **nikt go nie importuje**;
       istnieje jako granica, nie jako spis życzeń.
       **Gotowe, gdy:** `tsc` czysty, `/truck` otwiera się w klikaczu. **(AC-3, AC-12)**
-- [ ] **T-11** — **Kontakty** → `src/modules/contacts/`. `contract.ts` eksportuje to, czego potrzebuje
+- [x] **T-11** — **Kontakty** → `src/modules/contacts/`. `contract.ts` eksportuje to, czego potrzebuje
       `lib/ai/executors/contactsExecutor.ts`; executor przechodzi na import kontraktu.
       **Gotowe, gdy:** executor nie importuje wnętrza modułu. **(AC-3, AC-5)**
 - [ ] **T-12** — **Raporty** → `src/modules/reports/`. Konsumenci: panel admina, `AICommandSheet`,
