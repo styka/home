@@ -141,23 +141,23 @@
 
 ## Faza 6 — Playground od zera
 
-- [ ] **T-24** — `src/lib/ui/playground/registry.tsx` — rejestr wpisów
+- [x] **T-24** — `src/lib/ui/playground/registry.tsx` — rejestr wpisów
       (`id, name, category, summary, render, controls?, variants?`); kategorie jako `String` + unia:
       `prymitywy|formularze|dane-i-listy|powloka-i-nawigacja|stany-brzegowe|wzorce-widoku`.
       **Gotowe, gdy:** rejestr obejmuje **wszystkie** komponenty z `src/components/ui/` i
       `src/components/ui/view/`. **(AC-22)**
-- [ ] **T-25** — `src/components/admin/playground/` — `PlaygroundPage`, `PlaygroundNav`,
+- [x] **T-25** — `src/components/admin/playground/` — `PlaygroundPage`, `PlaygroundNav`,
       `PlaygroundEntry`, `PropControls`, `CodeBlock`. Nawigacja boczna `hidden md:flex`, na telefonie
       **szuflada** (nigdy dwa panele boczne, C-31), wyszukiwarka, wybór w adresie (`?c=<id>`).
       **Gotowe, gdy:** przy 375 px i 1440 px dowolny komponent osiągalny w ≤ 2 interakcjach.
       **(AC-18, AC-19)**
-- [ ] **T-26** — Sterowanie właściwościami na żywo + warianty brzegowe (pusty, długi tekst, błąd) dla
+- [x] **T-26** — Sterowanie właściwościami na żywo + warianty brzegowe (pusty, długi tekst, błąd) dla
       komponentów, które je mają.
       **Gotowe, gdy:** zmiana kontrolki natychmiast przerysowuje demonstrację. **(AC-20)**
-- [ ] **T-27** — Lokalny przełącznik skórki w playgroundzie: kontener demonstracji z
+- [x] **T-27** — Lokalny przełącznik skórki w playgroundzie: kontener demonstracji z
       `style={tokensToStyle(resolveTokens(tokeny))}`; **nie zmienia** skórki konta.
       **Gotowe, gdy:** przełączenie na „Mostek" zmienia tylko obszar demonstracji. **(AC-21)**
-- [ ] **T-28** — Montaż w `src/app/admin/playground/page.tsx` + **usunięcie**
+- [x] **T-28** — Montaż w `src/app/admin/playground/page.tsx` + **usunięcie**
       `src/components/admin/ComponentPlayground.tsx`.
       **Gotowe, gdy:** stary plik nie istnieje, a `next lint` nie zgłasza martwych importów.
 
