@@ -112,7 +112,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
             <Link
               href={`/languages/${deck.id}/study`}
               className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium"
-              style={{ background: dueCount > 0 ? "var(--accent-green)" : "var(--bg-hover)", color: dueCount > 0 ? "#fff" : "var(--text-secondary)", textDecoration: "none" }}
+              style={{ background: dueCount > 0 ? "var(--accent-green)" : "var(--bg-hover)", color: dueCount > 0 ? "var(--on-accent)" : "var(--text-secondary)", textDecoration: "none" }}
             >
               <Play size={15} /> Ucz się
             </Link>
