@@ -5,7 +5,8 @@ import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/lib/viewState/viewState";
 import Link from "next/link";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
-import { PageHeader, EmptyState, pageContainerStyle } from "@/components/ui/home";
+import { EmptyState } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
 import { getCalendarEvents } from "@/actions/calendar";
 import { isoDay, MODULE_META, type CalendarEvent, type CalendarModule } from "@/lib/calendar";
 
@@ -66,136 +67,135 @@ export function CalendarPage({ initialYear, initialMonth0, initialEvents, viewPa
   const activeModules = allModules;
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
-        <PageHeader
-          icon={<CalendarIcon size={22} />}
-          iconColor="var(--accent-purple)"
-          title="Kalendarz"
-          subtitle="Terminy ze wszystkich modułów w jednym miejscu"
-          action={
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button onClick={() => go(-1)} style={navBtn} aria-label="Poprzedni miesiąc"><ChevronLeft size={16} /></button>
-              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", minWidth: 130, textAlign: "center" }}>
-                {MONTHS[month0]} {year}
-              </span>
-              <button onClick={() => go(1)} style={navBtn} aria-label="Następny miesiąc"><ChevronRight size={16} /></button>
-            </div>
-          }
-        />
-
-        {/* Legenda modułów obecnych w miesiącu — klik filtruje (P4) */}
-        {activeModules.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-            {activeModules.map((m) => {
-              const active = filter === m;
-              return (
-                <button
-                  key={m}
-                  onClick={() => setFilter(active ? null : (m as CalendarModule))}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "3px 9px", borderRadius: 99, cursor: "pointer",
-                    border: `1px solid ${active ? MODULE_META[m as CalendarModule].accent : "var(--border)"}`,
-                    background: active ? "color-mix(in srgb, " + MODULE_META[m as CalendarModule].accent + " 14%, var(--bg-surface))" : "transparent",
-                    color: active ? "var(--text-primary)" : "var(--text-muted)" }}
-                >
-                  <span style={{ width: 8, height: 8, borderRadius: 99, background: MODULE_META[m as CalendarModule].accent }} />
-                  {MODULE_META[m as CalendarModule].label}
-                </button>
-              );
-            })}
-            {filter && (
-              <button onClick={() => setFilter(null)} style={{ fontSize: 11, color: "var(--accent-blue)", background: "none", border: "none", cursor: "pointer" }}>
-                Pokaż wszystkie
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Siatka miesiąca */}
-        <div style={{ opacity: pending ? 0.6 : 1 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
-            {WEEKDAYS.map((w) => (
-              <div key={w} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", padding: "2px 0" }}>{w}</div>
-            ))}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
-            {cells.map((cell, i) => {
-              if (!cell) return <div key={`e${i}`} />;
-              const key = isoDay(cell);
-              const dayEvents = byDay.get(key) ?? [];
-              const isToday = key === todayKey;
-              const isSelected = key === selected;
-              return (
-                <button
-                  key={key}
-                  onClick={() => setSelected(key)}
-                  style={{
-                    minHeight: 64,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 3,
-                    padding: 6,
-                    borderRadius: 8,
-                    border: `1px solid ${isSelected ? "var(--accent-purple)" : "var(--border)"}`,
-                    background: isToday ? "color-mix(in srgb, var(--accent-purple) 10%, var(--bg-surface))" : "var(--bg-surface)",
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
-                  <span style={{ fontSize: 12, fontWeight: isToday ? 700 : 500, color: isToday ? "var(--accent-purple)" : "var(--text-secondary)" }}>
-                    {cell.getDate()}
-                  </span>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-                    {dayEvents.slice(0, 4).map((ev) => (
-                      <span key={ev.id} style={{ width: 6, height: 6, borderRadius: 99, background: ev.accent }} />
-                    ))}
-                    {dayEvents.length > 4 && <span style={{ fontSize: 9, color: "var(--text-muted)" }}>+{dayEvents.length - 4}</span>}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+    <ModuleView
+      width="narrow"
+      state="ready"
+      icon={<CalendarIcon size={22} />}
+      iconColor="var(--accent-purple)"
+      title="Kalendarz"
+      subtitle="Terminy ze wszystkich modułów w jednym miejscu"
+      headerAction={
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={() => go(-1)} style={navBtn} aria-label="Poprzedni miesiąc"><ChevronLeft size={16} /></button>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", minWidth: 130, textAlign: "center" }}>
+            {MONTHS[month0]} {year}
+          </span>
+          <button onClick={() => go(1)} style={navBtn} aria-label="Następny miesiąc"><ChevronRight size={16} /></button>
         </div>
+      }
+    >
 
-        {/* Lista wybranego dnia */}
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 10 }}>
-            {formatDayHeading(selected)}
-          </div>
-          {selectedEvents.length === 0 ? (
-            <EmptyState icon={<CalendarIcon size={26} />} message="Brak zaplanowanych zdarzeń tego dnia" />
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {selectedEvents.map((ev) => (
-                <Link
-                  key={ev.id}
-                  href={ev.href}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "10px 12px",
-                    borderRadius: 8,
-                    border: "1px solid var(--border)",
-                    background: "var(--bg-surface)",
-                    textDecoration: "none",
-                  }}
-                >
-                  <span style={{ width: 4, alignSelf: "stretch", borderRadius: 99, background: ev.accent, flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{ev.title}</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                      {MODULE_META[ev.module].label}
-                      {ev.at && ` · ${new Date(ev.at).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}`}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+      {/* Legenda modułów obecnych w miesiącu — klik filtruje (P4) */}
+      {activeModules.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+          {activeModules.map((m) => {
+            const active = filter === m;
+            return (
+              <button
+                key={m}
+                onClick={() => setFilter(active ? null : (m as CalendarModule))}
+                style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "3px 9px", borderRadius: 99, cursor: "pointer",
+                  border: `1px solid ${active ? MODULE_META[m as CalendarModule].accent : "var(--border)"}`,
+                  background: active ? "color-mix(in srgb, " + MODULE_META[m as CalendarModule].accent + " 14%, var(--bg-surface))" : "transparent",
+                  color: active ? "var(--text-primary)" : "var(--text-muted)" }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: 99, background: MODULE_META[m as CalendarModule].accent }} />
+                {MODULE_META[m as CalendarModule].label}
+              </button>
+            );
+          })}
+          {filter && (
+            <button onClick={() => setFilter(null)} style={{ fontSize: 11, color: "var(--accent-blue)", background: "none", border: "none", cursor: "pointer" }}>
+              Pokaż wszystkie
+            </button>
           )}
         </div>
+      )}
+
+      {/* Siatka miesiąca */}
+      <div style={{ opacity: pending ? 0.6 : 1 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
+          {WEEKDAYS.map((w) => (
+            <div key={w} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", padding: "2px 0" }}>{w}</div>
+          ))}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+          {cells.map((cell, i) => {
+            if (!cell) return <div key={`e${i}`} />;
+            const key = isoDay(cell);
+            const dayEvents = byDay.get(key) ?? [];
+            const isToday = key === todayKey;
+            const isSelected = key === selected;
+            return (
+              <button
+                key={key}
+                onClick={() => setSelected(key)}
+                style={{
+                  minHeight: 64,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 3,
+                  padding: 6,
+                  borderRadius: 8,
+                  border: `1px solid ${isSelected ? "var(--accent-purple)" : "var(--border)"}`,
+                  background: isToday ? "color-mix(in srgb, var(--accent-purple) 10%, var(--bg-surface))" : "var(--bg-surface)",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                <span style={{ fontSize: 12, fontWeight: isToday ? 700 : 500, color: isToday ? "var(--accent-purple)" : "var(--text-secondary)" }}>
+                  {cell.getDate()}
+                </span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                  {dayEvents.slice(0, 4).map((ev) => (
+                    <span key={ev.id} style={{ width: 6, height: 6, borderRadius: 99, background: ev.accent }} />
+                  ))}
+                  {dayEvents.length > 4 && <span style={{ fontSize: 9, color: "var(--text-muted)" }}>+{dayEvents.length - 4}</span>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      {/* Lista wybranego dnia */}
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 10 }}>
+          {formatDayHeading(selected)}
+        </div>
+        {selectedEvents.length === 0 ? (
+          <EmptyState icon={<CalendarIcon size={26} />} message="Brak zaplanowanych zdarzeń tego dnia" />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {selectedEvents.map((ev) => (
+              <Link
+                key={ev.id}
+                href={ev.href}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border)",
+                  background: "var(--bg-surface)",
+                  textDecoration: "none",
+                }}
+              >
+                <span style={{ width: 4, alignSelf: "stretch", borderRadius: 99, background: ev.accent, flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{ev.title}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    {MODULE_META[ev.module].label}
+                    {ev.at && ` · ${new Date(ev.at).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}`}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </ModuleView>
   );
 }
 

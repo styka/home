@@ -9,6 +9,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import type { StorageSupplier } from "@prisma/client";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import { ModuleView } from "@/components/ui/view";
 
 const inputStyle: React.CSSProperties = { backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" };
 
@@ -109,11 +110,15 @@ export function DocumentsPage({
   }
 
   return (
-    <div className="px-4 md:px-6 py-4 max-w-2xl mx-auto flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-          <FileText size={20} style={{ color: "var(--accent-blue)" }} /> Dokumenty
-        </h2>
+    <ModuleView
+      width="narrow"
+      icon={<FileText size={22} />}
+      iconColor="var(--accent-blue)"
+      title="Dokumenty"
+      href="/magazynowanie/dokumenty"
+      state="ready"
+      contentGap={16}
+      headerAction={
         <div className="flex items-center gap-2">
           <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleScan(e.target.files)} />
           <button type="button" onClick={() => fileRef.current?.click()} disabled={scanning} className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm border disabled:opacity-50" style={{ borderColor: "var(--border)", color: "var(--accent-purple)" }}>
@@ -123,8 +128,8 @@ export function DocumentsPage({
             <Plus size={16} /> Nowy
           </button>
         </div>
-      </div>
-
+      }
+    >
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>
         Zeskanuj zdjęcie faktury lub WZ — AI odczyta pozycje, a Ty jednym kliknięciem zaksięgujesz je na stan.
       </p>
@@ -208,6 +213,6 @@ export function DocumentsPage({
           </label>
         </Modal>
       ) : null}
-    </div>
+    </ModuleView>
   );
 }

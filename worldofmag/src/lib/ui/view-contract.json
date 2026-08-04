@@ -6,11 +6,10 @@
       "reason": "Trasa generująca ikonę PWA — zwraca obraz, nie widok."
     },
     "calendar": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/calendar/CalendarPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "contacts": {
       "status": "done",
@@ -66,12 +65,11 @@
       "reason": "Strony prawne (zgody, polityka) — treść statyczna bez nagłówka modułu."
     },
     "magazynowanie": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/magazynowanie/DocumentsPage.tsx",
         "src/components/magazynowanie/SuppliersPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "notes": {
       "status": "pending",
@@ -90,12 +88,11 @@
       "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
     },
     "pogoda": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/weather/WeatherPage.tsx",
         "src/components/weather/IdeaLibraryPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej."
+      ]
     },
     "portfel": {
       "status": "pending",
@@ -178,11 +175,10 @@
       "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej."
     },
     "wiadomosci": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/news/NewsPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej."
+      ]
     }
   },
   "colorExceptions": {

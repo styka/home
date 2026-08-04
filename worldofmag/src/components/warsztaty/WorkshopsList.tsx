@@ -3,9 +3,10 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Wrench, Users } from "lucide-react";
+import { Plus, Wrench, Users , Hammer } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { createWorkshop, type WorkshopWithCounts, type WarsztatMode } from "@/actions/warsztat";
+import { ModuleView } from "@/components/ui/view";
 import {
   WORKSHOP_TYPES,
   getWorkshopType,
@@ -60,11 +61,14 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
   }
 
   return (
-    <div className="px-4 md:px-6 py-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-5">
-        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-          Twoje warsztaty i pracownie — trzymaj wyposażenie pod kontrolą.
-        </p>
+    <ModuleView
+      icon={<Hammer size={22} />}
+      iconColor="var(--accent-amber)"
+      title="Warsztaty"
+      href="/warsztaty"
+      subtitle="Twoje warsztaty i pracownie — trzymaj wyposażenie pod kontrolą."
+      state="ready"
+      headerAction={
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -73,8 +77,9 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
         >
           <Plus size={16} /> Nowy warsztat
         </button>
-      </div>
-
+      }
+    >
+      <div className="max-w-5xl mx-auto w-full">
       {workshops.length === 0 ? (
         <div
           className="rounded-lg border border-dashed p-10 text-center"
@@ -202,6 +207,7 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
           ) : null}
         </div>
       </Modal>
-    </div>
+      </div>
+    </ModuleView>
   );
 }
