@@ -80,7 +80,7 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
 
 ## Faza 3 — Wiadomości: warstwa serwera (część B)
 
-- [ ] **T-7** — **Odczyt całego strumienia.**
+- [x] **T-7** — **Odczyt całego strumienia.**
   W `src/actions/news.ts`: `StreamTopicDTO` + `getStreamView()`. Jedno zapytanie o tematy
   użytkownika (`where: { ownerId: user.id }`, `orderBy: [sortOrder, createdAt]`) z `include` pozycji
   `PENDING` (`orderBy: publishedAt desc`, `include: { source: true }`). Tematy **bez** pozycji
@@ -89,7 +89,7 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
   *Gotowe, gdy:* jeden round-trip do bazy, kolejność zgodna z Z-3, tematy puste obecne w wyniku.
   **(AC-B1, AC-B6)**
 
-- [ ] **T-8** — **Akcje zbiorcze „oznacz jako przeczytane".**
+- [x] **T-8** — **Akcje zbiorcze „oznacz jako przeczytane".**
   W tym samym pliku: `acknowledgeTopicItems(topicId)` (najpierw `assertTopic(topicId, user.id)`,
   potem `updateMany` po `topicId` + `status: "PENDING"`) oraz `acknowledgeAllItems()` (`updateMany`
   z `where: { status: "PENDING", topic: { ownerId: user.id } }` — filtr właściciela **w zapytaniu**).
@@ -97,7 +97,7 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
   *Gotowe, gdy:* akcja zbiorcza nie jest szerszym wektorem niż pojedyncza — nie da się trafić
   w cudzą pozycję. **(AC-B15, AC-B16; C-20, C-21)**
 
-- [ ] **T-9** — **Manifest pokrycia AI dla trzech nowych akcji.**
+- [x] **T-9** — **Manifest pokrycia AI dla trzech nowych akcji.**
   W `src/lib/ai/action-coverage.json` dopisz `news:getStreamView` (`kind: "read"`),
   `news:acknowledgeTopicItems`, `news:acknowledgeAllItems` — wszystkie `status: "excluded"`,
   `reason: "interactive"`, `access: "owner"` (jak istniejące `news:acknowledgeItem`).
