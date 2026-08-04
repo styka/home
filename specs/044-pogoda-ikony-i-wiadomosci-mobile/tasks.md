@@ -126,7 +126,7 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
 
 ## Faza 5 — Wiadomości: strumień (część B, najtrudniejsze)
 
-- [ ] **T-12** — **Komponent `NewsStream` — sekcje, przyklejony nagłówek, nawigacja, gest.**
+- [x] **T-12** — **Komponent `NewsStream` — sekcje, przyklejony nagłówek, nawigacja, gest.**
   Nowy `src/components/news/NewsStream.tsx` wg planu §5B:
   - sekcje per temat z `ref` w `Map<string, HTMLElement>`; sekcja pusta z notką „Brak nowych
     wiadomości";
@@ -148,7 +148,7 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
   działają w obie strony, a nic nie znika samo.
   **(AC-B1…B7, AC-B9, AC-B10, AC-B11, AC-B14, AC-B15, AC-B16, AC-B18)**
 
-- [ ] **T-13** — **Wpięcie strumienia w stronę modułu.**
+- [x] **T-13** — **Wpięcie strumienia w stronę modułu.**
   - `src/app/wiadomosci/page.tsx`: `searchParams` rozszerzone o `tryb`, przekazane w `viewParams`
     (wartość startowa **propsem z serwera** — nigdy `window` w pierwszym renderze).
   - `src/components/news/NewsPage.tsx`: `viewSpec` + `tryb: oneOf(["stream","topic"], "stream")`;
