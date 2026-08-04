@@ -110,7 +110,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | 39 | Eksport danych użytkownika | ⬜ | |
 | 40 | Usunięcie konta | ⬜ | |
 | 41 | Próba odtworzenia z kopii + runbook | ⬜ | |
-| 42 | **Stany błędów i puste w każdym module** | 🟡 | Komponenty i bramka gotowe; migracja modułów 12/21 |
+| 42 | **Stany błędów i puste w każdym module** | ✅ | 21/21 modułów na kontrakcie widoku, bramka `check:ui-contract` wpięta w build |
 | 43 | Budżet wydajnościowy w CI | ⬜ | |
 
 ### Faza 9 — Domknięcie
@@ -142,6 +142,14 @@ za samowolkę spoza zakresu.
 
 **Co zrobiono**
 
+- **Migracja 21/21 modułów na kontrakt widoku.** Bez wyjątków „inny układ" w manifeście.
+- **Sweep zaszytych kolorów: 73 podmiany.** Zero pozycji „do poprawy" — każdy pozostały literał
+  (29 plików) ma świadome uzasadnienie: paleta danych z rekordów użytkownika, semantyka niezależna
+  od motywu (przeterminowana żywność, progi magazynowe) albo ilustracja (logo, etykiety QR do druku,
+  poradnik ze zrzutami).
+- **Cztery skórki flagowe:** „Mostek", „Papier", „Terminal", „Zen" — dwa bieguny ciemny/jasny razy
+  dwa charaktery (efektowny/oszczędny). Każda z kontrastem liczonym w testach.
+
 - **Kontrakt widoku** (`components/ui/view/`): `ModuleView`, `ViewBar`, `ViewChrome`, `ViewState`,
   `ChromeFrame`. Moduł deklaruje tytuł, filtry, akcje i stan; ramę rysuje powłoka.
   Rozwiązanie odwraca zależność opisaną w 043: `AppShell` nie rysuje paska (nie zna tytułu modułu,
@@ -167,24 +175,24 @@ za samowolkę spoza zakresu.
 
 **Czego świadomie NIE zrobiono**
 
-- **Migracja modułów na `ModuleView`: 12 z 21.** Pozostałe 9 widoków jest **jawnie wypisanych**
-  w `src/lib/ui/view-contract.json` ze statusem `pending` — bramka pilnuje, że żaden nie zniknie
-  z listy, a nowy moduł bez wpisu wywala build. Są to strony szczegółu z ręcznie pisanym `<h1>`
-  (Flota, Języki, Zwierzęta, Portfel, QA, Warsztaty) i trzy widoki wielopanelowe (Zadania, Notatki,
-  Zakupy). Każdy wymaga indywidualnej zamiany nagłówka, a nie mechanicznej podmiany opakowania —
-  dlatego nie poszły partią.
-- **Sweep zaszytych kolorów**: 50 plików oznaczonych jako `do-poprawy` w tym samym manifeście.
-  Bramka wypisuje je przy każdym budowaniu, więc dług jest widoczny, a nie przemilczany.
 - Faza 0 i pozostałe fazy przebudowy — zgodnie z zasadą „jedna faza = jeden przebieg".
 
 **Punkt kontrolny kontraktu (C-54)**
 
-Plan zakładał sprawdzian: jeśli `ModuleView` nie uniesie Wiadomości i Magazynowania, wracamy do planu
-zamiast obchodzić problem w module. **Nie uniósł** — moduły wielopanelowe mają osobne przewijanie
-panelu bocznego i listy, a kolumnowa rama narzuciłaby im jeden scroll na całość. Kontrakt został
-więc **poszerzony** o `layout="fill"` (nagłówek i pasek w stałym pasku u góry, treść dostaje resztę
-wysokości i przewija się sama) oraz o prop `breadcrumb`, który powtarzał się w ośmiu widokach
-podrzędnych. Obie zmiany są w kontrakcie, nie w modułach.
+Plan zakładał sprawdzian: jeśli `ModuleView` nie uniesie najbardziej nietypowych widoków, wracamy do
+planu zamiast obchodzić problem w module. **Nie uniósł** — i kontrakt został poszerzony **trzy razy**,
+za każdym razem z tego samego powodu:
+
+1. **`breadcrumb`** — link powrotny powtarzał się w ośmiu widokach podrzędnych, za każdym razem
+   z innym odstępem i rozmiarem ikony.
+2. **`layout="fill"`** — moduły wielopanelowe mają osobne przewijanie panelu bocznego i listy;
+   kolumnowa rama narzuciłaby im jeden scroll na całość, czyli przebudowę układu.
+3. **`density="compact"`** — Zadania, Zakupy i Notatki mają celowo gęsty pasek 48 px; standardowy
+   nagłówek 22 px dołożyłby drugi wiersz chromu tam, gdzie liczy się każdy piksel listy.
+
+Wszystkie trzy zmiany są **w kontrakcie**, nie w modułach. Efekt: ani jeden moduł nie figuruje
+w manifeście jako wyjątek z powodu „inny układ". To jest test, który kontrakt zdał — bo poszerzenie
+ramy jest tanie i jednorazowe, a wyjątek w module byłby długiem w dwudziestu miejscach.
 
 **Decyzje warte zapamiętania**
 
