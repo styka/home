@@ -273,6 +273,26 @@ input[type="week"]::-webkit-calendar-picker-indicator:hover {
   margin: 4px 0;
 }
 
+/* 045: dekoracyjne ramki narożne widoku. `ModuleView` renderuje je zawsze, a widoczność
+   rozstrzyga skórka przez atrybut `data-chrome-frame` na <html> (ustawiany serwerowo
+   w layout.tsx). CSS nie potrafi warunkować `display` wartością zmiennej, a odczyt
+   tokenu w useEffect dawałby mignięcie po hydratacji. */
+.omnia-chrome-frame { display: none; }
+html[data-chrome-frame="corners"] .omnia-chrome-frame { display: block; }
+
+/* Szkielet ładowania. Definicja MUSI żyć tutaj, a nie w znaczniku <style> wewnątrz
+   komponentu: React escapuje cudzysłowy w tekstowym dziecku <style> tylko na serwerze,
+   więc rozjazd hydratacji potrafi położyć całą aplikację (doświadczenia.md, 2026-08-02). */
+.omnia-skeleton {
+  background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 37%, var(--bg-surface) 63%);
+  background-size: 400% 100%;
+  animation: omnia-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes omnia-shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }

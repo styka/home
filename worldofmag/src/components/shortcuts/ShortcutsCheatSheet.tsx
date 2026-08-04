@@ -8,6 +8,7 @@ import {
   type RegisteredShortcut,
 } from "@/components/shell/ShortcutsProvider";
 import { compareGroups, formatKeys, type ShortcutDef } from "@/lib/shortcuts/registry";
+import { SHORTCUTS_OPEN_EVENT } from "@/lib/shortcuts/shortcutsBus";
 
 /**
  * 043: ściągawka skrótów (AC-11) — nakładka pod klawiszem `?`.
@@ -35,6 +36,14 @@ export function ShortcutsCheatSheet() {
   ], []);
 
   useShortcuts(entries);
+
+  // 045: ta sama nakładka otwierana przyciskiem w pasku widoku. `?` zostaje jako skrót
+  // dla tych, którzy go znają — przycisk jest po to, żeby dało się go POZNAĆ.
+  useEffect(() => {
+    function onOpen() { setOpen(true); }
+    window.addEventListener(SHORTCUTS_OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(SHORTCUTS_OPEN_EVENT, onOpen);
+  }, []);
 
   // Lista skrótów liczona PO otwarciu, a nie w trakcie renderu. Powód: strona rejestruje swoje
   // skróty w efekcie, więc otwarcie ściągawki tuż po wejściu na stronę potrafiło złapać moment,
