@@ -1,6 +1,13 @@
 "use client";
 
-import { wmo, type Forecast } from "@/lib/weather/openMeteo";
+import {
+  wmo,
+  observedWmo,
+  precipAmount,
+  precipKind,
+  type Forecast,
+  type HourPoint,
+} from "@/lib/weather/openMeteo";
 import { moonPhase } from "@/lib/weather/moon";
 
 const PL_DAYS = ["niedz.", "pon.", "wt.", "śr.", "czw.", "pt.", "sob."];
@@ -15,6 +22,18 @@ function weekday(dateIso: string): string {
  * siedziały w jednym komponencie, więc nie dało się wsunąć niczego pomiędzy nie.
  */
 
+/**
+ * Punkt godzinowy odpowiadający „teraz". Dopasowujemy po prefiksie `YYYY-MM-DDTHH`, bo Open-Meteo
+ * zwraca oba czasy jako lokalne dla lokalizacji — porównywanie ich z zegarem przeglądarki
+ * przekłamywałoby wynik wszędzie tam, gdzie użytkownik ogląda pogodę w innej strefie.
+ */
+function currentHour(forecast: Forecast): HourPoint | null {
+  const t = forecast.current?.time;
+  if (!t) return null;
+  const prefix = t.slice(0, 13);
+  return forecast.hourly.find((h) => h.time.slice(0, 13) === prefix) ?? null;
+}
+
 /** „Teraz" — bieżące warunki + jednolinijkowe podsumowanie dnia. */
 export function ForecastNow({ forecast }: { forecast: Forecast }) {
   const cur = forecast.current;
@@ -22,8 +41,16 @@ export function ForecastNow({ forecast }: { forecast: Forecast }) {
   if (!cur) return null;
 
   // 038: `isDay` było pobierane, ale nieużywane — stąd słońce po zmroku.
-  const meta = wmo(cur.code, !cur.isDay);
+  // 044: sam kod pogody potrafi mówić „pochmurno", gdy w tej samej chwili pada — `observedWmo`
+  // koryguje go zmierzonym opadem. To jedna funkcja wspólna z czujkami i asystentem (AC-A8).
+  const meta = observedWmo(cur);
   const moon = moonPhase();
+
+  // 044: liczby przy kafelku MUSZĄ mieć jawny horyzont czasowy. Do 043 obok ikony stało samo
+  // „opady 82%" — dobowe maksimum, które przy chmurce czytało się jak „szansa opadu teraz".
+  const nowHour = currentHour(forecast);
+  const raining = precipKind(cur) !== "none";
+  const mm = raining ? precipAmount(cur) : null;
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
@@ -34,9 +61,21 @@ export function ForecastNow({ forecast }: { forecast: Forecast }) {
           <div className="text-sm text-[var(--text-secondary)]">
             {meta.label} · odczuwalna {Math.round(cur.apparent)}°C · wiatr {Math.round(cur.windKph)} km/h
           </div>
+
+          {/* Wiersz „teraz" pojawia się tylko wtedy, gdy mamy co w nim napisać — pusta etykieta
+              „Teraz:" bez wartości byłaby gorsza niż jej brak. */}
+          {(mm !== null || nowHour) && (
+            <div className="text-xs text-[var(--text-secondary)]">
+              <span className="font-medium text-[var(--text-primary)]">Teraz</span>
+              {mm !== null && <> · opad {mm.toFixed(1)} mm/h</>}
+              {nowHour && <> · szansa opadu {nowHour.precipProb}%</>}
+            </div>
+          )}
+
           {today && (
             <div className="text-xs text-[var(--text-muted)]">
-              Dziś {Math.round(today.tMin)}–{Math.round(today.tMax)}°C · opady {today.precipProbMax}%
+              <span className="font-medium">Dziś</span> {Math.round(today.tMin)}–
+              {Math.round(today.tMax)}°C · opady maks. {today.precipProbMax}%
             </div>
           )}
         </div>
@@ -87,7 +126,9 @@ export function ForecastHours({ forecast }: { forecast: Forecast }) {
             className="flex min-w-[64px] flex-col items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-2 py-2 text-center"
           >
             <span className="text-xs text-[var(--text-muted)]">{h.time.slice(11, 16)}</span>
-            <span className="text-xl">{wmo(h.code, !h.isDay).emoji}</span>
+            {/* 044: ta sama korekta co w kafelku „Teraz" — godzina ze zmierzonym opadem nie może
+                pokazywać samej chmurki. `HourPoint` niesie `precip` od 038. */}
+            <span className="text-xl">{observedWmo(h).emoji}</span>
             <span className="text-sm font-medium text-[var(--text-primary)]">
               {Math.round(h.temp)}°
             </span>

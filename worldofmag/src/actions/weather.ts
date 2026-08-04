@@ -10,6 +10,7 @@ import {
   geocode,
   reverseGeocode,
   wmo,
+  observedWmo,
   type Forecast,
   type HourPoint,
 } from "@/lib/weather/openMeteo";
@@ -191,7 +192,9 @@ function hourlyDigest(f: Forecast, hours: number): string {
     .filter((h) => new Date(h.time).getTime() >= now)
     .slice(0, hours)
     .map((h) => {
-      const w = wmo(h.code);
+      // 044: ten sam opis co na ekranie — czujka i asystent nie mogą mówić „pochmurno" o godzinie,
+      // dla której model raportuje opad, skoro kafel „Teraz" mówi „deszcz" (AC-A8).
+      const w = observedWmo(h);
       return `${h.time.slice(5, 16).replace("T", " ")}: ${Math.round(h.temp)}°C (odcz. ${Math.round(
         h.apparent
       )}°C), ${w.label}, opady ${h.precipProb}%, wiatr ${Math.round(h.windKph)} km/h`;
@@ -202,7 +205,8 @@ function hourlyDigest(f: Forecast, hours: number): string {
 function digestHours(hours: HourPoint[]): string {
   return hours
     .map((h) => {
-      const w = wmo(h.code);
+      // 044: jak wyżej — opis godziny liczony z pełnych parametrów, wspólnie z ekranem.
+      const w = observedWmo(h);
       return `${h.time.slice(11, 16)}: ${Math.round(h.temp)}°C (odcz. ${Math.round(
         h.apparent
       )}°C), ${w.label}, opady ${h.precipProb}%, wiatr ${Math.round(h.windKph)} km/h`;

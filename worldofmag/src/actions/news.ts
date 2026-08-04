@@ -16,6 +16,7 @@ import { visibleUsage } from "@/lib/ai/costVisibility";
 import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/lib/jobs/queue";
 import { startJobWorker } from "@/lib/jobs/worker";
 import type { DateConfidence, NewsRefreshResult } from "@/lib/jobs/handlers/newsRefresh";
+import type { NewsItem, NewsSource } from "@prisma/client";
 
 export type SummaryLength = "short" | "medium" | "long";
 export type ItemStatus = "PENDING" | "ACKNOWLEDGED" | "DISMISSED";
@@ -167,24 +168,73 @@ export async function getTopicView(topicId: string): Promise<{
 
   const timeline = await getTopicTimeline(topicId);
 
+  return { items: items.map(toItemDTO), timeline };
+}
+
+/**
+ * 044: mapowanie pozycji na DTO wyjęte z `getTopicView`, bo od teraz ma dwóch konsumentów —
+ * widok jednego tematu i strumień wszystkich tematów. Dwie kopie tego samego mapowania rozjechałyby
+ * się przy pierwszym nowym polu.
+ */
+function toItemDTO(i: NewsItem & { source: NewsSource }): NewsItemDTO {
   return {
-    items: items.map((i) => ({
-      id: i.id,
-      sourceId: i.sourceId,
-      sourceName: i.source.name,
-      sourceKey: i.source.key,
-      sourceDescriptor: i.source.descriptor,
-      url: i.url,
-      title: i.title,
-      summary: i.summary,
-      summaryLength: i.summaryLength as SummaryLength,
-      noveltyNote: i.noveltyNote,
-      imageUrl: i.imageUrl,
-      publishedAt: i.publishedAt.toISOString(),
-      status: i.status as ItemStatus,
-    })),
-    timeline,
+    id: i.id,
+    sourceId: i.sourceId,
+    sourceName: i.source.name,
+    sourceKey: i.source.key,
+    sourceDescriptor: i.source.descriptor,
+    url: i.url,
+    title: i.title,
+    summary: i.summary,
+    summaryLength: i.summaryLength as SummaryLength,
+    noveltyNote: i.noveltyNote,
+    imageUrl: i.imageUrl,
+    publishedAt: i.publishedAt.toISOString(),
+    status: i.status as ItemStatus,
   };
+}
+
+/** 044: temat wraz z jego nowymi pozycjami — jednostka strumienia. */
+export interface StreamTopicDTO {
+  id: string;
+  title: string;
+  pendingCount: number;
+  items: NewsItemDTO[];
+}
+
+/**
+ * 044: WSZYSTKIE nowe wiadomości ze wszystkich tematów, w jednym odczycie.
+ *
+ * Zgłoszenie właściciela: „z wiadomości na mobile korzysta się niewygodnie" — żeby przejrzeć nową
+ * porcję, trzeba było przełączać temat po temacie i za każdym razem czekać na wczytanie. Ten odczyt
+ * pozwala złożyć jeden ciągły strumień.
+ *
+ * Tematy BEZ nowych pozycji zwracamy z pustą listą, a nie pomijamy: znikający temat wygląda jak
+ * usterka, a pusta sekcja jest informacją („tu nic nowego nie przyszło").
+ *
+ * Jedno zapytanie z `include` zamiast N+1 — to te same dane, które użytkownik i tak by wczytał,
+ * przechodząc temat po temacie.
+ */
+export async function getStreamView(): Promise<StreamTopicDTO[]> {
+  const user = await requireAuth();
+  const topics = await prisma.newsTopic.findMany({
+    where: { ownerId: user.id },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: {
+      items: {
+        where: { status: "PENDING" },
+        orderBy: { publishedAt: "desc" },
+        include: { source: true },
+      },
+    },
+  });
+
+  return topics.map((t) => ({
+    id: t.id,
+    title: t.title,
+    pendingCount: t.items.length,
+    items: t.items.map(toItemDTO),
+  }));
 }
 
 /**
@@ -592,6 +642,41 @@ export async function acknowledgeItem(itemId: string): Promise<void> {
   if (!item || item.topic.ownerId !== user.id) throw new Error("Pozycja nie istnieje");
   await prisma.newsItem.update({ where: { id: itemId }, data: { status: "ACKNOWLEDGED" } });
   revalidatePath("/wiadomosci");
+}
+
+/**
+ * 044: „nadrobiłem cały temat" jednym gestem.
+ *
+ * Guard jest ten sam co przy pozycji pojedynczej, tylko postawiony raz: `assertTopic` rzuca, gdy
+ * temat nie należy do użytkownika, więc `updateMany` niżej nie może wyjść poza jego dane. Akcja
+ * zbiorcza NIE MOŻE być szerszym wektorem niż pojedyncza (C-21).
+ */
+export async function acknowledgeTopicItems(topicId: string): Promise<{ count: number }> {
+  const user = await requireAuth();
+  await assertTopic(topicId, user.id);
+  const r = await prisma.newsItem.updateMany({
+    where: { topicId, status: "PENDING" },
+    data: { status: "ACKNOWLEDGED" },
+  });
+  revalidatePath("/wiadomosci");
+  return { count: r.count };
+}
+
+/**
+ * 044: „nadrobiłem całą porcję" — wszystkie tematy naraz.
+ *
+ * Właściciela filtrujemy W ZAPYTANIU (`topic.ownerId`), a nie po fakcie w kodzie: przy `updateMany`
+ * nie ma etapu, na którym dałoby się odsiać cudze wiersze po odczycie, więc warunek musi być
+ * częścią zapytania. Potwierdzenie tej masowej akcji należy do UI — z serwera nie da się cofnąć.
+ */
+export async function acknowledgeAllItems(): Promise<{ count: number }> {
+  const user = await requireAuth();
+  const r = await prisma.newsItem.updateMany({
+    where: { status: "PENDING", topic: { ownerId: user.id } },
+    data: { status: "ACKNOWLEDGED" },
+  });
+  revalidatePath("/wiadomosci");
+  return { count: r.count };
 }
 
 export async function dismissItem(itemId: string): Promise<void> {
