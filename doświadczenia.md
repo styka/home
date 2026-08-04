@@ -4,6 +4,53 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-04 — Ikona pogody liczona z pola, którego zapytanie w ogóle nie pobierało
+**Problem:** Właściciel zgłosił: „mam deszcz, a moduł pogody pokazuje tylko chmurkę i 82%".
+Pierwszy odruch — „pewnie zły warunek w mapowaniu kodów WMO" — był fałszywym tropem. Mapowanie było
+poprawne. Kafel „Teraz" liczył ikonę **wyłącznie** z syntetycznego `weather_code` dostawcy, a blok
+`current` w zapytaniu do Open-Meteo brzmiał
+`temperature_2m,apparent_temperature,weather_code,wind_speed_10m,is_day` — **ani jednego pola
+o opadzie**. Kod pogody bywa „pochmurno" w tej samej chwili, w której ten sam model raportuje opad,
+więc aplikacja fizycznie nie miała z czego poznać deszczu. Drugie, niezależne kłamstwo: liczba „82%"
+obok chmurki to było `precipProbMax`, czyli **dobowe maksimum**, ale bez podpisu czytało się jak
+„szansa opadu teraz". Trzecia sprawa: warianty nocne ikon dodane w 038 objęły kody 0/1/2, ale
+pominęły mżawkę (51–55) i przelotny deszcz (80–82), które też używają ikony ze słońcem (🌦️) — więc
+po zmroku dalej gdzieniegdzie świeciło słońce.
+**Rozwiązanie:** Dociągnięcie `precipitation,rain,showers,snowfall` do **tego samego** zapytania
+(zero dodatkowego ruchu sieciowego) i jedna funkcja `observedWmo()`, z której korzystają wszyscy
+konsumenci — ekran, czujki i asystent. Korekta jest celowo **wąska**: kody `>= 51` (dostawca już
+opisuje opad lub burzę) zostają nietknięte, bo nadpisywanie burzy „deszczem" gubiłoby ostrzeżenie;
+podmieniamy tylko kody `<= 48` przy zmierzonym opadzie ≥ 0,1 mm. Próg jest istotny — bez niego
+wilgoć na granicy czułości (0,05 mm) kazałaby ikonie krzyczeć „deszcz" przy suchym chodniku. Pola
+opadu są `number | null`, nie `number`, bo **brak danych musi znaczyć „nie wiem", a nie „nie pada"** —
+`?? 0` wyłączałoby korektę tak samo jak zmierzona susza. Liczby na kafelku rozdzielone i podpisane:
+„Teraz · opad X mm/h · szansa opadu Y%" (Y z bieżącej godziny) osobno od „Dziś · … · opady maks. Z%".
+**Lekcja:** Zanim zaczniesz szukać błędu w logice, **sprawdź, czy dane, na których ta logika pracuje,
+w ogóle są pobierane**. Tutaj cała warstwa mapowania była bezbłędna, a mimo to wynik był nieprawdą —
+bo wejście było niepełne. I szerzej: **każda liczba na ekranie musi mieć jawny horyzont czasowy**.
+„82%" bez podpisu to nie jest informacja niepełna, to jest informacja fałszywa, bo użytkownik
+przypisze jej horyzont sam — ten najbliższy, czyli „teraz".
+
+## 2026-08-04 — Poziomy gest i natywne przewijanie: rozstrzygaj na końcu gestu, nie w trakcie
+**Problem:** Strumień wiadomości miał dostać przesuwanie palcem w bok jako skrót skoku do sąsiedniego
+tematu. Typowy sposób implementacji — nasłuch `touchmove` z `preventDefault()`, żeby „przejąć" gest —
+psuje na telefonie przewijanie w pionie: przeglądarka traci płynne, natywne przewijanie i ruch zaczyna
+skakać. Drugi problem był subtelniejszy: strumień synchronizuje wybór tematu z przewijaniem
+(obserwator przecięć) **i** przewija do tematu po jego wybraniu. Te dwa kierunki się nakręcają — skok
+uruchamia płynną animację, obserwator widzi po drodze każdą mijaną sekcję i przestawia wybór na
+przypadkową, co wygląda jak „uciekający" wybór tematu.
+**Rozwiązanie:** (1) Gest rozstrzygany **dopiero w `touchend`**, na podstawie kształtu całego ruchu:
+`|dx| > 60 px` **i** `|dx| > 1.5 × |dy|`. W `touchmove` nie robimy nic, więc przewijanie w pionie
+zostaje w 100% natywne. Dodatkowo gest zaczęty na przycisku/linku/polu jest ignorowany — to próba
+użycia tego elementu, nie nawigacja. (2) Strażnik `programmaticUntil` (~700 ms): obserwator ignoruje
+zmiany przez czas trwania przewinięcia sterowanego kodem. (3) Ten sam skok dostępny **przyciskami**,
+więc gest jest skrótem, a nie jedyną drogą — na desktopie i przy obsłudze klawiaturą nic nie ginie,
+a w razie problemów z ergonomią da się go wyciszyć bez utraty funkcji.
+**Lekcja:** Gest poziomy na obszarze, który przewija się w pionie, **rozstrzygaj po zakończeniu
+ruchu**, nigdy przez `preventDefault` w trakcie. I zawsze, gdy dwie rzeczy synchronizują się
+nawzajem (A zmienia B, B zmienia A), potrzebny jest **jawny strażnik na zmianę sterowaną kodem** —
+inaczej dostajesz sprzężenie zwrotne, które objawia się jako „samo się przestawia".
+
 ## 2026-08-02 — `<style>{CSS}</style>` w Reakcie psuje hydratację CAŁEJ aplikacji
 **Problem:** Nowa funkcja (ulubione widoki) zachowywała się losowo: gwiazdka bywała nieklikalna,
 popover znikał zaraz po otwarciu, a skrót `Alt+1` nie nawigował, mimo że zdarzenie docierało

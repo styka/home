@@ -1,7 +1,7 @@
 # Zadania: Wierne ikony pogody „teraz" + strumień nowych wiadomości na telefonie
 
 - **Plan:** ./plan.md (044-pogoda-ikony-i-wiadomosci-mobile)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-08-04
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -163,7 +163,7 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
 
 ## Faza 6 — Bramki i domknięcie
 
-- [ ] **T-14** — **Bramki jakości.** W kolejności: `npm run test:unit` → `npm run check:migrations`
+- [x] **T-14** — **Bramki jakości.** W kolejności: `npm run test:unit` → `npm run check:migrations`
   → `npm run check:actions` → `npm run check:ai-coverage` → `npm run check:cost-badge` →
   `npm run check:content-memory` → `npm run lint` → `npm run typecheck` → `npx prisma generate` →
   `npx next build`. **Do kroku `next build`** — pełne `npm run build` kończy się `scripts/migrate.js`,
@@ -174,7 +174,7 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
   i przy każdym zapisz sposób weryfikacji oraz wynik. To wejście dla `/verify`.
   *Gotowe, gdy:* żadne AC nie zostaje bez pokrycia.
 
-- [ ] **T-16** — **Wpisy do `doświadczenia.md`** (C-51, po polsku, format `## YYYY-MM-DD — tytuł` /
+- [x] **T-16** — **Wpisy do `doświadczenia.md`** (C-51, po polsku, format `## YYYY-MM-DD — tytuł` /
   `**Problem:**` / `**Rozwiązanie:**` / `**Lekcja:**`). Planowane dwa:
   1. ikona pogody liczona z kodu, którego zapytanie nie dostarczało danych o opadzie — objaw
      „pada, a widzę chmurkę";
