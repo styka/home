@@ -170,7 +170,7 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
   który rusza prawdziwą bazę (C-13). Lokalny Postgres wg planu §8.
   *Gotowe, gdy:* wszystkie bramki zielone. **(C-50)**
 
-- [ ] **T-15** — **Mapowanie AC → dowód.** Przejdź listę 28 kryteriów (8× część A, 20× część B)
+- [x] **T-15** — **Mapowanie AC → dowód.** Przejdź listę 28 kryteriów (8× część A, 20× część B)
   i przy każdym zapisz sposób weryfikacji oraz wynik. To wejście dla `/verify`.
   *Gotowe, gdy:* żadne AC nie zostaje bez pokrycia.
 
