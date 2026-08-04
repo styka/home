@@ -27,11 +27,38 @@ export interface DayPoint {
   uvMax: number;
 }
 
+/**
+ * 044: bieżące warunki. Do 043 był to typ wpisany inline w `Forecast` i niosący WYŁĄCZNIE
+ * syntetyczny kod pogody dostawcy — zapytanie nie pobierało nawet pola o opadzie. Stąd zgłoszenie
+ * właściciela „pada, a moduł pokazuje chmurkę": kod WMO potrafi mówić „pochmurno" w tej samej
+ * chwili, w której model raportuje opad. Cztery pola opadu pochodzą z TEGO SAMEGO zapytania,
+ * więc nie kosztują dodatkowego wywołania sieciowego.
+ *
+ * Każde z nich jest `number | null`, bo dostawca może pola nie zwrócić (starsze wdrożenia API,
+ * degradacja). `null` musi oznaczać „nie wiem", a nie „nie pada" — inaczej brak danych
+ * cichaczem kasowałby korektę.
+ */
+export interface CurrentPoint {
+  temp: number;
+  apparent: number;
+  code: number;
+  windKph: number;
+  isDay: boolean;
+  /** Suma opadu (deszcz+przelotny+śnieg) w ostatniej godzinie, mm. */
+  precip: number | null;
+  /** Deszcz ciągły, mm. */
+  rain: number | null;
+  /** Opad przelotny, mm. */
+  showers: number | null;
+  /** Śnieg, cm (Open-Meteo podaje śnieg w centymetrach). */
+  snowfall: number | null;
+}
+
 export interface Forecast {
   latitude: number;
   longitude: number;
   timezone: string;
-  current: { temp: number; apparent: number; code: number; windKph: number; isDay: boolean } | null;
+  current: CurrentPoint | null;
   hourly: HourPoint[];
   daily: DayPoint[];
 }
@@ -57,6 +84,11 @@ export interface WmoMeta {
  * Zgłoszenie właściciela: o 23:00 i 02:00 pasek godzinowy pokazywał ☀️. Deszcz, śnieg i mgła
  * wyglądają w nocy tak samo jak w dzień, więc świadomie NIE dorabiamy im sztucznych wariantów —
  * byłoby to mnożenie ikon bez informacji (C-53).
+ *
+ * 044: ta sama zasada, konsekwentnie domknięta. Mżawka (51–55) i przelotny deszcz (80–82) też
+ * używały ikony ze słońcem (🌦️), więc po zmroku pokazywały słońce zza chmury — dokładnie usterka,
+ * którą 038 miało usunąć, tyle że w dwóch przeoczonych zakresach kodów. Nocą dostają 🌧️.
+ * Reguła do zapamiętania: wariant nocny dodajemy WTEDY I TYLKO WTEDY, gdy dzienny zawiera słońce.
  */
 export function wmo(code: number, isNight = false): WmoMeta {
   const c = code;
@@ -74,17 +106,116 @@ export function wmo(code: number, isNight = false): WmoMeta {
       : { label: "Częściowe zachmurzenie", emoji: "⛅", color: "var(--accent-amber)" };
   if (c === 3) return { label: "Pochmurno", emoji: "☁️", color: "var(--text-secondary)" };
   if (c === 45 || c === 48) return { label: "Mgła", emoji: "🌫️", color: "var(--text-muted)" };
-  if (c >= 51 && c <= 55) return { label: "Mżawka", emoji: "🌦️", color: "var(--accent-blue)" };
+  if (c >= 51 && c <= 55)
+    return isNight
+      ? { label: "Mżawka", emoji: "🌧️", color: "var(--accent-blue)" }
+      : { label: "Mżawka", emoji: "🌦️", color: "var(--accent-blue)" };
   if (c >= 56 && c <= 57) return { label: "Marznąca mżawka", emoji: "🌧️", color: "var(--accent-blue)" };
   if (c >= 61 && c <= 65) return { label: "Deszcz", emoji: "🌧️", color: "var(--accent-blue)" };
   if (c >= 66 && c <= 67) return { label: "Marznący deszcz", emoji: "🌧️", color: "var(--accent-blue)" };
   if (c >= 71 && c <= 75) return { label: "Śnieg", emoji: "🌨️", color: "var(--accent-blue)" };
   if (c === 77) return { label: "Krupa śnieżna", emoji: "🌨️", color: "var(--accent-blue)" };
-  if (c >= 80 && c <= 82) return { label: "Przelotny deszcz", emoji: "🌦️", color: "var(--accent-blue)" };
+  if (c >= 80 && c <= 82)
+    return isNight
+      ? { label: "Przelotny deszcz", emoji: "🌧️", color: "var(--accent-blue)" }
+      : { label: "Przelotny deszcz", emoji: "🌦️", color: "var(--accent-blue)" };
   if (c >= 85 && c <= 86) return { label: "Przelotny śnieg", emoji: "🌨️", color: "var(--accent-blue)" };
   if (c === 95) return { label: "Burza", emoji: "⛈️", color: "var(--accent-purple)" };
   if (c >= 96 && c <= 99) return { label: "Burza z gradem", emoji: "⛈️", color: "var(--accent-purple)" };
   return { label: "Pogoda zmienna", emoji: "🌡️", color: "var(--text-secondary)" };
+}
+
+// ─── 044: korekta opisu pogody zmierzonym opadem ───────────────────────────
+
+/** Rodzaj opadu rozpoznany z pomiarów. Union TS, nie enum Prisma (C-12). */
+export type PrecipKind = "rain" | "showers" | "snow" | "none";
+
+/**
+ * Poniżej tej wartości opad jest ŚLADOWY i nie zmienia obrazu pogody. Bez tego progu wilgoć na
+ * granicy czułości (0,05 mm) kazałaby ikonie krzyczeć „deszcz" przy suchym chodniku.
+ */
+const PRECIP_MM_MIN = 0.1;
+/** Progi natężenia (mm/h) — standardowe meteorologiczne granice słaby/umiarkowany/silny. */
+const PRECIP_MM_MODERATE = 2.5;
+const PRECIP_MM_HEAVY = 7.6;
+
+/**
+ * Wejście korekty: kod dostawcy + to, co faktycznie zmierzono. Pasuje zarówno do `CurrentPoint`,
+ * jak i do `HourPoint` — dzięki temu ekran, czujki i asystent liczą opis JEDNĄ funkcją (AC-A8).
+ */
+export interface ObservedConditions {
+  code: number;
+  /** Brak = traktujemy jak dzień (prognoza dzienna nie ma pory doby). */
+  isDay?: boolean;
+  precip?: number | null;
+  rain?: number | null;
+  showers?: number | null;
+  snowfall?: number | null;
+}
+
+/** Czy pomiar przekracza próg istotności. `null`/brak = „nie wiem", więc nie. */
+function measurable(v: number | null | undefined): boolean {
+  return typeof v === "number" && v >= PRECIP_MM_MIN;
+}
+
+/**
+ * Rodzaj opadu z pomiarów. Śnieg ma pierwszeństwo (jest najbardziej rozstrzygający dla ubioru),
+ * potem przelotny, a `precipitation` bez rozbicia na rodzaje lądujemy jako deszcz.
+ */
+export function precipKind(o: ObservedConditions): PrecipKind {
+  if (measurable(o.snowfall)) return "snow";
+  if (measurable(o.showers)) return "showers";
+  if (measurable(o.rain) || measurable(o.precip)) return "rain";
+  return "none";
+}
+
+/** Ile w sumie spadło — do pokazania użytkownikowi „ile pada" (AC-A4). */
+export function precipAmount(o: ObservedConditions): number | null {
+  if (typeof o.precip === "number") return o.precip;
+  const parts = [o.rain, o.showers].filter((v): v is number => typeof v === "number");
+  return parts.length ? parts.reduce((a, b) => a + b, 0) : null;
+}
+
+/**
+ * Kod WMO o właściwym natężeniu dla danego rodzaju opadu.
+ *
+ * Natężenie liczymy z sumy w mm (dla śniegu jest to ekwiwalent wodny z pola `precipitation`, bo samo
+ * `snowfall` dostawca podaje w centymetrach). Ziarnistość „słaby/umiarkowany/silny" w zupełności
+ * wystarcza ikonie — dokładną wartość i tak pokazujemy obok liczbowo.
+ */
+function codeForPrecip(kind: Exclude<PrecipKind, "none">, mm: number): number {
+  const step = mm >= PRECIP_MM_HEAVY ? 2 : mm >= PRECIP_MM_MODERATE ? 1 : 0;
+  if (kind === "snow") return 71 + step * 2; // 71 / 73 / 75
+  if (kind === "showers") return 80 + step; // 80 / 81 / 82
+  return 61 + step * 2; // 61 / 63 / 65
+}
+
+/**
+ * 044: opis warunków liczony z PEŁNYCH parametrów, nie z samego kodu dostawcy.
+ *
+ * Zgłoszenie właściciela brzmiało: „mam deszcz, a moduł pokazuje chmurkę i 82%". Przyczyna była
+ * podwójna — kafel nie pobierał danych o opadzie (patrz `CurrentPoint`), a syntetyczny `weather_code`
+ * modelu potrafi zostać na „pochmurno", gdy ten sam model raportuje już opad.
+ *
+ * Korekta jest CELOWO wąska, żeby nie zamienić jednego kłamstwa na drugie:
+ *  - `code >= 51` (mżawka, deszcz, śnieg, przelotne, burza) zostawiamy w spokoju — dostawca wie
+ *    lepiej niż my, jaki to rodzaj opadu, a nadpisywanie burzy „deszczem" gubiłoby ostrzeżenie;
+ *  - `code <= 48` (bezchmurnie / zachmurzenie / mgła) przy zmierzonym opadzie ≥ progu podmieniamy
+ *    na kod opadowy — to jest dokładnie ta sytuacja ze zgłoszenia;
+ *  - brak danych o opadzie (`null`) → zachowanie identyczne jak przed 044 (AC-A7).
+ *
+ * Wynik zawsze przechodzi przez `wmo()`, więc etykieta, emoji i token koloru powstają nadal
+ * w jednym miejscu.
+ */
+export function observedWmo(o: ObservedConditions): WmoMeta {
+  const isNight = o.isDay === false;
+  if (o.code > 48) return wmo(o.code, isNight);
+
+  const kind = precipKind(o);
+  if (kind === "none") return wmo(o.code, isNight);
+
+  const mm = precipAmount(o) ?? PRECIP_MM_MIN;
+  return wmo(codeForPrecip(kind, mm), isNight);
 }
 
 export async function geocode(name: string): Promise<GeoResult | null> {
@@ -160,12 +291,22 @@ export async function reverseGeocode(lat: number, lon: number): Promise<string |
   }
 }
 
+/** Liczba z odpowiedzi API albo `null`. Odsiewa `undefined`, `null` i `NaN` jednym sitem. */
+function num(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
 export async function fetchForecast(lat: number, lon: number): Promise<Forecast | null> {
   try {
     const params = new URLSearchParams({
       latitude: String(lat),
       longitude: String(lon),
-      current: "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,is_day",
+      // 044: `precipitation,rain,showers,snowfall` — bez nich kafel „Teraz" nie miał z czego poznać
+      // deszczu i wisiał na samym `weather_code`. To ten sam blok `current`, więc zero dodatkowego
+      // ruchu sieciowego.
+      current:
+        "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,is_day," +
+        "precipitation,rain,showers,snowfall",
       hourly:
         "temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,is_day",
       daily:
@@ -216,6 +357,12 @@ export async function fetchForecast(lat: number, lon: number): Promise<Forecast 
             code: d.current.weather_code,
             windKph: d.current.wind_speed_10m,
             isDay: d.current.is_day === 1,
+            // 044: `?? null` celowo zamiast `?? 0` — brak pola ma znaczyć „nie wiem", bo zero
+            // wyłączałoby korektę ikony tak samo jak zmierzona susza (AC-A7).
+            precip: num(d.current.precipitation),
+            rain: num(d.current.rain),
+            showers: num(d.current.showers),
+            snowfall: num(d.current.snowfall),
           }
         : null,
       hourly,

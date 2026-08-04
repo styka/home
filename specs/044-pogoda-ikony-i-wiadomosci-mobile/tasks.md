@@ -25,20 +25,20 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
 
 ## Faza 1 — Pogoda: rdzeń obliczeniowy (część A)
 
-- [ ] **T-1** — **Pobranie bieżących opadów z Open-Meteo.**
+- [x] **T-1** — **Pobranie bieżących opadów z Open-Meteo.**
   W `src/lib/weather/openMeteo.ts` dodaj do bloku `current` zapytania pola `precipitation`, `rain`,
   `showers`, `snowfall`. Wyodrębnij typ `CurrentPoint` (dziś typ jest wpisany inline w `Forecast`)
   i rozszerz go o te cztery pola jako `number | null`, czytane defensywnie (`?? null`).
   *Gotowe, gdy:* `Forecast.current` niesie dane o opadzie, a brak pola w odpowiedzi daje `null`
   zamiast wyjątku. `npm run typecheck` czysto. **(AC-A7)**
 
-- [ ] **T-2** — **Warianty nocne dla ikon zawierających słońce.**
+- [x] **T-2** — **Warianty nocne dla ikon zawierających słońce.**
   W `wmo(code, isNight)` dodaj warianty nocne dla `51–55` (mżawka) i `80–82` (przelotny deszcz) —
   `🌦️` → `🌧️`. Nie ruszaj deszczu, śniegu, mgły i pełnego zachmurzenia; podtrzymaj (i dopisz
   w komentarzu) zasadę z 038: wariant nocny tylko tam, gdzie w dziennym świeci słońce.
   *Gotowe, gdy:* żaden wariant nocny nie zawiera `☀️`, `🌤️`, `⛅` ani `🌦️`. **(AC-A5)**
 
-- [ ] **T-3** — **Funkcja `observedWmo()` — jedno źródło prawdy dla opisu warunków.**
+- [x] **T-3** — **Funkcja `observedWmo()` — jedno źródło prawdy dla opisu warunków.**
   W tym samym pliku: stałe `PRECIP_MM_MIN = 0.1`, `PRECIP_MM_MODERATE = 2.5`, `PRECIP_MM_HEAVY = 7.6`,
   typ `PrecipKind = "rain" | "showers" | "snow" | "none"` (union TS, nie enum — C-12) oraz
   `observedWmo({code, isDay, precip, rain, showers, snowfall})`. Reguła korekty wg planu §5A:
@@ -48,7 +48,7 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
   *Gotowe, gdy:* funkcja jest wyeksportowana, a `wmo()` pozostaje jedynym miejscem mapowania kodu na
   opis/emoji/token. **(AC-A1, AC-A2)**
 
-- [ ] **T-4** — **Testy jednostkowe korekty i wariantów nocnych.**
+- [x] **T-4** — **Testy jednostkowe korekty i wariantów nocnych.**
   Nowy `src/lib/weather/openMeteo.test.ts` (wzorzec: `moon.test.ts`, `sourceColor.test.ts`).
   Przypadki: opad przy `code=3` → deszcz · `code=3` bez opadu → pochmurno · śnieg vs przelotny vs
   deszcz · ślad `0.05 mm` → bez korekty · `code=61` nietykany · `precip: null` → bez korekty ·
