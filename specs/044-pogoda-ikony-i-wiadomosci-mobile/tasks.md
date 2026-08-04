@@ -59,7 +59,7 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
 
 ## Faza 2 — Pogoda: konsumenci (część A)
 
-- [ ] **T-5** — **Kafel „Teraz" mówi prawdę.**
+- [x] **T-5** — **Kafel „Teraz" mówi prawdę.**
   W `src/components/weather/ForecastView.tsx`: `ForecastNow` liczy ikonę i opis przez `observedWmo`.
   Wiersz liczb rozdzielony i jawnie podpisany: „**Teraz**: opady *X* mm · szansa *Y*%" (gdzie `Y` to
   `precipProb` **bieżącej godziny** — dopasowanie elementu `hourly` po prefiksie `YYYY-MM-DDTHH`
@@ -69,7 +69,7 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
   *Gotowe, gdy:* żaden odsetek na kafelku nie da się odczytać jako „teraz", jeśli nim nie jest,
   a prognoza dzienna nadal używa ikon dziennych. **(AC-A1, AC-A3, AC-A4, AC-A6)**
 
-- [ ] **T-6** `[P]` — **Czujki i asystent mówią to samo co ekran.**
+- [x] **T-6** `[P]` — **Czujki i asystent mówią to samo co ekran.**
   W `src/actions/weather.ts` przestaw `hourlyDigest` i `digestHours` na `observedWmo`
   (z `isDay` i `precip` punktu godzinowego). `dailyDigest` zostaje na `wmo(d.code)` — podsumowanie
   doby ma być dzienne.

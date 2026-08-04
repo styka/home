@@ -39,6 +39,12 @@ export interface DayPoint {
  * cichaczem kasowałby korektę.
  */
 export interface CurrentPoint {
+  /**
+   * Znacznik czasu dostawcy (czas LOKALNY lokalizacji, ISO). Po nim dopasowujemy punkt godzinowy
+   * odpowiadający „teraz" — zegar przeglądarki nie nadaje się do tego, bo użytkownik ogląda pogodę
+   * także dla miejsc w innej strefie czasowej.
+   */
+  time: string;
   temp: number;
   apparent: number;
   code: number;
@@ -352,6 +358,7 @@ export async function fetchForecast(lat: number, lon: number): Promise<Forecast 
       timezone: d.timezone ?? "auto",
       current: d.current
         ? {
+            time: typeof d.current.time === "string" ? d.current.time : "",
             temp: d.current.temperature_2m,
             apparent: d.current.apparent_temperature,
             code: d.current.weather_code,
