@@ -96,15 +96,15 @@
 
 ## Faza 4 — Skórki flagowe
 
-- [ ] **T-18** — `src/lib/skins/flagship.ts` — tokeny skórek **Mostek** (ciemna konsola sci-fi) i
+- [x] **T-18** — `src/lib/skins/flagship.ts` — tokeny skórek **Mostek** (ciemna konsola sci-fi) i
       **Papier** (jasna, typograficzna) wg planu §5.6. Zero odwołań do cudzych znaków towarowych.
       **Gotowe, gdy:** obie skórki używają wyłącznie tokenów z whitelisty.
-- [ ] **T-19** — Migracja `prisma/migrations/0224_skorki_flagowe/migration.sql` — dwa idempotentne
+- [x] **T-19** — Migracja `prisma/migrations/0224_skorki_flagowe/migration.sql` — dwa idempotentne
       `INSERT … ON CONFLICT ("id") DO NOTHING`, stałe id `skin-system-mostek` / `skin-system-papier`,
       `isSystem = true`, tokeny dollar-quoted (`$tokens$…$tokens$`).
       **Gotowe, gdy:** `npm run check:migrations` przechodzi, a `migrate deploy` na **lokalnym**
       Postgresie (C-13) dodaje obie skórki i jest bezpieczny przy powtórzeniu.
-- [ ] **T-20** — Kontrola kontrastu **AA** obu skórek: pary tekst/tło, tekst-drugorzędny/tło,
+- [x] **T-20** — Kontrola kontrastu **AA** obu skórek: pary tekst/tło, tekst-drugorzędny/tło,
       tekst-na-akcencie dla każdego akcentu. Wyniki (wyliczone współczynniki) zapisz — będą wejściem
       do `/verify`. Skórka stylizowana **nigdy** nie jest domyślna.
       **Gotowe, gdy:** każda para ≥ 4.5:1 (tekst zwykły) / ≥ 3:1 (duży tekst i elementy UI).
