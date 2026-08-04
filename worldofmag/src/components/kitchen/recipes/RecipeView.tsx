@@ -176,7 +176,7 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
           <Link
             href={`/kitchen/recipes/${recipe.slug}/cook`}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
-            style={{ backgroundColor: "#0d0d0d", color: "var(--accent-orange)", border: "1px solid var(--accent-orange)" }}
+            style={{ backgroundColor: "var(--bg-base)", color: "var(--accent-orange)", border: "1px solid var(--accent-orange)" }}
           >
             <Play size={14} /> Cook Mode
           </Link>
@@ -185,7 +185,7 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
           type="button"
           onClick={() => setShopOpen(true)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
-          style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+          style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
         >
           <ShoppingCart size={14} /> Do listy zakupów
         </button>

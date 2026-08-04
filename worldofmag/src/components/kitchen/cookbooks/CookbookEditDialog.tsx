@@ -124,7 +124,7 @@ export function CookbookEditDialog({ open, onClose, cookbook }: CookbookEditDial
               onClick={handleSave}
               disabled={pending}
               className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
-              style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+              style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
             >
               {pending ? "Zapisuję…" : "Zapisz"}
             </button>

@@ -150,7 +150,7 @@ export function ShoppingFromPlanDialog({
             onClick={handleConfirm}
             disabled={pending || lists.length === 0 || toAdd.length === 0}
             className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
-            style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+            style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
           >
             {pending ? "Generuję…" : `Dodaj ${toAdd.length}`}
           </button>

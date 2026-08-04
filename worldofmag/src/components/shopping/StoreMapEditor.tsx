@@ -24,7 +24,7 @@ const CATEGORY_META: Record<string, { emoji: string; color: string }> = {
   "Przyprawy i oleje":   { emoji: "🫙", color: "#65a30d" },
   "Zioła i przyprawy":   { emoji: "🌿", color: "#059669" },
   "Chemia i higiena":    { emoji: "🧴", color: "#7c3aed" },
-  "Konserwy i przetwory": { emoji: "🥫", color: "#b45309" },
+  "Konserwy i przetwory": { emoji: "🥫", color: "var(--accent-amber-dim)" },
   "Inne":                { emoji: "📦", color: "#6b7280" },
 };
 
@@ -531,7 +531,7 @@ function NodeTypeDialog({ dialog, existingNodes, pos, onChange, onConfirm, onCan
         <button
           onClick={onConfirm}
           className="flex-1 text-xs py-1.5 rounded font-medium"
-          style={{ backgroundColor: "#16a34a", color: "var(--on-accent)" }}
+          style={{ backgroundColor: "var(--accent-green)", color: "var(--on-accent)" }}
         >
           Dodaj
         </button>
@@ -593,7 +593,7 @@ function WeightInputDialog({ fromLabel, toLabel, pos, value, onChange, onConfirm
         <button
           onClick={onConfirm}
           className="flex-1 text-xs py-1.5 rounded font-medium"
-          style={{ backgroundColor: "#2563eb", color: "var(--on-accent)" }}
+          style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
         >
           Połącz
         </button>

@@ -83,7 +83,7 @@ export function PantryList({ items, expiringSoon, viewParams = {} }: PantryListP
           type="button"
           onClick={() => setEditing({ item: null })}
           className="mt-6 inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm"
-          style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+          style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
         >
           <Plus size={16} /> Dodaj pozycję
         </button>
@@ -121,7 +121,7 @@ export function PantryList({ items, expiringSoon, viewParams = {} }: PantryListP
           type="button"
           onClick={() => setEditing({ item: null })}
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm"
-          style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+          style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
         >
           <Plus size={16} /> Dodaj
         </button>
@@ -227,7 +227,7 @@ export function PantryList({ items, expiringSoon, viewParams = {} }: PantryListP
                         {i.quantity != null ? `${i.quantity}${i.unit ? ` ${i.unit}` : ""}` : "—"}
                       </span>
                       {belowMin ? (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--kitchen-expiring)", color: "#0d0d0d" }}>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--kitchen-expiring)", color: "var(--on-accent)" }}>
                           poniżej min
                         </span>
                       ) : null}

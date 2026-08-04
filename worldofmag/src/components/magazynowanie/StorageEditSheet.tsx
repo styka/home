@@ -223,7 +223,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
               onClick={handleSave}
               disabled={pending}
               className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
-              style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}
+              style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
             >
               {pending ? "Zapisuję…" : "Zapisz"}
             </button>
@@ -489,7 +489,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
                       onClick={handleTransfer}
                       disabled={pending}
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-sm disabled:opacity-50"
-                      style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}
+                      style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
                     >
                       <ArrowLeftRight size={13} /> Przenieś
                     </button>

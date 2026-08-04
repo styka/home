@@ -553,7 +553,7 @@ function PortfolioSection({ images, onChange }: { images: { id: string; url: str
             <button
               onClick={async () => { if (confirm("Usunąć zdjęcie?")) { await deleteServiceImage(img.id); onChange(); } }}
               aria-label="Usuń zdjęcie"
-              style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: 6, background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: 6, background: "rgba(0,0,0,0.6)", color: "var(--on-accent)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
             >
               <Trash2 size={13} />
             </button>

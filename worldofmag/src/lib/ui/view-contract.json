@@ -174,204 +174,120 @@
   },
   "colorExceptions": {
     "src/components/shopping/StoreGraphView.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolory węzłów grafu sklepu pochodzą ze słownika kategorii."
     },
     "src/components/shopping/StoreMapEditor.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/shopping/StoreWizard.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Słownik kolorów kategorii sklepu — mapa sklepu ma odwzorowywać realne strefy, więc kolory są danymi domeny, nie motywem."
     },
     "src/components/shopping/StoresManager.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolory kategorii sklepu."
     },
     "src/components/kitchen/recipes/CookMode.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/kitchen/recipes/RecipeEditor.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolory tagów przepisu z rekordów."
     },
     "src/components/kitchen/recipes/RecipeFilters.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/kitchen/recipes/RecipeList.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/kitchen/recipes/RecipeView.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/kitchen/recipes/ShopForRecipeDialog.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/kitchen/plan/MealPlanWeek.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolory tagów przepisów z rekordów użytkownika."
     },
     "src/components/kitchen/plan/PlanWeekDialog.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/kitchen/plan/ShoppingFromPlanDialog.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/kitchen/plan/SlotEditorSheet.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolory tagów przepisów z rekordów."
     },
     "src/components/kitchen/cookbooks/CookbookEditDialog.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Paleta okładek książki kucharskiej wybierana przez użytkownika."
     },
     "src/components/kitchen/cookbooks/CookbookList.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolor okładki z rekordu książki."
     },
     "src/components/kitchen/cookbooks/CookbookView.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/kitchen/pantry/PantryEditSheet.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolor okładki z rekordu książki."
     },
     "src/components/kitchen/pantry/PantryList.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/kitchen/pantry/StockTakeMode.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Progi przydatności do spożycia mają stałe, semantyczne kolory (`--kitchen-*` w globals.css) — celowo niezależne od skórki, bo „przeterminowane\" musi być rozpoznawalne w każdym motywie."
     },
     "src/components/admin/AudytBookReader.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "ilustracja",
+      "reason": "Tryby czytania książki (jasny/ciemny/sepia) to własny, zamknięty motyw czytnika — celowo niezależny od skórki aplikacji."
     },
     "src/components/teams/InvitationsList.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/teams/InviteMemberForm.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolor awatara wyliczany z identyfikatora użytkownika."
     },
     "src/components/tasks/QuickAddTask.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolory priorytetów zadania — semantyczne, stałe w każdej skórce."
     },
     "src/components/tasks/TaskDetail.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolory priorytetów zadania."
     },
     "src/components/tasks/TaskTagBadge.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolor zapasowy dla tagu bez ustawionego koloru — musi być konkretną wartością, bo trafia do obliczeń przezroczystości."
     },
     "src/components/tasks/TaskTagsManager.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Paleta do wyboru koloru tagu zadania — wartość ląduje w kolumnie `TaskTagDef.color`."
     },
     "src/components/tasks/TasksGuide.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "ilustracja",
+      "reason": "Poradnik pokazuje ZRZUTY i przykłady interfejsu; kolory są treścią ilustracji, nie stylem strony."
     },
     "src/components/brand/BrandLogo.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "ilustracja",
+      "reason": "Logo marki. Znak firmowy nie zmienia barw razem ze skórką."
     },
     "src/components/skins/SkinEditor.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Wartość zastępcza dla pola wyboru koloru (#000000), gdy token nie jest w formacie akceptowanym przez natywną kontrolkę."
     },
     "src/components/notes/GroupsManager.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/notes/NoteGroupSection.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Paleta kolorów folderu notatek wybierana przez użytkownika."
     },
     "src/components/notes/NoteRow.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/notes/NotesPage.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolory tagów i folderów z rekordów użytkownika."
     },
     "src/components/notes/QuickNoteBar.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolory tagów z rekordów użytkownika."
     },
     "src/components/notes/TagChip.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/shell/ModuleSidebar.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Paleta kolorów tagu WYBIERANA PRZEZ UŻYTKOWNIKA i zapisana w bazie. To dane rekordu, nie motyw — skórka nie ma prawa ich nadpisać."
     },
     "src/components/portfel/MonthlyReportPage.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/magazynowanie/BatchesManager.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/magazynowanie/DocumentsPage.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/magazynowanie/PurchaseOrders.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Paleta serii na wykresie — musi mieć stałą liczbę rozróżnialnych kolorów niezależnie od skórki, inaczej dwie kategorie wydatków zlałyby się w jedną."
     },
     "src/components/magazynowanie/QrLabels.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "ilustracja",
+      "reason": "Etykieta QR jest DRUKOWANA — musi być czarna na białym niezależnie od skórki ekranowej, inaczej wydruk wyjdzie nieczytelny."
     },
     "src/components/magazynowanie/ScanFlow.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/magazynowanie/StockTakeMode.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolory statusu skanowania — semantyczne."
     },
     "src/components/magazynowanie/StorageAnalytics.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/magazynowanie/StorageEditSheet.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Paleta serii na wykresie ABC."
     },
     "src/components/magazynowanie/StorageList.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/magazynowanie/StorageScan.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolory progów stanu magazynowego (semantyczne, jak w spiżarni)."
     },
     "src/components/magazynowanie/StorageSettingsForm.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
-    },
-    "src/components/magazynowanie/SuppliersPage.tsx": {
-      "kind": "do-poprawy",
-      "reason": "Zaszyte kolory do zamiany na zmienne skórki — nieprzejrzane w przebiegu 045."
+      "kind": "paleta-danych",
+      "reason": "Kolor podglądu trybu."
     }
   }
 }

@@ -149,7 +149,7 @@ export function StoresManager({ stores: initialStores }: StoresManagerProps) {
                       <button
                         onClick={() => handleDelete(store.id)}
                         className="px-2 py-1 rounded text-xs"
-                        style={{ backgroundColor: "#dc2626", color: "var(--on-accent)" }}
+                        style={{ backgroundColor: "var(--accent-red)", color: "var(--on-accent)" }}
                       >
                         Usuń
                       </button>

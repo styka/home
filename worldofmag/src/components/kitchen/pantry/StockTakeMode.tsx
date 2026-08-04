@@ -72,7 +72,7 @@ export function StockTakeMode({ items }: StockTakeModeProps) {
           onClick={handleSave}
           disabled={pending}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm disabled:opacity-50"
-          style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+          style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
         >
           <Save size={14} /> {pending ? "Zapisuję…" : "Zapisz wszystko"}
         </button>

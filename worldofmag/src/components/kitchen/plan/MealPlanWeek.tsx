@@ -263,7 +263,7 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI, week
             type="button"
             onClick={() => setShoppingOpen(true)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
-            style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+            style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
           >
             <ShoppingCart size={14} /> Lista zakupów z planu
           </button>

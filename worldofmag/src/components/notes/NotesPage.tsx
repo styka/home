@@ -291,7 +291,7 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
           <option value="">Wszystkie foldery</option>
           {groups.map((g) => (
             <option key={g.id} value={g.id}
-              style={{ backgroundColor: "#1c1c1c", color: "var(--text-primary)" }}>
+              style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-primary)" }}>
               {g.name}
             </option>
           ))}

@@ -176,7 +176,7 @@ export function CookMode({ recipe }: CookModeProps) {
         <button
           onClick={handleExit}
           className="px-4 py-2 rounded text-sm"
-          style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+          style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
         >
           Wyjdź
         </button>
@@ -271,7 +271,7 @@ export function CookMode({ recipe }: CookModeProps) {
                   type="button"
                   onClick={() => handleTimerToggle(activeTimer.stepId)}
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm"
-                  style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+                  style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
                 >
                   {activeTimer.running ? <Pause size={16} /> : <Play size={16} />}
                   {activeTimer.running ? "Pauza" : "Start"}
@@ -435,7 +435,7 @@ export function CookMode({ recipe }: CookModeProps) {
                 onClick={handleConfirmCooked}
                 disabled={pendingCook}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm disabled:opacity-50"
-                style={{ backgroundColor: "var(--accent-green)", color: "#0d0d0d" }}
+                style={{ backgroundColor: "var(--accent-green)", color: "var(--on-accent)" }}
               >
                 <CheckCircle2 size={14} /> {pendingCook ? "Zapisuję…" : "Zapisz"}
               </button>

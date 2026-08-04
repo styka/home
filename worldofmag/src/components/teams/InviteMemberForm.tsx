@@ -60,7 +60,7 @@ export default function InviteMemberForm({ teamId }: { teamId: string }) {
         {status === "loading" ? "..." : status === "ok" ? "Wysłano ✓" : "Zaproś"}
       </button>
       {status === "error" && (
-        <span style={{ color: "#ef4444", fontSize: 13 }}>{error}</span>
+        <span style={{ color: "var(--accent-red)", fontSize: 13 }}>{error}</span>
       )}
     </form>
   )

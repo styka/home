@@ -26,9 +26,9 @@ interface TaskDetailProps {
 
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] = [
   { value: "NONE", label: "Brak", color: "var(--text-muted)" },
-  { value: "LOW", label: "Niski", color: "#3b82f6" },
-  { value: "MEDIUM", label: "Średni", color: "#f59e0b" },
-  { value: "HIGH", label: "Wysoki", color: "#ef4444" },
+  { value: "LOW", label: "Niski", color: "var(--accent-blue)" },
+  { value: "MEDIUM", label: "Średni", color: "var(--accent-amber)" },
+  { value: "HIGH", label: "Wysoki", color: "var(--accent-red)" },
   { value: "URGENT", label: "Pilne", color: "#dc2626" },
 ];
 

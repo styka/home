@@ -121,7 +121,7 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
             type="button"
             onClick={() => setEditing({ item: null })}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm"
-            style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}
+            style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
           >
             <Plus size={16} /> Dodaj pozycję
           </button>
@@ -169,7 +169,7 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
           type="button"
           onClick={() => setEditing({ item: null, warehouse: activeWarehouse && activeWarehouse !== NO_WAREHOUSE ? activeWarehouse : undefined })}
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm"
-          style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}
+          style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
         >
           <Plus size={16} /> Dodaj
         </button>
@@ -235,7 +235,7 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
                 onClick={handleReplenish}
                 disabled={pending || shoppingLists.length === 0}
                 className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs disabled:opacity-50"
-                style={{ backgroundColor: "var(--accent-amber)", color: "#0d0d0d" }}
+                style={{ backgroundColor: "var(--accent-amber)", color: "var(--on-accent)" }}
               >
                 <ShoppingCart size={12} /> Do zakupów
               </button>
@@ -334,7 +334,7 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
                         {i.quantity != null ? `${i.quantity}${i.unit ? ` ${i.unit}` : ""}` : "—"}
                       </span>
                       {belowMin ? (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--accent-amber)", color: "#0d0d0d" }}>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--accent-amber)", color: "var(--on-accent)" }}>
                           poniżej min
                         </span>
                       ) : null}

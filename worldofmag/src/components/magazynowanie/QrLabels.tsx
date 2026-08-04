@@ -138,7 +138,7 @@ export function QrLabels({ locations }: QrLabelsProps) {
           onClick={() => window.print()}
           disabled={chosen.length === 0}
           className="self-start inline-flex items-center gap-2 px-4 py-2 rounded text-sm disabled:opacity-50"
-          style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}
+          style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
         >
           <Printer size={16} /> Drukuj ({chosen.length})
         </button>
