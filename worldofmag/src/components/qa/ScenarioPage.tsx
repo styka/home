@@ -5,8 +5,9 @@ import { FlaskConical, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react
 import { getModuleInfo } from "@/lib/qaModules";
 import { getScenarioTypeLabel, getScenarioTypeColor, getPriorityColor, getPriorityLabel } from "@/lib/qaConstants";
 import { MARKDOWN_STYLES } from "@/lib/markdown";
-import { pageContainerStyle } from "@/components/ui/home";
+
 import type { ScenarioWithContext } from "@/actions/qa";
+import { ModuleView } from "@/components/ui/view";
 
 interface ScenarioPageProps {
   scenario: ScenarioWithContext;
@@ -23,63 +24,51 @@ export function ScenarioPage({ scenario, contentHtml }: ScenarioPageProps) {
   const next = idx >= 0 && idx < scenario.siblings.length - 1 ? scenario.siblings[idx + 1] : null;
 
   return (
-    <div style={pageContainerStyle}>
-      <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
-      <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-        {/* Breadcrumb */}
-        <nav
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            fontSize: 12,
-            color: "var(--text-muted)",
-            flexWrap: "wrap",
-          }}
-        >
-          <Link href="/qa" style={{ color: "var(--text-muted)", textDecoration: "none" }}>
-            QA
-          </Link>
-          <span>›</span>
-          <Link
-            href={`/qa/${scenario.story.epic.module}`}
-            style={{ color: moduleInfo.color, textDecoration: "none" }}
-          >
+    <ModuleView
+      width="narrow"
+      state="ready"
+      contentGap={16}
+      breadcrumb={
+          <nav
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 12,
+        color: "var(--text-muted)",
+        flexWrap: "wrap",
+      }}
+    >
+      <Link href="/qa" style={{ color: "var(--text-muted)", textDecoration: "none" }}>
+        QA
+      </Link>
+      <span>›</span>
+      <Link
+        href={`/qa/${scenario.story.epic.module}`}
+        style={{ color: moduleInfo.color, textDecoration: "none" }}
+      >
+        {moduleInfo.label}
+      </Link>
+      <span>›</span>
+      <span>{scenario.story.epic.title}</span>
+      <span>›</span>
+      <span>{scenario.story.title}</span>
+    </nav>
+      }
+      icon={<FlaskConical size={22} />}
+      iconColor={typeColor}
+      title={scenario.title}
+      headerAction={
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <Pill color={typeColor}>{getScenarioTypeLabel(scenario.type)}</Pill>
+          <Pill color={priorityColor}>{getPriorityLabel(scenario.priority)}</Pill>
+          <Pill color={moduleInfo.color} subtle>
             {moduleInfo.label}
-          </Link>
-          <span>›</span>
-          <span>{scenario.story.epic.title}</span>
-          <span>›</span>
-          <span>{scenario.story.title}</span>
-        </nav>
-
-        {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 10,
-            padding: "16px 18px",
-            borderRadius: 12,
-            border: "1px solid var(--border)",
-            background: "var(--bg-surface)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <FlaskConical size={20} style={{ color: typeColor, flexShrink: 0 }} />
-            <h1 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", margin: 0, flex: 1, minWidth: 0 }}>
-              {scenario.title}
-            </h1>
-          </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <Pill color={typeColor}>{getScenarioTypeLabel(scenario.type)}</Pill>
-            <Pill color={priorityColor}>{getPriorityLabel(scenario.priority)}</Pill>
-            <Pill color={moduleInfo.color} subtle>
-              {moduleInfo.label}
-            </Pill>
-          </div>
+          </Pill>
         </div>
-
+      }
+    >
+      <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
         {/* Markdown content */}
         <div
           className="md-content"
@@ -174,8 +163,7 @@ export function ScenarioPage({ scenario, contentHtml }: ScenarioPageProps) {
         >
           <ArrowLeft size={12} /> Wróć do listy modułu
         </Link>
-      </div>
-    </div>
+    </ModuleView>
   );
 }
 

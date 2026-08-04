@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Wallet, Plus, Loader2, Target, Trash2, ChevronLeft, PiggyBank, Check } from "lucide-react";
-import { PageHeader, SectionHeading, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
+import { SectionHeading, EmptyState } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
 import { formatMoney } from "@/lib/portfel";
 import {
   createBudget, deleteBudget, type BudgetWithSpending,
@@ -58,116 +59,117 @@ export function BudgetsPage({ budgets, periodLabel, goals, teams }: Props) {
   }
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
+    <ModuleView
+      width="narrow"
+      state="ready"
+      breadcrumb={
         <Link href="/portfel" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none", marginBottom: 4 }}>
-          <ChevronLeft size={14} /> Portfel
-        </Link>
-        <PageHeader
-          icon={<Target size={22} />}
-          iconColor="var(--accent-amber)"
-          title="Budżety i cele"
-          href="/portfel/budzety"
-          subtitle={`Limity wydatków (${periodLabel}) i cele oszczędnościowe`}
-        />
+      <ChevronLeft size={14} /> Portfel
+    </Link>
+      }
+      icon={<Target size={22} />}
+      iconColor="var(--accent-amber)"
+      title="Budżety i cele"
+      href="/portfel/budzety"
+      subtitle={`Limity wydatków (${periodLabel}) i cele oszczędnościowe`}
+    >
 
-        {/* ── Budżety ── */}
-        <div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <SectionHeading>Budżety miesięczne</SectionHeading>
-            <button onClick={() => setBOpen((v) => !v)} style={smallBtn}>
-              <Plus size={13} /> Budżet
+      {/* ── Budżety ── */}
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <SectionHeading>Budżety miesięczne</SectionHeading>
+          <button onClick={() => setBOpen((v) => !v)} style={smallBtn}>
+            <Plus size={13} /> Budżet
+          </button>
+        </div>
+
+        {bOpen && (
+          <div style={formRow}>
+            <input autoFocus value={bCat} onChange={(e) => setBCat(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addBudget()} placeholder="Kategoria (np. jedzenie)" style={inputStyle} />
+            <input value={bLimit} onChange={(e) => setBLimit(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addBudget()} placeholder="Limit / mies." type="number" step="0.01" style={{ ...inputStyle, maxWidth: 150 }} />
+            {teams.length > 0 && (
+              <select value={bTeam} onChange={(e) => setBTeam(e.target.value)} style={{ ...inputStyle, maxWidth: 160 }}>
+                <option value="">Mój (prywatny)</option>
+                {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            )}
+            <button onClick={addBudget} disabled={isPending || !bCat.trim() || !bLimit} style={primaryBtn}>
+              {isPending ? <Loader2 size={13} className="animate-spin" /> : null} Dodaj
             </button>
+            <button onClick={() => setBOpen(false)} style={cancelBtn}>Anuluj</button>
           </div>
+        )}
 
-          {bOpen && (
-            <div style={formRow}>
-              <input autoFocus value={bCat} onChange={(e) => setBCat(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addBudget()} placeholder="Kategoria (np. jedzenie)" style={inputStyle} />
-              <input value={bLimit} onChange={(e) => setBLimit(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addBudget()} placeholder="Limit / mies." type="number" step="0.01" style={{ ...inputStyle, maxWidth: 150 }} />
-              {teams.length > 0 && (
-                <select value={bTeam} onChange={(e) => setBTeam(e.target.value)} style={{ ...inputStyle, maxWidth: 160 }}>
-                  <option value="">Mój (prywatny)</option>
-                  {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              )}
-              <button onClick={addBudget} disabled={isPending || !bCat.trim() || !bLimit} style={primaryBtn}>
-                {isPending ? <Loader2 size={13} className="animate-spin" /> : null} Dodaj
-              </button>
-              <button onClick={() => setBOpen(false)} style={cancelBtn}>Anuluj</button>
-            </div>
-          )}
-
-          {budgets.length === 0 ? (
-            <EmptyState icon={<Target size={28} />} message="Brak budżetów" hint="Ustaw miesięczny limit dla kategorii — postęp liczony jest z wydatków zaksięgowanych w Portfelu" cta={{ label: "+ Budżet", onClick: () => setBOpen(true), color: "var(--accent-amber)" }} />
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
-              {budgets.map((b) => {
-                const over = b.spent > b.limitAmount;
-                const near = !over && b.pct >= 80;
-                const barColor = over ? "var(--accent-red)" : near ? "var(--accent-amber)" : "var(--accent-green)";
-                return (
-                  <div key={b.id} style={card}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", flex: 1, textTransform: "capitalize" }}>{b.category}</span>
-                      <span style={{ fontSize: 13, color: over ? "var(--accent-red)" : "var(--text-secondary)" }}>
-                        {formatMoney(b.spent, b.currency)} / {formatMoney(b.limitAmount, b.currency)}
-                      </span>
-                      <button onClick={() => startTransition(() => { deleteBudget(b.id); })} title="Usuń budżet" style={iconBtn}><Trash2 size={13} /></button>
-                    </div>
-                    <div style={{ height: 7, borderRadius: 4, background: "var(--bg-base)", overflow: "hidden", marginTop: 6 }}>
-                      <div style={{ width: `${Math.min(100, b.pct)}%`, height: "100%", background: barColor, transition: "width .2s" }} />
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
-                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{b.pct}% wykorzystane</span>
-                      <span style={{ fontSize: 11, color: over ? "var(--accent-red)" : "var(--text-muted)" }}>
-                        {over ? `Przekroczono o ${formatMoney(b.spent - b.limitAmount, b.currency)}` : `Zostało ${formatMoney(b.remaining, b.currency)}`}
-                      </span>
-                    </div>
+        {budgets.length === 0 ? (
+          <EmptyState icon={<Target size={28} />} message="Brak budżetów" hint="Ustaw miesięczny limit dla kategorii — postęp liczony jest z wydatków zaksięgowanych w Portfelu" cta={{ label: "+ Budżet", onClick: () => setBOpen(true), color: "var(--accent-amber)" }} />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+            {budgets.map((b) => {
+              const over = b.spent > b.limitAmount;
+              const near = !over && b.pct >= 80;
+              const barColor = over ? "var(--accent-red)" : near ? "var(--accent-amber)" : "var(--accent-green)";
+              return (
+                <div key={b.id} style={card}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", flex: 1, textTransform: "capitalize" }}>{b.category}</span>
+                    <span style={{ fontSize: 13, color: over ? "var(--accent-red)" : "var(--text-secondary)" }}>
+                      {formatMoney(b.spent, b.currency)} / {formatMoney(b.limitAmount, b.currency)}
+                    </span>
+                    <button onClick={() => startTransition(() => { deleteBudget(b.id); })} title="Usuń budżet" style={iconBtn}><Trash2 size={13} /></button>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* ── Cele ── */}
-        <div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <SectionHeading>Cele oszczędnościowe</SectionHeading>
-            <button onClick={() => setGOpen((v) => !v)} style={smallBtn}>
-              <Plus size={13} /> Cel
-            </button>
+                  <div style={{ height: 7, borderRadius: 4, background: "var(--bg-base)", overflow: "hidden", marginTop: 6 }}>
+                    <div style={{ width: `${Math.min(100, b.pct)}%`, height: "100%", background: barColor, transition: "width .2s" }} />
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
+                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{b.pct}% wykorzystane</span>
+                    <span style={{ fontSize: 11, color: over ? "var(--accent-red)" : "var(--text-muted)" }}>
+                      {over ? `Przekroczono o ${formatMoney(b.spent - b.limitAmount, b.currency)}` : `Zostało ${formatMoney(b.remaining, b.currency)}`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-
-          {gOpen && (
-            <div style={formRow}>
-              <input autoFocus value={gName} onChange={(e) => setGName(e.target.value)} placeholder="Nazwa (np. Wakacje)" style={inputStyle} />
-              <input value={gTarget} onChange={(e) => setGTarget(e.target.value)} placeholder="Cel (kwota)" type="number" step="0.01" style={{ ...inputStyle, maxWidth: 140 }} />
-              <input value={gCurrent} onChange={(e) => setGCurrent(e.target.value)} placeholder="Już mam" type="number" step="0.01" style={{ ...inputStyle, maxWidth: 120 }} />
-              <input value={gDeadline} onChange={(e) => setGDeadline(e.target.value)} type="date" title="Termin (opcjonalnie)" style={{ ...inputStyle, maxWidth: 160 }} />
-              {teams.length > 0 && (
-                <select value={gTeam} onChange={(e) => setGTeam(e.target.value)} style={{ ...inputStyle, maxWidth: 160 }}>
-                  <option value="">Mój (prywatny)</option>
-                  {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              )}
-              <button onClick={addGoal} disabled={isPending || !gName.trim() || !gTarget} style={primaryBtn}>
-                {isPending ? <Loader2 size={13} className="animate-spin" /> : null} Dodaj
-              </button>
-              <button onClick={() => setGOpen(false)} style={cancelBtn}>Anuluj</button>
-            </div>
-          )}
-
-          {goals.length === 0 ? (
-            <EmptyState icon={<PiggyBank size={28} />} message="Brak celów" hint="Wyznacz cel oszczędnościowy (np. wkład własny) i odkładaj wpłaty — pasek pokaże postęp" cta={{ label: "+ Cel", onClick: () => setGOpen(true), color: "var(--accent-amber)" }} />
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
-              {goals.map((g) => <GoalCard key={g.id} goal={g} onChange={startTransition} pending={isPending} />)}
-            </div>
-          )}
-        </div>
+        )}
       </div>
-    </div>
+
+      {/* ── Cele ── */}
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <SectionHeading>Cele oszczędnościowe</SectionHeading>
+          <button onClick={() => setGOpen((v) => !v)} style={smallBtn}>
+            <Plus size={13} /> Cel
+          </button>
+        </div>
+
+        {gOpen && (
+          <div style={formRow}>
+            <input autoFocus value={gName} onChange={(e) => setGName(e.target.value)} placeholder="Nazwa (np. Wakacje)" style={inputStyle} />
+            <input value={gTarget} onChange={(e) => setGTarget(e.target.value)} placeholder="Cel (kwota)" type="number" step="0.01" style={{ ...inputStyle, maxWidth: 140 }} />
+            <input value={gCurrent} onChange={(e) => setGCurrent(e.target.value)} placeholder="Już mam" type="number" step="0.01" style={{ ...inputStyle, maxWidth: 120 }} />
+            <input value={gDeadline} onChange={(e) => setGDeadline(e.target.value)} type="date" title="Termin (opcjonalnie)" style={{ ...inputStyle, maxWidth: 160 }} />
+            {teams.length > 0 && (
+              <select value={gTeam} onChange={(e) => setGTeam(e.target.value)} style={{ ...inputStyle, maxWidth: 160 }}>
+                <option value="">Mój (prywatny)</option>
+                {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            )}
+            <button onClick={addGoal} disabled={isPending || !gName.trim() || !gTarget} style={primaryBtn}>
+              {isPending ? <Loader2 size={13} className="animate-spin" /> : null} Dodaj
+            </button>
+            <button onClick={() => setGOpen(false)} style={cancelBtn}>Anuluj</button>
+          </div>
+        )}
+
+        {goals.length === 0 ? (
+          <EmptyState icon={<PiggyBank size={28} />} message="Brak celów" hint="Wyznacz cel oszczędnościowy (np. wkład własny) i odkładaj wpłaty — pasek pokaże postęp" cta={{ label: "+ Cel", onClick: () => setGOpen(true), color: "var(--accent-amber)" }} />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+            {goals.map((g) => <GoalCard key={g.id} goal={g} onChange={startTransition} pending={isPending} />)}
+          </div>
+        )}
+      </div>
+    </ModuleView>
   );
 }
 

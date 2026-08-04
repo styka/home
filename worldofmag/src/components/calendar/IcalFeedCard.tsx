@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { getMyIcalFeedUrl, regenerateIcalFeed } from "@/actions/calendar"
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 /**
  * Z-150: karta subskrypcji iCal — pokazuje odwoływalny link feedu agendy do
@@ -9,6 +10,7 @@ import { getMyIcalFeedUrl, regenerateIcalFeed } from "@/actions/calendar"
  * Link generowany leniwie na żądanie (token zakładany przy pierwszym „Pokaż").
  */
 export function IcalFeedCard() {
+  const confirmDialog = useConfirm();
   const [url, setUrl] = useState<string | null>(null)
   const [shown, setShown] = useState(false)
   const [noBase, setNoBase] = useState(false)
@@ -24,7 +26,7 @@ export function IcalFeedCard() {
   }
 
   async function regen() {
-    if (!confirm("Wygenerować nowy link subskrypcji? Stary przestanie działać.")) return
+    if (!(await confirmDialog("Wygenerować nowy link subskrypcji? Stary przestanie działać."))) return
     setLoading(true)
     try {
       const u = await regenerateIcalFeed()

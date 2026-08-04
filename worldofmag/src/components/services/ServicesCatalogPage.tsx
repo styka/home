@@ -5,7 +5,8 @@ import { useViewState } from "@/hooks/useViewState";
 import { oneOf, text, type RawParams } from "@/lib/viewState/viewState";
 import Link from "next/link";
 import { Handshake, Search, Briefcase, ClipboardList, MapPin, SlidersHorizontal, Navigation, Heart } from "lucide-react";
-import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle, cardHoverHandlers } from "@/components/ui/home";
+import { EmptyState, cardStyle, cardHoverHandlers } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
 import { getListings } from "@/actions/services";
 import type { ListingSort } from "@/lib/services";
 import type { ListingDTO, ServiceCategoryDTO } from "@/lib/services";
@@ -108,174 +109,173 @@ export function ServicesCatalogPage({ initialListings, categories, hasProviderPr
   }
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
-        <PageHeader
-          icon={<Handshake size={22} />}
-          iconColor="var(--accent-blue)"
-          title="Usługi"
-          subtitle="Znajdź wykonawcę lub zaoferuj swoje usługi"
-          action={
-            <div style={{ display: "flex", gap: 8 }}>
-              <Link href="/services/requests" style={{ ...secondaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
-                <ClipboardList size={15} /> Moje zlecenia
-              </Link>
-              <Link href="/services/provider" style={{ ...primaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
-                <Briefcase size={15} /> {hasProviderProfile ? "Panel wykonawcy" : "Zostań wykonawcą"}
-              </Link>
-            </div>
-          }
-        />
-
-        {/* Wyszukiwarka */}
-        <form onSubmit={onSearchSubmit} style={{ display: "flex", gap: 8 }}>
-          <div style={{ position: "relative", flex: 1 }}>
-            <Search size={15} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Szukaj usługi lub wykonawcy…"
-              style={{ ...fieldInputStyle, paddingLeft: 32 }}
-            />
-          </div>
-          <button type="submit" style={primaryButtonStyle} disabled={pending}>
-            Szukaj
-          </button>
-          <button type="button" onClick={() => setShowFilters((v) => !v)} title="Filtry" style={{ ...secondaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <SlidersHorizontal size={15} /> Filtry
-          </button>
-        </form>
-
-        {/* Filtry zaawansowane (M10) */}
-        {showFilters && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, padding: 12, borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)", alignItems: "flex-end" }}>
-            <div>
-              <label style={fieldLabelStyle}>Sortuj</label>
-              <select value={sort} onChange={(e) => { const v = e.target.value as ListingSort; setSort(v); applyFilters(activeCat, query, { sort: v }); }} style={{ ...fieldInputStyle, width: 160 }}>
-                <option value="rating">Najlepiej oceniani</option>
-                <option value="priceAsc">Cena rosnąco</option>
-                <option value="priceDesc">Cena malejąco</option>
-                <option value="newest">Najnowsze</option>
-              </select>
-            </div>
-            <div>
-              <label style={fieldLabelStyle}>Min. ocena</label>
-              <select value={minRating} onChange={(e) => { const v = Number(e.target.value); setMinRating(v); applyFilters(activeCat, query, { minRating: v }); }} style={{ ...fieldInputStyle, width: 120 }}>
-                <option value={0}>dowolna</option>
-                <option value={3}>3+ ★</option>
-                <option value={4}>4+ ★</option>
-                <option value={4.5}>4.5+ ★</option>
-              </select>
-            </div>
-            <div>
-              <label style={fieldLabelStyle}>Cena (PLN)</label>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <input value={minPrice} onChange={(e) => setMinPrice(e.target.value)} onBlur={() => applyFilters(activeCat, query)} placeholder="od" inputMode="decimal" style={{ ...fieldInputStyle, width: 80 }} />
-                <span style={{ color: "var(--text-muted)" }}>–</span>
-                <input value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} onBlur={() => applyFilters(activeCat, query)} placeholder="do" inputMode="decimal" style={{ ...fieldInputStyle, width: 80 }} />
-              </div>
-            </div>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", cursor: "pointer", paddingBottom: 8 }}>
-              <input type="checkbox" checked={bookingOnly} onChange={(e) => { setBookingOnly(e.target.checked); applyFilters(activeCat, query, { bookingOnly: e.target.checked }); }} />
-              Z rezerwacją online
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", cursor: "pointer", paddingBottom: 8 }}>
-              <input type="checkbox" checked={verifiedOnly} onChange={(e) => { setVerifiedOnly(e.target.checked); applyFilters(activeCat, query, { verifiedOnly: e.target.checked }); }} />
-              Tylko zweryfikowani
-            </label>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-              <button type="button" onClick={toggleNear} style={{ ...(nearPos ? primaryButtonStyle : secondaryButtonStyle), display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <Navigation size={14} /> {nearPos ? "W pobliżu: wł." : "W pobliżu"}
-              </button>
-              {nearPos && (
-                <div>
-                  <label style={fieldLabelStyle}>Promień</label>
-                  <select value={radiusKm} onChange={(e) => { const v = Number(e.target.value); setRadiusKm(v); applyFilters(activeCat, query, { radiusKm: v }); }} style={{ ...fieldInputStyle, width: 110 }}>
-                    {[2, 5, 10, 25, 50].map((r) => <option key={r} value={r}>{r} km</option>)}
-                  </select>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        {geoMsg && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{geoMsg}</div>}
-
-        {/* Kategorie */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <CategoryChip label="Wszystkie" icon="🗂️" active={activeCat === null} onClick={() => selectCategory(null)} />
-          {categories.map((c) => (
-            <CategoryChip
-              key={c.id}
-              label={c.name}
-              icon={c.icon}
-              color={c.color}
-              active={activeCat === c.id}
-              onClick={() => selectCategory(c.id)}
-            />
-          ))}
+    <ModuleView
+      width="narrow"
+      state="ready"
+      icon={<Handshake size={22} />}
+      iconColor="var(--accent-blue)"
+      title="Usługi"
+      subtitle="Znajdź wykonawcę lub zaoferuj swoje usługi"
+      headerAction={
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link href="/services/requests" style={{ ...secondaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+            <ClipboardList size={15} /> Moje zlecenia
+          </Link>
+          <Link href="/services/provider" style={{ ...primaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+            <Briefcase size={15} /> {hasProviderProfile ? "Panel wykonawcy" : "Zostań wykonawcą"}
+          </Link>
         </div>
+      }
+    >
 
-        {/* Ulubieni wykonawcy (M11) */}
-        {favorites.length > 0 && (
+      {/* Wyszukiwarka */}
+      <form onSubmit={onSearchSubmit} style={{ display: "flex", gap: 8 }}>
+        <div style={{ position: "relative", flex: 1 }}>
+          <Search size={15} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Szukaj usługi lub wykonawcy…"
+            style={{ ...fieldInputStyle, paddingLeft: 32 }}
+          />
+        </div>
+        <button type="submit" style={primaryButtonStyle} disabled={pending}>
+          Szukaj
+        </button>
+        <button type="button" onClick={() => setShowFilters((v) => !v)} title="Filtry" style={{ ...secondaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <SlidersHorizontal size={15} /> Filtry
+        </button>
+      </form>
+
+      {/* Filtry zaawansowane (M10) */}
+      {showFilters && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, padding: 12, borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)", alignItems: "flex-end" }}>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
-              <Heart size={13} fill="var(--accent-red)" color="var(--accent-red)" /> Ulubieni wykonawcy
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {favorites.map((f) => (
-                <Link key={f.id} href={`/services/providers/${f.id}`}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, border: "1px solid var(--border)", background: "var(--bg-surface)", textDecoration: "none", fontSize: 12, color: "var(--text-primary)" }}>
-                  {f.displayName}
-                  {f.verified && <VerifiedBadge size={11} />}
-                  <RatingStars avg={f.ratingAvg} count={f.ratingCount} size={10} />
-                </Link>
-              ))}
+            <label style={fieldLabelStyle}>Sortuj</label>
+            <select value={sort} onChange={(e) => { const v = e.target.value as ListingSort; setSort(v); applyFilters(activeCat, query, { sort: v }); }} style={{ ...fieldInputStyle, width: 160 }}>
+              <option value="rating">Najlepiej oceniani</option>
+              <option value="priceAsc">Cena rosnąco</option>
+              <option value="priceDesc">Cena malejąco</option>
+              <option value="newest">Najnowsze</option>
+            </select>
+          </div>
+          <div>
+            <label style={fieldLabelStyle}>Min. ocena</label>
+            <select value={minRating} onChange={(e) => { const v = Number(e.target.value); setMinRating(v); applyFilters(activeCat, query, { minRating: v }); }} style={{ ...fieldInputStyle, width: 120 }}>
+              <option value={0}>dowolna</option>
+              <option value={3}>3+ ★</option>
+              <option value={4}>4+ ★</option>
+              <option value={4.5}>4.5+ ★</option>
+            </select>
+          </div>
+          <div>
+            <label style={fieldLabelStyle}>Cena (PLN)</label>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input value={minPrice} onChange={(e) => setMinPrice(e.target.value)} onBlur={() => applyFilters(activeCat, query)} placeholder="od" inputMode="decimal" style={{ ...fieldInputStyle, width: 80 }} />
+              <span style={{ color: "var(--text-muted)" }}>–</span>
+              <input value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} onBlur={() => applyFilters(activeCat, query)} placeholder="do" inputMode="decimal" style={{ ...fieldInputStyle, width: 80 }} />
             </div>
           </div>
-        )}
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", cursor: "pointer", paddingBottom: 8 }}>
+            <input type="checkbox" checked={bookingOnly} onChange={(e) => { setBookingOnly(e.target.checked); applyFilters(activeCat, query, { bookingOnly: e.target.checked }); }} />
+            Z rezerwacją online
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", cursor: "pointer", paddingBottom: 8 }}>
+            <input type="checkbox" checked={verifiedOnly} onChange={(e) => { setVerifiedOnly(e.target.checked); applyFilters(activeCat, query, { verifiedOnly: e.target.checked }); }} />
+            Tylko zweryfikowani
+          </label>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+            <button type="button" onClick={toggleNear} style={{ ...(nearPos ? primaryButtonStyle : secondaryButtonStyle), display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <Navigation size={14} /> {nearPos ? "W pobliżu: wł." : "W pobliżu"}
+            </button>
+            {nearPos && (
+              <div>
+                <label style={fieldLabelStyle}>Promień</label>
+                <select value={radiusKm} onChange={(e) => { const v = Number(e.target.value); setRadiusKm(v); applyFilters(activeCat, query, { radiusKm: v }); }} style={{ ...fieldInputStyle, width: 110 }}>
+                  {[2, 5, 10, 25, 50].map((r) => <option key={r} value={r}>{r} km</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {geoMsg && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{geoMsg}</div>}
 
-        {/* Lista ofert */}
-        {listings.length === 0 ? (
-          <EmptyState
-            icon={<Handshake size={28} />}
-            message="Brak ofert w tej kategorii"
-            hint={hasProviderProfile ? "Dodaj własną ofertę w panelu wykonawcy." : "Zostań wykonawcą i dodaj pierwszą ofertę."}
-            cta={{ label: "Panel wykonawcy", href: "/services/provider", color: "var(--accent-blue)" }}
+      {/* Kategorie */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <CategoryChip label="Wszystkie" icon="🗂️" active={activeCat === null} onClick={() => selectCategory(null)} />
+        {categories.map((c) => (
+          <CategoryChip
+            key={c.id}
+            label={c.name}
+            icon={c.icon}
+            color={c.color}
+            active={activeCat === c.id}
+            onClick={() => selectCategory(c.id)}
           />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, opacity: pending ? 0.6 : 1 }}>
-            {listings.map((l) => (
-              <Link key={l.id} href={`/services/${l.id}`} style={cardStyle} {...cardHoverHandlers}>
-                <div style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>{l.category?.icon ?? "🛠️"}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{l.title}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      {l.provider.displayName}
-                      {l.provider.verified && <VerifiedBadge size={12} />}
-                    </span>
-                    {l.provider.area && (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
-                        <MapPin size={11} /> {l.provider.area}
-                      </span>
-                    )}
-                    <RatingStars avg={l.provider.ratingAvg} count={l.provider.ratingCount} size={11} />
-                    {l.distanceKm != null && (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--accent-blue)" }}>
-                        <Navigation size={11} /> {formatDistance(l.distanceKm)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--accent-green)", flexShrink: 0, textAlign: "right" }}>
-                  {formatPrice(l.priceModel, l.priceAmount, l.currency)}
-                </div>
+        ))}
+      </div>
+
+      {/* Ulubieni wykonawcy (M11) */}
+      {favorites.length > 0 && (
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+            <Heart size={13} fill="var(--accent-red)" color="var(--accent-red)" /> Ulubieni wykonawcy
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {favorites.map((f) => (
+              <Link key={f.id} href={`/services/providers/${f.id}`}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, border: "1px solid var(--border)", background: "var(--bg-surface)", textDecoration: "none", fontSize: 12, color: "var(--text-primary)" }}>
+                {f.displayName}
+                {f.verified && <VerifiedBadge size={11} />}
+                <RatingStars avg={f.ratingAvg} count={f.ratingCount} size={10} />
               </Link>
             ))}
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+
+      {/* Lista ofert */}
+      {listings.length === 0 ? (
+        <EmptyState
+          icon={<Handshake size={28} />}
+          message="Brak ofert w tej kategorii"
+          hint={hasProviderProfile ? "Dodaj własną ofertę w panelu wykonawcy." : "Zostań wykonawcą i dodaj pierwszą ofertę."}
+          cta={{ label: "Panel wykonawcy", href: "/services/provider", color: "var(--accent-blue)" }}
+        />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, opacity: pending ? 0.6 : 1 }}>
+          {listings.map((l) => (
+            <Link key={l.id} href={`/services/${l.id}`} style={cardStyle} {...cardHoverHandlers}>
+              <div style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>{l.category?.icon ?? "🛠️"}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{l.title}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    {l.provider.displayName}
+                    {l.provider.verified && <VerifiedBadge size={12} />}
+                  </span>
+                  {l.provider.area && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                      <MapPin size={11} /> {l.provider.area}
+                    </span>
+                  )}
+                  <RatingStars avg={l.provider.ratingAvg} count={l.provider.ratingCount} size={11} />
+                  {l.distanceKm != null && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--accent-blue)" }}>
+                      <Navigation size={11} /> {formatDistance(l.distanceKm)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--accent-green)", flexShrink: 0, textAlign: "right" }}>
+                {formatPrice(l.priceModel, l.priceAmount, l.currency)}
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </ModuleView>
   );
 }
 

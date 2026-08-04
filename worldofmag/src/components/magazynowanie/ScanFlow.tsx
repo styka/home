@@ -207,7 +207,7 @@ export function ScanFlow() {
         type="button"
         onClick={() => setScannerOpen(true)}
         className="flex items-center justify-center gap-2 py-4 rounded-lg font-semibold text-base"
-        style={{ backgroundColor: accent, color: "#0d0d0d" }}
+        style={{ backgroundColor: accent, color: "var(--on-accent)" }}
       >
         <ScanLine size={20} /> Skanuj kod
       </button>
@@ -330,7 +330,7 @@ export function ScanFlow() {
                 <button type="button" onClick={() => { setUnknown(null); setScannerOpen(true); }} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
                   Pomiń
                 </button>
-                <button type="button" onClick={saveUnknown} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}>
+                <button type="button" onClick={saveUnknown} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>
                   Dodaj i licz
                 </button>
               </div>

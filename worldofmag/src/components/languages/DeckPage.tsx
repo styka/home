@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Plus, Trash2, Play, Sparkles, Loader2, Pencil, Check, X } from "lucide-react";
-import { pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
+import { Languages, ChevronLeft, Plus, Trash2, Play, Sparkles, Loader2, Pencil, Check, X } from "lucide-react";
+import { cardStyle } from "@/components/ui/home";
 import { addWord, bulkAddWords, deleteWord, updateWord, deleteDeck } from "@/actions/languageDecks";
 import { llm } from "@/lib/llm-client";
 import { SpeakButton } from "./SpeakButton";
 import type { LanguageDeck, Vocabulary } from "@/types";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import { ModuleView } from "@/components/ui/view";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -26,6 +28,7 @@ function isDue(card: Vocabulary): boolean {
 }
 
 export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] } }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [term, setTerm] = useState("");
   const [translation, setTranslation] = useState("");
@@ -88,30 +91,30 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
   }
 
   async function removeDeck() {
-    if (!confirm(`Usunąć talię „${deck.name}" wraz ze wszystkimi słówkami?`)) return;
+    if (!(await confirmDialog(`Usunąć talię „${deck.name}" wraz ze wszystkimi słówkami?`))) return;
     await deleteDeck(deck.id);
     router.push("/languages");
   }
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
+    <ModuleView
+      width="narrow"
+      state="ready"
+      breadcrumb={
         <Link href="/languages" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none" }}>
           <ChevronLeft size={14} /> Nauka języków
         </Link>
-
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ minWidth: 0 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{deck.name}</h1>
-            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "4px 0 0" }}>
-              {deck.nativeLang} → {deck.targetLang} · {deck.cards.length} słówek · {dueCount} do powtórki
-            </p>
-          </div>
+      }
+      icon={<Languages size={22} />}
+      iconColor="var(--accent-green)"
+      title={deck.name}
+      subtitle={`${deck.nativeLang} → ${deck.targetLang} · ${deck.cards.length} słówek · ${dueCount} do powtórki`}
+      headerAction={
           <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
             <Link
               href={`/languages/${deck.id}/study`}
               className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium"
-              style={{ background: dueCount > 0 ? "var(--accent-green)" : "var(--bg-hover)", color: dueCount > 0 ? "#fff" : "var(--text-secondary)", textDecoration: "none" }}
+              style={{ background: dueCount > 0 ? "var(--accent-green)" : "var(--bg-hover)", color: dueCount > 0 ? "var(--on-accent)" : "var(--text-secondary)", textDecoration: "none" }}
             >
               <Play size={15} /> Ucz się
             </Link>
@@ -119,7 +122,9 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
               <Trash2 size={15} />
             </button>
           </div>
-        </div>
+      }
+    >
+
 
         {/* Dodawanie słówka */}
         <div style={{ display: "flex", gap: 8 }}>
@@ -193,7 +198,6 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
             </p>
           )}
         </div>
-      </div>
-    </div>
+    </ModuleView>
   );
 }

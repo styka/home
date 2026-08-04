@@ -127,6 +127,10 @@
     "mode": "remembered",
     "reason": "Porady dobrostanu zwierząt — treść do czytania, zależna od stałego zestawu zwierząt i zadań opieki."
   },
+  "src/lib/jobs/handlers/skinGenerate.ts": {
+    "mode": "on-demand",
+    "reason": "Generowanie skórki z opisu — operacja odpalana kliknięciem, a wynik zależy WYŁĄCZNIE od tekstu wpisanego przed kliknięciem. Pamięć treści zwracałaby motyw wygenerowany dla poprzedniego opisu, czyli dokładnie to, czego użytkownik nie chce, gdy prosi o inny wygląd. Ponowne generowanie z tym samym opisem jest zamierzone — to sposób na dostanie innego wariantu."
+  },
   "src/lib/jobs/handlers/storesGenerate.ts": {
     "mode": "on-demand",
     "reason": "Układ sklepu generowany raz dla nowego sklepu; wynik zapisuje się jako graf sklepu."

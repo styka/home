@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pill, HeartPulse, Plus, Trash2, Pencil, Check, X, Clock, Bandage, CalendarClock } from "lucide-react";
-import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
+import { EmptyState, cardStyle } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
 import {
   createMedicationSchedule,
   updateMedicationSchedule,
@@ -14,6 +15,7 @@ import {
 import { describeFrequency, parseTimes } from "@/lib/medicationSchedule";
 import type { DoseSlot, MedicationFreqType, MedicationKind, MedicationSchedule } from "@/types";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -376,6 +378,7 @@ function ScheduleCard({ s, focused, onEdit, onDelete, onToggleActive, onFocus }:
 }
 
 export function MedicationsPage({ schedules, today }: { schedules: MedicationSchedule[]; today: { date: string; slots: DoseSlot[] } }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<MedicationSchedule | null>(null);
@@ -384,7 +387,7 @@ export function MedicationsPage({ schedules, today }: { schedules: MedicationSch
   const doneCount = today.slots.filter((s) => s.done).length;
 
   async function removeSchedule(s: MedicationSchedule) {
-    if (!confirm("Usunąć harmonogram?")) return;
+    if (!(await confirmDialog("Usunąć harmonogram?"))) return;
     await deleteMedicationSchedule(s.id);
     router.refresh();
   }
@@ -443,62 +446,61 @@ export function MedicationsPage({ schedules, today }: { schedules: MedicationSch
   }
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
-        <PageHeader
-          icon={<Pill size={22} />}
-          iconColor="var(--accent-red)"
-          title="Leki i pielęgnacja"
-          subtitle="Harmonogram dawkowania leków i czynności pielęgnacyjnych"
-          action={
-            <button onClick={() => { setAdding(true); setEditing(null); }} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-red)", color: "var(--on-accent)", border: "none" }}>
-              <Plus size={15} /> Dodaj
-            </button>
-          }
+    <ModuleView
+      width="narrow"
+      state="ready"
+      icon={<Pill size={22} />}
+      iconColor="var(--accent-red)"
+      title="Leki i pielęgnacja"
+      subtitle="Harmonogram dawkowania leków i czynności pielęgnacyjnych"
+      headerAction={
+        <button onClick={() => { setAdding(true); setEditing(null); }} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-red)", color: "var(--on-accent)", border: "none" }}>
+          <Plus size={15} /> Dodaj
+        </button>
+      }
+    >
+
+      {(adding || editing) && (
+        <ScheduleForm
+          initial={editing ? formFromSchedule(editing) : emptyForm()}
+          onSave={editing ? handleUpdate : handleCreate}
+          onCancel={() => { setAdding(false); setEditing(null); }}
         />
+      )}
 
-        {(adding || editing) && (
-          <ScheduleForm
-            initial={editing ? formFromSchedule(editing) : emptyForm()}
-            onSave={editing ? handleUpdate : handleCreate}
-            onCancel={() => { setAdding(false); setEditing(null); }}
-          />
+      <section>
+        <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px", display: "flex", justifyContent: "space-between" }}>
+          <span>Na dziś</span>
+          {today.slots.length > 0 && <span>{doneCount}/{today.slots.length}</span>}
+        </h2>
+        {today.slots.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>Brak zaplanowanych dawek ani czynności na dziś.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {today.slots.map((d) => (
+              <DoseRow key={`${d.scheduleId}-${d.slot}`} date={today.date} dose={d} onChanged={() => router.refresh()} />
+            ))}
+          </div>
         )}
+      </section>
 
-        <section>
-          <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px", display: "flex", justifyContent: "space-between" }}>
-            <span>Na dziś</span>
-            {today.slots.length > 0 && <span>{doneCount}/{today.slots.length}</span>}
-          </h2>
-          {today.slots.length === 0 ? (
-            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>Brak zaplanowanych dawek ani czynności na dziś.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {today.slots.map((d) => (
-                <DoseRow key={`${d.scheduleId}-${d.slot}`} date={today.date} dose={d} onChanged={() => router.refresh()} />
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section>
-          <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Wszystkie harmonogramy</h2>
-          {schedules.length === 0 ? (
-            <EmptyState
-              icon={<HeartPulse size={32} />}
-              message="Brak harmonogramów"
-              hint="Dodaj lek z dawkowaniem albo cykliczną czynność pielęgnacyjną."
-              cta={{ label: "Dodaj harmonogram", onClick: () => setAdding(true), color: "var(--accent-red)" }}
-            />
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {schedules.map((s, i) => (
-                <ScheduleCard key={s.id} s={s} focused={focused === i} onFocus={() => setFocused(i)} onEdit={() => { setEditing(s); setAdding(false); }} onDelete={() => removeSchedule(s)} onToggleActive={() => toggleScheduleActive(s)} />
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
-    </div>
+      <section>
+        <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Wszystkie harmonogramy</h2>
+        {schedules.length === 0 ? (
+          <EmptyState
+            icon={<HeartPulse size={32} />}
+            message="Brak harmonogramów"
+            hint="Dodaj lek z dawkowaniem albo cykliczną czynność pielęgnacyjną."
+            cta={{ label: "Dodaj harmonogram", onClick: () => setAdding(true), color: "var(--accent-red)" }}
+          />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {schedules.map((s, i) => (
+              <ScheduleCard key={s.id} s={s} focused={focused === i} onFocus={() => setFocused(i)} onEdit={() => { setEditing(s); setAdding(false); }} onDelete={() => removeSchedule(s)} onToggleActive={() => toggleScheduleActive(s)} />
+            ))}
+          </div>
+        )}
+      </section>
+    </ModuleView>
   );
 }

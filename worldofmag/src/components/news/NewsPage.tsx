@@ -21,12 +21,14 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { sourceColor } from "@/lib/news/sourceColor";
 import { AiCostBadge } from "@/components/ui/AiCostBadge";
+import { ModuleView } from "@/components/ui/view";
 import { NewsItemCard } from "./NewsItemCard";
 import { NewsTimeline } from "./NewsTimeline";
 import { NewsStream } from "./NewsStream";
 import { HotTopics } from "./HotTopics";
 import { NewsSettings } from "./NewsSettings";
 import { TopicPicker } from "./TopicPicker";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import {
   getTopicView,
   getStreamView,
@@ -71,6 +73,7 @@ export function NewsPage({
   /** 043: parametry adresu z serwera — zakładkę widoku czytamy stąd, nie z `window`. */
   viewParams?: RawParams;
 }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const { showToast } = useToast();
   // 043: zakładka widoku w adresie (AC-8a). Klucz `widok`, bo `view` bywa w Omnii zajęte przez
@@ -243,22 +246,23 @@ export function NewsPage({
   );
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        {/* Nagłówek */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex items-center gap-2 text-xl font-bold text-[var(--text-primary)]">
-          <Newspaper size={22} className="text-[var(--accent-blue)]" /> Wiadomości
-        </h1>
-        {/* 039: „Odśwież" stoi w nagłówku MODUŁU, a nie przy temacie — bo jeden przebieg pobiera
-            wspólne kanały i obsługuje wszystkie tematy naraz. Przycisk przy temacie sugerowałby,
-            że da się odświeżyć jeden temat osobno, a tak już nie jest. */}
+    <ModuleView
+      icon={<Newspaper size={22} />}
+      iconColor="var(--accent-blue)"
+      title="Wiadomości"
+      href="/wiadomosci"
+      state="ready"
+      headerAction={
+        /* 039: „Odśwież" stoi w nagłówku MODUŁU, a nie przy temacie — bo jeden przebieg pobiera
+           wspólne kanały i obsługuje wszystkie tematy naraz. Przycisk przy temacie sugerowałby,
+           że da się odświeżyć jeden temat osobno, a tak już nie jest. */
         <Button size="sm" onClick={startRefresh} disabled={starting || refreshRunning}>
           <RefreshCw size={15} className={starting || refreshRunning ? "animate-spin" : ""} />
           {refreshRunning ? "Odświeżam…" : "Odśwież"}
         </Button>
-      </div>
-
+      }
+    >
+      <div className="mx-auto w-full max-w-6xl">
       {/* 040: pasek widoków modułu — obecny w KAŻDYM trybie, także na telefonie.
           Wcześniej „Gorące tematy" i „Źródła" były przełącznikami w nagłówku: po wejściu w któryś z
           nich nic nie wskazywało drogi powrotnej, bo przycisk zmieniał tylko swój wariant. Pasek z
@@ -393,7 +397,7 @@ export function NewsPage({
         </div>
       )}
       </div>
-    </div>
+    </ModuleView>
   );
 }
 
@@ -622,14 +626,15 @@ function TopicBar({
   onSelect: (id: string) => void;
   onChanged: () => void;
 }) {
+  const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const [editing, setEditing] = useState<TopicDTO | null>(null);
   const [creating, setCreating] = useState(false);
   const selected = topics.find((t) => t.id === selectedId) ?? null;
 
-  function remove(t: TopicDTO) {
-    if (!confirm(`Usunąć temat „${t.title}" wraz z linią czasu?`)) return;
+  async function remove(t: TopicDTO) {
+    if (!(await confirmDialog(`Usunąć temat „${t.title}" wraz z linią czasu?`))) return;
     startTransition(async () => {
       try {
         await deleteTopic(t.id);

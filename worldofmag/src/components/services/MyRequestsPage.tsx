@@ -6,7 +6,8 @@ import { oneOf, type RawParams } from "@/lib/viewState/viewState";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ClipboardList, ArrowLeft, Star, X, MessagesSquare, CalendarClock } from "lucide-react";
-import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
+import { EmptyState, cardStyle } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
 import { cancelMyRequest, addReview, rescheduleRequest } from "@/actions/services";
 import { getAvailableSlots } from "@/actions/services/scheduling";
 import type { RequestDTO } from "@/lib/services";
@@ -30,36 +31,37 @@ export function MyRequestsPage({ asClient, asProvider, viewParams = {} }: { asCl
   const list = tab === "client" ? asClient : asProvider;
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
+    <ModuleView
+      width="narrow"
+      state="ready"
+      breadcrumb={
         <Link href="/services" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>
-          <ArrowLeft size={15} /> Wszystkie usługi
-        </Link>
+      <ArrowLeft size={15} /> Wszystkie usługi
+    </Link>
+      } icon={<ClipboardList size={22} />} iconColor="var(--accent-blue)" title="Moje zlecenia" subtitle="Zlecenia złożone i przyjęte"
+    >
 
-        <PageHeader icon={<ClipboardList size={22} />} iconColor="var(--accent-blue)" title="Moje zlecenia" subtitle="Zlecenia złożone i przyjęte" />
-
-        {/* Zakładki */}
-        <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--border)" }}>
-          <TabButton active={tab === "client"} onClick={() => setTab("client")} label={`Jako klient (${asClient.length})`} />
-          <TabButton active={tab === "provider"} onClick={() => setTab("provider")} label={`Jako wykonawca (${asProvider.length})`} />
-        </div>
-
-        {list.length === 0 ? (
-          <EmptyState
-            icon={<ClipboardList size={28} />}
-            message={tab === "client" ? "Nie złożyłeś jeszcze żadnych zleceń" : "Nie masz jeszcze przyjętych zleceń"}
-            hint={tab === "client" ? "Przeglądaj usługi i zamów pierwszą." : "Zlecenia od klientów pojawią się tutaj."}
-            cta={tab === "client" ? { label: "Przeglądaj usługi", href: "/services" } : undefined}
-          />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {list.map((r) => (
-              <RequestCard key={r.id} request={r} role={tab} onChange={() => router.refresh()} />
-            ))}
-          </div>
-        )}
+      {/* Zakładki */}
+      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--border)" }}>
+        <TabButton active={tab === "client"} onClick={() => setTab("client")} label={`Jako klient (${asClient.length})`} />
+        <TabButton active={tab === "provider"} onClick={() => setTab("provider")} label={`Jako wykonawca (${asProvider.length})`} />
       </div>
-    </div>
+
+      {list.length === 0 ? (
+        <EmptyState
+          icon={<ClipboardList size={28} />}
+          message={tab === "client" ? "Nie złożyłeś jeszcze żadnych zleceń" : "Nie masz jeszcze przyjętych zleceń"}
+          hint={tab === "client" ? "Przeglądaj usługi i zamów pierwszą." : "Zlecenia od klientów pojawią się tutaj."}
+          cta={tab === "client" ? { label: "Przeglądaj usługi", href: "/services" } : undefined}
+        />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {list.map((r) => (
+            <RequestCard key={r.id} request={r} role={tab} onChange={() => router.refresh()} />
+          ))}
+        </div>
+      )}
+    </ModuleView>
   );
 }
 

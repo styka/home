@@ -246,7 +246,7 @@ export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
                     style={{ backgroundColor: c, border: form.color === c ? "2px solid var(--text-primary)" : "1px solid var(--border)" }}
                     title={c}
                   >
-                    {form.color === c && <Check size={11} style={{ color: "#fff" }} />}
+                    {form.color === c && <Check size={11} style={{ color: "var(--on-accent)" }} />}
                   </button>
                 ))}
               </div>
@@ -272,7 +272,7 @@ export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
                 <button onClick={() => setFormOpen(false)} className="text-xs px-2.5 py-1 rounded focus:outline-none" style={{ color: "var(--text-secondary)" }}>
                   Anuluj
                 </button>
-                <button onClick={submitForm} className="text-xs px-2.5 py-1 rounded focus:outline-none" style={{ backgroundColor: "var(--accent-blue)", color: "#fff" }}>
+                <button onClick={submitForm} className="text-xs px-2.5 py-1 rounded focus:outline-none" style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>
                   {editingKey ? "Zapisz status" : "Dodaj"}
                 </button>
               </div>

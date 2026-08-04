@@ -9,6 +9,7 @@ import { addRecipeImage, updateRecipeImage, deleteRecipeImage } from "@/actions/
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import type { RecipeImage } from "@/types/kitchen";
 import type { AiCostUsage } from "@/components/ui/AiCostBadge";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 interface RecipeImagesEditorProps {
   recipeId: string;
@@ -17,6 +18,7 @@ interface RecipeImagesEditorProps {
 }
 
 export function RecipeImagesEditor({ recipeId, images, hasAI }: RecipeImagesEditorProps) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const { showToast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -87,7 +89,7 @@ export function RecipeImagesEditor({ recipeId, images, hasAI }: RecipeImagesEdit
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Usunąć to zdjęcie?")) return;
+    if (!(await confirmDialog("Usunąć to zdjęcie?"))) return;
     try {
       await deleteRecipeImage(id);
       setItems((prev) => prev.filter((i) => i.id !== id));

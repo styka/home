@@ -9,6 +9,8 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import type { StorageSupplier } from "@prisma/client";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import { ModuleView } from "@/components/ui/view";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const inputStyle: React.CSSProperties = { backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" };
 
@@ -24,6 +26,7 @@ export function DocumentsPage({
   suppliers: StorageSupplier[];
   currency: string;
 }) {
+  const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [editorOpen, setEditorOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -101,30 +104,34 @@ export function DocumentsPage({
     });
   }
 
-  function remove(id: string) {
-    if (!confirm("Usunąć dokument? (stan nie zostanie cofnięty)")) return;
+  async function remove(id: string) {
+    if (!(await confirmDialog("Usunąć dokument? (stan nie zostanie cofnięty)"))) return;
     startTransition(async () => {
       await deleteDocument(id);
     });
   }
 
   return (
-    <div className="px-4 md:px-6 py-4 max-w-2xl mx-auto flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-          <FileText size={20} style={{ color: "var(--accent-blue)" }} /> Dokumenty
-        </h2>
+    <ModuleView
+      width="narrow"
+      icon={<FileText size={22} />}
+      iconColor="var(--accent-blue)"
+      title="Dokumenty"
+      href="/magazynowanie/dokumenty"
+      state="ready"
+      contentGap={16}
+      headerAction={
         <div className="flex items-center gap-2">
           <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleScan(e.target.files)} />
           <button type="button" onClick={() => fileRef.current?.click()} disabled={scanning} className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm border disabled:opacity-50" style={{ borderColor: "var(--border)", color: "var(--accent-purple)" }}>
             {scanning ? <Loader2 size={15} className="animate-spin" /> : <FileScan size={15} />} Skanuj
           </button>
-          <button type="button" onClick={openBlank} className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm" style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}>
+          <button type="button" onClick={openBlank} className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm" style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>
             <Plus size={16} /> Nowy
           </button>
         </div>
-      </div>
-
+      }
+    >
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>
         Zeskanuj zdjęcie faktury lub WZ — AI odczyta pozycje, a Ty jednym kliknięciem zaksięgujesz je na stan.
       </p>
@@ -135,7 +142,7 @@ export function DocumentsPage({
         <ul className="flex flex-col gap-1.5">
           {documents.map((d) => (
             <li key={d.id} className="flex items-center gap-3 px-3 py-2.5 rounded border" style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}>
-              <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ backgroundColor: d.type === "WZ" ? "var(--accent-red)" : "var(--accent-green)", color: "#0d0d0d" }}>{d.type}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ backgroundColor: d.type === "WZ" ? "var(--accent-red)" : "var(--accent-green)", color: "var(--on-accent)" }}>{d.type}</span>
               <div className="flex-1 min-w-0">
                 <div className="text-sm truncate" style={{ color: "var(--text-primary)" }}>
                   {d.number || "—"}{d.supplier ? ` · ${d.supplier.name}` : ""}
@@ -158,7 +165,7 @@ export function DocumentsPage({
           footer={
             <>
               <button onClick={() => setEditorOpen(false)} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>Anuluj</button>
-              <button onClick={save} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}>
+              <button onClick={save} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>
                 {pending ? "Zapisuję…" : "Zapisz"}
               </button>
             </>
@@ -208,6 +215,6 @@ export function DocumentsPage({
           </label>
         </Modal>
       ) : null}
-    </div>
+    </ModuleView>
   );
 }

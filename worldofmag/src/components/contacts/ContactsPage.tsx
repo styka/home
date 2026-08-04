@@ -5,9 +5,11 @@ import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/lib/viewState/viewState";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Users, Search, Plus, Pencil, Trash2, Check, X, Phone, Mail, Building2 } from "lucide-react";
-import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
+import { cardStyle } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
 import { getContacts, createContact, updateContact, deleteContact, type ContactDTO } from "@/actions/contacts";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const inputStyle: React.CSSProperties = {
   width: "100%", background: "var(--bg-base)", border: "1px solid var(--border)",
@@ -18,6 +20,7 @@ const primaryBtn: React.CSSProperties = { padding: "8px 14px", borderRadius: 8, 
 const secondaryBtn: React.CSSProperties = { padding: "7px 12px", borderRadius: 8, background: "var(--bg-elevated)", color: "var(--text-secondary)", fontSize: 13, fontWeight: 500, border: "1px solid var(--border)", cursor: "pointer" };
 
 export function ContactsPage({ initialContacts, viewParams = {} }: { initialContacts: ContactDTO[]; viewParams?: RawParams }) {
+  const confirmDialog = useConfirm();
   const [contacts, setContacts] = useState<ContactDTO[]>(initialContacts);
   // 043: szukajka w adresie (AC-8a). Zapis przez `replace` — inaczej każda wpisana litera
   // byłaby osobnym wpisem w historii i „wstecz" trzeba by naciskać kilkanaście razy.
@@ -89,10 +92,10 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
       onNavigateDown: () => move(1),
       onNavigateUp: () => move(-1),
       onEdit: () => { if (selectedId) { setEditId(selectedId); setAdding(false); } },
-      onDelete: () => {
+      onDelete: async () => {
         if (!selectedId) return;
         const c = contacts.find((x) => x.id === selectedId);
-        if (!c || !confirm(`Usunąć kontakt „${c.name}"?`)) return;
+        if (!c || !(await confirmDialog(`Usunąć kontakt „${c.name}"?`))) return;
         const idx = contacts.findIndex((x) => x.id === selectedId);
         const next = contacts[idx + 1] ?? contacts[idx - 1];
         setSelectedId(next?.id ?? null);
@@ -113,28 +116,36 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
   useKeyboardShortcuts(handlers);
 
   return (
-    <div ref={scrollRef} style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
-        <PageHeader
-          icon={<Users size={22} />}
-          iconColor="var(--accent-blue)"
-          title="Kontakty"
-          subtitle="Osobisty CRM — klienci, wykonawcy, znajomi"
-          action={
-            <button onClick={() => { setAdding((v) => !v); setEditId(null); }} style={{ ...primaryBtn, display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <Plus size={15} /> Nowy kontakt
-            </button>
-          }
-        />
-
-        <form onSubmit={(e) => { e.preventDefault(); reload(); }} style={{ display: "flex", gap: 8 }}>
-          <div style={{ position: "relative", flex: 1 }}>
+    <ModuleView
+      scrollRef={scrollRef}
+      width="narrow"
+      icon={<Users size={22} />}
+      iconColor="var(--accent-blue)"
+      title="Kontakty"
+      subtitle="Osobisty CRM — klienci, wykonawcy, znajomi"
+      state={contacts.length === 0 && !adding ? "empty" : "ready"}
+      empty={{
+        icon: <Users size={22} />,
+        title: "Brak kontaktów",
+        description: "Dodaj pierwszy kontakt, by zbudować swoją bazę relacji.",
+        action: { label: "Nowy kontakt", onClick: () => setAdding(true) },
+      }}
+      headerAction={
+        <button onClick={() => { setAdding((v) => !v); setEditId(null); }} style={{ ...primaryBtn, display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <Plus size={15} /> Nowy kontakt
+        </button>
+      }
+      filters={
+        <form onSubmit={(e) => { e.preventDefault(); reload(); }} style={{ display: "flex", gap: 8, flex: 1, minWidth: 0 }}>
+          <div style={{ position: "relative", flex: 1, minWidth: 140 }}>
             <Search size={15} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
             <input ref={searchRef} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Szukaj po nazwie, telefonie, e-mailu, tagu…" style={{ ...inputStyle, paddingLeft: 32 }} />
           </div>
           <button type="submit" style={primaryBtn} disabled={pending}>Szukaj</button>
         </form>
-
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {adding && (
           <ContactForm
             onDone={() => { setAdding(false); reload(); }}
@@ -142,9 +153,7 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
           />
         )}
 
-        {contacts.length === 0 ? (
-          <EmptyState icon={<Users size={28} />} message="Brak kontaktów" hint="Dodaj pierwszy kontakt, by zbudować swoją bazę relacji." />
-        ) : (
+        {contacts.length > 0 && (
           // Wrapper o wysokości całej listy (getTotalSize) z absolutnie pozycjonowanymi,
           // dynamicznie mierzonymi wierszami — renderujemy tylko okno widoczne (+overscan).
           <div ref={listRef} style={{ position: "relative", height: virtualizer.getTotalSize(), opacity: pending ? 0.6 : 1 }}>
@@ -179,7 +188,7 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
           </div>
         )}
       </div>
-    </div>
+    </ModuleView>
   );
 }
 
@@ -190,6 +199,7 @@ function ContactRow({ contact, onEdit, onDeleted, selected, onSelect }: {
   selected?: boolean;
   onSelect?: () => void;
 }) {
+  const confirmDialog = useConfirm();
   return (
     <div
       onClick={onSelect}
@@ -226,7 +236,7 @@ function ContactRow({ contact, onEdit, onDeleted, selected, onSelect }: {
       </div>
       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
         <button onClick={onEdit} style={secondaryBtn} aria-label="Edytuj"><Pencil size={14} /></button>
-        <button onClick={async () => { if (confirm(`Usunąć kontakt „${contact.name}"?`)) { await deleteContact(contact.id); onDeleted(); } }} style={{ ...secondaryBtn, color: "var(--accent-red)" }} aria-label="Usuń"><Trash2 size={14} /></button>
+        <button onClick={async () => { if (await confirmDialog(`Usunąć kontakt „${contact.name}"?`)) { await deleteContact(contact.id); onDeleted(); } }} style={{ ...secondaryBtn, color: "var(--accent-red)" }} aria-label="Usuń"><Trash2 size={14} /></button>
       </div>
     </div>
   );

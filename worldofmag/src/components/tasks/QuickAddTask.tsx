@@ -87,9 +87,9 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
 
     const PRIORITY_OPTS: { value: TaskPriority; label: string; color: string }[] = [
       { value: "NONE", label: "—", color: "var(--text-muted)" },
-      { value: "LOW", label: "↓", color: "#3b82f6" },
-      { value: "MEDIUM", label: "◆", color: "#f59e0b" },
-      { value: "HIGH", label: "↑", color: "#ef4444" },
+      { value: "LOW", label: "↓", color: "var(--accent-blue)" },
+      { value: "MEDIUM", label: "◆", color: "var(--accent-amber)" },
+      { value: "HIGH", label: "↑", color: "var(--accent-red)" },
       { value: "URGENT", label: "‼", color: "#dc2626" },
     ];
 

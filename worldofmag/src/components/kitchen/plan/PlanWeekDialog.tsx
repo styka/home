@@ -217,7 +217,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
                 onClick={handleApply}
                 disabled={pending}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm disabled:opacity-50"
-                style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+                style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
               >
                 {pending ? "Zapisuję…" : `Zaakceptuj ${suggestions.length - excluded.size}`}
               </button>
@@ -241,7 +241,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
               href="/kitchen/recipes/new"
               onClick={handleClose}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
-              style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+              style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
             >
               Dodaj przepis
             </Link>

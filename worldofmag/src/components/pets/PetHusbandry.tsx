@@ -15,6 +15,7 @@ import {
 } from "@/lib/petEnvironment";
 import { formatDate } from "@/lib/petSpecies";
 import type { PetWithRelations, PetEnclosure, PetEnvironmentReading } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const STATUS_COLOR: Record<EnvStatus, string> = {
   ok: "var(--accent-green)",
@@ -30,6 +31,7 @@ function parseJSON<T>(raw: string | null | undefined, fallback: T): T {
 }
 
 export function HusbandrySection({ pet }: { pet: PetWithRelations }) {
+  const confirmDialog = useConfirm();
   return <EnclosureSection pet={pet} group="terrarium" />;
 }
 export function AquariumSection({ pet }: { pet: PetWithRelations }) {
@@ -37,6 +39,7 @@ export function AquariumSection({ pet }: { pet: PetWithRelations }) {
 }
 
 function EnclosureSection({ pet, group }: { pet: PetWithRelations; group: EnvGroup }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -53,8 +56,8 @@ function EnclosureSection({ pet, group }: { pet: PetWithRelations; group: EnvGro
     ? `${enc.lengthCm ?? "?"}×${enc.widthCm ?? "?"}×${enc.heightCm ?? "?"} cm`
     : enc.volumeL != null ? `${enc.volumeL} l` : null;
 
-  function unassign() {
-    if (!confirm("Odłączyć zwierzę od tego zbiornika? Zbiornik i jego pomiary pozostaną.")) return;
+  async function unassign() {
+    if (!(await confirmDialog("Odłączyć zwierzę od tego zbiornika? Zbiornik i jego pomiary pozostaną."))) return;
     startTransition(async () => {
       await assignPetToEnclosure(pet.id, null);
       router.refresh();

@@ -4,6 +4,80 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-04 — Wspólny komponent bez konsumenta wygląda w raporcie jak zrobiony
+**Problem:** Przebieg 045 dowiózł `ConfirmDialog`, `Field`, `DataList` i `BulkActionBar` — wszystkie
+zgodne z planem, otypowane, w playgroundzie, build zielony. Etap `/verify` odrzucił to jednak jako
+DO POPRAWY, bo **żadnego z nich nie używał ani jeden moduł**: w kodzie nadal siedziały 52 wywołania
+natywnego `window.confirm()`, a stan pusty istniał w dwóch implementacjach obok siebie. Bramki tego
+nie łapały, bo bramka sprawdza istnienie i poprawność, a nie ADOPCJĘ.
+**Rozwiązanie:** Trzy różne odpowiedzi zależnie od przypadku. `ConfirmDialog` dostał `ConfirmProvider`
+z API obietnicowym (`if (!(await confirmDialog(…))) return;`), bo podmiana MUSIAŁA być jednolinijkowa
+w miejscu wywołania — inaczej nikt nie zrobiłby jej w 52 plikach. Zdublowane `EmptyState` i `Field`
+zamieniono w cienkie nakładki na wspólne implementacje: jedna implementacja, dwa wejścia, zero
+przepisywania 21 wywołań. `DataList` i wspólny `BulkActionBar` po prostu **usunięto** — nie miały
+konsumenta i nie było go w zasięgu.
+**Lekcja:** Przy budowie systemu komponentów „gotowe" znaczy **wpięte**, nie „istnieje". Komponent
+bez konsumenta jest gorszy niż jego brak: w galerii ogłasza wspólne rozwiązanie, którego nikt nie
+stosuje, więc następna osoba i tak napisze swoje. Planując taki system, zaplanuj MIGRACJĘ pierwszego
+konsumenta w tym samym zadaniu — a jeśli migracja jest droga, przewidź nakładkę na stare API zamiast
+nowego wywołania w każdym pliku.
+
+## 2026-08-04 — Obietnica bez rozstrzygnięcia przy współdzielonym oknie dialogowym
+**Problem:** `ConfirmProvider` trzymał `resolve` bieżącej obietnicy w jednym `useRef`. Drugie
+wywołanie `confirm()`, zanim pierwsze zostało rozstrzygnięte, nadpisywało tę referencję — i pierwsza
+obietnica **nigdy się nie domykała**. Handler usuwania zostawał na `await` na zawsze, razem
+z otwartym `startTransition`, więc widok wisiał w stanie oczekiwania do przeładowania strony.
+Scenariusz nie jest teoretyczny: skróty klawiszowe działają dalej pod modalem.
+**Rozwiązanie:** Przed nadpisaniem referencji domykamy poprzednią obietnicę odmową
+(`resolveRef.current?.(false)`). Użytkownik i tak widzi już inne pytanie, więc „nie" jest jedyną
+bezpieczną odpowiedzią dla porzuconego wywołania.
+**Lekcja:** Każde API obietnicowe oparte na POJEDYNCZYM `useRef` z `resolve` ma tę pułapkę. Zawsze
+pytaj: „co się stanie przy drugim wywołaniu przed rozstrzygnięciem pierwszego?". Odpowiedź „to się nie
+zdarzy" jest fałszywa wszędzie tam, gdzie istnieją skróty klawiszowe, podwójne kliknięcia albo
+odświeżanie w tle.
+
+## 2026-08-04 — Wspólny pasek widoku: powłoka nie może go narysować, ale może go wypełnić
+**Problem:** W 043 właściciel poprosił, żeby przycisk zapisu widoku był „wyraźnie widoczny w pasku
+bieżącego widoku". Odpowiedź brzmiała „nie da się" — `AppShell` renderuje `<main>{children}</main>`
+i nie zna tytułu modułu, więc pasek narysowany w powłoce dałby PODWÓJNE NAGŁÓWKI w ~20 modułach.
+Przycisk trafił wtedy na górę nawigacji, a odstępstwo odnotowano w recenzji. Ten sam wniosek
+powtórzyłby się przy każdym kolejnym elemencie wspólnym (świeżość danych, obecność, udostępnianie).
+**Rozwiązanie:** Odwrócenie zależności. Powłoka nie RYSUJE paska, tylko UDOSTĘPNIA jego zawartość
+przez kontekst (`ViewChromeProvider`), a rysuje go `ModuleView` osadzony w stronie modułu. Moduł
+nadal nie wie, co w pasku siedzi — dostaje ramę, nie listę widgetów. Koszt: jeden kontekst.
+**Lekcja:** Gdy „powłoka nie może tego wiedzieć" blokuje wspólny element UI, sprawdź, czy problemem
+nie jest kierunek zależności. Powłoka nie musi znać modułu, żeby dołożyć coś do jego widoku —
+wystarczy, że moduł zna kontrakt. To samo odwrócenie pozwala potem dołożyć udostępnianie i wykrywanie
+konfliktów bez wracania do dwudziestu modułów.
+
+## 2026-08-04 — Rozszerzenie tokenów skórki nie może luzować blokady wstrzyknięcia CSS
+**Problem:** Skórka miała objąć gradienty, cienie i krzywe ruchu, a wszystkie trzy WYMAGAJĄ nawiasów
+(`linear-gradient(`, `rgba(`, `cubic-bezier(`). Dotychczasowa sanityzacja blokowała nawiasy globalnie,
+z wyjątkiem `rgb/hsl`. Odruch „poluzujmy blokadę nawiasów" otworzyłby `url(...)`, `paint(...)`
+i `element(...)` — a od tej wersji skórkę można ZAIMPORTOWAĆ Z PLIKU i wygenerować modelem, czyli
+źródło bywa obce.
+**Rozwiązanie:** Zamiast luzować blokadę globalną — whitelista funkcji PER RODZAJ tokenu. Tło
+przyjmuje wyłącznie funkcje gradientu, cień wyłącznie funkcje koloru, krzywa ruchu wyłącznie
+`cubic-bezier` i słowa kluczowe. Limit długości podniesiony tylko tam, gdzie wartość jest z natury
+długa (gradient 240 znaków), nie wszędzie. `--font-family-*` w ogóle nie przyjmuje tekstu — tylko
+słowo kluczowe z zamkniętej listy stosów systemowych, bo w `font-family` cudzysłowy i przecinki są
+legalne, więc każda reguła wychodzi albo dziurawa, albo bezużyteczna.
+**Lekcja:** Gdy nowy typ danych wymaga znaku, który dotąd był zakazany, nie znoś zakazu — zawęź
+kontekst, w którym znak jest dozwolony. I traktuj wyjście modelu dokładnie jak plik od obcej osoby:
+przechodzi przez tę samą walidację, bez taryfy ulgowej.
+
+## 2026-08-04 — Istniejące testy jako straż przed „ulepszeniem", które jest regresją
+**Problem:** Rozszerzając tokeny skórki o `rem`/`em` i większe zakresy, poluzowałem wspólne wyrażenie
+dla rozmiarów. Dwa istniejące testy natychmiast padły: `--radius: 8em` i `--radius: 1000px` zaczęły
+przechodzić.
+**Rozwiązanie:** Rozdzielenie na dwa wyrażenia. Zaokrąglenia i gęstość zostają WĄSKIE (px, max trzy
+cyfry), szerszą jednostkę dostał wyłącznie nowy rodzaj `length` (odstępy, wymiary). Testy miały rację:
+promień w `em` skaluje się z rozmiarem tekstu (pułapka przy zmianie gęstości), a `1000px` to nie
+zaokrąglenie, tylko awaria układu.
+**Lekcja:** Gdy rozszerzasz walidację, nie rozszerzaj jej „hurtem" na wszystkie pola tego samego
+kształtu. Padający stary test przy dodawaniu funkcji to najczęściej informacja, że granica była
+przemyślana — sprawdź DLACZEGO ją postawiono, zanim ją przesuniesz.
+
 ## 2026-08-04 — Ikona pogody liczona z pola, którego zapytanie w ogóle nie pobierało
 **Problem:** Właściciel zgłosił: „mam deszcz, a moduł pogody pokazuje tylko chmurkę i 82%".
 Pierwszy odruch — „pewnie zły warunek w mapowaniu kodów WMO" — był fałszywym tropem. Mapowanie było

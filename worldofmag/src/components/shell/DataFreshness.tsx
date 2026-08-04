@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { notifyDataRefreshed } from "@/lib/dataFreshnessBus";
 
 // Globalny nasłuchiwacz świeżości danych.
 //
@@ -27,6 +28,10 @@ export function DataFreshness() {
       if (now - lastRefresh.current < MIN_GAP_MS) return;
       lastRefresh.current = now;
       router.refresh();
+      // 045: ogłoszenie faktu odświeżenia — wskaźnik w pasku widoku ma pokazać, jak stare
+      // są dane. Mechanika i interwał odpytywania BEZ ZMIAN; to wyłącznie uwidocznienie
+      // stanu, który i tak istniał. Usunięcie odpytywania to Faza 4 przebudowy.
+      notifyDataRefreshed();
     }
 
     function onVisibilityChange() {

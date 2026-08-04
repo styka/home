@@ -7,10 +7,14 @@ import {
   ADVANCED_CONTROLS,
   DEFAULT_DARK_TOKENS,
   DENSITY_OPTIONS,
+  SKIN_GROUP_LABELS,
   type SkinTokens,
   type SkinControl,
+  type SkinGroup,
 } from "@/lib/skins";
 import { SkinPreview } from "./SkinPreview";
+import { SkinAiPanel } from "./SkinAiPanel";
+import { SkinTransfer } from "./SkinTransfer";
 import { createSkin, updateSkin, type SkinView } from "@/actions/skins";
 
 type TeamOpt = { id: string; name: string };
@@ -167,6 +171,80 @@ export function SkinEditor({
         </div>
       );
     }
+    // Rodzaje z zamkniętą listą wartości (czcionka, wersaliki, styl obramowania, ramki).
+    if (c.kind === "font" || c.kind === "keyword") {
+      return (
+        <div key={c.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={labelStyle}>{c.label}</span>
+          <select value={value} onChange={(e) => set(c.key, e.target.value)} style={inputStyle}>
+            {(c.options ?? []).map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          {c.hint && <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{c.hint}</span>}
+        </div>
+      );
+    }
+
+    if (c.kind === "easing") {
+      const presets = ["linear", "ease", "ease-in", "ease-out", "ease-in-out"];
+      return (
+        <div key={c.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={labelStyle}>{c.label}</span>
+          <select
+            value={presets.includes(value) ? value : "__custom"}
+            onChange={(e) => { if (e.target.value !== "__custom") set(c.key, e.target.value); }}
+            style={inputStyle}
+          >
+            {presets.map((p) => <option key={p} value={p}>{p}</option>)}
+            <option value="__custom">własna (cubic-bezier)</option>
+          </select>
+          {!presets.includes(value) && (
+            <input value={value} onChange={(e) => set(c.key, e.target.value)} style={inputStyle} placeholder="cubic-bezier(0.2, 0, 0, 1)" />
+          )}
+        </div>
+      );
+    }
+
+    if (c.kind === "weight") {
+      return (
+        <div key={c.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={labelStyle}>{c.label}</span>
+          <select value={value} onChange={(e) => set(c.key, e.target.value)} style={inputStyle}>
+            {["300", "400", "500", "600", "700", "800", "900"].map((w) => (
+              <option key={w} value={w}>{w}</option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+
+    // Pozostałe rodzaje (length, tracking, number, duration, shadow, background) to pola
+    // tekstowe — wartości są zbyt różnorodne na suwak, a walidacja i tak jest po stronie
+    // `sanitizeTokenValue`. Podpowiedź mówi wprost, co wolno wpisać.
+    if (c.kind !== "color") {
+      const placeholder =
+        c.kind === "shadow" ? "0 4px 16px rgba(0,0,0,0.4) albo none"
+        : c.kind === "background" ? "linear-gradient(...) albo none"
+        : c.kind === "duration" ? "120ms"
+        : c.kind === "tracking" ? "0.08em"
+        : c.kind === "number" ? "1.5"
+        : "16px";
+      return (
+        <div key={c.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={labelStyle}>{c.label}</span>
+          <input
+            value={value}
+            onChange={(e) => set(c.key, e.target.value)}
+            style={inputStyle}
+            placeholder={placeholder}
+            spellCheck={false}
+          />
+          {c.hint && <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{c.hint}</span>}
+        </div>
+      );
+    }
+
     // color
     return (
       <div key={c.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -221,11 +299,42 @@ export function SkinEditor({
           {advanced ? "▾ Ukryj zaawansowane" : "▸ Zaawansowane (wszystkie zmienne)"}
         </button>
         {advanced && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 12 }}>
-            {ADVANCED_CONTROLS.map(renderControl)}
+          <div style={{ display: "flex", flexDirection: "column", gap: 18, marginTop: 12 }}>
+            {/* Pogrupowane w rodziny — płaska lista czterdziestu kilku pól była nie do
+                przejrzenia, a to właśnie w tych rodzinach siedzi charakter motywu. */}
+            {(Object.keys(SKIN_GROUP_LABELS) as SkinGroup[]).map((group) => {
+              const controls = ADVANCED_CONTROLS.filter((c) => c.group === group);
+              if (controls.length === 0) return null;
+              return (
+                <div key={group}>
+                  <h4 style={{ ...labelStyle, marginBottom: 8, marginTop: 0, color: "var(--text-primary)" }}>
+                    {SKIN_GROUP_LABELS[group]}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 12 }}>
+                    {controls.map(renderControl)}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* 045: opis słowami → komplet tokenów. Model PROPONUJE, niczego nie zapisuje. */}
+      <SkinAiPanel
+        onApply={(generated) => {
+          setTokens((t) => ({ ...t, ...generated.tokens }));
+          if (generated.name) setName(generated.name);
+          if (generated.description) setDescription(generated.description);
+        }}
+      />
+
+      {/* 045: przenośność — skórka jako plik. */}
+      <SkinTransfer
+        skinId={existingId}
+        tokens={tokens}
+        onImported={(imported) => setTokens((t) => ({ ...t, ...imported }))}
+      />
 
       {/* Udostępnianie (tylko user) */}
       {!system && (

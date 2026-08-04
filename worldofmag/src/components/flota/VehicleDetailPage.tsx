@@ -12,9 +12,12 @@ import {
   type VehicleWithStats,
 } from "@/actions/flota";
 import { FUEL_LABELS, SERVICE_LABELS, deadlineStatus, computeConsumption, computeVehicleTCO } from "@/lib/flota";
-import { pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
+
 
 export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -51,8 +54,8 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
     });
   }
 
-  function removeVehicle() {
-    if (!confirm(`Usunąć pojazd „${vehicle.name}" wraz z historią?`)) return;
+  async function removeVehicle() {
+    if (!(await confirmDialog(`Usunąć pojazd „${vehicle.name}" wraz z historią?`))) return;
     startTransition(async () => { await deleteVehicle(vehicle.id); router.push("/flota"); });
   }
 
@@ -61,15 +64,21 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
   }
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={() => router.push("/flota")} style={iconBtn} title="Wróć do floty"><ArrowLeft size={18} /></button>
-          <Car size={22} style={{ color: "var(--accent-blue)" }} />
-          <h1 style={{ flex: 1, fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{vehicle.name}</h1>
-          <button onClick={removeVehicle} style={{ ...iconBtn, color: "var(--accent-red)" }} title="Usuń pojazd"><Trash2 size={16} /></button>
-        </div>
-
+    <ModuleView
+      width="narrow"
+      state="ready"
+      breadcrumb={
+        <button onClick={() => router.push("/flota")} style={{ ...iconBtn, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }} title="Wróć do floty">
+          <ArrowLeft size={14} /> Flota
+        </button>
+      }
+      icon={<Car size={22} />}
+      iconColor="var(--accent-blue)"
+      title={vehicle.name}
+      headerAction={
+        <button onClick={removeVehicle} style={{ ...iconBtn, color: "var(--accent-red)" }} title="Usuń pojazd"><Trash2 size={16} /></button>
+      }
+    >
         {/* Przegląd / dane */}
         <div style={card}>
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13, color: "var(--text-secondary)" }}>
@@ -161,12 +170,12 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
 
         {/* Załączniki (F3) */}
         <AttachmentsSection vehicle={vehicle} />
-      </div>
-    </div>
+    </ModuleView>
   );
 }
 
 function AttachmentsSection({ vehicle }: { vehicle: VehicleWithStats }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -211,7 +220,7 @@ function AttachmentsSection({ vehicle }: { vehicle: VehicleWithStats }) {
             <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--text-primary)", padding: "6px 8px", borderRadius: 6, background: "var(--bg-base)" }}>
               <span style={{ color: "var(--text-muted)", width: 78 }}>{new Date(a.createdAt).toLocaleDateString("pl-PL")}</span>
               <a href={a.url} target="_blank" rel="noopener noreferrer" download={a.name} style={{ flex: 1, color: "var(--accent-blue)", textDecoration: "none", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</a>
-              <button onClick={async () => { if (confirm("Usunąć załącznik?")) { await deleteVehicleAttachment(a.id); router.refresh(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title="Usuń"><Trash2 size={13} /></button>
+              <button onClick={async () => { if (await confirmDialog("Usunąć załącznik?")) { await deleteVehicleAttachment(a.id); router.refresh(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title="Usuń"><Trash2 size={13} /></button>
             </div>
           ))}
         </div>

@@ -8,8 +8,10 @@ import {
   LayoutList, Map, Image as ImageIcon, Users,
 } from "lucide-react";
 import { getListSummaries, createList, renameList, deleteList, type ListSummary } from "@/actions/lists";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 export function ShoppingSideNav() {
+  const confirmDialog = useConfirm();
   const pathname = usePathname();
   const router = useRouter();
   const [lists, setLists] = useState<ListSummary[]>([]);
@@ -65,10 +67,10 @@ export function ShoppingSideNav() {
     });
   }
 
-  function handleDelete(id: string, e: React.MouseEvent) {
+  async function handleDelete(id: string, e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm("Usunąć tę listę i wszystkie jej pozycje?")) return;
+    if (!(await confirmDialog("Usunąć tę listę i wszystkie jej pozycje?"))) return;
     startTransition(async () => {
       await deleteList(id);
       const remaining = lists.filter((l) => l.id !== id);

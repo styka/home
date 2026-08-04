@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn";
 import { useToast } from "@/components/ui/Toast";
 import { NewsItemCard } from "./NewsItemCard";
 import { NewsReader, type ReaderBlock } from "./NewsReader";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import {
   acknowledgeAllItems,
   acknowledgeTopicItems,
@@ -62,6 +63,7 @@ export function NewsStream({
   /** Udostępnia rodzicowi funkcję „przewiń do tematu", żeby selektor tematu mógł jej użyć. */
   registerScrollToTopic: (fn: (topicId: string) => void) => void;
 }) {
+  const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const sectionRefs = useRef(new Map<string, HTMLElement>());
   const programmaticUntil = useRef(0);
@@ -225,7 +227,7 @@ export function NewsStream({
 
   async function markAll() {
     // Potwierdzenie, bo akcja jest masowa i z poziomu ekranu nieodwracalna (AC-B16).
-    if (!confirm(`Oznaczyć wszystkie nowe wiadomości (${totalItems}) jako przeczytane?`)) return;
+    if (!(await confirmDialog(`Oznaczyć wszystkie nowe wiadomości (${totalItems}) jako przeczytane?`))) return;
     setBusyAll(true);
     try {
       const { count } = await acknowledgeAllItems();

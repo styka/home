@@ -17,14 +17,6 @@ export function LoadingState({ label = "Ładowanie…", rows = 4 }: { label?: st
         </div>
         <span style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 4 }}>{label}</span>
       </div>
-      <style>{`
-        .omnia-skeleton {
-          background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 37%, var(--bg-surface) 63%);
-          background-size: 400% 100%;
-          animation: omnia-shimmer 1.4s ease-in-out infinite;
-        }
-        @keyframes omnia-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
-      `}</style>
     </div>
   );
 }

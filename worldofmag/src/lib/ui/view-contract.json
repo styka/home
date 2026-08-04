@@ -1,0 +1,293 @@
+{
+  "$opis": "Manifest kontraktu widoku (045). Kluczowany MODUŁEM, nie nazwą pliku — konwencja *Page.tsx nie jest powszechna. status: done | pending | exempt. Wpisy 'pending' to JAWNA lista długu, nie cisza.",
+  "modules": {
+    "apple-touch-icon": {
+      "status": "exempt",
+      "reason": "Trasa generująca ikonę PWA — zwraca obraz, nie widok."
+    },
+    "calendar": {
+      "status": "done",
+      "entries": [
+        "src/components/calendar/CalendarPage.tsx"
+      ]
+    },
+    "contacts": {
+      "status": "done",
+      "entries": [
+        "src/components/contacts/ContactsPage.tsx"
+      ]
+    },
+    "flota": {
+      "status": "done",
+      "entries": [
+        "src/components/flota/FlotaHomePage.tsx",
+        "src/components/flota/VehicleDetailPage.tsx"
+      ]
+    },
+    "guide": {
+      "status": "exempt",
+      "reason": "Dokumentacja pomocy — własny układ czytelniczy, nie widok listowy modułu."
+    },
+    "habits": {
+      "status": "done",
+      "entries": [
+        "src/components/habits/HabitsPage.tsx"
+      ]
+    },
+    "health": {
+      "status": "done",
+      "entries": [
+        "src/components/health/HealthHomePage.tsx",
+        "src/components/health/MedicationsPage.tsx"
+      ]
+    },
+    "invitations": {
+      "status": "exempt",
+      "reason": "Zaproszenia do zespołów — element powłoki, nie moduł z rejestru MODULES."
+    },
+    "kitchen": {
+      "status": "done",
+      "entries": [
+        "src/components/kitchen/KitchenHomePage.tsx"
+      ]
+    },
+    "languages": {
+      "status": "done",
+      "entries": [
+        "src/components/languages/DeckPage.tsx",
+        "src/components/languages/LanguagesHomePage.tsx"
+      ]
+    },
+    "legal": {
+      "status": "exempt",
+      "reason": "Strony prawne (zgody, polityka) — treść statyczna bez nagłówka modułu."
+    },
+    "magazynowanie": {
+      "status": "done",
+      "entries": [
+        "src/components/magazynowanie/DocumentsPage.tsx",
+        "src/components/magazynowanie/SuppliersPage.tsx"
+      ]
+    },
+    "notes": {
+      "status": "done",
+      "entries": [
+        "src/components/notes/NotesHomePage.tsx",
+        "src/components/notes/NotesPage.tsx"
+      ]
+    },
+    "pets": {
+      "status": "done",
+      "entries": [
+        "src/components/pets/PetDetailPage.tsx",
+        "src/components/pets/PetsHomePage.tsx"
+      ]
+    },
+    "pogoda": {
+      "status": "done",
+      "entries": [
+        "src/components/weather/WeatherPage.tsx",
+        "src/components/weather/IdeaLibraryPage.tsx"
+      ]
+    },
+    "portfel": {
+      "status": "done",
+      "entries": [
+        "src/components/portfel/BudgetsPage.tsx",
+        "src/components/portfel/ElementDetailPage.tsx",
+        "src/components/portfel/MonthlyReportPage.tsx",
+        "src/components/portfel/PortfelHomePage.tsx",
+        "src/components/portfel/PortfelSettingsPage.tsx"
+      ]
+    },
+    "pwa-icon": {
+      "status": "exempt",
+      "reason": "Trasa generująca ikonę PWA — zwraca obraz, nie widok."
+    },
+    "qa": {
+      "status": "done",
+      "entries": [
+        "src/components/qa/QaHomePage.tsx",
+        "src/components/qa/ScenarioPage.tsx"
+      ]
+    },
+    "reports": {
+      "status": "done",
+      "entries": [
+        "src/components/reports/ReportsHomePage.tsx"
+      ]
+    },
+    "services": {
+      "status": "done",
+      "entries": [
+        "src/components/services/ListingDetailPage.tsx",
+        "src/components/services/ModerationPage.tsx",
+        "src/components/services/MyRequestsPage.tsx",
+        "src/components/services/ProviderPanelPage.tsx",
+        "src/components/services/ProviderPublicPage.tsx",
+        "src/components/services/ServicesCatalogPage.tsx"
+      ]
+    },
+    "settings": {
+      "status": "exempt",
+      "reason": "Ustawienia konta — element powłoki, nie moduł z rejestru MODULES."
+    },
+    "shopping": {
+      "status": "done",
+      "entries": [
+        "src/components/shopping/ShoppingHomePage.tsx",
+        "src/components/shopping/ShoppingPage.tsx"
+      ]
+    },
+    "tasks": {
+      "status": "done",
+      "entries": [
+        "src/components/tasks/TasksHomePage.tsx",
+        "src/components/tasks/TasksPage.tsx"
+      ]
+    },
+    "trash": {
+      "status": "done",
+      "entries": [
+        "src/components/trash/TrashPage.tsx"
+      ]
+    },
+    "truck": {
+      "status": "done",
+      "entries": [
+        "src/components/truck/TruckPlannerPage.tsx"
+      ]
+    },
+    "warsztaty": {
+      "status": "done",
+      "entries": [
+        "src/components/warsztaty/WorkshopsList.tsx",
+        "src/components/warsztaty/WorkshopDetail.tsx"
+      ]
+    },
+    "wiadomosci": {
+      "status": "done",
+      "entries": [
+        "src/components/news/NewsPage.tsx"
+      ]
+    }
+  },
+  "colorExceptions": {
+    "src/components/shopping/StoreGraphView.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolory węzłów grafu sklepu pochodzą ze słownika kategorii."
+    },
+    "src/components/shopping/StoreMapEditor.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Słownik kolorów kategorii sklepu — mapa sklepu ma odwzorowywać realne strefy, więc kolory są danymi domeny, nie motywem."
+    },
+    "src/components/shopping/StoresManager.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolory kategorii sklepu."
+    },
+    "src/components/kitchen/recipes/CookMode.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolory tagów przepisu z rekordów."
+    },
+    "src/components/kitchen/recipes/RecipeFilters.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolory tagów przepisów z rekordów użytkownika."
+    },
+    "src/components/kitchen/plan/PlanWeekDialog.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolory tagów przepisów z rekordów."
+    },
+    "src/components/kitchen/cookbooks/CookbookEditDialog.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Paleta okładek książki kucharskiej wybierana przez użytkownika."
+    },
+    "src/components/kitchen/cookbooks/CookbookList.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolor okładki z rekordu książki."
+    },
+    "src/components/kitchen/cookbooks/CookbookView.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolor okładki z rekordu książki."
+    },
+    "src/components/kitchen/pantry/PantryList.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Progi przydatności do spożycia mają stałe, semantyczne kolory (`--kitchen-*` w globals.css) — celowo niezależne od skórki, bo „przeterminowane\" musi być rozpoznawalne w każdym motywie."
+    },
+    "src/components/admin/AudytBookReader.tsx": {
+      "kind": "ilustracja",
+      "reason": "Tryby czytania książki (jasny/ciemny/sepia) to własny, zamknięty motyw czytnika — celowo niezależny od skórki aplikacji."
+    },
+    "src/components/teams/InvitationsList.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolor awatara wyliczany z identyfikatora użytkownika."
+    },
+    "src/components/tasks/QuickAddTask.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolory priorytetów zadania — semantyczne, stałe w każdej skórce."
+    },
+    "src/components/tasks/TaskDetail.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolory priorytetów zadania."
+    },
+    "src/components/tasks/TaskTagBadge.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolor zapasowy dla tagu bez ustawionego koloru — musi być konkretną wartością, bo trafia do obliczeń przezroczystości."
+    },
+    "src/components/tasks/TaskTagsManager.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Paleta do wyboru koloru tagu zadania — wartość ląduje w kolumnie `TaskTagDef.color`."
+    },
+    "src/components/tasks/TasksGuide.tsx": {
+      "kind": "ilustracja",
+      "reason": "Poradnik pokazuje ZRZUTY i przykłady interfejsu; kolory są treścią ilustracji, nie stylem strony."
+    },
+    "src/components/brand/BrandLogo.tsx": {
+      "kind": "ilustracja",
+      "reason": "Logo marki. Znak firmowy nie zmienia barw razem ze skórką."
+    },
+    "src/components/skins/SkinEditor.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Wartość zastępcza dla pola wyboru koloru (#000000), gdy token nie jest w formacie akceptowanym przez natywną kontrolkę."
+    },
+    "src/components/notes/GroupsManager.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Paleta kolorów folderu notatek wybierana przez użytkownika."
+    },
+    "src/components/notes/NoteRow.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolory tagów i folderów z rekordów użytkownika."
+    },
+    "src/components/notes/QuickNoteBar.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolory tagów z rekordów użytkownika."
+    },
+    "src/components/notes/TagChip.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Paleta kolorów tagu WYBIERANA PRZEZ UŻYTKOWNIKA i zapisana w bazie. To dane rekordu, nie motyw — skórka nie ma prawa ich nadpisać."
+    },
+    "src/components/portfel/MonthlyReportPage.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Paleta serii na wykresie — musi mieć stałą liczbę rozróżnialnych kolorów niezależnie od skórki, inaczej dwie kategorie wydatków zlałyby się w jedną."
+    },
+    "src/components/magazynowanie/QrLabels.tsx": {
+      "kind": "ilustracja",
+      "reason": "Etykieta QR jest DRUKOWANA — musi być czarna na białym niezależnie od skórki ekranowej, inaczej wydruk wyjdzie nieczytelny."
+    },
+    "src/components/magazynowanie/ScanFlow.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolory statusu skanowania — semantyczne."
+    },
+    "src/components/magazynowanie/StorageAnalytics.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Paleta serii na wykresie ABC."
+    },
+    "src/components/magazynowanie/StorageList.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolory progów stanu magazynowego (semantyczne, jak w spiżarni)."
+    },
+    "src/components/magazynowanie/StorageSettingsForm.tsx": {
+      "kind": "paleta-danych",
+      "reason": "Kolor podglądu trybu."
+    }
+  }
+}

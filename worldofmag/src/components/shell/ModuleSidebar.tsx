@@ -300,7 +300,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
             <span
               style={{
                 marginLeft: "auto",
-                background: "#ef4444",
+                background: "var(--accent-red)",
                 color: "var(--on-accent)",
                 fontSize: 11,
                 borderRadius: 999,

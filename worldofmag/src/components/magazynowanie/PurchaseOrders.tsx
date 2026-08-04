@@ -13,6 +13,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import type { StorageSupplier } from "@prisma/client";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const inputStyle: React.CSSProperties = { backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" };
 
@@ -29,6 +30,7 @@ export function PurchaseOrders({
   suppliers: StorageSupplier[];
   lowStock: LowItem[];
 }) {
+  const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export function PurchaseOrders({
         <h2 className="flex items-center gap-2 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
           <ShoppingBag size={20} style={{ color: "var(--accent-blue)" }} /> Zamówienia
         </h2>
-        <button type="button" onClick={() => setCreating(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm" style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}>
+        <button type="button" onClick={() => setCreating(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm" style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>
           <Plus size={16} /> Nowe
         </button>
       </div>
@@ -72,6 +74,7 @@ function OrderRow({
   onToggle: () => void;
   onToast: (m: string, t: "success" | "error") => void;
 }) {
+  const confirmDialog = useConfirm();
   const [draft, setDraft] = useState(order.draftText ?? "");
   const [drafting, setDrafting] = useState(false);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
@@ -110,8 +113,8 @@ function OrderRow({
     });
   }
 
-  function remove() {
-    if (!confirm("Usunąć zamówienie?")) return;
+  async function remove() {
+    if (!(await confirmDialog("Usunąć zamówienie?"))) return;
     startTransition(async () => {
       await deletePurchaseOrder(order.id);
     });
@@ -232,7 +235,7 @@ function OrderCreator({
       footer={
         <>
           <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>Anuluj</button>
-          <button onClick={save} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}>Utwórz</button>
+          <button onClick={save} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>Utwórz</button>
         </>
       }
     >

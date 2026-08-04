@@ -7,6 +7,7 @@ import { ChevronRight, ChevronDown, Plus, Pencil, Trash2, FlaskConical, FileText
 import { deleteEpic, deleteStory, deleteScenario } from "@/actions/qa";
 import { QA_MODULES, getModuleInfo } from "@/lib/qaModules";
 import { getScenarioTypeColor, getPriorityColor } from "@/lib/qaConstants";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 interface AdminScenario {
   id: string;
@@ -41,6 +42,7 @@ interface QaAdminTreeProps {
 }
 
 export function QaAdminTree({ epics }: QaAdminTreeProps) {
+  const confirmDialog = useConfirm();
   // Group epics by module
   const byModule = new Map<string, AdminEpic[]>();
   for (const e of epics) {
@@ -150,12 +152,13 @@ function ModuleSection({ module, epics }: { module: string; epics: AdminEpic[] }
 }
 
 function EpicRow({ epic }: { epic: AdminEpic }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  function handleDelete() {
-    if (!confirm(`Usunąć epic „${epic.title}"? Wszystkie user stories i scenariusze zostaną usunięte.`)) return;
+  async function handleDelete() {
+    if (!(await confirmDialog(`Usunąć epic „${epic.title}"? Wszystkie user stories i scenariusze zostaną usunięte.`))) return;
     startTransition(async () => {
       try {
         await deleteEpic(epic.slug);
@@ -227,12 +230,13 @@ function EpicRow({ epic }: { epic: AdminEpic }) {
 }
 
 function StoryRow({ story }: { story: AdminStory }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  function handleDelete() {
-    if (!confirm(`Usunąć user story „${story.title}"? Wszystkie scenariusze zostaną usunięte.`)) return;
+  async function handleDelete() {
+    if (!(await confirmDialog(`Usunąć user story „${story.title}"? Wszystkie scenariusze zostaną usunięte.`))) return;
     startTransition(async () => {
       try {
         await deleteStory(story.slug);
@@ -295,13 +299,14 @@ function StoryRow({ story }: { story: AdminStory }) {
 }
 
 function ScenarioRow({ scenario }: { scenario: AdminScenario }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const typeColor = getScenarioTypeColor(scenario.type);
   const priorityColor = getPriorityColor(scenario.priority);
 
-  function handleDelete() {
-    if (!confirm(`Usunąć scenariusz „${scenario.title}"?`)) return;
+  async function handleDelete() {
+    if (!(await confirmDialog(`Usunąć scenariusz „${scenario.title}"?`))) return;
     startTransition(async () => {
       try {
         await deleteScenario(scenario.slug);

@@ -6,6 +6,7 @@ import { Check, Plus, Pencil, Trash2, Copy } from "lucide-react";
 import { SkinPreview } from "@/components/skins/SkinPreview";
 import { SkinEditor } from "@/components/skins/SkinEditor";
 import { setActiveSkin, deleteSkin, type SkinView } from "@/actions/skins";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 type TeamOpt = { id: string; name: string };
 
@@ -22,6 +23,7 @@ export function SkinPicker({
   activeId: string | null;
   teams: TeamOpt[];
 }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [pending, start] = useTransition();
   const [active, setActive] = useState<string | null>(activeId);
@@ -35,8 +37,8 @@ export function SkinPicker({
     });
   }
 
-  function remove(id: string) {
-    if (!confirm("Usunąć tę skórkę? Użytkownicy z nią ustawioną wrócą do domyślnej.")) return;
+  async function remove(id: string) {
+    if (!(await confirmDialog("Usunąć tę skórkę? Użytkownicy z nią ustawioną wrócą do domyślnej."))) return;
     start(async () => {
       await deleteSkin(id);
       if (active === id) setActive(null);

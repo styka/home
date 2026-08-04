@@ -15,6 +15,7 @@ import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import { BatchesManager } from "./BatchesManager";
 import type { StorageItemWithMovements } from "@/actions/storage";
 import type { StorageSupplier } from "@prisma/client";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 interface StorageEditSheetProps {
   open: boolean;
@@ -39,6 +40,7 @@ function toDateInput(d: Date | string | null | undefined): string {
 }
 
 export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppliers = [], currency = "PLN", pro = false }: StorageEditSheetProps) {
+  const confirmDialog = useConfirm();
   const [name, setName] = useState(item?.name ?? "");
   const [sku, setSku] = useState(item?.sku ?? "");
   const [barcode, setBarcode] = useState(item?.barcode ?? "");
@@ -181,9 +183,9 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
     });
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!item) return;
-    if (!confirm("Usunąć tę pozycję z magazynu?")) return;
+    if (!(await confirmDialog("Usunąć tę pozycję z magazynu?"))) return;
     startTransition(async () => {
       try {
         await deleteStorageItem(item.id);
@@ -223,7 +225,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
               onClick={handleSave}
               disabled={pending}
               className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
-              style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}
+              style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
             >
               {pending ? "Zapisuję…" : "Zapisz"}
             </button>
@@ -489,7 +491,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
                       onClick={handleTransfer}
                       disabled={pending}
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-sm disabled:opacity-50"
-                      style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}
+                      style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
                     >
                       <ArrowLeftRight size={13} /> Przenieś
                     </button>

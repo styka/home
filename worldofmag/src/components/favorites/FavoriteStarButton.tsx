@@ -20,9 +20,11 @@ interface FavoriteStarButtonProps {
   favorites: FavoriteViewDTO[];
   /**
    * `sidebar` — wiersz na liście nawigacji · `topbar` — sama ikona w pasku mobilnym ·
-   * `viewbar` — 043: wyeksponowany wiersz na SAMEJ GÓRZE sekcji ulubionych (desktop).
+   * `viewbar` — 043: wyeksponowany wiersz na SAMEJ GÓRZE sekcji ulubionych (desktop) ·
+   * `viewbar-inline` — 045: sama ikona w PASKU BIEŻĄCEGO WIDOKU, czyli tam, gdzie
+   * właściciel prosił o nią w 043; wtedy nie było wspólnego paska, więc się nie dało.
    */
-  placement: "sidebar" | "topbar" | "viewbar";
+  placement: "sidebar" | "topbar" | "viewbar" | "viewbar-inline";
 }
 
 /**
@@ -156,7 +158,7 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
         cursor: "pointer",
         fontWeight: placement === "viewbar" ? 600 : undefined,
         // Cel dotyku ≥32 px (C-31).
-        ...(placement === "topbar" ? { width: 32, height: 32 } : null),
+        ...(placement === "topbar" || placement === "viewbar-inline" ? { width: 32, height: 32 } : null),
       }}
     >
       <Star size={placement === "viewbar" ? 14 : 18} fill={isSaved ? "var(--accent-amber)" : "none"} style={{ flexShrink: 0 }} />
@@ -180,6 +182,8 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
             width: 268,
             // `sidebar` siedzi na dole paska → popover otwiera się w GÓRĘ; `viewbar` jest na
             // samej górze nawigacji, więc musi otwierać się w DÓŁ, inaczej wyjechałby poza ekran.
+            // `viewbar-inline` siedzi po prawej stronie paska widoku, więc popover
+            // musi być kotwiczony do prawej krawędzi — inaczej wyjeżdża poza ekran.
             ...(placement === "sidebar"
               ? { bottom: "100%", left: 8, marginBottom: 6 }
               : placement === "viewbar"

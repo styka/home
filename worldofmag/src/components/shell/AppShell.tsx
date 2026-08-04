@@ -14,8 +14,12 @@ import { ConsentBanner } from "@/components/legal/ConsentBanner";
 import { FeedbackInspector } from "./FeedbackInspector";
 import { NotificationBell } from "./NotificationBell";
 import { ToastProvider } from "@/components/ui/Toast";
+import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 import { ShortcutsProvider } from "./ShortcutsProvider";
 import { ShortcutsCheatSheet } from "@/components/shortcuts/ShortcutsCheatSheet";
+import { ShortcutsButton } from "@/components/shortcuts/ShortcutsButton";
+import { ViewChromeProvider } from "@/components/ui/view";
+import { FreshnessIndicator } from "./FreshnessIndicator";
 import { isPathLocked } from "@/lib/permissions";
 import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
@@ -95,6 +99,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
 
   return (
     <ToastProvider>
+    <ConfirmProvider>
     {/* 043: JEDEN nasłuchiwacz klawiatury dla całej aplikacji, z rejestrem skrótów.
         Musi opakowywać `children`, bo to strony modułów rejestrują swoje skróty (i mają
         pierwszeństwo przed globalnymi). */}
@@ -128,7 +133,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
           >
             <Menu size={18} />
             {invitationCount > 0 && (
-              <span style={{ position: "absolute", top: 2, right: 2, background: "#ef4444", borderRadius: "50%", width: 8, height: 8 }} />
+              <span style={{ position: "absolute", top: 2, right: 2, background: "var(--accent-red)", borderRadius: "50%", width: 8, height: 8 }} />
             )}
           </button>
           <Link
@@ -234,7 +239,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               <MobileItem href="/invitations" pathname={pathname} locked={isLocked("/invitations")}>
                 <Mail size={20} /><span>Zaproszenia</span>
                 {invitationCount > 0 && (
-                  <span style={{ marginLeft: "auto", background: "#ef4444", color: "var(--on-accent)", fontSize: 11, borderRadius: 999, padding: "1px 6px" }}>{invitationCount}</span>
+                  <span style={{ marginLeft: "auto", background: "var(--accent-red)", color: "var(--on-accent)", fontSize: 11, borderRadius: 999, padding: "1px 6px" }}>{invitationCount}</span>
                 )}
               </MobileItem>
               <MobileItem href="/settings" pathname={pathname} locked={isLocked("/settings")}>
@@ -252,8 +257,21 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
 
       <ModuleSidebar invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} favoriteViews={favoriteViews} />
 
+      {/* 045 — KONTRAKT WIDOKU. Powłoka nie rysuje paska widoku (nie zna tytułu modułu,
+          więc dostałaby podwójne nagłówki w ~20 modułach), tylko UDOSTĘPNIA jego zawartość.
+          Rysuje go `ModuleView` osadzony w stronie modułu, a moduł nadal nie wie, co w nim
+          siedzi. To jest spłata długu z 043: gwiazdka „zapisz widok" trafia wreszcie tam,
+          gdzie właściciel o nią prosił. */}
       <main className="flex-1 overflow-hidden flex flex-col min-w-0 pb-14 md:pb-0">
-        {children}
+        <ViewChromeProvider
+          value={{
+            favorite: <FavoriteStarButton favorites={favoriteViews} placement="viewbar-inline" />,
+            freshness: <FreshnessIndicator />,
+            shortcuts: <ShortcutsButton />,
+          }}
+        >
+          {children}
+        </ViewChromeProvider>
       </main>
 
       {/* Mobile bottom tab bar */}
@@ -291,6 +309,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
       {isAdmin && <FeedbackInspector />}
     </div>
     </ShortcutsProvider>
+    </ConfirmProvider>
     </ToastProvider>
   );
 }

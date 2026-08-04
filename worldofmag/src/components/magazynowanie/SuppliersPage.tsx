@@ -5,8 +5,10 @@ import { Plus, Truck, Trash2, Pencil, Mail, Phone } from "lucide-react";
 import { addSupplier, updateSupplier, deleteSupplier } from "@/actions/storage";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { ModuleView } from "@/components/ui/view";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { StorageSupplier } from "@prisma/client";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const inputStyle: React.CSSProperties = {
   backgroundColor: "var(--bg-elevated)",
@@ -15,6 +17,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 export function SuppliersPage({ suppliers }: { suppliers: StorageSupplier[] }) {
+  const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [editing, setEditing] = useState<StorageSupplier | "new" | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -45,10 +48,10 @@ export function SuppliersPage({ suppliers }: { suppliers: StorageSupplier[] }) {
         const s = suppliers.find((x) => x.id === selectedId);
         if (s) setEditing(s);
       },
-      onDelete: () => {
+      onDelete: async () => {
         if (editing) return;
         const s = suppliers.find((x) => x.id === selectedId);
-        if (!s || !confirm("Usunąć dostawcę?")) return;
+        if (!s || !(await confirmDialog("Usunąć dostawcę?"))) return;
         const idx = suppliers.findIndex((x) => x.id === s.id);
         const next = suppliers[idx + 1] ?? suppliers[idx - 1];
         setSelectedId(next?.id ?? null);
@@ -67,15 +70,20 @@ export function SuppliersPage({ suppliers }: { suppliers: StorageSupplier[] }) {
   useKeyboardShortcuts(handlers);
 
   return (
-    <div className="px-4 md:px-6 py-4 max-w-2xl mx-auto flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-          <Truck size={20} style={{ color: "var(--accent-blue)" }} /> Dostawcy
-        </h2>
-        <button type="button" onClick={() => setEditing("new")} className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm" style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}>
+    <ModuleView
+      width="narrow"
+      icon={<Truck size={22} />}
+      iconColor="var(--accent-blue)"
+      title="Dostawcy"
+      href="/magazynowanie/dostawcy"
+      state="ready"
+      contentGap={16}
+      headerAction={
+        <button type="button" onClick={() => setEditing("new")} className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm" style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>
           <Plus size={16} /> Dodaj
         </button>
-      </div>
+      }
+    >
 
       {suppliers.length === 0 ? (
         <p className="text-sm py-8 text-center" style={{ color: "var(--text-muted)" }}>
@@ -112,7 +120,7 @@ export function SuppliersPage({ suppliers }: { suppliers: StorageSupplier[] }) {
           onToast={showToast}
         />
       ) : null}
-    </div>
+    </ModuleView>
   );
 }
 
@@ -125,6 +133,7 @@ function SupplierEditor({
   onClose: () => void;
   onToast: (m: string, t: "success" | "error") => void;
 }) {
+  const confirmDialog = useConfirm();
   const [name, setName] = useState(supplier?.name ?? "");
   const [contact, setContact] = useState(supplier?.contact ?? "");
   const [email, setEmail] = useState(supplier?.email ?? "");
@@ -150,8 +159,8 @@ function SupplierEditor({
     });
   }
 
-  function remove() {
-    if (!supplier || !confirm("Usunąć dostawcę?")) return;
+  async function remove() {
+    if (!supplier || !(await confirmDialog("Usunąć dostawcę?"))) return;
     startTransition(async () => {
       try {
         await deleteSupplier(supplier.id);
@@ -174,7 +183,7 @@ function SupplierEditor({
           ) : <span />}
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>Anuluj</button>
-            <button onClick={save} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}>Zapisz</button>
+            <button onClick={save} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>Zapisz</button>
           </div>
         </div>
       }

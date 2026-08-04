@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect, useMemo, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Flame, Plus, Check, Bell, BellOff, Pencil, Trash2, ChevronDown, Archive, CalendarRange, CheckSquare } from "lucide-react";
-import { PageHeader, StatTile, SectionHeading, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
+import { StatTile, SectionHeading, EmptyState } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
 import { createHabit, updateHabit, deleteHabit, setHabitArchived, toggleHabitDay, createTaskFromHabit } from "@/actions/habits";
 import { todayISO, computeStreaks, weekProgress, weekDoneCount, completionRate } from "@/lib/habitStats";
 import { showLocalNotification, notificationsGranted, requestNotificationPermission } from "@/lib/notifications";
@@ -11,6 +12,7 @@ import { HabitFormModal, emptyHabitForm, type HabitFormValue } from "./HabitForm
 import { HabitHeatmap } from "./HabitHeatmap";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { HabitWithStats } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 function streakLabel(n: number): string {
   if (n === 0) return "Zacznij dziś";
@@ -30,6 +32,7 @@ function encouragement(doneToday: number, scheduledToday: number): string {
 }
 
 export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [habits, setHabits] = useState<HabitWithStats[]>(initial);
   const [modal, setModal] = useState<{ mode: "create" } | { mode: "edit"; habit: HabitWithStats } | null>(null);
@@ -133,7 +136,7 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Usunąć ten nawyk wraz z całą historią?")) return;
+    if (!(await confirmDialog("Usunąć ten nawyk wraz z całą historią?"))) return;
     setHabits((prev) => prev.filter((h) => h.id !== id));
     await deleteHabit(id);
     router.refresh();
@@ -181,89 +184,67 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
   );
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
-        <PageHeader
-          icon={<Flame size={22} />}
-          iconColor="var(--accent-orange)"
-          title="Nawyki"
-          subtitle={encouragement(doneToday, scheduled.length)}
-          action={
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={enableNotifications}
-                title={notifOn ? "Powiadomienia włączone" : "Włącz przypomnienia"}
-                className="flex items-center justify-center rounded"
-                style={{ width: 38, height: 38, background: "var(--bg-surface)", border: "1px solid var(--border)", color: notifOn ? "var(--accent-orange)" : "var(--text-muted)" }}
-              >
-                {notifOn ? <Bell size={16} /> : <BellOff size={16} />}
-              </button>
-              <button onClick={() => setModal({ mode: "create" })} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-orange)", color: "var(--on-accent)", border: "none" }}>
-                <Plus size={15} /> Dodaj
-              </button>
-            </div>
-          }
-        />
+    <ModuleView
+      width="narrow"
+      state="ready"
+      icon={<Flame size={22} />}
+      iconColor="var(--accent-orange)"
+      title="Nawyki"
+      subtitle={encouragement(doneToday, scheduled.length)}
+      headerAction={
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={enableNotifications}
+            title={notifOn ? "Powiadomienia włączone" : "Włącz przypomnienia"}
+            className="flex items-center justify-center rounded"
+            style={{ width: 38, height: 38, background: "var(--bg-surface)", border: "1px solid var(--border)", color: notifOn ? "var(--accent-orange)" : "var(--text-muted)" }}
+          >
+            {notifOn ? <Bell size={16} /> : <BellOff size={16} />}
+          </button>
+          <button onClick={() => setModal({ mode: "create" })} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-orange)", color: "var(--on-accent)", border: "none" }}>
+            <Plus size={15} /> Dodaj
+          </button>
+        </div>
+      }
+    >
 
-        {habits.length > 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
-            <StatTile value={`${doneToday}/${scheduled.length}`} label="Na dziś" color="var(--accent-orange)" />
-            <StatTile value={bestStreak} label="Najlepsza seria" color="var(--accent-red)" icon={<Flame size={14} />} />
-            <StatTile value={`${pct}%`} label="Ukończono dziś" color="var(--accent-green)" />
-            <StatTile value={habits.length} label="Aktywne nawyki" color="var(--accent-blue)" />
-          </div>
-        )}
-
-        {habits.length === 0 ? (
-          <EmptyState
-            icon={<Flame size={32} />}
-            message="Zbuduj swój pierwszy nawyk"
-            hint="Zacznij od jednej małej rzeczy dziennie. Konsekwencja pokona każdy zły dzień."
-            cta={{ label: "Dodaj nawyk", onClick: () => setModal({ mode: "create" }), color: "var(--accent-orange)" }}
-          />
-        ) : (
-          <>
-            {scheduled.length > 0 && (
-              <section>
-                <SectionHeading>Na dziś</SectionHeading>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {scheduled.map((h, i) => renderCard(h, i))}
-                </div>
-              </section>
-            )}
-            {others.length > 0 && (
-              <section>
-                <SectionHeading>Poza planem na dziś</SectionHeading>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {others.map((h, i) => renderCard(h, scheduled.length + i))}
-                </div>
-              </section>
-            )}
-          </>
-        )}
-      </div>
-
-      {modal && (
-        <HabitFormModal
-          title={modal.mode === "edit" ? "Edytuj nawyk" : "Nowy nawyk"}
-          initial={
-            modal.mode === "edit"
-              ? {
-                  name: modal.habit.name,
-                  description: modal.habit.description ?? "",
-                  icon: modal.habit.icon,
-                  color: modal.habit.color,
-                  daysOfWeek: modal.habit.daysOfWeek,
-                  weeklyGoal: modal.habit.weeklyGoal,
-                  reminderTime: modal.habit.reminderTime,
-                }
-              : emptyHabitForm()
-          }
-          onSave={handleSave}
-          onClose={() => setModal(null)}
-        />
+      {habits.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
+          <StatTile value={`${doneToday}/${scheduled.length}`} label="Na dziś" color="var(--accent-orange)" />
+          <StatTile value={bestStreak} label="Najlepsza seria" color="var(--accent-red)" icon={<Flame size={14} />} />
+          <StatTile value={`${pct}%`} label="Ukończono dziś" color="var(--accent-green)" />
+          <StatTile value={habits.length} label="Aktywne nawyki" color="var(--accent-blue)" />
+        </div>
       )}
-    </div>
+
+      {habits.length === 0 ? (
+        <EmptyState
+          icon={<Flame size={32} />}
+          message="Zbuduj swój pierwszy nawyk"
+          hint="Zacznij od jednej małej rzeczy dziennie. Konsekwencja pokona każdy zły dzień."
+          cta={{ label: "Dodaj nawyk", onClick: () => setModal({ mode: "create" }), color: "var(--accent-orange)" }}
+        />
+      ) : (
+        <>
+          {scheduled.length > 0 && (
+            <section>
+              <SectionHeading>Na dziś</SectionHeading>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {scheduled.map((h, i) => renderCard(h, i))}
+              </div>
+            </section>
+          )}
+          {others.length > 0 && (
+            <section>
+              <SectionHeading>Poza planem na dziś</SectionHeading>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {others.map((h, i) => renderCard(h, scheduled.length + i))}
+              </div>
+            </section>
+          )}
+        </>
+      )}
+    </ModuleView>
   );
 }
 

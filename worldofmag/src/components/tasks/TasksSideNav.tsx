@@ -10,6 +10,7 @@ import {
 import { getTaskProjects, createTaskProject, updateTaskProject, deleteTaskProject } from "@/actions/taskProjects";
 import { getProjectGroups, createProjectGroup, updateProjectGroup, deleteProjectGroup } from "@/actions/projectGroups";
 import type { TaskProject, ProjectGroup } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const VIRTUAL_VIEWS = [
   { id: "today", label: "Dziś", Icon: CalendarClock },
@@ -39,6 +40,7 @@ type GroupEditorState = {
 };
 
 export function TasksSideNav() {
+  const confirmDialog = useConfirm();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [projects, setProjects] = useState<TaskProject[]>([]);
@@ -142,7 +144,7 @@ export function TasksSideNav() {
     });
   }
 
-  function handleDelete(id: string, e: React.MouseEvent) {
+  async function handleDelete(id: string, e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
     const project = projects.find((p) => p.id === id);
@@ -152,7 +154,7 @@ export function TasksSideNav() {
       count > 0
         ? `Usunąć projekt „${name}"?\n\n${count} zadań NIE zostanie usuniętych — stracą przypisanie do projektu, ale pozostaną widoczne w „Wszystkie".`
         : `Usunąć projekt „${name}"?`;
-    if (!confirm(msg)) return;
+    if (!(await confirmDialog(msg))) return;
     startTransition(async () => {
       try {
         await deleteTaskProject(id);
@@ -214,10 +216,10 @@ export function TasksSideNav() {
     });
   }
 
-  function handleDeleteGroup(g: ProjectGroup, e: React.MouseEvent) {
+  async function handleDeleteGroup(g: ProjectGroup, e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm(`Usunąć grupę „${g.name}"?\n\nProjekty i zadania pozostaną nienaruszone — usuwasz tylko tę grupę.`)) return;
+    if (!(await confirmDialog(`Usunąć grupę „${g.name}"?\n\nProjekty i zadania pozostaną nienaruszone — usuwasz tylko tę grupę.`))) return;
     startTransition(async () => {
       try { await deleteProjectGroup(g.id); } catch { /* ignore */ }
       reload();

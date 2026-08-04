@@ -133,7 +133,7 @@ export function BatchesManager({ itemId }: { itemId: string }) {
       {batches && batches.length > 0 ? (
         <div className="flex items-center gap-1.5 mt-1">
           <input value={issueQty} onChange={(e) => setIssueQty(e.target.value)} type="number" step="any" placeholder="Ilość" className="w-20 px-2 py-1.5 rounded border text-xs text-right tabular-nums" style={inputStyle} />
-          <button type="button" onClick={fefo} disabled={pending} className="inline-flex items-center gap-1 text-xs px-2 py-1.5 rounded disabled:opacity-50" style={{ backgroundColor: "var(--accent-red)", color: "#0d0d0d" }}>
+          <button type="button" onClick={fefo} disabled={pending} className="inline-flex items-center gap-1 text-xs px-2 py-1.5 rounded disabled:opacity-50" style={{ backgroundColor: "var(--accent-red)", color: "var(--on-accent)" }}>
             <ArrowUpFromLine size={12} /> Wydaj FEFO
           </button>
           <span className="inline-flex items-center gap-1 text-[10px]" style={{ color: "var(--text-muted)" }}>

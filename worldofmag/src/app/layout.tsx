@@ -8,7 +8,7 @@ import { readMenuPrefs } from "@/actions/menuPrefs";
 import { readFavoriteViews } from "@/actions/favoriteViews";
 import { readActiveSkin } from "@/actions/skins";
 import { defaultMenuPrefs } from "@/lib/modules";
-import { tokensToStyle } from "@/lib/skins";
+import { tokensToStyle, type SkinTokens } from "@/lib/skins";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
 import { APP_TITLE, ICON_VERSION } from "@/lib/appName";
 
@@ -75,8 +75,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // 029: przelicznik USD→PLN — do wskaźnika kosztu asystenta (kwoty USD z równowartością PLN).
   const usdPlnRate = await getUsdPlnRate();
 
+  // 045: `data-chrome-frame` powiela token `--chrome-frame` jako atrybut, bo CSS nie potrafi
+  // warunkować `display` wartością zmiennej, a odczyt tokenu w `useEffect` dawałby mignięcie
+  // ramek po hydratacji. Atrybut renderuje się na serwerze, więc dekoracja skórki pojawia się
+  // od pierwszej klatki albo wcale.
+  const chromeFrame = (skin.tokens as SkinTokens)["--chrome-frame"] ?? "none";
+
   return (
-    <html lang="en" className="dark" data-skin-scheme={skin.colorScheme} style={tokensToStyle(skin.tokens)}>
+    <html
+      lang="en"
+      className="dark"
+      data-skin-scheme={skin.colorScheme}
+      data-chrome-frame={chromeFrame}
+      style={tokensToStyle(skin.tokens)}
+    >
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

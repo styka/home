@@ -7,6 +7,7 @@ import {
   createPermission, updatePermission, deletePermission,
   toggleRolePermission, addUserRole, removeUserRole,
 } from "@/actions/access"
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 type Tab = "permissions" | "roles" | "users"
 
@@ -101,6 +102,7 @@ function RoleBadge({ role }: { role: string }) {
 
 // ---------- Permissions Tab ----------
 function PermissionsTab({ permissions, users, rolePermissions }: { permissions: PermissionData[]; users: UserData[]; rolePermissions: RoleWithPermissions[] }) {
+  const confirmDialog = useConfirm();
   const [adding, setAdding] = useState(false)
   const [slug, setSlug] = useState("")
   const [name, setName] = useState("")
@@ -116,7 +118,7 @@ function PermissionsTab({ permissions, users, rolePermissions }: { permissions: 
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Usunąć to uprawnienie? Zostanie też usunięte z ról.")) return
+    if (!(await confirmDialog("Usunąć to uprawnienie? Zostanie też usunięte z ról."))) return
     try { await deletePermission(id) } catch (e) { alert(e instanceof Error ? e.message : "Nie udało się usunąć uprawnienia.") }
   }
 

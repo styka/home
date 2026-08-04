@@ -1,6 +1,25 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { ViewEmpty } from "@/components/ui/view/ViewState";
+
+/**
+ * 045 — cienka nakładka na `ViewEmpty` z kontraktu widoku.
+ *
+ * DLACZEGO NAKŁADKA, A NIE DRUGI KOMPONENT
+ *
+ * Kontrakt widoku przyniósł własny zestaw stanów brzegowych (`ViewState.tsx`), a ten
+ * komponent był już używany w 21 widokach. Zostawienie obu byłoby dokładnie tym długiem,
+ * który cały ten przebieg spłaca: DWA rozwiązania tego samego problemu, rozjeżdżające
+ * się przy pierwszej poprawce UX (AC-6, C-53).
+ *
+ * Przepisanie 21 wywołań na nowe API też nie było właściwe — stan pusty bywa tu
+ * SEKCYJNY (pusta lista wewnątrz jednej z kilku sekcji widoku), a `ModuleView.empty`
+ * obsługuje stan CAŁEGO widoku. To dwa różne zastosowania jednego wyglądu.
+ *
+ * Więc: jedna implementacja (`ViewEmpty`), dwa wejścia. To API zostaje dla stanów
+ * sekcyjnych i tłumaczy stare nazwy propsów (`message`/`hint`/`cta`) na nowe.
+ */
 
 interface EmptyStateProps {
   icon: ReactNode;
@@ -10,73 +29,18 @@ interface EmptyStateProps {
     label: string;
     onClick?: () => void;
     href?: string;
+    /** Ignorowane — ton stanu pustego jest wspólny, żeby nie rozjeżdżał się między modułami. */
     color?: string;
   };
 }
 
 export function EmptyState({ icon, message, hint, cta }: EmptyStateProps) {
-  const ctaColor = cta?.color ?? "var(--accent-blue)";
-
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 10,
-        padding: "32px 16px",
-        borderRadius: 10,
-        border: "1px dashed var(--border)",
-        background: "var(--bg-surface)",
-        textAlign: "center",
-      }}
-    >
-      <div style={{ opacity: 0.5, color: "var(--text-muted)", display: "flex" }}>{icon}</div>
-      <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: 0, fontWeight: 500 }}>
-        {message}
-      </p>
-      {hint && (
-        <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
-          {hint}
-        </p>
-      )}
-      {cta &&
-        (cta.href ? (
-          <a
-            href={cta.href}
-            style={{
-              marginTop: 4,
-              padding: "6px 14px",
-              borderRadius: 8,
-              background: ctaColor,
-              color: "var(--on-accent)",
-              fontSize: 13,
-              fontWeight: 600,
-              textDecoration: "none",
-              cursor: "pointer",
-            }}
-          >
-            {cta.label}
-          </a>
-        ) : (
-          <button
-            onClick={cta.onClick}
-            style={{
-              marginTop: 4,
-              padding: "6px 14px",
-              borderRadius: 8,
-              background: ctaColor,
-              color: "var(--on-accent)",
-              fontSize: 13,
-              fontWeight: 600,
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            {cta.label}
-          </button>
-        ))}
-    </div>
+    <ViewEmpty
+      icon={icon}
+      title={message}
+      description={hint}
+      action={cta ? { label: cta.label, onClick: cta.onClick, href: cta.href } : undefined}
+    />
   );
 }

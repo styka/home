@@ -5,6 +5,7 @@ import { Brain, Loader2, Plus, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import {
   getUserFactsForAdmin,
   setUserFactByAdmin,
@@ -26,6 +27,7 @@ import {
  * inaczej korekta żyłaby do najbliższego przebiegu w tle i po cichu znikała.
  */
 export function UserFactsPanel({ users }: { users: Array<{ id: string; email: string | null; name: string | null }> }) {
+  const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [userId, setUserId] = useState<string>(users[0]?.id ?? "");
   const [facts, setFacts] = useState<UserFactDTO[] | null>(null);
@@ -48,8 +50,8 @@ export function UserFactsPanel({ users }: { users: Array<{ id: string; email: st
     load();
   }, [load]);
 
-  function remove(f: UserFactDTO) {
-    if (!confirm(`Usunąć fakt „${f.text}”?`)) return;
+  async function remove(f: UserFactDTO) {
+    if (!(await confirmDialog(`Usunąć fakt „${f.text}”?`))) return;
     startBusy(async () => {
       try {
         await deleteUserFactByAdmin(f.id);

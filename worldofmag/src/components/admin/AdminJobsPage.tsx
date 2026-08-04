@@ -15,6 +15,7 @@ import {
   type JobRow,
 } from "@/actions/jobs";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 type JobStatus = "QUEUED" | "RUNNING" | "DONE" | "FAILED" | "CANCELLED";
 
@@ -33,6 +34,7 @@ function fmt(iso: string) {
 }
 
 export function AdminJobsPage({ initial }: { initial: JobsOverview }) {
+  const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [data, setData] = useState<JobsOverview>(initial);
   const [filter, setFilter] = useState<JobStatus | "ALL">("ALL");
@@ -74,8 +76,8 @@ export function AdminJobsPage({ initial }: { initial: JobsOverview }) {
     });
   }
 
-  function cleanup() {
-    if (!confirm("Usunąć zakończone zadania starsze niż 24h?")) return;
+  async function cleanup() {
+    if (!(await confirmDialog("Usunąć zakończone zadania starsze niż 24h?"))) return;
     startTransition(async () => {
       const n = await cleanupJobsAction(24);
       showToast(`Usunięto ${n} zadań`, "success");

@@ -563,7 +563,7 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
           </div>
 
           {aiError && (
-            <p style={{ fontSize: 13, color: "#f87171", background: "rgba(239,68,68,0.1)", padding: "10px 14px", borderRadius: 8, margin: 0 }}>
+            <p style={{ fontSize: 13, color: "var(--accent-red)", background: "rgba(239,68,68,0.1)", padding: "10px 14px", borderRadius: 8, margin: 0 }}>
               {aiError}
             </p>
           )}
@@ -623,7 +623,7 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
                 padding: "10px 14px",
                 borderRadius: 8,
                 border: "none",
-                background: "#16a34a",
+                background: "var(--accent-green)",
                 color: "var(--on-accent)",
                 fontSize: 14,
                 fontWeight: 600,
@@ -803,7 +803,7 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
                 padding: "10px 14px",
                 borderRadius: 8,
                 border: "none",
-                background: "#16a34a",
+                background: "var(--accent-green)",
                 color: "var(--on-accent)",
                 fontSize: 14,
                 fontWeight: 600,

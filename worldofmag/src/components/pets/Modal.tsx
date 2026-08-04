@@ -1,5 +1,7 @@
 "use client";
 
+import { Field as SharedField } from "@/components/ui/Field";
+
 // Z-110/Z-114: cienki re-eksport wspólnego, dostępnego prymitywu modalu.
 // Wcześniej był to lokalny modal bez pułapki focusu i atrybutów ARIA — teraz
 // deleguje do `ui/Modal` (Radix Dialog), więc wszystkie modale Pets dostają
@@ -28,13 +30,18 @@ export const inputStyle: React.CSSProperties = {
   outline: "none",
 };
 
+/**
+ * 045 — cienka nakładka na wspólne `Field` z `components/ui`.
+ *
+ * Moduł Zwierząt miał własne pole formularza, które robiło mniej niż wspólne: wiązało
+ * etykietę z kontrolką tylko przez zagnieżdżenie w `<label>`, bez `id`, więc podpowiedź
+ * i komunikat błędu nie miały się do czego podpiąć przez `aria-describedby`.
+ *
+ * Sygnatura zostaje bez zmian (label + children), żeby nie przepisywać kilkunastu
+ * formularzy — ale implementacja jest już jedna dla całej aplikacji.
+ */
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label style={{ display: "block" }}>
-      <span style={fieldLabelStyle}>{label}</span>
-      {children}
-    </label>
-  );
+  return <SharedField label={label}>{() => children}</SharedField>;
 }
 
 export function PrimaryButton({ children, onClick, disabled, type = "button" }: {

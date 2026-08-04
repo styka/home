@@ -130,7 +130,7 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI, viewParams = {} }:
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm whitespace-nowrap"
-              style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+              style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
             >
               <Plus size={16} /> Nowy <ChevronDown size={12} />
             </button>
@@ -190,7 +190,7 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI, viewParams = {} }:
           <Link
             href="/kitchen/recipes/new"
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm whitespace-nowrap"
-            style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+            style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
           >
             <Plus size={16} /> Nowy
           </Link>
@@ -251,7 +251,7 @@ function EmptyState({
         <Link
           href="/kitchen/recipes/new"
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm"
-          style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+          style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
         >
           <Plus size={16} /> Dodaj pierwszy przepis
         </Link>

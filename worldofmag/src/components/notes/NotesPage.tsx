@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useTransition, useEffect } from "react";
-import { MessageCircle, X, Search, ChevronLeft, LayoutGrid, List, ArchiveRestore } from "lucide-react";
+import { FileText, MessageCircle, X, Search, ChevronLeft, LayoutGrid, List, ArchiveRestore } from "lucide-react";
 import Link from "next/link";
 import { NoteList } from "./NoteList";
 import { QuickNoteBar, type QuickNoteBarHandle } from "./QuickNoteBar";
@@ -11,8 +11,10 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useViewState } from "@/hooks/useViewState";
 import { idList, oneOf, text, type RawParams } from "@/lib/viewState/viewState";
 import { useItemNavigation } from "@/hooks/useItemNavigation";
+import { ModuleView } from "@/components/ui/view";
 import type { Note, Tag as TagType, NoteGroup, NoteFilter } from "@/types";
 import { NOTE_FILTER_LABELS } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const NOTE_FILTERS: NoteFilter[] = ["ALL", "PINNED", "NO_GROUP", "SEARCH"];
 
@@ -30,6 +32,7 @@ interface NotesPageProps {
 }
 
 export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: NotesPageProps) {
+  const confirmDialog = useConfirm();
   const param = (key: string): string | undefined => {
     const raw = viewParams[key];
     return Array.isArray(raw) ? raw[0] : raw;
@@ -147,7 +150,7 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openNewFromQuery, focusFromQuery]);
 
-  function scrollToNote(noteId: string) {
+  async function scrollToNote(noteId: string) {
     const el = rowRefs.current.get(noteId);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     setFocusedNoteId(noteId);
@@ -159,9 +162,9 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
       onNavigateDown: navigateDown,
       onNavigateUp: navigateUp,
       onToggleStatus: () => {},
-      onDelete: () => {
+      onDelete: async () => {
         if (!focusedNoteId) return;
-        if (!confirm("Usunąć notatkę? Tej operacji nie można cofnąć.")) return;
+        if (!(await confirmDialog("Usunąć notatkę? Tej operacji nie można cofnąć."))) return;
         const idx = filteredNotes.findIndex((n) => n.id === focusedNoteId);
         const next = filteredNotes[idx + 1] ?? filteredNotes[idx - 1];
         setFocusedNoteId(next?.id ?? null);
@@ -197,22 +200,24 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div
-        className="flex items-center justify-between px-4 h-12 border-b flex-shrink-0"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
-      >
-        {backHref ? (
+    <ModuleView
+      layout="fill"
+      density="compact"
+      state="ready"
+      icon={<FileText size={16} />}
+      iconColor="var(--accent-purple)"
+      title="Notatki"
+      href="/notes"
+      breadcrumb={
+        backHref ? (
           <Link href={backHref} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none" }}>
             <ChevronLeft size={14} />
             Notatki
           </Link>
-        ) : (
-          <h1 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-            Notatki
-          </h1>
-        )}
+        ) : undefined
+      }
+      filters={
+        <>
         <div className="flex items-center gap-2">
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {filteredNotes.length} / {notes.length}
@@ -249,7 +254,9 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
             <span className="hidden sm:inline">Pytaj AI</span>
           </button>
         </div>
-      </div>
+        </>
+      }
+    >
 
       {/* Filter tabs */}
       <div
@@ -286,7 +293,7 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
           <option value="">Wszystkie foldery</option>
           {groups.map((g) => (
             <option key={g.id} value={g.id}
-              style={{ backgroundColor: "#1c1c1c", color: "var(--text-primary)" }}>
+              style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-primary)" }}>
               {g.name}
             </option>
           ))}
@@ -387,6 +394,6 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
           />
         )}
       </div>
-    </div>
+    </ModuleView>
   );
 }

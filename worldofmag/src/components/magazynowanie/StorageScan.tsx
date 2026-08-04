@@ -119,7 +119,7 @@ export function StorageScan() {
             onClick={handleSave}
             disabled={saving}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm disabled:opacity-50"
-            style={{ backgroundColor: "var(--accent-blue)", color: "#0d0d0d" }}
+            style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
           >
             <Save size={14} /> {saving ? "Zapisuję…" : `Zapisz (${rows.length})`}
           </button>

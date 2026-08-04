@@ -146,7 +146,7 @@ export function NoteGroupSection({
                     {highlightMatch(note.title, searchQuery)}
                   </span>
                   {note.isMarkdown && (
-                    <span style={{ fontSize: 9, padding: "1px 4px", borderRadius: 3, backgroundColor: "rgba(139,92,246,0.2)", color: "#8b5cf6", flexShrink: 0 }}>MD</span>
+                    <span style={{ fontSize: 9, padding: "1px 4px", borderRadius: 3, backgroundColor: "rgba(139,92,246,0.2)", color: "var(--accent-purple)", flexShrink: 0 }}>MD</span>
                   )}
                 </div>
                 {contentPreview && (

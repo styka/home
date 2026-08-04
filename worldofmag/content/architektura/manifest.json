@@ -4,19 +4,110 @@
   "auditDate": "2026-08-03",
   "promptIntro": "Jesteś Claude Code z dostępem do kodu aplikacji WorldOfMag (Omnia). Poniżej dostajesz PEŁNY dokument architektury docelowej — opis stanu, jaki ma powstać po przebudowie.\n\n## Co masz zrobić\n\nZrealizuj tę przebudowę przez **spec-driven pipeline** Omnii. Dokument dzieli pracę na fazy 0–9 (rozdział 13) i 46 ponumerowanych zadań (rozdział 14).\n\n1. **Zacznij od Fazy 0** — jest bezwarunkowo pierwsza. Refaktor bez siatki bezpieczeństwa to przepisywanie z nadzieją.\n2. **Jedna faza = jeden przebieg pipeline'u.** Uruchom `/specify`, przekazując jako zakres zadania z bieżącej fazy wraz z odsyłaczami do rozdziałów. Nigdy dwie fazy naraz.\n3. Po zakończeniu fazy zatrzymaj się i zaraportuj wynik — kolejną fazę zaczynasz osobnym przebiegiem.\n4. **Trzymaj się konstytucji i konwencji repo** (`.claude/spec-pipeline/constitution.md`, `CLAUDE.md`): praca w `worldofmag/`, migracje jako ręczne pliki (bez enumów Prisma), Server Actions z `revalidatePath`, motyw przez zmienne CSS, teksty po polsku, żadnego builda ani migracji przeciw prod DB.\n5. **Refaktor i zmiana funkcji nigdy w jednym commicie.** Jeśli po drodze zauważysz błąd — napraw go osobnym commitem, przed albo po.\n6. Rozdział 13 kończy się listą „Czego NIE robić\" — potraktuj ją jako wiążącą.\n\nJeśli którykolwiek etap wykaże, że dokument jest w czymś błędny lub niepełny, zastosuj regułę C-54: popraw artefakt, przelicz w dół, zostaw ślad decyzji.\n\n---\n\n",
   "chapters": [
-    { "slug": "01-wstep", "number": "1", "part": "Wprowadzenie", "title": "Wstęp — czym jest ten dokument", "summary": "Opis stanu docelowego, nie zastanego. Dla kogo, jak czytać, jak uruchomić przebudowę, warunki brzegowe i trzy korekty względem wcześniejszych analiz." },
-    { "slug": "02-werdykt", "number": "2", "part": "Analiza i decyzja", "title": "Werdykt — decyzje architektoniczne", "summary": "Siedem decyzji definiujących Omnię 🧐, warianty odrzucone z powodami, najważniejsza korekta o współdzieleniu i uzasadnienie momentu." },
-    { "slug": "03-stan-faktyczny", "number": "3", "part": "Analiza i decyzja", "title": "Punkt wyjścia — Omnia dzisiaj", "summary": "Liczby policzone z kodu: 147 modeli, 545 akcji, 21 modułów, 90 testów. Co jest zrobione dobrze, pięć mechanizmów współdzielenia i dług UI." },
-    { "slug": "04-skala-i-wspoldzielenie", "number": "4", "part": "Analiza i decyzja", "title": "Skala i współdzielenie", "summary": "Wycofanie fałszywego uogólnienia „dane są prywatne\". Trzy kształty współbieżności i co z każdego wynika. Trzy progi skali. Rachunek pokazujący pilność." },
-    { "slug": "05-diagnoza", "number": "5", "part": "Analiza i decyzja", "title": "Diagnoza — co się złamie", "summary": "Dwanaście zagrożeń P0/P1/P2, każde z dowodem w kodzie i scenariuszem awarii. Od cichej utraty pracy przy współdzieleniu po brak paginacji." },
-    { "slug": "06-warianty", "number": "6", "part": "Analiza i decyzja", "title": "Rozważone warianty", "summary": "Siedem wariantów ocenionych wg sześciu kryteriów — z uczciwie wypisanymi zaletami tych odrzuconych. Dlaczego modularny monolit." },
-    { "slug": "07-architektura-docelowa", "number": "7", "part": "Architektura docelowa", "title": "Struktura i reguły", "summary": "Układ katalogów, cztery reguły konstytucyjne, co się nie zmienia, test poprawności architektury i jej świadome ograniczenia." },
-    { "slug": "08-wspoldzielenie", "number": "8", "part": "Architektura docelowa", "title": "Współdzielenie i współpraca", "summary": "Przestrzenie, jeden model nadań, jeden słownik ról, kontrola współbieżności, zaproszenia, obecność i migracja z pięciu mechanizmów do jednego." },
-    { "slug": "09-integracja-modulow", "number": "9", "part": "Architektura docelowa", "title": "Integracja międzymodułowa", "summary": "Trzy rodzaje integracji i trzy mechanizmy. Kontrakty, deklaracja rejestrująca (8 miejsc → 1), zdarzenia domenowe i migracja asystenta AI." },
-    { "slug": "10-spojnosc-pionowa", "number": "10", "part": "Architektura docelowa", "title": "Spójność backend → frontend → UI/UX", "summary": "Warstwy i wzorzec akcji, granica serwer↔klient, system komponentów, kontrakt widoku spłacający dług z wersji 043, dostępność." },
-    { "slug": "11-warstwa-operacyjna", "number": "11", "part": "Architektura docelowa", "title": "Warstwa operacyjna", "summary": "Koniec odpytywania i kanały czasu rzeczywistego, współdzielony rate-limit, budżety AI, baza, cache, retencja, obserwowalność, rozdzielenie procesów." },
-    { "slug": "12-i18n-bezpieczenstwo", "number": "12", "part": "Architektura docelowa", "title": "Umiędzynarodowienie, bezpieczeństwo, zgodność", "summary": "Dlaczego i18n teraz albo nigdy, izolacja najemców przy współdzieleniu, asystent jako droga obejścia uprawnień, RODO, kopie zapasowe, koszty." },
-    { "slug": "13-plan-przebudowy", "number": "13", "part": "Wykonanie", "title": "Plan przebudowy — dziewięć faz", "summary": "Fazy 0–9 z celami, zadaniami, kryteriami wyjścia i ryzykiem. Tabela ryzyk całości, mierniki sukcesu i lista „czego NIE robić\"." },
-    { "slug": "14-checklista", "number": "14", "part": "Wykonanie", "title": "Checklista dla Claude Code", "summary": "46 zadań z odsyłaczami do rozdziałów i zależnościami. Trzy rzeczy do zapamiętania oraz osiem pytań kontrolnych weryfikujących wynik kodem." }
+    {
+      "slug": "01-wstep",
+      "number": "1",
+      "part": "Wprowadzenie",
+      "title": "Wstęp — czym jest ten dokument",
+      "summary": "Opis stanu docelowego, nie zastanego. Dla kogo, jak czytać, jak uruchomić przebudowę, warunki brzegowe i trzy korekty względem wcześniejszych analiz."
+    },
+    {
+      "slug": "02-werdykt",
+      "number": "2",
+      "part": "Analiza i decyzja",
+      "title": "Werdykt — decyzje architektoniczne",
+      "summary": "Siedem decyzji definiujących Omnię 🧐, warianty odrzucone z powodami, najważniejsza korekta o współdzieleniu i uzasadnienie momentu."
+    },
+    {
+      "slug": "03-stan-faktyczny",
+      "number": "3",
+      "part": "Analiza i decyzja",
+      "title": "Punkt wyjścia — Omnia dzisiaj",
+      "summary": "Liczby policzone z kodu: 147 modeli, 545 akcji, 21 modułów, 90 testów. Co jest zrobione dobrze, pięć mechanizmów współdzielenia i dług UI."
+    },
+    {
+      "slug": "04-skala-i-wspoldzielenie",
+      "number": "4",
+      "part": "Analiza i decyzja",
+      "title": "Skala i współdzielenie",
+      "summary": "Wycofanie fałszywego uogólnienia „dane są prywatne\". Trzy kształty współbieżności i co z każdego wynika. Trzy progi skali. Rachunek pokazujący pilność."
+    },
+    {
+      "slug": "05-diagnoza",
+      "number": "5",
+      "part": "Analiza i decyzja",
+      "title": "Diagnoza — co się złamie",
+      "summary": "Dwanaście zagrożeń P0/P1/P2, każde z dowodem w kodzie i scenariuszem awarii. Od cichej utraty pracy przy współdzieleniu po brak paginacji."
+    },
+    {
+      "slug": "06-warianty",
+      "number": "6",
+      "part": "Analiza i decyzja",
+      "title": "Rozważone warianty",
+      "summary": "Siedem wariantów ocenionych wg sześciu kryteriów — z uczciwie wypisanymi zaletami tych odrzuconych. Dlaczego modularny monolit."
+    },
+    {
+      "slug": "07-architektura-docelowa",
+      "number": "7",
+      "part": "Architektura docelowa",
+      "title": "Struktura i reguły",
+      "summary": "Układ katalogów, cztery reguły konstytucyjne, co się nie zmienia, test poprawności architektury i jej świadome ograniczenia."
+    },
+    {
+      "slug": "08-wspoldzielenie",
+      "number": "8",
+      "part": "Architektura docelowa",
+      "title": "Współdzielenie i współpraca",
+      "summary": "Przestrzenie, jeden model nadań, jeden słownik ról, kontrola współbieżności, zaproszenia, obecność i migracja z pięciu mechanizmów do jednego."
+    },
+    {
+      "slug": "09-integracja-modulow",
+      "number": "9",
+      "part": "Architektura docelowa",
+      "title": "Integracja międzymodułowa",
+      "summary": "Trzy rodzaje integracji i trzy mechanizmy. Kontrakty, deklaracja rejestrująca (8 miejsc → 1), zdarzenia domenowe i migracja asystenta AI."
+    },
+    {
+      "slug": "10-spojnosc-pionowa",
+      "number": "10",
+      "part": "Architektura docelowa",
+      "title": "Spójność backend → frontend → UI/UX",
+      "summary": "Warstwy i wzorzec akcji, granica serwer↔klient, system komponentów, kontrakt widoku spłacający dług z wersji 043, dostępność."
+    },
+    {
+      "slug": "11-warstwa-operacyjna",
+      "number": "11",
+      "part": "Architektura docelowa",
+      "title": "Warstwa operacyjna",
+      "summary": "Koniec odpytywania i kanały czasu rzeczywistego, współdzielony rate-limit, budżety AI, baza, cache, retencja, obserwowalność, rozdzielenie procesów."
+    },
+    {
+      "slug": "12-i18n-bezpieczenstwo",
+      "number": "12",
+      "part": "Architektura docelowa",
+      "title": "Umiędzynarodowienie, bezpieczeństwo, zgodność",
+      "summary": "Dlaczego i18n teraz albo nigdy, izolacja najemców przy współdzieleniu, asystent jako droga obejścia uprawnień, RODO, kopie zapasowe, koszty."
+    },
+    {
+      "slug": "13-plan-przebudowy",
+      "number": "13",
+      "part": "Wykonanie",
+      "title": "Plan przebudowy — dziewięć faz",
+      "summary": "Fazy 0–9 z celami, zadaniami, kryteriami wyjścia i ryzykiem. Tabela ryzyk całości, mierniki sukcesu i lista „czego NIE robić\"."
+    },
+    {
+      "slug": "14-checklista",
+      "number": "14",
+      "part": "Wykonanie",
+      "title": "Checklista dla Claude Code",
+      "summary": "46 zadań z odsyłaczami do rozdziałów i zależnościami. Trzy rzeczy do zapamiętania oraz osiem pytań kontrolnych weryfikujących wynik kodem."
+    },
+    {
+      "slug": "15-dziennik",
+      "number": "15",
+      "part": "Wykonanie",
+      "title": "Dziennik przebudowy — co zrobiono",
+      "summary": "Stan faktyczny wobec stanu docelowego: status wszystkich 46 zadań checklisty, wpisy kolejnych przebiegów pipeline'u i jednoznaczne wskazanie następnego kroku."
+    }
   ]
 }

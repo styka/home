@@ -5,11 +5,13 @@ import { useViewState } from "@/hooks/useViewState";
 import { oneOf, type RawParams } from "@/lib/viewState/viewState";
 import { useRouter } from "next/navigation";
 import { HeartPulse, Plus, Stethoscope, FlaskConical, Trash2, Pencil, Check, X, MapPin, CalendarClock, Paperclip } from "lucide-react";
-import { PageHeader, EmptyState, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
+import { EmptyState, cardStyle } from "@/components/ui/home";
 import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent, getHealthAttachments, addHealthAttachment, deleteHealthAttachment, type TestTrend, type HealthAttachmentDTO } from "@/actions/health";
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
 import { HealthAiOptInToggle } from "@/components/health/HealthAiOptInToggle";
+import { ModuleView } from "@/components/ui/view";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -201,6 +203,7 @@ function EventCard({ ev, focused, onEdit, onCycleStatus, onDelete, onFocus }: { 
 type Tab = "ALL" | "VISIT" | "TEST";
 
 export function HealthHomePage({ events, trends = [], viewParams = {} }: { events: HealthEvent[]; trends?: TestTrend[]; viewParams?: RawParams }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   // 043: zakładka w adresie — zapisany ulubiony widok Zdrowia wraca na tę samą zakładkę (AC-8a).
   const viewSpec = useMemo(() => ({ tab: oneOf(["ALL", "VISIT", "TEST"] as const, "ALL") }), []);
@@ -248,7 +251,7 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
     router.refresh();
   }
   async function removeEvent(ev: HealthEvent) {
-    if (!confirm("Usunąć wpis?")) return;
+    if (!(await confirmDialog("Usunąć wpis?"))) return;
     await deleteHealthEvent(ev.id);
     router.refresh();
   }
@@ -285,81 +288,80 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
   useKeyboardShortcuts(shortcutHandlers);
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
-        <PageHeader
-          icon={<HeartPulse size={22} />}
-          iconColor="var(--accent-red)"
-          title="Zdrowie"
-          subtitle="Wizyty u lekarzy i badania — terminy, statusy i wyniki"
-          action={
-            <button onClick={() => { setAdding(true); setEditing(null); }} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-red)", color: "var(--on-accent)", border: "none" }}>
-              <Plus size={15} /> Dodaj
-            </button>
-          }
-        />
+    <ModuleView
+      width="narrow"
+      state="ready"
+      icon={<HeartPulse size={22} />}
+      iconColor="var(--accent-red)"
+      title="Zdrowie"
+      subtitle="Wizyty u lekarzy i badania — terminy, statusy i wyniki"
+      headerAction={
+        <button onClick={() => { setAdding(true); setEditing(null); }} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-red)", color: "var(--on-accent)", border: "none" }}>
+          <Plus size={15} /> Dodaj
+        </button>
+      }
+    >
 
-        <HealthAiOptInToggle />
+      <HealthAiOptInToggle />
 
-        <div style={{ display: "flex", gap: 6 }}>
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className="px-3 py-1.5 rounded text-xs font-medium"
-              style={{
-                background: tab === t.id ? "var(--bg-elevated)" : "transparent",
-                border: `1px solid ${tab === t.id ? "var(--border-focus)" : "var(--border)"}`,
-                color: tab === t.id ? "var(--text-primary)" : "var(--text-muted)",
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {adding && <EventForm initial={emptyForm(tab === "TEST" ? "TEST" : "VISIT")} onSave={handleCreate} onCancel={() => setAdding(false)} />}
-        {editing && <EventForm initial={formFromEvent(editing)} onSave={handleUpdate} onCancel={() => setEditing(null)} />}
-
-        {/* Z2: trendy badań */}
-        {(tab === "ALL" || tab === "TEST") && trends.length > 0 && (
-          <section>
-            <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Trendy badań</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {trends.map((t) => <TrendRow key={t.title} trend={t} />)}
-            </div>
-          </section>
-        )}
-
-        {filtered.length === 0 && !adding ? (
-          <EmptyState
-            icon={<HeartPulse size={32} />}
-            message="Brak wpisów"
-            hint="Dodaj pierwszą wizytę lub badanie z terminem."
-            cta={{ label: "Dodaj wpis", onClick: () => setAdding(true), color: "var(--accent-red)" }}
-          />
-        ) : (
-          <>
-            {upcoming.length > 0 && (
-              <section>
-                <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Nadchodzące</h2>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {upcoming.map((e, i) => <EventCard key={e.id} ev={e} focused={focused === i} onFocus={() => setFocused(i)} onEdit={() => { setEditing(e); setAdding(false); }} onCycleStatus={() => cycleStatus(e)} onDelete={() => removeEvent(e)} />)}
-                </div>
-              </section>
-            )}
-            {past.length > 0 && (
-              <section>
-                <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Minione</h2>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {past.map((e, j) => { const idx = upcoming.length + j; return <EventCard key={e.id} ev={e} focused={focused === idx} onFocus={() => setFocused(idx)} onEdit={() => { setEditing(e); setAdding(false); }} onCycleStatus={() => cycleStatus(e)} onDelete={() => removeEvent(e)} />; })}
-                </div>
-              </section>
-            )}
-          </>
-        )}
+      <div style={{ display: "flex", gap: 6 }}>
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className="px-3 py-1.5 rounded text-xs font-medium"
+            style={{
+              background: tab === t.id ? "var(--bg-elevated)" : "transparent",
+              border: `1px solid ${tab === t.id ? "var(--border-focus)" : "var(--border)"}`,
+              color: tab === t.id ? "var(--text-primary)" : "var(--text-muted)",
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
-    </div>
+
+      {adding && <EventForm initial={emptyForm(tab === "TEST" ? "TEST" : "VISIT")} onSave={handleCreate} onCancel={() => setAdding(false)} />}
+      {editing && <EventForm initial={formFromEvent(editing)} onSave={handleUpdate} onCancel={() => setEditing(null)} />}
+
+      {/* Z2: trendy badań */}
+      {(tab === "ALL" || tab === "TEST") && trends.length > 0 && (
+        <section>
+          <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Trendy badań</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {trends.map((t) => <TrendRow key={t.title} trend={t} />)}
+          </div>
+        </section>
+      )}
+
+      {filtered.length === 0 && !adding ? (
+        <EmptyState
+          icon={<HeartPulse size={32} />}
+          message="Brak wpisów"
+          hint="Dodaj pierwszą wizytę lub badanie z terminem."
+          cta={{ label: "Dodaj wpis", onClick: () => setAdding(true), color: "var(--accent-red)" }}
+        />
+      ) : (
+        <>
+          {upcoming.length > 0 && (
+            <section>
+              <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Nadchodzące</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {upcoming.map((e, i) => <EventCard key={e.id} ev={e} focused={focused === i} onFocus={() => setFocused(i)} onEdit={() => { setEditing(e); setAdding(false); }} onCycleStatus={() => cycleStatus(e)} onDelete={() => removeEvent(e)} />)}
+              </div>
+            </section>
+          )}
+          {past.length > 0 && (
+            <section>
+              <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Minione</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {past.map((e, j) => { const idx = upcoming.length + j; return <EventCard key={e.id} ev={e} focused={focused === idx} onFocus={() => setFocused(idx)} onEdit={() => { setEditing(e); setAdding(false); }} onCycleStatus={() => cycleStatus(e)} onDelete={() => removeEvent(e)} />; })}
+              </div>
+            </section>
+          )}
+        </>
+      )}
+    </ModuleView>
   );
 }
 
@@ -399,6 +401,7 @@ function TrendRow({ trend }: { trend: TestTrend }) {
 }
 
 function HealthAttachments({ eventId }: { eventId: string }) {
+  const confirmDialog = useConfirm();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<HealthAttachmentDTO[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -438,7 +441,7 @@ function HealthAttachments({ eventId }: { eventId: string }) {
           {(items ?? []).map((a) => (
             <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
               <a href={a.url} target="_blank" rel="noopener noreferrer" download={a.name} style={{ color: "var(--accent-blue)", textDecoration: "none", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</a>
-              <button onClick={async () => { if (confirm("Usunąć?")) { await deleteHealthAttachment(a.id); await load(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title="Usuń"><Trash2 size={12} /></button>
+              <button onClick={async () => { if (await confirmDialog("Usunąć?")) { await deleteHealthAttachment(a.id); await load(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title="Usuń"><Trash2 size={12} /></button>
             </div>
           ))}
           <label style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--accent-blue)", cursor: busy ? "wait" : "pointer" }}>

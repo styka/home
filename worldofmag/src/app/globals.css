@@ -33,6 +33,53 @@
   --radius:         6px;         /* promień zaokrąglenia */
   --radius-lg:      10px;
   --font-size-base: 14px;        /* gęstość — bazowy rozmiar tekstu */
+
+  /* 045 — rodziny tokenów wprowadzone razem z profesjonalnym silnikiem skórek.
+     KAŻDA musi mieć wartość domyślną tutaj: skórka bywa CZĘŚCIOWA (mapa kilku
+     tokenów), a pominięta zmienna bez wartości domyślnej wywaliłaby układ. */
+
+  /* typografia */
+  --font-family-base:      -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-family-mono:      "JetBrains Mono", "Fira Code", Consolas, Monaco, monospace;
+  --font-family-display:   var(--font-family-base);
+  --font-weight-heading:   700;
+  --letter-spacing-base:   0em;
+  --letter-spacing-heading: 0em;
+  --text-transform-heading: none;
+  --line-height-base:      1.5;
+
+  /* gęstość i odstępy */
+  --space-unit:     4px;
+  --control-height: 32px;
+  --view-padding:   16px;
+
+  /* zaokrąglenia */
+  --radius-pill:    999px;
+  --radius-control: var(--radius);
+
+  /* obramowania */
+  --border-width:      1px;
+  --border-style:      solid;
+  --focus-ring-width:  2px;
+
+  /* cienie i poświaty */
+  --shadow-surface:  none;
+  --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-glow:     none;
+
+  /* tło — gradienty CSS, nigdy pliki graficzne */
+  --bg-image-base:    none;
+  --bg-image-surface: none;
+
+  /* ruch */
+  --motion-duration:      100ms;
+  --motion-duration-slow: 220ms;
+  --motion-easing:        ease;
+
+  /* chrom powłoki */
+  --chrome-bg:     var(--bg-surface);
+  --chrome-border: var(--border);
+  --chrome-frame:  none;
 }
 
 * {
@@ -52,10 +99,38 @@ html, body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-family-base);
   font-size: var(--font-size-base, 14px);
-  line-height: 1.5;
+  line-height: var(--line-height-base, 1.5);
+  letter-spacing: var(--letter-spacing-base, 0em);
   -webkit-font-smoothing: antialiased;
+  /* Tło aplikacji może być gradientem ze skórki; domyślnie `none`, więc widać
+     `background-color` z reguły html, body powyżej. */
+  background-image: var(--bg-image-base, none);
+  background-attachment: fixed;
+}
+
+/* Nagłówki biorą typografię ze skórki. Rozmiary zostają tam, gdzie były (w komponentach) —
+   skórka steruje krojem, grubością, rozstrzeleniem i wersalikami, a nie skalą. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-heading, 700);
+  letter-spacing: var(--letter-spacing-heading, 0em);
+  text-transform: var(--text-transform-heading, none);
+}
+
+/* Ograniczony ruch — jeden warunek dla całej aplikacji (rozdz. 10.7 architektury docelowej).
+   Skórka może deklarować dowolne animacje; ta reguła i tak je wyłączy, więc charakter motywu
+   nigdy nie wygrywa z ustawieniem dostępności systemu. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Scrollbar styling */
@@ -76,7 +151,7 @@ body {
 
 /* Focus ring */
 :focus-visible {
-  outline: 2px solid var(--accent-blue);
+  outline: var(--focus-ring-width, 2px) solid var(--accent-blue);
   outline-offset: 2px;
 }
 
@@ -87,7 +162,7 @@ body {
 
 /* Mono class for item names */
 .mono {
-  font-family: "JetBrains Mono", "Fira Code", Consolas, Monaco, monospace;
+  font-family: var(--font-family-mono);
   font-size: 13px;
 }
 
@@ -109,9 +184,13 @@ kbd {
   letter-spacing: 0;
 }
 
-/* Smooth transitions for interactive elements */
+/* Smooth transitions for interactive elements — czas i krzywa ze skórki (045). */
 button, [role="button"], a, input, [tabindex] {
-  transition: background-color 100ms, color 100ms, border-color 100ms, opacity 100ms;
+  transition:
+    background-color var(--motion-duration, 100ms) var(--motion-easing, ease),
+    color            var(--motion-duration, 100ms) var(--motion-easing, ease),
+    border-color     var(--motion-duration, 100ms) var(--motion-easing, ease),
+    opacity          var(--motion-duration, 100ms) var(--motion-easing, ease);
 }
 
 /* Hide number input spinners */
@@ -192,6 +271,26 @@ input[type="week"]::-webkit-calendar-picker-indicator:hover {
   height: 1px;
   background: var(--border);
   margin: 4px 0;
+}
+
+/* 045: dekoracyjne ramki narożne widoku. `ModuleView` renderuje je zawsze, a widoczność
+   rozstrzyga skórka przez atrybut `data-chrome-frame` na <html> (ustawiany serwerowo
+   w layout.tsx). CSS nie potrafi warunkować `display` wartością zmiennej, a odczyt
+   tokenu w useEffect dawałby mignięcie po hydratacji. */
+.omnia-chrome-frame { display: none; }
+html[data-chrome-frame="corners"] .omnia-chrome-frame { display: block; }
+
+/* Szkielet ładowania. Definicja MUSI żyć tutaj, a nie w znaczniku <style> wewnątrz
+   komponentu: React escapuje cudzysłowy w tekstowym dziecku <style> tylko na serwerze,
+   więc rozjazd hydratacji potrafi położyć całą aplikację (doświadczenia.md, 2026-08-02). */
+.omnia-skeleton {
+  background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 37%, var(--bg-surface) 63%);
+  background-size: 400% 100%;
+  animation: omnia-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes omnia-shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
 }
 
 @keyframes fadeIn {

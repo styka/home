@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { FileText, ChevronRight, Pin, FolderOpen, Tag, Plus, LayoutList } from "lucide-react";
-import { PageHeader, StatTile, SectionHeading, ManagementGrid, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
+import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
 
 interface RecentNote {
   id: string;
@@ -45,118 +46,117 @@ export function NotesHomePage({
       : `${totalCount} ${pluralizePolish(totalCount, "notatka", "notatki", "notatek")}`;
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
-        <PageHeader
-          icon={<FileText size={22} />}
-          iconColor="var(--accent-amber)"
-          title="Notatki"
-          subtitle={subtitle}
+    <ModuleView
+      width="narrow"
+      state="ready"
+      icon={<FileText size={22} />}
+      iconColor="var(--accent-amber)"
+      title="Notatki"
+      subtitle={subtitle}
+      headerAction={
+        <Link
+          href="/notes/all?new=1"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+            padding: "6px 12px",
+            borderRadius: 8,
+            border: "1px solid var(--border)",
+            background: "var(--bg-surface)",
+            color: "var(--text-secondary)",
+            fontSize: 13,
+            textDecoration: "none",
+          }}
+        >
+          <Plus size={13} />
+          Nowa notatka
+        </Link>
+      }
+    >
+
+      {/* Stats grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
+        <StatTile value={totalCount} label="Notatki" color="var(--accent-amber)" href="/notes/all" />
+        <StatTile
+          value={pinnedCount}
+          label="Przypięte"
+          color={pinnedCount > 0 ? "var(--accent-blue)" : "var(--text-muted)"}
+          icon={<Pin size={14} />}
+          href="/notes/all?pinned=1"
+        />
+        <StatTile value={groupCount} label="Foldery" color="var(--accent-green)" href="/notes/groups" />
+        <StatTile value={tagCount} label="Tagi" color="var(--accent-purple)" href="/notes/tags" />
+      </div>
+
+      {/* Pinned notes */}
+      {pinnedNotes.length > 0 && (
+        <div>
+          <SectionHeading>Przypięte</SectionHeading>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {pinnedNotes.map((note) => (
+              <NoteRow key={note.id} id={note.id} title={note.title} content={note.content} group={note.group} pinned />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent notes */}
+      <div>
+        <SectionHeading
           action={
             <Link
-              href="/notes/all?new=1"
+              href="/notes/all"
               style={{
+                fontSize: 11,
+                color: "var(--text-muted)",
+                textDecoration: "none",
                 display: "flex",
                 alignItems: "center",
-                gap: 5,
-                padding: "6px 12px",
-                borderRadius: 8,
-                border: "1px solid var(--border)",
-                background: "var(--bg-surface)",
-                color: "var(--text-secondary)",
-                fontSize: 13,
-                textDecoration: "none",
+                gap: 3,
               }}
             >
-              <Plus size={13} />
-              Nowa notatka
+              Wszystkie <ChevronRight size={11} />
             </Link>
           }
-        />
-
-        {/* Stats grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
-          <StatTile value={totalCount} label="Notatki" color="var(--accent-amber)" href="/notes/all" />
-          <StatTile
-            value={pinnedCount}
-            label="Przypięte"
-            color={pinnedCount > 0 ? "var(--accent-blue)" : "var(--text-muted)"}
-            icon={<Pin size={14} />}
-            href="/notes/all?pinned=1"
+        >
+          Ostatnie notatki
+        </SectionHeading>
+        {recentNotes.length === 0 ? (
+          <EmptyState
+            icon={<FileText size={28} />}
+            message="Brak notatek"
+            hint="Zacznij od pierwszej notatki — może być krótka"
+            cta={{ label: "+ Nowa notatka", href: "/notes/all?new=1", color: "var(--accent-amber)" }}
           />
-          <StatTile value={groupCount} label="Foldery" color="var(--accent-green)" href="/notes/groups" />
-          <StatTile value={tagCount} label="Tagi" color="var(--accent-purple)" href="/notes/tags" />
-        </div>
-
-        {/* Pinned notes */}
-        {pinnedNotes.length > 0 && (
-          <div>
-            <SectionHeading>Przypięte</SectionHeading>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {pinnedNotes.map((note) => (
-                <NoteRow key={note.id} id={note.id} title={note.title} content={note.content} group={note.group} pinned />
-              ))}
-            </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {recentNotes.map((note) => (
+              <NoteRow
+                key={note.id}
+                id={note.id}
+                title={note.title}
+                content={note.content}
+                group={note.group}
+                pinned={note.pinned}
+              />
+            ))}
           </div>
         )}
-
-        {/* Recent notes */}
-        <div>
-          <SectionHeading
-            action={
-              <Link
-                href="/notes/all"
-                style={{
-                  fontSize: 11,
-                  color: "var(--text-muted)",
-                  textDecoration: "none",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 3,
-                }}
-              >
-                Wszystkie <ChevronRight size={11} />
-              </Link>
-            }
-          >
-            Ostatnie notatki
-          </SectionHeading>
-          {recentNotes.length === 0 ? (
-            <EmptyState
-              icon={<FileText size={28} />}
-              message="Brak notatek"
-              hint="Zacznij od pierwszej notatki — może być krótka"
-              cta={{ label: "+ Nowa notatka", href: "/notes/all?new=1", color: "var(--accent-amber)" }}
-            />
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {recentNotes.map((note) => (
-                <NoteRow
-                  key={note.id}
-                  id={note.id}
-                  title={note.title}
-                  content={note.content}
-                  group={note.group}
-                  pinned={note.pinned}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Management */}
-        <div>
-          <SectionHeading>Zarządzanie</SectionHeading>
-          <ManagementGrid
-            items={[
-              { href: "/notes/all", icon: <LayoutList size={16} />, label: "Wszystkie", color: "var(--accent-amber)" },
-              { href: "/notes/groups", icon: <FolderOpen size={16} />, label: "Foldery", color: "var(--accent-amber)" },
-              { href: "/notes/tags", icon: <Tag size={16} />, label: "Tagi", color: "var(--accent-amber)" },
-            ]}
-          />
-        </div>
       </div>
-    </div>
+
+      {/* Management */}
+      <div>
+        <SectionHeading>Zarządzanie</SectionHeading>
+        <ManagementGrid
+          items={[
+            { href: "/notes/all", icon: <LayoutList size={16} />, label: "Wszystkie", color: "var(--accent-amber)" },
+            { href: "/notes/groups", icon: <FolderOpen size={16} />, label: "Foldery", color: "var(--accent-amber)" },
+            { href: "/notes/tags", icon: <Tag size={16} />, label: "Tagi", color: "var(--accent-amber)" },
+          ]}
+        />
+      </div>
+    </ModuleView>
   );
 }
 

@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Trash2, CheckCircle2 } from "lucide-react";
+import { ShoppingCart, Trash2, CheckCircle2 } from "lucide-react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { Modal } from "@/components/ui/Modal";
@@ -24,6 +24,7 @@ import type { ShoppingListWithItems, ShoppingList, FilterTab, Item, ItemStatus, 
 import { FILTER_TABS, STATUS_CYCLE } from "@/types";
 import { useViewState } from "@/hooks/useViewState";
 import { oneOf, text, type RawParams } from "@/lib/viewState/viewState";
+import { ModuleView } from "@/components/ui/view";
 
 const SORT_STORAGE_KEY = "wom_shopping_sort";
 
@@ -246,12 +247,16 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
   const sortBy = sortMode.type === "product" ? "product" : "category";
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div
-        className="flex items-center gap-2 px-4 h-12 border-b flex-shrink-0"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
-      >
+    <ModuleView
+      layout="fill"
+      density="compact"
+      state="ready"
+      icon={<ShoppingCart size={16} />}
+      iconColor="var(--accent-green)"
+      title={effName}
+      href="/shopping"
+      filters={
+        <>
         {/* Mobile: native <select> as list switcher (offline: przełącza z lokalnego snapshotu) */}
         <div className="md:hidden flex-1 min-w-0">
           <select
@@ -274,28 +279,6 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
             {online && <option value="__catalog__">+ Zarządzaj listami…</option>}
           </select>
         </div>
-
-        {/* Desktop: list title — klik = strona główna działu Zakupy */}
-        <h1
-          className="hidden md:flex items-center gap-2 text-sm font-semibold truncate min-w-0"
-          style={{ color: "var(--text-primary)" }}
-        >
-          <Link href="/shopping" className="truncate" style={{ color: "inherit", textDecoration: "none" }} title="Zakupy — strona główna działu">
-            {effName}
-          </Link>
-          {effOwnerTeam && (
-            <span
-              className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0"
-              style={{
-                color: "var(--accent-purple)",
-                backgroundColor: "rgba(168,85,247,0.12)",
-                border: "1px solid rgba(168,85,247,0.2)",
-              }}
-            >
-              {effOwnerTeam.name}
-            </span>
-          )}
-        </h1>
 
         <div className="flex-1" />
         {/* Operacje na LIŚCIE są online-only (spec 009): offline wyłączone z tooltipem. */}
@@ -328,7 +311,9 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
         <span className="text-xs hidden md:block" style={{ color: "var(--text-muted)" }}>
           {statsText}
         </span>
-      </div>
+        </>
+      }
+    >
 
       {isSearchOpen && (
         <SearchBar
@@ -420,7 +405,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
         />
       )}
 
-    </div>
+    </ModuleView>
   );
 }
 

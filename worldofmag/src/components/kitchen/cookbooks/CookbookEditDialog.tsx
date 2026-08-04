@@ -7,6 +7,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { createCookbook, updateCookbook, deleteCookbook } from "@/actions/cookbooks";
 import type { Cookbook } from "@/types/kitchen";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 interface CookbookEditDialogProps {
   open: boolean;
@@ -26,6 +27,7 @@ const COLOR_PRESETS: Array<{ label: string; value: string | null }> = [
 ];
 
 export function CookbookEditDialog({ open, onClose, cookbook }: CookbookEditDialogProps) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const { showToast } = useToast();
   const [pending, startTransition] = useTransition();
@@ -76,9 +78,9 @@ export function CookbookEditDialog({ open, onClose, cookbook }: CookbookEditDial
     });
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!cookbook) return;
-    if (!confirm(`Usunąć książkę „${cookbook.name}"? Przepisy w niej zostaną, ale stracą przypisanie.`)) return;
+    if (!(await confirmDialog(`Usunąć książkę „${cookbook.name}"? Przepisy w niej zostaną, ale stracą przypisanie.`))) return;
     startTransition(async () => {
       try {
         await deleteCookbook(cookbook.id);
@@ -124,7 +126,7 @@ export function CookbookEditDialog({ open, onClose, cookbook }: CookbookEditDial
               onClick={handleSave}
               disabled={pending}
               className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
-              style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+              style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
             >
               {pending ? "Zapisuję…" : "Zapisz"}
             </button>

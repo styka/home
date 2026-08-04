@@ -203,7 +203,7 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
             {titleLoading && <Loader2 size={11} className="animate-spin flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
             {titleAiSuggested && !titleLoading && (
               <span className="text-[10px] px-1 rounded flex-shrink-0"
-                style={{ backgroundColor: "rgba(139,92,246,0.2)", color: "#8b5cf6" }}>
+                style={{ backgroundColor: "rgba(139,92,246,0.2)", color: "var(--accent-purple)" }}>
                 ✨ AI
               </span>
             )}
@@ -254,7 +254,7 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
                 <option value="">Bez folderu</option>
                 {groups.map((g) => (
                   <option key={g.id} value={g.id}
-                    style={{ backgroundColor: "#1c1c1c", color: "var(--text-primary)" }}>
+                    style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-primary)" }}>
                     {g.name}
                   </option>
                 ))}
@@ -349,7 +349,7 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
                       className="text-[11px] px-1.5 rounded-full font-medium"
                       style={{
                         backgroundColor: "rgba(59,130,246,0.15)",
-                        color: "#3b82f6",
+                        color: "var(--accent-blue)",
                         opacity: already ? 0.4 : 1,
                       }}
                     >

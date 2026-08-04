@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useCallback, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { ListTodo, Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
@@ -17,8 +17,10 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useViewState } from "@/hooks/useViewState";
 import { idList, oneOf, type RawParams } from "@/lib/viewState/viewState";
 import { deleteTask, toggleTaskStatus, bulkUpdateTasks, bulkDeleteTasks } from "@/actions/tasks";
+import { ModuleView } from "@/components/ui/view";
 import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode, ProjectStatusConfig } from "@/types";
 import { resolveStatuses, statusMetaFor, DEFAULT_STATUS_CONFIG } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 interface TasksPageProps {
   tasks: Task[];
@@ -46,6 +48,7 @@ interface TasksPageProps {
 }
 
 export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId, viewParams = {} }: TasksPageProps) {
+  const confirmDialog = useConfirm();
   const [statusConfigOpen, setStatusConfigOpen] = useState(false);
 
   // 043: filtr, tagi, grupowanie i układ żyją w ADRESIE strony — dzięki temu zapisany ulubiony
@@ -357,10 +360,10 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
       finishSelection(res.skipped > 0 ? `Zmieniono ${res.updated} z ${ids.length} (pominięto ${res.skipped})` : `Zmieniono ${res.updated}`);
     });
   }
-  function deleteBulk() {
+  async function deleteBulk() {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
-    if (!confirm(`Usunąć ${ids.length} zaznaczonych zadań? Trafią do Kosza.`)) return;
+    if (!(await confirmDialog(`Usunąć ${ids.length} zaznaczonych zadań? Trafią do Kosza.`))) return;
     startBulkTransition(async () => {
       const res = await bulkDeleteTasks(ids);
       finishSelection(res.skipped > 0 ? `Usunięto ${res.deleted} z ${ids.length} (pominięto ${res.skipped})` : `Usunięto ${res.deleted}`);
@@ -400,7 +403,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     rowRefs.current.get(next.id)?.scrollIntoView({ block: "nearest" });
   }
 
-  function navigateUp() {
+  async function navigateUp() {
     if (filteredForNav.length === 0) return;
     const idx = filteredForNav.findIndex((t) => t.id === focusedTaskId);
     const prev = idx <= 0 ? filteredForNav[filteredForNav.length - 1] : filteredForNav[idx - 1];
@@ -419,9 +422,9 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         if (!focusedTaskId) return;
         startTransition(async () => { await toggleTaskStatus(focusedTaskId); });
       },
-      onDelete: () => {
+      onDelete: async () => {
         if (!focusedTaskId) return;
-        if (!confirm("Usunąć zadanie?")) return;
+        if (!(await confirmDialog("Usunąć zadanie?"))) return;
         const idx = filteredForNav.findIndex((t) => t.id === focusedTaskId);
         const next = filteredForNav[idx + 1] ?? filteredForNav[idx - 1];
         if (openTaskId === focusedTaskId) setOpenTaskId(null);
@@ -479,12 +482,16 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   }
 
   return (
-    <div className="flex flex-col flex-1 min-w-0 overflow-hidden h-full">
-      {/* Header */}
-      <div
-        className="flex items-center justify-between px-4 h-12 border-b flex-shrink-0"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
-      >
+    <ModuleView
+      layout="fill"
+      density="compact"
+      state="ready"
+      icon={<ListTodo size={16} />}
+      iconColor="var(--accent-blue)"
+      title={projectName}
+      href="/tasks"
+      filters={
+        <>
         {/* Mobile: project picker */}
         <div className="md:hidden flex-1 mr-2">
           <select
@@ -506,16 +513,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             ))}
           </select>
         </div>
-
-        {/* Desktop: title — klik = strona główna działu Zadania */}
-        <Link
-          href="/tasks"
-          className="hidden md:block text-sm font-semibold"
-          style={{ color: "var(--text-primary)", textDecoration: "none" }}
-          title="Zadania — strona główna działu"
-        >
-          {projectName}
-        </Link>
 
         {/* Actions — na wąskich ekranach (iPhone) rząd ikon przewija się w poziomie zamiast
             wypadać poza kadr. Uwaga: kontener z overflow przycina wewnętrzne popovery (overflow-y
@@ -700,7 +697,9 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               : null;
           })()}
         </div>
-      </div>
+        </>
+      }
+    >
 
       {/* Pasek zakresu widoku wielu projektów: zawsze widać, z jakich projektów są zadania.
           Każdy chip prowadzi do pojedynczego projektu; ołówek otwiera edycję zapisanego widoku. */}
@@ -911,6 +910,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         </div>
       )}
 
-    </div>
+    </ModuleView>
   );
 }

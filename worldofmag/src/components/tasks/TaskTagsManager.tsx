@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Plus, Check, X, Pencil, Trash2 } from "lucide-react";
 import { createTaskTag, updateTaskTag, deleteTaskTag } from "@/actions/taskTags";
 import type { TaskTagDef } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const PRESET_COLORS = [
   "#3b82f6", "#ef4444", "#f59e0b", "#10b981",
@@ -15,6 +16,7 @@ interface TaskTagsManagerProps {
 }
 
 export function TaskTagsManager({ initialTags }: TaskTagsManagerProps) {
+  const confirmDialog = useConfirm();
   const [tags, setTags] = useState<TaskTagDef[]>(initialTags);
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -52,8 +54,8 @@ export function TaskTagsManager({ initialTags }: TaskTagsManagerProps) {
     });
   }
 
-  function handleDelete(id: string) {
-    if (!confirm("Usunąć tag? Zostanie usunięty ze wszystkich zadań.")) return;
+  async function handleDelete(id: string) {
+    if (!(await confirmDialog("Usunąć tag? Zostanie usunięty ze wszystkich zadań."))) return;
     startTransition(async () => {
       await deleteTaskTag(id);
       setTags((prev) => prev.filter((t) => t.id !== id));

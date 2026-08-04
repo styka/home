@@ -82,7 +82,7 @@ export function CookbookView({ cookbook, recipes, canEdit }: CookbookViewProps) 
           <Link
             href="/kitchen/recipes/new"
             className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
-            style={{ backgroundColor: "var(--accent-orange)", color: "#0d0d0d" }}
+            style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
           >
             <Plus size={14} /> Nowy przepis
           </Link>

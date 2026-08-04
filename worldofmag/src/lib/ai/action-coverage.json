@@ -1086,16 +1086,16 @@
     "action": "list_news_sources",
     "access": "owner"
   },
-  "news:getTopicTimeline": {
-    "kind": "read",
-    "status": "ai",
-    "action": "get_news_topic_view",
-    "access": "owner"
-  },
   "news:getStreamView": {
     "kind": "read",
     "status": "excluded",
     "reason": "interactive",
+    "access": "owner"
+  },
+  "news:getTopicTimeline": {
+    "kind": "read",
+    "status": "ai",
+    "action": "get_news_topic_view",
     "access": "owner"
   },
   "news:getTopicView": {
@@ -2015,8 +2015,20 @@
     "reason": "admin",
     "access": "admin"
   },
+  "skins:exportSkin": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self",
+    "guardedVia": "listAvailableSkins"
+  },
   "skins:getActiveSkinId": {
     "kind": "read",
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
+  "skins:importSkin": {
     "status": "excluded",
     "reason": "settings",
     "access": "self"

@@ -10,6 +10,7 @@ import { TagSuggestions } from "./TagSuggestions";
 import { updateNote, deleteNote, toggleNotePin, setNoteTags, getNoteAttachments, addNoteAttachment, deleteNoteAttachment, getNoteRevisions, restoreNoteRevision, type NoteAttachmentDTO, type NoteRevisionDTO } from "@/actions/notes";
 import { createTag } from "@/actions/tags";
 import type { Note, Tag, NoteGroup } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 interface NoteRowProps {
   note: Note;
@@ -51,6 +52,7 @@ function highlightMatch(text: string, query: string) {
 export function NoteRow({
   note, allNotes, allTags, allGroups, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, onNavigateToNote, onTagsChanged, rowRef, searchQuery = "",
 }: NoteRowProps) {
+  const confirmDialog = useConfirm();
   const [, startTransition] = useTransition();
   const [editTitle, setEditTitle] = useState(note.title);
   const [editContent, setEditContent] = useState(note.content);
@@ -145,8 +147,8 @@ export function NoteRow({
     onStopEdit();
   }
 
-  function handleDelete() {
-    if (!confirm("Usunąć notatkę? Tej operacji nie można cofnąć.")) return;
+  async function handleDelete() {
+    if (!(await confirmDialog("Usunąć notatkę? Tej operacji nie można cofnąć."))) return;
     startTransition(() => { deleteNote(note.id); });
   }
 
@@ -322,7 +324,7 @@ export function NoteRow({
           >
             {REWRITE_MODES.map((m) => (
               <option key={m.value} value={m.value}
-                style={{ backgroundColor: "#1c1c1c", color: "var(--text-primary)" }}>
+                style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-primary)" }}>
                 {m.label}
               </option>
             ))}
@@ -368,7 +370,7 @@ export function NoteRow({
             <option value="">Bez folderu</option>
             {allGroups.map((g) => (
               <option key={g.id} value={g.id}
-                style={{ backgroundColor: "#1c1c1c", color: "var(--text-primary)" }}>
+                style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-primary)" }}>
                 {g.name}
               </option>
             ))}
@@ -511,7 +513,7 @@ export function NoteRow({
           </span>
           {note.isMarkdown && (
             <span className="text-[10px] px-1 rounded flex-shrink-0"
-              style={{ backgroundColor: "rgba(139,92,246,0.2)", color: "#8b5cf6" }}>
+              style={{ backgroundColor: "rgba(139,92,246,0.2)", color: "var(--accent-purple)" }}>
               MD
             </span>
           )}
@@ -627,7 +629,7 @@ function NoteAttachments({ noteId }: { noteId: string }) {
               <a href={a.url} target="_blank" rel="noopener noreferrer" download={a.name} className="flex items-center justify-center" style={{ width: 64, height: 64, fontSize: 10, color: "var(--accent-blue)", textAlign: "center", padding: 4 }}>{a.name.slice(0, 18)}</a>
             )}
             <button onClick={async () => { await deleteNoteAttachment(a.id); setItems(await getNoteAttachments(noteId)); }} title="Usuń"
-              style={{ position: "absolute", top: 1, right: 1, width: 18, height: 18, borderRadius: 4, background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              style={{ position: "absolute", top: 1, right: 1, width: 18, height: 18, borderRadius: 4, background: "rgba(0,0,0,0.6)", color: "var(--on-accent)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Trash2 size={11} />
             </button>
           </div>
@@ -643,6 +645,7 @@ function NoteAttachments({ noteId }: { noteId: string }) {
 }
 
 function NoteHistory({ noteId, onRestored }: { noteId: string; onRestored: () => void }) {
+  const confirmDialog = useConfirm();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NoteRevisionDTO[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -657,7 +660,7 @@ function NoteHistory({ noteId, onRestored }: { noteId: string; onRestored: () =>
   }
 
   async function restore(rev: NoteRevisionDTO) {
-    if (!confirm("Przywrócić tę wersję? Aktualna treść trafi do historii.")) return;
+    if (!(await confirmDialog("Przywrócić tę wersję? Aktualna treść trafi do historii."))) return;
     setBusy(true);
     try {
       await restoreNoteRevision(rev.id);

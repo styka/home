@@ -6,18 +6,20 @@ import { Plus, Pencil, Trash2, Palette } from "lucide-react";
 import { SkinPreview } from "@/components/skins/SkinPreview";
 import { SkinEditor } from "@/components/skins/SkinEditor";
 import { deleteSkin, type SkinView } from "@/actions/skins";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 type EditorState =
   | { open: false }
   | { open: true; initial: SkinView | null; existingId: string | null };
 
 export function SystemSkinManager({ skins }: { skins: SkinView[] }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [pending, start] = useTransition();
   const [editor, setEditor] = useState<EditorState>({ open: false });
 
-  function remove(id: string) {
-    if (!confirm("Usunąć tę skórkę systemową? Użytkownicy z nią ustawioną wrócą do domyślnej.")) return;
+  async function remove(id: string) {
+    if (!(await confirmDialog("Usunąć tę skórkę systemową? Użytkownicy z nią ustawioną wrócą do domyślnej."))) return;
     start(async () => {
       await deleteSkin(id);
       router.refresh();

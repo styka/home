@@ -267,9 +267,9 @@ function StatusFlowSVG() {
 function PrioritySVG() {
   const rows = [
     { label: "Brak",   code: "NONE",   color: "#6b7280", bg: "#1a1a1a", bord: "#333",    desc: "Zadania bez określonego priorytetu"        },
-    { label: "Niski",  code: "LOW",    color: "#3b82f6", bg: "#0f172a", bord: "#1d4ed8",  desc: "Mało pilne — zrób kiedy masz czas"          },
-    { label: "Średni", code: "MEDIUM", color: "#f59e0b", bg: "#1c1400", bord: "#b45309",  desc: "Ważne, ale nie natychmiastowe"               },
-    { label: "Wysoki", code: "HIGH",   color: "#ef4444", bg: "#1c0808", bord: "#b91c1c",  desc: "Pilna sprawa, zajmij się dziś"               },
+    { label: "Niski",  code: "LOW",    color: "var(--accent-blue)", bg: "#0f172a", bord: "#1d4ed8",  desc: "Mało pilne — zrób kiedy masz czas"          },
+    { label: "Średni", code: "MEDIUM", color: "var(--accent-amber)", bg: "#1c1400", bord: "#b45309",  desc: "Ważne, ale nie natychmiastowe"               },
+    { label: "Wysoki", code: "HIGH",   color: "var(--accent-red)", bg: "#1c0808", bord: "#b91c1c",  desc: "Pilna sprawa, zajmij się dziś"               },
     { label: "Pilne",  code: "URGENT", color: "#dc2626", bg: "#200606", bord: "#991b1b",  desc: "Natychmiastowe działanie wymagane!",  bold: true },
   ];
   return (
@@ -551,7 +551,7 @@ function SharingSVG() {
 
         {/* Users */}
         {[
-          { y: 35,  label: "Ania K.",   role: "Edytor",  color: "#3b82f6", roleColor: "#1d4ed8", roleBg: "#0f172a" },
+          { y: 35,  label: "Ania K.",   role: "Edytor",  color: "var(--accent-blue)", roleColor: "#1d4ed8", roleBg: "#0f172a" },
           { y: 80,  label: "Bartek W.", role: "Widz",    color: "#10b981", roleColor: "#059669", roleBg: "#052e16" },
           { y: 125, label: "Ciszewski", role: "Widz",    color: "#8b5cf6", roleColor: "#6d28d9", roleBg: "#1a0d3a" },
         ].map((u) => (

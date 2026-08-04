@@ -16,6 +16,7 @@ import {
 } from "@/lib/petGenetics";
 import { formatDate, speciesEmoji } from "@/lib/petSpecies";
 import type { PetWithRelations, PetBreedingData } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const PAIR_STATUS: Record<string, string> = {
   PLANNED: "Planowana", PAIRED: "Połączona", COOLING: "Cooling", PRODUCTIVE: "Produktywna", RETIRED: "Wycofana",
@@ -249,6 +250,7 @@ export function BreedingSection({ pet }: { pet: PetWithRelations }) {
 }
 
 function PairCard({ pair, pet, onChange }: { pair: PetBreedingData["pairs"][number]; pet: PetWithRelations; onChange: () => void }) {
+  const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [clutchOpen, setClutchOpen] = useState(false);
@@ -275,7 +277,7 @@ function PairCard({ pair, pet, onChange }: { pair: PetBreedingData["pairs"][numb
           style={{ fontSize: 11, background: "var(--bg-elevated)", color: "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 6, padding: "2px 6px" }}>
           {Object.keys(PAIR_STATUS).map((s) => <option key={s} value={s}>{PAIR_STATUS[s]}</option>)}
         </select>
-        <button onClick={() => startTransition(async () => { if (confirm("Usunąć parę?")) { await deleteBreedingPair(pair.id); onChange(); } })} style={iconBtn}><Trash2 size={12} /></button>
+        <button onClick={() => startTransition(async () => { if (await confirmDialog("Usunąć parę?")) { await deleteBreedingPair(pair.id); onChange(); } })} style={iconBtn}><Trash2 size={12} /></button>
       </div>
       <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>
         ♂ {pair.male?.name ?? "—"} × ♀ {pair.female?.name ?? "—"}
