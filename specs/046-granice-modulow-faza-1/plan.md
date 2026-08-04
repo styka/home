@@ -134,10 +134,14 @@ potrzebuje więcej (komunikat reguły lintu wprost o tym mówi).
 
 ```js
 {
-  "group": ["@/modules/*/!(contract)", "@/modules/*/!(contract)/**"],
-  "message": "Moduł widzi inny moduł WYŁĄCZNIE przez contract.ts. Potrzebujesz więcej? Rozszerz kontrakt tamtego modułu."
+  "group": ["@/modules/*/**", "!@/modules/*/contract"],
+  "message": "Moduł widzi inny moduł WYŁĄCZNIE przez contract.ts (@/modules/<moduł>/contract). …"
 }
 ```
+
+**Poprawka z `/implement` (C-54).** Pierwotny wzorzec `@/modules/*/!(contract)` zakłada extglob,
+którego dopasowywanie wzorców w `no-restricted-imports` (semantyka .gitignore) nie obsługuje.
+Powyższa para „szeroki wzorzec + negacja" daje ten sam efekt środkami, które reguła rozumie.
 
 Plus druga reguła dla `src/platform/**`: zakaz importu z `@/modules/*` w ogóle (AC-2) —
 **asymetria z rozdz. 7.1**: platforma nie zna modułów, moduł zna platformę.
@@ -146,11 +150,23 @@ Plus druga reguła dla `src/platform/**`: zakaz importu z `@/modules/*` w ogóle
 nieprzeniesiony żyje w `src/components|actions|lib` i reguła go nie dotyczy — dzięki temu można ją
 włączyć **na twardo już teraz**, nie czekając na 17 pozostałych modułów.
 
-Import **własnego** wnętrza (`@/modules/truck/ui/...` z wewnątrz Truck) musi przechodzić — inaczej
-moduł nie mógłby się złożyć. Realizowane przez `allow`/ścieżki względne wewnątrz modułu.
+Import **własnego** wnętrza musi przechodzić — inaczej moduł nie mógłby się złożyć. Realizowane
+**ścieżkami względnymi wewnątrz modułu** (`./actions/x`), i to jest decyzja, nie szczegół: dla
+lintera plik w `modules/qa` importujący `@/modules/qa/actions/qa` wygląda **identycznie** jak import
+cudzego wnętrza. Przy aliasach jedna reguła nie odróżni swojego od cudzego i trzeba by utrzymywać
+osobny blok `overrides` na każdy z 21 modułów. Przy ścieżkach względnych granica jest widoczna
+w samym imporcie: `./` = moje, `@/modules/…` = cudze.
 
 **Test negatywny jest obowiązkowy:** tymczasowy import wnętrza obcego modułu ma czerwienić lint.
 Bez tego reguła może być składniowo poprawna i nic nie łapać.
+
+**A test negatywny „na raz" to za mało — `check:boundaries` (T-16a, C-54).** Przy pisaniu tej fazy
+wyszło doświadczalnie, że gdy `.eslintrc.json` jest niepoprawny, `next lint` wypisuje ostrzeżenie
+o konfiguracji, ale **kończy się kodem 0**: reguła granic przestaje działać, a build jest zielony.
+Dlatego dokładamy bramkę `scripts/check-boundaries.js`, która sama tworzy pliki łamiące obie reguły
+i wymaga od ESLinta realnego błędu — plus dwa przypadki, które MUSZĄ przechodzić (kontrakt obcego
+modułu, własne wnętrze), bo reguła za szeroka jest tak samo szkodliwa, tylko objawia się
+obchodzeniem. Wpięta w `build` obok pozostałych bramek.
 
 ---
 
@@ -246,16 +262,16 @@ pliku. Zadanie **T-10a**.
 | AC | Jak sprawdzamy |
 |----|----------------|
 | AC-1 | Przegląd zawartości `platform/` — wyłącznie zdolności bez wiedzy o modułach |
-| AC-2 | Reguła ESLint + test negatywny (import `@/modules/*` z `platform/` → czerwony lint) |
+| AC-2 | Reguła ESLint + test negatywny (import `@/modules/*` z `platform/` → czerwony lint), utrwalony w `check:boundaries` |
 | AC-3 | Struktura katalogu modułu; trasa zawiera wyłącznie sesję, pobranie danych i render |
-| AC-4 | **Test negatywny:** import wnętrza obcego modułu → lint czerwony |
+| AC-4 | **Test negatywny:** import wnętrza obcego modułu → lint czerwony, utrwalony w `check:boundaries` |
 | AC-5 | Import `contract.ts` obcego modułu → lint zielony |
 | AC-6 | `check:module-registry` — katalog w `modules/` bez `module.ts`/`contract.ts` wywala build |
 | AC-7 | Usunięcie wpisów modułów pilotażowych z `modules.tsx`/`permissions.ts` → build i klikacz zielone |
 | AC-8 | Zmiana etykiety w deklaracji → widoczna w nawigacji bez edycji drugiego pliku |
 | AC-9 | `check:module-registry` z niekompletną deklaracją → czerwony |
 | AC-10 | `e2e/specs/modules-happy-path.spec.ts` — **25/25** |
-| AC-11 | Komplet bramek: `check:actions`, `check:ai-coverage`, `check:cost-badge`, `check:content-memory`, `check:migrations`, `check:ui-contract`, `check:schema-drift`, `check:module-registry` + `next lint` + `next build` + `test:unit` |
+| AC-11 | Komplet bramek: `check:actions`, `check:ai-coverage`, `check:cost-badge`, `check:content-memory`, `check:migrations`, `check:ui-contract`, `check:schema-drift`, `check:boundaries`, `check:module-registry` + `next lint` + `next build` + `test:unit` |
 | AC-12 | Diff każdego commita przenoszącego zawiera **wyłącznie** przenosiny i przepisane importy |
 | AC-13 | Rozdz. 15 dokumentu architektury po przebiegu |
 

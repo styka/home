@@ -69,17 +69,31 @@
 
 ## Faza D — Egzekwowanie granic (zadanie 6 — **nieopcjonalne**)
 
-- [ ] **T-14** — Reguła ESLint `no-restricted-imports` w `overrides` dla `src/modules/**`:
-      import `@/modules/*/!(contract)` = błąd, komunikat po polsku wskazujący właściwą drogę.
+- [x] **T-14** — Reguła ESLint `no-restricted-imports` w `overrides` dla `src/modules/**`:
+      import wnętrza obcego modułu = błąd, komunikat po polsku wskazujący właściwą drogę.
       Import **własnego** wnętrza modułu musi przechodzić.
+      **Zmiana wobec planu (C-54):** wzorzec `@/modules/*/!(contract)` z planu zakłada extglob,
+      którego dopasowywanie wzorców w `no-restricted-imports` nie obsługuje; zamiast tego
+      `["@/modules/*/**", "!@/modules/*/contract"]` (semantyka .gitignore). Druga, ważniejsza
+      zmiana: **wewnątrz modułu importujemy ścieżką względną**, bo dla lintera plik w `modules/qa`
+      importujący `@/modules/qa/…` wygląda identycznie jak import cudzego wnętrza — przy aliasach
+      jedna reguła nie odróżni swojego od cudzego i trzeba by utrzymywać blok na każdy z 21 modułów.
       **Gotowe, gdy:** test pozytywny (import własnego wnętrza) zielony. **(AC-4)**
-- [ ] **T-15** — Druga reguła: `src/platform/**` nie importuje `@/modules/*` w ogóle — asymetria
+- [x] **T-15** — Druga reguła: `src/platform/**` nie importuje `@/modules/*` w ogóle — asymetria
       z rozdz. 7.1.
       **Gotowe, gdy:** test negatywny czerwieni lint. **(AC-2)**
-- [ ] **T-16** — **Testy negatywne obu reguł.** Tymczasowy import wnętrza obcego modułu → lint
+- [x] **T-16** — **Testy negatywne obu reguł.** Tymczasowy import wnętrza obcego modułu → lint
       czerwony; import `contract.ts` → zielony. Bez tego reguła może być składniowo poprawna
       i nic nie łapać.
       **Gotowe, gdy:** oba przypadki potwierdzone i cofnięte. **(AC-4, AC-5)**
+- [x] **T-16a** — **Bramka `scripts/check-boundaries.js`.** (Dopisane w trakcie `/implement` wg C-54.)
+      Test negatywny z T-16 wykrył coś gorszego niż źle napisana reguła: przy **niepoprawnej
+      konfiguracji** ESLinta `next lint` wypisuje „ESLint configuration … is invalid", ale **kończy
+      się kodem 0** — reguła granic przestaje działać, a build jest zielony. Jednorazowe ręczne
+      potwierdzenie nie chroni więc przed niczym. Bramka sama łamie obie reguły (i sprawdza dwa
+      przypadki, które MUSZĄ przechodzić — reguła za szeroka jest tak samo zła, tylko objawia się
+      obchodzeniem), wymagając realnego błędu od ESLinta. Wpięta w `build` + `npm run check:boundaries`.
+      **Gotowe, gdy:** wyłączenie reguły ORAZ zepsucie konfiguracji czerwienią bramkę. **(AC-2, AC-4, AC-5)**
 
 ## Faza E — Jedna deklaracja zamiast ośmiu list
 

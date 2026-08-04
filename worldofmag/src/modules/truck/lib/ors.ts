@@ -9,7 +9,7 @@
 
 import { prisma } from "@/platform/db/prisma";
 import { decryptSecret } from "@/lib/crypto/secrets";
-import type { PolygonCoords } from "@/modules/truck/lib/googleMaps";
+import type { PolygonCoords } from "./googleMaps";
 
 const ORS_BASE = "https://api.openrouteservice.org";
 

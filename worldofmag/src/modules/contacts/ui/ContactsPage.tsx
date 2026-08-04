@@ -7,7 +7,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { Users, Search, Plus, Pencil, Trash2, Check, X, Phone, Mail, Building2 } from "lucide-react";
 import { cardStyle } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { getContacts, createContact, updateContact, deleteContact, type ContactDTO } from "@/modules/contacts/actions/contacts";
+import { getContacts, createContact, updateContact, deleteContact, type ContactDTO } from "../actions/contacts";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 

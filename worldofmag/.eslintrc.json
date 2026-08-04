@@ -1,3 +1,10 @@
+// ESLint czyta ten plik przez `strip-json-comments`, więc komentarze `//` są dozwolone —
+// w przeciwieństwie do wymyślonych kluczy typu "$komentarz", które walidator schematu odrzuca.
+//
+// UWAGA, sprawdzone doświadczalnie (T-16): przy niepoprawnej konfiguracji `next lint` wypisuje
+// „ESLint configuration … is invalid", ale KOŃCZY SIĘ KODEM 0. Reguła granic wtedy nie działa,
+// a build jest zielony. Dlatego zamiast ufać lintowi mamy `npm run check:boundaries` — bramkę,
+// która sama próbuje złamać obie reguły i wymaga, żeby ESLint faktycznie zgłosił błąd.
 {
   "extends": "next/core-web-vitals",
   "plugins": ["@typescript-eslint"],
@@ -8,6 +15,53 @@
     "jsx-a11y/alt-text": "warn",
     "react-hooks/rules-of-hooks": "error"
   },
+  "overrides": [
+    // 046 — GRANICA MIĘDZY MODUŁAMI. Rozdz. 14 dokumentu architektury docelowej mówi wprost:
+    // ta reguła NIE JEST OPCJONALNA. Granice bez egzekwowania erodują w tygodnie i to jest
+    // najczęstszy sposób, w jaki takie przebudowy idą na marne.
+    //
+    // Wewnątrz modułu importujemy ŚCIEŻKĄ WZGLĘDNĄ (./actions/x), na zewnątrz — wyłącznie
+    // kontraktem obcego modułu (@/modules/inny/contract). To nie jest kosmetyka: dla lintera
+    // plik w modules/qa importujący "@/modules/qa/actions/qa" wygląda IDENTYCZNIE jak import
+    // obcego wnętrza, więc przy aliasach jedna reguła nie odróżni swojego od cudzego i trzeba
+    // by utrzymywać osobny blok na każdy z 21 modułów. Przy ścieżkach względnych granica jest
+    // widoczna w samym imporcie: "./" = moje, "@/modules/…" = cudze.
+    {
+      "files": ["src/modules/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/modules/*/**", "!@/modules/*/contract"],
+                "message": "Moduł widzi inny moduł WYŁĄCZNIE przez contract.ts (@/modules/<moduł>/contract). Potrzebujesz więcej? Rozszerz kontrakt tamtego modułu. Własne wnętrze importuj ścieżką względną (./…)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    // 046 — ASYMETRIA z rozdz. 7.1: moduł zna platformę, platforma NIE zna modułów.
+    // Gdyby platforma sięgała do modułu, przestałaby być warstwą wspólną — stałaby się kolejnym
+    // modułem, tyle że takim, od którego zależą wszystkie pozostałe.
+    {
+      "files": ["src/platform/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/modules/*", "@/modules/*/**"],
+                "message": "Platforma nie może zależeć od modułu (asymetria: moduł zna platformę, platforma nie zna modułów). Przenieś wspólną zdolność do src/platform/ albo odwróć zależność."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
   "ignorePatterns": [
     "src/generated/**",
     ".next/**",

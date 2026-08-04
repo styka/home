@@ -24,7 +24,7 @@ import {
 import { StatTile, SectionHeading, cardStyle, cardHoverHandlers } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { QA_MODULES } from "@/lib/qaModules";
-import type { ModuleStats } from "@/modules/qa/actions/qa";
+import type { ModuleStats } from "../actions/qa";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   ShoppingCart, CheckSquare, FileText, ChefHat, Home, BookOpen, Users, Settings, Lock, Shield, Sparkles, FlaskConical,
