@@ -281,14 +281,56 @@ CSS zostają po angielsku (to identyfikatory), ale ich etykiety w edytorze są p
 
 ---
 
-## 6. AI / integracje
+## 6. AI — generowanie skórki z opisu
 
-**Nie dotyczy.** Zero nowych `AIAction`, zero read-tooli, brak wpięcia w kalendarz, powiadomienia i
-auto-księgowanie. Generowanie skórki opisem słownym jest **poza zakresem** speca.
+> **Zmiana zakresu (C-54).** Właściciel 2026-08-04 włączył generowanie skórki przez AI do zakresu;
+> pierwotnie było „poza zakresem". Spec i lista zadań przeliczone w dół.
 
-Jedyny styk z bramkami AI: nowe akcje `exportSkin`/`importSkin` wymagają wpisu w
-`src/lib/ai/action-coverage.json` (klasyfikacja + `access`), inaczej `check:ai-coverage` wywali build.
-To wymóg formalny bramki, nie funkcja AI.
+**Zero nowych `AIAction` i zero read-tooli.** To nie jest funkcja asystenta czatowego, tylko operacja
+odpalana **kliknięciem** w edytorze skórki — jak `kitchen/generate-recipe`, nie jak zdanie w czacie.
+Katalog akcji asystenta zostaje nietknięty, więc `check:actions` nie ma tu nic do roboty.
+
+### 6.1. Kształt
+
+Naśladujemy **dokładnie** wzorzec `kitchen.generateRecipe` (cienka trasa + handler w `lib/jobs/handlers`):
+
+- **Handler:** `src/lib/jobs/handlers/skinGenerate.ts` — `skinGenerateHandler({ prompt }, ctx)`.
+- **Trasa:** `src/app/api/llm/skins/generate/route.ts` — sesja, `JobError` → status, nic więcej.
+- **Operacja LLM:** `op: "generation"` (dłuższy tekst twórczy), `json: true`, `temperature ~0.7`
+  (dobór palety to zadanie kreatywne, nie klasyfikacja). Model **z konfiguracji DB**, nigdy zaszyty
+  w kodzie (C-40).
+
+### 6.2. Prompt — jak nie dostać brzydkiej skórki
+
+Prompt dostaje **pełny katalog tokenów wraz z ich rodzajami i dozwolonymi wartościami**, wygenerowany
+z `ALL_CONTROLS`, a nie przepisany ręcznie — inaczej rozjechałby się przy pierwszym nowym tokenie.
+Do tego trzy twarde wymagania, bo to one decydują, czy skórka jest „nienachalna":
+
+1. **Kontrast.** Model ma obowiązek dobrać `--text-primary`/`--bg-base` z kontrastem ≥ 7:1, a
+   `--text-secondary` ≥ 4.5:1, i dobrać `--on-accent` do jasności akcentu (biały tekst na bursztynie
+   to ~1.8:1 — czyli przycisk nie do odczytania).
+2. **Umiar.** Gradienty i poświaty tylko tam, gdzie służą hierarchii; żadnych animacji dłuższych niż
+   300 ms; `--font-size-base` w przedziale 13–15 px.
+3. **Kompletność.** Ma zwrócić komplet tokenów, nie trzy kolory — skórka częściowa jest legalna, ale
+   z opisu „jak konsola statku" ma powstać motyw, a nie przemalowane tło.
+
+### 6.3. Bezpieczeństwo — model to źródło obce
+
+Wynik przechodzi przez **to samo** `validateTokens()` co import pliku. To nie jest ostrożność na
+wyrost: model potrafi „pomocnie" zwrócić `url(...)` z obrazkiem tła albo `font-family` z nazwą
+czcionki z sieci. Odrzucone klucze **wracają do UI** razem z resztą, tak jak przy imporcie.
+
+Model **nie zapisuje i nie włącza** skórki. Zwraca propozycję, którą użytkownik widzi w podglądzie
+i dopiero zapisuje istniejącą akcją `createSkin`. Automatyczna podmiana wyglądu aplikacji byłaby
+zaskoczeniem, nie funkcją (zapisane wprost w „poza zakresem" speca).
+
+### 6.4. Bramki, które to uruchamia
+
+| Bramka | Co trzeba zrobić |
+|--------|------------------|
+| `check:cost-badge` | Handler **musi** przepuścić zużycie (`usageFromChat`) — inaczej build pada. Wskaźnik kosztu w edytorze to `AiCostBadge`, na tych samych zasadach widoczności co wszędzie (`visibleUsage`). |
+| `check:content-memory` | Nowy plik wołający `chatComplete` wymaga wpisu w `content-memory-coverage.json`. Klasyfikacja: **`on-demand`** — pamięć treści zwracałaby stary motyw dla zmienionego opisu, a operację odpala kliknięcie. |
+| `check:ai-coverage` | Handler nie jest Server Action, więc manifestu akcji nie dotyka. Wpisy dla `exportSkin`/`importSkin` (pkt 3) zostają. |
 
 ---
 

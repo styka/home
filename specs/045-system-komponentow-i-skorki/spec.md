@@ -57,6 +57,8 @@ utraty czytelności; wszystko oglądalne w przepisanym od zera playgroundzie.
 - Jako **właściciel** chcę zbudować własną skórkę z podglądem na żywo i zapisać ją, żeby nie
   potrzebować programisty do zmiany wyglądu.
 - Jako **właściciel** chcę wyeksportować skórkę i wczytać cudzą, żeby dało się nimi wymieniać.
+- Jako **właściciel** chcę opisać wygląd własnymi słowami („jak konsola ze Star Treka") i dostać
+  gotową skórkę do podejrzenia, żeby nie dobierać kilkudziesięciu tokenów ręcznie.
 - Jako **właściciel** chcę mieć przycisk zapisu bieżącego widoku tam, gdzie o niego prosiłem — w
   pasku widoku — w każdym module.
 - Jako **właściciel/administrator** chcę przejrzeć w jednym miejscu wszystkie wspólne komponenty,
@@ -109,26 +111,39 @@ utraty czytelności; wszystko oglądalne w przepisanym od zera playgroundzie.
 - [ ] **AC-13** — Given skórka nieustawiająca części tokenów, when jej używam, then brakujące
       wartości dziedziczą domyślne — skórka częściowa nigdy nie psuje układu.
 
+**Generowanie skórki przez AI**
+
+- [ ] **AC-14** — Given opis motywu własnymi słowami, when proszę o wygenerowanie skórki, then
+      dostaję komplet tokenów widoczny w podglądzie **zanim** cokolwiek zapiszę.
+- [ ] **AC-15** — Given wynik modelu zawierający token spoza whitelisty albo złośliwą wartość, when
+      trafia on do aplikacji, then jest odrzucany dokładnie tak samo jak przy imporcie pliku — model
+      nie jest źródłem bardziej zaufanym niż cudzy plik.
+- [ ] **AC-16** — Given wygenerowana skórka, when ją oglądam, then widzę koszt wywołania modelu na
+      tych samych zasadach co w reszcie aplikacji (wskaźnik kosztu dla administratora).
+- [ ] **AC-17** — Given wygenerowana skórka, when nie odpowiada opisowi, then mogę poprawić opis
+      i wygenerować ponownie albo dostroić pojedyncze tokeny ręcznie — generowanie nie zastępuje
+      edytora, tylko daje mu punkt startowy.
+
 **Playground**
 
-- [ ] **AC-14** — Given playground na komputerze, when go otwieram, then komponenty są pogrupowane w
+- [ ] **AC-18** — Given playground na komputerze, when go otwieram, then komponenty są pogrupowane w
       czytelną hierarchię kategorii z nawigacją boczną i wyszukiwarką.
-- [ ] **AC-15** — Given playground na telefonie, when go otwieram, then nawigacja jest dostępna bez
+- [ ] **AC-19** — Given playground na telefonie, when go otwieram, then nawigacja jest dostępna bez
       poziomego przewijania, a cele dotyku spełniają minimum; **nigdy dwa panele boczne naraz**.
-- [ ] **AC-16** — Given dowolny wspólny komponent w playgroundzie, when zmieniam jego właściwości w
+- [ ] **AC-20** — Given dowolny wspólny komponent w playgroundzie, when zmieniam jego właściwości w
       sterowaniu, then demonstracja reaguje na żywo i pokazuje wariant brzegowy (pusty, długi tekst,
       błąd), a nie tylko przypadek idealny.
-- [ ] **AC-17** — Given playground, when przełączam w nim skórkę, then wszystkie demonstracje
+- [ ] **AC-21** — Given playground, when przełączam w nim skórkę, then wszystkie demonstracje
       natychmiast pokazują się w tej skórce — bez zmiany skórki całego konta.
-- [ ] **AC-18** — Given nowy wspólny komponent dodany do warstwy UI, when nie ma go w playgroundzie,
+- [ ] **AC-22** — Given nowy wspólny komponent dodany do warstwy UI, when nie ma go w playgroundzie,
       then jest to wykrywalne (playground wywodzi listę z rejestru komponentów, nie z ręcznej listy).
 
 **Dziennik przebudowy**
 
-- [ ] **AC-19** — Given dokument „Omnia 🧐 — architektura docelowa", when go otwieram, then ma
+- [ ] **AC-23** — Given dokument „Omnia 🧐 — architektura docelowa", when go otwieram, then ma
       rozdział-dziennik ze stanem **wszystkich 46 zadań** z checklisty (zrobione / w toku / nietknięte)
       oraz wpisem opisującym zmiany z tego przebiegu.
-- [ ] **AC-20** — Given zakończony ten przebieg, when czytam dziennik, then wiem, która faza jest
+- [ ] **AC-24** — Given zakończony ten przebieg, when czytam dziennik, then wiem, która faza jest
       następna i dlaczego — bez otwierania historii gita.
 
 ## 5. Zakres
@@ -153,10 +168,15 @@ utraty czytelności; wszystko oglądalne w przepisanym od zera playgroundzie.
 7. **Edytor skórki** z podglądem na żywo, importem i eksportem.
 8. **Dwie skórki flagowe** dowożone jako systemowe, w tym jedna mocno stylizowana (konsola sci-fi
    inspirowana estetyką LCARS, bez naruszania cudzych znaków), obie zweryfikowane pod kontrast i UX.
-9. **Playground napisany od zera** — hierarchia kategorii, nawigacja boczna na desktopie i szufladą na
+9. **Generowanie skórki opisem słownym przez AI** (decyzja właściciela z 2026-08-04). Użytkownik
+   opisuje motyw własnymi słowami („jak konsola ze Star Treka", „jak stary terminal", „jak papier
+   listowy"), a model zwraca **komplet tokenów**, który trafia do edytora jako propozycja do
+   podejrzenia i zapisania. Wynik przechodzi tę samą sanityzację co import pliku — model jest
+   źródłem **równie obcym** jak cudzy plik.
+10. **Playground napisany od zera** — hierarchia kategorii, nawigacja boczna na desktopie i szufladą na
    telefonie, wyszukiwarka, sterowanie właściwościami na żywo, warianty brzegowe, przełącznik skórki
    lokalny dla playgroundu.
-10. **Rozdział-dziennik w dokumencie architektury docelowej** — status wszystkich 46 zadań plus wpis
+11. **Rozdział-dziennik w dokumencie architektury docelowej** — status wszystkich 46 zadań plus wpis
     o zmianach z tego przebiegu; utrzymywany przez kolejne przebiegi.
 
 **Poza zakresem (świadomie):**
@@ -176,11 +196,12 @@ utraty czytelności; wszystko oglądalne w przepisanym od zera playgroundzie.
   udostępnienia, awatary obecności. **Powód:** nie mają się o co oprzeć — nie istnieje ani
   wersjonowanie rekordów, ani jednolity model nadań, ani kanały czasu rzeczywistego. Kontrakt widoku
   jest projektowany tak, żeby dało się je dołożyć **bez zmian w modułach**.
-- **Generowanie skórki opisem słownym przez asystenta AI.** Silnik ma to umożliwiać (skórka to dane),
-  ale sama operacja LLM — z bramkami kosztu i pamięcią treści — to osobny przebieg.
 - **Paginacja kursorowa** w listach — zadanie 20 z Fazy 3. Wspólna lista danych jest projektowana pod
   nią, ale zapytania listowe zmieniamy w tamtym przebiegu.
 - **Wielojęzyczność.** Teksty zostają po polsku (`C-32`); i18n to Faza 7.
+- **Generowanie skórki przez AI działające bez wyboru użytkownika** — model **proponuje**, nigdy nie
+  zapisuje ani nie włącza skórki samodzielnie. Automatyczne podmienianie wyglądu aplikacji bez
+  kliknięcia byłoby zaskoczeniem, nie funkcją.
 - **Grafiki binarne** (bitmapy, pliki obrazów) w skórkach. Elementy graficzne powstają jako wektor i
   CSS: skalują się, ważą tyle co nic i same reagują na tokeny skórki.
 
@@ -192,8 +213,10 @@ utraty czytelności; wszystko oglądalne w przepisanym od zera playgroundzie.
 - **Własność danych:** bez zmian w modelu współwłasności. Skórki zachowują dotychczasowy podział
   systemowa / użytkownika / zespołu (`ownerId` / `ownerTeamId`) oraz per-użytkownikowy wybór skórki. —
   por. `C-21`.
-- **Asystent AI:** nie dotyczy w tym przebiegu — brak nowej `AIAction` i nowego read-toola
-  (generowanie skórki opisem jest poza zakresem). — por. `C-23`.
+- **Asystent AI:** feature **korzysta z LLM** (generowanie skórki z opisu), ale **nie** przez katalog
+  akcji asystenta — to operacja odpalana kliknięciem w edytorze skórki, nie zdanie w czacie. Brak
+  nowej `AIAction` i nowego read-toola; obowiązują za to bramki kosztu i pamięci treści. — por.
+  `C-23`, `C-40`.
 - **Kalendarz / powiadomienia / trash:** kalendarz i powiadomienia bez zmian. Skórki użytkownika
   wpinamy w kosz na dotychczasowych zasadach modułu, jeśli dziś tam trafiają; ten przebieg tego nie
   zmienia. — por. `C-24`.
@@ -231,9 +254,15 @@ rekomendowane domyślne** i zapisano je poniżej jako wiążące dla całego prz
       dokumencie architektury. Faza 0 i dalsze idą osobnymi przebiegami, zgodnie z nakazem dokumentu.
       *Uzasadnienie:* praca addytywna nie łamie zasady „siatka bezpieczeństwa przed refaktorem", a
       dziennik sprawia, że Zadanie 2 jest od teraz śledzone, a nie zgadywane.
+      Właściciel (2026-08-04) doprecyzował: *„zrób to tak, by efekt końcowy był najlepszy; możesz
+      odpalać pipeline tyle razy, ile potrzeba"* — czyli **łańcuch przebiegów jest autoryzowany
+      z góry**. Ten przebieg domyka Zadanie 1; Zadanie 2 (Fazy 0–9) realizują kolejne przebiegi,
+      a dziennik jest tym, co je spina.
 - [x] **Zasięg silnika skórek** → pełny silnik (typografia, gęstość, zaokrąglenia, obramowania,
-      cienie, tło, ruch, chrom powłoki) + dwie skórki flagowe, grafika wyłącznie wektorowa/CSS.
-      Generowanie skórki przez AI **poza zakresem**.
+      cienie, tło, ruch, chrom powłoki) + dwie skórki flagowe, grafika wyłącznie wektorowa/CSS,
+      **oraz generowanie skórki opisem słownym przez AI**. *(Decyzja właściciela z 2026-08-04 —
+      pierwotnie odłożone na osobny przebieg, świadomie włączone do zakresu; artefakty przeliczone
+      w dół zgodnie z C-54.)*
 - [x] **Zasięg migracji widoków** → **wszystkie 21 modułów**, moduł po module, osobnymi commitami, bez
       zmiany zachowania. Tylko przy pełnej migracji można włączyć bramkę na twardo i tylko wtedy
       znika dług z 043.

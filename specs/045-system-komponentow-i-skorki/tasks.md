@@ -62,7 +62,7 @@
       z kontekstu. Na telefonie filtry przewijają się poziomo **we własnym kontenerze**
       (`overflow-x: auto`); strona nigdy nie przewija się w poziomie. Adresu **nie** czytamy przez
       `useSearchParams` (plan §5.3).
-      **Gotowe, gdy:** przy 375 px brak poziomego przewijania strony. **(AC-15)**
+      **Gotowe, gdy:** przy 375 px brak poziomego przewijania strony. **(AC-19)**
 - [ ] **T-10** — `src/components/ui/view/ModuleView.tsx` — rama widoku wg API z planu §5.1;
       wewnętrznie renderuje istniejący `PageHeader` (wygląd nagłówka **bez zmian**); prop `resource`
       przyjmowany i przekazywany do kontekstu, **nieaktywny** (plan §5.2). Plus
@@ -80,17 +80,17 @@
 
 ## Faza 3 — Komponenty wspólne
 
-- [ ] **T-13** `[P]` — `src/components/ui/ConfirmDialog.tsx` — wspólne potwierdzenie na bazie
+- [x] **T-13** `[P]` — `src/components/ui/ConfirmDialog.tsx` — wspólne potwierdzenie na bazie
       istniejącego `Modal`; obsługa klawiatury (Esc / Enter), wariant destrukcyjny.
       **Gotowe, gdy:** zastępuje modal usuwania w co najmniej jednym module bez zmiany zachowania.
       **(AC-5)**
-- [ ] **T-14** `[P]` — `src/components/ui/Field.tsx` — pole formularza: etykieta, podpowiedź, błąd,
+- [x] **T-14** `[P]` — `src/components/ui/Field.tsx` — pole formularza: etykieta, podpowiedź, błąd,
       wymagalność; cel dotyku ≥ 44 px.
-- [ ] **T-15** `[P]` — `src/components/ui/DataList.tsx` — lista z zaznaczaniem i skrótami `j/k`,
+- [x] **T-15** `[P]` — `src/components/ui/DataList.tsx` — lista z zaznaczaniem i skrótami `j/k`,
       **bez paginacji** (Faza 3 przebudowy); API projektowane tak, by paginację dało się dołożyć.
-- [ ] **T-16** `[P]` — `src/components/ui/BulkActionBar.tsx` — pasek akcji zbiorczych wyprowadzony ze
+- [x] **T-16** `[P]` — `src/components/ui/BulkActionBar.tsx` — pasek akcji zbiorczych wyprowadzony ze
       wzorca z Zadań.
-- [ ] **T-17** — Eksporty w `src/components/ui/index.ts` + re-eksport zgodnościowy w
+- [x] **T-17** — Eksporty w `src/components/ui/index.ts` + re-eksport zgodnościowy w
       `src/components/ui/home/index.ts`, żeby stare importy działały w trakcie migracji.
       **Gotowe, gdy:** `next lint` czysty, żaden istniejący import nie pęka. **(AC-6)**
 
@@ -123,24 +123,40 @@
       /`importSkin` z T-5; komunikat, gdy część tokenów odrzucono przy imporcie.
       **Gotowe, gdy:** eksport→import na **drugim koncie** odtwarza skórkę identycznie. **(AC-11)**
 
+## Faza 5b — Generowanie skórki przez AI (zakres dodany 2026-08-04, C-54)
+
+- [ ] **T-21a** — `src/lib/jobs/handlers/skinGenerate.ts` — handler wzorowany na
+      `kitchenGenerateRecipe`: `op: "generation"`, `json: true`, katalog tokenów w promptcie
+      **generowany z `ALL_CONTROLS`** (nie przepisany ręcznie), twarde wymagania kontrastu i umiaru.
+      Wynik przez `validateTokens()` — model jest źródłem równie obcym jak cudzy plik.
+      Zużycie przepuszczone przez `usageFromChat`.
+      **Gotowe, gdy:** `npm run check:cost-badge` przechodzi. **(AC-14, AC-15, AC-16)**
+- [ ] **T-21b** — `src/app/api/llm/skins/generate/route.ts` — cienka trasa (sesja, `JobError` → status)
+      + wpis `on-demand` w `src/lib/ai/content-memory-coverage.json` z powodem.
+      **Gotowe, gdy:** `npm run check:content-memory` przechodzi.
+- [ ] **T-21c** — UI w edytorze skórki: pole opisu, przycisk generowania, podgląd propozycji
+      **przed** zapisem, wskaźnik kosztu, informacja o odrzuconych tokenach, możliwość poprawienia
+      opisu i ponowienia oraz ręcznego dostrojenia wyniku.
+      **Gotowe, gdy:** model niczego nie zapisuje ani nie włącza sam. **(AC-14, AC-17)**
+
 ## Faza 6 — Playground od zera
 
 - [ ] **T-24** — `src/lib/ui/playground/registry.tsx` — rejestr wpisów
       (`id, name, category, summary, render, controls?, variants?`); kategorie jako `String` + unia:
       `prymitywy|formularze|dane-i-listy|powloka-i-nawigacja|stany-brzegowe|wzorce-widoku`.
       **Gotowe, gdy:** rejestr obejmuje **wszystkie** komponenty z `src/components/ui/` i
-      `src/components/ui/view/`. **(AC-18)**
+      `src/components/ui/view/`. **(AC-22)**
 - [ ] **T-25** — `src/components/admin/playground/` — `PlaygroundPage`, `PlaygroundNav`,
       `PlaygroundEntry`, `PropControls`, `CodeBlock`. Nawigacja boczna `hidden md:flex`, na telefonie
       **szuflada** (nigdy dwa panele boczne, C-31), wyszukiwarka, wybór w adresie (`?c=<id>`).
       **Gotowe, gdy:** przy 375 px i 1440 px dowolny komponent osiągalny w ≤ 2 interakcjach.
-      **(AC-14, AC-15)**
+      **(AC-18, AC-19)**
 - [ ] **T-26** — Sterowanie właściwościami na żywo + warianty brzegowe (pusty, długi tekst, błąd) dla
       komponentów, które je mają.
-      **Gotowe, gdy:** zmiana kontrolki natychmiast przerysowuje demonstrację. **(AC-16)**
+      **Gotowe, gdy:** zmiana kontrolki natychmiast przerysowuje demonstrację. **(AC-20)**
 - [ ] **T-27** — Lokalny przełącznik skórki w playgroundzie: kontener demonstracji z
       `style={tokensToStyle(resolveTokens(tokeny))}`; **nie zmienia** skórki konta.
-      **Gotowe, gdy:** przełączenie na „Mostek" zmienia tylko obszar demonstracji. **(AC-17)**
+      **Gotowe, gdy:** przełączenie na „Mostek" zmienia tylko obszar demonstracji. **(AC-21)**
 - [ ] **T-28** — Montaż w `src/app/admin/playground/page.tsx` + **usunięcie**
       `src/components/admin/ComponentPlayground.tsx`.
       **Gotowe, gdy:** stary plik nie istnieje, a `next lint` nie zgłasza martwych importów.
@@ -183,7 +199,7 @@
       przebiegu 045, jednoznaczne wskazanie następnego kroku (**Faza 0 — siatka bezpieczeństwa**) oraz
       odnotowanie luki w dokumencie źródłowym: rozdz. 10.4–10.5 (system komponentów, kontrakt widoku)
       **nie mają numeru w checkliście**, choć są opisanym długiem.
-      **Gotowe, gdy:** `/admin/architektura-docelowa` pokazuje rozdział 15. **(AC-19, AC-20)**
+      **Gotowe, gdy:** `/admin/architektura-docelowa` pokazuje rozdział 15. **(AC-23, AC-24)**
 - [ ] **T-41** — Pełny zestaw bramek na **lokalnym** Postgresie (C-13): `check:migrations`,
       `check:actions`, `check:ai-coverage`, `check:cost-badge`, `check:content-memory`,
       `check:ui-contract`, `next lint --dir src`, `prisma generate`, `next build`.
