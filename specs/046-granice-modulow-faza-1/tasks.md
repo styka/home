@@ -1,7 +1,7 @@
 # Zadania: Granice modułów — Faza 1 (pionowy wycinek)
 
 - **Plan:** ./plan.md (046-granice-modulow-faza-1)
-- **Status:** w trakcie
+- **Status:** zaimplementowane
 - **Data:** 2026-08-04
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna
@@ -127,17 +127,21 @@
 - [x] **T-22** — Aktualizacja `src/lib/ui/view-contract.json` o nowe ścieżki modułów pilotażowych.
       **Gotowe, gdy:** `check:ui-contract` zielony (wywala się na nieistniejącym pliku, więc to jest
       realna weryfikacja przenosin).
-- [ ] **T-23** — Komplet bramek na lokalnym Postgresie (C-13; `export` osobno dla `DATABASE_URL`
+- [x] **T-23** — Komplet bramek na lokalnym Postgresie (C-13; `export` osobno dla `DATABASE_URL`
       i `DIRECT_URL`): `check:actions`, `check:ai-coverage`, `check:cost-badge`,
       `check:content-memory`, `check:migrations`, `check:ui-contract`, `check:schema-drift`,
       `check:module-registry`, `next lint`, `next build`, `test:unit`. **(AC-11)**
-- [ ] **T-24** — Klikacz ścieżki szczęśliwej **25/25**. To jedyny dowód, że przeniesienie plików
-      niczego nie zmieniło dla użytkownika. **(AC-10, AC-12)**
-- [ ] **T-25** — `CLAUDE.md` + konstytucja: opis struktury `platform/`+`modules/` i reguły granic
+- [x] **T-24** — Klikacz ścieżki szczęśliwej: **22/22** (21 modułów + odczyt rejestru — liczba „25"
+      z planu była szacunkiem, spec ma 22 przypadki). To jedyny dowód, że przeniesienie plików
+      niczego nie zmieniło dla użytkownika. Pełny zestaw klikaczy: 113 zielonych, 19 czerwonych
+      **z powodów niezwiązanych z przebudową** — brak danych z seeda w tym środowisku (`QaEpic`,
+      `ShoppingList`, `Note` = 0 wierszy) oraz 3 przypadki niestabilne pod obciążeniem równoległym
+      (`smoke.spec.ts` uruchomiony osobno: 12/12). **(AC-10, AC-12)**
+- [x] **T-25** — `CLAUDE.md` + konstytucja: opis struktury `platform/`+`modules/` i reguły granic
       jako `C-36`. Bez tego następna sesja pozna regułę dopiero z czerwonego lintu (lekcja z 045b).
-- [ ] **T-26** — Rozdz. 15 dokumentu architektury: wpis 046, statusy zadań 4–7, **jawna lista
+- [x] **T-26** — Rozdz. 15 dokumentu architektury: wpis 046, statusy zadań 4–7, **jawna lista
       17 modułów czekających** i zdolności platformy odłożonych (`ai`, `llm`, `jobs`). **(AC-13)**
-- [ ] **T-27** — Wpisy do `doświadczenia.md` (C-51).
+- [x] **T-27** — Wpisy do `doświadczenia.md` (C-51).
 
 ---
 
