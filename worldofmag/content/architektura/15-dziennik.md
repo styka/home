@@ -206,4 +206,30 @@ ramy jest tanie i jednorazowe, a wyjątek w module byłby długiem w dwudziestu 
 - `.omnia-skeleton` przeniesione z tekstowego dziecka `<style>` do `globals.css`. React escapuje tam
   cudzysłowy tylko na serwerze, a rozjazd hydratacji kładzie **całą** aplikację.
 
+**Nawrót z weryfikacji**
+
+`/verify` odrzucił pierwszą wersję z werdyktem DO POPRAWY — i słusznie. Powstały wspólne komponenty,
+których **żaden moduł nie używał**: `ConfirmDialog` istniał, a w kodzie było 52 wywołania natywnego
+`window.confirm()`. To jest dokładnie ten rodzaj długu, który cały ten przebieg spłaca: rozwiązanie
+zadeklarowane, ale niewpięte, wygląda w raporcie jak zrobione i nie zmienia niczego dla użytkownika.
+
+Domknięcie:
+- **52 wywołania `window.confirm()` → wspólne okno aplikacji.** Natywne okno nie zna skórki, ma
+  przyciski w języku systemu i blokuje wątek, więc nie da się przy nim pokazać, co zostanie usunięte.
+  Podmiana jest jednolinijkowa w miejscu wywołania (`ConfirmProvider` z API obietnicowym), bo inaczej
+  nikt by jej nie zrobił w 52 plikach.
+- **Dwie implementacje stanu pustego scalone w jedną.** `ui/home/EmptyState` (21 widoków) stał się
+  cienką nakładką na `ViewEmpty` z kontraktu. Przepisywanie 21 wywołań byłoby błędem — stan pusty
+  bywa SEKCYJNY (pusta lista wewnątrz jednej z sekcji), a `ModuleView.empty` opisuje stan CAŁEGO
+  widoku. Jedna implementacja, dwa wejścia.
+- **Dwie implementacje pola formularza scalone.** `Field` w module Zwierząt robił mniej niż wspólny
+  (etykieta wiązana tylko zagnieżdżeniem, bez `id`, więc błąd nie miał się do czego podpiąć przez
+  `aria-describedby`).
+- **`DataList` i wspólny `BulkActionBar` USUNIĘTE.** Nie miały konsumenta. Komponent bez użycia jest
+  gorszy niż jego brak: w playgroundzie ogłasza wspólne rozwiązanie, którego nikt nie stosuje.
+  Pasek akcji zbiorczych z rozdz. 10.6 zostaje **otwarty** — Zadania mają własny, z popoverami
+  kotwiczonymi we własnym kontenerze, a wyprowadzenie go stanie się sensowne dopiero, gdy drugi moduł
+  będzie potrzebował akcji zbiorczych. Lista z nawigacją `j`/`k` wraca przy zadaniu 20 (paginacja
+  kursorowa), bo i tak wymaga zmian w zapytaniach.
+
 **Następny przebieg:** Faza 0, zadania 1–3.

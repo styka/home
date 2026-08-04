@@ -10,8 +10,6 @@ import { IconButton } from "@/components/ui/IconButton";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Field, fieldControlStyle } from "@/components/ui/Field";
-import { DataList } from "@/components/ui/DataList";
-import { BulkActionBar } from "@/components/ui/BulkActionBar";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { ViewEmpty, ViewLoading, ViewError, ViewNoAccess } from "@/components/ui/view/ViewState";
 import { ViewBar } from "@/components/ui/view/ViewBar";
@@ -144,34 +142,6 @@ function FieldDemo({ error, required }: { error: boolean; required: boolean }) {
   );
 }
 
-function DataListDemo({ selectable }: { selectable: boolean }) {
-  const [selected, setSelected] = useState<string[]>([]);
-  return (
-    <div>
-      <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 8px" }}>
-        Kliknij w listę, potem <kbd>j</kbd>/<kbd>k</kbd>{selectable ? " i " : ""}
-        {selectable && <kbd>x</kbd>}
-      </p>
-      <DataList
-        items={DEMO_ITEMS}
-        keyOf={(i) => i.id}
-        selectable={selectable}
-        selectedIds={selected}
-        onSelectionChange={setSelected}
-        renderItem={(item) => (
-          <div style={{ padding: "10px 12px", fontSize: 13, color: "var(--text-primary)" }}>{item.title}</div>
-        )}
-      />
-      {selectable && selected.length > 0 && (
-        <BulkActionBar count={selected.length} noun={["zadanie", "zadania", "zadań"]} onClear={() => setSelected([])}>
-          <Button size="sm" variant="secondary">Oznacz</Button>
-          <Button size="sm" variant="danger">Usuń</Button>
-        </BulkActionBar>
-      )}
-    </div>
-  );
-}
-
 function SmartTextareaDemo() {
   const [v, setV] = useState("");
   return <SmartTextarea value={v} onChange={setV} placeholder="Wpisz lub dyktuj…" rows={3} />;
@@ -289,33 +259,6 @@ export const PLAYGROUND_ENTRIES: PlaygroundEntryDef[] = [
     summary: "Pole tekstowe z dyktowaniem (Web Speech) i modyfikacją głosową przez model.",
     importPath: 'import { SmartTextarea } from "@/components/ui/SmartTextarea";',
     render: () => <SmartTextareaDemo />,
-  },
-  {
-    id: "data-list",
-    name: "DataList",
-    category: "dane-i-listy",
-    summary: "Lista z nawigacją j/k, zaznaczaniem i Enter. Klawisze milkną, gdy focus jest w polu tekstowym.",
-    importPath: 'import { DataList } from "@/components/ui";',
-    controls: [{ key: "selectable", label: "Zaznaczanie", kind: "boolean", default: true }],
-    render: (v) => <DataListDemo selectable={v.selectable as boolean} />,
-    variants: [
-      { label: "Pusta lista", render: () => (
-        <DataList items={[]} keyOf={(i: { id: string }) => i.id} renderItem={() => null} emptyState={<ViewEmpty title="Brak pozycji" />} />
-      ) },
-    ],
-  },
-  {
-    id: "bulk-action-bar",
-    name: "BulkActionBar",
-    category: "dane-i-listy",
-    summary: "Pasek akcji zbiorczych. Pływa nad treścią i siada NAD dolną nawigacją. Odmienia liczebnik po polsku.",
-    importPath: 'import { BulkActionBar } from "@/components/ui";',
-    controls: [{ key: "count", label: "Zaznaczonych", kind: "number", default: 3, min: 1, max: 25 }],
-    render: (v) => (
-      <BulkActionBar count={Number(v.count)} noun={["zadanie", "zadania", "zadań"]} onClear={() => {}}>
-        <Button size="sm" variant="secondary">Oznacz</Button>
-      </BulkActionBar>
-    ),
   },
   {
     id: "view-empty",
