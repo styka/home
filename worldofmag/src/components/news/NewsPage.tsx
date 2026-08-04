@@ -23,11 +23,14 @@ import { sourceColor } from "@/lib/news/sourceColor";
 import { AiCostBadge } from "@/components/ui/AiCostBadge";
 import { NewsItemCard } from "./NewsItemCard";
 import { NewsTimeline } from "./NewsTimeline";
+import { NewsStream } from "./NewsStream";
 import { HotTopics } from "./HotTopics";
 import { NewsSettings } from "./NewsSettings";
 import { TopicPicker } from "./TopicPicker";
 import {
   getTopicView,
+  getStreamView,
+  type StreamTopicDTO,
   startNewsRefresh,
   getNewsRefreshState,
   getNewsRefreshHistory,
@@ -47,6 +50,12 @@ import {
 type View = "feed" | "hot" | "settings";
 /** 040: co pokazujemy w wybranym temacie. Domyślnie nowe wiadomości — po nie użytkownik tu wchodzi. */
 type ContentTabKey = "items" | "timeline";
+/**
+ * 044: jak przeglądamy nowe wiadomości. Union TS, nie enum (C-12).
+ * `stream` — wszystkie tematy jednym przewijaniem (domyślne, po to powstało zgłoszenie).
+ * `topic`  — jeden temat naraz; zostaje, bo skupienie na jednym temacie to osobna potrzeba.
+ */
+type BrowseMode = "stream" | "topic";
 
 export function NewsPage({
   topics,
@@ -66,10 +75,23 @@ export function NewsPage({
   const { showToast } = useToast();
   // 043: zakładka widoku w adresie (AC-8a). Klucz `widok`, bo `view` bywa w Omnii zajęte przez
   // inne znaczenia — tu chodzi wprost o zakładkę Wiadomości.
-  const viewSpec = useMemo(() => ({ widok: oneOf(["feed", "hot", "settings"] as const, "feed") }), []);
+  const viewSpec = useMemo(
+    () => ({
+      widok: oneOf(["feed", "hot", "settings"] as const, "feed"),
+      // 044: tryb przeglądania też w adresie — dzięki temu przeżywa odświeżenie i „wstecz",
+      // tak samo jak zakładka widoku (AC-B20). Zero kolumn w bazie.
+      tryb: oneOf(["stream", "topic"] as const, "stream"),
+    }),
+    []
+  );
   const [viewState, setViewState] = useViewState(viewSpec, viewParams);
   const view = viewState.widok;
   const setView = useCallback((value: View) => setViewState({ widok: value }), [setViewState]);
+  const browseMode = viewState.tryb;
+  const setBrowseMode = useCallback(
+    (value: BrowseMode) => setViewState({ tryb: value }),
+    [setViewState]
+  );
   // Wybór treści jest CELOWO trzymany poza tematem: przełączenie na linię czasu przeżywa zmianę
   // tematu, bo użytkownik, który nadrabia kontekst, robi to zwykle w kilku tematach pod rząd.
   const [contentTab, setContentTab] = useState<ContentTabKey>("items");
@@ -77,6 +99,13 @@ export function NewsPage({
   const [sourceFilter, setSourceFilter] = useState<string>(activeSourceKey ?? "all");
   const [data, setData] = useState<{ items: NewsItemDTO[]; timeline: TimelineEntryDTO[] } | null>(null);
   const [loadingView, setLoadingView] = useState(false);
+  // 044: dane strumienia trzymamy osobno od danych pojedynczego tematu — to dwa różne odczyty
+  // i przełączenie trybu nie może kasować tego, co już wczytane.
+  const [stream, setStream] = useState<StreamTopicDTO[] | null>(null);
+  const [loadingStream, setLoadingStream] = useState(false);
+  // Funkcja „przewiń do tematu" udostępniana przez strumień — po niej selektor tematu przewija
+  // stronę zamiast przeładowywać widok (AC-B4).
+  const scrollToTopicRef = useRef<((topicId: string) => void) | null>(null);
   const [refresh, setRefresh] = useState<NewsRefreshState | null>(null);
   const [starting, startRefreshing] = useTransition();
 
@@ -92,9 +121,23 @@ export function NewsPage({
       .finally(() => setLoadingView(false));
   }, []);
 
+  const loadStream = useCallback(() => {
+    setLoadingStream(true);
+    getStreamView()
+      .then(setStream)
+      .catch(() => setStream([]))
+      .finally(() => setLoadingStream(false));
+  }, []);
+
+  // Widok jednego tematu czytamy tylko wtedy, gdy jest na ekranie — w trybie strumienia byłby to
+  // odczyt dokładnie tych samych pozycji drugi raz.
   useEffect(() => {
-    if (selectedId && view === "feed") loadView(selectedId);
-  }, [selectedId, view, loadView]);
+    if (selectedId && view === "feed" && browseMode === "topic") loadView(selectedId);
+  }, [selectedId, view, browseMode, loadView]);
+
+  useEffect(() => {
+    if (view === "feed" && browseMode === "stream") loadStream();
+  }, [view, browseMode, loadStream]);
 
   // Po zmianach serwerowych (np. odświeżenie listy tematów) zsynchronizuj wybór.
   useEffect(() => {
@@ -153,8 +196,10 @@ export function NewsPage({
       );
     }
     if (selectedId) loadView(selectedId);
+    // 044: świeża porcja musi trafić także do strumienia — po to właściciel klika „Odśwież".
+    loadStream();
     router.refresh();
-  }, [refreshRunning, refresh, selectedId, loadView, router, showToast]);
+  }, [refreshRunning, refresh, selectedId, loadView, loadStream, router, showToast]);
 
   function startRefresh() {
     startRefreshing(async () => {
@@ -168,9 +213,27 @@ export function NewsPage({
   }
 
   const onItemChanged = useCallback(() => {
-    if (selectedId) loadView(selectedId);
+    if (browseMode === "stream") loadStream();
+    else if (selectedId) loadView(selectedId);
     router.refresh();
-  }, [selectedId, loadView, router]);
+  }, [browseMode, selectedId, loadView, loadStream, router]);
+
+  /**
+   * 044: wybór tematu w trybie strumienia PRZEWIJA, a nie przeładowuje (AC-B4). Gdy strumień nie
+   * zdążył jeszcze zarejestrować swojej funkcji przewijania, zostaje samo ustawienie wyboru —
+   * gorsze byłoby zignorowanie dotknięcia.
+   */
+  const selectTopic = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      if (browseMode === "stream") scrollToTopicRef.current?.(id);
+    },
+    [browseMode]
+  );
+
+  const registerScrollToTopic = useCallback((fn: (topicId: string) => void) => {
+    scrollToTopicRef.current = fn;
+  }, []);
 
   const filteredItems = (data?.items ?? []).filter(
     (i) => sourceFilter === "all" || i.sourceKey === sourceFilter
@@ -224,14 +287,63 @@ export function NewsPage({
           nawigacji. */}
       {view === "feed" && (
         <div className="min-w-0">
+          {/* 044: wybór sposobu przeglądania. Strumień jest domyślny — po niego przyszło
+              zgłoszenie — ale skupienie na jednym temacie zostaje jako osobna potrzeba. */}
+          <div className="mb-3 flex gap-1">
+            <ContentTab
+              label="Strumień"
+              active={browseMode === "stream"}
+              onClick={() => setBrowseMode("stream")}
+            />
+            <ContentTab
+              label="Jeden temat"
+              active={browseMode === "topic"}
+              onClick={() => setBrowseMode("topic")}
+            />
+          </div>
+
           <TopicBar
             topics={topics}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={selectTopic}
             onChanged={() => router.refresh()}
           />
 
-          {!selectedTopic ? (
+          {/* Filtr źródeł stoi NAD oboma trybami: jest ustawieniem użytkownika, a nie własnością
+              tematu, więc w strumieniu działa na całość (Z-4). */}
+          <div className="mb-1 flex flex-wrap gap-1.5">
+            <SourceTab
+              label={`Wszystkie (${enabledSources.length})`}
+              active={sourceFilter === "all"}
+              onClick={() => pickSource("all")}
+            />
+            {enabledSources.map((s) => (
+              <SourceTab
+                key={s.id}
+                label={s.name}
+                color={sourceColor(s.descriptor)}
+                active={sourceFilter === s.key}
+                onClick={() => pickSource(s.key)}
+              />
+            ))}
+          </div>
+          <p className="mb-4 text-[11px] text-[var(--text-muted)]">
+            {sourceFilter === "all"
+              ? "Widok zbiorczy ze wszystkich źródeł. Wybierz portal, żeby zobaczyć, jak ujmuje temat."
+              : "Widok jednego portalu. Wróć do „Wszystkie”, żeby porównać ujęcia."}
+          </p>
+
+          {browseMode === "stream" ? (
+            <NewsStream
+              topics={stream ?? []}
+              loading={loadingStream && stream === null}
+              sourceFilter={sourceFilter}
+              activeTopicId={selectedId}
+              onActiveTopicChange={setSelectedId}
+              onChanged={onItemChanged}
+              registerScrollToTopic={registerScrollToTopic}
+            />
+          ) : !selectedTopic ? (
             <div className="rounded-lg border border-dashed border-[var(--border)] p-8 text-center text-[var(--text-muted)]">
               Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.
             </div>
@@ -254,29 +366,9 @@ export function NewsPage({
                 />
               </div>
 
-              {/* 039: „Wszystkie" bez opisu wyglądało na zbędne. Licznik i podpis mówią wprost,
-                  że to widok zbiorczy, a pozostałe zakładki zawężają do jednego portalu. */}
-              <div className="mb-1 flex flex-wrap gap-1.5">
-                <SourceTab
-                  label={`Wszystkie (${enabledSources.length})`}
-                  active={sourceFilter === "all"}
-                  onClick={() => pickSource("all")}
-                />
-                {enabledSources.map((s) => (
-                  <SourceTab
-                    key={s.id}
-                    label={s.name}
-                    color={sourceColor(s.descriptor)}
-                    active={sourceFilter === s.key}
-                    onClick={() => pickSource(s.key)}
-                  />
-                ))}
-              </div>
-              <p className="mb-4 text-[11px] text-[var(--text-muted)]">
-                {sourceFilter === "all"
-                  ? "Widok zbiorczy ze wszystkich źródeł. Wybierz portal, żeby zobaczyć, jak ujmuje temat."
-                  : "Widok jednego portalu. Wróć do „Wszystkie”, żeby porównać ujęcia."}
-              </p>
+              {/* 044: filtr źródeł przeniesiony NAD przełącznik trybu — jest wspólny dla strumienia
+                  i widoku pojedynczego tematu, więc dwie kopie rozjechałyby się przy pierwszej
+                  zmianie. */}
 
               {loadingView ? (
                 <div className="flex justify-center py-12">

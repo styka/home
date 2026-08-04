@@ -1012,7 +1012,17 @@
     "reason": "settings",
     "access": "admin"
   },
+  "news:acknowledgeAllItems": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
   "news:acknowledgeItem": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "news:acknowledgeTopicItems": {
     "status": "excluded",
     "reason": "interactive",
     "access": "owner"
@@ -1080,6 +1090,12 @@
     "kind": "read",
     "status": "ai",
     "action": "get_news_topic_view",
+    "access": "owner"
+  },
+  "news:getStreamView": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
     "access": "owner"
   },
   "news:getTopicView": {
