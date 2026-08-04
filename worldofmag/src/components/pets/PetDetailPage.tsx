@@ -6,7 +6,7 @@ import { oneOf, type RawParams } from "@/lib/viewState/viewState";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Pencil, Trash2, PawPrint, Printer, Download } from "lucide-react";
-import { pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
+
 import { speciesEmoji, speciesLabel, ageFromBirth, STATUS_LABELS, SEX_LABELS } from "@/lib/petSpecies";
 import { resolveFeatures, PET_FEATURE_PHASE, PET_FEATURE_KEYS, type PetFeatureKey } from "@/lib/petPresets";
 import { buildVetCardHtml, buildMeasurementsCsv } from "@/lib/petExport";
@@ -20,6 +20,7 @@ import {
 import { HusbandrySection, AquariumSection } from "./PetHusbandry";
 import { BreedingSection, GeneticsSection } from "./PetBreeding";
 import { useToast } from "@/components/ui/Toast";
+import { ModuleView } from "@/components/ui/view";
 import type { PetWithRelations, PetSex } from "@/types";
 
 type TabKey = "profile" | PetFeatureKey | "sharing" | "settings";
@@ -122,39 +123,20 @@ export function PetDetailPage({ pet, teams, viewParams = {} }: { pet: PetWithRel
   }
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
+    <ModuleView
+      width="narrow"
+      state="ready"
+      breadcrumb={
         <Link href="/pets" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>
           <ChevronLeft size={15} /> Zwierzęta
         </Link>
+      }
+      icon={<PawPrint size={22} />}
+      iconColor="var(--accent-orange)"
+      title={pet.name}
+      subtitle={`${speciesEmoji(pet.species)} ${speciesLabel(pet.species)}${pet.breed ? ` · ${pet.breed}` : ""}${pet.sex && pet.sex !== "unknown" ? ` · ${SEX_LABELS[pet.sex as PetSex]}` : ""}`}
+    >
 
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 12, flexShrink: 0, background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, overflow: "hidden" }}>
-            {pet.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={pet.photoUrl} alt={pet.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            ) : (
-              <PawPrint size={26} style={{ color: "var(--accent-orange)" }} />
-            )}
-          </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{pet.name}</h1>
-            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "2px 0 0" }}>
-              {speciesEmoji(pet.species)} {speciesLabel(pet.species)}
-              {pet.breed ? ` · ${pet.breed}` : ""}
-              {pet.sex && pet.sex !== "unknown" ? ` · ${SEX_LABELS[pet.sex as PetSex]}` : ""}
-              {age ? ` · ${age}` : ""}
-              {pet.status !== "ACTIVE" ? ` · ${STATUS_LABELS[pet.status as keyof typeof STATUS_LABELS]}` : ""}
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-            <button onClick={printVetCard} title="Drukuj kartę dla weterynarza (PDF)" style={iconBtn}><Printer size={15} /></button>
-            <button onClick={exportCsv} title="Eksportuj pomiary (CSV)" style={iconBtn}><Download size={15} /></button>
-            <button onClick={() => setEditing(true)} title="Edytuj" style={iconBtn}><Pencil size={15} /></button>
-            <button onClick={handleDelete} title="Usuń" style={{ ...iconBtn, color: "var(--accent-red)" }}><Trash2 size={15} /></button>
-          </div>
-        </div>
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: 4, overflowX: "auto", borderBottom: "1px solid var(--border)", paddingBottom: 2 }}>
@@ -175,10 +157,10 @@ export function PetDetailPage({ pet, teams, viewParams = {} }: { pet: PetWithRel
         </div>
 
         {renderTab()}
-      </div>
+
 
       {editing && <PetForm pet={pet} onClose={() => setEditing(false)} onSaved={() => router.refresh()} />}
-    </div>
+    </ModuleView>
   );
 }
 

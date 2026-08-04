@@ -18,12 +18,11 @@
       ]
     },
     "flota": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/flota/FlotaHomePage.tsx",
         "src/components/flota/VehicleDetailPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "guide": {
       "status": "exempt",
@@ -53,12 +52,11 @@
       ]
     },
     "languages": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/languages/DeckPage.tsx",
         "src/components/languages/LanguagesHomePage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "legal": {
       "status": "exempt",
@@ -80,12 +78,11 @@
       "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
     },
     "pets": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/pets/PetDetailPage.tsx",
         "src/components/pets/PetsHomePage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "pogoda": {
       "status": "done",
@@ -95,27 +92,25 @@
       ]
     },
     "portfel": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/portfel/BudgetsPage.tsx",
         "src/components/portfel/ElementDetailPage.tsx",
         "src/components/portfel/MonthlyReportPage.tsx",
         "src/components/portfel/PortfelHomePage.tsx",
         "src/components/portfel/PortfelSettingsPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "pwa-icon": {
       "status": "exempt",
       "reason": "Trasa generująca ikonę PWA — zwraca obraz, nie widok."
     },
     "qa": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/qa/QaHomePage.tsx",
         "src/components/qa/ScenarioPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "reports": {
       "status": "done",
@@ -167,12 +162,11 @@
       ]
     },
     "warsztaty": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/warsztaty/WorkshopsList.tsx",
         "src/components/warsztaty/WorkshopDetail.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej."
+      ]
     },
     "wiadomosci": {
       "status": "done",

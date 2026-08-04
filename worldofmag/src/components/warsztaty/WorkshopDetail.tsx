@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { oneOf, type RawParams } from "@/lib/viewState/viewState";
+import { ModuleView } from "@/components/ui/view";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -40,28 +41,21 @@ export function WorkshopDetail({ workshop, mode, viewParams = {} }: { workshop: 
   ];
 
   return (
-    <div className="px-4 md:px-6 py-6 max-w-4xl mx-auto">
-      <Link href="/warsztaty" className="inline-flex items-center gap-1 text-sm mb-4" style={{ color: "var(--text-muted)" }}>
-        <ArrowLeft size={15} /> Warsztaty
-      </Link>
-
-      <div className="flex items-start justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl" aria-hidden>{wt.emoji}</span>
-          <div>
-            <h1 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>{workshop.name}</h1>
-            <div className="text-xs mt-0.5 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
-              <span>{wt.label}</span>
-              {workshop.location ? <span>· {workshop.location}</span> : null}
-              {workshop.ownerTeamId ? (
-                <span className="inline-flex items-center gap-1"><Users size={12} /> zespół</span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-        <DeleteWorkshopButton id={workshop.id} onDeleted={() => router.push("/warsztaty")} />
-      </div>
-
+    <ModuleView
+      width="narrow"
+      state="ready"
+      contentGap={20}
+      breadcrumb={
+        <Link href="/warsztaty" className="inline-flex items-center gap-1 text-sm" style={{ color: "var(--text-muted)" }}>
+          <ArrowLeft size={15} /> Warsztaty
+        </Link>
+      }
+      icon={<span className="text-2xl leading-none" aria-hidden>{wt.emoji}</span>}
+      title={workshop.name}
+      subtitle={[wt.label, workshop.location, workshop.ownerTeamId ? "zespół" : null].filter(Boolean).join(" · ")}
+      headerAction={<DeleteWorkshopButton id={workshop.id} onDeleted={() => router.push("/warsztaty")} />}
+    >
+      <div className="max-w-4xl mx-auto w-full">
       <div className="flex items-center gap-1 border-b mb-5" style={{ borderColor: "var(--border)" }}>
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
@@ -82,7 +76,8 @@ export function WorkshopDetail({ workshop, mode, viewParams = {} }: { workshop: 
       {tab === "equipment" ? <EquipmentTab workshop={workshop} pro={mode === "pro"} /> : null}
       {tab === "suggestions" ? <SuggestionsTab workshop={workshop} /> : null}
       {tab === "projects" && mode === "pro" ? <ProjectsTab workshop={workshop} /> : null}
-    </div>
+      </div>
+    </ModuleView>
   );
 }
 

@@ -8,7 +8,8 @@ import { Modal } from "@/components/ui/Modal";
 import { addEntry, setBalance, deleteElement, importBankCsv, type ElementWithEntries } from "@/actions/portfel";
 import { parseBankCsv, type ParsedTransaction } from "@/lib/portfel/bankCsv";
 import { ELEMENT_KIND_LABELS, ENTRY_KIND_LABELS, formatMoney } from "@/lib/portfel";
-import { pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
+
 
 export function ElementDetailPage({ element }: { element: ElementWithEntries }) {
   const router = useRouter();
@@ -80,18 +81,25 @@ export function ElementDetailPage({ element }: { element: ElementWithEntries }) 
   }
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
+    <ModuleView
+      width="narrow"
+      state="ready"
+      breadcrumb={
+        <button onClick={() => router.push("/portfel")} style={{ ...iconBtn, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }} title="Wróć do portfela">
+          <ArrowLeft size={14} /> Portfel
+        </button>
+      }
+      icon={<Wallet size={22} />}
+      iconColor="var(--accent-green)"
+      title={element.name}
+      subtitle={ELEMENT_KIND_LABELS[element.kind] ?? element.kind}
+      headerAction={
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={() => router.push("/portfel")} style={iconBtn} title="Wróć do portfela"><ArrowLeft size={18} /></button>
-          <Wallet size={22} style={{ color: "var(--accent-green)" }} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{element.name}</h1>
-            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{ELEMENT_KIND_LABELS[element.kind] ?? element.kind}</span>
-          </div>
           <span style={{ fontSize: 20, fontWeight: 700, color: isDebt ? "var(--accent-red)" : "var(--text-primary)" }}>{isDebt ? "−" : ""}{formatMoney(element.balance, element.currency)}</span>
           <button onClick={remove} style={{ ...iconBtn, color: "var(--accent-red)" }} title="Usuń element"><Trash2 size={16} /></button>
         </div>
+      }
+    >
 
         {series.length >= 2 && (
           <div style={card}>
@@ -144,7 +152,6 @@ export function ElementDetailPage({ element }: { element: ElementWithEntries }) 
             ))}
           </div>
         </div>
-      </div>
 
       {preview && (
         <Modal
@@ -175,7 +182,7 @@ export function ElementDetailPage({ element }: { element: ElementWithEntries }) 
           </div>
         </Modal>
       )}
-    </div>
+    </ModuleView>
   );
 }
 

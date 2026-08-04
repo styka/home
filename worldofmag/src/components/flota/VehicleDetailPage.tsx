@@ -12,7 +12,8 @@ import {
   type VehicleWithStats,
 } from "@/actions/flota";
 import { FUEL_LABELS, SERVICE_LABELS, deadlineStatus, computeConsumption, computeVehicleTCO } from "@/lib/flota";
-import { pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
+
 
 export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
   const router = useRouter();
@@ -61,15 +62,21 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
   }
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={() => router.push("/flota")} style={iconBtn} title="Wróć do floty"><ArrowLeft size={18} /></button>
-          <Car size={22} style={{ color: "var(--accent-blue)" }} />
-          <h1 style={{ flex: 1, fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{vehicle.name}</h1>
-          <button onClick={removeVehicle} style={{ ...iconBtn, color: "var(--accent-red)" }} title="Usuń pojazd"><Trash2 size={16} /></button>
-        </div>
-
+    <ModuleView
+      width="narrow"
+      state="ready"
+      breadcrumb={
+        <button onClick={() => router.push("/flota")} style={{ ...iconBtn, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }} title="Wróć do floty">
+          <ArrowLeft size={14} /> Flota
+        </button>
+      }
+      icon={<Car size={22} />}
+      iconColor="var(--accent-blue)"
+      title={vehicle.name}
+      headerAction={
+        <button onClick={removeVehicle} style={{ ...iconBtn, color: "var(--accent-red)" }} title="Usuń pojazd"><Trash2 size={16} /></button>
+      }
+    >
         {/* Przegląd / dane */}
         <div style={card}>
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13, color: "var(--text-secondary)" }}>
@@ -161,8 +168,7 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
 
         {/* Załączniki (F3) */}
         <AttachmentsSection vehicle={vehicle} />
-      </div>
-    </div>
+    </ModuleView>
   );
 }
 
