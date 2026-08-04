@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { ExternalLink, Check, X, Sparkles, Loader2, Headphones } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { sourceColor } from "@/lib/news/sourceColor";
@@ -26,6 +26,9 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
   const [imgError, setImgError] = useState(false);
   const [reading, setReading] = useState(false);
   const color = sourceColor(item.sourceDescriptor);
+  // 044: lektor przyjmuje listę bloków. Pojedyncza karta to jeden blok — zachowanie identyczne jak
+  // przed zmianą. `useMemo` jest tu potrzebne, żeby nie budować nowej tablicy przy każdym renderze.
+  const readerBlocks = useMemo(() => [{ title: item.title, text: summary }], [item.title, summary]);
 
   function changeLength(next: SummaryLength) {
     if (next === length || resummarizing) return;
@@ -106,7 +109,7 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
           zgadywać, który z nich jest „ten właściwy". */}
       {reading ? (
         <div className="mt-2">
-          <NewsReader title={item.title} text={summary} />
+          <NewsReader blocks={readerBlocks} />
         </div>
       ) : (
         <p className="mt-2 [overflow-wrap:anywhere] text-sm leading-relaxed text-[var(--text-secondary)]">

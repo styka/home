@@ -107,7 +107,7 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
 
 ## Faza 4 — Wiadomości: lektor wielopoziomowy (część B)
 
-- [ ] **T-10** — **Generalizacja `NewsReader` na listę bloków.**
+- [x] **T-10** — **Generalizacja `NewsReader` na listę bloków.**
   `src/components/news/NewsReader.tsx`: props `{ blocks: ReaderBlock[]; onBlockChange?: (i:number)=>void }`,
   gdzie `ReaderBlock = { lead?: string; title: string; text: string }`. Zdania budowane płasko przez
   wszystkie bloki z zapamiętanym `blockIndex`. Przy `blocks.length > 1` dochodzą przyciski
@@ -117,7 +117,7 @@ dopiero w bramce końcowej (T-14) jako potwierdzenie, że nic się nie wkradło.
   *Gotowe, gdy:* odsłuch jednej wiadomości wygląda i działa jak przed zmianą, a wielu — pozwala
   skakać po wiadomościach i zdaniach. **(AC-B8, AC-B11, AC-B12, AC-B13)**
 
-- [ ] **T-11** — **`NewsItemCard` na nowym interfejsie lektora.**
+- [x] **T-11** — **`NewsItemCard` na nowym interfejsie lektora.**
   Przekaż jeden blok (`[{ title, text: summary }]`). Przy „Przeczytane"/„Odrzuć" nie wymuszaj
   przewijania — pozycja ma zniknąć bez skoku widoku.
   *Gotowe, gdy:* `npm run typecheck` czysto, a karta zachowuje się jak dziś. **(AC-B8, AC-B17)**
