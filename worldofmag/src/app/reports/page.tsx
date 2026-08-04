@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getUserReportsMeta } from "@/actions/reports";
+import { getUserReportsMeta } from "@/modules/reports/contract";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { ReportsHomePage, type ReportSummary } from "@/components/reports/ReportsHomePage";
+import { ReportsHomePage, type ReportSummary } from "@/modules/reports/ui/ReportsHomePage";
 
 export const dynamic = "force-dynamic";
 

@@ -114,7 +114,7 @@
     "reports": {
       "status": "done",
       "entries": [
-        "src/components/reports/ReportsHomePage.tsx"
+        "src/modules/reports/ui/ReportsHomePage.tsx"
       ]
     },
     "services": {

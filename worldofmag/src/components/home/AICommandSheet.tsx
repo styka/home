@@ -17,7 +17,7 @@ import {
   listAiConversations, getAiConversation, createAiConversation, appendAiMessage,
   deleteAiConversation, renameAiConversation, saveConversationDraft, type ConversationMeta,
 } from "@/actions/aiConversations";
-import { createUserReport } from "@/actions/reports";
+import { createUserReport } from "@/modules/reports/contract";
 import { getRecentAiCalls, type AiCallLogRow } from "@/actions/llmConfig";
 import { aiCallsToText } from "@/lib/ai/aiCallLog";
 import { submitFeedbackTask } from "@/actions/feedback";

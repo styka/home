@@ -8,7 +8,7 @@ import { BookOpen, ChevronRight, Calendar, User, Plus, Layers, Search, HardDrive
 import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { getCategoryInfo } from "@/lib/reportCategories";
-import { searchReports } from "@/actions/reports";
+import { searchReports } from "@/modules/reports/actions/reports";
 
 export interface ReportSummary {
   id: string;

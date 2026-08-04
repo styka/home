@@ -1,7 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getReport } from "@/actions/reports";
+import { getReport } from "@/modules/reports/contract";
 import { EditReportForm } from "./EditReportForm";
 
 export default async function EditReportPage({ params }: { params: { slug: string } }) {

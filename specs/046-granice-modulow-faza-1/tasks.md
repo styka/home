@@ -61,7 +61,7 @@
 - [x] **T-11** — **Kontakty** → `src/modules/contacts/`. `contract.ts` eksportuje to, czego potrzebuje
       `lib/ai/executors/contactsExecutor.ts`; executor przechodzi na import kontraktu.
       **Gotowe, gdy:** executor nie importuje wnętrza modułu. **(AC-3, AC-5)**
-- [ ] **T-12** — **Raporty** → `src/modules/reports/`. Konsumenci: panel admina, `AICommandSheet`,
+- [x] **T-12** — **Raporty** → `src/modules/reports/`. Konsumenci: panel admina, `AICommandSheet`,
       `agentTools`, `reportExecutor` — wszyscy przez `contract.ts`.
       **Gotowe, gdy:** żaden konsument nie sięga do wnętrza. **(AC-3, AC-5)**
 - [ ] **T-13** — **QA** → `src/modules/qa/`. Konsumenci w `app/admin/qa/*` i `components/admin/qa/*`.

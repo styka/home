@@ -22,7 +22,7 @@ import { getTestTrends } from "@/actions/health";
 import { getDueCards, getStudyStreak } from "@/actions/languageDecks";
 import { getMealPlanCost, getTodaysMeals } from "@/actions/mealPlans";
 import { getMonthlyReport } from "@/actions/portfelReports";
-import { searchReports } from "@/actions/reports";
+import { searchReports } from "@/modules/reports/contract";
 import { getWatchers } from "@/actions/weather";
 import { describeFrequency } from "@/lib/medicationSchedule";
 import { describeRecurringRule, parseRecurringRule } from "@/lib/recurrence";
