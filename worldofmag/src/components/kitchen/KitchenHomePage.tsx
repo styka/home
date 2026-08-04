@@ -18,7 +18,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { markMealCooked } from "@/actions/mealPlans";
-import { PageHeader, StatTile, SectionHeading, ManagementGrid, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
+import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
 import { llm } from "@/lib/llm-client";
 
 interface TodayMeal {
@@ -131,110 +132,140 @@ export function KitchenHomePage({
       : `${recipeCount} ${pluralizePolish(recipeCount, "przepis", "przepisy", "przepisów")} w bibliotece`;
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
-        <PageHeader
-          icon={<ChefHat size={22} />}
-          iconColor="var(--accent-orange)"
-          title="Kuchnia"
-          subtitle={subtitle}
+    <ModuleView
+      width="narrow"
+      state="ready"
+      icon={<ChefHat size={22} />}
+      iconColor="var(--accent-orange)"
+      title="Kuchnia"
+      subtitle={subtitle}
+      headerAction={
+        <Link
+          href="/kitchen/recipes/new"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+            padding: "6px 12px",
+            borderRadius: 8,
+            border: "1px solid var(--border)",
+            background: "var(--bg-surface)",
+            color: "var(--text-secondary)",
+            fontSize: 13,
+            textDecoration: "none",
+          }}
+        >
+          <Plus size={13} />
+          Nowy przepis
+        </Link>
+      }
+    >
+
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
+        <StatTile
+          value={recipeCount}
+          label="Przepisy"
+          color="var(--accent-orange)"
+          icon={<BookMarked size={14} />}
+          href="/kitchen/recipes"
+        />
+        <StatTile
+          value={todayPlannedCount}
+          label="Posiłki dziś"
+          color={todayPlannedCount > 0 ? "var(--accent-blue)" : "var(--text-muted)"}
+          icon={<CalendarDays size={14} />}
+          href="/kitchen/plan"
+        />
+        <StatTile
+          value={pantryCount}
+          label="Spiżarnia"
+          color="var(--accent-green)"
+          icon={<Package size={14} />}
+          href="/kitchen/pantry"
+        />
+        <StatTile
+          value={expiringSoonCount}
+          label="Wygasające"
+          color={expiringSoonCount > 0 ? "var(--accent-red)" : "var(--text-muted)"}
+          icon={<AlertTriangle size={14} />}
+          href="/kitchen/pantry"
+          emphasized={expiringSoonCount > 0}
+        />
+      </div>
+
+      {/* AI: Co ugotować z tego co mam (K3) */}
+      {pantryCount > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Co ugotować z tego co mam?</span>
+            <button
+              onClick={fetchSuggestions}
+              disabled={suggestBusy}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, padding: "4px 10px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--accent-orange)", cursor: "pointer", opacity: suggestBusy ? 0.6 : 1 }}
+            >
+              {suggestBusy ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+              {suggestBusy ? "Sprawdzam…" : "Zaproponuj AI"}
+            </button>
+          </div>
+          {suggestError && <p style={{ fontSize: 12, color: "var(--accent-red)", margin: 0 }}>{suggestError}</p>}
+          {suggestions !== null && (
+            suggestions.length === 0 ? (
+              <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Brak sugestii — uzupełnij spiżarnię lub dodaj przepisy.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {suggestions.map((s) => (
+                  <Link key={s.recipeId} href={`/kitchen/recipes/${s.slug}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--bg-surface)", textDecoration: "none" }}>
+                    <Sparkles size={14} style={{ color: "var(--accent-orange)", flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{s.title}</div>
+                      {s.reason && <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{s.reason}</div>}
+                    </div>
+                    <ChevronRight size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                  </Link>
+                ))}
+              </div>
+            )
+          )}
+        </div>
+      )}
+
+      {/* Today's meals (always show, even if empty) */}
+      <div>
+        <SectionHeading
           action={
             <Link
-              href="/kitchen/recipes/new"
+              href="/kitchen/plan"
               style={{
+                fontSize: 11,
+                color: "var(--text-muted)",
+                textDecoration: "none",
                 display: "flex",
                 alignItems: "center",
-                gap: 5,
-                padding: "6px 12px",
-                borderRadius: 8,
-                border: "1px solid var(--border)",
-                background: "var(--bg-surface)",
-                color: "var(--text-secondary)",
-                fontSize: 13,
-                textDecoration: "none",
+                gap: 3,
               }}
             >
-              <Plus size={13} />
-              Nowy przepis
+              Plan tygodnia <ChevronRight size={11} />
             </Link>
           }
-        />
-
-        {/* Stats */}
+        >
+          Dziś w menu
+        </SectionHeading>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
-          <StatTile
-            value={recipeCount}
-            label="Przepisy"
-            color="var(--accent-orange)"
-            icon={<BookMarked size={14} />}
-            href="/kitchen/recipes"
-          />
-          <StatTile
-            value={todayPlannedCount}
-            label="Posiłki dziś"
-            color={todayPlannedCount > 0 ? "var(--accent-blue)" : "var(--text-muted)"}
-            icon={<CalendarDays size={14} />}
-            href="/kitchen/plan"
-          />
-          <StatTile
-            value={pantryCount}
-            label="Spiżarnia"
-            color="var(--accent-green)"
-            icon={<Package size={14} />}
-            href="/kitchen/pantry"
-          />
-          <StatTile
-            value={expiringSoonCount}
-            label="Wygasające"
-            color={expiringSoonCount > 0 ? "var(--accent-red)" : "var(--text-muted)"}
-            icon={<AlertTriangle size={14} />}
-            href="/kitchen/pantry"
-            emphasized={expiringSoonCount > 0}
-          />
+          {SLOT_ORDER.map((slot) => {
+            const meal = todayMeals.find((m) => m.slot === slot);
+            return <TodaySlotCard key={slot} slot={slot} meal={meal} />;
+          })}
         </div>
+      </div>
 
-        {/* AI: Co ugotować z tego co mam (K3) */}
-        {pantryCount > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Co ugotować z tego co mam?</span>
-              <button
-                onClick={fetchSuggestions}
-                disabled={suggestBusy}
-                style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, padding: "4px 10px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--accent-orange)", cursor: "pointer", opacity: suggestBusy ? 0.6 : 1 }}
-              >
-                {suggestBusy ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                {suggestBusy ? "Sprawdzam…" : "Zaproponuj AI"}
-              </button>
-            </div>
-            {suggestError && <p style={{ fontSize: 12, color: "var(--accent-red)", margin: 0 }}>{suggestError}</p>}
-            {suggestions !== null && (
-              suggestions.length === 0 ? (
-                <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Brak sugestii — uzupełnij spiżarnię lub dodaj przepisy.</p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {suggestions.map((s) => (
-                    <Link key={s.recipeId} href={`/kitchen/recipes/${s.slug}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--bg-surface)", textDecoration: "none" }}>
-                      <Sparkles size={14} style={{ color: "var(--accent-orange)", flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{s.title}</div>
-                        {s.reason && <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{s.reason}</div>}
-                      </div>
-                      <ChevronRight size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-                    </Link>
-                  ))}
-                </div>
-              )
-            )}
-          </div>
-        )}
-
-        {/* Today's meals (always show, even if empty) */}
+      {/* Expiring soon (only show if items exist) */}
+      {expiring.length > 0 && (
         <div>
           <SectionHeading
             action={
               <Link
-                href="/kitchen/plan"
+                href="/kitchen/pantry"
                 style={{
                   fontSize: 11,
                   color: "var(--text-muted)",
@@ -244,277 +275,246 @@ export function KitchenHomePage({
                   gap: 3,
                 }}
               >
-                Plan tygodnia <ChevronRight size={11} />
+                Cała spiżarnia <ChevronRight size={11} />
               </Link>
             }
           >
-            Dziś w menu
+            Kończy się termin
           </SectionHeading>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
-            {SLOT_ORDER.map((slot) => {
-              const meal = todayMeals.find((m) => m.slot === slot);
-              return <TodaySlotCard key={slot} slot={slot} meal={meal} />;
-            })}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {expiring.map((item) => (
+              <Link
+                key={item.id}
+                href="/kitchen/pantry"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  border: "1px solid var(--border)",
+                  background: "var(--bg-surface)",
+                  textDecoration: "none",
+                  transition: "background 0.1s, border-color 0.1s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "var(--bg-elevated)";
+                  e.currentTarget.style.borderColor = "var(--border-focus)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "var(--bg-surface)";
+                  e.currentTarget.style.borderColor = "var(--border)";
+                }}
+              >
+                <AlertTriangle
+                  size={14}
+                  style={{
+                    color: expiryColor(item.daysLeft),
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ flex: 1, fontSize: 13, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {item.name}
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: expiryColor(item.daysLeft),
+                    padding: "2px 8px",
+                    borderRadius: 10,
+                    background: expiryColor(item.daysLeft) + "1a",
+                    flexShrink: 0,
+                  }}
+                >
+                  {expiryText(item.daysLeft)}
+                </span>
+              </Link>
+            ))}
           </div>
         </div>
+      )}
 
-        {/* Expiring soon (only show if items exist) */}
-        {expiring.length > 0 && (
-          <div>
-            <SectionHeading
-              action={
-                <Link
-                  href="/kitchen/pantry"
-                  style={{
-                    fontSize: 11,
-                    color: "var(--text-muted)",
-                    textDecoration: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 3,
-                  }}
-                >
-                  Cała spiżarnia <ChevronRight size={11} />
-                </Link>
-              }
-            >
-              Kończy się termin
-            </SectionHeading>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {expiring.map((item) => (
-                <Link
-                  key={item.id}
-                  href="/kitchen/pantry"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    padding: "10px 14px",
-                    borderRadius: 10,
-                    border: "1px solid var(--border)",
-                    background: "var(--bg-surface)",
-                    textDecoration: "none",
-                    transition: "background 0.1s, border-color 0.1s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "var(--bg-elevated)";
-                    e.currentTarget.style.borderColor = "var(--border-focus)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "var(--bg-surface)";
-                    e.currentTarget.style.borderColor = "var(--border)";
-                  }}
-                >
-                  <AlertTriangle
-                    size={14}
-                    style={{
-                      color: expiryColor(item.daysLeft),
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span style={{ flex: 1, fontSize: 13, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {item.name}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: expiryColor(item.daysLeft),
-                      padding: "2px 8px",
-                      borderRadius: 10,
-                      background: expiryColor(item.daysLeft) + "1a",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {expiryText(item.daysLeft)}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Recently cooked */}
-        {recentlyCooked.length > 0 && (
-          <div>
-            <SectionHeading
-              action={
-                <Link
-                  href="/kitchen/recipes"
-                  style={{
-                    fontSize: 11,
-                    color: "var(--text-muted)",
-                    textDecoration: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 3,
-                  }}
-                >
-                  Wszystkie <ChevronRight size={11} />
-                </Link>
-              }
-            >
-              Ostatnio gotowane
-            </SectionHeading>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {recentlyCooked.map((r) => (
-                <RecipeRow key={r.id} recipe={r} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Latest (newly added) recipes — show only if no recently cooked yet */}
-        {recentlyCooked.length === 0 && latestRecipes.length > 0 && (
-          <div>
-            <SectionHeading
-              action={
-                <Link
-                  href="/kitchen/recipes"
-                  style={{
-                    fontSize: 11,
-                    color: "var(--text-muted)",
-                    textDecoration: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 3,
-                  }}
-                >
-                  Wszystkie <ChevronRight size={11} />
-                </Link>
-              }
-            >
-              Nowe w bibliotece
-            </SectionHeading>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {latestRecipes.map((r) => (
-                <Link
-                  key={r.id}
-                  href={`/kitchen/recipes/${r.slug}`}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    padding: "10px 14px",
-                    borderRadius: 10,
-                    border: "1px solid var(--border)",
-                    background: "var(--bg-surface)",
-                    textDecoration: "none",
-                    transition: "background 0.1s, border-color 0.1s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "var(--bg-elevated)";
-                    e.currentTarget.style.borderColor = "var(--border-focus)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "var(--bg-surface)";
-                    e.currentTarget.style.borderColor = "var(--border)";
-                  }}
-                >
-                  <span style={{ fontSize: 16, flexShrink: 0 }}>🍳</span>
-                  <span style={{ flex: 1, fontSize: 13, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {r.title}
-                  </span>
-                  {r.totalMinutes > 0 && (
-                    <span style={{ fontSize: 11, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
-                      <Clock size={10} /> {r.totalMinutes} min
-                    </span>
-                  )}
-                  <ChevronRight size={12} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Empty state — no recipes at all */}
-        {recipeCount === 0 && (
-          <EmptyState
-            icon={<ChefHat size={32} />}
-            message="Brak przepisów w bibliotece"
-            hint="Dodaj pierwszy przepis ręcznie, z URL-a, zdjęcia menu lub przez AI"
-            cta={{ label: "+ Dodaj przepis", href: "/kitchen/recipes/new", color: "var(--accent-orange)" }}
-          />
-        )}
-
-        {/* Cookbooks */}
-        {cookbooks.length > 0 && (
-          <div>
-            <SectionHeading
-              action={
-                totalCookbooks > cookbooks.length ? (
-                  <Link
-                    href="/kitchen/cookbooks"
-                    style={{
-                      fontSize: 11,
-                      color: "var(--text-muted)",
-                      textDecoration: "none",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 3,
-                    }}
-                  >
-                    Wszystkie ({totalCookbooks}) <ChevronRight size={11} />
-                  </Link>
-                ) : undefined
-              }
-            >
-              Książki kucharskie
-            </SectionHeading>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 }}>
-              {cookbooks.map((cb) => (
-                <Link
-                  key={cb.id}
-                  href={`/kitchen/cookbooks/${cb.id}`}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "12px 14px",
-                    borderRadius: 10,
-                    border: "1px solid var(--border)",
-                    background: "var(--bg-surface)",
-                    textDecoration: "none",
-                    transition: "background 0.1s, border-color 0.1s, transform 0.1s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "var(--bg-elevated)";
-                    e.currentTarget.style.borderColor = cb.color ?? "var(--border-focus)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "var(--bg-surface)";
-                    e.currentTarget.style.borderColor = "var(--border)";
-                  }}
-                >
-                  <span style={{ fontSize: 20, flexShrink: 0 }}>{cb.emoji}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {cb.name}
-                    </p>
-                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0, marginTop: 2 }}>
-                      {cb.recipeCount} {pluralizePolish(cb.recipeCount, "przepis", "przepisy", "przepisów")}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Management */}
+      {/* Recently cooked */}
+      {recentlyCooked.length > 0 && (
         <div>
-          <SectionHeading>Zarządzanie</SectionHeading>
-          <ManagementGrid
-            items={[
-              { href: "/kitchen/recipes", icon: <BookMarked size={16} />, label: "Przepisy", color: "var(--accent-orange)" },
-              { href: "/kitchen/plan", icon: <CalendarDays size={16} />, label: "Plan tygodnia", color: "var(--accent-blue)" },
-              { href: "/kitchen/pantry", icon: <Package size={16} />, label: "Spiżarnia", color: "var(--accent-green)" },
-              { href: "/kitchen/cookbooks", icon: <BookOpen size={16} />, label: "Książki", color: "var(--accent-purple)" },
-            ]}
-          />
+          <SectionHeading
+            action={
+              <Link
+                href="/kitchen/recipes"
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  textDecoration: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 3,
+                }}
+              >
+                Wszystkie <ChevronRight size={11} />
+              </Link>
+            }
+          >
+            Ostatnio gotowane
+          </SectionHeading>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {recentlyCooked.map((r) => (
+              <RecipeRow key={r.id} recipe={r} />
+            ))}
+          </div>
         </div>
+      )}
+
+      {/* Latest (newly added) recipes — show only if no recently cooked yet */}
+      {recentlyCooked.length === 0 && latestRecipes.length > 0 && (
+        <div>
+          <SectionHeading
+            action={
+              <Link
+                href="/kitchen/recipes"
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  textDecoration: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 3,
+                }}
+              >
+                Wszystkie <ChevronRight size={11} />
+              </Link>
+            }
+          >
+            Nowe w bibliotece
+          </SectionHeading>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {latestRecipes.map((r) => (
+              <Link
+                key={r.id}
+                href={`/kitchen/recipes/${r.slug}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  border: "1px solid var(--border)",
+                  background: "var(--bg-surface)",
+                  textDecoration: "none",
+                  transition: "background 0.1s, border-color 0.1s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "var(--bg-elevated)";
+                  e.currentTarget.style.borderColor = "var(--border-focus)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "var(--bg-surface)";
+                  e.currentTarget.style.borderColor = "var(--border)";
+                }}
+              >
+                <span style={{ fontSize: 16, flexShrink: 0 }}>🍳</span>
+                <span style={{ flex: 1, fontSize: 13, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {r.title}
+                </span>
+                {r.totalMinutes > 0 && (
+                  <span style={{ fontSize: 11, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+                    <Clock size={10} /> {r.totalMinutes} min
+                  </span>
+                )}
+                <ChevronRight size={12} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state — no recipes at all */}
+      {recipeCount === 0 && (
+        <EmptyState
+          icon={<ChefHat size={32} />}
+          message="Brak przepisów w bibliotece"
+          hint="Dodaj pierwszy przepis ręcznie, z URL-a, zdjęcia menu lub przez AI"
+          cta={{ label: "+ Dodaj przepis", href: "/kitchen/recipes/new", color: "var(--accent-orange)" }}
+        />
+      )}
+
+      {/* Cookbooks */}
+      {cookbooks.length > 0 && (
+        <div>
+          <SectionHeading
+            action={
+              totalCookbooks > cookbooks.length ? (
+                <Link
+                  href="/kitchen/cookbooks"
+                  style={{
+                    fontSize: 11,
+                    color: "var(--text-muted)",
+                    textDecoration: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 3,
+                  }}
+                >
+                  Wszystkie ({totalCookbooks}) <ChevronRight size={11} />
+                </Link>
+              ) : undefined
+            }
+          >
+            Książki kucharskie
+          </SectionHeading>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 }}>
+            {cookbooks.map((cb) => (
+              <Link
+                key={cb.id}
+                href={`/kitchen/cookbooks/${cb.id}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "12px 14px",
+                  borderRadius: 10,
+                  border: "1px solid var(--border)",
+                  background: "var(--bg-surface)",
+                  textDecoration: "none",
+                  transition: "background 0.1s, border-color 0.1s, transform 0.1s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "var(--bg-elevated)";
+                  e.currentTarget.style.borderColor = cb.color ?? "var(--border-focus)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "var(--bg-surface)";
+                  e.currentTarget.style.borderColor = "var(--border)";
+                }}
+              >
+                <span style={{ fontSize: 20, flexShrink: 0 }}>{cb.emoji}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {cb.name}
+                  </p>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0, marginTop: 2 }}>
+                    {cb.recipeCount} {pluralizePolish(cb.recipeCount, "przepis", "przepisy", "przepisów")}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Management */}
+      <div>
+        <SectionHeading>Zarządzanie</SectionHeading>
+        <ManagementGrid
+          items={[
+            { href: "/kitchen/recipes", icon: <BookMarked size={16} />, label: "Przepisy", color: "var(--accent-orange)" },
+            { href: "/kitchen/plan", icon: <CalendarDays size={16} />, label: "Plan tygodnia", color: "var(--accent-blue)" },
+            { href: "/kitchen/pantry", icon: <Package size={16} />, label: "Spiżarnia", color: "var(--accent-green)" },
+            { href: "/kitchen/cookbooks", icon: <BookOpen size={16} />, label: "Książki", color: "var(--accent-purple)" },
+          ]}
+        />
       </div>
-    </div>
+    </ModuleView>
   );
 }
 

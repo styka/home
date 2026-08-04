@@ -5,7 +5,8 @@ import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/lib/viewState/viewState";
 import Link from "next/link";
 import { BookOpen, ChevronRight, Calendar, User, Plus, Layers, Search, HardDrive } from "lucide-react";
-import { PageHeader, StatTile, SectionHeading, ManagementGrid, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
+import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
 import { getCategoryInfo } from "@/lib/reportCategories";
 import { searchReports } from "@/actions/reports";
 
@@ -76,170 +77,169 @@ export function ReportsHomePage({ reports, myCount, teamCount, isAdmin, viewPara
       : `${total} ${pluralizePolish(total, "raport", "raporty", "raportów")}`;
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
-        <PageHeader
-          icon={<BookOpen size={22} />}
-          iconColor="var(--accent-purple)"
-          title="Raporty"
-          subtitle={subtitle}
-          action={
-            isAdmin ? (
-              <Link
-                href="/admin/reports"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "6px 12px",
-                  borderRadius: 8,
-                  border: "1px solid var(--border)",
-                  background: "var(--bg-surface)",
-                  color: "var(--text-secondary)",
-                  fontSize: 13,
-                  textDecoration: "none",
-                }}
-              >
-                <Plus size={13} />
-                Nowy raport
-              </Link>
-            ) : undefined
-          }
-        />
+    <ModuleView
+      width="narrow"
+      state="ready"
+      icon={<BookOpen size={22} />}
+      iconColor="var(--accent-purple)"
+      title="Raporty"
+      subtitle={subtitle}
+      headerAction={
+        isAdmin ? (
+          <Link
+            href="/admin/reports"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "6px 12px",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+              background: "var(--bg-surface)",
+              color: "var(--text-secondary)",
+              fontSize: 13,
+              textDecoration: "none",
+            }}
+          >
+            <Plus size={13} />
+            Nowy raport
+          </Link>
+        ) : undefined
+      }
+    >
 
-        {/* Stats grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
-          <StatTile value={total} label="Wszystkie" color="var(--accent-purple)" />
-          {myCount > 0 && (
-            <StatTile value={myCount} label="Moje" color="var(--accent-blue)" icon={<User size={14} />} />
-          )}
-          {teamCount > 0 && (
-            <StatTile value={teamCount} label="Zespołowe" color="var(--accent-green)" />
-          )}
-          <StatTile
-            value={categoryEntries.length}
-            label="Kategorie"
-            color="var(--accent-amber)"
-            icon={<Layers size={14} />}
+      {/* Stats grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
+        <StatTile value={total} label="Wszystkie" color="var(--accent-purple)" />
+        {myCount > 0 && (
+          <StatTile value={myCount} label="Moje" color="var(--accent-blue)" icon={<User size={14} />} />
+        )}
+        {teamCount > 0 && (
+          <StatTile value={teamCount} label="Zespołowe" color="var(--accent-green)" />
+        )}
+        <StatTile
+          value={categoryEntries.length}
+          label="Kategorie"
+          color="var(--accent-amber)"
+          icon={<Layers size={14} />}
+        />
+      </div>
+
+      {/* Wyszukiwarka */}
+      {total > 0 && (
+        <div style={{ position: "relative" }}>
+          <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }} />
+          <input
+            type="search"
+            placeholder="Szukaj raportu…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px 12px 8px 34px",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+              background: "var(--bg-surface)",
+              color: "var(--text-primary)",
+              fontSize: 13,
+              outline: "none",
+              boxSizing: "border-box",
+            }}
           />
         </div>
+      )}
 
-        {/* Wyszukiwarka */}
-        {total > 0 && (
-          <div style={{ position: "relative" }}>
-            <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }} />
-            <input
-              type="search"
-              placeholder="Szukaj raportu…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "8px 12px 8px 34px",
-                borderRadius: 8,
-                border: "1px solid var(--border)",
-                background: "var(--bg-surface)",
-                color: "var(--text-primary)",
-                fontSize: 13,
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
-          </div>
-        )}
-
-        {/* Wszystkie raporty — pełna, klikalna lista (każdy wiersz → szczegóły) */}
-        <div>
-          <SectionHeading>
-            {query.trim() ? `Wyniki (${filtered.length})` : "Wszystkie raporty"}
-          </SectionHeading>
-          {reports.length === 0 ? (
-            <EmptyState
-              icon={<BookOpen size={28} />}
-              message="Brak raportów"
-              hint={isAdmin ? "Utwórz pierwszy raport w panelu admina" : "Raporty zostaną tu pokazane gdy się pojawią"}
-              cta={isAdmin ? { label: "Otwórz panel", href: "/admin/reports", color: "var(--accent-purple)" } : undefined}
-            />
-          ) : query.trim() && pending && results === null ? (
-            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "12px 0" }}>Szukam…</p>
-          ) : filtered.length === 0 ? (
-            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "12px 0" }}>Brak wyników dla „{query}” (przeszukano też treść)</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {filtered.map((r) => (
-                <ReportRow key={r.id} report={r} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* By category */}
-        {categoryEntries.length >= 2 && (
-          <div>
-            <SectionHeading>Według kategorii</SectionHeading>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 }}>
-              {categoryEntries.map(([cat, count]) => {
-                const info = getCategoryInfo(cat);
-                return (
-                  <div
-                    key={cat}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "10px 12px",
-                      borderRadius: 10,
-                      border: "1px solid var(--border)",
-                      background: "var(--bg-surface)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 999,
-                        background: info.color,
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span style={{ flex: 1, fontSize: 13, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {info.label}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: info.color,
-                        background: `${info.color}1a`,
-                        padding: "2px 8px",
-                        borderRadius: 10,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {count}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Management — pokazujemy tylko gdy są realne miejsca do przejścia.
-            Wcześniej kafelek „Wszystkie raporty" linkował do /reports (tej samej
-            strony) — martwy link, przez który „nie dało się nigdzie przejść". */}
-        {isAdmin && (
-          <div>
-            <SectionHeading>Zarządzanie</SectionHeading>
-            <ManagementGrid
-              items={[
-                { href: "/admin/reports", icon: <Plus size={16} />, label: "Panel admina", color: "var(--accent-purple)" },
-              ]}
-            />
+      {/* Wszystkie raporty — pełna, klikalna lista (każdy wiersz → szczegóły) */}
+      <div>
+        <SectionHeading>
+          {query.trim() ? `Wyniki (${filtered.length})` : "Wszystkie raporty"}
+        </SectionHeading>
+        {reports.length === 0 ? (
+          <EmptyState
+            icon={<BookOpen size={28} />}
+            message="Brak raportów"
+            hint={isAdmin ? "Utwórz pierwszy raport w panelu admina" : "Raporty zostaną tu pokazane gdy się pojawią"}
+            cta={isAdmin ? { label: "Otwórz panel", href: "/admin/reports", color: "var(--accent-purple)" } : undefined}
+          />
+        ) : query.trim() && pending && results === null ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "12px 0" }}>Szukam…</p>
+        ) : filtered.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "12px 0" }}>Brak wyników dla „{query}” (przeszukano też treść)</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {filtered.map((r) => (
+              <ReportRow key={r.id} report={r} />
+            ))}
           </div>
         )}
       </div>
-    </div>
+
+      {/* By category */}
+      {categoryEntries.length >= 2 && (
+        <div>
+          <SectionHeading>Według kategorii</SectionHeading>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 }}>
+            {categoryEntries.map(([cat, count]) => {
+              const info = getCategoryInfo(cat);
+              return (
+                <div
+                  key={cat}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: "1px solid var(--border)",
+                    background: "var(--bg-surface)",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 999,
+                      background: info.color,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span style={{ flex: 1, fontSize: 13, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {info.label}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: info.color,
+                      background: `${info.color}1a`,
+                      padding: "2px 8px",
+                      borderRadius: 10,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {count}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Management — pokazujemy tylko gdy są realne miejsca do przejścia.
+          Wcześniej kafelek „Wszystkie raporty" linkował do /reports (tej samej
+          strony) — martwy link, przez który „nie dało się nigdzie przejść". */}
+      {isAdmin && (
+        <div>
+          <SectionHeading>Zarządzanie</SectionHeading>
+          <ManagementGrid
+            items={[
+              { href: "/admin/reports", icon: <Plus size={16} />, label: "Panel admina", color: "var(--accent-purple)" },
+            ]}
+          />
+        </div>
+      )}
+    </ModuleView>
   );
 }
 

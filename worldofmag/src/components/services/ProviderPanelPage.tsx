@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Briefcase, ArrowLeft, Plus, Pencil, Trash2, Check, X, Eye, EyeOff, ImagePlus, Rocket, CheckCircle2, Circle, MapPin, Share2 } from "lucide-react";
-import { PageHeader, EmptyState, SectionHeading, pageContainerStyle, pageInnerStyle, cardStyle } from "@/components/ui/home";
+import { EmptyState, SectionHeading, cardStyle } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
 import {
   upsertServiceProvider,
   createListing,
@@ -70,109 +71,109 @@ export function ProviderPanelPage({ provider, categories, incomingRequests, stat
   const [editingProfile, setEditingProfile] = useState(provider == null);
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
+    <ModuleView
+      width="narrow"
+      state="ready"
+      breadcrumb={
         <Link href="/services" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>
-          <ArrowLeft size={15} /> Wszystkie usługi
-        </Link>
+      <ArrowLeft size={15} /> Wszystkie usługi
+    </Link>
+      }
+      icon={<Briefcase size={22} />}
+      iconColor="var(--accent-blue)"
+      title="Panel wykonawcy"
+      subtitle={provider ? "Zarządzaj profilem, ofertami i zleceniami" : "Załóż profil, aby zacząć przyjmować zlecenia"}
+    >
 
-        <PageHeader
-          icon={<Briefcase size={22} />}
-          iconColor="var(--accent-blue)"
-          title="Panel wykonawcy"
-          subtitle={provider ? "Zarządzaj profilem, ofertami i zleceniami" : "Załóż profil, aby zacząć przyjmować zlecenia"}
+      {/* Profil */}
+      {editingProfile || !provider ? (
+        <ProfileForm
+          initial={provider}
+          categories={categories}
+          onDone={() => {
+            setEditingProfile(false);
+            router.refresh();
+          }}
+          onCancel={provider ? () => setEditingProfile(false) : undefined}
         />
-
-        {/* Profil */}
-        {editingProfile || !provider ? (
-          <ProfileForm
-            initial={provider}
-            categories={categories}
-            onDone={() => {
-              setEditingProfile(false);
-              router.refresh();
-            }}
-            onCancel={provider ? () => setEditingProfile(false) : undefined}
-          />
-        ) : (
-          <div style={{ ...cardStyle, cursor: "default", alignItems: "flex-start" }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{provider.displayName}</span>
-                {provider.verified && <VerifiedBadge size={14} withLabel />}
-                {provider.visible ? (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "var(--accent-green)" }}><Eye size={12} /> Widoczny</span>
-                ) : (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "var(--text-muted)" }}><EyeOff size={12} /> Ukryty</span>
-                )}
-              </div>
-              {provider.tagline && <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 2, fontStyle: "italic" }}>{provider.tagline}</div>}
-              {provider.area && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{provider.area}</div>}
-              {provider.bio && <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6, whiteSpace: "pre-wrap" }}>{provider.bio}</div>}
-              <div style={{ marginTop: 8 }}><RatingStars avg={provider.ratingAvg} count={provider.ratingCount} /></div>
-              {provider.slug && (
-                <Link href={`/services/providers/${provider.slug}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--accent-blue)", textDecoration: "none", marginTop: 8 }}>
-                  <Share2 size={12} /> Twój publiczny profil: /services/providers/{provider.slug}
-                </Link>
+      ) : (
+        <div style={{ ...cardStyle, cursor: "default", alignItems: "flex-start" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>{provider.displayName}</span>
+              {provider.verified && <VerifiedBadge size={14} withLabel />}
+              {provider.visible ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "var(--accent-green)" }}><Eye size={12} /> Widoczny</span>
+              ) : (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "var(--text-muted)" }}><EyeOff size={12} /> Ukryty</span>
               )}
             </div>
-            <button onClick={() => setEditingProfile(true)} style={secondaryButtonStyle}>
-              <Pencil size={14} />
-            </button>
-          </div>
-        )}
-
-        {/* Statystyki wykonawcy (M13) */}
-        {provider && stats && stats.total > 0 && <ProviderStatsRow stats={stats} />}
-
-        {/* Onboarding wykonawcy (M18) */}
-        {provider && !editingProfile && (
-          <OnboardingChecklist
-            hasListing={provider.listings.length > 0}
-            hasAvailability={provider.availabilityCount > 0}
-            hasImages={provider.images.length > 0}
-          />
-        )}
-
-        {/* Oferty */}
-        {provider && (
-          <ListingsSection listings={provider.listings} categories={categories} onChange={() => router.refresh()} />
-        )}
-
-        {/* Portfolio (M4) */}
-        {provider && (
-          <PortfolioSection images={provider.images} onChange={() => router.refresh()} />
-        )}
-
-        {/* Kody rabatowe (M16) */}
-        {provider && <PromoCodesManager />}
-
-        {/* Lokalizacja (M5) */}
-        {provider && <LocationControl hasLocation={provider.hasLocation} onChange={() => router.refresh()} />}
-
-        {/* Pracownicy (M14) */}
-        {provider && <StaffManager onChange={() => router.refresh()} />}
-
-        {/* Dostępność do rezerwacji (M2 / M14 per-pracownik) */}
-        {provider && <AvailabilityEditor />}
-
-        {/* Przychodzące zlecenia */}
-        {provider && (
-          <div>
-            <SectionHeading>Przychodzące zlecenia</SectionHeading>
-            {incomingRequests.length === 0 ? (
-              <EmptyState icon={<Briefcase size={26} />} message="Brak zleceń" hint="Gdy klient zamówi Twoją usługę, pojawi się tutaj." />
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {incomingRequests.map((r) => (
-                  <IncomingRequestCard key={r.id} request={r} onChange={() => router.refresh()} />
-                ))}
-              </div>
+            {provider.tagline && <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 2, fontStyle: "italic" }}>{provider.tagline}</div>}
+            {provider.area && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{provider.area}</div>}
+            {provider.bio && <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6, whiteSpace: "pre-wrap" }}>{provider.bio}</div>}
+            <div style={{ marginTop: 8 }}><RatingStars avg={provider.ratingAvg} count={provider.ratingCount} /></div>
+            {provider.slug && (
+              <Link href={`/services/providers/${provider.slug}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--accent-blue)", textDecoration: "none", marginTop: 8 }}>
+                <Share2 size={12} /> Twój publiczny profil: /services/providers/{provider.slug}
+              </Link>
             )}
           </div>
-        )}
-      </div>
-    </div>
+          <button onClick={() => setEditingProfile(true)} style={secondaryButtonStyle}>
+            <Pencil size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Statystyki wykonawcy (M13) */}
+      {provider && stats && stats.total > 0 && <ProviderStatsRow stats={stats} />}
+
+      {/* Onboarding wykonawcy (M18) */}
+      {provider && !editingProfile && (
+        <OnboardingChecklist
+          hasListing={provider.listings.length > 0}
+          hasAvailability={provider.availabilityCount > 0}
+          hasImages={provider.images.length > 0}
+        />
+      )}
+
+      {/* Oferty */}
+      {provider && (
+        <ListingsSection listings={provider.listings} categories={categories} onChange={() => router.refresh()} />
+      )}
+
+      {/* Portfolio (M4) */}
+      {provider && (
+        <PortfolioSection images={provider.images} onChange={() => router.refresh()} />
+      )}
+
+      {/* Kody rabatowe (M16) */}
+      {provider && <PromoCodesManager />}
+
+      {/* Lokalizacja (M5) */}
+      {provider && <LocationControl hasLocation={provider.hasLocation} onChange={() => router.refresh()} />}
+
+      {/* Pracownicy (M14) */}
+      {provider && <StaffManager onChange={() => router.refresh()} />}
+
+      {/* Dostępność do rezerwacji (M2 / M14 per-pracownik) */}
+      {provider && <AvailabilityEditor />}
+
+      {/* Przychodzące zlecenia */}
+      {provider && (
+        <div>
+          <SectionHeading>Przychodzące zlecenia</SectionHeading>
+          {incomingRequests.length === 0 ? (
+            <EmptyState icon={<Briefcase size={26} />} message="Brak zleceń" hint="Gdy klient zamówi Twoją usługę, pojawi się tutaj." />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {incomingRequests.map((r) => (
+                <IncomingRequestCard key={r.id} request={r} onChange={() => router.refresh()} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </ModuleView>
   );
 }
 

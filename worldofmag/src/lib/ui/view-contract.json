@@ -33,19 +33,17 @@
       "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
     },
     "habits": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/habits/HabitsPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "health": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/health/HealthHomePage.tsx",
         "src/components/health/MedicationsPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "invitations": {
       "status": "pending",
@@ -53,11 +51,10 @@
       "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
     },
     "kitchen": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/kitchen/KitchenHomePage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "languages": {
       "status": "pending",
@@ -126,14 +123,13 @@
       "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
     },
     "reports": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/reports/ReportsHomePage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "services": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/services/ListingDetailPage.tsx",
         "src/components/services/ModerationPage.tsx",
@@ -141,8 +137,7 @@
         "src/components/services/ProviderPanelPage.tsx",
         "src/components/services/ProviderPublicPage.tsx",
         "src/components/services/ServicesCatalogPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "settings": {
       "status": "pending",
@@ -166,18 +161,16 @@
       "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
     },
     "trash": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/trash/TrashPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "truck": {
-      "status": "pending",
+      "status": "done",
       "entries": [
         "src/components/truck/TruckPlannerPage.tsx"
-      ],
-      "reason": "Migracja na ModuleView zaplanowana — patrz rozdz. 15 dokumentu architektury docelowej (dziennik przebudowy), wpis 045."
+      ]
     },
     "warsztaty": {
       "status": "pending",

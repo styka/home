@@ -4,7 +4,8 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Car, Plus, Loader2, ChevronRight, Gauge, CalendarClock, ShieldCheck, AlertTriangle, Users } from "lucide-react";
-import { PageHeader, SectionHeading, EmptyState, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
+import { SectionHeading, EmptyState } from "@/components/ui/home";
+import { ModuleView } from "@/components/ui/view";
 import { createVehicle, type VehicleWithStats } from "@/actions/flota";
 import { FUEL_LABELS, deadlineStatus } from "@/lib/flota";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -46,56 +47,55 @@ export function FlotaHomePage({ vehicles, teams }: Props) {
   }
 
   return (
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
-        <PageHeader
-          icon={<Car size={22} />}
-          iconColor="var(--accent-blue)"
-          title="Flota"
-          href="/flota"
-          subtitle={vehicles.length > 0 ? `${vehicles.length} pojazdów` : "Dodaj pierwszy pojazd"}
-          action={
-            <button
-              onClick={() => setAdding((v) => !v)}
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-secondary)", fontSize: 13, cursor: "pointer" }}
-            >
-              <Plus size={13} /> Nowy pojazd
-            </button>
-          }
-        />
+    <ModuleView
+      width="narrow"
+      state="ready"
+      icon={<Car size={22} />}
+      iconColor="var(--accent-blue)"
+      title="Flota"
+      href="/flota"
+      subtitle={vehicles.length > 0 ? `${vehicles.length} pojazdów` : "Dodaj pierwszy pojazd"}
+      headerAction={
+        <button
+          onClick={() => setAdding((v) => !v)}
+          style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-secondary)", fontSize: 13, cursor: "pointer" }}
+        >
+          <Plus size={13} /> Nowy pojazd
+        </button>
+      }
+    >
 
-        {adding && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: 12, borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
-            <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleCreate()} placeholder="Nazwa (np. Octavia)" style={inputStyle} />
-            <input value={plate} onChange={(e) => setPlate(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleCreate()} placeholder="Nr rej." style={{ ...inputStyle, maxWidth: 120 }} />
-            <select value={fuelType} onChange={(e) => setFuelType(e.target.value)} style={{ ...inputStyle, maxWidth: 140 }}>
-              {Object.entries(FUEL_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+      {adding && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: 12, borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
+          <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleCreate()} placeholder="Nazwa (np. Octavia)" style={inputStyle} />
+          <input value={plate} onChange={(e) => setPlate(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleCreate()} placeholder="Nr rej." style={{ ...inputStyle, maxWidth: 120 }} />
+          <select value={fuelType} onChange={(e) => setFuelType(e.target.value)} style={{ ...inputStyle, maxWidth: 140 }}>
+            {Object.entries(FUEL_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+          {teams.length > 0 && (
+            <select value={ownerTeamId} onChange={(e) => setOwnerTeamId(e.target.value)} style={{ ...inputStyle, maxWidth: 160 }}>
+              <option value="">Mój (prywatny)</option>
+              {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
-            {teams.length > 0 && (
-              <select value={ownerTeamId} onChange={(e) => setOwnerTeamId(e.target.value)} style={{ ...inputStyle, maxWidth: 160 }}>
-                <option value="">Mój (prywatny)</option>
-                {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            )}
-            <button onClick={handleCreate} disabled={isPending || !name.trim()} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-              {isPending ? <Loader2 size={13} className="animate-spin" /> : null} Dodaj
-            </button>
-            <button onClick={() => setAdding(false)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 13, cursor: "pointer" }}>Anuluj</button>
+          )}
+          <button onClick={handleCreate} disabled={isPending || !name.trim()} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+            {isPending ? <Loader2 size={13} className="animate-spin" /> : null} Dodaj
+          </button>
+          <button onClick={() => setAdding(false)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 13, cursor: "pointer" }}>Anuluj</button>
+        </div>
+      )}
+
+      <div>
+        <SectionHeading>Pojazdy</SectionHeading>
+        {vehicles.length === 0 ? (
+          <EmptyState icon={<Car size={28} />} message="Brak pojazdów" hint="Dodaj pojazd, by śledzić przeglądy, OC, serwisy i zużycie paliwa" cta={{ label: "+ Nowy pojazd", onClick: () => setAdding(true), color: "var(--accent-blue)" }} />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {vehicles.map((v, i) => <VehicleCard key={v.id} v={v} focused={focused === i} onFocus={() => setFocused(i)} />)}
           </div>
         )}
-
-        <div>
-          <SectionHeading>Pojazdy</SectionHeading>
-          {vehicles.length === 0 ? (
-            <EmptyState icon={<Car size={28} />} message="Brak pojazdów" hint="Dodaj pojazd, by śledzić przeglądy, OC, serwisy i zużycie paliwa" cta={{ label: "+ Nowy pojazd", onClick: () => setAdding(true), color: "var(--accent-blue)" }} />
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {vehicles.map((v, i) => <VehicleCard key={v.id} v={v} focused={focused === i} onFocus={() => setFocused(i)} />)}
-            </div>
-          )}
-        </div>
       </div>
-    </div>
+    </ModuleView>
   );
 }
 

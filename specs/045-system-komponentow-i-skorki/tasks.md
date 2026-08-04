@@ -51,29 +51,29 @@
 
 ## Faza 2 — Kontrakt widoku (fundament UI)
 
-- [ ] **T-7** — `src/components/ui/view/ViewState.tsx` — jeden zestaw stanów brzegowych
+- [x] **T-7** — `src/components/ui/view/ViewState.tsx` — jeden zestaw stanów brzegowych
       (`EmptyState`/`LoadingState`/`ErrorState`/`NoAccessState`) zbudowany na istniejącym
       `ui/home/EmptyState`, tokeny zamiast liczb (`var(--radius-lg)`, `var(--border-width)`).
       **Gotowe, gdy:** cztery stany renderują się spójnie i reagują na zmianę skórki. **(AC-4)**
-- [ ] **T-8** — `src/components/ui/view/ViewChrome.tsx` — kontekst `ViewChromeProvider` /
+- [x] **T-8** — `src/components/ui/view/ViewChrome.tsx` — kontekst `ViewChromeProvider` /
       `useViewChrome()`; brak providera zwraca pusty chrom **bez błędu**.
       **Gotowe, gdy:** `ViewBar` poza `AppShell` (np. w playgroundzie) renderuje się poprawnie.
-- [ ] **T-9** — `src/components/ui/view/ViewBar.tsx` — pasek: filtry modułu | akcje modułu | chrom
+- [x] **T-9** — `src/components/ui/view/ViewBar.tsx` — pasek: filtry modułu | akcje modułu | chrom
       z kontekstu. Na telefonie filtry przewijają się poziomo **we własnym kontenerze**
       (`overflow-x: auto`); strona nigdy nie przewija się w poziomie. Adresu **nie** czytamy przez
       `useSearchParams` (plan §5.3).
       **Gotowe, gdy:** przy 375 px brak poziomego przewijania strony. **(AC-19)**
-- [ ] **T-10** — `src/components/ui/view/ModuleView.tsx` — rama widoku wg API z planu §5.1;
+- [x] **T-10** — `src/components/ui/view/ModuleView.tsx` — rama widoku wg API z planu §5.1;
       wewnętrznie renderuje istniejący `PageHeader` (wygląd nagłówka **bez zmian**); prop `resource`
       przyjmowany i przekazywany do kontekstu, **nieaktywny** (plan §5.2). Plus
       `ChromeFrame.tsx` (inline SVG sterowany `--chrome-frame`) i `index.ts`.
       **Gotowe, gdy:** podmiana `PageHeader` → `ModuleView` w jednym module nie zmienia wyglądu.
       **(AC-1)**
-- [ ] **T-11** — `src/components/shell/FreshnessIndicator.tsx` + publikacja czasu ostatniego
+- [x] **T-11** — `src/components/shell/FreshnessIndicator.tsx` + publikacja czasu ostatniego
       odświeżenia z `DataFreshness.tsx` przez lekki kontekst. **Mechanika i interwał odpytywania bez
       zmian** — to Faza 4 przebudowy, nie ten przebieg.
       **Gotowe, gdy:** wskaźnik pokazuje „teraz"/„N min temu" i nie dokłada żadnego zapytania.
-- [ ] **T-12** — Wpięcie `ViewChromeProvider` w `src/components/shell/AppShell.tsx` (wokół `<main>`):
+- [x] **T-12** — Wpięcie `ViewChromeProvider` w `src/components/shell/AppShell.tsx` (wokół `<main>`):
       gwiazdka ulubionych (nowy wariant `placement="viewbar-inline"` w `FavoriteStarButton.tsx`),
       `FreshnessIndicator`, przycisk ściągawki skrótów. Przy okazji usuń dwa zaszyte `#ef4444`.
       **Gotowe, gdy:** moduł nie przekazuje chromu propsami, a mimo to widzi go w pasku. **(AC-2)**

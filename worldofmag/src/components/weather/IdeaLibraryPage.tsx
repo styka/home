@@ -25,6 +25,7 @@ import { PageHeader } from "@/components/ui/home/PageHeader";
 import { pageContainerStyle, pageInnerStyle } from "@/components/ui/home/styles";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import { ModuleView } from "@/components/ui/view";
 import { IDEA_CATEGORY_LABELS, IDEA_STATE_LABELS, type IdeaDTO, type IdeaState } from "@/lib/weather/ideas";
 import { getIdeaDetail, setIdeaState, deleteIdea, addIdeaToTasks } from "@/actions/weather";
 
@@ -93,84 +94,85 @@ export function IdeaLibraryPage({
     /* 038: strona korzysta z tych samych elementów układu co pozostałe podstrony działów
        (`pageContainerStyle` + `pageInnerStyle` + `PageHeader`), zamiast własnego nagłówka —
        właściciel słusznie zauważył, że odstawała stylistycznie od reszty aplikacji. */
-    <div style={pageContainerStyle}>
-      <div style={pageInnerStyle}>
+    <ModuleView
+      width="narrow"
+      state="ready"
+      breadcrumb={
         <Link
-          href="/pogoda"
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12,
-            color: "var(--text-muted)", textDecoration: "none", marginBottom: -12,
-          }}
-        >
-          <ChevronLeft size={14} /> Pogoda
-        </Link>
-        <PageHeader
-          icon={<Library size={22} />}
-          iconColor="var(--accent-purple)"
-          title="Pomysły"
-          href="/pogoda/pomysly"
-          subtitle="Propozycje, które rozważałeś albo odrzuciłeś. Zablokowane nie wrócą w „Co robić?”, dopóki ich nie przywrócisz."
-        />
+      href="/pogoda"
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12,
+        color: "var(--text-muted)", textDecoration: "none", marginBottom: -12,
+      }}
+    >
+      <ChevronLeft size={14} /> Pogoda
+    </Link>
+      }
+      icon={<Library size={22} />}
+      iconColor="var(--accent-purple)"
+      title="Pomysły"
+      href="/pogoda/pomysly"
+      subtitle="Propozycje, które rozważałeś albo odrzuciłeś. Zablokowane nie wrócą w „Co robić?”, dopóki ich nie przywrócisz."
+    >
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap gap-1">
-            {FILTERS.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                aria-pressed={filter === f.key}
-                className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs transition-colors",
-                  filter === f.key
-                    ? "border-transparent bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-[inset_0_0_0_1px_var(--accent-purple)]"
-                    : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          {locations.length > 1 && (
-            <select
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              aria-label="Filtruj po lokalizacji"
-              className="rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-1.5 text-xs text-[var(--text-primary)]"
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-1">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              aria-pressed={filter === f.key}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-xs transition-colors",
+                filter === f.key
+                  ? "border-transparent bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-[inset_0_0_0_1px_var(--accent-purple)]"
+                  : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+              )}
             >
-              <option value="all">Wszystkie lokalizacje</option>
-              {locations.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          )}
+              {f.label}
+            </button>
+          ))}
         </div>
-
-        {visible.length === 0 ? (
-          <p className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-6 text-sm text-[var(--text-muted)]">
-            {ideas.length === 0
-              ? "Nic tu jeszcze nie ma. Otwórz szczegóły propozycji w sekcji „Co robić?” albo odrzuć taką, której nie chcesz widzieć — trafi tutaj."
-              : "Brak pozycji dla wybranych filtrów."}
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {visible.map((idea) => (
-              <LibraryRow
-                key={idea.id ?? idea.fingerprint}
-                idea={idea}
-                usdPlnRate={usdPlnRate}
-                canAddToTasks={canAddToTasks}
-                defaultOpen={!!initialIdeaId && idea.id === initialIdeaId}
-                onState={(state) => run(() => setIdeaState(idea.id!, state))}
-                onDelete={() => run(() => deleteIdea(idea.id!), "Przeniesiono do kosza")}
-                onAddToTasks={() => run(() => addIdeaToTasks(idea.id!), "Dodano do zadań")}
-              />
+        {locations.length > 1 && (
+          <select
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            aria-label="Filtruj po lokalizacji"
+            className="rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-1.5 text-xs text-[var(--text-primary)]"
+          >
+            <option value="all">Wszystkie lokalizacje</option>
+            {locations.map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
             ))}
-          </div>
+          </select>
         )}
       </div>
-    </div>
+
+      {visible.length === 0 ? (
+        <p className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-6 text-sm text-[var(--text-muted)]">
+          {ideas.length === 0
+            ? "Nic tu jeszcze nie ma. Otwórz szczegóły propozycji w sekcji „Co robić?” albo odrzuć taką, której nie chcesz widzieć — trafi tutaj."
+            : "Brak pozycji dla wybranych filtrów."}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {visible.map((idea) => (
+            <LibraryRow
+              key={idea.id ?? idea.fingerprint}
+              idea={idea}
+              usdPlnRate={usdPlnRate}
+              canAddToTasks={canAddToTasks}
+              defaultOpen={!!initialIdeaId && idea.id === initialIdeaId}
+              onState={(state) => run(() => setIdeaState(idea.id!, state))}
+              onDelete={() => run(() => deleteIdea(idea.id!), "Przeniesiono do kosza")}
+              onAddToTasks={() => run(() => addIdeaToTasks(idea.id!), "Dodano do zadań")}
+            />
+          ))}
+        </div>
+      )}
+    </ModuleView>
   );
 }
 

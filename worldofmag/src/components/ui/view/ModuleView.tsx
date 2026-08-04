@@ -34,6 +34,15 @@ export interface ModuleViewProps {
   /** Prawy górny róg nagłówka (np. przycisk główny modułu). */
   headerAction?: ReactNode;
 
+  /**
+   * Link powrotny nad nagłówkiem („‹ Portfel", „‹ Wszystkie usługi").
+   *
+   * Trafił do kontraktu, bo powtarzał się w ośmiu widokach podrzędnych, za każdym razem
+   * z lekko innym odstępem i rozmiarem ikony. Skoro rama i tak zna miejsce nad tytułem,
+   * niech pilnuje go w jednym miejscu.
+   */
+  breadcrumb?: ReactNode;
+
   // ── pasek widoku ──
   filters?: ReactNode;
   actions?: ReactNode;
@@ -62,6 +71,13 @@ export interface ModuleViewProps {
   width?: "full" | "narrow";
 
   /**
+   * Odstęp między blokami treści. Domyślnie 24 px — dokładnie tyle, ile miał
+   * `pageInnerStyle`, z którego migrują moduły. Dzięki temu podmiana opakowania nie
+   * przesuwa ani jednego piksela, a „zero zmian zachowania" jest sprawdzalne wzrokiem.
+   */
+  contentGap?: number;
+
+  /**
    * Referencja do kontenera PRZEWIJANIA widoku.
    *
    * Potrzebna modułom, które wirtualizują długie listy (Kontakty, Magazynowanie):
@@ -82,6 +98,7 @@ export function ModuleView({
   subtitle,
   href,
   headerAction,
+  breadcrumb,
   filters,
   actions,
   hideChrome,
@@ -91,6 +108,7 @@ export function ModuleView({
   noAccess,
   loadingRows,
   width = "full",
+  contentGap = 24,
   scrollRef,
   children,
 }: ModuleViewProps) {
@@ -121,6 +139,8 @@ export function ModuleView({
           gap: 12,
         }}
       >
+        {breadcrumb && <div style={{ marginBottom: -4 }}>{breadcrumb}</div>}
+
         <PageHeader
           icon={icon}
           iconColor={iconColor}
@@ -138,6 +158,7 @@ export function ModuleView({
           error={error}
           noAccess={noAccess}
           loadingRows={loadingRows}
+          contentGap={contentGap}
         >
           {children}
         </ViewContent>
@@ -152,8 +173,9 @@ function ViewContent({
   error,
   noAccess,
   loadingRows,
+  contentGap,
   children,
-}: Pick<ModuleViewProps, "state" | "empty" | "error" | "noAccess" | "loadingRows" | "children">) {
+}: Pick<ModuleViewProps, "state" | "empty" | "error" | "noAccess" | "loadingRows" | "contentGap" | "children">) {
   switch (state) {
     case "loading":
       return <ViewLoading rows={loadingRows} />;
@@ -164,6 +186,6 @@ function ViewContent({
     case "empty":
       return <ViewEmpty {...empty} />;
     default:
-      return <>{children}</>;
+      return <div style={{ display: "flex", flexDirection: "column", gap: contentGap }}>{children}</div>;
   }
 }
