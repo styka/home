@@ -20,6 +20,7 @@ import { deleteTask, toggleTaskStatus, bulkUpdateTasks, bulkDeleteTasks } from "
 import { ModuleView } from "@/components/ui/view";
 import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode, ProjectStatusConfig } from "@/types";
 import { resolveStatuses, statusMetaFor, DEFAULT_STATUS_CONFIG } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 interface TasksPageProps {
   tasks: Task[];
@@ -47,6 +48,7 @@ interface TasksPageProps {
 }
 
 export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId, viewParams = {} }: TasksPageProps) {
+  const confirmDialog = useConfirm();
   const [statusConfigOpen, setStatusConfigOpen] = useState(false);
 
   // 043: filtr, tagi, grupowanie i układ żyją w ADRESIE strony — dzięki temu zapisany ulubiony
@@ -358,10 +360,10 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
       finishSelection(res.skipped > 0 ? `Zmieniono ${res.updated} z ${ids.length} (pominięto ${res.skipped})` : `Zmieniono ${res.updated}`);
     });
   }
-  function deleteBulk() {
+  async function deleteBulk() {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
-    if (!confirm(`Usunąć ${ids.length} zaznaczonych zadań? Trafią do Kosza.`)) return;
+    if (!(await confirmDialog(`Usunąć ${ids.length} zaznaczonych zadań? Trafią do Kosza.`))) return;
     startBulkTransition(async () => {
       const res = await bulkDeleteTasks(ids);
       finishSelection(res.skipped > 0 ? `Usunięto ${res.deleted} z ${ids.length} (pominięto ${res.skipped})` : `Usunięto ${res.deleted}`);
@@ -401,7 +403,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     rowRefs.current.get(next.id)?.scrollIntoView({ block: "nearest" });
   }
 
-  function navigateUp() {
+  async function navigateUp() {
     if (filteredForNav.length === 0) return;
     const idx = filteredForNav.findIndex((t) => t.id === focusedTaskId);
     const prev = idx <= 0 ? filteredForNav[filteredForNav.length - 1] : filteredForNav[idx - 1];
@@ -420,9 +422,9 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         if (!focusedTaskId) return;
         startTransition(async () => { await toggleTaskStatus(focusedTaskId); });
       },
-      onDelete: () => {
+      onDelete: async () => {
         if (!focusedTaskId) return;
-        if (!confirm("Usunąć zadanie?")) return;
+        if (!(await confirmDialog("Usunąć zadanie?"))) return;
         const idx = filteredForNav.findIndex((t) => t.id === focusedTaskId);
         const next = filteredForNav[idx + 1] ?? filteredForNav[idx - 1];
         if (openTaskId === focusedTaskId) setOpenTaskId(null);

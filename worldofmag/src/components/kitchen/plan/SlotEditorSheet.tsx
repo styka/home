@@ -15,6 +15,7 @@ import type { MealSlot } from "@/types/kitchen";
 import { MEAL_SLOT_LABELS } from "@/types/kitchen";
 import type { MealPlanEntryWithRecipe } from "@/actions/mealPlans";
 import { formatDayLong } from "@/lib/kitchenDate";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 export interface RecipePickerItem {
   id: string;
@@ -42,6 +43,7 @@ export function SlotEditorSheet({
   recipes,
   teamId,
 }: SlotEditorSheetProps) {
+  const confirmDialog = useConfirm();
   const [query, setQuery] = useState("");
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(entry?.recipeId ?? null);
   const [customTitle, setCustomTitle] = useState(entry?.customTitle ?? "");
@@ -103,9 +105,9 @@ export function SlotEditorSheet({
     });
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!entry) return;
-    if (!confirm("Usunąć ten wpis z planu?")) return;
+    if (!(await confirmDialog("Usunąć ten wpis z planu?"))) return;
     startTransition(async () => {
       try {
         await deleteMealPlanEntry(entry.id);

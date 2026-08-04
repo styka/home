@@ -12,6 +12,7 @@ import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { computeRecipeCost } from "@/lib/kitchen/recipeCost";
 import type { RecipeFull } from "@/types/kitchen";
 import { DIFFICULTY_LABELS, MEAL_TYPE_LABELS } from "@/types/kitchen";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 interface RecipeViewProps {
   recipe: RecipeFull;
@@ -25,6 +26,7 @@ function scaleQuantity(qty: number | null, factor: number): number | null {
 }
 
 export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const { showToast } = useToast();
   const [servings, setServings] = useState(recipe.servings);
@@ -55,8 +57,8 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
     return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [recipe.ingredients]);
 
-  function handleDelete() {
-    if (!confirm("Usunąć przepis? Tej operacji nie da się cofnąć.")) return;
+  async function handleDelete() {
+    if (!(await confirmDialog("Usunąć przepis? Tej operacji nie da się cofnąć."))) return;
     startDelete(async () => {
       try {
         await deleteRecipe(recipe.id);

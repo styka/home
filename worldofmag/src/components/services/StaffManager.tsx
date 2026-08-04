@@ -5,10 +5,12 @@ import { Users, Plus, Trash2, Loader2 } from "lucide-react";
 import { SectionHeading } from "@/components/ui/home";
 import { getMyStaff, createStaff, updateStaff, deleteStaff } from "@/actions/services/scheduling";
 import { fieldInputStyle, primaryButtonStyle } from "./serviceUi";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 type Staff = { id: string; name: string; role: string | null; active: boolean };
 
 export function StaffManager({ onChange }: { onChange?: () => void }) {
+  const confirmDialog = useConfirm();
   const [staff, setStaff] = useState<Staff[] | null>(null);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -64,7 +66,7 @@ export function StaffManager({ onChange }: { onChange?: () => void }) {
               <button onClick={() => startTransition(async () => { await updateStaff(s.id, { active: !s.active }); await reload(); onChange?.(); })} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", cursor: "pointer" }}>
                 {s.active ? "Wyłącz" : "Włącz"}
               </button>
-              <button onClick={() => { if (confirm(`Usunąć pracownika „${s.name}"?`)) startTransition(async () => { await deleteStaff(s.id); await reload(); onChange?.(); }); }} title="Usuń" style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>
+              <button onClick={async () => { if (await confirmDialog(`Usunąć pracownika „${s.name}"?`)) startTransition(async () => { await deleteStaff(s.id); await reload(); onChange?.(); }); }} title="Usuń" style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>
                 <Trash2 size={13} />
               </button>
             </div>

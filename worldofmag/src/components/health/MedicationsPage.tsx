@@ -15,6 +15,7 @@ import {
 import { describeFrequency, parseTimes } from "@/lib/medicationSchedule";
 import type { DoseSlot, MedicationFreqType, MedicationKind, MedicationSchedule } from "@/types";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -377,6 +378,7 @@ function ScheduleCard({ s, focused, onEdit, onDelete, onToggleActive, onFocus }:
 }
 
 export function MedicationsPage({ schedules, today }: { schedules: MedicationSchedule[]; today: { date: string; slots: DoseSlot[] } }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<MedicationSchedule | null>(null);
@@ -385,7 +387,7 @@ export function MedicationsPage({ schedules, today }: { schedules: MedicationSch
   const doneCount = today.slots.filter((s) => s.done).length;
 
   async function removeSchedule(s: MedicationSchedule) {
-    if (!confirm("Usunąć harmonogram?")) return;
+    if (!(await confirmDialog("Usunąć harmonogram?"))) return;
     await deleteMedicationSchedule(s.id);
     router.refresh();
   }

@@ -9,9 +9,11 @@ import { addEntry, setBalance, deleteElement, importBankCsv, type ElementWithEnt
 import { parseBankCsv, type ParsedTransaction } from "@/lib/portfel/bankCsv";
 import { ELEMENT_KIND_LABELS, ENTRY_KIND_LABELS, formatMoney } from "@/lib/portfel";
 import { ModuleView } from "@/components/ui/view";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 
 export function ElementDetailPage({ element }: { element: ElementWithEntries }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const isDebt = element.kind === "debt";
@@ -75,8 +77,8 @@ export function ElementDetailPage({ element }: { element: ElementWithEntries }) 
     });
   }
 
-  function remove() {
-    if (!confirm(`Usunąć element „${element.name}" wraz z historią?`)) return;
+  async function remove() {
+    if (!(await confirmDialog(`Usunąć element „${element.name}" wraz z historią?`))) return;
     startTransition(async () => { await deleteElement(element.id); router.push("/portfel"); });
   }
 

@@ -14,6 +14,7 @@ import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import type { Task, TaskPriority, TaskTagDef, RecurringRule, ProjectStatusConfig, TaskProject } from "@/types";
 import { TASK_PRIORITY_COLORS, statusMetaFor, DEFAULT_STATUS_CONFIG, parseStatusConfig } from "@/types";
 import { toDateTimeLocalValue, toDateValue, parseDateInput } from "@/lib/dateInput";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 interface TaskDetailProps {
   task: Task;
@@ -41,6 +42,7 @@ const RECURRING_TYPES = [
 const DAY_LABELS = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So"];
 
 export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEFAULT_STATUS_CONFIG, onClose, onDelete }: TaskDetailProps) {
+  const confirmDialog = useConfirm();
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
   const [editingDesc, setEditingDesc] = useState(false);
@@ -259,8 +261,8 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
     });
   }
 
-  function handleDelete() {
-    if (!confirm("Usunąć zadanie?")) return;
+  async function handleDelete() {
+    if (!(await confirmDialog("Usunąć zadanie?"))) return;
     startTransition(async () => {
       await deleteTask(task.id);
       onDelete();

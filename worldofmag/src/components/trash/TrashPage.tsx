@@ -5,6 +5,7 @@ import { Trash2, RotateCcw, FileText, CheckSquare, Loader2 } from "lucide-react"
 import { EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { restoreTrashItem, purgeTrashItem, emptyTrash, type TrashItemDTO } from "@/actions/trash";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const MODULE_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   notes: { label: "Notatka", icon: <FileText size={14} />, color: "var(--accent-purple)" },
@@ -12,6 +13,7 @@ const MODULE_META: Record<string, { label: string; icon: React.ReactNode; color:
 };
 
 export function TrashPage({ items, retentionDays }: { items: TrashItemDTO[]; retentionDays: number }) {
+  const confirmDialog = useConfirm();
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -19,13 +21,13 @@ export function TrashPage({ items, retentionDays }: { items: TrashItemDTO[]; ret
     setBusyId(id);
     startTransition(async () => { await restoreTrashItem(id); setBusyId(null); });
   }
-  function purge(id: string) {
-    if (!confirm("Usunąć trwale? Tej operacji nie można cofnąć.")) return;
+  async function purge(id: string) {
+    if (!(await confirmDialog("Usunąć trwale? Tej operacji nie można cofnąć."))) return;
     setBusyId(id);
     startTransition(async () => { await purgeTrashItem(id); setBusyId(null); });
   }
-  function empty() {
-    if (!confirm("Opróżnić cały kosz? Wszystkie pozycje zostaną usunięte trwale.")) return;
+  async function empty() {
+    if (!(await confirmDialog("Opróżnić cały kosz? Wszystkie pozycje zostaną usunięte trwale."))) return;
     startTransition(() => { emptyTrash(); });
   }
 

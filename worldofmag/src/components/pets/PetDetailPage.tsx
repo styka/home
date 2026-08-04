@@ -22,6 +22,7 @@ import { BreedingSection, GeneticsSection } from "./PetBreeding";
 import { useToast } from "@/components/ui/Toast";
 import { ModuleView } from "@/components/ui/view";
 import type { PetWithRelations, PetSex } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 type TabKey = "profile" | PetFeatureKey | "sharing" | "settings";
 
@@ -46,6 +47,7 @@ const FEATURE_ORDER: PetFeatureKey[] = [
 ];
 
 export function PetDetailPage({ pet, teams, viewParams = {} }: { pet: PetWithRelations; teams: Array<{ id: string; name: string }>; viewParams?: RawParams }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const { showToast } = useToast();
   // 043: zakładka profilu zwierzęcia w adresie (AC-8a). Lista dopuszczalnych wartości bierze się
@@ -69,8 +71,8 @@ export function PetDetailPage({ pet, teams, viewParams = {} }: { pet: PetWithRel
     { key: "settings", label: "Widoczność" },
   ];
 
-  function handleDelete() {
-    if (!confirm(`Usunąć zwierzę „${pet.name}" wraz ze wszystkimi danymi?`)) return;
+  async function handleDelete() {
+    if (!(await confirmDialog(`Usunąć zwierzę „${pet.name}" wraz ze wszystkimi danymi?`))) return;
     deletePet(pet.id)
       .then(() => { showToast("Usunięto zwierzę", "success"); router.push("/pets"); })
       .catch((e) => showToast(e instanceof Error ? e.message : "Błąd", "error"));

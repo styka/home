@@ -27,6 +27,7 @@ import { RatingStars, formatPrice, StatusBadge, VerifiedBadge, fieldInputStyle, 
 import { AvailabilityEditor } from "./AvailabilityEditor";
 import { PromoCodesManager } from "./PromoCodesManager";
 import { StaffManager } from "./StaffManager";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 type ListingItem = {
   id: string;
@@ -266,6 +267,7 @@ function ListingsSection({
   categories: ServiceCategoryDTO[];
   onChange: () => void;
 }) {
+  const confirmDialog = useConfirm();
   const [adding, setAdding] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
 
@@ -309,7 +311,7 @@ function ListingsSection({
                 <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                   <button onClick={() => { setEditId(l.id); setAdding(false); }} style={secondaryButtonStyle}><Pencil size={14} /></button>
                   <button
-                    onClick={async () => { if (confirm("Usunąć ofertę?")) { await deleteListing(l.id); onChange(); } }}
+                    onClick={async () => { if (await confirmDialog("Usunąć ofertę?")) { await deleteListing(l.id); onChange(); } }}
                     style={{ ...secondaryButtonStyle, color: "var(--accent-red)" }}
                   >
                     <Trash2 size={14} />
@@ -519,6 +521,7 @@ function nextActionsFor(status: RequestDTO["status"]): RequestStatus[] {
 }
 
 function PortfolioSection({ images, onChange }: { images: { id: string; url: string; caption: string | null }[]; onChange: () => void }) {
+  const confirmDialog = useConfirm();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -551,7 +554,7 @@ function PortfolioSection({ images, onChange }: { images: { id: string; url: str
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={img.url} alt={img.caption ?? "Realizacja"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             <button
-              onClick={async () => { if (confirm("Usunąć zdjęcie?")) { await deleteServiceImage(img.id); onChange(); } }}
+              onClick={async () => { if (await confirmDialog("Usunąć zdjęcie?")) { await deleteServiceImage(img.id); onChange(); } }}
               aria-label="Usuń zdjęcie"
               style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: 6, background: "rgba(0,0,0,0.6)", color: "var(--on-accent)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
             >

@@ -10,6 +10,7 @@ import { TagSuggestions } from "./TagSuggestions";
 import { updateNote, deleteNote, toggleNotePin, setNoteTags, getNoteAttachments, addNoteAttachment, deleteNoteAttachment, getNoteRevisions, restoreNoteRevision, type NoteAttachmentDTO, type NoteRevisionDTO } from "@/actions/notes";
 import { createTag } from "@/actions/tags";
 import type { Note, Tag, NoteGroup } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 interface NoteRowProps {
   note: Note;
@@ -51,6 +52,7 @@ function highlightMatch(text: string, query: string) {
 export function NoteRow({
   note, allNotes, allTags, allGroups, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, onNavigateToNote, onTagsChanged, rowRef, searchQuery = "",
 }: NoteRowProps) {
+  const confirmDialog = useConfirm();
   const [, startTransition] = useTransition();
   const [editTitle, setEditTitle] = useState(note.title);
   const [editContent, setEditContent] = useState(note.content);
@@ -145,8 +147,8 @@ export function NoteRow({
     onStopEdit();
   }
 
-  function handleDelete() {
-    if (!confirm("Usunąć notatkę? Tej operacji nie można cofnąć.")) return;
+  async function handleDelete() {
+    if (!(await confirmDialog("Usunąć notatkę? Tej operacji nie można cofnąć."))) return;
     startTransition(() => { deleteNote(note.id); });
   }
 
@@ -643,6 +645,7 @@ function NoteAttachments({ noteId }: { noteId: string }) {
 }
 
 function NoteHistory({ noteId, onRestored }: { noteId: string; onRestored: () => void }) {
+  const confirmDialog = useConfirm();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NoteRevisionDTO[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -657,7 +660,7 @@ function NoteHistory({ noteId, onRestored }: { noteId: string; onRestored: () =>
   }
 
   async function restore(rev: NoteRevisionDTO) {
-    if (!confirm("Przywrócić tę wersję? Aktualna treść trafi do historii.")) return;
+    if (!(await confirmDialog("Przywrócić tę wersję? Aktualna treść trafi do historii."))) return;
     setBusy(true);
     try {
       await restoreNoteRevision(rev.id);

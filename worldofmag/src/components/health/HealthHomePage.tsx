@@ -11,6 +11,7 @@ import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
 import { HealthAiOptInToggle } from "@/components/health/HealthAiOptInToggle";
 import { ModuleView } from "@/components/ui/view";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -202,6 +203,7 @@ function EventCard({ ev, focused, onEdit, onCycleStatus, onDelete, onFocus }: { 
 type Tab = "ALL" | "VISIT" | "TEST";
 
 export function HealthHomePage({ events, trends = [], viewParams = {} }: { events: HealthEvent[]; trends?: TestTrend[]; viewParams?: RawParams }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   // 043: zakładka w adresie — zapisany ulubiony widok Zdrowia wraca na tę samą zakładkę (AC-8a).
   const viewSpec = useMemo(() => ({ tab: oneOf(["ALL", "VISIT", "TEST"] as const, "ALL") }), []);
@@ -249,7 +251,7 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
     router.refresh();
   }
   async function removeEvent(ev: HealthEvent) {
-    if (!confirm("Usunąć wpis?")) return;
+    if (!(await confirmDialog("Usunąć wpis?"))) return;
     await deleteHealthEvent(ev.id);
     router.refresh();
   }
@@ -399,6 +401,7 @@ function TrendRow({ trend }: { trend: TestTrend }) {
 }
 
 function HealthAttachments({ eventId }: { eventId: string }) {
+  const confirmDialog = useConfirm();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<HealthAttachmentDTO[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -438,7 +441,7 @@ function HealthAttachments({ eventId }: { eventId: string }) {
           {(items ?? []).map((a) => (
             <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
               <a href={a.url} target="_blank" rel="noopener noreferrer" download={a.name} style={{ color: "var(--accent-blue)", textDecoration: "none", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</a>
-              <button onClick={async () => { if (confirm("Usunąć?")) { await deleteHealthAttachment(a.id); await load(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title="Usuń"><Trash2 size={12} /></button>
+              <button onClick={async () => { if (await confirmDialog("Usunąć?")) { await deleteHealthAttachment(a.id); await load(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title="Usuń"><Trash2 size={12} /></button>
             </div>
           ))}
           <label style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--accent-blue)", cursor: busy ? "wait" : "pointer" }}>

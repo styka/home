@@ -15,6 +15,7 @@ import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import { BatchesManager } from "./BatchesManager";
 import type { StorageItemWithMovements } from "@/actions/storage";
 import type { StorageSupplier } from "@prisma/client";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 interface StorageEditSheetProps {
   open: boolean;
@@ -39,6 +40,7 @@ function toDateInput(d: Date | string | null | undefined): string {
 }
 
 export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppliers = [], currency = "PLN", pro = false }: StorageEditSheetProps) {
+  const confirmDialog = useConfirm();
   const [name, setName] = useState(item?.name ?? "");
   const [sku, setSku] = useState(item?.sku ?? "");
   const [barcode, setBarcode] = useState(item?.barcode ?? "");
@@ -181,9 +183,9 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
     });
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!item) return;
-    if (!confirm("Usunąć tę pozycję z magazynu?")) return;
+    if (!(await confirmDialog("Usunąć tę pozycję z magazynu?"))) return;
     startTransition(async () => {
       try {
         await deleteStorageItem(item.id);

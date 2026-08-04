@@ -14,6 +14,7 @@ import { useItemNavigation } from "@/hooks/useItemNavigation";
 import { ModuleView } from "@/components/ui/view";
 import type { Note, Tag as TagType, NoteGroup, NoteFilter } from "@/types";
 import { NOTE_FILTER_LABELS } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const NOTE_FILTERS: NoteFilter[] = ["ALL", "PINNED", "NO_GROUP", "SEARCH"];
 
@@ -31,6 +32,7 @@ interface NotesPageProps {
 }
 
 export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: NotesPageProps) {
+  const confirmDialog = useConfirm();
   const param = (key: string): string | undefined => {
     const raw = viewParams[key];
     return Array.isArray(raw) ? raw[0] : raw;
@@ -148,7 +150,7 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openNewFromQuery, focusFromQuery]);
 
-  function scrollToNote(noteId: string) {
+  async function scrollToNote(noteId: string) {
     const el = rowRefs.current.get(noteId);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     setFocusedNoteId(noteId);
@@ -160,9 +162,9 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
       onNavigateDown: navigateDown,
       onNavigateUp: navigateUp,
       onToggleStatus: () => {},
-      onDelete: () => {
+      onDelete: async () => {
         if (!focusedNoteId) return;
-        if (!confirm("Usunąć notatkę? Tej operacji nie można cofnąć.")) return;
+        if (!(await confirmDialog("Usunąć notatkę? Tej operacji nie można cofnąć."))) return;
         const idx = filteredNotes.findIndex((n) => n.id === focusedNoteId);
         const next = filteredNotes[idx + 1] ?? filteredNotes[idx - 1];
         setFocusedNoteId(next?.id ?? null);

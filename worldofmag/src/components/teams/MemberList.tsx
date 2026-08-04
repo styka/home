@@ -3,6 +3,7 @@
 import { changeMemberRole, removeMember, setMemberModuleAccess } from "@/actions/teams"
 import { useState } from "react"
 import { RESTRICTABLE_MODULES, moduleLabel, parseModuleAccess } from "@/lib/teams/memberAccess"
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 type Member = {
   userId: string
@@ -22,6 +23,7 @@ export default function MemberList({
   currentUserId: string
   currentUserRole: string
 }) {
+  const confirmDialog = useConfirm()
   const [busy, setBusy] = useState<string | null>(null)
   const [accessOpen, setAccessOpen] = useState<string | null>(null)
   const isOwner = currentUserRole === "OWNER"
@@ -37,7 +39,7 @@ export default function MemberList({
   }
 
   async function handleRemove(userId: string) {
-    if (!confirm("Usunąć tego użytkownika z teamu?")) return
+    if (!(await confirmDialog("Usunąć tego użytkownika z teamu?"))) return
     setBusy(userId)
     try {
       await removeMember(teamId, userId)
@@ -192,6 +194,7 @@ function ModuleAccessEditor({
   moduleAccess: string | null
   onClose: () => void
 }) {
+  const confirmDialog = useConfirm()
   // null = brak ograniczeń → wszystkie zaznaczone na starcie.
   const initial = parseModuleAccess(moduleAccess)
   const [selected, setSelected] = useState<Set<string>>(

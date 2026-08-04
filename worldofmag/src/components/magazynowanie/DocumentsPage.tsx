@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import type { StorageSupplier } from "@prisma/client";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { ModuleView } from "@/components/ui/view";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const inputStyle: React.CSSProperties = { backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" };
 
@@ -25,6 +26,7 @@ export function DocumentsPage({
   suppliers: StorageSupplier[];
   currency: string;
 }) {
+  const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [editorOpen, setEditorOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -102,8 +104,8 @@ export function DocumentsPage({
     });
   }
 
-  function remove(id: string) {
-    if (!confirm("Usunąć dokument? (stan nie zostanie cofnięty)")) return;
+  async function remove(id: string) {
+    if (!(await confirmDialog("Usunąć dokument? (stan nie zostanie cofnięty)"))) return;
     startTransition(async () => {
       await deleteDocument(id);
     });

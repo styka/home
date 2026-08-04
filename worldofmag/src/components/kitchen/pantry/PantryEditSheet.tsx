@@ -6,6 +6,7 @@ import { addPantryItem, updatePantryItem, deletePantryItem } from "@/actions/pan
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import type { PantryItemWithProduct } from "@/actions/pantry";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const LOCATION_OPTIONS = ["spiżarnia", "lodówka", "zamrażarka", "przyprawy", "inne"];
 
@@ -26,6 +27,7 @@ function toDateInput(d: Date | null | undefined): string {
 }
 
 export function PantryEditSheet({ open, onClose, item, defaultLocation }: PantryEditSheetProps) {
+  const confirmDialog = useConfirm();
   const [name, setName] = useState(item?.name ?? "");
   const [quantity, setQuantity] = useState<string>(item?.quantity?.toString() ?? "");
   const [unit, setUnit] = useState(item?.unit ?? "");
@@ -74,9 +76,9 @@ export function PantryEditSheet({ open, onClose, item, defaultLocation }: Pantry
     });
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!item) return;
-    if (!confirm("Usunąć tę pozycję ze spiżarni?")) return;
+    if (!(await confirmDialog("Usunąć tę pozycję ze spiżarni?"))) return;
     startTransition(async () => {
       try {
         await deletePantryItem(item.id);

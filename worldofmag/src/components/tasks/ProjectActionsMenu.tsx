@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { MoreVertical, Pencil, Trash2, Check, X, Loader2 } from "lucide-react";
 import { updateTaskProject, deleteTaskProject } from "@/actions/taskProjects";
 import type { TaskProject } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 /**
  * Akcje projektu (zmiana nazwy + usunięcie) dostępne z nagłówka listy zadań.
@@ -12,6 +13,7 @@ import type { TaskProject } from "@/types";
  * identycznie na dotyku (mobile) i myszą (desktop). Skrzynki nie da się usunąć.
  */
 export function ProjectActionsMenu({ project }: { project: TaskProject }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -39,13 +41,13 @@ export function ProjectActionsMenu({ project }: { project: TaskProject }) {
     });
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     const count = project._count?.tasks ?? 0;
     const msg =
       count > 0
         ? `Usunąć projekt „${project.name}"?\n\n${count} zadań NIE zostanie usuniętych — stracą przypisanie do projektu, ale pozostaną widoczne w „Wszystkie".`
         : `Usunąć projekt „${project.name}"?`;
-    if (!confirm(msg)) return;
+    if (!(await confirmDialog(msg))) return;
     startTransition(async () => {
       try {
         await deleteTaskProject(project.id);

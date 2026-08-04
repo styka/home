@@ -28,6 +28,7 @@ import { NewsStream } from "./NewsStream";
 import { HotTopics } from "./HotTopics";
 import { NewsSettings } from "./NewsSettings";
 import { TopicPicker } from "./TopicPicker";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import {
   getTopicView,
   getStreamView,
@@ -72,6 +73,7 @@ export function NewsPage({
   /** 043: parametry adresu z serwera — zakładkę widoku czytamy stąd, nie z `window`. */
   viewParams?: RawParams;
 }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const { showToast } = useToast();
   // 043: zakładka widoku w adresie (AC-8a). Klucz `widok`, bo `view` bywa w Omnii zajęte przez
@@ -624,14 +626,15 @@ function TopicBar({
   onSelect: (id: string) => void;
   onChanged: () => void;
 }) {
+  const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const [editing, setEditing] = useState<TopicDTO | null>(null);
   const [creating, setCreating] = useState(false);
   const selected = topics.find((t) => t.id === selectedId) ?? null;
 
-  function remove(t: TopicDTO) {
-    if (!confirm(`Usunąć temat „${t.title}" wraz z linią czasu?`)) return;
+  async function remove(t: TopicDTO) {
+    if (!(await confirmDialog(`Usunąć temat „${t.title}" wraz z linią czasu?`))) return;
     startTransition(async () => {
       try {
         await deleteTopic(t.id);

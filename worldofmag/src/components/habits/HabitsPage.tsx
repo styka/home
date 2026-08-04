@@ -12,6 +12,7 @@ import { HabitFormModal, emptyHabitForm, type HabitFormValue } from "./HabitForm
 import { HabitHeatmap } from "./HabitHeatmap";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { HabitWithStats } from "@/types";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 function streakLabel(n: number): string {
   if (n === 0) return "Zacznij dziś";
@@ -31,6 +32,7 @@ function encouragement(doneToday: number, scheduledToday: number): string {
 }
 
 export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [habits, setHabits] = useState<HabitWithStats[]>(initial);
   const [modal, setModal] = useState<{ mode: "create" } | { mode: "edit"; habit: HabitWithStats } | null>(null);
@@ -134,7 +136,7 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Usunąć ten nawyk wraz z całą historią?")) return;
+    if (!(await confirmDialog("Usunąć ten nawyk wraz z całą historią?"))) return;
     setHabits((prev) => prev.filter((h) => h.id !== id));
     await deleteHabit(id);
     router.refresh();

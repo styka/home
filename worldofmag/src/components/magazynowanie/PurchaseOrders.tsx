@@ -13,6 +13,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import type { StorageSupplier } from "@prisma/client";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const inputStyle: React.CSSProperties = { backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" };
 
@@ -29,6 +30,7 @@ export function PurchaseOrders({
   suppliers: StorageSupplier[];
   lowStock: LowItem[];
 }) {
+  const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -72,6 +74,7 @@ function OrderRow({
   onToggle: () => void;
   onToast: (m: string, t: "success" | "error") => void;
 }) {
+  const confirmDialog = useConfirm();
   const [draft, setDraft] = useState(order.draftText ?? "");
   const [drafting, setDrafting] = useState(false);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
@@ -110,8 +113,8 @@ function OrderRow({
     });
   }
 
-  function remove() {
-    if (!confirm("Usunąć zamówienie?")) return;
+  async function remove() {
+    if (!(await confirmDialog("Usunąć zamówienie?"))) return;
     startTransition(async () => {
       await deletePurchaseOrder(order.id);
     });

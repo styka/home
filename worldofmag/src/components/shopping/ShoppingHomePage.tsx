@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 // 009-shopping-offline-sync: offline wchodzimy w listę TWARDĄ nawigacją (<a>) zamiast SPA (<Link>),
 // bo nawigacja SPA offline pobiera payload RSC z sieci i się wywala. Twarda nawigacja pozwala
@@ -58,6 +59,7 @@ interface ShoppingHomePageProps {
 }
 
 export function ShoppingHomePage({ lists, archivedLists = [], totalPending, recentItems }: ShoppingHomePageProps) {
+  const confirmDialog = useConfirm();
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [showArchived, setShowArchived] = useState(false);
@@ -73,7 +75,7 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
       ? `${totalPending} ${pluralizePolish(totalPending, "pozycja", "pozycje", "pozycji")} do kupienia`
       : `${lists.length} ${pluralizePolish(lists.length, "lista", "listy", "list")}`;
 
-  function handleCreate() {
+  async function handleCreate() {
     const name = newName.trim() || "Zakupy";
     startTransition(async () => {
       await createList(name);
@@ -296,8 +298,8 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
                   <Archive size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
                   <span style={{ flex: 1, fontSize: 13, color: "var(--text-secondary)" }}>{list.name}</span>
                   <button
-                    onClick={() => {
-                      if (!confirm("Przywrócić listę z archiwum?")) return;
+                    onClick={async () => {
+                      if (!(await confirmDialog("Przywrócić listę z archiwum?"))) return;
                       startTransition(() => unarchiveList(list.id));
                       showToast("Lista przywrócona", "success");
                     }}

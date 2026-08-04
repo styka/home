@@ -11,6 +11,7 @@ import { SpeakButton } from "./SpeakButton";
 import type { LanguageDeck, Vocabulary } from "@/types";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { ModuleView } from "@/components/ui/view";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -27,6 +28,7 @@ function isDue(card: Vocabulary): boolean {
 }
 
 export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] } }) {
+  const confirmDialog = useConfirm();
   const router = useRouter();
   const [term, setTerm] = useState("");
   const [translation, setTranslation] = useState("");
@@ -89,7 +91,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
   }
 
   async function removeDeck() {
-    if (!confirm(`Usunąć talię „${deck.name}" wraz ze wszystkimi słówkami?`)) return;
+    if (!(await confirmDialog(`Usunąć talię „${deck.name}" wraz ze wszystkimi słówkami?`))) return;
     await deleteDeck(deck.id);
     router.push("/languages");
   }

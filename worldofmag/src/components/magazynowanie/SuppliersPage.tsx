@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/Toast";
 import { ModuleView } from "@/components/ui/view";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { StorageSupplier } from "@prisma/client";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const inputStyle: React.CSSProperties = {
   backgroundColor: "var(--bg-elevated)",
@@ -16,6 +17,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 export function SuppliersPage({ suppliers }: { suppliers: StorageSupplier[] }) {
+  const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [editing, setEditing] = useState<StorageSupplier | "new" | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -46,10 +48,10 @@ export function SuppliersPage({ suppliers }: { suppliers: StorageSupplier[] }) {
         const s = suppliers.find((x) => x.id === selectedId);
         if (s) setEditing(s);
       },
-      onDelete: () => {
+      onDelete: async () => {
         if (editing) return;
         const s = suppliers.find((x) => x.id === selectedId);
-        if (!s || !confirm("Usunąć dostawcę?")) return;
+        if (!s || !(await confirmDialog("Usunąć dostawcę?"))) return;
         const idx = suppliers.findIndex((x) => x.id === s.id);
         const next = suppliers[idx + 1] ?? suppliers[idx - 1];
         setSelectedId(next?.id ?? null);
@@ -131,6 +133,7 @@ function SupplierEditor({
   onClose: () => void;
   onToast: (m: string, t: "success" | "error") => void;
 }) {
+  const confirmDialog = useConfirm();
   const [name, setName] = useState(supplier?.name ?? "");
   const [contact, setContact] = useState(supplier?.contact ?? "");
   const [email, setEmail] = useState(supplier?.email ?? "");
@@ -156,8 +159,8 @@ function SupplierEditor({
     });
   }
 
-  function remove() {
-    if (!supplier || !confirm("Usunąć dostawcę?")) return;
+  async function remove() {
+    if (!supplier || !(await confirmDialog("Usunąć dostawcę?"))) return;
     startTransition(async () => {
       try {
         await deleteSupplier(supplier.id);
