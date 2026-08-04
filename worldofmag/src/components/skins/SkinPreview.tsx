@@ -3,7 +3,12 @@
 import { resolveTokens, tokensToStyle, type SkinTokens } from "@/lib/skins";
 
 /** Miniatura skórki — renderuje przykładowy „chrom" aplikacji ze zmiennymi danej
- *  skórki zastosowanymi lokalnie (scoped), więc pokazuje wygląd bez zmiany całej strony. */
+ *  skórki zastosowanymi lokalnie (scoped), więc pokazuje wygląd bez zmiany całej strony.
+ *
+ *  045: podgląd pokazuje też TYPOGRAFIĘ, CIEŃ, TŁO i OBRAMOWANIE, nie tylko próbki kolorów.
+ *  Odkąd skórka steruje krojem, wersalikami i poświatą, miniatura złożona z samych kolorowych
+ *  prostokątów pokazywałaby ułamek tego, co użytkownik właśnie zmienia — i wybór skórki
+ *  z listy byłby zgadywaniem. */
 export function SkinPreview({ tokens, compact = false }: { tokens: SkinTokens; compact?: boolean }) {
   const full = resolveTokens(tokens);
   const style = tokensToStyle(full);
@@ -13,9 +18,11 @@ export function SkinPreview({ tokens, compact = false }: { tokens: SkinTokens; c
       style={{
         ...style,
         background: "var(--bg-base)",
+        backgroundImage: "var(--bg-image-base)",
         color: "var(--text-primary)",
+        fontFamily: "var(--font-family-base)",
         borderRadius: "var(--radius-lg)",
-        border: "1px solid var(--border)",
+        border: "var(--border-width) var(--border-style) var(--border)",
         padding: compact ? 10 : 14,
         display: "flex",
         flexDirection: "column",
@@ -33,16 +40,38 @@ export function SkinPreview({ tokens, compact = false }: { tokens: SkinTokens; c
       <div
         style={{
           background: "var(--bg-surface)",
-          border: "1px solid var(--border)",
+          backgroundImage: "var(--bg-image-surface)",
+          border: "var(--border-width) var(--border-style) var(--border)",
           borderRadius: "var(--radius)",
+          boxShadow: "var(--shadow-surface)",
           padding: compact ? 8 : 10,
           display: "flex",
           flexDirection: "column",
           gap: 6,
         }}
       >
-        <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: compact ? 12 : 13 }}>Aa</div>
-        <div style={{ color: "var(--text-secondary)", fontSize: compact ? 10 : 11 }}>Tekst drugorzędny</div>
+        <div
+          style={{
+            fontFamily: "var(--font-family-display)",
+            fontWeight: "var(--font-weight-heading)" as unknown as number,
+            letterSpacing: "var(--letter-spacing-heading)",
+            textTransform: "var(--text-transform-heading)" as React.CSSProperties["textTransform"],
+            color: "var(--text-primary)",
+            fontSize: compact ? 12 : 14,
+          }}
+        >
+          Nagłówek
+        </div>
+        <div
+          style={{
+            color: "var(--text-secondary)",
+            fontSize: compact ? 10 : 11,
+            letterSpacing: "var(--letter-spacing-base)",
+            lineHeight: "var(--line-height-base)",
+          }}
+        >
+          Tekst drugorzędny
+        </div>
         <div style={{ display: "flex", gap: 6, marginTop: 2, flexWrap: "wrap" }}>
           <span style={{ background: "var(--accent-blue)", color: "var(--on-accent)", padding: "3px 8px", borderRadius: "var(--radius)", fontSize: 10, fontWeight: 500 }}>
             Akcent
@@ -53,6 +82,23 @@ export function SkinPreview({ tokens, compact = false }: { tokens: SkinTokens; c
           <span style={{ background: "var(--accent-red)", color: "var(--on-accent)", padding: "3px 8px", borderRadius: "var(--radius)", fontSize: 10, fontWeight: 500 }}>
             Uwaga
           </span>
+        </div>
+        {/* Kontrolka — pokazuje zaokrąglenie kontrolek i poświatę, czyli to, czym „Mostek"
+            różni się od „Papieru" bardziej niż samym kolorem. */}
+        <div
+          style={{
+            marginTop: 4,
+            alignSelf: "flex-start",
+            background: "var(--accent-amber)",
+            color: "var(--on-accent)",
+            padding: "4px 12px",
+            borderRadius: "var(--radius-control)",
+            boxShadow: "var(--shadow-glow)",
+            fontSize: 10,
+            fontWeight: 600,
+          }}
+        >
+          Przycisk
         </div>
       </div>
     </div>

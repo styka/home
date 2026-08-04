@@ -112,29 +112,29 @@
 
 ## Faza 5 — Edytor skórki
 
-- [ ] **T-21** — `src/components/skins/SkinEditor.tsx` — sekcje rodzin tokenów (kolory, typografia,
+- [x] **T-21** — `src/components/skins/SkinEditor.tsx` — sekcje rodzin tokenów (kolory, typografia,
       gęstość, zaokrąglenia, obramowania, cienie, tło, ruch, chrom), kontrolki dla nowych rodzajów,
       podgląd na żywo.
       **Gotowe, gdy:** zmiana tokenu z **każdej** rodziny jest natychmiast widoczna w podglądzie.
       **(AC-7)**
-- [ ] **T-22** — `src/components/skins/SkinPreview.tsx` — podgląd pokazujący typografię, cienie,
+- [x] **T-22** — `src/components/skins/SkinPreview.tsx` — podgląd pokazujący typografię, cienie,
       obramowania i ruch, nie tylko próbki kolorów.
-- [ ] **T-23** — Import/eksport w UI edytora (pobranie pliku JSON + wczytanie), oparte na `exportSkin`
+- [x] **T-23** — Import/eksport w UI edytora (pobranie pliku JSON + wczytanie), oparte na `exportSkin`
       /`importSkin` z T-5; komunikat, gdy część tokenów odrzucono przy imporcie.
       **Gotowe, gdy:** eksport→import na **drugim koncie** odtwarza skórkę identycznie. **(AC-11)**
 
 ## Faza 5b — Generowanie skórki przez AI (zakres dodany 2026-08-04, C-54)
 
-- [ ] **T-21a** — `src/lib/jobs/handlers/skinGenerate.ts` — handler wzorowany na
+- [x] **T-21a** — `src/lib/jobs/handlers/skinGenerate.ts` — handler wzorowany na
       `kitchenGenerateRecipe`: `op: "generation"`, `json: true`, katalog tokenów w promptcie
       **generowany z `ALL_CONTROLS`** (nie przepisany ręcznie), twarde wymagania kontrastu i umiaru.
       Wynik przez `validateTokens()` — model jest źródłem równie obcym jak cudzy plik.
       Zużycie przepuszczone przez `usageFromChat`.
       **Gotowe, gdy:** `npm run check:cost-badge` przechodzi. **(AC-14, AC-15, AC-16)**
-- [ ] **T-21b** — `src/app/api/llm/skins/generate/route.ts` — cienka trasa (sesja, `JobError` → status)
+- [x] **T-21b** — `src/app/api/llm/skins/generate/route.ts` — cienka trasa (sesja, `JobError` → status)
       + wpis `on-demand` w `src/lib/ai/content-memory-coverage.json` z powodem.
       **Gotowe, gdy:** `npm run check:content-memory` przechodzi.
-- [ ] **T-21c** — UI w edytorze skórki: pole opisu, przycisk generowania, podgląd propozycji
+- [x] **T-21c** — UI w edytorze skórki: pole opisu, przycisk generowania, podgląd propozycji
       **przed** zapisem, wskaźnik kosztu, informacja o odrzuconych tokenach, możliwość poprawienia
       opisu i ponowienia oraz ręcznego dostrojenia wyniku.
       **Gotowe, gdy:** model niczego nie zapisuje ani nie włącza sam. **(AC-14, AC-17)**
