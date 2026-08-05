@@ -63,7 +63,7 @@
       Konsumenci: `notesExecutor`, `agentTools` (`getNoteGroups`).
       **Gotowe, gdy:** rytuał przechodzi, a Kuchnia nadal importuje tagi z `@/actions/tags`.
       **(AC-1, AC-2, AC-3)**
-- [ ] **T-7** — **Flota** → `src/modules/flota/`. Akcje: `flota.ts`. UI: `components/flota/` (3).
+- [x] **T-7** — **Flota** → `src/modules/flota/`. Akcje: `flota.ts`. UI: `components/flota/` (3).
       Lib: `lib/flota.ts` + testy `flota.test.ts`, `flotaTco.test.ts`.
       Konsumenci: `flotaExecutor`, **pulpit** (`getVehicles`).
       **Gotowe, gdy:** rytuał + `test:unit` bez ubytku testów. **(AC-1, AC-2, AC-3)**

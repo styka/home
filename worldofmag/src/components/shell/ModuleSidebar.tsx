@@ -12,7 +12,7 @@ import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
 import { PetsSideNav } from "@/components/pets/PetsSideNav";
 import { LanguagesSideNav } from "@/modules/languages/ui/LanguagesSideNav";
-import { FlotaSideNav } from "@/components/flota/FlotaSideNav";
+import { FlotaSideNav } from "@/modules/flota/ui/FlotaSideNav";
 import { PortfelSideNav } from "@/components/portfel/PortfelSideNav";
 import { isPathLocked } from "@/lib/pathPermissions";
 import { resolveMenu, defaultMenuPrefs, type MenuPrefs, type ModuleDef } from "@/lib/modules";

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { computeVehicleTCO, type FuelLogLike, type ServiceRecordLike } from "@/lib/flota";
+import { computeVehicleTCO, type FuelLogLike, type ServiceRecordLike } from "../flota";
 
 // Z-291: TCO pojazdu (paliwo + serwis) + koszt/km.
 const fuel: FuelLogLike[] = [

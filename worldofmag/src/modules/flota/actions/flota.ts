@@ -5,7 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { bookAutoExpense, removeAutoExpense } from "@/lib/portfel/autoExpense";
-import { SERVICE_LABELS } from "@/lib/flota";
+import { SERVICE_LABELS } from "../lib/flota";
 import type { Vehicle, FuelLog, ServiceRecord } from "@prisma/client";
 
 export type VehicleAttachmentDTO = { id: string; name: string; url: string; createdAt: Date };

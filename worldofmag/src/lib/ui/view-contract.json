@@ -20,8 +20,8 @@
     "flota": {
       "status": "done",
       "entries": [
-        "src/components/flota/FlotaHomePage.tsx",
-        "src/components/flota/VehicleDetailPage.tsx"
+        "src/modules/flota/ui/FlotaHomePage.tsx",
+        "src/modules/flota/ui/VehicleDetailPage.tsx"
       ]
     },
     "guide": {

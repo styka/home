@@ -6,8 +6,8 @@ import Link from "next/link";
 import { Car, Plus, Loader2, ChevronRight, Gauge, CalendarClock, ShieldCheck, AlertTriangle, Users } from "lucide-react";
 import { SectionHeading, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { createVehicle, type VehicleWithStats } from "@/actions/flota";
-import { FUEL_LABELS, deadlineStatus } from "@/lib/flota";
+import { createVehicle, type VehicleWithStats } from "../actions/flota";
+import { FUEL_LABELS, deadlineStatus } from "../lib/flota";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface Props {

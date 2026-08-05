@@ -9,7 +9,7 @@ import { getTodaysMeals } from "@/actions/mealPlans";
 import { getExpiringSoon } from "@/actions/pantry";
 import { getPendingInvitationsCount } from "@/actions/invitations";
 import { getCareAgenda } from "@/actions/petCare";
-import { getVehicles } from "@/actions/flota";
+import { getVehicles } from "@/modules/flota/contract";
 import { getWalletOverview } from "@/actions/portfel";
 import { getDecks } from "@/modules/languages/contract";
 import { getHealthEvents } from "@/actions/health";

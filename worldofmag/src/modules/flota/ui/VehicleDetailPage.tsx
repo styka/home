@@ -10,8 +10,8 @@ import {
   addFuelLog, deleteFuelLog, addServiceRecord, deleteServiceRecord, updateVehicle, deleteVehicle,
   addVehicleAttachment, deleteVehicleAttachment,
   type VehicleWithStats,
-} from "@/actions/flota";
-import { FUEL_LABELS, SERVICE_LABELS, deadlineStatus, computeConsumption, computeVehicleTCO } from "@/lib/flota";
+} from "../actions/flota";
+import { FUEL_LABELS, SERVICE_LABELS, deadlineStatus, computeConsumption, computeVehicleTCO } from "../lib/flota";
 import { ModuleView } from "@/components/ui/view";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 

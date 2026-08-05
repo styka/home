@@ -9,7 +9,6 @@ export const PERMISSIONS = {
   ADMIN:       "module.admin",
   INVITATIONS: "module.invitations",
   PETS:        "module.pets",
-  FLOTA:       "module.flota",
   PORTFEL:     "module.portfel",
   HEALTH:      "module.health",
   SERVICES:    "module.services",
@@ -49,7 +48,6 @@ export function legacyPermissionForPath(path: string): string | null {
   if (path.startsWith("/admin")) return PERMISSIONS.ADMIN
   if (path.startsWith("/invitations")) return PERMISSIONS.INVITATIONS
   if (path.startsWith("/pets")) return PERMISSIONS.PETS
-  if (path.startsWith("/flota")) return PERMISSIONS.FLOTA
   if (path.startsWith("/portfel")) return PERMISSIONS.PORTFEL
   if (path.startsWith("/health")) return PERMISSIONS.HEALTH
   if (path.startsWith("/services")) return PERMISSIONS.SERVICES

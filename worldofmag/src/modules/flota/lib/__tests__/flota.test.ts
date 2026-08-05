@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { deadlineStatus, computeConsumption } from "@/lib/flota";
+import { deadlineStatus, computeConsumption } from "../flota";
 
 // Flota — czyste funkcje dotąd nieprzetestowane (computeVehicleTCO osobno w flotaTco.test).
 const DAY = 86_400_000;
