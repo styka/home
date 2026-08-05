@@ -10,7 +10,6 @@ export const PERMISSIONS = {
   INVITATIONS: "module.invitations",
   PETS:        "module.pets",
   PORTFEL:     "module.portfel",
-  HEALTH:      "module.health",
   SERVICES:    "module.services",
   CALENDAR:    "module.calendar",
   NEWS:        "module.news",
@@ -49,7 +48,6 @@ export function legacyPermissionForPath(path: string): string | null {
   if (path.startsWith("/invitations")) return PERMISSIONS.INVITATIONS
   if (path.startsWith("/pets")) return PERMISSIONS.PETS
   if (path.startsWith("/portfel")) return PERMISSIONS.PORTFEL
-  if (path.startsWith("/health")) return PERMISSIONS.HEALTH
   if (path.startsWith("/services")) return PERMISSIONS.SERVICES
   if (path.startsWith("/calendar")) return PERMISSIONS.CALENDAR
   if (path.startsWith("/wiadomosci")) return PERMISSIONS.NEWS

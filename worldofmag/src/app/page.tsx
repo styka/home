@@ -12,7 +12,7 @@ import { getCareAgenda } from "@/actions/petCare";
 import { getVehicles } from "@/modules/flota/contract";
 import { getWalletOverview } from "@/actions/portfel";
 import { getDecks } from "@/modules/languages/contract";
-import { getHealthEvents } from "@/actions/health";
+import { getHealthEvents } from "@/modules/health/contract";
 import { getLowStock, getExpiringStorage } from "@/modules/magazynowanie/contract";
 import { getDashboardPrefs } from "@/actions/dashboardPrefs";
 import { readFavoriteViews } from "@/actions/favoriteViews";

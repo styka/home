@@ -37,8 +37,8 @@
     "health": {
       "status": "done",
       "entries": [
-        "src/components/health/HealthHomePage.tsx",
-        "src/components/health/MedicationsPage.tsx"
+        "src/modules/health/ui/HealthHomePage.tsx",
+        "src/modules/health/ui/MedicationsPage.tsx"
       ]
     },
     "invitations": {

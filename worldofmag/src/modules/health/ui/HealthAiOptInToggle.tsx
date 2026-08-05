@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Bot, Loader2 } from "lucide-react";
-import { getHealthSettings, setHealthAiOptIn } from "@/actions/health";
+import { getHealthSettings, setHealthAiOptIn } from "../actions/health";
 
 // Z-270: przełącznik zgody na dostęp asystenta AI do danych zdrowotnych.
 // Samowystarczalny (sam pobiera stan). Domyślnie wyłączone (privacy-by-default).

@@ -18,7 +18,7 @@ import { getNoteGroups } from "@/modules/notes/contract";
 import { getCookbooks } from "@/actions/cookbooks";
 import { getWalletOverview } from "@/actions/portfel";
 import { getExpiringSoon, getAutoReplenishCandidates } from "@/actions/pantry";
-import { getTestTrends } from "@/actions/health";
+import { getTestTrends } from "@/modules/health/contract";
 import { getDueCards, getStudyStreak } from "@/modules/languages/contract";
 import { getMealPlanCost, getTodaysMeals } from "@/actions/mealPlans";
 import { getMonthlyReport } from "@/actions/portfelReports";

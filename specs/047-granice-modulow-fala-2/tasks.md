@@ -67,7 +67,7 @@
       Lib: `lib/flota.ts` + testy `flota.test.ts`, `flotaTco.test.ts`.
       Konsumenci: `flotaExecutor`, **pulpit** (`getVehicles`).
       **Gotowe, gdy:** rytuał + `test:unit` bez ubytku testów. **(AC-1, AC-2, AC-3)**
-- [ ] **T-8** — **Zdrowie** → `src/modules/health/`. Akcje: `health.ts` + `medications.ts`.
+- [x] **T-8** — **Zdrowie** → `src/modules/health/`. Akcje: `health.ts` + `medications.ts`.
       UI: `components/health/` (4). **`lib/medicationSchedule.ts` i `lib/health/queryDiag.ts`
       ZOSTAJĄ** — pierwszego używa kalendarz i `agentTools`, drugiego `systemHealth` (plan §3.1).
       Konsumenci: `healthExecutor`, `agentTools` (`getTestTrends`), **pulpit** (`getHealthEvents`).

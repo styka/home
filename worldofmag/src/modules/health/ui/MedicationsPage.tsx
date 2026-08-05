@@ -11,7 +11,7 @@ import {
   deleteMedicationSchedule,
   logDose,
   unlogDose,
-} from "@/actions/medications";
+} from "../actions/medications";
 import { describeFrequency, parseTimes } from "@/lib/medicationSchedule";
 import type { DoseSlot, MedicationFreqType, MedicationKind, MedicationSchedule } from "@/types";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
