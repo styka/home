@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Save, Loader2, ArrowLeft } from "lucide-react";
-import { createStory, updateStory } from "@/actions/qa";
+import { createStory, updateStory } from "@/modules/qa/contract";
 
 interface Props {
   mode: "create" | "edit";

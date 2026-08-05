@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 
 // 031 (audyt kontroli dostępu): `notifyUser` żyła w `src/actions/notifications.ts` z dyrektywą
 // `"use server"`, więc — jak każda eksportowana funkcja w takim pliku — była wystawiona jako

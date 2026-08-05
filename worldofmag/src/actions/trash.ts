@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
-import { TRASH_RETENTION_DAYS } from "@/lib/trash";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
+import { TRASH_RETENTION_DAYS } from "@/platform/trash/trash";
 
 export type TrashItemDTO = {
   id: string;

@@ -1,8 +1,8 @@
 "use server";
 
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+import { prisma } from "@/platform/db/prisma";
 import { getConfigValue } from "@/actions/config";
 import { getAiUsageStats } from "@/lib/ai/usage";
 

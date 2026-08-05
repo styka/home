@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic";
 
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { getCookbook } from "@/actions/cookbooks";
 import { getRecipes } from "@/actions/recipes";
-import { getUserTeamIds } from "@/lib/server-utils";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { CookbookView } from "@/components/kitchen/cookbooks/CookbookView";
 
 interface PageProps {

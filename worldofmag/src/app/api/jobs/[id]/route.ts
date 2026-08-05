@@ -2,7 +2,7 @@
 // Zawężone do właściciela (getJob z ownerId) — nie da się podejrzeć cudzego zadania.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { getJob } from "@/lib/jobs/queue";
 import { startJobWorker } from "@/lib/jobs/worker";
 import { visibleUsage } from "@/lib/ai/costVisibility";

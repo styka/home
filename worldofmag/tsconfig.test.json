@@ -1,0 +1,19 @@
+{
+  // 046 — kontrola typów DLA TESTÓW.
+  //
+  // `tsconfig.json` wyklucza `src/**/*.test.ts`, więc `tsc --noEmit` NIE widzi plików testowych.
+  // W tym przebiegu kosztowało to dwa razy: po przeniesieniu `lib/permissions.ts` do
+  // `platform/auth/` dwa testy importowały nieistniejący już moduł, typecheck był czysty,
+  // a wykrył to dopiero `npm run test:unit` (i to dopiero po ~40 sekundach uruchamiania).
+  //
+  // Testy działają w Node, nie w przeglądarce, więc mają własny `target` — to jedyny powód, dla
+  // którego nie da się ich po prostu dołączyć do głównej konfiguracji (iteracja po Set/Map wymaga
+  // ES2015+, a główny target celuje w przeglądarkę).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "types": ["node"]
+  },
+  "include": ["src/**/*.test.ts", "src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "e2e", "playwright.config.ts", "playwright-report", "test-results"]
+}

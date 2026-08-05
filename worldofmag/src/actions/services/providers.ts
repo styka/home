@@ -2,10 +2,10 @@
 
 // Z-213/361: akcje modułu Usługi — kategorie, profil wykonawcy, weryfikacja (M7).
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { notifyUser } from "@/lib/notify";
 import { uniqueProviderSlug, requireOwnProvider } from "@/lib/services/helpers";
 import type { ServiceCategoryDTO } from "@/lib/services";

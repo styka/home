@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { userDayBounds } from "@/lib/userTime";
 import { assertProjectAccess } from "@/actions/taskProjects";
 import { assertTaskAccess } from "@/lib/tasks/access";
 import { trackActivity } from "@/actions/activity";
-import { recordTrash } from "@/lib/trash";
+import { recordTrash } from "@/platform/trash/trash";
 import { computeNextDue, parseRecurringRule, computeRecurringSuccessor } from "@/lib/recurrence";
 import type { Task, TaskPriority, TaskWithRelations, RecurringRule } from "@/types";
 import { parseStatusConfig, DEFAULT_STATUS_CONFIG, SYSTEM_TASK_STATUSES } from "@/types";

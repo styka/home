@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { defaultMenuPrefs, MAX_TAB_BAR, MODULES, type MenuPrefs } from "@/lib/modules";
 
 const VALID_IDS = new Set(MODULES.map((m) => m.id));

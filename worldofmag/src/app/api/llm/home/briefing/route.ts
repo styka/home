@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { getUserTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { auth } from "@/platform/auth/session";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { getCalendarEvents } from "@/actions/calendar";
 import { chatComplete } from "@/lib/llm/chat";
 import { checkAiBudget, recordAiUsage } from "@/lib/ai/usage";

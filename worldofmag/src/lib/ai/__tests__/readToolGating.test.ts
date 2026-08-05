@@ -12,7 +12,7 @@ function isNote(result: unknown): boolean {
 }
 
 test("Z-181: bramki prywatności read-toolów (finanse opt-out, zdrowie opt-in) + izolacja", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const { runReadTool } = await import("@/lib/ai/agentTools");
 
   const A = await prisma.user.create({ data: { email: `rtg-a-${rnd()}@test.local` } });

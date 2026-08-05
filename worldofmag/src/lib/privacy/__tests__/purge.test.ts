@@ -8,7 +8,7 @@ const HAS_DB = !!process.env.DATABASE_URL;
 const rnd = () => Math.random().toString(36).slice(2, 10);
 
 test("Z-051 purgeUserData: kasuje dane usera (w tym SET-NULL), izolacja innych zachowana", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const { purgeUserData } = await import("@/lib/privacy/purge");
 
   const A = await prisma.user.create({ data: { email: `purge-a-${rnd()}@test.local` } });
@@ -61,7 +61,7 @@ test("Z-051 purgeUserData: kasuje dane usera (w tym SET-NULL), izolacja innych z
 // więc usunięcie konta sprzedawcy MUSI skasować też dane kupującego (nie osierocić).
 // Test pilnuje tej kaskady — gdyby ktoś zmienił FK na SetNull, PII wyciekłoby.
 test("Z-264 RODO: usunięcie konta kasuje PetSale wraz z PII kupującego (CASCADE)", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const { purgeUserData } = await import("@/lib/privacy/purge");
 
   const U = await prisma.user.create({ data: { email: `petsale-${rnd()}@test.local` } });
@@ -87,7 +87,7 @@ test("Z-264 RODO: usunięcie konta kasuje PetSale wraz z PII kupującego (CASCAD
 // Wszystkie modele Portfela mają FK onDelete:Cascade do User → usunięcie konta MUSI
 // je skasować. Test pilnuje kaskady (gdyby ktoś zmienił FK na SetNull, dane zostałyby).
 test("Z-301 RODO: usunięcie konta kasuje dane finansowe Portfela (CASCADE)", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const { purgeUserData } = await import("@/lib/privacy/purge");
 
   const U = await prisma.user.create({ data: { email: `fin-${rnd()}@test.local` } });
@@ -119,7 +119,7 @@ test("Z-301 RODO: usunięcie konta kasuje dane finansowe Portfela (CASCADE)", { 
 // pilnuje intencji: zmiana FK na Cascade = utrata scenariuszy QA; dodanie do purge
 // = niepotrzebne kasowanie współdzielonej dokumentacji. (Potwierdza: brak luki RODO.)
 test("RODO/QA: usunięcie konta autora ANONIMIZUJE QaTestScenario (authorId→null), nie kasuje", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const { purgeUserData } = await import("@/lib/privacy/purge");
 
   const U = await prisma.user.create({ data: { email: `qa-${rnd()}@test.local` } });

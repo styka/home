@@ -29,6 +29,7 @@ const path = require("path");
 
 const root = path.join(__dirname, "..");
 const actionsDir = path.join(root, "src/actions");
+const modulesDir = path.join(root, "src/modules");
 const manifestPath = path.join(root, "src/lib/ai/action-coverage.json");
 
 // Odczyt użytkownika = get*/list*/search* (to, co przegląda w aplikacji).
@@ -40,13 +41,55 @@ const SKIP_EXTRA = new Set([
 ]);
 const VALID = new Set(["ai", "pending", "excluded"]);
 
+/**
+ * Gdzie mieszkają Server Actions. Historycznie był to wyłącznie `src/actions/`; od 046 moduł
+ * przeniesiony do `src/modules/<x>/` trzyma swoje akcje u siebie (`src/modules/<x>/actions/*.ts`).
+ *
+ * To NIE jest kosmetyka: gdyby bramka dalej patrzyła tylko w `src/actions`, przeniesienie modułu
+ * po cichu wypisałoby jego akcje z pokrycia AI **i z kontroli dostępu** — czyli refaktor
+ * organizacyjny osłabiłby bezpieczeństwo, nie zmieniając ani linijki logiki. Klucz w manifeście
+ * zostaje ten sam (nazwa pliku bez rozszerzenia), więc przenosiny nie wymagają przepisania wpisów.
+ */
+function actionFiles() {
+  const files = fs
+    .readdirSync(actionsDir)
+    .filter((f) => f.endsWith(".ts"))
+    .map((f) => path.join(actionsDir, f));
+
+  if (fs.existsSync(modulesDir)) {
+    for (const mod of fs.readdirSync(modulesDir)) {
+      const dir = path.join(modulesDir, mod, "actions");
+      if (!fs.existsSync(dir)) continue;
+      for (const f of fs.readdirSync(dir)) {
+        if (f.endsWith(".ts")) files.push(path.join(dir, f));
+      }
+    }
+  }
+
+  // Klucz manifestu to sama nazwa pliku, więc dwa pliki akcji o tej samej nazwie w różnych
+  // katalogach scaliłyby się w jeden wpis i połowa akcji zniknęłaby z bramki bez słowa.
+  const byName = new Map();
+  for (const f of files) {
+    const name = path.basename(f, ".ts");
+    if (byName.has(name)) {
+      console.error(
+        `✖ Kolizja nazw plików akcji: „${name}.ts" istnieje w dwóch miejscach:\n` +
+        `  ${path.relative(root, byName.get(name))}\n  ${path.relative(root, f)}\n` +
+        `  Klucz w manifeście pokrycia to nazwa pliku — zmień nazwę jednego z nich.`,
+      );
+      process.exit(1);
+    }
+    byName.set(name, f);
+  }
+  return files;
+}
+
 // Zbierz kandydatów (mutacje + odczyty) jako klucze `plik:funkcja`, z rozróżnieniem rodzaju.
 function collectCandidates() {
   const out = [];
-  for (const f of fs.readdirSync(actionsDir)) {
-    if (!f.endsWith(".ts")) continue;
-    const mod = f.replace(/\.ts$/, "");
-    const src = fs.readFileSync(path.join(actionsDir, f), "utf8");
+  for (const file of actionFiles()) {
+    const mod = path.basename(file, ".ts");
+    const src = fs.readFileSync(file, "utf8");
     // 031: zapamiętujemy też CIAŁO funkcji — bramka kontroli dostępu sprawdza w nim wywołanie guardu.
     const found = [...src.matchAll(/export async function ([a-zA-Z0-9_]+)/g)];
     found.forEach((m, i) => {

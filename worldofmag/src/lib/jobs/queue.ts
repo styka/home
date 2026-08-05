@@ -4,7 +4,7 @@
 // (visibility timeout), idempotencja (dedupeKey). Czysta warstwa danych — handlery
 // i pętla workera są osobno (`handlers.ts`, `worker.ts`).
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 
 export type JobStatus = "QUEUED" | "RUNNING" | "DONE" | "FAILED" | "CANCELLED";
 

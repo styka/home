@@ -7,7 +7,7 @@ import { StatTile, SectionHeading, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { createHabit, updateHabit, deleteHabit, setHabitArchived, toggleHabitDay, createTaskFromHabit } from "@/actions/habits";
 import { todayISO, computeStreaks, weekProgress, weekDoneCount, completionRate } from "@/lib/habitStats";
-import { showLocalNotification, notificationsGranted, requestNotificationPermission } from "@/lib/notifications";
+import { showLocalNotification, notificationsGranted, requestNotificationPermission } from "@/platform/notifications/notifications";
 import { HabitFormModal, emptyHabitForm, type HabitFormValue } from "./HabitFormModal";
 import { HabitHeatmap } from "./HabitHeatmap";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";

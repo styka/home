@@ -16,10 +16,14 @@ w checkliście nie ma numeru (rozdz. 10.4–10.5 — system komponentów i kontr
 zadań 1–3 Fazy 0. Rozdz. 13 nazywał je „bezwarunkowo pierwszymi": *refaktor bez siatki bezpieczeństwa
 to nie refaktor, tylko przepisywanie z nadzieją*.
 
-**Następny krok: Faza 1 — granice modułów** (zadania 4–8). Teraz jest bezpieczna do rozpoczęcia:
-klikacz pokrywa 21/21 modułów, test izolacji najemcy stoi na 37 modelach, a rozjazd schematu wykrywa
-bramka w buildzie. Uwaga z rozdz. 14: **reguła ESLint z zadania 6 nie jest opcjonalna** — granice bez
-egzekwowania erodują w tygodnie.
+**Faza 1 jest ZROBIONA W CZĘŚCI — jako pionowy wycinek** (przebieg 046). Powstała warstwa
+`src/platform/`, cztery moduły stoją w `src/modules/` z kontraktami, granica jest **egzekwowana
+lintem i dwiema bramkami**, a rejestr, uprawnienia i mapowanie ścieżek dla tych czterech modułów
+wynikają z **jednej deklaracji**. Poza wycinkiem zostaje **17 modułów** i **zadanie 8** (asystent AI).
+Lista jest jawna niżej — to jest dług nazwany, a nie cisza.
+
+**Następny krok: kolejne fale Fazy 1** — przenoszenie modułów od najmniej do najbardziej sprzężonych,
+po jednym commicie na moduł, tym samym wzorcem, który 046 sprawdził na czterech.
 
 ---
 
@@ -39,11 +43,11 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
-| 4 | `src/platform/` — przeniesienie wspólnych zdolności | ⬜ | |
-| 5 | `src/modules/<x>/` — moduł po module | ⬜ | |
-| 6 | `contract.ts` + reguła ESLint blokująca import przez granicę | ⬜ | **Nie jest opcjonalna** (rozdz. 14) |
-| 7 | `defineModule` + wyprowadzenie rejestru, uprawnień, nawigacji | ⬜ | |
-| 8 | Migracja asystenta AI na katalog składany z deklaracji | ⬜ | |
+| 4 | `src/platform/` — przeniesienie wspólnych zdolności | 🟡 | Przeniesione: `auth/{session,permissions,serverUtils,ownership}`, `db/prisma`, `trash`, `audit`, `notifications`, `viewState`, `shortcuts`, `favorites`, `registry`. `platform/ui` jest **re-eksportem** `components/ui` (świadomie — patrz wpis 046). **Zostaje:** `ai` (25 plików / 97 importujących), `llm` (8/55), `jobs` (5/45) |
+| 5 | `src/modules/<x>/` — moduł po module | 🟡 | **4 z 21**: Trasy TIR, Kontakty, Raporty, QA — każdy osobnym commitem. **Zostaje 17** (lista niżej) |
+| 6 | `contract.ts` + reguła ESLint blokująca import przez granicę | ✅ | Dwie reguły `no-restricted-imports` (moduł↔moduł, platforma↛moduł) + bramka `check:boundaries`, która sama je łamie i wymaga błędu. Sprawdzone: wyłączenie reguły **i** zepsucie konfiguracji czerwienią bramkę |
+| 7 | `defineModule` + wyprowadzenie rejestru, uprawnień, nawigacji | 🟡 | `defineModule` + `module.ts` dla 4 modułów; ich wpisy **usunięte** z `lib/modules.tsx` i `platform/auth/permissions.ts`. Bramka `check:module-registry`. Pulpit i kalendarz **jeszcze nie** wynikają z deklaracji — dojdą razem z modułami, które je zasilają |
+| 8 | Migracja asystenta AI na katalog składany z deklaracji | ⬜ | Dokument stawia je **ostatnim w fazie**, po wszystkich modułach — świadomie nietknięte |
 
 ### Faza 2 — Współdzielenie i współbieżność
 
@@ -256,3 +260,77 @@ Uzupełnienie tego, bez czego praca z 045 by się nie utrzymała.
 **Następny przebieg:** Faza 0, zadania **1 i 2** — klikacz ścieżki szczęśliwej dla 21/21 modułów
 (dziś smoke pokrywa 8) oraz generowany test izolacji najemcy z manifestu 545 akcji. Ten drugi
 dokument nazywa „najważniejszym testem w systemie", bo wyciek między najemcami kończy produkt.
+
+### 046 — Faza 1: granice modułów (pionowy wycinek) · 2026-08-04
+
+Pierwszy przebieg Fazy 1. Świadomie **wycinek pionowy, nie poziomy**: zamiast przenieść wszystkie
+21 modułów na pół gwizdka, cztery przechodzą całą drogę — przenosiny, kontrakt, deklaracja,
+egzekwowana granica — żeby wzorzec był **sprawdzony**, zanim powtórzy się go siedemnaście razy.
+
+**Co powstało**
+
+- **`src/platform/`** — jedenaście zdolności niezależnych od modułu. Kolejność przenoszenia szła od
+  zera importujących do 155 (`prisma`, `auth`), żeby skrypt przepisujący importy był sprawdzony na
+  małym zbiorze, zanim dotknie połowy repo. Łącznie ~490 podmian importu, poprawność potwierdzona
+  kontrolą typów: zerwany import to błąd kompilacji, nie cicha awaria.
+- **Cztery moduły w `src/modules/`** — Trasy TIR, Kontakty, Raporty, QA. Kolejność nieprzypadkowa:
+  Truck nie ma zewnętrznego konsumenta (kontrakt jako sama granica), Kontakty mają jednego
+  (egzekutor asystenta), Raporty czterech (panel admina, `AICommandSheet`, `agentTools`, egzekutor),
+  QA sprawdzają granicę **moduł ↔ powierzchnia administracyjna** — ich formularze redakcyjne
+  **zostały** w `components/admin/` właśnie po to, żeby granica miała co testować.
+- **Egzekwowanie** — dwie reguły lintu plus bramka `check:boundaries`.
+- **Jedna deklaracja** — `defineModule` w `module.ts`; stąd menu, uprawnienie i mapowanie ścieżek.
+  Wpisy czterech modułów **zniknęły** z `lib/modules.tsx` i z `platform/auth/permissions.ts`.
+  To jest sedno: deklaracja miała **zastąpić** listy, a nie dołożyć dziewiątą.
+
+**Decyzje warte zapamiętania**
+
+- **Wewnątrz modułu importujemy ścieżką względną.** Dla lintera plik w `modules/qa` importujący
+  `@/modules/qa/actions/qa` wygląda **identycznie** jak import cudzego wnętrza — przy aliasach jedna
+  reguła nie odróżni swojego od cudzego i trzeba by utrzymywać blok konfiguracji na każdy z 21
+  modułów. Przy ścieżkach względnych granicę widać w samym imporcie: `./` = moje, `@/modules/…` = cudze.
+- **Scalanie deklaracji nie mieszka w platformie.** Plan przewidywał `platform/registry.ts` jako
+  miejsce składania modułów, ale platformie nie wolno importować modułów — to ta sama reguła, którą
+  sami tu wprowadzamy. Platforma daje **typ i funkcje czyste**, składa **korzeń kompozycji**
+  (`src/lib/modules.tsx`). Asymetria z rozdz. 7.1 obowiązuje też autora przebudowy.
+- **Platforma, która potrzebuje wiedzy modułowej, przyjmuje ją parametrem.**
+  `filterAccessibleFavorites` dostaje predykat `isPathLocked` **parametrem wymaganym**. Gdyby był
+  opcjonalny z wariantem „historycznym" jako domyślnym, zapomniane przekazanie dawałoby **cichy
+  przeciek RBAC** zamiast błędu kompilacji.
+- **`platform/ui` jest re-eksportem, nie przenosinami.** Bramka kontraktu widoku skanuje
+  `src/components`; przeniesienie plików wywróciłoby ją w tym samym commicie, w którym przenosimy
+  granice. Dla modułu różnicy nie ma.
+
+**Trzy dziury, które ten przebieg zamknął — wszystkie znalezione, nie przewidziane**
+
+1. **Bramki miały zaszyte korzenie skanowania.** `check-ai-coverage` czytał tylko `src/actions/`,
+   a kontrola zaszytych kolorów tylko `src/components/`. Przeniesienie modułu **wypisywało jego akcje
+   z pokrycia AI i z kontroli dostępu**, a widok z zakazu zaszytych kolorów — bez jednego czerwonego
+   komunikatu. Refaktor czysto organizacyjny osłabiłby bezpieczeństwo, nie zmieniając linijki logiki.
+2. **`next lint` przy niepoprawnej konfiguracji kończy się kodem 0.** Wypisuje „ESLint configuration
+   … is invalid" i przechodzi dalej. Reguła granic przestaje wtedy działać przy zielonym buildzie —
+   czyli dokładnie to, przed czym ostrzega rozdz. 14. Stąd `check:boundaries`: bramka nie czyta
+   konfiguracji, tylko ją **wywołuje**, próbując złamać obie reguły.
+3. **`tsc` nie widzi plików testowych** (`tsconfig.json` wyklucza `src/**/*.test.ts`). Dwa testy
+   importowały pliki przeniesione do `platform/`; typecheck był czysty, a wykrywał to dopiero
+   40-sekundowy `test:unit`. Stąd `tsconfig.test.json` + `check:test-types` w buildzie.
+
+**Weryfikacja**
+
+Klikacz ścieżki szczęśliwej: **22/22** (21 modułów + odczyt rejestru) — w tym wszystkie cztery
+przeniesione. Testy jednostkowe 566/566. Komplet bramek zielony, `next build` przechodzi.
+Pełny zestaw klikaczy pokazał 19 czerwonych, wszystkie z powodów **niezwiązanych z przebudową**:
+brak danych z seeda w tym środowisku (`QaEpic`, `ShoppingList`, `Note` mają po 0 wierszy) oraz trzy
+przypadki niestabilne pod obciążeniem równoległym — `smoke.spec.ts` uruchomiony osobno daje 12/12.
+
+**Poza zakresem — jawnie, żeby nic nie zginęło**
+
+- **17 modułów czekających na przeniesienie:** Strona główna, Kalendarz, Zakupy, Zadania, Notatki,
+  Zwierzęta, Kuchnia, Nauka języków, Zdrowie, Wiadomości, Pogoda, Nawyki, Usługi, Flota, Portfel,
+  Magazynowanie, Warsztaty. Żyją na **jawnie nazwanej liście przejściowej** w `src/lib/modules.tsx`,
+  która ma się kurczyć do zera.
+- **Zdolności platformy odłożone:** `lib/ai` (25 plików / 97 importujących), `lib/llm` (8/55),
+  `lib/jobs` (5/45). Nie były potrzebne modułom pilotażowym, a ich przeniesienie podwoiłoby diff.
+- **Zadanie 8** (asystent AI składany z deklaracji) — dokument stawia je ostatnim w fazie.
+- **Pulpit i kalendarz** nie wynikają jeszcze z deklaracji: zasilają je moduły, których w
+  `src/modules/` jeszcze nie ma. Pola dojdą do `defineModule` razem z nimi.

@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { prisma } from "@/platform/db/prisma";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { UserFactsPanel } from "@/components/admin/UserFactsPanel";
 
 // 039: wgląd administratora w wiedzę o użytkowniku — i możliwość jej poprawienia.

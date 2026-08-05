@@ -4,7 +4,7 @@ import { useState, useTransition, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save, Columns, Eye, Edit3, HardDrive, Database } from "lucide-react";
-import { createReport } from "@/actions/reports";
+import { createReport } from "@/modules/reports/contract";
 import { getDriveStatus } from "@/actions/drive";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 

@@ -1,8 +1,8 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { getReport } from "@/actions/reports";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+import { getReport } from "@/modules/reports/contract";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { BookOpen, ArrowLeft, Calendar, Tag, Pencil, HardDrive, Database } from "lucide-react";
 

@@ -4,7 +4,7 @@
 // `actions/userFacts.ts` (akcje użytkownika), bo to jedyne miejsce, które sięga do bazy w imieniu
 // INNEGO modułu — bez sesji, po `userId`.
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { USER_FACT_CATEGORY_LABELS, USER_FACT_CONFIDENCE_LABELS, parseUserFactCategory, parseUserFactConfidence } from "@/lib/userFacts";
 
 /** Ile faktów maksymalnie doklejamy — prompt ma być kontekstem, nie życiorysem. */

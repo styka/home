@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { getSuggestions } from "@/lib/warsztat/catalog";
 import type { Workshop, WorkshopItem, WorkshopProject } from "@prisma/client";

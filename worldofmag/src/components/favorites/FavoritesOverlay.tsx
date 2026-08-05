@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FavoritesSwitcher } from "./FavoritesSwitcher";
 import { FavoritesShortcuts } from "./FavoritesShortcuts";
-import { FAVORITES_OPEN_EVENT } from "@/lib/favorites/favoritesBus";
-import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
+import { FAVORITES_OPEN_EVENT } from "@/platform/favorites/favoritesBus";
+import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
+import { isPathLocked } from "@/lib/pathPermissions";
 
 interface FavoritesOverlayProps {
   favorites: FavoriteViewDTO[];
@@ -23,7 +24,7 @@ export function FavoritesOverlay({ favorites, userPermissions }: FavoritesOverla
   // `useMemo` jest tu KONIECZNE, nie kosmetyczne: ta tablica idzie do `FavoritesShortcuts`, gdzie
   // steruje rejestracją skrótów. Nowa referencja przy każdym renderze = ponowna rejestracja.
   const accessible = useMemo(
-    () => filterAccessibleFavorites(favorites, userPermissions),
+    () => filterAccessibleFavorites(favorites, userPermissions, isPathLocked),
     [favorites, userPermissions],
   );
 

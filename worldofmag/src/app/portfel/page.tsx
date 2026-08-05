@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getWalletOverview } from "@/actions/portfel";
 import { getMyTeams } from "@/actions/teams";
 import { PortfelHomePage } from "@/components/portfel/PortfelHomePage";

@@ -11,7 +11,7 @@
 // `content-memory-coverage.json`, pilnowany bramką `check-content-memory.js`.
 
 import { createHash } from "crypto";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { parseStoredUsage, type AiUsageInfo } from "@/lib/ai/usage";
 // Import WYŁĄCZNIE typu — `sectionMode.ts` importuje stąd `AiContentKind`, więc import wartości
 // zrobiłby cykl w czasie wykonania. Typy znikają przy kompilacji, więc ten kierunek jest bezpieczny.

@@ -1,7 +1,7 @@
 // OCR dokumentu magazynowego. Logika w handlerze (`@/lib/jobs/handlers/magazynDocument`);
 // tu cienka trasa sync (wstecznie). Klient używa kolejki: runJob("magazyn.document").
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { magazynDocumentHandler } from "@/lib/jobs/handlers/magazynDocument";
 import { JobError } from "@/lib/jobs/types";
 

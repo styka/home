@@ -22,7 +22,7 @@ test("Z-173: netAmount liczy netto po rabacie (grosze→PLN)", () => {
 });
 
 test("Z-173/Z-360: loadRequestAccess — izolacja klient/wykonawca, obcy odrzucony", { skip: !HAS_DB && "brak DATABASE_URL" }, async (t) => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const { loadRequestAccess } = await import("@/lib/services/access");
 
   const client = await prisma.user.create({ data: { email: `cli-${rnd()}@test.local`, name: "Client" } });

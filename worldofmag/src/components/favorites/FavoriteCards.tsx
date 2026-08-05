@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { Star } from "lucide-react";
-import { openFavoritesSwitcher } from "@/lib/favorites/favoritesBus";
-import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
+import { openFavoritesSwitcher } from "@/platform/favorites/favoritesBus";
+import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
+import { isPathLocked } from "@/lib/pathPermissions";
 
 interface FavoriteCardsProps {
   favorites: FavoriteViewDTO[];
@@ -17,7 +18,7 @@ interface FavoriteCardsProps {
  * użytkownik jeszcze nie używa, nie ma prawa zajmować miejsca nad fałdą.
  */
 export function FavoriteCards({ favorites, permissions }: FavoriteCardsProps) {
-  const accessible = filterAccessibleFavorites(favorites, permissions);
+  const accessible = filterAccessibleFavorites(favorites, permissions, isPathLocked);
 
   if (accessible.length === 0) {
     return (

@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { prisma } from "@/platform/db/prisma";
+import { auth } from "@/platform/auth/session";
 import { orphanCategoryIcons } from "@/actions/categoryIcons";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 
 async function requireAdmin() {
   const session = await auth();

@@ -4,6 +4,77 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-04 — `next lint` przy zepsutej konfiguracji kończy się kodem 0
+**Problem:** Do `.eslintrc.json` trafił blok `overrides` z wymyślonym kluczem `$komentarz`
+(chcieliśmy skomentować regułę granic modułów). Walidator schematu ESLinta odrzucił konfigurację,
+`next lint` wypisał „ESLint configuration in .eslintrc.json is invalid" — **i zakończył się kodem 0**.
+Build był zielony, a reguła blokująca import przez granicę modułu nie działała w ogóle. Wykrył to
+dopiero ręczny test negatywny: plik celowo łamiący regułę przeszedł bez błędu.
+**Rozwiązanie:** Komentarze w `.eslintrc.json` piszemy jako `//` (ESLint czyta plik przez
+`strip-json-comments`), a nie jako zmyślone klucze. Ważniejsze: powstała bramka
+`scripts/check-boundaries.js`, która nie *czyta* konfiguracji, tylko ją **wywołuje** — tworzy pliki
+łamiące obie reguły granic i wymaga od ESLinta realnego błędu, a przy okazji sprawdza dwa przypadki,
+które muszą przechodzić (kontrakt obcego modułu, własne wnętrze). Sprawdzone: wyłączenie reguły ORAZ
+zepsucie konfiguracji czerwienią bramkę.
+**Lekcja:** Zielony lint nie znaczy „reguła działa" — może znaczyć „lint się nie uruchomił".
+Reguła, na której opiera się architektura, potrzebuje **testu negatywnego wpiętego w build**, a nie
+jednorazowego sprawdzenia przy pisaniu. Test wykonany raz chroni przez jeden dzień.
+
+## 2026-08-04 — `tsc --noEmit` nie widzi plików testowych
+**Problem:** Po przeniesieniu `lib/permissions.ts` → `platform/auth/permissions.ts` test
+`src/lib/__tests__/permissions.test.ts` importował `../permissions` — ścieżką **względną**, której
+skrypt przepisujący aliasy `@/…` nie dotknął. `npx tsc --noEmit` był czysty, a test przestał się
+uruchamiać. Wyszło to dopiero po 40 sekundach `npm run test:unit` (1 fail na 599). Ten sam problem
+powtórzył się drugi raz w tym samym przebiegu, przy zmianie nazw funkcji RBAC.
+**Rozwiązanie:** `tsconfig.json` wyklucza `src/**/*.test.ts`, więc typecheck z definicji pomija testy.
+Powstał `tsconfig.test.json` (dziedziczy po głównym, ale z `target: ES2022` — testy działają w Node
+i iterują po `Set`/`Map`) plus `npm run check:test-types` wpięte w `build`.
+**Lekcja:** Po refaktorze przenoszącym pliki czysty `tsc` **nie jest** dowodem, że nic się nie
+zerwało — sprawdź, co konfiguracja wyklucza. I: skrypt przepisujący importy po aliasach nie dotknie
+importów względnych, więc po każdej fali przenosin trzeba osobno przejrzeć `../`.
+
+## 2026-08-04 — Bramka ze sztywnym korzeniem skanowania gubi kod, który się przeprowadził
+**Problem:** `check-ai-coverage.js` skanował wyłącznie `src/actions/`, a kontrola zaszytych kolorów
+w `check-ui-contract.js` wyłącznie `src/components/`. Przeniesienie modułu do `src/modules/<x>/`
+(refaktor czysto organizacyjny, zero zmian logiki) **wypisało jego akcje z pokrycia AI i z kontroli
+dostępu**, a jego widok z zakazu zaszytych kolorów — bez jednego czerwonego komunikatu. Liczba
+sprawdzanych akcji spadła z 550 do 547 i tylko dlatego dało się to zauważyć.
+**Rozwiązanie:** Obie bramki dostały dodatkowy korzeń (`src/modules/*/actions`, `src/modules/*/ui`).
+Bramka pokrycia dodatkowo wykrywa **kolizję nazw plików akcji**, bo klucz manifestu to sama nazwa
+pliku — dwa `tasks.ts` w różnych katalogach scaliłyby się w jeden wpis i połowa akcji zniknęłaby
+z kontroli bez słowa.
+**Lekcja:** Bramka bezpieczeństwa ze **sztywną ścieżką** przestaje działać przy pierwszej
+przeprowadzce kodu — i to po cichu, bo brak plików do sprawdzenia wygląda jak brak naruszeń.
+Planując refaktor przenoszący, przejrzyj bramki pod kątem zaszytych korzeni **zanim** ruszysz pliki,
+i dokładaj do bramek liczbę sprawdzonych elementów, żeby spadek dało się zobaczyć.
+
+## 2026-08-04 — Reguła granic modułów nie odróżni „swojego" od „cudzego" po aliasie
+**Problem:** Reguła `no-restricted-imports` miała blokować import wnętrza obcego modułu
+(`@/modules/inny/actions/x`), ale przepuszczać import własnego wnętrza. Przy aliasach jest to
+niewykonalne jedną regułą: plik w `modules/qa` importujący `@/modules/qa/actions/qa` wygląda dla
+lintera **identycznie** jak import cudzego wnętrza. Wyjściem byłby osobny blok `overrides` na każdy
+z 21 modułów — konfiguracja, która rozjedzie się przy pierwszym nowym module.
+**Rozwiązanie:** Wewnątrz modułu importujemy **ścieżką względną** (`./actions/x`), na zewnątrz
+wyłącznie kontraktem. Wtedy jedna reguła wystarcza dla wszystkich modułów, a granica jest widoczna
+w samym imporcie: `./` = moje, `@/modules/…` = cudze. Przy okazji: wzorzec `@/modules/*/!(contract)`
+z planu nie działa — dopasowywanie wzorców w `no-restricted-imports` nie obsługuje extglob;
+działa para „szeroki wzorzec + negacja": `["@/modules/*/**", "!@/modules/*/contract"]`.
+**Lekcja:** Konwencja importu to nie kosmetyka — decyduje o tym, czy granicę **da się** egzekwować
+jedną regułą. Projektując granicę, sprawdź najpierw, czym linter dysponuje, zanim zaprojektujesz
+kształt importów.
+
+## 2026-08-04 — Platforma, która musi wiedzieć coś o module, przyjmuje to parametrem
+**Problem:** `filterAccessibleFavorites` (warstwa platformy) importowało `isPathLocked`, żeby ukryć
+ulubione widoki bez uprawnienia. Po przeniesieniu modułów pełna wiedza „która ścieżka wymaga jakiego
+uprawnienia" wylądowała w korzeniu kompozycji — a platformie nie wolno importować modułów. Kuszące
+było zostawienie w platformie wariantu „historycznego" jako domyślnego.
+**Rozwiązanie:** Predykat przychodzi **parametrem wymaganym**. Gdyby był opcjonalny z domyślnym
+wariantem częściowym, zapomniane przekazanie dawałoby **cichy przeciek RBAC** (ulubiony do modułu bez
+uprawnienia po prostu by się pokazał) zamiast błędu kompilacji. Funkcje o niepełnym obrazie dostały
+prefiks `legacy` w nazwie — kto po nie sięgnie, ma to widzieć.
+**Lekcja:** Przy odwracaniu zależności w kodzie decydującym o dostępie **nie dawaj wartości
+domyślnej**. Domyślna zamienia błąd kompilacji w dziurę bezpieczeństwa, której nikt nie zobaczy.
+
 ## 2026-08-04 — Bramka pilnuje kodu, ale nie podpowiada, czego użyć
 **Problem:** Po 045 aplikacja miała kontrakt widoku wymuszany bramką `check:ui-contract`: nowy moduł
 bez `ModuleView` nie przechodził builda. Mimo to `CLAUDE.md` — jedyny dokument, który czyta każda

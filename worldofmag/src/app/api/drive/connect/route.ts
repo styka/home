@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { buildConsentUrl, DRIVE_CALLBACK_PATH } from "@/lib/drive/oauth";
 
 // Kicks off the Drive OAuth flow: redirects the user to Google's consent screen.

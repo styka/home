@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import {
   DEFAULT_FAVORITE_ICON,
   FAVORITE_COLORS,
@@ -11,7 +11,7 @@ import {
   normalizeFavoritePath,
   suggestFavoriteLabel,
   type FavoriteViewDTO,
-} from "@/lib/favorites/favoriteViews";
+} from "@/platform/favorites/favoriteViews";
 
 /**
  * 042: Ulubione widoki — prywatne zakładki nawigacyjne użytkownika.

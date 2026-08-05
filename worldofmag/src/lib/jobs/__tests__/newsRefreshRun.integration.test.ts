@@ -9,7 +9,7 @@ const HAS_DB = !!process.env.DATABASE_URL;
 const rnd = () => Math.random().toString(36).slice(2, 10);
 
 async function withUser(fn: (userId: string) => Promise<void>) {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const user = await prisma.user.create({
     data: { email: `refreshrun-${rnd()}@test.local`, name: "Test historii przebiegów" },
   });
@@ -26,7 +26,7 @@ test(
   "dwa przebiegi = dwa wiersze, każdy z własnymi liczbami",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/platform/db/prisma");
     const { recordRun } = await import("@/lib/jobs/handlers/newsRefresh");
     await withUser(async (ownerId) => {
       await recordRun(ownerId, new Date(Date.now() - 60_000), "done", RESULT);
@@ -46,7 +46,7 @@ test(
   "niepowodzenie zapisuje się z komunikatem, a nie znika",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/platform/db/prisma");
     const { recordRun } = await import("@/lib/jobs/handlers/newsRefresh");
     await withUser(async (ownerId) => {
       await recordRun(ownerId, new Date(), "failed", null, "kanał RSS nie odpowiada");
@@ -62,7 +62,7 @@ test(
   "skasowanie zadania z kolejki NIE usuwa historii",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/platform/db/prisma");
     const { recordRun } = await import("@/lib/jobs/handlers/newsRefresh");
     await withUser(async (ownerId) => {
       const type = `news.refresh.test.${rnd()}`;
@@ -84,7 +84,7 @@ test(
   "historia jest przycinana do ostatnich 30 przebiegów",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/platform/db/prisma");
     const { recordRun, RUN_HISTORY_LIMIT } = await import("@/lib/jobs/handlers/newsRefresh");
     await withUser(async (ownerId) => {
       // Wstawiamy o pięć więcej niż limit; kasowane mają być NAJSTARSZE.

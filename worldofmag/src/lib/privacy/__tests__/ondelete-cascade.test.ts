@@ -19,7 +19,7 @@ test(
   "Z-033 onDelete=Cascade: user.delete kasuje dane 10 modeli własności bez sierot (izolacja zachowana)",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async (t) => {
-    const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/platform/db/prisma");
 
     const U = await prisma.user.create({ data: { email: `casc-u-${rnd()}@test.local` } });
     const V = await prisma.user.create({ data: { email: `casc-v-${rnd()}@test.local` } });

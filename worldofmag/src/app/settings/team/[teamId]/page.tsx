@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth"
+import { auth } from "@/platform/auth/session"
 import { getTeam, deleteTeam, getHouseholdOnboarding } from "@/actions/teams"
 import { getPendingInvitations } from "@/actions/invitations"
 import MemberList from "@/components/teams/MemberList"

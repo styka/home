@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Star, Search, Settings2 } from "lucide-react";
-import { openFavoritesSwitcher } from "@/lib/favorites/favoritesBus";
+import { openFavoritesSwitcher } from "@/platform/favorites/favoritesBus";
 import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
-import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
+import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
+import { isPathLocked } from "@/lib/pathPermissions";
 
 interface FavoritesSidebarSectionProps {
   favorites: FavoriteViewDTO[];
@@ -27,7 +28,7 @@ const VISIBLE_LIMIT = 6;
  */
 export function FavoritesSidebarSection({ favorites, userPermissions }: FavoritesSidebarSectionProps) {
   const pathname = usePathname();
-  const accessible = filterAccessibleFavorites(favorites, userPermissions);
+  const accessible = filterAccessibleFavorites(favorites, userPermissions, isPathLocked);
 
   const visible = accessible.slice(0, VISIBLE_LIMIT);
   const hiddenCount = accessible.length - visible.length;

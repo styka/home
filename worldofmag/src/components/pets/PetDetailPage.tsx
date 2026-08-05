@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
-import { oneOf, type RawParams } from "@/lib/viewState/viewState";
+import { oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Pencil, Trash2, PawPrint, Printer, Download } from "lucide-react";

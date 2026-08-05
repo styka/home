@@ -1,9 +1,9 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { requireUserId } from "@/lib/ownership";
+import { prisma } from "@/platform/db/prisma";
+import { requireUserId } from "@/platform/auth/ownership";
 import { purgeUserData } from "@/lib/privacy/purge";
-import { signOut } from "@/lib/auth";
+import { signOut } from "@/platform/auth/session";
 
 /**
  * Z-050 (RODO art. 15/20) — eksport danych użytkownika.

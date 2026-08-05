@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
-import { hasPermission, PERMISSIONS } from "@/lib/permissions"
+import { auth } from "@/platform/auth/session"
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions"
 import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes, Palette, ClipboardList, LineChart, Sparkles, Bug, Compass } from "lucide-react"
 import Link from "next/link"
-import { prisma } from "@/lib/prisma"
+import { prisma } from "@/platform/db/prisma"
 import { FeedbackTriggerButton } from "@/components/admin/FeedbackTriggerButton"
 
 function fmtDate(iso: string | undefined) {

@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import {
   requireAuth,
   getUserTeamIds,
   ownedOrSystemWhere,
   assertDictionaryAccess,
-} from "@/lib/server-utils";
+} from "@/platform/auth/serverUtils";
 import type { Tag } from "@/types";
 
 /**

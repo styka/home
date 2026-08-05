@@ -7,8 +7,8 @@ import {
   useShortcutsRegistry,
   type RegisteredShortcut,
 } from "@/components/shell/ShortcutsProvider";
-import { compareGroups, formatKeys, type ShortcutDef } from "@/lib/shortcuts/registry";
-import { SHORTCUTS_OPEN_EVENT } from "@/lib/shortcuts/shortcutsBus";
+import { compareGroups, formatKeys, type ShortcutDef } from "@/platform/shortcuts/registry";
+import { SHORTCUTS_OPEN_EVENT } from "@/platform/shortcuts/shortcutsBus";
 
 /**
  * 043: ściągawka skrótów (AC-11) — nakładka pod klawiszem `?`.

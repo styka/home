@@ -9,7 +9,7 @@ import {
   MAX_FAVORITE_LABEL_LENGTH,
   MAX_FAVORITE_VIEWS,
   type FavoriteViewDTO,
-} from "@/lib/favorites/favoriteViews";
+} from "@/platform/favorites/favoriteViews";
 
 const ICON_CHOICES = ["⭐", "📌", "🔥", "✅", "📝", "🛒", "💡", "📊", "🐾", "🍳"];
 

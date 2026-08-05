@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { getReportsMeta } from "@/actions/reports";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+import { getReportsMeta } from "@/modules/reports/contract";
 import { BookOpen, ChevronRight, ChevronLeft, Calendar, Plus, User, HardDrive, Database } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {

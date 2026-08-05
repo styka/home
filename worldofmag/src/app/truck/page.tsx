@@ -1,15 +1,16 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { getVehicleProfile } from "@/actions/truck";
-import { TruckPlannerPage } from "@/components/truck/TruckPlannerPage";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+import truckModule from "@/modules/truck/module";
+import { getVehicleProfile } from "@/modules/truck/actions/truck";
+import { TruckPlannerPage } from "@/modules/truck/ui/TruckPlannerPage";
 
 export default async function TruckRootPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.TRUCK) && !hasPermission(session, PERMISSIONS.ADMIN)) {
+  if (!hasPermission(session, truckModule.permission) && !hasPermission(session, PERMISSIONS.ADMIN)) {
     redirect("/");
   }
 

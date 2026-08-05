@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Save, Loader2, ArrowLeft } from "lucide-react";
-import { createEpic, updateEpic } from "@/actions/qa";
+import { createEpic, updateEpic } from "@/modules/qa/contract";
 import { QA_MODULES } from "@/lib/qaModules";
 
 interface Props {

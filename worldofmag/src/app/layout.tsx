@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/shell/AppShell";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { getPendingInvitationsCount } from "@/actions/invitations";
 import { readMenuPrefs } from "@/actions/menuPrefs";
 import { readFavoriteViews } from "@/actions/favoriteViews";

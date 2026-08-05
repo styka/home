@@ -8,7 +8,7 @@ const HAS_DB = !!process.env.DATABASE_URL;
 const rnd = () => Math.random().toString(36).slice(2, 10);
 
 test("Z-240 pg_trgm: rozszerzenie + indeksy GIN istnieją", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const ext = await prisma.$queryRawUnsafe<Array<{ extname: string }>>(`SELECT extname FROM pg_extension WHERE extname='pg_trgm'`);
   assert.equal(ext.length, 1, "rozszerzenie pg_trgm zainstalowane");
   const idx = await prisma.$queryRawUnsafe<Array<{ indexname: string }>>(
@@ -18,7 +18,7 @@ test("Z-240 pg_trgm: rozszerzenie + indeksy GIN istnieją", { skip: !HAS_DB && "
 });
 
 test("Z-240: filtr ILIKE zwraca poprawne notatki (bez zmiany zachowania)", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const user = await prisma.user.create({ data: { email: `fts-${rnd()}@test.local` } });
   try {
     await prisma.note.create({ data: { title: "Przepis na żurek", content: "kwas i kiełbasa", ownerId: user.id } });
@@ -42,7 +42,7 @@ test("Z-240: filtr ILIKE zwraca poprawne notatki (bez zmiany zachowania)", { ski
 });
 
 test("Z-240: planer UMIE użyć indeksu trigramowego dla ILIKE (enable_seqscan=off)", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   // Wymuszamy preferencję indeksu (na małej tabeli planer normalnie wybrałby seq scan).
   await prisma.$executeRawUnsafe(`SET enable_seqscan = off`);
   try {

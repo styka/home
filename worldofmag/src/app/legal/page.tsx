@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { LEGAL_DOCUMENTS } from "@/lib/legal/documents";
 import { getMyConsents } from "@/actions/legal";
 import { ScrollText, Check, ChevronRight } from "lucide-react";

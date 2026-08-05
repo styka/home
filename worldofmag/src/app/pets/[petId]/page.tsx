@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { redirect, notFound } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getPet } from "@/actions/pets";
 import { getMyTeams } from "@/actions/teams";
 import { PetDetailPage } from "@/components/pets/PetDetailPage";

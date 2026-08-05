@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { FileText, ChevronLeft } from "lucide-react";
 import { ADMIN_DOCS, ADMIN_DOCS_GENERATED_AT } from "@/generated/admin-docs";
 import { AdminDocsViewer } from "@/components/admin/AdminDocsViewer";

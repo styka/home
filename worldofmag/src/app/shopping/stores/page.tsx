@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { getStores } from "@/actions/stores";
 import { StoresManager } from "@/components/shopping/StoresManager";
 

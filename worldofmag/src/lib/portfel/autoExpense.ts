@@ -2,7 +2,7 @@
 // Plik NIE jest "use server" — to wewnętrzny helper wołany przez Server Actions
 // (np. flota.ts), nie eksponowany do klienta. Idempotentny po (sourceModule, sourceId).
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 
 export type AutoExpenseInput = {
   module: string; // "flota" itd.

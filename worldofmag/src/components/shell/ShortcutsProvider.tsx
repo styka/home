@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
-import { isTypingTarget, matchShortcut, type ShortcutDef } from "@/lib/shortcuts/registry";
+import { isTypingTarget, matchShortcut, type ShortcutDef } from "@/platform/shortcuts/registry";
 
 /** Handler zwracający `false` = „nie obsłużyłem" → dyspozytor szuka dalej i nie blokuje klawisza. */
 export type ShortcutHandler = (e: KeyboardEvent) => boolean | void;

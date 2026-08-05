@@ -4,8 +4,8 @@
 //
 // Brak `type === "..."` tutaj — to wyłącznie typy i resolvery (scripts/check-action-coverage.js
 // skanuje ten katalog, ale ten plik nie deklaruje żadnych akcji).
-import { prisma } from "@/lib/prisma";
-import { getUserTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { createList } from "@/actions/lists";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { TaskPriority } from "@/types";

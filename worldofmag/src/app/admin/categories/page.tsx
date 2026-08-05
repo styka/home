@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getSystemCategories } from "@/actions/adminCategories";
 import { SystemCategoryManager } from "@/components/admin/SystemCategoryManager";
 import { ChevronLeft } from "lucide-react";

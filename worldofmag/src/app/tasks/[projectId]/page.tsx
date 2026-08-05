@@ -1,12 +1,12 @@
 import { redirect, notFound } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getTasks, getTodayTasks, getOverdueTasks, getAllUserTasks, getTasksForProjects } from "@/actions/tasks";
 import { getTaskProjects } from "@/actions/taskProjects";
 import { getTaskTags } from "@/actions/taskTags";
 import { getProjectGroup } from "@/actions/projectGroups";
 import { userTomorrowStart } from "@/lib/userTime";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { TasksPage } from "@/components/tasks/TasksPage";
 import type { Task, ViewMode } from "@/types";
 import { parseStatusConfig, aggregateStatusConfig } from "@/types";

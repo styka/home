@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { configuredSpeechVoices } from "@/lib/tts/serverTts";
 import { type ServerVoice } from "@/lib/tts/serverVoices";
 import {

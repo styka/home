@@ -2,7 +2,7 @@
 // All operations act on the connected user's Drive using the `drive.file` scope,
 // so the app only ever touches files/folders it created itself.
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { refreshAccessToken } from "@/lib/drive/oauth";
 import type { DriveConnection } from "@prisma/client";
 

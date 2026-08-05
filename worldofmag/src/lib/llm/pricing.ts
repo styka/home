@@ -10,7 +10,7 @@
 // To dalej SZACUNEK: rzeczywisty koszt zależy od dostawcy i planu. Model spoza cennika ma koszt
 // NIEZNANY (`known: false`) — pokazujemy to wprost, zamiast udawać, że kosztował 0.
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 
 export interface ModelPrice {
   /** USD za 1M tokenów wejścia. */

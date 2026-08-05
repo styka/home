@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition, useMemo, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
-import { oneOf, type RawParams } from "@/lib/viewState/viewState";
+import { oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ClipboardList, ArrowLeft, Star, X, MessagesSquare, CalendarClock } from "lucide-react";

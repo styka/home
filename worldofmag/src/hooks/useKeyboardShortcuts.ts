@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import type { ShortcutHandlers } from "@/types";
-import { isTypingTarget, matchShortcut } from "@/lib/shortcuts/registry";
+import { isTypingTarget, matchShortcut } from "@/platform/shortcuts/registry";
 import {
   useShortcuts,
   useShortcutsRegistry,

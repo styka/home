@@ -2,8 +2,8 @@
 
 import { randomBytes } from "crypto";
 import { unstable_cache } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { collectCalendarEvents } from "@/lib/calendar/collect";
 import type { CalendarEvent } from "@/lib/calendar";
 

@@ -1,7 +1,7 @@
 // Wnioski z analityki magazynu. Logika w handlerze; cienka trasa sync (degradacja łagodna).
 // Klient: runJob("magazyn.insights", stats).
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { magazynInsightsHandler } from "@/lib/jobs/handlers/magazynInsights";
 
 export async function POST(req: NextRequest) {

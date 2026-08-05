@@ -1,4 +1,4 @@
-import { signIn } from "@/lib/auth"
+import { signIn } from "@/platform/auth/session"
 import { BrandLogo } from "@/components/brand/BrandLogo"
 import { AppName } from "@/components/brand/AppName"
 import { APP_NAME } from "@/lib/appName"

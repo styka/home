@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getMyProviderProfile, getServiceCategories, getMyRequests } from "@/actions/services";
 import { getProviderStats } from "@/actions/services/stats";
 import { ProviderPanelPage } from "@/components/services/ProviderPanelPage";

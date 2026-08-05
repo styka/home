@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { getMealPlan, getMealPlanCost } from "@/actions/mealPlans";
 import { getRecipes } from "@/actions/recipes";
 import { getLists } from "@/actions/lists";

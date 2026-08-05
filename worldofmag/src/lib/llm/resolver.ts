@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { decryptSecret } from "@/lib/crypto/secrets";
 import { parseEffort, type LlmEffort } from "@/lib/llm/effort";
 import {

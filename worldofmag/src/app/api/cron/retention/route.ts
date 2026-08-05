@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { purgeExpiredTrash } from "@/lib/trash";
+import { auth } from "@/platform/auth/session";
+import { purgeExpiredTrash } from "@/platform/trash/trash";
 import { logEvent } from "@/lib/observability/log";
 
 export const dynamic = "force-dynamic";

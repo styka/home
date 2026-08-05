@@ -1,7 +1,7 @@
 // Z-010: handler akcji asystenta dla modułu Nawyki.
 // Scala trzy dawne bloki `module === "habits"` z execute/route.ts.
-import { prisma } from "@/lib/prisma";
-import { getUserTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { toggleHabitDay, createHabit, updateHabit, setHabitArchived, deleteHabit, createTaskFromHabit } from "@/actions/habits";
 import { asStr, undoAction, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executors/shared";
 import { isoDate } from "@/lib/habitStats";
