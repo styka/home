@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
-import { reviewCard, type ReviewGrade } from "@/lib/srs";
+import { reviewCard, type ReviewGrade } from "../lib/srs";
 import type { LanguageDeck, Vocabulary } from "@/types";
 
 async function assertDeckAccess(deckId: string, userId: string): Promise<void> {

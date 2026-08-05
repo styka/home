@@ -91,6 +91,16 @@ Kontrakt piszemy **po** sprawdzeniu, czego używa konsument, nie „na zapas" (C
 | Flota | `getVehicles` (pulpit) + operacje `flotaExecutor` | pulpit, asystent |
 | Zdrowie | `getHealthEvents` (pulpit), `getTestTrends` (`agentTools`) + operacje `healthExecutor` | pulpit, asystent |
 
+**Nawigacja boczna powłoki — świadome wyłączenie (C-54, odkryte w `/implement`).**
+`ModuleSidebar` importuje `LanguagesSideNav`, `FlotaSideNav`, `StorageNav` i `WarsztatNav` wprost
+z `ui/` tych modułów. Zostawiamy to tak i **nazywamy**, zamiast udawać zgodność:
+- kontrakt opisuje **dane, nie ekrany** — tę zasadę przyjęliśmy w 046 przy Raportach i łamanie jej
+  teraz oznaczałoby przepuszczanie komponentu klienckiego przez plik importowany przez kod serwerowy;
+- właściwe rozwiązanie to **pole `sideNav` w deklaracji**, ładowane leniwie (rozdz. 9.3 opisuje
+  dokładnie ten wzorzec dla kafelka pulpitu). Import dynamiczny to zmiana zachowania, a zasada tej
+  fali mówi, że commit przenoszący zawiera wyłącznie przenosiny — więc **nie robimy tego tutaj**.
+Zadanie **T-8a** odnotowuje to w dzienniku jako następny krok, a nie jako przeoczenie.
+
 **Kontrakt Magazynowania jest testem zasady.** Moduł ma **47 eksportów akcji**; kontrakt ma wystawić
 kilkanaście, a nie wszystkie. Rozdz. 9 mówi wprost: kontrakt rosnący do kilkudziesięciu funkcji to
 sygnał, że moduł robi za dużo — i to jest sygnał, który chcemy **zobaczyć**, a nie ukryć eksportując

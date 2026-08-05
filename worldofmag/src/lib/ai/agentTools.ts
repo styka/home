@@ -19,7 +19,7 @@ import { getCookbooks } from "@/actions/cookbooks";
 import { getWalletOverview } from "@/actions/portfel";
 import { getExpiringSoon, getAutoReplenishCandidates } from "@/actions/pantry";
 import { getTestTrends } from "@/actions/health";
-import { getDueCards, getStudyStreak } from "@/actions/languageDecks";
+import { getDueCards, getStudyStreak } from "@/modules/languages/contract";
 import { getMealPlanCost, getTodaysMeals } from "@/actions/mealPlans";
 import { getMonthlyReport } from "@/actions/portfelReports";
 import { searchReports } from "@/modules/reports/contract";

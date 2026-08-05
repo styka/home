@@ -50,8 +50,17 @@ sygnału** — „czerwony" przestaje znaczyć „regresja", więc następna pra
 - [ ] **AC-1** — Given moduł objęty tą falą, when patrzę na jego katalog, then zawiera wszystko, czego
       moduł potrzebuje (akcje, komponenty, logika własna, kontrakt, deklaracja), a jego trasy
       w aplikacji pozostają cienkie.
-- [ ] **AC-2** — Given konsument spoza modułu (asystent AI, pulpit, powłoka), when korzysta
-      z przeniesionego modułu, then robi to **wyłącznie przez jego kontrakt**, nigdy przez wnętrze.
+- [ ] **AC-2** — Given konsument spoza modułu sięgający po **dane** (asystent AI, pulpit), when
+      korzysta z przeniesionego modułu, then robi to **wyłącznie przez jego kontrakt**, nigdy przez
+      wnętrze.
+      **Doprecyzowanie z `/implement` (C-54):** jeden przypadek jest z tego wyłączony i musi zostać
+      **nazwany**, a nie przemilczany — powłoka (`ModuleSidebar`) importuje **komponent** bocznej
+      nawigacji modułu (Nauka języków, Flota, Magazynowanie, Warsztaty) wprost z jego `ui/`.
+      Kontrakt opisuje **dane, nie ekrany** (zasada przyjęta w 046 przy Raportach), a przepuszczanie
+      komponentu klienckiego przez plik importowany przez kod serwerowy rozmywałoby granicę zamiast
+      ją rysować. Docelowe rozwiązanie to pole `sideNav` w deklaracji modułu, ładowane leniwie —
+      tak jak rozdz. 9.3 opisuje kafelek pulpitu. To osobna zmiana zachowania (import dynamiczny),
+      więc **nie wchodzi do fali przenoszącej**; ma być odnotowana w dzienniku jako następny krok.
 - [ ] **AC-3** — Given przeniesiony moduł, when szukam jego wpisu na liście przejściowej rejestru
       i w słowniku uprawnień, then **nie ma go tam** — jego tożsamość wynika z deklaracji.
 - [ ] **AC-4** — Given moduł, którego nie da się przenieść bez zmiany zachowania, when kończę falę,

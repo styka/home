@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ChevronLeft, RotateCcw, PartyPopper, Check, X, Pencil, Layers } from "lucide-react";
 import { pageContainerStyle } from "@/components/ui/home";
-import { submitReview } from "@/actions/languageDecks";
-import { REVIEW_OPTIONS, type ReviewGrade } from "@/lib/srs";
+import { submitReview } from "../actions/languageDecks";
+import { REVIEW_OPTIONS, type ReviewGrade } from "../lib/srs";
 import { SpeakButton } from "./SpeakButton";
 import type { LanguageDeck, Vocabulary } from "@/types";
 

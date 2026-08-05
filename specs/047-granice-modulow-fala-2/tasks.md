@@ -40,7 +40,7 @@
       `notifications`, `kitchenExecutor` i `medicationSchedule` (plan §3.1).
       Konsument zewnętrzny: `habitsExecutor` → kontrakt.
       **Gotowe, gdy:** rytuał przechodzi, `/habits` otwiera się w klikaczu. **(AC-1, AC-2, AC-3)**
-- [ ] **T-3** — **Nauka języków** → `src/modules/languages/`. Akcje: `languageDecks.ts`.
+- [x] **T-3** — **Nauka języków** → `src/modules/languages/`. Akcje: `languageDecks.ts`.
       UI: `components/languages/` (5). Lib: `lib/srs.ts` → `modules/languages/lib/`.
       Konsumenci: `languageExecutor`, `agentTools` (`getDueCards`, `getStudyStreak`),
       **pulpit** `app/page.tsx` (`getDecks`) → wszyscy przez kontrakt.
@@ -72,6 +72,12 @@
       ZOSTAJĄ** — pierwszego używa kalendarz i `agentTools`, drugiego `systemHealth` (plan §3.1).
       Konsumenci: `healthExecutor`, `agentTools` (`getTestTrends`), **pulpit** (`getHealthEvents`).
       **Gotowe, gdy:** rytuał przechodzi; agregat kalendarza zwraca to samo. **(AC-1, AC-2, AC-3)**
+- [ ] **T-8a** — **Nazwać wyłączenie: nawigacja boczna powłoki.** (Dopisane w trakcie `/implement`
+      wg C-54.) `ModuleSidebar` importuje komponenty `*SideNav` wprost z `ui/` czterech modułów tej
+      fali. Kontrakt opisuje **dane, nie ekrany**, a właściwym rozwiązaniem jest pole `sideNav`
+      w deklaracji, ładowane leniwie (rozdz. 9.3) — czyli zmiana zachowania, która nie może wejść
+      do commita przenoszącego. Odnotować w dzienniku jako następny krok.
+      **Gotowe, gdy:** wyłączenie opisane w `spec.md`, `plan.md` i rozdz. 15 dziennika. **(AC-2)**
 - [ ] **T-9** — Jeśli którykolwiek moduł okazał się zbyt sprzężony, żeby przenieść go **bez zmiany
       zachowania** — zostawić go na liście przejściowej i zapisać powód (do dziennika w T-14).
       **Gotowe, gdy:** decyzja i powód zapisane, albo jawnie: „wszystkie siedem przeszło".
@@ -114,7 +120,7 @@
 | AC | Zadania |
 |----|---------|
 | AC-1 — katalog modułu samowystarczalny, trasy cienkie | T-2…T-8 |
-| AC-2 — konsumenci z zewnątrz wyłącznie przez kontrakt | T-2…T-8 |
+| AC-2 — konsumenci danych wyłącznie przez kontrakt; wyłączenie powłoki nazwane | T-2…T-8, T-8a |
 | AC-3 — wpis usunięty z listy przejściowej i z uprawnień | T-2…T-8 |
 | AC-4 — moduł pominięty jawnie, z powodem | T-9 |
 | AC-5 — panel admina QA przez kontrakt | T-10 |

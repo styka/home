@@ -7,7 +7,7 @@ import { GraduationCap, Plus, Sparkles, Loader2, ArrowRight, BookOpen, Flame } f
 import { StatTile, SectionHeading } from "@/components/ui/home";
 import { EmptyState, cardStyle, cardHoverHandlers } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { createDeck, bulkAddWords } from "@/actions/languageDecks";
+import { createDeck, bulkAddWords } from "../actions/languageDecks";
 import { llm } from "@/lib/llm-client";
 import type { LanguageDeck } from "@/types";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GraduationCap } from "lucide-react";
-import { getDecks } from "@/actions/languageDecks";
+import { getDecks } from "../actions/languageDecks";
 import type { LanguageDeck } from "@/types";
 
 export function LanguagesSideNav() {

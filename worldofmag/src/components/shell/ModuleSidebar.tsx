@@ -11,7 +11,7 @@ import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
 import { PetsSideNav } from "@/components/pets/PetsSideNav";
-import { LanguagesSideNav } from "@/components/languages/LanguagesSideNav";
+import { LanguagesSideNav } from "@/modules/languages/ui/LanguagesSideNav";
 import { FlotaSideNav } from "@/components/flota/FlotaSideNav";
 import { PortfelSideNav } from "@/components/portfel/PortfelSideNav";
 import { isPathLocked } from "@/lib/pathPermissions";

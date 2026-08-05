@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Languages, ChevronLeft, Plus, Trash2, Play, Sparkles, Loader2, Pencil, Check, X } from "lucide-react";
 import { cardStyle } from "@/components/ui/home";
-import { addWord, bulkAddWords, deleteWord, updateWord, deleteDeck } from "@/actions/languageDecks";
+import { addWord, bulkAddWords, deleteWord, updateWord, deleteDeck } from "../actions/languageDecks";
 import { llm } from "@/lib/llm-client";
 import { SpeakButton } from "./SpeakButton";
 import type { LanguageDeck, Vocabulary } from "@/types";

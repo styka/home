@@ -54,8 +54,8 @@
     "languages": {
       "status": "done",
       "entries": [
-        "src/components/languages/DeckPage.tsx",
-        "src/components/languages/LanguagesHomePage.tsx"
+        "src/modules/languages/ui/DeckPage.tsx",
+        "src/modules/languages/ui/LanguagesHomePage.tsx"
       ]
     },
     "legal": {
