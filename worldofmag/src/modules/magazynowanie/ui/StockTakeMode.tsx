@@ -3,9 +3,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
-import { bulkSetStorageQuantities } from "@/actions/storage";
+import { bulkSetStorageQuantities } from "../actions/storage";
 import { useToast } from "@/components/ui/Toast";
-import type { StorageItemWithMovements } from "@/actions/storage";
+import type { StorageItemWithMovements } from "../actions/storage";
 
 interface StockTakeModeProps {
   items: StorageItemWithMovements[];

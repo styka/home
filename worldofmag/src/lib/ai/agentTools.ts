@@ -12,7 +12,7 @@ import { getEnclosures } from "@/actions/petHusbandry";
 import { getMaintenanceOverview } from "@/modules/warsztaty/contract";
 import { getHotTopics, getSources, getTopics, getTopicView } from "@/actions/news";
 import { getLocations, getWeather } from "@/actions/weather";
-import { getSuppliers, getLowStock, getExpiringStorage, getStorageAnalytics } from "@/actions/storage";
+import { getSuppliers, getLowStock, getExpiringStorage, getStorageAnalytics } from "@/modules/magazynowanie/contract";
 import { getProjectGroups } from "@/actions/projectGroups";
 import { getNoteGroups } from "@/actions/noteGroups";
 import { getCookbooks } from "@/actions/cookbooks";

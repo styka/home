@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo, useRef } from "react";
 import { Plus, Truck, Trash2, Pencil, Mail, Phone } from "lucide-react";
-import { addSupplier, updateSupplier, deleteSupplier } from "@/actions/storage";
+import { addSupplier, updateSupplier, deleteSupplier } from "../actions/storage";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { ModuleView } from "@/components/ui/view";

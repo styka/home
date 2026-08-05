@@ -18,7 +18,7 @@ import {
   Home,
   Building2,
 } from "lucide-react";
-import { setStorageMode, type StorageMode } from "@/actions/storage";
+import { setStorageMode, type StorageMode } from "../actions/storage";
 
 interface Tab {
   href: string;

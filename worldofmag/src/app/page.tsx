@@ -13,7 +13,7 @@ import { getVehicles } from "@/actions/flota";
 import { getWalletOverview } from "@/actions/portfel";
 import { getDecks } from "@/modules/languages/contract";
 import { getHealthEvents } from "@/actions/health";
-import { getLowStock, getExpiringStorage } from "@/actions/storage";
+import { getLowStock, getExpiringStorage } from "@/modules/magazynowanie/contract";
 import { getDashboardPrefs } from "@/actions/dashboardPrefs";
 import { readFavoriteViews } from "@/actions/favoriteViews";
 import { HomePage } from "@/components/home/HomePage";

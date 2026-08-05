@@ -8,12 +8,12 @@ import {
   deleteStorageItem,
   adjustStorageQuantity,
   transferStock,
-} from "@/actions/storage";
+} from "../actions/storage";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import { BatchesManager } from "./BatchesManager";
-import type { StorageItemWithMovements } from "@/actions/storage";
+import type { StorageItemWithMovements } from "../actions/storage";
 import type { StorageSupplier } from "@prisma/client";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 

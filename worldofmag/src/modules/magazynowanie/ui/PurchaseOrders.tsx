@@ -7,7 +7,7 @@ import {
   updatePurchaseOrder,
   deletePurchaseOrder,
   type PurchaseOrderWithLines,
-} from "@/actions/storage";
+} from "../actions/storage";
 import { runJob } from "@/lib/jobs/client";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";

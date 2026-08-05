@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { getPurchaseOrders, getSuppliers, getLowStock } from "@/actions/storage";
-import { PurchaseOrders } from "@/components/magazynowanie/PurchaseOrders";
+import { getPurchaseOrders, getSuppliers, getLowStock } from "@/modules/magazynowanie/actions/storage";
+import { PurchaseOrders } from "@/modules/magazynowanie/ui/PurchaseOrders";
 
 export default async function ZamowieniaPage() {
   const [orders, suppliers, low] = await Promise.all([getPurchaseOrders(), getSuppliers(), getLowStock()]);

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Home, Building2, Check } from "lucide-react";
-import { setStorageMode, setStorageCurrency, type StorageMode } from "@/actions/storage";
+import { setStorageMode, setStorageCurrency, type StorageMode } from "../actions/storage";
 import { useToast } from "@/components/ui/Toast";
 
 const CURRENCIES = ["PLN", "EUR", "USD", "GBP"];

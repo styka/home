@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Layers, Plus, Trash2, ArrowUpFromLine, Loader2, AlertTriangle } from "lucide-react";
-import { getStorageItem, addBatch, deleteBatch, issueByFEFO } from "@/actions/storage";
+import { getStorageItem, addBatch, deleteBatch, issueByFEFO } from "../actions/storage";
 import { useToast } from "@/components/ui/Toast";
 import type { StorageBatch } from "@prisma/client";
 

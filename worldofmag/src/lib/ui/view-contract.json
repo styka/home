@@ -65,8 +65,8 @@
     "magazynowanie": {
       "status": "done",
       "entries": [
-        "src/components/magazynowanie/DocumentsPage.tsx",
-        "src/components/magazynowanie/SuppliersPage.tsx"
+        "src/modules/magazynowanie/ui/DocumentsPage.tsx",
+        "src/modules/magazynowanie/ui/SuppliersPage.tsx"
       ]
     },
     "notes": {
@@ -269,23 +269,23 @@
       "kind": "paleta-danych",
       "reason": "Paleta serii na wykresie — musi mieć stałą liczbę rozróżnialnych kolorów niezależnie od skórki, inaczej dwie kategorie wydatków zlałyby się w jedną."
     },
-    "src/components/magazynowanie/QrLabels.tsx": {
+    "src/modules/magazynowanie/ui/QrLabels.tsx": {
       "kind": "ilustracja",
       "reason": "Etykieta QR jest DRUKOWANA — musi być czarna na białym niezależnie od skórki ekranowej, inaczej wydruk wyjdzie nieczytelny."
     },
-    "src/components/magazynowanie/ScanFlow.tsx": {
+    "src/modules/magazynowanie/ui/ScanFlow.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory statusu skanowania — semantyczne."
     },
-    "src/components/magazynowanie/StorageAnalytics.tsx": {
+    "src/modules/magazynowanie/ui/StorageAnalytics.tsx": {
       "kind": "paleta-danych",
       "reason": "Paleta serii na wykresie ABC."
     },
-    "src/components/magazynowanie/StorageList.tsx": {
+    "src/modules/magazynowanie/ui/StorageList.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory progów stanu magazynowego (semantyczne, jak w spiżarni)."
     },
-    "src/components/magazynowanie/StorageSettingsForm.tsx": {
+    "src/modules/magazynowanie/ui/StorageSettingsForm.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolor podglądu trybu."
     }

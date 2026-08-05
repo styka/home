@@ -13,6 +13,7 @@ import truckModule from "@/modules/truck/module";
 import contactsModule from "@/modules/contacts/module";
 import reportsModule from "@/modules/reports/module";
 import qaModule from "@/modules/qa/module";
+import magazynowanieModule from "@/modules/magazynowanie/module";
 import warsztatyModule from "@/modules/warsztaty/module";
 import languagesModule from "@/modules/languages/module";
 import habitsModule from "@/modules/habits/module";
@@ -21,7 +22,7 @@ import habitsModule from "@/modules/habits/module";
 // Zaproszenia, Admin) NIE są tutaj — pozostają na stałe w komponentach paska.
 export type ModuleDef = ResolvedModule;
 
-const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, qaModule, habitsModule, languagesModule, warsztatyModule];
+const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, qaModule, habitsModule, languagesModule, warsztatyModule, magazynowanieModule];
 
 /**
  * Moduły JESZCZE NIEPRZENIESIONE do `src/modules/`. Lista przejściowa, kurcząca się z każdą
@@ -42,7 +43,6 @@ const LEGACY: ResolvedModule[] = [
   defineModule({ id: "services",  label: "Usługi",        href: "/services",  permission: PERMISSIONS.SERVICES,  color: "var(--accent-blue)",   Icon: Handshake,     defaultEnabled: true }),
   defineModule({ id: "flota",     label: "Flota",         href: "/flota",     permission: PERMISSIONS.FLOTA,     color: "var(--accent-blue)",   Icon: Car,           defaultEnabled: true }),
   defineModule({ id: "portfel",   label: "Portfel",       href: "/portfel",   permission: PERMISSIONS.PORTFEL,   color: "var(--accent-green)",  Icon: Wallet,        defaultEnabled: true }),
-  defineModule({ id: "magazynowanie", label: "Magazynowanie", href: "/magazynowanie", permission: PERMISSIONS.MAGAZYNOWANIE, color: "var(--accent-blue)", Icon: Warehouse, defaultEnabled: true }),
 ];
 
 /**

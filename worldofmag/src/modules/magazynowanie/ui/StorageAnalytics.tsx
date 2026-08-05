@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Sparkles, Loader2, Download, TrendingUp, PackageX, Boxes, Wallet, AlertTriangle } from "lucide-react";
 import { runJob } from "@/lib/jobs/client";
-import type { StorageAnalytics as Analytics } from "@/actions/storage";
+import type { StorageAnalytics as Analytics } from "../actions/storage";
 import type { AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AiContentMeta } from "@/components/ui/AiContentMeta";
 import type { AiSectionMode } from "@/lib/ai/sectionMode";

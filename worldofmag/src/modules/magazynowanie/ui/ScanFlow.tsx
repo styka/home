@@ -7,7 +7,7 @@ import {
   findStorageItemByCode,
   adjustStorageQuantity,
   addStorageItem,
-} from "@/actions/storage";
+} from "../actions/storage";
 import { llm } from "@/lib/llm-client";
 import { useToast } from "@/components/ui/Toast";
 

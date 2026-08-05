@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Search, Sparkles, MapPin, Loader2, PackageSearch } from "lucide-react";
 import { llm } from "@/lib/llm-client";
 import { useToast } from "@/components/ui/Toast";
-import type { StorageItemWithMovements } from "@/actions/storage";
+import type { StorageItemWithMovements } from "../actions/storage";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
 interface StorageSearchProps {

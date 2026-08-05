@@ -6,9 +6,9 @@ import { text, type RawParams } from "@/platform/viewState/viewState";
 import Link from "next/link";
 import { Plus, Search, Warehouse, AlertTriangle, ClipboardList, Camera, ShoppingCart, CalendarClock, ShieldCheck } from "lucide-react";
 import { StorageEditSheet } from "./StorageEditSheet";
-import { addLowStockToShoppingList, type ExpiringEntry } from "@/actions/storage";
+import { addLowStockToShoppingList, type ExpiringEntry } from "../actions/storage";
 import { useToast } from "@/components/ui/Toast";
-import type { StorageItemWithMovements } from "@/actions/storage";
+import type { StorageItemWithMovements } from "../actions/storage";
 import type { StorageSupplier } from "@prisma/client";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 

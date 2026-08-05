@@ -51,7 +51,7 @@
       Konsumenci: `warsztatExecutor`, `agentTools` (`getMaintenanceOverview`).
       **Gotowe, gdy:** rytuał + `check:test-types` zielone (test katalogu jedzie za kodem).
       **(AC-1, AC-2, AC-3)**
-- [ ] **T-5** — **Magazynowanie** → `src/modules/magazynowanie/`. Akcje: `storage.ts` (**47**
+- [x] **T-5** — **Magazynowanie** → `src/modules/magazynowanie/`. Akcje: `storage.ts` (**47**
       eksportów). UI: `components/magazynowanie/` (15).
       Konsumenci: `storageExecutor`, `agentTools` (4 funkcje), **pulpit** (2 funkcje).
       **Kontrakt wystawia kilkanaście funkcji, nie 47** — piszemy go z listy realnych wywołań
