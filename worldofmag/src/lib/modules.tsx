@@ -4,7 +4,7 @@ import {
   Newspaper, CloudSun, Warehouse, Wrench,
 } from "lucide-react";
 import { PERMISSIONS } from "@/platform/auth/permissions";
-import { defineModule, mergeModules, type ResolvedModule } from "@/platform/registry";
+import { defineModule, mergeModules, permissionForPathIn, type ResolvedModule } from "@/platform/registry";
 
 // 046: deklaracje modułów przeniesionych do `src/modules/`. TO JEST KORZEŃ KOMPOZYCJI —
 // jedyne miejsce w kodzie, które zna wszystkie moduły naraz. Nie może nim być
@@ -66,12 +66,7 @@ const MODULE_INDEX = new Map(MODULES.map((m, i) => [m.id, i]));
  * bo nie wolno jej importować modułów.
  */
 export function declaredPermissionForPath(path: string): string | null | undefined {
-  for (const m of DECLARED) {
-    for (const route of m.routes) {
-      if (m.exact ? path === route : path === route || path.startsWith(`${route}/`)) return m.permission;
-    }
-  }
-  return undefined;
+  return permissionForPathIn(DECLARED, path);
 }
 
 // Maksymalna liczba ikon w dolnym pasku (mobile) — przy większej liczbie robi się ciasno.
