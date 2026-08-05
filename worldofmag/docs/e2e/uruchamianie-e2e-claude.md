@@ -25,10 +25,15 @@ nohup bash scripts/e2e-web.sh e2e/specs/notes.spec.ts > /tmp/e2e.log 2>&1 &  # j
 nohup bash scripts/e2e-web.sh e2e/specs > /tmp/e2e.log 2>&1 &                 # CALY zestaw
 ```
 
-> ⚠️ **Pełny zestaw ma znane porażki** w specach funkcjonalnych
-> (`shopping`, `notes`, `qa`, `reports`, `settings`, `gating`) — to backlog
-> scenariuszy do domknięcia, nie regresja smoke. Do szybkiej weryfikacji
-> „czy żyje" używaj domyślnego smoke.
+> ⚠️ **Pełny zestaw ma znane porażki** — stan po przebiegu 047: **16 czerwonych na 132**
+> (`shopping` ×4, `notes` ×1, `qa` ×1, `reports` ×2, `settings`, `gating`, `favorites`,
+> `shortcuts`, `view-state`, `smoke-nav` ×3). Wszystkie **potwierdzone imiennie jako zastane** —
+> były czerwone również przed falą przenoszenia modułów. To backlog jakości scenariuszy,
+> nie regresja.
+>
+> Skrypt **odpala seed danych** (`prisma/seed.ts` + scenariusze QA, oba idempotentne), więc
+> testy nie padają już z powodu pustych tabel — to naprawiło 3 spece QA. Do szybkiej weryfikacji
+> „czy żyje" nadal używaj domyślnego smoke.
 
 ---
 
@@ -90,6 +95,8 @@ sudo -u postgres createdb -O e2e worldofmag_e2e
 export DATABASE_URL="postgresql://e2e:e2e@localhost:5432/worldofmag_e2e"
 export DIRECT_URL="$DATABASE_URL"
 npx prisma migrate deploy
+npx tsx prisma/seed.ts          # dane domenowe (idempotentne)
+npx tsx prisma/seeds/qa-all.ts  # scenariusze QA
 ```
 
 > Uwaga: schemat Prisma ma `provider = "postgresql"`, więc **musi** to być

@@ -104,10 +104,12 @@ npx prisma migrate deploy >/dev/null
 # Niepowodzenie seeda NIE przerywa przebiegu: lepiej mieć wynik z adnotacją niż brak wyniku —
 # ale komunikat musi być głośny, żeby czerwone testy dało się przypisać właściwej przyczynie.
 echo "▶ 5/6 Dane z seeda (idempotentne)…"
-npx tsx prisma/seed.ts >/dev/null 2>&1 \
-  || echo "  ⚠ seed podstawowy nie przeszedł — testy wymagające danych mogą być czerwone"
-npx tsx prisma/seeds/qa-all.ts >/dev/null 2>&1 \
-  || echo "  ⚠ seed scenariuszy QA nie przeszedł — specy QA mogą być czerwone"
+# Wyciszamy tylko stdout. Stderr ZOSTAJE widoczny: skoro cały sens tej zmiany to zaufanie do
+# czerwonego wyniku, ukrycie powodu awarii seeda działałoby przeciwko niej.
+npx tsx prisma/seed.ts >/dev/null \
+  || echo "  ⚠ seed podstawowy nie przeszedł (powód wyżej) — testy wymagające danych mogą być czerwone"
+npx tsx prisma/seeds/qa-all.ts >/dev/null \
+  || echo "  ⚠ seed scenariuszy QA nie przeszedł (powód wyżej) — specy QA mogą być czerwone"
 
 echo "▶ 6/6 Testy E2E (headless Chromium)…"
 ARGS=("$@")
