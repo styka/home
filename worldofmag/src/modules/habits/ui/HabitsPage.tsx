@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Flame, Plus, Check, Bell, BellOff, Pencil, Trash2, ChevronDown, Archive, CalendarRange, CheckSquare } from "lucide-react";
 import { StatTile, SectionHeading, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { createHabit, updateHabit, deleteHabit, setHabitArchived, toggleHabitDay, createTaskFromHabit } from "@/actions/habits";
+import { createHabit, updateHabit, deleteHabit, setHabitArchived, toggleHabitDay, createTaskFromHabit } from "../actions/habits";
 import { todayISO, computeStreaks, weekProgress, weekDoneCount, completionRate } from "@/lib/habitStats";
 import { showLocalNotification, notificationsGranted, requestNotificationPermission } from "@/platform/notifications/notifications";
 import { HabitFormModal, emptyHabitForm, type HabitFormValue } from "./HabitFormModal";

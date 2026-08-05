@@ -1,7 +1,7 @@
 # Zadania: Granice modułów — Faza 1, fala 2
 
 - **Plan:** ./plan.md (047-granice-modulow-fala-2)
-- **Status:** todo
+- **Status:** w trakcie
 - **Data:** 2026-08-05
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna
@@ -24,7 +24,7 @@
 
 ## Faza 0 — Bez zmian w danych
 
-- [ ] **T-1** — Potwierdzić, że fala **nie rusza schematu**: `npm run check:schema-drift` zielony
+- [x] **T-1** — Potwierdzić, że fala **nie rusza schematu**: `npm run check:schema-drift` zielony
       na starcie i na końcu. Żadnej migracji nie tworzymy (plan §2).
       **Gotowe, gdy:** bramka zielona, `prisma/migrations/` bez nowego katalogu.
 
@@ -35,7 +35,7 @@
 > z `LEGACY` i z `PERMISSIONS`, strażnik trasy z deklaracji, konsumenci przez kontrakt, manifest
 > kontraktu widoku.
 
-- [ ] **T-2** — **Nawyki** → `src/modules/habits/`. Akcje: `habits.ts`. UI: `components/habits/`
+- [x] **T-2** — **Nawyki** → `src/modules/habits/`. Akcje: `habits.ts`. UI: `components/habits/`
       (3 pliki). **`lib/habitStats.ts` ZOSTAJE** w `src/lib` — używają go `medications`,
       `notifications`, `kitchenExecutor` i `medicationSchedule` (plan §3.1).
       Konsument zewnętrzny: `habitsExecutor` → kontrakt.

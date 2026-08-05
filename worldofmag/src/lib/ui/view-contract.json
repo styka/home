@@ -31,7 +31,7 @@
     "habits": {
       "status": "done",
       "entries": [
-        "src/components/habits/HabitsPage.tsx"
+        "src/modules/habits/ui/HabitsPage.tsx"
       ]
     },
     "health": {
