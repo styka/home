@@ -57,7 +57,7 @@
       **Kontrakt wystawia kilkanaście funkcji, nie 47** — piszemy go z listy realnych wywołań
       konsumenta, nie z listy eksportów (plan §4).
       **Gotowe, gdy:** rytuał przechodzi; kontrakt ≤ 20 pozycji. **(AC-1, AC-2, AC-3)**
-- [ ] **T-6** — **Notatki** → `src/modules/notes/`. Akcje: `notes.ts` + `noteGroups.ts`.
+- [x] **T-6** — **Notatki** → `src/modules/notes/`. Akcje: `notes.ts` + `noteGroups.ts`.
       UI: `components/notes/` (11). Lib: `lib/wikilinks.ts`, `lib/notes/searchRank.ts` + ich testy.
       **`actions/tags.ts` ZOSTAJE** w `src/actions` — słownik dzielony z Kuchnią (plan §3.2).
       Konsumenci: `notesExecutor`, `agentTools` (`getNoteGroups`).

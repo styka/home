@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Trash2, Plus, FolderOpen } from "lucide-react";
-import { createNoteGroup, updateNoteGroup, deleteNoteGroup } from "@/actions/noteGroups";
+import { createNoteGroup, updateNoteGroup, deleteNoteGroup } from "../actions/noteGroups";
 import type { NoteGroup } from "@/types";
 
 const GROUP_COLORS = [

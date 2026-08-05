@@ -2,10 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getNotes } from "@/actions/notes";
-import { getNoteGroups } from "@/actions/noteGroups";
+import { getNotes } from "@/modules/notes/actions/notes";
+import { getNoteGroups } from "@/modules/notes/actions/noteGroups";
 import { getTags } from "@/actions/tags";
-import { NotesHomePage } from "@/components/notes/NotesHomePage";
+import { NotesHomePage } from "@/modules/notes/ui/NotesHomePage";
 
 export default async function NotesRootPage() {
   const session = await auth();

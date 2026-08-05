@@ -4,7 +4,6 @@ export const PERMISSIONS = {
   HOME:        "module.home",
   SHOPPING:    "module.shopping",
   TASKS:       "module.tasks",
-  NOTES:       "module.notes",
   KITCHEN:     "module.kitchen",
   SETTINGS:    "module.settings",
   ADMIN:       "module.admin",
@@ -45,7 +44,6 @@ export function legacyPermissionForPath(path: string): string | null {
   if (path === "/" || path === "") return PERMISSIONS.HOME
   if (path.startsWith("/shopping")) return PERMISSIONS.SHOPPING
   if (path.startsWith("/tasks")) return PERMISSIONS.TASKS
-  if (path.startsWith("/notes")) return PERMISSIONS.NOTES
   if (path.startsWith("/kitchen")) return PERMISSIONS.KITCHEN
   if (path.startsWith("/settings")) return PERMISSIONS.SETTINGS
   if (path.startsWith("/admin")) return PERMISSIONS.ADMIN

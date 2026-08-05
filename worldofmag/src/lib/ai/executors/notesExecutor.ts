@@ -1,9 +1,9 @@
 // Z-010: handler akcji asystenta dla modułu Notatki.
 // Scala oba dawne bloki `module === "notes"` (CRUD + toggle_pin) z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
-import { createNote, updateNote, deleteNote, toggleNotePin, setNoteTags } from "@/actions/notes";
+import { createNote, updateNote, deleteNote, toggleNotePin, setNoteTags } from "@/modules/notes/contract";
 import { getTags, createTag } from "@/actions/tags";
-import { createNoteGroup, updateNoteGroup, deleteNoteGroup } from "@/actions/noteGroups";
+import { createNoteGroup, updateNoteGroup, deleteNoteGroup } from "@/modules/notes/contract";
 import { asStr, undoAction, resolveNoteId, type ExecOutcome } from "@/lib/ai/executors/shared";
 import { getUserTeamIds, ownedOrSystemWhere } from "@/platform/auth/serverUtils";
 import type { AIAction } from "@/lib/ai/aiAction";

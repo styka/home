@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Sparkles, Loader2, Plus, Check } from "lucide-react";
 import { TagChip, getTagStyle } from "./TagChip";
 import { createTag } from "@/actions/tags";
-import { addTagToNote } from "@/actions/notes";
+import { addTagToNote } from "../actions/notes";
 import type { Tag } from "@/types";
 
 interface TagSuggestionsProps {

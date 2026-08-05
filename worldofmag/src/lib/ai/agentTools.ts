@@ -14,7 +14,7 @@ import { getHotTopics, getSources, getTopics, getTopicView } from "@/actions/new
 import { getLocations, getWeather } from "@/actions/weather";
 import { getSuppliers, getLowStock, getExpiringStorage, getStorageAnalytics } from "@/modules/magazynowanie/contract";
 import { getProjectGroups } from "@/actions/projectGroups";
-import { getNoteGroups } from "@/actions/noteGroups";
+import { getNoteGroups } from "@/modules/notes/contract";
 import { getCookbooks } from "@/actions/cookbooks";
 import { getWalletOverview } from "@/actions/portfel";
 import { getExpiringSoon, getAutoReplenishCandidates } from "@/actions/pantry";

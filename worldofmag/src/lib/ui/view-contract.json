@@ -72,8 +72,8 @@
     "notes": {
       "status": "done",
       "entries": [
-        "src/components/notes/NotesHomePage.tsx",
-        "src/components/notes/NotesPage.tsx"
+        "src/modules/notes/ui/NotesHomePage.tsx",
+        "src/modules/notes/ui/NotesPage.tsx"
       ]
     },
     "pets": {
@@ -249,19 +249,19 @@
       "kind": "paleta-danych",
       "reason": "Wartość zastępcza dla pola wyboru koloru (#000000), gdy token nie jest w formacie akceptowanym przez natywną kontrolkę."
     },
-    "src/components/notes/GroupsManager.tsx": {
+    "src/modules/notes/ui/GroupsManager.tsx": {
       "kind": "paleta-danych",
       "reason": "Paleta kolorów folderu notatek wybierana przez użytkownika."
     },
-    "src/components/notes/NoteRow.tsx": {
+    "src/modules/notes/ui/NoteRow.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory tagów i folderów z rekordów użytkownika."
     },
-    "src/components/notes/QuickNoteBar.tsx": {
+    "src/modules/notes/ui/QuickNoteBar.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory tagów z rekordów użytkownika."
     },
-    "src/components/notes/TagChip.tsx": {
+    "src/modules/notes/ui/TagChip.tsx": {
       "kind": "paleta-danych",
       "reason": "Paleta kolorów tagu WYBIERANA PRZEZ UŻYTKOWNIKA i zapisana w bazie. To dane rekordu, nie motyw — skórka nie ma prawa ich nadpisać."
     },

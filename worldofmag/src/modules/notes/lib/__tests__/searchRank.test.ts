@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { noteSearchScore, rankNotesBySearch } from "@/lib/notes/searchRank";
+import { noteSearchScore, rankNotesBySearch } from "../searchRank";
 
 // Z-240 (T-16) — ranking trafności wyszukiwania notatek.
 

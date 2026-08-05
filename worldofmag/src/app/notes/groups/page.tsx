@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { getNoteGroups } from "@/actions/noteGroups";
-import { GroupsManager } from "@/components/notes/GroupsManager";
+import { getNoteGroups } from "@/modules/notes/actions/noteGroups";
+import { GroupsManager } from "@/modules/notes/ui/GroupsManager";
 import { ChevronLeft } from "lucide-react";
 
 export default async function NotesGroupsPage() {

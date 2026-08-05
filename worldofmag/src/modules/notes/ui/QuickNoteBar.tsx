@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, forwardRef, useImperativeHandle, useTransition } from "react";
 import { ChevronDown, ChevronUp, Sparkles, Mic, MicOff, Loader2 } from "lucide-react";
-import { createNote } from "@/actions/notes";
+import { createNote } from "../actions/notes";
 import { createTag } from "@/actions/tags";
 import { TagChip } from "./TagChip";
 import type { Tag, NoteGroup } from "@/types";

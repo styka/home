@@ -6,7 +6,7 @@ import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/au
 import type { Note } from "@/types";
 import { trackActivity } from "@/actions/activity";
 import { recordTrash } from "@/platform/trash/trash";
-import { rankNotesBySearch } from "@/lib/notes/searchRank";
+import { rankNotesBySearch } from "../lib/searchRank";
 
 async function assertNoteAccess(noteId: string, userId: string): Promise<void> {
   const teamIds = await getUserTeamIds(userId);

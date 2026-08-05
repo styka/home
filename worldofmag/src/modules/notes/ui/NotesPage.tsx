@@ -169,7 +169,7 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
         const next = filteredNotes[idx + 1] ?? filteredNotes[idx - 1];
         setFocusedNoteId(next?.id ?? null);
         startTransition(() => {
-          import("@/actions/notes").then(({ deleteNote }) => deleteNote(focusedNoteId));
+          import("../actions/notes").then(({ deleteNote }) => deleteNote(focusedNoteId));
         });
       },
       onEdit: () => {
