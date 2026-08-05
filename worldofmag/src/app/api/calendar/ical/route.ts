@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { collectCalendarEvents } from "@/lib/calendar/collect";
 import { buildICalendar } from "@/lib/calendar/ical";
 

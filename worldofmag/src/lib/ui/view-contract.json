@@ -14,7 +14,7 @@
     "contacts": {
       "status": "done",
       "entries": [
-        "src/components/contacts/ContactsPage.tsx"
+        "src/modules/contacts/ui/ContactsPage.tsx"
       ]
     },
     "flota": {
@@ -107,14 +107,14 @@
     "qa": {
       "status": "done",
       "entries": [
-        "src/components/qa/QaHomePage.tsx",
-        "src/components/qa/ScenarioPage.tsx"
+        "src/modules/qa/ui/QaHomePage.tsx",
+        "src/modules/qa/ui/ScenarioPage.tsx"
       ]
     },
     "reports": {
       "status": "done",
       "entries": [
-        "src/components/reports/ReportsHomePage.tsx"
+        "src/modules/reports/ui/ReportsHomePage.tsx"
       ]
     },
     "services": {
@@ -155,7 +155,7 @@
     "truck": {
       "status": "done",
       "entries": [
-        "src/components/truck/TruckPlannerPage.tsx"
+        "src/modules/truck/ui/TruckPlannerPage.tsx"
       ]
     },
     "warsztaty": {

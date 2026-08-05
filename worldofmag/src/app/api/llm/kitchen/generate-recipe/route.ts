@@ -1,6 +1,6 @@
 // Wygeneruj przepis z opisu. Logika w handlerze; cienka trasa sync. Klient: runJob("kitchen.generateRecipe").
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { kitchenGenerateRecipeHandler } from "@/lib/jobs/handlers/kitchenGenerateRecipe";
 import { JobError } from "@/lib/jobs/types";
 

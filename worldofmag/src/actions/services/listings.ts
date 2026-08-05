@@ -2,8 +2,8 @@
 
 // Z-213/361: akcje modułu Usługi — oferty wykonawcy + katalog (przeglądanie).
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { requireOwnProvider, toListingDTO, PROVIDER_CARD_SELECT } from "@/lib/services/helpers";
 import { haversineKm } from "@/lib/serviceGeo";
 import type { PriceModel, ListingDTO, ListingSort } from "@/lib/services";

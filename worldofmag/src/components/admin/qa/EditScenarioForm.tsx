@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Save, Loader2, ArrowLeft, Eye, Code } from "lucide-react";
-import { createScenario, updateScenario } from "@/actions/qa";
+import { createScenario, updateScenario } from "@/modules/qa/contract";
 import { SCENARIO_TYPES, PRIORITIES, getScenarioTypeLabel, getPriorityLabel } from "@/lib/qaConstants";
 
 const TEMPLATE = `## Warunki wstępne

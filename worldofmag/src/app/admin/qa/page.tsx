@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronLeft, FlaskConical } from "lucide-react";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+import { prisma } from "@/platform/db/prisma";
 import { QaAdminTree } from "@/components/admin/qa/QaAdminTree";
 
 export const dynamic = "force-dynamic";

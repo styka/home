@@ -1,7 +1,7 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
 import { isoDay } from "@/lib/calendar";
 import { notifyUser } from "@/lib/notify";
 import { isScheduledOn, weekDoneCount } from "@/lib/habitStats";

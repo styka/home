@@ -1,6 +1,6 @@
 // Wygeneruj mapę (graf) sklepu. Logika w handlerze; cienka trasa sync. Klient: runJob("stores.generate").
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { storesGenerateHandler } from "@/lib/jobs/handlers/storesGenerate";
 import { JobError } from "@/lib/jobs/types";
 

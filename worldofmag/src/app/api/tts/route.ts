@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { checkRateLimit } from "@/lib/ai/rateLimit";
 import { SPEECH_MAX_CHARS, synthesizeSpeech } from "@/lib/tts/serverTts";
 

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 
 /**
  * 036: przełącznik propozycji kolejnych pytań („follow-upy") pod odpowiedzią asystenta.

@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
 import { categorize } from "@/lib/categorize";
 import { computeRecipeCost } from "@/lib/kitchen/recipeCost";
 import { trackActivity } from "@/actions/activity";

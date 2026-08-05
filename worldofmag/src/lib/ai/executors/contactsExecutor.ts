@@ -1,6 +1,6 @@
 // 011-ai-full-action-coverage: handler akcji asystenta dla modułu Kontakty (CRM).
 // Kontakty były dotąd niewidoczne dla asystenta (brak akcji i narzędzia odczytu).
-import { getContacts, createContact, updateContact, deleteContact } from "@/actions/contacts";
+import { getContacts, createContact, updateContact, deleteContact } from "@/modules/contacts/contract";
 import { asStr, undoAction, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 

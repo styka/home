@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { FlaskConical, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { PlaygroundPage } from "@/components/admin/playground/PlaygroundPage";

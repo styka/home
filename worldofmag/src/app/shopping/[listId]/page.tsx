@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/platform/auth/session";
+import { prisma } from "@/platform/db/prisma";
 import { getLists, assertListAccess } from "@/actions/lists";
 import { getCategoryEmojiMap, getCategoryNames } from "@/actions/categories";
 import { getStores } from "@/actions/stores";

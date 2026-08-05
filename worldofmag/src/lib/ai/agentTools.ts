@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/prisma";
-import { getUserTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { matchNamedRef, unresolvedRefMessage, type NamedCandidate, type RefResolution } from "@/lib/ai/refResolve";
 import { getCalendarEvents } from "@/actions/calendar";
 import { getBudgetsWithSpending, getFinanceGoals } from "@/actions/portfelBudgets";
@@ -22,7 +22,7 @@ import { getTestTrends } from "@/actions/health";
 import { getDueCards, getStudyStreak } from "@/actions/languageDecks";
 import { getMealPlanCost, getTodaysMeals } from "@/actions/mealPlans";
 import { getMonthlyReport } from "@/actions/portfelReports";
-import { searchReports } from "@/actions/reports";
+import { searchReports } from "@/modules/reports/contract";
 import { getWatchers } from "@/actions/weather";
 import { describeFrequency } from "@/lib/medicationSchedule";
 import { describeRecurringRule, parseRecurringRule } from "@/lib/recurrence";

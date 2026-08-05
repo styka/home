@@ -1,7 +1,7 @@
 "use client";
 
 import { Keyboard } from "lucide-react";
-import { openShortcutsCheatSheet } from "@/lib/shortcuts/shortcutsBus";
+import { openShortcutsCheatSheet } from "@/platform/shortcuts/shortcutsBus";
 
 /**
  * 045 — wejście do ściągawki skrótów w pasku bieżącego widoku.

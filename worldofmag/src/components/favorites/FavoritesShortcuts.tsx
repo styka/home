@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useShortcuts, type RegisteredShortcut } from "@/components/shell/ShortcutsProvider";
-import type { FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
+import type { FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 
 interface FavoritesShortcutsProps {
   /** Ulubione JUŻ przefiltrowane po uprawnieniach (AC-8) — skrót nie może omijać RBAC. */

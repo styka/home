@@ -3,7 +3,7 @@
 // To zwykły moduł serwerowy (NIE "use server") — używany przez akcje w
 // actions/services(/*).ts. Trzymanie tu plumbingu pozwala plikom akcji być
 // czystymi listami Server Actions.
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { generateDaySlots, minutesOfDay, type BookedInterval } from "@/lib/serviceSlots";
 import type { RequestStatus, PriceModel, ListingDTO, RequestDTO } from "@/lib/services";
 

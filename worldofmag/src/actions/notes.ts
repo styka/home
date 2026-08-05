@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
 import type { Note } from "@/types";
 import { trackActivity } from "@/actions/activity";
-import { recordTrash } from "@/lib/trash";
+import { recordTrash } from "@/platform/trash/trash";
 import { rankNotesBySearch } from "@/lib/notes/searchRank";
 
 async function assertNoteAccess(noteId: string, userId: string): Promise<void> {

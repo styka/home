@@ -7,7 +7,7 @@ const HAS_DB = !!process.env.DATABASE_URL;
 const rnd = () => Math.random().toString(36).slice(2, 10);
 
 test("Z-174 bookAutoExpense: księguje, jest idempotentne, koryguje i odwraca saldo", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const { bookAutoExpense, removeAutoExpense } = await import("@/lib/portfel/autoExpense");
 
   const user = await prisma.user.create({ data: { email: `ae-${rnd()}@test.local` } });

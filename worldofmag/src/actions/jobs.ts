@@ -4,9 +4,9 @@
 // Wszystko za bramką `module.admin`. Job nie ma FK do User (ownerId to gołe id),
 // więc e-maile właścicieli dociągamy osobnym zapytaniem i mapujemy.
 
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { prisma } from "@/platform/db/prisma";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { requeueJob, cancelJob, cleanupOldJobs, type JobStatus } from "@/lib/jobs/queue";
 import { revalidatePath } from "next/cache";
 

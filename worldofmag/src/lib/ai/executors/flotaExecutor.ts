@@ -1,7 +1,7 @@
 // Z-010: handler akcji asystenta dla modułu Flota (pojazdy + tankowania + serwis).
 // Scala trzy dawne bloki `module === "flota"` z execute/route.ts.
-import { prisma } from "@/lib/prisma";
-import { getUserTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { addFuelLog, addServiceRecord, createVehicle, updateVehicle, deleteVehicle } from "@/actions/flota";
 import { asStr, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";

@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { getRecipe, assertRecipeAccess } from "@/actions/recipes";
 import { getCookbooks } from "@/actions/cookbooks";
 import { RecipeEditor } from "@/components/kitchen/recipes/RecipeEditor";

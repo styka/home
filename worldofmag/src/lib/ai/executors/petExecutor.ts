@@ -2,8 +2,8 @@
 // Powierzchnia `type === "..."` jest skanowana przez scripts/check-action-coverage.js
 // (które od Z-010 czyta też src/lib/ai/executors/*.ts) — nie zmieniaj nazw akcji bez
 // aktualizacji katalogu w agent/route.ts + petActions.ts.
-import { prisma } from "@/lib/prisma";
-import { getUserTeamIds } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { updatePet, setPetStatus, deletePet } from "@/actions/pets";
 import { completeTreatment } from "@/actions/petCare";
 import { updateEnclosure, deleteEnclosure, assignPetToEnclosure } from "@/actions/petHusbandry";

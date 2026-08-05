@@ -5,7 +5,7 @@
 // Prisma nie działa w przeglądarce i wywaliłaby build. Słownik pojęć został więc czysty, a wszystko,
 // co dotyka bazy, mieszka tutaj (ten sam podział co `lib/llm/effort.ts` kontra `lib/llm/resolver.ts`).
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import type { AiContentKind } from "@/lib/ai/contentMemory";
 import {
   AI_SECTION_KINDS,

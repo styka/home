@@ -16,7 +16,26 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   `worldofmag/`. **Nigdy** nie dotykaj `src/` w katalogu głównym repo, `_old/`, `pom.xml` ani
   legacy AngularJS/Spring. Komendy uruchamiamy z `worldofmag/`.
 - **C-02 — Alias importów `@/*` → `./src/*`.** Zawsze używaj aliasu w importach, nigdy długich
-  ścieżek względnych (`../../..`).
+  ścieżek względnych (`../../..`). **Wyjątek: wewnątrz `src/modules/<x>/` importujemy własne
+  wnętrze ścieżką względną** (`./actions/x`) — patrz C-36.
+- **C-36 — Granica modułów: `platform/` ↔ `modules/`.** (Faza 1 przebudowy, 046.)
+  - `src/platform/` to zdolności **niezależne od modułu** (sesja, baza, uprawnienia, kosz, audyt,
+    powiadomienia, stan widoku, skróty, ulubione, komponenty). Platforma **nie zna żadnego modułu**
+    i nie wolno jej importować `@/modules/*` — nawet kontraktu. Gdy platforma potrzebuje wiedzy
+    modułowej, **przyjmuje ją parametrem** (wzorzec: `filterAccessibleFavorites(..., isPathLocked)`).
+  - `src/modules/<x>/` to moduł: `contract.ts` (granica), `module.ts` (deklaracja), `actions/`,
+    `ui/`, `lib/`. Trasy zostają w `src/app/` i są **cienkie**: sesja → uprawnienie → dane → render.
+  - **Moduł widzi inny moduł WYŁĄCZNIE przez `@/modules/<x>/contract`.** Własne wnętrze importuje
+    **ścieżką względną** — bo dla lintera `@/modules/qa/…` wewnątrz `modules/qa` wygląda identycznie
+    jak import cudzego wnętrza, a przy ścieżce względnej granicę widać w samym imporcie.
+  - Kontrakt zawiera **dokładnie to, czego potrzebują konsumenci** — nie „wszystko na wszelki
+    wypadek". Kontrakt rosnący do kilkudziesięciu funkcji to sygnał, że moduł robi za dużo.
+  - Moduł rejestruje się **jedną deklaracją** (`defineModule` w `module.ts`): stąd biorą się menu,
+    uprawnienie i mapowanie ścieżek. **Nie dopisuj modułu do równoległych list** — to jest dokładnie
+    ten dług, który Faza 1 likwiduje (cel „8 → 1").
+  - Wymuszają to: `npm run check:boundaries` (reguła lintu naprawdę działa) i
+    `npm run check:module-registry` (katalog modułu ma kontrakt, kompletną deklarację i wpięcie
+    w rejestr). Obie w `build`.
 - **C-03 — Artefakty pipeline'u żyją w `specs/<NNN-slug>/`** (katalog główny repo): `spec.md`,
   `plan.md`, `tasks.md`, `verify.md`, `review.md`. Numer `NNN` jest sekwencyjny, zero-padded (001,
   002, …). Slug = kebab-case, po angielsku lub po polsku bez znaków diakrytycznych.

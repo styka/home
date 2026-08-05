@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { decryptSecret } from "@/lib/crypto/secrets";
 import { resilientFetch } from "@/lib/integrations/resilientFetch"; // Z-157
 

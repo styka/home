@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
-import { oneOf, type RawParams } from "@/lib/viewState/viewState";
+import { oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { useRouter } from "next/navigation";
 import { HeartPulse, Plus, Stethoscope, FlaskConical, Trash2, Pencil, Check, X, MapPin, CalendarClock, Paperclip } from "lucide-react";
 import { EmptyState, cardStyle } from "@/components/ui/home";

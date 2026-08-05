@@ -1,5 +1,5 @@
 // Z-010: handler akcji asystenta dla modułu Raporty (zapis wyniku/sesji do /reports).
-import { createUserReport } from "@/actions/reports";
+import { createUserReport } from "@/modules/reports/contract";
 import { asStr, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 

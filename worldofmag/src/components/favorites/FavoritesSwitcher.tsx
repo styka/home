@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
 import { Star, X, Settings } from "lucide-react";
-import type { FavoriteViewDTO } from "@/lib/favorites/favoriteViews";
+import type { FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 
 interface FavoritesSwitcherProps {
   /** Ulubione JUŻ przefiltrowane po uprawnieniach (AC-8) — komponent nie robi tego sam. */

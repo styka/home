@@ -1,7 +1,7 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { prisma } from "@/platform/db/prisma";
+import { auth } from "@/platform/auth/session";
 import type { Prisma } from "@prisma/client";
 
 export async function trackActivity(

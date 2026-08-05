@@ -12,7 +12,7 @@ const rnd = () => Math.random().toString(36).slice(2, 10);
 const KIND = "weather.ideas" as const;
 
 async function withUser(fn: (userId: string) => Promise<void>) {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const user = await prisma.user.create({
     data: { email: `contentmode-${rnd()}@test.local`, name: "Test pamięci treści" },
   });
@@ -235,7 +235,7 @@ test(
   "uszkodzony zapis przy trybie „na żądanie” daje stan oczekiwania, a nie ciche generowanie",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/platform/db/prisma");
     const { rememberedContent } = await import("@/lib/ai/contentMemory");
     await withUser(async (ownerId) => {
       const scopeKey = `broken-${rnd()}`;

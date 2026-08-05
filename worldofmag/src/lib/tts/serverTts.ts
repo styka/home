@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { resolveLlmChain } from "@/lib/llm/resolver";
 import { buildSpeechRequest, parseSpeechResponse } from "@/lib/tts/adapters";
 import { defaultVoiceFor, isVoiceOf, voicesFor } from "@/lib/tts/catalog";

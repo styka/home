@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { getActivePlan } from "@/lib/plans";
 import { estimateCost, estimateCostUsd } from "@/lib/llm/pricing";
-import { PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS } from "@/platform/auth/permissions";
 import { notifyUser } from "@/lib/notify";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
 import { withPln } from "@/lib/usdPln";

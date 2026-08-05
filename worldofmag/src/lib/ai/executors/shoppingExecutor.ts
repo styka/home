@@ -1,6 +1,6 @@
 // Z-010: handler akcji asystenta dla modułu Zakupy (listy + pozycje).
 // Scala oba dawne bloki `module === "shopping"` z execute/route.ts.
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { addItem, updateItem, updateItemStatus, deleteItem, clearDoneItems, markAllInCart, moveItem } from "@/actions/items";
 import { createList, renameList, archiveList, deleteList, unarchiveList, completeShopping } from "@/actions/lists";
 import { asStr, undoAction, resolveOrCreateList, resolveListId, resolveItemId, type ExecOutcome } from "@/lib/ai/executors/shared";

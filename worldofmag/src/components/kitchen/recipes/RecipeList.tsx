@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
-import { text, type RawParams } from "@/lib/viewState/viewState";
+import { text, type RawParams } from "@/platform/viewState/viewState";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Search, ChefHat, Globe, ChevronDown, Camera, Sparkles } from "lucide-react";

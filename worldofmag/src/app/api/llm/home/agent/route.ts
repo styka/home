@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { isAssistantLevel, type AssistantLevel } from "@/types";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentTools";
 import {
   ACTION_CATALOG_BY_MODULE,

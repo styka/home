@@ -1,50 +1,73 @@
-import type { LucideIcon } from "lucide-react";
 import {
   Home, ShoppingCart, CheckSquare, FileText, PawPrint, ChefHat, GraduationCap,
-  HeartPulse, Flame, FlaskConical, Truck, Car, Wallet, BookOpen, Handshake, Calendar,
-  Newspaper, CloudSun, Warehouse, Wrench, Users,
+  HeartPulse, Flame, Car, Wallet, Handshake, Calendar,
+  Newspaper, CloudSun, Warehouse, Wrench,
 } from "lucide-react";
-import { PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS } from "@/platform/auth/permissions";
+import { defineModule, mergeModules, permissionForPathIn, type ResolvedModule } from "@/platform/registry";
+
+// 046: deklaracje modułów przeniesionych do `src/modules/`. TO JEST KORZEŃ KOMPOZYCJI —
+// jedyne miejsce w kodzie, które zna wszystkie moduły naraz. Nie może nim być
+// `src/platform/registry.ts`, bo platforma z zasady nie zna modułów (reguła ESLint tego pilnuje).
+import truckModule from "@/modules/truck/module";
+import contactsModule from "@/modules/contacts/module";
+import reportsModule from "@/modules/reports/module";
+import qaModule from "@/modules/qa/module";
 
 // Definicja górnego (konfigurowalnego) modułu menu. Pozycje dolne (Ustawienia,
 // Zaproszenia, Admin) NIE są tutaj — pozostają na stałe w komponentach paska.
-export type ModuleDef = {
-  id: string;
-  label: string;
-  href: string;
-  exact?: boolean;
-  permission: string | null; // wymagany slug; null = dostępny zawsze (np. Raporty)
-  color: string;
-  Icon: LucideIcon;
-  defaultEnabled: boolean; // domyślnie włączone wszystkie oprócz QA
-};
+export type ModuleDef = ResolvedModule;
 
-// Jedno źródło prawdy dla górnych modułów (kolejność = domyślna kolejność menu).
-export const MODULES: ModuleDef[] = [
-  { id: "home",      label: "Strona główna", href: "/",          exact: true, permission: PERMISSIONS.HOME,      color: "var(--text-secondary)", Icon: Home,          defaultEnabled: true },
-  { id: "calendar",  label: "Kalendarz",     href: "/calendar",  permission: PERMISSIONS.CALENDAR,  color: "var(--accent-purple)", Icon: Calendar,      defaultEnabled: true },
-  { id: "shopping",  label: "Zakupy",        href: "/shopping",  permission: PERMISSIONS.SHOPPING,  color: "var(--accent-blue)",   Icon: ShoppingCart,  defaultEnabled: true },
-  { id: "tasks",     label: "Zadania",       href: "/tasks",     permission: PERMISSIONS.TASKS,     color: "var(--accent-green)",  Icon: CheckSquare,   defaultEnabled: true },
-  { id: "notes",     label: "Notatki",       href: "/notes",     permission: PERMISSIONS.NOTES,     color: "var(--accent-amber)",  Icon: FileText,      defaultEnabled: true },
-  { id: "pets",      label: "Zwierzęta",     href: "/pets",      permission: PERMISSIONS.PETS,      color: "var(--accent-orange)", Icon: PawPrint,      defaultEnabled: true },
-  { id: "kitchen",   label: "Kuchnia",       href: "/kitchen",   permission: PERMISSIONS.KITCHEN,   color: "var(--accent-orange)", Icon: ChefHat,       defaultEnabled: true },
-  { id: "languages", label: "Nauka języków", href: "/languages", permission: PERMISSIONS.LANGUAGES, color: "var(--accent-purple)", Icon: GraduationCap, defaultEnabled: true },
-  { id: "health",    label: "Zdrowie",       href: "/health",    permission: PERMISSIONS.HEALTH,    color: "var(--accent-red)",    Icon: HeartPulse,    defaultEnabled: true },
-  { id: "news",      label: "Wiadomości",    href: "/wiadomosci", permission: PERMISSIONS.NEWS,     color: "var(--accent-blue)",   Icon: Newspaper,     defaultEnabled: true },
-  { id: "weather",   label: "Pogoda",        href: "/pogoda",    permission: PERMISSIONS.WEATHER,   color: "var(--accent-amber)",  Icon: CloudSun,      defaultEnabled: true },
-  { id: "habits",    label: "Nawyki",        href: "/habits",    permission: PERMISSIONS.HABITS,    color: "var(--accent-orange)", Icon: Flame,         defaultEnabled: true },
-  { id: "services",  label: "Usługi",        href: "/services",  permission: PERMISSIONS.SERVICES,  color: "var(--accent-blue)",   Icon: Handshake,     defaultEnabled: true },
-  { id: "contacts",  label: "Kontakty",      href: "/contacts",  permission: PERMISSIONS.CONTACTS,  color: "var(--accent-blue)",   Icon: Users,         defaultEnabled: true },
-  { id: "qa",        label: "QA",            href: "/qa",        permission: PERMISSIONS.QA,        color: "var(--accent-red)",    Icon: FlaskConical,  defaultEnabled: false },
-  { id: "truck",     label: "Trasy TIR",     href: "/truck",     permission: PERMISSIONS.TRUCK,     color: "var(--accent-blue)",   Icon: Truck,         defaultEnabled: true },
-  { id: "flota",     label: "Flota",         href: "/flota",     permission: PERMISSIONS.FLOTA,     color: "var(--accent-blue)",   Icon: Car,           defaultEnabled: true },
-  { id: "portfel",   label: "Portfel",       href: "/portfel",   permission: PERMISSIONS.PORTFEL,   color: "var(--accent-green)",  Icon: Wallet,        defaultEnabled: true },
-  { id: "magazynowanie", label: "Magazynowanie", href: "/magazynowanie", permission: PERMISSIONS.MAGAZYNOWANIE, color: "var(--accent-blue)", Icon: Warehouse, defaultEnabled: true },
-  { id: "warsztaty", label: "Warsztaty",     href: "/warsztaty", permission: PERMISSIONS.WARSZTATY,  color: "var(--accent-amber)",  Icon: Wrench,        defaultEnabled: true },
-  { id: "reports",   label: "Raporty",       href: "/reports",   permission: null,                  color: "var(--accent-purple)", Icon: BookOpen,      defaultEnabled: true },
+const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, qaModule];
+
+/**
+ * Moduły JESZCZE NIEPRZENIESIONE do `src/modules/`. Lista przejściowa, kurcząca się z każdą
+ * kolejną falą Fazy 1 — jawnie nazwana, żeby długu nie dało się przeoczyć (wzorzec statusu
+ * `pending` z 045). Docelowo pusta: wtedy `MODULES` wynika wyłącznie z deklaracji.
+ */
+const LEGACY: ResolvedModule[] = [
+  defineModule({ id: "home",      label: "Strona główna", href: "/",          exact: true, permission: PERMISSIONS.HOME,      color: "var(--text-secondary)", Icon: Home,          defaultEnabled: true }),
+  defineModule({ id: "calendar",  label: "Kalendarz",     href: "/calendar",  permission: PERMISSIONS.CALENDAR,  color: "var(--accent-purple)", Icon: Calendar,      defaultEnabled: true }),
+  defineModule({ id: "shopping",  label: "Zakupy",        href: "/shopping",  permission: PERMISSIONS.SHOPPING,  color: "var(--accent-blue)",   Icon: ShoppingCart,  defaultEnabled: true }),
+  defineModule({ id: "tasks",     label: "Zadania",       href: "/tasks",     permission: PERMISSIONS.TASKS,     color: "var(--accent-green)",  Icon: CheckSquare,   defaultEnabled: true }),
+  defineModule({ id: "notes",     label: "Notatki",       href: "/notes",     permission: PERMISSIONS.NOTES,     color: "var(--accent-amber)",  Icon: FileText,      defaultEnabled: true }),
+  defineModule({ id: "pets",      label: "Zwierzęta",     href: "/pets",      permission: PERMISSIONS.PETS,      color: "var(--accent-orange)", Icon: PawPrint,      defaultEnabled: true }),
+  defineModule({ id: "kitchen",   label: "Kuchnia",       href: "/kitchen",   permission: PERMISSIONS.KITCHEN,   color: "var(--accent-orange)", Icon: ChefHat,       defaultEnabled: true }),
+  defineModule({ id: "languages", label: "Nauka języków", href: "/languages", permission: PERMISSIONS.LANGUAGES, color: "var(--accent-purple)", Icon: GraduationCap, defaultEnabled: true }),
+  defineModule({ id: "health",    label: "Zdrowie",       href: "/health",    permission: PERMISSIONS.HEALTH,    color: "var(--accent-red)",    Icon: HeartPulse,    defaultEnabled: true }),
+  defineModule({ id: "news",      label: "Wiadomości",    href: "/wiadomosci", permission: PERMISSIONS.NEWS,     color: "var(--accent-blue)",   Icon: Newspaper,     defaultEnabled: true }),
+  defineModule({ id: "weather",   label: "Pogoda",        href: "/pogoda",    permission: PERMISSIONS.WEATHER,   color: "var(--accent-amber)",  Icon: CloudSun,      defaultEnabled: true }),
+  defineModule({ id: "habits",    label: "Nawyki",        href: "/habits",    permission: PERMISSIONS.HABITS,    color: "var(--accent-orange)", Icon: Flame,         defaultEnabled: true }),
+  defineModule({ id: "services",  label: "Usługi",        href: "/services",  permission: PERMISSIONS.SERVICES,  color: "var(--accent-blue)",   Icon: Handshake,     defaultEnabled: true }),
+  defineModule({ id: "flota",     label: "Flota",         href: "/flota",     permission: PERMISSIONS.FLOTA,     color: "var(--accent-blue)",   Icon: Car,           defaultEnabled: true }),
+  defineModule({ id: "portfel",   label: "Portfel",       href: "/portfel",   permission: PERMISSIONS.PORTFEL,   color: "var(--accent-green)",  Icon: Wallet,        defaultEnabled: true }),
+  defineModule({ id: "magazynowanie", label: "Magazynowanie", href: "/magazynowanie", permission: PERMISSIONS.MAGAZYNOWANIE, color: "var(--accent-blue)", Icon: Warehouse, defaultEnabled: true }),
+  defineModule({ id: "warsztaty", label: "Warsztaty",     href: "/warsztaty", permission: PERMISSIONS.WARSZTATY,  color: "var(--accent-amber)",  Icon: Wrench,        defaultEnabled: true }),
 ];
 
+/**
+ * Kolejność pozycji w menu — decyzja produktowa, więc trzyma się jednej listy, a nie kolejności,
+ * w jakiej moduły akurat zostały przeniesione. Zmiana kolejności = zmiana tej tablicy.
+ */
+const MODULE_ORDER = [
+  "home", "calendar", "shopping", "tasks", "notes", "pets", "kitchen", "languages", "health",
+  "news", "weather", "habits", "services", "contacts", "qa", "truck", "flota", "portfel",
+  "magazynowanie", "warsztaty", "reports",
+];
+
+// Jedno źródło prawdy dla górnych modułów (kolejność = domyślna kolejność menu).
+export const MODULES: ModuleDef[] = mergeModules(DECLARED, LEGACY, MODULE_ORDER);
+
 const MODULE_INDEX = new Map(MODULES.map((m, i) => [m.id, i]));
+
+/**
+ * Mapowanie ścieżka → uprawnienie dla modułów ZADEKLAROWANYCH. Uzupełnia historyczny łańcuch
+ * `if`-ów w `platform/auth/permissions.ts`, którego platforma nie może wyprowadzić z deklaracji,
+ * bo nie wolno jej importować modułów.
+ */
+export function declaredPermissionForPath(path: string): string | null | undefined {
+  return permissionForPathIn(DECLARED, path);
+}
 
 // Maksymalna liczba ikon w dolnym pasku (mobile) — przy większej liczbie robi się ciasno.
 export const MAX_TAB_BAR = 5;

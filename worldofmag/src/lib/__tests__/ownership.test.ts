@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 // i nie dotykają bazy (test nie jest DB-gated).
 
 test("ownedByWhere: pusty teamIds → tylko ownerId; z teamIds → dodaje ownerTeamId in", async () => {
-  const { ownedByWhere } = await import("@/lib/ownership");
+  const { ownedByWhere } = await import("@/platform/auth/ownership");
   assert.deepEqual(ownedByWhere("u1", []), { OR: [{ ownerId: "u1" }] });
   assert.deepEqual(ownedByWhere("u1", ["t1", "t2"]), {
     OR: [{ ownerId: "u1" }, { ownerTeamId: { in: ["t1", "t2"] } }],
@@ -14,7 +14,7 @@ test("ownedByWhere: pusty teamIds → tylko ownerId; z teamIds → dodaje ownerT
 });
 
 test("assertOwnership: null→Not found, własność bezpośrednia/zespołowa OK, obcy→Forbidden", async () => {
-  const { assertOwnership } = await import("@/lib/ownership");
+  const { assertOwnership } = await import("@/platform/auth/ownership");
   // brak encji
   assert.throws(() => assertOwnership(null, "u1", []), /Not found/);
   // własność bezpośrednia

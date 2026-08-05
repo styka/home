@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
-import { hasPermission, PERMISSIONS } from "@/lib/permissions"
+import { auth } from "@/platform/auth/session"
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions"
 import { Shield } from "lucide-react"
 import { getPermissions, getRolePermissions, getUsers, getAvailableRoles } from "@/actions/access"
 import { PermissionManager } from "@/components/admin/PermissionManager"

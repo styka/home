@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { prisma } from "@/platform/db/prisma";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import {
   BASE_CONFIG_LEVEL,
   CONFIG_LEVEL_LABELS,
@@ -19,7 +19,7 @@ import { invalidatePriceCache } from "@/lib/llm/pricing";
 import { FOLLOWUPS_CONFIG_KEY, readFollowupsEnabled } from "@/lib/ai/followups";
 import { TTS_CATALOG, findTtsProvider, findTtsProviderById, providerMatchesSpec, normalizeBaseUrl } from "@/lib/tts/catalog";
 import { encryptSecret, decryptSecret, maskSecret } from "@/lib/crypto/secrets";
-import { logAudit } from "@/lib/audit";
+import { logAudit } from "@/platform/audit/audit";
 import { LLM_EFFORT_LABELS, LLM_EFFORT_LEVELS, parseEffort, type LlmEffort } from "@/lib/llm/effort";
 import { COST_ALERT_CONFIG_KEY, getDailyCostUsd, AI_COST_BADGE_CONFIG_KEY } from "@/lib/ai/usage";
 import { readCostBadgeEnabled } from "@/lib/ai/costVisibility";

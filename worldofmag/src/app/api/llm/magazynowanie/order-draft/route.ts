@@ -1,7 +1,7 @@
 // Treść zamówienia do dostawcy. Logika w handlerze; cienka trasa sync (degradacja łagodna).
 // Klient: runJob("magazyn.orderDraft", input).
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { magazynOrderDraftHandler } from "@/lib/jobs/handlers/magazynOrderDraft";
 import { JobError } from "@/lib/jobs/types";
 

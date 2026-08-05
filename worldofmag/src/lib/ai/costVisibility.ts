@@ -8,9 +8,9 @@
 // Kontrola dostępu jest STRUKTURALNA, nie kosmetyczna: konto bez `module.admin` nie dostaje danych
 // o modelach i tokenach na drut, więc nie ma czego ukrywać w kliencie.
 
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { prisma } from "@/platform/db/prisma";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { AI_COST_BADGE_CONFIG_KEY, usageFromChat, type AiUsageInfo } from "@/lib/ai/usage";
 
 /**

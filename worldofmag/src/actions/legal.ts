@@ -1,7 +1,7 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { requireUserId } from "@/lib/ownership";
+import { prisma } from "@/platform/db/prisma";
+import { requireUserId } from "@/platform/auth/ownership";
 import { revalidatePath } from "next/cache";
 import { CONSENT_DOCUMENTS, getLegalDoc } from "@/lib/legal/documents";
 

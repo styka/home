@@ -2,8 +2,8 @@
 
 // Z-213/361: akcje modułu Usługi — ulubieni wykonawcy (M11).
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 
 export async function toggleFavorite(providerId: string): Promise<{ favored: boolean }> {
   const user = await requireAuth();

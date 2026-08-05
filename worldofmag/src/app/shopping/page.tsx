@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/platform/auth/session";
+import { prisma } from "@/platform/db/prisma";
 import { getListSummaries } from "@/actions/lists";
-import { getUserTeamIds } from "@/lib/server-utils";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { ShoppingHomePage } from "@/components/shopping/ShoppingHomePage";
 
 export const dynamic = "force-dynamic";

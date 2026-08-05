@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getLocations, getWatchers } from "@/actions/weather";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
 import { WeatherPage } from "@/components/weather/WeatherPage";

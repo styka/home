@@ -3,7 +3,7 @@
 // NIE-gejtowany uprawnieniami — przelicznik nie jest sekretem i bywa pokazywany także
 // zwykłym użytkownikom (np. koszt odpowiedzi asystenta).
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 import { USD_PLN_CONFIG_KEY, DEFAULT_USD_PLN_RATE, parseUsdPlnRate } from "@/lib/usdPln";
 
 export async function getUsdPlnRate(): Promise<number> {

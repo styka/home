@@ -1,7 +1,7 @@
 // Porady dobrostanu zwierząt. Logika w handlerze; cienka trasa sync (degradacja łagodna).
 // Klient: runJob("pets.insights", input).
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { petsInsightsHandler } from "@/lib/jobs/handlers/petsInsights";
 
 export async function POST(req: NextRequest) {

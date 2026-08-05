@@ -1,7 +1,7 @@
 // Inwentaryzacja ze zdjęcia. Logika w handlerze (`@/lib/jobs/handlers/magazynScan`);
 // tu cienka trasa sync (wstecznie). Klient używa kolejki: runJob("magazyn.scan").
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { magazynScanHandler } from "@/lib/jobs/handlers/magazynScan";
 import { JobError } from "@/lib/jobs/types";
 

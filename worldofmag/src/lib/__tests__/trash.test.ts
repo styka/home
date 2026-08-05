@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { trashCutoff, TRASH_RETENTION_DAYS } from "@/lib/trash";
+import { trashCutoff, TRASH_RETENTION_DAYS } from "@/platform/trash/trash";
 
 // Z-059: granica retencji kosza. Wpis usunięty PRZED cutoff → do twardego usunięcia.
 test("trashCutoff: cofa o domyślne okno retencji (30 dni)", () => {

@@ -3,8 +3,8 @@
 // Z-213/361: akcje modułu Usługi — dostępność, pracownicy firmy, rezerwacja slotów
 // (M2 + M14, wyodrębnione z actions/services.ts).
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { notifyUser } from "@/lib/notify";
 import { requireOwnProvider, computeSlots } from "@/lib/services/helpers";
 import type { AvailabilityRule } from "@/lib/serviceSlots";

@@ -1,7 +1,7 @@
 // Plan posiłków na tydzień. Logika (z odczytem przepisów/spiżarni) w handlerze; cienka trasa sync.
 // Klient: runJob("kitchen.planWeek", input).
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { kitchenPlanWeekHandler } from "@/lib/jobs/handlers/kitchenPlanWeek";
 import { JobError } from "@/lib/jobs/types";
 

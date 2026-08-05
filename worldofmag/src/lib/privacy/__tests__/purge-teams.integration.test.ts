@@ -7,7 +7,7 @@ const HAS_DB = !!process.env.DATABASE_URL;
 const rnd = () => Math.random().toString(36).slice(2, 10);
 
 test("Z-194 deleteMyAccount: właściciel z innymi członkami → transfer własności na następcę", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const { purgeUserData } = await import("@/lib/privacy/purge");
 
   const owner = await prisma.user.create({ data: { email: `t4-owner-${rnd()}@test.local` } });
@@ -54,7 +54,7 @@ test("Z-194 deleteMyAccount: właściciel z innymi członkami → transfer włas
 });
 
 test("Z-194 deleteMyAccount: zespół solo (właściciel = jedyny członek) usuwany wraz z zasobami", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const { purgeUserData } = await import("@/lib/privacy/purge");
 
   const owner = await prisma.user.create({ data: { email: `t4-solo-${rnd()}@test.local` } });

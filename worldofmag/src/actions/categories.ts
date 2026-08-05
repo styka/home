@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth, getUserTeamIds } from "@/lib/server-utils";
-import { auth } from "@/lib/auth";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
+import { auth } from "@/platform/auth/session";
 import { BASE_CATEGORIES } from "@/lib/categories";
 import { getActiveCategoryIconMap, orphanCategoryIcons } from "@/actions/categoryIcons";
 

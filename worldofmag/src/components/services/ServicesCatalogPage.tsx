@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
-import { oneOf, text, type RawParams } from "@/lib/viewState/viewState";
+import { oneOf, text, type RawParams } from "@/platform/viewState/viewState";
 import Link from "next/link";
 import { Handshake, Search, Briefcase, ClipboardList, MapPin, SlidersHorizontal, Navigation, Heart } from "lucide-react";
 import { EmptyState, cardStyle, cardHoverHandlers } from "@/components/ui/home";

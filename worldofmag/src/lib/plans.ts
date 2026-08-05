@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/platform/db/prisma";
 
 /**
  * Z-471 (monetyzacja): definicje planów handlowych w kodzie (rzadko się zmieniają).

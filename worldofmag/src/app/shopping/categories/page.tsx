@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { getCategories } from "@/actions/categories";
 import { getActiveCategoryIconMap } from "@/actions/categoryIcons";
 import { getMyTeams } from "@/actions/teams";

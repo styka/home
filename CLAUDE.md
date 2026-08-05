@@ -200,6 +200,51 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 
 ## Architecture
 
+### Module boundaries — `src/platform/` and `src/modules/` (046, Faza 1)
+
+The rebuild's Faza 1 introduced two directories with **hard, lint-enforced** boundaries. Four modules
+have moved so far (**Trasy TIR, Kontakty, Raporty, QA**); the other 17 still live in
+`src/{actions,components,lib}/` and are listed explicitly as a shrinking transitional array in
+`src/lib/modules.tsx`.
+
+```
+src/platform/     # capabilities that know NOTHING about any module
+  auth/{session,permissions,serverUtils,ownership}.ts   db/prisma.ts
+  trash/  audit/  notifications/  viewState/  shortcuts/  favorites/
+  registry.ts     # ModuleDeclaration + defineModule + pure merge helpers
+  ui/index.ts     # RE-EXPORT of components/ui (deliberately not a move)
+src/modules/<x>/  # a module
+  contract.ts     # the ONLY file other modules may import
+  module.ts       # defineModule(...) — menu, permission and path mapping come from here
+  actions/  ui/  lib/
+```
+
+Three rules, each enforced by a gate rather than by good will:
+
+- **A module sees another module ONLY through `@/modules/<x>/contract`.** Its *own* internals it
+  imports **by relative path** (`./actions/x`) — to a linter, `@/modules/qa/…` inside `modules/qa`
+  looks identical to a foreign import, so with aliases one rule cannot tell mine from theirs and you
+  would need an `overrides` block per module. With relative paths the boundary is visible in the
+  import itself. `npm run check:boundaries` breaks both rules on purpose and demands ESLint actually
+  errors — because `next lint` **exits 0 on an invalid config**, which would silently disable the rule.
+- **`src/platform/**` must not import `@/modules/*` at all** — not even a contract (asymmetry from
+  chapter 7.1: a module knows the platform, the platform knows no module). When the platform needs
+  module knowledge it **takes it as a required parameter** (`filterAccessibleFavorites(…, isPathLocked)`);
+  an optional parameter with a "historical" default would turn a forgotten argument into a silent RBAC leak.
+- **A module registers with ONE declaration.** `npm run check:module-registry` fails the build when a
+  directory in `src/modules/` lacks `contract.ts`/`module.ts`, has an incomplete declaration, a
+  duplicate id, or **is not imported by the composition root** (`src/lib/modules.tsx`) — a module that
+  exists on disk and not in the app otherwise builds green.
+
+Because the platform may not import modules, **the composition root is `src/lib/modules.tsx`**, not
+`platform/registry.ts`: the platform supplies the type and pure helpers, the root assembles. Same for
+path→permission: `platform/auth/permissions.ts` keeps `legacyPermissionForPath` (modules not yet moved
+plus non-module surfaces such as `/settings`, `/admin`), and **`src/lib/pathPermissions.ts` is the
+app-wide `permissionForPath`/`isPathLocked` you should import**.
+
+Contracts carry exactly what consumers need — never "everything just in case". A contract growing to
+dozens of functions is a signal the module does too much.
+
 ### Route Structure (`src/app/`)
 
 ```
@@ -727,7 +772,7 @@ survives) — do **not** move escaping into `inlineFormat` (it opened an XSS hol
 the table/paragraph merge).
 
 **Build pipeline**: `npm run build` runs
-`node scripts/copy-docs.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && next lint --dir src && prisma generate && next build && node scripts/migrate.js`.
+`node scripts/copy-docs.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/migrate.js`.
 - `copy-docs.js` bundles `docs/` for `/admin/docs`.
 - `check-action-coverage.js` (also `npm run check:actions`) verifies **every AI
   `AIAction` has an executor** in `/api/llm/home/execute` — the build **fails**
@@ -798,6 +843,21 @@ the table/paragraph merge).
   connection: it creates and drops a shadow database (C-13). Conscious exceptions (things Prisma
   cannot express, e.g. `pg_trgm` GIN indexes created in raw SQL) live in
   `src/lib/db/schema-drift-allowed.json` with a reason each.
+- **`check-boundaries.js`** (also `npm run check:boundaries`) — 046: proves the module-boundary ESLint
+  rules actually fire. It writes four temporary probe files (foreign internals → must error, foreign
+  contract → must pass, own internals by relative path → must pass, platform→module → must error) and
+  requires ESLint to report exactly that. It exists because **`next lint` prints "ESLint configuration
+  … is invalid" and then exits 0** — a typo in `.eslintrc.json` silently disables the boundary rule
+  while the build stays green. A rule that is too *wide* is checked as well: it would be worked around
+  rather than obeyed.
+- **`check-module-registry.js`** (also `npm run check:module-registry`) — 046: every directory in
+  `src/modules/` must have `contract.ts` and a complete `defineModule` declaration in `module.ts`,
+  with a unique id, **and be imported by the composition root** `src/lib/modules.tsx`. Without the
+  last check a module can exist on disk, be absent from the app, and still build green.
+- **`tsconfig.test.json`** (`npm run check:test-types`, wired into `build`) — 046: `tsconfig.json`
+  excludes `src/**/*.test.ts`, so `tsc --noEmit` does **not** see test files; a test importing a moved
+  module typechecked clean and only failed in the 40-second `test:unit`. Tests run in Node, so they
+  need their own `target` — hence a separate config rather than dropping the exclusion.
 - `check-migrations.js` (also `npm run check:migrations`) **fails** on a *new*
   duplicate migration-number prefix (legacy duplicates grandfathered).
 - `migrate.js` runs `prisma migrate deploy` (with retries for Neon cold-start) then

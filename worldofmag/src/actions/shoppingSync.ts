@@ -12,8 +12,8 @@
 // względem stanu serwera SPRZED naszego batcha (zmiana innego klienta nowsza niż `op.ts`).
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/server-utils";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { assertListAccess } from "@/actions/lists";
 import { categorize } from "@/lib/categorize";
 import { upsertUserProduct } from "@/actions/products";

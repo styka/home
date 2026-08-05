@@ -7,7 +7,7 @@ const HAS_DB = !!process.env.DATABASE_URL;
 const rnd = () => Math.random().toString(36).slice(2, 10);
 
 test("Z-130 budżet AI: free limit egzekwowany, premium większy, licznik rośnie", { skip: !HAS_DB && "brak DATABASE_URL" }, async (t) => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const { checkAiBudget, recordAiUsage } = await import("@/lib/ai/usage");
   const { getActivePlan, PLANS } = await import("@/lib/plans");
 

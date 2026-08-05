@@ -14,14 +14,14 @@ const HAS_DB = !!process.env.DATABASE_URL;
 const rnd = () => Math.random().toString(36).slice(2, 10);
 
 test("Z-172 izolacja danych (IDOR/BOLA) — guardy odrzucają obcego właściciela", { skip: !HAS_DB && "brak DATABASE_URL" }, async (t) => {
-  const { prisma } = await import("@/lib/prisma");
+  const { prisma } = await import("@/platform/db/prisma");
   const { assertListAccess } = await import("@/actions/lists");
   const { assertProjectAccess } = await import("@/actions/taskProjects");
   const { assertRecipeAccess } = await import("@/actions/recipes");
   const { assertPetAccess } = await import("@/actions/pets");
   const { assertCookbookAccess } = await import("@/actions/cookbooks");
   const { assertTaskAccess } = await import("@/lib/tasks/access");
-  const { ownedByWhere } = await import("@/lib/ownership");
+  const { ownedByWhere } = await import("@/platform/auth/ownership");
 
   const A = await prisma.user.create({ data: { email: `iso-a-${rnd()}@test.local`, name: "A" } });
   const B = await prisma.user.create({ data: { email: `iso-b-${rnd()}@test.local`, name: "B" } });

@@ -4,7 +4,7 @@ import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save, Trash2, Columns, Eye, Edit3, HardDrive, Database } from "lucide-react";
-import { updateReport, deleteReport } from "@/actions/reports";
+import { updateReport, deleteReport } from "@/modules/reports/contract";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 
 const CATEGORIES = [

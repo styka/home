@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { chatComplete } from "@/lib/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
 import { usageField } from "@/lib/ai/costVisibility";

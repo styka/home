@@ -8,10 +8,10 @@
 // tego byłby to niewidzialny profil, który po cichu steruje tym, co system mu proponuje.
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { requireAuth } from "@/lib/server-utils";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { prisma } from "@/platform/db/prisma";
+import { auth } from "@/platform/auth/session";
+import { requireAuth } from "@/platform/auth/serverUtils";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { fingerprintOf } from "@/lib/textKey";
 import {
   parseUserFactCategory,

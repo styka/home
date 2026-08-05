@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { auth } from "@/platform/auth/session";
+import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getConfigMasked, getConfigValue } from "@/actions/config";
 import { AdminConfigForm } from "./AdminConfigForm";
 import { ChevronLeft, Cpu, ChevronRight } from "lucide-react";

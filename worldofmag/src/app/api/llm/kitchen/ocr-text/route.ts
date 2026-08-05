@@ -1,7 +1,7 @@
 // Transkrypcja tekstu ze zdjęcia. Logika w handlerze (`@/lib/jobs/handlers/kitchenOcrText`);
 // tu cienka trasa sync (wstecznie). Klient używa kolejki: runJob("kitchen.ocrText").
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/platform/auth/session";
 import { kitchenOcrTextHandler } from "@/lib/jobs/handlers/kitchenOcrText";
 import { JobError } from "@/lib/jobs/types";
 
