@@ -13,6 +13,7 @@ import truckModule from "@/modules/truck/module";
 import contactsModule from "@/modules/contacts/module";
 import reportsModule from "@/modules/reports/module";
 import qaModule from "@/modules/qa/module";
+import warsztatyModule from "@/modules/warsztaty/module";
 import languagesModule from "@/modules/languages/module";
 import habitsModule from "@/modules/habits/module";
 
@@ -20,7 +21,7 @@ import habitsModule from "@/modules/habits/module";
 // Zaproszenia, Admin) NIE są tutaj — pozostają na stałe w komponentach paska.
 export type ModuleDef = ResolvedModule;
 
-const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, qaModule, habitsModule, languagesModule];
+const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, qaModule, habitsModule, languagesModule, warsztatyModule];
 
 /**
  * Moduły JESZCZE NIEPRZENIESIONE do `src/modules/`. Lista przejściowa, kurcząca się z każdą
@@ -42,7 +43,6 @@ const LEGACY: ResolvedModule[] = [
   defineModule({ id: "flota",     label: "Flota",         href: "/flota",     permission: PERMISSIONS.FLOTA,     color: "var(--accent-blue)",   Icon: Car,           defaultEnabled: true }),
   defineModule({ id: "portfel",   label: "Portfel",       href: "/portfel",   permission: PERMISSIONS.PORTFEL,   color: "var(--accent-green)",  Icon: Wallet,        defaultEnabled: true }),
   defineModule({ id: "magazynowanie", label: "Magazynowanie", href: "/magazynowanie", permission: PERMISSIONS.MAGAZYNOWANIE, color: "var(--accent-blue)", Icon: Warehouse, defaultEnabled: true }),
-  defineModule({ id: "warsztaty", label: "Warsztaty",     href: "/warsztaty", permission: PERMISSIONS.WARSZTATY,  color: "var(--accent-amber)",  Icon: Wrench,        defaultEnabled: true }),
 ];
 
 /**

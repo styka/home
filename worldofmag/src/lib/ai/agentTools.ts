@@ -9,7 +9,7 @@ import { getTags } from "@/actions/tags";
 import { getRecipe } from "@/actions/recipes";
 import { getCareAgenda, getCareHistory, getPetWelfare } from "@/actions/petCare";
 import { getEnclosures } from "@/actions/petHusbandry";
-import { getMaintenanceOverview } from "@/actions/warsztat";
+import { getMaintenanceOverview } from "@/modules/warsztaty/contract";
 import { getHotTopics, getSources, getTopics, getTopicView } from "@/actions/news";
 import { getLocations, getWeather } from "@/actions/weather";
 import { getSuppliers, getLowStock, getExpiringStorage, getStorageAnalytics } from "@/actions/storage";

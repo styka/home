@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
-import { getSuggestions } from "@/lib/warsztat/catalog";
+import { getSuggestions } from "../lib/catalog";
 import type { Workshop, WorkshopItem, WorkshopProject } from "@prisma/client";
 
 export type WarsztatMode = "home" | "pro";

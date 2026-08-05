@@ -161,8 +161,8 @@
     "warsztaty": {
       "status": "done",
       "entries": [
-        "src/components/warsztaty/WorkshopsList.tsx",
-        "src/components/warsztaty/WorkshopDetail.tsx"
+        "src/modules/warsztaty/ui/WorkshopsList.tsx",
+        "src/modules/warsztaty/ui/WorkshopDetail.tsx"
       ]
     },
     "wiadomosci": {

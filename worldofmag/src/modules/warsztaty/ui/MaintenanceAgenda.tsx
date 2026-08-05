@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CalendarClock, AlertTriangle, PackageOpen } from "lucide-react";
-import type { MaintenanceOverview } from "@/actions/warsztat";
+import type { MaintenanceOverview } from "../actions/warsztat";
 
 export function MaintenanceAgenda({ overview }: { overview: MaintenanceOverview }) {
   const { due, lowStock } = overview;

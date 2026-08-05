@@ -45,7 +45,7 @@
       Konsumenci: `languageExecutor`, `agentTools` (`getDueCards`, `getStudyStreak`),
       **pulpit** `app/page.tsx` (`getDecks`) → wszyscy przez kontrakt.
       **Gotowe, gdy:** rytuał przechodzi; pulpit renderuje kafelek języków. **(AC-1, AC-2, AC-3)**
-- [ ] **T-4** — **Warsztaty** → `src/modules/warsztaty/`. Akcje: `warsztat.ts` (23 eksporty).
+- [x] **T-4** — **Warsztaty** → `src/modules/warsztaty/`. Akcje: `warsztat.ts` (23 eksporty).
       UI: `components/warsztaty/` (5). Lib: `lib/warsztat/catalog.ts` + jego test →
       `modules/warsztaty/{lib,__tests__}/`.
       Konsumenci: `warsztatExecutor`, `agentTools` (`getMaintenanceOverview`).

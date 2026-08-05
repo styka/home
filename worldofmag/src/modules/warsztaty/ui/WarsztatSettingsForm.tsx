@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Home, Building2, Check } from "lucide-react";
-import { setWarsztatMode, type WarsztatMode } from "@/actions/warsztat";
+import { setWarsztatMode, type WarsztatMode } from "../actions/warsztat";
 
 export function WarsztatSettingsForm({ mode }: { mode: WarsztatMode }) {
   const router = useRouter();

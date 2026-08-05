@@ -14,11 +14,11 @@ import {
   addWorkshopItem, updateWorkshopItem, deleteWorkshopItem, addSuggestedItems,
   deleteWorkshop, addWorkshopProject, updateWorkshopProject, deleteWorkshopProject,
   type WorkshopDetail as WorkshopDetailType, type WarsztatMode,
-} from "@/actions/warsztat";
+} from "../actions/warsztat";
 import {
   getWorkshopType, getSuggestions, KIND_LABELS, TIER_LABELS, CONDITION_LABELS,
   type EquipmentKind, type EquipmentTier,
-} from "@/lib/warsztat/catalog";
+} from "../lib/catalog";
 
 type Tab = "equipment" | "suggestions" | "projects";
 

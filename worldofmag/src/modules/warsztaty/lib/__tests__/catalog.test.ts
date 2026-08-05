@@ -8,7 +8,7 @@ import {
   getSuggestions,
   KIND_LABELS,
   TIER_LABELS,
-} from "@/lib/warsztat/catalog";
+} from "../catalog";
 
 // Katalog warsztatów = statyczne dane „łatwe do rozbudowy" → testy pilnują spójności,
 // żeby dopisanie typu/pozycji nie wprowadziło cicho błędu (zwł. duplikatu `key`,

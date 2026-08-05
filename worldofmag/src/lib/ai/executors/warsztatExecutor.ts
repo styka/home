@@ -5,7 +5,7 @@ import {
   createWorkshop, addWorkshopItem, updateWorkshop, deleteWorkshop,
   updateWorkshopItem, deleteWorkshopItem, adjustWorkshopItemQuantity,
   addWorkshopProject, updateWorkshopProject, deleteWorkshopProject,
-} from "@/actions/warsztat";
+} from "@/modules/warsztaty/contract";
 import { asStr, resolveByName, ownerOrArr } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 

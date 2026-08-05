@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Wrench, Users , Hammer } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
-import { createWorkshop, type WorkshopWithCounts, type WarsztatMode } from "@/actions/warsztat";
+import { createWorkshop, type WorkshopWithCounts, type WarsztatMode } from "../actions/warsztat";
 import { ModuleView } from "@/components/ui/view";
 import {
   WORKSHOP_TYPES,
   getWorkshopType,
   getSuggestions,
-} from "@/lib/warsztat/catalog";
+} from "../lib/catalog";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface Props {
