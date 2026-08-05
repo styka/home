@@ -72,20 +72,20 @@
       ZOSTAJĄ** — pierwszego używa kalendarz i `agentTools`, drugiego `systemHealth` (plan §3.1).
       Konsumenci: `healthExecutor`, `agentTools` (`getTestTrends`), **pulpit** (`getHealthEvents`).
       **Gotowe, gdy:** rytuał przechodzi; agregat kalendarza zwraca to samo. **(AC-1, AC-2, AC-3)**
-- [ ] **T-8a** — **Nazwać wyłączenie: nawigacja boczna powłoki.** (Dopisane w trakcie `/implement`
+- [x] **T-8a** — **Nazwać wyłączenie: nawigacja boczna powłoki.** (Dopisane w trakcie `/implement`
       wg C-54.) `ModuleSidebar` importuje komponenty `*SideNav` wprost z `ui/` czterech modułów tej
       fali. Kontrakt opisuje **dane, nie ekrany**, a właściwym rozwiązaniem jest pole `sideNav`
       w deklaracji, ładowane leniwie (rozdz. 9.3) — czyli zmiana zachowania, która nie może wejść
       do commita przenoszącego. Odnotować w dzienniku jako następny krok.
       **Gotowe, gdy:** wyłączenie opisane w `spec.md`, `plan.md` i rozdz. 15 dziennika. **(AC-2)**
-- [ ] **T-9** — Jeśli którykolwiek moduł okazał się zbyt sprzężony, żeby przenieść go **bez zmiany
+- [x] **T-9** — Jeśli którykolwiek moduł okazał się zbyt sprzężony, żeby przenieść go **bez zmiany
       zachowania** — zostawić go na liście przejściowej i zapisać powód (do dziennika w T-14).
       **Gotowe, gdy:** decyzja i powód zapisane, albo jawnie: „wszystkie siedem przeszło".
       **(AC-4)**
 
 ## Faza B — Spłata długu z 046 (osobne commity)
 
-- [ ] **T-10** — **Panel admina QA przez kontrakt.** `app/admin/qa/page.tsx` woła
+- [x] **T-10** — **Panel admina QA przez kontrakt.** `app/admin/qa/page.tsx` woła
       `prisma.qaEpic.findMany` z zagnieżdżonym `include`, mimo że moduł ma `getAllEpics`.
       Sprawdzić kształt danych; jeśli nie pokrywa tego, czego używa `QaAdminTree` — **rozszerzyć
       kontrakt QA**, a nie obchodzić granicę. To zmiana zachowania → osobny commit.

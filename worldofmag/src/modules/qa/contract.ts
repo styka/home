@@ -27,6 +27,7 @@ export {
   getAllEpics,
   // odczyt dla panelu redakcyjnego
   getEpicForAdmin,
+  getEpicTreeForAdmin,
   getStoryForAdmin,
   getScenarioForAdmin,
   // redakcja
@@ -41,4 +42,4 @@ export {
   deleteScenario,
 } from "./actions/qa";
 
-export type { EpicWithCounts, ModuleStats, ModuleTree, ScenarioWithContext } from "./actions/qa";
+export type { EpicWithCounts, ModuleStats, ModuleTree, ScenarioWithContext, AdminEpicTreeNode } from "./actions/qa";

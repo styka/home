@@ -149,6 +149,67 @@ export async function getEpicForAdmin(slug: string) {
   });
 }
 
+/** Epik z pełnym drzewem historyjek i scenariuszy — dla drzewa redakcyjnego w panelu admina. */
+export type AdminEpicTreeNode = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  module: string;
+  order: number;
+  stories: {
+    id: string;
+    slug: string;
+    title: string;
+    description: string | null;
+    order: number;
+    scenarios: { id: string; slug: string; title: string; type: string; priority: string; order: number }[];
+  }[];
+};
+
+/**
+ * 047: pełne drzewo Epik → Historyjka → Scenariusz dla panelu redakcyjnego.
+ *
+ * Powstało, żeby `app/admin/qa/page.tsx` przestał odpytywać Prismę z pominięciem kontraktu modułu
+ * (dług nazwany w recenzji 046). `getAllEpics` się do tego nie nadaje — zwraca **liczniki**
+ * historyjek i scenariuszy, a drzewo redakcyjne potrzebuje ich treści. To dwie różne potrzeby,
+ * więc kontrakt dostaje drugą funkcję zamiast rozdmuchanego wariantu jednej.
+ */
+export async function getEpicTreeForAdmin(): Promise<AdminEpicTreeNode[]> {
+  await requireAdmin();
+  const rows = await prisma.qaEpic.findMany({
+    orderBy: [{ module: "asc" }, { order: "asc" }],
+    include: {
+      userStories: {
+        orderBy: [{ order: "asc" }],
+        include: {
+          scenarios: {
+            orderBy: [{ order: "asc" }],
+            select: { id: true, slug: true, title: true, type: true, priority: true, order: true },
+          },
+        },
+      },
+    },
+  });
+
+  return rows.map((e) => ({
+    id: e.id,
+    slug: e.slug,
+    title: e.title,
+    description: e.description,
+    module: e.module,
+    order: e.order,
+    stories: e.userStories.map((s) => ({
+      id: s.id,
+      slug: s.slug,
+      title: s.title,
+      description: s.description,
+      order: s.order,
+      scenarios: s.scenarios,
+    })),
+  }));
+}
+
 export async function getStoryForAdmin(slug: string) {
   await requireAdmin();
   return prisma.qaUserStory.findUnique({
