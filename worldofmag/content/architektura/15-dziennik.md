@@ -16,14 +16,18 @@ w checkliście nie ma numeru (rozdz. 10.4–10.5 — system komponentów i kontr
 zadań 1–3 Fazy 0. Rozdz. 13 nazywał je „bezwarunkowo pierwszymi": *refaktor bez siatki bezpieczeństwa
 to nie refaktor, tylko przepisywanie z nadzieją*.
 
-**Faza 1 jest ZROBIONA W CZĘŚCI — jako pionowy wycinek** (przebieg 046). Powstała warstwa
-`src/platform/`, cztery moduły stoją w `src/modules/` z kontraktami, granica jest **egzekwowana
-lintem i dwiema bramkami**, a rejestr, uprawnienia i mapowanie ścieżek dla tych czterech modułów
-wynikają z **jednej deklaracji**. Poza wycinkiem zostaje **17 modułów** i **zadanie 8** (asystent AI).
-Lista jest jawna niżej — to jest dług nazwany, a nie cisza.
+**Faza 1 jest ZROBIONA W POŁOWIE.** Przebieg 046 postawił warstwę `src/platform/`, granicę
+egzekwowaną lintem i dwiema bramkami oraz deklarację `defineModule` — i sprawdził to na czterech
+modułach. Przebieg 047 powtórzył ten wzorzec na kolejnych siedmiu.
 
-**Następny krok: kolejne fale Fazy 1** — przenoszenie modułów od najmniej do najbardziej sprzężonych,
-po jednym commicie na moduł, tym samym wzorcem, który 046 sprawdził na czterech.
+**Stan po 047: 11 z 21 modułów stoi w `src/modules/`.** Lista przejściowa w `src/lib/modules.tsx`
+skurczyła się z 17 do **10**. Poza zakresem zostaje **zadanie 8** (asystent AI składany z deklaracji)
+oraz trzy zdolności platformy (`ai`, `llm`, `jobs`). Wszystko wymienione niżej z nazwy — to jest dług
+nazwany, a nie cisza.
+
+**Następny krok: trzecia fala** — dziesięć najbardziej sprzężonych modułów, w tym te zasilające
+pulpit i kalendarz (Zadania, Zakupy, Kuchnia, Zwierzęta, Kalendarz, Strona główna). Dopiero po niej
+ma sens wyprowadzanie pulpitu i kalendarza z deklaracji oraz zaostrzenie bramki rejestru.
 
 ---
 
@@ -44,7 +48,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
 | 4 | `src/platform/` — przeniesienie wspólnych zdolności | 🟡 | Przeniesione: `auth/{session,permissions,serverUtils,ownership}`, `db/prisma`, `trash`, `audit`, `notifications`, `viewState`, `shortcuts`, `favorites`, `registry`. `platform/ui` jest **re-eksportem** `components/ui` (świadomie — patrz wpis 046). **Zostaje:** `ai` (25 plików / 97 importujących), `llm` (8/55), `jobs` (5/45) |
-| 5 | `src/modules/<x>/` — moduł po module | 🟡 | **4 z 21**: Trasy TIR, Kontakty, Raporty, QA — każdy osobnym commitem. **Zostaje 17** (lista niżej) |
+| 5 | `src/modules/<x>/` — moduł po module | 🟡 | **11 z 21** po 047: Trasy TIR, Kontakty, Raporty, QA (046) + Nawyki, Nauka języków, Warsztaty, Magazynowanie, Notatki, Flota, Zdrowie (047). Każdy osobnym commitem. **Zostaje 10** (lista niżej) |
 | 6 | `contract.ts` + reguła ESLint blokująca import przez granicę | ✅ | Dwie reguły `no-restricted-imports` (moduł↔moduł, platforma↛moduł) + bramka `check:boundaries`, która sama je łamie i wymaga błędu. Sprawdzone: wyłączenie reguły **i** zepsucie konfiguracji czerwienią bramkę |
 | 7 | `defineModule` + wyprowadzenie rejestru, uprawnień, nawigacji | 🟡 | `defineModule` + `module.ts` dla 4 modułów; ich wpisy **usunięte** z `lib/modules.tsx` i `platform/auth/permissions.ts`. Bramka `check:module-registry`. Pulpit i kalendarz **jeszcze nie** wynikają z deklaracji — dojdą razem z modułami, które je zasilają |
 | 8 | Migracja asystenta AI na katalog składany z deklaracji | ⬜ | Dokument stawia je **ostatnim w fazie**, po wszystkich modułach — świadomie nietknięte |
@@ -334,3 +338,72 @@ przypadki niestabilne pod obciążeniem równoległym — `smoke.spec.ts` urucho
 - **Zadanie 8** (asystent AI składany z deklaracji) — dokument stawia je ostatnim w fazie.
 - **Pulpit i kalendarz** nie wynikają jeszcze z deklaracji: zasilają je moduły, których w
   `src/modules/` jeszcze nie ma. Pola dojdą do `defineModule` razem z nimi.
+
+### 047 — Faza 1, fala 2: siedem kolejnych modułów · 2026-08-05
+
+Powtórzenie wzorca z 046 — bez wymyślania niczego nowego. Siedem modułów, **jeden commit na moduł**,
+plus dwa długi nazwane w recenzji poprzedniego przebiegu.
+
+**Przeniesione:** Nawyki, Nauka języków, Warsztaty, Magazynowanie, Notatki, Flota, Zdrowie.
+Kolejność jak poprzednio — od jednego konsumenta zewnętrznego (Nawyki) do trzech, w tym pulpitu
+i agregatu kalendarza (Zdrowie).
+
+**Co ten przebieg pokazał o kontraktach**
+
+Magazynowanie ma **47 eksportów akcji**; jego kontrakt ma **14**. To nie jest oszczędność dla
+oszczędności — 47 pozycji w kontrakcie znaczyłoby dokładnie tyle samo, co brak kontraktu. Rozdz. 9
+mówi, że rosnący kontrakt to **sygnał**, iż moduł robi za dużo; sygnał ma być widoczny, a nie
+zagłuszony eksportem całości. Podobnie Warsztaty: 23 eksporty, 11 w kontrakcie.
+
+**Trzy rzeczy, które NIE należą do modułów, mimo że tak brzmią**
+
+Najciekawsza część tej fali okazała się nie „co przenieść", tylko **czego nie przenosić**:
+
+- `lib/habitStats.ts` — nazwa mówi „Nawyki", a używają go `actions/medications`,
+  `actions/notifications`, `kitchenExecutor` i `lib/medicationSchedule`. To wspólny helper dat.
+- `lib/medicationSchedule.ts` — brzmi jak Zdrowie, ale korzysta z niego **agregat kalendarza**
+  i narzędzia asystenta. Wciągnięcie go do modułu zmusiłoby kalendarz (jeszcze nie moduł) do importu
+  kontraktu Zdrowia dla funkcji, która nawet nie dotyka bazy.
+- `actions/tags.ts` — wygląda na część Notatek, ale tagi to **słownik współdzielony** z Kuchnią.
+  Wciągnięcie ich do Notatek zabetonowałoby przypadkowe sprzężenie zamiast je rozwiązać. Docelowe
+  miejsce: warstwa słowników platformy, razem z kategoriami i jednostkami — **osobne zadanie**.
+
+Wniosek na kolejne fale: **przynależność pliku ustala się po jego konsumentach, nie po nazwie.**
+
+**Świadome wyłączenie — nawigacja boczna powłoki**
+
+`ModuleSidebar` importuje komponenty `*SideNav` wprost z `ui/` czterech modułów tej fali. Zostawiamy
+to i **nazywamy**, zamiast udawać zgodność: kontrakt opisuje **dane, nie ekrany** (zasada przyjęta
+w 046 przy Raportach), a przepuszczanie komponentu klienckiego przez plik importowany przez kod
+serwerowy rozmywałoby granicę zamiast ją rysować. Właściwe rozwiązanie to **pole `sideNav`
+w deklaracji, ładowane leniwie** — dokładnie ten wzorzec, który rozdz. 9.3 opisuje dla kafelka
+pulpitu. To zmiana zachowania (import dynamiczny), więc nie mogła wejść do fali przenoszącej.
+**Następny krok, nie przeoczenie.**
+
+**Spłacone długi z 046**
+
+- **Panel admina QA przez kontrakt.** `app/admin/qa/page.tsx` odpytywał Prismę z pominięciem
+  kontraktu własnego modułu. `getAllEpics` się nie nadawał — zwraca **liczniki**, a drzewo
+  redakcyjne potrzebuje treści; kontrakt dostał więc drugą funkcję (`getEpicTreeForAdmin`) zamiast
+  rozdmuchanego wariantu jednej. Strona schudła o 30 linii mapowania.
+- **Dane z seeda w środowisku klikaczy.** `scripts/e2e-web.sh` kończył na `migrate deploy`, więc
+  ~16 testów było czerwonych z powodu pustych tabel. To gorsze niż czerwony test: **psuje wartość
+  sygnału** — „czerwony" przestaje znaczyć „regresja". Skrypt odpala teraz istniejące seedy
+  (idempotentne), a nie drugi zestaw danych obok.
+
+**Lekcja o bramkach z 046, która zwróciła się dwa razy**
+
+`check:test-types` (dodane w 046, bo `tsconfig.json` wyklucza pliki testowe) złapało w tej fali
+**dwa** testy, które zostały w `src/lib` po przeniesieniu swojego kodu — SRS i wikilinków. Bez tej
+bramki oba wyszłyby dopiero po 40 sekundach `test:unit`, albo wcale.
+
+**Poza zakresem — jawnie**
+
+- **10 modułów czekających:** Strona główna, Kalendarz, Zakupy, Zadania, Zwierzęta, Kuchnia,
+  Wiadomości, Pogoda, Usługi, Portfel. To najbardziej sprzężone — zasilają pulpit i kalendarz.
+- **Zdolności platformy:** `lib/ai` (25 plików / 97 importujących), `lib/llm` (8/55), `lib/jobs` (5/45).
+- **Zadanie 8** (asystent AI składany z deklaracji) — dokument stawia je ostatnim w fazie.
+- **Pole `sideNav` w deklaracji** — patrz wyżej.
+- **Tagi do warstwy słowników platformy** — razem z kategoriami i jednostkami.
+- **Zaostrzenie bramki rejestru** o wykrywanie modułów pisanych „po staremu" (AC-6 z 046) — możliwe
+  dopiero przy **pustej** liście przejściowej, czyli po trzeciej fali.

@@ -91,7 +91,7 @@
       kontrakt QA**, a nie obchodzić granicę. To zmiana zachowania → osobny commit.
       **Gotowe, gdy:** plik nie zawiera `prisma.`, a klikacz `scenario-qa-admin-create-hierarchy`
       jest zielony. **(AC-5)**
-- [ ] **T-11** — **Dane z seeda w środowisku klikaczy.** `scripts/e2e-web.sh` odpala tylko
+- [x] **T-11** — **Dane z seeda w środowisku klikaczy.** `scripts/e2e-web.sh` odpala tylko
       `migrate deploy`; przez to 16 testów było czerwonych z pustych tabel, co **psuje wartość
       sygnału**. Dołożyć istniejący `npm run db:seed` (nie pisać drugiego zestawu danych).
       **Gotowe, gdy:** pełny zestaw klikaczy uruchomiony, liczba czerwonych porównana z 19 sprzed
@@ -106,12 +106,12 @@
       `next lint`, `next build`, `test:unit`. **(AC-9)**
 - [ ] **T-13** — Klikacz ścieżki szczęśliwej **22/22** (21 modułów + odczyt rejestru). To jedyny
       dowód, że przeniesienie siedmiu modułów niczego nie zmieniło dla użytkownika. **(AC-8, AC-10)**
-- [ ] **T-14** — Rozdz. 15 dziennika: wpis 047, przestawione statusy zadań 4–5, **jawna lista
+- [x] **T-14** — Rozdz. 15 dziennika: wpis 047, przestawione statusy zadań 4–5, **jawna lista
       modułów wciąż czekających** (po nazwie, z liczbą), stan zdolności platformy odłożonych oraz
       informacja, czego brakuje do domknięcia AC-6 z 046. **(AC-7)**
-- [ ] **T-15** `[P]` — `CLAUDE.md`: aktualizacja liczby przeniesionych modułów i listy przejściowej
+- [x] **T-15** `[P]` — `CLAUDE.md`: aktualizacja liczby przeniesionych modułów i listy przejściowej
       w sekcji „Module boundaries".
-- [ ] **T-16** — Wpisy do `doświadczenia.md` (C-51), jeśli po drodze wyszedł nieoczywisty problem.
+- [x] **T-16** — Wpisy do `doświadczenia.md` (C-51), jeśli po drodze wyszedł nieoczywisty problem.
 
 ---
 

@@ -8,7 +8,7 @@ import { HeartPulse, Plus, Stethoscope, FlaskConical, Trash2, Pencil, Check, X, 
 import { EmptyState, cardStyle } from "@/components/ui/home";
 import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent, getHealthAttachments, addHealthAttachment, deleteHealthAttachment, type TestTrend, type HealthAttachmentDTO } from "../actions/health";
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
-import { HealthAiOptInToggle } from "@/modules/health/ui/HealthAiOptInToggle";
+import { HealthAiOptInToggle } from "./HealthAiOptInToggle";
 import { ModuleView } from "@/components/ui/view";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useConfirm } from "@/components/ui/ConfirmProvider";

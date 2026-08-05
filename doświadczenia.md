@@ -4,6 +4,43 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-05 — Przynależność pliku ustala się po konsumentach, nie po nazwie
+**Problem:** Przy przenoszeniu modułów do `src/modules/` kuszące było zabranie wszystkiego, co ma
+pasującą nazwę. `lib/habitStats.ts` brzmi jak Nawyki, `lib/medicationSchedule.ts` jak Zdrowie,
+`actions/tags.ts` jak Notatki. Sprawdzenie konsumentów pokazało co innego: `habitStats` używają
+`actions/medications`, `actions/notifications` i `kitchenExecutor`; `medicationSchedule` — **agregat
+kalendarza** i narzędzia asystenta; tagi — Kuchnia. Przeniesienie któregokolwiek zmusiłoby cudzy kod
+do importu kontraktu modułu, do którego ten plik nie należy.
+**Rozwiązanie:** Wszystkie trzy zostały tam, gdzie były, a decyzja i powód trafiły do `plan.md`,
+kontraktów i dziennika przebudowy — przed napisaniem kodu, nie po. Tagi mają docelowo trafić do
+warstwy słowników platformy, razem z kategoriami i jednostkami; to osobne zadanie.
+**Lekcja:** Przed przeniesieniem pliku do modułu wypisz jego **importujących**. Nazwa pliku mówi,
+czym plik miał być; lista konsumentów mówi, czym jest. Przeniesienie „bo pasuje nazwą" betonuje
+przypadkowe sprzężenie zamiast je rozwiązać — i wychodzi dopiero, gdy ktoś próbuje przenieść moduł
+po drugiej stronie tej zależności.
+
+## 2026-08-05 — Bramka granic sprawdza swoje sondy, nie repozytorium
+**Problem:** Po każdym przeniesionym module odpalałem `check:boundaries` i był zielony. Dopiero
+`next lint` na końcu fali pokazał realne naruszenie: `HealthHomePage` importował sąsiedni komponent
+tego samego modułu przez alias (`@/modules/health/ui/HealthAiOptInToggle`), a nie ścieżką względną.
+Bramka tego nie widziała, bo ona **tworzy własne pliki-sondy** i sprawdza, czy ESLint na nie
+reaguje — nie skanuje kodu repozytorium.
+**Rozwiązanie:** Import zamieniony na `./HealthAiOptInToggle`. Ważniejsze: do rytuału po każdym
+module dochodzi `next lint --dir src`, a nie sam `check:boundaries`.
+**Lekcja:** Bramka typu „udowodnij, że reguła działa" i lint typu „sprawdź kod" odpowiadają na dwa
+różne pytania. Zielona pierwsza znaczy tylko tyle, że reguła jest sprawna — nie że nikt jej nie
+łamie. W rytuale weryfikacyjnym potrzebne są obie.
+
+## 2026-08-05 — `next build` i serwer dev klikaczy walczą o katalog `.next`
+**Problem:** Żeby zaoszczędzić czas, odpaliłem `next build` w trakcie trwającego przebiegu
+klikaczy (`scripts/e2e-web.sh` trzyma serwer deweloperski). Build padł z `Cannot find module
+'./1682.js'`, a przebieg klikaczy wykrzaczył się na `ENOENT … webpack/client-development-fallback`
+i pokazał **38 czerwonych zamiast realnych ~19** — czyli wynik nie do odczytania w obie strony.
+**Rozwiązanie:** `rm -rf .next`, czysty build, a potem osobny, samotny przebieg klikaczy.
+**Lekcja:** `next build` i serwer deweloperski dzielą `.next` i nawzajem sobie go psują. Nigdy nie
+zrównoleglaj builda z klikaczami w tym samym katalogu roboczym — oszczędność kilku minut kosztuje
+dwa bezużyteczne wyniki i jeszcze jeden pełny, 13-minutowy przebieg.
+
 ## 2026-08-04 — `next lint` przy zepsutej konfiguracji kończy się kodem 0
 **Problem:** Do `.eslintrc.json` trafił blok `overrides` z wymyślonym kluczem `$komentarz`
 (chcieliśmy skomentować regułę granic modułów). Walidator schematu ESLinta odrzucił konfigurację,
