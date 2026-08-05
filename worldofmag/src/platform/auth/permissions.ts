@@ -4,23 +4,16 @@ export const PERMISSIONS = {
   HOME:        "module.home",
   SHOPPING:    "module.shopping",
   TASKS:       "module.tasks",
-  NOTES:       "module.notes",
   KITCHEN:     "module.kitchen",
   SETTINGS:    "module.settings",
   ADMIN:       "module.admin",
   INVITATIONS: "module.invitations",
   PETS:        "module.pets",
-  FLOTA:       "module.flota",
   PORTFEL:     "module.portfel",
-  LANGUAGES:   "module.languages",
-  HEALTH:      "module.health",
-  HABITS:      "module.habits",
   SERVICES:    "module.services",
   CALENDAR:    "module.calendar",
   NEWS:        "module.news",
   WEATHER:     "module.weather",
-  MAGAZYNOWANIE: "module.magazynowanie",
-  WARSZTATY:   "module.warsztaty",
   // Kitchen sub-permissions
   KITCHEN_RECIPE_CREATE: "kitchen.recipe.create",
   KITCHEN_RECIPE_EDIT:   "kitchen.recipe.edit",
@@ -49,23 +42,16 @@ export function legacyPermissionForPath(path: string): string | null {
   if (path === "/" || path === "") return PERMISSIONS.HOME
   if (path.startsWith("/shopping")) return PERMISSIONS.SHOPPING
   if (path.startsWith("/tasks")) return PERMISSIONS.TASKS
-  if (path.startsWith("/notes")) return PERMISSIONS.NOTES
   if (path.startsWith("/kitchen")) return PERMISSIONS.KITCHEN
   if (path.startsWith("/settings")) return PERMISSIONS.SETTINGS
   if (path.startsWith("/admin")) return PERMISSIONS.ADMIN
   if (path.startsWith("/invitations")) return PERMISSIONS.INVITATIONS
   if (path.startsWith("/pets")) return PERMISSIONS.PETS
-  if (path.startsWith("/flota")) return PERMISSIONS.FLOTA
   if (path.startsWith("/portfel")) return PERMISSIONS.PORTFEL
-  if (path.startsWith("/languages")) return PERMISSIONS.LANGUAGES
-  if (path.startsWith("/health")) return PERMISSIONS.HEALTH
-  if (path.startsWith("/habits")) return PERMISSIONS.HABITS
   if (path.startsWith("/services")) return PERMISSIONS.SERVICES
   if (path.startsWith("/calendar")) return PERMISSIONS.CALENDAR
   if (path.startsWith("/wiadomosci")) return PERMISSIONS.NEWS
   if (path.startsWith("/pogoda")) return PERMISSIONS.WEATHER
-  if (path.startsWith("/magazynowanie")) return PERMISSIONS.MAGAZYNOWANIE
-  if (path.startsWith("/warsztaty")) return PERMISSIONS.WARSZTATY
   return null
 }
 

@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { getWarsztatSettings } from "@/actions/warsztat";
-import { WarsztatSettingsForm } from "@/components/warsztaty/WarsztatSettingsForm";
+import { getWarsztatSettings } from "@/modules/warsztaty/actions/warsztat";
+import { WarsztatSettingsForm } from "@/modules/warsztaty/ui/WarsztatSettingsForm";
 
 export default async function WarsztatUstawieniaPage() {
   const { mode } = await getWarsztatSettings();

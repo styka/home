@@ -13,12 +13,19 @@ import truckModule from "@/modules/truck/module";
 import contactsModule from "@/modules/contacts/module";
 import reportsModule from "@/modules/reports/module";
 import qaModule from "@/modules/qa/module";
+import healthModule from "@/modules/health/module";
+import flotaModule from "@/modules/flota/module";
+import notesModule from "@/modules/notes/module";
+import magazynowanieModule from "@/modules/magazynowanie/module";
+import warsztatyModule from "@/modules/warsztaty/module";
+import languagesModule from "@/modules/languages/module";
+import habitsModule from "@/modules/habits/module";
 
 // Definicja górnego (konfigurowalnego) modułu menu. Pozycje dolne (Ustawienia,
 // Zaproszenia, Admin) NIE są tutaj — pozostają na stałe w komponentach paska.
 export type ModuleDef = ResolvedModule;
 
-const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, qaModule];
+const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, qaModule, habitsModule, languagesModule, warsztatyModule, magazynowanieModule, notesModule, flotaModule, healthModule];
 
 /**
  * Moduły JESZCZE NIEPRZENIESIONE do `src/modules/`. Lista przejściowa, kurcząca się z każdą
@@ -30,19 +37,12 @@ const LEGACY: ResolvedModule[] = [
   defineModule({ id: "calendar",  label: "Kalendarz",     href: "/calendar",  permission: PERMISSIONS.CALENDAR,  color: "var(--accent-purple)", Icon: Calendar,      defaultEnabled: true }),
   defineModule({ id: "shopping",  label: "Zakupy",        href: "/shopping",  permission: PERMISSIONS.SHOPPING,  color: "var(--accent-blue)",   Icon: ShoppingCart,  defaultEnabled: true }),
   defineModule({ id: "tasks",     label: "Zadania",       href: "/tasks",     permission: PERMISSIONS.TASKS,     color: "var(--accent-green)",  Icon: CheckSquare,   defaultEnabled: true }),
-  defineModule({ id: "notes",     label: "Notatki",       href: "/notes",     permission: PERMISSIONS.NOTES,     color: "var(--accent-amber)",  Icon: FileText,      defaultEnabled: true }),
   defineModule({ id: "pets",      label: "Zwierzęta",     href: "/pets",      permission: PERMISSIONS.PETS,      color: "var(--accent-orange)", Icon: PawPrint,      defaultEnabled: true }),
   defineModule({ id: "kitchen",   label: "Kuchnia",       href: "/kitchen",   permission: PERMISSIONS.KITCHEN,   color: "var(--accent-orange)", Icon: ChefHat,       defaultEnabled: true }),
-  defineModule({ id: "languages", label: "Nauka języków", href: "/languages", permission: PERMISSIONS.LANGUAGES, color: "var(--accent-purple)", Icon: GraduationCap, defaultEnabled: true }),
-  defineModule({ id: "health",    label: "Zdrowie",       href: "/health",    permission: PERMISSIONS.HEALTH,    color: "var(--accent-red)",    Icon: HeartPulse,    defaultEnabled: true }),
   defineModule({ id: "news",      label: "Wiadomości",    href: "/wiadomosci", permission: PERMISSIONS.NEWS,     color: "var(--accent-blue)",   Icon: Newspaper,     defaultEnabled: true }),
   defineModule({ id: "weather",   label: "Pogoda",        href: "/pogoda",    permission: PERMISSIONS.WEATHER,   color: "var(--accent-amber)",  Icon: CloudSun,      defaultEnabled: true }),
-  defineModule({ id: "habits",    label: "Nawyki",        href: "/habits",    permission: PERMISSIONS.HABITS,    color: "var(--accent-orange)", Icon: Flame,         defaultEnabled: true }),
   defineModule({ id: "services",  label: "Usługi",        href: "/services",  permission: PERMISSIONS.SERVICES,  color: "var(--accent-blue)",   Icon: Handshake,     defaultEnabled: true }),
-  defineModule({ id: "flota",     label: "Flota",         href: "/flota",     permission: PERMISSIONS.FLOTA,     color: "var(--accent-blue)",   Icon: Car,           defaultEnabled: true }),
   defineModule({ id: "portfel",   label: "Portfel",       href: "/portfel",   permission: PERMISSIONS.PORTFEL,   color: "var(--accent-green)",  Icon: Wallet,        defaultEnabled: true }),
-  defineModule({ id: "magazynowanie", label: "Magazynowanie", href: "/magazynowanie", permission: PERMISSIONS.MAGAZYNOWANIE, color: "var(--accent-blue)", Icon: Warehouse, defaultEnabled: true }),
-  defineModule({ id: "warsztaty", label: "Warsztaty",     href: "/warsztaty", permission: PERMISSIONS.WARSZTATY,  color: "var(--accent-amber)",  Icon: Wrench,        defaultEnabled: true }),
 ];
 
 /**

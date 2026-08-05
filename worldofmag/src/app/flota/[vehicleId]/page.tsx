@@ -3,8 +3,9 @@ export const dynamic = "force-dynamic";
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getVehicle } from "@/actions/flota";
-import { VehicleDetailPage } from "@/components/flota/VehicleDetailPage";
+import flotaModule from "@/modules/flota/module";
+import { getVehicle } from "@/modules/flota/actions/flota";
+import { VehicleDetailPage } from "@/modules/flota/ui/VehicleDetailPage";
 
 interface Props {
   params: { vehicleId: string };
@@ -13,7 +14,7 @@ interface Props {
 export default async function VehiclePage({ params }: Props) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.FLOTA) && !hasPermission(session, PERMISSIONS.ADMIN)) {
+  if (!hasPermission(session, flotaModule.permission) && !hasPermission(session, PERMISSIONS.ADMIN)) {
     redirect("/");
   }
 

@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { getTags } from "@/actions/tags";
-import { TagsManager } from "@/components/notes/TagsManager";
+import { TagsManager } from "@/modules/notes/ui/TagsManager";
 import { ChevronLeft } from "lucide-react";
 
 export default async function NotesTagsPage() {

@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { getStorageAnalytics, getStorageItems } from "@/actions/storage";
-import { StorageAnalytics } from "@/components/magazynowanie/StorageAnalytics";
+import { getStorageAnalytics, getStorageItems } from "@/modules/magazynowanie/actions/storage";
+import { StorageAnalytics } from "@/modules/magazynowanie/ui/StorageAnalytics";
 
 export default async function AnalitykaPage() {
   const [analytics, items] = await Promise.all([getStorageAnalytics(), getStorageItems()]);

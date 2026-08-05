@@ -20,8 +20,8 @@
     "flota": {
       "status": "done",
       "entries": [
-        "src/components/flota/FlotaHomePage.tsx",
-        "src/components/flota/VehicleDetailPage.tsx"
+        "src/modules/flota/ui/FlotaHomePage.tsx",
+        "src/modules/flota/ui/VehicleDetailPage.tsx"
       ]
     },
     "guide": {
@@ -31,14 +31,14 @@
     "habits": {
       "status": "done",
       "entries": [
-        "src/components/habits/HabitsPage.tsx"
+        "src/modules/habits/ui/HabitsPage.tsx"
       ]
     },
     "health": {
       "status": "done",
       "entries": [
-        "src/components/health/HealthHomePage.tsx",
-        "src/components/health/MedicationsPage.tsx"
+        "src/modules/health/ui/HealthHomePage.tsx",
+        "src/modules/health/ui/MedicationsPage.tsx"
       ]
     },
     "invitations": {
@@ -54,8 +54,8 @@
     "languages": {
       "status": "done",
       "entries": [
-        "src/components/languages/DeckPage.tsx",
-        "src/components/languages/LanguagesHomePage.tsx"
+        "src/modules/languages/ui/DeckPage.tsx",
+        "src/modules/languages/ui/LanguagesHomePage.tsx"
       ]
     },
     "legal": {
@@ -65,15 +65,15 @@
     "magazynowanie": {
       "status": "done",
       "entries": [
-        "src/components/magazynowanie/DocumentsPage.tsx",
-        "src/components/magazynowanie/SuppliersPage.tsx"
+        "src/modules/magazynowanie/ui/DocumentsPage.tsx",
+        "src/modules/magazynowanie/ui/SuppliersPage.tsx"
       ]
     },
     "notes": {
       "status": "done",
       "entries": [
-        "src/components/notes/NotesHomePage.tsx",
-        "src/components/notes/NotesPage.tsx"
+        "src/modules/notes/ui/NotesHomePage.tsx",
+        "src/modules/notes/ui/NotesPage.tsx"
       ]
     },
     "pets": {
@@ -161,8 +161,8 @@
     "warsztaty": {
       "status": "done",
       "entries": [
-        "src/components/warsztaty/WorkshopsList.tsx",
-        "src/components/warsztaty/WorkshopDetail.tsx"
+        "src/modules/warsztaty/ui/WorkshopsList.tsx",
+        "src/modules/warsztaty/ui/WorkshopDetail.tsx"
       ]
     },
     "wiadomosci": {
@@ -249,19 +249,19 @@
       "kind": "paleta-danych",
       "reason": "Wartość zastępcza dla pola wyboru koloru (#000000), gdy token nie jest w formacie akceptowanym przez natywną kontrolkę."
     },
-    "src/components/notes/GroupsManager.tsx": {
+    "src/modules/notes/ui/GroupsManager.tsx": {
       "kind": "paleta-danych",
       "reason": "Paleta kolorów folderu notatek wybierana przez użytkownika."
     },
-    "src/components/notes/NoteRow.tsx": {
+    "src/modules/notes/ui/NoteRow.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory tagów i folderów z rekordów użytkownika."
     },
-    "src/components/notes/QuickNoteBar.tsx": {
+    "src/modules/notes/ui/QuickNoteBar.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory tagów z rekordów użytkownika."
     },
-    "src/components/notes/TagChip.tsx": {
+    "src/modules/notes/ui/TagChip.tsx": {
       "kind": "paleta-danych",
       "reason": "Paleta kolorów tagu WYBIERANA PRZEZ UŻYTKOWNIKA i zapisana w bazie. To dane rekordu, nie motyw — skórka nie ma prawa ich nadpisać."
     },
@@ -269,23 +269,23 @@
       "kind": "paleta-danych",
       "reason": "Paleta serii na wykresie — musi mieć stałą liczbę rozróżnialnych kolorów niezależnie od skórki, inaczej dwie kategorie wydatków zlałyby się w jedną."
     },
-    "src/components/magazynowanie/QrLabels.tsx": {
+    "src/modules/magazynowanie/ui/QrLabels.tsx": {
       "kind": "ilustracja",
       "reason": "Etykieta QR jest DRUKOWANA — musi być czarna na białym niezależnie od skórki ekranowej, inaczej wydruk wyjdzie nieczytelny."
     },
-    "src/components/magazynowanie/ScanFlow.tsx": {
+    "src/modules/magazynowanie/ui/ScanFlow.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory statusu skanowania — semantyczne."
     },
-    "src/components/magazynowanie/StorageAnalytics.tsx": {
+    "src/modules/magazynowanie/ui/StorageAnalytics.tsx": {
       "kind": "paleta-danych",
       "reason": "Paleta serii na wykresie ABC."
     },
-    "src/components/magazynowanie/StorageList.tsx": {
+    "src/modules/magazynowanie/ui/StorageList.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory progów stanu magazynowego (semantyczne, jak w spiżarni)."
     },
-    "src/components/magazynowanie/StorageSettingsForm.tsx": {
+    "src/modules/magazynowanie/ui/StorageSettingsForm.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolor podglądu trybu."
     }

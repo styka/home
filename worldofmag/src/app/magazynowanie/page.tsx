@@ -6,9 +6,9 @@ import {
   getStorageSettings,
   getSuppliers,
   getExpiringStorage,
-} from "@/actions/storage";
+} from "@/modules/magazynowanie/actions/storage";
 import { getLists } from "@/actions/lists";
-import { StorageList } from "@/components/magazynowanie/StorageList";
+import { StorageList } from "@/modules/magazynowanie/ui/StorageList";
 
 export default async function MagazynowaniePage({ searchParams }: { searchParams?: { q?: string } }) {
   const [items, lowStock, lists, settings, suppliers, expiring] = await Promise.all([

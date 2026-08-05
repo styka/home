@@ -2,14 +2,15 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getDecks, getStudyStreak } from "@/actions/languageDecks";
-import { LanguagesHomePage } from "@/components/languages/LanguagesHomePage";
+import { hasPermission } from "@/platform/auth/permissions";
+import languagesModule from "@/modules/languages/module";
+import { getDecks, getStudyStreak } from "@/modules/languages/actions/languageDecks";
+import { LanguagesHomePage } from "@/modules/languages/ui/LanguagesHomePage";
 
 export default async function LanguagesRootPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.LANGUAGES)) redirect("/");
+  if (!hasPermission(session, languagesModule.permission)) redirect("/");
 
   const [decks, streak] = await Promise.all([getDecks(), getStudyStreak()]);
 

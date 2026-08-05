@@ -1,7 +1,7 @@
 // Z-010: handler akcji asystenta dla modułu Zdrowie (wizyty/badania + leki/pielęgnacja).
 // Wyodrębniony z execute/route.ts. `type === "..."` skanowane przez check-action-coverage.js.
-import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent } from "@/actions/health";
-import { createMedicationSchedule, deleteMedicationSchedule, updateMedicationSchedule, logDose, unlogDose, getMedicationDay } from "@/actions/medications";
+import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent } from "@/modules/health/contract";
+import { createMedicationSchedule, deleteMedicationSchedule, updateMedicationSchedule, logDose, unlogDose, getMedicationDay } from "@/modules/health/contract";
 import { asStr, resolveHealthEventId, resolveMedicationId, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { HealthKind, HealthStatus } from "@/types";

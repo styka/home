@@ -2,14 +2,15 @@ export const dynamic = "force-dynamic";
 
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getDeck, getDueCards } from "@/actions/languageDecks";
-import { StudySession } from "@/components/languages/StudySession";
+import { hasPermission } from "@/platform/auth/permissions";
+import languagesModule from "@/modules/languages/module";
+import { getDeck, getDueCards } from "@/modules/languages/actions/languageDecks";
+import { StudySession } from "@/modules/languages/ui/StudySession";
 
 export default async function LanguageStudyPage({ params }: { params: { deckId: string } }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.LANGUAGES)) redirect("/");
+  if (!hasPermission(session, languagesModule.permission)) redirect("/");
 
   const deck = await getDeck(params.deckId);
   if (!deck) notFound();

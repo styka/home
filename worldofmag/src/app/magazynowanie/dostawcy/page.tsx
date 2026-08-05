@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { getSuppliers } from "@/actions/storage";
-import { SuppliersPage } from "@/components/magazynowanie/SuppliersPage";
+import { getSuppliers } from "@/modules/magazynowanie/actions/storage";
+import { SuppliersPage } from "@/modules/magazynowanie/ui/SuppliersPage";
 
 export default async function DostawcyPage() {
   const suppliers = await getSuppliers();

@@ -2,7 +2,7 @@
 // Scala oba dawne bloki `module === "magazynowanie"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
-import { addStorageItem, adjustStorageQuantity, updateStorageItem, deleteStorageItem, transferStock, addSupplier, updateSupplier, deleteSupplier, addLowStockToShoppingList, addBatch } from "@/actions/storage";
+import { addStorageItem, adjustStorageQuantity, updateStorageItem, deleteStorageItem, transferStock, addSupplier, updateSupplier, deleteSupplier, addLowStockToShoppingList, addBatch } from "@/modules/magazynowanie/contract";
 import { asStr, undoAction, resolveByName, ownerOrArr, resolveOrCreateList, type ExecOutcome } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 

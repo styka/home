@@ -29,10 +29,10 @@ cd "$(dirname "$0")/.."
 
 PW_DIR="${PLAYWRIGHT_BROWSERS_PATH:-/opt/pw-browsers}"
 
-echo "▶ 1/5 Zależności npm…"
+echo "▶ 1/6 Zależności npm…"
 [ -d node_modules ] || npm install
 
-echo "▶ 2/5 Mapowanie pre-zainstalowanej przeglądarki Chromium…"
+echo "▶ 2/6 Mapowanie pre-zainstalowanej przeglądarki Chromium…"
 # @playwright/test oczekuje konkretnej rewizji (np. 1223), a w obrazie jest
 # starsza (np. 1194). Wersje są kompatybilne na potrzeby smoke — mapujemy
 # symlinkami katalog oczekiwanej rewizji na tę faktycznie zainstalowaną.
@@ -65,7 +65,7 @@ ln -sfn "$HS_HAVE_DIR/chrome-linux" \
   "$PW_DIR/chromium_headless_shell-$HS_WANT/chrome-headless-shell-linux64"
 echo "  Chromium: $CHROME_HAVE_DIR → rev $CHROME_WANT (oczekiwana)"
 
-echo "▶ 3/5 Lokalny Postgres (bez Dockera)…"
+echo "▶ 3/6 Lokalny Postgres (bez Dockera)…"
 PG_VER="$(ls /usr/lib/postgresql 2>/dev/null | sort -V | tail -1)"
 if [ -z "$PG_VER" ]; then
   echo "✘ Brak lokalnego Postgresa (/usr/lib/postgresql/*)." >&2; exit 1
@@ -88,10 +88,30 @@ export AUTH_SECRET="${AUTH_SECRET:-e2e-local-secret-not-for-prod}"
 export E2E_TEST_MODE=1
 export DEMO=0
 
-echo "▶ 4/5 Migracje Prisma…"
+echo "▶ 4/6 Migracje Prisma…"
 npx prisma migrate deploy >/dev/null
 
-echo "▶ 5/5 Testy E2E (headless Chromium)…"
+# 047: DANE Z SEEDA.
+#
+# Wcześniej skrypt kończył na `migrate deploy`, więc tabele domenowe były puste, a zestaw
+# klikaczy dawał ~16 czerwonych z powodu braku danych (epik „Listy zakupowe", listy zakupowe,
+# notatki). To jest gorsze niż czerwony test: **psuje wartość sygnału** — „czerwony" przestaje
+# znaczyć „regresja", więc przy następnej prawdziwej regresji nikt tego nie zauważy.
+#
+# Używamy istniejących seedów (`prisma/seed.ts` + scenariusze QA), a nie drugiego zestawu danych
+# obok — dwa równoległe zestawy rozjechałyby się przy pierwszej zmianie modelu.
+# Oba są idempotentne (upsert / ON CONFLICT), więc powtórne uruchomienie skryptu nic nie psuje.
+# Niepowodzenie seeda NIE przerywa przebiegu: lepiej mieć wynik z adnotacją niż brak wyniku —
+# ale komunikat musi być głośny, żeby czerwone testy dało się przypisać właściwej przyczynie.
+echo "▶ 5/6 Dane z seeda (idempotentne)…"
+# Wyciszamy tylko stdout. Stderr ZOSTAJE widoczny: skoro cały sens tej zmiany to zaufanie do
+# czerwonego wyniku, ukrycie powodu awarii seeda działałoby przeciwko niej.
+npx tsx prisma/seed.ts >/dev/null \
+  || echo "  ⚠ seed podstawowy nie przeszedł (powód wyżej) — testy wymagające danych mogą być czerwone"
+npx tsx prisma/seeds/qa-all.ts >/dev/null \
+  || echo "  ⚠ seed scenariuszy QA nie przeszedł (powód wyżej) — specy QA mogą być czerwone"
+
+echo "▶ 6/6 Testy E2E (headless Chromium)…"
 ARGS=("$@")
 # Bez jawnego --project ograniczamy się do desktop (mobile=WebKit niedostępny).
 if ! printf '%s\n' "${ARGS[@]:-}" | grep -q -- '--project'; then
