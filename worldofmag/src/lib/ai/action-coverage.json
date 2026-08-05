@@ -1796,6 +1796,12 @@
     "reason": "admin",
     "access": "admin"
   },
+  "qa:getEpicTreeForAdmin": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
   "qa:getEpicForAdmin": {
     "kind": "read",
     "status": "excluded",

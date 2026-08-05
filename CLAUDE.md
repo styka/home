@@ -202,10 +202,20 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 
 ### Module boundaries — `src/platform/` and `src/modules/` (046, Faza 1)
 
-The rebuild's Faza 1 introduced two directories with **hard, lint-enforced** boundaries. Four modules
-have moved so far (**Trasy TIR, Kontakty, Raporty, QA**); the other 17 still live in
+The rebuild's Faza 1 introduced two directories with **hard, lint-enforced** boundaries. **11 of 21
+modules have moved**: Trasy TIR, Kontakty, Raporty, QA (046) plus Nawyki, Nauka języków, Warsztaty,
+Magazynowanie, Notatki, Flota, Zdrowie (047). The other 10 — Strona główna, Kalendarz, Zakupy,
+Zadania, Zwierzęta, Kuchnia, Wiadomości, Pogoda, Usługi, Portfel — still live in
 `src/{actions,components,lib}/` and are listed explicitly as a shrinking transitional array in
 `src/lib/modules.tsx`.
+
+**A file belongs to the module its CONSUMERS put it in, not the one its name suggests.** 047 left
+`lib/habitStats.ts` (used by medications, notifications, kitchen), `lib/medicationSchedule.ts` (used
+by the calendar aggregate) and `actions/tags.ts` (a dictionary shared with Kitchen) in `src/lib` /
+`src/actions` for exactly that reason — moving them would have frozen accidental coupling in place.
+
+**A contract carries what consumers call, not what the module exports.** Magazynowanie exports 47
+actions; its contract has 14. A 47-entry contract would mean the same as no contract at all.
 
 ```
 src/platform/     # capabilities that know NOTHING about any module

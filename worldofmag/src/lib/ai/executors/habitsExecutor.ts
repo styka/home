@@ -2,7 +2,7 @@
 // Scala trzy dawne bloki `module === "habits"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
-import { toggleHabitDay, createHabit, updateHabit, setHabitArchived, deleteHabit, createTaskFromHabit } from "@/actions/habits";
+import { toggleHabitDay, createHabit, updateHabit, setHabitArchived, deleteHabit, createTaskFromHabit } from "@/modules/habits/contract";
 import { asStr, undoAction, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executors/shared";
 import { isoDate } from "@/lib/habitStats";
 import type { AIAction } from "@/lib/ai/aiAction";

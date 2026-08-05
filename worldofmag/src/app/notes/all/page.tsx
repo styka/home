@@ -2,10 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getNotes } from "@/actions/notes";
-import { getNoteGroups } from "@/actions/noteGroups";
+import { getNotes } from "@/modules/notes/actions/notes";
+import { getNoteGroups } from "@/modules/notes/actions/noteGroups";
 import { getTags } from "@/actions/tags";
-import { NotesPage } from "@/components/notes/NotesPage";
+import { NotesPage } from "@/modules/notes/ui/NotesPage";
 
 interface Props {
   /** 043: stan widoku (filtr, folder, tagi, tryb) czytany przez `useViewState` po stronie klienta. */

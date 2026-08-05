@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
-import { getWorkshop, getWarsztatSettings } from "@/actions/warsztat";
-import { WorkshopDetail } from "@/components/warsztaty/WorkshopDetail";
+import { getWorkshop, getWarsztatSettings } from "@/modules/warsztaty/actions/warsztat";
+import { WorkshopDetail } from "@/modules/warsztaty/ui/WorkshopDetail";
 
 export default async function WorkshopDetailPage({ params, searchParams }: { params: { workshopId: string }; searchParams?: { tab?: string } }) {
   const [workshop, { mode }] = await Promise.all([

@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
-import { getWorkshops, getWarsztatSettings } from "@/actions/warsztat";
+import { getWorkshops, getWarsztatSettings } from "@/modules/warsztaty/actions/warsztat";
 import { getMyTeams } from "@/actions/teams";
-import { WorkshopsList } from "@/components/warsztaty/WorkshopsList";
+import { WorkshopsList } from "@/modules/warsztaty/ui/WorkshopsList";
 
 export default async function WarsztatyPage() {
   const [workshops, { mode }, teams] = await Promise.all([

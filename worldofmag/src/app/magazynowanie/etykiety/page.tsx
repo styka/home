@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { getStorageItems } from "@/actions/storage";
-import { QrLabels } from "@/components/magazynowanie/QrLabels";
+import { getStorageItems } from "@/modules/magazynowanie/actions/storage";
+import { QrLabels } from "@/modules/magazynowanie/ui/QrLabels";
 
 export default async function EtykietyPage() {
   const items = await getStorageItems();
