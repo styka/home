@@ -47,7 +47,7 @@ import {
   type TimelineEntryDTO,
   type NewsRefreshState,
   type NewsRefreshRunDTO,
-} from "@/actions/news";
+} from "../actions/news";
 
 type View = "feed" | "hot" | "settings";
 /** 040: co pokazujemy w wybranym temacie. Domyślnie nowe wiadomości — po nie użytkownik tu wchodzi. */

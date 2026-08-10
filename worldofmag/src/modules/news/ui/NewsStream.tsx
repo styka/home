@@ -12,7 +12,7 @@ import {
   acknowledgeTopicItems,
   type NewsItemDTO,
   type StreamTopicDTO,
-} from "@/actions/news";
+} from "../actions/news";
 
 /**
  * 044: ciągły strumień nowych wiadomości ze WSZYSTKICH tematów.

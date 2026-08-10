@@ -13,7 +13,7 @@ import {
   setDefaultSummaryLength,
   type SourceDTO,
   type SummaryLength,
-} from "@/actions/news";
+} from "../actions/news";
 
 export function NewsSettings({
   sources,

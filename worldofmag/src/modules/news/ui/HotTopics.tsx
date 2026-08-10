@@ -14,7 +14,7 @@ import {
   type HotTopic,
   type HotTopicsResult,
   type HiddenTopicDTO,
-} from "@/actions/news";
+} from "../actions/news";
 
 /** `onTopicsChanged` odświeża listę tematów w module — bez zmiany widoku (040). */
 export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) {

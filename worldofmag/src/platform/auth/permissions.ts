@@ -12,7 +12,6 @@ export const PERMISSIONS = {
   PORTFEL:     "module.portfel",
   SERVICES:    "module.services",
   CALENDAR:    "module.calendar",
-  NEWS:        "module.news",
   WEATHER:     "module.weather",
   // Kitchen sub-permissions
   KITCHEN_RECIPE_CREATE: "kitchen.recipe.create",
@@ -50,7 +49,6 @@ export function legacyPermissionForPath(path: string): string | null {
   if (path.startsWith("/portfel")) return PERMISSIONS.PORTFEL
   if (path.startsWith("/services")) return PERMISSIONS.SERVICES
   if (path.startsWith("/calendar")) return PERMISSIONS.CALENDAR
-  if (path.startsWith("/wiadomosci")) return PERMISSIONS.NEWS
   if (path.startsWith("/pogoda")) return PERMISSIONS.WEATHER
   return null
 }

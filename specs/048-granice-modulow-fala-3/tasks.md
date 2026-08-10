@@ -46,7 +46,7 @@
 > Kolejność od najmniejszego promienia rażenia. Kalendarz i pulpit **na końcu** — zastaną gotowe
 > kontrakty zamiast tymczasowych.
 
-- [ ] **T-4** — **Wiadomości** → `src/modules/news/`. Konsumenci: `newsExecutor`, `agentTools`.
+- [x] **T-4** — **Wiadomości** → `src/modules/news/`. Konsumenci: `newsExecutor`, `agentTools`.
       **(AC-1, AC-2, AC-3)**
 - [ ] **T-5** — **Pogoda** → `src/modules/weather/`. Konsumenci: `weatherExecutor`, `agentTools`.
       Sama woła Zadania (`createTask`) — do czasu T-11 przez `@/actions/tasks`, potem przez kontrakt.

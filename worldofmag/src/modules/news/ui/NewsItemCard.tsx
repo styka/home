@@ -14,7 +14,7 @@ import {
   resummarizeItem,
   type NewsItemDTO,
   type SummaryLength,
-} from "@/actions/news";
+} from "../actions/news";
 
 export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged: () => void }) {
   const { showToast } = useToast();

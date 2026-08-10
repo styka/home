@@ -2,7 +2,7 @@
 
 import { CalendarClock, ExternalLink } from "lucide-react";
 import { sourceColor } from "@/lib/news/sourceColor";
-import type { TimelineEntryDTO } from "@/actions/news";
+import type { TimelineEntryDTO } from "../actions/news";
 
 /**
  * 039: linia czasu tematu — zastąpiła narracyjną, wersjonowaną „bazę wiedzy".

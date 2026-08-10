@@ -168,7 +168,7 @@
     "wiadomosci": {
       "status": "done",
       "entries": [
-        "src/components/news/NewsPage.tsx"
+        "src/modules/news/ui/NewsPage.tsx"
       ]
     }
   },

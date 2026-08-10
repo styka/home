@@ -16,7 +16,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/cn";
-import type { TopicDTO } from "@/actions/news";
+import type { TopicDTO } from "../actions/news";
 
 export function TopicPicker({
   topics,
