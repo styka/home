@@ -5,14 +5,15 @@ import { redirect } from "next/navigation";
 import { CalendarDays, CalendarRange } from "lucide-react";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getCareAgenda } from "@/actions/petCare";
+import petsModule from "@/modules/pets/module";
+import { getCareAgenda } from "@/modules/pets/actions/petCare";
 import { PageHeader, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
-import { CareAgenda } from "@/components/pets/CareAgenda";
+import { CareAgenda } from "@/modules/pets/ui/CareAgenda";
 
 export default async function PetsCalendarPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.PETS)) redirect("/");
+  if (!hasPermission(session, petsModule.permission)) redirect("/");
 
   const agenda = await getCareAgenda();
   // P4: opieka nad zwierzętami jest częścią wspólnego kalendarza (NM1) — link do widoku miesięcznego.

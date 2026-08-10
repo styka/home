@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
-import { assertPetAccess } from "@/actions/pets";
+import { assertPetAccess } from "./pets";
 import { computeNextDue, parseRecurringRule } from "@/lib/recurrence";
-import { buildAgenda, buildWelfareSuggestions, buildEnvironmentSuggestions, type AgendaSource } from "@/lib/petWelfare";
+import { buildAgenda, buildWelfareSuggestions, buildEnvironmentSuggestions, type AgendaSource } from "../lib/petWelfare";
 import type {
   PetTreatment, PetCareTask, PetVetVisit, PetMeasurement, PetHealthRecord, PetCareLog,
   PetTreatmentKind, PetCareCategory, PetHealthType, RecurringRule,

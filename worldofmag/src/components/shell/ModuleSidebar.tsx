@@ -10,7 +10,7 @@ import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
 import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
-import { PetsSideNav } from "@/components/pets/PetsSideNav";
+import { PetsSideNav } from "@/modules/pets/ui/PetsSideNav";
 import { LanguagesSideNav } from "@/modules/languages/ui/LanguagesSideNav";
 import { FlotaSideNav } from "@/modules/flota/ui/FlotaSideNav";
 import { PortfelSideNav } from "@/components/portfel/PortfelSideNav";

@@ -79,8 +79,8 @@
     "pets": {
       "status": "done",
       "entries": [
-        "src/components/pets/PetDetailPage.tsx",
-        "src/components/pets/PetsHomePage.tsx"
+        "src/modules/pets/ui/PetDetailPage.tsx",
+        "src/modules/pets/ui/PetsHomePage.tsx"
       ]
     },
     "pogoda": {

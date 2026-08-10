@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
-import { assertPetAccess } from "@/actions/pets";
+import { assertPetAccess } from "./pets";
 import { notifyUser } from "@/lib/notify";
-import { ENV_PARAMS, classifyValue, rangeLabel, type Range } from "@/lib/petEnvironment";
+import { ENV_PARAMS, classifyValue, rangeLabel, type Range } from "../lib/petEnvironment";
 import type { PetEnclosure, PetEnvironmentReading } from "@/types";
 
 async function assertEnclosureAccess(enclosureId: string, userId: string): Promise<void> {

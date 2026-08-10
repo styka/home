@@ -9,12 +9,12 @@ import {
   getPetBreeding, setParentage, setGenetics, createBreedingPair, updateBreedingPair,
   deleteBreedingPair, createClutch, markClutchHatched, deleteClutch, createOffspring,
   recordSale, deleteSale,
-} from "@/actions/petBreeding";
+} from "../actions/petBreeding";
 import {
   parseGenetics, calculateOffspring, zygositiesForMode, GENE_MODE_LABELS, ZYGOSITY_LABELS,
   type PetGene, type GeneMode, type Zygosity,
-} from "@/lib/petGenetics";
-import { formatDate, speciesEmoji } from "@/lib/petSpecies";
+} from "../lib/petGenetics";
+import { formatDate, speciesEmoji } from "../lib/petSpecies";
 import type { PetWithRelations, PetBreedingData } from "@/types";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 

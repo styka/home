@@ -1,5 +1,5 @@
 import type { CareAgendaItem, WelfareSuggestion } from "@/types";
-import { paramsForGroup, classifyValue, enclosureTypeMeta, envParam, type Range } from "@/lib/petEnvironment";
+import { paramsForGroup, classifyValue, enclosureTypeMeta, envParam, type Range } from "./petEnvironment";
 
 const UPCOMING_DAYS = 7;
 const MS_DAY = 24 * 60 * 60 * 1000;

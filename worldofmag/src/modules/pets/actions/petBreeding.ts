@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
-import { assertPetAccess } from "@/actions/pets";
+import { assertPetAccess } from "./pets";
 import type { PetBreedingData, PetBreedingPair, PetClutch, PetSale, PetStatus } from "@/types";
-import type { PetGene } from "@/lib/petGenetics";
+import type { PetGene } from "../lib/petGenetics";
 
 const PET_REF = { id: true, name: true, species: true, sex: true, status: true } as const;
 

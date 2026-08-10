@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { speciesEmoji, speciesLabel, ageFromBirth, STATUS_LABELS } from "@/lib/petSpecies";
+import { speciesEmoji, speciesLabel, ageFromBirth, STATUS_LABELS } from "../lib/petSpecies";
 import type { Pet } from "@/types";
 
 export function PetCard({ pet, focused = false, onFocus }: { pet: Pet; focused?: boolean; onFocus?: () => void }) {

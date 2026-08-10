@@ -1,7 +1,7 @@
 // P3: eksport danych zwierzęcia dla weterynarza/kupującego.
 // Bez zależności sieciowych: CSV pomiarów (download) + karta HTML do druku (→ PDF z przeglądarki).
 
-import { speciesLabel, SEX_LABELS, STATUS_LABELS } from "@/lib/petSpecies";
+import { speciesLabel, SEX_LABELS, STATUS_LABELS } from "./petSpecies";
 import type { PetWithRelations, PetSex } from "@/types";
 
 function fmtDate(d: Date | string | null | undefined): string {

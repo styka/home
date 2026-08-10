@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarDays, PawPrint } from "lucide-react";
-import { getPets } from "@/actions/pets";
-import { speciesEmoji } from "@/lib/petSpecies";
+import { getPets } from "../actions/pets";
+import { speciesEmoji } from "../lib/petSpecies";
 import type { Pet } from "@/types";
 
 export function PetsSideNav() {

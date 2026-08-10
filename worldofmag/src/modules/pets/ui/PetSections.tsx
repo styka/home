@@ -13,16 +13,16 @@ import {
   createVetVisit, deleteVetVisit,
   createHealthRecord, updateHealthRecord, deleteHealthRecord,
   createCareTask, completeCareTask, deleteCareTask, logFeeding,
-} from "@/actions/petCare";
-import { updatePet, setPetStatus, updatePetFeatures, sharePetByEmail, removePetShare } from "@/actions/pets";
+} from "../actions/petCare";
+import { updatePet, setPetStatus, updatePetFeatures, sharePetByEmail, removePetShare } from "../actions/pets";
 import { ShareControl } from "@/components/sharing/ShareControl";
 import {
   formatDate, formatWeight, TREATMENT_KIND_LABELS, CARE_CATEGORY_LABELS, HEALTH_TYPE_LABELS, STATUS_LABELS,
-} from "@/lib/petSpecies";
+} from "../lib/petSpecies";
 import {
   resolveFeatures, flagsForPreset, PET_PRESETS, PET_FEATURE_KEYS, PET_FEATURE_LABELS, PET_FEATURE_PHASE,
   type PetFeatureKey, type PetFeatureFlags,
-} from "@/lib/petPresets";
+} from "../lib/petPresets";
 import type {
   PetWithRelations, PetStatus, PetTreatmentKind, PetCareCategory, PetHealthType, RecurringRule,
 } from "@/types";

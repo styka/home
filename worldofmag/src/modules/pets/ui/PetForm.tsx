@@ -3,9 +3,9 @@
 import { useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { Modal, Field, inputStyle, PrimaryButton, GhostButton } from "./Modal";
-import { createPet, updatePet } from "@/actions/pets";
-import { SPECIES_OPTIONS } from "@/lib/petSpecies";
-import { PET_PRESETS, suggestedPresetForSpecies } from "@/lib/petPresets";
+import { createPet, updatePet } from "../actions/pets";
+import { SPECIES_OPTIONS } from "../lib/petSpecies";
+import { PET_PRESETS, suggestedPresetForSpecies } from "../lib/petPresets";
 import { useToast } from "@/components/ui/Toast";
 import { ImageUrlInput } from "@/components/ui/ImageUrlInput";
 import type { Pet, PetSpecies } from "@/types";

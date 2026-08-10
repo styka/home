@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Check, Loader2, AlertCircle, Clock, CalendarDays, Syringe, Pill, Bug, Utensils, Stethoscope } from "lucide-react";
-import { completeTreatment, completeCareTask } from "@/actions/petCare";
-import { speciesEmoji } from "@/lib/petSpecies";
+import { completeTreatment, completeCareTask } from "../actions/petCare";
+import { speciesEmoji } from "../lib/petSpecies";
 import { useToast } from "@/components/ui/Toast";
 import type { CareAgendaItem } from "@/types";
 

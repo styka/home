@@ -57,7 +57,7 @@
 - [x] **T-7** — **Kuchnia** → `src/modules/kitchen/`. Cztery pliki akcji, 28 komponentów, zero
       konsumentów zewnętrznych. Woła Zakupy (`assertListAccess`) i tagi (zostają w `src/actions`).
       **(AC-1, AC-3, AC-4)**
-- [ ] **T-8** — **Zwierzęta** → `src/modules/pets/`. Cztery pliki akcji. Konsumenci: `petExecutor`,
+- [x] **T-8** — **Zwierzęta** → `src/modules/pets/`. Cztery pliki akcji. Konsumenci: `petExecutor`,
       `agentTools`, powłoka (nawigacja — rozwiązana w T-13). **(AC-1, AC-2, AC-3)**
 - [ ] **T-9** — **Portfel** → `src/modules/portfel/`. Pięć plików akcji. Konsumenci: `portfelExecutor`,
       `agentTools`, pulpit **oraz Usługi** — `addEntry` przechodzi na kontrakt Portfela.

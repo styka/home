@@ -7,10 +7,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Pencil, Trash2, PawPrint, Printer, Download } from "lucide-react";
 
-import { speciesEmoji, speciesLabel, ageFromBirth, STATUS_LABELS, SEX_LABELS } from "@/lib/petSpecies";
-import { resolveFeatures, PET_FEATURE_PHASE, PET_FEATURE_KEYS, type PetFeatureKey } from "@/lib/petPresets";
-import { buildVetCardHtml, buildMeasurementsCsv } from "@/lib/petExport";
-import { deletePet } from "@/actions/pets";
+import { speciesEmoji, speciesLabel, ageFromBirth, STATUS_LABELS, SEX_LABELS } from "../lib/petSpecies";
+import { resolveFeatures, PET_FEATURE_PHASE, PET_FEATURE_KEYS, type PetFeatureKey } from "../lib/petPresets";
+import { buildVetCardHtml, buildMeasurementsCsv } from "../lib/petExport";
+import { deletePet } from "../actions/pets";
 import { PetForm } from "./PetForm";
 import {
   ProfileSection, MeasurementsSection, TreatmentsSection, VetSection, HealthSection,

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
-import { DEFAULT_PRESET_KEY } from "@/lib/petPresets";
+import { DEFAULT_PRESET_KEY } from "../lib/petPresets";
 import type { Pet, PetWithRelations, PetShare, PetStatus, ShareRole } from "@/types";
 
 const SHARE_INCLUDE = {

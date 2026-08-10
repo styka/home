@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { speciesEmoji, speciesLabel, formatWeight, formatDate, ageFromBirth } from "@/lib/petSpecies";
+import { speciesEmoji, speciesLabel, formatWeight, formatDate, ageFromBirth } from "../petSpecies";
 
 test("speciesEmoji/Label: znane gatunki + fallback dla nieznanego", () => {
   assert.equal(speciesEmoji("dog"), "🐶");

@@ -8,12 +8,12 @@ import { useToast } from "@/components/ui/Toast";
 import {
   getEnclosures, createEnclosure, assignPetToEnclosure, updateEnclosure,
   addEnvironmentReading, deleteEnvironmentReading,
-} from "@/actions/petHusbandry";
+} from "../actions/petHusbandry";
 import {
   ENCLOSURE_TYPES, enclosureTypeMeta, enclosureTypeForSpecies, paramsForGroup,
   classifyValue, rangeLabel, type EnvGroup, type EnvStatus, type Range,
-} from "@/lib/petEnvironment";
-import { formatDate } from "@/lib/petSpecies";
+} from "../lib/petEnvironment";
+import { formatDate } from "../lib/petSpecies";
 import type { PetWithRelations, PetEnclosure, PetEnvironmentReading } from "@/types";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   suggestedPresetForSpecies, flagsForPreset, resolveFeatures, isFeatureEnabled,
   PET_FEATURE_KEYS, PET_PRESETS,
-} from "@/lib/petPresets";
+} from "../petPresets";
 
 test("suggestedPresetForSpecies: mapowanie gatunku → preset (+ fallback)", () => {
   assert.equal(suggestedPresetForSpecies("snake"), "reptile_keeper");

@@ -8,7 +8,7 @@ import { getRecentActivity } from "@/actions/activity";
 import { getTodaysMeals } from "@/modules/kitchen/contract";
 import { getExpiringSoon } from "@/modules/kitchen/contract";
 import { getPendingInvitationsCount } from "@/actions/invitations";
-import { getCareAgenda } from "@/actions/petCare";
+import { getCareAgenda } from "@/modules/pets/contract";
 import { getVehicles } from "@/modules/flota/contract";
 import { getWalletOverview } from "@/actions/portfel";
 import { getDecks } from "@/modules/languages/contract";
