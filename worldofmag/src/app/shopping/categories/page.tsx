@@ -3,10 +3,10 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getCategories } from "@/actions/categories";
-import { getActiveCategoryIconMap } from "@/actions/categoryIcons";
+import { getCategories } from "@/modules/shopping/actions/categories";
+import { getActiveCategoryIconMap } from "@/modules/shopping/actions/categoryIcons";
 import { getMyTeams } from "@/actions/teams";
-import { CategoryManager } from "@/components/shopping/CategoryManager";
+import { CategoryManager } from "@/modules/shopping/ui/CategoryManager";
 import { ChevronLeft } from "lucide-react";
 
 export default async function CategoriesPage() {

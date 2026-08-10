@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2, Pencil, Map, HelpCircle } from "lucide-react";
 import type { StoreWithGraph } from "@/types";
-import { createStore, renameStore, deleteStore } from "@/actions/stores";
+import { createStore, renameStore, deleteStore } from "../actions/stores";
 
 interface StoresManagerProps {
   stores: StoreWithGraph[];

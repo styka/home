@@ -135,8 +135,8 @@
     "shopping": {
       "status": "done",
       "entries": [
-        "src/components/shopping/ShoppingHomePage.tsx",
-        "src/components/shopping/ShoppingPage.tsx"
+        "src/modules/shopping/ui/ShoppingHomePage.tsx",
+        "src/modules/shopping/ui/ShoppingPage.tsx"
       ]
     },
     "tasks": {
@@ -173,15 +173,15 @@
     }
   },
   "colorExceptions": {
-    "src/components/shopping/StoreGraphView.tsx": {
+    "src/modules/shopping/ui/StoreGraphView.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory węzłów grafu sklepu pochodzą ze słownika kategorii."
     },
-    "src/components/shopping/StoreMapEditor.tsx": {
+    "src/modules/shopping/ui/StoreMapEditor.tsx": {
       "kind": "paleta-danych",
       "reason": "Słownik kolorów kategorii sklepu — mapa sklepu ma odwzorowywać realne strefy, więc kolory są danymi domeny, nie motywem."
     },
-    "src/components/shopping/StoresManager.tsx": {
+    "src/modules/shopping/ui/StoresManager.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory kategorii sklepu."
     },

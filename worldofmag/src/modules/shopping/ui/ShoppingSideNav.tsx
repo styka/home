@@ -7,7 +7,7 @@ import {
   ShoppingCart, Plus, Loader2, Pencil, Check, X, Trash2,
   LayoutList, Map, Image as ImageIcon, Users,
 } from "lucide-react";
-import { getListSummaries, createList, renameList, deleteList, type ListSummary } from "@/actions/lists";
+import { getListSummaries, createList, renameList, deleteList, type ListSummary } from "../actions/lists";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 export function ShoppingSideNav() {

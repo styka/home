@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
-import { categorize } from "@/lib/categorize";
+import { categorize } from "@/modules/shopping/contract";
 import { computeRecipeCost } from "../lib/recipeCost";
 import { trackActivity } from "@/actions/activity";
-import { assertListAccess } from "@/actions/lists";
+import { assertListAccess } from "@/modules/shopping/contract";
 import type { MealSlot, MealStatus } from "@/types/kitchen";
 import type { MealPlanEntry, Item } from "@prisma/client";
 

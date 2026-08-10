@@ -9,7 +9,7 @@ import { AppName } from "@/components/brand/AppName";
 import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/cn";
 import { TasksSideNav } from "@/components/tasks/TasksSideNav";
-import { ShoppingSideNav } from "@/components/shopping/ShoppingSideNav";
+import { ShoppingSideNav } from "@/modules/shopping/ui/ShoppingSideNav";
 import { PetsSideNav } from "@/modules/pets/ui/PetsSideNav";
 import { LanguagesSideNav } from "@/modules/languages/ui/LanguagesSideNav";
 import { FlotaSideNav } from "@/modules/flota/ui/FlotaSideNav";

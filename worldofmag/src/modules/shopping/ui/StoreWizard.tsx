@@ -3,8 +3,8 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, ArrowRight, RotateCcw, Check, Loader2 } from "lucide-react";
-import { saveStoreGraph } from "@/actions/stores";
-import { computeLayout } from "@/lib/storeLayout";
+import { saveStoreGraph } from "../actions/stores";
+import { computeLayout } from "../lib/storeLayout";
 import { runJob } from "@/lib/jobs/client";
 import { StoreGraphView } from "./StoreGraphView";
 import type { StoreWithGraph, StoreNodeData, StoreEdgeData } from "@/types";

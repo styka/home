@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { getRecipe } from "@/modules/kitchen/actions/recipes";
-import { getLists } from "@/actions/lists";
+import { getLists } from "@/modules/shopping/contract";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { RecipeView } from "@/modules/kitchen/ui/recipes/RecipeView";
 

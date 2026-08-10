@@ -14,9 +14,9 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import { assertListAccess } from "@/actions/lists";
-import { categorize } from "@/lib/categorize";
-import { upsertUserProduct } from "@/actions/products";
+import { assertListAccess } from "./lists";
+import { categorize } from "../lib/categorize";
+import { upsertUserProduct } from "./products";
 import { trackActivity } from "@/actions/activity";
 import type { OfflineOp, SyncResult } from "@/lib/shopping/offlineTypes";
 

@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { getActiveListsForOffline } from "@/actions/lists";
-import { syncShoppingMutations } from "@/actions/shoppingSync";
+import { getActiveListsForOffline } from "../actions/lists";
+import { syncShoppingMutations } from "../actions/shoppingSync";
 import { getQueue, removeOps, saveSnapshot, pendingCount, onOfflineChanged } from "@/lib/shopping/offlineStore";
 import { OfflineIndicator } from "./OfflineIndicator";
 

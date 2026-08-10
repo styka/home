@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
 import { auth } from "@/platform/auth/session";
-import { categorize } from "@/lib/categorize";
+import { categorize } from "../lib/categorize";
 import type { Product } from "@/types";
 
 export async function getProductSuggestions(prefix: string): Promise<Product[]> {

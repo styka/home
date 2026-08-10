@@ -3,10 +3,10 @@
 import { useState, useRef } from "react";
 import { Trash2, Plus, RefreshCw, FolderOpen, FolderSymlink, Sparkles } from "lucide-react";
 import Link from "next/link";
-import type { CategoryIconVariantData } from "@/actions/categoryIcons";
-import { deleteCategoryIconVariant, saveToLibrary, assignIconToCategory } from "@/actions/categoryIcons";
+import type { CategoryIconVariantData } from "../actions/categoryIcons";
+import { deleteCategoryIconVariant, saveToLibrary, assignIconToCategory } from "../actions/categoryIcons";
 import { Modal } from "@/components/ui/Modal";
-import { IconDisplay } from "@/components/shopping/IconDisplay";
+import { IconDisplay } from "./IconDisplay";
 
 interface IconLibraryProps {
   initialIcons: CategoryIconVariantData[];

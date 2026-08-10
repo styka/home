@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { RefreshCw, RotateCcw, Trash2, ChevronDown, Sparkles } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
-import type { CategoryIconVariantData } from "@/actions/categoryIcons";
+import type { CategoryIconVariantData } from "../actions/categoryIcons";
 import {
   getAllUserIconVariantsFlat,
   saveAndActivateCategoryIcon,
@@ -11,10 +11,10 @@ import {
   deactivateCategoryIcon,
   deleteCategoryIconVariant,
   upsertCategoryEmojiOverride,
-} from "@/actions/categoryIcons";
+} from "../actions/categoryIcons";
 import dynamic from "next/dynamic";
 import { Theme } from "emoji-picker-react";
-import { IconDisplay } from "@/components/shopping/IconDisplay";
+import { IconDisplay } from "./IconDisplay";
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
 interface CategoryIconPickerProps {

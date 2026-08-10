@@ -7,8 +7,8 @@
 //   • OFFLINE → optymistyczna zmiana w snapshotcie + operacja do kolejki (replay po powrocie sieci).
 // Dodatkowo: jeśli sieć padnie w trakcie żądania online, łapiemy błąd i degradujemy do kolejki.
 
-import { updateItemStatus, updateItem, deleteItem, addItemStructured } from "@/actions/items";
-import { categorize } from "@/lib/categorize";
+import { updateItemStatus, updateItem, deleteItem, addItemStructured } from "@/modules/shopping/contract";
+import { categorize } from "@/modules/shopping/contract";
 import type { ItemStatus } from "@/types";
 import { enqueue } from "./offlineStore";
 import type { OfflineOp, OfflineOpPayload, OfflineOpType } from "./offlineTypes";

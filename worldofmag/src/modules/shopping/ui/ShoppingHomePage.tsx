@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ShoppingCart, Plus, ChevronRight, Loader2, Package, Ruler, Tag, Map, Image as ImageIcon, Archive, RotateCcw, Users, Clock } from "lucide-react";
-import { createList, unarchiveList } from "@/actions/lists";
+import { createList, unarchiveList } from "../actions/lists";
 import { useToast } from "@/components/ui/Toast";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";

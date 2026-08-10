@@ -4,7 +4,7 @@ import { useState, useTransition, useId } from "react";
 import { Pencil, Trash2, Plus, Check, X, Copy, Loader2 } from "lucide-react";
 import type { Product } from "@/types";
 import { UNITS } from "@/types";
-import { createProduct, updateProduct, deleteProduct, copyGlobalProduct } from "@/actions/products";
+import { createProduct, updateProduct, deleteProduct, copyGlobalProduct } from "../actions/products";
 import { cn } from "@/lib/cn";
 
 interface ProductManagerProps {

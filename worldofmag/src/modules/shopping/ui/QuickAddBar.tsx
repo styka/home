@@ -4,8 +4,8 @@ import { useRef, useState, useEffect, useTransition, forwardRef, useImperativeHa
 import { Plus, Loader2, PenLine } from "lucide-react";
 import type { Product } from "@/types";
 import { UNITS } from "@/types";
-import { getProductSuggestions } from "@/actions/products";
-import { categorize } from "@/lib/categorize";
+import { getProductSuggestions } from "../actions/products";
+import { categorize } from "../lib/categorize";
 import { mutAdd } from "@/lib/shopping/offlineMutations";
 
 interface QuickAddBarProps {

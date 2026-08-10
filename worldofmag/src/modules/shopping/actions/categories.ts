@@ -5,7 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
 import { auth } from "@/platform/auth/session";
 import { BASE_CATEGORIES } from "@/lib/categories";
-import { getActiveCategoryIconMap, orphanCategoryIcons } from "@/actions/categoryIcons";
+import { getActiveCategoryIconMap, orphanCategoryIcons } from "./categoryIcons";
 
 export type CategoryWithUsage = {
   id: string | null;

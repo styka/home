@@ -15,7 +15,7 @@ const rnd = () => Math.random().toString(36).slice(2, 10);
 
 test("Z-172 izolacja danych (IDOR/BOLA) — guardy odrzucają obcego właściciela", { skip: !HAS_DB && "brak DATABASE_URL" }, async (t) => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { assertListAccess } = await import("@/actions/lists");
+  const { assertListAccess } = await import("@/modules/shopping/contract");
   const { assertProjectAccess } = await import("@/actions/taskProjects");
   const { assertRecipeAccess } = await import("@/modules/kitchen/contract");
   const { assertPetAccess } = await import("@/modules/pets/contract");

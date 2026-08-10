@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getStore } from "@/actions/stores";
-import { StoreEditorClient } from "@/components/shopping/StoreEditorClient";
+import { getStore } from "@/modules/shopping/actions/stores";
+import { StoreEditorClient } from "@/modules/shopping/ui/StoreEditorClient";
 import type { StoreWithGraph } from "@/types";
 
 export const dynamic = "force-dynamic";

@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, Check, X, Loader2 } from "lucide-react";
-import type { UnitWithUsage } from "@/actions/units";
-import { createUnit, renameUnit, deleteUnit } from "@/actions/units";
+import type { UnitWithUsage } from "../actions/units";
+import { createUnit, renameUnit, deleteUnit } from "../actions/units";
 
 interface UnitManagerProps {
   units: UnitWithUsage[];

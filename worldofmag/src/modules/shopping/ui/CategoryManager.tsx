@@ -2,9 +2,9 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { Plus, Pencil, Trash2, Check, X, Loader2, Image as ImageIcon, Users } from "lucide-react";
-import type { CategoryWithUsage } from "@/actions/categories";
-import { createCategory, updateCategory, deleteCategory } from "@/actions/categories";
-import { CategoryIconPicker } from "@/components/shopping/CategoryIconPicker";
+import type { CategoryWithUsage } from "../actions/categories";
+import { createCategory, updateCategory, deleteCategory } from "../actions/categories";
+import { CategoryIconPicker } from "./CategoryIconPicker";
 import { EMOJI_DATA } from "@/lib/emojiData";
 
 interface CategoryManagerProps {

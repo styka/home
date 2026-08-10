@@ -8,7 +8,7 @@ import {
   deleteStoreNode,
   upsertStoreEdge,
   deleteStoreEdge,
-} from "@/actions/stores";
+} from "../actions/stores";
 
 type EditorMode = "select" | "addNode" | "addEdge" | "delete";
 

@@ -3,9 +3,9 @@
 import { useState, useTransition, useId } from "react";
 import { Loader2, Plus, CheckSquare, Square, Sparkles } from "lucide-react";
 import { UNITS } from "@/types";
-import { addItemStructured } from "@/actions/items";
-import { upsertUserProduct, getProductSuggestions } from "@/actions/products";
-import { categorize } from "@/lib/categorize";
+import { addItemStructured } from "../actions/items";
+import { upsertUserProduct, getProductSuggestions } from "../actions/products";
+import { categorize } from "../lib/categorize";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 

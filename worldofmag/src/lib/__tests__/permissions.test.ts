@@ -21,7 +21,7 @@ test("hasPermission: ma / nie ma / brak sesji", () => {
 test("permissionForPath: mapuje prefiks ścieżki na uprawnienie", () => {
   assert.equal(permissionForPath("/"), PERMISSIONS.HOME);
   assert.equal(permissionForPath(""), PERMISSIONS.HOME);
-  assert.equal(permissionForPath("/shopping/abc"), PERMISSIONS.SHOPPING);
+  assert.equal(permissionForPath("/shopping/abc"), "module.shopping");
   assert.equal(permissionForPath("/admin/access"), PERMISSIONS.ADMIN);
   // 048: Wiadomości i Pogoda są już modułami — ich slugi mieszkają w deklaracjach.
   // Test sprawdza ZACHOWANIE (ścieżka nadal chroniona tym samym slugiem), nie miejsce zapisu.

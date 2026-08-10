@@ -14,8 +14,8 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Item } from "@/types";
 import { ItemRow } from "./ItemRow";
 import { CategoryIconPicker } from "./CategoryIconPicker";
-import { IconDisplay } from "@/components/shopping/IconDisplay";
-import { reorderItems } from "@/actions/items";
+import { IconDisplay } from "./IconDisplay";
+import { reorderItems } from "../actions/items";
 
 
 interface CategoryGroupProps {

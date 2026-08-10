@@ -62,7 +62,7 @@
 - [x] **T-9** — **Portfel** → `src/modules/portfel/`. Pięć plików akcji. Konsumenci: `portfelExecutor`,
       `agentTools`, pulpit **oraz Usługi** — `addEntry` przechodzi na kontrakt Portfela.
       **(AC-1, AC-2, AC-3, AC-4)**
-- [ ] **T-10** — **Zakupy** → `src/modules/shopping/`. Akcje list/pozycji/sklepów **oraz słowniki
+- [x] **T-10** — **Zakupy** → `src/modules/shopping/`. Akcje list/pozycji/sklepów **oraz słowniki
       zakupowe** (`categories`, `units`, `products`, `categoryIcons`) — rekonesans potwierdził, że mają
       wyłącznie konsumentów zakupowych (plan §1.2). Konsumenci: paleta poleceń, Kuchnia,
       Magazynowanie (`assertListAccess` przez kontrakt). **`actions/tags.ts` ZOSTAJE.**

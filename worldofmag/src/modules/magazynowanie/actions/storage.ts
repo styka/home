@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
-import { categorize } from "@/lib/categorize";
+import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
-import { assertListAccess } from "@/actions/lists";
+import { assertListAccess } from "@/modules/shopping/contract";
 import type {
   StorageItem,
   StorageMovement,

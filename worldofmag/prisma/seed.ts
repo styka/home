@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { categorize } from "../src/lib/categorize";
+import { categorize } from "../src/modules/shopping/lib/categorize";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require("fs") as typeof import("fs");
 // eslint-disable-next-line @typescript-eslint/no-require-imports

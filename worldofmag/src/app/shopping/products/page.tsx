@@ -3,9 +3,9 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getProducts } from "@/actions/products";
-import { getCategoryNames } from "@/actions/categories";
-import { ProductManager } from "@/components/shopping/ProductManager";
+import { getProducts } from "@/modules/shopping/actions/products";
+import { getCategoryNames } from "@/modules/shopping/actions/categories";
+import { ProductManager } from "@/modules/shopping/ui/ProductManager";
 import { ChevronLeft } from "lucide-react";
 
 export default async function ProductsPage() {

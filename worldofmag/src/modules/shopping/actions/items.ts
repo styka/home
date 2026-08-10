@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, ownedOrSystemWhere } from "@/platform/auth/serverUtils";
-import { categorize } from "@/lib/categorize";
-import { parseQuantity } from "@/lib/parseQuantity";
-import { assertListAccess } from "@/actions/lists";
-import { upsertUserProduct } from "@/actions/products";
+import { categorize } from "../lib/categorize";
+import { parseQuantity } from "../lib/parseQuantity";
+import { assertListAccess } from "./lists";
+import { upsertUserProduct } from "./products";
 import { trackActivity } from "@/actions/activity";
 import type { Item, ItemStatus, ItemHistory } from "@/types";
 import type { Item as PrismaItem } from "@prisma/client";

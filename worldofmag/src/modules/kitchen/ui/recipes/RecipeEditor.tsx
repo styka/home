@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Save, ArrowLeft, Sparkles, Wand2, ClipboardCheck } from "lucide-react";
-import { parseQuantity } from "@/lib/parseQuantity";
+import { parseQuantity } from "@/modules/shopping/contract";
 import { llm } from "@/lib/llm-client";
 import { ServingSelector } from "../shared/ServingSelector";
 import { DurationInput } from "../shared/DurationInput";

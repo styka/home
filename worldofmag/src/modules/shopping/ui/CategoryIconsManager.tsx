@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { Trash2, Sparkles } from "lucide-react";
-import type { CategoryIconVariantData } from "@/actions/categoryIcons";
-import { deleteCategoryIconVariant } from "@/actions/categoryIcons";
+import type { CategoryIconVariantData } from "../actions/categoryIcons";
+import { deleteCategoryIconVariant } from "../actions/categoryIcons";
 import { CategoryIconPicker } from "./CategoryIconPicker";
-import { IconDisplay } from "@/components/shopping/IconDisplay";
+import { IconDisplay } from "./IconDisplay";
 
 interface CategoryIconsManagerProps {
   variants: Record<string, CategoryIconVariantData[]>;

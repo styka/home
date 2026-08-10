@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { getMealPlan, getMealPlanCost } from "@/modules/kitchen/actions/mealPlans";
 import { getRecipes } from "@/modules/kitchen/actions/recipes";
-import { getLists } from "@/actions/lists";
+import { getLists } from "@/modules/shopping/contract";
 import { getWeekStart, getWeekEnd, dateKey } from "@/lib/kitchenDate";
 import { MealPlanWeek } from "@/modules/kitchen/ui/plan/MealPlanWeek";
 

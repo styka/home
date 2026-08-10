@@ -6,7 +6,7 @@ import type { Item, ItemStatus } from "@/types";
 import { STATUS_CYCLE } from "@/types";
 import { StatusBadge } from "./StatusBadge";
 import { cn } from "@/lib/cn";
-import { moveItem } from "@/actions/items";
+import { moveItem } from "../actions/items";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { mutSetStatus, mutUpdate, mutRemove } from "@/lib/shopping/offlineMutations";
 
