@@ -9,8 +9,8 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { ModuleView } from "@/components/ui/view";
 import { cn } from "@/lib/cn";
-import { FALLBACK_LOCATION } from "@/lib/weather/presets";
-import type { Forecast } from "@/lib/weather/openMeteo";
+import { FALLBACK_LOCATION } from "../lib/presets";
+import type { Forecast } from "../lib/openMeteo";
 import { ForecastNow, ForecastHours, ForecastDays } from "./ForecastView";
 import { WatchersPanel } from "./WatchersPanel";
 import { IdeasPanel } from "./IdeasPanel";
@@ -22,7 +22,7 @@ import {
   deleteLocation,
   type LocationDTO,
   type WatcherDTO,
-} from "@/actions/weather";
+} from "../actions/weather";
 
 interface Coords {
   lat: number;

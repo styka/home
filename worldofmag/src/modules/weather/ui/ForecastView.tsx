@@ -7,8 +7,8 @@ import {
   precipKind,
   type Forecast,
   type HourPoint,
-} from "@/lib/weather/openMeteo";
-import { moonPhase } from "@/lib/weather/moon";
+} from "../lib/openMeteo";
+import { moonPhase } from "../lib/moon";
 
 const PL_DAYS = ["niedz.", "pon.", "wt.", "śr.", "czw.", "pt.", "sob."];
 

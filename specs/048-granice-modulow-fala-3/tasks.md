@@ -48,7 +48,7 @@
 
 - [x] **T-4** — **Wiadomości** → `src/modules/news/`. Konsumenci: `newsExecutor`, `agentTools`.
       **(AC-1, AC-2, AC-3)**
-- [ ] **T-5** — **Pogoda** → `src/modules/weather/`. Konsumenci: `weatherExecutor`, `agentTools`.
+- [x] **T-5** — **Pogoda** → `src/modules/weather/`. Konsumenci: `weatherExecutor`, `agentTools`.
       Sama woła Zadania (`createTask`) — do czasu T-11 przez `@/actions/tasks`, potem przez kontrakt.
       **(AC-1, AC-2, AC-3)**
 - [ ] **T-6** — **Usługi** → `src/modules/services/`. Akcje `services.ts` + katalog `actions/services/`;

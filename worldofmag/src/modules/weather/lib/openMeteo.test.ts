@@ -1,6 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { observedWmo, precipKind, wmo } from "@/lib/weather/openMeteo"
+import { observedWmo, precipKind, wmo } from "./openMeteo"
 
 // 044: zgłoszenie właściciela — „mam deszcz, a moduł pogody pokazuje chmurkę i 82%".
 // Błąd tego rodzaju jest CICHY: ikona zawsze wygląda wiarygodnie, więc nieprawdy nie widać

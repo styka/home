@@ -13,15 +13,15 @@ import {
   observedWmo,
   type Forecast,
   type HourPoint,
-} from "@/lib/weather/openMeteo";
-import { presetByKey, DAY_PARTS, type Horizon, type DayPart } from "@/lib/weather/presets";
+} from "../lib/openMeteo";
+import { presetByKey, DAY_PARTS, type Horizon, type DayPart } from "../lib/presets";
 import {
   fingerprintOf,
   parseIdeaCategory,
   parseIdeaState,
   type IdeaDTO,
   type IdeaState,
-} from "@/lib/weather/ideas";
+} from "../lib/ideas";
 import { usageFromChat, parseStoredUsage, type AiUsageInfo } from "@/lib/ai/usage";
 import { visibleUsage } from "@/lib/ai/costVisibility";
 import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";

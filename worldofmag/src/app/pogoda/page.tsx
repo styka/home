@@ -3,14 +3,15 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getLocations, getWatchers } from "@/actions/weather";
+import weatherModule from "@/modules/weather/module";
+import { getLocations, getWatchers } from "@/modules/weather/actions/weather";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
-import { WeatherPage } from "@/components/weather/WeatherPage";
+import { WeatherPage } from "@/modules/weather/ui/WeatherPage";
 
 export default async function PogodaRootPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.WEATHER)) redirect("/");
+  if (!hasPermission(session, weatherModule.permission)) redirect("/");
 
   const [locations, watchers, usdPlnRate] = await Promise.all([
     getLocations(),

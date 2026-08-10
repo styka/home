@@ -26,8 +26,8 @@ import { pageContainerStyle, pageInnerStyle } from "@/components/ui/home/styles"
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { ModuleView } from "@/components/ui/view";
-import { IDEA_CATEGORY_LABELS, IDEA_STATE_LABELS, type IdeaDTO, type IdeaState } from "@/lib/weather/ideas";
-import { getIdeaDetail, setIdeaState, deleteIdea, addIdeaToTasks } from "@/actions/weather";
+import { IDEA_CATEGORY_LABELS, IDEA_STATE_LABELS, type IdeaDTO, type IdeaState } from "../lib/ideas";
+import { getIdeaDetail, setIdeaState, deleteIdea, addIdeaToTasks } from "../actions/weather";
 
 type Filter = IdeaState | "all";
 

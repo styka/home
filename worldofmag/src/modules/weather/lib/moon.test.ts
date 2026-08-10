@@ -1,6 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { moonPhase } from "@/lib/weather/moon"
+import { moonPhase } from "./moon"
 
 // 038: błąd w rachunku faz księżyca byłby CICHY i wiarygodnie wyglądający — „Pełnia" zamiast „Nów"
 // niczym się nie objawia poza tym, że jest nieprawdą. Stąd test na rzeczywistych datach.

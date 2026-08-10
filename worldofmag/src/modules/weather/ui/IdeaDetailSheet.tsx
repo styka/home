@@ -5,7 +5,7 @@ import { ArrowLeft, Loader2, RefreshCw, Star, ListPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
-import type { IdeaDTO } from "@/lib/weather/ideas";
+import type { IdeaDTO } from "../lib/ideas";
 
 /**
  * 037: szczegółowy plan jednej propozycji.

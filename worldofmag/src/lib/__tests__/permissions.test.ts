@@ -23,8 +23,10 @@ test("permissionForPath: mapuje prefiks ścieżki na uprawnienie", () => {
   assert.equal(permissionForPath(""), PERMISSIONS.HOME);
   assert.equal(permissionForPath("/shopping/abc"), PERMISSIONS.SHOPPING);
   assert.equal(permissionForPath("/admin/access"), PERMISSIONS.ADMIN);
-  assert.equal(permissionForPath("/wiadomosci"), PERMISSIONS.NEWS);
-  assert.equal(permissionForPath("/pogoda"), PERMISSIONS.WEATHER);
+  // 048: Wiadomości i Pogoda są już modułami — ich slugi mieszkają w deklaracjach.
+  // Test sprawdza ZACHOWANIE (ścieżka nadal chroniona tym samym slugiem), nie miejsce zapisu.
+  assert.equal(permissionForPath("/wiadomosci"), "module.news");
+  assert.equal(permissionForPath("/pogoda"), "module.weather");
   // 047: Magazynowanie jest już modułem — jego slug mieszka w deklaracji, nie w PERMISSIONS.
   // Test sprawdza zachowanie widoczne dla użytkownika (ścieżka nadal chroniona tym samym slugiem),
   // a nie to, w którym pliku slug jest zapisany.

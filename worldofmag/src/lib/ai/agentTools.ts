@@ -11,7 +11,7 @@ import { getCareAgenda, getCareHistory, getPetWelfare } from "@/actions/petCare"
 import { getEnclosures } from "@/actions/petHusbandry";
 import { getMaintenanceOverview } from "@/modules/warsztaty/contract";
 import { getHotTopics, getSources, getTopics, getTopicView } from "@/modules/news/contract";
-import { getLocations, getWeather } from "@/actions/weather";
+import { getLocations, getWeather } from "@/modules/weather/contract";
 import { getSuppliers, getLowStock, getExpiringStorage, getStorageAnalytics } from "@/modules/magazynowanie/contract";
 import { getProjectGroups } from "@/actions/projectGroups";
 import { getNoteGroups } from "@/modules/notes/contract";
@@ -23,7 +23,7 @@ import { getDueCards, getStudyStreak } from "@/modules/languages/contract";
 import { getMealPlanCost, getTodaysMeals } from "@/actions/mealPlans";
 import { getMonthlyReport } from "@/actions/portfelReports";
 import { searchReports } from "@/modules/reports/contract";
-import { getWatchers } from "@/actions/weather";
+import { getWatchers } from "@/modules/weather/contract";
 import { describeFrequency } from "@/lib/medicationSchedule";
 import { describeRecurringRule, parseRecurringRule } from "@/lib/recurrence";
 import { technicalToLabel } from "@/lib/ai/humanize";

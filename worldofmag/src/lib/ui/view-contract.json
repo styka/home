@@ -86,8 +86,8 @@
     "pogoda": {
       "status": "done",
       "entries": [
-        "src/components/weather/WeatherPage.tsx",
-        "src/components/weather/IdeaLibraryPage.tsx"
+        "src/modules/weather/ui/WeatherPage.tsx",
+        "src/modules/weather/ui/IdeaLibraryPage.tsx"
       ]
     },
     "portfel": {

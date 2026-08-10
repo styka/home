@@ -8,7 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
-import { WEATHER_PRESETS, HORIZON_META, type Horizon } from "@/lib/weather/presets";
+import { WEATHER_PRESETS, HORIZON_META, type Horizon } from "../lib/presets";
 import {
   evaluateWatchers,
   addPresetWatcher,
@@ -17,7 +17,7 @@ import {
   updateWatcher,
   type WatcherDTO,
   type WatcherVerdict,
-} from "@/actions/weather";
+} from "../actions/weather";
 
 /**
  * 037: etykiety mówią o SPEŁNIENIU WARUNKU obserwatora, nie o urodzie pogody.

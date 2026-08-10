@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { currentDayPart, presetByKey, WEATHER_PRESETS, HORIZON_META, DAY_PARTS, FALLBACK_LOCATION } from "@/lib/weather/presets";
+import { currentDayPart, presetByKey, WEATHER_PRESETS, HORIZON_META, DAY_PARTS, FALLBACK_LOCATION } from "../presets";
 
 const at = (h: number) => {
   const d = new Date();
