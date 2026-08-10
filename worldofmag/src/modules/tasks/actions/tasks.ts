@@ -5,7 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { userDayBounds } from "@/lib/userTime";
 import { assertProjectAccess } from "./taskProjects";
-import { assertTaskAccess } from "@/lib/tasks/access";
+import { assertTaskAccess } from "../lib/access";
 import { trackActivity } from "@/actions/activity";
 import { recordTrash } from "@/platform/trash/trash";
 import { computeNextDue, parseRecurringRule, computeRecurringSuccessor } from "@/lib/recurrence";

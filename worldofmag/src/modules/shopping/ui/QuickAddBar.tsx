@@ -6,7 +6,7 @@ import type { Product } from "@/types";
 import { UNITS } from "@/types";
 import { getProductSuggestions } from "../actions/products";
 import { categorize } from "../lib/categorize";
-import { mutAdd } from "@/lib/shopping/offlineMutations";
+import { mutAdd } from "../lib/offlineMutations";
 
 interface QuickAddBarProps {
   listId: string;

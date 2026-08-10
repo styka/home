@@ -113,17 +113,32 @@ for (const name of dirs) {
 // kodzie. Po fali 3 lista przejściowa jest pusta, więc kontrola staje się wykonalna.
 //
 // Zasada: identyfikator obecny w rejestrze nie może mieć kodu poza swoim katalogiem.
-// `src/actions/<id>.ts` i `src/components/<id>/` to najczęstsze miejsca, w które trafiłby nowy
-// moduł pisany z pamięci starego układu.
+// Historycznie moduł mieszkał w TRZECH miejscach — `src/actions/<id>.ts`, `src/components/<id>/`
+// **i `src/lib/<id>/`** — więc bramka musi patrzeć na wszystkie trzy. Recenzja 048 znalazła
+// dokładnie tę lukę: `src/lib/tasks/` i `src/lib/shopping/` przetrwały falę, a `lib/tasks/access.ts`
+// importowało **własny kontrakt modułu Zadania**, czyli obchodziło C-02 okrężną drogą przez alias.
 const actionsDir = path.join(root, "src/actions");
 const componentsDir = path.join(root, "src/components");
+const libDir = path.join(root, "src/lib");
+
+// Świadome wyjątki: katalog nazwany jak moduł, ale z konsumentem SPOZA tego modułu — czyli kod
+// realnie współdzielony, którego przeniesienie zamroziłoby przypadkowe sprzężenie (lekcja z 047:
+// „plik należy do modułu, w którym umieszczają go jego KONSUMENCI, nie ten, który sugeruje nazwa").
+// Każdy wyjątek wymaga powodu — bramka nie zgaduje, tylko żąda decyzji.
+const SHARED_LIB_DIRS = {
+  news: "rss.ts i webSearch.ts czyta warstwa zadań w tle (lib/jobs/handlers) oraz trasa agenta — obie poza modułem Wiadomości; wydzielenie ich to zadanie fazy „platforma ai/llm/jobs”.",
+  health: "queryDiag.ts to diagnostyka zapytań do bazy, używana przez actions/systemHealth.ts (panel admina), nie przez moduł Zdrowie.",
+  home: "dashboardSections.ts współdzielą modul Strona główna i przekrojowe actions/dashboardPrefs.ts (preferencje per użytkownik).",
+};
 
 for (const [id, dir] of ids) {
   const strays = [];
   const legacyAction = path.join(actionsDir, `${id}.ts`);
   const legacyComponents = path.join(componentsDir, id);
+  const legacyLib = path.join(libDir, id);
   if (fs.existsSync(legacyAction)) strays.push(`src/actions/${id}.ts`);
   if (fs.existsSync(legacyComponents)) strays.push(`src/components/${id}/`);
+  if (fs.existsSync(legacyLib) && !SHARED_LIB_DIRS[id]) strays.push(`src/lib/${id}/`);
 
   if (strays.length) {
     errors.push(

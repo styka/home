@@ -8,7 +8,7 @@ import { StatusBadge } from "./StatusBadge";
 import { cn } from "@/lib/cn";
 import { moveItem } from "../actions/items";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { mutSetStatus, mutUpdate, mutRemove } from "@/lib/shopping/offlineMutations";
+import { mutSetStatus, mutUpdate, mutRemove } from "../lib/offlineMutations";
 
 interface ItemRowProps {
   item: Item;

@@ -9,7 +9,7 @@
  * | **Nawyki** | `createTask` („zrób z nawyku zadanie") |
  * | **Pogoda** | `createTask` („dodaj pomysł do zadań") |
  * | skrzynka zgłoszeń (`actions/feedback`) | `assertProjectAccess` |
- * | `lib/tasks/access` | `assertProjectAccess` |
+ * | `modules/tasks/lib/access` | `assertProjectAccess` |
  * | narzędzia odczytu asystenta | `getTaskTags`, `getProjectGroups` |
  * | egzekutor akcji asystenta | zadania, projekty, tagi, grupy |
  * | test izolacji najemcy | `assertProjectAccess` |

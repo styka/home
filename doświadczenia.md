@@ -4,6 +4,38 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-05 — Bramka rozjazdu schematu KASOWAŁA lokalną bazę deweloperską
+**Problem:** `npm run build` wywracał się na ostatnim kroku (`scripts/migrate.js`) błędem Prismy
+**P3005 „The database schema is not empty"**, mimo że chwilę wcześniej `prisma migrate deploy`
+przeszedł czysto. Objaw wskazywał na migracje, a winowajcą była bramka uruchamiana **wcześniej**
+w tym samym buildzie: `check-schema-drift.js` podawał jako `--shadow-database-url` **to samo
+połączenie co robocze**. Prisma czyści bazę cienia przed odtworzeniem migracji, więc każde
+uruchomienie bramki (a więc każdy build i każde `npm run check:schema-drift`) **kasowało schemat
+lokalnej bazy razem z `_prisma_migrations`**. Potem `migrate deploy` widział 147 tabel bez tabeli
+migracji i słusznie odmawiał.
+**Rozwiązanie:** Baza cienia to teraz **osobna** baza `<db>_shadow`, tworzona przez bramkę
+(`CREATE DATABASE`, powtórzone „already exists" ignorowane). Jeśli roli brakuje `CREATEDB`,
+bramka **pomija sprawdzenie** zamiast sięgać po bazę roboczą — lepiej stracić jedno sprawdzenie
+niż czyjeś dane. W sandboksie wystarczyło `ALTER ROLE omnia CREATEDB;`.
+**Lekcja:** „Baza cienia" u Prismy znaczy **kasowana baza**. Nigdy nie podawaj tam `DATABASE_URL`.
+I gdy build pada na kroku N, sprawdź, czy kroku N nie zepsuł krok N-1 — kolejność w potoku bramek
+jest częścią diagnozy, a P3005 potrafi wskazać na zupełnie niewinne miejsce.
+
+## 2026-08-05 — Moduł ma TRZY historyczne miejsca, a bramka pilnowała dwóch
+**Problem:** Po fali 3 bramka `check-module-registry` chwaliła się, że żaden moduł nie ma kodu poza
+swoim katalogiem — sprawdzała jednak tylko `src/actions/<id>.ts` i `src/components/<id>/`. Trzecie
+historyczne miejsce, **`src/lib/<id>/`**, zostało pominięte, więc falę przetrwały `src/lib/tasks/`
+i `src/lib/shopping/`. Najgorszy skutek: `lib/tasks/access.ts` importowało
+`@/modules/tasks/contract`, czyli **własny publiczny kontrakt modułu Zadania** — obejście C-02
+okrężną drogą przez alias, którego linter nie widzi, bo plik formalnie leży poza modułem.
+**Rozwiązanie:** Pliki jednomodułowe przeniesione do `modules/<x>/lib/` (import na ścieżkę
+względną), a bramka patrzy już na wszystkie trzy miejsca. Katalogi realnie współdzielone
+(`lib/news`, `lib/health`, `lib/home`) mają **jawną listę wyjątków z powodem** — bramka nie zgaduje,
+tylko żąda decyzji.
+**Lekcja:** Kiedy bramka ma dowodzić „nie ma kodu poza katalogiem", wypisz najpierw **wszystkie**
+miejsca, w których ten kod historycznie mieszkał, i sprawdź każde. Bramka pilnująca podzbioru
+wygląda dokładnie tak samo jak bramka pilnująca całości — do dnia, w którym coś przez nią przejdzie.
+
 ## 2026-08-05 — Skrypt przepisujący importy myli PLIK z KATALOGIEM o tej samej nazwie
 **Problem:** Przy przenoszeniu modułów skrypt zamieniający `@/actions/services` na nową ścieżkę
 przepisał **także** `@/actions/services/disputes` — bo wzorzec świadomie dopuszcza `/` po aliasie

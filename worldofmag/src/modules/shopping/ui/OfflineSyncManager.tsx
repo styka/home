@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { getActiveListsForOffline } from "../actions/lists";
 import { syncShoppingMutations } from "../actions/shoppingSync";
-import { getQueue, removeOps, saveSnapshot, pendingCount, onOfflineChanged } from "@/lib/shopping/offlineStore";
+import { getQueue, removeOps, saveSnapshot, pendingCount, onOfflineChanged } from "../lib/offlineStore";
 import { OfflineIndicator } from "./OfflineIndicator";
 
 // 009-shopping-offline-sync — steruje trybem offline Zakupów:

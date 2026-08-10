@@ -18,7 +18,7 @@ import { assertListAccess } from "./lists";
 import { categorize } from "../lib/categorize";
 import { upsertUserProduct } from "./products";
 import { trackActivity } from "@/actions/activity";
-import type { OfflineOp, SyncResult } from "@/lib/shopping/offlineTypes";
+import type { OfflineOp, SyncResult } from "../lib/offlineTypes";
 
 async function nextCategoryOrder(listId: string, category: string): Promise<number> {
   const agg = await prisma.item.aggregate({ where: { listId, category }, _max: { order: true } });

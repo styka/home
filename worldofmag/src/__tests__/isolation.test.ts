@@ -20,7 +20,7 @@ test("Z-172 izolacja danych (IDOR/BOLA) — guardy odrzucają obcego właścicie
   const { assertRecipeAccess } = await import("@/modules/kitchen/contract");
   const { assertPetAccess } = await import("@/modules/pets/contract");
   const { assertCookbookAccess } = await import("@/modules/kitchen/contract");
-  const { assertTaskAccess } = await import("@/lib/tasks/access");
+  const { assertTaskAccess } = await import("@/modules/tasks/lib/access");
   const { ownedByWhere } = await import("@/platform/auth/ownership");
 
   const A = await prisma.user.create({ data: { email: `iso-a-${rnd()}@test.local`, name: "A" } });
