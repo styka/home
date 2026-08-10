@@ -4,8 +4,8 @@ import { randomBytes } from "crypto";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import { collectCalendarEvents } from "@/lib/calendar/collect";
-import type { CalendarEvent } from "@/lib/calendar";
+import { collectCalendarEvents } from "../lib/collect";
+import type { CalendarEvent } from "../lib/index";
 
 function feedUrl(token: string): string {
   const base = (process.env.AUTH_URL || "").replace(/\/$/, "");

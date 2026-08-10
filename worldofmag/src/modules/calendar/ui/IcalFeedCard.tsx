@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { getMyIcalFeedUrl, regenerateIcalFeed } from "@/actions/calendar"
+import { getMyIcalFeedUrl, regenerateIcalFeed } from "../actions/calendar"
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 /**

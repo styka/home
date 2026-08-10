@@ -8,7 +8,7 @@
     "calendar": {
       "status": "done",
       "entries": [
-        "src/components/calendar/CalendarPage.tsx"
+        "src/modules/calendar/ui/CalendarPage.tsx"
       ]
     },
     "contacts": {

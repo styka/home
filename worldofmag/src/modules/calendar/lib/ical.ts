@@ -1,4 +1,4 @@
-import type { CalendarEvent } from "@/lib/calendar";
+import type { CalendarEvent } from "./index";
 
 /** RFC 5545 escaping wartości tekstowej (backslash, ;, , i nowe linie). */
 export function escapeICalText(s: string): string {

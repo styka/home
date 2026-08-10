@@ -69,7 +69,7 @@
       **(AC-1, AC-2, AC-3, AC-4, AC-7)**
 - [x] **T-11** — **Zadania** → `src/modules/tasks/`. Cztery pliki akcji. Konsumenci: `tasksExecutor`,
       **Pogoda** i **Nawyki** (`createTask` przez kontrakt). **(AC-1, AC-2, AC-3, AC-4)**
-- [ ] **T-12** — **Kalendarz** → `src/modules/calendar/`. `actions/calendar.ts` + `lib/calendar/`.
+- [x] **T-12** — **Kalendarz** → `src/modules/calendar/`. `actions/calendar.ts` + `lib/calendar/`.
       Kontrakt musi wystawić także `isoDay`, `MODULE_META` i typy — używa ich `NotificationBell`
       (powłoka) i `actions/notifications`, oba **spoza** `src/platform`, więc import kontraktu jest
       legalny. **Agregat ma zwracać identyczny wynik** — to najostrzejszy test tej fali.

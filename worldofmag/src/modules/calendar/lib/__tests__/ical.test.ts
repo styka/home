@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildICalendar, escapeICalText, toICalUtc, toICalDate } from "@/lib/calendar/ical";
-import type { CalendarEvent } from "@/lib/calendar";
+import { buildICalendar, escapeICalText, toICalUtc, toICalDate } from "../ical";
+import type { CalendarEvent } from "../index";
 
 const STAMP = "2026-06-23T09:00:00.000Z";
 

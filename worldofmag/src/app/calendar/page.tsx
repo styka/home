@@ -2,14 +2,15 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getCalendarEvents } from "@/actions/calendar";
-import { CalendarPage } from "@/components/calendar/CalendarPage";
+import { hasPermission } from "@/platform/auth/permissions";
+import calendarModule from "@/modules/calendar/module";
+import { getCalendarEvents } from "@/modules/calendar/actions/calendar";
+import { CalendarPage } from "@/modules/calendar/ui/CalendarPage";
 
 export default async function CalendarRootPage({ searchParams }: { searchParams?: { module?: string } }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.CALENDAR)) redirect("/");
+  if (!hasPermission(session, calendarModule.permission)) redirect("/");
 
   const now = new Date();
   const year = now.getFullYear();

@@ -1,7 +1,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { matchNamedRef, unresolvedRefMessage, type NamedCandidate, type RefResolution } from "@/lib/ai/refResolve";
-import { getCalendarEvents } from "@/actions/calendar";
+import { getCalendarEvents } from "@/modules/calendar/contract";
 import { getBudgetsWithSpending, getFinanceGoals } from "@/modules/portfel/contract";
 import { getTrash } from "@/actions/trash";
 import { getTaskTags } from "@/modules/tasks/contract";

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isoDay, monthRange } from "@/lib/calendar";
+import { isoDay, monthRange } from "../index";
 
 test("isoDay: 'YYYY-MM-DD' w czasie lokalnym, z paddingiem", () => {
   assert.equal(isoDay(new Date(2024, 0, 5)), "2024-01-05");

@@ -1,6 +1,6 @@
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
-import { isoDay, monthRange, type CalendarEvent } from "@/lib/calendar";
+import { isoDay, monthRange, type CalendarEvent } from "./index";
 import { slotsForDate } from "@/lib/medicationSchedule";
 import type { MedicationSchedule } from "@/types";
 
