@@ -117,7 +117,7 @@
       `check:cost-badge`, `check:content-memory`, `check:migrations`, `check:ui-contract`,
       `check:schema-drift`, `check:boundaries`, `check:module-registry`, `check:test-types`,
       `next lint`, `next build`, `test:unit`. **(AC-10)**
-- [ ] **T-21** — Klikacz ścieżki szczęśliwej **22/22** + pełny zestaw; porównanie liczby czerwonych
+- [x] **T-21** — Klikacz ścieżki szczęśliwej **22/22** + pełny zestaw; porównanie liczby czerwonych
       z 16 sprzed fali. **(AC-9, AC-12)**
 - [x] **T-22** — Rozdz. 15 dziennika: wpis 048, statusy zadań 4–8, **czy Faza 1 jest domknięta**,
       co zostaje na Fazę 2, pierwszy krok Fazy 2. **(AC-13)**
