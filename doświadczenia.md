@@ -4,6 +4,45 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-05 — Skrypt przepisujący importy myli PLIK z KATALOGIEM o tej samej nazwie
+**Problem:** Przy przenoszeniu modułów skrypt zamieniający `@/actions/services` na nową ścieżkę
+przepisał **także** `@/actions/services/disputes` — bo wzorzec świadomie dopuszcza `/` po aliasie
+(inaczej nie objąłby katalogów). Gdy plik i katalog mają tę samą nazwę, oba lecą w to samo miejsce
+i importy jednego z nich wskazują nieistniejącą ścieżkę. Zdarzyło się **cztery razy w jednej fali**:
+`actions/services.ts` + `actions/services/`, `lib/services.ts` + `lib/services/`, `lib/portfel.ts` +
+`lib/portfel/`, `lib/calendar.ts` + `lib/calendar/`.
+**Rozwiązanie:** Każdą złapał `tsc` natychmiast — to jest ten przypadek, w którym kontrola typów
+naprawdę wystarcza za dowód poprawności. Po przenosinach katalogi dostały inne nazwy (`parts/`,
+`core/`), a pliki weszły do modułu jako `lib/<nazwa>.ts` albo `lib/index.ts`, więc kolizja już nie
+wraca.
+**Lekcja:** Przed przeniesieniem sprawdź, czy w źródle nie ma pary „plik X.ts + katalog X/". Jeśli
+jest — przenieś je **osobno i w innej kolejności niż alfabetyczna**, albo od razu nadaj katalogowi
+inną nazwę. I nie ufaj liczbie „przepisano N importów": ona nie wie, że część trafiła nie tam.
+
+## 2026-08-05 — Bramka trzymająca ścieżki jest czuła na refaktor przenoszący
+**Problem:** Trzeci raz w tej przebudowie bramka wywróciła się na przenosinach: `check-ai-coverage`
+i kontrola zaszytych kolorów miały **zaszyty korzeń skanowania** (047), a `check-content-memory`
+trzyma ścieżki plików **w manifeście** — po przeniesieniu Wiadomości i Pogody zażądała klasyfikacji
+dla „nowych" plików, choć klasyfikacja istniała pod starą ścieżką.
+**Rozwiązanie:** Ścieżki w manifeście zaktualizowane; klasyfikacje bez zmian. W przypadku
+`check-ai-coverage` (047) trzeba było dołożyć drugi korzeń skanowania.
+**Lekcja:** Planując refaktor przenoszący, **przejrzyj bramki pod kątem ścieżek** — i w kodzie,
+i w manifestach — zanim ruszysz pliki. Bramka ze sztywną ścieżką albo przestaje sprawdzać (groźne,
+bo cicho), albo żąda ponownej klasyfikacji (uciążliwe, ale widoczne). Pierwszy wariant jest znacznie
+gorszy, więc warto go szukać aktywnie.
+
+## 2026-08-05 — „Dostępne w nawigacji" ma dwie poprawne postacie
+**Problem:** Test `scenario-qa-tester-access` twierdził, że moduł QA jest niedostępny dla
+uprawnionego użytkownika. Sprawdzał `getByRole("link", { name: "QA" })`. QA ma jednak
+`defaultEnabled: false`, więc nie jest w głównej nawigacji — siedzi w zwiniętej sekcji „Więcej…"
+i renderuje się tam jako **przycisk** (służy do dołożenia modułu do menu, a nie do przejścia).
+Test szukał wyłącznie linku, więc nie znajdował niczego i wyglądało to na brak uprawnień.
+**Rozwiązanie:** Asercja akceptuje obie postacie (link **albo** przycisk) i najpierw rozwija sekcję.
+Poprawka po stronie testu — zachowanie aplikacji jest zamierzone.
+**Lekcja:** Gdy test sprawdza „czy X jest dostępne", opisz **wszystkie** postacie, w jakich produkt
+to pokazuje. Test opisujący jedną z nich nie sprawdza dostępności, tylko konkretny wariant
+renderowania — i myli brak wariantu z brakiem funkcji.
+
 ## 2026-08-05 — Przynależność pliku ustala się po konsumentach, nie po nazwie
 **Problem:** Przy przenoszeniu modułów do `src/modules/` kuszące było zabranie wszystkiego, co ma
 pasującą nazwę. `lib/habitStats.ts` brzmi jak Nawyki, `lib/medicationSchedule.ts` jak Zdrowie,
