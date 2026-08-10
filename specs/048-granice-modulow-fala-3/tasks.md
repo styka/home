@@ -113,7 +113,7 @@
 
 ## Faza F — Bramki i dokumentacja
 
-- [ ] **T-20** — Komplet bramek: `check:actions` (**=160**), `check:ai-coverage` (**≥551**),
+- [x] **T-20** — Komplet bramek: `check:actions` (**=160**), `check:ai-coverage` (**≥551**),
       `check:cost-badge`, `check:content-memory`, `check:migrations`, `check:ui-contract`,
       `check:schema-drift`, `check:boundaries`, `check:module-registry`, `check:test-types`,
       `next lint`, `next build`, `test:unit`. **(AC-10)**
