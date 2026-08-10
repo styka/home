@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseBankCsv, parseBankDate, parseBankAmount } from "@/lib/portfel/bankCsv";
+import { parseBankCsv, parseBankDate, parseBankAmount } from "../bankCsv";
 
 // Z-300: parser wyciągów bankowych CSV.
 

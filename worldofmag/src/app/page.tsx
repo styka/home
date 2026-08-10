@@ -10,7 +10,7 @@ import { getExpiringSoon } from "@/modules/kitchen/contract";
 import { getPendingInvitationsCount } from "@/actions/invitations";
 import { getCareAgenda } from "@/modules/pets/contract";
 import { getVehicles } from "@/modules/flota/contract";
-import { getWalletOverview } from "@/actions/portfel";
+import { getWalletOverview } from "@/modules/portfel/contract";
 import { getDecks } from "@/modules/languages/contract";
 import { getHealthEvents } from "@/modules/health/contract";
 import { getLowStock, getExpiringStorage } from "@/modules/magazynowanie/contract";

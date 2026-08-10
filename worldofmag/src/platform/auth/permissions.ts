@@ -7,7 +7,6 @@ export const PERMISSIONS = {
   SETTINGS:    "module.settings",
   ADMIN:       "module.admin",
   INVITATIONS: "module.invitations",
-  PORTFEL:     "module.portfel",
   CALENDAR:    "module.calendar",
   // Kitchen sub-permissions
   KITCHEN_RECIPE_CREATE: "kitchen.recipe.create",
@@ -40,7 +39,6 @@ export function legacyPermissionForPath(path: string): string | null {
   if (path.startsWith("/settings")) return PERMISSIONS.SETTINGS
   if (path.startsWith("/admin")) return PERMISSIONS.ADMIN
   if (path.startsWith("/invitations")) return PERMISSIONS.INVITATIONS
-  if (path.startsWith("/portfel")) return PERMISSIONS.PORTFEL
   if (path.startsWith("/calendar")) return PERMISSIONS.CALENDAR
   return null
 }

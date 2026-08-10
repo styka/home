@@ -8,7 +8,7 @@ const rnd = () => Math.random().toString(36).slice(2, 10);
 
 test("Z-174 bookAutoExpense: księguje, jest idempotentne, koryguje i odwraca saldo", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { bookAutoExpense, removeAutoExpense } = await import("@/lib/portfel/autoExpense");
+  const { bookAutoExpense, removeAutoExpense } = await import("../autoExpense");
 
   const user = await prisma.user.create({ data: { email: `ae-${rnd()}@test.local` } });
   const el = await prisma.walletElement.create({ data: { name: "Konto", ownerId: user.id, balance: 1000 } });

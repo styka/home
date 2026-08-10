@@ -5,11 +5,11 @@ import Link from "next/link";
 import { Wallet, Plus, Loader2, Target, Trash2, ChevronLeft, PiggyBank, Check } from "lucide-react";
 import { SectionHeading, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { formatMoney } from "@/lib/portfel";
+import { formatMoney } from "../lib/portfel";
 import {
   createBudget, deleteBudget, type BudgetWithSpending,
   createGoal, deleteGoal, contributeGoal,
-} from "@/actions/portfelBudgets";
+} from "../actions/portfelBudgets";
 import type { FinanceGoal } from "@prisma/client";
 
 interface Props {

@@ -5,8 +5,8 @@ import Link from "next/link";
 import { BarChart3, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { SectionHeading, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { formatMoney } from "@/lib/portfel";
-import { getMonthlyReport, type MonthlyReport } from "@/actions/portfelReports";
+import { formatMoney } from "../lib/portfel";
+import { getMonthlyReport, type MonthlyReport } from "../actions/portfelReports";
 
 const CAT_COLORS = [
   "#3b82f6", "#22c55e", "#f59e0b", "#a855f7", "#ef4444",

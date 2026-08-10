@@ -93,11 +93,11 @@
     "portfel": {
       "status": "done",
       "entries": [
-        "src/components/portfel/BudgetsPage.tsx",
-        "src/components/portfel/ElementDetailPage.tsx",
-        "src/components/portfel/MonthlyReportPage.tsx",
-        "src/components/portfel/PortfelHomePage.tsx",
-        "src/components/portfel/PortfelSettingsPage.tsx"
+        "src/modules/portfel/ui/BudgetsPage.tsx",
+        "src/modules/portfel/ui/ElementDetailPage.tsx",
+        "src/modules/portfel/ui/MonthlyReportPage.tsx",
+        "src/modules/portfel/ui/PortfelHomePage.tsx",
+        "src/modules/portfel/ui/PortfelSettingsPage.tsx"
       ]
     },
     "pwa-icon": {
@@ -265,7 +265,7 @@
       "kind": "paleta-danych",
       "reason": "Paleta kolorów tagu WYBIERANA PRZEZ UŻYTKOWNIKA i zapisana w bazie. To dane rekordu, nie motyw — skórka nie ma prawa ich nadpisać."
     },
-    "src/components/portfel/MonthlyReportPage.tsx": {
+    "src/modules/portfel/ui/MonthlyReportPage.tsx": {
       "kind": "paleta-danych",
       "reason": "Paleta serii na wykresie — musi mieć stałą liczbę rozróżnialnych kolorów niezależnie od skórki, inaczej dwie kategorie wydatków zlałyby się w jedną."
     },

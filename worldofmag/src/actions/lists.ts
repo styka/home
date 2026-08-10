@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
-import { bookAutoExpense } from "@/lib/portfel/autoExpense";
+import { bookAutoExpense } from "@/modules/portfel/contract";
 import type { ShoppingList, ShoppingListWithItems } from "@/types";
 
 export interface ListSummary {

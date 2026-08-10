@@ -11,7 +11,7 @@ import {
 import { setServicePayment, markPaymentPaid, bookClientExpense } from "../actions/parts/payments";
 import { applyPromoCode, clearPromoCode } from "../actions/parts/promo";
 import { getRequestDisputes, openDispute } from "../actions/parts/disputes";
-import { getWalletElements } from "@/actions/portfel";
+import { getWalletElements } from "@/modules/portfel/contract";
 import type { RequestThreadDTO, ServiceQuoteDTO, ServicePaymentDTO, PaymentMethod, ServiceDisputeDTO } from "../lib/services";
 import { QUOTE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "../lib/services";
 import { fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";

@@ -4,12 +4,12 @@ import { useState, useTransition } from "react";
 import { ModuleView } from "@/components/ui/view";
 import Link from "next/link";
 import { Settings, ChevronLeft, Loader2, Check, Coins, Trash2, RefreshCw, Plus } from "lucide-react";
-import { setFinanceSettings, type FinanceSettingsDTO } from "@/actions/portfelAuto";
+import { setFinanceSettings, type FinanceSettingsDTO } from "../actions/portfelAuto";
 import { FinanceAiAccessToggle } from "./FinanceAiAccessToggle";
 import {
   setBaseCurrency, setExchangeRate, deleteExchangeRate, refreshRatesFromNBP,
   type ExchangeRateDTO,
-} from "@/actions/portfelCurrency";
+} from "../actions/portfelCurrency";
 
 interface Props {
   accounts: { id: string; name: string }[];

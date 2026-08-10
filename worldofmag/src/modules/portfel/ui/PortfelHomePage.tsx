@@ -7,8 +7,8 @@ import { Wallet, Plus, Loader2, ChevronRight, TrendingUp, TrendingDown, Users, P
 import { SectionHeading, EmptyState } from "@/components/ui/home";
 import { LineChart } from "@/components/ui/LineChart";
 import { ModuleView } from "@/components/ui/view";
-import { createElement, type WalletOverview } from "@/actions/portfel";
-import { ELEMENT_KIND_LABELS, formatMoney } from "@/lib/portfel";
+import { createElement, type WalletOverview } from "../actions/portfel";
+import { ELEMENT_KIND_LABELS, formatMoney } from "../lib/portfel";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface Props {

@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
-import { loadRates, toBase } from "@/lib/portfel/currency";
-import { parseBankCsv, type ParsedTransaction } from "@/lib/portfel/bankCsv";
+import { loadRates, toBase } from "../lib/currency";
+import { parseBankCsv, type ParsedTransaction } from "../lib/bankCsv";
 import { createHash } from "crypto";
 import type { WalletElement, WalletEntry } from "@prisma/client";
 

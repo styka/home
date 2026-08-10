@@ -59,7 +59,7 @@
       **(AC-1, AC-3, AC-4)**
 - [x] **T-8** — **Zwierzęta** → `src/modules/pets/`. Cztery pliki akcji. Konsumenci: `petExecutor`,
       `agentTools`, powłoka (nawigacja — rozwiązana w T-13). **(AC-1, AC-2, AC-3)**
-- [ ] **T-9** — **Portfel** → `src/modules/portfel/`. Pięć plików akcji. Konsumenci: `portfelExecutor`,
+- [x] **T-9** — **Portfel** → `src/modules/portfel/`. Pięć plików akcji. Konsumenci: `portfelExecutor`,
       `agentTools`, pulpit **oraz Usługi** — `addEntry` przechodzi na kontrakt Portfela.
       **(AC-1, AC-2, AC-3, AC-4)**
 - [ ] **T-10** — **Zakupy** → `src/modules/shopping/`. Akcje list/pozycji/sklepów **oraz słowniki

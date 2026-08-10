@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Wallet, Target, BarChart3, Settings } from "lucide-react";
-import { getWalletElements } from "@/actions/portfel";
+import { getWalletElements } from "../actions/portfel";
 
 export function PortfelSideNav() {
   const pathname = usePathname();

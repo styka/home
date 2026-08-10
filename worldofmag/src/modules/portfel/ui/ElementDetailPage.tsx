@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { Wallet, ArrowLeft, Plus, Loader2, Trash2, ArrowUpCircle, ArrowDownCircle, Pencil, Upload } from "lucide-react";
 import { LineChart } from "@/components/ui/LineChart";
 import { Modal } from "@/components/ui/Modal";
-import { addEntry, setBalance, deleteElement, importBankCsv, type ElementWithEntries } from "@/actions/portfel";
-import { parseBankCsv, type ParsedTransaction } from "@/lib/portfel/bankCsv";
-import { ELEMENT_KIND_LABELS, ENTRY_KIND_LABELS, formatMoney } from "@/lib/portfel";
+import { addEntry, setBalance, deleteElement, importBankCsv, type ElementWithEntries } from "../actions/portfel";
+import { parseBankCsv, type ParsedTransaction } from "../lib/bankCsv";
+import { ELEMENT_KIND_LABELS, ENTRY_KIND_LABELS, formatMoney } from "../lib/portfel";
 import { ModuleView } from "@/components/ui/view";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatMoney, ELEMENT_KIND_LABELS, ENTRY_KIND_LABELS } from "@/lib/portfel";
+import { formatMoney, ELEMENT_KIND_LABELS, ENTRY_KIND_LABELS } from "../portfel";
 
 // Usuwamy CAŁĄ białą spację. Separator tysięcy w pl-PL to spacja niełamliwa/wąska,
 // a jej OBECNOŚĆ zależy od buildu ICU (pełne ICU grupuje „1 234,50", małe nie).

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { notifyUser } from "@/lib/notify";
-import { addEntry } from "@/actions/portfel";
+import { addEntry } from "@/modules/portfel/contract";
 import { loadRequestAccess } from "../../lib/core/access";
 import { netAmount } from "../../lib/core/payment";
 import type { PaymentMethod } from "../../lib/services";

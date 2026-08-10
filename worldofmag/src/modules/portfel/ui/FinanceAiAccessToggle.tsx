@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Bot } from "lucide-react";
-import { getFinanceSettings, setFinanceSettings } from "@/actions/portfelAuto";
+import { getFinanceSettings, setFinanceSettings } from "../actions/portfelAuto";
 
 // Z-055: przełącznik dostępu asystenta AI do danych finansowych (salda/długi).
 // Opt-out — domyślnie WŁĄCZONY (zachowuje dotychczasowe zachowanie); użytkownik
