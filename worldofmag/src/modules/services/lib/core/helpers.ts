@@ -4,8 +4,8 @@
 // actions/services(/*).ts. Trzymanie tu plumbingu pozwala plikom akcji być
 // czystymi listami Server Actions.
 import { prisma } from "@/platform/db/prisma";
-import { generateDaySlots, minutesOfDay, type BookedInterval } from "@/lib/serviceSlots";
-import type { RequestStatus, PriceModel, ListingDTO, RequestDTO } from "@/lib/services";
+import { generateDaySlots, minutesOfDay, type BookedInterval } from "../serviceSlots";
+import type { RequestStatus, PriceModel, ListingDTO, RequestDTO } from "../services";
 
 /** Dozwolone przejścia statusu po stronie wykonawcy/klienta. */
 export const PROVIDER_TRANSITIONS: Partial<Record<RequestStatus, RequestStatus[]>> = {

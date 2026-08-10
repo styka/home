@@ -1,5 +1,5 @@
 // Z-213/361: `actions/services.ts` to teraz BARREL re-eksportujący akcje modułu
-// Usługi z plików per-obszar (src/actions/services/*.ts). Zachowuje stabilny
+// Usługi z plików per-obszar (`actions/parts/*.ts`). Zachowuje stabilny
 // publiczny import `@/actions/services` dla istniejących konsumentów; nowy kod może
 // importować wprost z konkretnego pliku obszaru.
 //
@@ -7,14 +7,14 @@
 // Actions żyją w plikach obszarów (każdy z "use server"). Plik "use server" NIE
 // może re-eksportować akcji (build: „Only async functions… in use server file"),
 // dlatego barrel jest nie-akcyjny. Typy/helpery: @/lib/services i @/lib/services/helpers.
-export * from "./services/providers";
-export * from "./services/listings";
-export * from "./services/requests";
-export * from "./services/messaging";
-export * from "./services/scheduling";
-export * from "./services/payments";
-export * from "./services/favorites";
-export * from "./services/stats";
-export * from "./services/images";
-export * from "./services/promo";
-export * from "./services/disputes";
+export * from "./parts/providers";
+export * from "./parts/listings";
+export * from "./parts/requests";
+export * from "./parts/messaging";
+export * from "./parts/scheduling";
+export * from "./parts/payments";
+export * from "./parts/favorites";
+export * from "./parts/stats";
+export * from "./parts/images";
+export * from "./parts/promo";
+export * from "./parts/disputes";

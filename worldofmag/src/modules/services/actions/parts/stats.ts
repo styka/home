@@ -3,7 +3,7 @@
 // Z-213/361: akcje modułu Usługi — statystyki wykonawcy (M13).
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import type { ProviderStats } from "@/lib/services";
+import type { ProviderStats } from "../../lib/services";
 
 export async function getProviderStats(): Promise<ProviderStats | null> {
   const user = await requireAuth();

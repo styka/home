@@ -120,12 +120,12 @@
     "services": {
       "status": "done",
       "entries": [
-        "src/components/services/ListingDetailPage.tsx",
-        "src/components/services/ModerationPage.tsx",
-        "src/components/services/MyRequestsPage.tsx",
-        "src/components/services/ProviderPanelPage.tsx",
-        "src/components/services/ProviderPublicPage.tsx",
-        "src/components/services/ServicesCatalogPage.tsx"
+        "src/modules/services/ui/ListingDetailPage.tsx",
+        "src/modules/services/ui/ModerationPage.tsx",
+        "src/modules/services/ui/MyRequestsPage.tsx",
+        "src/modules/services/ui/ProviderPanelPage.tsx",
+        "src/modules/services/ui/ProviderPublicPage.tsx",
+        "src/modules/services/ui/ServicesCatalogPage.tsx"
       ]
     },
     "settings": {

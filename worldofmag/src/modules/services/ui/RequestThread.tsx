@@ -7,13 +7,13 @@ import {
   sendServiceMessage,
   sendQuote,
   respondToQuote,
-} from "@/actions/services";
-import { setServicePayment, markPaymentPaid, bookClientExpense } from "@/actions/services/payments";
-import { applyPromoCode, clearPromoCode } from "@/actions/services/promo";
-import { getRequestDisputes, openDispute } from "@/actions/services/disputes";
+} from "../actions/services";
+import { setServicePayment, markPaymentPaid, bookClientExpense } from "../actions/parts/payments";
+import { applyPromoCode, clearPromoCode } from "../actions/parts/promo";
+import { getRequestDisputes, openDispute } from "../actions/parts/disputes";
 import { getWalletElements } from "@/actions/portfel";
-import type { RequestThreadDTO, ServiceQuoteDTO, ServicePaymentDTO, PaymentMethod, ServiceDisputeDTO } from "@/lib/services";
-import { QUOTE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/services";
+import type { RequestThreadDTO, ServiceQuoteDTO, ServicePaymentDTO, PaymentMethod, ServiceDisputeDTO } from "../lib/services";
+import { QUOTE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "../lib/services";
 import { fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 
 function money(grosze: number, currency: string): string {

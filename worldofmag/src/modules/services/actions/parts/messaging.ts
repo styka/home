@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { notifyUser } from "@/lib/notify";
-import { loadRequestAccess } from "@/lib/services/access";
-import type { RequestStatus, RequestThreadDTO, QuoteStatus, PaymentMethod, PaymentStatus } from "@/lib/services";
+import { loadRequestAccess } from "../../lib/core/access";
+import type { RequestStatus, RequestThreadDTO, QuoteStatus, PaymentMethod, PaymentStatus } from "../../lib/services";
 
 export async function addReview(requestId: string, rating: number, comment?: string): Promise<void> {
   const user = await requireAuth();

@@ -13,16 +13,16 @@ import {
   deleteListing,
   advanceRequestStatus,
   setProviderLocation,
-} from "@/actions/services";
-import { addServiceImage, deleteServiceImage } from "@/actions/services/images";
+} from "../actions/services";
+import { addServiceImage, deleteServiceImage } from "../actions/parts/images";
 import {
   PRICE_MODEL_LABELS,
   type ServiceCategoryDTO,
   type PriceModel,
   type RequestDTO,
   type RequestStatus,
-} from "@/lib/services";
-import type { ProviderStats } from "@/lib/services";
+} from "../lib/services";
+import type { ProviderStats } from "../lib/services";
 import { RatingStars, formatPrice, StatusBadge, VerifiedBadge, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 import { AvailabilityEditor } from "./AvailabilityEditor";
 import { PromoCodesManager } from "./PromoCodesManager";

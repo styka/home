@@ -51,7 +51,7 @@
 - [x] **T-5** — **Pogoda** → `src/modules/weather/`. Konsumenci: `weatherExecutor`, `agentTools`.
       Sama woła Zadania (`createTask`) — do czasu T-11 przez `@/actions/tasks`, potem przez kontrakt.
       **(AC-1, AC-2, AC-3)**
-- [ ] **T-6** — **Usługi** → `src/modules/services/`. Akcje `services.ts` + katalog `actions/services/`;
+- [x] **T-6** — **Usługi** → `src/modules/services/`. Akcje `services.ts` + katalog `actions/services/`;
       własne `lib/{services,serviceSlots,serviceGeo}.ts`. Sama woła Portfel (`addEntry`).
       **(AC-1, AC-2, AC-3, AC-4)**
 - [ ] **T-7** — **Kuchnia** → `src/modules/kitchen/`. Cztery pliki akcji, 28 komponentów, zero

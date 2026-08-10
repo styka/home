@@ -7,10 +7,10 @@ import Link from "next/link";
 import { Handshake, Search, Briefcase, ClipboardList, MapPin, SlidersHorizontal, Navigation, Heart } from "lucide-react";
 import { EmptyState, cardStyle, cardHoverHandlers } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { getListings } from "@/actions/services";
-import type { ListingSort } from "@/lib/services";
-import type { ListingDTO, ServiceCategoryDTO } from "@/lib/services";
-import { formatDistance } from "@/lib/serviceGeo";
+import { getListings } from "../actions/services";
+import type { ListingSort } from "../lib/services";
+import type { ListingDTO, ServiceCategoryDTO } from "../lib/services";
+import { formatDistance } from "../lib/serviceGeo";
 import { RatingStars, formatPrice, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle, VerifiedBadge } from "./serviceUi";
 
 type FavProvider = { id: string; displayName: string; area: string | null; ratingAvg: number; ratingCount: number; verified: boolean };

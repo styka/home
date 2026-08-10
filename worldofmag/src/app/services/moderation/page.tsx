@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getModerationDisputes } from "@/actions/services/disputes";
-import { ModerationPage } from "@/components/services/ModerationPage";
+import { getModerationDisputes } from "@/modules/services/actions/parts/disputes";
+import { ModerationPage } from "@/modules/services/ui/ModerationPage";
 
 export default async function ServicesModerationPage({ searchParams }: { searchParams?: { tab?: string } }) {
   const session = await auth();

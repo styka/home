@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { slugify } from "@/lib/services/helpers";
+import { slugify } from "../core/helpers";
 
 // Usługi — slugify wykonawcy (publiczny URL /providers/[slug]). Dotąd bez testu.
 test("slugify: spacje → myślniki, lowercase", () => {

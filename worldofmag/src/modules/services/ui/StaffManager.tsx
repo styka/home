@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { Users, Plus, Trash2, Loader2 } from "lucide-react";
 import { SectionHeading } from "@/components/ui/home";
-import { getMyStaff, createStaff, updateStaff, deleteStaff } from "@/actions/services/scheduling";
+import { getMyStaff, createStaff, updateStaff, deleteStaff } from "../actions/parts/scheduling";
 import { fieldInputStyle, primaryButtonStyle } from "./serviceUi";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 

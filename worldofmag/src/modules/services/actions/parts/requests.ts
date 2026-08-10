@@ -5,9 +5,9 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { notifyUser } from "@/lib/notify";
-import { REQUEST_STATUS_LABELS } from "@/lib/services";
-import { PROVIDER_TRANSITIONS, mapRequest, computeSlots } from "@/lib/services/helpers";
-import type { RequestStatus, RequestDTO } from "@/lib/services";
+import { REQUEST_STATUS_LABELS } from "../../lib/services";
+import { PROVIDER_TRANSITIONS, mapRequest, computeSlots } from "../../lib/core/helpers";
+import type { RequestStatus, RequestDTO } from "../../lib/services";
 
 export async function createServiceRequest(data: {
   providerId: string;

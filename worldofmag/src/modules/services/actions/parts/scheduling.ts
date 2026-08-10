@@ -6,8 +6,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { notifyUser } from "@/lib/notify";
-import { requireOwnProvider, computeSlots } from "@/lib/services/helpers";
-import type { AvailabilityRule } from "@/lib/serviceSlots";
+import { requireOwnProvider, computeSlots } from "../../lib/core/helpers";
+import type { AvailabilityRule } from "../../lib/serviceSlots";
 
 /** Reguły dostępności bieżącego wykonawcy. */
 export async function getMyAvailability(staffId?: string | null): Promise<AvailabilityRule[]> {

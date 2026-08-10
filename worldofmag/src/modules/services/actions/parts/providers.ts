@@ -7,8 +7,8 @@ import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { notifyUser } from "@/lib/notify";
-import { uniqueProviderSlug, requireOwnProvider } from "@/lib/services/helpers";
-import type { ServiceCategoryDTO } from "@/lib/services";
+import { uniqueProviderSlug, requireOwnProvider } from "../../lib/core/helpers";
+import type { ServiceCategoryDTO } from "../../lib/services";
 
 /** Kategorie usług widoczne dla użytkownika: systemowe + własne + zespołowe. */
 export async function getServiceCategories(): Promise<ServiceCategoryDTO[]> {

@@ -8,9 +8,9 @@ import Link from "next/link";
 import { ClipboardList, ArrowLeft, Star, X, MessagesSquare, CalendarClock } from "lucide-react";
 import { EmptyState, cardStyle } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { cancelMyRequest, addReview, rescheduleRequest } from "@/actions/services";
-import { getAvailableSlots } from "@/actions/services/scheduling";
-import type { RequestDTO } from "@/lib/services";
+import { cancelMyRequest, addReview, rescheduleRequest } from "../actions/services";
+import { getAvailableSlots } from "../actions/parts/scheduling";
+import type { RequestDTO } from "../lib/services";
 import { StatusBadge, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 import { RequestThread } from "./RequestThread";
 

@@ -4,7 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import { requireOwnProvider } from "@/lib/services/helpers";
+import { requireOwnProvider } from "../../lib/core/helpers";
 
 /** Dodaje zdjęcie do portfolio wykonawcy. url = data-URL (limit ~2MB) lub link. */
 export async function addServiceImage(url: string, caption?: string | null): Promise<void> {

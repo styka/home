@@ -7,8 +7,8 @@ import { requireAuth } from "@/platform/auth/serverUtils";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { notifyUser } from "@/lib/notify";
-import { loadRequestAccess } from "@/lib/services/access";
-import type { ServiceDisputeDTO, DisputeStatus, ModerationDisputeDTO } from "@/lib/services";
+import { loadRequestAccess } from "../../lib/core/access";
+import type { ServiceDisputeDTO, DisputeStatus, ModerationDisputeDTO } from "../../lib/services";
 
 /** Strona zlecenia (klient/wykonawca) zgłasza problem. Jeden OPEN na zlecenie. */
 export async function openDispute(requestId: string, reason: string, description?: string | null): Promise<void> {

@@ -7,8 +7,8 @@ import Link from "next/link";
 import { ChevronLeft, ShieldAlert, Check, X, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { getModerationDisputes, resolveDispute } from "@/actions/services/disputes";
-import type { ModerationDisputeDTO } from "@/lib/services";
+import { getModerationDisputes, resolveDispute } from "../actions/parts/disputes";
+import type { ModerationDisputeDTO } from "../lib/services";
 
 type Tab = "OPEN" | "RESOLVED" | "REJECTED";
 

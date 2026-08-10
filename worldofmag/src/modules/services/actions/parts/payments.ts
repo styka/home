@@ -6,9 +6,9 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { notifyUser } from "@/lib/notify";
 import { addEntry } from "@/actions/portfel";
-import { loadRequestAccess } from "@/lib/services/access";
-import { netAmount } from "@/lib/services/payment";
-import type { PaymentMethod } from "@/lib/services";
+import { loadRequestAccess } from "../../lib/core/access";
+import { netAmount } from "../../lib/core/payment";
+import type { PaymentMethod } from "../../lib/services";
 
 /** Wykonawca ustawia kwotę/metodę płatności za zlecenie (nie zmienia statusu PAID). */
 export async function setServicePayment(

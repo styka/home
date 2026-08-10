@@ -6,9 +6,9 @@ import Link from "next/link";
 import { ArrowLeft, Handshake, MapPin, Send, Check, CalendarClock, Clock } from "lucide-react";
 import { cardStyle } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { createServiceRequest } from "@/actions/services";
-import { getAvailableSlots, bookSlot, getListingStaff } from "@/actions/services/scheduling";
-import type { ListingDTO } from "@/lib/services";
+import { createServiceRequest } from "../actions/services";
+import { getAvailableSlots, bookSlot, getListingStaff } from "../actions/parts/scheduling";
+import type { ListingDTO } from "../lib/services";
 import { RatingStars, formatPrice, fieldInputStyle, fieldLabelStyle, primaryButtonStyle, secondaryButtonStyle } from "./serviceUi";
 
 function todayISO(): string {

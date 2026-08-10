@@ -7,9 +7,9 @@ import { SectionHeading, cardStyle, cardHoverHandlers } from "@/components/ui/ho
 import { ModuleView } from "@/components/ui/view";
 import { Heart } from "lucide-react";
 import { RatingStars, formatPrice, VerifiedBadge, secondaryButtonStyle } from "./serviceUi";
-import { setProviderVerified } from "@/actions/services";
-import { toggleFavorite } from "@/actions/services/favorites";
-import type { PriceModel } from "@/lib/services";
+import { setProviderVerified } from "../actions/services";
+import { toggleFavorite } from "../actions/parts/favorites";
+import type { PriceModel } from "../lib/services";
 
 interface ProviderPublic {
   id: string;

@@ -1,6 +1,6 @@
 import { Star, BadgeCheck } from "lucide-react";
-import type { RequestStatus, PriceModel } from "@/lib/services";
-import { REQUEST_STATUS_LABELS, PRICE_MODEL_LABELS } from "@/lib/services";
+import type { RequestStatus, PriceModel } from "../lib/services";
+import { REQUEST_STATUS_LABELS, PRICE_MODEL_LABELS } from "../lib/services";
 
 /** Plakietka „zweryfikowany wykonawca" (M7). */
 export function VerifiedBadge({ size = 13, withLabel = false }: { size?: number; withLabel?: boolean }) {

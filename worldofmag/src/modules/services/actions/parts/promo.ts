@@ -4,9 +4,9 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import { requireMyProvider } from "@/lib/services/helpers";
-import { loadRequestAccess } from "@/lib/services/access";
-import type { PromoKind, ServicePromoCodeDTO } from "@/lib/services";
+import { requireMyProvider } from "../../lib/core/helpers";
+import { loadRequestAccess } from "../../lib/core/access";
+import type { PromoKind, ServicePromoCodeDTO } from "../../lib/services";
 
 export async function getMyPromoCodes(): Promise<ServicePromoCodeDTO[]> {
   const user = await requireAuth();

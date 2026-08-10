@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { SectionHeading } from "@/components/ui/home";
-import { getMyAvailability, setAvailability, getMyStaff } from "@/actions/services/scheduling";
-import { WEEKDAY_LABELS, minToLabel, labelToMin } from "@/lib/serviceSlots";
+import { getMyAvailability, setAvailability, getMyStaff } from "../actions/parts/scheduling";
+import { WEEKDAY_LABELS, minToLabel, labelToMin } from "../lib/serviceSlots";
 import { fieldInputStyle, primaryButtonStyle } from "./serviceUi";
 
 // Kolejność wyświetlania: poniedziałek…niedziela (weekday: 1..6,0).
