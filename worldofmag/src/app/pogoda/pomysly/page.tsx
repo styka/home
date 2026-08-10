@@ -2,10 +2,12 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getIdeaLibrary } from "@/actions/weather";
+import { hasPermission } from "@/platform/auth/permissions";
+import tasksModule from "@/modules/tasks/module";
+import weatherModule from "@/modules/weather/module";
+import { getIdeaLibrary } from "@/modules/weather/actions/weather";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
-import { IdeaLibraryPage } from "@/components/weather/IdeaLibraryPage";
+import { IdeaLibraryPage } from "@/modules/weather/ui/IdeaLibraryPage";
 
 /**
  * 037: biblioteka pomysłów „co robić". Podstrona modułu Pogoda, więc chroni ją to samo uprawnienie —
@@ -18,7 +20,7 @@ export default async function PogodaPomyslyPage({
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.WEATHER)) redirect("/");
+  if (!hasPermission(session, weatherModule.permission)) redirect("/");
 
   const [ideas, usdPlnRate] = await Promise.all([getIdeaLibrary(), getUsdPlnRate()]);
 
@@ -26,7 +28,7 @@ export default async function PogodaPomyslyPage({
     <IdeaLibraryPage
       ideas={ideas}
       usdPlnRate={usdPlnRate}
-      canAddToTasks={hasPermission(session, PERMISSIONS.TASKS)}
+      canAddToTasks={hasPermission(session, tasksModule.permission)}
       initialIdeaId={searchParams?.idea}
       viewParams={searchParams ?? {}}
     />

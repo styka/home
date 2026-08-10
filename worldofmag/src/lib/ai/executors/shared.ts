@@ -6,7 +6,7 @@
 // skanuje ten katalog, ale ten plik nie deklaruje żadnych akcji).
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
-import { createList } from "@/actions/lists";
+import { createList } from "@/modules/shopping/contract";
 import type { AIAction } from "@/lib/ai/aiAction";
 import type { TaskPriority } from "@/types";
 

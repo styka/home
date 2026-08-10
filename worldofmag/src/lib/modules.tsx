@@ -1,10 +1,4 @@
-import {
-  Home, ShoppingCart, CheckSquare, FileText, PawPrint, ChefHat, GraduationCap,
-  HeartPulse, Flame, Car, Wallet, Handshake, Calendar,
-  Newspaper, CloudSun, Warehouse, Wrench,
-} from "lucide-react";
-import { PERMISSIONS } from "@/platform/auth/permissions";
-import { defineModule, mergeModules, permissionForPathIn, type ResolvedModule } from "@/platform/registry";
+import { mergeModules, permissionForPathIn, type ResolvedModule } from "@/platform/registry";
 
 // 046: deklaracje modułów przeniesionych do `src/modules/`. TO JEST KORZEŃ KOMPOZYCJI —
 // jedyne miejsce w kodzie, które zna wszystkie moduły naraz. Nie może nim być
@@ -13,6 +7,16 @@ import truckModule from "@/modules/truck/module";
 import contactsModule from "@/modules/contacts/module";
 import reportsModule from "@/modules/reports/module";
 import qaModule from "@/modules/qa/module";
+import homeModule from "@/modules/home/module";
+import calendarModule from "@/modules/calendar/module";
+import tasksModule from "@/modules/tasks/module";
+import shoppingModule from "@/modules/shopping/module";
+import portfelModule from "@/modules/portfel/module";
+import petsModule from "@/modules/pets/module";
+import kitchenModule from "@/modules/kitchen/module";
+import servicesModule from "@/modules/services/module";
+import weatherModule from "@/modules/weather/module";
+import newsModule from "@/modules/news/module";
 import healthModule from "@/modules/health/module";
 import flotaModule from "@/modules/flota/module";
 import notesModule from "@/modules/notes/module";
@@ -25,25 +29,7 @@ import habitsModule from "@/modules/habits/module";
 // Zaproszenia, Admin) NIE są tutaj — pozostają na stałe w komponentach paska.
 export type ModuleDef = ResolvedModule;
 
-const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, qaModule, habitsModule, languagesModule, warsztatyModule, magazynowanieModule, notesModule, flotaModule, healthModule];
-
-/**
- * Moduły JESZCZE NIEPRZENIESIONE do `src/modules/`. Lista przejściowa, kurcząca się z każdą
- * kolejną falą Fazy 1 — jawnie nazwana, żeby długu nie dało się przeoczyć (wzorzec statusu
- * `pending` z 045). Docelowo pusta: wtedy `MODULES` wynika wyłącznie z deklaracji.
- */
-const LEGACY: ResolvedModule[] = [
-  defineModule({ id: "home",      label: "Strona główna", href: "/",          exact: true, permission: PERMISSIONS.HOME,      color: "var(--text-secondary)", Icon: Home,          defaultEnabled: true }),
-  defineModule({ id: "calendar",  label: "Kalendarz",     href: "/calendar",  permission: PERMISSIONS.CALENDAR,  color: "var(--accent-purple)", Icon: Calendar,      defaultEnabled: true }),
-  defineModule({ id: "shopping",  label: "Zakupy",        href: "/shopping",  permission: PERMISSIONS.SHOPPING,  color: "var(--accent-blue)",   Icon: ShoppingCart,  defaultEnabled: true }),
-  defineModule({ id: "tasks",     label: "Zadania",       href: "/tasks",     permission: PERMISSIONS.TASKS,     color: "var(--accent-green)",  Icon: CheckSquare,   defaultEnabled: true }),
-  defineModule({ id: "pets",      label: "Zwierzęta",     href: "/pets",      permission: PERMISSIONS.PETS,      color: "var(--accent-orange)", Icon: PawPrint,      defaultEnabled: true }),
-  defineModule({ id: "kitchen",   label: "Kuchnia",       href: "/kitchen",   permission: PERMISSIONS.KITCHEN,   color: "var(--accent-orange)", Icon: ChefHat,       defaultEnabled: true }),
-  defineModule({ id: "news",      label: "Wiadomości",    href: "/wiadomosci", permission: PERMISSIONS.NEWS,     color: "var(--accent-blue)",   Icon: Newspaper,     defaultEnabled: true }),
-  defineModule({ id: "weather",   label: "Pogoda",        href: "/pogoda",    permission: PERMISSIONS.WEATHER,   color: "var(--accent-amber)",  Icon: CloudSun,      defaultEnabled: true }),
-  defineModule({ id: "services",  label: "Usługi",        href: "/services",  permission: PERMISSIONS.SERVICES,  color: "var(--accent-blue)",   Icon: Handshake,     defaultEnabled: true }),
-  defineModule({ id: "portfel",   label: "Portfel",       href: "/portfel",   permission: PERMISSIONS.PORTFEL,   color: "var(--accent-green)",  Icon: Wallet,        defaultEnabled: true }),
-];
+const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, qaModule, habitsModule, languagesModule, warsztatyModule, magazynowanieModule, notesModule, flotaModule, healthModule, newsModule, weatherModule, servicesModule, kitchenModule, petsModule, portfelModule, shoppingModule, tasksModule, calendarModule, homeModule];
 
 /**
  * Kolejność pozycji w menu — decyzja produktowa, więc trzyma się jednej listy, a nie kolejności,
@@ -56,14 +42,14 @@ const MODULE_ORDER = [
 ];
 
 // Jedno źródło prawdy dla górnych modułów (kolejność = domyślna kolejność menu).
-export const MODULES: ModuleDef[] = mergeModules(DECLARED, LEGACY, MODULE_ORDER);
+export const MODULES: ModuleDef[] = mergeModules(DECLARED, MODULE_ORDER);
 
 const MODULE_INDEX = new Map(MODULES.map((m, i) => [m.id, i]));
 
 /**
- * Mapowanie ścieżka → uprawnienie dla modułów ZADEKLAROWANYCH. Uzupełnia historyczny łańcuch
- * `if`-ów w `platform/auth/permissions.ts`, którego platforma nie może wyprowadzić z deklaracji,
- * bo nie wolno jej importować modułów.
+ * Mapowanie ścieżka → uprawnienie **wszystkich** modułów. Po fali 3 (048) nie ma już modułów
+ * nieprzeniesionych, więc to jest komplet — `legacyPermissionForPath` obsługuje wyłącznie
+ * powierzchnie SPOZA rejestru modułów (ustawienia, admin, zaproszenia).
  */
 export function declaredPermissionForPath(path: string): string | null | undefined {
   return permissionForPathIn(DECLARED, path);

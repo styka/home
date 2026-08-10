@@ -2,9 +2,9 @@ export const dynamic = "force-dynamic";
 
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getRecipe, assertRecipeAccess } from "@/actions/recipes";
-import { getCookbooks } from "@/actions/cookbooks";
-import { RecipeEditor } from "@/components/kitchen/recipes/RecipeEditor";
+import { getRecipe, assertRecipeAccess } from "@/modules/kitchen/actions/recipes";
+import { getCookbooks } from "@/modules/kitchen/actions/cookbooks";
+import { RecipeEditor } from "@/modules/kitchen/ui/recipes/RecipeEditor";
 
 interface PageProps {
   params: { recipeId: string };

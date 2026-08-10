@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getRecipe } from "@/actions/recipes";
-import { CookMode } from "@/components/kitchen/recipes/CookMode";
+import { getRecipe } from "@/modules/kitchen/actions/recipes";
+import { CookMode } from "@/modules/kitchen/ui/recipes/CookMode";
 
 interface PageProps {
   params: { recipeId: string };

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { auth } from "@/platform/auth/session";
-import { orphanCategoryIcons } from "@/actions/categoryIcons";
+import { orphanCategoryIcons } from "@/modules/shopping/contract";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 
 async function requireAdmin() {

@@ -9,7 +9,7 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { ModuleSidebar } from "./ModuleSidebar";
 import { DataFreshness } from "./DataFreshness";
-import { AICommandSheet } from "@/components/home/AICommandSheet";
+import { AICommandSheet } from "@/components/assistant/AICommandSheet";
 import { ConsentBanner } from "@/components/legal/ConsentBanner";
 import { FeedbackInspector } from "./FeedbackInspector";
 import { NotificationBell } from "./NotificationBell";

@@ -5,7 +5,10 @@ test.describe("Raporty", () => {
   test("[scenario-reports-list-visibility] lista raportów użytkownika", async ({ page, reports }) => {
     await reports.open();
     await expect(page).toHaveURL(/\/reports/);
-    await expect(page.getByText(/Raporty|Brak raportów/).first()).toBeVisible();
+    // 048: zawężone do `<main>`. Bez tego `getByText(...)` trafiał najpierw w element POWŁOKI
+    // (pozycja nawigacji ukryta na tym rozmiarze ekranu), więc asercja widoczności padała mimo
+    // poprawnie wyrenderowanej strony. Treść sprawdzamy w treści, nie w chromie.
+    await expect(page.getByRole("main").getByText(/Raporty|Brak raportów/).first()).toBeVisible();
   });
 
   test("[scenario-reports-open-markdown] otwarcie raportu renderuje treść", async ({ page, reports }) => {
@@ -29,7 +32,9 @@ test.describe("Raporty", () => {
   test("[scenario-reports-admin-edit] formularz nowego raportu", async ({ page }) => {
     await page.goto("/admin/reports/new");
     await expect(page).toHaveURL(/\/admin\/reports\/new/);
-    const title = page.getByPlaceholder(/Tytuł raportu/i);
+    // 048: naruszenie trybu strict — wzorzec /Tytuł raportu/i pasował TAKŻE do pola treści
+    // („# Tytuł raportu  Treść w formacie Markdown…"). Dopasowanie dokładne wskazuje tytuł.
+    const title = page.getByPlaceholder("Tytuł raportu", { exact: true });
     await requireVisible(title, "Brak formularza nowego raportu");
     await expect(title).toBeVisible();
   });

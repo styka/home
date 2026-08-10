@@ -2,9 +2,9 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getCookbooks } from "@/actions/cookbooks";
-import { RecipeEditor } from "@/components/kitchen/recipes/RecipeEditor";
-import { RecipeImportReview } from "@/components/kitchen/recipes/RecipeImportReview";
+import { getCookbooks } from "@/modules/kitchen/actions/cookbooks";
+import { RecipeEditor } from "@/modules/kitchen/ui/recipes/RecipeEditor";
+import { RecipeImportReview } from "@/modules/kitchen/ui/recipes/RecipeImportReview";
 
 export default async function NewRecipePage({
   searchParams,

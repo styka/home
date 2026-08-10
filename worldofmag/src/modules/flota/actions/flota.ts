@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
-import { bookAutoExpense, removeAutoExpense } from "@/lib/portfel/autoExpense";
+import { bookAutoExpense, removeAutoExpense } from "@/modules/portfel/contract";
 import { SERVICE_LABELS } from "../lib/flota";
 import type { Vehicle, FuelLog, ServiceRecord } from "@prisma/client";
 

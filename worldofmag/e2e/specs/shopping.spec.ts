@@ -13,19 +13,19 @@ test.describe("Zakupy — listy", () => {
 
   test("[scenario-create-list-empty-name] pusta nazwa nie tworzy listy", async ({ page, shopping }) => {
     await shopping.open();
-    await shopping.button(/Nowa lista/).first().click();
-    const create = shopping.button(/Utwórz/).first();
+    await shopping.openNewListForm();
+    const create = page.getByRole("main").getByRole("button", { name: /Utwórz/ }).first();
     if (await create.isEnabled().catch(() => false)) await create.click();
     await expect(page).toHaveURL(/\/shopping/);
   });
 
   test("[scenario-create-list-long-name] bardzo długa nazwa nie psuje layoutu", async ({ page, shopping }) => {
     await shopping.open();
-    await shopping.button(/Nowa lista/).first().click();
+    await shopping.openNewListForm();
     const input = page.getByPlaceholder(/Nazwa listy/);
     await requireVisible(input, "Brak formularza tworzenia listy");
     await input.fill("L".repeat(300));
-    await shopping.button(/Utwórz/).first().click();
+    await page.getByRole("main").getByRole("button", { name: /Utwórz/ }).first().click();
     await expect(page).toHaveURL(/\/shopping/);
   });
 

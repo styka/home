@@ -31,8 +31,15 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   - Kontrakt zawiera **dokładnie to, czego potrzebują konsumenci** — nie „wszystko na wszelki
     wypadek". Kontrakt rosnący do kilkudziesięciu funkcji to sygnał, że moduł robi za dużo.
   - Moduł rejestruje się **jedną deklaracją** (`defineModule` w `module.ts`): stąd biorą się menu,
-    uprawnienie i mapowanie ścieżek. **Nie dopisuj modułu do równoległych list** — to jest dokładnie
-    ten dług, który Faza 1 likwiduje (cel „8 → 1").
+    uprawnienie, mapowanie ścieżek i **nawigacja boczna** (pole `sideNav`, ładowane leniwie — bo
+    `module.ts` czyta kod serwerowy). **Nie dopisuj modułu do równoległych list** — po fali 3 (048)
+    takich list już nie ma i cel „8 → 1" jest osiągnięty; dopisanie nowej byłaby regresją.
+  - **Przynależność pliku ustala lista jego KONSUMENTÓW, nie nazwa.** Zanim przeniesiesz plik do
+    modułu, wypisz kto go importuje. Helper używany przez trzy moduły zostaje wspólny; „słownik",
+    po który sięga tylko jeden moduł, jest jego własnością. Nazwa mówi, czym plik miał być; lista
+    konsumentów mówi, czym jest.
+  - **Powłoka nie importuje wnętrza żadnego modułu.** Gdy potrzebuje od modułu komponentu, bierze go
+    z deklaracji; gdy danych — z kontraktu.
   - Wymuszają to: `npm run check:boundaries` (reguła lintu naprawdę działa) i
     `npm run check:module-registry` (katalog modułu ma kontrakt, kompletną deklarację i wpięcie
     w rejestr). Obie w `build`.

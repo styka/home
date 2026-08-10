@@ -1,19 +1,9 @@
 import type { Session } from "next-auth"
 
 export const PERMISSIONS = {
-  HOME:        "module.home",
-  SHOPPING:    "module.shopping",
-  TASKS:       "module.tasks",
-  KITCHEN:     "module.kitchen",
   SETTINGS:    "module.settings",
   ADMIN:       "module.admin",
   INVITATIONS: "module.invitations",
-  PETS:        "module.pets",
-  PORTFEL:     "module.portfel",
-  SERVICES:    "module.services",
-  CALENDAR:    "module.calendar",
-  NEWS:        "module.news",
-  WEATHER:     "module.weather",
   // Kitchen sub-permissions
   KITCHEN_RECIPE_CREATE: "kitchen.recipe.create",
   KITCHEN_RECIPE_EDIT:   "kitchen.recipe.edit",
@@ -39,19 +29,9 @@ export function hasPermission(session: Session | null | undefined, slug: string)
  * `src/lib/pathPermissions.ts`. **Używaj tamtej funkcji, nie tej** — ta widzi tylko część aplikacji.
  */
 export function legacyPermissionForPath(path: string): string | null {
-  if (path === "/" || path === "") return PERMISSIONS.HOME
-  if (path.startsWith("/shopping")) return PERMISSIONS.SHOPPING
-  if (path.startsWith("/tasks")) return PERMISSIONS.TASKS
-  if (path.startsWith("/kitchen")) return PERMISSIONS.KITCHEN
   if (path.startsWith("/settings")) return PERMISSIONS.SETTINGS
   if (path.startsWith("/admin")) return PERMISSIONS.ADMIN
   if (path.startsWith("/invitations")) return PERMISSIONS.INVITATIONS
-  if (path.startsWith("/pets")) return PERMISSIONS.PETS
-  if (path.startsWith("/portfel")) return PERMISSIONS.PORTFEL
-  if (path.startsWith("/services")) return PERMISSIONS.SERVICES
-  if (path.startsWith("/calendar")) return PERMISSIONS.CALENDAR
-  if (path.startsWith("/wiadomosci")) return PERMISSIONS.NEWS
-  if (path.startsWith("/pogoda")) return PERMISSIONS.WEATHER
   return null
 }
 

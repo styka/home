@@ -8,5 +8,6 @@ export default defineModule({
   permission: "module.flota",
   color: "var(--accent-blue)",
   Icon: Car,
+  sideNav: () => import("./ui/FlotaSideNav").then((m) => ({ default: m.FlotaSideNav })),
   defaultEnabled: true,
 });

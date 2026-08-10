@@ -10,7 +10,7 @@ import {
   markAllNotificationsRead,
   type NotificationDTO,
 } from "@/actions/notifications";
-import { MODULE_META, type CalendarModule } from "@/lib/calendar";
+import { MODULE_META, type CalendarModule } from "@/modules/calendar/contract";
 
 function accentFor(module: string): string {
   const m = MODULE_META[module as CalendarModule];

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
 import { prisma } from "@/platform/db/prisma";
-import { getPantry } from "@/actions/pantry";
-import { getRecipes } from "@/actions/recipes";
+import { getPantry } from "@/modules/kitchen/contract";
+import { getRecipes } from "@/modules/kitchen/contract";
 
 interface Suggestion {
   recipeId: string;

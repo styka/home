@@ -3,14 +3,15 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getBudgetsWithSpending, getFinanceGoals } from "@/actions/portfelBudgets";
+import portfelModule from "@/modules/portfel/module";
+import { getBudgetsWithSpending, getFinanceGoals } from "@/modules/portfel/actions/portfelBudgets";
 import { getMyTeams } from "@/actions/teams";
-import { BudgetsPage } from "@/components/portfel/BudgetsPage";
+import { BudgetsPage } from "@/modules/portfel/ui/BudgetsPage";
 
 export default async function PortfelBudgetsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.PORTFEL) && !hasPermission(session, PERMISSIONS.ADMIN)) {
+  if (!hasPermission(session, portfelModule.permission) && !hasPermission(session, PERMISSIONS.ADMIN)) {
     redirect("/");
   }
 

@@ -1,3 +1,4 @@
+import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
 
 /**
@@ -43,6 +44,21 @@ export type ModuleDeclaration = {
    * Domyślnie `[href]`; osobne pole jest potrzebne dla modułów z kilkoma korzeniami tras.
    */
   routes?: string[];
+  /**
+   * 048: własna nawigacja boczna modułu, renderowana przez powłokę gdy moduł jest aktywny.
+   *
+   * **Ładowana LENIWIE i to nie jest optymalizacja, tylko warunek poprawności.** `module.ts` jest
+   * importowany przez korzeń kompozycji, a ten przez **kod serwerowy**; statyczny import komponentu
+   * klienckiego wciągnąłby go do każdego takiego grafu. Funkcja zwracająca `import()` jest
+   * wywoływana dopiero przez `next/dynamic` po stronie klienta.
+   *
+   * Kształt `{ default }` bierze się z `next/dynamic`; komponenty eksportowane nazwanie mapujemy
+   * w miejscu deklaracji: `() => import("./ui/XNav").then((m) => ({ default: m.XNav }))`.
+   *
+   * Bez tego pola powłoka musiałaby importować `ui/` sześciu modułów — czyli sięgać do ich wnętrz
+   * (rozdz. 9.3 opisuje ten sam wzorzec dla kafelka pulpitu).
+   */
+  sideNav?: () => Promise<{ default: ComponentType }>;
 };
 
 /** Deklaracja po uzupełnieniu wartości domyślnych — tego używa rejestr. */
@@ -59,30 +75,30 @@ export function defineModule<T extends ModuleDeclaration>(decl: T): T & { routes
 }
 
 /**
- * Scala deklaracje modułów z **przejściową** tablicą modułów jeszcze nieprzeniesionych.
+ * Układa deklaracje modułów w kolejności menu.
  *
- * Tablica przejściowa istnieje, bo Faza 1 przenosi 4 z 21 modułów. Jest to jawny, tymczasowy stan —
- * dokładnie ten wzorzec, który sprawdził się w 045: `pending` jako legalny, ale **widoczny** status,
- * zamiast cichego długu.
+ * **048 — parametr `legacy` zniknął.** Do fali 3 funkcja scalała deklaracje z jawną tablicą modułów
+ * jeszcze nieprzeniesionych; ta tablica doszła do zera i została usunięta jako martwy kod. Gdyby
+ * została pusta „na wszelki wypadek", byłaby zaproszeniem, żeby dopisać do niej kolejny moduł
+ * zamiast utworzyć katalog — czyli dokładnie ten dług, który Faza 1 zlikwidowała.
  *
  * Kolejność wyniku bierze się z `order` — bo kolejność pozycji w menu jest decyzją produktową,
- * a nie pochodną tego, który moduł akurat został już przeniesiony.
+ * a nie pochodną kolejności importów.
  *
  * Duplikat identyfikatora jest **błędem**, nie ostrzeżeniem: dwa moduły o tym samym `id` po cichu
  * nadpisałyby sobie preferencje menu użytkownika.
  */
 export function mergeModules(
   declared: ResolvedModule[],
-  legacy: ResolvedModule[],
   order: string[],
 ): ResolvedModule[] {
-  const all = [...declared, ...legacy];
+  const all = [...declared];
 
   const seen = new Set<string>();
   for (const m of all) {
     if (seen.has(m.id)) {
       throw new Error(
-        `Zduplikowany identyfikator modułu „${m.id}" — moduł zadeklarowany i jednocześnie obecny na liście przejściowej.`,
+        `Zduplikowany identyfikator modułu „${m.id}" — dwa moduły deklarują to samo id.`,
       );
     }
     seen.add(m.id);

@@ -8,7 +8,7 @@
     "calendar": {
       "status": "done",
       "entries": [
-        "src/components/calendar/CalendarPage.tsx"
+        "src/modules/calendar/ui/CalendarPage.tsx"
       ]
     },
     "contacts": {
@@ -48,7 +48,7 @@
     "kitchen": {
       "status": "done",
       "entries": [
-        "src/components/kitchen/KitchenHomePage.tsx"
+        "src/modules/kitchen/ui/KitchenHomePage.tsx"
       ]
     },
     "languages": {
@@ -79,25 +79,25 @@
     "pets": {
       "status": "done",
       "entries": [
-        "src/components/pets/PetDetailPage.tsx",
-        "src/components/pets/PetsHomePage.tsx"
+        "src/modules/pets/ui/PetDetailPage.tsx",
+        "src/modules/pets/ui/PetsHomePage.tsx"
       ]
     },
     "pogoda": {
       "status": "done",
       "entries": [
-        "src/components/weather/WeatherPage.tsx",
-        "src/components/weather/IdeaLibraryPage.tsx"
+        "src/modules/weather/ui/WeatherPage.tsx",
+        "src/modules/weather/ui/IdeaLibraryPage.tsx"
       ]
     },
     "portfel": {
       "status": "done",
       "entries": [
-        "src/components/portfel/BudgetsPage.tsx",
-        "src/components/portfel/ElementDetailPage.tsx",
-        "src/components/portfel/MonthlyReportPage.tsx",
-        "src/components/portfel/PortfelHomePage.tsx",
-        "src/components/portfel/PortfelSettingsPage.tsx"
+        "src/modules/portfel/ui/BudgetsPage.tsx",
+        "src/modules/portfel/ui/ElementDetailPage.tsx",
+        "src/modules/portfel/ui/MonthlyReportPage.tsx",
+        "src/modules/portfel/ui/PortfelHomePage.tsx",
+        "src/modules/portfel/ui/PortfelSettingsPage.tsx"
       ]
     },
     "pwa-icon": {
@@ -120,12 +120,12 @@
     "services": {
       "status": "done",
       "entries": [
-        "src/components/services/ListingDetailPage.tsx",
-        "src/components/services/ModerationPage.tsx",
-        "src/components/services/MyRequestsPage.tsx",
-        "src/components/services/ProviderPanelPage.tsx",
-        "src/components/services/ProviderPublicPage.tsx",
-        "src/components/services/ServicesCatalogPage.tsx"
+        "src/modules/services/ui/ListingDetailPage.tsx",
+        "src/modules/services/ui/ModerationPage.tsx",
+        "src/modules/services/ui/MyRequestsPage.tsx",
+        "src/modules/services/ui/ProviderPanelPage.tsx",
+        "src/modules/services/ui/ProviderPublicPage.tsx",
+        "src/modules/services/ui/ServicesCatalogPage.tsx"
       ]
     },
     "settings": {
@@ -135,15 +135,15 @@
     "shopping": {
       "status": "done",
       "entries": [
-        "src/components/shopping/ShoppingHomePage.tsx",
-        "src/components/shopping/ShoppingPage.tsx"
+        "src/modules/shopping/ui/ShoppingHomePage.tsx",
+        "src/modules/shopping/ui/ShoppingPage.tsx"
       ]
     },
     "tasks": {
       "status": "done",
       "entries": [
-        "src/components/tasks/TasksHomePage.tsx",
-        "src/components/tasks/TasksPage.tsx"
+        "src/modules/tasks/ui/TasksHomePage.tsx",
+        "src/modules/tasks/ui/TasksPage.tsx"
       ]
     },
     "trash": {
@@ -168,48 +168,48 @@
     "wiadomosci": {
       "status": "done",
       "entries": [
-        "src/components/news/NewsPage.tsx"
+        "src/modules/news/ui/NewsPage.tsx"
       ]
     }
   },
   "colorExceptions": {
-    "src/components/shopping/StoreGraphView.tsx": {
+    "src/modules/shopping/ui/StoreGraphView.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory węzłów grafu sklepu pochodzą ze słownika kategorii."
     },
-    "src/components/shopping/StoreMapEditor.tsx": {
+    "src/modules/shopping/ui/StoreMapEditor.tsx": {
       "kind": "paleta-danych",
       "reason": "Słownik kolorów kategorii sklepu — mapa sklepu ma odwzorowywać realne strefy, więc kolory są danymi domeny, nie motywem."
     },
-    "src/components/shopping/StoresManager.tsx": {
+    "src/modules/shopping/ui/StoresManager.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory kategorii sklepu."
     },
-    "src/components/kitchen/recipes/CookMode.tsx": {
+    "src/modules/kitchen/ui/recipes/CookMode.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory tagów przepisu z rekordów."
     },
-    "src/components/kitchen/recipes/RecipeFilters.tsx": {
+    "src/modules/kitchen/ui/recipes/RecipeFilters.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory tagów przepisów z rekordów użytkownika."
     },
-    "src/components/kitchen/plan/PlanWeekDialog.tsx": {
+    "src/modules/kitchen/ui/plan/PlanWeekDialog.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory tagów przepisów z rekordów."
     },
-    "src/components/kitchen/cookbooks/CookbookEditDialog.tsx": {
+    "src/modules/kitchen/ui/cookbooks/CookbookEditDialog.tsx": {
       "kind": "paleta-danych",
       "reason": "Paleta okładek książki kucharskiej wybierana przez użytkownika."
     },
-    "src/components/kitchen/cookbooks/CookbookList.tsx": {
+    "src/modules/kitchen/ui/cookbooks/CookbookList.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolor okładki z rekordu książki."
     },
-    "src/components/kitchen/cookbooks/CookbookView.tsx": {
+    "src/modules/kitchen/ui/cookbooks/CookbookView.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolor okładki z rekordu książki."
     },
-    "src/components/kitchen/pantry/PantryList.tsx": {
+    "src/modules/kitchen/ui/pantry/PantryList.tsx": {
       "kind": "paleta-danych",
       "reason": "Progi przydatności do spożycia mają stałe, semantyczne kolory (`--kitchen-*` w globals.css) — celowo niezależne od skórki, bo „przeterminowane\" musi być rozpoznawalne w każdym motywie."
     },
@@ -221,23 +221,23 @@
       "kind": "paleta-danych",
       "reason": "Kolor awatara wyliczany z identyfikatora użytkownika."
     },
-    "src/components/tasks/QuickAddTask.tsx": {
+    "src/modules/tasks/ui/QuickAddTask.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory priorytetów zadania — semantyczne, stałe w każdej skórce."
     },
-    "src/components/tasks/TaskDetail.tsx": {
+    "src/modules/tasks/ui/TaskDetail.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory priorytetów zadania."
     },
-    "src/components/tasks/TaskTagBadge.tsx": {
+    "src/modules/tasks/ui/TaskTagBadge.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolor zapasowy dla tagu bez ustawionego koloru — musi być konkretną wartością, bo trafia do obliczeń przezroczystości."
     },
-    "src/components/tasks/TaskTagsManager.tsx": {
+    "src/modules/tasks/ui/TaskTagsManager.tsx": {
       "kind": "paleta-danych",
       "reason": "Paleta do wyboru koloru tagu zadania — wartość ląduje w kolumnie `TaskTagDef.color`."
     },
-    "src/components/tasks/TasksGuide.tsx": {
+    "src/modules/tasks/ui/TasksGuide.tsx": {
       "kind": "ilustracja",
       "reason": "Poradnik pokazuje ZRZUTY i przykłady interfejsu; kolory są treścią ilustracji, nie stylem strony."
     },
@@ -265,7 +265,7 @@
       "kind": "paleta-danych",
       "reason": "Paleta kolorów tagu WYBIERANA PRZEZ UŻYTKOWNIKA i zapisana w bazie. To dane rekordu, nie motyw — skórka nie ma prawa ich nadpisać."
     },
-    "src/components/portfel/MonthlyReportPage.tsx": {
+    "src/modules/portfel/ui/MonthlyReportPage.tsx": {
       "kind": "paleta-danych",
       "reason": "Paleta serii na wykresie — musi mieć stałą liczbę rozróżnialnych kolorów niezależnie od skórki, inaczej dwie kategorie wydatków zlałyby się w jedną."
     },

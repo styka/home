@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getUnits } from "@/actions/units";
-import { UnitManager } from "@/components/shopping/UnitManager";
+import { getUnits } from "@/modules/shopping/actions/units";
+import { UnitManager } from "@/modules/shopping/ui/UnitManager";
 import { ChevronLeft } from "lucide-react";
 
 export default async function UnitsPage() {

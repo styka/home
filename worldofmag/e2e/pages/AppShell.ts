@@ -48,8 +48,26 @@ export class AppShell extends BasePage {
     await expect(this.page.getByRole("link", { name: NAV[key] })).toHaveCount(0);
   }
 
+  /**
+   * 048: „moduł jest dostępny w nawigacji" ma DWIE poprawne postacie i test musi znać obie.
+   *
+   * Moduł włączony renderuje się jako **link**. Moduł domyślnie WYŁĄCZONY (dziś tylko QA) siedzi
+   * w zwiniętej sekcji „Więcej…" i renderuje się tam jako **przycisk** — bo służy do dołożenia go
+   * do menu, a nie do przejścia. Test szukał wyłącznie linku, więc twierdził, że QA jest
+   * niedostępne dla uprawnionego użytkownika, choć było: o jedno rozwinięcie i jedno kliknięcie.
+   *
+   * To zamierzone zachowanie produktu (`defaultEnabled: false`), więc poprawiamy test, nie aplikację.
+   */
   async expectNavVisible(key: NavKey) {
     await this.openMobileMenuIfNeeded();
-    await expect(this.page.getByRole("link", { name: NAV[key] }).first()).toBeVisible();
+    const link = this.page.getByRole("link", { name: NAV[key] }).first();
+    if (await link.isVisible().catch(() => false)) return;
+
+    const more = this.page.getByRole("button", { name: /Więcej/ }).first();
+    if (await more.isVisible().catch(() => false)) await more.click();
+
+    await expect(
+      link.or(this.page.getByRole("button", { name: NAV[key] }).first()),
+    ).toBeVisible();
   }
 }

@@ -202,20 +202,27 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 
 ### Module boundaries — `src/platform/` and `src/modules/` (046, Faza 1)
 
-The rebuild's Faza 1 introduced two directories with **hard, lint-enforced** boundaries. **11 of 21
-modules have moved**: Trasy TIR, Kontakty, Raporty, QA (046) plus Nawyki, Nauka języków, Warsztaty,
-Magazynowanie, Notatki, Flota, Zdrowie (047). The other 10 — Strona główna, Kalendarz, Zakupy,
-Zadania, Zwierzęta, Kuchnia, Wiadomości, Pogoda, Usługi, Portfel — still live in
-`src/{actions,components,lib}/` and are listed explicitly as a shrinking transitional array in
-`src/lib/modules.tsx`.
+The rebuild's Faza 1 introduced two directories with **hard, lint-enforced** boundaries.
+**All 21 modules now live in `src/modules/`** — the transitional array is gone, and `PERMISSIONS`
+in `platform/auth/permissions.ts` holds only non-module surfaces (`SETTINGS`, `ADMIN`,
+`INVITATIONS`, plus Kitchen's five sub-permissions). That emptiness is the proof the "8 → 1" goal
+landed: no module slug lives in a parallel list any more.
 
-**A file belongs to the module its CONSUMERS put it in, not the one its name suggests.** 047 left
-`lib/habitStats.ts` (used by medications, notifications, kitchen), `lib/medicationSchedule.ts` (used
-by the calendar aggregate) and `actions/tags.ts` (a dictionary shared with Kitchen) in `src/lib` /
-`src/actions` for exactly that reason — moving them would have frozen accidental coupling in place.
+**A file belongs to the module its CONSUMERS put it in, not the one its name suggests.** This ruling
+kept `lib/habitStats.ts`, `lib/medicationSchedule.ts` and `actions/tags.ts` outside the modules
+(shared by several), and — the other way round — moved the shopping dictionaries (categories, units,
+products, category icons) *into* Shopping once a consumer check showed nobody else called them.
 
 **A contract carries what consumers call, not what the module exports.** Magazynowanie exports 47
-actions; its contract has 14. A 47-entry contract would mean the same as no contract at all.
+actions; its contract has 14. Cross-module coupling turned out to be five one-function calls:
+`assertListAccess` (Kitchen, Storage → Shopping), `createTask` (Weather, Habits → Tasks), `addEntry`
+and `bookAutoExpense` (Services, Fleet, Shopping → Portfel).
+
+**The shell imports no module internals.** Per-module side navigation comes from the declaration
+(`sideNav`, lazily loaded — `module.ts` is read by server code, so a static import of a client
+component would drag it into every such graph). The global AI assistant lives in
+`components/assistant/`, not in the Home module: the shell mounts it on every page, so it is chrome,
+not the dashboard.
 
 ```
 src/platform/     # capabilities that know NOTHING about any module

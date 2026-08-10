@@ -10,7 +10,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { netAmount } from "@/lib/services/payment";
+import { netAmount } from "@/modules/services/lib/core/payment";
 
 const HAS_DB = !!process.env.DATABASE_URL;
 const rnd = () => Math.random().toString(36).slice(2, 10);
@@ -23,7 +23,7 @@ test("Z-173: netAmount liczy netto po rabacie (grosze→PLN)", () => {
 
 test("Z-173/Z-360: loadRequestAccess — izolacja klient/wykonawca, obcy odrzucony", { skip: !HAS_DB && "brak DATABASE_URL" }, async (t) => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { loadRequestAccess } = await import("@/lib/services/access");
+  const { loadRequestAccess } = await import("@/modules/services/lib/core/access");
 
   const client = await prisma.user.create({ data: { email: `cli-${rnd()}@test.local`, name: "Client" } });
   const provUser = await prisma.user.create({ data: { email: `prov-${rnd()}@test.local`, name: "Provider" } });

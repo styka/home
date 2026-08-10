@@ -2,10 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getRecipes } from "@/actions/recipes";
-import { getCookbooks } from "@/actions/cookbooks";
+import { getRecipes } from "@/modules/kitchen/actions/recipes";
+import { getCookbooks } from "@/modules/kitchen/actions/cookbooks";
 import { getTags } from "@/actions/tags";
-import { RecipeList } from "@/components/kitchen/recipes/RecipeList";
+import { RecipeList } from "@/modules/kitchen/ui/recipes/RecipeList";
 
 export default async function KitchenRecipesPage({ searchParams }: { searchParams?: { q?: string } }) {
   const session = await auth();

@@ -19,7 +19,15 @@ test.describe("Kuchnia — nawigacja", () => {
 
   test("[scenario-kitchen-plan-cooked] plan pokazuje sloty posiłków", async ({ page, kitchen }) => {
     await kitchen.openPlan();
-    await expect(page.getByText(/Śniadanie|Obiad|Kolacja|Przekąska/).first()).toBeVisible();
+    // 048: zawężone do `<main>` (plan renderuje dwa warianty — siatkę `hidden md:grid` i listę
+    // `md:hidden` — więc etykiety pór posiłków są w DOM dwukrotnie).
+    //
+    // UWAGA, nierozstrzygnięte: w środowisku klikaczy ten scenariusz bywa czerwony mimo poprawnie
+    // wyrenderowanej strony (nagłówek, nawigacja tygodni i przyciski są obecne, a sąsiedni test
+    // `kitchen-plan-week-nav` przechodzi). W migawce błędu widać region `status`, czyli siatka
+    // planu **wciąż się doczytuje** po 10 s. Nie ustalono, czy to wolne ładowanie w tym środowisku,
+    // czy brak wpisów planu na bieżący tydzień w danych z seeda. Opisane w 048/verify.md.
+    await expect(page.getByRole("main").getByText(/Śniadanie|Obiad|Kolacja|Przekąska/).first()).toBeVisible();
   });
 
   // Regresja: nawigacja tygodni MUSI zmieniać URL (?week=) → serwer przeładowuje

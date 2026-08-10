@@ -17,8 +17,8 @@ test("rejestr ma dokładnie 21 modułów i unikalne identyfikatory", () => {
   assert.equal(new Set(ids).size, ids.length, "zduplikowany identyfikator modułu");
 });
 
-test("moduły zadeklarowane są w rejestrze i nie ma ich już na liście przejściowej", () => {
-  for (const id of ["truck", "contacts", "reports", "qa"]) {
+test("wszystkie 21 modułów jest zadeklarowanych — lista przejściowa nie istnieje", () => {
+  for (const id of ["truck", "contacts", "reports", "qa", "habits", "tasks", "shopping", "calendar", "home"]) {
     const found = MODULES.filter((m) => m.id === id);
     assert.equal(found.length, 1, `moduł ${id} musi wystąpić dokładnie raz`);
   }
@@ -50,13 +50,13 @@ test("domyślne preferencje menu obejmują wszystkie moduły; QA jest wyłączon
 test("mergeModules odrzuca zduplikowany identyfikator zamiast po cichu nadpisać", () => {
   const a = defineModule({ id: "x", label: "A", href: "/a", permission: null, color: "var(--x)", Icon: Home, defaultEnabled: true });
   const b = defineModule({ id: "x", label: "B", href: "/b", permission: null, color: "var(--x)", Icon: Home, defaultEnabled: true });
-  assert.throws(() => mergeModules([a], [b], ["x"]), /Zduplikowany identyfikator/);
+  assert.throws(() => mergeModules([a, b], ["x"]), /Zduplikowany identyfikator/);
 });
 
 test("moduł spoza listy kolejności trafia na koniec, a nie znika", () => {
   const a = defineModule({ id: "a", label: "A", href: "/a", permission: null, color: "var(--x)", Icon: Home, defaultEnabled: true });
   const nowy = defineModule({ id: "nowy", label: "N", href: "/n", permission: null, color: "var(--x)", Icon: Home, defaultEnabled: true });
-  const merged = mergeModules([nowy], [a], ["a"]);
+  const merged = mergeModules([a, nowy], ["a"]);
   assert.deepEqual(merged.map((m) => m.id), ["a", "nowy"]);
 });
 
