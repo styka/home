@@ -95,7 +95,7 @@
 
 ## Faza D — Dług testowy (osobny commit)
 
-- [ ] **T-17** — **Diagnoza ośmiu zastanych porażek klikaczy.** Dla każdej: odtworzyć, ustalić
+- [x] **T-17** — **Diagnoza ośmiu zastanych porażek klikaczy.** Dla każdej: odtworzyć, ustalić
       przyczynę, rozstrzygnąć **błąd testu** (naprawiamy) czy **brak funkcji w aplikacji** (backlog —
       opisujemy, nie dorabiamy funkcji w fali refaktorującej).
       **Gotowe, gdy:** każda z ośmiu ma zapisaną przyczynę i decyzję. **(AC-8)**
