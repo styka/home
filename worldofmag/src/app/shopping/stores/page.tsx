@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getStores } from "@/actions/stores";
-import { StoresManager } from "@/components/shopping/StoresManager";
+import { getStores } from "@/modules/shopping/actions/stores";
+import { StoresManager } from "@/modules/shopping/ui/StoresManager";
 
 export const dynamic = "force-dynamic";
 

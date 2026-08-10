@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { BasePage } from "./BasePage";
 
 export class ShoppingPage extends BasePage {
@@ -10,11 +10,28 @@ export class ShoppingPage extends BasePage {
     await this.goto("/shopping");
   }
 
+  /**
+   * Przycisk „Nowa lista" WEWNĄTRZ treści strony.
+   *
+   * 048: na `/shopping` są trzy przyciski o tej nazwie — w nawigacji bocznej modułu, w nagłówku
+   * widoku i w stanie pustym. `button(...).first()` trafiał w ten z **paska bocznego**, który nie
+   * otwiera formularza na stronie głównej modułu, więc test czekał na pole „Nazwa listy…", które
+   * nigdy się nie pojawiało. Zawężenie do `<main>` usuwa tę wieloznaczność.
+   */
+  private get newListButton(): Locator {
+    return this.page.getByRole("main").getByRole("button", { name: /Nowa lista/ }).first();
+  }
+
   /** Create a list via the "Nowa lista" inline form. */
   async createList(name: string) {
-    await this.button(/Nowa lista/).first().click();
+    await this.newListButton.click();
     await this.page.getByPlaceholder(/Nazwa listy/).fill(name);
-    await this.button(/Utwórz/).first().click();
+    await this.page.getByRole("main").getByRole("button", { name: /Utwórz/ }).first().click();
+  }
+
+  /** Otwiera sam formularz (bez wypełniania) — dla scenariuszy walidacji. */
+  async openNewListForm() {
+    await this.newListButton.click();
   }
 
   /** Open a list by its name from the sidebar / catalogue. */

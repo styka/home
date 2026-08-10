@@ -21,8 +21,14 @@ export class TasksPage extends BasePage {
     await this.link(TASK_VIEWS[view]).first().click();
   }
 
+  /**
+   * 048: przycisk „Nowy projekt" jest i w nawigacji bocznej modułu, i w treści strony.
+   * `.first()` trafiał w ten z paska bocznego — a odkąd nawigacja ładuje się leniwie (pole
+   * `sideNav` w deklaracji), kliknięcie potrafiło wyprzedzić jej zamontowanie i formularz się
+   * nie otwierał. Zawężenie do `<main>` usuwa i wieloznaczność, i wyścig.
+   */
   async createProject(name: string) {
-    await this.button(/Nowy projekt/).first().click();
+    await this.page.getByRole("main").getByRole("button", { name: /Nowy projekt/ }).first().click();
     await this.page.getByPlaceholder(/Nazwa projektu/).fill(name);
     await this.page.keyboard.press("Enter");
   }

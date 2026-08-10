@@ -12,7 +12,7 @@ import {
   weekProgress,
   weekDoneCount,
 } from "@/lib/habitStats";
-import { createTask } from "@/actions/tasks";
+import { createTask } from "@/modules/tasks/contract";
 
 
 async function assertHabitAccess(id: string, userId: string): Promise<void> {

@@ -16,18 +16,25 @@ w checkliście nie ma numeru (rozdz. 10.4–10.5 — system komponentów i kontr
 zadań 1–3 Fazy 0. Rozdz. 13 nazywał je „bezwarunkowo pierwszymi": *refaktor bez siatki bezpieczeństwa
 to nie refaktor, tylko przepisywanie z nadzieją*.
 
-**Faza 1 jest ZROBIONA W POŁOWIE.** Przebieg 046 postawił warstwę `src/platform/`, granicę
-egzekwowaną lintem i dwiema bramkami oraz deklarację `defineModule` — i sprawdził to na czterech
-modułach. Przebieg 047 powtórzył ten wzorzec na kolejnych siedmiu.
+**ZADANIE 5 JEST DOMKNIĘTE. Wszystkie 21 modułów stoi w `src/modules/`.** Trzy przebiegi: 046
+postawił warstwę `src/platform/`, granicę egzekwowaną lintem i bramkami oraz deklarację
+`defineModule` (4 moduły), 047 powtórzył wzorzec na siedmiu, 048 domknął pozostałe dziesięć — w tym
+najbardziej sprzężone jądro: Zadania, Zakupy, Portfel, Kalendarz i pulpit.
 
-**Stan po 047: 11 z 21 modułów stoi w `src/modules/`.** Lista przejściowa w `src/lib/modules.tsx`
-skurczyła się z 17 do **10**. Poza zakresem zostaje **zadanie 8** (asystent AI składany z deklaracji)
-oraz trzy zdolności platformy (`ai`, `llm`, `jobs`). Wszystko wymienione niżej z nazwy — to jest dług
-nazwany, a nie cisza.
+**Lista przejściowa nie istnieje.** Tablica `LEGACY` została usunięta jako martwy kod, a
+`PERMISSIONS` zawiera już wyłącznie powierzchnie **spoza** rejestru modułów: `SETTINGS`, `ADMIN`,
+`INVITATIONS` i pięć podupranień Kuchni. To jest sprawdzalny dowód, że cel „8 → 1" z rozdz. 9.3
+został osiągnięty: **żadnego sluga modułu nie ma już w równoległej liście.**
 
-**Następny krok: trzecia fala** — dziesięć najbardziej sprzężonych modułów, w tym te zasilające
-pulpit i kalendarz (Zadania, Zakupy, Kuchnia, Zwierzęta, Kalendarz, Strona główna). Dopiero po niej
-ma sens wyprowadzanie pulpitu i kalendarza z deklaracji oraz zaostrzenie bramki rejestru.
+**Powłoka nie importuje wnętrza żadnego modułu.** Nawigacja boczna sześciu modułów przychodzi
+z deklaracji (`sideNav`, ładowane leniwie), a globalny asystent został wyprowadzony z pulpitu do
+`components/assistant/`.
+
+**Co zostaje z Fazy 1:** wyłącznie **zadanie 8** (asystent AI składany z deklaracji) — dokument
+stawia je po wszystkich modułach i wymaga najpierw przeniesienia `lib/ai` do platformy.
+
+**Następny krok: zdolności platformy `ai`, `llm`, `jobs`** (38 plików, ~200 importujących), a po
+nich zadanie 8. Potem Faza 2 — współdzielenie i współbieżność.
 
 ---
 
@@ -48,9 +55,9 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
 | 4 | `src/platform/` — przeniesienie wspólnych zdolności | 🟡 | Przeniesione: `auth/{session,permissions,serverUtils,ownership}`, `db/prisma`, `trash`, `audit`, `notifications`, `viewState`, `shortcuts`, `favorites`, `registry`. `platform/ui` jest **re-eksportem** `components/ui` (świadomie — patrz wpis 046). **Zostaje:** `ai` (25 plików / 97 importujących), `llm` (8/55), `jobs` (5/45) |
-| 5 | `src/modules/<x>/` — moduł po module | 🟡 | **11 z 21** po 047: Trasy TIR, Kontakty, Raporty, QA (046) + Nawyki, Nauka języków, Warsztaty, Magazynowanie, Notatki, Flota, Zdrowie (047). Każdy osobnym commitem. **Zostaje 10** (lista niżej) |
+| 5 | `src/modules/<x>/` — moduł po module | ✅ | **21 z 21.** 046: Trasy TIR, Kontakty, Raporty, QA · 047: Nawyki, Nauka języków, Warsztaty, Magazynowanie, Notatki, Flota, Zdrowie · 048: Wiadomości, Pogoda, Usługi, Kuchnia, Zwierzęta, Portfel, Zakupy, Zadania, Kalendarz, Strona główna. Każdy osobnym commitem. **Lista przejściowa usunięta** |
 | 6 | `contract.ts` + reguła ESLint blokująca import przez granicę | ✅ | Dwie reguły `no-restricted-imports` (moduł↔moduł, platforma↛moduł) + bramka `check:boundaries`, która sama je łamie i wymaga błędu. Sprawdzone: wyłączenie reguły **i** zepsucie konfiguracji czerwienią bramkę |
-| 7 | `defineModule` + wyprowadzenie rejestru, uprawnień, nawigacji | 🟡 | `defineModule` + `module.ts` dla 4 modułów; ich wpisy **usunięte** z `lib/modules.tsx` i `platform/auth/permissions.ts`. Bramka `check:module-registry`. Pulpit i kalendarz **jeszcze nie** wynikają z deklaracji — dojdą razem z modułami, które je zasilają |
+| 7 | `defineModule` + wyprowadzenie rejestru, uprawnień, nawigacji | ✅ | Wszystkie 21 modułów deklaruje się jednym plikiem. `PERMISSIONS` zawiera już tylko powierzchnie spoza rejestru. Nawigacja boczna sześciu modułów pochodzi z pola `sideNav` (leniwie). Bramka `check:module-registry` wykrywa też moduł pisany „po staremu". **Pulpit i kalendarz** nadal nie wynikają z deklaracji — to pola `dashboard`/`calendar` z rozdz. 9.3, następny krok |
 | 8 | Migracja asystenta AI na katalog składany z deklaracji | ⬜ | Dokument stawia je **ostatnim w fazie**, po wszystkich modułach — świadomie nietknięte |
 
 ### Faza 2 — Współdzielenie i współbieżność
@@ -407,3 +414,94 @@ bramki oba wyszłyby dopiero po 40 sekundach `test:unit`, albo wcale.
 - **Tagi do warstwy słowników platformy** — razem z kategoriami i jednostkami.
 - **Zaostrzenie bramki rejestru** o wykrywanie modułów pisanych „po staremu" (AC-6 z 046) — możliwe
   dopiero przy **pustej** liście przejściowej, czyli po trzeciej fali.
+
+### 048 — Faza 1, fala 3: DOMKNIĘCIE zadania 5 · 2026-08-05
+
+Dziesięć ostatnich modułów — i nie były to resztki, tylko najbardziej sprzężone jądro aplikacji.
+Po tym przebiegu **wszystkie 21 modułów stoi za granicą**, a lista przejściowa nie istnieje.
+
+**Przeniesione:** Wiadomości, Pogoda, Usługi, Kuchnia, Zwierzęta, Portfel, Zakupy, Zadania,
+Kalendarz, Strona główna.
+
+**Sprzężenia międzymodułowe okazały się maleńkie — i to jest wynik pomiaru, nie szczęścia**
+
+Rekonesans przed kodem pokazał, że cała „sieć zależności" między modułami to **pięć wywołań, każde
+jednofunkcyjne**:
+
+| Konsument | Dostawca | Co dokładnie |
+|---|---|---|
+| Kuchnia, Magazynowanie | Zakupy | `assertListAccess` |
+| Pogoda, Nawyki | Zadania | `createTask` |
+| Usługi | Portfel | `addEntry` |
+
+Do tego Portfel wystawia `bookAutoExpense` dla Floty i Zakupów. Rozdz. 9 mówił, że kontrakt ma
+**pokazać koszt sprzężenia**; okazało się, że koszt jest niski, tylko dotąd niewidoczny.
+
+**Trzy rzeczy, które nie należały tam, gdzie leżały**
+
+- **Słowniki zakupowe** (kategorie, jednostki, produkty, ikony) — spec zakładał, że są dzielone
+  z Kuchnią. Sprawdzenie konsumentów tego **nie potwierdziło**: poza Zakupami nikt ich nie woła.
+  Pojechały z Zakupami. Jedynym realnie współdzielonym słownikiem są **tagi** (Notatki + Kuchnia)
+  i tylko one zostały poza modułami.
+- **Globalny asystent** siedział w `components/home/`, choć powłoka montuje go na **każdej** stronie.
+  To nie jest pulpit. Wyszedł do `components/assistant/` osobnym commitem — bez tego moduł Strona
+  główna nie dałby się zamknąć bez importu z powłoki.
+- **Feed aktywności** — jedynym konsumentem jest strona ustawień. Poszedł do `components/settings/`.
+
+**Nawigacja boczna z deklaracji**
+
+Powłoka importowała sześć komponentów `*SideNav` wprost z wnętrz modułów. Recenzja 047 nazwała to
+warunkiem, nie życzeniem — i słusznie: po tej fali wszystkie sześć byłoby wnętrzami. `defineModule`
+dostał pole `sideNav`, **ładowane leniwie**. Leniwość nie jest optymalizacją, tylko warunkiem
+poprawności: `module.ts` czyta kod serwerowy, więc statyczny import komponentu klienckiego wciągnąłby
+go do każdego takiego grafu. Drugi szczegół, który wygląda na kosmetykę, a nią nie jest: **cache
+komponentów** — `dynamic()` wywołane w renderze tworzyłoby przy każdym przerysowaniu nowy typ, więc
+React odmontowywałby nawigację i montował ją od nowa.
+
+Efekt sprawdzalny: `grep` po `src/components/shell/` nie zwraca **ani jednego** importu wnętrza modułu.
+
+**Cztery kolizje nazw plik/katalog**
+
+Skrypt przepisujący importy dopuszcza `/` po aliasie — inaczej nie objąłby katalogów. Gdy jednak
+**plik i katalog mają tę samą nazwę** (`actions/services.ts` + `actions/services/`, `lib/services.ts`
++ `lib/services/`, `lib/portfel.ts` + `lib/portfel/`, `lib/calendar.ts` + `lib/calendar/`), przepisuje
+oba tak samo i importy pliku lecą w katalog. Wszystkie cztery złapał `tsc` natychmiast. Rozwiązanie:
+katalogi dostały inne nazwy (`parts/`, `core/`), pliki weszły do modułu jako `lib/<nazwa>.ts` lub
+`lib/index.ts`.
+
+**Osiem zastanych porażek klikaczy — wszystkie okazały się błędami TESTÓW**
+
+Dług nazwany w recenzji 047. Każdą odtworzono i zdiagnozowano; **żadna nie wymagała zmiany zachowania
+aplikacji**:
+
+- cztery scenariusze Zakupów — na `/shopping` są **trzy** przyciski „Nowa lista" (nawigacja boczna,
+  nagłówek widoku, stan pusty); `.first()` trafiał w ten z paska bocznego, który nie otwiera
+  formularza;
+- lista raportów — `getByText` trafiał najpierw w **ukryty** element powłoki;
+- formularz raportu — naruszenie trybu strict: wzorzec pasował też do pola treści;
+- foldery notatek — asercja **nieaktualna**: widok mówi „Foldery notatek", nazwa „grupy" zniknęła
+  z interfejsu dawno temu;
+- dostęp do QA — „moduł dostępny w nawigacji" ma **dwie** poprawne postacie: włączony to link,
+  domyślnie wyłączony (QA) siedzi w „Więcej…" jako **przycisk** do dołożenia go do menu.
+
+**Domknięcie fazy**
+
+Przy pustej liście przejściowej dało się wreszcie zrobić to, co 046 musiał odłożyć:
+`check:module-registry` sprawdza teraz także **odwrotność** — identyfikator z rejestru nie może mieć
+kodu poza swoim katalogiem (`src/actions/<id>.ts`, `src/components/<id>/`). Wcześniej reguła
+zapaliłaby się na całym istniejącym kodzie. Sprawdzone testem negatywnym.
+
+Usunięty martwy kod przejściowy: tablica `LEGACY`, parametr `legacy` w `mergeModules`, ostatnia gałąź
+`legacyPermissionForPath`. Pusta tablica zostawiona „na wszelki wypadek" byłaby zaproszeniem, żeby
+dopisać do niej moduł zamiast utworzyć katalog.
+
+**Poza zakresem — co zostaje**
+
+- **Zdolności platformy `ai` (25 plików / 97 importujących), `llm` (8/55), `jobs` (5/45)** — własny
+  przebieg, następny w kolejce.
+- **Zadanie 8** (asystent AI składany z deklaracji) — wymaga najpierw platformy `ai`. **To jedyne, co
+  zostało z Fazy 1.**
+- **Pola `dashboard`, `calendar`, `resources` w deklaracji** (rozdz. 9.3) — pulpit i kalendarz dopiero
+  w tej fali stały się modułami; wyprowadzanie ich z deklaracji to następny krok.
+- **Tagi do warstwy słowników platformy** — razem z ewentualnymi innymi słownikami wspólnymi.
+- **Faza 2** (współdzielenie, `Workspace`, `ResourceGrant`) w całości.

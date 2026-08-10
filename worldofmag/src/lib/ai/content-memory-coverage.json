@@ -1,9 +1,9 @@
 {
-  "src/actions/news.ts": {
+  "src/modules/news/actions/news.ts": {
     "mode": "remembered",
     "reason": "Plik ma dwa rodzaje wywolan i decyduje o nich osobno. getHotTopics przechodzi przez rememberedContent (kind news.hotTopics) — wejscie na zakladke nie moze kosztowac za kazdym razem, a nowe artykuly w puli tylko zapalaja znacznik „nieaktualne”. resummarizeItem zostaje na zadanie: kliknięcie w inną długość JEST wyraźną prośbą, a wynik zależy od wybranej długości, wiec pamiec zwrocilaby nie to, o co uzytkownik poprosil."
   },
-  "src/actions/weather.ts": {
+  "src/modules/weather/actions/weather.ts": {
     "mode": "remembered",
     "reason": "Lista propozycji „Co robić?\" i szczegółowe plany pomysłów — treść do czytania, wracająca przy każdym wejściu na stronę."
   },
@@ -121,7 +121,7 @@
   },
   "src/lib/jobs/handlers/newsRefresh.ts": {
     "mode": "on-demand",
-    "reason": "Przebieg odswiezania odpalany jawnym klikniecem „Odswiez”. Kazdy przejazd pracuje na INNYM materiale (nowe artykuly w puli), wiec zapamietany wynik z poprzedniego przebiegu bylby po prostu nieaktualny. Trwalosc daje tu baza — pozycje i fakty zostaja zapisane, a nie liczone od nowa przy kazdym wejsciu na widok. Zapamietywana jest natomiast lista goracych tematow (actions/news.ts, kind news.hotTopics)."
+    "reason": "Przebieg odswiezania odpalany jawnym klikniecem „Odswiez”. Kazdy przejazd pracuje na INNYM materiale (nowe artykuly w puli), wiec zapamietany wynik z poprzedniego przebiegu bylby po prostu nieaktualny. Trwalosc daje tu baza — pozycje i fakty zostaja zapisane, a nie liczone od nowa przy kazdym wejsciu na widok. Zapamietywana jest natomiast lista goracych tematow (modules/news/actions/news.ts, kind news.hotTopics)."
   },
   "src/lib/jobs/handlers/petsInsights.ts": {
     "mode": "remembered",

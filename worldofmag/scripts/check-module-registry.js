@@ -105,6 +105,51 @@ for (const name of dirs) {
   }
 }
 
+// ─── 5. Moduł pisany „po staremu" (048, AC-11 / domknięcie AC-6 z 046) ──────────────────
+//
+// Do tej pory bramka pilnowała tylko katalogów, które JUŻ są w `src/modules/`. Nie mogła
+// pilnować czegoś odwrotnego — modułu rozsypanego po `src/actions/` i `src/components/` — bo
+// dokładnie tak wyglądała większość aplikacji i reguła zapaliłaby się na całym istniejącym
+// kodzie. Po fali 3 lista przejściowa jest pusta, więc kontrola staje się wykonalna.
+//
+// Zasada: identyfikator obecny w rejestrze nie może mieć kodu poza swoim katalogiem.
+// Historycznie moduł mieszkał w TRZECH miejscach — `src/actions/<id>.ts`, `src/components/<id>/`
+// **i `src/lib/<id>/`** — więc bramka musi patrzeć na wszystkie trzy. Recenzja 048 znalazła
+// dokładnie tę lukę: `src/lib/tasks/` i `src/lib/shopping/` przetrwały falę, a `lib/tasks/access.ts`
+// importowało **własny kontrakt modułu Zadania**, czyli obchodziło C-02 okrężną drogą przez alias.
+const actionsDir = path.join(root, "src/actions");
+const componentsDir = path.join(root, "src/components");
+const libDir = path.join(root, "src/lib");
+
+// Świadome wyjątki: katalog nazwany jak moduł, ale z konsumentem SPOZA tego modułu — czyli kod
+// realnie współdzielony, którego przeniesienie zamroziłoby przypadkowe sprzężenie (lekcja z 047:
+// „plik należy do modułu, w którym umieszczają go jego KONSUMENCI, nie ten, który sugeruje nazwa").
+// Każdy wyjątek wymaga powodu — bramka nie zgaduje, tylko żąda decyzji.
+const SHARED_LIB_DIRS = {
+  news: "rss.ts i webSearch.ts czyta warstwa zadań w tle (lib/jobs/handlers) oraz trasa agenta — obie poza modułem Wiadomości; wydzielenie ich to zadanie fazy „platforma ai/llm/jobs”.",
+  health: "queryDiag.ts to diagnostyka zapytań do bazy, używana przez actions/systemHealth.ts (panel admina), nie przez moduł Zdrowie.",
+  home: "dashboardSections.ts współdzielą modul Strona główna i przekrojowe actions/dashboardPrefs.ts (preferencje per użytkownik).",
+};
+
+for (const [id, dir] of ids) {
+  const strays = [];
+  const legacyAction = path.join(actionsDir, `${id}.ts`);
+  const legacyComponents = path.join(componentsDir, id);
+  const legacyLib = path.join(libDir, id);
+  if (fs.existsSync(legacyAction)) strays.push(`src/actions/${id}.ts`);
+  if (fs.existsSync(legacyComponents)) strays.push(`src/components/${id}/`);
+  if (fs.existsSync(legacyLib) && !SHARED_LIB_DIRS[id]) strays.push(`src/lib/${id}/`);
+
+  if (strays.length) {
+    errors.push(
+      `Moduł „${id}" ma kod POZA swoim katalogiem: ${strays.join(", ")}.\n` +
+        `    Moduł mieszka w src/modules/${dir}/ — akcje w actions/, widoki w ui/, logika w lib/.\n` +
+        "    Kod w starych miejscach omija granicę: reguła ESLint go nie pilnuje, więc każdy może\n" +
+        "    go zaimportować bezpośrednio i sprzężenie znów stanie się niewidoczne.",
+    );
+  }
+}
+
 if (errors.length) {
   console.error("\n✖ Rejestr modułów — niekompletne moduły w src/modules/:\n");
   console.error(errors.map((e) => `  ✖ ${e}`).join("\n\n"));
@@ -113,5 +158,5 @@ if (errors.length) {
 }
 
 console.log(
-  `✓ Rejestr modułów: ${dirs.length} modułów w src/modules — każdy z contract.ts, kompletną deklaracją i wpięciem w rejestr.`,
+  `✓ Rejestr modułów: ${dirs.length} modułów w src/modules — każdy z contract.ts, kompletną deklaracją, wpięciem w rejestr i bez kodu poza swoim katalogiem.`,
 );

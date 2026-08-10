@@ -2,15 +2,16 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getMyProviderProfile, getServiceCategories, getMyRequests } from "@/actions/services";
-import { getProviderStats } from "@/actions/services/stats";
-import { ProviderPanelPage } from "@/components/services/ProviderPanelPage";
+import { hasPermission } from "@/platform/auth/permissions";
+import servicesModule from "@/modules/services/module";
+import { getMyProviderProfile, getServiceCategories, getMyRequests } from "@/modules/services/actions/services";
+import { getProviderStats } from "@/modules/services/actions/parts/stats";
+import { ProviderPanelPage } from "@/modules/services/ui/ProviderPanelPage";
 
 export default async function ServicesProviderPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.SERVICES)) redirect("/");
+  if (!hasPermission(session, servicesModule.permission)) redirect("/");
 
   const [provider, categories, requests, stats] = await Promise.all([
     getMyProviderProfile(),

@@ -18,7 +18,12 @@ test.describe("Notatki", () => {
   test("[scenario-notes-group-create] strona grup", async ({ page, notes }) => {
     await notes.openGroups();
     await expect(page).toHaveURL(/\/notes\/groups/);
-    await expect(page.getByText(/Grupy notatek|Brak grup|Nowa grupa/).first()).toBeVisible();
+    // 048: zawężone do `<main>`. Bez tego `getByText(...)` trafiał najpierw w element POWŁOKI
+    // (pozycja nawigacji ukryta na tym rozmiarze ekranu), więc asercja widoczności padała mimo
+    // poprawnie wyrenderowanej strony. Treść sprawdzamy w treści, nie w chromie.
+    // 048: asercja była NIEAKTUALNA — widok mówi „Foldery notatek" / „Nowy folder"; nazwa
+    // „grupy" pochodzi z wcześniejszej wersji nazewnictwa i nie ma jej w interfejsie od dawna.
+    await expect(page.getByRole("main").getByText(/Foldery notatek|Nowy folder/).first()).toBeVisible();
   });
 
   test("[scenario-notes-tag-create-assign] strona tagów", async ({ page, notes }) => {

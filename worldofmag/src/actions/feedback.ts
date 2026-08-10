@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import { assertProjectAccess } from "@/actions/taskProjects";
+import { assertProjectAccess } from "@/modules/tasks/contract";
 
 // 031: „wyrzutnik" na zgłoszenia od użytkowników.
 //

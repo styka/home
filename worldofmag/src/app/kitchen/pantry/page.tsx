@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getPantry, getExpiringSoon } from "@/actions/pantry";
-import { PantryList } from "@/components/kitchen/pantry/PantryList";
+import { getPantry, getExpiringSoon } from "@/modules/kitchen/actions/pantry";
+import { PantryList } from "@/modules/kitchen/ui/pantry/PantryList";
 
 export default async function KitchenPantryPage({ searchParams }: { searchParams?: { q?: string } }) {
   const session = await auth();

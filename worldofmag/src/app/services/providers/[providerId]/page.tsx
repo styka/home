@@ -4,13 +4,14 @@ import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getProviderPublic } from "@/actions/services";
-import { ProviderPublicPage } from "@/components/services/ProviderPublicPage";
+import servicesModule from "@/modules/services/module";
+import { getProviderPublic } from "@/modules/services/actions/services";
+import { ProviderPublicPage } from "@/modules/services/ui/ProviderPublicPage";
 
 // M19: metadane SEO per-wykonawca (tytuł/opis) — sensowny tytuł karty i unfurl linku.
 export async function generateMetadata({ params }: { params: { providerId: string } }): Promise<Metadata> {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session, PERMISSIONS.SERVICES)) return { title: "Usługi" };
+  if (!session?.user?.id || !hasPermission(session, servicesModule.permission)) return { title: "Usługi" };
   const provider = await getProviderPublic(params.providerId).catch(() => null);
   if (!provider) return { title: "Wykonawca — Usługi" };
   const desc = (provider.tagline || provider.bio || `Profil wykonawcy ${provider.displayName} w Omnia`).slice(0, 160);
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: { params: { providerId: strin
 export default async function ProviderProfilePage({ params }: { params: { providerId: string } }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
-  if (!hasPermission(session, PERMISSIONS.SERVICES)) redirect("/");
+  if (!hasPermission(session, servicesModule.permission)) redirect("/");
 
   const provider = await getProviderPublic(params.providerId);
   if (!provider) notFound();

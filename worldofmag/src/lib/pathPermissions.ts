@@ -18,9 +18,13 @@ import { legacyPermissionForPath } from "@/platform/auth/permissions";
  * rozróżnienie musi przetrwać aż tutaj, zamiast zostać spłaszczone do falsy.
  */
 export function permissionForPath(path: string): string | null {
-  const declared = declaredPermissionForPath(path);
+  // Pusta ścieżka to ta sama strona co "/" — Next bywa niekonsekwentny w tym, którą poda.
+  // Normalizujemy TUTAJ, bo deklaracja Strony głównej ma `exact: true` i celowo dopasowuje
+  // dokładnie jedną wartość; rozluźnienie jej otworzyłoby dopasowanie na wszystko.
+  const normalized = path === "" ? "/" : path;
+  const declared = declaredPermissionForPath(normalized);
   if (declared !== undefined) return declared;
-  return legacyPermissionForPath(path);
+  return legacyPermissionForPath(normalized);
 }
 
 /** Czy użytkownikowi brakuje uprawnienia do wskazanej ścieżki. */

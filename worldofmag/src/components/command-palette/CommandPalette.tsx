@@ -6,8 +6,8 @@ import { Command } from "cmdk";
 import { ShoppingCart, Plus, Trash2, CheckCheck, X, Package, ArrowRight } from "lucide-react";
 import { useCommandPalette } from "./CommandPaletteProvider";
 import type { ShoppingList } from "@/types";
-import { clearDoneItems, markAllInCart } from "@/actions/items";
-import { createList } from "@/actions/lists";
+import { clearDoneItems, markAllInCart } from "@/modules/shopping/contract";
+import { createList } from "@/modules/shopping/contract";
 
 interface CommandPaletteProps {
   listId: string;

@@ -3,9 +3,9 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getAllUserIconVariantsFlat } from "@/actions/categoryIcons";
-import { getCategoryNames } from "@/actions/categories";
-import { IconLibrary } from "@/components/shopping/IconLibrary";
+import { getAllUserIconVariantsFlat } from "@/modules/shopping/actions/categoryIcons";
+import { getCategoryNames } from "@/modules/shopping/actions/categories";
+import { IconLibrary } from "@/modules/shopping/ui/IconLibrary";
 import { ChevronLeft } from "lucide-react";
 
 export default async function IconsPage() {

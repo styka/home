@@ -1,13 +1,13 @@
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getTasks, getTodayTasks, getOverdueTasks, getAllUserTasks, getTasksForProjects } from "@/actions/tasks";
-import { getTaskProjects } from "@/actions/taskProjects";
-import { getTaskTags } from "@/actions/taskTags";
-import { getProjectGroup } from "@/actions/projectGroups";
+import { getTasks, getTodayTasks, getOverdueTasks, getAllUserTasks, getTasksForProjects } from "@/modules/tasks/actions/tasks";
+import { getTaskProjects } from "@/modules/tasks/actions/taskProjects";
+import { getTaskTags } from "@/modules/tasks/actions/taskTags";
+import { getProjectGroup } from "@/modules/tasks/actions/projectGroups";
 import { userTomorrowStart } from "@/lib/userTime";
 import { prisma } from "@/platform/db/prisma";
-import { TasksPage } from "@/components/tasks/TasksPage";
+import { TasksPage } from "@/modules/tasks/ui/TasksPage";
 import type { Task, ViewMode } from "@/types";
 import { parseStatusConfig, aggregateStatusConfig } from "@/types";
 

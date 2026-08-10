@@ -5,18 +5,18 @@ import { auth } from "@/platform/auth/session";
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { getRecentActivity } from "@/actions/activity";
-import { getTodaysMeals } from "@/actions/mealPlans";
-import { getExpiringSoon } from "@/actions/pantry";
+import { getTodaysMeals } from "@/modules/kitchen/contract";
+import { getExpiringSoon } from "@/modules/kitchen/contract";
 import { getPendingInvitationsCount } from "@/actions/invitations";
-import { getCareAgenda } from "@/actions/petCare";
+import { getCareAgenda } from "@/modules/pets/contract";
 import { getVehicles } from "@/modules/flota/contract";
-import { getWalletOverview } from "@/actions/portfel";
+import { getWalletOverview } from "@/modules/portfel/contract";
 import { getDecks } from "@/modules/languages/contract";
 import { getHealthEvents } from "@/modules/health/contract";
 import { getLowStock, getExpiringStorage } from "@/modules/magazynowanie/contract";
 import { getDashboardPrefs } from "@/actions/dashboardPrefs";
 import { readFavoriteViews } from "@/actions/favoriteViews";
-import { HomePage } from "@/components/home/HomePage";
+import { HomePage } from "@/modules/home/ui/HomePage";
 import type { TaskPriority, CareAgendaItem } from "@/types";
 
 export default async function HomePageRoute() {

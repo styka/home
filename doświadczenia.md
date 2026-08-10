@@ -4,6 +4,77 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-05 — Bramka rozjazdu schematu KASOWAŁA lokalną bazę deweloperską
+**Problem:** `npm run build` wywracał się na ostatnim kroku (`scripts/migrate.js`) błędem Prismy
+**P3005 „The database schema is not empty"**, mimo że chwilę wcześniej `prisma migrate deploy`
+przeszedł czysto. Objaw wskazywał na migracje, a winowajcą była bramka uruchamiana **wcześniej**
+w tym samym buildzie: `check-schema-drift.js` podawał jako `--shadow-database-url` **to samo
+połączenie co robocze**. Prisma czyści bazę cienia przed odtworzeniem migracji, więc każde
+uruchomienie bramki (a więc każdy build i każde `npm run check:schema-drift`) **kasowało schemat
+lokalnej bazy razem z `_prisma_migrations`**. Potem `migrate deploy` widział 147 tabel bez tabeli
+migracji i słusznie odmawiał.
+**Rozwiązanie:** Baza cienia to teraz **osobna** baza `<db>_shadow`, tworzona przez bramkę
+(`CREATE DATABASE`, powtórzone „already exists" ignorowane). Jeśli roli brakuje `CREATEDB`,
+bramka **pomija sprawdzenie** zamiast sięgać po bazę roboczą — lepiej stracić jedno sprawdzenie
+niż czyjeś dane. W sandboksie wystarczyło `ALTER ROLE omnia CREATEDB;`.
+**Lekcja:** „Baza cienia" u Prismy znaczy **kasowana baza**. Nigdy nie podawaj tam `DATABASE_URL`.
+I gdy build pada na kroku N, sprawdź, czy kroku N nie zepsuł krok N-1 — kolejność w potoku bramek
+jest częścią diagnozy, a P3005 potrafi wskazać na zupełnie niewinne miejsce.
+
+## 2026-08-05 — Moduł ma TRZY historyczne miejsca, a bramka pilnowała dwóch
+**Problem:** Po fali 3 bramka `check-module-registry` chwaliła się, że żaden moduł nie ma kodu poza
+swoim katalogiem — sprawdzała jednak tylko `src/actions/<id>.ts` i `src/components/<id>/`. Trzecie
+historyczne miejsce, **`src/lib/<id>/`**, zostało pominięte, więc falę przetrwały `src/lib/tasks/`
+i `src/lib/shopping/`. Najgorszy skutek: `lib/tasks/access.ts` importowało
+`@/modules/tasks/contract`, czyli **własny publiczny kontrakt modułu Zadania** — obejście C-02
+okrężną drogą przez alias, którego linter nie widzi, bo plik formalnie leży poza modułem.
+**Rozwiązanie:** Pliki jednomodułowe przeniesione do `modules/<x>/lib/` (import na ścieżkę
+względną), a bramka patrzy już na wszystkie trzy miejsca. Katalogi realnie współdzielone
+(`lib/news`, `lib/health`, `lib/home`) mają **jawną listę wyjątków z powodem** — bramka nie zgaduje,
+tylko żąda decyzji.
+**Lekcja:** Kiedy bramka ma dowodzić „nie ma kodu poza katalogiem", wypisz najpierw **wszystkie**
+miejsca, w których ten kod historycznie mieszkał, i sprawdź każde. Bramka pilnująca podzbioru
+wygląda dokładnie tak samo jak bramka pilnująca całości — do dnia, w którym coś przez nią przejdzie.
+
+## 2026-08-05 — Skrypt przepisujący importy myli PLIK z KATALOGIEM o tej samej nazwie
+**Problem:** Przy przenoszeniu modułów skrypt zamieniający `@/actions/services` na nową ścieżkę
+przepisał **także** `@/actions/services/disputes` — bo wzorzec świadomie dopuszcza `/` po aliasie
+(inaczej nie objąłby katalogów). Gdy plik i katalog mają tę samą nazwę, oba lecą w to samo miejsce
+i importy jednego z nich wskazują nieistniejącą ścieżkę. Zdarzyło się **cztery razy w jednej fali**:
+`actions/services.ts` + `actions/services/`, `lib/services.ts` + `lib/services/`, `lib/portfel.ts` +
+`lib/portfel/`, `lib/calendar.ts` + `lib/calendar/`.
+**Rozwiązanie:** Każdą złapał `tsc` natychmiast — to jest ten przypadek, w którym kontrola typów
+naprawdę wystarcza za dowód poprawności. Po przenosinach katalogi dostały inne nazwy (`parts/`,
+`core/`), a pliki weszły do modułu jako `lib/<nazwa>.ts` albo `lib/index.ts`, więc kolizja już nie
+wraca.
+**Lekcja:** Przed przeniesieniem sprawdź, czy w źródle nie ma pary „plik X.ts + katalog X/". Jeśli
+jest — przenieś je **osobno i w innej kolejności niż alfabetyczna**, albo od razu nadaj katalogowi
+inną nazwę. I nie ufaj liczbie „przepisano N importów": ona nie wie, że część trafiła nie tam.
+
+## 2026-08-05 — Bramka trzymająca ścieżki jest czuła na refaktor przenoszący
+**Problem:** Trzeci raz w tej przebudowie bramka wywróciła się na przenosinach: `check-ai-coverage`
+i kontrola zaszytych kolorów miały **zaszyty korzeń skanowania** (047), a `check-content-memory`
+trzyma ścieżki plików **w manifeście** — po przeniesieniu Wiadomości i Pogody zażądała klasyfikacji
+dla „nowych" plików, choć klasyfikacja istniała pod starą ścieżką.
+**Rozwiązanie:** Ścieżki w manifeście zaktualizowane; klasyfikacje bez zmian. W przypadku
+`check-ai-coverage` (047) trzeba było dołożyć drugi korzeń skanowania.
+**Lekcja:** Planując refaktor przenoszący, **przejrzyj bramki pod kątem ścieżek** — i w kodzie,
+i w manifestach — zanim ruszysz pliki. Bramka ze sztywną ścieżką albo przestaje sprawdzać (groźne,
+bo cicho), albo żąda ponownej klasyfikacji (uciążliwe, ale widoczne). Pierwszy wariant jest znacznie
+gorszy, więc warto go szukać aktywnie.
+
+## 2026-08-05 — „Dostępne w nawigacji" ma dwie poprawne postacie
+**Problem:** Test `scenario-qa-tester-access` twierdził, że moduł QA jest niedostępny dla
+uprawnionego użytkownika. Sprawdzał `getByRole("link", { name: "QA" })`. QA ma jednak
+`defaultEnabled: false`, więc nie jest w głównej nawigacji — siedzi w zwiniętej sekcji „Więcej…"
+i renderuje się tam jako **przycisk** (służy do dołożenia modułu do menu, a nie do przejścia).
+Test szukał wyłącznie linku, więc nie znajdował niczego i wyglądało to na brak uprawnień.
+**Rozwiązanie:** Asercja akceptuje obie postacie (link **albo** przycisk) i najpierw rozwija sekcję.
+Poprawka po stronie testu — zachowanie aplikacji jest zamierzone.
+**Lekcja:** Gdy test sprawdza „czy X jest dostępne", opisz **wszystkie** postacie, w jakich produkt
+to pokazuje. Test opisujący jedną z nich nie sprawdza dostępności, tylko konkretny wariant
+renderowania — i myli brak wariantu z brakiem funkcji.
+
 ## 2026-08-05 — Przynależność pliku ustala się po konsumentach, nie po nazwie
 **Problem:** Przy przenoszeniu modułów do `src/modules/` kuszące było zabranie wszystkiego, co ma
 pasującą nazwę. `lib/habitStats.ts` brzmi jak Nawyki, `lib/medicationSchedule.ts` jak Zdrowie,

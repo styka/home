@@ -43,6 +43,48 @@ if (/neon\.tech|render\.com/.test(dbUrl) && !process.env.ALLOW_DRIFT_CHECK_ON_RE
   process.exit(0);
 }
 
+/**
+ * Baza cienia musi być ODDZIELNA bazą, nie tą z `DATABASE_URL`.
+ *
+ * Recenzja 048: bramka podawała jako `--shadow-database-url` **to samo** połączenie co robocze.
+ * Prisma czyści bazę cienia przed odtworzeniem migracji, więc każde uruchomienie
+ * `npm run check:schema-drift` (a więc i każdy `npm run build`) **kasowało lokalną bazę
+ * deweloperską** — łącznie z `_prisma_migrations`. Objaw był mylący: `next build` przechodził,
+ * a wywracał się dopiero końcowy `scripts/migrate.js` z błędem P3005 („schema is not empty"),
+ * czyli w miejscu, które z przyczyną nie miało nic wspólnego.
+ *
+ * Nazwę bazy cienia wyprowadzamy z roboczej (`<db>_shadow`) i tworzymy ją, jeśli nie istnieje.
+ * Gdyby się nie dało (brak uprawnień do CREATE DATABASE), bramkę POMIJAMY — lepiej stracić
+ * jedno sprawdzenie niż czyjeś dane.
+ */
+function shadowUrl(url) {
+  const u = new URL(url);
+  const dbName = u.pathname.replace(/^\//, "") || "postgres";
+  u.pathname = `/${dbName}_shadow`;
+  return { url: u.toString(), name: `${dbName}_shadow` };
+}
+
+let shadow;
+try {
+  shadow = shadowUrl(dbUrl);
+  const admin = new URL(dbUrl);
+  admin.pathname = "/postgres";
+  // `CREATE DATABASE` nie ma `IF NOT EXISTS`, więc powtórzone uruchomienie zwróci błąd — i dobrze,
+  // bo to znaczy, że baza już jest. Rozróżniamy to od realnego braku uprawnień po treści błędu.
+  try {
+    execFileSync("npx", ["prisma", "db", "execute", "--url", admin.toString(), "--stdin"], {
+      cwd: root, input: `CREATE DATABASE "${shadow.name}";`, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"],
+    });
+  } catch (e) {
+    if (!/already exists/i.test(String(e.stderr || e.message))) throw e;
+  }
+} catch (e) {
+  console.log(
+    "• Rozjazd schematu: pominięty (nie udało się przygotować bazy cienia — bramka nigdy nie użyje bazy roboczej jako cienia).",
+  );
+  process.exit(0);
+}
+
 let out;
 try {
   out = execFileSync(
@@ -51,7 +93,7 @@ try {
       "prisma", "migrate", "diff",
       "--from-migrations", "prisma/migrations",
       "--to-schema-datamodel", "prisma/schema.prisma",
-      "--shadow-database-url", dbUrl,
+      "--shadow-database-url", shadow.url,
       "--script",
     ],
     { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },

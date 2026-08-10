@@ -15,12 +15,12 @@ const rnd = () => Math.random().toString(36).slice(2, 10);
 
 test("Z-172 izolacja danych (IDOR/BOLA) — guardy odrzucają obcego właściciela", { skip: !HAS_DB && "brak DATABASE_URL" }, async (t) => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { assertListAccess } = await import("@/actions/lists");
-  const { assertProjectAccess } = await import("@/actions/taskProjects");
-  const { assertRecipeAccess } = await import("@/actions/recipes");
-  const { assertPetAccess } = await import("@/actions/pets");
-  const { assertCookbookAccess } = await import("@/actions/cookbooks");
-  const { assertTaskAccess } = await import("@/lib/tasks/access");
+  const { assertListAccess } = await import("@/modules/shopping/contract");
+  const { assertProjectAccess } = await import("@/modules/tasks/contract");
+  const { assertRecipeAccess } = await import("@/modules/kitchen/contract");
+  const { assertPetAccess } = await import("@/modules/pets/contract");
+  const { assertCookbookAccess } = await import("@/modules/kitchen/contract");
+  const { assertTaskAccess } = await import("@/modules/tasks/lib/access");
   const { ownedByWhere } = await import("@/platform/auth/ownership");
 
   const A = await prisma.user.create({ data: { email: `iso-a-${rnd()}@test.local`, name: "A" } });

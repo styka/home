@@ -7,7 +7,7 @@ import {
   getSuppliers,
   getExpiringStorage,
 } from "@/modules/magazynowanie/actions/storage";
-import { getLists } from "@/actions/lists";
+import { getLists } from "@/modules/shopping/contract";
 import { StorageList } from "@/modules/magazynowanie/ui/StorageList";
 
 export default async function MagazynowaniePage({ searchParams }: { searchParams?: { q?: string } }) {

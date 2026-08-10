@@ -1,5 +1,5 @@
 import { CommandPaletteProvider } from "@/components/command-palette/CommandPaletteProvider";
-import { OfflineSyncManager } from "@/components/shopping/OfflineSyncManager";
+import { OfflineSyncManager } from "@/modules/shopping/ui/OfflineSyncManager";
 
 export default function ShoppingLayout({ children }: { children: React.ReactNode }) {
   return (

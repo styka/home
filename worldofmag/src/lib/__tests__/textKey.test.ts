@@ -1,7 +1,7 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import { fingerprintOf } from "@/lib/textKey"
-import { fingerprintOf as fingerprintFromIdeas } from "@/lib/weather/ideas"
+import { fingerprintOf as fingerprintFromIdeas } from "@/modules/weather/lib/ideas"
 
 // 039: odcisk jest kluczem naturalnym w bazie (`WeatherIdea.fingerprint`, odrzucone gorące tematy,
 // fakty o użytkowniku). Zmiana jego wyniku po cichu odkleja zapisane wiersze od nowych tytułów —

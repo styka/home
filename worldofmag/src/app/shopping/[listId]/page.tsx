@@ -1,10 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { prisma } from "@/platform/db/prisma";
-import { getLists, assertListAccess } from "@/actions/lists";
-import { getCategoryEmojiMap, getCategoryNames } from "@/actions/categories";
-import { getStores } from "@/actions/stores";
-import { ShoppingPage } from "@/components/shopping/ShoppingPage";
+import { getLists, assertListAccess } from "@/modules/shopping/actions/lists";
+import { getCategoryEmojiMap, getCategoryNames } from "@/modules/shopping/actions/categories";
+import { getStores } from "@/modules/shopping/actions/stores";
+import { ShoppingPage } from "@/modules/shopping/ui/ShoppingPage";
 import type { ShoppingListWithItems } from "@/types";
 
 export const dynamic = "force-dynamic";
