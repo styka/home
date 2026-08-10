@@ -67,7 +67,7 @@
       wyłącznie konsumentów zakupowych (plan §1.2). Konsumenci: paleta poleceń, Kuchnia,
       Magazynowanie (`assertListAccess` przez kontrakt). **`actions/tags.ts` ZOSTAJE.**
       **(AC-1, AC-2, AC-3, AC-4, AC-7)**
-- [ ] **T-11** — **Zadania** → `src/modules/tasks/`. Cztery pliki akcji. Konsumenci: `tasksExecutor`,
+- [x] **T-11** — **Zadania** → `src/modules/tasks/`. Cztery pliki akcji. Konsumenci: `tasksExecutor`,
       **Pogoda** i **Nawyki** (`createTask` przez kontrakt). **(AC-1, AC-2, AC-3, AC-4)**
 - [ ] **T-12** — **Kalendarz** → `src/modules/calendar/`. `actions/calendar.ts` + `lib/calendar/`.
       Kontrakt musi wystawić także `isoDay`, `MODULE_META` i typy — używa ich `NotificationBell`

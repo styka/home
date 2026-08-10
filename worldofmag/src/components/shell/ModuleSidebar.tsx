@@ -8,7 +8,7 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/cn";
-import { TasksSideNav } from "@/components/tasks/TasksSideNav";
+import { TasksSideNav } from "@/modules/tasks/ui/TasksSideNav";
 import { ShoppingSideNav } from "@/modules/shopping/ui/ShoppingSideNav";
 import { PetsSideNav } from "@/modules/pets/ui/PetsSideNav";
 import { LanguagesSideNav } from "@/modules/languages/ui/LanguagesSideNav";

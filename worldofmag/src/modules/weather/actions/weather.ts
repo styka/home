@@ -31,7 +31,7 @@ import { buildUserContext, userContextStamp } from "@/lib/userContext";
 import { recordTrash } from "@/platform/trash/trash";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { createTask } from "@/actions/tasks";
+import { createTask, tasksModule } from "@/modules/tasks/contract";
 
 export interface LocationDTO {
   id: string;
@@ -985,7 +985,7 @@ export async function deleteIdea(id: string): Promise<void> {
 export async function addIdeaToTasks(id: string): Promise<void> {
   const user = await requireAuth();
   const session = await auth();
-  if (!hasPermission(session, PERMISSIONS.TASKS)) throw new Error("Brak dostępu do modułu Zadania");
+  if (!hasPermission(session, tasksModule.permission)) throw new Error("Brak dostępu do modułu Zadania");
   const row = await prisma.weatherIdea.findUnique({ where: { id } });
   if (!row || row.ownerId !== user.id) throw new Error("Propozycja nie istnieje");
 

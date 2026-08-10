@@ -2,8 +2,8 @@
 
 import { useState, useRef, useTransition } from "react";
 import { Mic, MicOff, Loader2, Plus, CheckSquare, Square, Sparkles, X, Paperclip } from "lucide-react";
-import { createTask } from "@/actions/tasks";
-import { createTaskTag } from "@/actions/taskTags";
+import { createTask } from "../actions/tasks";
+import { createTaskTag } from "../actions/taskTags";
 import type { TaskPriority, TaskTagDef, RecurringRule } from "@/types";
 import { TASK_PRIORITY_LABELS } from "@/types";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";

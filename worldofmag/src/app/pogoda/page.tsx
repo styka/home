@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+import { hasPermission } from "@/platform/auth/permissions";
+import tasksModule from "@/modules/tasks/module";
 import weatherModule from "@/modules/weather/module";
 import { getLocations, getWatchers } from "@/modules/weather/actions/weather";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
@@ -20,7 +21,7 @@ export default async function PogodaRootPage() {
   ]);
   // „Dodaj do zadań" pokazujemy tylko komuś, kto ma dostęp do modułu Zadania — akcja i tak to
   // sprawdza po stronie serwera, ale przycisk, który zawsze kończy się błędem, byłby wadą UX.
-  const canAddToTasks = hasPermission(session, PERMISSIONS.TASKS);
+  const canAddToTasks = hasPermission(session, tasksModule.permission);
 
   return (
     <WeatherPage

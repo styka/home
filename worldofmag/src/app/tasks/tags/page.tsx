@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getTaskTags } from "@/actions/taskTags";
-import { TaskTagsManager } from "@/components/tasks/TaskTagsManager";
+import { getTaskTags } from "@/modules/tasks/actions/taskTags";
+import { TaskTagsManager } from "@/modules/tasks/ui/TaskTagsManager";
 import { ChevronLeft } from "lucide-react";
 
 export default async function TaskTagsPage() {

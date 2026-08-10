@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo, useRef } from "react";
 import { Clock, ChevronRight, Paperclip, Check } from "lucide-react";
-import { toggleTaskStatus, updateTask } from "@/actions/tasks";
+import { toggleTaskStatus, updateTask } from "../actions/tasks";
 import { TaskTagBadge } from "./TaskTagBadge";
 import { RecurringBadge } from "./RecurringBadge";
 import { StatusIcon } from "./StatusIcon";

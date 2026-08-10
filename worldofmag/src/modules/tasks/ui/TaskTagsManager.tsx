@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Plus, Check, X, Pencil, Trash2 } from "lucide-react";
-import { createTaskTag, updateTaskTag, deleteTaskTag } from "@/actions/taskTags";
+import { createTaskTag, updateTaskTag, deleteTaskTag } from "../actions/taskTags";
 import type { TaskTagDef } from "@/types";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 

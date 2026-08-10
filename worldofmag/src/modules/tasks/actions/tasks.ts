@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { userDayBounds } from "@/lib/userTime";
-import { assertProjectAccess } from "@/actions/taskProjects";
+import { assertProjectAccess } from "./taskProjects";
 import { assertTaskAccess } from "@/lib/tasks/access";
 import { trackActivity } from "@/actions/activity";
 import { recordTrash } from "@/platform/trash/trash";

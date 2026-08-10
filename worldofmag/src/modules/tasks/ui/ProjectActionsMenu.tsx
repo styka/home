@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreVertical, Pencil, Trash2, Check, X, Loader2 } from "lucide-react";
-import { updateTaskProject, deleteTaskProject } from "@/actions/taskProjects";
+import { updateTaskProject, deleteTaskProject } from "../actions/taskProjects";
 import type { TaskProject } from "@/types";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 

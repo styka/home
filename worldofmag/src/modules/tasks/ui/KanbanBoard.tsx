@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateTask } from "@/actions/tasks";
+import { updateTask } from "../actions/tasks";
 import { statusMetaFor, type Task, type ProjectStatusConfig } from "@/types";
 
 const PRIORITY_COLOR: Record<string, string> = {

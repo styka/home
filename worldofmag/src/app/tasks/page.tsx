@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { prisma } from "@/platform/db/prisma";
-import { getTaskProjects } from "@/actions/taskProjects";
+import { getTaskProjects } from "@/modules/tasks/actions/taskProjects";
 import { userDayBounds } from "@/lib/userTime";
-import { TasksHomePage } from "@/components/tasks/TasksHomePage";
+import { TasksHomePage } from "@/modules/tasks/ui/TasksHomePage";
 
 export const dynamic = "force-dynamic";
 

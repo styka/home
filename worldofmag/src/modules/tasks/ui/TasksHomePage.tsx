@@ -15,7 +15,7 @@ import {
   Tag,
   Users,
 } from "lucide-react";
-import { createTaskProject } from "@/actions/taskProjects";
+import { createTaskProject } from "../actions/taskProjects";
 import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import type { TaskProject, TaskPriority } from "@/types";

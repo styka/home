@@ -2,7 +2,7 @@
 
 import { useState, useRef, useTransition, useImperativeHandle, forwardRef } from "react";
 import { Plus, Loader2 } from "lucide-react";
-import { createTask } from "@/actions/tasks";
+import { createTask } from "../actions/tasks";
 import { llm } from "@/lib/llm-client";
 import { useToast } from "@/components/ui/Toast";
 import type { Task, TaskPriority } from "@/types";

@@ -1,4 +1,4 @@
-import { assertProjectAccess } from "@/actions/taskProjects";
+import { assertProjectAccess } from "@/modules/tasks/contract";
 
 /**
  * Z-052/Z-190: dostęp do pojedynczego zadania. Zadania w projekcie chroni dostęp

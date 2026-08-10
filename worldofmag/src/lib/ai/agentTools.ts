@@ -4,7 +4,7 @@ import { matchNamedRef, unresolvedRefMessage, type NamedCandidate, type RefResol
 import { getCalendarEvents } from "@/actions/calendar";
 import { getBudgetsWithSpending, getFinanceGoals } from "@/modules/portfel/contract";
 import { getTrash } from "@/actions/trash";
-import { getTaskTags } from "@/actions/taskTags";
+import { getTaskTags } from "@/modules/tasks/contract";
 import { getTags } from "@/actions/tags";
 import { getRecipe } from "@/modules/kitchen/contract";
 import { getCareAgenda, getCareHistory, getPetWelfare } from "@/modules/pets/contract";
@@ -13,7 +13,7 @@ import { getMaintenanceOverview } from "@/modules/warsztaty/contract";
 import { getHotTopics, getSources, getTopics, getTopicView } from "@/modules/news/contract";
 import { getLocations, getWeather } from "@/modules/weather/contract";
 import { getSuppliers, getLowStock, getExpiringStorage, getStorageAnalytics } from "@/modules/magazynowanie/contract";
-import { getProjectGroups } from "@/actions/projectGroups";
+import { getProjectGroups } from "@/modules/tasks/contract";
 import { getNoteGroups } from "@/modules/notes/contract";
 import { getCookbooks } from "@/modules/kitchen/contract";
 import { getWalletOverview } from "@/modules/portfel/contract";

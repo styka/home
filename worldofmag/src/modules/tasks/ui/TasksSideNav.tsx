@@ -7,8 +7,8 @@ import {
   CalendarClock, CalendarDays, AlertCircle, Inbox, Tag, Plus,
   Loader2, Pencil, Check, X, LayoutList, Trash2, CheckSquare, Square, Layers, ChevronRight,
 } from "lucide-react";
-import { getTaskProjects, createTaskProject, updateTaskProject, deleteTaskProject } from "@/actions/taskProjects";
-import { getProjectGroups, createProjectGroup, updateProjectGroup, deleteProjectGroup } from "@/actions/projectGroups";
+import { getTaskProjects, createTaskProject, updateTaskProject, deleteTaskProject } from "../actions/taskProjects";
+import { getProjectGroups, createProjectGroup, updateProjectGroup, deleteProjectGroup } from "../actions/projectGroups";
 import type { TaskProject, ProjectGroup } from "@/types";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 

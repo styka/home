@@ -142,8 +142,8 @@
     "tasks": {
       "status": "done",
       "entries": [
-        "src/components/tasks/TasksHomePage.tsx",
-        "src/components/tasks/TasksPage.tsx"
+        "src/modules/tasks/ui/TasksHomePage.tsx",
+        "src/modules/tasks/ui/TasksPage.tsx"
       ]
     },
     "trash": {
@@ -221,23 +221,23 @@
       "kind": "paleta-danych",
       "reason": "Kolor awatara wyliczany z identyfikatora użytkownika."
     },
-    "src/components/tasks/QuickAddTask.tsx": {
+    "src/modules/tasks/ui/QuickAddTask.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory priorytetów zadania — semantyczne, stałe w każdej skórce."
     },
-    "src/components/tasks/TaskDetail.tsx": {
+    "src/modules/tasks/ui/TaskDetail.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory priorytetów zadania."
     },
-    "src/components/tasks/TaskTagBadge.tsx": {
+    "src/modules/tasks/ui/TaskTagBadge.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolor zapasowy dla tagu bez ustawionego koloru — musi być konkretną wartością, bo trafia do obliczeń przezroczystości."
     },
-    "src/components/tasks/TaskTagsManager.tsx": {
+    "src/modules/tasks/ui/TaskTagsManager.tsx": {
       "kind": "paleta-danych",
       "reason": "Paleta do wyboru koloru tagu zadania — wartość ląduje w kolumnie `TaskTagDef.color`."
     },
-    "src/components/tasks/TasksGuide.tsx": {
+    "src/modules/tasks/ui/TasksGuide.tsx": {
       "kind": "ilustracja",
       "reason": "Poradnik pokazuje ZRZUTY i przykłady interfejsu; kolory są treścią ilustracji, nie stylem strony."
     },

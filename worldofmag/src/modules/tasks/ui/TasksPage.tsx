@@ -16,7 +16,7 @@ import { BulkActionBar, type BulkPatch } from "./BulkActionBar";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useViewState } from "@/hooks/useViewState";
 import { idList, oneOf, type RawParams } from "@/platform/viewState/viewState";
-import { deleteTask, toggleTaskStatus, bulkUpdateTasks, bulkDeleteTasks } from "@/actions/tasks";
+import { deleteTask, toggleTaskStatus, bulkUpdateTasks, bulkDeleteTasks } from "../actions/tasks";
 import { ModuleView } from "@/components/ui/view";
 import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode, ProjectStatusConfig } from "@/types";
 import { resolveStatuses, statusMetaFor, DEFAULT_STATUS_CONFIG } from "@/types";

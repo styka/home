@@ -6,9 +6,9 @@ import {
   RefreshCw, Tag, Calendar, Timer, ChevronDown, ChevronLeft, Plus, Send, Sparkles,
   MessageSquare, Eye, Undo2, FolderInput,
 } from "lucide-react";
-import { updateTask, deleteTask, updateTaskTags, addTaskComment, createTask, completeRecurringTask, shareTaskByEmail, removeTaskShare } from "@/actions/tasks";
+import { updateTask, deleteTask, updateTaskTags, addTaskComment, createTask, completeRecurringTask, shareTaskByEmail, removeTaskShare } from "../actions/tasks";
 import { ShareControl } from "@/components/sharing/ShareControl";
-import { createTaskTag } from "@/actions/taskTags";
+import { createTaskTag } from "../actions/taskTags";
 import { TaskTagBadge } from "./TaskTagBadge";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import type { Task, TaskPriority, TaskTagDef, RecurringRule, ProjectStatusConfig, TaskProject } from "@/types";

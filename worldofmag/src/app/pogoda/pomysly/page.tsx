@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+import { hasPermission } from "@/platform/auth/permissions";
+import tasksModule from "@/modules/tasks/module";
 import weatherModule from "@/modules/weather/module";
 import { getIdeaLibrary } from "@/modules/weather/actions/weather";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
@@ -27,7 +28,7 @@ export default async function PogodaPomyslyPage({
     <IdeaLibraryPage
       ideas={ideas}
       usdPlnRate={usdPlnRate}
-      canAddToTasks={hasPermission(session, PERMISSIONS.TASKS)}
+      canAddToTasks={hasPermission(session, tasksModule.permission)}
       initialIdeaId={searchParams?.idea}
       viewParams={searchParams ?? {}}
     />

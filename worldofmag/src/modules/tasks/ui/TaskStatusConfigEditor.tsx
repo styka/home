@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronUp, ChevronDown, Loader2, Plus, Pencil, Trash2, Check } from "lucide-react";
-import { updateTaskProjectStatusConfig } from "@/actions/taskProjects";
+import { updateTaskProjectStatusConfig } from "../actions/taskProjects";
 import { Modal } from "@/components/ui/Modal";
 import type { ProjectStatusConfig, CustomTaskStatus } from "@/types";
 import { resolveStatuses } from "@/types";
