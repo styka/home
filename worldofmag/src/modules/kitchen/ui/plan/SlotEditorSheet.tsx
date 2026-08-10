@@ -3,17 +3,17 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Search, Trash2, CheckCircle2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
-import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
+import { ServingSelector } from "../shared/ServingSelector";
 import { useToast } from "@/components/ui/Toast";
 import {
   setMealPlanEntry,
   updateMealPlanEntry,
   deleteMealPlanEntry,
   markMealCooked,
-} from "@/actions/mealPlans";
+} from "../../actions/mealPlans";
 import type { MealSlot } from "@/types/kitchen";
 import { MEAL_SLOT_LABELS } from "@/types/kitchen";
-import type { MealPlanEntryWithRecipe } from "@/actions/mealPlans";
+import type { MealPlanEntryWithRecipe } from "../../actions/mealPlans";
 import { formatDayLong } from "@/lib/kitchenDate";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 

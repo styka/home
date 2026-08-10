@@ -17,7 +17,7 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
-import { markMealCooked } from "@/actions/mealPlans";
+import { markMealCooked } from "../actions/mealPlans";
 import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { llm } from "@/lib/llm-client";

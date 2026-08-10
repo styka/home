@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { ShoppingCart } from "lucide-react";
-import { shopForRecipe } from "@/actions/recipes";
+import { shopForRecipe } from "../../actions/recipes";
 import { Modal } from "@/components/ui/Modal";
-import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
+import { ServingSelector } from "../shared/ServingSelector";
 import { useToast } from "@/components/ui/Toast";
 import { polishPlural } from "@/lib/polishPlural";
 import type { RecipeFull } from "@/types/kitchen";

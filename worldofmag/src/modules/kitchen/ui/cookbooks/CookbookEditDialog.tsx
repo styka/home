@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { createCookbook, updateCookbook, deleteCookbook } from "@/actions/cookbooks";
+import { createCookbook, updateCookbook, deleteCookbook } from "../../actions/cookbooks";
 import type { Cookbook } from "@/types/kitchen";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 

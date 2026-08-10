@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
-import { addPantryItem, updatePantryItem, deletePantryItem } from "@/actions/pantry";
+import { addPantryItem, updatePantryItem, deletePantryItem } from "../../actions/pantry";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import type { PantryItemWithProduct } from "@/actions/pantry";
+import type { PantryItemWithProduct } from "../../actions/pantry";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const LOCATION_OPTIONS = ["spiżarnia", "lodówka", "zamrażarka", "przyprawy", "inne"];

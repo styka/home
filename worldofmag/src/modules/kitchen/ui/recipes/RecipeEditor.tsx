@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { Plus, Trash2, Save, ArrowLeft, Sparkles, Wand2, ClipboardCheck } from "lucide-react";
 import { parseQuantity } from "@/lib/parseQuantity";
 import { llm } from "@/lib/llm-client";
-import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
-import { DurationInput } from "@/components/kitchen/shared/DurationInput";
+import { ServingSelector } from "../shared/ServingSelector";
+import { DurationInput } from "../shared/DurationInput";
 import { RecipeImagesEditor } from "./RecipeImagesEditor";
 import { useToast } from "@/components/ui/Toast";
 import { ImageUrlInput } from "@/components/ui/ImageUrlInput";
-import { createRecipe, updateRecipe } from "@/actions/recipes";
+import { createRecipe, updateRecipe } from "../../actions/recipes";
 import type {
   RecipeFull,
   CreateRecipeInput,

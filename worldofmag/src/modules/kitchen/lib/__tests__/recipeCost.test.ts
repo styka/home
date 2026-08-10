@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { computeRecipeCost } from "@/lib/kitchen/recipeCost";
+import { computeRecipeCost } from "../recipeCost";
 
 // Z-252: koszt przepisu / porcji.
 

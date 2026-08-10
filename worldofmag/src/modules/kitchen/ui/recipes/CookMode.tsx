@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { X, ChevronLeft, ChevronRight, Play, Pause, Square, List, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
-import { markRecipeCooked } from "@/actions/recipes";
-import { ServingSelector } from "@/components/kitchen/shared/ServingSelector";
+import { markRecipeCooked } from "../../actions/recipes";
+import { ServingSelector } from "../shared/ServingSelector";
 import type { RecipeFull } from "@/types/kitchen";
 
 interface CookModeProps {

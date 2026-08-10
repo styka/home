@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
 import { categorize } from "@/lib/categorize";
-import { computeRecipeCost } from "@/lib/kitchen/recipeCost";
+import { computeRecipeCost } from "../lib/recipeCost";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/actions/lists";
 import type { MealSlot, MealStatus } from "@/types/kitchen";

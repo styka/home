@@ -2,11 +2,11 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
-import { getMealPlan, getMealPlanCost } from "@/actions/mealPlans";
-import { getRecipes } from "@/actions/recipes";
+import { getMealPlan, getMealPlanCost } from "@/modules/kitchen/actions/mealPlans";
+import { getRecipes } from "@/modules/kitchen/actions/recipes";
 import { getLists } from "@/actions/lists";
 import { getWeekStart, getWeekEnd, dateKey } from "@/lib/kitchenDate";
-import { MealPlanWeek } from "@/components/kitchen/plan/MealPlanWeek";
+import { MealPlanWeek } from "@/modules/kitchen/ui/plan/MealPlanWeek";
 
 interface PageProps {
   searchParams: { week?: string };

@@ -2,10 +2,10 @@ import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
-import { getTodaysMeals } from "@/actions/mealPlans";
-import { getExpiringSoon } from "@/actions/pantry";
-import { getCookbooks } from "@/actions/cookbooks";
-import { KitchenHomePage } from "@/components/kitchen/KitchenHomePage";
+import { getTodaysMeals } from "@/modules/kitchen/actions/mealPlans";
+import { getExpiringSoon } from "@/modules/kitchen/actions/pantry";
+import { getCookbooks } from "@/modules/kitchen/actions/cookbooks";
+import { KitchenHomePage } from "@/modules/kitchen/ui/KitchenHomePage";
 
 export const dynamic = "force-dynamic";
 

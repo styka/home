@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ImagePlus, Trash2, ScanText, Loader2, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { runJob } from "@/lib/jobs/client";
-import { addRecipeImage, updateRecipeImage, deleteRecipeImage } from "@/actions/recipes";
+import { addRecipeImage, updateRecipeImage, deleteRecipeImage } from "../../actions/recipes";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import type { RecipeImage } from "@/types/kitchen";
 import type { AiCostUsage } from "@/components/ui/AiCostBadge";

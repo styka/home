@@ -17,9 +17,9 @@ test("Z-172 izolacja danych (IDOR/BOLA) — guardy odrzucają obcego właścicie
   const { prisma } = await import("@/platform/db/prisma");
   const { assertListAccess } = await import("@/actions/lists");
   const { assertProjectAccess } = await import("@/actions/taskProjects");
-  const { assertRecipeAccess } = await import("@/actions/recipes");
+  const { assertRecipeAccess } = await import("@/modules/kitchen/contract");
   const { assertPetAccess } = await import("@/actions/pets");
-  const { assertCookbookAccess } = await import("@/actions/cookbooks");
+  const { assertCookbookAccess } = await import("@/modules/kitchen/contract");
   const { assertTaskAccess } = await import("@/lib/tasks/access");
   const { ownedByWhere } = await import("@/platform/auth/ownership");
 

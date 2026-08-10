@@ -15,12 +15,12 @@ import {
 } from "@dnd-kit/core";
 import { addDays, subDays } from "date-fns";
 import { useToast } from "@/components/ui/Toast";
-import { moveMealPlanEntry, setMealPlanEntry } from "@/actions/mealPlans";
+import { moveMealPlanEntry, setMealPlanEntry } from "../../actions/mealPlans";
 import { SlotEditorSheet, type RecipePickerItem } from "./SlotEditorSheet";
 import { ShoppingFromPlanDialog } from "./ShoppingFromPlanDialog";
 import { RecipeDrawer } from "./RecipeDrawer";
 import { PlanWeekDialog } from "./PlanWeekDialog";
-import type { MealPlanEntryWithRecipe, MealPlanCost } from "@/actions/mealPlans";
+import type { MealPlanEntryWithRecipe, MealPlanCost } from "../../actions/mealPlans";
 import type { MealSlot } from "@/types/kitchen";
 import { MEAL_SLOTS, MEAL_SLOT_LABELS } from "@/types/kitchen";
 import {

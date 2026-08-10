@@ -54,7 +54,7 @@
 - [x] **T-6** — **Usługi** → `src/modules/services/`. Akcje `services.ts` + katalog `actions/services/`;
       własne `lib/{services,serviceSlots,serviceGeo}.ts`. Sama woła Portfel (`addEntry`).
       **(AC-1, AC-2, AC-3, AC-4)**
-- [ ] **T-7** — **Kuchnia** → `src/modules/kitchen/`. Cztery pliki akcji, 28 komponentów, zero
+- [x] **T-7** — **Kuchnia** → `src/modules/kitchen/`. Cztery pliki akcji, 28 komponentów, zero
       konsumentów zewnętrznych. Woła Zakupy (`assertListAccess`) i tagi (zostają w `src/actions`).
       **(AC-1, AC-3, AC-4)**
 - [ ] **T-8** — **Zwierzęta** → `src/modules/pets/`. Cztery pliki akcji. Konsumenci: `petExecutor`,

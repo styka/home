@@ -3,9 +3,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
-import { bulkSetPantryQuantities } from "@/actions/pantry";
+import { bulkSetPantryQuantities } from "../../actions/pantry";
 import { useToast } from "@/components/ui/Toast";
-import type { PantryItemWithProduct } from "@/actions/pantry";
+import type { PantryItemWithProduct } from "../../actions/pantry";
 
 interface StockTakeModeProps {
   items: PantryItemWithProduct[];

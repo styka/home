@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Plus, BookOpen } from "lucide-react";
 import { CookbookEditDialog } from "./CookbookEditDialog";
 import { polishPlural } from "@/lib/polishPlural";
-import type { CookbookWithCount } from "@/actions/cookbooks";
+import type { CookbookWithCount } from "../../actions/cookbooks";
 
 interface CookbookListProps {
   cookbooks: CookbookWithCount[];

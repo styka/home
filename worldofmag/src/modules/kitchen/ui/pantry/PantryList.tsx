@@ -6,7 +6,7 @@ import { text, type RawParams } from "@/platform/viewState/viewState";
 import Link from "next/link";
 import { Plus, Search, Package, AlertTriangle, ClipboardList } from "lucide-react";
 import { PantryEditSheet } from "./PantryEditSheet";
-import type { PantryItemWithProduct } from "@/actions/pantry";
+import type { PantryItemWithProduct } from "../../actions/pantry";
 
 interface PantryListProps {
   /** 043: parametry adresu z serwera — szukajka listy. */

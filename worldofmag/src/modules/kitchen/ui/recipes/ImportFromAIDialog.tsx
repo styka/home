@@ -6,7 +6,7 @@ import { Sparkles } from "lucide-react";
 import { runJob } from "@/lib/jobs/client";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { stashImportDraft } from "@/lib/kitchen/recipeImportDraft";
+import { stashImportDraft } from "../../lib/recipeImportDraft";
 import type { CreateRecipeInput, MealType, Difficulty } from "@/types/kitchen";
 import type { AiCostUsage } from "@/components/ui/AiCostBadge";
 

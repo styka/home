@@ -6,7 +6,7 @@ import { Globe } from "lucide-react";
 import { llm } from "@/lib/llm-client";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { stashImportDraft } from "@/lib/kitchen/recipeImportDraft";
+import { stashImportDraft } from "../../lib/recipeImportDraft";
 import type { CreateRecipeInput, MealType, Difficulty } from "@/types/kitchen";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 

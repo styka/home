@@ -7,7 +7,7 @@ import {
   generateShoppingListFromPlan,
   previewShoppingListFromPlan,
   type ShoppingListPreviewItem,
-} from "@/actions/mealPlans";
+} from "../../actions/mealPlans";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { polishPlural } from "@/lib/polishPlural";

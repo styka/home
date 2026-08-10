@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { RecipeEditor } from "./RecipeEditor";
-import { popImportDraft, type RecipeImportDraft } from "@/lib/kitchen/recipeImportDraft";
+import { popImportDraft, type RecipeImportDraft } from "../../lib/recipeImportDraft";
 
 const SOURCE_LABELS: Record<string, string> = {
   image: "ze zdjęcia (OCR)",

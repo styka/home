@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil, Plus } from "lucide-react";
-import { RecipeCard } from "@/components/kitchen/recipes/RecipeCard";
+import { RecipeCard } from "../recipes/RecipeCard";
 import { CookbookEditDialog } from "./CookbookEditDialog";
 import { polishPlural } from "@/lib/polishPlural";
 import type { Cookbook, RecipeListItem } from "@/types/kitchen";

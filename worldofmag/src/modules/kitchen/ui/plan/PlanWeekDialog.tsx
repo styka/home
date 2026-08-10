@@ -7,7 +7,7 @@ import { Sparkles, Loader2, Wand2, ChefHat } from "lucide-react";
 import { runJob } from "@/lib/jobs/client";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { bulkSetMealPlan } from "@/actions/mealPlans";
+import { bulkSetMealPlan } from "../../actions/mealPlans";
 import type { MealSlot } from "@/types/kitchen";
 import { MEAL_SLOTS, MEAL_SLOT_LABELS } from "@/types/kitchen";
 import { dateKey, formatDayShort, getWeekDays } from "@/lib/kitchenDate";
