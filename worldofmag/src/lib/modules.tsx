@@ -13,6 +13,7 @@ import truckModule from "@/modules/truck/module";
 import contactsModule from "@/modules/contacts/module";
 import reportsModule from "@/modules/reports/module";
 import qaModule from "@/modules/qa/module";
+import homeModule from "@/modules/home/module";
 import calendarModule from "@/modules/calendar/module";
 import tasksModule from "@/modules/tasks/module";
 import shoppingModule from "@/modules/shopping/module";
@@ -34,7 +35,7 @@ import habitsModule from "@/modules/habits/module";
 // Zaproszenia, Admin) NIE są tutaj — pozostają na stałe w komponentach paska.
 export type ModuleDef = ResolvedModule;
 
-const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, qaModule, habitsModule, languagesModule, warsztatyModule, magazynowanieModule, notesModule, flotaModule, healthModule, newsModule, weatherModule, servicesModule, kitchenModule, petsModule, portfelModule, shoppingModule, tasksModule, calendarModule];
+const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, qaModule, habitsModule, languagesModule, warsztatyModule, magazynowanieModule, notesModule, flotaModule, healthModule, newsModule, weatherModule, servicesModule, kitchenModule, petsModule, portfelModule, shoppingModule, tasksModule, calendarModule, homeModule];
 
 /**
  * Moduły JESZCZE NIEPRZENIESIONE do `src/modules/`. Lista przejściowa, kurcząca się z każdą
@@ -42,7 +43,6 @@ const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, 
  * `pending` z 045). Docelowo pusta: wtedy `MODULES` wynika wyłącznie z deklaracji.
  */
 const LEGACY: ResolvedModule[] = [
-  defineModule({ id: "home",      label: "Strona główna", href: "/",          exact: true, permission: PERMISSIONS.HOME,      color: "var(--text-secondary)", Icon: Home,          defaultEnabled: true }),
 ];
 
 /**

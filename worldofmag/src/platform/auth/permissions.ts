@@ -1,7 +1,6 @@
 import type { Session } from "next-auth"
 
 export const PERMISSIONS = {
-  HOME:        "module.home",
   SETTINGS:    "module.settings",
   ADMIN:       "module.admin",
   INVITATIONS: "module.invitations",
@@ -30,7 +29,6 @@ export function hasPermission(session: Session | null | undefined, slug: string)
  * `src/lib/pathPermissions.ts`. **Używaj tamtej funkcji, nie tej** — ta widzi tylko część aplikacji.
  */
 export function legacyPermissionForPath(path: string): string | null {
-  if (path === "/" || path === "") return PERMISSIONS.HOME
   if (path.startsWith("/settings")) return PERMISSIONS.SETTINGS
   if (path.startsWith("/admin")) return PERMISSIONS.ADMIN
   if (path.startsWith("/invitations")) return PERMISSIONS.INVITATIONS

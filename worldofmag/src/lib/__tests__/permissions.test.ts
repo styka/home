@@ -19,8 +19,8 @@ test("hasPermission: ma / nie ma / brak sesji", () => {
 });
 
 test("permissionForPath: mapuje prefiks ścieżki na uprawnienie", () => {
-  assert.equal(permissionForPath("/"), PERMISSIONS.HOME);
-  assert.equal(permissionForPath(""), PERMISSIONS.HOME);
+  assert.equal(permissionForPath("/"), "module.home");
+  assert.equal(permissionForPath(""), "module.home", "pusta ścieżka to ta sama strona co /");
   assert.equal(permissionForPath("/shopping/abc"), "module.shopping");
   assert.equal(permissionForPath("/admin/access"), PERMISSIONS.ADMIN);
   // 048: Wiadomości i Pogoda są już modułami — ich slugi mieszkają w deklaracjach.

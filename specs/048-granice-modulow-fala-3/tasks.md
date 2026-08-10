@@ -75,9 +75,9 @@
       legalny. **Agregat ma zwracać identyczny wynik** — to najostrzejszy test tej fali.
       **Gotowe, gdy:** rytuał + porównanie wyniku agregatu przed/po na tej samej bazie.
       **(AC-1, AC-2, AC-3)**
-- [ ] **T-13** — **Strona główna** → `src/modules/home/`. Same widoki pulpitu (po T-2 i T-3 nie ma
+- [x] **T-13** — **Strona główna** → `src/modules/home/`. Same widoki pulpitu (po T-2 i T-3 nie ma
       w nich już asystenta ani feedu aktywności). **(AC-1, AC-3)**
-- [ ] **T-14** — Jeśli którykolwiek moduł nie dał się przenieść bez zmiany zachowania — zostawić go
+- [x] **T-14** — Jeśli którykolwiek moduł nie dał się przenieść bez zmiany zachowania — zostawić go
       na liście i **zapisać powód**. **Gotowe, gdy:** jawna lista albo „wszystkie dziesięć przeszło".
       **(AC-1)**
 

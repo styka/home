@@ -16,7 +16,7 @@ import { getHealthEvents } from "@/modules/health/contract";
 import { getLowStock, getExpiringStorage } from "@/modules/magazynowanie/contract";
 import { getDashboardPrefs } from "@/actions/dashboardPrefs";
 import { readFavoriteViews } from "@/actions/favoriteViews";
-import { HomePage } from "@/components/home/HomePage";
+import { HomePage } from "@/modules/home/ui/HomePage";
 import type { TaskPriority, CareAgendaItem } from "@/types";
 
 export default async function HomePageRoute() {
