@@ -8,5 +8,6 @@ export default defineModule({
   permission: "module.tasks",
   color: "var(--accent-green)",
   Icon: CheckSquare,
+  sideNav: () => import("./ui/TasksSideNav").then((m) => ({ default: m.TasksSideNav })),
   defaultEnabled: true,
 });

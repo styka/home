@@ -83,12 +83,12 @@
 
 ## Faza C — Powłoka bez wiedzy o wnętrzach (zmiana zachowania — osobny commit)
 
-- [ ] **T-15** — **Pole `sideNav` w deklaracji** (`ModuleDeclaration`), ładowane **leniwie**
+- [x] **T-15** — **Pole `sideNav` w deklaracji** (`ModuleDeclaration`), ładowane **leniwie**
       (`() => Promise<{default: ComponentType}>` + `next/dynamic`). Leniwość nie jest kosmetyką:
       `module.ts` jest importowany przez kod serwerowy, więc statyczny import komponentu klienckiego
       wciągnąłby go do każdego takiego grafu.
       **Gotowe, gdy:** typ i mechanizm gotowe, `tsc` czysty.
-- [ ] **T-16** — **`ModuleSidebar` czyta nawigację z rejestru** zamiast `switch` po `id` z sześcioma
+- [x] **T-16** — **`ModuleSidebar` czyta nawigację z rejestru** zamiast `switch` po `id` z sześcioma
       importami wnętrz. Zachowujemy SSR — nawigacja ma być widoczna od pierwszej klatki.
       **Gotowe, gdy:** `grep` po `src/components/shell/` nie zwraca **żadnego** `@/modules/*/ui`,
       a klikacz po zmianie jest zielony. **(AC-5, AC-6)**

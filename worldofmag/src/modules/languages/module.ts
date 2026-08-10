@@ -8,5 +8,6 @@ export default defineModule({
   permission: "module.languages",
   color: "var(--accent-purple)",
   Icon: GraduationCap,
+  sideNav: () => import("./ui/LanguagesSideNav").then((m) => ({ default: m.LanguagesSideNav })),
   defaultEnabled: true,
 });

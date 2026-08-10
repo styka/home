@@ -8,5 +8,6 @@ export default defineModule({
   permission: "module.shopping",
   color: "var(--accent-blue)",
   Icon: ShoppingCart,
+  sideNav: () => import("./ui/ShoppingSideNav").then((m) => ({ default: m.ShoppingSideNav })),
   defaultEnabled: true,
 });

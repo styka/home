@@ -2,18 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ComponentType } from "react";
 import { Calendar, Settings, Mail, Shield, FolderOpen, Tag, Lock, BookOpen, Package, BookMarked, CalendarDays, MoreHorizontal, Plus } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { NotificationBell } from "./NotificationBell";
+import dynamic from "next/dynamic";
 import { cn } from "@/lib/cn";
-import { TasksSideNav } from "@/modules/tasks/ui/TasksSideNav";
-import { ShoppingSideNav } from "@/modules/shopping/ui/ShoppingSideNav";
-import { PetsSideNav } from "@/modules/pets/ui/PetsSideNav";
-import { LanguagesSideNav } from "@/modules/languages/ui/LanguagesSideNav";
-import { FlotaSideNav } from "@/modules/flota/ui/FlotaSideNav";
-import { PortfelSideNav } from "@/modules/portfel/ui/PortfelSideNav";
+import { MODULES } from "@/lib/modules";
 import { isPathLocked } from "@/lib/pathPermissions";
 import { resolveMenu, defaultMenuPrefs, type MenuPrefs, type ModuleDef } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
@@ -29,13 +25,39 @@ interface ModuleSidebarProps {
   favoriteViews?: FavoriteViewDTO[];
 }
 
+/**
+ * 048: nawigacja boczna POCHODZI Z DEKLARACJI MODUŁU, a nie z importu jego wnętrza.
+ *
+ * Wcześniej powłoka importowała sześć komponentów `*SideNav` wprost z `ui/` modułów — czyli
+ * sięgała do wnętrz, których granica ma bronić. Teraz bierze je z `sideNav` w `defineModule`,
+ * ładowane leniwie: `module.ts` czyta kod serwerowy, więc statyczny import komponentu klienckiego
+ * wciągnąłby go do każdego takiego grafu.
+ *
+ * Cache jest konieczny, nie kosmetyczny: `dynamic()` wywołane w renderze tworzyłoby przy każdym
+ * przerysowaniu NOWY typ komponentu, więc React odmontowywałby i montował nawigację od nowa —
+ * gubiąc jej stan i migając.
+ */
+const sideNavCache = new Map<string, ComponentType>();
+
+function moduleSideNav(id: string): ComponentType | null {
+  const cached = sideNavCache.get(id);
+  if (cached) return cached;
+  const loader = MODULES.find((m) => m.id === id)?.sideNav;
+  if (!loader) return null;
+  const Comp = dynamic(loader);
+  sideNavCache.set(id, Comp);
+  return Comp;
+}
+
 /** Sub-nawigacja danego modułu (renderowana, gdy moduł jest aktywny). */
 function ModuleSubNav({ id, pathname }: { id: string; pathname: string }) {
+  const FromDeclaration = moduleSideNav(id);
+
   switch (id) {
     case "shopping":
       return (
         <div className="mb-1">
-          <ShoppingSideNav />
+          {FromDeclaration ? <FromDeclaration /> : null}
           {pathname.startsWith("/shopping/icons") && (
             <NavSubItem href="/shopping/icons/categories" label="Przypisania" pathname={pathname} />
           )}
@@ -50,9 +72,9 @@ function ModuleSubNav({ id, pathname }: { id: string; pathname: string }) {
         </div>
       );
     case "tasks":
-      return <div className="mb-1"><TasksSideNav /></div>;
+      return <div className="mb-1">{FromDeclaration ? <FromDeclaration /> : null}</div>;
     case "pets":
-      return <div className="mb-1"><PetsSideNav /></div>;
+      return <div className="mb-1">{FromDeclaration ? <FromDeclaration /> : null}</div>;
     case "kitchen":
       return (
         <div className="mb-1">
@@ -63,7 +85,7 @@ function ModuleSubNav({ id, pathname }: { id: string; pathname: string }) {
         </div>
       );
     case "languages":
-      return <div className="mb-1"><LanguagesSideNav /></div>;
+      return <div className="mb-1">{FromDeclaration ? <FromDeclaration /> : null}</div>;
     case "qa":
       return (
         <div className="mb-1">
@@ -74,9 +96,9 @@ function ModuleSubNav({ id, pathname }: { id: string; pathname: string }) {
         </div>
       );
     case "flota":
-      return <div className="mb-1"><FlotaSideNav /></div>;
+      return <div className="mb-1">{FromDeclaration ? <FromDeclaration /> : null}</div>;
     case "portfel":
-      return <div className="mb-1"><PortfelSideNav /></div>;
+      return <div className="mb-1">{FromDeclaration ? <FromDeclaration /> : null}</div>;
     default:
       return null;
   }

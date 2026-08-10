@@ -8,5 +8,6 @@ export default defineModule({
   permission: "module.portfel",
   color: "var(--accent-green)",
   Icon: Wallet,
+  sideNav: () => import("./ui/PortfelSideNav").then((m) => ({ default: m.PortfelSideNav })),
   defaultEnabled: true,
 });

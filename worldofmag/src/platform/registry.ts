@@ -1,3 +1,4 @@
+import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
 
 /**
@@ -43,6 +44,21 @@ export type ModuleDeclaration = {
    * Domyślnie `[href]`; osobne pole jest potrzebne dla modułów z kilkoma korzeniami tras.
    */
   routes?: string[];
+  /**
+   * 048: własna nawigacja boczna modułu, renderowana przez powłokę gdy moduł jest aktywny.
+   *
+   * **Ładowana LENIWIE i to nie jest optymalizacja, tylko warunek poprawności.** `module.ts` jest
+   * importowany przez korzeń kompozycji, a ten przez **kod serwerowy**; statyczny import komponentu
+   * klienckiego wciągnąłby go do każdego takiego grafu. Funkcja zwracająca `import()` jest
+   * wywoływana dopiero przez `next/dynamic` po stronie klienta.
+   *
+   * Kształt `{ default }` bierze się z `next/dynamic`; komponenty eksportowane nazwanie mapujemy
+   * w miejscu deklaracji: `() => import("./ui/XNav").then((m) => ({ default: m.XNav }))`.
+   *
+   * Bez tego pola powłoka musiałaby importować `ui/` sześciu modułów — czyli sięgać do ich wnętrz
+   * (rozdz. 9.3 opisuje ten sam wzorzec dla kafelka pulpitu).
+   */
+  sideNav?: () => Promise<{ default: ComponentType }>;
 };
 
 /** Deklaracja po uzupełnieniu wartości domyślnych — tego używa rejestr. */
