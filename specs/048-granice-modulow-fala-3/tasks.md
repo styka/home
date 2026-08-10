@@ -102,12 +102,12 @@
 
 ## Faza E — Domknięcie fazy (tylko przy pustej liście przejściowej)
 
-- [ ] **T-18** — **Czwarta kontrola w `check-module-registry.js`:** identyfikator obecny w rejestrze
+- [x] **T-18** — **Czwarta kontrola w `check-module-registry.js`:** identyfikator obecny w rejestrze
       nie może mieć kodu poza `src/modules/` (`src/actions/<x>.ts`, `src/components/<x>/`).
       **Warunek:** włączamy **tylko** gdy lista przejściowa jest pusta — przy niepustej bramka
       blokowałaby pracę, a pierwszym odruchem byłoby jej wyłączenie.
       **Gotowe, gdy:** test negatywny (podłożony `src/actions/<moduł>.ts`) czerwieni bramkę. **(AC-11)**
-- [ ] **T-19** — **Usunięcie martwego kodu przejściowego:** `LEGACY`, `legacyPermissionForPath`,
+- [x] **T-19** — **Usunięcie martwego kodu przejściowego:** `LEGACY`, `legacyPermissionForPath`,
       uproszczenie `pathPermissions.ts` do deklaracji + powierzchni spoza rejestru.
       **Gotowe, gdy:** `tsc` czysty, testy rejestru zielone.
 

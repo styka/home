@@ -1,10 +1,4 @@
-import {
-  Home, ShoppingCart, CheckSquare, FileText, PawPrint, ChefHat, GraduationCap,
-  HeartPulse, Flame, Car, Wallet, Handshake, Calendar,
-  Newspaper, CloudSun, Warehouse, Wrench,
-} from "lucide-react";
-import { PERMISSIONS } from "@/platform/auth/permissions";
-import { defineModule, mergeModules, permissionForPathIn, type ResolvedModule } from "@/platform/registry";
+import { mergeModules, permissionForPathIn, type ResolvedModule } from "@/platform/registry";
 
 // 046: deklaracje modułów przeniesionych do `src/modules/`. TO JEST KORZEŃ KOMPOZYCJI —
 // jedyne miejsce w kodzie, które zna wszystkie moduły naraz. Nie może nim być
@@ -38,14 +32,6 @@ export type ModuleDef = ResolvedModule;
 const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, qaModule, habitsModule, languagesModule, warsztatyModule, magazynowanieModule, notesModule, flotaModule, healthModule, newsModule, weatherModule, servicesModule, kitchenModule, petsModule, portfelModule, shoppingModule, tasksModule, calendarModule, homeModule];
 
 /**
- * Moduły JESZCZE NIEPRZENIESIONE do `src/modules/`. Lista przejściowa, kurcząca się z każdą
- * kolejną falą Fazy 1 — jawnie nazwana, żeby długu nie dało się przeoczyć (wzorzec statusu
- * `pending` z 045). Docelowo pusta: wtedy `MODULES` wynika wyłącznie z deklaracji.
- */
-const LEGACY: ResolvedModule[] = [
-];
-
-/**
  * Kolejność pozycji w menu — decyzja produktowa, więc trzyma się jednej listy, a nie kolejności,
  * w jakiej moduły akurat zostały przeniesione. Zmiana kolejności = zmiana tej tablicy.
  */
@@ -56,14 +42,14 @@ const MODULE_ORDER = [
 ];
 
 // Jedno źródło prawdy dla górnych modułów (kolejność = domyślna kolejność menu).
-export const MODULES: ModuleDef[] = mergeModules(DECLARED, LEGACY, MODULE_ORDER);
+export const MODULES: ModuleDef[] = mergeModules(DECLARED, MODULE_ORDER);
 
 const MODULE_INDEX = new Map(MODULES.map((m, i) => [m.id, i]));
 
 /**
- * Mapowanie ścieżka → uprawnienie dla modułów ZADEKLAROWANYCH. Uzupełnia historyczny łańcuch
- * `if`-ów w `platform/auth/permissions.ts`, którego platforma nie może wyprowadzić z deklaracji,
- * bo nie wolno jej importować modułów.
+ * Mapowanie ścieżka → uprawnienie **wszystkich** modułów. Po fali 3 (048) nie ma już modułów
+ * nieprzeniesionych, więc to jest komplet — `legacyPermissionForPath` obsługuje wyłącznie
+ * powierzchnie SPOZA rejestru modułów (ustawienia, admin, zaproszenia).
  */
 export function declaredPermissionForPath(path: string): string | null | undefined {
   return permissionForPathIn(DECLARED, path);

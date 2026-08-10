@@ -105,6 +105,36 @@ for (const name of dirs) {
   }
 }
 
+// ─── 5. Moduł pisany „po staremu" (048, AC-11 / domknięcie AC-6 z 046) ──────────────────
+//
+// Do tej pory bramka pilnowała tylko katalogów, które JUŻ są w `src/modules/`. Nie mogła
+// pilnować czegoś odwrotnego — modułu rozsypanego po `src/actions/` i `src/components/` — bo
+// dokładnie tak wyglądała większość aplikacji i reguła zapaliłaby się na całym istniejącym
+// kodzie. Po fali 3 lista przejściowa jest pusta, więc kontrola staje się wykonalna.
+//
+// Zasada: identyfikator obecny w rejestrze nie może mieć kodu poza swoim katalogiem.
+// `src/actions/<id>.ts` i `src/components/<id>/` to najczęstsze miejsca, w które trafiłby nowy
+// moduł pisany z pamięci starego układu.
+const actionsDir = path.join(root, "src/actions");
+const componentsDir = path.join(root, "src/components");
+
+for (const [id, dir] of ids) {
+  const strays = [];
+  const legacyAction = path.join(actionsDir, `${id}.ts`);
+  const legacyComponents = path.join(componentsDir, id);
+  if (fs.existsSync(legacyAction)) strays.push(`src/actions/${id}.ts`);
+  if (fs.existsSync(legacyComponents)) strays.push(`src/components/${id}/`);
+
+  if (strays.length) {
+    errors.push(
+      `Moduł „${id}" ma kod POZA swoim katalogiem: ${strays.join(", ")}.\n` +
+        `    Moduł mieszka w src/modules/${dir}/ — akcje w actions/, widoki w ui/, logika w lib/.\n` +
+        "    Kod w starych miejscach omija granicę: reguła ESLint go nie pilnuje, więc każdy może\n" +
+        "    go zaimportować bezpośrednio i sprzężenie znów stanie się niewidoczne.",
+    );
+  }
+}
+
 if (errors.length) {
   console.error("\n✖ Rejestr modułów — niekompletne moduły w src/modules/:\n");
   console.error(errors.map((e) => `  ✖ ${e}`).join("\n\n"));
@@ -113,5 +143,5 @@ if (errors.length) {
 }
 
 console.log(
-  `✓ Rejestr modułów: ${dirs.length} modułów w src/modules — każdy z contract.ts, kompletną deklaracją i wpięciem w rejestr.`,
+  `✓ Rejestr modułów: ${dirs.length} modułów w src/modules — każdy z contract.ts, kompletną deklaracją, wpięciem w rejestr i bez kodu poza swoim katalogiem.`,
 );
