@@ -71,9 +71,15 @@ Trzy rzeczy dodatkowo dojrzały do zrobienia **teraz, a nie później**:
 
 **Słowniki współdzielone**
 
-- [ ] **AC-7** — Given słownik używany przez więcej niż jeden moduł (kategorie, jednostki, produkty,
-      tagi), when sprawdzam jego miejsce, then decyzja jest **jedna, zapisana i uzasadniona** —
-      nie „każdy słownik inaczej".
+- [ ] **AC-7** — Given słownik danych (kategorie, jednostki, produkty, ikony kategorii, tagi), when
+      sprawdzam jego miejsce, then wynika ono z **listy jego konsumentów**, a nie z nazwy — i jest
+      zapisane z uzasadnieniem.
+      **Korekta z `/plan` (C-54):** spec zakładał, że kategorie/jednostki/produkty są dzielone
+      z Kuchnią. **Sprawdzenie konsumentów pokazało co innego:** używa ich wyłącznie Zakupy
+      (komponenty i trasy `shopping`, `actions/items`, `actions/shoppingSync`). Kuchnia sięga tylko
+      po **tagi**. Zgodnie z lekcją z 047 („przynależność po konsumentach, nie po nazwie") słowniki
+      zakupowe **przenoszą się z Zakupami**; jedynym realnie współdzielonym słownikiem zostają
+      **tagi** i to one — i tylko one — zostają w `src/actions` z nazwanym powodem.
 
 **Dług testowy**
 
@@ -151,11 +157,12 @@ końca. Decyzje przyjęte domyślnie, zapisane tutaj:
 - **Kolejność: od najmniej do najbardziej sprzężonych**, z Kalendarzem i pulpitem na końcu — one
   czytają pozostałe moduły, więc przeniesione jako ostatnie zastaną gotowe kontrakty zamiast
   tymczasowych.
-- **Słowniki współdzielone zostają w `src/actions` i dostają jedno, wspólne uzasadnienie** —
-  zgodnie z precedensem tagów z 047. Powód: kategorie, jednostki i produkty **nie są własnością**
-  ani Zakupów, ani Kuchni; wciągnięcie ich do któregokolwiek zabetonowałoby sprzężenie, a wyniesienie
-  do platformy to osobne zadanie z własnym ryzykiem (trzy modele, trzy poziomy własności
-  system/user/team). Fala ma domknąć **granice modułów**, nie przeprojektować słowniki.
+- **Słowniki rozstrzygamy po konsumentach, nie po nazwie** (lekcja z 047). Założenie ze specyfikacji,
+  że kategorie/jednostki/produkty są dzielone z Kuchnią, **nie potwierdziło się w kodzie** — patrz
+  korekta przy AC-7. Kategorie, jednostki, produkty i ikony kategorii **jadą z Zakupami**;
+  w `src/actions` zostają **tagi**, bo tych faktycznie używają dwa moduły (Notatki i Kuchnia).
+  Wyniesienie tagów do warstwy słowników platformy pozostaje osobnym zadaniem — fala ma domknąć
+  **granice modułów**, nie przeprojektować słowniki.
 - **Moduł zbyt sprzężony zostaje na liście z powodem** — cel to sprawdzone przeniesienie, nie liczba
   w raporcie.
 - **Naprawiamy tylko te porażki klikaczy, które da się naprawić bez zmiany zachowania aplikacji.**
