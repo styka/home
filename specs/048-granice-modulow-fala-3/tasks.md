@@ -1,7 +1,7 @@
 # Zadania: Granice modułów — Faza 1, fala 3 (domknięcie zadania 5)
 
 - **Plan:** ./plan.md (048-granice-modulow-fala-3)
-- **Status:** todo
+- **Status:** w trakcie
 - **Data:** 2026-08-05
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna
@@ -25,19 +25,19 @@
 
 ## Faza 0 — Punkt wyjścia
 
-- [ ] **T-1** — Potwierdzić stan startowy: `check:schema-drift` zielony, `check:ai-coverage` = 551,
+- [x] **T-1** — Potwierdzić stan startowy: `check:schema-drift` zielony, `check:ai-coverage` = 551,
       `check:module-registry` = 11 modułów, lista przejściowa = 10.
       **Gotowe, gdy:** liczby zapisane jako punkt odniesienia dla całej fali.
 
 ## Faza A — Rozdzielenie asystenta od pulpitu (przygotowanie pod AC-6)
 
-- [ ] **T-2** — **Klaster asystenta → `src/components/assistant/`.** `AICommandSheet`, `ActionDrawer`,
+- [x] **T-2** — **Klaster asystenta → `src/components/assistant/`.** `AICommandSheet`, `ActionDrawer`,
       `AssistantLevelSettings` (i to, czego używają wyłącznie one) wychodzą z `components/home/`.
       Asystent jest **globalnym elementem powłoki** montowanym na każdej stronie — to nie jest pulpit.
       Bez tego kroku moduł Strona główna nie da się zamknąć bez importu z powłoki (AC-6).
       Czysta przenosina, zero zmian treści.
       **Gotowe, gdy:** `AppShell` importuje z `@/components/assistant`, rytuał przechodzi.
-- [ ] **T-3** `[P]` — **`ActivityFeed` → `src/components/settings/`.** Jedyny konsument to
+- [x] **T-3** `[P]` — **`ActivityFeed` → `src/components/settings/`.** Jedyny konsument to
       `app/settings/page.tsx`; do pulpitu nie należy.
       **Gotowe, gdy:** `components/home/` nie ma już konsumentów spoza pulpitu poza `HomePage`.
 

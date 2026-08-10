@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { useDictation } from "@/hooks/useDictation";
-import { ActionDrawer } from "@/components/home/ActionDrawer";
+import { ActionDrawer } from "@/components/assistant/ActionDrawer";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { withPln, DEFAULT_USD_PLN_RATE } from "@/lib/usdPln";
 import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported, primeSpeech, getAvailableVoices, onVoicesChanged, setPreferredVoiceURI, getPreferredVoiceURI, setServerVoiceId, speechAvailable } from "@/lib/tts";
@@ -32,7 +32,7 @@ import { DEFAULT_ASSISTANT_STARTERS } from "@/lib/ai/assistantStarters";
 import { useOverlayState } from "@/hooks/useOverlayState";
 import { useIsNarrowScreen, usePinToVisualViewport, VV_HEIGHT_VAR, VV_TOP_VAR } from "@/hooks/useVisualViewport";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
-import { AssistantLevelSettings } from "@/components/home/AssistantLevelSettings";
+import { AssistantLevelSettings } from "@/components/assistant/AssistantLevelSettings";
 
 interface RouteContext {
   context: string[];
