@@ -1,7 +1,7 @@
 # Zadania: Migawka pulpitu z deklaracji
 
 - **Plan:** ./plan.md (050-pulpit-z-deklaracji)
-- **Status:** w trakcie
+- **Status:** zrobione
 - **Data:** 2026-08-11
 
 > **Zasada nadrzędna tego przebiegu:** **najpierw dowód, potem przenosiny.** Faza A jest warunkiem
@@ -123,7 +123,7 @@
       **Gotowe, gdy:** wszystko zielone, cztery liczniki bez spadku. **(AC-8)**
       **Wynik:** `npm run build` **exit 0** („Compiled successfully"), `test:unit` **657/657**,
       liczniki **160 / 551 / 35 / 35** bez zmian, `next lint --dir src` bez błędów.
-- [ ] **T-14** — **Dokumentacja domknięcia Fazy 1:** `CLAUDE.md`, `constitution.md` (C-36 o polu
+- [x] **T-14** — **Dokumentacja domknięcia Fazy 1:** `CLAUDE.md`, `constitution.md` (C-36 o polu
       `dashboard`), rozdz. 15 dziennika — **Faza 1 domknięta w całości**, odpowiedź na pytanie
       kontrolne **bez przypisu**, pierwszy krok Fazy 2 (zadanie 9: `Workspace`, `ResourceGrant`).
       Wpis do `doświadczenia.md`, jeśli po drodze wyjdzie coś nieoczywistego (C-51). **(AC-10)**
