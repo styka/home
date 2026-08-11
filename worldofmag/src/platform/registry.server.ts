@@ -26,4 +26,11 @@ export type ModuleServerContributions = {
   jobs?: () => Promise<{ default: Record<string, JobHandler<any, any>> }>;
   /** Wkład do wspólnej agendy kalendarza. */
   calendar?: () => Promise<{ default: CalendarContributor }>;
+
+  // 050: pola `dashboard` tu NIE MA — i to jest decyzja, nie przeoczenie. Ten obiekt jest
+  // **plikiem zbiorczym leniwych loaderów**: kto go zaimportuje dla jednego pola, dostaje do grafu
+  // cele `import()` wszystkich pozostałych. Dołożenie tu pulpitu podniosło graf strony głównej
+  // z 1889 do 2117 modułów (egzekutory asystenta i handlery zadań siedemnastu modułów, których
+  // pulpit nie wywołuje). Wkłady pulpitu wpina więc własny korzeń — `src/lib/dashboardContributors.ts`
+  // — i tam jest pełny pomiar. Ta sama operacja czeka `ai`, `jobs` i `calendar`.
 };

@@ -1,0 +1,127 @@
+{
+  "zUprawnieniami": {
+    "pendingItems": 2,
+    "todayTasks": 1,
+    "overdueTasks": 2,
+    "todayTaskPreview": [
+      {
+        "id": "cmsp5lsoz000oo6yglhc1mdtv",
+        "title": "Fixture: zadanie na dziś",
+        "priority": "HIGH",
+        "projectId": null,
+        "projectName": null,
+        "projectEmoji": null
+      }
+    ],
+    "pinnedNotes": 1,
+    "todayMeals": [
+      {
+        "id": "cmsp5lspe000uo6ygx3q94226",
+        "slot": "LUNCH",
+        "title": "Fixture: lunch dziś",
+        "servings": 2,
+        "recipeSlug": null
+      }
+    ],
+    "expiringSoon": 1,
+    "recentReports": 1,
+    "petCareDue": 2,
+    "petAgenda": [
+      {
+        "id": "c-cmsp5lso3000do6ygv0lqj1d5",
+        "petId": "cmsp5lso0000bo6yg5305gpsj",
+        "petName": "Fixture: zwierzę",
+        "petSpecies": "dog",
+        "kind": "CARE_TASK",
+        "category": "FEEDING",
+        "title": "Fixture: karmienie",
+        "dueAt": "2026-08-10T12:00:00.000Z",
+        "bucket": "OVERDUE"
+      },
+      {
+        "id": "c-cmsp5lspi000yo6yg4a6we6bm",
+        "petId": "cmsp5lso0000bo6yg5305gpsj",
+        "petName": "Fixture: zwierzę",
+        "petSpecies": "dog",
+        "kind": "CARE_TASK",
+        "category": "FEEDING",
+        "title": "Fixture: karmienie dziś",
+        "dueAt": "2026-08-11T12:00:00.000Z",
+        "bucket": "TODAY"
+      }
+    ],
+    "vehiclesCount": 2,
+    "vehicleAlerts": [
+      {
+        "id": "cmsp5lsnv0007o6ygxqaq6net",
+        "name": "Fixture: auto",
+        "type": "inspection",
+        "dueAt": "2026-08-08T12:00:00.000Z",
+        "daysLeft": -2
+      },
+      {
+        "id": "cmsp5lsnv0007o6ygxqaq6net",
+        "name": "Fixture: auto",
+        "type": "insurance",
+        "dueAt": "2026-08-09T12:00:00.000Z",
+        "daysLeft": -1
+      },
+      {
+        "id": "cmsp5lspk0010o6ygdo4e395d",
+        "name": "Fixture: auto 2",
+        "type": "inspection",
+        "dueAt": "2026-08-21T12:00:00.000Z",
+        "daysLeft": 11
+      }
+    ],
+    "wallet": {
+      "totalNet": 1234.5,
+      "currency": "PLN",
+      "monthlyRate": 0
+    },
+    "languagesDue": 2,
+    "languageDecks": [
+      {
+        "id": "cmsp5lsoc000fo6yg4ymrucsx",
+        "name": "Fixture: talia",
+        "targetLang": "en",
+        "dueCount": 2
+      }
+    ],
+    "healthUpcomingCount": 1,
+    "healthUpcoming": [
+      {
+        "id": "cmsp5lspq0016o6yggxn35csz",
+        "kind": "TEST",
+        "title": "Fixture: badanie",
+        "specialty": null,
+        "scheduledAt": "2026-08-16T10:00:00.000Z"
+      }
+    ],
+    "storageLowStock": 1,
+    "storageExpiring": 1,
+    "adminStats": null
+  },
+  "bezUprawnien": {
+    "pendingItems": 0,
+    "todayTasks": 0,
+    "overdueTasks": 0,
+    "todayTaskPreview": [],
+    "pinnedNotes": 0,
+    "todayMeals": [],
+    "expiringSoon": 0,
+    "recentReports": 1,
+    "petCareDue": 0,
+    "petAgenda": [],
+    "vehiclesCount": 0,
+    "vehicleAlerts": [],
+    "wallet": null,
+    "languagesDue": 0,
+    "languageDecks": [],
+    "healthUpcomingCount": 0,
+    "healthUpcoming": [],
+    "storageLowStock": 0,
+    "storageExpiring": 0,
+    "adminStats": null
+  }
+}

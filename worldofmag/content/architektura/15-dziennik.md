@@ -30,11 +30,18 @@ został osiągnięty: **żadnego sluga modułu nie ma już w równoległej liśc
 z deklaracji (`sideNav`, ładowane leniwie), a globalny asystent został wyprowadzony z pulpitu do
 `components/assistant/`.
 
-**Co zostaje z Fazy 1:** wyłącznie **zadanie 8** (asystent AI składany z deklaracji) — dokument
-stawia je po wszystkich modułach i wymaga najpierw przeniesienia `lib/ai` do platformy.
+**FAZA 1 JEST DOMKNIĘTA W CAŁOŚCI.** 049 dowiozło zadania 4 i 8 oraz kalendarzową połowę
+zadania 7; 050 domknęło drugą połowę — **migawkę pulpitu**. Trasa `src/app/page.tsx` importowała
+osiem kontraktów modułów i miała dziesięć gałęzi na uprawnienia; było to ostatnie miejsce w całej
+aplikacji, w którym dodanie modułu wymagało edycji cudzego pliku.
 
-**Następny krok: zdolności platformy `ai`, `llm`, `jobs`** (38 plików, ~200 importujących), a po
-nich zadanie 8. Potem Faza 2 — współdzielenie i współbieżność.
+**Odpowiedź na pytanie kontrolne z rozdz. 14 nie ma już przypisu:** *ile miejsc trzeba dotknąć, żeby
+dodać moduł?* → **jeden katalog plus wpięcie w korzeń kompozycji.** Nie jest to deklaracja dobrych
+chęci: `check:module-registry` ma dziś **osiem kontroli** i wywala build, gdy moduł opisze się poza
+swoim katalogiem — łącznie z trasą pulpitu.
+
+**Następny krok: Faza 2 — współdzielenie i współbieżność**, zadanie 9: modele `Workspace`,
+`WorkspaceMember`, `ResourceGrant`, `ResourceInvitation`.
 
 ---
 
@@ -57,7 +64,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | 4 | `src/platform/` — przeniesienie wspólnych zdolności | ✅ | **049: domknięte.** Poza tym, co przeniosły 046–048, w platformie są `ai`, `llm` i `jobs`. `grep "@/modules/"` po `src/platform/` zwraca **zero**. Kod modułowy z tych warstw (egzekutory, read-toole, handlery zadań) wrócił do modułów |
 | 5 | `src/modules/<x>/` — moduł po module | ✅ | **21 z 21.** 046: Trasy TIR, Kontakty, Raporty, QA · 047: Nawyki, Nauka języków, Warsztaty, Magazynowanie, Notatki, Flota, Zdrowie · 048: Wiadomości, Pogoda, Usługi, Kuchnia, Zwierzęta, Portfel, Zakupy, Zadania, Kalendarz, Strona główna. Każdy osobnym commitem. **Lista przejściowa usunięta** |
 | 6 | `contract.ts` + reguła ESLint blokująca import przez granicę | ✅ | Dwie reguły `no-restricted-imports` (moduł↔moduł, platforma↛moduł) + bramka `check:boundaries`, która sama je łamie i wymaga błędu. Sprawdzone: wyłączenie reguły **i** zepsucie konfiguracji czerwienią bramkę |
-| 7 | `defineModule` + wyprowadzenie rejestru, uprawnień, nawigacji | ✅ | Wszystkie 21 modułów deklaruje się jednym plikiem. `PERMISSIONS` zawiera już tylko powierzchnie spoza rejestru. Nawigacja boczna sześciu modułów pochodzi z pola `sideNav` (leniwie). Bramka `check:module-registry` wykrywa też moduł pisany „po staremu". **049: kalendarz wynika z deklaracji** (pole `calendar`, 7 wkładów, agregat schudł z 227 do 32 linii). **Migawka pulpitu odłożona** — brak dowodu runtime, patrz wpis 049 |
+| 7 | `defineModule` + wyprowadzenie rejestru, uprawnień, nawigacji | ✅ | Wszystkie 21 modułów deklaruje się jednym plikiem. `PERMISSIONS` zawiera już tylko powierzchnie spoza rejestru. Nawigacja boczna sześciu modułów pochodzi z pola `sideNav` (leniwie). Bramka `check:module-registry` wykrywa też moduł pisany „po staremu". **049: kalendarz wynika z deklaracji** (pole `calendar`, 7 wkładów, agregat schudł z 227 do 32 linii). **050: migawka pulpitu też** — 11 wkładów, trasa bez importów modułów, równoważność udowodniona zrzutem runtime pole po polu |
 | 8 | Migracja asystenta AI na katalog składany z deklaracji | ✅ | **049.** Katalog akcji, egzekutory i 56 narzędzi odczytu pochodzą z pola `ai` w deklaracji; `buildAiCatalog` w platformie bierze wkłady parametrem. `check:actions` pilnuje mocniejszej własności: moduł z akcjami **musi** deklarować `ai` |
 
 ### Faza 2 — Współdzielenie i współbieżność
@@ -581,3 +588,87 @@ katalogiem modułu. Sprawdzone testem negatywnym.
 
 **Pierwszy krok Fazy 2:** zadanie 9 — modele `Workspace`, `WorkspaceMember`, `ResourceGrant`,
 `ResourceInvitation`.
+
+---
+
+### 050 — Faza 1 DOMKNIĘTA: migawka pulpitu z deklaracji · 2026-08-11
+
+**Zakres:** druga połowa zadania 7 — ostatnia równoległa lista opisująca moduł.
+**Artefakty:** `specs/050-pulpit-z-deklaracji/`. **Wynik: Faza 1 zamknięta w całości.**
+
+**Dlaczego 049 tego nie ruszyło i co się zmieniło**
+
+Agregat kalendarza dało się porównać zdarzenie po zdarzeniu, bo jest **funkcją, którą można
+zawołać**. Migawka pulpitu powstawała **w miejscu** — w 322-liniowej trasie z dziesięcioma gałęziami
+na uprawnienia — więc żeby zrzucić stan „przed", trzeba było ją najpierw wyodrębnić, czyli wykonać
+dokładnie tę zmianę, którą chcemy zweryfikować. Ten przebieg rozciął ten węzeł kolejnością:
+**(1) czysta przenosina obliczeń do funkcji biorącej `userId` parametrem → (2) zrzut punktu
+odniesienia → (3) dopiero potem rozbicie na wkłady.** Krok (2) był twardym warunkiem wstępnym: bez
+niego przenosiny jedenastu bloków obliczeń miałyby za jedyne sprawdzenie kompilator.
+
+**Trzy odkrycia, każde zmieniło plan (C-54)**
+
+- **Skrypt nie wystarczył.** Pierwszy zrzut dał **6 niezerowych pól z 20**: siedem z jedenastu bloków
+  woła kontrakty modułów, a te są Server Actions wywodzącymi użytkownika **z sesji** — poza żądaniem
+  rzucają „headers was called outside a request scope", a `try/catch` zamienia to na zera. Zgodnie
+  z własną zasadą listy zadań — *zrzut z zerami to brak dowodu, nie sukces* — punkt odniesienia
+  powstał przez **tymczasową trasę diagnostyczną** odpytaną na działającym serwerze z ciasteczkiem
+  sesji. Wynik: **19 z 20 pól niezerowych** (dwudzieste, `adminStats`, jest z założenia `null`).
+- **Siedem bloków ignoruje parametr `userId`.** Wywodzą użytkownika z sesji, więc zasianie danych na
+  osobnym koncie dawało zera — fixture musiał umieć siać **na istniejącym koncie** (`--email=`).
+  Gdyby to wyszło po przenosinach, wyglądałoby jak regresja przenosin.
+- **Raporty nie są bramkowane uprawnieniem modułu.** W zrzucie „bez uprawnień" `recentReports`
+  zostało niezerowe. Korzeń kompozycji musi to uszanować: **moduł z `permission: null` wołamy
+  zawsze.** Bramkowanie go „dla porządku" byłoby cichą zmianą zachowania — dokładnie tym, czego ten
+  przebieg miał nie zrobić.
+
+**Pomiar, który zmienił projekt — wspólny rejestr też jest plikiem zbiorczym**
+
+Pierwsza wersja wpinała wkłady polem `dashboard` w `module.server.ts`, czyli tak jak `ai`, `jobs`
+i `calendar`. Graf kompilacji strony głównej urósł z **1889 do 2117** modułów.
+
+| wariant | `/auth/signin` | `/` |
+|---|---|---|
+| przed 050 (trasa importowała osiem kontraktów) | 1771 | **1889** |
+| wkłady przez wspólny `MODULE_SERVER` | 1771 | **2117** |
+| wkłady przez własny korzeń kompozycji | 1771 | **1903** |
+
+Powód jest tą samą lekcją co kontrakt-barrel z 049, tylko **piętro wyżej**: `MODULE_SERVER` to obiekt
+**czterech leniwych loaderów na moduł**, a webpack w trybie dev kompiluje cele `import()` osiągalne
+ze statycznie zaimportowanego pliku. Kto importuje go dla **jednego** pola, płaci grafem za
+**wszystkie cztery** — pulpit ciągnął egzekutory asystenta i handlery zadań w tle siedemnastu
+modułów, których nie wywołuje ani razu. Wkłady pulpitu dostały więc **własny korzeń**
+(`src/lib/dashboardContributors.ts`). Pozostałe **+14 to dokładnie liczba nowych plików** (jedenaście
+wkładów, korzeń, składanie migawki, typ w platformie) — koszt kodu, nie napompowanego grafu.
+
+**Cena tej decyzji i jak jest spłacona.** Wpięcie znikło z deklaracji modułu, więc nie widać go
+w `module.server.ts`. Pilnuje go bramka, **w obie strony**: `dashboard.ts` bez wpięcia → build
+czerwony; wpięcie wskazujące nieistniejący plik → build czerwony. Oba sprawdzone testem negatywnym.
+
+> **Wskazanie na osobny krok:** `calendarContributors.ts`, `lib/ai/catalog.ts` i `lib/jobs/registry.ts`
+> płacą dziś ten sam podatek — agenda kalendarza wciąga egzekutory asystenta. Rozdzielenie ich to ta
+> sama operacja co tutaj. Nie zrobiliśmy tego w tym przebiegu, żeby nie mieszać dowodu równoważności
+> migawki z przebudową trzech innych korzeni (C-53).
+
+**Dowód braku regresji**
+
+Zrzut porównany z punktem odniesienia **po każdej grupie wkładów**, nie raz na końcu: cztery razy
+(T-6, T-7, T-8, T-10) plus po zmianie korzenia — za każdym razem **20 pól, IDENTYCZNE, w obu
+wariantach** (z uprawnieniami i bez). Wariant „bez uprawnień" równa się `EMPTY_SNAPSHOT` w 19 polach
+na 20; dwudzieste to `recentReports`, z powodu opisanego wyżej.
+
+**Co zostało w trasie i dlaczego**
+
+Celem było usunięcie gałęzi **modułowych**, nie opróżnienie pliku za wszelką cenę. Zostały:
+aktywność, zaproszenia, preferencje pulpitu i ulubione widoki (**dane konta** — sięgają po sesję,
+nie po dziedzinę modułu) oraz statystyki admina (**przekrój całej instalacji** — nie ma modułu,
+którego byłyby własnością). Wciśnięcie ich w jakiś moduł na siłę byłoby gorsze niż zostawienie
+w kompozycji z zapisanym powodem.
+
+**Bramki:** build **exit 0**, `test:unit` **657/657**, liczniki **160 / 551 / 35 / 35** bez spadku,
+`check:module-registry` **8 kontroli**, `check:boundaries` i `check:ui-contract` zielone.
+
+**Pierwszy krok Fazy 2:** zadanie 9 — modele `Workspace`, `WorkspaceMember`, `ResourceGrant`,
+`ResourceInvitation`. Do zabrania z Fazy 1: **read-toole asystenta wciąż nie przechodzą przez
+`requireAccess`** (rozdz. 9.6) — wykonalne dopiero po zadaniu 10, i przy zasobach współdzielonych
+przestaje to być teoretyczne.
