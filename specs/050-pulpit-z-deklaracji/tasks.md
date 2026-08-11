@@ -60,11 +60,11 @@
 
 ## Faza B — Kształt
 
-- [ ] **T-4** — **Typ wkładu w platformie + pole w deklaracji serwerowej.**
+- [x] **T-4** — **Typ wkładu w platformie + pole w deklaracji serwerowej.**
       `src/platform/dashboard.ts` (`DashboardContext`, `DashboardContributor`) + pole `dashboard`
       w `ModuleServerContributions`. **Nie w `module.ts`** — lekcja z 049.
       **Gotowe, gdy:** typy istnieją, `tsc` czysty, żaden moduł jeszcze ich nie używa. **(AC-7)**
-- [ ] **T-5** — **`DashboardSnapshot` + `EMPTY_SNAPSHOT` w kontrakcie Strony głównej.**
+- [x] **T-5** — **`DashboardSnapshot` + `EMPTY_SNAPSHOT` w kontrakcie Strony głównej.**
       Dokładnie te pola `HomePageProps`, które wnoszą moduły; wartości domyślne = dzisiejsze
       inicjalizatory z trasy.
       **Gotowe, gdy:** funkcja z T-2 zwraca `DashboardSnapshot` i `tsc` to potwierdza. **(AC-3)**
@@ -74,30 +74,33 @@
 > Kolejność od najprostszego wkładu do najbardziej złożonego. Po **każdej** grupie porównanie zrzutu
 > z punktem odniesienia — nie na końcu.
 
-- [ ] **T-6** — **Wkłady jednopolowe:** Zakupy (`pendingItems`), Notatki (`pinnedNotes`),
+- [x] **T-6** — **Wkłady jednopolowe:** Zakupy (`pendingItems`), Notatki (`pinnedNotes`),
       Portfel (`wallet`), Raporty (`recentReports`).
       Raporty **dochodzą jako nowy wkład** — trasa liczyła je wprost z Prismy, z pominięciem
       kontraktu modułu.
       **Gotowe, gdy:** cztery pola pochodzą z deklaracji, zrzut **identyczny**. **(AC-3, AC-6)**
-- [ ] **T-7** — **Wkłady dwupolowe:** Kuchnia, Zwierzęta, Magazynowanie, Nauka języków.
+- [x] **T-7** — **Wkłady dwupolowe:** Kuchnia, Zwierzęta, Magazynowanie, Nauka języków.
       **(AC-3, AC-6)**
-- [ ] **T-8** — **Wkłady najbardziej złożone:** Zadania (trzy pola, trzy zapytania równolegle),
+- [x] **T-8** — **Wkłady najbardziej złożone:** Zadania (trzy pola, trzy zapytania równolegle),
       Flota (pętla po pojazdach z horyzontem 30 dni), Zdrowie.
       **Gotowe, gdy:** wszystkie jedenaście wkładów w deklaracjach, zrzut **identyczny**.
       **(AC-3, AC-6)**
-- [ ] **T-9** — **Korzeń kompozycji + bramkowanie uprawnieniem z rejestru.**
+- [x] **T-9** — **Korzeń kompozycji + bramkowanie uprawnieniem z rejestru.**
       `src/lib/dashboardSnapshot.ts`: iteracja po `MODULE_SERVER`, uprawnienie z `MODULES`, wołanie
       równoległe, scalanie na `EMPTY_SNAPSHOT`, jeden `try/catch` zamiast ośmiu.
       **Gotowe, gdy:** zrzut dla użytkownika z fixture'a **identyczny**, a dla użytkownika bez
-      uprawnień równy `EMPTY_SNAPSHOT`. **(AC-3, AC-5, AC-6)**
-- [ ] **T-10** — **ZMIANA ZACHOWANIA (osobny commit): trasa pulpitu składa z katalogu.**
+      uprawnień równy `EMPTY_SNAPSHOT` **z jednym wyjątkiem odkrytym w T-3**: `recentReports`,
+      bo Raporty nie są bramkowane uprawnieniem modułu (C-54 — kryterium doprecyzowane, nie
+      obniżone). **Wynik: 19 z 20 pól równych `EMPTY_SNAPSHOT`, dwudzieste to `recentReports: 1`.**
+      **(AC-3, AC-5, AC-6)**
+- [x] **T-10** — **ZMIANA ZACHOWANIA (osobny commit): trasa pulpitu składa z katalogu.**
       `src/app/page.tsx` chudnie do ~70 linii; zostają dane przekrojowe (aktywność, zaproszenia,
       statystyki admina, preferencje, ulubione) z zapisanym powodem.
       **Gotowe, gdy:** `grep "@/modules/" src/app/page.tsx` zwraca **tylko** `HomePage`. **(AC-4)**
 
 ## Faza D — Domknięcie Fazy 1
 
-- [ ] **T-11** — **Siódmy test `check:module-registry`:** trasa pulpitu nie może importować kontraktu
+- [x] **T-11** — **Siódmy test `check:module-registry`:** trasa pulpitu nie może importować kontraktu
       modułu. Sprawdzone **testem negatywnym**.
       **Gotowe, gdy:** podłożony import → bramka czerwona; po usunięciu → zielona. **(AC-9)**
 - [ ] **T-12** — **Pomiar grafu kompilacji** (`next dev`, z ciasteczkiem sesji — `middleware`

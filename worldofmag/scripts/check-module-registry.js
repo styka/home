@@ -189,6 +189,33 @@ for (const [id, dir] of ids) {
   }
 }
 
+// ─── 7. Trasa pulpitu nie opisuje modułów „po staremu" (050, AC-9) ─────────────────────
+//
+// Do 050 `src/app/page.tsx` importowało osiem kontraktów modułów i miało dziesięć gałęzi na
+// uprawnienia — było to OSTATNIE miejsce w aplikacji, w którym dodanie modułu wymagało edycji
+// cudzego pliku. Dziś moduł deklaruje wkład u siebie (`module.server.ts` → `dashboard`), a trasa
+// składa go z katalogu.
+//
+// Bez tej kontroli powrót do starego wzorca jest jedną linijką importu i buduje się na zielono —
+// dokładnie tak, jak egzekutor asystenta poza modułem budował się na zielono przed kontrolą 5.
+// Widok Strony głównej jest jedynym dozwolonym wyjątkiem: trasa musi coś wyrenderować.
+const dashboardRoute = path.join(root, "src/app/page.tsx");
+if (fs.existsSync(dashboardRoute)) {
+  const zrodlo = fs.readFileSync(dashboardRoute, "utf8");
+  const zakazane = [...zrodlo.matchAll(/from\s+["']@\/modules\/([^/"']+)(\/[^"']*)?["']/g)]
+    .map((m) => ({ id: m[1], sciezka: `@/modules/${m[1]}${m[2] ?? ""}` }))
+    .filter(({ id, sciezka }) => sciezka.endsWith("/contract") || id !== "home");
+
+  if (zakazane.length) {
+    errors.push(
+      `Trasa pulpitu (src/app/page.tsx) sięga do modułów: ${zakazane.map((z) => z.sciezka).join(", ")}.\n` +
+        "    Wkład modułu do migawki pulpitu deklaruje się w src/modules/<id>/dashboard.ts i wpina\n" +
+        "    polem `dashboard` w module.server.ts — nie dopisuje się go do trasy.\n" +
+        "    Dozwolony jest wyłącznie widok Strony głównej (@/modules/home/ui/...).",
+    );
+  }
+}
+
 if (errors.length) {
   console.error("\n✖ Rejestr modułów — niekompletne moduły w src/modules/:\n");
   console.error(errors.map((e) => `  ✖ ${e}`).join("\n\n"));
