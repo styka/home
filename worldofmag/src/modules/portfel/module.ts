@@ -10,4 +10,5 @@ export default defineModule({
   Icon: Wallet,
   sideNav: () => import("./ui/PortfelSideNav").then((m) => ({ default: m.PortfelSideNav })),
   defaultEnabled: true,
+  ai: () => import("./ai"),
 });

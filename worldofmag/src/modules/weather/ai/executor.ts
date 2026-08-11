@@ -1,7 +1,7 @@
 // Z-010: handler akcji asystenta dla modułu Pogoda (lokalizacje + obserwatorzy).
 // Scala oba dawne bloki `module === "weather"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
-import { addLocationByName, deleteLocation, setDefaultLocation, addPresetWatcher, deleteWatcher, addCustomWatcher, updateWatcher } from "@/modules/weather/contract";
+import { addLocationByName, deleteLocation, setDefaultLocation, addPresetWatcher, deleteWatcher, addCustomWatcher, updateWatcher } from "../contract";
 import { asStr, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 

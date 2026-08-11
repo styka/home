@@ -1,7 +1,7 @@
 // Z-010: handler akcji asystenta dla modułu Wiadomości (tematy + odświeżanie).
 // Scala oba dawne bloki `module === "news"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
-import { createTopic, updateTopic, deleteTopic, startNewsRefresh, createSource, updateSource, deleteSource } from "@/modules/news/contract";
+import { createTopic, updateTopic, deleteTopic, startNewsRefresh, createSource, updateSource, deleteSource } from "../contract";
 import { asStr, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 

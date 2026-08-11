@@ -10,4 +10,5 @@ export default defineModule({
   Icon: PawPrint,
   sideNav: () => import("./ui/PetsSideNav").then((m) => ({ default: m.PetsSideNav })),
   defaultEnabled: true,
+  ai: () => import("./ai"),
 });

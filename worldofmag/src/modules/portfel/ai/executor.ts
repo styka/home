@@ -1,8 +1,8 @@
 // Z-010: handler akcji asystenta dla modułu Portfel (wpisy + elementy).
 // Scala trzy dawne bloki `module === "portfel"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
-import { addEntry, getWalletElements, createElement, updateElement, setBalance, archiveElement, deleteElement } from "@/modules/portfel/contract";
-import { createBudget, createGoal, contributeGoal, updateBudget, deleteBudget, updateGoal, deleteGoal } from "@/modules/portfel/contract";
+import { addEntry, getWalletElements, createElement, updateElement, setBalance, archiveElement, deleteElement } from "../contract";
+import { createBudget, createGoal, contributeGoal, updateBudget, deleteBudget, updateGoal, deleteGoal } from "../contract";
 import { asStr, resolveByName, ownerOrArr } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 

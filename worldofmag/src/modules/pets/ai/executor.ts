@@ -4,9 +4,9 @@
 // aktualizacji katalogu w agent/route.ts + petActions.ts.
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
-import { updatePet, setPetStatus, deletePet } from "@/modules/pets/contract";
-import { completeTreatment } from "@/modules/pets/contract";
-import { updateEnclosure, deleteEnclosure, assignPetToEnclosure } from "@/modules/pets/contract";
+import { updatePet, setPetStatus, deletePet } from "../contract";
+import { completeTreatment } from "../contract";
+import { updateEnclosure, deleteEnclosure, assignPetToEnclosure } from "../contract";
 import { asStr } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 import type { RecurringRule, PetStatus } from "@/types";
