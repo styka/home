@@ -1,0 +1,26 @@
+import type { DashboardContributor, DashboardContext } from "@/platform/dashboard";
+import type { DashboardSnapshot } from "../home/contract";
+import { prisma } from "@/platform/db/prisma";
+
+/**
+ * 050: wkład Zakupów do migawki pulpitu — liczba pozycji do kupienia na niezarchiwizowanych listach.
+ *
+ * Zapytania **przeniesione bez zmiany** z trasy: te same `where`, ten sam dwuetapowy odczyt
+ * (najpierw listy w zakresie użytkownika/zespołu, potem pozycje `NEEDED` na tych listach).
+ */
+const wklad: DashboardContributor<Pick<DashboardSnapshot, "pendingItems">> = async (userId, ctx) => {
+  const listy = await prisma.shoppingList.findMany({
+    where: {
+      archived: false,
+      OR: [{ ownerId: userId }, ...(ctx.teamIds.length > 0 ? [{ ownerTeamId: { in: ctx.teamIds } }] : [])],
+    },
+    select: { id: true },
+  });
+  const listIds = listy.map((l) => l.id);
+  const pendingItems = listIds.length > 0
+    ? await prisma.item.count({ where: { listId: { in: listIds }, status: "NEEDED" } })
+    : 0;
+  return { pendingItems };
+};
+
+export default wklad;

@@ -10,6 +10,7 @@ import { getHealthEvents } from "@/modules/health/contract";
 import { getLowStock, getExpiringStorage } from "@/modules/magazynowanie/contract";
 import type { TaskPriority, CareAgendaItem } from "@/types";
 import type { DashboardSnapshot } from "@/modules/home/contract";
+import { collectDashboardSnapshot } from "@/lib/dashboardSnapshot";
 
 /**
  * 050/T-2 — MIGAWKA PULPITU WYODRĘBNIONA Z TRASY. **Czysta przenosina.**
@@ -52,29 +53,6 @@ export async function collectDashboardSnapshotLegacy(
   // 050: aktywność i zaproszenia WYPADŁY z tej funkcji — sięgają po sesję (`headers()`), więc
   // wywołane ze skryptu rzucają „headers was called outside a request scope". To dane konta, nie
   // modułu; zostają w trasie zgodnie z planem §7.4. Zrzut je wykrył od razu.
-  const [userLists, recentReports] = await Promise.all([
-    has("module.shopping")
-      ? prisma.shoppingList.findMany({
-          where: {
-            archived: false,
-            OR: [
-              { ownerId: userId },
-              ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-            ],
-          },
-          select: { id: true },
-        })
-      : Promise.resolve([] as { id: string }[]),
-    prisma.report.count({
-      where: { createdAt: { gte: sevenDaysAgo }, ...reportAccessFilter },
-    }),
-  ]);
-
-  const listIds = userLists.map((l) => l.id);
-  const pendingItems =
-    has("module.shopping") && listIds.length > 0
-      ? await prisma.item.count({ where: { listId: { in: listIds }, status: "NEEDED" } })
-      : 0;
 
   // Tasks (conditional)
   let todayTasks = 0;
@@ -127,19 +105,6 @@ export async function collectDashboardSnapshotLegacy(
     }));
   }
 
-  // Notes (conditional)
-  let pinnedNotes = 0;
-  if (has("module.notes")) {
-    pinnedNotes = await prisma.note.count({
-      where: {
-        OR: [
-          { ownerId: userId },
-          ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-        ],
-        pinned: true,
-      },
-    });
-  }
 
   // Kitchen (conditional)
   let todayMealsForUI: Array<{ id: string; slot: string; title: string; servings: number; recipeSlug: string | null }> = [];
@@ -205,16 +170,6 @@ export async function collectDashboardSnapshotLegacy(
     }
   }
 
-  // Portfel (conditional) — net worth + monthly trend
-  let wallet: { totalNet: number; currency: string; monthlyRate: number } | null = null;
-  if (has("module.portfel")) {
-    try {
-      const overview = await getWalletOverview();
-      wallet = { totalNet: overview.totalNet, currency: overview.currency, monthlyRate: overview.monthlyRate };
-    } catch {
-      wallet = null;
-    }
-  }
 
   // Nauka języków (conditional) — karty do powtórki (SRS)
   let languagesDue = 0;
@@ -283,20 +238,19 @@ export async function collectDashboardSnapshotLegacy(
 
 
 
+  const zDeklaracji = await collectDashboardSnapshot(userId, userPermissions, { todayStart, todayEnd, teamIds });
+
   return {
-    pendingItems,
+    ...zDeklaracji,
     todayTasks,
     overdueTasks,
     todayTaskPreview,
-    pinnedNotes,
     todayMeals: todayMealsForUI,
     expiringSoon: expiringCount,
-    recentReports,
     petCareDue,
     petAgenda,
     vehiclesCount,
     vehicleAlerts,
-    wallet,
     languagesDue,
     languageDecks,
     healthUpcomingCount,
