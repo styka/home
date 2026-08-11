@@ -76,6 +76,9 @@ które przetrwały cel „8 → 1".
 
 - [ ] **AC-4** — Given moduł wnoszący dane do pulpitu, when pulpit je zbiera, then bierze je
       z deklaracji modułu, a nie z ręcznej listy w trasie.
+      **⏸️ ODŁOŻONE na następny przebieg** — patrz „Świadome ograniczenie przebiegu" w §5. Brak
+      dowodu runtime, a `tsc` sam w sobie nie jest dowodem braku regresji dla dziesięciu bloków
+      obliczeń.
       **Korekta z `/plan` (C-54):** spec zakładał za rozdz. 9.3 „kafelek pulpitu" (`dashboard: () =>
       import("./ui/DashboardCard")`). **W Omnii takich kafelków nie ma** — pulpit składa się z sekcji
       przekrojowych (briefing, ulubione, „dziś", siatka modułów, szybkie akcje, sugestie, ostatnio
@@ -146,6 +149,18 @@ które przetrwały cel „8 → 1".
 priorytetem jest **czysta granica**, nie liczba domkniętych zadań. Wtedy: platforma przeniesiona,
 reszta zatrzymana z **jawnym** raportem w dzienniku i żadne z trzech zadań nie zostaje przemilczane.
 Zatrzymanie się na czystej linii jest wynikiem; zostawienie warstwy AI w połowie migracji **nie jest**.
+
+> **Skorzystano z tego ograniczenia (C-54, decyzja z etapu `/implement`).** Zadania **4** (platforma
+> `ai`/`llm`/`jobs`) i **8** (asystent z deklaracji) są **zrobione**, tak samo jak kalendarzowa
+> połowa zadania 7. **Migawka pulpitu zostaje na następny przebieg** i powód jest konkretny, nie
+> zmęczeniem materiału: w przeciwieństwie do kalendarza **nie ma dla niej dowodu runtime**. Kalendarz
+> dało się porównać zdarzenie po zdarzeniu (38 = 38, listy identyczne), bo agregat jest funkcją,
+> którą można zawołać. Migawka pulpitu powstaje **w miejscu**, w 322-liniowej trasie z dziesięcioma
+> gałęziami na uprawnienia — żeby ją zrzucić „przed", trzeba by ją najpierw wyodrębnić, czyli wykonać
+> dokładnie tę zmianę, którą chcemy zweryfikować. Przeniesienie dziesięciu bloków, którego jedynym
+> sprawdzeniem byłby `tsc`, to ryzyko cichej regresji na produkcji — a cały przebieg stoi na obietnicy
+> „zero zmian widocznych dla użytkownika". Następny przebieg zaczyna od **zbudowania tego dowodu**
+> (wyodrębnienie obliczeń do funkcji + zrzut), dopiero potem przenosi.
 
 ## 6. Wpływ na Omnia
 

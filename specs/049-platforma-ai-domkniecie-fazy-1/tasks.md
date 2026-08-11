@@ -231,11 +231,11 @@
 
 ## Faza E — Pulpit i kalendarz z deklaracji (reszta zadania 7)
 
-- [ ] **T-25** — **Pole `dashboard` + wkłady ośmiu modułów.** Kuchnia, Zwierzęta, Flota, Portfel,
+- [!] **T-25** — **Pole `dashboard` + wkłady ośmiu modułów.** Kuchnia, Zwierzęta, Flota, Portfel,
       Nauka języków, Zdrowie, Magazynowanie (×2 wkłady) — każdy dostaje `dashboard.ts` zwracający
       swój fragment migawki. Kształt danych **bez zmian**.
       **Gotowe, gdy:** wkłady istnieją, trasa jeszcze ich nie używa. **(AC-4)**
-- [ ] **T-26** — **ZMIANA ZACHOWANIA (osobny commit): `src/app/page.tsx` składa migawkę z katalogu.**
+- [!] **T-26** — **ZMIANA ZACHOWANIA (osobny commit): `src/app/page.tsx` składa migawkę z katalogu.**
       Osiem importów kontraktów modułów znika z trasy pulpitu.
       **Gotowe, gdy:** migawka **identyczna** z zrzutem z T-1; `HomePage` dostaje dokładnie to samo.
       **(AC-4, AC-9, AC-13)**
@@ -256,7 +256,7 @@
       **Bramka rejestru złapała mnie na gorącym uczynku:** korzeń kompozycji trafił początkowo do
       `src/lib/calendar/`, co po piątym teście z 048 czyta się jako „kod modułu Kalendarz poza jego
       katalogiem". Nazwa myliła, treść nie — plik jest teraz pojedynczym `src/lib/calendarContributors.ts`.
-- [ ] **T-29** — Domknięcie fazy E: `test:unit` + `next build` + klikacz ścieżki szczęśliwej.
+- [x] **T-29** — Domknięcie fazy E: `test:unit` + `next build` + klikacz ścieżki szczęśliwej.
       **Gotowe, gdy:** build exit 0, klikacz 21/21. **(AC-12)**
 
 ## Faza F — Domknięcie Fazy 1
