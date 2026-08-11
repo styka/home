@@ -23,7 +23,7 @@ type Snapshot = {
   egzekutory: string[];
   zadaniaWTle: string[];
   kalendarz?: { userId: string; miesiac: string; zdarzenia: string[] };
-  pulpit?: Record<string, unknown>;
+  pulpit?: { zUprawnieniami: Record<string, unknown>; bezUprawnien: Record<string, unknown> };
 };
 
 /**
@@ -125,6 +125,21 @@ async function main() {
         const { collectCalendarEvents } = await import("../src/lib/calendarAgenda");
         const now = new Date();
         const zdarzenia = await collectCalendarEvents(user.id, now.getFullYear(), now.getMonth());
+        // 050: migawka pulpitu — dwa zrzuty. Drugi (bez uprawnień) jest materiałem do AC-5:
+        // wkład modułu, do którego użytkownik nie ma dostępu, nie może zostać zawołany.
+        const { collectDashboardSnapshotLegacy } = await import("../src/lib/dashboardLegacy");
+        const WSZYSTKIE = [
+          "module.shopping", "module.tasks", "module.notes", "module.kitchen", "module.pets",
+          "module.flota", "module.portfel", "module.languages", "module.health",
+          "module.magazynowanie",
+        ];
+        const stabilnie = (v: unknown): unknown =>
+          JSON.parse(JSON.stringify(v, (k, val) => (k === "id" ? "<id>" : val)));
+        snapshot.pulpit = {
+          zUprawnieniami: stabilnie(await collectDashboardSnapshotLegacy(user.id, WSZYSTKIE, false)) as Record<string, unknown>,
+          bezUprawnien: stabilnie(await collectDashboardSnapshotLegacy(user.id, [], false)) as Record<string, unknown>,
+        };
+
         snapshot.kalendarz = {
           userId: user.email ?? user.id,
           miesiac: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
@@ -146,7 +161,8 @@ async function main() {
     `✓ Zrzut: ${Object.keys(snapshot.akcjeAsystenta).length} modułów / ${liczbaAkcji} akcji · ` +
       `${snapshot.readToole.length} read-tooli · ${snapshot.egzekutory.length} egzekutorów · ` +
       `${snapshot.zadaniaWTle.length} typów zadań · ` +
-      `${snapshot.kalendarz?.zdarzenia.length ?? 0} zdarzeń kalendarza → ${out}`,
+      `${snapshot.kalendarz?.zdarzenia.length ?? 0} zdarzeń kalendarza · ` +
+      `${Object.keys(snapshot.pulpit?.zUprawnieniami ?? {}).length} pól migawki pulpitu → ${out}`,
   );
 }
 

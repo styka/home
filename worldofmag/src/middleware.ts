@@ -9,7 +9,8 @@ export default middleware
 export const config = {
   // Bramka logowania pomija: API auth, health, feed iCal (Z-150: auth tokenem w URL,
   // nie sesją), zasoby _next, generowane ikony (icon/apple-icon/pwa-icon), manifest,
+  // 050: `api/dashboard-baseline` jest TYMCZASOWE (zrzut punktu odniesienia) i znika w T-12b.
   // service worker i favicon — muszą być publiczne, bo przeglądarka/iOS/klient kalendarza
   // pobierają je BEZ sesji (inaczej dostają redirect zamiast treści).
-  matcher: ["/((?!api/auth|api/health|api/calendar/ical|_next/static|_next/image|icon|apple-icon|apple-touch-icon|pwa-icon|manifest|sw\\.js|favicon).*)"],
+  matcher: ["/((?!api/auth|api/health|api/calendar/ical|api/dashboard-baseline|_next/static|_next/image|icon|apple-icon|apple-touch-icon|pwa-icon|manifest|sw\\.js|favicon).*)"],
 }

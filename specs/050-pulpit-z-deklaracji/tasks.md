@@ -1,7 +1,7 @@
 # Zadania: Migawka pulpitu z deklaracji
 
 - **Plan:** ./plan.md (050-pulpit-z-deklaracji)
-- **Status:** todo
+- **Status:** w trakcie
 - **Data:** 2026-08-11
 
 > **Zasada nadrzędna tego przebiegu:** **najpierw dowód, potem przenosiny.** Faza A jest warunkiem
@@ -27,18 +27,18 @@
 
 ## Faza A — DOWÓD (warunek wstępny całej reszty)
 
-- [ ] **T-1** — **Rozszerzyć fixture o dane dla wszystkich jedenastu wkładów.**
+- [x] **T-1** — **Rozszerzyć fixture o dane dla wszystkich jedenastu wkładów.**
       `scripts/fixture-calendar-surface.ts` sadzi dziś dane dla siedmiu źródeł agendy. Pulpit czyta
       inne rzeczy: pozycje listy zakupów, przypięte notatki, spiżarnię z krótkim terminem, saldo
       portfela, talie z powtórkami, braki magazynowe, raport.
       **Gotowe, gdy:** każdy z jedenastu wkładów ma w bazie dane dające **niezerowy** wynik.
       **(AC-2)**
-- [ ] **T-2** — **Wyodrębnić obliczenia trasy do funkcji — CZYSTA PRZENOSINA.**
+- [x] **T-2** — **Wyodrębnić obliczenia trasy do funkcji — CZYSTA PRZENOSINA.**
       `src/app/page.tsx` → funkcja biorąca `userId`, `permissions`, `isAdmin` **parametrem** (żadnej
       sesji w środku, jak `collectCalendarEvents`). Ta sama treść, ta sama kolejność, te same
       `try/catch` i wartości domyślne. Trasa woła ją i przekazuje wynik do `HomePage`.
       **Gotowe, gdy:** `git diff` pokazuje przenosiny, nie przepisanie; UI bez zmian. **(AC-1)**
-- [ ] **T-3** — **Zrzucić punkt odniesienia przez tymczasową trasę diagnostyczną.**
+- [x] **T-3** — **Zrzucić punkt odniesienia przez tymczasową trasę diagnostyczną.**
       **Korekta planu (C-54).** Pierwsze podejście — zrzut ze skryptu — dało **6 niezerowych pól
       z 20**, bo siedem z jedenastu bloków woła kontrakty modułów, a te są Server Actions
       wywodzącymi użytkownika z sesji; poza żądaniem rzucają „headers was called outside a request
@@ -48,6 +48,15 @@
       w fazie D.
       **Gotowe, gdy:** `specs/050…/baseline-pulpit.json` ma **wszystkie 20 pól niezerowych** tam,
       gdzie fixture zasiał dane, oraz drugi zrzut dla użytkownika bez uprawnień. **(AC-2, AC-5)**
+      **Wynik: 19 z 20 pól niezerowych** (dwudzieste to `adminStats`, celowo `null`).
+      **Odkrycie ważniejsze niż sam pomiar:** siedem z jedenastu bloków **ignoruje parametr
+      `userId`** — wołają kontrakty modułów, a te wywodzą użytkownika z **sesji**. Zasianie danych na
+      osobnym koncie dawało zera, bo bloki czytały konto z ciasteczka. Fixture umie więc teraz siać
+      na istniejącym użytkowniku (`--email=`), a zrzut idzie na koncie z sesji.
+      **Drugie odkrycie, istotne dla AC-5:** w zrzucie „bez uprawnień" niezerowe zostaje
+      `recentReports` — Raporty **nie są dziś bramkowane uprawnieniem modułu** (to powierzchnia
+      dostępna każdemu zalogowanemu). Korzeń kompozycji musi to uszanować: moduł z `permission: null`
+      wołamy zawsze. Bramkowanie go byłoby zmianą zachowania.
 
 ## Faza B — Kształt
 
