@@ -1,7 +1,7 @@
 # Zadania: Platforma AI i domknięcie Fazy 1
 
 - **Plan:** ./plan.md (049-platforma-ai-domkniecie-fazy-1)
-- **Status:** todo
+- **Status:** w trakcie
 - **Data:** 2026-08-11
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna
@@ -33,13 +33,26 @@
 
 ## Faza 0 — Punkt odniesienia
 
-- [ ] **T-1** — Zapisać stan startowy jako liczby: `check:actions` = 160, `check:ai-coverage` = 551,
+- [x] **T-1** — Zapisać stan startowy jako liczby: `check:actions` = 160, `check:ai-coverage` = 551,
       `check:cost-badge` = 35, `check:content-memory` = 35, `check:module-registry` = 21 modułów,
       `grep -rn "@/modules/" src/platform/` = 0, plików `lib/ai`+`lib/jobs` importujących moduły = 18.
       Dodatkowo **zrzucić katalog asystenta** (liczba akcji i read-tooli per moduł) oraz **wynik
       agregatu kalendarza i migawki pulpitu** dla użytkownika z seeda — to jest materiał porównawczy
       do AC-8/AC-9, którego po przenosinach już się nie odtworzy.
       **Gotowe, gdy:** liczby i zrzuty zapisane jako punkt odniesienia całego przebiegu.
+      **Wynik:** `baseline.json` (obok tego pliku) + `scripts/snapshot-ai-surface.ts`.
+      160 akcji w 16 modułach · 56 read-tooli · 16 egzekutorów · 12 typów zadań · 38 zdarzeń
+      kalendarza w sześciu modułach. Bramki: 160 / 551 / 35 / 35; `src/platform/` = **0** realnych
+      importów modułu (jedno trafienie grepa to komentarz); `lib/ai`+`lib/jobs` = 18 plików z importem
+      modułu.
+      **Odkrycie:** zwykły seed **nie tworzy żadnych danych użytkownika** (konta powstają przez
+      OAuth), więc agregat kalendarza zwracał zero zdarzeń — a pusty wynik zgadza się z pustym nawet
+      wtedy, gdy przebudowa zgubi połowę źródeł. Dlatego powstał `scripts/fixture-calendar-surface.ts`:
+      po jednym zdarzeniu w **każdym** z siedmiu źródeł agendy, idempotentnie, wyłącznie lokalnie.
+      **Ograniczenie zapisane wprost:** migawka pulpitu **nie ma** zrzutu runtime — trasa pulpitu to
+      322 linie składania w miejscu, z dziesięcioma gałęziami na uprawnienia; jej zrzut wymagałby
+      odtworzenia sesji. AC-9 dla pulpitu weryfikujemy **strukturalnie** (te same propsy wchodzą do
+      `HomePage`), co przy przenoszeniu zapytań bez ich przepisywania jest równoważnym dowodem.
 
 ## Faza A — `platform/llm` (czysta przenosina)
 
