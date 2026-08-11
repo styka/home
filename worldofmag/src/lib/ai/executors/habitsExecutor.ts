@@ -3,7 +3,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { toggleHabitDay, createHabit, updateHabit, setHabitArchived, deleteHabit, createTaskFromHabit } from "@/modules/habits/contract";
-import { asStr, undoAction, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executors/shared";
+import { asStr, undoAction, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executorShared";
 import { isoDate } from "@/lib/habitStats";
 import type { AIAction } from "@/platform/ai/aiAction";
 

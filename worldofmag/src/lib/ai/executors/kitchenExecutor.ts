@@ -1,3 +1,4 @@
+import { resolveOrCreateList } from "@/modules/shopping/contract";
 // Z-010: handler akcji asystenta dla modułu Kuchnia (jadłospis + przepisy + spiżarnia).
 // Scala trzy dawne bloki `module === "kitchen"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
@@ -6,7 +7,7 @@ import { setMealPlanEntry, markMealCooked, markMealSkipped, updateMealPlanEntry,
 import { addPantryItem, updatePantryItem, consumePantryItem, deletePantryItem, setPantryQuantity, moveItemToPantry, autoReplenishToList } from "@/modules/kitchen/contract";
 import { createRecipe, deleteRecipe, updateRecipe, archiveRecipe, duplicateRecipe, markRecipeCooked, shopForRecipe, addIngredient, addStep } from "@/modules/kitchen/contract";
 import { createCookbook, updateCookbook, deleteCookbook } from "@/modules/kitchen/contract";
-import { asStr, resolveOrCreateList, type ExecOutcome, resolveByName, ownerOrArr } from "@/lib/ai/executors/shared";
+import { asStr, type ExecOutcome, resolveByName, ownerOrArr } from "@/lib/ai/executorShared";
 import { isoDate } from "@/lib/habitStats";
 import type { AIAction } from "@/platform/ai/aiAction";
 

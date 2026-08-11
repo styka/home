@@ -2,7 +2,7 @@
 // Scala oba dawne bloki `module === "languages"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
 import { createDeck, updateDeck, deleteDeck, addWord, updateWord, deleteWord, bulkAddWords } from "@/modules/languages/contract";
-import { asStr, resolveDeckId, ownerOrArr } from "@/lib/ai/executors/shared";
+import { asStr, resolveDeckId, ownerOrArr } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 
 export async function executeLanguageAction(action: AIAction, userId: string): Promise<string> {

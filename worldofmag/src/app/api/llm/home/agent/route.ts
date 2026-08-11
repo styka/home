@@ -19,7 +19,7 @@ import { extractJsonLoose, salvageAnswerText } from "@/lib/ai/agentProtocol";
 import { compactToolResults, collapseUsedToolData, TOOL_DATA_HEADER } from "@/lib/ai/agentContext";
 import { humanizeAssistantText } from "@/lib/ai/humanize";
 import type { AssistantWorkLevel } from "@/platform/llm/operationTypes";
-import { isAccessError, toUserFacingError } from "@/lib/ai/executors/shared";
+import { isAccessError, toUserFacingError } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 import { readCostBadgeEnabled } from "@/lib/ai/costVisibility";
 

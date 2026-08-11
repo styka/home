@@ -3,7 +3,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { addFuelLog, addServiceRecord, createVehicle, updateVehicle, deleteVehicle } from "@/modules/flota/contract";
-import { asStr, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executors/shared";
+import { asStr, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 
 export async function executeFlotaAction(action: AIAction, userId: string): Promise<string | ExecOutcome> {

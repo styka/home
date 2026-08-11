@@ -1,9 +1,10 @@
+import { resolveOrCreateList } from "@/modules/shopping/contract";
 // Z-010: handler akcji asystenta dla modułu Magazynowanie.
 // Scala oba dawne bloki `module === "magazynowanie"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { addStorageItem, adjustStorageQuantity, updateStorageItem, deleteStorageItem, transferStock, addSupplier, updateSupplier, deleteSupplier, addLowStockToShoppingList, addBatch } from "@/modules/magazynowanie/contract";
-import { asStr, undoAction, resolveByName, ownerOrArr, resolveOrCreateList, type ExecOutcome } from "@/lib/ai/executors/shared";
+import { asStr, undoAction, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 
 export async function executeStorageAction(action: AIAction, userId: string): Promise<string | ExecOutcome> {

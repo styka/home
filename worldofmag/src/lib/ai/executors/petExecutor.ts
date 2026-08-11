@@ -7,7 +7,7 @@ import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { updatePet, setPetStatus, deletePet } from "@/modules/pets/contract";
 import { completeTreatment } from "@/modules/pets/contract";
 import { updateEnclosure, deleteEnclosure, assignPetToEnclosure } from "@/modules/pets/contract";
-import { asStr } from "@/lib/ai/executors/shared";
+import { asStr } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 import type { RecurringRule, PetStatus } from "@/types";
 

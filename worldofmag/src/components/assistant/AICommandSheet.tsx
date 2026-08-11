@@ -26,7 +26,7 @@ import { parseServerVoiceValue, toServerVoiceValue, type ServerVoice } from "@/l
 import { ASSISTANT_LEVEL_DESCRIPTIONS, ASSISTANT_LEVEL_LABELS, ASSISTANT_LEVELS, type AssistantLevel } from "@/types";
 import type { AIAction } from "@/platform/ai/aiAction";
 import { isDestructiveAction } from "@/platform/ai/aiAction";
-import type { ActionResult } from "@/lib/ai/executors/shared";
+import type { ActionResult } from "@/lib/ai/executorShared";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
 import { DEFAULT_ASSISTANT_STARTERS } from "@/lib/ai/assistantStarters";
 import { useOverlayState } from "@/hooks/useOverlayState";

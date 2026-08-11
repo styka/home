@@ -6,7 +6,7 @@ import {
   updateWorkshopItem, deleteWorkshopItem, adjustWorkshopItemQuantity,
   addWorkshopProject, updateWorkshopProject, deleteWorkshopProject,
 } from "@/modules/warsztaty/contract";
-import { asStr, resolveByName, ownerOrArr } from "@/lib/ai/executors/shared";
+import { asStr, resolveByName, ownerOrArr } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 
 export async function executeWarsztatAction(action: AIAction, userId: string): Promise<string> {

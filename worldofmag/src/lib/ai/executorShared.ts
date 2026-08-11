@@ -6,7 +6,6 @@
 // skanuje ten katalog, ale ten plik nie deklaruje żadnych akcji).
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
-import { createList } from "@/modules/shopping/contract";
 import type { AIAction } from "@/platform/ai/aiAction";
 import type { TaskPriority } from "@/types";
 
@@ -96,31 +95,6 @@ async function accessibleListIds(userId: string): Promise<string[]> {
     select: { id: true },
   });
   return lists.map((l) => l.id);
-}
-
-export async function resolveOrCreateList(
-  userId: string,
-  opts: { listId?: string; listName?: string; activeListId?: string }
-): Promise<{ id: string; name: string }> {
-  const teamIds = await getUserTeamIds(userId);
-  const ownerOr = teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
-
-  let list =
-    (opts.listId && (await prisma.shoppingList.findFirst({ where: { OR: ownerOr, id: opts.listId } }))) || null;
-  if (!list && opts.listName) {
-    list = await prisma.shoppingList.findFirst({ where: { OR: ownerOr, name: { contains: opts.listName, mode: "insensitive" } } });
-  }
-  if (!list && opts.activeListId) {
-    list = await prisma.shoppingList.findFirst({ where: { OR: ownerOr, id: opts.activeListId } });
-  }
-  if (!list) {
-    list = await prisma.shoppingList.findFirst({ where: { OR: ownerOr }, orderBy: { createdAt: "asc" } });
-  }
-  if (!list) {
-    const created = await createList("Zakupy");
-    return { id: created.id, name: created.name };
-  }
-  return { id: list.id, name: list.name };
 }
 
 export async function resolveListId(

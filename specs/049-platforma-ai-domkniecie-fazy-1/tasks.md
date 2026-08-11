@@ -85,11 +85,21 @@
       dla użytkownika (`activeListId`, `currentProjectId`), a nie po module — inaczej platforma
       zaczęłaby znać moduły tylnymi drzwiami. Przy okazji `aiAction.ts` (czyste typy) przeniesione do
       platformy, bo bez tego typ wkładu musiałby importować warstwę aplikacji: 25 importów w 23 plikach.
-- [ ] **T-5** — **`executors/shared.ts` → `src/lib/ai/executorShared.ts` + wstrzyknięcie Zakupów.**
+- [x] **T-5** — **`executors/shared.ts` → `src/lib/ai/executorShared.ts` + wstrzyknięcie Zakupów.**
       Plik jest wspólny dla wszystkich egzekutorów i importuje kontrakt Zakupów (`createList`) —
       po regule konsumentów nie należy do żadnego modułu, więc zostaje w warstwie kompozycji,
       a zależność od Zakupów dostaje **parametrem**.
       **Gotowe, gdy:** żaden egzekutor nie importuje kontraktu przez `shared`. **(AC-3)**
+      **Wynik — rozwiązane inaczej, niż zakładał plan (C-54).** Plan mówił „wstrzyknąć zależność
+      od Zakupów parametrem". Przy pisaniu okazało się, że jedyną funkcją sięgającą po kontrakt jest
+      `resolveOrCreateList`, a to **nie jest logika asystenta, tylko Zakupów**: rozstrzyganie, która
+      lista jest „tą właściwą" i co zrobić, gdy użytkownik nie ma żadnej. Wstrzyknięcie
+      przeciągałoby `createList` przez sześć wywołań w trzech egzekutorach tylko po to, żeby udawać,
+      że plik nie należy do Zakupów. Funkcja pojechała więc **do modułu Zakupy**
+      (`lib/resolveList.ts`, eksport w kontrakcie), a Kuchnia i Magazynowanie wołają ją przez
+      kontrakt — co ujawnia zależność, która i tak istniała (`assertListAccess`), zamiast ją ukrywać.
+      Reszta pliku (`resolveListId`, `resolveTaskId`, `resolveNoteId`, …) sięga do Prismy bez importu
+      modułu, więc zostaje w warstwie kompozycji jako `src/lib/ai/executorShared.ts`.
 - [ ] **T-6** — **Egzekutory, grupa 1 — moduły bez sprzężeń:** Kontakty, Raporty, Nawyki, Flota.
       `src/lib/ai/executors/<x>Executor.ts` → `src/modules/<x>/ai/executor.ts`; blok tekstu
       z `ACTION_CATALOG_BY_MODULE[<x>]` → `src/modules/<x>/ai/catalog.ts`; `ai/index.ts` + pole `ai`

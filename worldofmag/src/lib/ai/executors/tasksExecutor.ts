@@ -6,7 +6,7 @@ import { createTaskProject, updateTaskProject, deleteTaskProject } from "@/modul
 import { createTaskTag } from "@/modules/tasks/contract";
 import { createProjectGroup, updateProjectGroup, deleteProjectGroup } from "@/modules/tasks/contract";
 import { submitFeedbackTask } from "@/actions/feedback";
-import { addDays, shiftPriority, asStr, undoAction, resolveTaskId, resolveProjectIdForCreate, type ExecOutcome } from "@/lib/ai/executors/shared";
+import { addDays, shiftPriority, asStr, undoAction, resolveTaskId, resolveProjectIdForCreate, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 import type { TaskStatus, TaskPriority } from "@/types";
 

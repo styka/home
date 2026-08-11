@@ -2,7 +2,7 @@
 // Scala oba dawne bloki `module === "weather"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
 import { addLocationByName, deleteLocation, setDefaultLocation, addPresetWatcher, deleteWatcher, addCustomWatcher, updateWatcher } from "@/modules/weather/contract";
-import { asStr, type ExecOutcome } from "@/lib/ai/executors/shared";
+import { asStr, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 
 export async function executeWeatherAction(action: AIAction, userId: string): Promise<string | ExecOutcome> {
