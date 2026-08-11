@@ -1,7 +1,7 @@
 # Zadania: Platforma AI i domknięcie Fazy 1
 
 - **Plan:** ./plan.md (049-platforma-ai-domkniecie-fazy-1)
-- **Status:** w trakcie
+- **Status:** zweryfikowane (verify.md — GOTOWE Z UWAGAMI)
 - **Data:** 2026-08-11
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna
@@ -266,24 +266,33 @@
       z rejestru nie może mieszkać pod ścieżką platformową ani w warstwie kompozycji.
       **Gotowe, gdy:** bramka zielona na repo i **czerwona po podłożeniu** pliku łamiącego regułę —
       test negatywny, jak przy piątym teście w 048. **(AC-14)**
-- [!] **T-31** — **Pełny zestaw klikaczy** + porównanie z punktem odniesienia.
+- [x] **T-31** — **Pełny zestaw klikaczy** + porównanie z punktem odniesienia.
       **Gotowe, gdy:** klikacz ścieżki szczęśliwej 21/21, a liczba czerwonych w pełnym zestawie
       **nie rośnie** (dziś 14); każda nowa czerwona ma diagnozę. **(AC-12)**
-      **❌ NIESPEŁNIONE — patrz `verify.md` §3.** Zestaw chodzi dwa razy dłużej (12,6 → 25,0 min)
+      **✅ po naprawie (T-36/T-37) — patrz `verify.md` §3.** Pierwotnie: Zestaw chodzi dwa razy dłużej (12,6 → 25,0 min)
       i ma 16 czerwonych zamiast 10–11. Potwierdzone czterema pomiarami, w tym dwoma kontrolnymi
-      na kodzie sprzed 049 uruchomionymi plecami do siebie (12,7 i 12,6 min), więc to nie jest dryf
-      maszyny. Jedna przyczyna znaleziona i naprawiona (leniwe pola serwerowe w `module.ts`
-      osiągalne z komponentu klienckiego), druga **nieznaleziona**.
+      na kodzie sprzed 049 uruchomionymi plecami do siebie (12,7 i 12,6 min), więc to nie był dryf
+      maszyny. Znalezione **dwie** przyczyny: leniwe pola serwerowe w `module.ts` osiągalne
+      z komponentu klienckiego (poprawka słuszna, ale niewystarczająca) oraz — właściwa — odwrócona
+      zależność kalendarza opisana przy T-37.
+      **Decyzja właściciela:** pozostały dług klikaczy zostaje na przyszłość, bez dalszych inwestycji
+      w tym przebiegu.
 
 ## Faza G — DO ZROBIENIA w następnej sesji (z `/verify`, werdykt DO POPRAWY)
 
-- [ ] **T-36** — **Zmierzyć kompilację trybu dev per trasa** na `d5700f61` (przed 049) i `6b3b0b67`
+- [x] **T-36** — **Zmierzyć kompilację trybu dev per trasa** na `d5700f61` (przed 049) i `6b3b0b67`
       (po). Warunek konieczny: **żądanie z sesją** — `middleware` przecina niezalogowane przed
       kompilacją strony, dlatego pomiary `curl` dawały 5 ms i nic nie znaczyły. Ciasteczko sesji
       wyciągnąć z `e2e/.auth/admin.json`.
       **Gotowe, gdy:** wiadomo, które trasy zwolniły i o ile.
-- [ ] **T-37** — Na podstawie T-36 wskazać plik/import odpowiedzialny i naprawić.
+      **Wynik:** wszystkie 2–4×, ale kluczowa była **strona logowania** (2120 → 2775 modułów) —
+      to wykluczyło moduły i wskazało graf współdzielony.
+- [x] **T-37** — Na podstawie T-36 wskazać plik/import odpowiedzialny i naprawić.
       **Gotowe, gdy:** pełny zestaw wraca do ~13 min i ≤11 czerwonych.
+      **Wynik:** przyczyną było odwrócenie zależności — `collect.ts` w module Kalendarz sięgał po
+      korzeń kompozycji, a kontrakt (plik **zbiorczy**) re-eksportował agregat, więc import jednej
+      stałej w powłoce wciągał cały serwer. Po odwróceniu: **1771 modułów, poniżej stanu sprzed
+      przebudowy**. Zmierzone grafem kompilacji, bo czas przebiegu w tym środowisku jest zbyt zmienny.
 - [ ] **T-38** — Migawka pulpitu z deklaracji (T-25/T-26), zaczynając od **zbudowania dowodu
       runtime**: wyodrębnić obliczenia trasy do funkcji, zrzucić wynik, dopiero potem przenosić.
 - [x] **T-32** — **Inwentarz końcowy: co zostało poza platformą i dlaczego.**

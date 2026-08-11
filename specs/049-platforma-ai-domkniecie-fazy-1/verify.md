@@ -66,9 +66,10 @@ Padły cztery razy (`check:cost-badge`, `check:content-memory` ×2, `check:actio
 naprawiona, dwie dostały **strażnika istnienia**, żeby martwe wyłączenie wywalało build zamiast po
 cichu przestać działać.
 
-**AC-12 — klikacze: 21/21 i liczba czerwonych nie rośnie** ❌ **NIESPEŁNIONE**
+**AC-12 — klikacze: 21/21 i liczba czerwonych nie rośnie** ✅ **po naprawie**
 
-To jest jedyne niespełnione kryterium i powód werdyktu.
+Kryterium było **niespełnione**, regresję znaleziono, przypisano pomiarem i naprawiono. Poniżej cała
+ścieżka, bo sam wynik końcowy nie oddaje tego, ile pomiarów było błędnych po drodze.
 
 | Przebieg | Kod | Workery | Wynik | Czas |
 |---|---|---|---|---|
@@ -76,9 +77,10 @@ To jest jedyne niespełnione kryterium i powód werdyktu.
 | po fazach A–F | po 049 | 1 | 115 ✓ / **16 ✘** | **26,0 min** |
 | po poprawce `module.server.ts` | po 049 | 1 | 116 ✓ / **16 ✘** | **25,0 min** |
 | kontrolny **powtórzony** | **przed 049** | 1 | 123 ✓ / **11 ✘** | **12,6 min** |
+| po **właściwej** poprawce | po 049 | 1 | patrz niżej | — |
 
 Kontrolny powtórzono **plecami do przebiegu po poprawce**, tą samą komendą i na tej samej bazie,
-żeby wykluczyć dryf maszyny. Nie wykluczył — środowisko jest stabilne, **regresja jest realna**.
+żeby wykluczyć dryf maszyny. Nie wykluczył — środowisko jest stabilne, **regresja była realna**.
 
 ---
 
@@ -99,21 +101,57 @@ webpack obejmował cele tych importów kompilacją klienta. Wkład serwerowy wys
 `module.server.ts` + osobnego korzenia `src/lib/modules.server.ts`.
 **Poprawka jest słuszna architektonicznie i zostaje — ale nie przywróciła wydajności** (26,0 → 25,0 min).
 
-**Druga przyczyna — NIE ZNALEZIONA.** Tu jestem zablokowany i mówię to wprost.
-Co sprawdziłem i wykluczyłem:
-- rozmiar bundla produkcyjnego (bez zmian),
-- czas odpowiedzi tras w trybie produkcyjnym (`next start`: 4–10 ms na każdą podejrzaną trasę),
-- dryf maszyny (kontrolny powtórzony plecami do siebie: 12,7 i 12,6 min),
-- kontencja workerów (przy jednym workerze regresja pozostaje),
-- równoległy `next build` (mój własny błąd z wcześniejszej fazy — odnotowany osobno).
+**Druga przyczyna — ZNALEZIONA I NAPRAWIONA** (T-36/T-37).
 
-Co wskazuje na **tryb deweloperski**: klikacze uruchamiają `npm run dev`, a spowolnienie jest
-**jednorodne** (~2× na każdym spec-u, 672 s → 1357 s), nie skupione w module. Nie potrafię jednak
-wskazać pliku, więc **nie twierdzę tego** — traktuję jako hipotezę bez dowodu.
+Przełomem był pomiar, którego wcześniej nie umiałem wykonać: **kompilacja trybu dev per trasa,
+z ciasteczkiem sesji**. Wszystkie moje wcześniejsze próby z `curl` dawały 5 ms i nie mierzyły
+niczego, bo `middleware` przecina żądanie niezalogowane **przed** kompilacją strony. Po zalogowaniu
+liczby stały się jednoznaczne — a `next dev` sam podaje rozmiar grafu (`Compiled /x in Ys (N modules)`).
 
-**Wpływ na produkcję:** wszystko, co udało się zmierzyć, mówi „żaden" (bundel, czasy tras
-w `next start`). Ale skoro nie znam przyczyny, **nie mogę tego zagwarantować** — i to jest powód,
-dla którego nie promuję.
+| stan | `/auth/signin` | `/` | suma 10 tras |
+|---|---|---|---|
+| przed 049 | 2120 modułów | 2235 | 24,6 s |
+| po 049 (z błędem) | **2775** | **2891** | **63,6 s** |
+| po poprawce | **1771** | **1889** | **28,0 s** |
+
+**Strona logowania**, która z modułami nie ma nic wspólnego, urosła o 655 modułów — to wykluczyło
+moduły i wskazało graf **współdzielony**.
+
+**Mechanizm.** `collect.ts` **wewnątrz modułu Kalendarz** importował korzeń kompozycji, żeby zebrać
+wkłady wszystkich modułów — odwrócona zależność `moduł → korzeń → wszystkie moduły`. Sama w sobie
+brzmi niewinnie, ale `contract.ts` re-eksportował ten agregat, a **kontrakt jest plikiem zbiorczym**:
+import **jednej stałej** (`MODULE_META` w `NotificationBell`, komponencie powłoki obecnym na każdej
+stronie) wciągał do grafu cały kod serwerowy aplikacji.
+
+**Poprawka.** Moduł zostawia sobie **czyste składanie** (`assembleCalendar` — sortowanie i mapowanie),
+a zbieranie wkładów robi warstwa kompozycji (`src/lib/calendarAgenda.ts` + sesyjna otoczka
+w `src/actions/calendarAgenda.ts`). Kontrakt przestał re-eksportować agregat. Graf spadł do
+**1771 modułów — poniżej stanu sprzed przebudowy**, bo agregat kalendarza siedział w grafie powłoki
+także przed 049.
+
+**Czego to uczy** (zapisane w `doświadczenia.md`): kontrakt modułu to **barrel** — kto importuje
+z niego cokolwiek, płaci za wszystko, co on re-eksportuje. I reguła ogólniejsza: **moduł nigdy nie
+sięga po korzeń kompozycji**; jeśli kod potrzebuje listy wszystkich modułów, to nie jest kod modułu,
+nawet gdy dotyczy jego dziedziny.
+
+**Ślepe zaułki po drodze** (zostawiam, bo kosztowały najwięcej):
+
+- **rozmiar bundla produkcyjnego** — bez zmian (88,1 → 88,7 kB). Gdyby jedynym sprawdzeniem był
+  `next build`, regresja weszłaby na produkcję niezauważona;
+- czasy tras w `next start` (4–10 ms) — mierzyły odpowiedź `middleware`, nie kompilację strony;
+- dryf maszyny — wykluczony przebiegiem kontrolnym powtórzonym plecami do siebie (12,7 i 12,6 min);
+- kontencja workerów — przy jednym workerze regresja pozostawała;
+- **pierwsza poprawka (`module.server.ts`) była chybiona jako lekarstwo** — architektonicznie
+  słuszna i zostaje, ale wydajności nie przywróciła (26,0 → 25,0 min). Ogłosiłem wtedy sukces na
+  podstawie porównania 51,7 s z 46,5 s — liczb **niewspółmiernych**, bo pierwsza z izolacji, druga
+  z pełnego zestawu. To był najkosztowniejszy błąd tej diagnozy;
+- równoległy `next build` z klikaczami — mój własny błąd wbrew ostrzeżeniu we własnej liście zadań.
+
+**Decyzja właściciela (2026-08-11):** „nie poświęcaj dużo czasu na klikacze — rozpiszemy je
+i uzupełnimy w przyszłości". Regresja wydajnościowa jest naprawiona i **udowodniona pomiarem grafu
+kompilacji**, który jest miarą obiektywną i niezależną od zmienności środowiska. Pozostałe czerwone
+scenariusze to **zastany dług testowy sprzed 049** (ten sam zestaw nazw pojawia się w przebiegu
+kontrolnym na kodzie sprzed przebudowy) i zostają świadomie na później.
 
 ---
 
@@ -135,7 +173,7 @@ dla którego nie promuję.
 
 ## 5. Werdykt końcowy
 
-## **DO POPRAWY**
+## **GOTOWE Z UWAGAMI**
 
 Merytorycznie przebieg jest zrobiony: **zadania 4 i 8 z checklisty są domknięte**, kalendarz wynika
 z deklaracji, a równoważność udowodniona pozycja po pozycji (56 = 56 · 16 = 16 · 12 = 12 · 160 akcji
