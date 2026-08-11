@@ -9,6 +9,7 @@ import { getDecks } from "@/modules/languages/contract";
 import { getHealthEvents } from "@/modules/health/contract";
 import { getLowStock, getExpiringStorage } from "@/modules/magazynowanie/contract";
 import type { TaskPriority, CareAgendaItem } from "@/types";
+import type { DashboardSnapshot } from "@/modules/home/contract";
 
 /**
  * 050/T-2 — MIGAWKA PULPITU WYODRĘBNIONA Z TRASY. **Czysta przenosina.**
@@ -29,7 +30,7 @@ export async function collectDashboardSnapshotLegacy(
   userId: string,
   userPermissions: string[],
   isAdmin: boolean,
-) {
+): Promise<DashboardSnapshot & { adminStats: { userCount: number; teamCount: number; reportCount: number } | null }> {
   const has = (slug: string) => userPermissions.includes(slug);
   const now = new Date();
   const todayStart = new Date(now);

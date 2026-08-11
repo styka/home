@@ -1,5 +1,6 @@
 import type { AiContribution } from "./ai/contribution";
 import type { CalendarContributor } from "./calendar";
+import type { DashboardContributor } from "./dashboard";
 import type { JobHandler } from "./jobs/types";
 
 /**
@@ -26,4 +27,7 @@ export type ModuleServerContributions = {
   jobs?: () => Promise<{ default: Record<string, JobHandler<any, any>> }>;
   /** Wkład do wspólnej agendy kalendarza. */
   calendar?: () => Promise<{ default: CalendarContributor }>;
+  /** Wkład do migawki pulpitu (strona główna). */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  dashboard?: () => Promise<{ default: DashboardContributor<any> }>;
 };
