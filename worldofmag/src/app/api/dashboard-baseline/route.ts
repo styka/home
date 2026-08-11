@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/platform/db/prisma";
-import { collectDashboardSnapshotLegacy } from "@/lib/dashboardLegacy";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
+import { collectDashboardSnapshot } from "@/lib/dashboardSnapshot";
 
 /**
  * 050/T-3 — TRASA TYMCZASOWA, kasowana w fazie domknięcia (T-12b).
@@ -30,6 +31,16 @@ export async function GET(req: Request) {
     "module.flota", "module.portfel", "module.languages", "module.health", "module.magazynowanie",
   ];
   const permissions = url.searchParams.has("brak") ? [] : WSZYSTKIE;
-  const snapshot = await collectDashboardSnapshotLegacy(user.id, permissions, false);
-  return NextResponse.json(snapshot);
+
+  // Ten sam kontekst, który liczy trasa pulpitu — inaczej porównanie z punktem odniesienia
+  // mierzyłoby różnicę granic dnia, a nie różnicę wkładów.
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(now);
+  todayEnd.setHours(23, 59, 59, 999);
+  const teamIds = await getUserTeamIds(user.id);
+
+  const snapshot = await collectDashboardSnapshot(user.id, permissions, { todayStart, todayEnd, teamIds });
+  return NextResponse.json({ ...snapshot, adminStats: null });
 }
