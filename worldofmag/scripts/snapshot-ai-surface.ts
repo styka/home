@@ -35,11 +35,7 @@ type Snapshot = {
  * na moduły, żeby po przebudowie sprawdzić, że żaden moduł nie zgubił swojego wkładu.
  */
 function akcjeZKatalogu(): Record<string, string[]> {
-  const src = read("src/lib/ai/agentPrompt.ts");
-  const petSrc = read("src/lib/ai/petActions.ts");
-  const start = src.indexOf("ACTION_CATALOG_BY_MODULE");
-  const end = src.indexOf("const NAVIGATION_CATALOG");
-  const body = src.slice(start, end);
+  // 049: katalog akcji nie jest już mapą w prompcie — każdy moduł wnosi swój blok.
   const out: Record<string, string[]> = {};
 
   const wyciagnij = (tresc: string) => {
@@ -52,33 +48,60 @@ function akcjeZKatalogu(): Record<string, string[]> {
     return Array.from(typy).sort();
   };
 
-  Array.from(body.matchAll(/^ {2}(\w+):\s*`([\s\S]*?)`,$/gm)).forEach((b) => {
-    out[b[1]] = wyciagnij(b[2]);
-  });
-  // Katalog akcji Zwierząt mieszka w osobnym pliku — bramka dokleja go tak samo.
-  out.pets = Array.from(new Set((out.pets ?? []).concat(wyciagnij(petSrc)))).sort();
+  const modulesDir = path.join(root, "src/modules");
+  for (const mod of fs.readdirSync(modulesDir)) {
+    const aiDir = path.join(modulesDir, mod, "ai");
+    if (!fs.existsSync(aiDir)) continue;
+    let tresc = "";
+    for (const f of fs.readdirSync(aiDir)) {
+      if (f.endsWith(".ts") && !["executor.ts", "readTools.ts", "index.ts"].includes(f)) {
+        tresc += "\n" + fs.readFileSync(path.join(aiDir, f), "utf8");
+      }
+    }
+    if (tresc) out[mod] = wyciagnij(tresc);
+  }
   return out;
 }
 
 /** Nazwy narzędzi odczytu — z jawnej listy, którą przebieg ma wyprowadzić z deklaracji. */
 function readToole(): string[] {
-  const src = read("src/lib/ai/agentTools.ts");
-  const start = src.indexOf("export const READ_TOOL_NAMES");
-  const body = src.slice(start, src.indexOf("]", start));
-  return Array.from(body.matchAll(/"([a-z_0-9]+)"/g)).map((m) => m[1]).sort();
+  // 049: nazwy narzędzi odczytu pochodzą z wkładów modułowych i przekrojowego.
+  const nazwy: string[] = [];
+  const zbierz = (tresc: string) => {
+    const start = tresc.indexOf("export const readTools:");
+    if (start < 0) return;
+    Array.from(tresc.slice(start).matchAll(/^  ([a-z_0-9]+): async /gm)).forEach((m) => nazwy.push(m[1]));
+  };
+  const modulesDir = path.join(root, "src/modules");
+  for (const mod of fs.readdirSync(modulesDir)) {
+    const f = path.join(modulesDir, mod, "ai", "readTools.ts");
+    if (fs.existsSync(f)) zbierz(fs.readFileSync(f, "utf8"));
+  }
+  zbierz(read("src/lib/ai/coreReadTools.ts"));
+  return nazwy.sort();
 }
 
 /** Moduły, dla których trasa egzekucji ma gałąź. */
 function egzekutory(): string[] {
-  const src = read("src/app/api/llm/home/execute/route.ts");
-  const mods = Array.from(src.matchAll(/module === "([a-z]+)"/g)).map((m) => m[1]);
-  return Array.from(new Set(mods)).sort();
+  // 049: egzekutory mieszkają w modułach, a nie w łańcuchu `if` w trasie.
+  const modulesDir = path.join(root, "src/modules");
+  return fs.readdirSync(modulesDir)
+    .filter((m) => fs.existsSync(path.join(modulesDir, m, "ai", "executor.ts")))
+    .sort();
 }
 
 /** Typy zadań, które wolno zakolejkować z klienta. */
 function zadaniaWTle(): string[] {
-  const src = read("src/lib/jobs/handlers.ts");
-  return Array.from(src.matchAll(/^\s*"([a-z]+\.[A-Za-z]+)":/gm)).map((m) => m[1]).sort();
+  // 049: allowlista składa się z deklaracji modułów + wkładu platformy.
+  const typy: string[] = [];
+  const zbierz = (f: string) => {
+    if (!fs.existsSync(f)) return;
+    Array.from(fs.readFileSync(f, "utf8").matchAll(/^\s*"([a-z]+\.[A-Za-z]+)":/gm)).forEach((m) => typy.push(m[1]));
+  };
+  const modulesDir = path.join(root, "src/modules");
+  for (const mod of fs.readdirSync(modulesDir)) zbierz(path.join(modulesDir, mod, "jobs", "index.ts"));
+  zbierz(path.join(root, "src/platform/jobs/handlers/index.ts"));
+  return typy.sort();
 }
 
 async function main() {

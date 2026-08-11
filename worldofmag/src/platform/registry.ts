@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { AiContribution } from "./ai/contribution";
 import type { JobHandler } from "./jobs/types";
+import type { CalendarContributor } from "./calendar";
 
 /**
  * 046 — DEKLARACJA MODUŁU (rozdz. 9.3 dokumentu „Omnia 🧐 — architektura docelowa").
@@ -86,6 +87,13 @@ export type ModuleDeclaration = {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   jobs?: () => Promise<{ default: Record<string, JobHandler<any, any>> }>;
+  /**
+   * 049: wkład modułu do wspólnej agendy kalendarza (rozdz. 9.3).
+   *
+   * Leniwy, bo sięga do bazy. Bez tego pola moduł Kalendarz musiałby znać tabele wszystkich
+   * pozostałych — i znał, przez dziewięć zapytań w jednym `Promise.all`.
+   */
+  calendar?: () => Promise<{ default: CalendarContributor }>;
 };
 
 /** Deklaracja po uzupełnieniu wartości domyślnych — tego używa rejestr. */

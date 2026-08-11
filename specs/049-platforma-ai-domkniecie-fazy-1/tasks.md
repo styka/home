@@ -239,14 +239,23 @@
       Osiem importów kontraktów modułów znika z trasy pulpitu.
       **Gotowe, gdy:** migawka **identyczna** z zrzutem z T-1; `HomePage` dostaje dokładnie to samo.
       **(AC-4, AC-9, AC-13)**
-- [ ] **T-27** — **Pole `calendar` + wkłady sześciu modułów.** Zadania, Kuchnia, Zdrowie (+ leki),
+- [x] **T-27** — **Pole `calendar` + wkłady sześciu modułów.** Zadania, Kuchnia, Zdrowie (+ leki),
       Zwierzęta, Flota, Nauka języków, Usługi — każdy wnosi swoje zdarzenia. **Te same `where`, ten
       sam `select`** co dziś w `collectCalendarEvents` — przenosimy zapytanie, nie przepisujemy go.
       **Gotowe, gdy:** wkłady istnieją, agregat jeszcze ich nie używa. **(AC-5)**
-- [ ] **T-28** — **ZMIANA ZACHOWANIA (osobny commit): `collectCalendarEvents` składa wkłady.**
+- [x] **T-28** — **ZMIANA ZACHOWANIA (osobny commit): `collectCalendarEvents` składa wkłady.**
       Moduł Kalendarz przestaje sięgać do tabel sześciu innych modułów.
       **Gotowe, gdy:** agregat zwraca **identyczny** wynik jak zrzut z T-1 — porównany zdarzenie po
       zdarzeniu. **(AC-5, AC-9, AC-13)**
+      **Wynik: 38 zdarzeń przed, 38 po, listy identyczne co do znaku.** `collectCalendarEvents`
+      schudło z 227 linii do 32: została **wyłącznie** kompozycja i sortowanie. Siedem wkładów
+      (Zadania, Kuchnia, Zdrowie z lekami, Flota, Zwierzęta, Języki, Usługi) przeniesiono
+      z zapytaniami bez ich przepisywania — te same `where`, `select`, identyfikatory i adresy.
+      **Wkład, który rzuci wyjątkiem, nie wywala agendy** — kalendarz czyta siedem źródeł i jedno
+      padnięcie nie może zamienić sześciu działających w pustą stronę.
+      **Bramka rejestru złapała mnie na gorącym uczynku:** korzeń kompozycji trafił początkowo do
+      `src/lib/calendar/`, co po piątym teście z 048 czyta się jako „kod modułu Kalendarz poza jego
+      katalogiem". Nazwa myliła, treść nie — plik jest teraz pojedynczym `src/lib/calendarContributors.ts`.
 - [ ] **T-29** — Domknięcie fazy E: `test:unit` + `next build` + klikacz ścieżki szczęśliwej.
       **Gotowe, gdy:** build exit 0, klikacz 21/21. **(AC-12)**
 

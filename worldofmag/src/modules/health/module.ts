@@ -10,4 +10,5 @@ export default defineModule({
   Icon: HeartPulse,
   defaultEnabled: true,
   ai: () => import("./ai"),
+  calendar: () => import("./calendar"),
 });

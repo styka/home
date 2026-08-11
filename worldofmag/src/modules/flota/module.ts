@@ -11,4 +11,5 @@ export default defineModule({
   sideNav: () => import("./ui/FlotaSideNav").then((m) => ({ default: m.FlotaSideNav })),
   defaultEnabled: true,
   ai: () => import("./ai"),
+  calendar: () => import("./calendar"),
 });

@@ -9,4 +9,5 @@ export default defineModule({
   color: "var(--accent-blue)",
   Icon: Handshake,
   defaultEnabled: true,
+  calendar: () => import("./calendar"),
 });
