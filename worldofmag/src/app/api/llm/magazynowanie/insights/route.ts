@@ -2,7 +2,7 @@
 // Klient: runJob("magazyn.insights", stats).
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
-import { magazynInsightsHandler } from "@/lib/jobs/handlers/magazynInsights";
+import { magazynInsightsHandler } from "@/modules/magazynowanie/jobs/magazynInsights";
 
 export async function POST(req: NextRequest) {
   const session = await auth();

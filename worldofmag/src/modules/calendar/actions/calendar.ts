@@ -1,35 +1,12 @@
 "use server";
 
 import { randomBytes } from "crypto";
-import { unstable_cache } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import { collectCalendarEvents } from "../lib/collect";
-import type { CalendarEvent } from "../lib/index";
 
 function feedUrl(token: string): string {
   const base = (process.env.AUTH_URL || "").replace(/\/$/, "");
   return `${base}/api/calendar/ical?token=${token}`;
-}
-
-/**
- * Agreguje zdarzenia z wielu modułów (zadania, plan posiłków, zdrowie, leki,
- * przeglądy floty, opieka nad zwierzętami, powtórki SRS, usługi) w jeden widok
- * kalendarza dla zalogowanego usera. Rdzeń (Z-150) w `@/lib/calendar/collect`
- * (reużywany przez feed iCal, który auth tokenem, nie sesją).
- */
-export async function getCalendarEvents(year: number, month0: number): Promise<CalendarEvent[]> {
-  const user = await requireAuth(); // sesja/cookies POZA cache (inaczej Next rzuca w unstable_cache)
-  // Z-072: krótki TTL (60 s) + klucz PER-USER odciąża bazę z powtarzalnej, ciężkiej agregacji
-  // wielomodułowej. `collectCalendarEvents` jest cookie-free → bezpieczne w `unstable_cache`.
-  // Świeżość gwarantuje TTL — bez ręcznej inwalidacji (max ~60 s opóźnienia na agregacie kalendarza).
-  // `user.id` w kluczu cache = brak przecieku między użytkownikami.
-  const cached = unstable_cache(
-    async () => collectCalendarEvents(user.id, year, month0),
-    ["calendar-events", user.id, String(year), String(month0)],
-    { revalidate: 60, tags: [`calendar:${user.id}`] },
-  );
-  return cached();
 }
 
 /**

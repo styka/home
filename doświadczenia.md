@@ -4,6 +4,91 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-11 — Kontrakt modułu jest plikiem ZBIORCZYM: import stałej wciągnął cały serwer
+**Problem:** Po przeniesieniu agregatu kalendarza na składanie z deklaracji `collect.ts` (wewnątrz
+modułu Kalendarz) zaczął importować **korzeń kompozycji**, żeby zebrać wkłady wszystkich modułów.
+To odwrócona zależność: moduł → korzeń → wszystkie moduły. Sama w sobie brzmi niewinnie, ale
+`contract.ts` re-eksportował ten agregat, a kontrakt jest **plikiem zbiorczym** — więc import
+**jednej stałej** (`MODULE_META` w `NotificationBell`, komponencie powłoki obecnym na każdej stronie)
+wciągał do grafu cały kod serwerowy aplikacji. Graf strony logowania — która z modułami nie ma nic
+wspólnego — urósł z **2120 do 2775 modułów**, a kompilacja każdej trasy w trybie dev zwolniła 2–4×.
+Pełny zestaw klikaczy: 12,6 → 25,0 min.
+**Rozwiązanie:** Odwrócenie zależności z powrotem. Moduł Kalendarz zostawia sobie **czyste składanie**
+(`assembleCalendar` — sortowanie i mapowanie), a zbieranie wkładów robi warstwa kompozycji
+(`src/lib/calendarAgenda.ts`). Kontrakt przestał re-eksportować agregat. Graf strony logowania spadł
+do **1771 modułów**, czyli **poniżej** stanu sprzed przebudowy.
+**Lekcja:** Kontrakt modułu to **barrel** — kto importuje z niego cokolwiek, płaci za wszystko, co on
+re-eksportuje. Dokładanie do kontraktu funkcji o ciężkim grafie opodatkowuje **każdego** konsumenta,
+także tego, który chciał tylko stałej. I reguła ogólniejsza: **moduł nigdy nie sięga po korzeń
+kompozycji.** Jeśli kod potrzebuje listy wszystkich modułów, to nie jest kod modułu — nawet jeśli
+dotyczy jego dziedziny. Diagnoza: `next dev` loguje liczbę modułów per trasa (`Compiled /x in Ys
+(N modules)`) i to jest najszybszy sposób, żeby zobaczyć spuchnięty graf.
+
+## 2026-08-11 — Leniwy `import()` w deklaracji modułu spowolnił CAŁĄ aplikację 2×, a build tego nie pokazał
+**Problem:** Deklaracja modułu (`module.ts`) dostała trzy leniwe pola serwerowe — `ai`, `jobs`,
+`calendar` — każde jako `() => import("./…")`. Leniwość miała wystarczyć, żeby kod serwerowy nie
+trafił do przeglądarki. Nie wystarczyła: `MODULES` jest importowane przez `ModuleSidebar`, czyli
+**komponent kliencki**, więc webpack musi objąć cele tych dynamicznych importów kompilacją klienta.
+W produkcji tree-shaking je odsiewa (`next build` pokazał **88,1 → 88,7 kB**, czyli „bez zmian"),
+ale **tryb deweloperski kompiluje je przy każdej stronie**. Efekt: pełny zestaw klikaczy urósł
+z 12,7 do 26,0 minuty, spec smoke z 46 do 125 sekund, a sześć testów ścieżki szczęśliwej zrobiło się
+czerwonych przez przekroczone limity czasu — mimo że aplikacja działała poprawnie.
+**Rozwiązanie:** Wkład serwerowy wyprowadzony do osobnego `module.server.ts` i osobnego korzenia
+kompozycji `src/lib/modules.server.ts`, którego klient nie dotyka. `module.ts` zawiera wyłącznie to,
+co wolno wysłać do przeglądarki. Po poprawce smoke wrócił do 52 s.
+**Lekcja:** „Leniwy import nie trafia do bundla" jest **nieprawdą** po stronie kompilacji — leniwy
+import zmienia moment ładowania, nie przynależność do grafu. Jeśli plik jest osiągalny z komponentu
+klienckiego, wszystko, co importuje (choćby dynamicznie), staje się częścią kompilacji klienta.
+I druga rzecz: **`next build` nie jest miarą wydajności deweloperskiej** — rozmiar bundla może stać
+w miejscu, gdy praca aplikacji spada dwukrotnie. Regresję wydajności widać tylko w pomiarze czasu,
+a jedynym uczciwym sposobem przypisania jej przyczynie jest **uruchomienie tego samego zestawu na
+kodzie sprzed zmiany**, w tym samym środowisku, jeden po drugim.
+
+## 2026-08-11 — Znowu build równolegle z klikaczami, mimo własnego ostrzeżenia w liście zadań
+**Problem:** Uruchomiłem klikacze w tle, a w „wolnej chwili" odpalił `npm run build`, który zaczyna od
+`rm -rf .next`. Zestaw pokazał **23 czerwone zamiast 14**, w tym sześć testów ścieżki szczęśliwej,
+z czasami po 40–70 sekund na test. Wyglądało to jak poważna regresja przebudowy; było wyrwaniem
+serwerowi spod nóg katalogu, z którego serwuje. Reguła „nigdy build równolegle z klikaczami" była
+wypisana **w nagłówku mojej własnej listy zadań** (lekcja z 047).
+**Rozwiązanie:** Powtórzenie zestawu bez niczego w tle.
+**Lekcja:** Reguła zapisana w dokumencie nie broni się sama, gdy proces w tle nie daje sygnału zajętości.
+Zanim odpalisz cokolwiek dotykającego `.next`, sprawdź `ps aux | grep playwright` — jedno polecenie
+kosztuje sekundę, a mylna diagnoza „regresja w przebudowie" kosztuje godziny. Podejrzanie długie czasy
+testów (dziesiątki sekund tam, gdzie zwykle są sekundy) to sygnatura walki o zasób, nie błędu w kodzie.
+
+## 2026-08-11 — Rozbicie promptu na wkłady zgubiło narzędzie, które nie ma implementacji
+**Problem:** Katalog narzędzi odczytu asystenta rozbito na wkłady modułowe, generując wiersze promptu
+z listy narzędzi **mających handler**. `web_search` handlera nie ma — trasa agenta obsługuje je
+osobno, bo idzie do internetu, nie do bazy. Jego wiersz katalogu wyparował, więc model przestałby
+wiedzieć, że narzędzie w ogóle istnieje. Build i `tsc` były zielone; nic tego nie widziało.
+**Rozwiązanie:** Wiersz dopisany do wkładu przekrojowego, z komentarzem, że narzędzie **celowo** nie
+ma tam implementacji. Złapał to test `buildReadToolsPrompt`, który asertuje obecność trzech narzędzi
+przekrojowych w prompcie.
+**Lekcja:** Gdy rozbijasz katalog na kawałki, źródłem prawdy o **kompletności** jest stara lista, a nie
+nowa struktura. Wygeneruj z listy „przed", odejmij „po" i sprawdź resztę — zamiast zakładać, że każdy
+wpis miał odpowiednik w kodzie. Wpis opisujący coś, czego nie ma w tym samym miejscu, ginie pierwszy.
+
+## 2026-08-11 — „Baza cienia" i allowlista: dwa miejsca, w których odruch dokłada za dużo
+**Problem:** Przy składaniu rejestru zadań w tle z deklaracji odruchowo dopisałem do wkładu platformy
+`skins.generate` — bo plik handlera leżał obok pozostałych. Tyle że tego typu **nigdy nie było**
+w `JOB_HANDLERS`: trasa woła go synchronicznie. Wpis poszerzyłby `ENQUEUABLE_TYPES`, czyli listę tego,
+co klient może zakolejkować z przeglądarki — a to granica bezpieczeństwa, nie wygoda.
+**Rozwiązanie:** Porównanie z zrzutem sprzed zmiany (12 typów przed, 12 po) wyłapało nadmiarowy wpis
+od razu. Handler został jako zwykły moduł wołany z trasy, bez wpisu w mapie.
+**Lekcja:** Przy refaktorze listy, która jest **allowlistą**, porównanie „przed/po" nie jest
+formalnością — jest jedyną rzeczą stojącą między refaktorem a cichym poszerzeniem uprawnień.
+„Plik leży obok" nie znaczy „należy do tej samej listy".
+
+## 2026-08-11 — Test, który startuje workera, wiesza cały zestaw
+**Problem:** Po przejściu rejestru zadań na składanie z deklaracji test kolejki dostał poprawkę
+wołającą `ensureJobWorker()` — żeby wstrzyknąć rezolwer handlerów. Zestaw testów przestał się kończyć:
+`npm run test:unit` wisiał do timeoutu bez jednego komunikatu o błędzie.
+**Rozwiązanie:** `ensureJobWorker()` odpala pętlę `setInterval`, która trzyma proces Node przy życiu.
+W teście wstrzykujemy sam rezolwer (`setJobHandlerResolver`), bez startowania pętli.
+**Lekcja:** Test, który wywołuje funkcję „ensure/start/init" produkcyjnego runtime'u, dziedziczy jego
+cykl życia. Objaw jest mylący — nie „test failed", tylko cisza do timeoutu. Gdy zestaw nagle wisi,
+szukaj najpierw tego, co ostatnia zmiana **wystartowała**, a nie tego, co sprawdza.
+
 ## 2026-08-05 — Bramka rozjazdu schematu KASOWAŁA lokalną bazę deweloperską
 **Problem:** `npm run build` wywracał się na ostatnim kroku (`scripts/migrate.js`) błędem Prismy
 **P3005 „The database schema is not empty"**, mimo że chwilę wcześniej `prisma migrate deploy`

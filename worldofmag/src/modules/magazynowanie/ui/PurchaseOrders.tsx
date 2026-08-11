@@ -8,7 +8,7 @@ import {
   deletePurchaseOrder,
   type PurchaseOrderWithLines,
 } from "../actions/storage";
-import { runJob } from "@/lib/jobs/client";
+import { runJob } from "@/platform/jobs/client";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import type { StorageSupplier } from "@prisma/client";

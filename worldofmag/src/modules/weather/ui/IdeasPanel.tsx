@@ -21,7 +21,7 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import type { AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
-import type { AiSectionMode } from "@/lib/ai/sectionMode";
+import type { AiSectionMode } from "@/platform/ai/sectionMode";
 import { UserFactHypothesisCard } from "@/components/ui/UserFactHypothesisCard";
 import { DAY_PARTS, currentDayPart, type DayPart } from "../lib/presets";
 import type { Forecast } from "../lib/openMeteo";

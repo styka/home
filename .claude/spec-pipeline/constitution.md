@@ -31,9 +31,17 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   - Kontrakt zawiera **dokładnie to, czego potrzebują konsumenci** — nie „wszystko na wszelki
     wypadek". Kontrakt rosnący do kilkudziesięciu funkcji to sygnał, że moduł robi za dużo.
   - Moduł rejestruje się **jedną deklaracją** (`defineModule` w `module.ts`): stąd biorą się menu,
-    uprawnienie, mapowanie ścieżek i **nawigacja boczna** (pole `sideNav`, ładowane leniwie — bo
-    `module.ts` czyta kod serwerowy). **Nie dopisuj modułu do równoległych list** — po fali 3 (048)
-    takich list już nie ma i cel „8 → 1" jest osiągnięty; dopisanie nowej byłaby regresją.
+    uprawnienie, mapowanie ścieżek, **nawigacja boczna** (`sideNav`), **wkład do asystenta** (`ai` —
+    katalog akcji, egzekutor, narzędzia odczytu), **zadania w tle** (`jobs`) i **wkład do wspólnej
+    agendy** (`calendar`). **Nie dopisuj modułu do równoległych list** — po 048/049 takich list już
+    nie ma i cel „8 → 1" jest osiągnięty; dopisanie nowej byłoby regresją.
+  - **Wszystkie te pola są LENIWE** (funkcja zwracająca `import()`) i to jest wymóg poprawności,
+    nie optymalizacja — w obie strony: `module.ts` czyta kod serwerowy (więc statyczny import
+    komponentu klienckiego wciągnąłby go tam), a `MODULES` importuje `ModuleSidebar`, komponent
+    kliencki (więc statyczny import egzekutora wciągnąłby Prismę do przeglądarki).
+  - **Gdy platforma potrzebuje wiedzy modułowej, przyjmuje ją parametrem WYMAGANYM.** `buildAiCatalog`
+    dostaje wkłady, worker kolejki — rezolwer handlerów. Parametr opcjonalny z „historycznym"
+    domyślnym jest zakazany: zapomniany argument stałby się cichym wyciekiem uprawnień.
   - **Przynależność pliku ustala lista jego KONSUMENTÓW, nie nazwa.** Zanim przeniesiesz plik do
     modułu, wypisz kto go importuje. Helper używany przez trzy moduły zostaje wspólny; „słownik",
     po który sięga tylko jeden moduł, jest jego własnością. Nazwa mówi, czym plik miał być; lista

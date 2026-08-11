@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/platform/db/prisma";
-import { collectCalendarEvents } from "@/modules/calendar/contract";
+import { collectCalendarEvents } from "@/lib/calendarAgenda";
 import { buildICalendar } from "@/modules/calendar/contract";
 
 export const dynamic = "force-dynamic";

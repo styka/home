@@ -16,15 +16,15 @@ import {
   OPERATION_TYPES,
   OPERATION_TYPE_META,
   isOperationType,
-} from "@/lib/llm/operationTypes";
-import { isSpeechOnlyKind, type ProviderKind } from "@/lib/llm/resolver";
+} from "@/platform/llm/operationTypes";
+import { isSpeechOnlyKind, type ProviderKind } from "@/platform/llm/resolver";
 import {
   LLM_EFFORT_LEVELS,
   effortSupported,
   parseEffort,
   supportsTemperature,
   type LlmEffort,
-} from "@/lib/llm/effort";
+} from "@/platform/llm/effort";
 
 // 031: ustawienia asystenta AI trzymane PER UŻYTKOWNIK (model `AssistantPref`), a nie w
 // pamięci przeglądarki — dzięki temu stałe preferencje i poziom pracy asystenta są te same

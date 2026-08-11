@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { Bug, X } from "lucide-react";
-import { openAssistant } from "@/lib/ai/assistantBus";
-import { FEEDBACK_START_EVENT } from "@/lib/ai/feedbackBus";
+import { openAssistant } from "@/platform/ai/assistantBus";
+import { FEEDBACK_START_EVENT } from "@/platform/ai/feedbackBus";
 import { useOverlayState } from "@/hooks/useOverlayState";
 
 // Tryb wskazywania (admin-only): admin włącza tryb, najeżdża/klika dowolny element

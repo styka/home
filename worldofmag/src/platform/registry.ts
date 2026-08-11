@@ -59,6 +59,10 @@ export type ModuleDeclaration = {
    * (rozdz. 9.3 opisuje ten sam wzorzec dla kafelka pulpitu).
    */
   sideNav?: () => Promise<{ default: ComponentType }>;
+  //
+  // UWAGA: wkład SERWEROWY modułu (asystent, zadania w tle, kalendarz) **nie należy tutaj** —
+  // ta deklaracja trafia przez `MODULES` do komponentu klienckiego powłoki. Patrz
+  // `registry.server.ts` i pomiar, który do tego rozdzielenia doprowadził.
 };
 
 /** Deklaracja po uzupełnieniu wartości domyślnych — tego używa rejestr. */

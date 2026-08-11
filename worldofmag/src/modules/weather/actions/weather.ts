@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import { chatComplete } from "@/lib/llm/chat";
-import { parseJsonLoose } from "@/lib/llm/json";
+import { chatComplete } from "@/platform/llm/chat";
+import { parseJsonLoose } from "@/platform/llm/json";
 import {
   fetchForecast,
   geocode,
@@ -22,11 +22,11 @@ import {
   type IdeaDTO,
   type IdeaState,
 } from "../lib/ideas";
-import { usageFromChat, parseStoredUsage, type AiUsageInfo } from "@/lib/ai/usage";
-import { visibleUsage } from "@/lib/ai/costVisibility";
-import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
-import { resolveSectionMode } from "@/lib/ai/sectionModeResolver";
-import type { AiSectionMode } from "@/lib/ai/sectionMode";
+import { usageFromChat, parseStoredUsage, type AiUsageInfo } from "@/platform/ai/usage";
+import { visibleUsage } from "@/platform/ai/costVisibility";
+import { rememberedContent, hashInputs } from "@/platform/ai/contentMemory";
+import { resolveSectionMode } from "@/platform/ai/sectionModeResolver";
+import type { AiSectionMode } from "@/platform/ai/sectionMode";
 import { buildUserContext, userContextStamp } from "@/lib/userContext";
 import { recordTrash } from "@/platform/trash/trash";
 import { auth } from "@/platform/auth/session";

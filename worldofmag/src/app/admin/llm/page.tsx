@@ -5,7 +5,7 @@ import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getLlmProviders, getAssignments, getAiCostBreakdown, getCostAlertThreshold, getUsdPlnRate, getSpeechConfig, getModelPrices, getFollowupsEnabled, getCostBadgeEnabled } from "@/actions/llmConfig";
 import { getDefaultSectionModes } from "@/actions/aiSections";
-import { CONFIG_LEVELS, type ConfigLevel } from "@/lib/llm/operationTypes";
+import { CONFIG_LEVELS, type ConfigLevel } from "@/platform/llm/operationTypes";
 import { LlmConfigPanel } from "@/components/admin/LlmConfigPanel";
 import { ChevronLeft, Cpu } from "lucide-react";
 import Link from "next/link";

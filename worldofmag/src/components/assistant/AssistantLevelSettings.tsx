@@ -9,7 +9,7 @@ import {
   type AssistantLevelConfigDTO,
   type AssistantOperationPrefDTO,
 } from "@/actions/assistantPrefs";
-import { LLM_EFFORT_LABELS, LLM_EFFORT_LEVELS, type LlmEffort } from "@/lib/llm/effort";
+import { LLM_EFFORT_LABELS, LLM_EFFORT_LEVELS, type LlmEffort } from "@/platform/llm/effort";
 
 /**
  * 034: ustawienia WŁASNEGO poziomu pracy asystenta.

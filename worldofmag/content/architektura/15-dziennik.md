@@ -54,11 +54,11 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
-| 4 | `src/platform/` — przeniesienie wspólnych zdolności | 🟡 | Przeniesione: `auth/{session,permissions,serverUtils,ownership}`, `db/prisma`, `trash`, `audit`, `notifications`, `viewState`, `shortcuts`, `favorites`, `registry`. `platform/ui` jest **re-eksportem** `components/ui` (świadomie — patrz wpis 046). **Zostaje:** `ai` (25 plików / 97 importujących), `llm` (8/55), `jobs` (5/45) |
+| 4 | `src/platform/` — przeniesienie wspólnych zdolności | ✅ | **049: domknięte.** Poza tym, co przeniosły 046–048, w platformie są `ai`, `llm` i `jobs`. `grep "@/modules/"` po `src/platform/` zwraca **zero**. Kod modułowy z tych warstw (egzekutory, read-toole, handlery zadań) wrócił do modułów |
 | 5 | `src/modules/<x>/` — moduł po module | ✅ | **21 z 21.** 046: Trasy TIR, Kontakty, Raporty, QA · 047: Nawyki, Nauka języków, Warsztaty, Magazynowanie, Notatki, Flota, Zdrowie · 048: Wiadomości, Pogoda, Usługi, Kuchnia, Zwierzęta, Portfel, Zakupy, Zadania, Kalendarz, Strona główna. Każdy osobnym commitem. **Lista przejściowa usunięta** |
 | 6 | `contract.ts` + reguła ESLint blokująca import przez granicę | ✅ | Dwie reguły `no-restricted-imports` (moduł↔moduł, platforma↛moduł) + bramka `check:boundaries`, która sama je łamie i wymaga błędu. Sprawdzone: wyłączenie reguły **i** zepsucie konfiguracji czerwienią bramkę |
-| 7 | `defineModule` + wyprowadzenie rejestru, uprawnień, nawigacji | ✅ | Wszystkie 21 modułów deklaruje się jednym plikiem. `PERMISSIONS` zawiera już tylko powierzchnie spoza rejestru. Nawigacja boczna sześciu modułów pochodzi z pola `sideNav` (leniwie). Bramka `check:module-registry` wykrywa też moduł pisany „po staremu". **Pulpit i kalendarz** nadal nie wynikają z deklaracji — to pola `dashboard`/`calendar` z rozdz. 9.3, następny krok |
-| 8 | Migracja asystenta AI na katalog składany z deklaracji | ⬜ | Dokument stawia je **ostatnim w fazie**, po wszystkich modułach — świadomie nietknięte |
+| 7 | `defineModule` + wyprowadzenie rejestru, uprawnień, nawigacji | ✅ | Wszystkie 21 modułów deklaruje się jednym plikiem. `PERMISSIONS` zawiera już tylko powierzchnie spoza rejestru. Nawigacja boczna sześciu modułów pochodzi z pola `sideNav` (leniwie). Bramka `check:module-registry` wykrywa też moduł pisany „po staremu". **049: kalendarz wynika z deklaracji** (pole `calendar`, 7 wkładów, agregat schudł z 227 do 32 linii). **Migawka pulpitu odłożona** — brak dowodu runtime, patrz wpis 049 |
+| 8 | Migracja asystenta AI na katalog składany z deklaracji | ✅ | **049.** Katalog akcji, egzekutory i 56 narzędzi odczytu pochodzą z pola `ai` w deklaracji; `buildAiCatalog` w platformie bierze wkłady parametrem. `check:actions` pilnuje mocniejszej własności: moduł z akcjami **musi** deklarować `ai` |
 
 ### Faza 2 — Współdzielenie i współbieżność
 
@@ -505,3 +505,79 @@ dopisać do niej moduł zamiast utworzyć katalog.
   w tej fali stały się modułami; wyprowadzanie ich z deklaracji to następny krok.
 - **Tagi do warstwy słowników platformy** — razem z ewentualnymi innymi słownikami wspólnymi.
 - **Faza 2** (współdzielenie, `Workspace`, `ResourceGrant`) w całości.
+
+
+### 049 — Faza 1: platforma AI i asystent z deklaracji (zadania 4 i 8) · 2026-08-11
+
+Najbardziej sprzężony element systemu przeszedł za granicę. Po tym przebiegu **`src/platform/` nie
+importuje ani jednego modułu** — ani wnętrza, ani kontraktu.
+
+**Zadania 4 i 8 okazały się jednym ruchem, nie dwoma**
+
+Rekonesans przed kodem pokazał, dlaczego zadanie 4 stało: osiemnaście plików w `lib/ai` i `lib/jobs`
+importowało moduły. Przeniesienie ich do platformy „jak leci" złamałoby regułę, dla której cała Faza 1
+powstała. Rozdz. 9.6 wskazywał wyjście — katalog asystenta ma się **składać z deklaracji** — więc
+kolejność musiała być odwrotna do intuicyjnej: **najpierw kod modułowy wraca do modułów, dopiero
+potem reszta jedzie do platformy jako czysta przenosina.**
+
+**Co zniknęło**
+
+| Równoległa lista | Było | Jest |
+|---|---|---|
+| Katalog akcji asystenta | mapa 16 bloków tekstu w `agentPrompt.ts` | `modules/<x>/ai/catalog.ts` |
+| Rejestr egzekutorów | łańcuch 16 `if (module === …)` w trasie | pole `ai` w deklaracji |
+| Narzędzia odczytu | `switch (name)` po 56 przypadkach, 1199 linii | `modules/<x>/ai/readTools.ts` |
+| Handlery zadań w tle | ręczna mapa `JOB_HANDLERS` | pole `jobs` w deklaracji |
+| Agregat kalendarza | 9 zapytań do tabel 6 modułów, 227 linii | pole `calendar` w deklaracji, 32 linie |
+
+**Odstępstwo od rozdz. 9.3, świadome:** dokument pokazuje `ai: { actions, readTools }` jako pole
+statyczne. W Omnii to by nie zadziałało — `MODULES` importuje `ModuleSidebar`, komponent **kliencki**,
+a egzekutory to kod serwerowy. Wszystkie cztery nowe pola są więc **leniwe**, jak `sideNav` w 048.
+
+**Dowód braku regresji, bo tu obietnica brzmiała „zero zmian"**
+
+Przed pierwszą linijką kodu powstał zrzut powierzchni (`specs/049…/baseline.json`). Po przebudowie
+porównany pozycja po pozycji: **read-toole 56 = 56 · egzekutory 16 = 16 · typy zadań 12 = 12 ·
+akcje per moduł zgodne co do jednej (razem 160) · zdarzenia kalendarza 38 = 38, listy identyczne
+co do znaku.**
+
+Przy okazji wyszło, że **zwykły seed nie tworzy żadnych danych użytkownika** (konta powstają przez
+OAuth), więc agregat kalendarza zwracał zero zdarzeń — a pusty wynik zgadza się z pustym nawet wtedy,
+gdy przebudowa zgubi połowę źródeł. Stąd `scripts/fixture-calendar-surface.ts`: po jednym zdarzeniu
+w każdym z siedmiu źródeł agendy.
+
+**Trzy rzeczy, które złapały narzędzia, a nie oko**
+
+- **Zgubiony `web_search`.** Rozbicie promptu na wkłady modułowe wycięło wiersz katalogu narzędzia,
+  które nie ma implementacji w żadnym module (trasa obsługuje je osobno). Zapalił się test
+  `buildReadToolsPrompt` — pierwszy raz, gdy zarobił na siebie.
+- **O mało nie poszerzona allowlista zadań.** Pisząc rejestr platformowy odruchowo dopisałem
+  `skins.generate`, którego **nigdy nie było** w `JOB_HANDLERS` (trasa woła je synchronicznie). To
+  jest granica bezpieczeństwa — porównanie 12 = 12 nie jest formalnością.
+- **Bramka rejestru na własnym kodzie.** Korzeń kompozycji agendy trafił najpierw do
+  `src/lib/calendar/`, co po piątym teście z 048 czyta się jako „kod modułu Kalendarz poza jego
+  katalogiem". Nazwa myliła, treść nie.
+
+**Odpowiedź KODEM na pytanie kontrolne z rozdz. 14**
+
+„Ile miejsc trzeba dotknąć, żeby dodać moduł?" → **jeden katalog + jeden import w korzeniu
+kompozycji.** I nie jest to deklaracja, tylko rzecz wymuszona: `check:module-registry` ma teraz sześć
+testów i wywala build, gdy kod modułu — albo jego wkład do asystenta czy kolejki — wyląduje poza
+katalogiem modułu. Sprawdzone testem negatywnym.
+
+**Poza zakresem — co zostaje z Fazy 1**
+
+- **Migawka pulpitu z deklaracji** (druga połowa zadania 7) — **odłożona świadomie, z powodem**:
+  w przeciwieństwie do kalendarza nie ma dla niej dowodu runtime. Agregat kalendarza jest funkcją,
+  którą da się zawołać i porównać; migawka pulpitu powstaje **w miejscu**, w 322-liniowej trasie
+  z dziesięcioma gałęziami na uprawnienia. Żeby zrzucić stan „przed", trzeba by ją najpierw
+  wyodrębnić — czyli wykonać dokładnie tę zmianę, którą chcemy zweryfikować. Przenoszenie dziesięciu
+  bloków obliczeń, którego jedynym sprawdzeniem byłby `tsc`, to ryzyko cichej regresji na produkcji.
+  **Następny przebieg zaczyna od zbudowania tego dowodu**, dopiero potem przenosi.
+- **Pole `resources`** (rozdz. 8.4) — należy do Fazy 2, ma sens dopiero z `Workspace`/`ResourceGrant`.
+- **Read-toole przez `requireAccess`** (wymóg z rozdz. 9.6) — **realne zagrożenie bezpieczeństwa**
+  i musi zostać zrobione, ale `requireAccess` powstaje dopiero w zadaniu 10. Zapisane, żeby nie
+  zginęło przy przejściu do Fazy 2.
+
+**Pierwszy krok Fazy 2:** zadanie 9 — modele `Workspace`, `WorkspaceMember`, `ResourceGrant`,
+`ResourceInvitation`.

@@ -2,8 +2,8 @@
 // tu cienka trasa sync (wstecznie). Klient używa kolejki: runJob("magazyn.scan").
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
-import { magazynScanHandler } from "@/lib/jobs/handlers/magazynScan";
-import { JobError } from "@/lib/jobs/types";
+import { magazynScanHandler } from "@/modules/magazynowanie/jobs/magazynScan";
+import { JobError } from "@/platform/jobs/types";
 
 export async function POST(req: NextRequest) {
   const session = await auth();

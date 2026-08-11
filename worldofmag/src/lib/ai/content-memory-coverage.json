@@ -87,55 +87,55 @@
     "mode": "on-demand",
     "reason": "Klasyfikacja intencji wewnątrz tury asystenta — nie jest treścią pokazywaną użytkownikowi."
   },
-  "src/lib/jobs/handlers/kitchenGenerateRecipe.ts": {
+  "src/modules/kitchen/jobs/kitchenGenerateRecipe.ts": {
     "mode": "on-demand",
     "reason": "Przepis generowany z podanego opisu — inny opis to inny przepis; wynik i tak zapisuje się jako przepis."
   },
-  "src/lib/jobs/handlers/kitchenOcrImage.ts": {
+  "src/modules/kitchen/jobs/kitchenOcrImage.ts": {
     "mode": "on-demand",
     "reason": "Odczyt konkretnego zdjęcia; wynik trafia do edytora przepisu."
   },
-  "src/lib/jobs/handlers/kitchenOcrText.ts": {
+  "src/modules/kitchen/jobs/kitchenOcrText.ts": {
     "mode": "on-demand",
     "reason": "Odczyt tekstu z konkretnego zdjęcia; wynik zapisuje się przy zdjęciu."
   },
-  "src/lib/jobs/handlers/kitchenPlanWeek.ts": {
+  "src/modules/kitchen/jobs/kitchenPlanWeek.ts": {
     "mode": "remembered",
     "reason": "Plan tygodnia — treść do czytania, przypisana do konkretnego tygodnia i ustawień."
   },
-  "src/lib/jobs/handlers/magazynDocument.ts": {
+  "src/modules/magazynowanie/jobs/magazynDocument.ts": {
     "mode": "on-demand",
     "reason": "Odczyt konkretnego dokumentu; wynik zapisuje się jako dokument magazynowy."
   },
-  "src/lib/jobs/handlers/magazynInsights.ts": {
+  "src/modules/magazynowanie/jobs/magazynInsights.ts": {
     "mode": "remembered",
     "reason": "Wnioski z analityki magazynu — treść do czytania, niezmieniająca się między wejściami przy tym samym stanie magazynu."
   },
-  "src/lib/jobs/handlers/magazynOrderDraft.ts": {
+  "src/modules/magazynowanie/jobs/magazynOrderDraft.ts": {
     "mode": "on-demand",
     "reason": "Projekt zamówienia dla konkretnego zamówienia; wynik zapisuje się w polu draftText."
   },
-  "src/lib/jobs/handlers/magazynScan.ts": {
+  "src/modules/magazynowanie/jobs/magazynScan.ts": {
     "mode": "on-demand",
     "reason": "Rozpoznanie pozycji z konkretnego zdjęcia; wynik trafia do formularza."
   },
-  "src/lib/jobs/handlers/newsRefresh.ts": {
+  "src/modules/news/jobs/newsRefresh.ts": {
     "mode": "on-demand",
     "reason": "Przebieg odswiezania odpalany jawnym klikniecem „Odswiez”. Kazdy przejazd pracuje na INNYM materiale (nowe artykuly w puli), wiec zapamietany wynik z poprzedniego przebiegu bylby po prostu nieaktualny. Trwalosc daje tu baza — pozycje i fakty zostaja zapisane, a nie liczone od nowa przy kazdym wejsciu na widok. Zapamietywana jest natomiast lista goracych tematow (modules/news/actions/news.ts, kind news.hotTopics)."
   },
-  "src/lib/jobs/handlers/petsInsights.ts": {
+  "src/modules/pets/jobs/petsInsights.ts": {
     "mode": "remembered",
     "reason": "Porady dobrostanu zwierząt — treść do czytania, zależna od stałego zestawu zwierząt i zadań opieki."
   },
-  "src/lib/jobs/handlers/skinGenerate.ts": {
+  "src/platform/jobs/handlers/skinGenerate.ts": {
     "mode": "on-demand",
     "reason": "Generowanie skórki z opisu — operacja odpalana kliknięciem, a wynik zależy WYŁĄCZNIE od tekstu wpisanego przed kliknięciem. Pamięć treści zwracałaby motyw wygenerowany dla poprzedniego opisu, czyli dokładnie to, czego użytkownik nie chce, gdy prosi o inny wygląd. Ponowne generowanie z tym samym opisem jest zamierzone — to sposób na dostanie innego wariantu."
   },
-  "src/lib/jobs/handlers/storesGenerate.ts": {
+  "src/modules/shopping/jobs/storesGenerate.ts": {
     "mode": "on-demand",
     "reason": "Układ sklepu generowany raz dla nowego sklepu; wynik zapisuje się jako graf sklepu."
   },
-  "src/lib/jobs/handlers/userFacts.ts": {
+  "src/platform/jobs/handlers/userFacts.ts": {
     "mode": "on-demand",
     "reason": "Wnioskowanie faktow o uzytkowniku odpalane jawnie i pracujace za kazdym razem na INNYM materiale (nowe zapisane/zablokowane pomysly, nowe tematy). Trwalosc daje tabela UserFact — hipotezy zostaja zapisane, wiec nic nie powstaje dwa razy; pamiec tresci zwrocilaby tu wynik sprzed zmiany zachowan, czyli dokladnie to, czego ten mechanizm ma nie robic."
   }

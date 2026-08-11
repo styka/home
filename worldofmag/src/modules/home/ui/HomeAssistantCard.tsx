@@ -1,7 +1,7 @@
 "use client";
 
 import { Sparkles, ArrowRight } from "lucide-react";
-import { openAssistant } from "@/lib/ai/assistantBus";
+import { openAssistant } from "@/platform/ai/assistantBus";
 import type { AssistantStarter } from "@/lib/ai/assistantStarters";
 
 interface HomeAssistantCardProps {

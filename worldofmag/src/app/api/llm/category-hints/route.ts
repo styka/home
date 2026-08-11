@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chatComplete } from "@/lib/llm/chat";
-import { usageField } from "@/lib/ai/costVisibility";
+import { chatComplete } from "@/platform/llm/chat";
+import { usageField } from "@/platform/ai/costVisibility";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));

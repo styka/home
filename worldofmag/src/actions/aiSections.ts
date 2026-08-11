@@ -18,9 +18,9 @@ import {
   DEFAULT_SECTION_MODE,
   isSectionMode,
   type AiSectionMode,
-} from "@/lib/ai/sectionMode";
-import { readDefaultSectionModes, resolveSectionModes } from "@/lib/ai/sectionModeResolver";
-import type { AiContentKind } from "@/lib/ai/contentMemory";
+} from "@/platform/ai/sectionMode";
+import { readDefaultSectionModes, resolveSectionModes } from "@/platform/ai/sectionModeResolver";
+import type { AiContentKind } from "@/platform/ai/contentMemory";
 
 export interface SectionModeDTO {
   kind: AiContentKind;

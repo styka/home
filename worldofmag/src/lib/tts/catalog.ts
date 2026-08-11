@@ -12,7 +12,7 @@
 // Głosy są tu wpisane, bo dostawcy nie udostępniają ich w jednolity sposób, a lista musi być znana
 // PRZED pierwszym wywołaniem (użytkownik wybiera głos w ustawieniach asystenta).
 
-import type { ProviderKind } from "@/lib/llm/resolver";
+import type { ProviderKind } from "@/platform/llm/resolver";
 import { SERVER_VOICES, type ServerVoice } from "@/lib/tts/serverVoices";
 
 export interface TtsModelSpec {

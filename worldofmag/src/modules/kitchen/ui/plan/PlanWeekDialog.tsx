@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sparkles, Loader2, Wand2, ChefHat } from "lucide-react";
-import { runJob } from "@/lib/jobs/client";
+import { runJob } from "@/platform/jobs/client";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { bulkSetMealPlan } from "../../actions/mealPlans";
@@ -13,7 +13,7 @@ import { MEAL_SLOTS, MEAL_SLOT_LABELS } from "@/types/kitchen";
 import { dateKey, formatDayShort, getWeekDays } from "@/lib/kitchenDate";
 import { polishPlural } from "@/lib/polishPlural";
 import type { AiCostUsage } from "@/components/ui/AiCostBadge";
-import type { AiSectionMode } from "@/lib/ai/sectionMode";
+import type { AiSectionMode } from "@/platform/ai/sectionMode";
 import { AiContentMeta } from "@/components/ui/AiContentMeta";
 
 interface PlanWeekDialogProps {

@@ -13,7 +13,12 @@ function isNote(result: unknown): boolean {
 
 test("Z-181: bramki prywatności read-toolów (finanse opt-out, zdrowie opt-in) + izolacja", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { runReadTool } = await import("@/lib/ai/agentTools");
+  // 049: narzędzia odczytu składają się z deklaracji modułów — test woła je przez katalog,
+  // czyli dokładnie tą drogą co trasa agenta.
+  const { getAiCatalog } = await import("@/lib/ai/catalog");
+  const catalog = await getAiCatalog();
+  const runReadTool = (name: string, args: Record<string, unknown>, userId: string) =>
+    catalog.readTools[name](args, userId);
 
   const A = await prisma.user.create({ data: { email: `rtg-a-${rnd()}@test.local` } });
   const B = await prisma.user.create({ data: { email: `rtg-b-${rnd()}@test.local` } });

@@ -1,4 +1,4 @@
-import type { AiUsageInfo } from "@/lib/ai/usage";
+import type { AiUsageInfo } from "@/platform/ai/usage";
 
 /**
  * 037: KAŻDA odpowiedź typowanego klienta może nieść `usage` — zużycie modelu do pokazania przy
