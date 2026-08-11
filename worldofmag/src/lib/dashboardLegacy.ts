@@ -106,40 +106,7 @@ export async function collectDashboardSnapshotLegacy(
   }
 
 
-  // Kitchen (conditional)
-  let todayMealsForUI: Array<{ id: string; slot: string; title: string; servings: number; recipeSlug: string | null }> = [];
-  let expiringCount = 0;
 
-  if (has("module.kitchen")) {
-    try {
-      const [todayMeals, expiring] = await Promise.all([getTodaysMeals(), getExpiringSoon(3)]);
-      todayMealsForUI = todayMeals.map((m) => ({
-        id: m.id,
-        slot: m.slot,
-        title: m.recipe?.title ?? m.customTitle ?? "—",
-        servings: m.servings,
-        recipeSlug: m.recipe?.slug ?? null,
-      }));
-      expiringCount = expiring.length;
-    } catch {
-      todayMealsForUI = [];
-      expiringCount = 0;
-    }
-  }
-
-  // Pets (conditional) — care agenda (overdue / today / upcoming)
-  let petCareDue = 0;
-  let petAgenda: CareAgendaItem[] = [];
-  if (has("module.pets")) {
-    try {
-      const agenda = await getCareAgenda();
-      petCareDue = agenda.filter((a) => a.bucket === "OVERDUE" || a.bucket === "TODAY").length;
-      petAgenda = agenda.slice(0, 4);
-    } catch {
-      petCareDue = 0;
-      petAgenda = [];
-    }
-  }
 
   // Flota (conditional) — vehicle count + inspection/insurance due within 30 days
   let vehiclesCount = 0;
@@ -171,23 +138,6 @@ export async function collectDashboardSnapshotLegacy(
   }
 
 
-  // Nauka języków (conditional) — karty do powtórki (SRS)
-  let languagesDue = 0;
-  let languageDecks: Array<{ id: string; name: string; targetLang: string; dueCount: number }> = [];
-  if (has("module.languages")) {
-    try {
-      const decks = await getDecks();
-      languagesDue = decks.reduce((sum, d) => sum + (d.dueCount ?? 0), 0);
-      languageDecks = decks
-        .filter((d) => (d.dueCount ?? 0) > 0)
-        .sort((a, b) => (b.dueCount ?? 0) - (a.dueCount ?? 0))
-        .slice(0, 4)
-        .map((d) => ({ id: d.id, name: d.name, targetLang: d.targetLang, dueCount: d.dueCount ?? 0 }));
-    } catch {
-      languagesDue = 0;
-      languageDecks = [];
-    }
-  }
 
   // Zdrowie (conditional) — nadchodzące wizyty i badania
   let healthUpcomingCount = 0;
@@ -210,19 +160,6 @@ export async function collectDashboardSnapshotLegacy(
     }
   }
 
-  // Magazynowanie (conditional) — braki i terminy/gwarancje
-  let storageLowStock = 0;
-  let storageExpiring = 0;
-  if (has("module.magazynowanie")) {
-    try {
-      const [low, expiring] = await Promise.all([getLowStock(), getExpiringStorage(30)]);
-      storageLowStock = low.length;
-      storageExpiring = expiring.length;
-    } catch {
-      storageLowStock = 0;
-      storageExpiring = 0;
-    }
-  }
 
   // Admin stats (conditional)
   let adminStats: { userCount: number; teamCount: number; reportCount: number } | null = null;
@@ -245,18 +182,10 @@ export async function collectDashboardSnapshotLegacy(
     todayTasks,
     overdueTasks,
     todayTaskPreview,
-    todayMeals: todayMealsForUI,
-    expiringSoon: expiringCount,
-    petCareDue,
-    petAgenda,
     vehiclesCount,
     vehicleAlerts,
-    languagesDue,
-    languageDecks,
     healthUpcomingCount,
     healthUpcoming,
-    storageLowStock,
-    storageExpiring,
     adminStats,
   };
 }
