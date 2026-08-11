@@ -1,5 +1,5 @@
 // Z-131 (T-17) — handler: porady dobrostanu zwierząt. Z `/api/llm/pets/insights`. Łagodna degradacja.
-import { chatComplete } from "@/lib/llm/chat";
+import { chatComplete } from "@/platform/llm/chat";
 import { type JobContext } from "@/lib/jobs/types";
 import { usageFromChat } from "@/lib/ai/usage";
 import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";

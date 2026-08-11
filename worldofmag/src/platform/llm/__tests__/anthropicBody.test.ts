@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { openAiBody, anthropicBody } from "@/lib/llm/chat";
-import type { ResolvedLlm } from "@/lib/llm/resolver";
-import type { ChatOptions } from "@/lib/llm/chat";
+import { openAiBody, anthropicBody } from "@/platform/llm/chat";
+import type { ResolvedLlm } from "@/platform/llm/resolver";
+import type { ChatOptions } from "@/platform/llm/chat";
 
 // 026-anthropic-temperature-fix: nowsze modele Anthropic (claude-sonnet-5, Opus 4.x)
 // odrzucają `temperature` błędem 400 „temperature is deprecated for this model".

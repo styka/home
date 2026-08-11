@@ -4,7 +4,7 @@
 // operacji: jedno wywołanie modelu odpalane KLIKNIĘCIEM, zwracające ustrukturyzowany
 // JSON. To nie jest funkcja asystenta czatowego — katalog `AIAction` zostaje nietknięty.
 
-import { chatComplete } from "@/lib/llm/chat";
+import { chatComplete } from "@/platform/llm/chat";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { usageFromChat } from "@/lib/ai/usage";
 import {

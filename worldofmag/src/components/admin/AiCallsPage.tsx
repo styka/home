@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronLeft, Bug, RefreshCw, Copy, Check } from "lucide-react";
 import { getRecentAiCalls, type AiCallLogRow } from "@/actions/llmConfig";
-import { LLM_EFFORT_LABELS, type LlmEffort } from "@/lib/llm/effort";
+import { LLM_EFFORT_LABELS, type LlmEffort } from "@/platform/llm/effort";
 import { aiCallsToText, fmtAiCallTime as fmtTime } from "@/lib/ai/aiCallLog";
 
 // Diagnostyka asystenta AI: surowy log wywołań LLM (per rozmowa), łącznie z

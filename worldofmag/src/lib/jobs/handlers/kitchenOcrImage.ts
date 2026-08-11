@@ -2,7 +2,7 @@
 // Logika przeniesiona z trasy `/api/llm/kitchen/ocr-image` (jedno źródło prawdy).
 // Rzuca `JobError(status)` przy błędach — worker mapuje na porażkę, cienka trasa na HTTP.
 
-import { chatComplete } from "@/lib/llm/chat";
+import { chatComplete } from "@/platform/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { usageFromChat } from "@/lib/ai/usage";

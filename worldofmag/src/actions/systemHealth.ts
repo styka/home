@@ -3,7 +3,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { BASE_CONFIG_LEVEL, OPERATION_TYPES, OPERATION_TYPE_META } from "@/lib/llm/operationTypes";
+import { BASE_CONFIG_LEVEL, OPERATION_TYPES, OPERATION_TYPE_META } from "@/platform/llm/operationTypes";
 import { isSecretConfigured } from "@/lib/crypto/secrets";
 import { summarizeExplainPlan, REPRESENTATIVE_QUERIES, type ScanType } from "@/lib/health/queryDiag";
 

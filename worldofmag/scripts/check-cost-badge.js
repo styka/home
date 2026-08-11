@@ -23,7 +23,17 @@ const manifestPath = path.join(root, "src/lib/ai/cost-badge-coverage.json");
 // Import któregokolwiek z tych symboli oznacza, że plik zajmuje się zużyciem modelu.
 const PRODUCERS = ["usageFromChat", "usageField", "visibleUsage", "accrueUsage", "readCostBadgeEnabled"];
 // Plik, w którym `chatComplete` jest DEFINIOWANE, nie jest jego konsumentem.
-const SELF = new Set(["src/lib/llm/chat.ts"]);
+// 049: warstwa LLM przeniosła się do platformy. Ścieżka jest sprawdzana przy starcie — bez tego
+// przenosiny zamieniłyby wyłączenie w martwy wpis po cichu, a bramka zaczęłaby zgłaszać własną
+// definicję jako brak (trzeci taki przypadek w tej przebudowie).
+const SELF = new Set(["src/platform/llm/chat.ts"]);
+for (const rel of SELF) {
+  if (!fs.existsSync(path.join(root, rel))) {
+    console.error(`\n✖ ${path.basename(__filename)}: wyłączenie wskazuje nieistniejący plik „${rel}".`);
+    console.error("  Ścieżka definicji `chatComplete` się zmieniła — zaktualizuj SELF, nie usuwaj go.\n");
+    process.exit(1);
+  }
+}
 
 function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

@@ -1,11 +1,11 @@
 import { prisma } from "@/platform/db/prisma";
 import { getActivePlan } from "@/lib/plans";
-import { estimateCost, estimateCostUsd } from "@/lib/llm/pricing";
+import { estimateCost, estimateCostUsd } from "@/platform/llm/pricing";
 import { PERMISSIONS } from "@/platform/auth/permissions";
 import { notifyUser } from "@/lib/notify";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
 import { withPln } from "@/lib/usdPln";
-import type { TokenUsage } from "@/lib/llm/chat";
+import type { TokenUsage } from "@/platform/llm/chat";
 
 /**
  * 028: lekki akumulator zużycia dla JEDNEJ odpowiedzi asystenta — sumuje tokeny i

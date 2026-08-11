@@ -11,7 +11,7 @@ import {
   isKindUnique,
   providerMatchesSpec,
 } from "@/lib/tts/catalog";
-import type { ResolvedLlm } from "@/lib/llm/resolver";
+import type { ResolvedLlm } from "@/platform/llm/resolver";
 
 // 032: dostawców wymagających płatnego konta (ElevenLabs, Google, Azure) nie da się sprawdzić realnym
 // nagraniem w środowisku CI — dowodem poprawności jest KONTRAKT ŻĄDANIA: adres, nagłówki i kształt

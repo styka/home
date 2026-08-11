@@ -56,10 +56,17 @@
 
 ## Faza A — `platform/llm` (czysta przenosina)
 
-- [ ] **T-2** — **`src/lib/llm/` → `src/platform/llm/`.** 9 plików, 64 miejsca importujące, **zero**
+- [x] **T-2** — **`src/lib/llm/` → `src/platform/llm/`.** 9 plików, 64 miejsca importujące, **zero**
       importów modułów (sprawdzone) — najprostszy krok fazy i dowód, że wzorzec działa na tej
       warstwie. `src/lib/llm-client.ts` **zostaje** w `src/lib` (to konsument tras, nie warstwa LLM).
       **Gotowe, gdy:** rytuał przechodzi, `src/lib/llm` nie istnieje. **(AC-1, AC-2)**
+      **Wynik:** 9 plików, 71 importów w 55 plikach. Kolizja `src/lib/llm/` (katalog) +
+      `src/lib/llm-client.ts` (plik) rozbrojona przez kotwiczenie wzorca na `"@/lib/llm/` ze slashem
+      — dokładnie lekcja z 048. **Dwie bramki padły, zgodnie z przewidywaniem AC-11:**
+      `check:cost-badge` i `check:content-memory` trzymały ścieżkę definicji `chatComplete`
+      (`SELF = "src/lib/llm/chat.ts"`) i po przenosinach zaczęły zgłaszać własną definicję jako brak.
+      Poza aktualizacją ścieżki obie dostały **strażnika istnienia**: martwe wyłączenie wywala bramkę
+      zamiast po cichu przestać działać. Sprawdzone testem negatywnym.
 - [ ] **T-3** — Domknięcie fazy A: `test:unit` + `next build` na lokalnym Postgresie.
       **Gotowe, gdy:** build exit 0.
 

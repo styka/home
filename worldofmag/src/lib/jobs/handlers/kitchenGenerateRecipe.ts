@@ -1,5 +1,5 @@
 // Z-131 (T-17) — handler: wygeneruj przepis z opisu. Z `/api/llm/kitchen/generate-recipe`.
-import { chatComplete } from "@/lib/llm/chat";
+import { chatComplete } from "@/platform/llm/chat";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { usageFromChat } from "@/lib/ai/usage";
 

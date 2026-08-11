@@ -2,7 +2,7 @@
 // Czyta bibliotekę przepisów + spiżarnię po `ownerId` (nie po sesji — worker) i prosi
 // LLM o dobór przepisów do par (dzień, slot). Rzuca JobError przy błędach.
 import { prisma } from "@/platform/db/prisma";
-import { chatComplete } from "@/lib/llm/chat";
+import { chatComplete } from "@/platform/llm/chat";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { addDays, format } from "date-fns";
 import { JobError, type JobContext } from "@/lib/jobs/types";

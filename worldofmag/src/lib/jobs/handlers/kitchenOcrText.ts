@@ -1,6 +1,6 @@
 // Z-131 (T-17) — handler: transkrypcja CAŁEGO tekstu ze zdjęcia (Markdown). Logika
 // przeniesiona z `/api/llm/kitchen/ocr-text`.
-import { chatComplete } from "@/lib/llm/chat";
+import { chatComplete } from "@/platform/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { assertValidImage } from "@/lib/jobs/handlers/imageInput";

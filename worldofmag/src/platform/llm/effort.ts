@@ -12,7 +12,7 @@
 // gdy jesteśmy pewni rodziny modelu. Panel administratora korzysta z tych samych funkcji, żeby
 // powiedzieć wprost, że dla wybranego modelu ustawienie zostanie pominięte.
 
-import type { ProviderKind } from "@/lib/llm/resolver";
+import type { ProviderKind } from "@/platform/llm/resolver";
 
 export type LlmEffort = "none" | "low" | "medium" | "high";
 

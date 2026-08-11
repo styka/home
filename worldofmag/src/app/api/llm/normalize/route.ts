@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chatComplete } from "@/lib/llm/chat";
+import { chatComplete } from "@/platform/llm/chat";
 import { usageField } from "@/lib/ai/costVisibility";
 
 const SYSTEM_PROMPT = `Jesteś asystentem listy zakupów. Użytkownik poda Ci tekst (mówiony lub pisany) opisujący produkty do kupienia.

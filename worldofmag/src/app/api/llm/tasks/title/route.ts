@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chatComplete } from "@/lib/llm/chat";
+import { chatComplete } from "@/platform/llm/chat";
 import { usageField } from "@/lib/ai/costVisibility";
 
 export async function POST(req: NextRequest) {

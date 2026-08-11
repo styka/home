@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classifyRateLimitKind, rateLimitUserMessage } from "@/lib/llm/chat";
+import { classifyRateLimitKind, rateLimitUserMessage } from "@/platform/llm/chat";
 
 // 017-ai-model-limit-resilience: rozróżnienie limitu dziennego (TPD) od minutowego
 // (TPM) z treści błędu Groqa, żeby komunikat dla użytkownika był UCZCIWY.

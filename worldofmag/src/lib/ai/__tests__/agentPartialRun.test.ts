@@ -6,7 +6,7 @@ import {
   partialRunFallbackMessage,
   type PartialRunLogEntry,
 } from "@/lib/ai/agentPartialRun";
-import { isTruncatedAnthropicResponse, isTruncatedOpenAiResponse } from "@/lib/llm/truncation";
+import { isTruncatedAnthropicResponse, isTruncatedOpenAiResponse } from "@/platform/llm/truncation";
 
 // 032 (zgłoszenie Z-2): przebieg, który się nie domknął, oddawał użytkownikowi jedno bezużyteczne
 // zdanie o „limicie kroków". Teraz musi powiedzieć, co ustalono i co zablokowało dokończenie.

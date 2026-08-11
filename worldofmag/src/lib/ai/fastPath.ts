@@ -9,9 +9,9 @@
 // Fast-path NIE wykonuje zapisu — produkuje AIAction do panelu potwierdzenia
 // (ActionDrawer), tak samo jak krok "plan" agenta (destructive opt-in bez zmian).
 
-import { chatComplete } from "@/lib/llm/chat";
+import { chatComplete } from "@/platform/llm/chat";
 import { accrueUsage, type UsageMeter } from "@/lib/ai/usage";
-import type { AssistantWorkLevel } from "@/lib/llm/operationTypes";
+import type { AssistantWorkLevel } from "@/platform/llm/operationTypes";
 import type { AIAction, AIActionModule } from "@/lib/ai/aiAction";
 
 export type FastPathResult =

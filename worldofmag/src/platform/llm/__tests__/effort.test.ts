@@ -8,7 +8,7 @@ import {
   isEffortRejection,
   parseEffort,
   supportsTemperature,
-} from "@/lib/llm/effort";
+} from "@/platform/llm/effort";
 
 describe("effort — skala", () => {
   it("podnosi wysiłek o jeden stopień, najwyższy zostaje najwyższy", () => {

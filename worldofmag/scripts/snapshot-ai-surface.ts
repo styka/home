@@ -45,16 +45,18 @@ function akcjeZKatalogu(): Record<string, string[]> {
   const wyciagnij = (tresc: string) => {
     const stripped = tresc.replace(/\{[^{}]*\}/g, " ").replace(/\([^()]*\)/g, " ");
     const typy = new Set<string>();
-    for (const m of stripped.matchAll(/\b([a-z]+_[a-z_]+)\b/g)) typy.add(m[1]);
+    // Array.from zamiast spreadu iteratora — `tsconfig.json` nie ustawia `target`, więc obowiązuje
+    // ES5 i `[...set]` się nie kompiluje. Skrypty repo trzymają się tego ograniczenia.
+    Array.from(stripped.matchAll(/\b([a-z]+_[a-z_]+)\b/g)).forEach((m) => typy.add(m[1]));
     typy.delete("web_search");
-    return [...typy].sort();
+    return Array.from(typy).sort();
   };
 
-  for (const b of body.matchAll(/^ {2}(\w+):\s*`([\s\S]*?)`,$/gm)) {
+  Array.from(body.matchAll(/^ {2}(\w+):\s*`([\s\S]*?)`,$/gm)).forEach((b) => {
     out[b[1]] = wyciagnij(b[2]);
-  }
+  });
   // Katalog akcji Zwierząt mieszka w osobnym pliku — bramka dokleja go tak samo.
-  out.pets = [...new Set([...(out.pets ?? []), ...wyciagnij(petSrc)])].sort();
+  out.pets = Array.from(new Set((out.pets ?? []).concat(wyciagnij(petSrc)))).sort();
   return out;
 }
 
@@ -63,20 +65,20 @@ function readToole(): string[] {
   const src = read("src/lib/ai/agentTools.ts");
   const start = src.indexOf("export const READ_TOOL_NAMES");
   const body = src.slice(start, src.indexOf("]", start));
-  return [...body.matchAll(/"([a-z_0-9]+)"/g)].map((m) => m[1]).sort();
+  return Array.from(body.matchAll(/"([a-z_0-9]+)"/g)).map((m) => m[1]).sort();
 }
 
 /** Moduły, dla których trasa egzekucji ma gałąź. */
 function egzekutory(): string[] {
   const src = read("src/app/api/llm/home/execute/route.ts");
-  const mods = [...src.matchAll(/module === "([a-z]+)"/g)].map((m) => m[1]);
-  return [...new Set(mods)].sort();
+  const mods = Array.from(src.matchAll(/module === "([a-z]+)"/g)).map((m) => m[1]);
+  return Array.from(new Set(mods)).sort();
 }
 
 /** Typy zadań, które wolno zakolejkować z klienta. */
 function zadaniaWTle(): string[] {
   const src = read("src/lib/jobs/handlers.ts");
-  return [...src.matchAll(/^\s*"([a-z]+\.[A-Za-z]+)":/gm)].map((m) => m[1]).sort();
+  return Array.from(src.matchAll(/^\s*"([a-z]+\.[A-Za-z]+)":/gm)).map((m) => m[1]).sort();
 }
 
 async function main() {

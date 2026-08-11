@@ -1,6 +1,6 @@
 import { prisma } from "@/platform/db/prisma";
 import { decryptSecret } from "@/lib/crypto/secrets";
-import { parseEffort, type LlmEffort } from "@/lib/llm/effort";
+import { parseEffort, type LlmEffort } from "@/platform/llm/effort";
 import {
   BASE_CONFIG_LEVEL,
   GROQ_BASE_URL,

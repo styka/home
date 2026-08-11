@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import { chatComplete } from "@/lib/llm/chat";
-import { parseJsonLoose } from "@/lib/llm/json";
+import { chatComplete } from "@/platform/llm/chat";
+import { parseJsonLoose } from "@/platform/llm/json";
 import { fetchArticle } from "@/lib/news/article";
 import { DEFAULT_SOURCES } from "@/lib/news/sources";
 import { fingerprintOf } from "@/lib/textKey";

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { reserveTpm, estimateTokens } from "@/lib/llm/tpmLimiter";
+import { reserveTpm, estimateTokens } from "@/platform/llm/tpmLimiter";
 
 // Pacing pod TPM: pierwsze wywołania mieszczące się w oknie idą bez czekania;
 // po przekroczeniu capu kolejne czekają (rolling window 60 s).

@@ -11,14 +11,14 @@ import {
 import { readFollowupsEnabled } from "@/lib/ai/followups";
 import { partialRunFallbackMessage } from "@/lib/ai/agentPartialRun";
 import { webSearch } from "@/lib/news/webSearch";
-import { chatComplete, classifyRateLimitKind, rateLimitUserMessage } from "@/lib/llm/chat";
+import { chatComplete, classifyRateLimitKind, rateLimitUserMessage } from "@/platform/llm/chat";
 import { checkRateLimit, acquireSlot } from "@/lib/ai/rateLimit";
 import { checkAiBudget, recordAiUsage, newUsageMeter, accrueUsage, type UsageMeter } from "@/lib/ai/usage";
 import { classifyIntent, READ_INTENT_RE, SMALL_TALK_RE } from "@/lib/ai/fastPath";
 import { extractJsonLoose, salvageAnswerText } from "@/lib/ai/agentProtocol";
 import { compactToolResults, collapseUsedToolData, TOOL_DATA_HEADER } from "@/lib/ai/agentContext";
 import { humanizeAssistantText } from "@/lib/ai/humanize";
-import type { AssistantWorkLevel } from "@/lib/llm/operationTypes";
+import type { AssistantWorkLevel } from "@/platform/llm/operationTypes";
 import { isAccessError, toUserFacingError } from "@/lib/ai/executors/shared";
 import type { AIAction } from "@/lib/ai/aiAction";
 import { readCostBadgeEnabled } from "@/lib/ai/costVisibility";

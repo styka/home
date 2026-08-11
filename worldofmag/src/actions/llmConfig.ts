@@ -13,14 +13,14 @@ import {
   isOperationType,
   type ConfigLevel,
   type OperationType,
-} from "@/lib/llm/operationTypes";
-import { PROVIDER_KINDS, isSpeechOnlyKind, type ProviderKind } from "@/lib/llm/resolver";
-import { invalidatePriceCache } from "@/lib/llm/pricing";
+} from "@/platform/llm/operationTypes";
+import { PROVIDER_KINDS, isSpeechOnlyKind, type ProviderKind } from "@/platform/llm/resolver";
+import { invalidatePriceCache } from "@/platform/llm/pricing";
 import { FOLLOWUPS_CONFIG_KEY, readFollowupsEnabled } from "@/lib/ai/followups";
 import { TTS_CATALOG, findTtsProvider, findTtsProviderById, providerMatchesSpec, normalizeBaseUrl } from "@/lib/tts/catalog";
 import { encryptSecret, decryptSecret, maskSecret } from "@/lib/crypto/secrets";
 import { logAudit } from "@/platform/audit/audit";
-import { LLM_EFFORT_LABELS, LLM_EFFORT_LEVELS, parseEffort, type LlmEffort } from "@/lib/llm/effort";
+import { LLM_EFFORT_LABELS, LLM_EFFORT_LEVELS, parseEffort, type LlmEffort } from "@/platform/llm/effort";
 import { COST_ALERT_CONFIG_KEY, getDailyCostUsd, AI_COST_BADGE_CONFIG_KEY } from "@/lib/ai/usage";
 import { readCostBadgeEnabled } from "@/lib/ai/costVisibility";
 import { USD_PLN_CONFIG_KEY, DEFAULT_USD_PLN_RATE, parseUsdPlnRate } from "@/lib/usdPln";

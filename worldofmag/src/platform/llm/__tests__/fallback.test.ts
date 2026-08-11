@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isRetryableLlmStatus } from "@/lib/llm/chat";
+import { isRetryableLlmStatus } from "@/platform/llm/chat";
 
 // Z-133: decyzja o fallbacku na zapasowy model/dostawcę.
 // Przejściowe (limit/serwer/sieć) → próbuj dalej; klienckie 4xx → nie ma sensu.

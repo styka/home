@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { chatStream } from "@/lib/llm/chat";
+import { chatStream } from "@/platform/llm/chat";
 
 export async function POST(req: NextRequest) {
   const { question, notes } = await req.json() as {

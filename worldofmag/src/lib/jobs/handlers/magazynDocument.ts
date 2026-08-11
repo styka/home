@@ -1,6 +1,6 @@
 // Z-131 (T-17) — handler: OCR dokumentu magazynowego (faktura/WZ/PZ) 2-etapowo.
 // Z `/api/llm/magazynowanie/document`.
-import { chatComplete } from "@/lib/llm/chat";
+import { chatComplete } from "@/platform/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { assertValidImage } from "@/lib/jobs/handlers/imageInput";

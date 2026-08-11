@@ -8,7 +8,7 @@
 // Uwaga bezpieczeństwa (C-41): tu NIE logujemy ani nie zwracamy klucza; treść błędu dostawcy
 // zostaje po stronie serwera (interpretuje ją `serverTts.ts`).
 
-import type { ResolvedLlm } from "@/lib/llm/resolver";
+import type { ResolvedLlm } from "@/platform/llm/resolver";
 
 export interface SpeechRequest {
   url: string;

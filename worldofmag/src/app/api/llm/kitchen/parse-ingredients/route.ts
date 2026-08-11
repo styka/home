@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
-import { chatComplete } from "@/lib/llm/chat";
+import { chatComplete } from "@/platform/llm/chat";
 import { usageField } from "@/lib/ai/costVisibility";
 
 const SYSTEM_PROMPT = `Jesteś parserem składników kulinarnych po polsku.
