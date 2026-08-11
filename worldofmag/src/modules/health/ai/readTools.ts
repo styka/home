@@ -1,5 +1,5 @@
 import { getTestTrends } from "../contract";
-import { technicalToLabel } from "@/lib/ai/humanize";
+import { technicalToLabel } from "@/platform/ai/humanize";
 import { describeFrequency } from "@/lib/medicationSchedule";
 import { prisma } from "@/platform/db/prisma";
 import { MedicationSchedule } from "@/types";

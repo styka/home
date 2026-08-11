@@ -6,10 +6,10 @@ import { chatComplete } from "@/platform/llm/chat";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { addDays, format } from "date-fns";
 import { JobError, type JobContext } from "@/lib/jobs/types";
-import { usageFromChat } from "@/lib/ai/usage";
-import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
-import { resolveSectionMode } from "@/lib/ai/sectionModeResolver";
-import type { AiUsageInfo } from "@/lib/ai/usage";
+import { usageFromChat } from "@/platform/ai/usage";
+import { rememberedContent, hashInputs } from "@/platform/ai/contentMemory";
+import { resolveSectionMode } from "@/platform/ai/sectionModeResolver";
+import type { AiUsageInfo } from "@/platform/ai/usage";
 
 const VALID_SLOTS = new Set(["breakfast", "lunch", "dinner", "snack"]);
 type Slot = "breakfast" | "lunch" | "dinner" | "snack";

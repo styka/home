@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
 import { chatComplete } from "@/platform/llm/chat";
-import { usageField } from "@/lib/ai/costVisibility";
+import { usageField } from "@/platform/ai/costVisibility";
 
 const SYSTEM_PROMPT = `Jesteś parserem składników kulinarnych po polsku.
 Otrzymasz blok tekstu z listą składników (jeden na linię lub po przecinkach).

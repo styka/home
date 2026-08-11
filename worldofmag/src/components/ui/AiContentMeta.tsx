@@ -5,8 +5,8 @@ import { RefreshCw, Loader2, Settings2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { setSectionMode } from "@/actions/aiSections";
-import { AI_SECTION_MODE_LABELS, type AiSectionMode } from "@/lib/ai/sectionMode";
-import type { AiContentKind } from "@/lib/ai/contentMemory";
+import { AI_SECTION_MODE_LABELS, type AiSectionMode } from "@/platform/ai/sectionMode";
+import type { AiContentKind } from "@/platform/ai/contentMemory";
 
 /**
  * 038/041: pasek pod treścią wygenerowaną przez AI — kiedy powstała, czy jest nieaktualna, ile

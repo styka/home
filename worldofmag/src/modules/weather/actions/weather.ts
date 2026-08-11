@@ -22,11 +22,11 @@ import {
   type IdeaDTO,
   type IdeaState,
 } from "../lib/ideas";
-import { usageFromChat, parseStoredUsage, type AiUsageInfo } from "@/lib/ai/usage";
-import { visibleUsage } from "@/lib/ai/costVisibility";
-import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
-import { resolveSectionMode } from "@/lib/ai/sectionModeResolver";
-import type { AiSectionMode } from "@/lib/ai/sectionMode";
+import { usageFromChat, parseStoredUsage, type AiUsageInfo } from "@/platform/ai/usage";
+import { visibleUsage } from "@/platform/ai/costVisibility";
+import { rememberedContent, hashInputs } from "@/platform/ai/contentMemory";
+import { resolveSectionMode } from "@/platform/ai/sectionModeResolver";
+import type { AiSectionMode } from "@/platform/ai/sectionMode";
 import { buildUserContext, userContextStamp } from "@/lib/userContext";
 import { recordTrash } from "@/platform/trash/trash";
 import { auth } from "@/platform/auth/session";

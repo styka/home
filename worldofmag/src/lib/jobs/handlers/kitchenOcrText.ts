@@ -4,8 +4,8 @@ import { chatComplete } from "@/platform/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { assertValidImage } from "@/lib/jobs/handlers/imageInput";
-import { usageFromChat } from "@/lib/ai/usage";
-import type { AiUsageInfo } from "@/lib/ai/usage";
+import { usageFromChat } from "@/platform/ai/usage";
+import type { AiUsageInfo } from "@/platform/ai/usage";
 
 const SYSTEM_PROMPT = `Jesteś OCR-em. Otrzymasz zdjęcie (np. kartka z przepisem, strona książki, notatka).
 Przepisz CAŁY widoczny, czytelny tekst i zwróć go jako czysty Markdown — zachowaj nagłówki,

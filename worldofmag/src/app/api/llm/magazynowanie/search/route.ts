@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
 import { chatComplete } from "@/platform/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
-import { usageField } from "@/lib/ai/costVisibility";
+import { usageField } from "@/platform/ai/costVisibility";
 
 // Semantyczne „gdzie to jest?": z zapytania w języku naturalnym i listy pozycji
 // (id + nazwa + kategoria) LLM wybiera najbardziej pasujące id. Aplikacja sama

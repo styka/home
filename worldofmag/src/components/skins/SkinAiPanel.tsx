@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Sparkles, AlertTriangle } from "lucide-react";
 import { AiCostBadge } from "@/components/ui/AiCostBadge";
-import type { AiUsageInfo } from "@/lib/ai/usage";
+import type { AiUsageInfo } from "@/platform/ai/usage";
 import { SkinPreview } from "./SkinPreview";
 import type { SkinTokens } from "@/lib/skins";
 

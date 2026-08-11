@@ -2,7 +2,7 @@
 // Degradacja łagodna: przy niedostępnym LLM zwraca {unavailable:true} (NIE rzuca).
 import { chatComplete } from "@/platform/llm/chat";
 import { JobError, type JobContext } from "@/lib/jobs/types";
-import { usageFromChat } from "@/lib/ai/usage";
+import { usageFromChat } from "@/platform/ai/usage";
 
 const SYSTEM_PROMPT = `Jesteś asystentem zaopatrzenia. Napisz po polsku krótką, uprzejmą i rzeczową
 treść e-maila z zamówieniem do dostawcy. Zacznij od zwrotu grzecznościowego, podaj listę pozycji

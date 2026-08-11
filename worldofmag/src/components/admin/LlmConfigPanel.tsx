@@ -41,7 +41,7 @@ import {
   AI_SECTION_LABELS,
   AI_SECTION_MODE_LABELS,
   type AiSectionMode,
-} from "@/lib/ai/sectionMode";
+} from "@/platform/ai/sectionMode";
 import { setDefaultSectionModes } from "@/actions/aiSections";
 
 const KIND_LABELS: Record<string, string> = {

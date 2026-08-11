@@ -19,7 +19,7 @@ import {
 } from "@/actions/aiConversations";
 import { createUserReport } from "@/modules/reports/contract";
 import { getRecentAiCalls, type AiCallLogRow } from "@/actions/llmConfig";
-import { aiCallsToText } from "@/lib/ai/aiCallLog";
+import { aiCallsToText } from "@/platform/ai/aiCallLog";
 import { submitFeedbackTask } from "@/actions/feedback";
 import { getAssistantPrefs, getSpeechOptions, updateAssistantPrefs } from "@/actions/assistantPrefs";
 import { parseServerVoiceValue, toServerVoiceValue, type ServerVoice } from "@/lib/tts/serverVoices";
@@ -27,7 +27,7 @@ import { ASSISTANT_LEVEL_DESCRIPTIONS, ASSISTANT_LEVEL_LABELS, ASSISTANT_LEVELS,
 import type { AIAction } from "@/platform/ai/aiAction";
 import { isDestructiveAction } from "@/platform/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executorShared";
-import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/lib/ai/assistantBus";
+import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/platform/ai/assistantBus";
 import { DEFAULT_ASSISTANT_STARTERS } from "@/lib/ai/assistantStarters";
 import { useOverlayState } from "@/hooks/useOverlayState";
 import { useIsNarrowScreen, usePinToVisualViewport, VV_HEIGHT_VAR, VV_TOP_VAR } from "@/hooks/useVisualViewport";

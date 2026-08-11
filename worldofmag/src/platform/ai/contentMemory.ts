@@ -12,10 +12,10 @@
 
 import { createHash } from "crypto";
 import { prisma } from "@/platform/db/prisma";
-import { parseStoredUsage, type AiUsageInfo } from "@/lib/ai/usage";
+import { parseStoredUsage, type AiUsageInfo } from "@/platform/ai/usage";
 // Import WYŁĄCZNIE typu — `sectionMode.ts` importuje stąd `AiContentKind`, więc import wartości
 // zrobiłby cykl w czasie wykonania. Typy znikają przy kompilacji, więc ten kierunek jest bezpieczny.
-import type { AiSectionMode } from "@/lib/ai/sectionMode";
+import type { AiSectionMode } from "@/platform/ai/sectionMode";
 
 /**
  * Rodzaj zapamiętanej treści. String + union (C-12) — nigdy enum Prisma.

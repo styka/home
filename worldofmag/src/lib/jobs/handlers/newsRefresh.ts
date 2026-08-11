@@ -14,7 +14,7 @@ import { chatComplete } from "@/platform/llm/chat";
 import { parseJsonLoose } from "@/platform/llm/json";
 import { fetchRss } from "@/lib/news/rss";
 import { fingerprintOf } from "@/lib/textKey";
-import { usageFromChat, type AiUsageInfo } from "@/lib/ai/usage";
+import { usageFromChat, type AiUsageInfo } from "@/platform/ai/usage";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 
 /** Okno pierwszego przebiegu, gdy nigdy jeszcze nie pobieraliśmy puli. */

@@ -7,20 +7,20 @@ import {
   buildSystemPromptParts,
 } from "@/lib/ai/agentPrompt";
 import { getAiCatalog } from "@/lib/ai/catalog";
-import { readFollowupsEnabled } from "@/lib/ai/followups";
-import { partialRunFallbackMessage } from "@/lib/ai/agentPartialRun";
+import { readFollowupsEnabled } from "@/platform/ai/followups";
+import { partialRunFallbackMessage } from "@/platform/ai/agentPartialRun";
 import { webSearch } from "@/lib/news/webSearch";
 import { chatComplete, classifyRateLimitKind, rateLimitUserMessage } from "@/platform/llm/chat";
-import { checkRateLimit, acquireSlot } from "@/lib/ai/rateLimit";
-import { checkAiBudget, recordAiUsage, newUsageMeter, accrueUsage, type UsageMeter } from "@/lib/ai/usage";
+import { checkRateLimit, acquireSlot } from "@/platform/ai/rateLimit";
+import { checkAiBudget, recordAiUsage, newUsageMeter, accrueUsage, type UsageMeter } from "@/platform/ai/usage";
 import { classifyIntent, READ_INTENT_RE, SMALL_TALK_RE } from "@/lib/ai/fastPath";
-import { extractJsonLoose, salvageAnswerText } from "@/lib/ai/agentProtocol";
-import { compactToolResults, collapseUsedToolData, TOOL_DATA_HEADER } from "@/lib/ai/agentContext";
-import { humanizeAssistantText } from "@/lib/ai/humanize";
+import { extractJsonLoose, salvageAnswerText } from "@/platform/ai/agentProtocol";
+import { compactToolResults, collapseUsedToolData, TOOL_DATA_HEADER } from "@/platform/ai/agentContext";
+import { humanizeAssistantText } from "@/platform/ai/humanize";
 import type { AssistantWorkLevel } from "@/platform/llm/operationTypes";
 import { isAccessError, toUserFacingError } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
-import { readCostBadgeEnabled } from "@/lib/ai/costVisibility";
+import { readCostBadgeEnabled } from "@/platform/ai/costVisibility";
 
 const MAX_ITERATIONS = 6;
 const MAX_TOOLS_PER_TURN = 4;

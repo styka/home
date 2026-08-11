@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { matchNamedRef, unresolvedRefMessage, type RefResolution } from "@/lib/ai/refResolve";
+import { matchNamedRef, unresolvedRefMessage, type RefResolution } from "@/platform/ai/refResolve";
 
 // 032: agent mówi nazwami („w projekcie Omnia", „na liście moje"), a read-toole przyjmowały je jako
 // identyfikatory — `where: { id: "moje" }` nie pasowało do niczego i asystent twierdził, że nic tam

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { extractJsonLoose, salvageAnswerText } from "@/lib/ai/agentProtocol";
+import { extractJsonLoose, salvageAnswerText } from "@/platform/ai/agentProtocol";
 
 // 030: tolerancyjne parsowanie protokołu agenta — pojedyncza niesforna odpowiedź
 // modelu nie może kończyć tury błędem „LLM zwrócił nieprawidłowy format".

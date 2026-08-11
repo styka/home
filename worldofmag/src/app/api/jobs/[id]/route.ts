@@ -5,8 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
 import { getJob } from "@/lib/jobs/queue";
 import { startJobWorker } from "@/lib/jobs/worker";
-import { visibleUsage } from "@/lib/ai/costVisibility";
-import type { AiUsageInfo } from "@/lib/ai/usage";
+import { visibleUsage } from "@/platform/ai/costVisibility";
+import type { AiUsageInfo } from "@/platform/ai/usage";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();

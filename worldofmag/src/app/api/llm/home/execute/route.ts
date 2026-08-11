@@ -4,7 +4,7 @@ import { auth } from "@/platform/auth/session";
 import type { AIAction } from "@/platform/ai/aiAction";
 import { getAiCatalog } from "@/lib/ai/catalog";
 import { toUserFacingError, type ExecOutcome, type ActionResult } from "@/lib/ai/executorShared";
-import { hasContract, validateActionParams } from "@/lib/ai/actionContract";
+import { hasContract, validateActionParams } from "@/platform/ai/actionContract";
 
 
 async function executeAction(

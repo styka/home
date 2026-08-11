@@ -8,7 +8,7 @@ import {
   paramLabel,
   validateActionParams,
   valueLabel,
-} from "@/lib/ai/actionContract";
+} from "@/platform/ai/actionContract";
 
 describe("actionContract — etykiety dla użytkownika", () => {
   it("zwraca polską nazwę akcji zamiast technicznego typu", () => {

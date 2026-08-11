@@ -172,11 +172,19 @@
 
 ## Faza C — `platform/ai` (czysta przenosina)
 
-- [ ] **T-17** — **Reszta `src/lib/ai/` → `src/platform/ai/`.** ~23 pliki zdolności platformowych.
+- [x] **T-17** — **Reszta `src/lib/ai/` → `src/platform/ai/`.** ~23 pliki zdolności platformowych.
       **Nie jadą:** trzy manifesty JSON bramek (to dane kontroli, nie kod platformy) oraz
       `src/lib/ai/catalog.ts` i `executorShared.ts` (warstwa kompozycji — znają moduły).
       **Gotowe, gdy:** `grep -rn "@/modules/" src/platform/` zwraca **zero**. **(AC-1, AC-2)**
-- [ ] **T-18** — **Bramki zaszyte na ścieżki — naprawa (przewidziana, nie awaria).**
+      **Wynik: 18 plików do platformy, `grep` zwraca zero.** W warstwie kompozycji zostało
+      jedenaście pozycji i **każda z powodem**: `agentPrompt` (katalog nawigacji wymienia trasy
+      modułów), `fastPath` (słowa-klucze rozpoznające moduł), `assistantStarters` (podpowiedzi per
+      moduł), `catalog` (składa z `MODULES`), `coreReadTools` (woła kontrakt Kalendarza),
+      `executorShared` i `readToolShared` (sięgają do tabel kilkunastu modułów), `coverage` + trzy
+      manifesty JSON (dane bramek, nie kod platformy).
+      Testy pojechały **razem ze swoim kodem** (12 plików) — lekcja z 047, tym razem zastosowana
+      od razu, a nie po tym, jak `check:test-types` się zapalił.
+- [x] **T-18** — **Bramki zaszyte na ścieżki — naprawa (przewidziana, nie awaria).**
       `check-action-coverage.js` czytało `src/lib/ai/agentPrompt.ts` i `src/lib/ai/executors/*` —
       oba miejsca zniknęły. `check-ai-coverage`, `check-cost-badge`, `check-content-memory` —
       korzenie skanowania i ścieżki w manifestach.
@@ -186,7 +194,7 @@
       egzekutor oraz kontrakt". Moduł bez deklaracji przestaje istnieć dla asystenta.
       **Gotowe, gdy:** bramka wywala się na module z akcjami, ale bez pola `ai` — sprawdzone **testem
       negatywnym**. **(AC-6, AC-10)**
-- [ ] **T-20** — Domknięcie fazy C: `test:unit` + `next build`.
+- [x] **T-20** — Domknięcie fazy C: `test:unit` + `next build`.
       **Gotowe, gdy:** build exit 0.
 
 ## Faza D — Kolejka zadań

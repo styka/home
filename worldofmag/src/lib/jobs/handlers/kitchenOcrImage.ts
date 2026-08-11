@@ -5,8 +5,8 @@
 import { chatComplete } from "@/platform/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
 import { JobError, type JobContext } from "@/lib/jobs/types";
-import { usageFromChat } from "@/lib/ai/usage";
-import type { AiUsageInfo } from "@/lib/ai/usage";
+import { usageFromChat } from "@/platform/ai/usage";
+import type { AiUsageInfo } from "@/platform/ai/usage";
 
 const TRANSCRIBE_PROMPT = `Jesteś precyzyjnym OCR-em. Przepisz CAŁY czytelny tekst ze zdjęcia
 (kartka, strona książki kucharskiej, notatka albo ekran z przepisem). Zachowaj składniki i kroki

@@ -13,7 +13,7 @@ import { MEAL_SLOTS, MEAL_SLOT_LABELS } from "@/types/kitchen";
 import { dateKey, formatDayShort, getWeekDays } from "@/lib/kitchenDate";
 import { polishPlural } from "@/lib/polishPlural";
 import type { AiCostUsage } from "@/components/ui/AiCostBadge";
-import type { AiSectionMode } from "@/lib/ai/sectionMode";
+import type { AiSectionMode } from "@/platform/ai/sectionMode";
 import { AiContentMeta } from "@/components/ui/AiContentMeta";
 
 interface PlanWeekDialogProps {

@@ -1,6 +1,6 @@
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
-import { matchNamedRef, unresolvedRefMessage, type NamedCandidate, type RefResolution } from "@/lib/ai/refResolve";
+import { matchNamedRef, unresolvedRefMessage, type NamedCandidate, type RefResolution } from "@/platform/ai/refResolve";
 
 /**
  * 049: helpery narzędzi ODCZYTU, wspólne dla wszystkich modułów.

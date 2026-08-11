@@ -4,7 +4,7 @@ import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { prisma } from "@/platform/db/prisma";
 import { getConfigValue } from "@/actions/config";
-import { getAiUsageStats } from "@/lib/ai/usage";
+import { getAiUsageStats } from "@/platform/ai/usage";
 
 /**
  * Z-510 — ekonomika jednostkowa. Część mierzalna liczymy z realnych danych

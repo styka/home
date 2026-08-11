@@ -1,9 +1,9 @@
 // Z-131 (T-17) — handler: wnioski z analityki magazynu. Z `/api/llm/magazynowanie/insights`. Łagodna degradacja.
 import { chatComplete } from "@/platform/llm/chat";
 import { type JobContext } from "@/lib/jobs/types";
-import { usageFromChat } from "@/lib/ai/usage";
-import { rememberedContent, hashInputs } from "@/lib/ai/contentMemory";
-import { resolveSectionMode } from "@/lib/ai/sectionModeResolver";
+import { usageFromChat } from "@/platform/ai/usage";
+import { rememberedContent, hashInputs } from "@/platform/ai/contentMemory";
+import { resolveSectionMode } from "@/platform/ai/sectionModeResolver";
 
 interface InsightsPayload {
   currency?: string; totalValue?: number; itemCount?: number;

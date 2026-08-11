@@ -4,8 +4,8 @@ import { auth } from "@/platform/auth/session";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { getCalendarEvents } from "@/modules/calendar/contract";
 import { chatComplete } from "@/platform/llm/chat";
-import { checkAiBudget, recordAiUsage } from "@/lib/ai/usage";
-import { usageField } from "@/lib/ai/costVisibility";
+import { checkAiBudget, recordAiUsage } from "@/platform/ai/usage";
+import { usageField } from "@/platform/ai/costVisibility";
 
 // Poranny briefing — krótkie, ciepłe podsumowanie dnia generowane na żądanie
 // (przycisk na stronie głównej, klient cache'uje per-dzień). Reużywa agregatu

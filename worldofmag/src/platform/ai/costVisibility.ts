@@ -11,7 +11,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { AI_COST_BADGE_CONFIG_KEY, usageFromChat, type AiUsageInfo } from "@/lib/ai/usage";
+import { AI_COST_BADGE_CONFIG_KEY, usageFromChat, type AiUsageInfo } from "@/platform/ai/usage";
 
 /**
  * Czy licznik kosztu jest w ogóle włączony w systemie.

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { boundMessageData, MAX_DATA_BYTES, MESSAGE_WINDOW } from "@/lib/ai/conversationLimits";
+import { boundMessageData, MAX_DATA_BYTES, MESSAGE_WINDOW } from "@/platform/ai/conversationLimits";
 
 // Z-215: ochrona pamięci historii rozmów asystenta.
 test("MESSAGE_WINDOW i MAX_DATA_BYTES mają sensowne wartości", () => {

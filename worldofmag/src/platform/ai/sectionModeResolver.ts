@@ -6,14 +6,14 @@
 // co dotyka bazy, mieszka tutaj (ten sam podział co `lib/llm/effort.ts` kontra `lib/llm/resolver.ts`).
 
 import { prisma } from "@/platform/db/prisma";
-import type { AiContentKind } from "@/lib/ai/contentMemory";
+import type { AiContentKind } from "@/platform/ai/contentMemory";
 import {
   AI_SECTION_KINDS,
   AI_SECTION_MODES_CONFIG_KEY,
   DEFAULT_SECTION_MODE,
   isSectionMode,
   type AiSectionMode,
-} from "@/lib/ai/sectionMode";
+} from "@/platform/ai/sectionMode";
 
 /**
  * Domyślne systemowe z `Config` — **bez sesji**, bo woła to również handler zadania w kolejce

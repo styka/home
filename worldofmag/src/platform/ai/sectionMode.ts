@@ -9,7 +9,7 @@
 // `sectionModeResolver.ts` i jest tam w JEDNEJ funkcji celowo: rozsypane po komponentach dałoby
 // sekcje, które „prawie" tak samo dziedziczą po administratorze.
 
-import type { AiContentKind } from "@/lib/ai/contentMemory";
+import type { AiContentKind } from "@/platform/ai/contentMemory";
 
 /** String + union TS (C-12) — nigdy enum Prisma. */
 export type AiSectionMode = "onDemand" | "onChange" | "always";

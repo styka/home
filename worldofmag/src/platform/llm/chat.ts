@@ -2,8 +2,8 @@ import { resolveLlmChain, type ResolvedLlm } from "./resolver";
 import { isTruncatedAnthropicResponse, isTruncatedOpenAiResponse } from "./truncation";
 import type { AssistantWorkLevel, OperationType } from "./operationTypes";
 import { applyEffort, isEffortRejection, parseEffort, type LlmEffort } from "./effort";
-import { cacheKeyFor, getCached, setCached } from "@/lib/ai/cache";
-import { checkAiBudget, recordAiUsage, recordAiCall } from "@/lib/ai/usage";
+import { cacheKeyFor, getCached, setCached } from "@/platform/ai/cache";
+import { checkAiBudget, recordAiUsage, recordAiCall } from "@/platform/ai/usage";
 import { reserveTpm, estimateTokens, modelTpmLimit } from "./tpmLimiter";
 import { ensurePricesLoaded } from "./pricing";
 

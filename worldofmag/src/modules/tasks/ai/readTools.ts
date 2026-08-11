@@ -1,5 +1,5 @@
 import { getProjectGroups, getTaskTags } from "../contract";
-import { technicalToLabel } from "@/lib/ai/humanize";
+import { technicalToLabel } from "@/platform/ai/humanize";
 import { describeRecurringRule, parseRecurringRule } from "@/lib/recurrence";
 import { prisma } from "@/platform/db/prisma";
 import { HARD_MAX, clampLimit, asStr, accessibleProjectIds, resolveIdOrName, resolveProjectRef } from "@/lib/ai/readToolShared";

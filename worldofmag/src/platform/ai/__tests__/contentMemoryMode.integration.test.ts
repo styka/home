@@ -39,7 +39,7 @@ test(
   "brak zapisu: „na żądanie” i „przy zmianie” CZEKAJĄ, „zawsze” generuje",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { rememberedContent } = await import("@/lib/ai/contentMemory");
+    const { rememberedContent } = await import("@/platform/ai/contentMemory");
     await withUser(async (ownerId) => {
       for (const mode of ["onDemand", "onChange"] as const) {
         const g = counter("x");
@@ -74,7 +74,7 @@ test(
   "brak trybu = zachowanie sprzed 041: brak zapisu → generuj",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { rememberedContent } = await import("@/lib/ai/contentMemory");
+    const { rememberedContent } = await import("@/platform/ai/contentMemory");
     await withUser(async (ownerId) => {
       const g = counter("legacy");
       const res = await rememberedContent<string>({
@@ -95,7 +95,7 @@ test(
   "zapis + odcisk zgodny: tylko „zawsze” woła model",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { rememberedContent } = await import("@/lib/ai/contentMemory");
+    const { rememberedContent } = await import("@/platform/ai/contentMemory");
     await withUser(async (ownerId) => {
       for (const mode of ["onDemand", "onChange", "always"] as const) {
         const scopeKey = `same-${mode}-${rnd()}`;
@@ -139,7 +139,7 @@ test(
   "zapis + odcisk inny: „na żądanie” pokazuje nieaktualne, „przy zmianie” odświeża samo",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { rememberedContent } = await import("@/lib/ai/contentMemory");
+    const { rememberedContent } = await import("@/platform/ai/contentMemory");
     await withUser(async (ownerId) => {
       // „na żądanie": treść ZOSTAJE na ekranie ze znacznikiem, model milczy.
       const scopeA = `diff-onDemand-${rnd()}`;
@@ -177,7 +177,7 @@ test(
   "force generuje w KAŻDYM trybie i podbija licznik odświeżeń",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { rememberedContent } = await import("@/lib/ai/contentMemory");
+    const { rememberedContent } = await import("@/platform/ai/contentMemory");
     await withUser(async (ownerId) => {
       for (const mode of ["onDemand", "onChange", "always"] as const) {
         const scopeKey = `force-${mode}-${rnd()}`;
@@ -202,7 +202,7 @@ test(
   "kliknięcie po stanie oczekiwania zapisuje treść, a kolejne wejście jej nie generuje ponownie",
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
-    const { rememberedContent } = await import("@/lib/ai/contentMemory");
+    const { rememberedContent } = await import("@/platform/ai/contentMemory");
     await withUser(async (ownerId) => {
       const scopeKey = `flow-${rnd()}`;
       const g = counter("flow");
@@ -236,7 +236,7 @@ test(
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
     const { prisma } = await import("@/platform/db/prisma");
-    const { rememberedContent } = await import("@/lib/ai/contentMemory");
+    const { rememberedContent } = await import("@/platform/ai/contentMemory");
     await withUser(async (ownerId) => {
       const scopeKey = `broken-${rnd()}`;
       await prisma.aiContent.create({

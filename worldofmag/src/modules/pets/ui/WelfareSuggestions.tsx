@@ -6,7 +6,7 @@ import { runJob } from "@/lib/jobs/client";
 import type { WelfareSuggestion, CareAgendaItem } from "@/types";
 import type { AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
-import type { AiSectionMode } from "@/lib/ai/sectionMode";
+import type { AiSectionMode } from "@/platform/ai/sectionMode";
 
 const SEVERITY_META = {
   info: { color: "var(--accent-blue)", Icon: Info },

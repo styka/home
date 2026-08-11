@@ -5,7 +5,7 @@ import {
   describeBlocker,
   partialRunFallbackMessage,
   type PartialRunLogEntry,
-} from "@/lib/ai/agentPartialRun";
+} from "@/platform/ai/agentPartialRun";
 import { isTruncatedAnthropicResponse, isTruncatedOpenAiResponse } from "@/platform/llm/truncation";
 
 // 032 (zgłoszenie Z-2): przebieg, który się nie domknął, oddawał użytkownikowi jedno bezużyteczne

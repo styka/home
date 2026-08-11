@@ -4,8 +4,8 @@ import { chatComplete } from "@/platform/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { assertValidImage } from "@/lib/jobs/handlers/imageInput";
-import { usageFromChat } from "@/lib/ai/usage";
-import type { AiUsageInfo } from "@/lib/ai/usage";
+import { usageFromChat } from "@/platform/ai/usage";
+import type { AiUsageInfo } from "@/platform/ai/usage";
 
 const VISION_PROMPT = `To zdjęcie dokumentu magazynowego lub faktury zakupu. Odczytaj dokładnie
 wszystkie POZYCJE z tabeli (nazwa towaru, ilość, jednostka, cena jednostkowa). Wypisz też numer

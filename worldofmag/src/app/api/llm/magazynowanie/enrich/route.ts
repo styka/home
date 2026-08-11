@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
 import { chatComplete } from "@/platform/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
-import { usageField } from "@/lib/ai/costVisibility";
+import { usageField } from "@/platform/ai/costVisibility";
 
 // Wzbogacenie pozycji przy skanie nieznanego kodu: na podstawie kodu kreskowego
 // i/lub wpisanej nazwy LLM podpowiada polską nazwę, kategorię i jednostkę.

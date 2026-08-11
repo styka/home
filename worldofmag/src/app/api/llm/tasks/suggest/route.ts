@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete, chatStream } from "@/platform/llm/chat";
-import { usageField } from "@/lib/ai/costVisibility";
+import { usageField } from "@/platform/ai/costVisibility";
 
 export async function POST(req: NextRequest) {
   const { task, mode } = await req.json() as {

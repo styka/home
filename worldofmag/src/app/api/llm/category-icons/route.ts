@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/platform/llm/chat";
-import { usageField } from "@/lib/ai/costVisibility";
+import { usageField } from "@/platform/ai/costVisibility";
 
 const GROQ_ITEMS_SYSTEM = `You are a shopping assistant for a Polish app. The app supports any shopping category (food, pets, cleaning, tools, etc.). Return ONLY a JSON array of exactly 6 English item names (1-3 words each) that are visually distinct and typical for the given category. No markdown, no explanation.`;
 

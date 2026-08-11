@@ -5,7 +5,7 @@ import { X, ShoppingCart, CheckSquare, FileText, PawPrint, Boxes, Wallet, Fuel, 
 import type { AIAction } from "@/platform/ai/aiAction";
 import { DESTRUCTIVE_ACTION_TYPES } from "@/platform/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executorShared";
-import { actionLabel, fieldSpec, validateActionParams } from "@/lib/ai/actionContract";
+import { actionLabel, fieldSpec, validateActionParams } from "@/platform/ai/actionContract";
 
 interface ActionDrawerProps {
   actions: AIAction[];

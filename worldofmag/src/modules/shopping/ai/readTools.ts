@@ -1,4 +1,4 @@
-import { technicalToLabel } from "@/lib/ai/humanize";
+import { technicalToLabel } from "@/platform/ai/humanize";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { prisma } from "@/platform/db/prisma";
 import { HARD_MAX, clampLimit, asStr, resolveRefOrThrow, accessibleListWhere } from "@/lib/ai/readToolShared";

@@ -3,8 +3,8 @@ import { chatComplete } from "@/platform/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
 import { JobError, type JobContext } from "@/lib/jobs/types";
 import { assertValidImage } from "@/lib/jobs/handlers/imageInput";
-import { usageFromChat } from "@/lib/ai/usage";
-import type { AiUsageInfo } from "@/lib/ai/usage";
+import { usageFromChat } from "@/platform/ai/usage";
+import type { AiUsageInfo } from "@/platform/ai/usage";
 
 const VISION_PROMPT = `Jesteś asystentem inwentaryzacji magazynu. Na zdjęciu jest półka, regał,
 szafa, garaż albo skrzynia z rzeczami. Wypisz po polsku WSZYSTKIE rozróżnialne przedmioty/produkty,

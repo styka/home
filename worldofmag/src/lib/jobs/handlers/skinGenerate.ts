@@ -6,7 +6,7 @@
 
 import { chatComplete } from "@/platform/llm/chat";
 import { JobError, type JobContext } from "@/lib/jobs/types";
-import { usageFromChat } from "@/lib/ai/usage";
+import { usageFromChat } from "@/platform/ai/usage";
 import {
   ALL_CONTROLS,
   DEFAULT_DARK_TOKENS,

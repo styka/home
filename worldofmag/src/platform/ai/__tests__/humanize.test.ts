@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { hasTechnicalLeftovers, humanizeAssistantText } from "@/lib/ai/humanize";
+import { hasTechnicalLeftovers, humanizeAssistantText } from "@/platform/ai/humanize";
 
 describe("humanizeAssistantText — wartości techniczne", () => {
   it("zamienia statusy i priorytety na etykiety z aplikacji (przypadek ze zgłoszenia)", () => {

@@ -8,7 +8,7 @@ import {
   TOOL_DATA_HEADER,
   TOOL_DATA_STUB,
   type ToolResult,
-} from "@/lib/ai/agentContext";
+} from "@/platform/ai/agentContext";
 
 // 028: higiena kontekstu pętli agenta — tnie największy zmienny koszt tokenów
 // (wyniki narzędzi re-wysyłane w każdej iteracji), bez utraty jakości.
@@ -70,7 +70,7 @@ test("collapseUsedToolData nie rusza pojedynczego bloku", () => {
 
 // 030: skracanie długich pól per-pole — blok wyników pozostaje POPRAWNYM JSON-em
 // (wcześniej bezpiecznik znakowy ucinał JSON w połowie i model wpadał w pętlę powtórek).
-import { trimLongStrings, FIELD_MAX_CHARS } from "@/lib/ai/agentContext";
+import { trimLongStrings, FIELD_MAX_CHARS } from "@/platform/ai/agentContext";
 
 test("trimLongStrings skraca długi string z markerem, krótkie zostawia", () => {
   const long = "y".repeat(FIELD_MAX_CHARS + 500);
