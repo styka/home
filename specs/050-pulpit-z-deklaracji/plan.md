@@ -170,7 +170,7 @@ za każdym razem dawał fałszywą diagnozę.
 
 | Ryzyko | Ograniczenie |
 |---|---|
-| **Zrzutu „przed" nie da się zrobić** (sesja, cookies) | wyodrębniona funkcja bierze `userId` i `permissions` **parametrem**, więc nie potrzebuje sesji — tak samo jak `collectCalendarEvents` |
+| ~~**Zrzutu „przed" nie da się zrobić** (sesja, cookies)~~ **— ZMATERIALIZOWAŁO SIĘ** | Wyodrębniona funkcja bierze `userId` parametrem, ale **siedem z jedenastu bloków woła kontrakty modułów**, a te są Server Actions wywodzącymi użytkownika z sesji. Poza żądaniem rzucają „headers was called outside a request scope", `try/catch` zamienia to na zera — i zrzut pokazał 6 niezerowych pól z 20. Rozwiązanie: **punkt odniesienia zbieramy przez tymczasową trasę diagnostyczną** na działającym serwerze, z ciasteczkiem sesji (mechanizm sprawdzony w 049/T-36). Trasa jest kasowana w fazie domknięcia. Odrzucone alternatywy: przepisanie siedmiu bloków na surowe zapytania z `userId` (to już nie byłaby przenosina i wprowadzałoby ryzyko, które ten przebieg ma wykluczyć) oraz dowód wyłącznie strukturalny (`tsc` nie jest dowodem — to powód, dla którego 049 tego nie ruszyło). |
 | **Fixture nie pokrywa wszystkich jedenastu wkładów** → zrzut pełen zer i porównanie niczego nie dowodzi | fixture z 049 rozszerzamy o dane dla każdego wkładu; **zrzut z samymi zerami traktujemy jako brak dowodu**, nie jako sukces (lekcja z 049: pusty wynik zgadza się z pustym) |
 | **Nowe pole powtórzy błąd z 049** (kod serwerowy w grafie klienta) | pole wyłącznie w `module.server.ts`; AC-7 mierzy graf, bo `next build` tego nie pokazuje |
 | **Zmiana zachowania przy braku uprawnienia** | wkład niewołany = wartości z `EMPTY_SNAPSHOT`, czyli dokładnie dzisiejsze inicjalizatory `let x = 0` |

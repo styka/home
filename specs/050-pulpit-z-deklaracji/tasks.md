@@ -38,11 +38,16 @@
       sesji w środku, jak `collectCalendarEvents`). Ta sama treść, ta sama kolejność, te same
       `try/catch` i wartości domyślne. Trasa woła ją i przekazuje wynik do `HomePage`.
       **Gotowe, gdy:** `git diff` pokazuje przenosiny, nie przepisanie; UI bez zmian. **(AC-1)**
-- [ ] **T-3** — **Zrzucić punkt odniesienia.** `scripts/snapshot-ai-surface.ts` dostaje sekcję
-      `pulpit` — wynik funkcji z T-2 dla użytkownika z fixture'a **oraz** dla użytkownika bez
-      uprawnień (drugi zrzut to materiał do AC-5).
-      **Gotowe, gdy:** `specs/050…/baseline-pulpit.json` istnieje, a wartości są **niezerowe**.
-      Zrzut z samymi zerami = wróć do T-1. **(AC-2, AC-5)**
+- [ ] **T-3** — **Zrzucić punkt odniesienia przez tymczasową trasę diagnostyczną.**
+      **Korekta planu (C-54).** Pierwsze podejście — zrzut ze skryptu — dało **6 niezerowych pól
+      z 20**, bo siedem z jedenastu bloków woła kontrakty modułów, a te są Server Actions
+      wywodzącymi użytkownika z sesji; poza żądaniem rzucają „headers was called outside a request
+      scope", a `try/catch` zamienia to na zera. Zgodnie z własną zasadą tej listy **zrzut z zerami
+      to brak dowodu**, więc zmieniamy sposób: tymczasowa trasa zwracająca migawkę jako JSON,
+      odpytana na działającym serwerze z ciasteczkiem sesji (mechanizm z 049/T-36). Trasa znika
+      w fazie D.
+      **Gotowe, gdy:** `specs/050…/baseline-pulpit.json` ma **wszystkie 20 pól niezerowych** tam,
+      gdzie fixture zasiał dane, oraz drugi zrzut dla użytkownika bez uprawnień. **(AC-2, AC-5)**
 
 ## Faza B — Kształt
 
@@ -89,6 +94,8 @@
 - [ ] **T-12** — **Pomiar grafu kompilacji** (`next dev`, z ciasteczkiem sesji — `middleware`
       przecina niezalogowane przed kompilacją strony).
       **Gotowe, gdy:** `/auth/signin` ≤ 1771 i `/` ≤ 1889 modułów. **(AC-7)**
+- [ ] **T-12b** — **Usunąć tymczasową trasę diagnostyczną** dodaną w T-3.
+      **Gotowe, gdy:** trasy nie ma w repozytorium, a `grep` tego potwierdza.
 - [ ] **T-13** — **Bramki końcowe:** komplet + `test:unit` + `next build` przeciw lokalnemu
       Postgresowi (C-13).
       **Gotowe, gdy:** wszystko zielone, cztery liczniki bez spadku. **(AC-8)**
