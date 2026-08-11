@@ -4,6 +4,18 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-11 — Znowu build równolegle z klikaczami, mimo własnego ostrzeżenia w liście zadań
+**Problem:** Uruchomiłem klikacze w tle, a w „wolnej chwili" odpalił `npm run build`, który zaczyna od
+`rm -rf .next`. Zestaw pokazał **23 czerwone zamiast 14**, w tym sześć testów ścieżki szczęśliwej,
+z czasami po 40–70 sekund na test. Wyglądało to jak poważna regresja przebudowy; było wyrwaniem
+serwerowi spod nóg katalogu, z którego serwuje. Reguła „nigdy build równolegle z klikaczami" była
+wypisana **w nagłówku mojej własnej listy zadań** (lekcja z 047).
+**Rozwiązanie:** Powtórzenie zestawu bez niczego w tle.
+**Lekcja:** Reguła zapisana w dokumencie nie broni się sama, gdy proces w tle nie daje sygnału zajętości.
+Zanim odpalisz cokolwiek dotykającego `.next`, sprawdź `ps aux | grep playwright` — jedno polecenie
+kosztuje sekundę, a mylna diagnoza „regresja w przebudowie" kosztuje godziny. Podejrzanie długie czasy
+testów (dziesiątki sekund tam, gdzie zwykle są sekundy) to sygnatura walki o zasób, nie błędu w kodzie.
+
 ## 2026-08-11 — Rozbicie promptu na wkłady zgubiło narzędzie, które nie ma implementacji
 **Problem:** Katalog narzędzi odczytu asystenta rozbito na wkłady modułowe, generując wiersze promptu
 z listy narzędzi **mających handler**. `web_search` handlera nie ma — trasa agenta obsługuje je
