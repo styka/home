@@ -266,9 +266,26 @@
       z rejestru nie może mieszkać pod ścieżką platformową ani w warstwie kompozycji.
       **Gotowe, gdy:** bramka zielona na repo i **czerwona po podłożeniu** pliku łamiącego regułę —
       test negatywny, jak przy piątym teście w 048. **(AC-14)**
-- [ ] **T-31** — **Pełny zestaw klikaczy** + porównanie z punktem odniesienia.
+- [!] **T-31** — **Pełny zestaw klikaczy** + porównanie z punktem odniesienia.
       **Gotowe, gdy:** klikacz ścieżki szczęśliwej 21/21, a liczba czerwonych w pełnym zestawie
       **nie rośnie** (dziś 14); każda nowa czerwona ma diagnozę. **(AC-12)**
+      **❌ NIESPEŁNIONE — patrz `verify.md` §3.** Zestaw chodzi dwa razy dłużej (12,6 → 25,0 min)
+      i ma 16 czerwonych zamiast 10–11. Potwierdzone czterema pomiarami, w tym dwoma kontrolnymi
+      na kodzie sprzed 049 uruchomionymi plecami do siebie (12,7 i 12,6 min), więc to nie jest dryf
+      maszyny. Jedna przyczyna znaleziona i naprawiona (leniwe pola serwerowe w `module.ts`
+      osiągalne z komponentu klienckiego), druga **nieznaleziona**.
+
+## Faza G — DO ZROBIENIA w następnej sesji (z `/verify`, werdykt DO POPRAWY)
+
+- [ ] **T-36** — **Zmierzyć kompilację trybu dev per trasa** na `d5700f61` (przed 049) i `6b3b0b67`
+      (po). Warunek konieczny: **żądanie z sesją** — `middleware` przecina niezalogowane przed
+      kompilacją strony, dlatego pomiary `curl` dawały 5 ms i nic nie znaczyły. Ciasteczko sesji
+      wyciągnąć z `e2e/.auth/admin.json`.
+      **Gotowe, gdy:** wiadomo, które trasy zwolniły i o ile.
+- [ ] **T-37** — Na podstawie T-36 wskazać plik/import odpowiedzialny i naprawić.
+      **Gotowe, gdy:** pełny zestaw wraca do ~13 min i ≤11 czerwonych.
+- [ ] **T-38** — Migawka pulpitu z deklaracji (T-25/T-26), zaczynając od **zbudowania dowodu
+      runtime**: wyodrębnić obliczenia trasy do funkcji, zrzucić wynik, dopiero potem przenosić.
 - [x] **T-32** — **Inwentarz końcowy: co zostało poza platformą i dlaczego.**
       Spis rzeczy świadomie niebędących w `src/platform/` (`user.facts` w platformie mimo nazwy,
       `executorShared`, `catalog` kompozycji, manifesty bramek, `llm-client`) — każda z powodem.
@@ -304,7 +321,7 @@
       **Jedno zastrzeżenie, żeby liczba była uczciwa:** moduł wnoszący dane do **migawki pulpitu**
       nadal wymaga edycji `src/app/page.tsx`. To jedyne pozostałe miejsce i jest jawnie odłożone
       (patrz spec §5).
-- [ ] **T-35** — **Bramki końcowe:** komplet + `next build` przeciw lokalnemu Postgresowi (C-13).
+- [x] **T-35** — **Bramki końcowe:** komplet + `next build` przeciw lokalnemu Postgresowi (C-13).
       **Gotowe, gdy:** wszystko zielone, cztery liczniki bez spadku. **(AC-10)**
 
 ---
