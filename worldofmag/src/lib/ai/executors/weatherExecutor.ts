@@ -3,7 +3,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { addLocationByName, deleteLocation, setDefaultLocation, addPresetWatcher, deleteWatcher, addCustomWatcher, updateWatcher } from "@/modules/weather/contract";
 import { asStr, type ExecOutcome } from "@/lib/ai/executors/shared";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 
 export async function executeWeatherAction(action: AIAction, userId: string): Promise<string | ExecOutcome> {
   const { type, params, searchQuery } = action;

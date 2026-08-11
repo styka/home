@@ -4,7 +4,7 @@ import { prisma } from "@/platform/db/prisma";
 import { addEntry, getWalletElements, createElement, updateElement, setBalance, archiveElement, deleteElement } from "@/modules/portfel/contract";
 import { createBudget, createGoal, contributeGoal, updateBudget, deleteBudget, updateGoal, deleteGoal } from "@/modules/portfel/contract";
 import { asStr, resolveByName, ownerOrArr } from "@/lib/ai/executors/shared";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 
 export async function executePortfelAction(action: AIAction, userId: string): Promise<string> {
   const { type, params, searchQuery } = action;

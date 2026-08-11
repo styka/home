@@ -67,18 +67,24 @@
       (`SELF = "src/lib/llm/chat.ts"`) i po przenosinach zaczęły zgłaszać własną definicję jako brak.
       Poza aktualizacją ścieżki obie dostały **strażnika istnienia**: martwe wyłączenie wywala bramkę
       zamiast po cichu przestać działać. Sprawdzone testem negatywnym.
-- [ ] **T-3** — Domknięcie fazy A: `test:unit` + `next build` na lokalnym Postgresie.
-      **Gotowe, gdy:** build exit 0.
+- [x] **T-3** — Domknięcie fazy A: `test:unit` + `next build` na lokalnym Postgresie.
+      **Gotowe, gdy:** build exit 0. **Wynik:** exit 0 end-to-end, testy 566/566.
 
 ## Faza B — Asystent wraca do modułów (zadanie 8)
 
 > Rdzeń przebiegu. Kolejność: najpierw wspólny szkielet, potem egzekutory grupami, potem read-toole,
 > **na końcu** przełączenie rejestru — bo to jedyna zmiana zachowania w tej fazie.
 
-- [ ] **T-4** — **Typy wkładu modułu do asystenta w platformie.** `AiActionContribution`,
+- [x] **T-4** — **Typy wkładu modułu do asystenta w platformie.** `AiActionContribution`,
       `AiReadToolContribution` w `src/platform/ai/` — biorą `userId`/zakres **parametrem**, nie znają
       żadnego modułu. Pole `ai?: () => Promise<…>` w `ModuleDeclaration` (leniwe, jak `sideNav`).
       **Gotowe, gdy:** typy istnieją, `tsc` czysty, żaden moduł jeszcze ich nie używa. **(AC-3)**
+      **Wynik:** `src/platform/ai/contribution.ts` (`AiContribution`, `AiActionExecutor`,
+      `AiReadToolHandler`, `AiExecContext`, `ExecOutcome`, `ActionResult`, `AiCatalog`) + pole
+      `ai?: () => Promise<AiContribution>` w deklaracji. `AiExecContext` nazywa pola po tym, czym są
+      dla użytkownika (`activeListId`, `currentProjectId`), a nie po module — inaczej platforma
+      zaczęłaby znać moduły tylnymi drzwiami. Przy okazji `aiAction.ts` (czyste typy) przeniesione do
+      platformy, bo bez tego typ wkładu musiałby importować warstwę aplikacji: 25 importów w 23 plikach.
 - [ ] **T-5** — **`executors/shared.ts` → `src/lib/ai/executorShared.ts` + wstrzyknięcie Zakupów.**
       Plik jest wspólny dla wszystkich egzekutorów i importuje kontrakt Zakupów (`createList`) —
       po regule konsumentów nie należy do żadnego modułu, więc zostaje w warstwie kompozycji,

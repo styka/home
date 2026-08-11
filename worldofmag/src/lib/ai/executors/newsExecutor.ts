@@ -3,7 +3,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { createTopic, updateTopic, deleteTopic, startNewsRefresh, createSource, updateSource, deleteSource } from "@/modules/news/contract";
 import { asStr, type ExecOutcome } from "@/lib/ai/executors/shared";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 
 export async function executeNewsAction(action: AIAction, userId: string): Promise<string | ExecOutcome> {
   const { type, params, searchQuery } = action;

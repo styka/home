@@ -15,7 +15,7 @@
 // etykietę z `PARAM_LABELS` i kontrolkę tekstową; pole kończące się na `Id` jest ukrywane.
 
 import { TASK_STATUS_LABELS, TASK_PRIORITY_LABELS } from "@/types";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 
 export type FieldControl =
   | "text"

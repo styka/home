@@ -6,7 +6,7 @@ import { getTags, createTag } from "@/actions/tags";
 import { createNoteGroup, updateNoteGroup, deleteNoteGroup } from "@/modules/notes/contract";
 import { asStr, undoAction, resolveNoteId, type ExecOutcome } from "@/lib/ai/executors/shared";
 import { getUserTeamIds, ownedOrSystemWhere } from "@/platform/auth/serverUtils";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 
 // Zamień nazwy tagów notatek na id (znajdź istniejący po nazwie, inaczej utwórz).
 async function resolveNoteTagIds(names: unknown): Promise<string[]> {

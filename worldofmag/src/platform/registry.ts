@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
+import type { AiContribution } from "./ai/contribution";
 
 /**
  * 046 — DEKLARACJA MODUŁU (rozdz. 9.3 dokumentu „Omnia 🧐 — architektura docelowa").
@@ -59,6 +60,19 @@ export type ModuleDeclaration = {
    * (rozdz. 9.3 opisuje ten sam wzorzec dla kafelka pulpitu).
    */
   sideNav?: () => Promise<{ default: ComponentType }>;
+  /**
+   * 049: wkład modułu do asystenta AI — katalog akcji, egzekutor i narzędzia odczytu.
+   *
+   * **Leniwy z tego samego powodu co `sideNav`, tylko w drugą stronę.** Tam chodziło o to, żeby
+   * komponent kliencki nie wpadł do grafu serwerowego; tu — żeby **kod serwerowy nie wpadł do
+   * bundla klienta**. `MODULES` importuje `ModuleSidebar`, który jest komponentem klienckim,
+   * a egzekutory wołają Server Actions i Prismę. Statyczne `ai: { … }` (dosłowny kształt
+   * z rozdz. 9.3) wciągnęłoby serwer do przeglądarki.
+   *
+   * Rozdz. 9.6: „moduł bez deklaracji nie istnieje dla asystenta" — i to jest gwarancja mocniejsza
+   * niż kompletność ręcznej listy, bo modułu nie da się zapomnieć.
+   */
+  ai?: () => Promise<AiContribution>;
 };
 
 /** Deklaracja po uzupełnieniu wartości domyślnych — tego używa rejestr. */

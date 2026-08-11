@@ -17,7 +17,7 @@ import { executeFlotaAction } from "@/lib/ai/executors/flotaExecutor";
 import { executeKitchenAction } from "@/lib/ai/executors/kitchenExecutor";
 import { executeStorageAction } from "@/lib/ai/executors/storageExecutor";
 import { executeContactsAction } from "@/lib/ai/executors/contactsExecutor";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 import { toUserFacingError, type ExecOutcome, type ActionResult } from "@/lib/ai/executors/shared";
 import { hasContract, validateActionParams } from "@/lib/ai/actionContract";
 

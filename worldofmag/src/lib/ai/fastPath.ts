@@ -12,7 +12,7 @@
 import { chatComplete } from "@/platform/llm/chat";
 import { accrueUsage, type UsageMeter } from "@/lib/ai/usage";
 import type { AssistantWorkLevel } from "@/platform/llm/operationTypes";
-import type { AIAction, AIActionModule } from "@/lib/ai/aiAction";
+import type { AIAction, AIActionModule } from "@/platform/ai/aiAction";
 
 export type FastPathResult =
   | { kind: "simple"; action: AIAction }

@@ -3,7 +3,7 @@
 import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent } from "@/modules/health/contract";
 import { createMedicationSchedule, deleteMedicationSchedule, updateMedicationSchedule, logDose, unlogDose, getMedicationDay } from "@/modules/health/contract";
 import { asStr, resolveHealthEventId, resolveMedicationId, type ExecOutcome } from "@/lib/ai/executors/shared";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 import type { HealthKind, HealthStatus } from "@/types";
 
 export async function executeHealthAction(action: AIAction, userId: string): Promise<string | ExecOutcome> {

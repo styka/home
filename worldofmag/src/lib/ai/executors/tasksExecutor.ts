@@ -7,7 +7,7 @@ import { createTaskTag } from "@/modules/tasks/contract";
 import { createProjectGroup, updateProjectGroup, deleteProjectGroup } from "@/modules/tasks/contract";
 import { submitFeedbackTask } from "@/actions/feedback";
 import { addDays, shiftPriority, asStr, undoAction, resolveTaskId, resolveProjectIdForCreate, type ExecOutcome } from "@/lib/ai/executors/shared";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 import type { TaskStatus, TaskPriority } from "@/types";
 
 // Zamień listę NAZW etykiet na ich id (tworzy brakujące — createTaskTag jest upsertem

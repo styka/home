@@ -3,7 +3,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { createDeck, updateDeck, deleteDeck, addWord, updateWord, deleteWord, bulkAddWords } from "@/modules/languages/contract";
 import { asStr, resolveDeckId, ownerOrArr } from "@/lib/ai/executors/shared";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 
 export async function executeLanguageAction(action: AIAction, userId: string): Promise<string> {
   const { type, params, searchQuery } = action;

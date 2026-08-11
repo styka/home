@@ -2,7 +2,7 @@
 // Kontakty były dotąd niewidoczne dla asystenta (brak akcji i narzędzia odczytu).
 import { getContacts, createContact, updateContact, deleteContact } from "@/modules/contacts/contract";
 import { asStr, undoAction, type ExecOutcome } from "@/lib/ai/executors/shared";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 
 // Namierz kontakt po nazwie/telefonie/mailu (getContacts zawęża do zakresu użytkownika).
 async function resolveContactId(params: Record<string, unknown>, searchQuery?: string): Promise<{ id: string; name: string }> {

@@ -4,7 +4,7 @@ import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { addFuelLog, addServiceRecord, createVehicle, updateVehicle, deleteVehicle } from "@/modules/flota/contract";
 import { asStr, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executors/shared";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 
 export async function executeFlotaAction(action: AIAction, userId: string): Promise<string | ExecOutcome> {
   const { type, params, searchQuery } = action;

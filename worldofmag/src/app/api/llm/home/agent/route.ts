@@ -20,7 +20,7 @@ import { compactToolResults, collapseUsedToolData, TOOL_DATA_HEADER } from "@/li
 import { humanizeAssistantText } from "@/lib/ai/humanize";
 import type { AssistantWorkLevel } from "@/platform/llm/operationTypes";
 import { isAccessError, toUserFacingError } from "@/lib/ai/executors/shared";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 import { readCostBadgeEnabled } from "@/lib/ai/costVisibility";
 
 const MAX_ITERATIONS = 6;

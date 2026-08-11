@@ -4,7 +4,7 @@ import { prisma } from "@/platform/db/prisma";
 import { addItem, updateItem, updateItemStatus, deleteItem, clearDoneItems, markAllInCart, moveItem } from "@/modules/shopping/actions/items";
 import { createList, renameList, archiveList, deleteList, unarchiveList, completeShopping } from "@/modules/shopping/actions/lists";
 import { asStr, undoAction, resolveOrCreateList, resolveListId, resolveItemId, type ExecOutcome } from "@/lib/ai/executors/shared";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 import type { ItemStatus } from "@/types";
 
 export async function executeShoppingAction(action: AIAction, userId: string, activeListId?: string): Promise<string | ExecOutcome> {

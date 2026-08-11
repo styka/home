@@ -7,7 +7,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { createList } from "@/modules/shopping/contract";
-import type { AIAction } from "@/lib/ai/aiAction";
+import type { AIAction } from "@/platform/ai/aiAction";
 import type { TaskPriority } from "@/types";
 
 export function addDays(d: Date, days: number): Date {
