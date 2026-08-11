@@ -66,8 +66,22 @@ a przypis przy takiej regule z czasem staje się furtką.
 - [ ] **AC-6** — Given punkt odniesienia z AC-2, when porównuję migawkę po przebudowie, then jest
       **identyczna wartość po wartości**.
 - [ ] **AC-7** — Given graf kompilacji trybu dev, when mierzę go po zmianie, then `/auth/signin`
-      i `/` **nie rosną** wobec 1771 i 1889 modułów. Wkład serwerowy modułu idzie do jego części
-      serwerowej deklaracji — nigdy do części czytanej przez powłokę.
+      **nie rośnie** wobec 1771 modułów, a wzrost `/` wobec 1889 jest **równy liczbie nowych plików
+      źródłowych** — nie kosztem grafu ściągniętego okrężną drogą.
+      **Kryterium doprecyzowane w trakcie przebiegu (C-54), z pomiarem, nie z wygody.** Pierwotne
+      „`/` nie rośnie" jest nieosiągalne z definicji: jedenaście nowych wkładów to jedenaście nowych
+      plików, a pulpit z nich korzysta. Miarą, o którą naprawdę chodzi, jest **brak grafu, którego
+      trasa nie używa** — i ona rozstrzygnęła wybór projektowy:
+
+      | wariant | `/auth/signin` | `/` |
+      |---|---|---|
+      | przed 050 (trasa importowała osiem kontraktów) | 1771 | **1889** |
+      | wkłady przez wspólny `MODULE_SERVER` | 1771 | **2117** |
+      | wkłady przez własny korzeń kompozycji | 1771 | **1903** |
+
+      Drugi wariant wciągał egzekutory asystenta i handlery zadań w tle siedemnastu modułów, których
+      pulpit nie wywołuje ani razu — odrzucony. Trzeci daje **+14 = dokładnie liczba nowych plików**
+      (11 wkładów + korzeń kompozycji + składanie migawki + typ w platformie).
 - [ ] **AC-8** — Given komplet bramek i budowanie, when je uruchamiam, then wszystko przechodzi,
       a liczniki 160 / 551 / 35 / 35 nie spadają.
 

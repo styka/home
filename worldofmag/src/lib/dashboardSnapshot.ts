@@ -1,13 +1,14 @@
-import { MODULE_SERVER } from "@/lib/modules.server";
 import { MODULES } from "@/lib/modules";
+import { DASHBOARD_CONTRIBUTORS } from "@/lib/dashboardContributors";
 import { EMPTY_SNAPSHOT, type DashboardSnapshot } from "@/modules/home/contract";
 import type { DashboardContext } from "@/platform/dashboard";
 
 /**
- * 050 — KORZEŃ KOMPOZYCJI MIGAWKI PULPITU.
+ * 050 — SKŁADANIE MIGAWKI PULPITU.
  *
  * Platforma dostarcza typ wkładu, ale nie wolno jej znać modułów (C-36), więc zbieranie robi się
- * tutaj — obok `src/lib/modules.tsx`, w jedynym miejscu, które z definicji zna wszystkich.
+ * tutaj — obok `src/lib/modules.tsx`, w warstwie, która z definicji zna wszystkich. Listę wkładów
+ * trzyma `dashboardContributors.ts` (tam też pomiar, dlaczego jest osobno od `MODULE_SERVER`).
  *
  * **Bramkowanie uprawnieniem zostaje po tej stronie i jest WYPROWADZONE Z REJESTRU.** Wcześniej
  * trasa miała dziesięć ręcznych `if (has("module.x"))` — dziś jest jedna pętla czytająca
@@ -24,16 +25,15 @@ export async function collectDashboardSnapshot(
   permissions: string[],
   ctx: DashboardContext,
 ): Promise<DashboardSnapshot> {
-  const wkladcy = Object.entries(MODULE_SERVER).filter(([id, server]) => {
-    if (!server.dashboard) return false;
+  const wkladcy = Object.entries(DASHBOARD_CONTRIBUTORS).filter(([id]) => {
     const permission = MODULES.find((m) => m.id === id)?.permission;
     return permission === null || permission === undefined || permissions.includes(permission);
   });
 
   const fragmenty = await Promise.all(
-    wkladcy.map(async ([, server]) => {
+    wkladcy.map(async ([, laduj]) => {
       try {
-        const mod = await server.dashboard!();
+        const mod = await laduj();
         return await mod.default(userId, ctx);
       } catch {
         // Jeden padnięty wkład nie może wywalić całego pulpitu — dokładnie to robiło osiem

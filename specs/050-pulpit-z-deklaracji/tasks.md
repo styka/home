@@ -103,9 +103,19 @@
 - [x] **T-11** — **Siódmy test `check:module-registry`:** trasa pulpitu nie może importować kontraktu
       modułu. Sprawdzone **testem negatywnym**.
       **Gotowe, gdy:** podłożony import → bramka czerwona; po usunięciu → zielona. **(AC-9)**
-- [ ] **T-12** — **Pomiar grafu kompilacji** (`next dev`, z ciasteczkiem sesji — `middleware`
+- [x] **T-12** — **Pomiar grafu kompilacji** (`next dev`, z ciasteczkiem sesji — `middleware`
       przecina niezalogowane przed kompilacją strony).
-      **Gotowe, gdy:** `/auth/signin` ≤ 1771 i `/` ≤ 1889 modułów. **(AC-7)**
+      **Gotowe, gdy:** `/auth/signin` ≤ 1771, a wzrost `/` równy liczbie nowych plików. **(AC-7)**
+      **Wynik: 1771 (bez zmian) i 1903 (+14 = 11 wkładów + 3 pliki kompozycji/typu).**
+      **Pomiar zmienił projekt, nie tylko go potwierdził (C-54).** Pierwsze podejście wpinało wkłady
+      polem `dashboard` w `module.server.ts` i dało **2117** — bo `MODULE_SERVER` jest **plikiem
+      zbiorczym leniwych loaderów**: import dla jednego pola kompiluje cele `import()` wszystkich
+      czterech. To ta sama lekcja co kontrakt-barrel z 049, piętro wyżej. Wkłady pulpitu dostały
+      więc własny korzeń (`src/lib/dashboardContributors.ts`), a bramka pilnuje wpięcia **w obie
+      strony**, bo znikło ono z deklaracji modułu.
+      **Wskazanie na osobny krok:** `calendarContributors.ts`, `lib/ai/catalog.ts` i
+      `lib/jobs/registry.ts` płacą dziś tym samym podatkiem (agenda kalendarza wciąga egzekutory
+      asystenta). Nie ruszamy tego w tym przebiegu — C-53.
 - [ ] **T-12b** — **Usunąć tymczasową trasę diagnostyczną** dodaną w T-3.
       **Gotowe, gdy:** trasy nie ma w repozytorium, a `grep` tego potwierdza.
 - [ ] **T-13** — **Bramki końcowe:** komplet + `test:unit` + `next build` przeciw lokalnemu

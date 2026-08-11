@@ -13,7 +13,6 @@ import type { ModuleServerContributions } from "@/platform/registry.server";
  * którego klient nigdy nie dotyka.
  */
 const server: ModuleServerContributions = {
-  dashboard: () => import("./dashboard"),
   ai: () => import("./ai"),
   jobs: () => import("./jobs"),
 };
