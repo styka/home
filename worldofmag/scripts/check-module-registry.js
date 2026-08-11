@@ -189,6 +189,67 @@ for (const [id, dir] of ids) {
   }
 }
 
+// ─── 6b. Wkład do pulpitu wpięty w swój korzeń kompozycji — W OBIE STRONY (050) ────────
+//
+// Wkłady pulpitu mają WŁASNY korzeń (`src/lib/dashboardContributors.ts`), a nie pole w
+// `module.server.ts` — bo tamten obiekt jest plikiem zbiorczym leniwych loaderów i import dla
+// jednego pola kosztuje grafem za wszystkie cztery (1889 → 2117 modułów na stronie głównej;
+// pomiar w nagłówku korzenia). Cena tej decyzji: wpięcia nie widać w deklaracji modułu, więc
+// pilnuje go bramka — inaczej `dashboard.ts` istniałby na dysku i nie istniał w aplikacji.
+const dashRootPath = path.join(root, "src/lib/dashboardContributors.ts");
+const dashRoot = fs.existsSync(dashRootPath) ? fs.readFileSync(dashRootPath, "utf8") : "";
+const wpieteWkladyPulpitu = new Set(
+  [...dashRoot.matchAll(/import\(["']@\/modules\/([^/"']+)\/dashboard["']\)/g)].map((m) => m[1]),
+);
+
+const majaWkladPulpitu = new Set(
+  [...ids.keys()].filter((id) => fs.existsSync(path.join(modulesDir, id, "dashboard.ts"))),
+);
+for (const id of majaWkladPulpitu) {
+  if (!wpieteWkladyPulpitu.has(id)) {
+    errors.push(
+      `src/modules/${id}/dashboard.ts nie jest wpięty w src/lib/dashboardContributors.ts.\n` +
+        "    Wkład do migawki pulpitu istnieje na dysku i NIE istnieje w aplikacji — build zielony,\n" +
+        "    a na stronie głównej po prostu brakuje danych tego modułu.",
+    );
+  }
+}
+for (const id of wpieteWkladyPulpitu) {
+  if (!majaWkladPulpitu.has(id)) {
+    errors.push(
+      `src/lib/dashboardContributors.ts wpina „${id}", ale src/modules/${id}/dashboard.ts nie istnieje.\n` +
+        "    Leniwy import wskazujący w próżnię wywala się dopiero przy renderze strony głównej.",
+    );
+  }
+}
+
+// ─── 7. Trasa pulpitu nie opisuje modułów „po staremu" (050, AC-9) ─────────────────────
+//
+// Do 050 `src/app/page.tsx` importowało osiem kontraktów modułów i miało dziesięć gałęzi na
+// uprawnienia — było to OSTATNIE miejsce w aplikacji, w którym dodanie modułu wymagało edycji
+// cudzego pliku. Dziś moduł deklaruje wkład u siebie (`module.server.ts` → `dashboard`), a trasa
+// składa go z katalogu.
+//
+// Bez tej kontroli powrót do starego wzorca jest jedną linijką importu i buduje się na zielono —
+// dokładnie tak, jak egzekutor asystenta poza modułem budował się na zielono przed kontrolą 5.
+// Widok Strony głównej jest jedynym dozwolonym wyjątkiem: trasa musi coś wyrenderować.
+const dashboardRoute = path.join(root, "src/app/page.tsx");
+if (fs.existsSync(dashboardRoute)) {
+  const zrodlo = fs.readFileSync(dashboardRoute, "utf8");
+  const zakazane = [...zrodlo.matchAll(/from\s+["']@\/modules\/([^/"']+)(\/[^"']*)?["']/g)]
+    .map((m) => ({ id: m[1], sciezka: `@/modules/${m[1]}${m[2] ?? ""}` }))
+    .filter(({ id, sciezka }) => sciezka.endsWith("/contract") || id !== "home");
+
+  if (zakazane.length) {
+    errors.push(
+      `Trasa pulpitu (src/app/page.tsx) sięga do modułów: ${zakazane.map((z) => z.sciezka).join(", ")}.\n` +
+        "    Wkład modułu do migawki pulpitu deklaruje się w src/modules/<id>/dashboard.ts i wpina\n" +
+        "    polem `dashboard` w module.server.ts — nie dopisuje się go do trasy.\n" +
+        "    Dozwolony jest wyłącznie widok Strony głównej (@/modules/home/ui/...).",
+    );
+  }
+}
+
 if (errors.length) {
   console.error("\n✖ Rejestr modułów — niekompletne moduły w src/modules/:\n");
   console.error(errors.map((e) => `  ✖ ${e}`).join("\n\n"));

@@ -4,6 +4,39 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-11 — Wspólny rejestr leniwych loaderów też jest plikiem zbiorczym
+**Problem:** Wkłady modułów do migawki pulpitu wpięliśmy polem `dashboard` w `module.server.ts` —
+tak jak `ai`, `jobs` i `calendar`. Graf kompilacji strony głównej urósł z **1889 do 2117 modułów**,
+mimo że nowego kodu doszło jedenaście małych plików. Powód: `MODULE_SERVER` to obiekt **czterech
+leniwych loaderów na moduł**, a webpack w trybie dev kompiluje cele `import()` osiągalne ze
+statycznie zaimportowanego pliku. Pulpit, importując rejestr **dla jednego pola**, wciągnął
+egzekutory asystenta i handlery zadań w tle siedemnastu modułów, których nie wywołuje ani razu.
+**Rozwiązanie:** Własny korzeń kompozycji dla tej jednej troski — `src/lib/dashboardContributors.ts`
+z jedenastoma leniwymi importami i bez pozostałych trzech pól. Graf: **1903**, czyli +14 wobec stanu
+sprzed zmiany — dokładnie tyle, ile doszło nowych plików. Pole `dashboard` zniknęło z
+`ModuleServerContributions`, a wpięcie pilnuje bramka `check:module-registry` **w obie strony**.
+**Lekcja:** To ta sama lekcja co „kontrakt modułu jest barrelem", tylko **piętro wyżej**: każdy
+wspólny obiekt zbierający leniwe loadery **wielu trosk** jest plikiem zbiorczym. Konsument jednej
+troski płaci grafem za wszystkie. Jeśli korzeni kompozycji jest kilka (asystent, zadania, kalendarz,
+pulpit), każdy powinien sięgać po **swoje** wkłady, a nie po wspólny rejestr. Diagnoza zawsze ta
+sama: `next dev` i liczba modułów per trasa.
+
+## 2026-08-11 — Zrzut ze skryptu nie jest dowodem, gdy kod czyta użytkownika z sesji
+**Problem:** Do porównania „przed/po" przebudowie pulpitu zrobiliśmy zrzut migawki skryptem
+uruchamiającym wyodrębnioną funkcję z `userId` w parametrze. Wyszło **6 niezerowych pól z 20**.
+Wyglądało jak ubogi fixture, a było czymś innym: siedem z jedenastu bloków woła **kontrakty modułów**,
+czyli Server Actions, które użytkownika wywodzą z **sesji**, a nie z parametru. Poza kontekstem
+żądania rzucają „headers was called outside a request scope", a `try/catch` w każdym bloku zamienia
+to na ciche zera. Drugi wariant tej samej pułapki: fixture siał dane na nowym koncie, a bloki czytały
+konto z ciasteczka — znowu zera.
+**Rozwiązanie:** Punkt odniesienia zrzucony **tymczasową trasą diagnostyczną** (włączaną tylko przy
+`E2E_TEST_MODE=1`) odpytaną na działającym serwerze z ciasteczkiem sesji; fixture nauczony siać na
+istniejącym koncie (`--email=`). Wynik: 19 z 20 pól niezerowych. Trasa skasowana po porównaniach.
+**Lekcja:** **Parametr `userId` w sygnaturze nie znaczy, że kod go używa.** Zanim uznasz zrzut za
+punkt odniesienia, policz pola niezerowe i wytłumacz **każde** zero — zrzut z zerami zgadza się
+z zerami po przebudowie nawet wtedy, gdy zgubisz połowę wkładów. Gdy mierzony kod dotyka sesji,
+mierz go **w kontekście żądania**, nie ze skryptu.
+
 ## 2026-08-11 — Kontrakt modułu jest plikiem ZBIORCZYM: import stałej wciągnął cały serwer
 **Problem:** Po przeniesieniu agregatu kalendarza na składanie z deklaracji `collect.ts` (wewnątrz
 modułu Kalendarz) zaczął importować **korzeń kompozycji**, żeby zebrać wkłady wszystkich modułów.

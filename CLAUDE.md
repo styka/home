@@ -242,6 +242,8 @@ src/modules/<x>/  # a module
   ai/             # 049: catalog.ts (prompt text) + executor.ts + readTools.ts + index.ts
   jobs/           # 049: this module's background handlers + index.ts
   calendar.ts     # 049: this module's contribution to the shared agenda
+  dashboard.ts    # 050: this module's contribution to the home snapshot (wired in
+                  #      lib/dashboardContributors.ts, NOT in module.server.ts — see below)
 ```
 
 **049 — the declaration now carries the module's whole contribution to the app.** Four lazy fields
@@ -256,13 +258,29 @@ What the fields replaced — five parallel lists that no longer exist: the assis
 (a 16-entry map of prompt text), the executor registry (a chain of 16 `if (module === …)`), the
 read-tool dispatcher (a 56-case `switch`, 1199 lines), the job-handler map (which also produced the
 **enqueue allowlist** — a security boundary), and the calendar aggregate (9 queries into six other
-modules' tables, 227 lines → 32). Still hand-written: the **home dashboard snapshot**, whose route
-imports eight module contracts — deferred with a reason (no runtime baseline; see spec 049 §5).
+modules' tables, 227 lines → 32). **050 removed the sixth and last one: the home dashboard
+snapshot.** `src/app/page.tsx` went from eight module-contract imports and ten permission branches to
+zero of either; eleven modules each declare a `dashboard.ts`. Equivalence was proved against a
+runtime dump taken *before* the move — 20 fields, value by value, in two variants (with and without
+permissions) — because the snapshot is built **in place** and `tsc` alone would not have caught a
+silent regression. Phase 1 of the rebuild is now closed in full.
+
+**A shared registry of lazy loaders is itself a barrel — the 049 contract lesson one floor up.**
+The dashboard contributions deliberately do **not** live in `module.server.ts`: that object holds
+four lazy loaders per module, and webpack's dev graph follows `import()` targets reachable from any
+statically imported file, so importing it for *one* field compiles all four. Measured on `/`:
+1889 (before) → **2117** via `MODULE_SERVER` → **1903** via a dedicated root
+(`src/lib/dashboardContributors.ts`), where +14 is exactly the number of new source files. The cost
+of that choice — the wiring is no longer visible in the module's declaration — is paid by the gate,
+which checks it **both ways**. `calendarContributors.ts`, `lib/ai/catalog.ts` and
+`lib/jobs/registry.ts` still pay the same tax; splitting them is the same operation, deliberately
+left as a separate step.
 
 **The platform composes but never knows.** `buildAiCatalog(contributions)` and the worker's handler
 resolver both take module knowledge as a **required parameter** — the `filterAccessibleFavorites(…,
 isPathLocked)` pattern. Composition roots live outside the platform: `src/lib/ai/catalog.ts`,
-`src/lib/jobs/registry.ts`, `src/lib/calendarContributors.ts`, next to `src/lib/modules.tsx`.
+`src/lib/jobs/registry.ts`, `src/lib/calendarContributors.ts`, `src/lib/dashboardContributors.ts`
++ `src/lib/dashboardSnapshot.ts`, next to `src/lib/modules.tsx`.
 
 Three rules, each enforced by a gate rather than by good will:
 
@@ -898,7 +916,11 @@ the table/paragraph merge).
 - **`check-module-registry.js`** (also `npm run check:module-registry`) — 046: every directory in
   `src/modules/` must have `contract.ts` and a complete `defineModule` declaration in `module.ts`,
   with a unique id, **and be imported by the composition root** `src/lib/modules.tsx`. Without the
-  last check a module can exist on disk, be absent from the app, and still build green.
+  last check a module can exist on disk, be absent from the app, and still build green. **050 brings
+  it to eight checks**, adding the two that close Phase 1: a module's `dashboard.ts` must be wired
+  into `src/lib/dashboardContributors.ts` **and** every entry there must point at a file that exists;
+  and `src/app/page.tsx` must not import any module beyond the Home view — otherwise "add a module by
+  editing someone else's file" comes back as a one-line import that builds green.
 - **`tsconfig.test.json`** (`npm run check:test-types`, wired into `build`) — 046: `tsconfig.json`
   excludes `src/**/*.test.ts`, so `tsc --noEmit` does **not** see test files; a test importing a moved
   module typechecked clean and only failed in the 40-second `test:unit`. Tests run in Node, so they

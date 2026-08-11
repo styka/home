@@ -23,7 +23,7 @@ type Snapshot = {
   egzekutory: string[];
   zadaniaWTle: string[];
   kalendarz?: { userId: string; miesiac: string; zdarzenia: string[] };
-  pulpit?: Record<string, unknown>;
+  pulpit?: { zUprawnieniami: Record<string, unknown>; bezUprawnien: Record<string, unknown> };
 };
 
 /**
@@ -125,6 +125,30 @@ async function main() {
         const { collectCalendarEvents } = await import("../src/lib/calendarAgenda");
         const now = new Date();
         const zdarzenia = await collectCalendarEvents(user.id, now.getFullYear(), now.getMonth());
+        // 050: migawka pulpitu — dwa zrzuty. Drugi (bez uprawnień) jest materiałem do AC-5:
+        // wkład modułu, do którego użytkownik nie ma dostępu, nie może zostać zawołany.
+        // UWAGA: ze skryptu wychodzą tu ZERA dla wkładów wołających kontrakty modułów — Server
+        // Action poza żądaniem rzuca „headers was called outside a request scope". Wiarygodny zrzut
+        // robi się na działającym serwerze (T-3); to poniżej jest tylko szkieletem porównania.
+        const { collectDashboardSnapshot } = await import("../src/lib/dashboardSnapshot");
+        const WSZYSTKIE = [
+          "module.shopping", "module.tasks", "module.notes", "module.kitchen", "module.pets",
+          "module.flota", "module.portfel", "module.languages", "module.health",
+          "module.magazynowanie",
+        ];
+        const stabilnie = (v: unknown): unknown =>
+          JSON.parse(JSON.stringify(v, (k, val) => (k === "id" ? "<id>" : val)));
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date(now);
+        todayEnd.setHours(23, 59, 59, 999);
+        const { getUserTeamIds } = await import("../src/platform/auth/serverUtils");
+        const ctx = { now, todayStart, todayEnd, teamIds: await getUserTeamIds(user.id) };
+        snapshot.pulpit = {
+          zUprawnieniami: stabilnie(await collectDashboardSnapshot(user.id, WSZYSTKIE, ctx)) as Record<string, unknown>,
+          bezUprawnien: stabilnie(await collectDashboardSnapshot(user.id, [], ctx)) as Record<string, unknown>,
+        };
+
         snapshot.kalendarz = {
           userId: user.email ?? user.id,
           miesiac: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
@@ -146,7 +170,8 @@ async function main() {
     `✓ Zrzut: ${Object.keys(snapshot.akcjeAsystenta).length} modułów / ${liczbaAkcji} akcji · ` +
       `${snapshot.readToole.length} read-tooli · ${snapshot.egzekutory.length} egzekutorów · ` +
       `${snapshot.zadaniaWTle.length} typów zadań · ` +
-      `${snapshot.kalendarz?.zdarzenia.length ?? 0} zdarzeń kalendarza → ${out}`,
+      `${snapshot.kalendarz?.zdarzenia.length ?? 0} zdarzeń kalendarza · ` +
+      `${Object.keys(snapshot.pulpit?.zUprawnieniami ?? {}).length} pól migawki pulpitu → ${out}`,
   );
 }
 

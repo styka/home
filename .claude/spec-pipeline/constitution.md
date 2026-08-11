@@ -39,6 +39,14 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
     nie optymalizacja — w obie strony: `module.ts` czyta kod serwerowy (więc statyczny import
     komponentu klienckiego wciągnąłby go tam), a `MODULES` importuje `ModuleSidebar`, komponent
     kliencki (więc statyczny import egzekutora wciągnąłby Prismę do przeglądarki).
+  - **Wkład do migawki pulpitu:** `src/modules/<x>/dashboard.ts` wpięty w korzeń kompozycji
+    `src/lib/dashboardContributors.ts` — **świadomie poza `module.server.ts`** (050). Wspólny obiekt
+    leniwych loaderów jest **plikiem zbiorczym**: kto importuje go dla jednego pola, dostaje do grafu
+    cele `import()` wszystkich pozostałych (zmierzone: strona główna 1889 → 2117 modułów). Bramka
+    pilnuje wpięcia **w obie strony**. Ta sama operacja czeka `ai`, `jobs` i `calendar`.
+  - **Trasa pulpitu (`src/app/page.tsx`) nie importuje żadnego modułu poza widokiem Strony głównej.**
+    Moduł pokazujący coś na pulpicie deklaruje to u siebie; bramka rejestru odrzuca powrót do
+    dopisywania się do trasy.
   - **Gdy platforma potrzebuje wiedzy modułowej, przyjmuje ją parametrem WYMAGANYM.** `buildAiCatalog`
     dostaje wkłady, worker kolejki — rezolwer handlerów. Parametr opcjonalny z „historycznym"
     domyślnym jest zakazany: zapomniany argument stałby się cichym wyciekiem uprawnień.
@@ -49,8 +57,9 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   - **Powłoka nie importuje wnętrza żadnego modułu.** Gdy potrzebuje od modułu komponentu, bierze go
     z deklaracji; gdy danych — z kontraktu.
   - Wymuszają to: `npm run check:boundaries` (reguła lintu naprawdę działa) i
-    `npm run check:module-registry` (katalog modułu ma kontrakt, kompletną deklarację i wpięcie
-    w rejestr). Obie w `build`.
+    `npm run check:module-registry` (osiem kontroli: kontrakt, kompletna deklaracja, unikalne id,
+    wpięcie w oba korzenie kompozycji, brak kodu modułu poza jego katalogiem, wpięcie wkładu pulpitu
+    w obie strony i czysta trasa pulpitu). Obie w `build`.
 - **C-03 — Artefakty pipeline'u żyją w `specs/<NNN-slug>/`** (katalog główny repo): `spec.md`,
   `plan.md`, `tasks.md`, `verify.md`, `review.md`. Numer `NNN` jest sekwencyjny, zero-padded (001,
   002, …). Slug = kebab-case, po angielsku lub po polsku bez znaków diakrytycznych.
