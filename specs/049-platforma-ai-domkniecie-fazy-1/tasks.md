@@ -112,13 +112,23 @@
       **Bramka `check:actions` padła natychmiast** (skanowała `src/lib/ai/executors/`) i została
       naprawiona **już tutaj**, nie w T-18: katalogi `ai/` modułów są **wyprowadzane z systemu
       plików**, nie z listy nazw, więc bramka znajdzie moduł, o którym nikt jej nie powiedział.
-- [ ] **T-7** — **Egzekutory, grupa 2:** Notatki, Zdrowie, Nauka języków, Warsztaty, Magazynowanie.
+- [x] **T-7** — **Egzekutory, grupa 2:** Notatki, Zdrowie, Nauka języków, Warsztaty, Magazynowanie.
       **(AC-6)**
-- [ ] **T-8** — **Egzekutory, grupa 3:** Wiadomości, Pogoda, Zwierzęta (+ `petActions.ts`, który mimo
+- [x] **T-8** — **Egzekutory, grupa 3:** Wiadomości, Pogoda, Zwierzęta (+ `petActions.ts`, który mimo
       lokalizacji w `lib/ai` jest kodem modułu Zwierzęta), Portfel.
       **(AC-6)**
-- [ ] **T-9** — **Egzekutory, grupa 4 — najbardziej sprzężone:** Zakupy, Zadania, Kuchnia.
+- [x] **T-9** — **Egzekutory, grupa 4 — najbardziej sprzężone:** Zakupy, Zadania, Kuchnia.
       **(AC-6)**
+      **Wynik: 16 egzekutorów w 16 modułach, `src/lib/ai/executors/` już nie istnieje.**
+      Dwie rzeczy wyszły dopiero tutaj:
+      • **Zakupy i Zadania biorą z kontekstu jedną wartość** (`activeListId`, `currentProjectId`),
+        a nie worek. Zamiast przerabiać ich sygnatury na `AiExecContext`, `ai/index.ts` ma
+        jednolinijkowy adapter — mówi wprost, którego pola kontekstu ten moduł używa, więc jest
+        lepszą dokumentacją niż generyczny kontekst przepuszczony przez egzekutor.
+      • **Lint złapał realne naruszenie**: egzekutor Zakupów importował własne wnętrze aliasem
+        (`@/modules/shopping/actions/items`), co po przeniesieniu pliku DO modułu łamie C-02.
+        Skrypt przepisywał tylko `contract`, więc tego nie objął. Kolejny raz potwierdza się, że
+        `check:boundaries` sprawdza swoje sondy, a realne naruszenie pokazuje dopiero lint.
 - [ ] **T-10** — **Rozbicie `agentTools.ts` (1199 linii): część platformowa.** Pętla narzędzi,
       protokół i formatowanie wyników → `src/platform/ai/tools.ts`. Wkłady modułowe zostają na razie
       w pliku — rozdzielamy szkielet od treści, zanim ruszymy treść.

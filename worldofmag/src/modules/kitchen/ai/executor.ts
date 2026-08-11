@@ -3,10 +3,10 @@ import { resolveOrCreateList } from "@/modules/shopping/contract";
 // Scala trzy dawne bloki `module === "kitchen"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
-import { setMealPlanEntry, markMealCooked, markMealSkipped, updateMealPlanEntry, moveMealPlanEntry, deleteMealPlanEntry, generateShoppingListFromPlan } from "@/modules/kitchen/contract";
-import { addPantryItem, updatePantryItem, consumePantryItem, deletePantryItem, setPantryQuantity, moveItemToPantry, autoReplenishToList } from "@/modules/kitchen/contract";
-import { createRecipe, deleteRecipe, updateRecipe, archiveRecipe, duplicateRecipe, markRecipeCooked, shopForRecipe, addIngredient, addStep } from "@/modules/kitchen/contract";
-import { createCookbook, updateCookbook, deleteCookbook } from "@/modules/kitchen/contract";
+import { setMealPlanEntry, markMealCooked, markMealSkipped, updateMealPlanEntry, moveMealPlanEntry, deleteMealPlanEntry, generateShoppingListFromPlan } from "../contract";
+import { addPantryItem, updatePantryItem, consumePantryItem, deletePantryItem, setPantryQuantity, moveItemToPantry, autoReplenishToList } from "../contract";
+import { createRecipe, deleteRecipe, updateRecipe, archiveRecipe, duplicateRecipe, markRecipeCooked, shopForRecipe, addIngredient, addStep } from "../contract";
+import { createCookbook, updateCookbook, deleteCookbook } from "../contract";
 import { asStr, type ExecOutcome, resolveByName, ownerOrArr } from "@/lib/ai/executorShared";
 import { isoDate } from "@/lib/habitStats";
 import type { AIAction } from "@/platform/ai/aiAction";
