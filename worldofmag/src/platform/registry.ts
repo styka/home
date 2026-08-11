@@ -72,7 +72,7 @@ export type ModuleDeclaration = {
    * Rozdz. 9.6: „moduł bez deklaracji nie istnieje dla asystenta" — i to jest gwarancja mocniejsza
    * niż kompletność ręcznej listy, bo modułu nie da się zapomnieć.
    */
-  ai?: () => Promise<AiContribution>;
+  ai?: () => Promise<{ default: AiContribution }>;
 };
 
 /** Deklaracja po uzupełnieniu wartości domyślnych — tego używa rejestr. */

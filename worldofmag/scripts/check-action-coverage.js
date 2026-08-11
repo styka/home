@@ -28,10 +28,23 @@ const petSrc = read("src/lib/ai/petActions.ts");
 // (src/lib/ai/executors/*.ts). Z-010 rozbija monolit execute/route.ts na moduły;
 // check musi podążać za przeniesionymi `type === "..."`, więc skanujemy oba.
 let execSrc = read("src/app/api/llm/home/execute/route.ts");
-const execDir = path.join(root, "src/lib/ai/executors");
-if (fs.existsSync(execDir)) {
-  for (const f of fs.readdirSync(execDir)) {
-    if (f.endsWith(".ts")) execSrc += "\n" + read(`src/lib/ai/executors/${f}`);
+
+// 049: egzekutory wracają do modułów (`src/modules/<x>/ai/`), bo katalog asystenta jest teraz
+// składany z deklaracji (rozdz. 9.6). Skanujemy OBA miejsca — przejściowo część egzekutorów
+// jeszcze siedzi w `src/lib/ai/executors/`. Katalog modułowy jest **wyprowadzany z systemu
+// plików**, a nie z listy nazw: bramka ma znaleźć moduł, o którym nikt jej nie powiedział.
+const execDirs = [path.join(root, "src/lib/ai/executors")];
+const modulesDir = path.join(root, "src/modules");
+if (fs.existsSync(modulesDir)) {
+  for (const m of fs.readdirSync(modulesDir)) {
+    const aiDir = path.join(modulesDir, m, "ai");
+    if (fs.existsSync(aiDir)) execDirs.push(aiDir);
+  }
+}
+for (const dir of execDirs) {
+  if (!fs.existsSync(dir)) continue;
+  for (const f of fs.readdirSync(dir)) {
+    if (f.endsWith(".ts")) execSrc += "\n" + fs.readFileSync(path.join(dir, f), "utf8");
   }
 }
 

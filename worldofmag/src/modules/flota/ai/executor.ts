@@ -2,7 +2,7 @@
 // Scala trzy dawne bloki `module === "flota"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
-import { addFuelLog, addServiceRecord, createVehicle, updateVehicle, deleteVehicle } from "@/modules/flota/contract";
+import { addFuelLog, addServiceRecord, createVehicle, updateVehicle, deleteVehicle } from "../contract";
 import { asStr, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 

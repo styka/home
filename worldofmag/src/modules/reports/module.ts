@@ -14,4 +14,5 @@ export default defineModule({
   color: "var(--accent-purple)",
   Icon: BookOpen,
   defaultEnabled: true,
+  ai: () => import("./ai"),
 });

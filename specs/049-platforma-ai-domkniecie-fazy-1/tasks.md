@@ -100,11 +100,18 @@
       kontrakt — co ujawnia zależność, która i tak istniała (`assertListAccess`), zamiast ją ukrywać.
       Reszta pliku (`resolveListId`, `resolveTaskId`, `resolveNoteId`, …) sięga do Prismy bez importu
       modułu, więc zostaje w warstwie kompozycji jako `src/lib/ai/executorShared.ts`.
-- [ ] **T-6** — **Egzekutory, grupa 1 — moduły bez sprzężeń:** Kontakty, Raporty, Nawyki, Flota.
+- [x] **T-6** — **Egzekutory, grupa 1 — moduły bez sprzężeń:** Kontakty, Raporty, Nawyki, Flota.
       `src/lib/ai/executors/<x>Executor.ts` → `src/modules/<x>/ai/executor.ts`; blok tekstu
       z `ACTION_CATALOG_BY_MODULE[<x>]` → `src/modules/<x>/ai/catalog.ts`; `ai/index.ts` + pole `ai`
       w `module.ts`. Rejestr w trasie **jeszcze nie zmieniany** — importuje z nowego miejsca.
       **Gotowe, gdy:** rytuał przechodzi, cztery moduły deklarują swój wkład. **(AC-6)**
+      **Korekta planu (C-54) — tekst katalogu NIE jedzie razem z egzekutorem.** Plan zakładał, że
+      w tym samym kroku przenosimy blok `ACTION_CATALOG_BY_MODULE[<x>]`. To dałoby **dwa źródła
+      prawdy naraz** przez cztery zadania (T-6…T-9). Katalog przenosimy więc jednym ruchem w T-13,
+      razem z usunięciem mapy — a tu jedzie sam egzekutor.
+      **Bramka `check:actions` padła natychmiast** (skanowała `src/lib/ai/executors/`) i została
+      naprawiona **już tutaj**, nie w T-18: katalogi `ai/` modułów są **wyprowadzane z systemu
+      plików**, nie z listy nazw, więc bramka znajdzie moduł, o którym nikt jej nie powiedział.
 - [ ] **T-7** — **Egzekutory, grupa 2:** Notatki, Zdrowie, Nauka języków, Warsztaty, Magazynowanie.
       **(AC-6)**
 - [ ] **T-8** — **Egzekutory, grupa 3:** Wiadomości, Pogoda, Zwierzęta (+ `petActions.ts`, który mimo

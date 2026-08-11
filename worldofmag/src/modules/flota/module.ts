@@ -10,4 +10,5 @@ export default defineModule({
   Icon: Car,
   sideNav: () => import("./ui/FlotaSideNav").then((m) => ({ default: m.FlotaSideNav })),
   defaultEnabled: true,
+  ai: () => import("./ai"),
 });
