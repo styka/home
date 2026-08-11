@@ -1,14 +1,5 @@
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
-import { getTodaysMeals } from "@/modules/kitchen/contract";
-import { getExpiringSoon } from "@/modules/kitchen/contract";
-import { getCareAgenda } from "@/modules/pets/contract";
-import { getVehicles } from "@/modules/flota/contract";
-import { getWalletOverview } from "@/modules/portfel/contract";
-import { getDecks } from "@/modules/languages/contract";
-import { getHealthEvents } from "@/modules/health/contract";
-import { getLowStock, getExpiringStorage } from "@/modules/magazynowanie/contract";
-import type { TaskPriority, CareAgendaItem } from "@/types";
 import type { DashboardSnapshot } from "@/modules/home/contract";
 import { collectDashboardSnapshot } from "@/lib/dashboardSnapshot";
 
@@ -24,144 +15,29 @@ import { collectDashboardSnapshot } from "@/lib/dashboardSnapshot";
  * ze skryptu (tak samo jak `collectCalendarEvents`). Treść jest przeniesiona 1:1: te same zapytania,
  * ta sama kolejność, te same `try/catch` i te same wartości domyślne.
  *
- * **To jest stan przejściowy.** Kolejne zadania rozbiją tę funkcję na wkłady deklarowane przez moduły
- * i wtedy zniknie razem z importami kontraktów.
+ * **Stan po T-8: wszystkie jedenaście wkładów MODUŁOWYCH pochodzi już z deklaracji.** Zostały tu
+ * wyłącznie statystyki admina — dane przekrojowe, które nie należą do żadnego modułu (spis
+ * użytkowników, zespołów i raportów całej instalacji). W T-10 znikną razem z tym plikiem, wracając
+ * do trasy z zapisanym powodem.
  */
 export async function collectDashboardSnapshotLegacy(
   userId: string,
   userPermissions: string[],
   isAdmin: boolean,
 ): Promise<DashboardSnapshot & { adminStats: { userCount: number; teamCount: number; reportCount: number } | null }> {
-  const has = (slug: string) => userPermissions.includes(slug);
   const now = new Date();
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(now);
   todayEnd.setHours(23, 59, 59, 999);
-  const sevenDaysAgo = new Date(now);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
   const teamIds = await getUserTeamIds(userId);
-  const reportAccessFilter = {
-    OR: [
-      { authorId: userId },
-      { authorId: null },
-      ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
-    ],
-  };
 
   // 050: aktywność i zaproszenia WYPADŁY z tej funkcji — sięgają po sesję (`headers()`), więc
   // wywołane ze skryptu rzucają „headers was called outside a request scope". To dane konta, nie
   // modułu; zostają w trasie zgodnie z planem §7.4. Zrzut je wykrył od razu.
 
-  // Tasks (conditional)
-  let todayTasks = 0;
-  let overdueTasks = 0;
-  let todayTaskPreview: Array<{
-    id: string;
-    title: string;
-    priority: TaskPriority;
-    projectId: string | null;
-    projectName: string | null;
-    projectEmoji: string | null;
-  }> = [];
-
-  if (has("module.tasks")) {
-    const [todayCnt, overdueCnt, todayList] = await Promise.all([
-      prisma.task.count({
-        where: {
-          OR: [{ createdById: userId }, { assigneeId: userId }],
-          dueDate: { gte: todayStart, lte: todayEnd },
-          status: { notIn: ["DONE", "CANCELLED"] },
-        },
-      }),
-      prisma.task.count({
-        where: {
-          OR: [{ createdById: userId }, { assigneeId: userId }],
-          dueDate: { lt: todayStart },
-          status: { notIn: ["DONE", "CANCELLED"] },
-        },
-      }),
-      prisma.task.findMany({
-        where: {
-          OR: [{ createdById: userId }, { assigneeId: userId }],
-          dueDate: { gte: todayStart, lte: todayEnd },
-          status: { notIn: ["DONE", "CANCELLED"] },
-        },
-        orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
-        take: 3,
-        include: { project: { select: { id: true, name: true, emoji: true } } },
-      }),
-    ]);
-    todayTasks = todayCnt;
-    overdueTasks = overdueCnt;
-    todayTaskPreview = todayList.map((t) => ({
-      id: t.id,
-      title: t.title,
-      priority: t.priority as TaskPriority,
-      projectId: t.projectId,
-      projectName: t.project?.name ?? null,
-      projectEmoji: t.project?.emoji ?? null,
-    }));
-  }
-
-
-
-
-  // Flota (conditional) — vehicle count + inspection/insurance due within 30 days
-  let vehiclesCount = 0;
-  let vehicleAlerts: Array<{ id: string; name: string; type: "inspection" | "insurance"; dueAt: string; daysLeft: number }> = [];
-  if (has("module.flota")) {
-    try {
-      const vehicles = await getVehicles();
-      vehiclesCount = vehicles.length;
-      const horizon = 30;
-      for (const v of vehicles) {
-        const checks: Array<["inspection" | "insurance", Date | null]> = [
-          ["inspection", v.inspectionDue],
-          ["insurance", v.insuranceDue],
-        ];
-        for (const [type, due] of checks) {
-          if (!due) continue;
-          const daysLeft = Math.ceil((new Date(due).getTime() - todayStart.getTime()) / 86_400_000);
-          if (daysLeft <= horizon) {
-            vehicleAlerts.push({ id: v.id, name: v.name, type, dueAt: new Date(due).toISOString(), daysLeft });
-          }
-        }
-      }
-      vehicleAlerts.sort((a, b) => a.daysLeft - b.daysLeft);
-      vehicleAlerts = vehicleAlerts.slice(0, 4);
-    } catch {
-      vehiclesCount = 0;
-      vehicleAlerts = [];
-    }
-  }
-
-
-
-  // Zdrowie (conditional) — nadchodzące wizyty i badania
-  let healthUpcomingCount = 0;
-  let healthUpcoming: Array<{ id: string; kind: "VISIT" | "TEST"; title: string; specialty: string | null; scheduledAt: string }> = [];
-  if (has("module.health")) {
-    try {
-      const events = await getHealthEvents({ scope: "upcoming" });
-      const planned = events.filter((e) => e.status !== "CANCELLED");
-      healthUpcomingCount = planned.length;
-      healthUpcoming = planned.slice(0, 4).map((e) => ({
-        id: e.id,
-        kind: e.kind,
-        title: e.title,
-        specialty: e.specialty,
-        scheduledAt: new Date(e.scheduledAt).toISOString(),
-      }));
-    } catch {
-      healthUpcomingCount = 0;
-      healthUpcoming = [];
-    }
-  }
-
-
-  // Admin stats (conditional)
+  // Statystyki admina — dane przekrojowe, poza jakimkolwiek modułem (patrz nagłówek).
   let adminStats: { userCount: number; teamCount: number; reportCount: number } | null = null;
   if (isAdmin) {
     const [userCount, teamCount, reportCount] = await Promise.all([
@@ -172,20 +48,7 @@ export async function collectDashboardSnapshotLegacy(
     adminStats = { userCount, teamCount, reportCount };
   }
 
-
-
-
   const zDeklaracji = await collectDashboardSnapshot(userId, userPermissions, { todayStart, todayEnd, teamIds });
 
-  return {
-    ...zDeklaracji,
-    todayTasks,
-    overdueTasks,
-    todayTaskPreview,
-    vehiclesCount,
-    vehicleAlerts,
-    healthUpcomingCount,
-    healthUpcoming,
-    adminStats,
-  };
+  return { ...zDeklaracji, adminStats };
 }
