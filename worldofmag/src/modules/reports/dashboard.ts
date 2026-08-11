@@ -1,4 +1,4 @@
-import type { DashboardContributor, DashboardContext } from "@/platform/dashboard";
+import type { DashboardContributor } from "@/platform/dashboard";
 import type { DashboardSnapshot } from "../home/contract";
 import { prisma } from "@/platform/db/prisma";
 
@@ -13,7 +13,7 @@ import { prisma } from "@/platform/db/prisma";
  * z T-3: `recentReports` było tam jedynym niezerowym polem.
  */
 const wklad: DashboardContributor<Pick<DashboardSnapshot, "recentReports">> = async (userId, ctx) => {
-  const sevenDaysAgo = new Date(ctx.todayEnd);
+  const sevenDaysAgo = new Date(ctx.now);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   return {
     recentReports: await prisma.report.count({

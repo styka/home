@@ -143,7 +143,7 @@ async function main() {
         const todayEnd = new Date(now);
         todayEnd.setHours(23, 59, 59, 999);
         const { getUserTeamIds } = await import("../src/platform/auth/serverUtils");
-        const ctx = { todayStart, todayEnd, teamIds: await getUserTeamIds(user.id) };
+        const ctx = { now, todayStart, todayEnd, teamIds: await getUserTeamIds(user.id) };
         snapshot.pulpit = {
           zUprawnieniami: stabilnie(await collectDashboardSnapshot(user.id, WSZYSTKIE, ctx)) as Record<string, unknown>,
           bezUprawnien: stabilnie(await collectDashboardSnapshot(user.id, [], ctx)) as Record<string, unknown>,

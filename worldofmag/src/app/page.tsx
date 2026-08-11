@@ -43,7 +43,7 @@ export default async function HomePageRoute() {
   todayEnd.setHours(23, 59, 59, 999);
   const teamIds = await getUserTeamIds(userId);
 
-  const snapshot = await collectDashboardSnapshot(userId, userPermissions, { todayStart, todayEnd, teamIds });
+  const snapshot = await collectDashboardSnapshot(userId, userPermissions, { now, todayStart, todayEnd, teamIds });
 
   // Dane KONTA, nie modułu — sięgają po sesję, więc zostają w trasie (plan §7.4).
   const [recentActivity, pendingInvitations] = await Promise.all([

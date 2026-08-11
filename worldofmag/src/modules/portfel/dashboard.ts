@@ -1,4 +1,4 @@
-import type { DashboardContributor, DashboardContext } from "@/platform/dashboard";
+import type { DashboardContributor } from "@/platform/dashboard";
 import type { DashboardSnapshot } from "../home/contract";
 import { getWalletOverview } from "./contract";
 

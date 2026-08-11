@@ -14,6 +14,9 @@
  * dnia od nowa, a `getUserTeamIds` poszłoby do bazy jedenaście razy zamiast raz.
  */
 export interface DashboardContext {
+  /** Moment złożenia migawki. Okna liczone „wstecz od teraz" (np. siedem dni) muszą wychodzić
+   *  STĄD, nie z `todayEnd` — koniec dnia jest do ~24 h późniejszy, więc okno wyszłoby węższe. */
+  now: Date;
   todayStart: Date;
   todayEnd: Date;
   teamIds: string[];

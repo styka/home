@@ -26,8 +26,13 @@ export async function collectDashboardSnapshot(
   ctx: DashboardContext,
 ): Promise<DashboardSnapshot> {
   const wkladcy = Object.entries(DASHBOARD_CONTRIBUTORS).filter(([id]) => {
-    const permission = MODULES.find((m) => m.id === id)?.permission;
-    return permission === null || permission === undefined || permissions.includes(permission);
+    const modul = MODULES.find((m) => m.id === id);
+    // Wkład wskazujący na moduł spoza rejestru NIE jest wołany. Bramka rejestru czyni ten przypadek
+    // nieosiągalnym, ale domyślna odpowiedź na „nie wiem, czyj to wkład" musi brzmieć „nie wołaj":
+    // gdyby kiedyś bramkę obejść, wersja odwrotna cicho pokazałaby dane bez sprawdzenia uprawnienia.
+    if (!modul) return false;
+    // `permission: null` = powierzchnia bez uprawnienia modułowego (Raporty) — wołamy zawsze.
+    return modul.permission === null || permissions.includes(modul.permission);
   });
 
   const fragmenty = await Promise.all(
