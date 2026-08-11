@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import type { Prisma } from "@prisma/client";
-import { MESSAGE_WINDOW, DRAFT_MAX_CHARS, boundMessageData } from "@/lib/ai/conversationLimits";
+import { MESSAGE_WINDOW, DRAFT_MAX_CHARS, boundMessageData } from "@/platform/ai/conversationLimits";
 
 // Pamięć rozmów asystenta AID ("magiczna ikona"). Wszystko per-user (ownerId === userId);
 // rozmowy zespołowe nie istnieją — to prywatny asystent użytkownika.

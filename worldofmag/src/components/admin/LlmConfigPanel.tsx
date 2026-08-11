@@ -28,20 +28,20 @@ import {
   effortSupported,
   supportsTemperature,
   type LlmEffort,
-} from "@/lib/llm/effort";
-import type { ProviderKind } from "@/lib/llm/resolver";
+} from "@/platform/llm/effort";
+import type { ProviderKind } from "@/platform/llm/resolver";
 import {
   CONFIG_LEVELS,
   CONFIG_LEVEL_DESCRIPTIONS,
   CONFIG_LEVEL_LABELS,
   type ConfigLevel,
-} from "@/lib/llm/operationTypes";
+} from "@/platform/llm/operationTypes";
 import {
   AI_SECTION_KINDS,
   AI_SECTION_LABELS,
   AI_SECTION_MODE_LABELS,
   type AiSectionMode,
-} from "@/lib/ai/sectionMode";
+} from "@/platform/ai/sectionMode";
 import { setDefaultSectionModes } from "@/actions/aiSections";
 
 const KIND_LABELS: Record<string, string> = {

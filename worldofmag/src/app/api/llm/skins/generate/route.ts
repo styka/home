@@ -1,8 +1,8 @@
 // 045: wygeneruj skórkę z opisu słownego. Logika w handlerze; cienka trasa sync.
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
-import { skinGenerateHandler } from "@/lib/jobs/handlers/skinGenerate";
-import { JobError } from "@/lib/jobs/types";
+import { skinGenerateHandler } from "@/platform/jobs/handlers/skinGenerate";
+import { JobError } from "@/platform/jobs/types";
 
 export async function POST(req: NextRequest) {
   const session = await auth();

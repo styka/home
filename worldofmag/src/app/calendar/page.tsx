@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission } from "@/platform/auth/permissions";
 import calendarModule from "@/modules/calendar/module";
-import { getCalendarEvents } from "@/modules/calendar/actions/calendar";
+import { getCalendarEvents } from "@/actions/calendarAgenda";
 import { CalendarPage } from "@/modules/calendar/ui/CalendarPage";
 
 export default async function CalendarRootPage({ searchParams }: { searchParams?: { module?: string } }) {

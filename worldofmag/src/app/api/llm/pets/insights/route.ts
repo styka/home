@@ -2,7 +2,7 @@
 // Klient: runJob("pets.insights", input).
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
-import { petsInsightsHandler } from "@/lib/jobs/handlers/petsInsights";
+import { petsInsightsHandler } from "@/modules/pets/jobs/petsInsights";
 
 export async function POST(req: NextRequest) {
   const session = await auth();

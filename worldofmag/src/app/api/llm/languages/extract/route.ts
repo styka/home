@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
-import { chatComplete } from "@/lib/llm/chat";
-import { usageField } from "@/lib/ai/costVisibility";
+import { chatComplete } from "@/platform/llm/chat";
+import { usageField } from "@/platform/ai/costVisibility";
 
 // Generowanie listy słówek do nauki na podstawie dowolnego tekstu (np. kodu,
 // artykułu, opisu projektu). Zwraca słówka w języku docelowym wraz z

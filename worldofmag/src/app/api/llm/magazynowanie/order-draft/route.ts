@@ -2,8 +2,8 @@
 // Klient: runJob("magazyn.orderDraft", input).
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
-import { magazynOrderDraftHandler } from "@/lib/jobs/handlers/magazynOrderDraft";
-import { JobError } from "@/lib/jobs/types";
+import { magazynOrderDraftHandler } from "@/modules/magazynowanie/jobs/magazynOrderDraft";
+import { JobError } from "@/platform/jobs/types";
 
 export async function POST(req: NextRequest) {
   const session = await auth();

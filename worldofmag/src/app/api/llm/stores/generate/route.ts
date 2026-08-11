@@ -1,8 +1,8 @@
 // Wygeneruj mapę (graf) sklepu. Logika w handlerze; cienka trasa sync. Klient: runJob("stores.generate").
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
-import { storesGenerateHandler } from "@/lib/jobs/handlers/storesGenerate";
-import { JobError } from "@/lib/jobs/types";
+import { storesGenerateHandler } from "@/modules/shopping/jobs/storesGenerate";
+import { JobError } from "@/platform/jobs/types";
 
 export async function POST(req: NextRequest) {
   const session = await auth();

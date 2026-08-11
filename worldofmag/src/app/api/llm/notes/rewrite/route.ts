@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chatComplete } from "@/lib/llm/chat";
-import { usageField } from "@/lib/ai/costVisibility";
+import { chatComplete } from "@/platform/llm/chat";
+import { usageField } from "@/platform/ai/costVisibility";
 
 const PROMPTS: Record<string, string | ((instruction: string) => string)> = {
   correct: `Popraw błędy ortograficzne, gramatyczne i interpunkcyjne w tym tekście. Zachowaj oryginalny styl i strukturę. Odpowiedz TYLKO poprawionym tekstem bez żadnych wyjaśnień.`,

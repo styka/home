@@ -7,7 +7,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { requeueJob, cancelJob, cleanupOldJobs, type JobStatus } from "@/lib/jobs/queue";
+import { requeueJob, cancelJob, cleanupOldJobs, type JobStatus } from "@/platform/jobs/queue";
 import { revalidatePath } from "next/cache";
 
 async function assertAdmin() {

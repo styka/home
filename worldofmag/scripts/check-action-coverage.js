@@ -18,28 +18,63 @@ const path = require("path");
 const root = path.join(__dirname, "..");
 const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
 
-// 035: katalog akcji mieszka w `src/lib/ai/agentPrompt.ts` (wyjęty z pliku trasy, żeby dało się go
-// zaimportować i policzyć — patrz raport „Asystent — audyt zużycia tokenów"). Trasa nadal jest
-// czytana pod kątem NAWIGACJI i pozostałych odwołań.
+// 049: katalog akcji NIE jest już mapą w jednym pliku — każdy moduł wnosi swój blok, a całość
+// składa się z deklaracji (rozdz. 9.6). Bramka pilnuje przez to własności MOCNIEJSZEJ niż dotąd:
+// nie „czy ręczna lista jest kompletna", lecz „czy każdy moduł zadeklarował swoje akcje i czy
+// każda ma egzekutor". Modułu nie da się zapomnieć, bo moduł bez deklaracji nie istnieje.
 const agentSrc = read("src/lib/ai/agentPrompt.ts");
-const petSrc = read("src/lib/ai/petActions.ts");
+
+// W katalogu `ai/` modułu pliki mają role: `executor.ts` wykonuje, `readTools.ts` czyta,
+// `index.ts` składa wkład — a WSZYSTKO POZOSTAŁE to tekst katalogu akcji (dziś `catalog.ts`,
+// w module Zwierzęta dodatkowo `petActions.ts`). Rola wynika z nazwy, więc nowy plik z katalogiem
+// zostanie znaleziony bez dopisywania go tutaj.
+const ROLE_EXECUTOR = "executor.ts";
+const ROLE_POZOSTALE = new Set([ROLE_EXECUTOR, "readTools.ts", "index.ts"]);
 
 // Powierzchnia executora = route + wszystkie wyodrębnione handlery per-domena
 // (src/lib/ai/executors/*.ts). Z-010 rozbija monolit execute/route.ts na moduły;
 // check musi podążać za przeniesionymi `type === "..."`, więc skanujemy oba.
 let execSrc = read("src/app/api/llm/home/execute/route.ts");
-const execDir = path.join(root, "src/lib/ai/executors");
-if (fs.existsSync(execDir)) {
-  for (const f of fs.readdirSync(execDir)) {
-    if (f.endsWith(".ts")) execSrc += "\n" + read(`src/lib/ai/executors/${f}`);
+
+// Moduły są WYPROWADZANE Z SYSTEMU PLIKÓW, a nie z listy nazw: bramka ma znaleźć moduł,
+// o którym nikt jej nie powiedział.
+const modulesDir = path.join(root, "src/modules");
+let modulowyKatalog = "";
+const bezDeklaracji = [];
+for (const m of fs.existsSync(modulesDir) ? fs.readdirSync(modulesDir) : []) {
+  const aiDir = path.join(modulesDir, m, "ai");
+  if (!fs.existsSync(aiDir)) continue;
+  let maKatalog = false;
+  for (const f of fs.readdirSync(aiDir)) {
+    if (!f.endsWith(".ts")) continue;
+    const tresc = fs.readFileSync(path.join(aiDir, f), "utf8");
+    if (f === ROLE_EXECUTOR) execSrc += "\n" + tresc;
+    else if (!ROLE_POZOSTALE.has(f)) { modulowyKatalog += "\n" + tresc; maKatalog = true; }
   }
+  // Moduł, który wnosi katalog akcji, MUSI deklarować pole `ai` — inaczej jego akcje istnieją
+  // w kodzie i nie istnieją dla asystenta, a to jest gorsze niż ich brak.
+  // 049: wkład serwerowy siedzi w `module.server.ts`, a nie w `module.ts` — `module.ts` trafia
+  // do grafu klienta przez `MODULES`, więc leniwe importy egzekutorów kazały trybowi dev
+  // kompilować kod serwerowy przy każdej stronie (zmierzone: klikacze 12,7 → 26,0 min).
+  const decl = path.join(modulesDir, m, "module.server.ts");
+  if (maKatalog && (!fs.existsSync(decl) || !/\bai:\s*\(\)\s*=>/.test(fs.readFileSync(decl, "utf8")))) {
+    bezDeklaracji.push(m);
+  }
+}
+
+if (bezDeklaracji.length > 0) {
+  console.error("\n✖ Spójność akcji asystenta: moduły z katalogiem akcji BEZ pola `ai` w deklaracji:");
+  console.error("  " + bezDeklaracji.join(", "));
+  console.error("\n  Ich akcje istnieją w kodzie, ale asystent ich nie zobaczy — katalog składa się");
+  console.error("  wyłącznie z deklaracji. Dopisz `ai: () => import(\"./ai\")` w module.ts.\n");
+  process.exit(1);
 }
 
 // Katalog akcji: tylko segment ACTION_CATALOG (między deklaracją a NAVIGATION_CATALOG)
 // + pełny katalog akcji zwierząt (petActions.ts).
 const catStart = agentSrc.indexOf("const ACTION_CATALOG_HEADER");
 const catEnd = agentSrc.indexOf("const NAVIGATION_CATALOG");
-const catalogText = agentSrc.slice(catStart, catEnd) + "\n" + petSrc;
+const catalogText = agentSrc.slice(catStart, catEnd) + modulowyKatalog;
 
 // Usuwamy najpierw zawartość sygnatur `{ ... }` i nawiasów `( ... )` (tam żyją nazwy
 // PARAMETRÓW i komentarze, nie akcje), a z reszty bierzemy tokeny snake_case — to są
@@ -75,11 +110,11 @@ if (orphan.length > 0) {
   console.warn("⚠ Spójność akcji asystenta: executor obsługuje akcje spoza katalogu agenta (ostrzeżenie): " + orphan.join(", "));
 }
 
-// 031: KONTRAKT AKCJI — każdy typ akcji musi mieć wpis w `src/lib/ai/actionContract.ts`.
+// 031: KONTRAKT AKCJI — każdy typ akcji musi mieć wpis w `src/platform/ai/actionContract.ts`.
 // Bez wpisu panel „Przejrzyj / popraw" pokazałby użytkownikowi techniczną nazwę akcji i surowe
 // wartości parametrów (id, enumy), a walidacja serwerowa nie miałaby reguł do sprawdzenia.
 // Skan jest statyczny: bierzemy klucze najwyższego poziomu z obiektu ACTION_CONTRACTS.
-const contractSrc = read("src/lib/ai/actionContract.ts");
+const contractSrc = read("src/platform/ai/actionContract.ts");
 const cStart = contractSrc.indexOf("export const ACTION_CONTRACTS");
 const cEnd = contractSrc.indexOf("\n};", cStart);
 const contracted = new Set();
@@ -91,7 +126,7 @@ if (cStart !== -1 && cEnd !== -1) {
 
 const noContract = [...new Set([...catalog, ...handled])].filter((t) => !contracted.has(t)).sort();
 if (noContract.length > 0) {
-  console.error("\n✖ Kontrakt akcji: akcje BEZ wpisu w src/lib/ai/actionContract.ts:");
+  console.error("\n✖ Kontrakt akcji: akcje BEZ wpisu w src/platform/ai/actionContract.ts:");
   console.error("  " + noContract.join(", "));
   console.error(
     "\n  Dopisz do ACTION_CONTRACTS wpis `<typ>: { label: \"<polska nazwa akcji>\", fields: { … } }`.\n" +
@@ -159,7 +194,7 @@ if (unlabelled.length > 0) {
   console.error("\n✖ Kontrakt akcji: parametry BEZ polskiej etykiety (użytkownik zobaczyłby nazwę z kodu):");
   console.error("  " + unlabelled.sort().join(", "));
   console.error(
-    "\n  Dopisz etykietę do `PARAM_LABELS` w src/lib/ai/actionContract.ts (gdy nazwa znaczy to samo\n" +
+    "\n  Dopisz etykietę do `PARAM_LABELS` w src/platform/ai/actionContract.ts (gdy nazwa znaczy to samo\n" +
       "  w wielu akcjach) albo do `fields` konkretnej akcji (gdy potrzebuje własnej etykiety/kontrolki).\n"
   );
   process.exit(1);

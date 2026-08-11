@@ -228,13 +228,41 @@ not the dashboard.
 src/platform/     # capabilities that know NOTHING about any module
   auth/{session,permissions,serverUtils,ownership}.ts   db/prisma.ts
   trash/  audit/  notifications/  viewState/  shortcuts/  favorites/
+  ai/             # 049: agent protocol, content memory, cost, rate limits, action contract,
+                  #      catalog.ts (buildAiCatalog — takes contributions as a PARAMETER)
+  llm/            # 049: chat, model resolver, pricing, effort, TPM limiter
+  jobs/           # 049: queue, worker (handler resolver is INJECTED), cross-cutting handlers
+  calendar.ts     # 049: CalendarContributor type
   registry.ts     # ModuleDeclaration + defineModule + pure merge helpers
   ui/index.ts     # RE-EXPORT of components/ui (deliberately not a move)
 src/modules/<x>/  # a module
   contract.ts     # the ONLY file other modules may import
-  module.ts       # defineModule(...) — menu, permission and path mapping come from here
+  module.ts       # defineModule(...) — menu, permission, paths, sideNav, ai, jobs, calendar
   actions/  ui/  lib/
+  ai/             # 049: catalog.ts (prompt text) + executor.ts + readTools.ts + index.ts
+  jobs/           # 049: this module's background handlers + index.ts
+  calendar.ts     # 049: this module's contribution to the shared agenda
 ```
+
+**049 — the declaration now carries the module's whole contribution to the app.** Four lazy fields
+(`sideNav`, `ai`, `jobs`, `calendar`), each a function returning `import()`. **Laziness is a
+correctness requirement, not an optimisation, and it cuts both ways:** `module.ts` is read by server
+code (so a static import of a client component would drag it into every such graph — that was
+`sideNav` in 048), *and* `MODULES` is imported by `ModuleSidebar`, a client component (so a static
+import of an executor would drag Prisma into the browser bundle — that is `ai`/`jobs`/`calendar` in
+049). The document (chapter 9.3) shows these as static fields; Omnia deliberately deviates.
+
+What the fields replaced — five parallel lists that no longer exist: the assistant's action catalog
+(a 16-entry map of prompt text), the executor registry (a chain of 16 `if (module === …)`), the
+read-tool dispatcher (a 56-case `switch`, 1199 lines), the job-handler map (which also produced the
+**enqueue allowlist** — a security boundary), and the calendar aggregate (9 queries into six other
+modules' tables, 227 lines → 32). Still hand-written: the **home dashboard snapshot**, whose route
+imports eight module contracts — deferred with a reason (no runtime baseline; see spec 049 §5).
+
+**The platform composes but never knows.** `buildAiCatalog(contributions)` and the worker's handler
+resolver both take module knowledge as a **required parameter** — the `filterAccessibleFavorites(…,
+isPathLocked)` pattern. Composition roots live outside the platform: `src/lib/ai/catalog.ts`,
+`src/lib/jobs/registry.ts`, `src/lib/calendarContributors.ts`, next to `src/lib/modules.tsx`.
 
 Three rules, each enforced by a gate rather than by good will:
 

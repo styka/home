@@ -1,7 +1,7 @@
 "use client";
 
 import { MousePointerClick } from "lucide-react";
-import { startFeedbackInspector } from "@/lib/ai/feedbackBus";
+import { startFeedbackInspector } from "@/platform/ai/feedbackBus";
 
 /**
  * Wpis w panelu admina uruchamiający „tryb wskazywania" (FeedbackInspector).

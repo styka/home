@@ -6,8 +6,8 @@
  *
  * | Konsument | Czego potrzebuje |
  * |---|---|
- * | **Kuchnia** | `assertListAccess`, `getLists` („kup na to zakupy"), `categorize`, `parseQuantity` |
- * | **Magazynowanie** | `assertListAccess`, `getLists`, `categorize` (uzupełnianie zapasów → lista) |
+ * | **Kuchnia** | `assertListAccess`, `getLists` („kup na to zakupy"), `resolveOrCreateList`, `categorize`, `parseQuantity` |
+ * | **Magazynowanie** | `assertListAccess`, `getLists`, `resolveOrCreateList`, `categorize` (uzupełnianie zapasów → lista) |
  * | paleta poleceń | `createList`, `clearDoneItems`, `markAllInCart` |
  * | tryb offline (`lib/shopping/offlineMutations`) | operacje na pozycjach + `categorize` |
  * | asystent (`executors/shared`) | `createList` |
@@ -42,5 +42,6 @@ export {
 export { orphanCategoryIcons } from "./actions/categoryIcons";
 
 /** Reguła kategoryzacji produktu — patrz uwaga w nagłówku. */
+export { resolveOrCreateList } from "./lib/resolveList";
 export { categorize } from "./lib/categorize";
 export { parseQuantity } from "./lib/parseQuantity";

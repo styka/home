@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Camera, Loader2, Plus, Trash2, Save } from "lucide-react";
-import { runJob } from "@/lib/jobs/client";
+import { runJob } from "@/platform/jobs/client";
 import { bulkAddStorageItems } from "../actions/storage";
 import { useToast } from "@/components/ui/Toast";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";

@@ -3,17 +3,17 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
-import { getJob } from "@/lib/jobs/queue";
-import { startJobWorker } from "@/lib/jobs/worker";
-import { visibleUsage } from "@/lib/ai/costVisibility";
-import type { AiUsageInfo } from "@/lib/ai/usage";
+import { getJob } from "@/platform/jobs/queue";
+import { ensureJobWorker } from "@/lib/jobs/registry";
+import { visibleUsage } from "@/platform/ai/costVisibility";
+import type { AiUsageInfo } from "@/platform/ai/usage";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // Polling też pilnuje, że worker chodzi (np. po restarcie serwera dla zaległych zadań).
-  startJobWorker();
+  ensureJobWorker();
 
   const job = await getJob(params.id, session.user.id);
   if (!job) return NextResponse.json({ error: "Nie znaleziono zadania" }, { status: 404 });

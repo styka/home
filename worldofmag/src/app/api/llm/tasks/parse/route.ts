@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chatComplete } from "@/lib/llm/chat";
+import { chatComplete } from "@/platform/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
-import { usageField } from "@/lib/ai/costVisibility";
+import { usageField } from "@/platform/ai/costVisibility";
 
 const SYSTEM_PROMPT = `Jesteś asystentem zarządzania zadaniami. Użytkownik poda dane opisujące jedno
 lub więcej zadań — w DOWOLNEJ formie: luźny tekst, lista (myślniki/numery/nowe linie), CSV
