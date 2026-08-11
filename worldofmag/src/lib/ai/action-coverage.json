@@ -188,11 +188,6 @@
     "reason": "settings",
     "access": "self"
   },
-  "calendar:getCalendarEvents": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
   "calendar:getMyIcalFeedUrl": {
     "kind": "read",
     "status": "excluded",
@@ -203,6 +198,11 @@
     "status": "excluded",
     "reason": "settings",
     "access": "self"
+  },
+  "calendarAgenda:getCalendarEvents": {
+    "kind": "read",
+    "status": "ai",
+    "access": "owner"
   },
   "categories:createCategory": {
     "status": "excluded",

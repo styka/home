@@ -4,6 +4,26 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-11 — Kontrakt modułu jest plikiem ZBIORCZYM: import stałej wciągnął cały serwer
+**Problem:** Po przeniesieniu agregatu kalendarza na składanie z deklaracji `collect.ts` (wewnątrz
+modułu Kalendarz) zaczął importować **korzeń kompozycji**, żeby zebrać wkłady wszystkich modułów.
+To odwrócona zależność: moduł → korzeń → wszystkie moduły. Sama w sobie brzmi niewinnie, ale
+`contract.ts` re-eksportował ten agregat, a kontrakt jest **plikiem zbiorczym** — więc import
+**jednej stałej** (`MODULE_META` w `NotificationBell`, komponencie powłoki obecnym na każdej stronie)
+wciągał do grafu cały kod serwerowy aplikacji. Graf strony logowania — która z modułami nie ma nic
+wspólnego — urósł z **2120 do 2775 modułów**, a kompilacja każdej trasy w trybie dev zwolniła 2–4×.
+Pełny zestaw klikaczy: 12,6 → 25,0 min.
+**Rozwiązanie:** Odwrócenie zależności z powrotem. Moduł Kalendarz zostawia sobie **czyste składanie**
+(`assembleCalendar` — sortowanie i mapowanie), a zbieranie wkładów robi warstwa kompozycji
+(`src/lib/calendarAgenda.ts`). Kontrakt przestał re-eksportować agregat. Graf strony logowania spadł
+do **1771 modułów**, czyli **poniżej** stanu sprzed przebudowy.
+**Lekcja:** Kontrakt modułu to **barrel** — kto importuje z niego cokolwiek, płaci za wszystko, co on
+re-eksportuje. Dokładanie do kontraktu funkcji o ciężkim grafie opodatkowuje **każdego** konsumenta,
+także tego, który chciał tylko stałej. I reguła ogólniejsza: **moduł nigdy nie sięga po korzeń
+kompozycji.** Jeśli kod potrzebuje listy wszystkich modułów, to nie jest kod modułu — nawet jeśli
+dotyczy jego dziedziny. Diagnoza: `next dev` loguje liczbę modułów per trasa (`Compiled /x in Ys
+(N modules)`) i to jest najszybszy sposób, żeby zobaczyć spuchnięty graf.
+
 ## 2026-08-11 — Leniwy `import()` w deklaracji modułu spowolnił CAŁĄ aplikację 2×, a build tego nie pokazał
 **Problem:** Deklaracja modułu (`module.ts`) dostała trzy leniwe pola serwerowe — `ai`, `jobs`,
 `calendar` — każde jako `() => import("./…")`. Leniwość miała wystarczyć, żeby kod serwerowy nie

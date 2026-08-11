@@ -1,5 +1,5 @@
 import { getTrash } from "@/actions/trash";
-import { getCalendarEvents } from "@/modules/calendar/contract";
+import { getCalendarEvents } from "@/actions/calendarAgenda";
 import { clampLimit } from "@/lib/ai/readToolShared";
 import type { AiReadToolHandler } from "@/platform/ai/contribution";
 

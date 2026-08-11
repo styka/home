@@ -25,9 +25,8 @@
  * konta nie są modułem z rejestru, tylko powierzchnią konta — nazwane w dzienniku, nie przemilczane.
  */
 
-export { getCalendarEvents } from "./actions/calendar";
 
-export { collectCalendarEvents } from "./lib/collect";
+export { assembleCalendar } from "./lib/collect";
 export { buildICalendar } from "./lib/ical";
 
 export { isoDay, monthRange, MODULE_META } from "./lib/index";

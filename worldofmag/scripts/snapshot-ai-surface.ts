@@ -122,7 +122,7 @@ async function main() {
       const { prisma } = await import("../src/platform/db/prisma");
       const user = await prisma.user.findFirst({ where: { email: { not: null } }, select: { id: true, email: true } });
       if (user) {
-        const { collectCalendarEvents } = await import("../src/modules/calendar/lib/collect");
+        const { collectCalendarEvents } = await import("../src/lib/calendarAgenda");
         const now = new Date();
         const zdarzenia = await collectCalendarEvents(user.id, now.getFullYear(), now.getMonth());
         snapshot.kalendarz = {

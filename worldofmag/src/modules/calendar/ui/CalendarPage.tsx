@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { getCalendarEvents } from "../actions/calendar";
+import { getCalendarEvents } from "@/actions/calendarAgenda";
 import { isoDay, MODULE_META, type CalendarEvent, type CalendarModule } from "../lib";
 
 const MONTHS = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
