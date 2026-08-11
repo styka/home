@@ -9,4 +9,5 @@ export default defineModule({
   color: "var(--accent-red)",
   Icon: HeartPulse,
   defaultEnabled: true,
+  ai: () => import("./ai"),
 });

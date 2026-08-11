@@ -9,4 +9,5 @@ export default defineModule({
   color: "var(--accent-amber)",
   Icon: FileText,
   defaultEnabled: true,
+  ai: () => import("./ai"),
 });

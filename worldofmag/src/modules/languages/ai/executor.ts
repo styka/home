@@ -1,7 +1,7 @@
 // Z-010: handler akcji asystenta dla modułu Języki (talie + fiszki SRS).
 // Scala oba dawne bloki `module === "languages"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
-import { createDeck, updateDeck, deleteDeck, addWord, updateWord, deleteWord, bulkAddWords } from "@/modules/languages/contract";
+import { createDeck, updateDeck, deleteDeck, addWord, updateWord, deleteWord, bulkAddWords } from "../contract";
 import { asStr, resolveDeckId, ownerOrArr } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 

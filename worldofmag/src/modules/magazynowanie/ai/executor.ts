@@ -3,7 +3,7 @@ import { resolveOrCreateList } from "@/modules/shopping/contract";
 // Scala oba dawne bloki `module === "magazynowanie"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
-import { addStorageItem, adjustStorageQuantity, updateStorageItem, deleteStorageItem, transferStock, addSupplier, updateSupplier, deleteSupplier, addLowStockToShoppingList, addBatch } from "@/modules/magazynowanie/contract";
+import { addStorageItem, adjustStorageQuantity, updateStorageItem, deleteStorageItem, transferStock, addSupplier, updateSupplier, deleteSupplier, addLowStockToShoppingList, addBatch } from "../contract";
 import { asStr, undoAction, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 
