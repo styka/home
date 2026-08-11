@@ -116,11 +116,13 @@
       **Wskazanie na osobny krok:** `calendarContributors.ts`, `lib/ai/catalog.ts` i
       `lib/jobs/registry.ts` płacą dziś tym samym podatkiem (agenda kalendarza wciąga egzekutory
       asystenta). Nie ruszamy tego w tym przebiegu — C-53.
-- [ ] **T-12b** — **Usunąć tymczasową trasę diagnostyczną** dodaną w T-3.
+- [x] **T-12b** — **Usunąć tymczasową trasę diagnostyczną** dodaną w T-3.
       **Gotowe, gdy:** trasy nie ma w repozytorium, a `grep` tego potwierdza.
-- [ ] **T-13** — **Bramki końcowe:** komplet + `test:unit` + `next build` przeciw lokalnemu
+- [x] **T-13** — **Bramki końcowe:** komplet + `test:unit` + `next build` przeciw lokalnemu
       Postgresowi (C-13).
       **Gotowe, gdy:** wszystko zielone, cztery liczniki bez spadku. **(AC-8)**
+      **Wynik:** `npm run build` **exit 0** („Compiled successfully"), `test:unit` **657/657**,
+      liczniki **160 / 551 / 35 / 35** bez zmian, `next lint --dir src` bez błędów.
 - [ ] **T-14** — **Dokumentacja domknięcia Fazy 1:** `CLAUDE.md`, `constitution.md` (C-36 o polu
       `dashboard`), rozdz. 15 dziennika — **Faza 1 domknięta w całości**, odpowiedź na pytanie
       kontrolne **bez przypisu**, pierwszy krok Fazy 2 (zadanie 9: `Workspace`, `ResourceGrant`).
