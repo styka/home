@@ -74,8 +74,16 @@ które przetrwały cel „8 → 1".
 
 **Wkład modułu z deklaracji (reszta zadania 7 + zadanie 8)**
 
-- [ ] **AC-4** — Given moduł z kafelkiem na pulpicie, when pulpit go renderuje, then bierze go
-      z deklaracji modułu, a nie z listy utrzymywanej obok rejestru.
+- [ ] **AC-4** — Given moduł wnoszący dane do pulpitu, when pulpit je zbiera, then bierze je
+      z deklaracji modułu, a nie z ręcznej listy w trasie.
+      **Korekta z `/plan` (C-54):** spec zakładał za rozdz. 9.3 „kafelek pulpitu" (`dashboard: () =>
+      import("./ui/DashboardCard")`). **W Omnii takich kafelków nie ma** — pulpit składa się z sekcji
+      przekrojowych (briefing, ulubione, „dziś", siatka modułów, szybkie akcje, sugestie, ostatnio
+      używane), a nie z kafelków per moduł. Realne sprzężenie jest gdzie indziej i jest dokładnie tym,
+      co rozdz. 9.3 chce usunąć: **trasa pulpitu importuje osiem kontraktów modułów**, żeby złożyć
+      migawkę. Deklaracja ma więc wnosić **wkład danych do migawki**, nie komponent kafelka.
+      Wprowadzanie kafelków per moduł byłoby nową funkcją, a przebieg ma nie zmieniać niczego
+      widocznego dla użytkownika (C-53).
 - [ ] **AC-5** — Given moduł wnoszący zdarzenia do wspólnego kalendarza, when kalendarz składa
       agendę, then pyta o nie deklarację — zamiast mieć gałąź `if` na każdy moduł.
 - [ ] **AC-6** — Given asystent AI, when buduje katalog akcji, odczytów i nawigacji, then składa go
