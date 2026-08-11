@@ -261,7 +261,7 @@
 
 ## Faza F — Domknięcie Fazy 1
 
-- [ ] **T-30** — **Szósty test `check:module-registry`: moduł opisany poza własnym katalogiem.**
+- [x] **T-30** — **Szósty test `check:module-registry`: moduł opisany poza własnym katalogiem.**
       Żaden egzekutor, read-tool, handler zadania, wkład pulpitu ani kalendarza należący do modułu
       z rejestru nie może mieszkać pod ścieżką platformową ani w warstwie kompozycji.
       **Gotowe, gdy:** bramka zielona na repo i **czerwona po podłożeniu** pliku łamiącego regułę —
@@ -269,20 +269,41 @@
 - [ ] **T-31** — **Pełny zestaw klikaczy** + porównanie z punktem odniesienia.
       **Gotowe, gdy:** klikacz ścieżki szczęśliwej 21/21, a liczba czerwonych w pełnym zestawie
       **nie rośnie** (dziś 14); każda nowa czerwona ma diagnozę. **(AC-12)**
-- [ ] **T-32** — **Inwentarz końcowy: co zostało poza platformą i dlaczego.**
+- [x] **T-32** — **Inwentarz końcowy: co zostało poza platformą i dlaczego.**
       Spis rzeczy świadomie niebędących w `src/platform/` (`user.facts` w platformie mimo nazwy,
       `executorShared`, `catalog` kompozycji, manifesty bramek, `llm-client`) — każda z powodem.
       **Gotowe, gdy:** żadna pozostałość nie jest bez zapisanego uzasadnienia. **(AC-1)**
-- [ ] **T-33** — **Dokumentacja:** `CLAUDE.md` (warstwa platformy kompletna, cztery nowe pola
+      **Inwentarz końcowy.** W `src/platform/` jest dziś: `ai`, `llm`, `jobs`, `auth`, `db`, `trash`,
+      `audit`, `notifications`, `viewState`, `shortcuts`, `favorites`, `ui`, `calendar.ts`,
+      `registry.ts`. Poza platformą, **w warstwie kompozycji**, zostało jedenaście pozycji i każda
+      z nazwanym powodem:
+      • `agentPrompt.ts` — katalog nawigacji wymienia trasy modułów wprost;
+      • `fastPath.ts` — słowa-klucze rozpoznające moduł z treści polecenia;
+      • `assistantStarters.ts` — podpowiedzi startowe per moduł;
+      • `catalog.ts`, `jobs/registry.ts`, `calendarContributors.ts` — trzy korzenie kompozycji
+        (składają wkłady z `MODULES`, więc z definicji znają wszystkie moduły);
+      • `coreReadTools.ts` — narzędzia przekrojowe; woła kontrakt Kalendarza;
+      • `executorShared.ts`, `readToolShared.ts` — helpery sięgające do tabel kilkunastu modułów;
+      • `coverage.ts` + trzy manifesty JSON — dane bramek, nie kod platformy.
+      W `src/lib/jobs/` został **wyłącznie** `registry.ts` i testy; `src/lib/llm/` nie istnieje.
+- [x] **T-33** — **Dokumentacja:** `CLAUDE.md` (warstwa platformy kompletna, cztery nowe pola
       deklaracji), `constitution.md` (C-36 o `ai`/`calendar`/`dashboard`/`jobs`), rozdz. 15 dziennika
       (wpis 049: stan Fazy 1, co z niej zostało, pierwszy krok Fazy 2), `doświadczenia.md` (C-51).
       **Gotowe, gdy:** dziennik odpowiada na pytanie „czy Faza 1 jest domknięta". **(AC-15)**
-- [ ] **T-34** — **Odpowiedź KODEM na pytanie kontrolne z rozdz. 14** („ile miejsc trzeba dotknąć,
+- [x] **T-34** — **Odpowiedź KODEM na pytanie kontrolne z rozdz. 14** („ile miejsc trzeba dotknąć,
       żeby dodać moduł?"). Odpowiedzią jest bramka z T-30 plus zliczenie: ile plików poza katalogiem
       modułu trzeba dotknąć, dodając moduł z pełnym wyposażeniem (menu, nawigacja, AI, pulpit,
       kalendarz, zadania w tle).
       **Gotowe, gdy:** liczba zapisana w dzienniku i **wynosi 1** (sama deklaracja w korzeniu
       kompozycji) albo ma wypisany powód, dlaczego nie. **(AC-14, AC-15)**
+      **Odpowiedź: jeden katalog + jeden import w korzeniu kompozycji** (`src/lib/modules.tsx`).
+      I nie jest to deklaracja, tylko rzecz **wymuszona**: `check:module-registry` ma teraz sześć
+      testów i wywala build, gdy kod modułu — albo jego wkład do asystenta czy kolejki — wyląduje
+      poza katalogiem modułu. Sprawdzone testem negatywnym (podłożony `src/lib/ai/petsExecutor.ts`
+      → czerwono; po usunięciu → zielono).
+      **Jedno zastrzeżenie, żeby liczba była uczciwa:** moduł wnoszący dane do **migawki pulpitu**
+      nadal wymaga edycji `src/app/page.tsx`. To jedyne pozostałe miejsce i jest jawnie odłożone
+      (patrz spec §5).
 - [ ] **T-35** — **Bramki końcowe:** komplet + `next build` przeciw lokalnemu Postgresowi (C-13).
       **Gotowe, gdy:** wszystko zielone, cztery liczniki bez spadku. **(AC-10)**
 

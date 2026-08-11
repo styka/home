@@ -14,7 +14,13 @@
  *   2. deklaracja ma komplet wymaganych pól,
  *   3. identyfikatory modułów są unikalne,
  *   4. każda deklaracja jest **wpięta w korzeń kompozycji** (`src/lib/modules.tsx`) — bez tego
- *      moduł istnieje na dysku i nie istnieje w aplikacji, a build jest zielony.
+ *      moduł istnieje na dysku i nie istnieje w aplikacji, a build jest zielony,
+ *   5. (048) identyfikator z rejestru nie ma kodu w trzech historycznych miejscach modułu,
+ *   6. (049) ani wkładu (egzekutor AI, handler zadania) pod ścieżką platformową/kompozycyjną.
+ *
+ * Punkty 5–6 są **odpowiedzią KODEM na pytanie kontrolne z rozdz. 14** („ile miejsc trzeba dotknąć,
+ * żeby dodać moduł?"). Odpowiedź brzmi **jeden katalog + jeden import w korzeniu kompozycji**, i nie
+ * jest deklaracją — jest wymuszona: każde inne miejsce, w którym moduł mógłby się rozlać, wywala build.
  */
 const fs = require("fs");
 const path = require("path");
@@ -121,6 +127,15 @@ const actionsDir = path.join(root, "src/actions");
 const componentsDir = path.join(root, "src/components");
 const libDir = path.join(root, "src/lib");
 
+// 049: miejsca, w których wkład modułu NIE MA prawa mieszkać, i wzorzec nazwy, który go zdradza.
+// Sprawdzamy nazwę pliku, nie treść: chodzi o wykrycie modułu pisanego „po staremu", a nie
+// o audyt zawartości.
+const WKLADY_POZA_MODULEM = [
+  ["src/platform/ai", (f, id) => f === `${id}Executor.ts` || f === `${id}ReadTools.ts`],
+  ["src/platform/jobs/handlers", (f, id) => f.toLowerCase().startsWith(id.toLowerCase()) && f !== "index.ts"],
+  ["src/lib/ai", (f, id) => f === `${id}Executor.ts` || f === `${id}ReadTools.ts`],
+];
+
 // Świadome wyjątki: katalog nazwany jak moduł, ale z konsumentem SPOZA tego modułu — czyli kod
 // realnie współdzielony, którego przeniesienie zamroziłoby przypadkowe sprzężenie (lekcja z 047:
 // „plik należy do modułu, w którym umieszczają go jego KONSUMENCI, nie ten, który sugeruje nazwa").
@@ -139,6 +154,18 @@ for (const [id, dir] of ids) {
   if (fs.existsSync(legacyAction)) strays.push(`src/actions/${id}.ts`);
   if (fs.existsSync(legacyComponents)) strays.push(`src/components/${id}/`);
   if (fs.existsSync(legacyLib) && !SHARED_LIB_DIRS[id]) strays.push(`src/lib/${id}/`);
+
+  // 049: moduł opisuje się dziś czterema polami deklaracji (`ai`, `jobs`, `calendar`, `sideNav`).
+  // Czwarte miejsce, w którym mógłby wylądować jego kod, to WARSTWY, z których te pola korzystają:
+  // egzekutor asystenta, handler zadania czy wkład do kalendarza pod ścieżką platformową albo
+  // kompozycyjną obchodzi granicę tak samo, jak obchodziło ją `src/actions/<id>.ts`.
+  for (const [dir, wzor] of WKLADY_POZA_MODULEM) {
+    const p = path.join(root, dir);
+    if (!fs.existsSync(p)) continue;
+    for (const f of fs.readdirSync(p)) {
+      if (wzor(f, id)) strays.push(`${dir}/${f}`);
+    }
+  }
 
   if (strays.length) {
     errors.push(

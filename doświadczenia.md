@@ -4,6 +4,39 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-11 — Rozbicie promptu na wkłady zgubiło narzędzie, które nie ma implementacji
+**Problem:** Katalog narzędzi odczytu asystenta rozbito na wkłady modułowe, generując wiersze promptu
+z listy narzędzi **mających handler**. `web_search` handlera nie ma — trasa agenta obsługuje je
+osobno, bo idzie do internetu, nie do bazy. Jego wiersz katalogu wyparował, więc model przestałby
+wiedzieć, że narzędzie w ogóle istnieje. Build i `tsc` były zielone; nic tego nie widziało.
+**Rozwiązanie:** Wiersz dopisany do wkładu przekrojowego, z komentarzem, że narzędzie **celowo** nie
+ma tam implementacji. Złapał to test `buildReadToolsPrompt`, który asertuje obecność trzech narzędzi
+przekrojowych w prompcie.
+**Lekcja:** Gdy rozbijasz katalog na kawałki, źródłem prawdy o **kompletności** jest stara lista, a nie
+nowa struktura. Wygeneruj z listy „przed", odejmij „po" i sprawdź resztę — zamiast zakładać, że każdy
+wpis miał odpowiednik w kodzie. Wpis opisujący coś, czego nie ma w tym samym miejscu, ginie pierwszy.
+
+## 2026-08-11 — „Baza cienia" i allowlista: dwa miejsca, w których odruch dokłada za dużo
+**Problem:** Przy składaniu rejestru zadań w tle z deklaracji odruchowo dopisałem do wkładu platformy
+`skins.generate` — bo plik handlera leżał obok pozostałych. Tyle że tego typu **nigdy nie było**
+w `JOB_HANDLERS`: trasa woła go synchronicznie. Wpis poszerzyłby `ENQUEUABLE_TYPES`, czyli listę tego,
+co klient może zakolejkować z przeglądarki — a to granica bezpieczeństwa, nie wygoda.
+**Rozwiązanie:** Porównanie z zrzutem sprzed zmiany (12 typów przed, 12 po) wyłapało nadmiarowy wpis
+od razu. Handler został jako zwykły moduł wołany z trasy, bez wpisu w mapie.
+**Lekcja:** Przy refaktorze listy, która jest **allowlistą**, porównanie „przed/po" nie jest
+formalnością — jest jedyną rzeczą stojącą między refaktorem a cichym poszerzeniem uprawnień.
+„Plik leży obok" nie znaczy „należy do tej samej listy".
+
+## 2026-08-11 — Test, który startuje workera, wiesza cały zestaw
+**Problem:** Po przejściu rejestru zadań na składanie z deklaracji test kolejki dostał poprawkę
+wołającą `ensureJobWorker()` — żeby wstrzyknąć rezolwer handlerów. Zestaw testów przestał się kończyć:
+`npm run test:unit` wisiał do timeoutu bez jednego komunikatu o błędzie.
+**Rozwiązanie:** `ensureJobWorker()` odpala pętlę `setInterval`, która trzyma proces Node przy życiu.
+W teście wstrzykujemy sam rezolwer (`setJobHandlerResolver`), bez startowania pętli.
+**Lekcja:** Test, który wywołuje funkcję „ensure/start/init" produkcyjnego runtime'u, dziedziczy jego
+cykl życia. Objaw jest mylący — nie „test failed", tylko cisza do timeoutu. Gdy zestaw nagle wisi,
+szukaj najpierw tego, co ostatnia zmiana **wystartowała**, a nie tego, co sprawdza.
+
 ## 2026-08-05 — Bramka rozjazdu schematu KASOWAŁA lokalną bazę deweloperską
 **Problem:** `npm run build` wywracał się na ostatnim kroku (`scripts/migrate.js`) błędem Prismy
 **P3005 „The database schema is not empty"**, mimo że chwilę wcześniej `prisma migrate deploy`
