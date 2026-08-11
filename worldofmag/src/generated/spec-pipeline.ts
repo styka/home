@@ -26,4 +26,4 @@ export const SPEC_PIPELINE_DOCS: AdminDoc[] = [
   }
 ]
 
-export const SPEC_PIPELINE_GENERATED_AT = "2026-08-11T09:06:21.759Z"
+export const SPEC_PIPELINE_GENERATED_AT = "2026-08-11T09:34:16.218Z"

@@ -1,4 +1,6 @@
+import { actionCatalog } from "./catalog";
 import type { AiContribution } from "@/platform/ai/contribution";
+import { readTools, readToolsPrompt } from "./readTools";
 import { executeNotesAction } from "./executor";
 
 /**
@@ -6,7 +8,10 @@ import { executeNotesAction } from "./executor";
  * ciągnie za sobą Server Actions i Prismę, więc nie może trafić do bundla klienta.
  */
 const contribution: AiContribution = {
+  actionCatalog,
   execute: executeNotesAction,
+  readToolsPrompt,
+  readTools,
 };
 
 export default contribution;

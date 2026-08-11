@@ -70,6 +70,12 @@ export interface AiContribution {
   actionCatalog?: string;
   /** Egzekutor akcji zapisu tego modułu. */
   execute?: AiActionExecutor;
+  /**
+   * Przykłady użycia dopisywane do sekcji przykładów w prompcie (nie do katalogu akcji).
+   * Osobne pole, bo to inne miejsce w prompcie — sklejenie z katalogiem przeniosłoby przykłady
+   * do sekcji, w której model spodziewa się definicji.
+   */
+  promptExamples?: string;
   /** Wiersze katalogu narzędzi odczytu (tekst promptu), po jednym na narzędzie. */
   readToolsPrompt?: string;
   /** Narzędzia odczytu: nazwa → implementacja. */
@@ -84,6 +90,7 @@ export interface AiContribution {
  */
 export interface AiCatalog {
   actionCatalogByModule: Record<string, string>;
+  promptExamplesByModule: Record<string, string>;
   executeByModule: Record<string, AiActionExecutor>;
   readToolsPrompt: string;
   readTools: Record<string, AiReadToolHandler>;

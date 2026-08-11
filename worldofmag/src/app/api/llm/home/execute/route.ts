@@ -1,23 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/platform/db/prisma";
 import { auth } from "@/platform/auth/session";
-import { executePetAction } from "@/modules/pets/ai/executor";
-import { executeHealthAction } from "@/modules/health/ai/executor";
-import { executeLanguageAction } from "@/modules/languages/ai/executor";
-import { executeNewsAction } from "@/modules/news/ai/executor";
-import { executeWeatherAction } from "@/modules/weather/ai/executor";
-import { executeWarsztatAction } from "@/modules/warsztaty/ai/executor";
-import { executeReportAction } from "@/modules/reports/ai/executor";
-import { executeNotesAction } from "@/modules/notes/ai/executor";
-import { executeShoppingAction } from "@/modules/shopping/ai/executor";
-import { executeTasksAction } from "@/modules/tasks/ai/executor";
-import { executeHabitsAction } from "@/modules/habits/ai/executor";
-import { executePortfelAction } from "@/modules/portfel/ai/executor";
-import { executeFlotaAction } from "@/modules/flota/ai/executor";
-import { executeKitchenAction } from "@/modules/kitchen/ai/executor";
-import { executeStorageAction } from "@/modules/magazynowanie/ai/executor";
-import { executeContactsAction } from "@/modules/contacts/ai/executor";
 import type { AIAction } from "@/platform/ai/aiAction";
+import { getAiCatalog } from "@/lib/ai/catalog";
 import { toUserFacingError, type ExecOutcome, type ActionResult } from "@/lib/ai/executorShared";
 import { hasContract, validateActionParams } from "@/lib/ai/actionContract";
 
@@ -37,81 +22,13 @@ async function executeAction(
   const invalid = validateActionParams(action);
   if (invalid.length > 0) throw new Error(invalid.join(" "));
 
-  if (module === "shopping") {
-    return executeShoppingAction(action, userId, activeListId);
-  }
-
-  if (module === "tasks") {
-    return executeTasksAction(action, userId, currentProjectId);
-  }
-
-  if (module === "notes") {
-    return executeNotesAction(action, userId);
-  }
-
-  if (module === "pets") {
-    return executePetAction(action, userId);
-  }
-
-  // ── Nawyki ────────────────────────────────────────────────────────────────
-  if (module === "habits") {
-    return executeHabitsAction(action, userId);
-  }
-
-  // ── Portfel ───────────────────────────────────────────────────────────────
-  if (module === "portfel") {
-    return executePortfelAction(action, userId);
-  }
-
-  // ── Kuchnia ───────────────────────────────────────────────────────────────
-  if (module === "kitchen") {
-    return executeKitchenAction(action, userId);
-  }
-
-  // ── Flota ─────────────────────────────────────────────────────────────────
-  if (module === "flota") {
-    return executeFlotaAction(action, userId);
-  }
-
-  // ── Magazynowanie ───────────────────────────────────────────────────────────
-  if (module === "magazynowanie") {
-    return executeStorageAction(action, userId);
-  }
-
-  // ── Warsztaty ─────────────────────────────────────────────────────────────
-  if (module === "warsztaty") {
-    return executeWarsztatAction(action, userId);
-  }
-
-  // ── Zdrowie ──────────────────────────────────────────────────────────────────
-  if (module === "health") {
-    return executeHealthAction(action, userId);
-  }
-
-  // ── Języki (fiszki) ──────────────────────────────────────────────────────────
-  if (module === "languages") {
-    return executeLanguageAction(action, userId);
-  }
-
-  // ── Wiadomości (tematy / odświeżanie) ─────────────────────────────────────────
-  if (module === "news") {
-    return executeNewsAction(action, userId);
-  }
-
-  // ── Pogoda (lokalizacje / obserwatorzy) ───────────────────────────────────────
-  if (module === "weather") {
-    return executeWeatherAction(action, userId);
-  }
-
-  // ── Kontakty (CRM) ────────────────────────────────────────────────────────────
-  if (module === "contacts") {
-    return executeContactsAction(action, userId);
-  }
-
-  // ── Raporty (zapis wyniku / sesji) ────────────────────────────────────────────
-  if (module === "reports") {
-    return executeReportAction(action);
-  }
+  // 049: rejestr egzekutorów pochodzi z DEKLARACJI modułów (rozdz. 9.6). Wcześniej był tu łańcuch
+  // szesnastu `if (module === …)` — równoległa lista, którą trzeba było pamiętać przy każdym nowym
+  // module i której nic nie pilnowało. Teraz moduł bez deklaracji po prostu nie ma egzekutora,
+  // a `check:actions` tego dopilnuje przed wdrożeniem.
+  const { executeByModule } = await getAiCatalog();
+  const execute = executeByModule[module];
+  if (execute) return execute(action, userId, { activeListId, currentProjectId });
 
   throw new Error(`Nieznany typ akcji: ${module}/${type}`);
 }

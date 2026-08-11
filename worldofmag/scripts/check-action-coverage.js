@@ -18,41 +18,60 @@ const path = require("path");
 const root = path.join(__dirname, "..");
 const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
 
-// 035: katalog akcji mieszka w `src/lib/ai/agentPrompt.ts` (wyjęty z pliku trasy, żeby dało się go
-// zaimportować i policzyć — patrz raport „Asystent — audyt zużycia tokenów"). Trasa nadal jest
-// czytana pod kątem NAWIGACJI i pozostałych odwołań.
+// 049: katalog akcji NIE jest już mapą w jednym pliku — każdy moduł wnosi swój blok, a całość
+// składa się z deklaracji (rozdz. 9.6). Bramka pilnuje przez to własności MOCNIEJSZEJ niż dotąd:
+// nie „czy ręczna lista jest kompletna", lecz „czy każdy moduł zadeklarował swoje akcje i czy
+// każda ma egzekutor". Modułu nie da się zapomnieć, bo moduł bez deklaracji nie istnieje.
 const agentSrc = read("src/lib/ai/agentPrompt.ts");
-const petSrc = read("src/lib/ai/petActions.ts");
+
+// W katalogu `ai/` modułu pliki mają role: `executor.ts` wykonuje, `readTools.ts` czyta,
+// `index.ts` składa wkład — a WSZYSTKO POZOSTAŁE to tekst katalogu akcji (dziś `catalog.ts`,
+// w module Zwierzęta dodatkowo `petActions.ts`). Rola wynika z nazwy, więc nowy plik z katalogiem
+// zostanie znaleziony bez dopisywania go tutaj.
+const ROLE_EXECUTOR = "executor.ts";
+const ROLE_POZOSTALE = new Set([ROLE_EXECUTOR, "readTools.ts", "index.ts"]);
 
 // Powierzchnia executora = route + wszystkie wyodrębnione handlery per-domena
 // (src/lib/ai/executors/*.ts). Z-010 rozbija monolit execute/route.ts na moduły;
 // check musi podążać za przeniesionymi `type === "..."`, więc skanujemy oba.
 let execSrc = read("src/app/api/llm/home/execute/route.ts");
 
-// 049: egzekutory wracają do modułów (`src/modules/<x>/ai/`), bo katalog asystenta jest teraz
-// składany z deklaracji (rozdz. 9.6). Skanujemy OBA miejsca — przejściowo część egzekutorów
-// jeszcze siedzi w `src/lib/ai/executors/`. Katalog modułowy jest **wyprowadzany z systemu
-// plików**, a nie z listy nazw: bramka ma znaleźć moduł, o którym nikt jej nie powiedział.
-const execDirs = [path.join(root, "src/lib/ai/executors")];
+// Moduły są WYPROWADZANE Z SYSTEMU PLIKÓW, a nie z listy nazw: bramka ma znaleźć moduł,
+// o którym nikt jej nie powiedział.
 const modulesDir = path.join(root, "src/modules");
-if (fs.existsSync(modulesDir)) {
-  for (const m of fs.readdirSync(modulesDir)) {
-    const aiDir = path.join(modulesDir, m, "ai");
-    if (fs.existsSync(aiDir)) execDirs.push(aiDir);
+let modulowyKatalog = "";
+const bezDeklaracji = [];
+for (const m of fs.existsSync(modulesDir) ? fs.readdirSync(modulesDir) : []) {
+  const aiDir = path.join(modulesDir, m, "ai");
+  if (!fs.existsSync(aiDir)) continue;
+  let maKatalog = false;
+  for (const f of fs.readdirSync(aiDir)) {
+    if (!f.endsWith(".ts")) continue;
+    const tresc = fs.readFileSync(path.join(aiDir, f), "utf8");
+    if (f === ROLE_EXECUTOR) execSrc += "\n" + tresc;
+    else if (!ROLE_POZOSTALE.has(f)) { modulowyKatalog += "\n" + tresc; maKatalog = true; }
+  }
+  // Moduł, który wnosi katalog akcji, MUSI deklarować pole `ai` — inaczej jego akcje istnieją
+  // w kodzie i nie istnieją dla asystenta, a to jest gorsze niż ich brak.
+  const decl = path.join(modulesDir, m, "module.ts");
+  if (maKatalog && fs.existsSync(decl) && !/\bai:\s*\(\)\s*=>/.test(fs.readFileSync(decl, "utf8"))) {
+    bezDeklaracji.push(m);
   }
 }
-for (const dir of execDirs) {
-  if (!fs.existsSync(dir)) continue;
-  for (const f of fs.readdirSync(dir)) {
-    if (f.endsWith(".ts")) execSrc += "\n" + fs.readFileSync(path.join(dir, f), "utf8");
-  }
+
+if (bezDeklaracji.length > 0) {
+  console.error("\n✖ Spójność akcji asystenta: moduły z katalogiem akcji BEZ pola `ai` w deklaracji:");
+  console.error("  " + bezDeklaracji.join(", "));
+  console.error("\n  Ich akcje istnieją w kodzie, ale asystent ich nie zobaczy — katalog składa się");
+  console.error("  wyłącznie z deklaracji. Dopisz `ai: () => import(\"./ai\")` w module.ts.\n");
+  process.exit(1);
 }
 
 // Katalog akcji: tylko segment ACTION_CATALOG (między deklaracją a NAVIGATION_CATALOG)
 // + pełny katalog akcji zwierząt (petActions.ts).
 const catStart = agentSrc.indexOf("const ACTION_CATALOG_HEADER");
 const catEnd = agentSrc.indexOf("const NAVIGATION_CATALOG");
-const catalogText = agentSrc.slice(catStart, catEnd) + "\n" + petSrc;
+const catalogText = agentSrc.slice(catStart, catEnd) + modulowyKatalog;
 
 // Usuwamy najpierw zawartość sygnatur `{ ... }` i nawiasów `( ... )` (tam żyją nazwy
 // PARAMETRÓW i komentarze, nie akcje), a z reszty bierzemy tokeny snake_case — to są

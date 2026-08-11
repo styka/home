@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/platform/db/prisma";
 import { isAssistantLevel, type AssistantLevel } from "@/types";
 import { auth } from "@/platform/auth/session";
-import { READ_TOOL_NAMES, runReadTool } from "@/lib/ai/agentTools";
 import {
-  ACTION_CATALOG_BY_MODULE,
   buildRouterPrompt,
   buildSystemPromptParts,
 } from "@/lib/ai/agentPrompt";
+import { getAiCatalog } from "@/lib/ai/catalog";
 import { readFollowupsEnabled } from "@/lib/ai/followups";
 import { partialRunFallbackMessage } from "@/lib/ai/agentPartialRun";
 import { webSearch } from "@/lib/news/webSearch";
@@ -162,7 +161,11 @@ async function callAgent(
   return { content: result.content || "{}", truncated: result.truncated === true };
 }
 
-const CATALOG_MODULES = Object.keys(ACTION_CATALOG_BY_MODULE);
+// 049: lista modułów z katalogiem akcji pochodzi z DEKLARACJI, nie z ręcznej mapy w prompcie.
+// Katalog jest asynchroniczny (pole `ai` jest leniwe), więc czytamy go tam, gdzie jest await.
+async function catalogModules(): Promise<string[]> {
+  return Object.keys((await getAiCatalog()).actionCatalogByModule);
+}
 
 // Słowa-klucze per moduł — do TANIEGO pre-routingu bez LLM. Dobierane tak, by
 // były wysoce dystynktywne (mało fałszywych trafień). Granice słów (\b) + formy.
@@ -200,6 +203,7 @@ function keywordRoute(text: string, allowed: string[], primary: string): string[
 // jakiejkolwiek niepewności (błąd/pusto) zwracamy PEŁNY zestaw aktywnych modułów
 // — wtedy zachowanie = jak przed optymalizacją (zero regresji w najgorszym razie).
 async function routeModules(text: string, activeModules: string[], primary: string, conversationId?: string | null, meta?: AgentMeta): Promise<string[]> {
+  const CATALOG_MODULES = await catalogModules();
   const allowed = activeModules.filter((m) => CATALOG_MODULES.includes(m));
   if (allowed.length <= 3) return allowed; // i tak mało — nie ma co klasyfikować
 
@@ -320,6 +324,10 @@ async function runAgentLoopRaw(
   systemBlocks?: { stable: string; variable: string }
 ): Promise<LoopResult> {
   const log: LogEntry[] = [];
+  // 049: narzędzia odczytu pochodzą z katalogu złożonego z deklaracji modułów — zamiast statycznej
+  // listy nazw i `switch (name)` w warstwie AI. Katalog jest zapamiętany, więc to nie jest koszt
+  // na turę.
+  const loopCatalog = await getAiCatalog();
   // 030: pamięć wywołań narzędzi w obrębie tury — identyczne wywołanie (tool+args) nie
   // wykonuje się drugi raz (wynik z mapy + marker powtórki), co przerywa pętle
   // „pobierz to samo jeszcze raz", które wyczerpywały limit kroków.
@@ -439,7 +447,7 @@ async function runAgentLoopRaw(
       const rawTools = Array.isArray(parsed.tools) ? parsed.tools.slice(0, MAX_TOOLS_PER_TURN) : [];
       const toolCalls = rawTools
         .map((t) => t as { tool?: string; args?: Record<string, unknown> })
-        .filter((t) => t.tool && ((READ_TOOL_NAMES as readonly string[]).includes(t.tool) || t.tool === "web_search"));
+        .filter((t) => t.tool && (t.tool in loopCatalog.readTools || t.tool === "web_search"));
 
       const results: { tool: string; args: Record<string, unknown>; data: unknown; error?: string; repeat?: string }[] = [];
       for (const call of toolCalls) {
@@ -463,7 +471,7 @@ async function runAgentLoopRaw(
             toolCache.set(cacheKey, data);
             results.push({ tool: call.tool, args: call.args ?? {}, data });
           } else {
-            const data = await runReadTool(call.tool!, call.args ?? {}, userId);
+            const data = await loopCatalog.readTools[call.tool!](call.args ?? {}, userId);
             toolCache.set(cacheKey, data);
             results.push({ tool: call.tool!, args: call.args ?? {}, data });
           }
@@ -664,6 +672,8 @@ export async function POST(req: NextRequest) {
   // Moduły do katalogu akcji ustala router (krok 1) na ścieżce świeżego polecenia;
   // przy wznawianiu (clarify/refine) dajemy pełny zestaw aktywnych modułów.
   const messages: ChatMessage[] = [];
+  // 049: lista modułów z katalogiem akcji pochodzi z deklaracji — liczona raz na żądanie.
+  const CATALOG_MODULES = await catalogModules();
   let selectedModules: string[] = CATALOG_MODULES;
   // 036: pełny zestaw modułów dostępnych w tej turze — potrzebny do ŚCIEŻKI ODWROTU, gdy pierwszy
   // przebieg poszedł bez katalogu akcji, a agent mimo to chce coś zmienić (AC-15).
@@ -827,7 +837,8 @@ export async function POST(req: NextRequest) {
   // 036: budowany w dwóch częściach — stały prefiks trafia do pamięci podręcznej dostawcy,
   // zmienny ogon (katalogi) już nie. Follow-upy zamawiamy tylko, gdy administrator je włączył.
   const followupsEnabled = await readFollowupsEnabled();
-  const promptParts = buildSystemPromptParts(selectedModules, { includeActions, followups: followupsEnabled });
+  const aiCatalog = await getAiCatalog();
+  const promptParts = buildSystemPromptParts(selectedModules, aiCatalog, { includeActions, followups: followupsEnabled });
   messages.unshift({ role: "system", content: promptParts.stable + promptParts.variable });
 
   // Rezerwacja tokenów odpowiedzi: duża TYLKO gdy użytkownik prosi o raport/obszerne
@@ -873,7 +884,7 @@ export async function POST(req: NextRequest) {
   // AC-15: ponowienie z pełnym katalogiem akcji, gdy tura bez katalogu skończyła się krokiem „plan".
   async function withActionCatalogRetry(result: LoopResult, onThought?: (t: string) => void): Promise<LoopResult> {
     if (!noCatalogBaseline || (result.body as { step?: string }).step !== "plan") return result;
-    const fullParts = buildSystemPromptParts(activeModules, { followups: followupsEnabled });
+    const fullParts = buildSystemPromptParts(activeModules, await getAiCatalog(), { followups: followupsEnabled });
     const retryMessages = noCatalogBaseline.map((m) => ({ ...m }));
     retryMessages[0] = { role: "system", content: fullParts.stable + fullParts.variable };
     return runAgentLoop(retryMessages, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning", true, assistantLevel, fullParts);

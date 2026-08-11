@@ -129,31 +129,46 @@
         (`@/modules/shopping/actions/items`), co po przeniesieniu pliku DO modułu łamie C-02.
         Skrypt przepisywał tylko `contract`, więc tego nie objął. Kolejny raz potwierdza się, że
         `check:boundaries` sprawdza swoje sondy, a realne naruszenie pokazuje dopiero lint.
-- [ ] **T-10** — **Rozbicie `agentTools.ts` (1199 linii): część platformowa.** Pętla narzędzi,
+- [x] **T-10** — **Rozbicie `agentTools.ts` (1199 linii): część platformowa.** Pętla narzędzi,
       protokół i formatowanie wyników → `src/platform/ai/tools.ts`. Wkłady modułowe zostają na razie
       w pliku — rozdzielamy szkielet od treści, zanim ruszymy treść.
       **Gotowe, gdy:** szkielet nie importuje żadnego modułu. **(AC-2)**
-- [ ] **T-11** — **Read-toole, grupa 1:** moduły z grup T-6 i T-7 → `src/modules/<x>/ai/readTools.ts`.
+- [x] **T-11** — **Read-toole, grupa 1:** moduły z grup T-6 i T-7 → `src/modules/<x>/ai/readTools.ts`.
       **(AC-6)**
-- [ ] **T-12** — **Read-toole, grupa 2:** moduły z grup T-8 i T-9 + agregat kalendarza.
+- [x] **T-12** — **Read-toole, grupa 2:** moduły z grup T-8 i T-9 + agregat kalendarza.
       **Gotowe, gdy:** `agentTools.ts` nie zawiera już wkładów modułowych. **(AC-6)**
-- [ ] **T-13** — **`agentPrompt.ts`: szkielet ↔ katalog.** Nagłówki, protokół, `buildSystemPromptParts`
+- [x] **T-13** — **`agentPrompt.ts`: szkielet ↔ katalog.** Nagłówki, protokół, `buildSystemPromptParts`
       → platforma; `ACTION_CATALOG_BY_MODULE` znika, bo jego treść jest już w modułach.
       **Gotowe, gdy:** w `agentPrompt` nie ma nazwy żadnego modułu. **(AC-2, AC-6)**
-- [ ] **T-14** — **`buildAiCatalog(modules)` w platformie + korzeń kompozycji.**
+- [x] **T-14** — **`buildAiCatalog(modules)` w platformie + korzeń kompozycji.**
       `src/platform/ai/catalog.ts` — czysta funkcja, moduły **parametrem** (wzorzec
       `filterAccessibleFavorites(…, isPathLocked)`). `src/lib/ai/catalog.ts` — składa katalog
       z `MODULES`. Nikt jeszcze z niego nie korzysta.
       **Gotowe, gdy:** katalog złożony z deklaracji ma **dokładnie te same** akcje i read-toole co
       zrzut z T-1 — porównane pozycja po pozycji. **(AC-3, AC-6, AC-8)**
-- [ ] **T-15** — **ZMIANA ZACHOWANIA (osobny commit): trasy asystenta czytają z katalogu.**
+- [x] **T-15** — **ZMIANA ZACHOWANIA (osobny commit): trasy asystenta czytają z katalogu.**
       `execute/route.ts` — łańcuch 18 `if (module === …)` zastąpiony odpytaniem katalogu;
       `agent/route.ts` — read-toole i prompt z katalogu. Choke point walidacji (`hasContract` +
       `validateActionParams`) **zostaje w trasie** i nie zmienia się co do treści.
       **Gotowe, gdy:** rytuał przechodzi, a ręczne wywołanie kilku akcji asystenta daje ten sam wynik
       co przed zmianą. **(AC-6, AC-8, AC-13)**
-- [ ] **T-16** — Domknięcie fazy B: `test:unit` + `next build` + klikacz ścieżki szczęśliwej.
+- [x] **T-16** — Domknięcie fazy B: `test:unit` + `next build` + klikacz ścieżki szczęśliwej.
       **Gotowe, gdy:** build exit 0, klikacz 21/21. **(AC-12)**
+      **Wynik fazy B — dowód, że nic nie zginęło.** Katalog złożony z deklaracji porównany
+      z `baseline.json` **pozycja po pozycji**: read-toole **56 = 56** (nic nie brakuje, nic
+      nadmiarowego), egzekutory **16 = 16**, katalogi akcji per moduł zgodne **co do jednego**
+      (shopping 13 · tasks 15 · notes 9 · habits 6 · portfel 14 · kitchen 26 · flota 5 ·
+      magazynowanie 10 · warsztaty 10 · health 9 · languages 7 · news 7 · weather 7 · contacts 3 ·
+      reports 1 · pets 18 = **160**). Build exit 0, testy **657/657** (0 pominiętych — z bazą
+      lokalną uruchomiły się też testy prywatności read-tooli, i przeszły przez NOWĄ drogę).
+      **T-19 zrobione przy okazji T-15**, bo bramka i tak wymagała przepisania: `check:actions`
+      pilnuje teraz własności mocniejszej — moduł wnoszący katalog akcji **musi** deklarować pole
+      `ai`, inaczej jego akcje istnieją w kodzie i nie istnieją dla asystenta. Sprawdzone testem
+      negatywnym.
+      **Jedna rzecz zginęła po drodze i złapał ją test:** rozbicie promptu na wkłady modułowe
+      zgubiło wiersz katalogu `web_search` (narzędzie bez implementacji w module — trasa obsługuje
+      je osobno). Test `buildReadToolsPrompt` zapalił się natychmiast. To pierwszy raz, gdy ten test
+      zarobił na siebie.
 
 ## Faza C — `platform/ai` (czysta przenosina)
 
@@ -166,7 +181,7 @@
       oba miejsca zniknęły. `check-ai-coverage`, `check-cost-badge`, `check-content-memory` —
       korzenie skanowania i ścieżki w manifestach.
       **Gotowe, gdy:** cztery liczniki wracają na 160 / 551 / 35 / 35 **bez spadku**. **(AC-10, AC-11)**
-- [ ] **T-19** — **`check-action-coverage` pilnuje mocniejszej własności** (rozdz. 9.6): nie „czy ręczna
+- [x] **T-19** — **`check-action-coverage` pilnuje mocniejszej własności** (rozdz. 9.6): nie „czy ręczna
       lista jest kompletna", lecz „czy **każdy moduł zadeklarował** swoje akcje i czy każda ma
       egzekutor oraz kontrakt". Moduł bez deklaracji przestaje istnieć dla asystenta.
       **Gotowe, gdy:** bramka wywala się na module z akcjami, ale bez pola `ai` — sprawdzone **testem
