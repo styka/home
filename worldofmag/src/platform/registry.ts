@@ -1,8 +1,5 @@
 import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
-import type { AiContribution } from "./ai/contribution";
-import type { JobHandler } from "./jobs/types";
-import type { CalendarContributor } from "./calendar";
 
 /**
  * 046 — DEKLARACJA MODUŁU (rozdz. 9.3 dokumentu „Omnia 🧐 — architektura docelowa").
@@ -62,38 +59,10 @@ export type ModuleDeclaration = {
    * (rozdz. 9.3 opisuje ten sam wzorzec dla kafelka pulpitu).
    */
   sideNav?: () => Promise<{ default: ComponentType }>;
-  /**
-   * 049: wkład modułu do asystenta AI — katalog akcji, egzekutor i narzędzia odczytu.
-   *
-   * **Leniwy z tego samego powodu co `sideNav`, tylko w drugą stronę.** Tam chodziło o to, żeby
-   * komponent kliencki nie wpadł do grafu serwerowego; tu — żeby **kod serwerowy nie wpadł do
-   * bundla klienta**. `MODULES` importuje `ModuleSidebar`, który jest komponentem klienckim,
-   * a egzekutory wołają Server Actions i Prismę. Statyczne `ai: { … }` (dosłowny kształt
-   * z rozdz. 9.3) wciągnęłoby serwer do przeglądarki.
-   *
-   * Rozdz. 9.6: „moduł bez deklaracji nie istnieje dla asystenta" — i to jest gwarancja mocniejsza
-   * niż kompletność ręcznej listy, bo modułu nie da się zapomnieć.
-   */
-  ai?: () => Promise<{ default: AiContribution }>;
-  /**
-   * 049: zadania w tle należące do tego modułu — mapa `typ zadania → handler`.
-   *
-   * Handlery **nie importują kontraktów** (sięgają wprost do Prismy), więc litera C-36 przepuściłaby
-   * je do platformy. O przynależności decyduje jednak lista konsumentów, nie brak importu: „wygeneruj
-   * przepis" jest zadaniem Kuchni, a nie zdolnością platformy. Przekrojowe zostają w platformie.
-   *
-   * Z tej mapy powstaje też **allowlista tego, co klient może zakolejkować** — czyli granica
-   * bezpieczeństwa. Wcześniej była ręczną mapą w jednym pliku.
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  jobs?: () => Promise<{ default: Record<string, JobHandler<any, any>> }>;
-  /**
-   * 049: wkład modułu do wspólnej agendy kalendarza (rozdz. 9.3).
-   *
-   * Leniwy, bo sięga do bazy. Bez tego pola moduł Kalendarz musiałby znać tabele wszystkich
-   * pozostałych — i znał, przez dziewięć zapytań w jednym `Promise.all`.
-   */
-  calendar?: () => Promise<{ default: CalendarContributor }>;
+  //
+  // UWAGA: wkład SERWEROWY modułu (asystent, zadania w tle, kalendarz) **nie należy tutaj** —
+  // ta deklaracja trafia przez `MODULES` do komponentu klienckiego powłoki. Patrz
+  // `registry.server.ts` i pomiar, który do tego rozdzielenia doprowadził.
 };
 
 /** Deklaracja po uzupełnieniu wartości domyślnych — tego używa rejestr. */

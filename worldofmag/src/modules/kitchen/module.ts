@@ -9,7 +9,4 @@ export default defineModule({
   color: "var(--accent-orange)",
   Icon: ChefHat,
   defaultEnabled: true,
-  ai: () => import("./ai"),
-  calendar: () => import("./calendar"),
-  jobs: () => import("./jobs"),
 });

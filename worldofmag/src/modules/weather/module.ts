@@ -9,5 +9,4 @@ export default defineModule({
   color: "var(--accent-amber)",
   Icon: CloudSun,
   defaultEnabled: true,
-  ai: () => import("./ai"),
 });

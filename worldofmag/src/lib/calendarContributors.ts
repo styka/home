@@ -1,4 +1,4 @@
-import { MODULES } from "@/lib/modules";
+import { MODULE_SERVER } from "@/lib/modules.server";
 import type { CalendarContribEvent, CalendarRange } from "@/platform/calendar";
 
 /**
@@ -19,7 +19,7 @@ import type { CalendarContribEvent, CalendarRange } from "@/platform/calendar";
  * pulpitu owija wywołania modułów w `try`.
  */
 export async function collectFromModules(userId: string, range: CalendarRange): Promise<CalendarContribEvent[]> {
-  const wkladcy = MODULES.filter((m) => m.calendar);
+  const wkladcy = Object.values(MODULE_SERVER).filter((m) => m.calendar);
   const wyniki = await Promise.all(
     wkladcy.map(async (m) => {
       try {

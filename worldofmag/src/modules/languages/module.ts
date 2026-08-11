@@ -10,6 +10,4 @@ export default defineModule({
   Icon: GraduationCap,
   sideNav: () => import("./ui/LanguagesSideNav").then((m) => ({ default: m.LanguagesSideNav })),
   defaultEnabled: true,
-  ai: () => import("./ai"),
-  calendar: () => import("./calendar"),
 });

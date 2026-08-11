@@ -1,5 +1,5 @@
 import type { JobHandler } from "@/platform/jobs/types";
-import { MODULES } from "@/lib/modules";
+import { MODULE_SERVER } from "@/lib/modules.server";
 import platformHandlers from "@/platform/jobs/handlers";
 import { setJobHandlerResolver, startJobWorker } from "@/platform/jobs/worker";
 
@@ -24,13 +24,13 @@ async function load(): Promise<Handlers> {
   // modułu — wnosi je platforma.
   const all: Handlers = { ...platformHandlers };
 
-  for (const m of MODULES) {
-    if (!m.jobs) continue;
-    const mod = await m.jobs();
+  for (const [id, server] of Object.entries(MODULE_SERVER)) {
+    if (!server.jobs) continue;
+    const mod = await server.jobs();
     for (const [type, handler] of Object.entries(mod.default)) {
       if (all[type]) {
         // Dwa moduły deklarujące ten sam typ zadania po cichu nadpisałyby się nawzajem.
-        throw new Error(`Zduplikowany typ zadania „${type}" — deklaruje go moduł „${m.id}" i ktoś jeszcze.`);
+        throw new Error(`Zduplikowany typ zadania „${type}" — deklaruje go moduł „${id}" i ktoś jeszcze.`);
       }
       all[type] = handler;
     }

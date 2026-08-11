@@ -47,6 +47,10 @@ const dirs = fs
   .sort();
 
 const composition = fs.existsSync(compositionRoot) ? fs.readFileSync(compositionRoot, "utf8") : "";
+// 049: druga strona granicy — wkłady serwerowe mają własny korzeń kompozycji, bo `module.ts`
+// trafia do bundla klienta i nie wolno mu ciągnąć egzekutorów ani handlerów.
+const serverRootPath = path.join(root, "src/lib/modules.server.ts");
+const serverRoot = fs.existsSync(serverRootPath) ? fs.readFileSync(serverRootPath, "utf8") : "";
 
 for (const name of dirs) {
   const dir = path.join(modulesDir, name);
@@ -98,6 +102,14 @@ for (const name of dirs) {
       );
     }
     ids.set(id, name);
+  }
+
+  // 4b. Moduł z wkładem serwerowym musi być wpięty w serwerowy korzeń kompozycji.
+  if (fs.existsSync(path.join(dir, "module.server.ts")) && !serverRoot.includes(`@/modules/${name}/module.server`)) {
+    errors.push(
+      `src/modules/${name}/module.server.ts nie jest zaimportowany w src/lib/modules.server.ts.\n` +
+        "    Wkład serwerowy (asystent, zadania w tle, kalendarz) istnieje i nie działa — build zielony.",
+    );
   }
 
   // 4. Wpięcie w korzeń kompozycji. Szukamy importu deklaracji — to jedyne miejsce, w którym

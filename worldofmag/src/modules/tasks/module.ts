@@ -10,6 +10,4 @@ export default defineModule({
   Icon: CheckSquare,
   sideNav: () => import("./ui/TasksSideNav").then((m) => ({ default: m.TasksSideNav })),
   defaultEnabled: true,
-  ai: () => import("./ai"),
-  calendar: () => import("./calendar"),
 });

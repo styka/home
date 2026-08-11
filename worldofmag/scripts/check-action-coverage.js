@@ -53,8 +53,11 @@ for (const m of fs.existsSync(modulesDir) ? fs.readdirSync(modulesDir) : []) {
   }
   // Moduł, który wnosi katalog akcji, MUSI deklarować pole `ai` — inaczej jego akcje istnieją
   // w kodzie i nie istnieją dla asystenta, a to jest gorsze niż ich brak.
-  const decl = path.join(modulesDir, m, "module.ts");
-  if (maKatalog && fs.existsSync(decl) && !/\bai:\s*\(\)\s*=>/.test(fs.readFileSync(decl, "utf8"))) {
+  // 049: wkład serwerowy siedzi w `module.server.ts`, a nie w `module.ts` — `module.ts` trafia
+  // do grafu klienta przez `MODULES`, więc leniwe importy egzekutorów kazały trybowi dev
+  // kompilować kod serwerowy przy każdej stronie (zmierzone: klikacze 12,7 → 26,0 min).
+  const decl = path.join(modulesDir, m, "module.server.ts");
+  if (maKatalog && (!fs.existsSync(decl) || !/\bai:\s*\(\)\s*=>/.test(fs.readFileSync(decl, "utf8")))) {
     bezDeklaracji.push(m);
   }
 }

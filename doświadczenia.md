@@ -4,6 +4,26 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-11 — Leniwy `import()` w deklaracji modułu spowolnił CAŁĄ aplikację 2×, a build tego nie pokazał
+**Problem:** Deklaracja modułu (`module.ts`) dostała trzy leniwe pola serwerowe — `ai`, `jobs`,
+`calendar` — każde jako `() => import("./…")`. Leniwość miała wystarczyć, żeby kod serwerowy nie
+trafił do przeglądarki. Nie wystarczyła: `MODULES` jest importowane przez `ModuleSidebar`, czyli
+**komponent kliencki**, więc webpack musi objąć cele tych dynamicznych importów kompilacją klienta.
+W produkcji tree-shaking je odsiewa (`next build` pokazał **88,1 → 88,7 kB**, czyli „bez zmian"),
+ale **tryb deweloperski kompiluje je przy każdej stronie**. Efekt: pełny zestaw klikaczy urósł
+z 12,7 do 26,0 minuty, spec smoke z 46 do 125 sekund, a sześć testów ścieżki szczęśliwej zrobiło się
+czerwonych przez przekroczone limity czasu — mimo że aplikacja działała poprawnie.
+**Rozwiązanie:** Wkład serwerowy wyprowadzony do osobnego `module.server.ts` i osobnego korzenia
+kompozycji `src/lib/modules.server.ts`, którego klient nie dotyka. `module.ts` zawiera wyłącznie to,
+co wolno wysłać do przeglądarki. Po poprawce smoke wrócił do 52 s.
+**Lekcja:** „Leniwy import nie trafia do bundla" jest **nieprawdą** po stronie kompilacji — leniwy
+import zmienia moment ładowania, nie przynależność do grafu. Jeśli plik jest osiągalny z komponentu
+klienckiego, wszystko, co importuje (choćby dynamicznie), staje się częścią kompilacji klienta.
+I druga rzecz: **`next build` nie jest miarą wydajności deweloperskiej** — rozmiar bundla może stać
+w miejscu, gdy praca aplikacji spada dwukrotnie. Regresję wydajności widać tylko w pomiarze czasu,
+a jedynym uczciwym sposobem przypisania jej przyczynie jest **uruchomienie tego samego zestawu na
+kodzie sprzed zmiany**, w tym samym środowisku, jeden po drugim.
+
 ## 2026-08-11 — Znowu build równolegle z klikaczami, mimo własnego ostrzeżenia w liście zadań
 **Problem:** Uruchomiłem klikacze w tle, a w „wolnej chwili" odpalił `npm run build`, który zaczyna od
 `rm -rf .next`. Zestaw pokazał **23 czerwone zamiast 14**, w tym sześć testów ścieżki szczęśliwej,

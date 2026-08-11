@@ -1,6 +1,6 @@
 import { buildAiCatalog, type LoadedContribution } from "@/platform/ai/catalog";
 import type { AiCatalog } from "@/platform/ai/contribution";
-import { MODULES } from "@/lib/modules";
+import { MODULE_SERVER } from "@/lib/modules.server";
 import coreContribution from "@/lib/ai/coreReadTools";
 
 /**
@@ -25,10 +25,10 @@ async function load(): Promise<AiCatalog> {
   // dostępne zawsze, niezależnie od tego, do których modułów agent zawęził zapytanie.
   loaded.push({ id: "__core__", contribution: coreContribution });
 
-  for (const m of MODULES) {
-    if (!m.ai) continue;
-    const mod = await m.ai();
-    loaded.push({ id: m.id, contribution: mod.default });
+  for (const [id, server] of Object.entries(MODULE_SERVER)) {
+    if (!server.ai) continue;
+    const mod = await server.ai();
+    loaded.push({ id, contribution: mod.default });
   }
 
   return buildAiCatalog(loaded);
