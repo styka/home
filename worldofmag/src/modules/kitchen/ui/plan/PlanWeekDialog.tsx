@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sparkles, Loader2, Wand2, ChefHat } from "lucide-react";
-import { runJob } from "@/lib/jobs/client";
+import { runJob } from "@/platform/jobs/client";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { bulkSetMealPlan } from "../../actions/mealPlans";

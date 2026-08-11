@@ -3,9 +3,26 @@
 // nie śpi. Ten sam kod można później uruchomić jako OSOBNY worker na Render — logika
 // pobierania (`claimNext`, SKIP LOCKED) jest wieloworkerowo-bezpieczna.
 
-import { claimNext, completeJob, failJob, failJobPermanent, cleanupOldJobs, setJobProgress, type JobRecord } from "@/lib/jobs/queue";
-import { getHandler } from "@/lib/jobs/handlers";
+import { claimNext, completeJob, failJob, failJobPermanent, cleanupOldJobs, setJobProgress, type JobRecord } from "@/platform/jobs/queue";
 import { reportServerError } from "@/lib/observability/report";
+import type { JobHandler } from "@/platform/jobs/types";
+
+/**
+ * 049: worker NIE zna rejestru handlerów — dostaje go **wstrzykniętego** przez korzeń kompozycji.
+ *
+ * Rejestr składa się z deklaracji modułów, więc gdyby platforma sięgała po niego sama, znałaby
+ * moduły tylnymi drzwiami (C-36). Parametr jest **wymagany**: wartość domyślna „na razie" byłaby
+ * dokładnie tym cichym obejściem, którego ta reguła ma zabraniać.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type HandlerResolver = (type: string) => Promise<JobHandler<any, any> | undefined>;
+
+let resolveHandler: HandlerResolver | null = null;
+
+/** Wołane RAZ przez korzeń kompozycji, zanim wystartuje worker. */
+export function setJobHandlerResolver(resolver: HandlerResolver): void {
+  resolveHandler = resolver;
+}
 
 const TICK_MS = 3000;
 const CONCURRENCY = 2; // ile zadań równolegle na tick (per instancja)
@@ -15,7 +32,7 @@ const CLEANUP_EVERY_MS = 60 * 60 * 1000;
 const g = globalThis as unknown as { __omniaJobWorker?: { timer: NodeJS.Timeout | null; cleanup: NodeJS.Timeout | null } };
 
 async function processOne(job: JobRecord): Promise<void> {
-  const handler = getHandler(job.type);
+  const handler = resolveHandler ? await resolveHandler(job.type) : undefined;
   if (!handler) {
     // Brak handlera = błąd trwały (ponawianie nic nie da).
     await failJobPermanent(job.id, `Brak handlera dla typu "${job.type}"`);

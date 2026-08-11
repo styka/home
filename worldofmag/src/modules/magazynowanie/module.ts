@@ -10,4 +10,5 @@ export default defineModule({
   Icon: Warehouse,
   defaultEnabled: true,
   ai: () => import("./ai"),
+  jobs: () => import("./jobs"),
 });

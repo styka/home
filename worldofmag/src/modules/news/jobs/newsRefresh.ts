@@ -15,7 +15,7 @@ import { parseJsonLoose } from "@/platform/llm/json";
 import { fetchRss } from "@/lib/news/rss";
 import { fingerprintOf } from "@/lib/textKey";
 import { usageFromChat, type AiUsageInfo } from "@/platform/ai/usage";
-import { JobError, type JobContext } from "@/lib/jobs/types";
+import { JobError, type JobContext } from "@/platform/jobs/types";
 
 /** Okno pierwszego przebiegu, gdy nigdy jeszcze nie pobieraliśmy puli. */
 const FIRST_RUN_WINDOW_MS = 24 * 60 * 60 * 1000;

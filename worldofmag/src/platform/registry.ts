@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { AiContribution } from "./ai/contribution";
+import type { JobHandler } from "./jobs/types";
 
 /**
  * 046 — DEKLARACJA MODUŁU (rozdz. 9.3 dokumentu „Omnia 🧐 — architektura docelowa").
@@ -73,6 +74,18 @@ export type ModuleDeclaration = {
    * niż kompletność ręcznej listy, bo modułu nie da się zapomnieć.
    */
   ai?: () => Promise<{ default: AiContribution }>;
+  /**
+   * 049: zadania w tle należące do tego modułu — mapa `typ zadania → handler`.
+   *
+   * Handlery **nie importują kontraktów** (sięgają wprost do Prismy), więc litera C-36 przepuściłaby
+   * je do platformy. O przynależności decyduje jednak lista konsumentów, nie brak importu: „wygeneruj
+   * przepis" jest zadaniem Kuchni, a nie zdolnością platformy. Przekrojowe zostają w platformie.
+   *
+   * Z tej mapy powstaje też **allowlista tego, co klient może zakolejkować** — czyli granica
+   * bezpieczeństwa. Wcześniej była ręczną mapą w jednym pliku.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  jobs?: () => Promise<{ default: Record<string, JobHandler<any, any>> }>;
 };
 
 /** Deklaracja po uzupełnieniu wartości domyślnych — tego używa rejestr. */

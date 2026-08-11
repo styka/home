@@ -5,7 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { chatComplete } from "@/platform/llm/chat";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { addDays, format } from "date-fns";
-import { JobError, type JobContext } from "@/lib/jobs/types";
+import { JobError, type JobContext } from "@/platform/jobs/types";
 import { usageFromChat } from "@/platform/ai/usage";
 import { rememberedContent, hashInputs } from "@/platform/ai/contentMemory";
 import { resolveSectionMode } from "@/platform/ai/sectionModeResolver";

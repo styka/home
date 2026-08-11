@@ -199,20 +199,34 @@
 
 ## Faza D — Kolejka zadań
 
-- [ ] **T-21** — **Pole `jobs` w deklaracji + rdzeń kolejki do platformy.**
+- [x] **T-21** — **Pole `jobs` w deklaracji + rdzeń kolejki do platformy.**
       `queue`, `worker`, `client`, `types` → `src/platform/jobs/`. Typ `JobHandler` bez wiedzy
       o module.
       **Gotowe, gdy:** rdzeń kolejki nie importuje modułu. **(AC-1, AC-2)**
-- [ ] **T-22** — **Handlery modułowe → moduły:** `kitchen.*` (4), `magazyn.*` (4), `pets.insights`,
+- [x] **T-22** — **Handlery modułowe → moduły:** `kitchen.*` (4), `magazyn.*` (4), `pets.insights`,
       `news.refresh`, `stores.generate` (Zakupy) → `src/modules/<x>/jobs/`.
       **Zostają w platformie z powodem:** `user.facts` (przekrojowy — wnioskuje wiedzę o użytkowniku
       z działań we wszystkich modułach) i `imageInput` (wspólny helper wejścia obrazowego).
       **Gotowe, gdy:** rytuał przechodzi. **(AC-7)**
-- [ ] **T-23** — **ZMIANA ZACHOWANIA (osobny commit): `JOB_HANDLERS` i `ENQUEUABLE_TYPES` z deklaracji.**
+- [x] **T-23** — **ZMIANA ZACHOWANIA (osobny commit): `JOB_HANDLERS` i `ENQUEUABLE_TYPES` z deklaracji.**
       Allowlista tego, co klient może zakolejkować, przestaje być ręczną mapą.
       **Gotowe, gdy:** zbiór dozwolonych typów jest **identyczny** z dzisiejszym (12 pozycji),
       porównany z zrzutem z T-1. **(AC-7, AC-13)**
-- [ ] **T-24** — Domknięcie fazy D: `test:unit` + `next build`.
+      **Wynik: 12 = 12, nic nie brakuje i nic nadmiarowego.** Trzy rzeczy warte odnotowania:
+      • **O mało nie poszerzyłem allowlisty.** Pisząc rejestr platformowy odruchowo dopisałem do
+        niego `skins.generate` — a to zadanie **nigdy nie było w `JOB_HANDLERS`**, bo trasa woła je
+        synchronicznie. Wpis dołożyłby klientowi prawo do kolejkowania czegoś, czego wcześniej
+        kolejkować nie mógł. Allowlista jest granicą bezpieczeństwa, więc porównanie z punktem
+        odniesienia nie jest formalnością.
+      • **Worker dostaje rezolwer wstrzyknięty** (`setJobHandlerResolver`), bo rejestr składa się
+        z deklaracji, a platforma nie ma prawa ich znać. Parametr jest wymagany — wartość domyślna
+        „na razie" byłaby dokładnie tym cichym obejściem, którego C-36 zabrania.
+      • **Test kolejki zawiesił zestaw** po naiwnej poprawce: wołał `ensureJobWorker()`, co odpala
+        `setInterval` trzymający proces testowy przy życiu. Rezolwer wstrzykujemy w teście wprost.
+      Manifesty `content-memory` i `cost-badge` znów trzymały ścieżki — **czwarty raz w tej
+      przebudowie**. I znów lint (nie bramka granic) złapał realne naruszenie: moduł Wiadomości
+      importował własne wnętrze aliasem.
+- [x] **T-24** — Domknięcie fazy D: `test:unit` + `next build`.
       **Gotowe, gdy:** build exit 0.
 
 ## Faza E — Pulpit i kalendarz z deklaracji (reszta zadania 7)

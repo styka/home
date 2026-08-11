@@ -1,6 +1,6 @@
 // Z-131 (T-17) — handler: wygeneruj mapę (graf) sklepu. Z `/api/llm/stores/generate`.
 import { chatComplete } from "@/platform/llm/chat";
-import { JobError, type JobContext } from "@/lib/jobs/types";
+import { JobError, type JobContext } from "@/platform/jobs/types";
 import { usageFromChat } from "@/platform/ai/usage";
 
 const CATEGORIES = [

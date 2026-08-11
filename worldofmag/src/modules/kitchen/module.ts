@@ -10,4 +10,5 @@ export default defineModule({
   Icon: ChefHat,
   defaultEnabled: true,
   ai: () => import("./ai"),
+  jobs: () => import("./jobs"),
 });

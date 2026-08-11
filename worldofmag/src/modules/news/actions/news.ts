@@ -13,9 +13,9 @@ import { resolveSectionMode } from "@/platform/ai/sectionModeResolver";
 import type { AiSectionMode } from "@/platform/ai/sectionMode";
 import { usageFromChat, parseStoredUsage, type AiUsageInfo } from "@/platform/ai/usage";
 import { visibleUsage } from "@/platform/ai/costVisibility";
-import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/lib/jobs/queue";
-import { startJobWorker } from "@/lib/jobs/worker";
-import type { DateConfidence, NewsRefreshResult } from "@/lib/jobs/handlers/newsRefresh";
+import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/platform/jobs/queue";
+import { ensureJobWorker } from "@/lib/jobs/registry";
+import type { DateConfidence, NewsRefreshResult } from "../jobs/newsRefresh";
 import type { NewsItem, NewsSource } from "@prisma/client";
 
 export type SummaryLength = "short" | "medium" | "long";
@@ -497,7 +497,7 @@ export async function startNewsRefresh(force?: boolean): Promise<{ jobId: string
   // się go wystartować globalnie, bo instrumentacja bundluje się też dla runtime edge). Ta ścieżka
   // omija te trasy w całości, więc bez tego wywołania zadanie zostałoby w QUEUED, a pasek stanu
   // pokazywałby „Odświeżam…" w nieskończoność. Wywołanie jest idempotentne.
-  startJobWorker();
+  ensureJobWorker();
   return { jobId: job.id };
 }
 
@@ -511,7 +511,7 @@ export async function getNewsRefreshState(): Promise<NewsRefreshState | null> {
   const user = await requireAuth();
   // Powrót na stronę też musi ruszyć workera: jeśli proces zdążył się w międzyczasie zrestartować
   // (na wolnym tierze usypia po 15 min), zaległe zadanie czekałoby, aż ktoś trafi w `/api/jobs`.
-  startJobWorker();
+  ensureJobWorker();
   const job = await prisma.job.findFirst({
     where: { ownerId: user.id, type: "news.refresh" },
     orderBy: { createdAt: "desc" },

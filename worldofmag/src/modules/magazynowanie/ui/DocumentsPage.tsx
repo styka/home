@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { FileText, Camera, Plus, Loader2, Trash2, FileScan } from "lucide-react";
 import { createDocument, deleteDocument, type StorageDocumentWithLines } from "../actions/storage";
-import { runJob } from "@/lib/jobs/client";
+import { runJob } from "@/platform/jobs/client";
 import { fileToDownscaledDataUrl } from "@/lib/image-utils";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";

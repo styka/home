@@ -27,7 +27,7 @@ test(
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
     const { prisma } = await import("@/platform/db/prisma");
-    const { recordRun } = await import("@/lib/jobs/handlers/newsRefresh");
+    const { recordRun } = await import("@/modules/news/jobs/newsRefresh");
     await withUser(async (ownerId) => {
       await recordRun(ownerId, new Date(Date.now() - 60_000), "done", RESULT);
       await recordRun(ownerId, new Date(), "done", { ...RESULT, assigned: 7 });
@@ -47,7 +47,7 @@ test(
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
     const { prisma } = await import("@/platform/db/prisma");
-    const { recordRun } = await import("@/lib/jobs/handlers/newsRefresh");
+    const { recordRun } = await import("@/modules/news/jobs/newsRefresh");
     await withUser(async (ownerId) => {
       await recordRun(ownerId, new Date(), "failed", null, "kanał RSS nie odpowiada");
       const row = await prisma.newsRefreshRun.findFirst({ where: { ownerId } });
@@ -63,7 +63,7 @@ test(
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
     const { prisma } = await import("@/platform/db/prisma");
-    const { recordRun } = await import("@/lib/jobs/handlers/newsRefresh");
+    const { recordRun } = await import("@/modules/news/jobs/newsRefresh");
     await withUser(async (ownerId) => {
       const type = `news.refresh.test.${rnd()}`;
       const job = await prisma.job.create({
@@ -85,7 +85,7 @@ test(
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async () => {
     const { prisma } = await import("@/platform/db/prisma");
-    const { recordRun, RUN_HISTORY_LIMIT } = await import("@/lib/jobs/handlers/newsRefresh");
+    const { recordRun, RUN_HISTORY_LIMIT } = await import("@/modules/news/jobs/newsRefresh");
     await withUser(async (ownerId) => {
       // Wstawiamy o pięć więcej niż limit; kasowane mają być NAJSTARSZE.
       for (let i = 0; i < RUN_HISTORY_LIMIT + 5; i++) {

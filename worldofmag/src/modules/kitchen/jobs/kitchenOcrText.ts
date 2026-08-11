@@ -2,8 +2,8 @@
 // przeniesiona z `/api/llm/kitchen/ocr-text`.
 import { chatComplete } from "@/platform/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
-import { JobError, type JobContext } from "@/lib/jobs/types";
-import { assertValidImage } from "@/lib/jobs/handlers/imageInput";
+import { JobError, type JobContext } from "@/platform/jobs/types";
+import { assertValidImage } from "@/platform/jobs/handlers/imageInput";
 import { usageFromChat } from "@/platform/ai/usage";
 import type { AiUsageInfo } from "@/platform/ai/usage";
 

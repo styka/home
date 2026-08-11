@@ -5,7 +5,7 @@ import { Brain, Check, X, Pencil, Plus, Trash2, Loader2, Sparkles } from "lucide
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { runJob } from "@/lib/jobs/client";
+import { runJob } from "@/platform/jobs/client";
 import {
   getUserFacts,
   confirmUserFact,

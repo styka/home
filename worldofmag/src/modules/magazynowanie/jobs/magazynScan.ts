@@ -1,8 +1,8 @@
 // Z-131 (T-17) — handler: inwentaryzacja ze zdjęcia (2-etapowo). Z `/api/llm/magazynowanie/scan`.
 import { chatComplete } from "@/platform/llm/chat";
 import { stripJsonFence } from "@/lib/groqVision";
-import { JobError, type JobContext } from "@/lib/jobs/types";
-import { assertValidImage } from "@/lib/jobs/handlers/imageInput";
+import { JobError, type JobContext } from "@/platform/jobs/types";
+import { assertValidImage } from "@/platform/jobs/handlers/imageInput";
 import { usageFromChat } from "@/platform/ai/usage";
 import type { AiUsageInfo } from "@/platform/ai/usage";
 

@@ -13,7 +13,7 @@ import { chatComplete } from "@/platform/llm/chat";
 import { parseJsonLoose } from "@/platform/llm/json";
 import { fingerprintOf } from "@/lib/textKey";
 import { usageFromChat, type AiUsageInfo } from "@/platform/ai/usage";
-import { JobError, type JobContext } from "@/lib/jobs/types";
+import { JobError, type JobContext } from "@/platform/jobs/types";
 import {
   USER_FACT_CATEGORIES,
   parseUserFactCategory,

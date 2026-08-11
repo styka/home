@@ -11,4 +11,5 @@ export default defineModule({
   sideNav: () => import("./ui/ShoppingSideNav").then((m) => ({ default: m.ShoppingSideNav })),
   defaultEnabled: true,
   ai: () => import("./ai"),
+  jobs: () => import("./jobs"),
 });

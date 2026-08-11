@@ -11,4 +11,5 @@ export default defineModule({
   sideNav: () => import("./ui/PetsSideNav").then((m) => ({ default: m.PetsSideNav })),
   defaultEnabled: true,
   ai: () => import("./ai"),
+  jobs: () => import("./jobs"),
 });

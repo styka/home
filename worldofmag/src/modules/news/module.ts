@@ -10,4 +10,5 @@ export default defineModule({
   Icon: Newspaper,
   defaultEnabled: true,
   ai: () => import("./ai"),
+  jobs: () => import("./jobs"),
 });

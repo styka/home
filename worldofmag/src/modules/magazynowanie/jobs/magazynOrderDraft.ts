@@ -1,7 +1,7 @@
 // Z-131 (T-17) — handler: redaguj treść zamówienia do dostawcy. Z `/api/llm/magazynowanie/order-draft`.
 // Degradacja łagodna: przy niedostępnym LLM zwraca {unavailable:true} (NIE rzuca).
 import { chatComplete } from "@/platform/llm/chat";
-import { JobError, type JobContext } from "@/lib/jobs/types";
+import { JobError, type JobContext } from "@/platform/jobs/types";
 import { usageFromChat } from "@/platform/ai/usage";
 
 const SYSTEM_PROMPT = `Jesteś asystentem zaopatrzenia. Napisz po polsku krótką, uprzejmą i rzeczową

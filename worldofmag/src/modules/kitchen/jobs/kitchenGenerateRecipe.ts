@@ -1,6 +1,6 @@
 // Z-131 (T-17) — handler: wygeneruj przepis z opisu. Z `/api/llm/kitchen/generate-recipe`.
 import { chatComplete } from "@/platform/llm/chat";
-import { JobError, type JobContext } from "@/lib/jobs/types";
+import { JobError, type JobContext } from "@/platform/jobs/types";
 import { usageFromChat } from "@/platform/ai/usage";
 
 const SYSTEM_PROMPT = `Jesteś szefem kuchni. Otrzymasz krótki opis dania po polsku (np. "spaghetti carbonara dla 2 osób", "szybki obiad z kurczakiem w 30 minut", "wegański deser bez piekarnika").

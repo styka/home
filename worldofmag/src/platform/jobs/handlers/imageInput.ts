@@ -1,5 +1,5 @@
 // Z-131 (T-17) — wspólna walidacja obrazu (data URL) dla handlerów wizyjnych OCR.
-import { JobError } from "@/lib/jobs/types";
+import { JobError } from "@/platform/jobs/types";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 

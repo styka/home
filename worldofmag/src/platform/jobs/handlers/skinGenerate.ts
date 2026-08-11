@@ -5,7 +5,7 @@
 // JSON. To nie jest funkcja asystenta czatowego — katalog `AIAction` zostaje nietknięty.
 
 import { chatComplete } from "@/platform/llm/chat";
-import { JobError, type JobContext } from "@/lib/jobs/types";
+import { JobError, type JobContext } from "@/platform/jobs/types";
 import { usageFromChat } from "@/platform/ai/usage";
 import {
   ALL_CONTROLS,

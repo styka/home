@@ -7,7 +7,7 @@ const rnd = () => Math.random().toString(36).slice(2, 10);
 
 test("enqueue → claimNext → complete: pełny cykl życia", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { enqueue, claimNext, completeJob, getJob } = await import("@/lib/jobs/queue");
+  const { enqueue, claimNext, completeJob, getJob } = await import("@/platform/jobs/queue");
   const type = `test.echo.${rnd()}`;
   const job = await enqueue(type, { x: 1 }, { ownerId: "u1" });
   try {
@@ -31,7 +31,7 @@ test("enqueue → claimNext → complete: pełny cykl życia", { skip: !HAS_DB &
 
 test("SKIP LOCKED: dwa równoległe claimy JEDNEGO zadania → dokładnie jeden je bierze", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { enqueue, claimNext } = await import("@/lib/jobs/queue");
+  const { enqueue, claimNext } = await import("@/platform/jobs/queue");
   const type = `test.race.${rnd()}`;
   const job = await enqueue(type, {}, {});
   try {
@@ -47,7 +47,7 @@ test("SKIP LOCKED: dwa równoległe claimy JEDNEGO zadania → dokładnie jeden 
 
 test("wiele zadań, wielu 'workerów': każde zadanie wzięte dokładnie raz", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { enqueue, claimNext } = await import("@/lib/jobs/queue");
+  const { enqueue, claimNext } = await import("@/platform/jobs/queue");
   const type = `test.many.${rnd()}`;
   const N = 6;
   for (let i = 0; i < N; i++) await enqueue(type, { i }, {});
@@ -66,7 +66,7 @@ test("wiele zadań, wielu 'workerów': każde zadanie wzięte dokładnie raz", {
 
 test("failJob: ponawia z backoffem do maxAttempts, potem FAILED", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { enqueue, claimNext, failJob } = await import("@/lib/jobs/queue");
+  const { enqueue, claimNext, failJob } = await import("@/platform/jobs/queue");
   const type = `test.retry.${rnd()}`;
   const job = await enqueue(type, {}, { maxAttempts: 2 });
   try {
@@ -91,7 +91,7 @@ test("failJob: ponawia z backoffem do maxAttempts, potem FAILED", { skip: !HAS_D
 
 test("odzysk po crashu: RUNNING starsze niż visibility timeout jest ponownie przejmowane", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { enqueue, claimNext } = await import("@/lib/jobs/queue");
+  const { enqueue, claimNext } = await import("@/platform/jobs/queue");
   const type = `test.stale.${rnd()}`;
   const job = await enqueue(type, {}, {});
   try {
@@ -110,7 +110,7 @@ test("odzysk po crashu: RUNNING starsze niż visibility timeout jest ponownie pr
 
 test("enqueue dedupeKey: nie tworzy duplikatu aktywnego zadania", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { enqueue } = await import("@/lib/jobs/queue");
+  const { enqueue } = await import("@/platform/jobs/queue");
   const type = `test.dedupe.${rnd()}`;
   const key = `k-${rnd()}`;
   const a = await enqueue(type, { v: 1 }, { dedupeKey: key });
@@ -125,7 +125,7 @@ test("enqueue dedupeKey: nie tworzy duplikatu aktywnego zadania", { skip: !HAS_D
 
 test("maxActivePerOwner: limit aktywnych zadań właściciela → QuotaError; dedupe pomija limit", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { enqueue, QuotaError } = await import("@/lib/jobs/queue");
+  const { enqueue, QuotaError } = await import("@/platform/jobs/queue");
   const type = `test.quota.${rnd()}`;
   const owner = `owner-${rnd()}`;
   try {
@@ -152,7 +152,7 @@ test("maxActivePerOwner: limit aktywnych zadań właściciela → QuotaError; de
 
 test("requeueJob/cancelJob: admin ponawia FAILED (reset prób) i anuluje QUEUED", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async () => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { enqueue, claimNext, failJob, requeueJob, cancelJob, getJob } = await import("@/lib/jobs/queue");
+  const { enqueue, claimNext, failJob, requeueJob, cancelJob, getJob } = await import("@/platform/jobs/queue");
   const type = `test.admin.${rnd()}`;
   const job = await enqueue(type, {}, { maxAttempts: 1 });
   try {
@@ -178,9 +178,15 @@ test("requeueJob/cancelJob: admin ponawia FAILED (reset prób) i anuluje QUEUED"
 // ── Worker end-to-end (scalony tu, by claimNext nie kolidował z równoległym plikiem) ──
 test("runTick: sukces → DONE z wynikiem; wyjątek → retry/FAILED; brak handlera → FAILED", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { JOB_HANDLERS } = await import("@/lib/jobs/handlers");
-  const { enqueue, getJob } = await import("@/lib/jobs/queue");
-  const { runTick } = await import("@/lib/jobs/worker");
+  // 049: rejestr handlerów składa się z deklaracji modułów i jest zapamiętany, więc test dokłada
+  // swoje typy do TEJ SAMEJ mapy, którą dostaje worker. Rezolwer wstrzykujemy wprost — `ensureJobWorker()`
+  // odpaliłoby pętlę `setInterval`, która trzyma proces testowy przy życiu i test nigdy by się nie skończył.
+  const { getJobHandlers } = await import("@/lib/jobs/registry");
+  const { setJobHandlerResolver } = await import("@/platform/jobs/worker");
+  const JOB_HANDLERS = await getJobHandlers();
+  setJobHandlerResolver(async (type: string) => (await getJobHandlers())[type]);
+  const { enqueue, getJob } = await import("@/platform/jobs/queue");
+  const { runTick } = await import("@/platform/jobs/worker");
 
   const okType = `test.ok.${rnd()}`;
   const boomType = `test.boom.${rnd()}`;
