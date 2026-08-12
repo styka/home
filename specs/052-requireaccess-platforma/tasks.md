@@ -64,17 +64,17 @@
 
 ## Faza C — Pierwszy konsument
 
-- [ ] **T-5** — **`src/modules/tasks/sharing.ts` — deklaracja Zadań.**
+- [x] **T-5** — **`src/modules/tasks/sharing.ts` — deklaracja Zadań.**
       Dwa typy zasobów, mapowanie operacji na cztery role wg tabeli z planu §3.3, `children`,
       `resolve` z `parent` dla zadania w projekcie, `extraGrants` dla zadania bez projektu
       (twórca i przypisany → `editor`).
       **Własność zespołowa NIE jest mapowana** — świadomie, z powodem w komentarzu (AC-5).
       **Gotowe, gdy:** `tsc` czysty; moduł nie definiuje ani jednej własnej roli. **(AC-2, AC-5)**
-- [ ] **T-6** — **Korzeń kompozycji: `src/lib/sharingResources.ts` + `src/lib/sharing.ts`.**
+- [x] **T-6** — **Korzeń kompozycji: `src/lib/sharingResources.ts` + `src/lib/sharing.ts`.**
       Leniwe wkłady modułów we własnym korzeniu (nie w `module.server.ts` — lekcja z 050) oraz
       wersja aplikacyjna dostarczająca katalog i kontekst (`teamIds`, `workspaceIds`).
       **Gotowe, gdy:** `tsc` czysty; korzeń ma dokładnie jeden wpis (Zadania). **(AC-1)**
-- [ ] **T-7** — **PORÓWNANIE Z PUNKTEM ODNIESIENIA — warunek przejścia dalej.**
+- [x] **T-7** — **PORÓWNANIE Z PUNKTEM ODNIESIENIA — warunek przejścia dalej.**
       Ten sam test co T-1, ale liczący decyzje **nowym** mechanizmem, zestawiony z zapisanym plikiem
       **komórka po komórce**.
       **Gotowe, gdy:** macierz **identyczna**. Każda różnica jest zatrzymaniem: albo błąd

@@ -1,4 +1,4 @@
-import { cache } from "react";
+import * as React from "react";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { prisma } from "@/platform/db/prisma";
 import type { AccessContext } from "./types";
@@ -16,16 +16,28 @@ import type { AccessContext } from "./types";
  * z żądaniem, **nie ma czego unieważniać** — problem nie powstaje, zamiast być rozwiązywany
  * mechanizmem, którego jeszcze nie ma.
  *
- * **Poza kontekstem żądania** (zadanie w tle, skrypt, test) `React.cache` degraduje się do zwykłego
- * wywołania — nie rzuca. To jest sprawdzone testem, bo inaczej „cache działa" byłoby zdaniem
- * prawdziwym wyłącznie tam, gdzie i tak nic by się nie stało.
+ * **Poza kontekstem żądania** (zadanie w tle, skrypt, test) `React.cache` NIE degraduje się sam —
+ * w środowisku bez runtime'u React nie jest nawet funkcją i wywołanie kończy się
+ * `cache is not a function`. Sprawdziliśmy to testem i dlatego degradacja jest tu **napisana
+ * wprost**: gdy `cache` nie istnieje, `perRequest` zwraca funkcję niezmienioną. Bez tego
+ * `requireAccess` wywalałby każde zadanie w tle i każdy skrypt — czyli zdanie „cache działa" byłoby
+ * prawdziwe wyłącznie tam, gdzie i tak nic by się nie stało.
  */
+
+/**
+ * Memoizacja na czas żądania, jeśli środowisko ją ma; w przeciwnym razie funkcja bez zmian.
+ * Zawężone do jednego argumentu, bo tyle wystarcza i tyle da się bezpiecznie otypować.
+ */
+function perRequest<A, R>(fn: (a: A) => Promise<R>): (a: A) => Promise<R> {
+  const maybeCache = (React as { cache?: <T>(f: T) => T }).cache;
+  return typeof maybeCache === "function" ? maybeCache(fn) : fn;
+}
 
 /**
  * Kontekst użytkownika liczony **raz na żądanie**: zespoły i przestrzenie. Bez tego każde
  * sprawdzenie dostępu odpytywałoby o członkostwa od nowa.
  */
-export const getAccessContext = cache(async (userId: string): Promise<AccessContext> => {
+export const getAccessContext = perRequest(async (userId: string): Promise<AccessContext> => {
   const [teamIds, workspaces] = await Promise.all([
     getUserTeamIds(userId),
     prisma.workspaceMember.findMany({ where: { userId }, select: { workspaceId: true } }),

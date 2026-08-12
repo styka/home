@@ -48,6 +48,7 @@ test(
     const { prisma } = await import("@/platform/db/prisma");
     const { assertProjectAccess } = await import("@/modules/tasks/actions/taskProjects");
     const { assertTaskAccess } = await import("@/modules/tasks/lib/access");
+    const { requireAccess } = await import("@/lib/sharing");
 
     // ── Fixture: jeden zespół, pięć osób w różnych relacjach, trzy zasoby ────────────────
     const wlasciciel = await prisma.user.create({ data: { email: `tt-own-${rnd()}@test.local` } });
@@ -113,14 +114,33 @@ test(
         ),
     };
 
-    try {
-      const macierz: Record<string, Record<string, Decyzja>> = {};
+    /**
+     * Te same operacje wyrażone NOWYM mechanizmem. Odwzorowanie `minRole` dzisiejszego guardu:
+     * domyślne `MEMBER` → operacja wymagająca `editor`, `ADMIN` → wymagająca `manager`.
+     */
+    const operacjeNowe: Record<string, (userId: string) => Promise<unknown>> = {
+      "projekt: odczyt/edycja zawartosci": (u) => requireAccess(u, { type: "tasks.project", id: projekt.id }, "task.edit"),
+      "projekt: zarzadzanie (ADMIN)": (u) => requireAccess(u, { type: "tasks.project", id: projekt.id }, "project.rename"),
+      "projekt zespolowy: odczyt/edycja": (u) => requireAccess(u, { type: "tasks.project", id: projektZespolu.id }, "task.edit"),
+      "zadanie w projekcie": (u) => requireAccess(u, { type: "tasks.task", id: zadanieWProjekcie.id }, "task.edit"),
+      "zadanie bez projektu": (u) => requireAccess(u, { type: "tasks.task", id: zadanieLuzem.id }, "task.edit"),
+    };
+
+    async function zbudujMacierz(
+      warianty: Record<string, (userId: string) => Promise<unknown>>,
+    ): Promise<Record<string, Record<string, Decyzja>>> {
+      const m: Record<string, Record<string, Decyzja>> = {};
       for (const [nazwaOsoby, userId] of Object.entries(osoby)) {
-        macierz[nazwaOsoby] = {};
-        for (const [nazwaOperacji, wykonaj] of Object.entries(operacje)) {
-          macierz[nazwaOsoby][nazwaOperacji] = await decyzja(() => wykonaj(userId));
+        m[nazwaOsoby] = {};
+        for (const [nazwaOperacji, wykonaj] of Object.entries(warianty)) {
+          m[nazwaOsoby][nazwaOperacji] = await decyzja(() => wykonaj(userId));
         }
       }
+      return m;
+    }
+
+    try {
+      const macierz = await zbudujMacierz(operacje);
 
       await t.test("każda komórka jest jednoznaczna", () => {
         const komorki = Object.values(macierz).flatMap((w) => Object.values(w));
@@ -148,6 +168,18 @@ test(
       // Ten wiersz zasługuje na własną asercję, bo jest łatwy do zepsucia „przy okazji".
       await t.test("AC-5: własność zespołowa NIE daje dziś dostępu do projektu zadań", () => {
         assert.equal(macierz["w zespole, bez czlonkostwa"]["projekt zespolowy: odczyt/edycja"], "odmowa");
+      });
+
+      // ── SEDNO PRZEBIEGU (AC-4) ────────────────────────────────────────────────────────
+      // Nowy mechanizm liczy te same decyzje. Różnica w JEDNEJ komórce jest zatrzymaniem —
+      // albo błąd w deklaracji, albo poszerzenie uprawnień, którego nikt nie zamawiał.
+      await t.test("NOWY mechanizm daje decyzje identyczne co do komórki", async () => {
+        const nowa = await zbudujMacierz(operacjeNowe);
+        assert.deepEqual(
+          nowa,
+          macierz,
+          "requireAccess rozstrzyga inaczej niż dzisiejszy guard — to jest ZATRZYMANIE, nie do nadpisania",
+        );
       });
     } finally {
       await prisma.task.deleteMany({ where: { id: { in: [zadanieWProjekcie.id, zadanieLuzem.id] } } });
