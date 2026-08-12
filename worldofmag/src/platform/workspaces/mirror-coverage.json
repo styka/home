@@ -1,0 +1,4 @@
+{
+  "_opis": "Świadome wyjątki od reguły: kto mutuje Team/TeamMember, uzgadnia przestrzeń (051, Faza 2 / zadanie 9). Pusto = każdy punkt mutacji jest wpięty. Wyjątek wymaga POWODU — bramka odrzuca też wpisy martwe, bo wyjątek bez powodu z czasem staje się furtką.",
+  "wyjatki": {}
+}

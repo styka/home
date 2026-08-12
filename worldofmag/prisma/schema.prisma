@@ -110,6 +110,8 @@ model User {
   aiUsage                 AiUsage[]              @relation("UserAiUsage")
   healthSettings          HealthSettings?        @relation("UserHealthSettings")
   subscription            Subscription?          @relation("UserSubscription")
+  personalWorkspace       Workspace?             @relation("PersonalWorkspace")
+  workspaceMemberships    WorkspaceMember[]
 }
 
 // Z-471 (monetyzacja): plan handlowy użytkownika. Definicje planów (limity/funkcje)
@@ -368,6 +370,7 @@ model Team {
   serviceCategories    ServiceCategory[]      @relation("TeamServiceCategories")
   skins                Skin[]                 @relation("SkinTeam")
   workshops            Workshop[]             @relation("TeamWorkshops")
+  workspace            Workspace?             @relation("TeamWorkspace")
 
   @@index([ownerId])
 }
@@ -2752,13 +2755,13 @@ model AiContent {
 // Domyślne SYSTEMOWE nie mieszkają tutaj (patrz `Config.ai_section_default_modes`) — wiersz z
 // pustym właścicielem nie byłby chroniony przez indeks unikalny, bo w PostgreSQL `NULL != NULL`.
 model AiSectionPref {
-  id      String @id @default(cuid())
-  ownerId String
+  id          String   @id @default(cuid())
+  ownerId     String
   // Te same wartości co `AiContentKind` w kodzie (weather.ideas, news.hotTopics, …).
   sectionKind String
   // "onDemand" | "onChange" | "always" — String + union TS (C-12).
-  mode      String   @default("onDemand")
-  updatedAt DateTime @default(now()) @updatedAt
+  mode        String   @default("onDemand")
+  updatedAt   DateTime @default(now()) @updatedAt
 
   owner User @relation("OwnedAiSectionPrefs", fields: [ownerId], references: [id], onDelete: Cascade)
 
@@ -2771,18 +2774,18 @@ model AiSectionPref {
 // `Job.result` trzyma wyłącznie ostatni przebieg. `usage` zapisujemy SUROWE (handler nie ma sesji);
 // bramka widoczności kosztu działa przy odczycie — ten sam podział co dla `Job.result` od 039.
 model NewsRefreshRun {
-  id         String   @id @default(cuid())
-  ownerId    String
-  startedAt  DateTime
-  finishedAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  ownerId       String
+  startedAt     DateTime
+  finishedAt    DateTime @default(now())
   // "done" | "failed" — String + union TS (C-12).
-  status String @default("done")
+  status        String   @default("done")
   // Liczby z wyniku — pozwalają odróżnić przebiegi od siebie, a nie tylko po godzinie.
-  sources       Int     @default(0)
-  fetched       Int     @default(0)
-  assigned      Int     @default(0)
-  summarized    Int     @default(0)
-  timelineAdded Int     @default(0)
+  sources       Int      @default(0)
+  fetched       Int      @default(0)
+  assigned      Int      @default(0)
+  summarized    Int      @default(0)
+  timelineAdded Int      @default(0)
   usage         String?
   error         String?
 
@@ -3023,4 +3026,94 @@ model Contact {
 
   @@index([ownerId])
   @@index([ownerTeamId])
+}
+
+// ─── Faza 2 przebudowy, zadanie 9 — PRZESTRZENIE I NADANIA (rozdz. 8.3) ─────────────────
+//
+// Fundament współdzielenia: „udostępnianie jest zdolnością platformy, nie funkcją modułu".
+// W tym przebiegu tabele powstają i zostają WYPEŁNIONE (migracja 0226), ale NIC ich jeszcze nie
+// czyta — aplikacja liczy dostęp dalej przez `ownerId`/`ownerTeamId`. Przełączenie odczytów to
+// zadania 10 i 11.
+
+/// Przestrzeń, w której żyje zasób. Użytkownik należy do wielu.
+model Workspace {
+  id   String @id @default(cuid())
+  kind String // "personal" | "team" — String + unia TS (C-12)
+  name String
+
+  // Połączenie ze ŹRÓDŁEM lustra. Nie ma tego w szkicu rozdz. 8.3, a jest konieczne: bez niego
+  // backfill nie da się powtórzyć idempotentnie, a zmiana składu zespołu nie ma jak odnaleźć jego
+  // przestrzeni. Oba nullowalne i UNIKALNE — w PostgreSQL wartości NULL są w indeksie unikalnym
+  // traktowane jako różne, więc jeden indeks daje niezmiennik „dokładnie jedna przestrzeń osobista
+  // na użytkownika" i nie przeszkadza przestrzeniom zespołowym.
+  personalUserId String? @unique
+  teamId         String? @unique
+
+  createdAt DateTime @default(now())
+
+  personalUser User?             @relation("PersonalWorkspace", fields: [personalUserId], references: [id], onDelete: Cascade)
+  team         Team?             @relation("TeamWorkspace", fields: [teamId], references: [id], onDelete: Cascade)
+  members      WorkspaceMember[]
+  grants       ResourceGrant[]
+
+  @@index([kind])
+}
+
+/// Członkostwo w przestrzeni. Właściciel przestrzeni ma zawsze pełne prawa do tego, co w niej żyje.
+model WorkspaceMember {
+  workspaceId String
+  userId      String
+  role        String   @default("member") // "owner" | "admin" | "member" | "guest"
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, userId])
+  @@index([userId])
+}
+
+/// JEDNO nadanie dostępu do JEDNEGO zasobu. Docelowo zastępuje TaskShare, PetShare i
+/// TaskProjectMember (zadanie 12) — dziś tabela istnieje i nie ma konsumenta.
+///
+/// ZNANE OGRANICZENIE, odroczone świadomie: `@@unique` nie zabezpiecza nadań linkowych
+/// (`subjectType: "link"`, `subjectId: NULL`), bo w PostgreSQL NULL != NULL. Poprawka to częściowy
+/// indeks w surowym SQL-u + wpis w `schema-drift-allowed.json`; robimy ją, gdy nadania linkowe
+/// dostaną konsumenta (zadanie 12), a nie „na zapas".
+model ResourceGrant {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  resourceType String // "tasks.project" | "notes.note" | … — TEKST, nie odwołanie do modułu (C-36)
+  resourceId   String
+  subjectType  String // "user" | "workspace" | "link"
+  subjectId    String? // userId | workspaceId | NULL dla linku
+  role         String // "viewer" | "commenter" | "editor" | "manager"
+  inherited    Boolean   @default(false) // nadanie wyliczone z rodzica (projekt → zadanie)
+  expiresAt    DateTime?
+  createdById  String // bez klucza obcego — nadanie przeżywa usunięcie konta, które je wystawiło
+  createdAt    DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceType, resourceId, subjectType, subjectId])
+  @@index([subjectType, subjectId]) // „co mi udostępniono"
+  @@index([resourceType, resourceId]) // „komu udostępniłem to"
+  @@index([workspaceId])
+}
+
+/// Zaproszenie osoby, która jeszcze nie ma konta albo nie jest w przestrzeni.
+/// Jak wyżej: tabela bez konsumenta do zadania 10.
+model ResourceInvitation {
+  id           String    @id @default(cuid())
+  resourceType String
+  resourceId   String
+  email        String
+  role         String
+  token        String    @unique
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  createdById  String
+  createdAt    DateTime  @default(now())
+
+  @@index([email])
 }

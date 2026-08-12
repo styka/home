@@ -76,7 +76,16 @@ try {
       cwd: root, input: `CREATE DATABASE "${shadow.name}";`, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"],
     });
   } catch (e) {
-    if (!/already exists/i.test(String(e.stderr || e.message))) throw e;
+    // 051: „nie umiem utworzyć" NIE znaczy „nie ma". Rola bez uprawnienia CREATEDB dostaje
+    // `permission denied to create database` także wtedy, gdy baza cienia już istnieje (założona
+    // przez administratora) — a wcześniej bramka milkła w takim układzie i **pomijała kontrolę**,
+    // czyli była najcichsza dokładnie tam, gdzie najbardziej potrzebna. Zamiast ufać treści błędu,
+    // sprawdzamy stan faktyczny: czy da się połączyć z bazą cienia.
+    if (!/already exists/i.test(String(e.stderr || e.message))) {
+      execFileSync("npx", ["prisma", "db", "execute", "--url", shadow.url, "--stdin"], {
+        cwd: root, input: "SELECT 1;", encoding: "utf8", stdio: ["pipe", "pipe", "pipe"],
+      });
+    }
   }
 } catch (e) {
   console.log(
