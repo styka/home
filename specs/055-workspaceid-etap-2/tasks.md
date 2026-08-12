@@ -47,7 +47,7 @@ niezależne od siebie, ale oba wymagają zastosowanej migracji z T-2.
       `npm run build` przeciw lokalnemu Postgresowi (C-13).
       *Gotowe, gdy:* build **exit 0**, liczniki **160 / 551 / 35 / 35** bez spadku.
 
-- [ ] **T-6** — Dokumentacja: `CLAUDE.md`, dziennik, lekcja.
+- [x] **T-6** — Dokumentacja: `CLAUDE.md`, dziennik, lekcja.
       `CLAUDE.md` — opis nowej bramki na liście bramek (lista ma być prawdziwa). Dziennik (rozdz. 15)
       — wpis 055: dlaczego wyzwalacz zamiast rozszerzenia Prismy, co zostaje na etapy 3 i 4.
       `doświadczenia.md` — lekcja, jeśli po drodze wyjdzie nieoczywisty problem (C-51).

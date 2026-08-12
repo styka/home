@@ -968,3 +968,59 @@ skorygowane w specu (C-54): mierzy **zachowanie aplikacji**, nie nietykalność 
 `check:schema-drift` zielony (schemat = katalog migracji), `git diff` **bez ani jednego pliku**
 w `src/app/`, `src/components/` i `src/actions/`; w `src/` poza testem wyłącznie dwa pliki
 powyższej poprawki typu.
+
+
+---
+
+### 055 — `workspaceId` utrzymywany dla nowych rekordów, etap 2 z czterech · 2026-08-12
+
+**Dług, który rósł sam.** Po 054 kolumna była kompletna wobec danych z chwili migracji i
+**niekompletna wobec przyszłych**: rekord utworzony później dostawał `NULL`, bo nic go nie
+ustawiało. Etap 3 (przełączenie odczytów) takiego rekordu **po prostu by nie zobaczył** — zasób
+zniknąłby właścicielowi z listy. Dlatego etap 2 idzie zaraz po etapie 1, a nie „kiedyś".
+
+**Najważniejsza decyzja tego przebiegu: wyzwalacz w bazie, nie kod w ścieżkach zapisu.**
+Własność ustawiają dziś **224** wywołania `create`/`createMany`/`upsert` w **75** plikach.
+Dopisanie kolumny w każdym z nich miałoby jedno sprawdzenie — kompilator — a **kompilator nie widzi
+BRAKU pola opcjonalnego**. To ten sam kształt, co lekcja „opcjonalny identyfikator w guardzie =
+ciche wracanie do starej reguły".
+
+Naturalnym drugim odruchem było **rozszerzenie klienta Prismy**. Odrzucone świadomie: widzi tylko
+zapisy przechodzące przez ten konkretny egzemplarz klienta i tylko na najwyższym poziomie wywołania.
+Omijają je zapisy zagnieżdżone, surowy SQL (repo go używa — seedy w migracjach, `lib/privacy/purge.ts`),
+skrypty i wszystko, co ktoś napisze importując `PrismaClient` wprost. Byłoby to rozwiązanie, które
+**wygląda** na jedno miejsce, a i tak wymagałoby bramki ścigającej obejścia.
+
+Wyzwalacza nie omija nic. To jest ta sama zamiana, którą Omnia robi wszędzie: zamiast **wykrywać**
+pominięcie — uczynić je **niemożliwym**. Bramka `check:workspace-fill` pilnuje wobec tego
+**mechanizmu**, nie wywołań: jedyne, co można pominąć, to założenie wyzwalacza na nowej tabeli.
+
+**Jedna funkcja na 45 tabel.** `to_jsonb(NEW)` pozwala tej samej implementacji obsłużyć tabele
+z obiema kolumnami własności i te z samym `ownerId` — brakujący klucz w JSON-ie to po prostu `NULL`,
+bez dynamicznego SQL-a i bez dwóch wariantów. Reguła jest więc zapisana **raz**, i jest tą samą,
+którą stosuje backfill 0227 i `resolveRole`: `ownerId` przed `ownerTeamId`.
+
+**Czego wyzwalacz nie robi — trzy świadome ograniczenia.** Nie działa na `UPDATE` (przeniesienie
+zasobu między przestrzeniami przy zmianie właściciela to operacja etapu 3; dziś zmieniałaby dane,
+których nikt nie czyta, i zabrałaby etapowi 3 możliwość porównania stanu). Nie nadpisuje wartości
+podanej wprost (etap 3, testy i migracje danych muszą móc ustawić przestrzeń same). Nie wywraca
+zapisu, gdy właściciel nie ma przestrzeni — zostawia `NULL`, bo **zapis użytkownika jest ważniejszy
+niż kompletność kolumny, której nikt jeszcze nie czyta**. Ten ostatni przypadek jest w teście
+najważniejszy: mechanizm siedzi na ścieżce zapisu każdego modułu, więc błąd w nim objawiłby się nie
+brakującym polem, tylko **odrzuconym zapisem**.
+
+**Kiedy to znika:** w etapie 4, razem z kolumnami `ownerId`/`ownerTeamId`, z których wywodzi wartość.
+Wyzwalacz jest urządzeniem **przejściowym**, nie elementem architektury docelowej — nagłówek migracji
+mówi to wprost, żeby za trzy miesiące nikt nie uznał go za stan pożądany.
+
+#### Co zostaje na etapy 3 i 4
+
+| Etap | Zakres | Warunek wejścia |
+|------|--------|-----------------|
+| **3** | `ResourceFacts` dostaje `workspaceId`; kroki 1–2 rozstrzygania w `platform/sharing/access.ts` czytają przestrzeń zamiast pary właścicieli; zakresy list idą po `workspaceId`; przeniesienie zasobu przy zmianie właściciela | **Tabela prawdy przed i po**, porównana komórka po komórce (C-17). To pierwszy moment, w którym kolumna cokolwiek znaczy |
+| **4** | `NOT NULL`; rozstrzygnięcie losu sierot; usunięcie `ownerId`/`ownerTeamId`; **usunięcie wyzwalacza i cichych wariantów lustra z 051** | Etap 3 działa na produkcji, a liczba sierot jest znana i wyzerowana |
+
+**Bramki:** build **exit 0**, `test:unit` **689/689**, liczniki **160 / 551 / 35 / 35** bez ruchu,
+`check:workspace-fill` **45/45 tabel**, `check:schema-drift` zielony **bez nowych wyjątków**
+(wyzwalacze są niewidoczne dla `prisma migrate diff`), `git diff` **bez ani jednego pliku**
+w `src/app/`, `src/components/`, `src/actions/` i `src/modules/`.

@@ -4,6 +4,26 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-12 — Kompilator nie widzi BRAKU pola opcjonalnego
+**Problem:** Nowa nullowalna kolumna (`workspaceId`) musiała być odtąd wypełniana przy każdym
+tworzeniu rekordu. Pierwszy odruch — dopisać ją w miejscach zapisu — rozbił się o liczby: 224
+wywołania `create`/`createMany`/`upsert` w 75 plikach. Gorzej: takiej zmiany **nie da się
+sprawdzić kompilatorem**. TypeScript zgłosi pole ZŁEGO typu, ale pole opcjonalne, którego po prostu
+NIE MA, jest dla niego poprawne. Pominięcie w jednym z 224 miejsc byłoby całkowicie bezobjawowe.
+Drugi odruch — rozszerzenie klienta Prismy (`$extends`) — wygląda na „jedno miejsce", ale widzi
+tylko zapisy przez ten egzemplarz klienta i tylko na najwyższym poziomie: omijają je zapisy
+zagnieżdżone, surowy SQL, seedy w migracjach i każdy przyszły `new PrismaClient()`.
+**Rozwiązanie:** Wyzwalacz `BEFORE INSERT` w bazie — jedna funkcja PL/pgSQL, wyzwalacz na każdej
+objętej tabeli. Nie omija go żadna ścieżka zapisu, bo działa poniżej ORM-a. Bramka pilnuje wobec
+tego **kompletności mechanizmu** (czy każda tabela z kolumną ma wyzwalacz), a nie miejsc wywołań —
+bo wywołań nie da się pominąć. Jedna funkcja obsługuje tabele z różnym zestawem kolumn własności
+dzięki `to_jsonb(NEW)`: brakujący klucz to po prostu `NULL`, bez dynamicznego SQL-a.
+**Lekcja:** Kiedy wymaganie brzmi „to ma być odtąd ustawiane wszędzie", zadaj najpierw pytanie
+**czym zmierzysz pominięcie**. Jeśli odpowiedź brzmi „kompilatorem", sprawdź, czy kompilator to
+naprawdę widzi — przy polu opcjonalnym nie widzi. Wtedy przenieś mechanizm o poziom niżej (tam,
+gdzie ominięcie jest niemożliwe) zamiast rozsiewać go po miejscach wywołań i pilnować bramką, kto
+zapomniał. Wykrywanie pominięcia jest gorsze od uczynienia go niemożliwym.
+
 ## 2026-08-12 — Kolumna w Prismie łamie komponent typowany na CAŁY model
 **Problem:** Migracja 054 dokładała `workspaceId` do 45 modeli — zmiana wyłącznie w bazie, bez
 jednej linii w kodzie aplikacji. `next build` padł mimo to: `TagChip` deklarował `tag: Tag`, a

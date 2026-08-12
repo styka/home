@@ -837,7 +837,7 @@ survives) — do **not** move escaping into `inlineFormat` (it opened an XSS hol
 the table/paragraph merge).
 
 **Build pipeline**: `npm run build` runs
-`node scripts/copy-docs.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/migrate.js`.
+`node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/migrate.js`.
 - `copy-docs.js` bundles `docs/` for `/admin/docs`.
 - `check-action-coverage.js` (also `npm run check:actions`) verifies **every AI
   `AIAction` has an executor** in `/api/llm/home/execute` — the build **fails**
@@ -924,6 +924,22 @@ the table/paragraph merge).
   without that it missed `lib/privacy/purge.ts`, which transfers team ownership inside an interactive
   transaction, and the review caught the omission only after widening it. Three files mutate teams
   today (`actions/teams.ts`, `actions/invitations.ts`, `lib/privacy/purge.ts`).
+- **`check-workspace-fill.js`** (also `npm run check:workspace-fill`) — 055 (task 11, **stage 2 of
+  four**): `workspaceId` on new records is filled by a **`BEFORE INSERT` trigger** (`omnia_fill_workspace`,
+  migration 0228), one per covered table. Not by application code: ownership is set by 224
+  `create`/`createMany`/`upsert` calls across 75 files, and **the compiler cannot see a missing
+  optional field**. A Prisma client extension looks like one place but is bypassed by nested writes,
+  raw SQL (this repo uses it), seeds and scripts — the trigger is bypassed by nothing. So the gate
+  checks the **mechanism, not the call sites**: every model with a *nullable* `workspaceId` must have
+  a trigger in `prisma/migrations` (honouring `@@map` — `ProjectGroup`→`TaskView`), checked **both
+  ways**, because a typo in a table name would otherwise read as "all green, one table uncovered".
+  Conscious exceptions live in `src/platform/workspaces/fill-coverage.json` (empty today; dead entries
+  fail). The nullable filter matters: `WorkspaceMember`/`ResourceGrant` also have a `workspaceId`, but
+  a **required** one — there the space is part of the record's identity, not derived ownership.
+  The trigger is **transitional**: it derives the space from `ownerId`/`ownerTeamId` and disappears in
+  stage 4 together with those columns. It only fires on INSERT (moving a resource between spaces when
+  its owner changes belongs to stage 3), never overwrites an explicitly supplied value, and leaves
+  `NULL` when the owner has no space — a user's write must never fail over a column nobody reads yet.
 - **`platform/sharing` + `check-module-registry` (9th check)** — 052: access to a *resource* is
   answered by the platform, not by each module's own guard. `requireAccess(userId, ref, operation,
   catalog, ctx)` takes the resource catalog as a **required parameter**; a module declares
