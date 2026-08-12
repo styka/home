@@ -8,6 +8,20 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ─── 054 (zadanie 11, etap 1 z czterech): kolumna `workspaceId` ───────────
+//
+// Własność zasobu ma docelowo przestać być parą `ownerId`/`ownerTeamId`, a stać się jednym
+// `workspaceId` (rozdz. 8.2 i 8.10 „architektury docelowej"). Rozbicie na cztery etapy jest
+// wymogiem, nie ostrożnością: (1) kolumna NULLABLE + backfill ← ZROBIONE, migracja 0227,
+// (2) utrzymywanie jej dla nowych rekordów, (3) przełączenie odczytów, (4) `NOT NULL`.
+//
+// DZIŚ KOLUMNA NIE MA ANI JEDNEGO CZYTELNIKA — dostęp i własność liczą się dalej przez
+// `ownerId`/`ownerTeamId`. Nie pisz zapytań po `workspaceId`, dopóki nie wejdzie etap 3;
+// rekord utworzony po migracji 0227 ma tam NULL, bo etap 2 jeszcze nie istnieje.
+//
+// Kolumnę ma model z `ownerId` lub `ownerTeamId` (45 modeli). Poza zbiorem świadomie:
+// `Task` (własność przez `createdById`/projekt) i `Team` (źródło przestrzeni, nie zasób w niej).
+
 // ─── NextAuth required models ─────────────────────────────────────────────
 
 model User {
@@ -201,10 +215,7 @@ model Skin {
   owner     User? @relation("SkinOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerTeam Team? @relation("SkinTeam", fields: [ownerTeamId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -431,10 +442,7 @@ model ShoppingList {
   ownerTeam Team?  @relation("TeamLists", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   items     Item[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -478,10 +486,7 @@ model ItemHistory {
   updatedAt DateTime @updatedAt
   owner     User?    @relation("OwnedItemHistory", fields: [ownerId], references: [id], onDelete: SetNull)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@unique([ownerId, name])
   @@index([ownerId])
@@ -604,10 +609,7 @@ model NoteGroup {
   owner       User?    @relation("OwnedNoteGroups", fields: [ownerId], references: [id], onDelete: SetNull)
   ownerTeam   Team?    @relation("TeamNoteGroups", fields: [ownerTeamId], references: [id], onDelete: SetNull)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -628,10 +630,7 @@ model Tag {
   owner       User?       @relation("OwnedTags", fields: [ownerId], references: [id], onDelete: SetNull)
   ownerTeam   Team?       @relation("TeamTags", fields: [ownerTeamId], references: [id], onDelete: SetNull)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@unique([ownerId, name])
   @@index([ownerTeamId])
@@ -656,10 +655,7 @@ model Note {
   attachments NoteAttachment[]
   revisions   NoteRevision[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -722,10 +718,7 @@ model TaskProject {
   tasks     Task[]
   members   TaskProjectMember[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -761,10 +754,7 @@ model ProjectGroup {
 
   owner User @relation("OwnedProjectGroups", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([workspaceId])
@@ -892,10 +882,7 @@ model Store {
 
   owner User? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([workspaceId])
@@ -970,10 +957,7 @@ model Job {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([status, runAfter])
   @@index([ownerId, createdAt])
@@ -1091,10 +1075,7 @@ model Recipe {
   ratings        RecipeRating[]
   itemsGenerated ItemRecipeOrigin[] @relation("ItemsFromRecipe")
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1191,10 +1172,7 @@ model Cookbook {
   ownerTeam Team?    @relation("TeamCookbooks", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   recipes   Recipe[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1220,10 +1198,7 @@ model MealPlanEntry {
   owner     User?   @relation("OwnedMealPlans", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerTeam Team?   @relation("TeamMealPlans", fields: [ownerTeamId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId, date])
   @@index([ownerTeamId, date])
@@ -1250,10 +1225,7 @@ model PantryItem {
   owner     User?    @relation("OwnedPantryItems", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerTeam Team?    @relation("TeamPantryItems", fields: [ownerTeamId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1294,10 +1266,7 @@ model StorageItem {
   movements StorageMovement[]
   batches   StorageBatch[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1352,10 +1321,7 @@ model StorageSupplier {
   documents StorageDocument[]
   orders    StoragePurchaseOrder[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1398,10 +1364,7 @@ model StorageDocument {
   supplier  StorageSupplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   lines     StorageDocumentLine[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1442,10 +1405,7 @@ model StoragePurchaseOrder {
   supplier  StorageSupplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   lines     StoragePurchaseOrderLine[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1582,10 +1542,7 @@ model Pet {
   pairsAsFemale   PetBreedingPair[] @relation("PairFemale")
   sales           PetSale[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1749,10 +1706,7 @@ model PetEnclosure {
   pets      Pet[]
   readings  PetEnvironmentReading[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1807,10 +1761,7 @@ model PetBreedingPair {
   ownerTeam Team?       @relation("TeamPairs", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   clutches  PetClutch[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1858,10 +1809,7 @@ model PetSale {
   owner     User? @relation("OwnedPetSales", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerTeam Team? @relation("TeamPetSales", fields: [ownerTeamId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([petId])
   @@index([ownerId])
@@ -1895,10 +1843,7 @@ model Vehicle {
   services    ServiceRecord[]
   attachments VehicleAttachment[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1968,10 +1913,7 @@ model WalletElement {
   ownerTeam Team?         @relation("TeamWalletElements", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   entries   WalletEntry[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -2058,10 +2000,7 @@ model FavoriteView {
 
   owner User @relation("OwnedFavoriteViews", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@unique([ownerId, path]) // AC-9: ponowny zapis tego samego adresu nie tworzy duplikatu
   @@index([ownerId, order])
@@ -2130,10 +2069,7 @@ model Budget {
   owner     User? @relation("OwnedBudgets", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerTeam Team? @relation("TeamBudgets", fields: [ownerTeamId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -2158,10 +2094,7 @@ model FinanceGoal {
   owner     User? @relation("OwnedFinanceGoals", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerTeam Team? @relation("TeamFinanceGoals", fields: [ownerTeamId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -2258,10 +2191,7 @@ model LanguageDeck {
   ownerTeam Team?        @relation("TeamLanguageDecks", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   cards     Vocabulary[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -2321,10 +2251,7 @@ model HealthEvent {
   ownerTeam   Team?              @relation("TeamHealthEvents", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   attachments HealthAttachment[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId, scheduledAt])
   @@index([ownerTeamId, scheduledAt])
@@ -2377,10 +2304,7 @@ model MedicationSchedule {
   ownerTeam Team?           @relation("TeamMedicationSchedules", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   logs      MedicationLog[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -2428,10 +2352,7 @@ model Habit {
   ownerTeam Team?        @relation("TeamHabits", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   entries   HabitEntry[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId, archived])
   @@index([ownerTeamId, archived])
@@ -2669,10 +2590,7 @@ model NewsSource {
   articles NewsArticle[]
   timeline NewsTimelineEntry[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@unique([ownerId, key])
   @@index([ownerId])
@@ -2695,10 +2613,7 @@ model NewsTopic {
   items    NewsItem[]
   timeline NewsTimelineEntry[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([workspaceId])
@@ -2724,10 +2639,7 @@ model NewsArticle {
   source NewsSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   items  NewsItem[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@unique([ownerId, sourceId, url])
   @@index([ownerId, publishedAt])
@@ -2770,10 +2682,7 @@ model NewsHiddenTopic {
 
   owner User @relation("OwnedNewsHiddenTopics", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@unique([ownerId, fingerprint])
   @@index([workspaceId])
@@ -2822,10 +2731,7 @@ model NewsPref {
 
   owner User @relation("NewsPref", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([workspaceId])
 }
@@ -2854,10 +2760,7 @@ model UserFact {
 
   owner User @relation("OwnedUserFacts", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@unique([ownerId, fingerprint])
   @@index([ownerId, status])
@@ -2879,10 +2782,7 @@ model WeatherLocation {
 
   owner User @relation("OwnedWeatherLocations", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([workspaceId])
@@ -2905,10 +2805,7 @@ model WeatherWatcher {
 
   owner User @relation("OwnedWeatherWatchers", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([workspaceId])
@@ -2954,10 +2851,7 @@ model WeatherIdea {
 
   owner User @relation("OwnedWeatherIdeas", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@unique([ownerId, fingerprint])
   @@index([ownerId, state])
@@ -2987,10 +2881,7 @@ model AiContent {
 
   owner User @relation("OwnedAiContent", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@unique([ownerId, kind, scopeKey])
   @@index([ownerId, kind])
@@ -3014,10 +2905,7 @@ model AiSectionPref {
 
   owner User @relation("OwnedAiSectionPrefs", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@unique([ownerId, sectionKind])
   @@index([workspaceId])
@@ -3046,10 +2934,7 @@ model NewsRefreshRun {
 
   owner User @relation("OwnedNewsRefreshRuns", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId, finishedAt])
   @@index([workspaceId])
@@ -3086,10 +2971,7 @@ model Workshop {
   items     WorkshopItem[]
   projects  WorkshopProject[]
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -3291,10 +3173,7 @@ model Contact {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // 054 (zadanie 11, etap 1/4): docelowy klucz własności. NULLABLE i jeszcze
-  // NIECZYTANY — odczyty idą dalej przez ownerId/ownerTeamId. Etap 3 przełączy zapytania,
-  // etap 4 uczyni kolumnę wymaganą.
-  workspaceId String?
+  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([ownerId])
   @@index([ownerTeamId])

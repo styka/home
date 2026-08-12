@@ -14,6 +14,13 @@
 -- osobistej, rekord zespołu — do przestrzeni zespołu. Warunek `workspaceId IS NULL` czyni każdy
 -- UPDATE idempotentnym i bezpiecznym przy powtórzeniu wdrożenia.
 --
+-- PIERWSZEŃSTWO WŁASNOŚCI. Konwencja mówi „użytkownik ALBO zespół", ale nic tego nie wymusza
+-- na poziomie bazy. Gdyby rekord miał obie kolumny, decyduje KOLEJNOŚĆ instrukcji: najpierw idzie
+-- UPDATE po `ownerId`, więc wygrywa przestrzeń osobista, a UPDATE zespołowy odbija się od warunku
+-- `workspaceId IS NULL`. To NIE jest przypadek — dokładnie tak rozstrzyga `resolveRole`
+-- (`platform/sharing/access.ts`: `ownerId` sprawdzane przed `ownerTeamId`), więc backfill i kontrola
+-- dostępu odpowiadają na to samo pytanie tak samo.
+--
 -- Rekord, którego właściciel nie ma przestrzeni (konto usunięte), zostaje z NULL — świadomie.
 -- Etap 4 musi wiedzieć, ile takich jest, więc test je ZLICZA, zamiast je przemilczeć.
 --
