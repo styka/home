@@ -41,7 +41,7 @@ niezależne od siebie, ale oba wymagają zastosowanej migracji z T-2.
 
 ## Faza 3 — domknięcie
 
-- [ ] **T-5** — Komplet bramek i build.
+- [x] **T-5** — Komplet bramek i build.
       `check:workspace-fill`, `check:schema-drift`, reszta bramek, `test:unit`, `check:test-types`,
       **`npx tsc --noEmit`** (łańcuch builda go nie zawiera — lekcja z 054), `next lint`,
       `npm run build` przeciw lokalnemu Postgresowi (C-13).
