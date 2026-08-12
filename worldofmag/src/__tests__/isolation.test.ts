@@ -62,7 +62,12 @@ test("Z-172 izolacja danych (IDOR/BOLA) — guardy odrzucają obcego właścicie
       await assert.rejects(() => assertTaskAccess(taskInProject, B.id));
     });
     await t.test("tasks (zadanie osobiste projectId=null): tylko twórca/przypisany", async () => {
-      const personal = { projectId: null, createdById: A.id, assigneeId: null };
+      // 052: guard rozstrzyga przez `platform/sharing`, które czyta FAKTY o zasobie z bazy —
+      // więc zadanie musi istnieć. Wcześniej wystarczał obiekt zbudowany w pamięci; teraz test
+      // sprawdza tę samą regułę na prawdziwym wierszu, czyli bliżej tego, jak działa aplikacja.
+      const personal = await prisma.task.create({
+        data: { title: "Osobiste (izolacja)", createdById: A.id },
+      });
       await assertTaskAccess(personal, A.id);
       await assert.rejects(() => assertTaskAccess(personal, B.id), /Access denied/);
     });
