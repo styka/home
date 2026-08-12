@@ -50,12 +50,12 @@
 
 ## Faza B — Lustro w przód
 
-- [ ] **T-3** `[P]` — **Słowniki w `src/platform/workspaces/types.ts`.**
+- [x] **T-3** `[P]` — **Słowniki w `src/platform/workspaces/types.ts`.**
       `WorkspaceKind`, `WorkspaceMemberRole`, `ResourceRole`, `GrantSubjectType` + kolejność rang ról
       zasobu (`viewer` < `commenter` < `editor` < `manager`). **Sam słownik — zero egzekwowania**,
       bo to zadanie 10.
       **Gotowe, gdy:** typy istnieją, `tsc` czysty, nic ich jeszcze nie używa. **(AC-2)**
-- [ ] **T-4** — **`src/platform/workspaces/sync.ts` — lustro i detektor rozjazdu w jednym.**
+- [x] **T-4** — **`src/platform/workspaces/sync.ts` — lustro i detektor rozjazdu w jednym.**
       `ensurePersonalWorkspace(userId)`, `syncTeamWorkspace(teamId)`,
       `reconcileWorkspaces(zakres?) → { utworzone, zaktualizowane, usuniete }`.
       **Uzgadnianie JEST detekcją rozjazdu** — „druga próba zwraca zero zmian" to jednocześnie
@@ -63,7 +63,7 @@
       wołane też ze zdarzenia tworzenia konta, gdzie sesji jeszcze nie ma).
       **Gotowe, gdy:** `tsc` czysty; `reconcileWorkspaces()` na bazie **po backfillu SQL** zwraca
       **zero zmian** — czyli TypeScript i SQL interpretują tę samą regułę identycznie. **(AC-6, AC-7)**
-- [ ] **T-5** — **Wpięcie w trzy istniejące miejsca.**
+- [x] **T-5** — **Wpięcie w trzy istniejące miejsca.**
       `session.ts` (zdarzenie `createUser`) → przestrzeń osobista; `actions/teams.ts` (siedem
       mutacji) i `actions/invitations.ts` (przyjęcie zaproszenia) → uzgodnienie przestrzeni.
       `deleteTeam` **świadomie bez wywołania** — sprząta kaskada klucza obcego.
