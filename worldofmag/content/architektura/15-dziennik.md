@@ -45,8 +45,11 @@ swoim katalogiem — łącznie z trasą pulpitu.
 istniejący zespół i każde konto ma już swoją przestrzeń. Aplikacja nadal liczy dostęp przez
 `ownerId`/`ownerTeamId`; przestrzenie są na razie **lustrem, nie zamiennikiem**.
 
-**Następny krok: zadanie 10** — `platform/sharing` z `requireAccess`, dziedziczeniem nadań i cache
-per żądanie (rozdz. 8.9). Dopiero ono daje przestrzeniom pierwszego czytelnika.
+**052 dowiozło zadanie 10:** `requireAccess` istnieje w platformie, a Zadania są jego pierwszym
+konsumentem. Nadania z 051 mają wreszcie czytelnika.
+
+**Następny krok: zadanie 11** — `workspaceId` na 46 modelach. Rozdz. 8.10 nazywa je **najbardziej
+ryzykownym krokiem całej przebudowy** i wymaga czterech osobnych etapów.
 
 ---
 
@@ -77,7 +80,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
 | 9 | Modele `Workspace`, `WorkspaceMember`, `ResourceGrant`, `ResourceInvitation` | ✅ | **051.** Cztery modele + migracja 0226 **z backfillem** (rozdz. 8.10 kroki 1–2): przestrzeń osobista na konto, zespołowa na zespół wraz ze składem. Lustro utrzymywane w przód (`platform/workspaces`), pilnowane bramką `check:workspace-mirror` i testem z testem negatywnym. Zero przełączonych odczytów |
-| 10 | `platform/sharing` — `requireAccess`, dziedziczenie, cache | ⬜ | |
+| 10 | `platform/sharing` — `requireAccess`, dziedziczenie, cache | ✅ | **052.** Platforma bez importu modułu (katalog parametrem wymaganym); Zadania jako pilot; **tabela prawdy 25 komórek identyczna** przed i po; read-tool asystenta przez wspólne sprawdzanie z testem obejścia. Cache per żądanie — bez unieważniania, bo nie ma czego unieważniać |
 | 11 | Migracja `ownerId`/`ownerTeamId` → `workspaceId` na 46 modelach | ⬜ | **Najgroźniejsze zadanie całej przebudowy** |
 | 12 | Migracja `TaskProjectMember`/`TaskShare`/`PetShare` → `ResourceGrant` | ⬜ | |
 | 13 | Deklaracje `resources` w `module.ts` | ⬜ | |
@@ -776,3 +779,86 @@ i `src/components/` — maszynowy dowód, że przebieg jest dla użytkownika nie
 **Uwaga procesowa:** pierwsze podejście do tego przebiegu przepadło razem z kontenerem — siedem
 ukończonych zadań istniało wyłącznie w lokalnych commitach. Odtworzone z artefaktów i tej lekcji:
 **push po każdym zadaniu**, nie po całym przebiegu.
+
+---
+
+### 052 — Zadanie 10: `requireAccess` jako zdolność platformy · 2026-08-12
+
+**Zakres:** jedna odpowiedź na pytanie „czy wolno" — w platformie, z dziedziczeniem i cache'em per
+żądanie — plus pierwszy konsument. **Artefakty:** `specs/052-requireaccess-platforma/`.
+
+**Kolejność, która jest tu ważniejsza niż gdziekolwiek indziej**
+
+To jest kod decydujący o dostępie do danych: błąd nie objawia się wolniejszą stroną, tylko cudzymi
+danymi albo zablokowaną pracą. `tsc` nie ma tu nic do powiedzenia — stary i nowy guard mają tę samą
+sygnaturę i mogą różnić się każdą pojedynczą odpowiedzią. Dlatego **tabela prawdy powstała przed
+napisaniem mechanizmu**: macierz pięciu relacji × pięciu operacji, 25 komórek, zapisana jako punkt
+odniesienia. Po przełączeniu — **identyczna**.
+
+**Co pokazał sam punkt odniesienia, zanim cokolwiek zmieniliśmy**
+
+Projekt zadań należący do **zespołu** jest dziś niedostępny **dla nikogo** — łącznie z właścicielem
+zespołu. `TaskProject` ma kolumnę `ownerTeamId`, ale ani guard zapisu, ani ścieżka odczytu asystenta
+jej nie czytają. Nowy mechanizm mógłby to „przy okazji" naprawić i **właśnie dlatego tego nie robi**:
+poprawka uprawnień ukryta w przebudowie uprawnień jest nie do odróżnienia od błędu. Zachowanie
+zostało co do znaku, a rozbieżność jest zgłoszona jako osobna rzecz do decyzji właściciela.
+
+**Trzy decyzje projektowe, każda z ceną wypisaną w kodzie**
+
+- **Katalog zasobów jest parametrem wymaganym**, bez wartości domyślnej — zapomniany argument
+  zamieniłby się w ciche przyzwolenie. Podaje go korzeń kompozycji.
+- **Moduł woła platformę z własnym katalogiem**, nie przez korzeń: sięgnięcie po `@/lib/sharing`
+  z wnętrza modułu odwróciłoby zależność (moduł → korzeń → wszystkie moduły) i powtórzyło regresję
+  z 049. Granica tego rozwiązania jest nazwana zawczasu: zasób, którego rodzic mieszka w innym
+  module, będzie znakiem, że wołający należy do warstwy kompozycji.
+- **Zadanie w projekcie nie ma własnego właściciela.** Kuszące `ownerId: createdById` dałoby twórcy
+  dostęp **po wypisaniu go z projektu** — czyli więcej niż dziś. Osoba przypisana do zadania bez
+  projektu dostała za to jawne pole `extraGrants`, zamiast zakłamywania pola `ownerId`.
+
+**Co złapały testy, a nie oko**
+
+- **`React.cache` nie degraduje się poza kontekstem żądania** — nie jest tam nawet funkcją i rzuca
+  `cache is not a function`. Bez jawnej degradacji `requireAccess` wywalałby każde zadanie w tle
+  i każdy skrypt. Wyszło przy pierwszym uruchomieniu tabeli prawdy.
+- **`id` w `assertTaskAccess` musiało stać się wymagane.** Przy opcjonalnym wołający, którego
+  `select` go nie pobiera, po cichu wracałby do starej reguły i nowy mechanizm nigdy by się tam nie
+  uruchomił. Kompilator wskazał jedno takie miejsce.
+- **Test izolacji budował syntetyczne zadanie bez wiersza w bazie.** Nowy guard czyta fakty
+  o zasobie, więc test tworzy teraz prawdziwe zadanie — sprawdza tę samą regułę bliżej tego, jak
+  działa aplikacja.
+
+**Asystent (rozdz. 9.6)**
+
+`get_task` pyta o dostęp tym samym mechanizmem co zapis, a zakres list przeniósł się z warstwy AI do
+modułu — obok guardu, żeby lista i sprawdzenie nie mogły się rozjechać. Test obejścia sprawdza
+**obie** drogi wejścia (identyfikator i tytuł, bo `get_task` rozwiązuje też nazwy) i został
+**zobaczony na czerwono**: po podłożeniu dziury w zawężeniu zapytania oba przypadki padają.
+
+**Pomiary (rozdz. 8.9)**
+
+Właściciel rozstrzyga się **bez** pytania o nadania. Obcy: nadania czytane **dokładnie raz**, mimo
+dwóch ogniw łańcucha. Sprawdzenie dostępu do projektu = **jedno** zapytanie, jak dawniej. Test mówi
+też wprost, czego **nie** udaje: „zero zapytań dla właściciela" z rozdz. 8.9 opiera się na
+`workspaceId`, którego zasoby jeszcze nie mają.
+
+**Co dokładnie zamienia zadanie 11**
+
+`ResourceFacts` to dziś `{ ownerId, ownerTeamId, parent }`. Zadanie 11 dokłada `workspaceId`
+i zmienia **krok 1–2 rozstrzygania** w `platform/sharing/access.ts` — reszta (łańcuch, nadania
+jednym zapytaniem, cache, deklaracje modułów) zostaje bez zmian. To ma być zamiana jednego kroku,
+nie przepisanie.
+
+**Co świadomie zostało**
+
+- **Osiemnaście modułów bez deklaracji zasobów** (rozdz. 8.10 krok 8) — każdy wymaga własnej tabeli
+  prawdy, więc dziewiętnaście naraz to dziewiętnaście niesprawdzonych zmian w kontroli dostępu.
+- **Migracja `TaskProjectMember`/`TaskShare`/`PetShare` na nadania** — zadanie 12. Pilot **czyta**
+  dzisiejsze mechanizmy, nie rusza danych.
+- **Unieważnianie cache zdarzeniem** (rozdz. 8.9 pkt 3) — wymaga warstwy zdarzeń z Fazy 4.
+- **Warianty ciche lustra przestrzeni z 051** — mają zniknąć razem z pierwszym czytelnikiem
+  przestrzeni; `requireAccess` czyta dziś nadania, ale nie przestrzenie zasobów, więc termin
+  przesuwa się na zadanie 11.
+
+**Bramki:** build **exit 0**, `test:unit` **680/680**, liczniki **160 / 551 / 35 / 35** bez ruchu,
+`check:module-registry` **dziewięć kontroli**, `git diff` **bez ani jednego pliku** w `src/app/`
+i `src/components/`.

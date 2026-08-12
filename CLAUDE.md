@@ -924,6 +924,16 @@ the table/paragraph merge).
   without that it missed `lib/privacy/purge.ts`, which transfers team ownership inside an interactive
   transaction, and the review caught the omission only after widening it. Three files mutate teams
   today (`actions/teams.ts`, `actions/invitations.ts`, `lib/privacy/purge.ts`).
+- **`platform/sharing` + `check-module-registry` (9th check)** — 052: access to a *resource* is
+  answered by the platform, not by each module's own guard. `requireAccess(userId, ref, operation,
+  catalog, ctx)` takes the resource catalog as a **required parameter**; a module declares
+  `src/modules/<x>/sharing.ts` (label, its own operations mapped onto the four roles, parent for
+  inheritance) and is wired into `src/lib/sharingResources.ts` — checked **both ways**, because an
+  unwired declaration surfaces as a **denial of access**, not as missing data. A module calls the
+  platform with **its own** catalog (`lib/sharingGuard.ts`), never through the composition root:
+  reaching for the root from inside a module inverts the dependency and reproduces the 049
+  regression. **Changing an access rule requires a truth table** compared cell by cell *before*
+  switching; widening anyone's access "while we're here" is forbidden.
 - **`check-module-registry.js`** (also `npm run check:module-registry`) — 046: every directory in
   `src/modules/` must have `contract.ts` and a complete `defineModule` declaration in `module.ts`,
   with a unique id, **and be imported by the composition root** `src/lib/modules.tsx`. Without the

@@ -1,7 +1,7 @@
 # Zadania: `requireAccess` — sprawdzanie dostępu jako zdolność platformy
 
 - **Plan:** ./plan.md (052-requireaccess-platforma)
-- **Status:** todo
+- **Status:** zrobione
 - **Data:** 2026-08-12
 
 > **Zasada nadrzędna tego przebiegu:** **to jest kod decydujący o dostępie do danych.** Błąd nie
@@ -113,7 +113,7 @@
       **Gotowe, gdy:** wszystko zielone, cztery liczniki bez ruchu, a `git diff --stat` **nie
       pokazuje ani jednego pliku** w `src/app/` i `src/components/` — maszynowy dowód na AC-10.
       **(AC-10, AC-11)**
-- [ ] **T-13** — **Dokumentacja:** `CLAUDE.md` (nowa zdolność platformy + bramka),
+- [x] **T-13** — **Dokumentacja:** `CLAUDE.md` (nowa zdolność platformy + bramka),
       `constitution.md` (reguła: dostęp do zasobu rozstrzyga platforma, moduł deklaruje operacje),
       rozdz. 15 dziennika — zadanie 10 zrobione, **co dokładnie zamienia zadanie 11** (jeden krok
       w `ResourceFacts`), oraz lista tego, co świadomie zostało (unieważnianie zdarzeniem, osiemnaście

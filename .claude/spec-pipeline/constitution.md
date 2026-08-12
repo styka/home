@@ -101,6 +101,17 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   Kto mutuje zespół, **uzgadnia przestrzeń** (`syncTeamWorkspace`) — wymusza to
   `npm run check:workspace-mirror` (w `build`). Pominięte uzgodnienie nie objawia się niczym, bo nic
   przestrzeni jeszcze nie czyta; wyszłoby dopiero przy zadaniu 11. Kasowanie lustra robi kaskada FK.
+- **C-17 — Dostęp do ZASOBU rozstrzyga platforma; moduł deklaruje operacje.** (052, zadanie 10.)
+  `platform/sharing` odpowiada na „czy wolno", biorąc katalog zasobów **parametrem wymaganym**
+  (bez wartości domyślnej — zapomniany argument byłby cichym przyzwoleniem). Moduł deklaruje
+  `src/modules/<x>/sharing.ts`: etykiety, mapowanie **własnych operacji** na cztery role
+  (`viewer` < `commenter` < `editor` < `manager`) i rodzica do dziedziczenia — **nigdy własnych ról
+  i nigdy własnej reguły dziedziczenia**. Wpięcie w `src/lib/sharingResources.ts` pilnuje
+  `check:module-registry` w obie strony: niewpięta deklaracja objawia się **odmową dostępu**.
+  **Moduł woła platformę z własnym katalogiem**, nie przez korzeń kompozycji (inaczej odwraca
+  zależność — regresja z 049). **Zmiana reguły dostępu wymaga tabeli prawdy** porównanej komórka
+  po komórce PRZED przełączeniem; poszerzenie czyjegokolwiek dostępu „przy okazji" jest zakazane —
+  idzie osobną, świadomą zmianą.
 - **C-22 — RBAC.** Nowy moduł = nowy slug `module.*` zaseedowany migracją SQL, wpięty w
   `src/lib/permissions.ts` (`PERMISSIONS`, `permissionForPath`), w rejestr modułów
   `src/lib/modules.tsx` i w `ModuleSidebar` (desktop + mobilny tab bar). Strony poza `/auth/signin`
