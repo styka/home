@@ -45,13 +45,13 @@ export const resources: ResourceCatalog = {
     resolve: async (id) => {
       const p = await prisma.taskProject.findUnique({
         where: { id },
-        select: { ownerId: true, ownerTeamId: true },
+        select: { workspaceId: true, ownerId: true, ownerTeamId: true },
       });
       if (!p) return null;
-      // `ownerTeamId` podajemy jako FAKT o zasobie (fakty mają być prawdziwe), ale rozstrzyganie
-      // go nie honoruje — patrz komentarz wyżej i `rolaZWlasnosci` w platformie. Zadanie 11
-      // podmieni tę parę na `workspaceId`.
-      return { ownerId: p.ownerId, ownerTeamId: p.ownerTeamId };
+      // 056: `workspaceId` jest odtąd PODSTAWOWYM faktem o własności i to po nim rozstrzyga
+      // platforma. Para `ownerId`/`ownerTeamId` zostaje jako fakt prawdziwy i jako droga awaryjna
+      // dla rekordów bez przestrzeni (sierot); zniknie w etapie 4.
+      return { workspaceId: p.workspaceId, ownerId: p.ownerId, ownerTeamId: p.ownerTeamId };
     },
     extraGrants: async (id) => {
       const czlonkowie = await prisma.taskProjectMember.findMany({

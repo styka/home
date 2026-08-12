@@ -49,6 +49,9 @@ test(
     const { assertProjectAccess } = await import("@/modules/tasks/actions/taskProjects");
     const { assertTaskAccess } = await import("@/modules/tasks/lib/access");
     const { requireAccess } = await import("@/lib/sharing");
+    const { ensurePersonalWorkspace, syncTeamWorkspace } = await import(
+      "@/platform/workspaces/sync"
+    );
 
     // ── Fixture: jeden zespół, pięć osób w różnych relacjach, trzy zasoby ────────────────
     const wlasciciel = await prisma.user.create({ data: { email: `tt-own-${rnd()}@test.local` } });
@@ -64,6 +67,22 @@ test(
         members: { create: [{ userId: zespolowy.id, role: "MEMBER" }] },
       },
     });
+
+    /**
+     * 056: PRZESTRZENIE MUSZĄ ISTNIEĆ, ZANIM POWSTANĄ ZASOBY.
+     *
+     * Bez tego fixture mierzyłby coś innego, niż deklaruje. Użytkownicy tworzeni wprost przez
+     * Prismę omijają zdarzenie logowania, więc nie mają przestrzeni osobistych; wyzwalacz z 0228
+     * nie miałby czego wpisać, `workspaceId` zostałby pusty i rozstrzyganie poszłoby **gałęzią
+     * awaryjną** na `ownerId`. Tabela świeciłaby na zielono, dowodząc, że działa stara reguła —
+     * czyli dokładnie nie to, co ten przebieg zmienia.
+     */
+    await ensurePersonalWorkspace(wlasciciel.id);
+    await ensurePersonalWorkspace(czlonek.id);
+    await ensurePersonalWorkspace(admin.id);
+    await ensurePersonalWorkspace(obcy.id);
+    await ensurePersonalWorkspace(zespolowy.id);
+    await syncTeamWorkspace(zespol.id);
 
     const projekt = await prisma.taskProject.create({
       data: {
@@ -82,6 +101,23 @@ test(
       data: { name: `Zespolowy-${rnd()}`, ownerTeamId: zespol.id },
     });
 
+    /**
+     * 056/AC-4: zasób BEZ PRZESTRZENI. Właściciel istnieje, ale przestrzeni nie ma — tak wyglądają
+     * sieroty po backfillu 0227 i tak samo wygląda każdy zasób, którego własność jest wyprowadzona.
+     * Kolumna pilnuje, żeby przełączenie na przestrzeń nie odebrało właścicielowi jego zasobu
+     * i żeby jednocześnie nie oddało go obcemu.
+     */
+    const bezPrzestrzeni = await prisma.user.create({
+      data: { email: `tt-sier-${rnd()}@test.local` },
+    });
+    const projektSierota = await prisma.taskProject.create({
+      data: { name: `Sierota-${rnd()}`, ownerId: bezPrzestrzeni.id },
+    });
+    await prisma.taskProject.update({
+      where: { id: projektSierota.id },
+      data: { workspaceId: null },
+    });
+
     const zadanieWProjekcie = await prisma.task.create({
       data: { title: `Zad-${rnd()}`, projectId: projekt.id, createdById: wlasciciel.id },
     });
@@ -95,6 +131,8 @@ test(
       "czlonek ADMIN": admin.id,
       obcy: obcy.id,
       "w zespole, bez czlonkostwa": zespolowy.id,
+      // 056/AC-4: właściciel zasobu, który nie ma przestrzeni.
+      "wlasciciel bez przestrzeni": bezPrzestrzeni.id,
     };
 
     /** Operacje wyrażone przez DZISIEJSZE guardy — to jest definicja stanu „przed". */
@@ -112,6 +150,9 @@ test(
           { id: zadanieLuzem.id, projectId: zadanieLuzem.projectId, createdById: zadanieLuzem.createdById, assigneeId: zadanieLuzem.assigneeId },
           u,
         ),
+      // 056/AC-4 — zasób bez przestrzeni. Kolumna dochodzi do OBU macierzy, więc porównanie
+      // „stary vs nowy mechanizm" obejmuje ją tak samo jak pozostałe.
+      "projekt bez przestrzeni (sierota)": (u) => assertProjectAccess(projektSierota.id, u),
     };
 
     /**
@@ -124,6 +165,7 @@ test(
       "projekt zespolowy: odczyt/edycja": (u) => requireAccess(u, { type: "tasks.project", id: projektZespolu.id }, "task.edit"),
       "zadanie w projekcie": (u) => requireAccess(u, { type: "tasks.task", id: zadanieWProjekcie.id }, "task.edit"),
       "zadanie bez projektu": (u) => requireAccess(u, { type: "tasks.task", id: zadanieLuzem.id }, "task.edit"),
+      "projekt bez przestrzeni (sierota)": (u) => requireAccess(u, { type: "tasks.project", id: projektSierota.id }, "task.edit"),
     };
 
     async function zbudujMacierz(
