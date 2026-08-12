@@ -96,7 +96,7 @@
 
 ## Faza D — Domknięcie
 
-- [ ] **T-8** — **Bramki końcowe:** komplet + `test:unit` + `next build` przeciw **lokalnemu**
+- [x] **T-8** — **Bramki końcowe:** komplet + `test:unit` + `next build` przeciw **lokalnemu**
       Postgresowi (C-13).
       **Gotowe, gdy:** wszystko zielone, cztery liczniki **bez ruchu** (160/551/35/35), a
       `git diff --stat` **nie pokazuje ani jednego pliku** w `src/app/` i `src/components/` — to

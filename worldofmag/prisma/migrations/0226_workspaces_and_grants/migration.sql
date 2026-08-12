@@ -17,20 +17,16 @@
 -- Wycofanie: DROP TABLE "ResourceInvitation", "ResourceGrant", "WorkspaceMember", "Workspace";
 -- Bezpieczne bez wycofywania kodu, bo nic z tych tabel nie czyta.
 
--- DropIndex
-DROP INDEX "Note_content_trgm_idx";
-
--- DropIndex
-DROP INDEX "Note_title_trgm_idx";
-
--- AlterTable
-ALTER TABLE "AssistantPref" ALTER COLUMN "updatedAt" DROP DEFAULT;
-
--- AlterTable
-ALTER TABLE "LlmModelPrice" ALTER COLUMN "updatedAt" DROP DEFAULT;
-
--- AlterTable
-ALTER TABLE "UserLlmPref" ALTER COLUMN "updatedAt" DROP DEFAULT;
+-- UWAGA DLA CZYTAJĄCEGO W PRZYSZŁOŚCI — czego tu NIE MA i dlaczego.
+-- `prisma migrate diff --to-schema-datamodel` wygenerował dodatkowo pięć instrukcji, których ta
+-- migracja NIE zawiera, bo żadna z nich nie należy do zadania 9:
+--   DROP INDEX "Note_title_trgm_idx" / "Note_content_trgm_idx"
+--   ALTER TABLE "AssistantPref"|"LlmModelPrice"|"UserLlmPref" ALTER COLUMN "updatedAt" DROP DEFAULT
+-- To NIE jest rozjazd do naprawienia, tylko **granica tego, co `schema.prisma` potrafi wyrazić** —
+-- oba przypadki są od dawna wpisane w `src/lib/db/schema-drift-allowed.json` z uzasadnieniem.
+-- Wklejenie ich tutaj skasowałoby indeksy trigramowe wyszukiwania notatek (ranking trafności
+-- spada do skanu sekwencyjnego) i zmieniło zachowanie trzech niezwiązanych tabel.
+-- **Wniosek ogólny: wyjścia `migrate diff` nie wolno dopisywać do migracji bez przeczytania.**
 
 -- CreateTable
 CREATE TABLE "Workspace" (
