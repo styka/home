@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-12 — Ręcznie pisany SQL musi sam uwzględnić `@@map`
+**Problem:** Migracja 0227 dokładała `workspaceId` do 45 tabel: instrukcje `ADD COLUMN` wygenerowała
+Prisma, a 73 `UPDATE`-y backfillu pisałem ręcznie — po nazwach **modeli**. Migracja padła na
+`relation "ProjectGroup" does not exist`. `ProjectGroup` jest zmapowany przez `@@map("TaskView")`
+i jest jedynym takim modelem w całym schemacie, więc 44 tabele przeszły, a wywaliła się jedna.
+Naprawa wymagała jeszcze skasowania nieudanego wiersza w `_prisma_migrations`, bo `migrate deploy`
+uznaje migrację za rozpoczętą i nie próbuje jej ponownie.
+**Rozwiązanie:** Backfill przepisany po nazwach TABEL (parser czyta `@@map` ze schematu), a test
+kompletności wyprowadza listę tabel ze `schema.prisma` — również z uwzględnieniem `@@map` — zamiast
+powtarzać ją ręcznie.
+**Lekcja:** Kiedy w jednym pliku migracji mieszasz DDL z `prisma migrate diff` z własnym SQL-em,
+mieszasz **dwie konwencje nazw**. Prisma pisze tabelami, ty piszesz tym, co masz przed oczami
+w schemacie. Zanim napiszesz ręczny `UPDATE`/`INSERT` na wielu tabelach, sprawdź
+`grep '@@map' prisma/schema.prisma` — jeden wyjątek na kilkadziesiąt tabel jest niewidoczny przy
+przeglądaniu, a widoczny dopiero jako błąd wdrożenia.
+
 ## 2026-08-12 — `React.cache` poza kontekstem żądania nie degraduje się, tylko rzuca
 **Problem:** Cache per żądanie dla sprawdzania dostępu oparliśmy na `React.cache`, zakładając (i tak
 zapisując w planie), że poza kontekstem żądania „degraduje się do zwykłego wywołania". Nieprawda:
@@ -1096,7 +1112,6 @@ Po przestawieniu bramki na nowy plik znów 160 akcji i 373 parametry.
 jej „fałszywy alarm" po przenosinach to sygnał, że coś REALNIE się przesunęło. Przy takich zmianach
 dowód neutralności warto zrobić wprost: porównać treść bloku przed i po (`git show`), znak po znaku.
 
-
 ## 2026-07-27 — Koszt liczony z tokenów, których UI w ogóle nie pokazywał
 **Problem:** W rozbiciu kosztu pod odpowiedzią asystenta dwa wywołania tego samego modelu
 (claude-haiku-4-5) o podobnej liczbie tokenów miały kwoty różniące się dwudziestokrotnie:
@@ -1151,7 +1166,6 @@ robi. Nowe indeksy unikalne tworzone PO backfillu właścicieli, żeby nie trafi
 `pg_constraint`/`pg_indexes`, nie przez `IF NOT EXISTS` (którego `ADD CONSTRAINT` nie ma). Kolejność
 ma znaczenie: najpierw dane (backfill), potem ograniczenia unikalności.
 
-
 ## 2026-07-26 — Równoległa sesja zajęła ten sam numer speca i migracji
 **Problem:** Podczas pracy nad feature'em „effort/temperature" druga sesja zmergowała do `develop`
 inny feature też ponumerowany **032** (katalog TTS) razem z migracją **0210**. Moja gałąź miała
@@ -1172,7 +1186,6 @@ parametr do tej samej funkcji, nie wybieraj „naszej/ich" wersji — złóż sy
 KAŻDE wywołanie. I pamiętaj: `git diff origin/develop HEAD` w trakcie nierozwiązanego merge porównuje
 do commitu PRZED merge, więc wygląda, jakby czyjaś praca ginęła — patrz na stan roboczy
 (`git diff origin/develop -- plik`).
-
 
 ## 2026-07-26 — „Effort" nie jest jednym parametrem: wspólna skala zamiast surowej wartości
 **Problem:** Zgłoszenie brzmiało „dodaj możliwość ustawienia effort", ale u każdego dostawcy to co
@@ -1361,7 +1374,6 @@ odczyt dla nikogo. Nie realizuj tego przez rozluźnienie guardu istniejącej akc
 uprawnienie RBAC (da się je przypadkiem rozszerzyć) — zrób osobną akcję z odstępstwem opisanym w
 jednym miejscu. I sprawdź, czy „wspólny" zasób jest naprawdę wspólny: `findFirst({ownerId: user.id})`
 cicho tworzy osobny byt per użytkownik.
-
 
 ## 2026-07-25 — Scalenie dwóch sekcji akcji asystenta przy append-only historii czatu
 **Problem:** Po wykonaniu akcji asystent pokazywał DWIE sekcje: turę `plan` z „✓ Wykonano" oraz osobną
