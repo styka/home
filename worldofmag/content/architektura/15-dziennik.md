@@ -862,3 +862,41 @@ nie przepisanie.
 **Bramki:** build **exit 0**, `test:unit` **680/680**, liczniki **160 / 551 / 35 / 35** bez ruchu,
 `check:module-registry` **dziewięć kontroli**, `git diff` **bez ani jednego pliku** w `src/app/`
 i `src/components/`.
+
+
+---
+
+### 053 — Projekty zespołowe przestają być martwe · 2026-08-12
+
+**Skąd się wziął ten przebieg.** Nie z listy zadań, tylko z **tabeli prawdy zbudowanej w 052**.
+Punkt odniesienia pokazał, że projekt zadań należący do zespołu jest niedostępny **dla nikogo** —
+`ownerTeamId` nie dawało niczego ani przy zapisie, ani przy odczycie. Funkcja istniała w modelu
+danych i nie istniała w praktyce: projekt widoczny, każda operacja odmówiona.
+
+**Dlaczego osobno, a nie „przy okazji" w 052.** Bo to jest **rozszerzenie dostępu**, a 052 miało
+dowieść równoważności. Poprawka wpleciona tam byłaby nie do odróżnienia od błędu przenosin,
+a tabela prawdy przestałaby cokolwiek dowodzić. Tu widać dokładnie, co się zmienia.
+
+**Zmieniła się DOKŁADNIE JEDNA komórka macierzy** — członek zespołu w projekcie zespołowym,
+z „odmowa" na „dozwolone". Pozostałe 24 bez ruchu, co potwierdza porównanie. Punkt odniesienia
+zaktualizowany **świadomie**, a asercja pilnująca dawnego zachowania zamieniona na dwie: nowy
+zamiar i sprawdzenie, że osoby spoza zespołu nadal nic nie zyskują.
+
+**Jak to jest wyrażone.** Deklaracja zasobu dostała opcjonalne pole `teamOwnership`
+(`{ member, admin }`) — **domyślnie puste**, bo nie każdy moduł honoruje własność zespołową
+i milczące przyznanie dostępu na podstawie samej obecności kolumny byłoby dokładnie tym, czego
+052 zabroniło. Zadania deklarują `member: "editor"`, `admin: "manager"`: członek pracuje
+w projekcie, właściciel/admin zespołu nim zarządza. Kontekst dostępu niesie teraz `adminTeamIds`,
+czytane **razem** z resztą, więc sprawdzenie nie kosztuje dodatkowego zapytania.
+
+**Rzecz, którą trzeba było domknąć razem ze zmianą:** zakres list. Bez tego członek zespołu miałby
+prawo działać w projekcie, **którego nie widzi**, a asystent twierdziłby, że taki projekt nie
+istnieje. `accessibleProjectIds` obejmuje więc teraz projekty zespołu — z tego samego miejsca, co
+sprawdzanie dostępu.
+
+**Znane ograniczenie, świadomie zostawione:** właściciel zespołu **bez wiersza `TeamMember`** nadal
+nic nie zyskuje, bo `getUserTeamIds` (całoaplikacyjne pojęcie „moje zespoły") czyta członkostwa.
+W praktyce `createTeam` zakłada właścicielowi taki wiersz; rozbieżność dotyczy zespołów tworzonych
+z pominięciem tej ścieżki i jest tą samą, którą 051 rozwiązało po stronie lustra przestrzeni.
+
+**Bramki:** build **exit 0**, `test:unit` **681/681**, liczniki **160 / 551 / 35 / 35** bez ruchu.

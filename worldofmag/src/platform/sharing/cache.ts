@@ -38,9 +38,19 @@ function perRequest<A, R>(fn: (a: A) => Promise<R>): (a: A) => Promise<R> {
  * sprawdzenie dostępu odpytywałoby o członkostwa od nowa.
  */
 export const getAccessContext = perRequest(async (userId: string): Promise<AccessContext> => {
-  const [teamIds, workspaces] = await Promise.all([
+  const [teamIds, workspaces, czlonkostwa] = await Promise.all([
     getUserTeamIds(userId),
     prisma.workspaceMember.findMany({ where: { userId }, select: { workspaceId: true } }),
+    // 053: role w zespołach — właściciel/admin dostaje wyższą rolę na zasobach zespołu niż zwykły
+    // członek. Czytamy je RAZEM z resztą kontekstu, żeby nie dokładać zapytania na sprawdzenie.
+    prisma.teamMember.findMany({
+      where: { userId, role: { in: ["OWNER", "ADMIN"] } },
+      select: { teamId: true },
+    }),
   ]);
-  return { teamIds, workspaceIds: workspaces.map((w) => w.workspaceId) };
+  return {
+    teamIds,
+    adminTeamIds: czlonkostwa.map((m) => m.teamId),
+    workspaceIds: workspaces.map((w) => w.workspaceId),
+  };
 });

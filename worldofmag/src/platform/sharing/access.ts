@@ -4,6 +4,7 @@ import {
   ACCESS_DENIED,
   type AccessContext,
   type ResourceCatalog,
+  type ResourceDeclaration,
   type ResourceFacts,
   type ResourceRef,
 } from "./types";
@@ -61,13 +62,25 @@ async function zbierzLancuch(
   return lancuch;
 }
 
-/** Rola wynikająca z WŁASNOŚCI — bez zapytań, na faktach już wczytanych. */
-function rolaZWlasnosci(facts: ResourceFacts, userId: string, ctx: AccessContext): ResourceRole | null {
+/**
+ * Rola wynikająca z WŁASNOŚCI — bez zapytań, na faktach już wczytanych.
+ *
+ * Własność zespołowa liczy się **tylko wtedy, gdy moduł zadeklarował `teamOwnership`** (053).
+ * Domyślne milczenie jest celowe: przyznanie dostępu na podstawie samej obecności kolumny
+ * `ownerTeamId` byłoby poszerzeniem uprawnień bez decyzji (052/AC-5).
+ */
+function rolaZWlasnosci(
+  facts: ResourceFacts,
+  userId: string,
+  ctx: AccessContext,
+  deklaracja: ResourceDeclaration | undefined,
+): ResourceRole | null {
   if (facts.ownerId && facts.ownerId === userId) return "manager";
-  // UWAGA: własność zespołowa NIE daje tu automatycznie roli. Moduł, który chce ją uznawać,
-  // wyraża to nadaniem albo `extraGrants` — bo dziś nie każdy moduł ją honoruje, a milczące
-  // przyznanie dostępu na podstawie samej kolumny poszerzyłoby uprawnienia (052/AC-5).
-  void ctx;
+  const zespolowa = deklaracja?.teamOwnership;
+  if (zespolowa && facts.ownerTeamId) {
+    if (ctx.adminTeamIds.includes(facts.ownerTeamId)) return zespolowa.admin;
+    if (ctx.teamIds.includes(facts.ownerTeamId)) return zespolowa.member;
+  }
   return null;
 }
 
@@ -87,7 +100,7 @@ export async function resolveRole(
   // 1. Właściciel — najczęstszy przypadek, zero dodatkowych zapytań.
   let rola: ResourceRole | null = null;
   for (const ogniwo of lancuch) {
-    rola = najwyzsza(rola, rolaZWlasnosci(ogniwo.facts, userId, ctx));
+    rola = najwyzsza(rola, rolaZWlasnosci(ogniwo.facts, userId, ctx, katalog[ogniwo.ref.type]));
   }
   if (rola === "manager") return rola;
 

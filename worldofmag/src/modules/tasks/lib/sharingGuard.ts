@@ -37,8 +37,18 @@ export async function requireTaskModuleAccess(
  * się to listą pokazującą coś, czego nie wolno otworzyć.
  */
 export async function accessibleProjectIds(userId: string): Promise<string[]> {
+  // 053: projekty zespołu MUSZĄ tu być, odkąd członek zespołu może w nich pracować. Inaczej lista
+  // i sprawdzanie dostępu rozjeżdżają się w najgorszą stronę: użytkownik ma prawo działać
+  // w projekcie, którego nie widzi — a asystent twierdzi, że taki projekt nie istnieje.
+  const ctx = await getAccessContext(userId);
   const projekty = await prisma.taskProject.findMany({
-    where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
+    where: {
+      OR: [
+        { ownerId: userId },
+        { members: { some: { userId } } },
+        ...(ctx.teamIds.length > 0 ? [{ ownerTeamId: { in: ctx.teamIds } }] : []),
+      ],
+    },
     select: { id: true },
   });
   return projekty.map((p) => p.id);

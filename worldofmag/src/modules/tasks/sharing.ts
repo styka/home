@@ -38,6 +38,10 @@ export const resources: ResourceCatalog = {
       "project.share": "manager",
     },
     children: ["tasks.task"],
+    // 053: projekt należący do zespołu przestaje być martwy. Do 052 kolumna `ownerTeamId` nie
+    // dawała NIKOMU niczego — także właścicielowi zespołu — więc taki projekt był widoczny
+    // i bezużyteczny. Stopniowanie: członek pracuje w projekcie, właściciel/admin nim zarządza.
+    teamOwnership: { member: "editor", admin: "manager" },
     resolve: async (id) => {
       const p = await prisma.taskProject.findUnique({
         where: { id },

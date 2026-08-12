@@ -166,8 +166,23 @@ test(
       });
 
       // Ten wiersz zasługuje na własną asercję, bo jest łatwy do zepsucia „przy okazji".
-      await t.test("AC-5: własność zespołowa NIE daje dziś dostępu do projektu zadań", () => {
-        assert.equal(macierz["w zespole, bez czlonkostwa"]["projekt zespolowy: odczyt/edycja"], "odmowa");
+      //
+      // **053 ZMIENIŁO GO ŚWIADOMIE.** Do 052 własność zespołowa nie dawała NIKOMU niczego, więc
+      // projekt zespołowy był martwy — widoczny i bezużyteczny. Teraz członek zespołu może w nim
+      // pracować. To jest jedyna zaplanowana różnica wobec punktu odniesienia z 052; wszystkie
+      // pozostałe komórki mają zostać nietknięte i pilnuje tego porównanie wyżej.
+      await t.test("053: członek zespołu MOŻE pracować w projekcie zespołowym", () => {
+        assert.equal(macierz["w zespole, bez czlonkostwa"]["projekt zespolowy: odczyt/edycja"], "dozwolone");
+      });
+
+      await t.test("053: osoby spoza zespołu nadal nic nie zyskują", () => {
+        for (const kto of ["czlonek MEMBER", "czlonek ADMIN", "obcy"]) {
+          assert.equal(
+            macierz[kto]["projekt zespolowy: odczyt/edycja"],
+            "odmowa",
+            `${kto} nie należy do zespołu i nie ma prawa nic zyskać`,
+          );
+        }
       });
 
       // ── SEDNO PRZEBIEGU (AC-4) ────────────────────────────────────────────────────────
