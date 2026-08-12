@@ -32,13 +32,13 @@
 
 ## Faza A — Fundament danych
 
-- [ ] **T-1** — **Cztery modele w `schema.prisma` + DDL migracji 0226.**
+- [x] **T-1** — **Cztery modele w `schema.prisma` + DDL migracji 0226.**
       Kształt wg planu §2: `Workspace` (z `personalUserId` i `teamId`, oba `String?` **unikalne**),
       `WorkspaceMember`, `ResourceGrant`, `ResourceInvitation` + relacje zwrotne w `User` i `Team`
       z `onDelete: Cascade`. Rodzaje i role jako `String` — **zero enumów Prisma (C-12)**.
       **Gotowe, gdy:** `npx prisma migrate deploy` przechodzi, `npm run check:schema-drift`
       **zielony** (to jest dowód na AC-1), `npm run check:migrations` zielony. **(AC-1, AC-2)**
-- [ ] **T-2** — **Backfill w tej samej migracji + weryfikacja na bazie Z DANYMI.**
+- [x] **T-2** — **Backfill w tej samej migracji + weryfikacja na bazie Z DANYMI.**
       Pięć kroków wg planu §2: przestrzenie zespołów → członkowie z mapowaniem ról → **właściciel
       zespołu osobnym `INSERT … DO UPDATE`** → przestrzenie osobiste → członkostwa osobiste.
       Wszystko `ON CONFLICT`, `gen_random_uuid()::text` (C-14).
