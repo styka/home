@@ -104,12 +104,12 @@ test(
       "projekt zespolowy: odczyt/edycja": (u) => assertProjectAccess(projektZespolu.id, u),
       "zadanie w projekcie": (u) =>
         assertTaskAccess(
-          { projectId: zadanieWProjekcie.projectId, createdById: zadanieWProjekcie.createdById, assigneeId: zadanieWProjekcie.assigneeId },
+          { id: zadanieWProjekcie.id, projectId: zadanieWProjekcie.projectId, createdById: zadanieWProjekcie.createdById, assigneeId: zadanieWProjekcie.assigneeId },
           u,
         ),
       "zadanie bez projektu": (u) =>
         assertTaskAccess(
-          { projectId: zadanieLuzem.projectId, createdById: zadanieLuzem.createdById, assigneeId: zadanieLuzem.assigneeId },
+          { id: zadanieLuzem.id, projectId: zadanieLuzem.projectId, createdById: zadanieLuzem.createdById, assigneeId: zadanieLuzem.assigneeId },
           u,
         ),
     };

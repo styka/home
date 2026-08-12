@@ -683,7 +683,7 @@ export async function reorderTask(taskId: string, newOrder: number): Promise<voi
   const user = await requireAuth();
   const task = await prisma.task.findUnique({
     where: { id: taskId },
-    select: { projectId: true, createdById: true, assigneeId: true },
+    select: { id: true, projectId: true, createdById: true, assigneeId: true },
   });
   if (!task) throw new Error("Task not found");
   await assertTaskAccess(task, user.id);

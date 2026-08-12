@@ -5,6 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import type { TaskProject, ProjectStatusConfig } from "@/types";
 import { serializeStatusConfig, parseStatusConfig, SYSTEM_TASK_STATUSES } from "@/types";
+import { requireTaskModuleAccess } from "../lib/sharingGuard"
 
 function toProject(p: unknown): TaskProject {
   return p as TaskProject;
@@ -205,17 +206,31 @@ export async function assertProjectAccess(
   userId: string,
   minRole: "MEMBER" | "ADMIN" = "MEMBER"
 ): Promise<void> {
-  const project = await prisma.taskProject.findUnique({
-    where: { id: projectId },
-    include: { members: { where: { userId } } },
-  });
-
+  // 052: decyzję podejmuje wspólne sprawdzanie dostępu (`platform/sharing`), a nie ten guard.
+  // Sygnatura i komunikaty zostają, żeby dwadzieścia wywołań i widok użytkownika się nie zmieniły.
+  // `minRole` odwzorowane na operacje: MEMBER → edycja zawartości (`editor`),
+  // ADMIN → zarządzanie projektem (`manager`). Równoważność udowodniona tabelą prawdy (052/T-7).
+  const project = await prisma.taskProject.findUnique({ where: { id: projectId }, select: { id: true } });
   if (!project) throw new Error("Project not found");
 
-  if (project.ownerId === userId) return;
+  const operacja = minRole === "ADMIN" ? "project.rename" : "task.edit";
+  try {
+    await requireTaskModuleAccess(userId, { type: "tasks.project", id: projectId }, operacja);
+  } catch {
+    // Komunikat rozróżniamy tak samo jak wcześniej: brak jakiegokolwiek dostępu vs za niska rola.
+    if (minRole === "ADMIN" && (await hasProjectRole(projectId, userId))) {
+      throw new Error("Admin access required");
+    }
+    throw new Error("Access denied");
+  }
+}
 
-  const membership = project.members[0];
-  if (!membership) throw new Error("Access denied");
-
-  if (minRole === "ADMIN" && membership.role !== "ADMIN") throw new Error("Admin access required");
+/** Czy użytkownik ma JAKIKOLWIEK dostęp do projektu — do rozróżnienia komunikatu odmowy. */
+async function hasProjectRole(projectId: string, userId: string): Promise<boolean> {
+  try {
+    await requireTaskModuleAccess(userId, { type: "tasks.project", id: projectId }, "task.edit");
+    return true;
+  } catch {
+    return false;
+  }
 }

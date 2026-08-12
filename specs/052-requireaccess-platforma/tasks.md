@@ -86,7 +86,7 @@
 > Każde z tych zadań idzie **osobnym commitem**, żeby dało się wycofać samo przełączenie bez
 > usuwania mechanizmu.
 
-- [ ] **T-8** — **`assertProjectAccess` i `assertTaskAccess` wołają `requireAccess`.**
+- [x] **T-8** — **`assertProjectAccess` i `assertTaskAccess` wołają `requireAccess`.**
       **Sygnatury i komunikaty odmowy bez zmian** — dwadzieścia wywołań zostaje nietkniętych,
       a użytkownik widzi to samo. Z `assertTaskAccess` znika ręczne dziedziczenie.
       **Gotowe, gdy:** test z T-7 nadal zielony, `test:unit` zielony, komunikaty porównane co do
