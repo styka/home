@@ -160,3 +160,41 @@ export async function reconcileWorkspaces(zakres?: {
   for (const teamId of teamIds) wyniki.push(await syncTeamWorkspace(teamId));
   return suma(...wyniki);
 }
+
+/**
+ * ── WARIANTY „CICHE", DO UŻYCIA W ŚCIEŻKACH UŻYTKOWNIKA ────────────────────────────────
+ *
+ * Lustro jest dziś **zapisem bez czytelnika**: nic z przestrzeni nie korzysta, dopóki nie powstanie
+ * `requireAccess` (zadanie 10). Wobec tego jego awaria **nie może wywalić operacji użytkownika** —
+ * nieudane odwzorowanie zespołu nie jest powodem, żeby tworzenie zespołu skończyło się błędem, a już
+ * na pewno nie żeby nie dało się założyć konta.
+ *
+ * Rozjazd, który stąd wyniknie, jest **naprawialny i wykrywalny**: `reconcileWorkspaces` jest
+ * jednocześnie detektorem i naprawą.
+ *
+ * **UWAGA NA ZADANIE 10:** w chwili, gdy przestrzenie dostaną pierwszego czytelnika, ciche
+ * połknięcie błędu przestaje być bezpieczne — cichy brak wiersza zamieni się w cichą odmowę dostępu.
+ * Wtedy te dwie funkcje mają zniknąć, a wołający mają zacząć przepuszczać wyjątek.
+ */
+
+function ostrzez(co: string, e: unknown) {
+  console.warn(`⚠ Lustro przestrzeni: ${co} nie powiodło się (rozjazd naprawi reconcileWorkspaces).`, e);
+}
+
+/** `syncTeamWorkspace`, ale awaria lustra nie psuje operacji na zespole. */
+export async function mirrorTeamWorkspace(teamId: string): Promise<void> {
+  try {
+    await syncTeamWorkspace(teamId);
+  } catch (e) {
+    ostrzez(`uzgodnienie zespołu ${teamId}`, e);
+  }
+}
+
+/** `ensurePersonalWorkspace`, ale awaria lustra nie blokuje założenia konta. */
+export async function mirrorPersonalWorkspace(userId: string): Promise<void> {
+  try {
+    await ensurePersonalWorkspace(userId);
+  } catch (e) {
+    ostrzez(`przestrzeń osobista ${userId}`, e);
+  }
+}

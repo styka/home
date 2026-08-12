@@ -3,7 +3,7 @@
 import { prisma } from "@/platform/db/prisma"
 import { revalidatePath } from "next/cache"
 import { requireAuth } from "@/platform/auth/serverUtils"
-import { syncTeamWorkspace } from "@/platform/workspaces/sync"
+import { mirrorTeamWorkspace } from "@/platform/workspaces/sync"
 
 export async function inviteUser(teamId: string, targetEmail: string) {
   const user = await requireAuth()
@@ -69,7 +69,7 @@ export async function acceptInvitation(invitationId: string) {
     }),
   ])
   // Faza 2 / zadanie 9: nowy członek zespołu musi trafić do jego przestrzeni.
-  await syncTeamWorkspace(invitation.teamId)
+  await mirrorTeamWorkspace(invitation.teamId)
   revalidatePath("/invitations")
   revalidatePath("/settings")
 }

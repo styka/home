@@ -1,7 +1,7 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { ensurePersonalWorkspace } from "@/platform/workspaces/sync"
+import { mirrorPersonalWorkspace } from "@/platform/workspaces/sync"
 import { prisma } from "@/platform/db/prisma"
 import { authConfig } from "@/auth.config"
 
@@ -97,7 +97,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // automatycznie przy rejestracji", więc to jest jej jedyne właściwe miejsce. Migracja 0226
       // zrobiła to dla kont istniejących; bez tego wiersza niezmiennik rozjechałby się nazajutrz
       // po wdrożeniu, przy pierwszym nowym użytkowniku.
-      await ensurePersonalWorkspace(user.id!)
+      // Wariant CICHY: nieudane lustro nie może zablokować założenia konta (patrz sync.ts).
+      await mirrorPersonalWorkspace(user.id!)
     },
   },
 })

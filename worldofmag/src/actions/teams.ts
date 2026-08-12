@@ -7,7 +7,7 @@ import { serializeModuleAccess } from "@/lib/teams/memberAccess"
 // Faza 2 / zadanie 9: zespół jest źródłem prawdy, przestrzeń jego lustrem. Każda mutacja składu,
 // nazwy albo właściciela musi uzgodnić przestrzeń — pilnuje tego `check:workspace-mirror`.
 // `deleteTeam` świadomie bez wywołania: przestrzeń znika kaskadą klucza obcego.
-import { syncTeamWorkspace } from "@/platform/workspaces/sync"
+import { mirrorTeamWorkspace } from "@/platform/workspaces/sync"
 
 async function requireTeamRole(
   teamId: string,
@@ -47,7 +47,7 @@ export async function createTeam(name: string, description?: string, kind: "team
     await prisma.taskProject.create({ data: { name: "Zadania domowe", ownerTeamId: team.id } })
     await prisma.walletElement.create({ data: { name: "Budżet domowy", kind: "account", ownerTeamId: team.id } })
   }
-  await syncTeamWorkspace(team.id)
+  await mirrorTeamWorkspace(team.id)
   revalidatePath("/settings")
   return team
 }
@@ -127,7 +127,7 @@ export async function updateTeam(
   const user = await requireAuth()
   await requireTeamRole(teamId, user.id, "ADMIN")
   await prisma.team.update({ where: { id: teamId }, data })
-  await syncTeamWorkspace(teamId)
+  await mirrorTeamWorkspace(teamId)
   revalidatePath(`/settings/team/${teamId}`)
 }
 
@@ -158,7 +158,7 @@ export async function changeMemberRole(
     where: { teamId_userId: { teamId, userId: targetUserId } },
     data: { role: newRole },
   })
-  await syncTeamWorkspace(teamId)
+  await mirrorTeamWorkspace(teamId)
   revalidatePath(`/settings/team/${teamId}`)
 }
 
@@ -202,7 +202,7 @@ export async function removeMember(teamId: string, targetUserId: string) {
   await prisma.teamMember.delete({
     where: { teamId_userId: { teamId, userId: targetUserId } },
   })
-  await syncTeamWorkspace(teamId)
+  await mirrorTeamWorkspace(teamId)
   revalidatePath(`/settings/team/${teamId}`)
 }
 
@@ -216,7 +216,7 @@ export async function leaveTeam(teamId: string) {
   await prisma.teamMember.delete({
     where: { teamId_userId: { teamId, userId: user.id } },
   })
-  await syncTeamWorkspace(teamId)
+  await mirrorTeamWorkspace(teamId)
   revalidatePath("/settings")
 }
 
@@ -239,7 +239,7 @@ export async function transferTeamOwnership(teamId: string, newOwnerId: string) 
     }),
     prisma.team.update({ where: { id: teamId }, data: { ownerId: newOwnerId } }),
   ])
-  await syncTeamWorkspace(teamId)
+  await mirrorTeamWorkspace(teamId)
   revalidatePath(`/settings/team/${teamId}`)
 }
 
@@ -261,7 +261,7 @@ export async function createSubTeam(
       members: { create: { userId: user.id, role: "OWNER" } },
     },
   })
-  await syncTeamWorkspace(team.id)
+  await mirrorTeamWorkspace(team.id)
   revalidatePath(`/settings/team/${parentTeamId}`)
   return team
 }

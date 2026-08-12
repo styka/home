@@ -23,8 +23,14 @@ const root = path.join(__dirname, "..");
 const srcDir = path.join(root, "src");
 const manifestPath = path.join(root, "src/platform/workspaces/mirror-coverage.json");
 
-/** Mutacje Prismy na zespole i jego składzie. Odczyty (`findMany`, `count`) nie ruszają lustra. */
-const MUTACJE = /prisma\.(team|teamMember)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b/;
+/**
+ * Mutacje Prismy na zespole i jego składzie. Odczyty (`findMany`, `count`) nie ruszają lustra.
+ *
+ * `tx` obok `prisma` nie jest ozdobą: w transakcji interaktywnej
+ * (`prisma.$transaction(async (tx) => …)`) mutacja nazywa się `tx.team.update`, więc wzorzec
+ * szukający wyłącznie `prisma.` przepuściłby ją bez słowa.
+ */
+const MUTACJE = /\b(prisma|tx)\.(team|teamMember)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b/;
 /** Import, który dowodzi, że plik o lustrze pamięta. */
 const UZGADNIA = /@\/platform\/workspaces\/sync/;
 

@@ -1,5 +1,6 @@
 import { prisma } from "@/platform/db/prisma";
 import { pickTeamSuccessor } from "@/lib/teams/ownership";
+import { mirrorTeamWorkspace } from "@/platform/workspaces/sync";
 
 type PurgeTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
@@ -14,11 +15,16 @@ type PurgeTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
  * Subzespoły (`parentTeamId` = SetNull) i zespoły, w których user jest tylko członkiem,
  * nie wymagają akcji — odpowiednio osierocają się na top-level / kaskadują z TeamMember.
  */
-async function resolveOwnedTeams(tx: PurgeTx, userId: string): Promise<void> {
+async function resolveOwnedTeams(tx: PurgeTx, userId: string): Promise<string[]> {
   const teams = await tx.team.findMany({
     where: { ownerId: userId },
     include: { members: { select: { userId: true, role: true, joinedAt: true } } },
   });
+  // 051 (Faza 2, zadanie 9): zespoły, w których własność PRZESZŁA na następcę. Ich przestrzenie
+  // trzeba uzgodnić PO transakcji — usunięty właściciel znika z przestrzeni kaskadą, ale rola
+  // `owner` nie przeskoczy na następcę sama. Zespoły usunięte nie wchodzą: ich przestrzeń
+  // kaskaduje razem z nimi.
+  const przekazane: string[] = [];
   for (const team of teams) {
     const successor = pickTeamSuccessor(team.members, userId);
     if (successor === null) {
@@ -32,8 +38,10 @@ async function resolveOwnedTeams(tx: PurgeTx, userId: string): Promise<void> {
         data: { role: "OWNER" },
       });
       await tx.team.update({ where: { id: team.id }, data: { ownerId: successor } });
+      przekazane.push(team.id);
     }
   }
+  return przekazane;
 }
 
 /**
@@ -58,9 +66,10 @@ async function resolveOwnedTeams(tx: PurgeTx, userId: string): Promise<void> {
  * `AuditLog` nie ma FK do User (zrzut e-maila) — historia audytu celowo zostaje.
  */
 export async function purgeUserData(userId: string): Promise<void> {
+  let przekazaneZespoly: string[] = [];
   await prisma.$transaction(async (tx) => {
     // Z-194 (T-04): najpierw rozwiąż własność zespołów (Team.ownerId = RESTRICT).
-    await resolveOwnedTeams(tx, userId);
+    przekazaneZespoly = await resolveOwnedTeams(tx, userId);
 
     // RESTRICT: zaproszenia wysłane i otrzymane.
     await tx.teamInvitation.deleteMany({
@@ -100,4 +109,11 @@ export async function purgeUserData(userId: string): Promise<void> {
     // Reszta (CASCADE) zniknie wraz z użytkownikiem.
     await tx.user.delete({ where: { id: userId } });
   });
+
+  // 051 (Faza 2, zadanie 9): uzgodnienie przestrzeni PO transakcji — `syncTeamWorkspace` pracuje
+  // na globalnym kliencie, więc w środku widziałoby stan sprzed commitu. Wariant cichy: usunięcie
+  // konta na żądanie RODO nie może się wywalić przez lustro, którego nikt jeszcze nie czyta.
+  for (const teamId of przekazaneZespoly) {
+    await mirrorTeamWorkspace(teamId);
+  }
 }

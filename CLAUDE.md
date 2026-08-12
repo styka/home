@@ -920,8 +920,10 @@ the table/paragraph merge).
   every file mutating a team must import `@/platform/workspaces/sync` (or carry a reasoned entry in
   `src/platform/workspaces/mirror-coverage.json`; dead entries fail too). It exists because a missed
   reconcile **shows no symptom** — nothing reads workspaces yet, so the bug would only surface at
-  task 11, when reads switch to `workspaceId`. Today exactly two files mutate teams
-  (`actions/teams.ts`, `actions/invitations.ts`); the gate is there for the third.
+  task 11, when reads switch to `workspaceId`. The pattern matches `tx.` as well as `prisma.` —
+  without that it missed `lib/privacy/purge.ts`, which transfers team ownership inside an interactive
+  transaction, and the review caught the omission only after widening it. Three files mutate teams
+  today (`actions/teams.ts`, `actions/invitations.ts`, `lib/privacy/purge.ts`).
 - **`check-module-registry.js`** (also `npm run check:module-registry`) — 046: every directory in
   `src/modules/` must have `contract.ts` and a complete `defineModule` declaration in `module.ts`,
   with a unique id, **and be imported by the composition root** `src/lib/modules.tsx`. Without the

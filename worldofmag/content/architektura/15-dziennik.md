@@ -760,6 +760,19 @@ i **to ona wyłapała** `DROP INDEX` opisany wyżej. „Pominięty" nie jest zie
 `check:workspace-mirror` (nowa) zielona, `git diff` **bez ani jednego pliku** w `src/app/`
 i `src/components/` — maszynowy dowód, że przebieg jest dla użytkownika niewidzialny.
 
+**Co znalazła recenzja — dwa punkty, oba przechodziłyby build na zielono**
+
+- **Trzeci punkt mutacji zespołów, o którym twierdziłem, że nie istnieje.** Wzorzec bramki szukał
+  `prisma.team…`, a w transakcji interaktywnej mutacja nazywa się `tx.team…`. Po poszerzeniu wzorca
+  wyszedł `lib/privacy/purge.ts`: przy usuwaniu konta przekazuje własność zespołu następcy, więc
+  bez uzgodnienia przestrzeń zostawałaby **bez właściciela** — a po zadaniu 10 następca straciłby
+  prawo zarządzania własnym zespołem. Bramka raportuje dziś **3 pliki**, nie 2.
+- **Lustro mogło wywalić logowanie i tworzenie zespołu.** Wpięcia były zwykłym `await`, więc awaria
+  zapisu, którego nikt nie czyta, przerywała operację użytkownika. Ryzyko jest asymetryczne, więc
+  ścieżki użytkownika wołają teraz jawnie nazwane warianty ciche (`mirrorTeamWorkspace`,
+  `mirrorPersonalWorkspace`), a wersje ścisłe zostają dla testów i uzgadniania. **W kodzie stoi,
+  kiedy to przestaje być bezpieczne:** gdy przestrzenie dostaną pierwszego czytelnika.
+
 **Uwaga procesowa:** pierwsze podejście do tego przebiegu przepadło razem z kontenerem — siedem
 ukończonych zadań istniało wyłącznie w lokalnych commitach. Odtworzone z artefaktów i tej lekcji:
 **push po każdym zadaniu**, nie po całym przebiegu.
