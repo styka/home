@@ -95,8 +95,9 @@ export function TagsManager({ tags }: TagsManagerProps) {
                 />
               ))}
             </div>
+            {/* Podgląd etykiety, której jeszcze nie ma w bazie — stąd literał, a nie rekord. */}
             {newName && (
-              <TagChip tag={{ id: "", name: newName, color: newColor, createdAt: new Date(), ownerId: null, ownerTeamId: null }} size="sm" />
+              <TagChip tag={{ name: newName, color: newColor }} size="sm" />
             )}
             <div className="flex gap-2">
               <button onClick={handleCreate} disabled={!newName.trim()}
