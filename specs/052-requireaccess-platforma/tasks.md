@@ -45,19 +45,19 @@
 
 ## Faza B — Zdolność platformy (jeszcze bez konsumenta)
 
-- [ ] **T-2** `[P]` — **`src/platform/sharing/types.ts`.**
+- [x] **T-2** `[P]` — **`src/platform/sharing/types.ts`.**
       `ResourceRef`, `ResourceFacts` (z `parent`), `ResourceDeclaration` (`label`, `operations`,
       `children`, `resolve`, `extraGrants`), `ResourceCatalog`. Role bierzemy z istniejącego
       słownika w `platform/workspaces/types.ts` — **nie dublujemy**.
       **Gotowe, gdy:** `tsc` czysty, nic tego jeszcze nie używa. **(AC-2)**
-- [ ] **T-3** — **`src/platform/sharing/access.ts` — `canAccess` / `requireAccess`.**
+- [x] **T-3** — **`src/platform/sharing/access.ts` — `canAccess` / `requireAccess`.**
       Cztery kroki z planu §3.1 w kolejności od najtańszego; katalog **parametrem WYMAGANYM** (bez
       wartości domyślnej — C-36); łańcuch przodków zbierany **przed** zapytaniem o nadania, żeby
       nadania czytać jednym zapytaniem; twardy limit głębokości łańcucha (ochrona przed zapętloną
       deklaracją) z własnym komunikatem błędu konfiguracji.
       **Gotowe, gdy:** `grep "@/modules/" src/platform/sharing/` → **pusto**; testy jednostkowe
       rozstrzygania ról przechodzą. **(AC-1, AC-3, AC-8)**
-- [ ] **T-4** — **`src/platform/sharing/cache.ts` — memoizacja per żądanie.**
+- [x] **T-4** — **`src/platform/sharing/cache.ts` — memoizacja per żądanie.**
       `React.cache` na dwóch odczytach: fakty o zasobie i nadania dla łańcucha.
       **Gotowe, gdy:** poza kontekstem żądania degraduje się do zwykłego wywołania **bez błędu**
       (pokryte testem — inaczej cache byłby „sprawdzony" tylko tam, gdzie i tak działa). **(AC-7)**
