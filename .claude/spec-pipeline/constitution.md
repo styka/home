@@ -90,6 +90,17 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
 - **C-21 — Model współwłasności `ownerId` / `ownerTeamId`** (wzajemnie wykluczające się). Dostęp
   liczymy przez `getUserTeamIds(userId)` i `where: { OR: [{ ownerId }, { ownerTeamId: { in }}] }`.
   Każdy moduł ma swój guard (`assertListAccess`, `assertNoteAccess`, …) — użyj/rozszerz istniejący.
+- **C-15 — Wyjścia `prisma migrate diff` NIE dopisuj do migracji bez przeczytania.** (051.)
+  `--to-schema-datamodel` generuje **doprowadzenie bazy do schematu**, a nie „DDL twojej zmiany":
+  wszystko, co żyje wyłącznie w surowym SQL-u — czyli dokładnie to, co jest wypisane
+  w `src/lib/db/schema-drift-allowed.json` — diff zaproponuje **skasować** (indeksy `pg_trgm`,
+  domyślne wartości kolumn). Po wygenerowaniu DDL zostaw wyłącznie instrukcje swojej zmiany;
+  `grep -E "^(DROP|ALTER)"` na nowej migracji zajmuje sekundę.
+- **C-16 — Przestrzenie są LUSTREM zespołów, dopóki trwa Faza 2.** (051, zadanie 9.)
+  `Team`/`TeamMember` pozostają źródłem prawdy; `Workspace`/`WorkspaceMember` je odwzorowują.
+  Kto mutuje zespół, **uzgadnia przestrzeń** (`syncTeamWorkspace`) — wymusza to
+  `npm run check:workspace-mirror` (w `build`). Pominięte uzgodnienie nie objawia się niczym, bo nic
+  przestrzeni jeszcze nie czyta; wyszłoby dopiero przy zadaniu 11. Kasowanie lustra robi kaskada FK.
 - **C-22 — RBAC.** Nowy moduł = nowy slug `module.*` zaseedowany migracją SQL, wpięty w
   `src/lib/permissions.ts` (`PERMISSIONS`, `permissionForPath`), w rejestr modułów
   `src/lib/modules.tsx` i w `ModuleSidebar` (desktop + mobilny tab bar). Strony poza `/auth/signin`

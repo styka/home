@@ -4,6 +4,47 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-12 — `migrate diff` dopisany do migracji bez czytania skasował indeksy z surowego SQL-a
+**Problem:** Migrację nowych tabel wygenerowałem przez
+`prisma migrate diff --from-migrations … --to-schema-datamodel` i **dopisałem jej wyjście do pliku
+bez przeczytania**. Diff nie zawierał tylko nowych tabel: dorzucił `DROP INDEX "Note_title_trgm_idx"`,
+`DROP INDEX "Note_content_trgm_idx"` oraz trzy `ALTER COLUMN "updatedAt" DROP DEFAULT` na
+niezwiązanych tabelach. Powód jest logiczny: te obiekty istnieją **tylko w migracjach pisanych
+surowym SQL-em**, bo `schema.prisma` nie umie ich wyrazić — więc z punktu widzenia diffa schemat
+„nie chce ich mieć". Skutek na produkcji byłby cichy i kosztowny: wyszukiwanie notatek spada
+z indeksu GIN na skan sekwencyjny, a nikt tego nie zauważa poza wolniejszą stroną.
+**Objaw, który mnie zmylił:** dwa testy `notesFts.integration` zaczęły padać. Wziąłem to najpierw za
+stan lokalnej bazy i **odtworzyłem indeksy ręcznie** zamiast szukać przyczyny — po czym przy
+następnym `migrate deploy` zniknęły znowu. Dopiero `grep "DROP INDEX" prisma/` pokazał sprawcę: moją
+własną, świeżo napisaną migrację.
+**Rozwiązanie:** Pięć niezamówionych instrukcji usunięte, a w migracji został komentarz **wymieniający
+je z nazwy** wraz z powodem, dla którego ich tam nie ma. Pełny cykl przeliczony od zera (usunięcie
+tabel + wpisu w `_prisma_migrations` + `migrate deploy`) z jawnym sprawdzeniem, że indeksy trigramowe
+**przeżywają** migrację.
+**Lekcja:** `migrate diff --to-schema-datamodel` to **propozycja doprowadzenia bazy do schematu**, a
+nie „DDL mojej zmiany". Wszystko, co żyje wyłącznie w surowym SQL-u — a więc dokładnie to, co jest
+wypisane w `src/lib/db/schema-drift-allowed.json` — diff zaproponuje **skasować**. Zasada: po
+wygenerowaniu DDL przeczytaj go w całości i zostaw wyłącznie instrukcje dotyczące swojej zmiany;
+`grep -E "^(DROP|ALTER)"` na nowej migracji zajmuje sekundę i wyłapuje to od razu. Druga lekcja:
+**padający test to hipoteza o przyczynie, a nie stan środowiska do obejścia** — naprawa objawu
+(odtworzenie indeksów) ukryła defekt na jeden cykl.
+
+## 2026-08-12 — Bramka rozjazdu schematu milczała dokładnie tam, gdzie była potrzebna
+**Problem:** `check:schema-drift` tworzy bazę cienia poleceniem `CREATE DATABASE` i toleruje błąd
+tylko wtedy, gdy jego treść zawiera „already exists". Rola bez uprawnienia `CREATEDB` dostaje jednak
+`permission denied to create database` **także wtedy, gdy baza cienia już istnieje** (założona przez
+administratora). Bramka uznawała to za „nie da się przygotować cienia" i **pomijała całą kontrolę**,
+kończąc się sukcesem. Efekt: w środowisku o ograniczonych uprawnieniach — czyli tym, w którym rozjazd
+najłatwiej przeoczyć — bramka nie sprawdzała niczego, a build świecił na zielono.
+**Rozwiązanie:** Zamiast ufać treści błędu, sprawdzamy stan faktyczny: jeśli `CREATE DATABASE` się nie
+udało, próbujemy **połączyć się z bazą cienia**. Połączenie działa → jedziemy dalej; nie działa →
+dopiero wtedy pomijamy. Po poprawce bramka po raz pierwszy realnie się uruchomiła i **od razu
+wyłapała**, że wygenerowana migracja kasuje indeksy trigramowe (wpis wyżej).
+**Lekcja:** Bramka, która potrafi się „pominąć", musi mieć powód pominięcia **sprawdzony, a nie
+wywnioskowany z komunikatu błędu**. Komunikat opisuje jedną nieudaną próbę, nie stan świata. I ogólniej:
+gdy bramka kończy się słowem „pominięty", to nie jest zielone — to jest brak pomiaru, i warto
+policzyć, jak często tak kończy.
+
 ## 2026-08-11 — Wspólny rejestr leniwych loaderów też jest plikiem zbiorczym
 **Problem:** Wkłady modułów do migawki pulpitu wpięliśmy polem `dashboard` w `module.server.ts` —
 tak jak `ai`, `jobs` i `calendar`. Graf kompilacji strony głównej urósł z **1889 do 2117 modułów**,
