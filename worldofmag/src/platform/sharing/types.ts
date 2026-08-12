@@ -46,6 +46,13 @@ export interface ResourceDeclaration {
   operations: Record<string, ResourceRole>;
   /** Typy zasobów dziedziczących po tym (projekt → zadanie). Dokumentacyjne i dla przyszłego UI. */
   children?: string[];
+  /**
+   * Co daje WŁASNOŚĆ ZESPOŁOWA zasobu (`ownerTeamId`). Pole jest **opcjonalne i domyślnie puste**,
+   * bo nie każdy moduł dziś ją honoruje — a milczące przyznanie dostępu na podstawie samej kolumny
+   * byłoby poszerzeniem uprawnień bez decyzji (052/AC-5). Moduł, który chce ją uznawać, musi
+   * powiedzieć to wprost i podać stopniowanie.
+   */
+  teamOwnership?: { member: ResourceRole; admin: ResourceRole };
   /** Fakty o zasobie; `null` = zasób nie istnieje (wtedy odmowa, nie wyjątek Prismy). */
   resolve: (id: string) => Promise<ResourceFacts | null>;
   /**
@@ -69,6 +76,8 @@ export type ResourceCatalog = Record<string, ResourceDeclaration>;
  */
 export interface AccessContext {
   teamIds: string[];
+  /** Podzbiór `teamIds`, w których użytkownik jest właścicielem albo adminem — daje wyższą rolę. */
+  adminTeamIds: string[];
   workspaceIds: string[];
 }
 
