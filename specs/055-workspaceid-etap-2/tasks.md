@@ -24,7 +24,7 @@ niezależne od siebie, ale oba wymagają zastosowanej migracji z T-2.
 
 ## Faza 2 — bramka i dowód
 
-- [ ] **T-3 [P]** — Bramka `check:workspace-fill` + pusty manifest wyjątków.
+- [x] **T-3 [P]** — Bramka `check:workspace-fill` + pusty manifest wyjątków.
       `scripts/check-workspace-fill.js` + `src/platform/workspaces/fill-coverage.json`; skrypt
       w `package.json` i wpięcie w `build` obok `check:workspace-mirror`. Trzy kontrole: model bez
       wyzwalacza, wyzwalacz bez modelu, martwy wpis w manifeście.

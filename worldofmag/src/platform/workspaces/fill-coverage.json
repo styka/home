@@ -1,0 +1,5 @@
+{
+  "_opis": "055 (zadanie 11, etap 2): tabele z kolumną `workspaceId`, które ŚWIADOMIE nie mają wyzwalacza wypełniającego. Wpis wymaga powodu. Bramka `check:workspace-fill` sprawdza go w obie strony — wpis dotyczący tabeli, która wyzwalacz już ma (albo modelu, który zniknął), też wywala build, żeby wyjątek nie stał się z czasem furtką.",
+  "_dzisiaj": "Manifest jest PUSTY i to jest stan docelowy: wszystkie 45 tabel ma wyzwalacz. Istnieje po to, żeby następny wyjątek był świadomą decyzją, a nie cichym pominięciem.",
+  "wyjatki": {}
+}
