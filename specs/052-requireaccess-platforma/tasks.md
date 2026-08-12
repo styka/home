@@ -96,7 +96,7 @@
       i sprawdzenie nie mogły się rozjechać.
       **Gotowe, gdy:** **test obejścia** (użytkownik B pyta o zadanie użytkownika A po identyfikatorze
       **i po tytule**) **widziany na czerwono** przed naprawą, potem zielony. **(AC-9)**
-- [ ] **T-10** — **Pomiar liczby zapytań.**
+- [x] **T-10** — **Pomiar liczby zapytań.**
       Licznik na `prisma.$on("query")`: właściciel (nowy ≤ stary), powtórne sprawdzenie w jednym
       żądaniu (**0**), łańcuch zadanie→projekt (**1** zapytanie o nadania).
       **Gotowe, gdy:** trzy liczby zmierzone i zapisane, żadna nie gorsza od założeń.
@@ -104,11 +104,11 @@
 
 ## Faza E — Domknięcie
 
-- [ ] **T-11** — **Dziewiąta kontrola `check:module-registry`:** moduł z `sharing.ts` musi być wpięty
+- [x] **T-11** — **Dziewiąta kontrola `check:module-registry`:** moduł z `sharing.ts` musi być wpięty
       w `src/lib/sharingResources.ts` i odwrotnie — **w obie strony**, jak przy wkładzie pulpitu.
       **Gotowe, gdy:** oba testy negatywne wykonane (plik bez wpięcia → czerwone; wpięcie bez pliku
       → czerwone), stan czysty → zielone.
-- [ ] **T-12** — **Bramki końcowe:** komplet + `test:unit` + `next build` przeciw **lokalnemu**
+- [x] **T-12** — **Bramki końcowe:** komplet + `test:unit` + `next build` przeciw **lokalnemu**
       Postgresowi (C-13).
       **Gotowe, gdy:** wszystko zielone, cztery liczniki bez ruchu, a `git diff --stat` **nie
       pokazuje ani jednego pliku** w `src/app/` i `src/components/` — maszynowy dowód na AC-10.
