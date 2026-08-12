@@ -900,3 +900,71 @@ W praktyce `createTeam` zakłada właścicielowi taki wiersz; rozbieżność dot
 z pominięciem tej ścieżki i jest tą samą, którą 051 rozwiązało po stronie lustra przestrzeni.
 
 **Bramki:** build **exit 0**, `test:unit` **681/681**, liczniki **160 / 551 / 35 / 35** bez ruchu.
+
+
+---
+
+### 054 — `workspaceId` w bazie, etap 1 z czterech · 2026-08-12
+
+**Co ten przebieg zrobił aplikacji: nic.** I to jest jego treść. Rozdz. 8.10 nazywa zadanie 11
+najgroźniejszym krokiem całej przebudowy i podaje kolejność, której nie wolno skracać:
+*(a) dodać kolumnę nullable, (b) wypełnić migracją, (c) przełączyć zapytania, (d) uczynić
+wymaganą. **Nigdy w jednym kroku.*** Wykonane zostały **(a) i (b)**. Kolumna `workspaceId`
+istnieje na **45 modelach**, jest wypełniona i **nie ma ani jednego czytelnika** — dostęp
+i własność liczą się dalej przez `ownerId`/`ownerTeamId`.
+
+**Dlaczego 45, a nie 46 z checklisty.** Zbiór wyznacza własność, nie licznik: kolumnę dostaje
+model mający `ownerId` lub `ownerTeamId`. Dwa wykluczenia są świadome i zapisane w kodzie.
+`Task` nie ma żadnej z tych kolumn — jego własność idzie przez `createdById`/`assigneeId`
+i przez projekt, więc nie ma z czego wyliczyć przestrzeni. `Team` jest **źródłem** przestrzeni
+(`Workspace.teamId`), a nie zasobem, który w jakiejś przestrzeni żyje; nadanie mu `workspaceId`
+zamknęłoby pętlę „zespół należy do przestrzeni, która należy do zespołu".
+
+**Pułapka, która wywaliła pierwszy przebieg backfillu:** `@@map`. `ADD COLUMN` generuje Prisma,
+więc pisze nazwy **tabel**; backfill pisałem ręcznie i użyłem nazw **modeli**. Wyszło na
+`ProjectGroup`, zmapowanym na `TaskView` — jedynym takim modelu w całym schemacie. Ręcznie pisany
+SQL musi `@@map` uwzględnić sam, a jeden wyjątek na kilkadziesiąt tabel jest dokładnie tym
+rodzajem różnicy, której się nie zauważa przy przeglądaniu.
+
+**C-15 zadziałała za drugim razem z rzędu.** `prisma migrate diff` dopisał — niezamówione —
+`DROP INDEX` na dwóch indeksach trigramowych notatek i trzy `ALTER COLUMN … DROP DEFAULT`.
+Te same instrukcje, które w 051 skasowały wyszukiwanie notatek. Zostały usunięte, a nagłówek
+migracji **wymienia je z nazwy**, żeby ich brak nie wyglądał na przeoczenie.
+
+**Dowód kompletności wyprowadza listę tabel ze schematu**, zamiast ją powtarzać. Ręczna lista
+sprawdziłaby to, o czym pamiętałem w dniu pisania testu, a pytanie brzmi odwrotnie: czy backfill
+objął **wszystkie**. Test porównuje przy okazji dwa źródła prawdy — zbiór modeli z `workspaceId`
+w schemacie i zbiór `ADD COLUMN` w migracji — bo rozjazdu w tę stronę `check:schema-drift` nie
+złapie. Rozróżnia też **lukę** (właściciel ma przestrzeń, kolumna pusta → awaria) od **sieroty**
+(właściciel przestrzeni nie ma, np. konto usunięte → liczba do raportu). Kontrola negatywna:
+wyzerowanie kolumny na jednym rekordzie świeci test na czerwono, więc wiadomo, że mierzy.
+
+**Zgodność SQL-a z TypeScriptem sprawdzona wprost:** `reconcileWorkspaces()` uruchomiony po
+backfillu zwrócił `{0, 0, 0}` — obie implementacje tej samej reguły rozumieją ją identycznie.
+
+#### Pozostałe trzy etapy zadania 11 — co obejmuje każdy
+
+| Etap | Zakres | Dlaczego osobno |
+|------|--------|-----------------|
+| **2** | Utrzymywanie `workspaceId` dla **nowych** rekordów: każda ścieżka zapisu ustawia kolumnę razem z `ownerId`/`ownerTeamId` | Dotyka **każdej** akcji tworzącej zasób. Etap 1 był jednorazowy i odwracalny przez `DROP COLUMN`; ten wchodzi w kod aplikacji |
+| **3** | Przełączenie **odczytów**: `ResourceFacts` dostaje `workspaceId`, kroki 1–2 rozstrzygania w `platform/sharing/access.ts` czytają przestrzeń zamiast pary właścicieli; zakresy list idą po `workspaceId` | To jest moment zmiany zachowania. Wymaga **tabeli prawdy przed i po**, tak jak 052 — porównania komórka po komórce |
+| **4** | `NOT NULL` + rozstrzygnięcie losu sierot; usunięcie `ownerId`/`ownerTeamId` z odczytów; usunięcie **cichych wariantów lustra** z 051 | Nieodwracalne. Wolno dopiero, gdy etap 3 działa na produkcji i liczba sierot jest znana i wyzerowana |
+
+Etap 3 jest tym, który wprowadza pierwszego czytelnika przestrzeni — a więc dopiero on zdejmuje
+dług zapisany w 051 i przypomniany w 049: ciche warianty `mirrorTeamWorkspace`/
+`mirrorPersonalWorkspace` mają wtedy zniknąć, bo rozjazd lustra przestanie być niewidoczny.
+
+**Jedyna rzecz, która wyszła poza bazę — i to nie z wyboru.** Przebieg miał nie tknąć kodu
+aplikacji i prawie się to udało: `next build` padł na `TagsManager`, gdzie podgląd etykiety
+**jeszcze nieistniejącej w bazie** buduje się z literału obiektowego, a `TagChip` deklarował
+`tag: Tag`. Kolumna dołożona do modelu weszła do wygenerowanego typu i literał przestał go
+spełniać. „Zmiana tylko w schemacie" nie istnieje, dopóki typy Prismy są propsami komponentów.
+Poprawka zwęża propsa do `Pick<Tag, "name" | "color">` zamiast dopisywać `workspaceId: null` —
+komponent rysujący dwa pola nie ma powodu wymagać kompletu kolumn tabeli, a dopisanie pola
+wróciłoby przy każdej następnej kolumnie, w tym w etapie 4. Kryterium AC-4 zostało z tego powodu
+skorygowane w specu (C-54): mierzy **zachowanie aplikacji**, nie nietykalność sygnatur.
+
+**Bramki:** build **exit 0**, `test:unit` **683/683**, liczniki **160 / 551 / 35 / 35** bez ruchu,
+`check:schema-drift` zielony (schemat = katalog migracji), `git diff` **bez ani jednego pliku**
+w `src/app/`, `src/components/` i `src/actions/`; w `src/` poza testem wyłącznie dwa pliki
+powyższej poprawki typu.
