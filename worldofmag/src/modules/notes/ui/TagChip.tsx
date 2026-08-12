@@ -4,7 +4,15 @@ import { X } from "lucide-react";
 import type { Tag } from "@/types";
 
 interface TagChipProps {
-  tag: Tag;
+  /**
+   * 054: **tylko to, co chip rysuje** — nie cały model `Tag`.
+   *
+   * Wcześniej było `tag: Tag`, więc dołożenie `workspaceId` do modelu wywaliło build na
+   * `TagsManager`, gdzie podgląd nowej etykiety buduje się z literału obiektowego. Komponent
+   * czytający dwa pola nie ma powodu wymagać kompletu kolumn tabeli: każda przyszła kolumna
+   * (a etap 4 zmieni `workspaceId` na wymagane) łamałaby ten sam literał od nowa.
+   */
+  tag: Pick<Tag, "name" | "color">;
   onRemove?: () => void;
   onClick?: () => void;
   active?: boolean;

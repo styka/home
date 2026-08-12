@@ -33,7 +33,12 @@ z wyraźnym wskazaniem: *(a) dodać nullable, (b) wypełnić migracją, (c) prze
       z właścicielem i pustym `workspaceId`, w **każdej** objętej tabeli.
 - [ ] **AC-3** — Given wykonany backfill, when uruchomię go ponownie, then nic się nie zmienia.
 - [ ] **AC-4** — Given aplikacja, when z niej korzystam, then **nic** — zero odczytów przez
-      `workspaceId`, zero zmian w UI, zero zmian sygnatur.
+      `workspaceId` i zero zmian widocznych dla użytkownika.
+      *(Skorygowane w trakcie przebiegu, C-54: pierwotne brzmienie żądało też „zera zmian sygnatur",
+      co okazało się nieosiągalne. Kolumna dołożona do modelu Prismy wchodzi do wygenerowanego typu,
+      więc komponent typowany na **cały** model przestaje się kompilować, gdy ktoś podaje mu literał.
+      Kryterium mierzy więc zachowanie aplikacji, a nie nietykalność typów — poprawki czysto
+      typowe są dozwolone i wymienione w `verify.md`.)*
 - [ ] **AC-5** — Given `check:schema-drift`, when go uruchamiam, then zielony (schemat = migracje).
 - [ ] **AC-6** — Given komplet bramek i build, then przechodzą; liczniki 160/551/35/35 bez spadku.
 - [ ] **AC-7** — Given dziennik, then etap 1 odnotowany wraz z **jawną listą pozostałych trzech

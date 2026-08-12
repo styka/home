@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-12 — Kolumna w Prismie łamie komponent typowany na CAŁY model
+**Problem:** Migracja 054 dokładała `workspaceId` do 45 modeli — zmiana wyłącznie w bazie, bez
+jednej linii w kodzie aplikacji. `next build` padł mimo to: `TagChip` deklarował `tag: Tag`, a
+`TagsManager` rysuje podgląd etykiety, **której jeszcze nie ma w bazie**, więc podaje literał
+obiektowy. Nowa kolumna weszła do wygenerowanego typu i literał przestał go spełniać.
+Wcześniejsze bramki tego nie złapały: build odpala `tsc --noEmit -p tsconfig.test.json` (typy
+TESTÓW), a typy aplikacji sprawdza dopiero `next build` — czyli najdroższy krok całego łańcucha.
+**Rozwiązanie:** Zamiast dopisać `workspaceId: null` do literału, zwężono propsa do
+`Pick<Tag, "name" | "color">` — komponent czytający dwa pola nie ma powodu wymagać kompletu kolumn
+tabeli. Dopisanie pola załatałoby jedno wystąpienie i wróciłoby przy każdej następnej kolumnie
+(w tym w etapie 4, gdy `workspaceId` stanie się wymagane).
+**Lekcja:** Dwie rzeczy. (1) **„Zmiana tylko w schemacie" nie istnieje**, dopóki typy Prismy są
+propsami komponentów — planując migrację kolumny, policz na to, że coś się nie skompiluje.
+(2) Przed uruchomieniem pełnego builda odpal `npx tsc --noEmit` (czyli `npm run typecheck`) —
+łańcuch bramek go NIE zawiera, a wywala się na tym samym błędzie kilka minut później.
+
 ## 2026-08-12 — Ręcznie pisany SQL musi sam uwzględnić `@@map`
 **Problem:** Migracja 0227 dokładała `workspaceId` do 45 tabel: instrukcje `ADD COLUMN` wygenerowała
 Prisma, a 73 `UPDATE`-y backfillu pisałem ręcznie — po nazwach **modeli**. Migracja padła na
