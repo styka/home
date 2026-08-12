@@ -32,7 +32,7 @@
 
 ## Faza A — Punkt odniesienia (warunek wstępny całej reszty)
 
-- [ ] **T-1** — **Tabela prawdy DZISIEJSZEGO zachowania.**
+- [x] **T-1** — **Tabela prawdy DZISIEJSZEGO zachowania.**
       Test integracyjny budujący macierz **(relacja użytkownika do zasobu) × (operacja)** i zapisujący
       decyzje `assertProjectAccess` / `assertTaskAccess` do `specs/052…/baseline-dostep.json`.
       Relacje (min. 7): właściciel projektu · członek `MEMBER` · członek `ADMIN` · obcy ·
