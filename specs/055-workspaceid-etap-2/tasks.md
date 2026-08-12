@@ -32,7 +32,7 @@ niezależne od siebie, ale oba wymagają zastosowanej migracji z T-2.
       z migracji (kontrola negatywna — bramka, której nie widziało się czerwonej, jest zdaniem
       o intencji).
 
-- [ ] **T-4 [P]** — Test zachowania `workspaceFill.integration.test.ts`.
+- [x] **T-4 [P]** — Test zachowania `workspaceFill.integration.test.ts`.
       Pięć przypadków: właściciel osobisty → jego przestrzeń · zespół → przestrzeń zespołu ·
       obie kolumny → wygrywa osobista · właściciel bez przestrzeni → `NULL` i **`create` nie rzuca** ·
       `workspaceId` podany wprost → nie nadpisany. Rekordy tworzone **przez Prismę**, własny fixture,
