@@ -63,7 +63,13 @@ BEGIN
 
   RETURN NEW;
 END;
-$omnia$ LANGUAGE plpgsql;
+$omnia$ LANGUAGE plpgsql
+-- Ustalony `search_path` — zalecenie dokumentacji PostgreSQL dla funkcji wyzwalaczy. Bez niego
+-- niekwalifikowane `"Workspace"` rozwiązuje się wg ścieżki WOŁAJĄCEGO, więc połączenie z innym
+-- `search_path` (np. narzędzie stawiające tabele w osobnym schemacie) czytałoby cudzą tabelę.
+-- Funkcja jest SECURITY INVOKER, więc to nie jest podniesienie uprawnień — ale byłaby to cicha,
+-- trudna do wyśledzenia zła odpowiedź.
+SET search_path = public, pg_temp;
 
 -- ═══ WYZWALACZE — jawna lista 45 tabel objętych migracją 0227 ═══
 --

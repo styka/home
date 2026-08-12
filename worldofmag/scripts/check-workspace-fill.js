@@ -54,11 +54,13 @@ function objeteTabele(schemat) {
  */
 function tabeleZWyzwalaczem() {
   const znalezione = new Set();
-  for (const dir of fs.readdirSync(migrationsDir)) {
+  // Migracje idą w kolejności numerów, bo późniejsza może wyzwalacz USUNĄĆ. Bez sortowania
+  // kolejność zależałaby od systemu plików.
+  for (const dir of fs.readdirSync(migrationsDir).sort()) {
     const plik = path.join(migrationsDir, dir, "migration.sql");
     if (!fs.existsSync(plik)) continue;
     const sql = fs.readFileSync(plik, "utf8");
-    if (!/omnia_fill_workspace/.test(sql)) continue;
+    if (!/omnia_fill_workspace|DROP\s+TRIGGER/i.test(sql)) continue;
 
     // Forma 1: jawna lista nazw w tablicy pętli DO.
     const petla = sql.match(/FOREACH\s+\w+\s+IN\s+ARRAY\s+ARRAY\[([\s\S]*?)\]/);
@@ -68,6 +70,14 @@ function tabeleZWyzwalaczem() {
     // Forma 2: wyzwalacz napisany wprost.
     for (const t of sql.matchAll(/CREATE\s+TRIGGER\s+\S+\s+BEFORE\s+INSERT\s+ON\s+"([^"]+)"/gi)) {
       znalezione.add(t[1]);
+    }
+    // Zdjęcie wyzwalacza w PÓŹNIEJSZEJ migracji. Bez tego bramka zliczałaby założenie z 0228
+    // i świeciła na zielono jeszcze długo po tym, jak wyzwalacz przestał istnieć — czyli byłaby
+    // najcichsza dokładnie w chwili, gdy mechanizm przestaje działać.
+    // W 0228 `DROP TRIGGER IF EXISTS` idzie przez `format(%I)`, więc nie ma tam nazwy tabeli
+    // w cudzysłowie i ten wzorzec go nie łapie — celowo, bo tamten DROP służy idempotencji.
+    for (const t of sql.matchAll(/DROP\s+TRIGGER\s+(?:IF\s+EXISTS\s+)?\S+\s+ON\s+"([^"]+)"/gi)) {
+      znalezione.delete(t[1]);
     }
   }
   return znalezione;

@@ -84,6 +84,22 @@ test(
         await prisma.user.delete({ where: { id: bezPrzestrzeni.id } });
       });
 
+      await t.test("`createMany` — każdy wiersz z osobna dostaje przestrzeń", async () => {
+        // `create` to nie jedyna ścieżka zapisu w repo. Wyzwalacz jest `FOR EACH ROW`, więc
+        // powinien objąć każdy wiersz wsadu — ale „powinien" to przewidywanie, a nie sprawdzenie.
+        const tytuly = [`m1-${rnd()}`, `m2-${rnd()}`, `m3-${rnd()}`];
+        await prisma.note.createMany({
+          data: tytuly.map((title) => ({ title, content: "", ownerId: uzytkownik.id })),
+        });
+        const wsad = await prisma.note.findMany({
+          where: { title: { in: tytuly } },
+          select: { id: true, workspaceId: true },
+        });
+        utworzone.push(...wsad.map((n) => n.id));
+        assert.equal(wsad.length, 3);
+        for (const n of wsad) assert.equal(n.workspaceId, przestrzenOsobista?.id);
+      });
+
       await t.test("przestrzeń podana wprost NIE jest nadpisywana", async () => {
         // Etap 3 i migracje danych muszą móc ustawić przestrzeń same — wyzwalacz uzupełnia brak,
         // a nie narzuca wartość.
