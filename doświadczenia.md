@@ -4,6 +4,32 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-12 — `React.cache` poza kontekstem żądania nie degraduje się, tylko rzuca
+**Problem:** Cache per żądanie dla sprawdzania dostępu oparliśmy na `React.cache`, zakładając (i tak
+zapisując w planie), że poza kontekstem żądania „degraduje się do zwykłego wywołania". Nieprawda:
+w środowisku bez runtime'u Reacta `cache` **nie jest nawet funkcją** i pierwsze wywołanie kończy się
+`(0 , import_react.cache) is not a function`. Ponieważ `requireAccess` siedzi na ścieżce każdego
+sprawdzenia dostępu, oznaczałoby to wywalenie **każdego zadania w tle i każdego skryptu**.
+**Rozwiązanie:** Degradacja napisana wprost: `perRequest(fn)` używa `React.cache`, gdy ta istnieje,
+a w przeciwnym razie zwraca funkcję niezmienioną. Wyszło przy pierwszym uruchomieniu testu tabeli
+prawdy — czyli dokładnie tam, gdzie plan wymagał sprawdzenia zachowania POZA żądaniem.
+**Lekcja:** „Degraduje się łagodnie" jest **założeniem, nie właściwością** — dopóki nie zobaczysz go
+na czerwono, jest zdaniem o tym, jak chciałbyś, żeby biblioteka działała. Reguła praktyczna: jeśli
+mechanizm ma działać w dwóch środowiskach (żądanie i skrypt/zadanie w tle), test musi go uruchomić
+w **obu**, a nie tylko w tym, w którym i tak nic by się nie stało.
+
+## 2026-08-12 — Opcjonalny identyfikator w guardzie = ciche wracanie do starej reguły
+**Problem:** Przełączając `assertTaskAccess` na wspólne sprawdzanie dostępu, dałem nowej sygnaturze
+`id?: string` z fallbackiem do starej logiki „gdy brak identyfikatora". Wyglądało to na ostrożność,
+a było **dziurą w migracji**: każdy wołający, którego `select` nie pobiera `id` (a takich się nie
+widzi — kompilator ich nie zgłasza), po cichu jechałby starą regułą i nowy mechanizm nigdy by się
+tam nie uruchomił. Nie objawiłoby się to niczym, dopóki obie reguły dają ten sam wynik.
+**Rozwiązanie:** `id` **wymagane** w typie. Kompilator natychmiast wskazał jedno takie miejsce
+(`reorderTask` z `select` bez `id`), które inaczej zostałoby na starej ścieżce.
+**Lekcja:** Przy przełączaniu mechanizmu **fallback do starego zachowania jest wrogiem, nie siatką
+bezpieczeństwa** — zamienia niekompletną migrację w stan nierozróżnialny od kompletnej. Jeśli nowa
+ścieżka czegoś wymaga, wymagaj tego w typie i pozwól kompilatorowi wypisać listę miejsc do poprawy.
+
 ## 2026-08-12 — `migrate diff` dopisany do migracji bez czytania skasował indeksy z surowego SQL-a
 **Problem:** Migrację nowych tabel wygenerowałem przez
 `prisma migrate diff --from-migrations … --to-schema-datamodel` i **dopisałem jej wyjście do pliku

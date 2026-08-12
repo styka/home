@@ -2,7 +2,10 @@ import { getProjectGroups, getTaskTags } from "../contract";
 import { technicalToLabel } from "@/platform/ai/humanize";
 import { describeRecurringRule, parseRecurringRule } from "@/lib/recurrence";
 import { prisma } from "@/platform/db/prisma";
-import { HARD_MAX, clampLimit, asStr, accessibleProjectIds, resolveIdOrName, resolveProjectRef } from "@/lib/ai/readToolShared";
+import { HARD_MAX, clampLimit, asStr, resolveIdOrName, resolveProjectRef } from "@/lib/ai/readToolShared";
+// 052 (rozdz. 9.6): zakres list i sprawdzanie pojedynczego zasobu pochodzą z JEDNEGO miejsca
+// w module — inaczej lista i guard rozjadą się przy pierwszej zmianie reguły.
+import { accessibleProjectIds, requireTaskModuleAccess } from "../lib/sharingGuard";
 import type { AiReadToolHandler } from "@/platform/ai/contribution";
 
 /**
@@ -137,6 +140,12 @@ export const readTools: Record<string, AiReadToolHandler> = {
               )
           )
         : undefined;
+      // 052/AC-9: zanim cokolwiek zwrócimy, o dostęp pyta WSPÓLNY mechanizm — ten sam, który
+      // decyduje przy zapisie. Zawężenie `access` niżej zostaje jako druga warstwa (obrona w głąb
+      // dla wyszukiwania po tytule), ale to nie ono jest tu źródłem decyzji.
+      if (resolvedTaskId) {
+        await requireTaskModuleAccess(userId, { type: "tasks.task", id: resolvedTaskId }, "task.read");
+      }
       const task = await prisma.task.findFirst({
         where: resolvedTaskId
           ? { id: resolvedTaskId, ...access }

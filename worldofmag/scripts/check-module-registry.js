@@ -223,6 +223,40 @@ for (const id of wpieteWkladyPulpitu) {
   }
 }
 
+// ─── 6c. Deklaracja zasobow wpieta w swoj korzen — W OBIE STRONY (052) ────────────
+//
+// Jak przy wkladzie pulpitu: deklaracja zasobow ma wlasny korzen kompozycji
+// (`src/lib/sharingResources.ts`), bo wspolny obiekt leniwych loaderow jest plikiem zbiorczym.
+// Cena tej decyzji — wpiecia nie widac w deklaracji modulu — jest tu splacona bramka.
+//
+// Stawka jest wyzsza niz przy pulpicie: niewpieta deklaracja zasobow nie objawia sie brakiem
+// danych, tylko ODMOWA DOSTEPU, czyli najbardziej mylacym z mozliwych objawow.
+const sharingRootPath = path.join(root, "src/lib/sharingResources.ts");
+const sharingRoot = fs.existsSync(sharingRootPath) ? fs.readFileSync(sharingRootPath, "utf8") : "";
+const wpieteZasoby = new Set(
+  [...sharingRoot.matchAll(/import\(["']@\/modules\/([^/"']+)\/sharing["']\)/g)].map((m) => m[1]),
+);
+const majaZasoby = new Set(
+  [...ids.keys()].filter((id) => fs.existsSync(path.join(modulesDir, id, "sharing.ts"))),
+);
+for (const id of majaZasoby) {
+  if (!wpieteZasoby.has(id)) {
+    errors.push(
+      `src/modules/${id}/sharing.ts nie jest wpiety w src/lib/sharingResources.ts.\n` +
+        "    Deklaracja zasobow istnieje na dysku i NIE istnieje w aplikacji \u2014 a objawi sie to\n" +
+        "    ODMOWA DOSTEPU do zasobow tego modulu, nie brakiem danych.",
+    );
+  }
+}
+for (const id of wpieteZasoby) {
+  if (!majaZasoby.has(id)) {
+    errors.push(
+      `src/lib/sharingResources.ts wpina \u201e${id}", ale src/modules/${id}/sharing.ts nie istnieje.\n` +
+        "    Leniwy import wskazujacy w prozanie wywali sie przy pierwszym sprawdzeniu dostepu.",
+    );
+  }
+}
+
 // ─── 7. Trasa pulpitu nie opisuje modułów „po staremu" (050, AC-9) ─────────────────────
 //
 // Do 050 `src/app/page.tsx` importowało osiem kontraktów modułów i miało dziesięć gałęzi na
