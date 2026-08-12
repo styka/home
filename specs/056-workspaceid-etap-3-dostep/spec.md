@@ -50,9 +50,13 @@ przebieg robi **(1)**.
 - [ ] **AC-3** — Given tabela prawdy (relacja × operacja), when policzę ją po zmianie, then jest
       **identyczna** z punktem odniesienia z 052/053 **z wyjątkiem komórek wymienionych w §5**,
       a każda różnica jest w tym specu nazwana **przed** przełączeniem.
-- [ ] **AC-4** — Given zasób z pustym `workspaceId` (sierota — właściciel bez przestrzeni),
-      when pytam o dostęp, then rozstrzygnięcie **nie wywala się** i nie przyznaje dostępu komuś,
-      kto nie miałby go dotąd.
+- [ ] **AC-4** — Given zasób **bez własnej przestrzeni**, when pytam o dostęp, then rozstrzygnięcie
+      działa **dokładnie jak dotąd** (para `ownerId`/`ownerTeamId`): właściciel ma dostęp, obcy nie.
+      Dotyczy to **dwóch** przypadków — sieroty (właściciel nie miał przestrzeni w chwili backfillu)
+      oraz zasobu, którego własność jest **wyprowadzona**, więc kolumny nie ma i mieć nie będzie.
+      *(Doprecyzowane na etapie planowania, C-54: `Task` nie jest wśród 45 modeli objętych migracją
+      0227, bo nie ma `ownerId` — własność zadania idzie przez `createdById` albo przez projekt.
+      Gałąź „bez przestrzeni" nie jest więc wyłącznie przejściowa i nie zniknie w etapie 4.)*
 - [ ] **AC-5** — Given liczba zapytań na jedno rozstrzygnięcie, then **nie rośnie** względem stanu
       dzisiejszego (istnieje na to test z 052).
 - [ ] **AC-6** — Given komplet bramek i build, then przechodzą; liczniki **160 / 551 / 35 / 35**
@@ -80,8 +84,9 @@ Wszystko poza tą komórką ma zostać **bez ruchu**.
 ## 6. Zakres
 
 **W zakresie:** `ResourceFacts` niesie `workspaceId`; krok „własność" w rozstrzyganiu czyta
-przestrzeń; kontekst dostępu niesie to, co do tego potrzebne, czytane **razem z resztą** (bez
-nowego zapytania); tabela prawdy przeliczona i porównana; deklaracja zasobów Zadań dostosowana.
+przestrzeń **gdy jest**, a gdy jej nie ma — parę kolumn jak dotąd (AC-4); kontekst dostępu niesie
+to, co do tego potrzebne, czytane **razem z resztą** (bez nowego zapytania); tabela prawdy
+przeliczona i porównana; deklaracja zasobów Zadań dostosowana.
 
 **Poza zakresem:** **zakresy list** — `OR: [{ownerId}, {ownerTeamId}]` w zapytaniach modułów
 (etap 3B, osobny przebieg); **przeniesienie zasobu między przestrzeniami** przy zmianie właściciela
