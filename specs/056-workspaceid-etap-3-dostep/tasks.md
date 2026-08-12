@@ -27,11 +27,17 @@ bramką merytoryczną — dopóki nie zgadza się z punktem odniesienia, reszta 
 
 ## Faza 3 — dowód
 
-- [x] **T-4** — Tabela prawdy: 25 komórek bez ruchu, dwa nowe wiersze.
-      Nowe wiersze: **właściciel zespołu bez wiersza `TeamMember`** (świadoma zmiana ze speca §5)
-      i **zasób bez przestrzeni** (AC-4). Punkt odniesienia zostaje w katalogu 052.
-      *Gotowe, gdy:* test zielony, a `git diff` na `baseline-dostep.json` pokazuje **wyłącznie
-      dopisane wiersze** — ani jednej zmienionej wartości wśród starych 25.
+- [x] **T-4** — Tabela prawdy: 24 komórki bez ruchu, jedna zmieniona, nowy wiersz i kolumna.
+      *(Skorygowane w trakcie, C-54: pierwotne brzmienie zakładało, że przypadek „właściciel zespołu
+      bez wiersza `TeamMember`" trzeba **dopisać** jako nowy wiersz. Nieprawda — macierz już go
+      zawierała, bo `wlasciciel` jest w fixture właścicielem zespołu i nie ma wiersza członkostwa.
+      Świadoma zmiana ze speca §5 objawiła się więc jako **jedna zmieniona wartość** wśród
+      dotychczasowych 25, a nie jako nowy wiersz. To lepszy dowód: zmiana wyszła tam, gdzie tabela
+      już patrzyła.)*
+      Dochodzą: kolumna **„projekt bez przestrzeni (sierota)"** i wiersz **„wlasciciel bez
+      przestrzeni"** (AC-4). Punkt odniesienia zostaje w katalogu 052.
+      *Gotowe, gdy:* test zielony, a `diff` punktu odniesienia pokazuje **dokładnie jedną** zmienioną
+      wartość — tę ze speca §5 — i nic poza tym prócz dopisanych pozycji.
 
 - [x] **T-5** — Licznik zapytań bez wzrostu.
       `queryCount.integration.test.ts` — liczby bez zmian.

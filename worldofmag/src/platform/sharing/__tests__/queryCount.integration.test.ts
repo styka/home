@@ -36,7 +36,19 @@ test(
     // Mierzymy SZPIEGAMI na metodach klienta, którego mierzony kod faktycznie używa. Osobny
     // `PrismaClient` z nasłuchem `$on("query")` byłby wygodniejszy, ale liczyłby zapytania, których
     // `requireAccess` nie wykonuje — czyli dawałby pomiar czegoś innego niż mierzona ścieżka.
-    const ctx = { teamIds: [], adminTeamIds: [], workspaceIds: [] };
+    /**
+     * 056: kontekst budowany RĘCZNIE, bo ten test mierzy liczbę zapytań i nie może ich sam dokładać
+     * przez `getAccessContext`. Pusty `personalWorkspaceId` znaczy „ten użytkownik nie ma
+     * przestrzeni", więc rozstrzyganie idzie gałęzią awaryjną na `ownerId` — a mierzony koszt
+     * dotyczy kroków 1–3, które są w obu gałęziach te same.
+     */
+    const ctx = {
+      teamIds: [],
+      adminTeamIds: [],
+      workspaceIds: [],
+      personalWorkspaceId: null,
+      workspaceRoles: {},
+    };
 
     try {
 
