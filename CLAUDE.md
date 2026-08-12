@@ -506,6 +506,8 @@ AuditLog                                      — Audit trail for RBAC + config 
 TrashItem                                     — Soft-delete recovery (JSON entity snapshot + retention days; surfaced at /trash)
 DriveConnection, DriveFile                    — Google Drive integration (per-user OAuth drive.file tokens + uploaded-file registry; module folder map)
 Contact                                       — Contacts / personal CRM (per-user; tags = JSON)
+Workspace, WorkspaceMember                    — 051 (Faza 2, zadanie 9): PRZESTRZEŃ, w której żyje zasób (`kind` personal|team). Dziś **lustro** `Team`/`TeamMember`, nie zamiennik — odczyty nadal idą przez `ownerId`/`ownerTeamId`. `personalUserId`/`teamId` (oba nullable+unique) łączą przestrzeń ze źródłem: w PostgreSQL NULL-e w indeksie unikalnym są różne, więc jeden indeks daje niezmiennik „dokładnie jedna przestrzeń osobista na użytkownika". Kasowanie = kaskada FK
+ResourceGrant, ResourceInvitation             — 051: nadanie dostępu do JEDNEGO zasobu + zaproszenie. **Tabele bez konsumenta do zadań 10/12** — świadomie, żeby nie robić dwóch migracji na tych samych tabelach. Nie kasować „w ramach porządków". Znane ograniczenie: `@@unique` nie łapie nadań linkowych (`subjectId: NULL`), poprawka w zadaniu 12
 ShoppingList, Item, ItemHistory               — Shopping core
 Product, Category, Unit, CategoryIconVariant  — Shopping config
 Store, StoreNode, StoreEdge                   — Store maps (graph)
@@ -913,6 +915,13 @@ the table/paragraph merge).
   … is invalid" and then exits 0** — a typo in `.eslintrc.json` silently disables the boundary rule
   while the build stays green. A rule that is too *wide* is checked as well: it would be worked around
   rather than obeyed.
+- **`check-workspace-mirror.js`** (also `npm run check:workspace-mirror`) — 051: through the Phase-2
+  transition, `Team`/`TeamMember` stay the **source of truth** and `Workspace` is their **mirror**, so
+  every file mutating a team must import `@/platform/workspaces/sync` (or carry a reasoned entry in
+  `src/platform/workspaces/mirror-coverage.json`; dead entries fail too). It exists because a missed
+  reconcile **shows no symptom** — nothing reads workspaces yet, so the bug would only surface at
+  task 11, when reads switch to `workspaceId`. Today exactly two files mutate teams
+  (`actions/teams.ts`, `actions/invitations.ts`); the gate is there for the third.
 - **`check-module-registry.js`** (also `npm run check:module-registry`) — 046: every directory in
   `src/modules/` must have `contract.ts` and a complete `defineModule` declaration in `module.ts`,
   with a unique id, **and be imported by the composition root** `src/lib/modules.tsx`. Without the

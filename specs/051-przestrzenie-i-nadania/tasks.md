@@ -1,7 +1,7 @@
 # Zadania: Przestrzenie i nadania — fundament danych pod współdzielenie
 
 - **Plan:** ./plan.md (051-przestrzenie-i-nadania)
-- **Status:** todo
+- **Status:** zrobione
 - **Data:** 2026-08-12
 
 > **Zasada nadrzędna tego przebiegu:** **niewidzialność jest kryterium jakości.** Każde zadanie musi
@@ -101,7 +101,7 @@
       **Gotowe, gdy:** wszystko zielone, cztery liczniki **bez ruchu** (160/551/35/35), a
       `git diff --stat` **nie pokazuje ani jednego pliku** w `src/app/` i `src/components/` — to
       jest maszynowy dowód na AC-9. **(AC-9, AC-10)**
-- [ ] **T-9** — **Dokumentacja otwarcia Fazy 2:** `CLAUDE.md` (cztery nowe modele w sekcji schematu),
+- [x] **T-9** — **Dokumentacja otwarcia Fazy 2:** `CLAUDE.md` (cztery nowe modele w sekcji schematu),
       `constitution.md` (reguła: kto mutuje zespół, uzgadnia przestrzeń), rozdz. 15 dziennika —
       **Faza 2 otwarta, zadanie 9 zrobione**, następny krok = zadanie 10, wraz z **dwiema rzeczami
       świadomie zostawionymi**: tabele nadań bez konsumenta i unikalność nadań linkowych.

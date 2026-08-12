@@ -40,8 +40,13 @@ dodać moduł?* → **jeden katalog plus wpięcie w korzeń kompozycji.** Nie je
 chęci: `check:module-registry` ma dziś **osiem kontroli** i wywala build, gdy moduł opisze się poza
 swoim katalogiem — łącznie z trasą pulpitu.
 
-**Następny krok: Faza 2 — współdzielenie i współbieżność**, zadanie 9: modele `Workspace`,
-`WorkspaceMember`, `ResourceGrant`, `ResourceInvitation`.
+**FAZA 2 JEST OTWARTA.** 051 dowiozło zadanie 9: cztery modele fundamentu współdzielenia
+(`Workspace`, `WorkspaceMember`, `ResourceGrant`, `ResourceInvitation`) **wraz z danymi** — każdy
+istniejący zespół i każde konto ma już swoją przestrzeń. Aplikacja nadal liczy dostęp przez
+`ownerId`/`ownerTeamId`; przestrzenie są na razie **lustrem, nie zamiennikiem**.
+
+**Następny krok: zadanie 10** — `platform/sharing` z `requireAccess`, dziedziczeniem nadań i cache
+per żądanie (rozdz. 8.9). Dopiero ono daje przestrzeniom pierwszego czytelnika.
 
 ---
 
@@ -71,7 +76,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
-| 9 | Modele `Workspace`, `WorkspaceMember`, `ResourceGrant`, `ResourceInvitation` | ⬜ | |
+| 9 | Modele `Workspace`, `WorkspaceMember`, `ResourceGrant`, `ResourceInvitation` | ✅ | **051.** Cztery modele + migracja 0226 **z backfillem** (rozdz. 8.10 kroki 1–2): przestrzeń osobista na konto, zespołowa na zespół wraz ze składem. Lustro utrzymywane w przód (`platform/workspaces`), pilnowane bramką `check:workspace-mirror` i testem z testem negatywnym. Zero przełączonych odczytów |
 | 10 | `platform/sharing` — `requireAccess`, dziedziczenie, cache | ⬜ | |
 | 11 | Migracja `ownerId`/`ownerTeamId` → `workspaceId` na 46 modelach | ⬜ | **Najgroźniejsze zadanie całej przebudowy** |
 | 12 | Migracja `TaskProjectMember`/`TaskShare`/`PetShare` → `ResourceGrant` | ⬜ | |
@@ -672,3 +677,89 @@ w kompozycji z zapisanym powodem.
 `ResourceInvitation`. Do zabrania z Fazy 1: **read-toole asystenta wciąż nie przechodzą przez
 `requireAccess`** (rozdz. 9.6) — wykonalne dopiero po zadaniu 10, i przy zasobach współdzielonych
 przestaje to być teoretyczne.
+
+---
+
+### 051 — Faza 2 OTWARTA: przestrzenie i nadania (zadanie 9) · 2026-08-12
+
+**Zakres:** fundament danych pod współdzielenie — cztery modele z rozdz. 8.3 **wypełnione danymi**,
+przy zerowej zmianie zachowania aplikacji. **Artefakty:** `specs/051-przestrzenie-i-nadania/`.
+
+**Dlaczego samo dodanie tabel by nie wystarczyło**
+
+Puste tabele niczego nie dowodzą i niczego nie zabezpieczają. Dlatego migracja 0226 robi dwie rzeczy
+naraz: tworzy tabele **i** wypełnia je z istniejących zespołów oraz kont. Backfill jest **w migracji,
+nie w seedzie** — seed nie odpala się automatycznie po wdrożeniu, więc niezmiennik „każde konto ma
+przestrzeń osobistą" wszedłby w życie dopiero wtedy, gdyby ktoś pamiętał go uruchomić.
+
+**Dwa pola, których nie ma w szkicu rozdz. 8.3 — i bez których nic by nie działało**
+
+`Workspace.personalUserId` i `Workspace.teamId`, oba nullowalne i **unikalne**. Dokument nie mówi,
+czym przestrzeń jest połączona ze swoim źródłem, a bez tego połączenia trzy kryteria akceptacji są
+niewykonalne: powtórzenie backfillu nie ma na czym oprzeć `ON CONFLICT`, zmiana składu zespołu nie ma
+jak odnaleźć jego przestrzeni, a „dokładnie jedna przestrzeń osobista" zostaje obietnicą zamiast
+więzem bazy. W PostgreSQL wartości `NULL` są w indeksie unikalnym traktowane jako różne, więc **jeden
+indeks daje dwa niezmienniki naraz** i nie przeszkadza drugiemu rodzajowi przestrzeni. Kasowanie
+lustra robi kaskada klucza obcego — ani jednej linijki kodu aplikacji.
+
+**Najbardziej prawdopodobny cichy błąd, wypatrzony przed napisaniem kodu**
+
+`Team.ownerId` jest **niezależny** od tabeli `TeamMember` — nic nie wymusza, żeby właściciel miał tam
+wiersz. Odwzorowanie „po członkach" wygląda przy tym na kompletne i po cichu gubi właściciela.
+Dlatego właściciel dochodzi **osobnym krokiem, po członkach**, przez `DO UPDATE` (żeby wygrał
+z ewentualnym wierszem `member`) — i ma własny przypadek testowy oraz własny fixture.
+
+**Uzgadnianie JEST detektorem rozjazdu**
+
+Przez okres przejściowy ta sama informacja mieszka w dwóch miejscach, a rozjazd **nie objawia się
+niczym**, bo nic przestrzeni jeszcze nie czyta — wyszedłby dopiero przy zadaniu 11. Zamiast pisać
+osobne API „sprawdź, czy jest rozjazd", `reconcileWorkspaces` **zwraca liczbę zmian**: zero przy
+drugim uruchomieniu to jednocześnie dowód idempotencji i dowód spójności. Dwa API byłyby dwiema
+interpretacjami jednej reguły — czyli tym samym problemem, który tu naprawiamy, piętro wyżej.
+
+Weryfikacja krzyżowa, która się opłaciła: `reconcileWorkspaces()` uruchomione na bazie **po backfillu
+SQL** zwróciło `{0,0,0}`. TypeScript i SQL interpretują mapowanie ról identycznie — a to są dwa
+niezależne zapisy tej samej reguły (prod nie wykona kodu TS przy `migrate deploy`).
+
+**Defekt złapany przez testy, nie przez oko — i moja własna pomyłka w diagnozie**
+
+DDL wygenerowałem przez `prisma migrate diff --to-schema-datamodel` i **dopisałem wyjście bez
+przeczytania**. Diff dorzucił `DROP INDEX` na obu indeksach trigramowych wyszukiwania notatek oraz
+trzy `ALTER COLUMN "updatedAt" DROP DEFAULT` na niezwiązanych tabelach — bo te obiekty żyją wyłącznie
+w surowym SQL-u i z punktu widzenia schematu „nie powinny istnieć". Na produkcji objawiłoby się to
+cicho: wyszukiwanie notatek spada na skan sekwencyjny.
+
+Zmyliło mnie to dwa razy. Najpierw wziąłem padające testy `notesFts` za stan lokalnej bazy
+i **odtworzyłem indeksy ręcznie** zamiast szukać przyczyny — po czym zniknęły znowu. Sprawcę pokazał
+dopiero `grep "DROP INDEX" prisma/`: moja własna migracja. Naprawa: pięć instrukcji usunięte,
+w migracji został komentarz wymieniający je **z nazwy** wraz z powodem, a cykl przeliczony od zera
+z jawnym sprawdzeniem, że indeksy migrację **przeżywają**.
+
+**Bramka, która milczała dokładnie tam, gdzie była potrzebna**
+
+`check:schema-drift` tworzy bazę cienia i toleruje wyłącznie błąd „already exists". Rola bez
+`CREATEDB` dostaje jednak „permission denied" **także wtedy, gdy baza cienia istnieje** — więc bramka
+**pomijała całą kontrolę** i kończyła się sukcesem. Poprawka: zamiast ufać treści błędu, sprawdzamy
+stan faktyczny (czy da się połączyć z bazą cienia). Po niej bramka po raz pierwszy realnie ruszyła
+i **to ona wyłapała** `DROP INDEX` opisany wyżej. „Pominięty" nie jest zielony — to brak pomiaru.
+
+**Co zostało świadomie niezrobione**
+
+- **`ResourceGrant` i `ResourceInvitation` nie mają konsumenta** — pierwszy przyjdzie z zadaniami 10
+  i 12. Odstępstwo od zasady „dowozimy razem z konsumentem", przyjęte, bo kształt jest rozstrzygnięty
+  w rozdz. 8.3, a checklista trzyma wszystkie cztery byty w jednym zadaniu: jedna migracja zamiast
+  dwóch na tych samych tabelach. **Nie kasować „w ramach porządków".**
+- **Unikalność nadań linkowych nie działa** (`subjectType: "link"`, `subjectId: NULL`) — ta sama
+  własność PostgreSQL, która wyżej pomaga, tu przeszkadza: `NULL != NULL`, więc dwa nadania linkowe
+  do jednego zasobu przejdą. Poprawka to częściowy indeks w surowym SQL-u; robimy ją w zadaniu 12,
+  gdy będzie wiadomo, czy nadania linkowe w ogóle wchodzą w pierwszej odsłonie.
+- **Zadanie 11** (`workspaceId` na 46 modelach) — rozdz. 8.10 nazywa je najbardziej ryzykownym krokiem
+  całej przebudowy i wymaga czterech osobnych etapów. Ten przebieg nie dotknął ani jednego z nich.
+
+**Bramki:** build **exit 0**, `test:unit` **666/666**, liczniki **160 / 551 / 35 / 35** bez ruchu,
+`check:workspace-mirror` (nowa) zielona, `git diff` **bez ani jednego pliku** w `src/app/`
+i `src/components/` — maszynowy dowód, że przebieg jest dla użytkownika niewidzialny.
+
+**Uwaga procesowa:** pierwsze podejście do tego przebiegu przepadło razem z kontenerem — siedem
+ukończonych zadań istniało wyłącznie w lokalnych commitach. Odtworzone z artefaktów i tej lekcji:
+**push po każdym zadaniu**, nie po całym przebiegu.
