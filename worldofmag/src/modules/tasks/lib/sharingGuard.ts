@@ -1,6 +1,7 @@
 import { requireAccess as requireAccessPlatform } from "@/platform/sharing/access";
 import { getAccessContext } from "@/platform/sharing/cache";
 import type { ResourceRef } from "@/platform/sharing/types";
+import { prisma } from "@/platform/db/prisma";
 import resources from "../sharing";
 
 /**
@@ -25,4 +26,20 @@ export async function requireTaskModuleAccess(
 ): Promise<void> {
   const ctx = await getAccessContext(userId);
   await requireAccessPlatform(userId, ref, operation, resources, ctx);
+}
+
+/**
+ * Identyfikatory projektów, w których użytkownik może działać — **zakres list**.
+ *
+ * Sprawdzanie pojedynczego zasobu i zawężanie listy to dwie różne operacje, ale muszą wynikać
+ * z **tej samej reguły**; trzymamy je więc obok siebie. Gdyby zakres list mieszkał w warstwie AI
+ * (jak przed 052), rozjechałby się z `requireAccess` przy pierwszej zmianie reguły — i objawiłoby
+ * się to listą pokazującą coś, czego nie wolno otworzyć.
+ */
+export async function accessibleProjectIds(userId: string): Promise<string[]> {
+  const projekty = await prisma.taskProject.findMany({
+    where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
+    select: { id: true },
+  });
+  return projekty.map((p) => p.id);
 }

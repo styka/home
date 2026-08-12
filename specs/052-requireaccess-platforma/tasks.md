@@ -91,7 +91,7 @@
       a użytkownik widzi to samo. Z `assertTaskAccess` znika ręczne dziedziczenie.
       **Gotowe, gdy:** test z T-7 nadal zielony, `test:unit` zielony, komunikaty porównane co do
       treści. **(AC-3, AC-4, AC-10)**
-- [ ] **T-9** — **Asystent: `get_task` przez `requireAccess`; zakres list z tej samej deklaracji.**
+- [x] **T-9** — **Asystent: `get_task` przez `requireAccess`; zakres list z tej samej deklaracji.**
       `accessibleProjectIds` przenosi się z `lib/ai/readToolShared.ts` do modułu, żeby lista
       i sprawdzenie nie mogły się rozjechać.
       **Gotowe, gdy:** **test obejścia** (użytkownik B pyta o zadanie użytkownika A po identyfikatorze
