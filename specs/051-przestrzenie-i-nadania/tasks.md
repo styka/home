@@ -76,7 +76,7 @@
 > bramka — czy ktoś w przyszłości go nie ominie. Odwrotna kolejność dałaby bramkę pilnującą
 > mechanizmu, o którym jeszcze nie wiadomo, czy jest poprawny.
 
-- [ ] **T-6** — **Test integracyjny `workspaceMirror.integration.test.ts`.**
+- [x] **T-6** — **Test integracyjny `workspaceMirror.integration.test.ts`.**
       Wzorzec: `accessibleTeamIds.integration.test.ts` (DB-gated przez `HAS_DB`, własny fixture,
       `concurrency: false`). Przypadki: przestrzeń zespołu · **właściciel spoza listy członków**
       (AC-4) · idempotencja · przestrzeń osobista dokładnie jedna · zmiana nazwy · awans członka ·
@@ -87,7 +87,7 @@
       (plan §9).
       **Gotowe, gdy:** `npm run test:unit` zielony, a test **naprawdę widziany na czerwono** po
       podłożeniu awarii w lustrze. **(AC-3, AC-4, AC-5, AC-6, AC-7, AC-8)**
-- [ ] **T-7** — **Bramka `check:workspace-mirror` + wpięcie w `build`.**
+- [x] **T-7** — **Bramka `check:workspace-mirror` + wpięcie w `build`.**
       Wzorzec `check-cost-badge.js`: plik mutujący `Team`/`TeamMember` musi importować
       `@/platform/workspaces/sync` albo mieć **uzasadniony** wyjątek w manifeście. Bramka odrzuca
       też wpisy **martwe** — wyjątek bez powodu z czasem staje się furtką.
