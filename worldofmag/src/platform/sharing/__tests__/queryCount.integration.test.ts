@@ -36,7 +36,7 @@ test(
     // Mierzymy SZPIEGAMI na metodach klienta, którego mierzony kod faktycznie używa. Osobny
     // `PrismaClient` z nasłuchem `$on("query")` byłby wygodniejszy, ale liczyłby zapytania, których
     // `requireAccess` nie wykonuje — czyli dawałby pomiar czegoś innego niż mierzona ścieżka.
-    const ctx = { teamIds: [], workspaceIds: [] };
+    const ctx = { teamIds: [], adminTeamIds: [], workspaceIds: [] };
 
     try {
 

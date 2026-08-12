@@ -30,7 +30,7 @@
   "w zespole, bez czlonkostwa": {
     "projekt: odczyt/edycja zawartosci": "odmowa",
     "projekt: zarzadzanie (ADMIN)": "odmowa",
-    "projekt zespolowy: odczyt/edycja": "odmowa",
+    "projekt zespolowy: odczyt/edycja": "dozwolone",
     "zadanie w projekcie": "odmowa",
     "zadanie bez projektu": "odmowa"
   }
