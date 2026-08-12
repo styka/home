@@ -41,6 +41,9 @@ bo każdy krok czyta wynik poprzedniego (zbiór modeli → DDL → zastosowanie 
 ## Faza 4 — domknięcie
 
 - [x] **T-5** — Bramki, build, dziennik, lekcja.
+      *(W trakcie wyszła poprawka typu: `next build` padł na `TagsManager` — `TagChip` deklarował
+      cały model `Tag`. Props zwężony do `Pick<Tag, "name" | "color">`, AC-4 w specu skorygowane
+      wg C-54, druga lekcja dopisana.)*
       Komplet bramek + `test:unit` + `next lint` + `next build` (lokalny Postgres).
       Dziennik (rozdz. 15): etap 1 **wraz z jawną listą pozostałych trzech etapów** i tym, co
       każdy obejmuje (AC-7). `doświadczenia.md`: lekcja o `@@map` w ręcznie pisanym SQL-u (C-51).

@@ -89,6 +89,33 @@ test("backfill 054: schemat i migracja 0227 obejmują ten sam zbiór tabel", () 
     [],
     `Model z \`workspaceId\`, ale bez \`ownerId\`/\`ownerTeamId\` — backfill nie ma z czego liczyć: ${bezWlasciciela.join(", ")}`,
   );
+
+  // Sama kolumna to za mało: tabela z `ADD COLUMN`, indeksem, ale BEZ instrukcji backfillu przejdzie
+  // sprawdzenie na bazie, dopóki jest pusta — i wyjdzie dopiero na produkcji, gdzie dane są.
+  // Dlatego pokrycie `UPDATE`-ami sprawdzamy statycznie, niezależnie od zawartości bazy.
+  const zOwnerId = new Set(
+    [...migracja.matchAll(/UPDATE "(\w+)" t SET[\s\S]{0,200}?w\."personalUserId"/g)].map((x) => x[1]),
+  );
+  const zOwnerTeamId = new Set(
+    [...migracja.matchAll(/UPDATE "(\w+)" t SET[\s\S]{0,200}?w\."teamId"/g)].map((x) => x[1]),
+  );
+  const brakBackfillu = objete
+    .filter((o) => (o.maOwnerId && !zOwnerId.has(o.tabela)) || (o.maOwnerTeamId && !zOwnerTeamId.has(o.tabela)))
+    .map((o) => o.tabela);
+  assert.deepEqual(
+    brakBackfillu,
+    [],
+    `Tabela ma kolumnę, ale brakuje jej instrukcji backfillu dla którejś z kolumn właściciela: ${brakBackfillu.join(", ")}`,
+  );
+
+  const brakIndeksu = objete
+    .filter((o) => !new RegExp(`CREATE INDEX "${o.tabela}_workspaceId_idx"`).test(migracja))
+    .map((o) => o.tabela);
+  assert.deepEqual(
+    brakIndeksu,
+    [],
+    `Tabela z kolumną, ale bez indeksu — etap 3 wejdzie tam w skan sekwencyjny: ${brakIndeksu.join(", ")}`,
+  );
 });
 
 test(

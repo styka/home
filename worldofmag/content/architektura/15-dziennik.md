@@ -954,6 +954,17 @@ Etap 3 jest tym, który wprowadza pierwszego czytelnika przestrzeni — a więc 
 dług zapisany w 051 i przypomniany w 049: ciche warianty `mirrorTeamWorkspace`/
 `mirrorPersonalWorkspace` mają wtedy zniknąć, bo rozjazd lustra przestanie być niewidoczny.
 
+**Jedyna rzecz, która wyszła poza bazę — i to nie z wyboru.** Przebieg miał nie tknąć kodu
+aplikacji i prawie się to udało: `next build` padł na `TagsManager`, gdzie podgląd etykiety
+**jeszcze nieistniejącej w bazie** buduje się z literału obiektowego, a `TagChip` deklarował
+`tag: Tag`. Kolumna dołożona do modelu weszła do wygenerowanego typu i literał przestał go
+spełniać. „Zmiana tylko w schemacie" nie istnieje, dopóki typy Prismy są propsami komponentów.
+Poprawka zwęża propsa do `Pick<Tag, "name" | "color">` zamiast dopisywać `workspaceId: null` —
+komponent rysujący dwa pola nie ma powodu wymagać kompletu kolumn tabeli, a dopisanie pola
+wróciłoby przy każdej następnej kolumnie, w tym w etapie 4. Kryterium AC-4 zostało z tego powodu
+skorygowane w specu (C-54): mierzy **zachowanie aplikacji**, nie nietykalność sygnatur.
+
 **Bramki:** build **exit 0**, `test:unit` **683/683**, liczniki **160 / 551 / 35 / 35** bez ruchu,
 `check:schema-drift` zielony (schemat = katalog migracji), `git diff` **bez ani jednego pliku**
-w `src/app/`, `src/components/` i `src/actions/`.
+w `src/app/`, `src/components/` i `src/actions/`; w `src/` poza testem wyłącznie dwa pliki
+powyższej poprawki typu.

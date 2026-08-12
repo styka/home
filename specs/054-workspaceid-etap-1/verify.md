@@ -20,7 +20,7 @@ Spec: `spec.md` · Plan: `plan.md` · Zadania: `tasks.md` · Data: 2026-08-12
 | `test:unit` | ✅ **683/683** (było 681 — dwa nowe testy z T-4) |
 | `next lint --dir src` | ✅ zero błędów; zastane ostrzeżenia bez zmian |
 | `tsc --noEmit` (cała aplikacja) | ✅ exit 0 — **dopiero po poprawce opisanej niżej**; pierwszy przebieg czerwony |
-| `npm run build` | ✅ **exit 0** (lokalny Postgres, C-13) — pierwszy przebieg **exit 1** |
+| `npm run build` | ✅ **exit 0** — cały łańcuch łącznie z `scripts/migrate.js` przeciw **lokalnemu** Postgresowi (C-13); pierwszy przebieg **exit 1** |
 
 Liczniki **160 / 551 / 35 / 35** — bez spadku względem 053.
 
@@ -38,6 +38,12 @@ zasób w niej) są poza nim, oba z zapisanym powodem.
 `schema.prisma` (z `@@map`), nie z ręcznego wyliczenia. Wynik: zero luk, zero sierot na bazie
 testowej. Test rozróżnia lukę (właściciel **ma** przestrzeń → awaria) od sieroty (właściciel jej
 nie ma → liczba do raportu dla etapu 4).
+
+Do tego **trzy kontrole statyczne**, niezależne od zawartości bazy — bo tabela pusta przechodzi
+sprawdzenie danych nawet bez backfillu, a puste są dziś prawie wszystkie: zbiór `ADD COLUMN`
+= zbiór modeli ze schematu · każda kolumna właściciela ma swój `UPDATE` (45 dla `ownerId`,
+28 dla `ownerTeamId`) · każda tabela ma indeks. Wszystkie trzy zielone, w obie strony (nic
+w migracji bez modelu, nic w modelu bez migracji).
 
 > **Kontrola negatywna — dowód, że test mierzy.** Ręczne wyzerowanie `workspaceId` na jednej
 > notatce dało `not ok 2 … Rekordy, których backfill nie objął mimo istniejącej przestrzeni
@@ -110,7 +116,10 @@ C-51 ✅ lekcja o `@@map` · C-53 ✅ zero zmian w kodzie aplikacji.
 
 ## 5. Werdykt
 
-**GOTOWE.** Siedem z siedmiu kryteriów spełnionych, komplet bramek zielony, build exit 0.
+**GOTOWE Z UWAGAMI.** Sześć kryteriów spełnionych wprost, **AC-4 częściowo** — i to jest jedyna
+uwaga: kryterium żądało „zera zmian sygnatur", co przy dokładaniu kolumny do modelu Prismy jest
+nieosiągalne. Spec został w tym punkcie poprawiony (C-54), zmiana obejmuje dwa pliki, jest czysto
+typowa i nic nie zmienia w zachowaniu. Komplet bramek zielony, build **exit 0**.
 Zmiana jest z założenia niewidoczna dla użytkownika i taka wyszła.
 
 **Uwaga przekazywana dalej (nie brak):** kolumna jest kompletna, ale **nie utrzymywana** — rekord
