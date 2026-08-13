@@ -2,36 +2,49 @@
   "wlasciciel projektu": {
     "projekt: odczyt/edycja zawartosci": "dozwolone",
     "projekt: zarzadzanie (ADMIN)": "dozwolone",
-    "projekt zespolowy: odczyt/edycja": "odmowa",
+    "projekt zespolowy: odczyt/edycja": "dozwolone",
     "zadanie w projekcie": "dozwolone",
-    "zadanie bez projektu": "dozwolone"
+    "zadanie bez projektu": "dozwolone",
+    "projekt bez przestrzeni (sierota)": "odmowa"
   },
   "czlonek MEMBER": {
     "projekt: odczyt/edycja zawartosci": "dozwolone",
     "projekt: zarzadzanie (ADMIN)": "odmowa",
     "projekt zespolowy: odczyt/edycja": "odmowa",
     "zadanie w projekcie": "dozwolone",
-    "zadanie bez projektu": "dozwolone"
+    "zadanie bez projektu": "dozwolone",
+    "projekt bez przestrzeni (sierota)": "odmowa"
   },
   "czlonek ADMIN": {
     "projekt: odczyt/edycja zawartosci": "dozwolone",
     "projekt: zarzadzanie (ADMIN)": "dozwolone",
     "projekt zespolowy: odczyt/edycja": "odmowa",
     "zadanie w projekcie": "dozwolone",
-    "zadanie bez projektu": "odmowa"
+    "zadanie bez projektu": "odmowa",
+    "projekt bez przestrzeni (sierota)": "odmowa"
   },
   "obcy": {
     "projekt: odczyt/edycja zawartosci": "odmowa",
     "projekt: zarzadzanie (ADMIN)": "odmowa",
     "projekt zespolowy: odczyt/edycja": "odmowa",
     "zadanie w projekcie": "odmowa",
-    "zadanie bez projektu": "odmowa"
+    "zadanie bez projektu": "odmowa",
+    "projekt bez przestrzeni (sierota)": "odmowa"
   },
   "w zespole, bez czlonkostwa": {
     "projekt: odczyt/edycja zawartosci": "odmowa",
     "projekt: zarzadzanie (ADMIN)": "odmowa",
     "projekt zespolowy: odczyt/edycja": "dozwolone",
     "zadanie w projekcie": "odmowa",
-    "zadanie bez projektu": "odmowa"
+    "zadanie bez projektu": "odmowa",
+    "projekt bez przestrzeni (sierota)": "odmowa"
+  },
+  "wlasciciel bez przestrzeni": {
+    "projekt: odczyt/edycja zawartosci": "odmowa",
+    "projekt: zarzadzanie (ADMIN)": "odmowa",
+    "projekt zespolowy: odczyt/edycja": "odmowa",
+    "zadanie w projekcie": "odmowa",
+    "zadanie bez projektu": "odmowa",
+    "projekt bez przestrzeni (sierota)": "dozwolone"
   }
 }
