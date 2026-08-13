@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { updateWithVersion } from "@/platform/concurrency/version";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import type { Note } from "@/types";
@@ -122,7 +123,9 @@ export async function updateNote(
     isMarkdown?: boolean;
     groupId?: string | null;
     pinned?: boolean;
-  }
+  },
+  /** 062: wersja odczytana przed edycją. Pominięta = zapis bez kontroli, jak przed 062. */
+  expectedVersion?: number,
 ): Promise<Note> {
   const user = await requireAuth();
   await assertNoteAccess(id, user.id);
@@ -145,9 +148,12 @@ export async function updateNote(
   const data: Record<string, unknown> = { ...patch };
   if (patch.title) data.title = patch.title.trim();
 
-  const note = await prisma.note.update({
+  // 062: zapis idzie przez mechanizm wersji (rozdz. 8.5). `expectedVersion` jest opcjonalne —
+  // dopóki UI go nie podaje, zachowanie jest identyczne jak dotąd, ale wersja rośnie, więc
+  // zadanie 16 dostanie na czym oprzeć `ConflictDialog`.
+  await updateWithVersion(prisma.note, "notes.note", id, data, expectedVersion);
+  const note = await prisma.note.findUniqueOrThrow({
     where: { id },
-    data,
     include: { group: true, tags: { include: { tag: true } } },
   });
 

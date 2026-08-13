@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { updateWithVersion } from "@/platform/concurrency/version";
 import { mirrorTaskShare, unmirrorTaskShare } from "@/platform/sharing/grantMirror";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
@@ -259,7 +260,7 @@ export async function updateTask(
   }>,
   // Wewnętrzne odstępstwa jednorazowe przy domykaniu cyklicznego (anchor/override/data wykonania).
   // Przekazywane WYŁĄCZNIE przez wrapper `completeRecurringTask`; klienci wołają z 2 argumentami.
-  internalOpts?: { recurring?: CompleteRecurringOptions },
+  internalOpts?: { recurring?: CompleteRecurringOptions; expectedVersion?: number },
 ): Promise<Task> {
   const user = await requireAuth();
   const existing = await prisma.task.findUnique({ where: { id } });
@@ -303,7 +304,12 @@ export async function updateTask(
   if (finalCompletedAt !== undefined) data.completedAt = finalCompletedAt;
   if (patch.title) data.title = patch.title.trim();
 
-  const task = await prisma.task.update({ where: { id }, data, include: TASK_INCLUDE });
+  // 062: zapis przez mechanizm wersji (rozdz. 8.5). `expectedVersion` opcjonalne — dopóki UI go
+  // nie podaje, zachowanie jest identyczne, ale wersja rośnie i zadanie 16 ma na czym oprzeć
+  // `ConflictDialog`. `internalOpts` celowo NIE niesie wersji: domykanie cyklicznego to zapis
+  // systemowy, nie edycja użytkownika, i nie ma z kim się ścigać.
+  await updateWithVersion(prisma.task, "tasks.task", id, data, internalOpts?.expectedVersion);
+  const task = await prisma.task.findUniqueOrThrow({ where: { id }, include: TASK_INCLUDE });
 
   // 022: przy jawnej edycji daty wykonania zsynchronizuj „datę ostatniego wykonania"
   // następnego wystąpienia cyklicznego (powiązanego przez previousTaskId). `updateMany`

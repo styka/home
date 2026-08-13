@@ -1,0 +1,5 @@
+{
+  "_opis": "062 (zadanie 15): pliki zapisujące model z kolumną `version`, które ŚWIADOMIE nie używają `updateWithVersion`. Bramka `check:versioning` sprawdza manifest w obie strony — martwy wpis też wywala build.",
+  "_dzisiaj": "Manifest jest PUSTY: oba pliki zapisujące modele pilota przechodzą przez mechanizm. Istnieje po to, żeby następny wyjątek (np. zapis pola, o które nikt się nie ściga) był świadomą decyzją.",
+  "wyjatki": {}
+}
