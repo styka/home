@@ -80,6 +80,12 @@ export async function purgeUserData(userId: string): Promise<void> {
     // projekty) w kolejności od zależnych, by nie zostawić sierot.
     await tx.taskComment.deleteMany({ where: { userId } });
     await tx.taskShare.deleteMany({ where: { userId } });
+    // 059: nadania są lustrem udostępnień, więc znikają razem z nimi. Kasujemy je HURTEM po
+    // podmiocie, a nie przez `unmirrorTaskShare` per wiersz — usuwanie konta idzie w jednej
+    // transakcji i nie może wołać kodu, który sięga po `prisma` obok niej.
+    // `ResourceGrant` nie ma klucza obcego do `User` (nadanie ma przeżyć usunięcie AUTORA),
+    // więc bez tego wiersza nadania usuniętego konta zostałyby w bazie jako cichy dostęp.
+    await tx.resourceGrant.deleteMany({ where: { subjectType: "user", subjectId: userId } });
     await tx.task.deleteMany({
       where: { OR: [{ createdById: userId }, { project: { ownerId: userId } }] },
     });
