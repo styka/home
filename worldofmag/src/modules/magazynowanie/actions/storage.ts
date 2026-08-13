@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhere, ownedOr } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
@@ -31,8 +31,8 @@ export type StorageItemDetail = StorageItem & {
 export type StorageMode = "home" | "pro";
 
 /** Buduje warunek własności (user OR teamy) dla dowolnego modelu magazynowego. */
-function ownershipOr(userId: string, teamIds: string[]) {
-  return ownedOr(userId, teamIds);
+async function ownershipOr(userId: string) {
+  return await ownedOrAsync(userId);
 }
 
 async function assertStorageItemAccess(storageItemId: string, userId: string): Promise<void> {
@@ -57,7 +57,7 @@ export async function getStorageItems(teamId?: string): Promise<StorageItemWithM
     ? teamIds.includes(teamId)
       ? [{ ownerTeamId: teamId }]
       : []
-    : ownedOr(user.id, teamIds);
+    : (await ownedOrAsync(user.id));
 
   if (ownership.length === 0) return [];
 
@@ -77,7 +77,7 @@ export async function getLowStock(): Promise<StorageItemWithMovements[]> {
 
   const items = await prisma.storageItem.findMany({
     where: {
-      ...ownedWhere(user.id, teamIds),
+      ...(await ownedWhereAsync(user.id)),
       minQuantity: { not: null },
     },
     include: { movements: { orderBy: { createdAt: "desc" }, take: 20 } },
@@ -389,7 +389,7 @@ export async function findStorageItemByCode(code: string): Promise<StorageItem |
   if (!c) return null;
   return prisma.storageItem.findFirst({
     where: {
-      OR: ownershipOr(user.id, teamIds),
+      OR: await ownershipOr(user.id),
       AND: {
         OR: [{ barcode: c }, { sku: c }, { name: { equals: c, mode: "insensitive" } }],
       },
@@ -489,7 +489,7 @@ export async function getSuppliers(): Promise<StorageSupplier[]> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   return prisma.storageSupplier.findMany({
-    where: { OR: ownershipOr(user.id, teamIds) },
+    where: { OR: await ownershipOr(user.id) },
     orderBy: { name: "asc" },
   });
 }
@@ -639,7 +639,7 @@ export async function getExpiringStorage(withinDays = 30): Promise<ExpiringEntry
   const now = new Date();
   const items = await prisma.storageItem.findMany({
     where: {
-      OR: ownershipOr(user.id, teamIds),
+      OR: await ownershipOr(user.id),
       AND: { OR: [{ expiresAt: { not: null } }, { warrantyUntil: { not: null } }] },
     },
     select: { id: true, name: true, warehouse: true, location: true, expiresAt: true, warrantyUntil: true },
@@ -679,7 +679,7 @@ export async function getStorageAnalytics(deadDays = 90): Promise<StorageAnalyti
   const settings = await getStorageSettings();
 
   const items = await prisma.storageItem.findMany({
-    where: { OR: ownershipOr(user.id, teamIds) },
+    where: { OR: await ownershipOr(user.id) },
     include: { movements: { orderBy: { createdAt: "desc" }, take: 1 } },
   });
 
@@ -734,7 +734,7 @@ export async function getStorageAnalytics(deadDays = 90): Promise<StorageAnalyti
   // Trend ruchów: ostatnie 14 dni (przyjęcia vs wydania)
   const since = new Date(Date.now() - 14 * 86_400_000);
   const movements = await prisma.storageMovement.findMany({
-    where: { item: { OR: ownershipOr(user.id, teamIds) }, createdAt: { gte: since } },
+    where: { item: { OR: await ownershipOr(user.id) }, createdAt: { gte: since } },
     select: { delta: true, createdAt: true },
   });
   const trendMap = new Map<string, { in: number; out: number }>();
@@ -797,7 +797,7 @@ export async function getDocuments(): Promise<StorageDocumentWithLines[]> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   return prisma.storageDocument.findMany({
-    where: { OR: ownershipOr(user.id, teamIds) },
+    where: { OR: await ownershipOr(user.id) },
     include: { lines: true, supplier: true },
     orderBy: { date: "desc" },
   });
@@ -928,7 +928,7 @@ export async function getPurchaseOrders(): Promise<PurchaseOrderWithLines[]> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   return prisma.storagePurchaseOrder.findMany({
-    where: { OR: ownershipOr(user.id, teamIds) },
+    where: { OR: await ownershipOr(user.id) },
     include: { lines: true, supplier: true },
     orderBy: { date: "desc" },
   });

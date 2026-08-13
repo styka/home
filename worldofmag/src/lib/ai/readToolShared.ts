@@ -1,5 +1,5 @@
 import { prisma } from "@/platform/db/prisma";
-import { getUserTeamIds, ownedWhere } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { matchNamedRef, unresolvedRefMessage, type NamedCandidate, type RefResolution } from "@/platform/ai/refResolve";
 
 /**
@@ -88,7 +88,7 @@ export async function resolveProjectRef(
 export async function accessibleListWhere(userId: string) {
   const teamIds = await getUserTeamIds(userId);
   return {
-    ...ownedWhere(userId, teamIds),
+    ...(await ownedWhereAsync(userId)),
   };
 }
 
@@ -96,7 +96,7 @@ export async function accessibleListWhere(userId: string) {
 export async function ownerScope(userId: string): Promise<{ OR: Record<string, unknown>[] }> {
   const teamIds = await getUserTeamIds(userId);
   return {
-    ...ownedWhere(userId, teamIds),
+    ...(await ownedWhereAsync(userId)),
   };
 }
 

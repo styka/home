@@ -2,7 +2,7 @@ import { resolveOrCreateList } from "@/modules/shopping/contract";
 // Z-010: handler akcji asystenta dla modułu Kuchnia (jadłospis + przepisy + spiżarnia).
 // Scala trzy dawne bloki `module === "kitchen"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
-import { getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { setMealPlanEntry, markMealCooked, markMealSkipped, updateMealPlanEntry, moveMealPlanEntry, deleteMealPlanEntry, generateShoppingListFromPlan } from "../contract";
 import { addPantryItem, updatePantryItem, consumePantryItem, deletePantryItem, setPantryQuantity, moveItemToPantry, autoReplenishToList } from "../contract";
 import { createRecipe, deleteRecipe, updateRecipe, archiveRecipe, duplicateRecipe, markRecipeCooked, shopForRecipe, addIngredient, addStep } from "../contract";
@@ -192,7 +192,7 @@ export async function executeKitchenAction(action: AIAction, userId: string): Pr
   if (type === "move_item_to_pantry") {
     const q = searchQuery ?? asStr(params.name);
     const teamIds = await getUserTeamIds(userId);
-    const ownerOr = ownedOr(userId, teamIds);
+    const ownerOr = (await ownedOrAsync(userId));
     const shopItem = await prisma.item.findFirst({
       where: { list: { OR: ownerOr }, name: { contains: q ?? "", mode: "insensitive" } },
       select: { id: true, name: true },

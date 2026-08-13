@@ -5,7 +5,7 @@
 // Brak `type === "..."` tutaj — to wyłącznie typy i resolvery (scripts/check-action-coverage.js
 // skanuje ten katalog, ale ten plik nie deklaruje żadnych akcji).
 import { prisma } from "@/platform/db/prisma";
-import { getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import type { AIAction } from "@/platform/ai/aiAction";
 import type { TaskPriority } from "@/types";
 
@@ -91,7 +91,7 @@ export function undoAction(module: AIAction["module"], type: string, params: Rec
 async function accessibleListIds(userId: string): Promise<string[]> {
   const teamIds = await getUserTeamIds(userId);
   const lists = await prisma.shoppingList.findMany({
-    where: { OR: ownedOr(userId, teamIds) },
+    where: { OR: (await ownedOrAsync(userId)) },
     select: { id: true },
   });
   return lists.map((l) => l.id);
@@ -104,7 +104,7 @@ export async function resolveListId(
   activeListId?: string
 ): Promise<string> {
   const teamIds = await getUserTeamIds(userId);
-  const ownerOr = ownedOr(userId, teamIds);
+  const ownerOr = (await ownedOrAsync(userId));
   const id = asStr(params.listId);
   if (id) {
     const l = await prisma.shoppingList.findFirst({ where: { OR: ownerOr, id } });
@@ -183,7 +183,7 @@ export async function resolveNoteId(userId: string, params: Record<string, unkno
   const teamIds = await getUserTeamIds(userId);
   const note = await prisma.note.findFirst({
     where: {
-      OR: ownedOr(userId, teamIds),
+      OR: (await ownedOrAsync(userId)),
       AND: {
         OR: [
           { title: { contains: searchQuery ?? "", mode: "insensitive" } },
@@ -200,7 +200,7 @@ export async function resolveNoteId(userId: string, params: Record<string, unkno
 export async function resolveHealthEventId(userId: string, params: Record<string, unknown>, searchQuery?: string): Promise<string> {
   const id = asStr(params.eventId);
   const teamIds = await getUserTeamIds(userId);
-  const ownerOr = ownedOr(userId, teamIds);
+  const ownerOr = (await ownedOrAsync(userId));
   if (id) {
     const ev = await prisma.healthEvent.findFirst({ where: { OR: ownerOr, id } });
     if (ev) return ev.id;
@@ -216,7 +216,7 @@ export async function resolveHealthEventId(userId: string, params: Record<string
 export async function resolveMedicationId(userId: string, params: Record<string, unknown>, searchQuery?: string): Promise<string> {
   const id = asStr(params.medicationId);
   const teamIds = await getUserTeamIds(userId);
-  const ownerOr = ownedOr(userId, teamIds);
+  const ownerOr = (await ownedOrAsync(userId));
   if (id) {
     const s = await prisma.medicationSchedule.findFirst({ where: { OR: ownerOr, id } });
     if (s) return s.id;
@@ -232,7 +232,7 @@ export async function resolveMedicationId(userId: string, params: Record<string,
 export async function resolveDeckId(userId: string, params: Record<string, unknown>, deckName?: string): Promise<string> {
   const id = asStr(params.deckId);
   const teamIds = await getUserTeamIds(userId);
-  const ownerOr = ownedOr(userId, teamIds);
+  const ownerOr = (await ownedOrAsync(userId));
   if (id) {
     const d = await prisma.languageDeck.findFirst({ where: { OR: ownerOr, id } });
     if (d) return d.id;
@@ -249,7 +249,7 @@ export async function resolveDeckId(userId: string, params: Record<string, unkno
 
 export async function ownerOrArr(userId: string) {
   const teamIds = await getUserTeamIds(userId);
-  return ownedOr(userId, teamIds);
+  return (await ownedOrAsync(userId));
 }
 
 // Generyczny resolver „id z paramu LUB pierwszy pasujący po nazwie w zakresie użytkownika".

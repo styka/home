@@ -1,4 +1,4 @@
-import { getUserTeamIds, ownedWhere } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { prisma } from "@/platform/db/prisma";
 import { clampLimit, asStr } from "@/lib/ai/readToolShared";
 import type { AiReadToolHandler } from "@/platform/ai/contribution";
@@ -19,7 +19,7 @@ export const readTools: Record<string, AiReadToolHandler> = {
       const teamIds = await getUserTeamIds(userId);
       const contacts = await prisma.contact.findMany({
         where: {
-          ...ownedWhere(userId, teamIds),
+          ...(await ownedWhereAsync(userId)),
           ...(search
             ? {
                 OR: [

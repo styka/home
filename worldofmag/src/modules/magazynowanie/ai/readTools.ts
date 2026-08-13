@@ -1,5 +1,5 @@
 import { getExpiringStorage, getLowStock, getStorageAnalytics, getSuppliers } from "../contract";
-import { getUserTeamIds, ownedWhere } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { prisma } from "@/platform/db/prisma";
 import { clampLimit, asStr } from "@/lib/ai/readToolShared";
 import type { AiReadToolHandler } from "@/platform/ai/contribution";
@@ -26,7 +26,7 @@ export const readTools: Record<string, AiReadToolHandler> = {
       const teamIds = await getUserTeamIds(userId);
       const items = await prisma.storageItem.findMany({
         where: {
-          ...ownedWhere(userId, teamIds),
+          ...(await ownedWhereAsync(userId)),
           ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
           ...(warehouse ? { warehouse: { contains: warehouse, mode: "insensitive" } } : {}),
           ...(lowStockOnly ? { minQuantity: { not: null } } : {}),

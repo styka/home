@@ -1,6 +1,6 @@
 import { getCareAgenda, getCareHistory, getEnclosures, getPetWelfare } from "../contract";
 import { technicalToLabel } from "@/platform/ai/humanize";
-import { getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { prisma } from "@/platform/db/prisma";
 import { HARD_MAX, clampLimit, asStr } from "@/lib/ai/readToolShared";
 import type { AiReadToolHandler } from "@/platform/ai/contribution";
@@ -26,7 +26,7 @@ export const readTools: Record<string, AiReadToolHandler> = {
       const pets = await prisma.pet.findMany({
         where: {
           OR: [
-            ...ownedOr(userId, teamIds),
+            ...(await ownedOrAsync(userId)),
             { shares: { some: { userId } } },
           ],
           ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
@@ -54,7 +54,7 @@ export const readTools: Record<string, AiReadToolHandler> = {
       const pet = await prisma.pet.findFirst({
         where: {
           OR: [
-            ...ownedOr(userId, teamIds),
+            ...(await ownedOrAsync(userId)),
             { shares: { some: { userId } } },
           ],
           name: { contains: petName, mode: "insensitive" },
