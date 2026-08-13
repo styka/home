@@ -1796,13 +1796,13 @@
     "reason": "admin",
     "access": "admin"
   },
-  "qa:getEpicTreeForAdmin": {
+  "qa:getEpicForAdmin": {
     "kind": "read",
     "status": "excluded",
     "reason": "admin",
     "access": "admin"
   },
-  "qa:getEpicForAdmin": {
+  "qa:getEpicTreeForAdmin": {
     "kind": "read",
     "status": "excluded",
     "reason": "admin",
@@ -2000,6 +2000,14 @@
     "status": "excluded",
     "reason": "admin",
     "access": "admin"
+  },
+  "sharing:getSharedByMe": {
+    "status": "pending",
+    "access": "self"
+  },
+  "sharing:getSharedWithMe": {
+    "status": "pending",
+    "access": "self"
   },
   "shoppingSync:syncShoppingMutations": {
     "status": "excluded",
