@@ -3,7 +3,7 @@
 // (które od Z-010 czyta też src/lib/ai/executors/*.ts) — nie zmieniaj nazw akcji bez
 // aktualizacji katalogu w agent/route.ts + petActions.ts.
 import { prisma } from "@/platform/db/prisma";
-import { getUserTeamIds } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
 import { updatePet, setPetStatus, deletePet } from "../contract";
 import { completeTreatment } from "../contract";
 import { updateEnclosure, deleteEnclosure, assignPetToEnclosure } from "../contract";
@@ -29,8 +29,7 @@ async function findPetByName(userId: string, name: string) {
   return prisma.pet.findFirst({
     where: {
       OR: [
-        { ownerId: userId },
-        teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" },
+        ...ownedOr(userId, teamIds),
         { shares: { some: { userId } } },
         teamIds.length > 0 ? { shares: { some: { teamId: { in: teamIds } } } } : { id: "" },
       ],
@@ -82,7 +81,7 @@ export async function executePetAction(action: AIAction, userId: string): Promis
   // Zbiorniki/terraria — rezolucja po nazwie w zakresie użytkownika/zespołu.
   if (type === "update_enclosure" || type === "delete_enclosure" || type === "assign_pet_to_enclosure") {
     const teamIds = await getUserTeamIds(userId);
-    const ownerOr = teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
+    const ownerOr = ownedOr(userId, teamIds);
     const encQuery = asStr(params.enclosureName) ?? (type === "assign_pet_to_enclosure" ? undefined : searchQuery);
     if (type === "assign_pet_to_enclosure") {
       const target = await findPetByName(userId, searchQuery ?? asStr(params.petName) ?? "");
@@ -203,8 +202,7 @@ export async function executePetAction(action: AIAction, userId: string): Promis
     const petIds = (await prisma.pet.findMany({
       where: {
         OR: [
-          { ownerId: userId },
-          teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" },
+          ...ownedOr(userId, teamIds),
           { shares: { some: { userId } } },
         ],
       },

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOr } from "@/platform/auth/serverUtils";
 import type { Habit, HabitWithStats } from "@/types";
 import {
   todayISO,
@@ -39,7 +39,7 @@ export async function getHabits(opts?: { includeArchived?: boolean }): Promise<H
 
   const habits = await prisma.habit.findMany({
     where: {
-      OR: [{ ownerId: user.id }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])],
+      OR: ownedOr(user.id, teamIds),
       ...(opts?.includeArchived ? {} : { archived: false }),
     },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],

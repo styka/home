@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhere, ownedOr } from "@/platform/auth/serverUtils";
 import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
@@ -78,10 +78,7 @@ export async function getRecipes(opts?: {
 
   const ownership = opts?.ownedOnly
     ? [{ ownerId: user.id }]
-    : [
-        { ownerId: user.id },
-        ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-      ];
+    : ownedOr(user.id, teamIds);
 
   const where: Record<string, unknown> = {
     isArchived: false,
@@ -614,10 +611,7 @@ export async function shopForRecipe(input: ShopForRecipeInput): Promise<ShopForR
   const pantry = input.skipPantry
     ? await prisma.pantryItem.findMany({
         where: {
-          OR: [
-            { ownerId: user.id },
-            ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-          ],
+          ...ownedWhere(user.id, teamIds),
         },
       })
     : [];

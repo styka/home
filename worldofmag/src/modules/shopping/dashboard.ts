@@ -2,6 +2,7 @@ import type { DashboardContributor } from "@/platform/dashboard";
 import type { DashboardSnapshot } from "../home/contract";
 import { prisma } from "@/platform/db/prisma";
 
+import { ownedWhere } from "@/platform/auth/serverUtils";
 /**
  * 050: wkład Zakupów do migawki pulpitu — liczba pozycji do kupienia na niezarchiwizowanych listach.
  *
@@ -12,7 +13,7 @@ const wklad: DashboardContributor<Pick<DashboardSnapshot, "pendingItems">> = asy
   const listy = await prisma.shoppingList.findMany({
     where: {
       archived: false,
-      OR: [{ ownerId: userId }, ...(ctx.teamIds.length > 0 ? [{ ownerTeamId: { in: ctx.teamIds } }] : [])],
+      ...ownedWhere(userId, ctx.teamIds),
     },
     select: { id: true },
   });

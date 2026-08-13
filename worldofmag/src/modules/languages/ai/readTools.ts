@@ -1,5 +1,5 @@
 import { getDueCards, getStudyStreak } from "../contract";
-import { getUserTeamIds } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedWhere } from "@/platform/auth/serverUtils";
 import { prisma } from "@/platform/db/prisma";
 import { HARD_MAX, clampLimit, asStr, ownerScope } from "@/lib/ai/readToolShared";
 import type { AiReadToolHandler } from "@/platform/ai/contribution";
@@ -31,7 +31,7 @@ export const readTools: Record<string, AiReadToolHandler> = {
       const teamIds = await getUserTeamIds(userId);
       const deck = await prisma.languageDeck.findFirst({
         where: {
-          OR: [{ ownerId: userId }, ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : [])],
+          ...ownedWhere(userId, teamIds),
           ...(deckName ? { name: { contains: deckName, mode: "insensitive" as const } } : {}),
         },
         select: { id: true, name: true },

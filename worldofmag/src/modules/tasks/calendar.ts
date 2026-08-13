@@ -1,5 +1,5 @@
 import { prisma } from "@/platform/db/prisma";
-import { getUserTeamIds } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
 import type { CalendarContribEvent, CalendarRange } from "@/platform/calendar";
 
 /**
@@ -25,7 +25,7 @@ export default async function calendarEvents(userId: string, { from, to }: Calen
       OR: [
         { createdById: userId },
         { assigneeId: userId },
-        { project: { OR: [{ ownerId: userId }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])] } },
+        { project: { OR: ownedOr(userId, teamIds) } },
       ],
     },
     select: { id: true, title: true, dueDate: true, projectId: true },

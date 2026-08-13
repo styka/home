@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhere, ownedOr } from "@/platform/auth/serverUtils";
 import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
@@ -39,10 +39,7 @@ export async function getPantry(teamId?: string): Promise<PantryItemWithProduct[
     ? teamIds.includes(teamId)
       ? [{ ownerTeamId: teamId }]
       : []
-    : [
-        { ownerId: user.id },
-        ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-      ];
+    : ownedOr(user.id, teamIds);
 
   if (ownership.length === 0) return [];
 
@@ -66,10 +63,7 @@ export async function getExpiringSoon(days: number): Promise<PantryItemWithProdu
 
   return prisma.pantryItem.findMany({
     where: {
-      OR: [
-        { ownerId: user.id },
-        ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-      ],
+      ...ownedWhere(user.id, teamIds),
       expiresAt: { not: null, lte: threshold },
     },
     include: {
@@ -85,10 +79,7 @@ export async function getAutoReplenishCandidates(): Promise<PantryItemWithProduc
 
   const items = await prisma.pantryItem.findMany({
     where: {
-      OR: [
-        { ownerId: user.id },
-        ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-      ],
+      ...ownedWhere(user.id, teamIds),
       autoShop: true,
       minQuantity: { not: null },
     },

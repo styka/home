@@ -15,6 +15,44 @@ export async function isAdminSession(): Promise<boolean> {
 }
 
 /**
+ * 057 (Faza 2, zadanie 11 / etap 3B krok 1) — WARUNEK „ZASOBY, KTÓRE WIDZĘ", W JEDNYM MIEJSCU.
+ *
+ * Do tej pory ten sam `OR` był wpisany ręcznie w **79 miejscach w 52 plikach**. Etap 3B ma go
+ * zamienić na zakres po przestrzeniach (`workspaceId: { in: … }`, rozdz. 8.2) — a to da się zrobić
+ * **jedną zmianą** tylko wtedy, gdy warunek istnieje w jednym miejscu. Ten helper niczego jeszcze
+ * nie zmienia: zwraca **strukturalnie ten sam** obiekt, co kod, który zastępuje.
+ *
+ * **Dwa kształty, jedno znaczenie.** W repo występowały dwa warianty — bezwarunkowy
+ * `{ ownerTeamId: { in: teamIds } }` i ostrożniejszy `...(teamIds.length > 0 ? [...] : [])`.
+ * Są **równoważne**, bo `in: []` nie pasuje do żadnego wiersza; helper zwraca wariant krótszy,
+ * a test `ownershipScope.test.ts` tę równoważność sprawdza, zamiast ją zakładać.
+ *
+ * **To NIE jest helper dla rekordów słownikowych** — te widać także jako systemowe
+ * (`ownerId = null`) i mają własny `ownedOrSystemWhere` niżej. Użycie tego helpera tam odebrałoby
+ * dostęp do rekordów systemowych; użycie tamtego tutaj — dodałoby dostęp, którego nie było.
+ *
+ * @param userId właściciel osobisty
+ * @param teamIds zespoły użytkownika (`getUserTeamIds`); pusta lista = brak gałęzi zespołowej
+ */
+export function ownedWhere(userId: string, teamIds: string[]) {
+  return {
+    OR:
+      teamIds.length > 0
+        ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }]
+        : [{ ownerId: userId }],
+  };
+}
+
+/**
+ * Same alternatywy, bez opakowania w `OR` — dla zapytań, które wstawiają je do własnego `AND`
+ * albo dokładają trzecią gałąź (np. przypisanie do zasobu). Istnieje, bo bez tego takie miejsca
+ * musiałyby rozpakowywać `ownedWhere(...).OR` i bramka nie miałaby czego pilnować.
+ */
+export function ownedOr(userId: string, teamIds: string[]) {
+  return ownedWhere(userId, teamIds).OR;
+}
+
+/**
  * 034: warunek widoczności rekordu SŁOWNIKOWEGO z właścicielem (grupy notatek, etykiety,
  * podpowiedzi zakupowe). Widać: swoje, zespołowe oraz SYSTEMOWE (bez właściciela — wspólne
  * dla wszystkich kont, tak jak kategorie systemowe). C-21.
