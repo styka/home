@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
 import { isoDay } from "@/modules/calendar/contract";
 import { notifyUser } from "@/lib/notify";
 import { isScheduledOn, weekDoneCount } from "@/lib/habitStats";
@@ -68,7 +68,7 @@ export async function markAllNotificationsRead(): Promise<void> {
 export async function syncReminders(): Promise<number> {
   const user = await requireAuth();
   const teamIds = await getUserTeamIds(user.id);
-  const ownScope = [{ ownerId: user.id }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])];
+  const ownScope = ownedOr(user.id, teamIds);
   const now = new Date();
   const in3 = new Date(now.getTime() + 3 * MS_DAY);
   const in7 = new Date(now.getTime() + 7 * MS_DAY);

@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOr } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import type { Budget, FinanceGoal } from "@prisma/client";
 
 async function scope(userId: string) {
   const teamIds = await getUserTeamIds(userId);
-  return { teamIds, where: { OR: [{ ownerId: userId }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])] } };
+  return { teamIds, where: { OR: ownedOr(userId, teamIds) } };
 }
 
 function startOfMonth(d = new Date()): Date {
@@ -31,7 +31,7 @@ export async function getBudgetsWithSpending(): Promise<{ budgets: BudgetWithSpe
 
   // Wydatki tego miesiąca z elementów portfela użytkownika/zespołów, pogrupowane po kategorii.
   const elements = await prisma.walletElement.findMany({
-    where: { OR: [{ ownerId: user.id }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])] },
+    where: { OR: ownedOr(user.id, teamIds) },
     select: { id: true },
   });
   const elementIds = elements.map((e) => e.id);

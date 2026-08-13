@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhere } from "@/platform/auth/serverUtils";
 import type { Note } from "@/types";
 import { trackActivity } from "@/actions/activity";
 import { recordTrash } from "@/platform/trash/trash";
@@ -30,12 +30,7 @@ export async function getNotes(filters?: {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "notes");
 
-  const where: Record<string, unknown> = {
-    OR: [
-      { ownerId: user.id },
-      teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : null,
-    ].filter(Boolean),
-  };
+  const where: Record<string, unknown> = { ...ownedWhere(user.id, teamIds) };
 
   if (filters?.groupId === "NO_GROUP") {
     where.groupId = null;

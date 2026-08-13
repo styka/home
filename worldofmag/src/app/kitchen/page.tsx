@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { prisma } from "@/platform/db/prisma";
-import { getUserTeamIds } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedWhere } from "@/platform/auth/serverUtils";
 import { getTodaysMeals } from "@/modules/kitchen/actions/mealPlans";
 import { getExpiringSoon } from "@/modules/kitchen/actions/pantry";
 import { getCookbooks } from "@/modules/kitchen/actions/cookbooks";
@@ -16,10 +16,7 @@ export default async function KitchenIndexPage() {
   const userId = session.user.id;
   const teamIds = await getUserTeamIds(userId);
   const accessFilter = {
-    OR: [
-      { ownerId: userId },
-      ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-    ],
+    ...ownedWhere(userId, teamIds),
   };
 
   const [recipeCount, pantryCount, todayMeals, expiring, cookbooks, recentlyCooked, latestRecipes] = await Promise.all([

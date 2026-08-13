@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOr } from "@/platform/auth/serverUtils";
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
 
 function safeDate(d: Date | string | null | undefined): Date | null {
@@ -55,7 +55,7 @@ export async function getHealthEvents(filter?: {
   const teamIds = await getAccessibleTeamIds(user.id, "health");
 
   const where: Record<string, unknown> = {
-    OR: [{ ownerId: user.id }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])],
+    OR: ownedOr(user.id, teamIds),
   };
   if (filter?.kind) where.kind = filter.kind;
 
@@ -205,7 +205,7 @@ export async function getTestTrends(): Promise<TestTrend[]> {
     where: {
       kind: "TEST",
       numericValue: { not: null },
-      OR: [{ ownerId: user.id }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])],
+      OR: ownedOr(user.id, teamIds),
     },
     orderBy: { scheduledAt: "asc" },
     select: { title: true, unit: true, numericValue: true, scheduledAt: true },

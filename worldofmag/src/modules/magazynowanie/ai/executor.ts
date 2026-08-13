@@ -2,7 +2,7 @@ import { resolveOrCreateList } from "@/modules/shopping/contract";
 // Z-010: handler akcji asystenta dla modułu Magazynowanie.
 // Scala oba dawne bloki `module === "magazynowanie"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
-import { getUserTeamIds } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
 import { addStorageItem, adjustStorageQuantity, updateStorageItem, deleteStorageItem, transferStock, addSupplier, updateSupplier, deleteSupplier, addLowStockToShoppingList, addBatch } from "../contract";
 import { asStr, undoAction, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
@@ -32,7 +32,7 @@ export async function executeStorageAction(action: AIAction, userId: string): Pr
     const teamIds = await getUserTeamIds(userId);
     const item = await prisma.storageItem.findFirst({
       where: {
-        OR: [{ ownerId: userId }, teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" }],
+        OR: ownedOr(userId, teamIds),
         name: { contains: query, mode: "insensitive" },
       },
       orderBy: { updatedAt: "desc" },

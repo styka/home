@@ -1,5 +1,5 @@
 import { prisma } from "@/platform/db/prisma";
-import { getUserTeamIds } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
 import { createList } from "../actions/lists";
 
 /**
@@ -19,7 +19,7 @@ export async function resolveOrCreateList(
   opts: { listId?: string; listName?: string; activeListId?: string },
 ): Promise<{ id: string; name: string }> {
   const teamIds = await getUserTeamIds(userId);
-  const ownerOr = teamIds.length > 0 ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] : [{ ownerId: userId }];
+  const ownerOr = ownedOr(userId, teamIds);
 
   let list =
     (opts.listId && (await prisma.shoppingList.findFirst({ where: { OR: ownerOr, id: opts.listId } }))) || null;

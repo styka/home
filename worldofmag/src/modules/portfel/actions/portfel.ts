@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOr } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { loadRates, toBase } from "../lib/currency";
 import { parseBankCsv, type ParsedTransaction } from "../lib/bankCsv";
@@ -19,7 +19,7 @@ function signedBalance(el: { kind: string; balance: number }): number {
 // Z-194 (T-12): widoczność elementów portfela respektuje dostęp domownika do „portfel".
 async function ownershipFilter(userId: string) {
   const teamIds = await getAccessibleTeamIds(userId, "portfel");
-  return { OR: [{ ownerId: userId }, ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : [])] };
+  return { OR: ownedOr(userId, teamIds) };
 }
 
 async function assertElementAccess(elementId: string, userId: string): Promise<WalletElement> {
