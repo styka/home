@@ -657,6 +657,11 @@ model Note {
 
   workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
+  /// 062 (zadanie 15): WERSJA REKORDU — koniec cichej utraty pracy (rozdz. 8.5).
+  /// Zapis z warunkiem na wersji odrzuca nadpisanie oparte na nieaktualnym odczycie.
+  /// Rośnie WYŁĄCZNIE przez `updateWithVersion`; pilnuje tego `check:versioning`.
+  version Int @default(0)
+
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([workspaceId])
@@ -805,6 +810,12 @@ model Task {
   // Z-031: indeksy pod realne zapytania list zadań (model nie miał żadnych).
   // (projectId, parentTaskId) pokrywa główny widok listy (WHERE projectId=… AND
   // parentTaskId IS NULL) i — jako prefiks — filtr po samym projectId.
+
+  /// 062 (zadanie 15): WERSJA REKORDU — koniec cichej utraty pracy (rozdz. 8.5).
+  /// Zapis z warunkiem na wersji odrzuca nadpisanie oparte na nieaktualnym odczycie.
+  /// Rośnie WYŁĄCZNIE przez `updateWithVersion`; pilnuje tego `check:versioning`.
+  version Int @default(0)
+
   @@index([projectId, parentTaskId])
   @@index([parentTaskId])
   @@index([previousTaskId])

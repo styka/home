@@ -18,7 +18,7 @@
     "check:module-registry": "node scripts/check-module-registry.js",
     "check:test-types": "tsc --noEmit -p tsconfig.test.json",
     "next:migration": "node scripts/check-migrations.js --next",
-    "build": "node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && node scripts/check-ownership-scope.js && node scripts/check-grant-mirror.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/migrate.js",
+    "build": "node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && node scripts/check-ownership-scope.js && node scripts/check-grant-mirror.js && node scripts/check-versioning.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/migrate.js",
     "start": "next start -H 0.0.0.0",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
@@ -42,7 +42,8 @@
     "check:workspace-mirror": "node scripts/check-workspace-mirror.js",
     "check:workspace-fill": "node scripts/check-workspace-fill.js",
     "check:ownership-scope": "node scripts/check-ownership-scope.js",
-    "check:grant-mirror": "node scripts/check-grant-mirror.js"
+    "check:grant-mirror": "node scripts/check-grant-mirror.js",
+    "check:versioning": "node scripts/check-versioning.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

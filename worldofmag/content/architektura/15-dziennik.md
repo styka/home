@@ -1311,3 +1311,52 @@ Trzeci raz z rzędu wzorzec „mutujesz źródło, uzgadniasz lustro" zadziała�
 | **3** | Usunięcie `TaskProjectMember`, `TaskShare`, `PetShare` ze schematu; zdjęcie lustra i jego bramki |
 
 **Bramki:** build **exit 0**, `check:grant-mirror` 4 pliki / 1 wyjątek, liczniki bez ruchu.
+
+
+---
+
+### 062 — Koniec cichej utraty pracy: wersjonowanie, zadanie 15 (mechanizm + pilot) · 2026-08-13
+
+**Diagnoza 5.1 mówi to jednym zdaniem:** *„żaden model nie ma wersji, więc ostatni zapis wygrywa
+po cichu"*. Dwie osoby edytujące ten sam rekord nie dostawały żadnego sygnału — praca jednej z nich
+znikała **bez śladu w logach i bez powodu, żeby ktokolwiek jej szukał**. To nie jest ryzyko
+teoretyczne: rozdz. 4 prostuje wcześniejsze analizy właśnie w tym punkcie — współpraca jest częścią
+produktu, nie wyjątkiem.
+
+**`updateMany` zamiast `update` jest sednem mechanizmu, nie szczegółem zapisu.** `update`
+z warunkiem, który nie pasuje, **rzuca** — i nie da się odróżnić „ktoś mnie ubiegł" od „rekord nie
+istnieje". `updateMany` zwraca **liczbę** zmienionych wierszy, więc `count === 0` plus osobne
+sprawdzenie istnienia daje dwa różne, **prawdziwe** komunikaty. Użytkownik, który skasował zadanie
+w drugiej karcie, nie może dostać „ktoś zmienił to zadanie" — dostałby zdanie nieprawdziwe
+i myląco sugerujące, że jego praca gdzieś jest.
+
+**Wersja jest opcjonalna po stronie wołającego — i to jest decyzja, nie niedoróbka.** Ścieżka
+zapisu, która jej nie podaje, działa jak dotąd. Wymuszenie wersji wszędzie naraz zmieniłoby
+zachowanie **każdej** akcji w aplikacji w jednym kroku, a jedynym dowodem byłby kompilator. Wersja
+mimo to **rośnie przy każdym zapisie**, więc zadanie 16 dostanie na czym oprzeć `ConflictDialog`
+bez kolejnej migracji.
+
+**Pilot, nie czterdzieści kolumn.** `Task` i `Note` — dwa różne kształty współpracy: rekord
+strukturalny (status, termin) i długi tekst. Kolumna na czterdziestu modelach, z których korzysta
+jeden, to czterdzieści nieużywanych kolumn i zero dowodu.
+
+**Dowód jest z równoległego zapisu, nie z lektury kodu.** Obie ścieżki wyglądają poprawnie;
+różnicę widać dopiero, gdy dwa zapisy spotkają się na jednym rekordzie. Test odtwarza to
+spotkanie: dwie osoby odczytują wersję N, obie zapisują — **pierwsza wygrywa, druga dostaje
+konflikt**, a w bazie zostaje treść pierwszej. Przed 062 obie kończyły się sukcesem.
+
+**Bramka wyprowadza zbiór modeli ze SCHEMATU**, nie z listy w skrypcie: rozszerzenie wersjonowania
+na kolejny model automatycznie obejmuje go kontrolą, zamiast wymagać pamiętania o dwóch miejscach.
+Wskazała dokładnie dwa pliki — po jednym na moduł pilota.
+
+**Świadomie pominięte** (rozdz. 8.5.3): liczniki aktualizowane atomowo (`increment` jest
+z definicji bezkonfliktowy), wpisy dziennikowe (tylko dopisywane) i zasoby jednego użytkownika
+(`AssistantPref`, `DashboardPref`, `UserMenuPref` — nie ma z kim się ścigać).
+
+**Co robi zadanie 16:** `ConflictDialog` — użytkownik dostaje wybór („zobacz różnice", „nadpisz",
+„odrzuć moje", „scal ręcznie") zamiast surowego błędu, a wersja odrzucona trafia do kosza jako
+robocza. Do tego czasu konflikt kończy się komunikatem po polsku, zrozumiałym bez kontekstu
+technicznego.
+
+**Bramki:** build **exit 0**, `test:unit` **727/727**, liczniki **160 / 551 / 35 / 35** bez ruchu,
+nowa `check:versioning` (2 modele, 2 pliki zapisujące, manifest pusty).
