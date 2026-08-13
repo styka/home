@@ -1136,3 +1136,52 @@ prawdy porównaną komórka po komórce, tak jak w 056. To jest właściwy etap 
 
 **Bramki:** build **exit 0**, `test:unit` **696/696**, liczniki **160 / 551 / 35 / 35** bez ruchu,
 nowa `check:ownership-scope` z trzema wyjątkami, 76 z 79 miejsc przeniesionych.
+
+
+---
+
+### 058 — Zakresy list idą po przestrzeniach; etap 3B domknięty · 2026-08-13
+
+**Zdanie z rozdz. 8.2 jest odtąd prawdą.** *„Dziś każde zapytanie musi obsłużyć oba przypadki
+(`OR: [{ownerId}, {ownerTeamId: {in: teamIds}}]`). Po zmianie: `where: { workspaceId: { in:
+mySpaces } }`."* Po 057 warunek mieszkał w jednym miejscu, więc **zmiana reguły objęła jeden plik**,
+a nie 79. To jest cały zysk z rozdzielenia kroku 1 i 2.
+
+**Trzy gałęzie zamiast jednej** — i dwie z nich są przejściowe:
+
+| Gałąź | Po co |
+|-------|-------|
+| `workspaceId in mojePrzestrzenie` | reguła docelowa; osobista i zespołowe to po prostu przestrzenie, których jestem członkiem |
+| `workspaceId: null` + `ownerId` | **sierota** musi zostać widoczna dla właściciela, dopóki kolumna jest nullowalna |
+| `workspaceId: null` + `ownerTeamId` | to samo dla sierot zespołowych |
+
+**Warunek `workspaceId: null` przy gałęziach awaryjnych jest sednem, nie ozdobą.** Bez niego stara
+reguła działałaby **obok** nowej i zbiory wyszłyby równe niezależnie od tego, czy gałąź po
+przestrzeniach w ogóle działa — czyli dokładnie ta pułapka, w którą 056 wpadło i z której wyszło
+dopiero po naprawie fixture'u. Tym razem zastosowana z wyprzedzeniem, z osobną asercją: test
+sprawdza, że **bez** gałęzi po przestrzeniach zasób z wypełnioną przestrzenią **wypada** ze zbioru.
+
+**Dowód jest równością zbiorów, nie kształtów.** 057 porównywało kształt zapytania, bo przenosiło
+zapis. Tu zmienia się znaczenie, więc porównujemy **zbiory identyfikatorów** zwrócone przez bazę,
+starym i nowym warunkiem, na tym samym fixture — z przestrzeniami, sierotą i cudzym zasobem.
+
+**Trzecia kopia tej samej reguły.** Przy przełączaniu wyszło, że `platform/auth/ownership.ts` ma
+`ownedByWhere` — funkcję robiącą dokładnie to samo, co helper z 057, tylko w innym pliku i z innym
+zestawem konsumentów. 057 jej nie zauważyło, bo szukało wzorca `ownerTeamId: { in: … }`, a ta go
+zawierała i została **zamieciona jak każde inne miejsce** — czyli bramka zadziałała, ale duplikat
+funkcji przetrwał. Jej test sprawdzał **kształt starej reguły**; zastąpiony, bo utrzymanie go
+znaczyłoby pilnowanie stanu, który świadomie zmieniamy (ten sam ruch, co w 053).
+
+**Etap 3 zadania 11 jest domknięty w całości.** Rozstrzyganie dostępu (056) i zakresy list (058)
+mówią tym samym językiem.
+
+#### Co zostaje na etap 4 — ostatni
+
+`NOT NULL` na `workspaceId`; policzenie i rozstrzygnięcie losu **sierot**; usunięcie
+`ownerId`/`ownerTeamId` z odczytów i ze schematu; zdjęcie **wyzwalacza** z 055 i **cichych
+wariantów lustra** z 051; usunięcie **gałęzi awaryjnych** z tego przebiegu i wyjątku
+`sharingGuard.ts` z manifestu 057. Warunek wejścia: 3A i 3B działają na produkcji, a liczba sierot
+jest znana i wyzerowana.
+
+**Bramki:** build **exit 0** (22 bramki), `test:unit` **701/701**, liczniki **160 / 551 / 35 / 35**
+bez ruchu, `check:ownership-scope` z trzema wyjątkami.
