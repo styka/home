@@ -1,12 +1,12 @@
 {
   "wlasciciel": {
     "lista wlasna": "dozwolone",
-    "lista zespolu": "odmowa",
+    "lista zespolu": "dozwolone",
     "przepis: odczyt": "dozwolone",
     "przepis: edycja": "dozwolone",
     "przepis PUBLICZNY: odczyt": "dozwolone",
     "przepis PUBLICZNY: edycja": "dozwolone",
-    "ksiazka zespolu": "odmowa"
+    "ksiazka zespolu": "dozwolone"
   },
   "czlonek zespolu": {
     "lista wlasna": "odmowa",
