@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhere } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "./pets";
 import { notifyUser } from "@/lib/notify";
@@ -26,10 +26,7 @@ export async function getEnclosures(): Promise<PetEnclosure[]> {
   const teamIds = await getAccessibleTeamIds(user.id, "pets");
   const list = await prisma.petEnclosure.findMany({
     where: {
-      OR: [
-        { ownerId: user.id },
-        ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-      ],
+      ...ownedWhere(user.id, teamIds),
     },
     orderBy: { createdAt: "asc" },
   });

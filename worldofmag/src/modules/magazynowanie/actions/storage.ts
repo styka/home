@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhere, ownedOr } from "@/platform/auth/serverUtils";
 import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
@@ -32,10 +32,7 @@ export type StorageMode = "home" | "pro";
 
 /** Buduje warunek własności (user OR teamy) dla dowolnego modelu magazynowego. */
 function ownershipOr(userId: string, teamIds: string[]) {
-  return [
-    { ownerId: userId },
-    ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-  ];
+  return ownedOr(userId, teamIds);
 }
 
 async function assertStorageItemAccess(storageItemId: string, userId: string): Promise<void> {
@@ -60,10 +57,7 @@ export async function getStorageItems(teamId?: string): Promise<StorageItemWithM
     ? teamIds.includes(teamId)
       ? [{ ownerTeamId: teamId }]
       : []
-    : [
-        { ownerId: user.id },
-        ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-      ];
+    : ownedOr(user.id, teamIds);
 
   if (ownership.length === 0) return [];
 
@@ -83,10 +77,7 @@ export async function getLowStock(): Promise<StorageItemWithMovements[]> {
 
   const items = await prisma.storageItem.findMany({
     where: {
-      OR: [
-        { ownerId: user.id },
-        ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-      ],
+      ...ownedWhere(user.id, teamIds),
       minQuantity: { not: null },
     },
     include: { movements: { orderBy: { createdAt: "desc" }, take: 20 } },

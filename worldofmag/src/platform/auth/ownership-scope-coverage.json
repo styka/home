@@ -1,0 +1,8 @@
+{
+  "_opis": "057 (etap 3B krok 1): miejsca, które ŚWIADOMIE piszą zakres własności ręcznie, zamiast używać `ownedWhere`/`ownedOr`. Bramka `check:ownership-scope` sprawdza manifest w obie strony — wpis dotyczący pliku, który warunku już nie zawiera, też wywala build.",
+  "wyjatki": {
+    "src/modules/tasks/lib/sharingGuard.ts": "056: gałąź AWARYJNA dla sierot — `{ workspaceId: null, ownerTeamId: { in: teamIds } }`. Nie jest zakresem własności, tylko dopełnieniem zakresu po przestrzeniach dla rekordów, które przestrzeni nie mają. Helper jej nie wyraża i nie powinien: znika w etapie 4 razem z kolumną.",
+    "src/actions/skins.ts": "Skórki nie mają zakresu własności w rozumieniu C-21: widać systemowe (`isSystem`), swoje, zespołowe I PUBLICZNE (`isPublic`). Wstawienie tu `ownedWhere` sugerowałoby, że to ta sama reguła, co w modułach — a jest szersza o dwie gałęzie, których helper nie zna i nie ma znać.",
+    "src/app/api/llm/home/briefing/route.ts": "Warunek dotyczy własności PROJEKTU zagnieżdżonej w relacji zadania (`{ project: { ownerTeamId: … } }`), a nie własności czytanego rekordu. Helper zwraca warunek dla rekordu, więc zagnieżdżenie musiałoby go rozpakowywać — zapis wyszedłby dłuższy i mniej czytelny niż to, co zastępuje."
+  }
+}

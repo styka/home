@@ -1,7 +1,7 @@
 // Z-010: handler akcji asystenta dla modułu Flota (pojazdy + tankowania + serwis).
 // Scala trzy dawne bloki `module === "flota"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
-import { getUserTeamIds } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
 import { addFuelLog, addServiceRecord, createVehicle, updateVehicle, deleteVehicle } from "../contract";
 import { asStr, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
@@ -16,7 +16,7 @@ export async function executeFlotaAction(action: AIAction, userId: string): Prom
     const vehicleName = asStr(params.vehicleName);
     const vehicle = await prisma.vehicle.findFirst({
       where: {
-        OR: [{ ownerId: userId }, teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" }],
+        OR: ownedOr(userId, teamIds),
         ...(vehicleName ? { name: { contains: vehicleName, mode: "insensitive" } } : {}),
       },
       orderBy: { updatedAt: "desc" },
@@ -33,7 +33,7 @@ export async function executeFlotaAction(action: AIAction, userId: string): Prom
     const vehicleName = asStr(params.vehicleName);
     const vehicle = await prisma.vehicle.findFirst({
       where: {
-        OR: [{ ownerId: userId }, teamIds.length > 0 ? { ownerTeamId: { in: teamIds } } : { id: "" }],
+        OR: ownedOr(userId, teamIds),
         ...(vehicleName ? { name: { contains: vehicleName, mode: "insensitive" } } : {}),
       },
       orderBy: { updatedAt: "desc" },

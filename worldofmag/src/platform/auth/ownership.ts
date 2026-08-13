@@ -1,4 +1,5 @@
-import { getUserTeamIds, requireAuth } from "@/platform/auth/serverUtils"
+
+import { ownedOr } from "@/platform/auth/serverUtils";import { getUserTeamIds, requireAuth } from "@/platform/auth/serverUtils"
 
 export { getUserTeamIds }
 
@@ -18,10 +19,7 @@ export async function requireUserId(): Promise<string> {
  */
 export function ownedByWhere(userId: string, teamIds: string[]) {
   return {
-    OR: [
-      { ownerId: userId },
-      ...(teamIds.length ? [{ ownerTeamId: { in: teamIds } }] : []),
-    ],
+    OR: ownedOr(userId, teamIds),
   }
 }
 

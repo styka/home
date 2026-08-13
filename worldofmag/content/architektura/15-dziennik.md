@@ -1090,3 +1090,49 @@ przypisanie jej czegokolwiek byłoby poszerzeniem dostępu na zapas.
 **Bramki:** build **exit 0**, `test:unit` **690/690**, liczniki **160 / 551 / 35 / 35** bez ruchu,
 licznik zapytań na sprawdzenie dostępu **bez wzrostu**, `git diff` bez ani jednego pliku
 w `src/app/` i `src/components/`.
+
+
+---
+
+### 057 — Zakres własności w jednym miejscu, etap 3B krok 1 z dwóch · 2026-08-13
+
+**Po co ten krok.** 056 przełączyło **rozstrzyganie dostępu** na przestrzenie. Zakresy list zostały
+na parze kolumn — i było ich **79 w 52 plikach**. Rozdz. 8.2 obiecuje, że po zmianie zapytanie
+brzmi `where: { workspaceId: { in: mySpaces } }`; żeby tę obietnicę spełnić **jedną** zmianą,
+warunek musiał najpierw istnieć w jednym miejscu. Ten przebieg go tam przeniósł i **nie zmienił
+w nim niczego**.
+
+**Cztery zapisy tego samego znaczenia** — tyle znalazło się w repo:
+
+| Zapis | Uwaga |
+|-------|-------|
+| `OR: [{ownerId}, {ownerTeamId: {in: teamIds}}]` | bezwarunkowy; przy pustej liście wysyłał `in: []` |
+| `OR: [{ownerId}, ...(teamIds.length > 0 ? […] : [])]` | ostrożniejszy, ten sam wynik |
+| `teamIds.length ? … : …` | to samo bez `> 0` — i to on wywrócił pierwszy przebieg regexpa |
+| `[{ownerId}, teamIds.length > 0 ? {…} : { id: "" }]` | **wartownik**: prawdziwy predykat, który nie pasuje do żadnego wiersza |
+
+Ostatni jest najciekawszy. `{ id: "" }` działał, ale wyrażał „brak gałęzi" **sztuczką** — czytelnik
+musi się domyślić, że pusty identyfikator nigdy nie wystąpi. Cztery zapisy jednej reguły to nie
+kwestia stylu: każdy z nich trzeba by osobno znaleźć i osobno przełączyć w etapie 3B.
+
+**Równoważność sprawdzona, nie założona.** Zdanie „`in: []` nie pasuje do niczego, więc warianty są
+równoważne" jest prawdziwe, ale to zdanie **o Prismie**, a nie fakt z tego repo. Test
+`ownershipScope.test.ts` porównuje kształty wprost — łącznie z tym, że helper **nie** wpuszcza
+rekordów systemowych (`ownerId = null`), bo to odrębna reguła słownikowa i pomylenie ich dołożyłoby
+po cichu dostęp do cudzych rekordów wspólnych.
+
+**Bramka złapała dwa miejsca, których nie widział mój `grep`.** Sweep leciał po `--include=*.ts`,
+a `src/app/kitchen/page.tsx` i `src/app/shopping/page.tsx` to **`.tsx`**. Gdyby bramka przeszukiwała
+ten sam zbiór plików co sweep, oba zostałyby przy starej regule i wypadły z etapu 3B — a build
+byłby zielony. To jest argument za tym, żeby bramka **nie** dziedziczyła założeń narzędzia, które
+sprawdza.
+
+**Trzy świadome wyjątki**, każdy z powodem w manifeście: gałąź awaryjna sierot z 056 (nie jest
+zakresem własności, tylko jego dopełnieniem), skórki (reguła **szersza** — systemowe, swoje,
+zespołowe i publiczne) oraz briefing (własność **projektu** zagnieżdżona w relacji zadania).
+
+**Co robi 058:** przełącza `ownedWhere`/`ownedOr` na `workspaceId: { in: … }` — jeden plik, z tabelą
+prawdy porównaną komórka po komórce, tak jak w 056. To jest właściwy etap 3B.
+
+**Bramki:** build **exit 0**, `test:unit` **696/696**, liczniki **160 / 551 / 35 / 35** bez ruchu,
+nowa `check:ownership-scope` z trzema wyjątkami, 76 z 79 miejsc przeniesionych.

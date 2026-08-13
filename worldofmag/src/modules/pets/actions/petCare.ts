@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "./pets";
 import { computeNextDue, parseRecurringRule } from "@/lib/recurrence";
@@ -33,8 +33,7 @@ async function accessiblePetIds(userId: string): Promise<string[]> {
   const pets = await prisma.pet.findMany({
     where: {
       OR: [
-        { ownerId: userId },
-        ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
+        ...ownedOr(userId, teamIds),
         { shares: { some: { userId } } },
         ...(teamIds.length > 0 ? [{ shares: { some: { teamId: { in: teamIds } } } }] : []),
       ],

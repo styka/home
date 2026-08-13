@@ -3,7 +3,7 @@
 // LLM o dobór przepisów do par (dzień, slot). Rzuca JobError przy błędach.
 import { prisma } from "@/platform/db/prisma";
 import { chatComplete } from "@/platform/llm/chat";
-import { getUserTeamIds } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
 import { addDays, format } from "date-fns";
 import { JobError, type JobContext } from "@/platform/jobs/types";
 import { usageFromChat } from "@/platform/ai/usage";
@@ -101,7 +101,7 @@ async function runPlanWeek(
   const people = Math.max(1, Math.min(12, Math.floor(payload.people ?? 2)));
 
   const teamIds = await getUserTeamIds(ownerId);
-  const ownerOr = [{ ownerId }, ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : [])];
+  const ownerOr = ownedOr(ownerId, teamIds);
 
   const recipes = await prisma.recipe.findMany({
     where: { isArchived: false, OR: ownerOr },

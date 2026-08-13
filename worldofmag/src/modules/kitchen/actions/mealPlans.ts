@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOr } from "@/platform/auth/serverUtils";
 import { categorize } from "@/modules/shopping/contract";
 import { computeRecipeCost } from "../lib/recipeCost";
 import { trackActivity } from "@/actions/activity";
@@ -60,10 +60,7 @@ export async function getMealPlan(
     ? teamIds.includes(teamId)
       ? [{ ownerTeamId: teamId }]
       : []
-    : [
-        { ownerId: user.id },
-        ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-      ];
+    : ownedOr(user.id, teamIds);
 
   if (ownershipFilter.length === 0) return [];
 
@@ -112,7 +109,7 @@ export async function getMealPlanCost(range: { from: Date; to: Date }, teamId?: 
     ? teamIds.includes(teamId)
       ? [{ ownerTeamId: teamId }]
       : []
-    : [{ ownerId: user.id }, ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : [])];
+    : ownedOr(user.id, teamIds);
   if (ownershipFilter.length === 0) return { total: 0, pricedEntries: 0, totalEntries: 0 };
 
   const entries = await prisma.mealPlanEntry.findMany({
@@ -428,10 +425,7 @@ export async function previewShoppingListFromPlan(
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
-  const ownership = [
-    { ownerId: user.id },
-    ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-  ];
+  const ownership = ownedOr(user.id, teamIds);
 
   const entries = await prisma.mealPlanEntry.findMany({
     where: {
@@ -535,10 +529,7 @@ export async function generateShoppingListFromPlan(
   await assertListAccess(input.listId, user.id);
   const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
-  const ownership = [
-    { ownerId: user.id },
-    ...(teamIds.length > 0 ? [{ ownerTeamId: { in: teamIds } }] : []),
-  ];
+  const ownership = ownedOr(user.id, teamIds);
 
   const entries = await prisma.mealPlanEntry.findMany({
     where: {
