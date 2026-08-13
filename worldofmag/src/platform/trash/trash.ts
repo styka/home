@@ -9,6 +9,32 @@ const RETENTION_DAYS = 30;
 // 037: „weather" = propozycje „co robić" z modułu Pogoda (biblioteka pomysłów).
 export type TrashModule = "notes" | "tasks" | "weather";
 
+/**
+ * 066 (zadanie 16) — WERSJA ROBOCZA ODRZUCONA PRZY KONFLIKCIE.
+ *
+ * Rozdz. 8.5.2: *„Wersja odrzucona trafia do kosza jako wersja robocza, żeby dało się do niej
+ * wrócić."* Bez tego przycisk „odrzuć moje zmiany" byłby **utratą pracy jednym kliknięciem** —
+ * czyli dokładnie tym, co zadanie 15 miało skończyć, tylko z ładniejszym oknem.
+ *
+ * Zapisujemy to jako zwykły wpis kosza, nie nowy byt: kosz **już** umie retencję, przywracanie
+ * i sprzątanie, a wersja robocza nie różni się od usuniętego rekordu niczym, co wymagałoby
+ * osobnej tabeli. `entityId` wskazuje rekord, którego dotyczyła — dzięki temu przywrócenie ma
+ * do czego wrócić.
+ */
+export async function recordRejectedDraft(
+  userId: string,
+  data: { module: TrashModule; entityId: string; title: string; payload: unknown },
+): Promise<void> {
+  await recordTrash(userId, {
+    module: data.module,
+    entityId: data.entityId,
+    // Prefiks jest częścią treści, nie ozdobą: w koszu wersja robocza stoi obok usuniętych
+    // rekordów i bez niego wyglądałaby na skasowany zasób, którym nie jest.
+    title: `Wersja robocza (konflikt): ${data.title}`,
+    payload: data.payload,
+  });
+}
+
 /** Zapisuje migawkę usuwanej encji do kosza i przy okazji czyści wpisy starsze niż 30 dni. */
 export async function recordTrash(
   userId: string,
