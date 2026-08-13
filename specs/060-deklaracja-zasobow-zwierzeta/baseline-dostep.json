@@ -1,0 +1,38 @@
+{
+  "wlasciciel": {
+    "zwierze wlasne: odczyt": "dozwolone",
+    "zwierze wlasne: edycja": "dozwolone",
+    "zwierze zespolowe: odczyt": "dozwolone",
+    "zwierze zespolowe: edycja": "dozwolone"
+  },
+  "czlonek zespolu wlasciciela": {
+    "zwierze wlasne: odczyt": "odmowa",
+    "zwierze wlasne: edycja": "odmowa",
+    "zwierze zespolowe: odczyt": "dozwolone",
+    "zwierze zespolowe: edycja": "dozwolone"
+  },
+  "udostepnione VIEWER": {
+    "zwierze wlasne: odczyt": "dozwolone",
+    "zwierze wlasne: edycja": "odmowa",
+    "zwierze zespolowe: odczyt": "odmowa",
+    "zwierze zespolowe: edycja": "odmowa"
+  },
+  "udostepnione EDITOR": {
+    "zwierze wlasne: odczyt": "dozwolone",
+    "zwierze wlasne: edycja": "dozwolone",
+    "zwierze zespolowe: odczyt": "odmowa",
+    "zwierze zespolowe: edycja": "odmowa"
+  },
+  "udostepnione zespolowi": {
+    "zwierze wlasne: odczyt": "dozwolone",
+    "zwierze wlasne: edycja": "dozwolone",
+    "zwierze zespolowe: odczyt": "odmowa",
+    "zwierze zespolowe: edycja": "odmowa"
+  },
+  "obcy": {
+    "zwierze wlasne: odczyt": "odmowa",
+    "zwierze wlasne: edycja": "odmowa",
+    "zwierze zespolowe: odczyt": "odmowa",
+    "zwierze zespolowe: edycja": "odmowa"
+  }
+}

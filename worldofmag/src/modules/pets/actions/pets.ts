@@ -16,28 +16,27 @@ const SHARE_INCLUDE = {
  * Rzuca, jeśli użytkownik nie ma dostępu do zwierzęcia.
  * `needEdit` wymaga roli właściciela/edytora (share VIEWER nie wystarcza).
  */
+/**
+ * 060: dostęp do zwierzęcia rozstrzyga PLATFORMA, na podstawie deklaracji `pets.pet`.
+ *
+ * Guard został cienką nakładką: tłumaczy dwa poziomy dawnego API (`needEdit`) na dwie operacje
+ * z deklaracji. Reguła — własność, własność zespołowa, udostępnienia, dziedziczenie, nadania —
+ * mieszka w jednym miejscu dla całej aplikacji.
+ *
+ * Sygnatura i komunikaty **bez zmian**: użytkownik nie ma zauważyć przenosin. Tabela prawdy
+ * (`__tests__/truthTablePets`) porównuje 24 komórki z punktem odniesienia policzonym PRZED zmianą.
+ */
 export async function assertPetAccess(petId: string, userId: string, needEdit = false): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
-  const pet = await prisma.pet.findUnique({
-    where: { id: petId },
-    select: {
-      ownerId: true,
-      ownerTeamId: true,
-      shares: { select: { userId: true, teamId: true, role: true } },
-    },
-  });
-  if (!pet) throw new Error("Zwierzę nie istnieje");
-  if (pet.ownerId === userId) return;
-  if (pet.ownerTeamId && teamIds.includes(pet.ownerTeamId)) return;
-
-  const share = pet.shares.find(
-    (s) => s.userId === userId || (s.teamId && teamIds.includes(s.teamId)),
-  );
-  if (share) {
-    if (!needEdit || share.role === "EDITOR") return;
-    throw new Error("Masz dostęp tylko do odczytu");
+  const { requirePetModuleAccess } = await import("../lib/sharingGuard");
+  const istnieje = await prisma.pet.findUnique({ where: { id: petId }, select: { id: true } });
+  // Rozróżnienie „nie istnieje" od „brak dostępu" zostaje: platforma na oba odpowiada odmową,
+  // a dawny komunikat niósł więcej i nie ma powodu go tracić.
+  if (!istnieje) throw new Error("Zwierzę nie istnieje");
+  try {
+    await requirePetModuleAccess(userId, { type: "pets.pet", id: petId }, needEdit ? "pet.edit" : "pet.read");
+  } catch {
+    throw new Error(needEdit ? "Masz dostęp tylko do odczytu" : "Brak dostępu do zwierzęcia");
   }
-  throw new Error("Brak dostępu do zwierzęcia");
 }
 
 export async function getPets(opts?: { includeInactive?: boolean }): Promise<Pet[]> {
