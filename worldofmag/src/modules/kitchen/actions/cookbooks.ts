@@ -9,15 +9,15 @@ import type { Cookbook } from "@/types/kitchen";
 export type CookbookWithCount = Cookbook & { recipeCount: number };
 
 export async function assertCookbookAccess(cookbookId: string, userId: string): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
-  const cb = await prisma.cookbook.findUnique({
-    where: { id: cookbookId },
-    select: { ownerId: true, ownerTeamId: true },
-  });
-  if (!cb) throw new Error("Książka kucharska nie istnieje");
-  if (cb.ownerId === userId) return;
-  if (cb.ownerTeamId && teamIds.includes(cb.ownerTeamId)) return;
-  throw new Error("Brak dostępu do tej książki kucharskiej");
+  // 064: rozstrzyga platforma (`kitchen.cookbook`).
+  const { requireModuleAccess } = await import("../lib/sharingGuard");
+  const istnieje = await prisma.cookbook.findUnique({ where: { id: cookbookId }, select: { id: true } });
+  if (!istnieje) throw new Error("Książka kucharska nie istnieje");
+  try {
+    await requireModuleAccess(userId, { type: "kitchen.cookbook", id: cookbookId }, "cookbook.edit");
+  } catch {
+    throw new Error("Brak dostępu do tej książki kucharskiej");
+  }
 }
 
 export async function getCookbook(id: string): Promise<Cookbook | null> {

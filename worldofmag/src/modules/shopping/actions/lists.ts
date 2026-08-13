@@ -213,20 +213,15 @@ export async function unarchiveList(id: string): Promise<void> {
  * Throws if the user doesn't own the list (directly or via a team).
  */
 export async function assertListAccess(listId: string, userId: string): Promise<void> {
-  const list = await prisma.shoppingList.findUnique({
-    where: { id: listId },
-    select: { ownerId: true, ownerTeamId: true },
-  });
-  if (!list) throw new Error("List not found");
-
-  if (list.ownerId === userId) return;
-
-  if (list.ownerTeamId) {
-    const membership = await prisma.teamMember.findUnique({
-      where: { teamId_userId: { teamId: list.ownerTeamId, userId } },
-    });
-    if (membership) return;
+  // 064: dostęp rozstrzyga PLATFORMA na podstawie deklaracji `shopping.list`. Guard został cienką
+  // nakładką tłumaczącą dawne API na operację z deklaracji i ZACHOWUJE dawne komunikaty —
+  // rozróżnienie „nie ma listy" od „brak dostępu" niesie informację, której platforma nie daje.
+  const { requireModuleAccess } = await import("../lib/sharingGuard");
+  const istnieje = await prisma.shoppingList.findUnique({ where: { id: listId }, select: { id: true } });
+  if (!istnieje) throw new Error("List not found");
+  try {
+    await requireModuleAccess(userId, { type: "shopping.list", id: listId }, "list.edit");
+  } catch {
+    throw new Error("Access denied");
   }
-
-  throw new Error("Access denied");
 }

@@ -294,3 +294,55 @@ if (errors.length) {
 console.log(
   `✓ Rejestr modułów: ${dirs.length} modułów w src/modules — każdy z contract.ts, kompletną deklaracją, wpięciem w rejestr i bez kodu poza swoim katalogiem.`,
 );
+
+// ── 064: KLASYFIKACJA POD KĄTEM DEKLARACJI ZASOBÓW (zadanie 13) ───────────────────────────────
+//
+// Zadanie 13 brzmi „deklaracje we wszystkich modułach". Bez jawnej listy nie dałoby się go
+// zamknąć: zawsze zostawałoby „jeszcze piętnaście", bez wiedzy, czy tamte piętnaście czegoś
+// potrzebuje, czy nie. Każdy katalog w `src/modules` musi mieć wpis z rodzajem i powodem;
+// wpis `deklaracja` musi mieć plik `sharing.ts`, a plik `sharing.ts` — wpis `deklaracja`.
+(function sprawdzKlasyfikacje() {
+  const klasPath = path.join(root, "src/lib/sharing-classification.json");
+  if (!fs.existsSync(klasPath)) {
+    console.error("✖ Brak `src/lib/sharing-classification.json` — zadanie 13 wymaga klasyfikacji modułów.");
+    process.exit(1);
+  }
+  const klas = JSON.parse(fs.readFileSync(klasPath, "utf8")).moduly || {};
+  const katalogi = fs
+    .readdirSync(path.join(root, "src/modules"), { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name);
+
+  const bledy = [];
+  for (const m of katalogi) {
+    const wpis = klas[m];
+    if (!wpis) {
+      bledy.push(`moduł „${m}" nie ma klasyfikacji — dopisz rodzaj i POWÓD do sharing-classification.json`);
+      continue;
+    }
+    if (!wpis.powod || wpis.powod.length < 20) {
+      bledy.push(`moduł „${m}" ma klasyfikację bez sensownego powodu`);
+    }
+    const maPlik = fs.existsSync(path.join(root, "src/modules", m, "sharing.ts"));
+    if (wpis.rodzaj === "deklaracja" && !maPlik) {
+      bledy.push(`moduł „${m}" sklasyfikowany jako „deklaracja", a nie ma pliku sharing.ts`);
+    }
+    if (wpis.rodzaj !== "deklaracja" && maPlik) {
+      bledy.push(`moduł „${m}" ma sharing.ts, a klasyfikacja mówi „${wpis.rodzaj}" — sprzeczność`);
+    }
+  }
+  for (const m of Object.keys(klas)) {
+    if (!katalogi.includes(m)) bledy.push(`klasyfikacja opisuje nieistniejący moduł „${m}"`);
+  }
+  if (bledy.length) {
+    console.error("\n✖ Klasyfikacja zasobów (zadanie 13):\n");
+    for (const b of bledy) console.error(`  ✖ ${b}`);
+    console.error("");
+    process.exit(1);
+  }
+  const ile = (r) => Object.values(klas).filter((w) => w.rodzaj === r).length;
+  console.log(
+    `✓ Klasyfikacja zasobów: ${katalogi.length} modułów — ${ile("deklaracja")} z deklaracją, ` +
+      `${ile("zakres")} przez zakres, ${ile("wlasciciel")} tylko właściciel.`,
+  );
+})();

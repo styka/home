@@ -44,6 +44,19 @@ export interface ResourceFacts {
   workspaceId?: string | null;
   ownerId: string | null;
   ownerTeamId: string | null;
+  /**
+   * 064 — zasób OTWARTY: rola, którą dostaje **każda zalogowana osoba**, niezależnie od relacji.
+   *
+   * Istnieje, bo dostępu „publiczny przepis" nie wyraża ani własność, ani nadanie per-osoba —
+   * a bez tego pola moduł Kuchnia musiałby zostać przy własnym guardzie i zadanie 13 nie dałoby
+   * się domknąć. Rozdz. 8.4 przewiduje pokrewne pojęcie (`subjectType: "link"`); tamto wymaga
+   * wiersza nadania na zasób, to jest własnością samego zasobu.
+   *
+   * **Nazwa mówi o ROLI, nie o fladze** (`publicRole`, nie `isPublic`): platforma nie wie, skąd
+   * moduł ją bierze, i nie ma wiedzieć. Kuchnia wyprowadza ją z kolumny `isPublic`, ale inny
+   * moduł może z czegokolwiek innego.
+   */
+  publicRole?: ResourceRole | null;
   /** Zasób nadrzędny — stąd bierze się dziedziczenie, bez pisania go w module. */
   parent?: ResourceRef;
 }

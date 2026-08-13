@@ -1388,3 +1388,44 @@ mówi coś o dacie.
 Dopisanie należy do zadania 23 i jest tam odnotowane.
 
 **Bramki:** build **exit 0**, `test:unit` **733/733**.
+
+
+---
+
+### 064 — Zadanie 13 domknięte: trzy guardy, nie siedemnaście modułów · 2026-08-13
+
+**Pomiar zmienił rozmiar zadania.** „Deklaracje `resources` we wszystkich modułach" wyglądało na
+siedemnaście przebiegów po pilocie i Zwierzętach. Policzenie guardów pokazało co innego: decyzję
+o dostępie **do pojedynczego rekordu** podejmuje **sześć** modułów. Pozostałe piętnaście rozstrzyga
+albo samym **zakresem list** (ujednoliconym w 057/058), albo sprawdzeniem `ownerId === user.id`
+**bez zespołów i bez udostępnień**.
+
+Deklaracja dla modułu ściśle osobistego wyrażałaby dokładnie to, co platforma robi domyślnie —
+piętnaście plików bez konsumenta, czyli dokładnie to, czego zakazuje C-35. **Zadanie 13 domyka więc
+trzy guardy** (lista zakupów, przepis, książka kucharska) **plus jawną klasyfikację wszystkich
+21 modułów** — bo bez niej pozycja checklisty zostałaby otwarta na zawsze, z niewiadomą „ile
+jeszcze".
+
+Klasyfikacja jest **bramką**, nie notatką: katalog w `src/modules` bez wpisu wywala build, wpis
+`deklaracja` bez pliku `sharing.ts` też, i odwrotnie — plik bez wpisu. Powód jest wymagany.
+Rozkład: **4 z deklaracją, 11 przez zakres, 6 tylko właściciel**.
+
+**Platforma dostała jedno nowe pojęcie: zasób OTWARTY.** Przepis z `isPublic` to jedyny w aplikacji
+dostęp **bez żadnej relacji** do zasobu — obcy czyta, ale nie edytuje. Nie wyraża tego ani własność,
+ani nadanie per-osoba, więc bez tego pola Kuchnia musiałaby zostać przy własnym guardzie i zadanie
+13 nie dałoby się zamknąć. Pole nazywa się `publicRole`, **nie `isPublic`**: platforma dostaje
+rolę, a nie flagę, i nie wie, skąd moduł ją bierze. Kuchnia wyprowadza ją z kolumny; inny moduł
+może z czegokolwiek.
+
+**Trzeci raz ta sama zmieniona komórka.** Właściciel zespołu bez wiersza `TeamMember` zyskał dostęp
+do listy zakupów i książki kucharskiej swojego zespołu — po 056 (Zadania) i 060 (Zwierzęta) to już
+nie odkrycie, tylko **przewidywalna konsekwencja** czytania przestrzeni zamiast członkostw.
+Pozostałe 19 komórek bez ruchu, w tym **cały przepis publiczny**.
+
+Warto to nazwać: **gdy ta sama różnica pojawia się trzeci raz, przestaje być niespodzianką i staje
+się regułą** — a regułę trzeba zapisać raz, zamiast odkrywać ją w każdym module z osobna. Zapisana
+jest w specach 056, 060 i 064; etap 4 zadania 11 usunie jej źródło, bo `getUserTeamIds` przestanie
+być drugą definicją przynależności.
+
+**Bramki:** build **exit 0**, `test:unit` **738/738**, `check:module-registry` **dziesięć kontroli**
+(doszła klasyfikacja), liczniki **160 / 551 / 35 / 35** bez ruchu.
