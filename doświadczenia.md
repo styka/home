@@ -4,6 +4,23 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-12 — Zielony test, który dowodził, że nowy kod się NIE uruchomił
+**Problem:** Po przełączeniu rozstrzygania dostępu z pary `ownerId`/`ownerTeamId` na `workspaceId`
+tabela prawdy (25 komórek, punkt odniesienia z poprzedniego przebiegu) przeszła **w całości** za
+pierwszym razem. Wyglądało to na dowód równoważności. Było odwrotnie: fixture tworzy użytkowników
+wprost przez Prismę, z pominięciem zdarzenia logowania, więc **nie mieli przestrzeni osobistych**.
+Wyzwalacz wypełniający `workspaceId` nie miał czego wpisać, kolumna zostawała pusta, a nowa logika
+schodziła **gałęzią awaryjną** na starą regułę. Test mierzył stary mechanizm i potwierdzał, że jest
+zgodny sam ze sobą.
+**Rozwiązanie:** Fixture zakłada przestrzenie (`ensurePersonalWorkspace`, `syncTeamWorkspace`)
+**przed** utworzeniem zasobów. Dopiero wtedy wyszła prawdziwa różnica — jedna komórka, dokładnie ta
+przewidziana w specyfikacji.
+**Lekcja:** Gdy zmiana ma **warunkową gałąź awaryjną** („użyj nowego, a jeśli danych brak — starego"),
+zielony test nie odróżnia „nowe działa poprawnie" od „nowe się nie wykonało". Przed uwierzeniem
+w wynik trzeba sprawdzić, **którą gałęzią poszedł** — najprościej: zepsuć nową ścieżkę i zobaczyć,
+czy test w ogóle zauważy. Fixture, który omija normalną drogę powstawania danych (tworzy rekordy
+wprost, z pominięciem zdarzeń), będzie systematycznie trafiał w gałąź awaryjną.
+
 ## 2026-08-12 — Kompilator nie widzi BRAKU pola opcjonalnego
 **Problem:** Nowa nullowalna kolumna (`workspaceId`) musiała być odtąd wypełniana przy każdym
 tworzeniu rekordu. Pierwszy odruch — dopisać ją w miejscach zapisu — rozbił się o liczby: 224

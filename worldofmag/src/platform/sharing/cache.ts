@@ -1,6 +1,7 @@
 import * as React from "react";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { prisma } from "@/platform/db/prisma";
+import type { WorkspaceMemberRole } from "@/platform/workspaces/types";
 import type { AccessContext } from "./types";
 
 /**
@@ -40,7 +41,13 @@ function perRequest<A, R>(fn: (a: A) => Promise<R>): (a: A) => Promise<R> {
 export const getAccessContext = perRequest(async (userId: string): Promise<AccessContext> => {
   const [teamIds, workspaces, czlonkostwa] = await Promise.all([
     getUserTeamIds(userId),
-    prisma.workspaceMember.findMany({ where: { userId }, select: { workspaceId: true } }),
+    // 056: to samo zapytanie co dotąd, tylko z dwoma polami więcej. Rozstrzyganie po przestrzeni
+    // potrzebuje MOJEJ ROLI w niej i wskazania, która przestrzeń jest moja osobista — jedno i
+    // drugie idzie złączeniem, żeby sprawdzenie dostępu nie kosztowało dodatkowej rundy do bazy.
+    prisma.workspaceMember.findMany({
+      where: { userId },
+      select: { workspaceId: true, role: true, workspace: { select: { personalUserId: true } } },
+    }),
     // 053: role w zespołach — właściciel/admin dostaje wyższą rolę na zasobach zespołu niż zwykły
     // członek. Czytamy je RAZEM z resztą kontekstu, żeby nie dokładać zapytania na sprawdzenie.
     prisma.teamMember.findMany({
@@ -48,9 +55,17 @@ export const getAccessContext = perRequest(async (userId: string): Promise<Acces
       select: { teamId: true },
     }),
   ]);
+  // Przestrzeń osobistą rozpoznajemy po `personalUserId === userId`, a NIE po `kind === "personal"`:
+  // `kind` mówi, jakiego rodzaju jest przestrzeń, a `personalUserId` — CZYJA. Gdyby ktoś kiedyś był
+  // członkiem cudzej przestrzeni osobistej, sprawdzanie `kind` przyznałoby mu w niej rolę właściciela.
+  const wlasna = workspaces.find((w) => w.workspace?.personalUserId === userId);
   return {
     teamIds,
     adminTeamIds: czlonkostwa.map((m) => m.teamId),
     workspaceIds: workspaces.map((w) => w.workspaceId),
+    personalWorkspaceId: wlasna?.workspaceId ?? null,
+    workspaceRoles: Object.fromEntries(
+      workspaces.map((w) => [w.workspaceId, w.role as WorkspaceMemberRole]),
+    ),
   };
 });

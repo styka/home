@@ -1,4 +1,4 @@
-import type { ResourceRole } from "@/platform/workspaces/types";
+import type { ResourceRole, WorkspaceMemberRole } from "@/platform/workspaces/types";
 
 /**
  * Faza 2 przebudowy, zadanie 10 — SŁOWNIK POJĘĆ SPRAWDZANIA DOSTĘPU (rozdz. 8.4 i 8.9).
@@ -22,13 +22,26 @@ export interface ResourceRef {
 /**
  * Fakty o zasobie, na których platforma opiera decyzję.
  *
- * **To jest SZEW POD ZADANIE 11.** Dziś własność opisuje para `ownerId`/`ownerTeamId`, bo tak
- * wygląda model przejściowy. Gdy zadanie 11 doda `workspaceId` do 46 modeli, dojdzie tu **jedno
- * pole**, a w `access.ts` zmieni się **jeden krok** rozstrzygania — reszta zostaje. Gdyby zamiast
- * tego platforma pytała moduł wprost „czy ten user ma dostęp", nie dałoby się tego podmienić
- * w jednym miejscu, bo każdy moduł odpowiadałby po swojemu.
+ * **Szew pod zadanie 11 zadziałał tak, jak zapowiadał ten komentarz w 052:** doszło **jedno pole**
+ * (`workspaceId`), a w `access.ts` zmienił się **jeden krok** rozstrzygania. Reszta — łańcuch
+ * rodziców, nadania jednym zapytaniem, cache — została bez zmian. Gdyby platforma pytała moduł
+ * wprost „czy ten user ma dostęp", nie dałoby się tego podmienić w jednym miejscu, bo każdy moduł
+ * odpowiadałby po swojemu.
  */
 export interface ResourceFacts {
+  /**
+   * 056 (etap 3A) — **podstawowy fakt o własności**: przestrzeń, w której zasób żyje.
+   *
+   * Opcjonalne, i to z DWÓCH różnych powodów, które warto rozróżniać:
+   * - zasób, którego własność jest **wyprowadzona**, nie ma tej kolumny i mieć nie będzie
+   *   (`Task` — własność idzie przez `createdById` albo przez projekt, więc nie było tam
+   *   `ownerId`, więc migracja 0227 go nie objęła);
+   * - **sierota** — rekord, którego właściciel nie miał przestrzeni w chwili backfillu.
+   *
+   * W obu przypadkach rozstrzyganie wraca do pary `ownerId`/`ownerTeamId`. Pierwszy powód jest
+   * trwały, drugi zniknie w etapie 4.
+   */
+  workspaceId?: string | null;
   ownerId: string | null;
   ownerTeamId: string | null;
   /** Zasób nadrzędny — stąd bierze się dziedziczenie, bez pisania go w module. */
@@ -79,6 +92,16 @@ export interface AccessContext {
   /** Podzbiór `teamIds`, w których użytkownik jest właścicielem albo adminem — daje wyższą rolę. */
   adminTeamIds: string[];
   workspaceIds: string[];
+  /**
+   * 056: MOJA przestrzeń osobista. `facts.workspaceId` równy tej wartości znaczy „mój zasób" —
+   * odpowiednik dzisiejszego `facts.ownerId === userId`.
+   */
+  personalWorkspaceId: string | null;
+  /**
+   * 056: moja rola w każdej przestrzeni, której jestem członkiem. Czytane **tym samym** zapytaniem,
+   * co `workspaceIds` — sprawdzenie dostępu nie może kosztować dodatkowej rundy do bazy.
+   */
+  workspaceRoles: Record<string, WorkspaceMemberRole>;
 }
 
 /** Komunikat odmowy. Ten sam tekst, co dotychczasowe guardy — użytkownik nie ma zauważyć zmiany. */

@@ -65,9 +65,13 @@ async function zbierzLancuch(
 /**
  * Rola wynikająca z WŁASNOŚCI — bez zapytań, na faktach już wczytanych.
  *
- * Własność zespołowa liczy się **tylko wtedy, gdy moduł zadeklarował `teamOwnership`** (053).
- * Domyślne milczenie jest celowe: przyznanie dostępu na podstawie samej obecności kolumny
- * `ownerTeamId` byłoby poszerzeniem uprawnień bez decyzji (052/AC-5).
+ * **056 (etap 3A): decyduje PRZESTRZEŃ, gdy zasób ją ma.** To jest ten jeden krok, który miało
+ * zmienić zadanie 11 — zapowiedziany w komentarzu do `ResourceFacts` jeszcze w 052.
+ *
+ * Własność zespołowa liczy się **tylko wtedy, gdy moduł zadeklarował `teamOwnership`** (053) —
+ * i dotyczy to obu gałęzi. Przyznanie dostępu na podstawie samej obecności przestrzeni byłoby
+ * dokładnie tym poszerzeniem uprawnień bez decyzji, którego zabroniło 052/AC-5; przejście
+ * z `ownerTeamId` na `workspaceId` nie jest powodem, żeby tę zasadę porzucić.
  */
 function rolaZWlasnosci(
   facts: ResourceFacts,
@@ -75,8 +79,23 @@ function rolaZWlasnosci(
   ctx: AccessContext,
   deklaracja: ResourceDeclaration | undefined,
 ): ResourceRole | null {
-  if (facts.ownerId && facts.ownerId === userId) return "manager";
   const zespolowa = deklaracja?.teamOwnership;
+
+  if (facts.workspaceId) {
+    // Mój zasób — odpowiednik dawnego `ownerId === userId`, tylko wyrażony przestrzenią.
+    if (facts.workspaceId === ctx.personalWorkspaceId) return "manager";
+    if (!zespolowa) return null;
+    const rola = ctx.workspaceRoles[facts.workspaceId];
+    // `guest` NIE dostaje nic. Dziś nic takiej roli nie produkuje (lustro zespołu zna wyłącznie
+    // owner/admin/member), więc przypisanie jej czegokolwiek byłoby poszerzeniem dostępu na zapas.
+    if (rola === "owner" || rola === "admin") return zespolowa.admin;
+    if (rola === "member") return zespolowa.member;
+    return null;
+  }
+
+  // Zasób BEZ własnej przestrzeni — stara reguła, bez zmian. Dwa różne powody, dla których się
+  // tu trafia (własność wyprowadzona vs sierota) opisuje `ResourceFacts.workspaceId`.
+  if (facts.ownerId && facts.ownerId === userId) return "manager";
   if (zespolowa && facts.ownerTeamId) {
     if (ctx.adminTeamIds.includes(facts.ownerTeamId)) return zespolowa.admin;
     if (ctx.teamIds.includes(facts.ownerTeamId)) return zespolowa.member;

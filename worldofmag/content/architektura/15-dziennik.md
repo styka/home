@@ -1024,3 +1024,69 @@ mówi to wprost, żeby za trzy miesiące nikt nie uznał go za stan pożądany.
 `check:workspace-fill` **45/45 tabel**, `check:schema-drift` zielony **bez nowych wyjątków**
 (wyzwalacze są niewidoczne dla `prisma migrate diff`), `git diff` **bez ani jednego pliku**
 w `src/app/`, `src/components/`, `src/actions/` i `src/modules/`.
+
+
+---
+
+### 056 — Rozstrzyganie dostępu czyta przestrzeń, etap 3A · 2026-08-12
+
+**Moment, w którym kolumna zaczyna cokolwiek znaczyć.** Po 054 i 055 `workspaceId` był kompletny
+i nieczytany — czyli cała Faza 2 była do tej pory **kosztem bez korzyści**: dwa modele własności,
+wyzwalacz utrzymujący ten drugi i lustro przestrzeni, którego nic nie weryfikowało w działaniu.
+Etap 3 to jedyny z czterech, który zmienia zachowanie.
+
+**Szew z 052 zadziałał dokładnie tak, jak zapowiadał tamtejszy komentarz.** W `ResourceFacts`
+doszło **jedno pole**, w `access.ts` zmienił się **jeden krok** (`rolaZWlasnosci`, 12 linii → 24).
+Łańcuch rodziców, nadania czytane jednym zapytaniem i cache per żądanie — bez zmian. To jest
+najlepszy dowód, że decyzja z 052, żeby platforma pytała o **fakty**, a nie moduł o **werdykt**,
+była trafna: przy tej drugiej każdy z modułów odpowiadałby po swojemu i nie byłoby czego podmienić.
+
+**Koszt nie wzrósł, bo zapytanie zostało to samo.** Kontekst potrzebował dwóch nowych rzeczy —
+mojej roli w każdej przestrzeni i wskazania, która przestrzeń jest moja osobista. Oba doszły jako
+pola i złączenie w **istniejącym** `workspaceMember.findMany`, nie jako czwarte zapytanie.
+Przestrzeń osobistą rozpoznajemy po `personalUserId === userId`, a **nie** po `kind === "personal"`:
+`kind` mówi, jakiego rodzaju jest przestrzeń, a `personalUserId` — czyja. Gdyby ktoś kiedyś był
+członkiem cudzej przestrzeni osobistej, sprawdzanie `kind` dałoby mu w niej rolę właściciela.
+
+#### Rzecz najważniejsza: fixture mierzył co innego, niż deklarował
+
+Pierwszy przebieg tabeli prawdy po przełączeniu był **zielony na wszystkich 25 komórkach**
+i był to wynik **bezwartościowy**. Fixture tworzy użytkowników wprost przez Prismę, z pominięciem
+zdarzenia logowania — więc nie mieli przestrzeni osobistych, wyzwalacz z 0228 nie miał czego
+wpisać, `workspaceId` zostawał pusty, a rozstrzyganie schodziło **gałęzią awaryjną** na `ownerId`.
+Tabela dowodziła, że działa **stara reguła**. Zieleń oznaczała „nowy kod się nie uruchomił".
+
+Po założeniu przestrzeni w fixture wynik zrobił się taki, jaki miał być: **dokładnie jedna
+zmieniona komórka** — „właściciel projektu" × „projekt zespołowy", z odmowy na dozwolone. To jest
+przypadek nazwany **z góry** w specu (§5): właściciel zespołu **bez wiersza `TeamMember`**. Lustro
+przestrzeni z 051 celowo wpisuje go do przestrzeni jako `owner`, a `getUserTeamIds` czyta wyłącznie
+członkostwa — więc do dziś nie widział zasobów własnego zespołu. Ta różnica po prostu przestała
+istnieć. Pozostałe **24 komórki bez ruchu**.
+
+Zmiana wyszła **tam, gdzie tabela już patrzyła** — nie trzeba było dopisywać wiersza, żeby ją
+zobaczyć. Plan zakładał inaczej i został poprawiony (C-54).
+
+#### Gałąź „bez przestrzeni" nie jest wyłącznie przejściowa
+
+Planowanie odkryło rzecz, której spec nie przewidział: **nie każdy zasób ma i będzie miał**
+`workspaceId`. `Task` nie jest wśród 45 modeli objętych migracją 0227, bo **nie ma `ownerId`** —
+własność zadania idzie przez `createdById` albo przez projekt. Rozstrzyganie obsługuje więc oba
+kształty faktów na stałe: **jest przestrzeń → decyduje przestrzeń; nie ma → para kolumn jak dotąd.**
+Ta sama gałąź obsługuje sieroty po backfillu i ma na to własną kolumnę w tabeli prawdy: właściciel
+zachowuje dostęp, obcy nic nie zyskuje.
+
+**Własność zespołowa nadal wymaga deklaracji.** Przejście z `ownerTeamId` na `workspaceId` nie jest
+powodem, żeby porzucić zasadę z 052/AC-5: sama obecność przestrzeni niczego nie przyznaje, moduł
+musi podać `teamOwnership`. Rola `guest` dostaje jawnie **nic** — nic jej dziś nie produkuje, więc
+przypisanie jej czegokolwiek byłoby poszerzeniem dostępu na zapas.
+
+#### Co zostaje
+
+| Etap | Zakres |
+|------|--------|
+| **3B** | **Zakresy list** — `OR: [{ownerId}, {ownerTeamId}]` w zapytaniach kilkunastu modułów → `workspaceId: { in: … }`. Osobno, bo przy jednej zmianie nie da się odróżnić błędu przenosin od błędu zakresu. Tam też: przeniesienie zasobu między przestrzeniami przy zmianie właściciela |
+| **4** | `NOT NULL`, los sierot, usunięcie `ownerId`/`ownerTeamId`, zdjęcie wyzwalacza z 055 i cichych wariantów lustra z 051 |
+
+**Bramki:** build **exit 0**, `test:unit` **690/690**, liczniki **160 / 551 / 35 / 35** bez ruchu,
+licznik zapytań na sprawdzenie dostępu **bez wzrostu**, `git diff` bez ani jednego pliku
+w `src/app/` i `src/components/`.
