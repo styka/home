@@ -170,6 +170,12 @@
       "entries": [
         "src/modules/news/ui/NewsPage.tsx"
       ]
+    },
+    "udostepnione": {
+      "status": "done",
+      "entries": [
+        "src/components/sharing/SharingPage.tsx"
+      ]
     }
   },
   "colorExceptions": {

@@ -1505,3 +1505,42 @@ podać; dopóki nikt nie poda, okno mówi prawdę: „ktoś zmienił ten element
 jako osobne zadanie, gdy pierwszy moduł będzie ich naprawdę potrzebował (C-35).
 
 **Bramki:** build **exit 0**, `test:unit` **744/744**.
+
+
+---
+
+### 067 — „Udostępnione mi" i „Co udostępniłem"; zadanie 14, część odczytowa · 2026-08-13
+
+**To jest wypłata za całą Fazę 2.** Rozdz. 8.7 mówi o tym widoku: *„możliwy tylko dzięki
+jednolitemu modelowi — przy pięciu mechanizmach wymagałby pięciu zapytań i pięciu formatów"*.
+Przed tą fazą pytanie „co mi udostępniono?" oznaczałoby zapytanie do `TaskProjectMember`,
+`TaskShare`, `PetShare`, sprawdzenie `ownerTeamId` w kilkunastu tabelach i sklejenie pięciu różnych
+słowników ról. Dziś to **jedno zapytanie do jednej tabeli**.
+
+Warto to nazwać, bo do 066 cała Faza 2 była **niewidoczna dla użytkownika**: poprawna, przetestowana
+i bez ani jednego ekranu pokazującego, po co była.
+
+**Etykiety typów zasobów pochodzą z deklaracji modułów.** Mapa `"tasks.project" → "Projekt zadań"`
+w warstwie widoku byłaby **szóstym** miejscem, w którym trzeba pamiętać o nowym typie zasobu — po
+deklaracji, korzeniu kompozycji, klasyfikacji, migracji nadań i lustrze. Widok pyta katalog o
+`label`; nieznany typ zostaje sobą, a nie „(nieznany)".
+
+**Dwie decyzje, które wyglądają na drobiazgi, a nie są:**
+
+- **Nadanie z minioną datą ważności nie pojawia się na liście.** Pokazanie go byłoby obietnicą,
+  której `requireAccess` nie dotrzyma — użytkownik widziałby dostęp, którego nie ma. Ten sam
+  warunek co w rozstrzyganiu, celowo powtórzony.
+- **„Co udostępniłem" filtruje po PRZESTRZENI zasobu, nie po `createdById`.** Pytanie brzmi „co
+  z moich rzeczy jest udostępnione", a nie „co ja osobiście kliknąłem". Nadania z migracji 0229
+  i 0230 mają w `createdById` właściciela zasobu, ale nadanie wystawione kiedyś przez
+  współpracownika dotyczy **mojego** zasobu i musi tu być widoczne.
+
+**Czego świadomie nie ma: przycisku „odwołaj".** Rozdz. 8.7 wymienia „odwołanie dostępu jednym
+kliknięciem" — i będzie, ale nie teraz. Dopóki dostęp rozstrzygają **dawne tabele** udostępnień
+(etap 2 zadania 12 jest przed nami), usunięcie samego nadania **nic by nie zmieniło**. Przycisk
+obiecywałby skutek, którego nie ma — a to gorsze niż jego brak. Ekran mówi to wprost, zamiast
+milczeć.
+
+**Bramki:** build **exit 0**, `test:unit` **744/744**, `check:ui-contract` **22/22**,
+`check:ai-coverage` **553** akcji (dwie nowe jako `pending` — asystent powinien umieć odpowiedzieć
+„co mi udostępniono?", więc to luka, nie wykluczenie).
