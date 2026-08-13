@@ -25,16 +25,20 @@ export async function assertRecipeAccess(
   userId: string,
   mode: "read" | "edit" = "edit"
 ): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
-  const recipe = await prisma.recipe.findUnique({
-    where: { id: recipeId },
-    select: { ownerId: true, ownerTeamId: true, isPublic: true },
-  });
-  if (!recipe) throw new Error("Przepis nie istnieje");
-  if (recipe.ownerId === userId) return;
-  if (recipe.ownerTeamId && teamIds.includes(recipe.ownerTeamId)) return;
-  if (mode === "read" && recipe.isPublic) return;
-  throw new Error("Brak dostępu do tego przepisu");
+  // 064: rozstrzyga platforma (`kitchen.recipe`). Publiczność przepisu wyraża `publicRole`
+  // w faktach — `viewer`, więc obcy CZYTA, ale nie edytuje, dokładnie jak dotąd.
+  const { requireModuleAccess } = await import("../lib/sharingGuard");
+  const istnieje = await prisma.recipe.findUnique({ where: { id: recipeId }, select: { id: true } });
+  if (!istnieje) throw new Error("Przepis nie istnieje");
+  try {
+    await requireModuleAccess(
+      userId,
+      { type: "kitchen.recipe", id: recipeId },
+      mode === "read" ? "recipe.read" : "recipe.edit",
+    );
+  } catch {
+    throw new Error("Brak dostępu do tego przepisu");
+  }
 }
 
 // ─── Slug helpers ─────────────────────────────────────────────────────────
