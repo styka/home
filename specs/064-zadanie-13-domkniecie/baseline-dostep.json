@@ -1,0 +1,29 @@
+{
+  "wlasciciel": {
+    "lista wlasna": "dozwolone",
+    "lista zespolu": "odmowa",
+    "przepis: odczyt": "dozwolone",
+    "przepis: edycja": "dozwolone",
+    "przepis PUBLICZNY: odczyt": "dozwolone",
+    "przepis PUBLICZNY: edycja": "dozwolone",
+    "ksiazka zespolu": "odmowa"
+  },
+  "czlonek zespolu": {
+    "lista wlasna": "odmowa",
+    "lista zespolu": "dozwolone",
+    "przepis: odczyt": "odmowa",
+    "przepis: edycja": "odmowa",
+    "przepis PUBLICZNY: odczyt": "dozwolone",
+    "przepis PUBLICZNY: edycja": "odmowa",
+    "ksiazka zespolu": "dozwolone"
+  },
+  "obcy": {
+    "lista wlasna": "odmowa",
+    "lista zespolu": "odmowa",
+    "przepis: odczyt": "odmowa",
+    "przepis: edycja": "odmowa",
+    "przepis PUBLICZNY: odczyt": "dozwolone",
+    "przepis PUBLICZNY: edycja": "odmowa",
+    "ksiazka zespolu": "odmowa"
+  }
+}
