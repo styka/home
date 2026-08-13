@@ -15,6 +15,7 @@ import { FeedbackInspector } from "./FeedbackInspector";
 import { NotificationBell } from "./NotificationBell";
 import { ToastProvider } from "@/components/ui/Toast";
 import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
+import { ConflictProvider } from "@/components/ui/ConflictProvider";
 import { ShortcutsProvider } from "./ShortcutsProvider";
 import { ShortcutsCheatSheet } from "@/components/shortcuts/ShortcutsCheatSheet";
 import { ShortcutsButton } from "@/components/shortcuts/ShortcutsButton";
@@ -100,6 +101,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
   return (
     <ToastProvider>
     <ConfirmProvider>
+    <ConflictProvider>
     {/* 043: JEDEN nasłuchiwacz klawiatury dla całej aplikacji, z rejestrem skrótów.
         Musi opakowywać `children`, bo to strony modułów rejestrują swoje skróty (i mają
         pierwszeństwo przed globalnymi). */}
@@ -309,6 +311,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
       {isAdmin && <FeedbackInspector />}
     </div>
     </ShortcutsProvider>
+    </ConflictProvider>
     </ConfirmProvider>
     </ToastProvider>
   );
