@@ -30,6 +30,8 @@ test(
       unmirrorProjectMember,
       mirrorTaskShare,
       unmirrorTaskShare,
+      mirrorPetShare,
+      unmirrorPetShare,
     } = await import("../grantMirror");
 
     const wlasciciel = await prisma.user.create({ data: { email: `gm-o-${rnd()}@test.local` } });
@@ -130,6 +132,28 @@ test(
         await mirrorProjectMember(sierota.id, czlonek.id, "MEMBER", wlasciciel.id);
         assert.equal(await nadanie("tasks.project", sierota.id, "user", czlonek.id), null);
         await prisma.taskProject.delete({ where: { id: sierota.id } });
+      });
+
+      await t.test("061: udostępnienie ZWIERZĘCIA osobie i zespołowi", async () => {
+        const zwierze = await prisma.pet.create({
+          data: { name: `Z-${rnd()}`, species: "kot", ownerId: wlasciciel.id },
+        });
+        try {
+          await mirrorPetShare(zwierze.id, { userId: czlonek.id }, "EDITOR", wlasciciel.id);
+          assert.equal((await nadanie("pets.pet", zwierze.id, "user", czlonek.id))?.role, "editor");
+
+          await mirrorPetShare(zwierze.id, { teamId: zespol.id }, "VIEWER", wlasciciel.id);
+          assert.equal(
+            (await nadanie("pets.pet", zwierze.id, "workspace", przestrzenZespolu!.id))?.role,
+            "viewer",
+          );
+
+          await unmirrorPetShare(zwierze.id, { userId: czlonek.id });
+          assert.equal(await nadanie("pets.pet", zwierze.id, "user", czlonek.id), null);
+        } finally {
+          await prisma.resourceGrant.deleteMany({ where: { resourceId: zwierze.id } });
+          await prisma.pet.delete({ where: { id: zwierze.id } });
+        }
       });
 
       await t.test("rola spoza słownika nie tworzy nadania", async () => {

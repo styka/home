@@ -170,3 +170,67 @@ export async function unmirrorTaskShare(
     if (tw) await usun("tasks.task", taskId, "workspace", tw.id);
   }
 }
+
+/**
+ * 061 — udostępnienie ZWIERZĘCIA. Ta sama zasada, co przy Zadaniach: przestrzeń nadania to
+ * przestrzeń zasobu, udostępnienie zespołowi celuje w jego przestrzeń, a degradacja roli obniża
+ * nadanie zamiast zostawiać stare.
+ */
+export async function mirrorPetShare(
+  petId: string,
+  cel: { userId?: string | null; teamId?: string | null },
+  legacyRole: string,
+  createdById: string,
+): Promise<void> {
+  const role = resourceRoleFromLegacy(legacyRole);
+  const p = await prisma.pet.findUnique({ where: { id: petId }, select: { workspaceId: true } });
+  const workspaceId = p?.workspaceId ?? null;
+  if (!role || !workspaceId) return;
+
+  if (cel.userId) {
+    await zapisz({
+      resourceType: "pets.pet",
+      resourceId: petId,
+      subjectType: "user",
+      subjectId: cel.userId,
+      role,
+      workspaceId,
+      createdById,
+    });
+    return;
+  }
+  if (cel.teamId) {
+    const tw = await prisma.workspace.findUnique({
+      where: { teamId: cel.teamId },
+      select: { id: true },
+    });
+    if (!tw) return;
+    await zapisz({
+      resourceType: "pets.pet",
+      resourceId: petId,
+      subjectType: "workspace",
+      subjectId: tw.id,
+      role,
+      workspaceId,
+      createdById,
+    });
+  }
+}
+
+/** Udostępnienie zwierzęcia zniknęło. */
+export async function unmirrorPetShare(
+  petId: string,
+  cel: { userId?: string | null; teamId?: string | null },
+): Promise<void> {
+  if (cel.userId) {
+    await usun("pets.pet", petId, "user", cel.userId);
+    return;
+  }
+  if (cel.teamId) {
+    const tw = await prisma.workspace.findUnique({
+      where: { teamId: cel.teamId },
+      select: { id: true },
+    });
+    if (tw) await usun("pets.pet", petId, "workspace", tw.id);
+  }
+}
