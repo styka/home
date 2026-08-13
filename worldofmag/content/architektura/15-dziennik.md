@@ -1185,3 +1185,58 @@ jest znana i wyzerowana.
 
 **Bramki:** build **exit 0** (22 bramki), `test:unit` **701/701**, liczniki **160 / 551 / 35 / 35**
 bez ruchu, `check:ownership-scope` z trzema wyjątkami.
+
+
+---
+
+### 059 — Udostępnienia Zadań jako nadania, etap 1 z trzech · 2026-08-13
+
+**`ResourceGrant` istniał, był czytany i był pusty.** Od 052 `resolveRole` sprawdza nadania jednym
+zapytaniem dla całego łańcucha — tylko że nic ich nie zapisywało, więc dostęp członka projektu
+przechodził **obok**, przez `extraGrants` w deklaracji modułu. Pole opisane tam jako „dostępy,
+których nie da się wyrazić własnością ani nadaniem" przestaje być prawdą w chwili, gdy nadania
+zaczynają istnieć.
+
+**Dlaczego tylko Zadania, choć zadanie 12 wymienia trzy tabele.** `PetShare` wymaga, żeby Zwierzęta
+miały **deklarację zasobu** — bez niej `resolveRole` nie zna typu `pets.pet` i nadanie nie daje nic.
+Migracja bez deklaracji nie przeniosłaby udostępniania zwierząt, tylko **je zabrała**. To zależność
+od zadania 13, której checklista nie pokazuje.
+
+**Trzy etapy, ta sama kolejność co w zadaniu 11:** zapisywać obok → przełączyć odczyty z tabelą
+prawdy → usunąć stare tabele.
+
+**Cztery rzeczy, które trzeba było rozstrzygnąć, a nie było ich w tabeli z rozdz. 8.10:**
+
+1. **Przestrzeń nadania to przestrzeń ZASOBU**, nie obdarowanego. `Task` nie ma kolumny
+   `workspaceId` (nie było w nim `ownerId`, więc 0227 go nie objęło), więc bierzemy ją z projektu,
+   a dla zadania luzem — z przestrzeni osobistej twórcy.
+2. **Udostępnienie zespołowi → nadanie dla PRZESTRZENI** (`subjectType: "workspace"`), nie dla
+   każdego członka z osobna. Rozstrzyganie czyta je z `ctx.workspaceIds`, więc obejmuje skład
+   zespołu automatycznie — także po jego zmianie.
+3. **Degradacja roli musi obniżać nadanie.** Lustro, które tylko dokłada, zostawiłoby przy zmianie
+   `ADMIN → MEMBER` stare, wyższe nadanie — cichą odmowę odebrania uprawnień. Stąd `upsert`
+   z `update: { role }`, a nie `createMany … skipDuplicates`.
+4. **Rola spoza słownika nie tworzy nadania.** `resourceRoleFromLegacy` zwraca `null`, a nie
+   „bezpieczny domyślny" — cicha degradacja do `viewer` przyznawałaby dostęp na podstawie danych,
+   których nie rozumiemy.
+
+**Bramka złapała `purge.ts` za pierwszym razem** — plik usuwający konto kasuje udostępnienia
+hurtem w transakcji. `ResourceGrant` **nie ma klucza obcego do `User`** (nadanie ma przeżyć
+usunięcie swojego autora), więc bez poprawki nadania usuniętego konta zostałyby w bazie jako cichy
+dostęp. W 051 ta sama pułapka wyszła dopiero w recenzji, po poszerzeniu wzorca o `tx.`; tu wzorzec
+miał `tx.` od początku i zadziałał od razu. **To jest wartość zapisanej lekcji.**
+
+**Odwzorowanie ról żyje w jednym miejscu** (`resourceRoleFromLegacy`), wspólnym dla migracji SQL
+i dla kodu. Rozjazd między nimi nie objawiłby się błędem — dałby inne role rekordom starym
+i nowym, co wychodzi dopiero przy skardze użytkownika.
+
+#### Co zostaje
+
+| Etap | Zakres |
+|------|--------|
+| **2** | Przełączenie odczytów: `extraGrants` znika z deklaracji Zadań, dostęp członka projektu idzie przez nadania. Wymaga **tabeli prawdy** (C-17) |
+| **3** | Usunięcie `TaskProjectMember` i `TaskShare` ze schematu; zdjęcie lustra i jego bramki |
+| **PetShare** | Po zadaniu 13 dla Zwierząt — osobny przebieg, tą samą trójetapową drogą |
+
+**Bramki:** build **exit 0**, `test:unit` **711/711**, liczniki **160 / 551 / 35 / 35** bez ruchu,
+nowa `check:grant-mirror` (3 pliki mutujące, 1 świadomy wyjątek).

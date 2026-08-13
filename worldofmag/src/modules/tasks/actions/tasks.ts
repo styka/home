@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { mirrorTaskShare, unmirrorTaskShare } from "@/platform/sharing/grantMirror";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { userDayBounds } from "@/lib/userTime";
@@ -641,6 +642,7 @@ export async function shareTask(taskId: string, target: { userId?: string; teamI
   await assertTaskAccess(task, user.id);
 
   await prisma.taskShare.create({ data: { taskId, userId: target.userId ?? null, teamId: target.teamId ?? null, role } });
+  await mirrorTaskShare(taskId, target, role, user.id);
   if (task.projectId) revalidatePath(`/tasks/${task.projectId}`);
 }
 
@@ -651,6 +653,7 @@ export async function removeTaskShare(shareId: string): Promise<void> {
   await assertTaskAccess(share.task, user.id);
 
   await prisma.taskShare.delete({ where: { id: shareId } });
+  await unmirrorTaskShare(share.taskId, { userId: share.userId, teamId: share.teamId });
   if (share.task.projectId) revalidatePath(`/tasks/${share.task.projectId}`);
 }
 
@@ -670,6 +673,7 @@ export async function shareTaskByEmail(taskId: string, email: string, role: "VIE
     } else {
       await prisma.taskShare.create({ data: { taskId, userId: targetUser.id, role } });
     }
+    await mirrorTaskShare(taskId, { userId: targetUser.id }, role, user.id);
 
     revalidatePath("/tasks");
     if (task.projectId) revalidatePath(`/tasks/${task.projectId}`);

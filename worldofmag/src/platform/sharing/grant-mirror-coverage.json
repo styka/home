@@ -1,0 +1,6 @@
+{
+  "_opis": "059 (zadanie 12, etap 1): pliki mutujące TaskProjectMember/TaskShare, które ŚWIADOMIE nie wołają grantMirror. Bramka `check:grant-mirror` sprawdza manifest w obie strony — martwy wpis też wywala build.",
+  "wyjatki": {
+    "src/lib/privacy/purge.ts": "Usuwanie konta idzie w JEDNEJ transakcji interaktywnej i kasuje udostępnienia hurtem. `grantMirror` operuje przez `prisma` obok transakcji, więc wołanie go stąd rozjechałoby atomowość. Nadania kasowane są w tym samym `tx` zapytaniem po podmiocie (`subjectType: 'user'`) — cel jest ten sam, droga inna."
+  }
+}

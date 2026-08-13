@@ -49,3 +49,30 @@ export function workspaceRoleFromTeamRole(rolaZespolu: string): WorkspaceMemberR
   if (rolaZespolu === "ADMIN") return "admin";
   return "member";
 }
+
+/**
+ * 059 (zadanie 12, etap 1) — ODWZOROWANIE DAWNYCH SŁOWNIKÓW NA ROLE ZASOBU.
+ *
+ * Rozdz. 8.10 podaje je w tabeli migracji: `MEMBER→editor`, `ADMIN/OWNER→manager`,
+ * `VIEWER→viewer`, `EDITOR→editor`. Odwzorowanie mieszka **w jednym miejscu**, bo używają go
+ * dwie rzeczy o różnym cyklu życia: **migracja SQL** (rekordy istniejące) i **kod** (rekordy nowe).
+ * Rozjazd między nimi nie objawiłby się błędem — dałby po prostu inne role rekordom starym
+ * i nowym, co wychodzi dopiero przy skardze użytkownika.
+ *
+ * Wartość spoza słownika daje `null`, a nie „bezpieczny domyślny": cicha degradacja do `viewer`
+ * przyznałaby dostęp na podstawie danych, których nie rozumiemy.
+ */
+export function resourceRoleFromLegacy(rola: string | null | undefined): ResourceRole | null {
+  switch (rola) {
+    case "OWNER":
+    case "ADMIN":
+      return "manager";
+    case "MEMBER":
+    case "EDITOR":
+      return "editor";
+    case "VIEWER":
+      return "viewer";
+    default:
+      return null;
+  }
+}

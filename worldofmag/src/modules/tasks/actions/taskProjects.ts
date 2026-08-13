@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { mirrorProjectMember, unmirrorProjectMember } from "@/platform/sharing/grantMirror";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import type { TaskProject, ProjectStatusConfig } from "@/types";
@@ -186,6 +187,9 @@ export async function addProjectMember(projectId: string, userId: string, role =
     create: { projectId, userId, role },
     update: { role },
   });
+  // 059: członkostwo jest źródłem prawdy, nadanie jego lustrem (C-16). Rozjazd nie objawi się
+  // niczym, dopóki etap 2 nie przełączy odczytów — dlatego pilnuje go bramka, nie pamięć.
+  await mirrorProjectMember(projectId, userId, role, user.id);
 
   revalidatePath(`/tasks/${projectId}`);
 }
@@ -197,6 +201,7 @@ export async function removeProjectMember(projectId: string, userId: string): Pr
   await prisma.taskProjectMember.delete({
     where: { projectId_userId: { projectId, userId } },
   });
+  await unmirrorProjectMember(projectId, userId);
 
   revalidatePath(`/tasks/${projectId}`);
 }
