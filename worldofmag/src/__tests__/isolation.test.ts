@@ -72,9 +72,9 @@ test("Z-172 izolacja danych (IDOR/BOLA) — guardy odrzucają obcego właścicie
       await assert.rejects(() => assertTaskAccess(personal, B.id), /Access denied/);
     });
     await t.test("ownedByWhere: filtr zwraca tylko rekordy właściciela", async () => {
-      const aNotes = await prisma.note.findMany({ where: ownedByWhere(A.id, []) });
+      const aNotes = await prisma.note.findMany({ where: await ownedByWhere(A.id) });
       assert.ok(aNotes.every((n) => n.ownerId === A.id), "A widzi tylko swoje notatki");
-      const bNotes = await prisma.note.findMany({ where: ownedByWhere(B.id, []) });
+      const bNotes = await prisma.note.findMany({ where: await ownedByWhere(B.id) });
       assert.ok(bNotes.every((n) => n.ownerId === B.id), "B widzi tylko swoje notatki");
     });
   } finally {

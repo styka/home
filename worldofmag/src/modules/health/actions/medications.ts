@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { isoDate } from "@/lib/habitStats";
 import { buildDayAgenda } from "@/lib/medicationSchedule";
 import type {
@@ -63,7 +63,7 @@ async function assertScheduleAccess(id: string, userId: string): Promise<void> {
 // Z-194 (T-12): widoczność leków/pielęgnacji respektuje dostęp domownika do „health".
 async function scopeWhere(userId: string) {
   const teamIds = await getAccessibleTeamIds(userId, "health");
-  return { OR: ownedOr(userId, teamIds) };
+  return { OR: (await ownedOrAsync(userId)) };
 }
 
 export async function getMedicationSchedules(): Promise<MedicationSchedule[]> {

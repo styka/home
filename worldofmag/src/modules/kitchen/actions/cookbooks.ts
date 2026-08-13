@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhere } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import type { Cookbook } from "@/types/kitchen";
 
@@ -37,7 +37,7 @@ export async function getCookbooks(): Promise<CookbookWithCount[]> {
 
   const cookbooks = await prisma.cookbook.findMany({
     where: {
-      ...ownedWhere(user.id, teamIds),
+      ...(await ownedWhereAsync(user.id)),
     },
     orderBy: { createdAt: "asc" },
     include: { _count: { select: { recipes: true } } },

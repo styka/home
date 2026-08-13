@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { reviewCard, type ReviewGrade } from "../lib/srs";
 import type { LanguageDeck, Vocabulary } from "@/types";
 
@@ -32,7 +32,7 @@ export async function getDecks(): Promise<LanguageDeck[]> {
 
   const decks = await prisma.languageDeck.findMany({
     where: {
-      OR: ownedOr(user.id, teamIds),
+      OR: (await ownedOrAsync(user.id)),
     },
     include: { _count: { select: { cards: true } } },
     orderBy: { updatedAt: "desc" },
@@ -255,7 +255,7 @@ export async function submitReview(cardId: string, grade: ReviewGrade): Promise<
 export async function getStudyStreak(): Promise<{ streak: number; reviewedToday: number }> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "languages");
-  const ownScope = ownedOr(user.id, teamIds);
+  const ownScope = (await ownedOrAsync(user.id));
 
   const rows = await prisma.vocabulary.findMany({
     where: { lastReviewedAt: { not: null }, deck: { is: { OR: ownScope } } },

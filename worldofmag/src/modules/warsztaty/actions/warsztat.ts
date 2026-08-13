@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { getSuggestions } from "../lib/catalog";
 import type { Workshop, WorkshopItem, WorkshopProject } from "@prisma/client";
@@ -20,8 +20,8 @@ export type WorkshopDetail = Workshop & {
 
 // ─── Dostęp ─────────────────────────────────────────────────────────────────
 
-function ownershipOr(userId: string, teamIds: string[]) {
-  return ownedOr(userId, teamIds);
+async function ownershipOr(userId: string) {
+  return await ownedOrAsync(userId);
 }
 
 /** Zwraca warsztat, jeśli użytkownik ma do niego dostęp (właściciel lub zespół). */
@@ -74,7 +74,7 @@ export async function getWorkshops(): Promise<WorkshopWithCounts[]> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "warsztaty");
   return prisma.workshop.findMany({
-    where: { OR: ownershipOr(user.id, teamIds) },
+    where: { OR: await ownershipOr(user.id) },
     include: { _count: { select: { items: true, projects: true } } },
     orderBy: { updatedAt: "desc" },
   });
@@ -297,7 +297,7 @@ export async function getMaintenanceOverview(): Promise<MaintenanceOverview> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "warsztaty");
   const workshops = await prisma.workshop.findMany({
-    where: { OR: ownershipOr(user.id, teamIds) },
+    where: { OR: await ownershipOr(user.id) },
     select: { id: true, name: true },
   });
   const nameById = new Map(workshops.map((w) => [w.id, w.name]));

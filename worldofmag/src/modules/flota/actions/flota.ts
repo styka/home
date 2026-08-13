@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { bookAutoExpense, removeAutoExpense } from "@/modules/portfel/contract";
 import { SERVICE_LABELS } from "../lib/flota";
@@ -14,7 +14,7 @@ export type VehicleWithStats = Vehicle & { fuelLogs: FuelLog[]; services: Servic
 // Z-194 (T-12): widoczność listy respektuje granularny dostęp domownika do modułu „flota".
 async function ownershipFilter(userId: string) {
   const teamIds = await getAccessibleTeamIds(userId, "flota");
-  return { OR: ownedOr(userId, teamIds) };
+  return { OR: (await ownedOrAsync(userId)) };
 }
 
 async function assertVehicleAccess(vehicleId: string, userId: string): Promise<Vehicle> {

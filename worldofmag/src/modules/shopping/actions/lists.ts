@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getAccessibleTeamIds, ownedWhere } from "@/platform/auth/serverUtils";
+import { requireAuth, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { bookAutoExpense } from "@/modules/portfel/contract";
 import type { ShoppingList, ShoppingListWithItems } from "@/types";
 
@@ -22,7 +22,7 @@ export async function getListSummaries(includeArchived = false): Promise<ListSum
   const lists = await prisma.shoppingList.findMany({
     where: {
       archived: includeArchived,
-      ...ownedWhere(user.id, teamIds),
+      ...(await ownedWhereAsync(user.id)),
     },
     include: { ownerTeam: { select: { id: true, name: true } } },
     orderBy: includeArchived ? { archivedAt: "desc" } : { createdAt: "asc" },
@@ -59,7 +59,7 @@ export async function getLists(): Promise<ShoppingList[]> {
   return prisma.shoppingList.findMany({
     where: {
       archived: false,
-      ...ownedWhere(user.id, teamIds),
+      ...(await ownedWhereAsync(user.id)),
     },
     include: { ownerTeam: { select: { id: true, name: true } } },
     orderBy: { createdAt: "asc" },
@@ -78,7 +78,7 @@ export async function getActiveListsForOffline(): Promise<ShoppingListWithItems[
   const lists = await prisma.shoppingList.findMany({
     where: {
       archived: false,
-      ...ownedWhere(user.id, teamIds),
+      ...(await ownedWhereAsync(user.id)),
     },
     include: {
       ownerTeam: { select: { id: true, name: true } },
@@ -97,7 +97,7 @@ export async function getArchivedLists(): Promise<ShoppingList[]> {
   return prisma.shoppingList.findMany({
     where: {
       archived: true,
-      ...ownedWhere(user.id, teamIds),
+      ...(await ownedWhereAsync(user.id)),
     },
     include: { ownerTeam: { select: { id: true, name: true } } },
     orderBy: { archivedAt: "desc" },

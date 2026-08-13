@@ -1,6 +1,6 @@
 import { getNoteGroups } from "../contract";
 import { getTags } from "@/actions/tags";
-import { getUserTeamIds, ownedWhere, ownedOr } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedWhereAsync, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { prisma } from "@/platform/db/prisma";
 import { HARD_MAX, clampLimit, asStr, resolveIdOrName } from "@/lib/ai/readToolShared";
 import type { AiReadToolHandler } from "@/platform/ai/contribution";
@@ -23,7 +23,7 @@ export const readTools: Record<string, AiReadToolHandler> = {
       const search = asStr(args.search);
       const teamIds = await getUserTeamIds(userId);
       const where: Record<string, unknown> = {
-        ...ownedWhere(userId, teamIds),
+        ...(await ownedWhereAsync(userId)),
       };
       if (search) {
         where.AND = [
@@ -54,7 +54,7 @@ export const readTools: Record<string, AiReadToolHandler> = {
       const noteId = asStr(args.noteId);
       const search = asStr(args.search);
       const teamIds = await getUserTeamIds(userId);
-      const ownerOr = ownedOr(userId, teamIds);
+      const ownerOr = (await ownedOrAsync(userId));
       // 032: `noteId` bywa TYTUŁEM notatki — rozwiąż, zamiast cicho zwrócić null.
       const resolvedNoteId = noteId
         ? await resolveIdOrName(
