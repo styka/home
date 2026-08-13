@@ -1,0 +1,6 @@
+{
+  "_opis": "065 (zadanie 18, rozdz. 12.2.1): narzędzia odczytu asystenta, w których zawężenia dostępu NIE widać z treści pliku. Wpis musi opisywać mechanizm — bramka nie potrafi go rozpoznać, więc rozstrzyga recenzent, raz, i zostaje to zapisane.",
+  "wyjatki": {
+    "src/modules/reports/ai/readTools.ts": "Zawężenie jest o poziom niżej: `searchReports` z kontraktu bierze użytkownika z SESJI (`requireAuth`) i filtruje po `authorId = ja OR authorId = null (systemowy) OR teamId in moje zespoły`. Parametr `userId` narzędzia jest tu nieużywany i to jest w porządku — asystent działa w imieniu zalogowanego, więc sesja i `userId` to ta sama osoba. Gdyby kiedyś przestały nią być, ten wpis jest miejscem, w którym trzeba to sprawdzić."
+  }
+}
