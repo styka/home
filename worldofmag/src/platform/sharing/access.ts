@@ -81,26 +81,30 @@ function rolaZWlasnosci(
 ): ResourceRole | null {
   const zespolowa = deklaracja?.teamOwnership;
 
+  // 064: zasób otwarty daje swoją rolę KAŻDEMU zalogowanemu — także komuś bez żadnej relacji.
+  // Liczymy to jako podłogę, nie jako wynik: właściciel otwartego zasobu ma nadal `manager`.
+  const otwarty = facts.publicRole ?? null;
+
   if (facts.workspaceId) {
     // Mój zasób — odpowiednik dawnego `ownerId === userId`, tylko wyrażony przestrzenią.
     if (facts.workspaceId === ctx.personalWorkspaceId) return "manager";
-    if (!zespolowa) return null;
+    if (!zespolowa) return otwarty;
     const rola = ctx.workspaceRoles[facts.workspaceId];
     // `guest` NIE dostaje nic. Dziś nic takiej roli nie produkuje (lustro zespołu zna wyłącznie
     // owner/admin/member), więc przypisanie jej czegokolwiek byłoby poszerzeniem dostępu na zapas.
-    if (rola === "owner" || rola === "admin") return zespolowa.admin;
-    if (rola === "member") return zespolowa.member;
-    return null;
+    if (rola === "owner" || rola === "admin") return najwyzsza(zespolowa.admin, otwarty);
+    if (rola === "member") return najwyzsza(zespolowa.member, otwarty);
+    return otwarty;
   }
 
   // Zasób BEZ własnej przestrzeni — stara reguła, bez zmian. Dwa różne powody, dla których się
   // tu trafia (własność wyprowadzona vs sierota) opisuje `ResourceFacts.workspaceId`.
   if (facts.ownerId && facts.ownerId === userId) return "manager";
   if (zespolowa && facts.ownerTeamId) {
-    if (ctx.adminTeamIds.includes(facts.ownerTeamId)) return zespolowa.admin;
-    if (ctx.teamIds.includes(facts.ownerTeamId)) return zespolowa.member;
+    if (ctx.adminTeamIds.includes(facts.ownerTeamId)) return najwyzsza(zespolowa.admin, otwarty);
+    if (ctx.teamIds.includes(facts.ownerTeamId)) return najwyzsza(zespolowa.member, otwarty);
   }
-  return null;
+  return otwarty;
 }
 
 /**
