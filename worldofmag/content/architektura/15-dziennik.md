@@ -1240,3 +1240,42 @@ i nowym, co wychodzi dopiero przy skardze użytkownika.
 
 **Bramki:** build **exit 0**, `test:unit` **711/711**, liczniki **160 / 551 / 35 / 35** bez ruchu,
 nowa `check:grant-mirror` (3 pliki mutujące, 1 świadomy wyjątek).
+
+
+---
+
+### 060 — Deklaracja zasobów Zwierząt; zadanie 13, moduł 2 z 19 · 2026-08-13
+
+**Pierwszy moduł po pilocie.** 052 świadomie odłożyło osiemnaście modułów: *„każdy wymaga własnej
+tabeli prawdy, więc dziewiętnaście naraz to dziewiętnaście niesprawdzonych zmian w kontroli
+dostępu"*. Ten przebieg bierze jeden — Zwierzęta, bo jako jedyne poza Zadaniami **mają już
+udostępnianie** (`PetShare`), więc deklaracja od razu ma co wyrażać zamiast być zapisem na zapas.
+
+**Rzecz, dla której ta tabela prawdy powstała: `teamOwnership: { member: "manager" }`.**
+Odwzorowanie „na logikę" dałoby członkowi zespołu `editor` — brzmi rozsądnie i **byłoby błędem**.
+Dzisiejszy `assertPetAccess` przy własności zespołowej wraca **bez sprawdzania `needEdit`**, czyli
+członek zespołu może wszystko to, co właściciel. `editor` **zabrałby uprawnienia**, których nikt
+nie kazał zabierać — a przy dwóch dzisiejszych operacjach różnicy nie byłoby widać, więc wyszłaby
+dopiero przy trzeciej, dołożonej kiedyś przez kogoś innego.
+
+**Punkt odniesienia pokazał dwie różnice — i obie były tą samą, znaną zmianą.** Wiersz „właściciel
+zespołu bez wiersza `TeamMember`", odczyt i edycja zwierzęcia zespołowego, z odmowy na dozwolone.
+To dokładnie ta komórka, którą 056 nazwało dla Zadań; tu ujawniła się w drugim module, bo przyczyna
+jest wspólna: rozstrzyganie czyta przestrzeń, a lustro z 051 wpisuje właściciela zespołu jako
+`owner` mimo braku członkostwa. **Spec zakładał „identycznie" i został poprawiony przed przyjęciem
+nowego wzorca** (C-54), a nie po. Pozostałe **22 komórki bez ruchu**.
+
+**Guard został cienką nakładką.** `assertPetAccess` tłumaczy dwa poziomy dawnego API (`needEdit`)
+na dwie operacje z deklaracji i **zachowuje dawne komunikaty** — łącznie z rozróżnieniem „zwierzę
+nie istnieje" od „brak dostępu", którego platforma nie robi (na oba odpowiada odmową). Rozróżnienie
+niosło informację i nie było powodu go tracić przy przenosinach.
+
+**`extraGrants` czyta `PetShare` i rozwija udostępnienie zespołowe na członków** — bo to pole mówi
+językiem „userId → rola". Po migracji na nadania zrobi to `subjectType: "workspace"` i rozwijanie
+zniknie razem z funkcją. Bez tego pola przełączenie guardu **odebrałoby** działające udostępnianie.
+
+**Co odblokowuje:** migrację `PetShare` na `ResourceGrant` — brakującą trzecią część zadania 12,
+której 059 nie mogło zrobić właśnie z braku tej deklaracji.
+
+**Bramki:** build **exit 0**, `test:unit` **719/719**, liczniki **160 / 551 / 35 / 35** bez ruchu,
+`check:module-registry` widzi wpięcie w obie strony.

@@ -16,6 +16,7 @@ import type { ResourceCatalog } from "@/platform/sharing/types";
  */
 export const SHARING_RESOURCES: Record<string, () => Promise<{ default: ResourceCatalog }>> = {
   tasks: () => import("@/modules/tasks/sharing"),
+  pets: () => import("@/modules/pets/sharing"),
 };
 
 /** Scalony katalog wszystkich typów zasobów. Ładowany leniwie, memoizowany na proces. */
