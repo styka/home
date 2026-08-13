@@ -1,7 +1,7 @@
 // Z-010: handler akcji asystenta dla modułu Nawyki.
 // Scala trzy dawne bloki `module === "habits"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
-import { getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { toggleHabitDay, createHabit, updateHabit, setHabitArchived, deleteHabit, createTaskFromHabit } from "../contract";
 import { asStr, undoAction, resolveByName, ownerOrArr, type ExecOutcome } from "@/lib/ai/executorShared";
 import { isoDate } from "@/lib/habitStats";
@@ -17,7 +17,7 @@ export async function executeHabitsAction(action: AIAction, userId: string): Pro
     const habit = await prisma.habit.findFirst({
       where: {
         archived: false,
-        OR: ownedOr(userId, teamIds),
+        OR: (await ownedOrAsync(userId)),
         name: { contains: q, mode: "insensitive" },
       },
     });

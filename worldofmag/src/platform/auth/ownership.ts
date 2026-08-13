@@ -1,5 +1,5 @@
 
-import { ownedOr } from "@/platform/auth/serverUtils";import { getUserTeamIds, requireAuth } from "@/platform/auth/serverUtils"
+import { ownedOrAsync , getUserTeamIds, requireAuth } from "@/platform/auth/serverUtils"
 
 export { getUserTeamIds }
 
@@ -17,10 +17,8 @@ export async function requireUserId(): Promise<string> {
  *   const { userId, teamIds } = await getUserScope()
  *   prisma.note.findMany({ where: ownedByWhere(userId, teamIds) })
  */
-export function ownedByWhere(userId: string, teamIds: string[]) {
-  return {
-    OR: ownedOr(userId, teamIds),
-  }
+export async function ownedByWhere(userId: string) {
+  return { OR: await ownedOrAsync(userId) }
 }
 
 /**

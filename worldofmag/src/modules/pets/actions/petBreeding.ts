@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "./pets";
 import type { PetBreedingData, PetBreedingPair, PetClutch, PetSale, PetStatus } from "@/types";
@@ -55,7 +55,7 @@ export async function getPetBreeding(petId: string): Promise<PetBreedingData> {
         species: pet.species,
         id: { not: petId },
         OR: [
-          ...ownedOr(user.id, teamIds),
+          ...(await ownedOrAsync(user.id)),
           { shares: { some: { userId: user.id } } },
         ],
       },
@@ -69,7 +69,7 @@ export async function getPetBreeding(petId: string): Promise<PetBreedingData> {
 
   // Z-262: przychód ze sprzedaży potomstwa per para (2 zapytania, bez N+1).
   // Potomstwo pary = zwierzęta z sireId=maleId AND damId=femaleId (w zakresie właściciela).
-  const ownerScope = ownedOr(user.id, teamIds);
+  const ownerScope = (await ownedOrAsync(user.id));
   const keyedPairs = pairs.filter((p) => p.maleId && p.femaleId);
   const revByKey = new Map<string, { revenue: number; soldCount: number }>();
   if (keyedPairs.length > 0) {

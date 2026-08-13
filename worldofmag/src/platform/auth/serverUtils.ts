@@ -35,12 +35,48 @@ export async function isAdminSession(): Promise<boolean> {
  * @param teamIds zespoły użytkownika (`getUserTeamIds`); pusta lista = brak gałęzi zespołowej
  */
 export function ownedWhere(userId: string, teamIds: string[]) {
-  return {
-    OR:
-      teamIds.length > 0
-        ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }]
-        : [{ ownerId: userId }],
-  };
+  return { OR: ownedOr(userId, teamIds) };
+}
+
+/**
+ * 058 (etap 3B krok 2) — ZAKRES IDZIE PO PRZESTRZENIACH.
+ *
+ * To jest realizacja zdania z rozdz. 8.2: *„Dziś każde zapytanie musi obsłużyć oba przypadki
+ * (`OR: [{ownerId}, {ownerTeamId: {in: teamIds}}]`). Po zmianie: `where: { workspaceId: { in:
+ * mySpaces } }`."* Dzięki 057 zmiana dotyczy **tego jednego miejsca**, a nie 79.
+ *
+ * **Trzy gałęzie, każda z powodem:**
+ * 1. `workspaceId in mojePrzestrzenie` — właściwa reguła docelowa. Obejmuje przestrzeń osobistą
+ *    **i** zespołowe, bo jedno i drugie to po prostu przestrzeń, której jestem członkiem.
+ * 2. `ownerId = ja` **przy pustej przestrzeni** — rekord bez przestrzeni (sierota po backfillu
+ *    0227) musi pozostać widoczny dla właściciela. Bez tego zniknąłby użytkownikowi z listy, a to
+ *    zmiana widoczna, której spec nie zamawia.
+ * 3. `ownerTeamId in mojeZespoły` **przy pustej przestrzeni** — to samo dla sierot zespołowych.
+ *
+ * Gałęzie 2 i 3 są **przejściowe** i znikają w etapie 4 razem z kolumnami. Warunek
+ * `workspaceId: null` jest przy nich istotny: bez niego stara reguła działałaby dalej **obok**
+ * nowej i przełączenie niczego by nie dowodziło — zbiory wyszłyby równe niezależnie od tego, czy
+ * gałąź pierwsza w ogóle działa (lekcja z 056: „zielony test, który dowodził, że nowy kod się nie
+ * uruchomił").
+ *
+ * Zakres przestrzeni bierzemy z kontekstu dostępu, liczonego **raz na żądanie** (cache z 052) —
+ * dlatego funkcja jest asynchroniczna, a liczba zapytań nie rośnie.
+ */
+export async function ownedOrAsync(userId: string): Promise<Record<string, unknown>[]> {
+  const { getAccessContext } = await import("@/platform/sharing/cache");
+  const ctx = await getAccessContext(userId);
+  const gałęzie: Record<string, unknown>[] = [];
+  if (ctx.workspaceIds.length > 0) gałęzie.push({ workspaceId: { in: ctx.workspaceIds } });
+  gałęzie.push({ workspaceId: null, ownerId: userId });
+  if (ctx.teamIds.length > 0) {
+    gałęzie.push({ workspaceId: null, ownerTeamId: { in: ctx.teamIds } });
+  }
+  return gałęzie;
+}
+
+/** Jak wyżej, ale gotowy `where`. */
+export async function ownedWhereAsync(userId: string) {
+  return { OR: await ownedOrAsync(userId) };
 }
 
 /**
@@ -49,7 +85,9 @@ export function ownedWhere(userId: string, teamIds: string[]) {
  * musiałyby rozpakowywać `ownedWhere(...).OR` i bramka nie miałaby czego pilnować.
  */
 export function ownedOr(userId: string, teamIds: string[]) {
-  return ownedWhere(userId, teamIds).OR;
+  return teamIds.length > 0
+    ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }]
+    : [{ ownerId: userId }];
 }
 
 /**

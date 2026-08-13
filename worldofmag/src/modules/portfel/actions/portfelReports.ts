@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getAccessibleTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { requireAuth, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 
 export type CategorySlice = { category: string; amount: number; pct: number };
 
@@ -32,7 +32,7 @@ export async function getMonthlyReport(monthOffset = 0): Promise<MonthlyReport> 
   const teamIds = await getAccessibleTeamIds(user.id, "portfel");
 
   const elements = await prisma.walletElement.findMany({
-    where: { OR: ownedOr(user.id, teamIds) },
+    where: { OR: (await ownedOrAsync(user.id)) },
     select: { id: true, currency: true },
   });
   const elementIds = elements.map((e) => e.id);

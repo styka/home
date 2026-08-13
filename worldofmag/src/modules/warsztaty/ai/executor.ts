@@ -1,6 +1,6 @@
 // Z-010: handler akcji asystenta dla modułu Warsztaty (warsztat + wyposażenie).
 import { prisma } from "@/platform/db/prisma";
-import { getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import {
   createWorkshop, addWorkshopItem, updateWorkshop, deleteWorkshop,
   updateWorkshopItem, deleteWorkshopItem, adjustWorkshopItemQuantity,
@@ -49,7 +49,7 @@ export async function executeWarsztatAction(action: AIAction, userId: string): P
     if (!name) throw new Error("Podaj nazwę pozycji");
     const wsName = asStr(params.workshopName) ?? searchQuery?.trim();
     const teamIds = await getUserTeamIds(userId);
-    const ownerOr = ownedOr(userId, teamIds);
+    const ownerOr = (await ownedOrAsync(userId));
     const workshop = wsName
       ? await prisma.workshop.findFirst({
           where: { OR: ownerOr, name: { contains: wsName, mode: "insensitive" } },

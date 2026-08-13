@@ -44,7 +44,7 @@ export async function getContacts(search?: string): Promise<ContactDTO[]> {
   const q = search?.trim();
   const rows = await prisma.contact.findMany({
     where: {
-      ...ownedByWhere(userId, teamIds),
+      ...(await ownedByWhere(userId)),
       ...(q
         ? {
             OR: [

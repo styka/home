@@ -1,5 +1,5 @@
 import { getAutoReplenishCandidates, getCookbooks, getExpiringSoon, getMealPlanCost, getRecipe, getTodaysMeals } from "../contract";
-import { getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { prisma } from "@/platform/db/prisma";
 import { HARD_MAX, clampLimit, asStr, resolveIdOrName, ownerScope } from "@/lib/ai/readToolShared";
 import type { AiReadToolHandler } from "@/platform/ai/contribution";
@@ -41,7 +41,7 @@ export const readTools: Record<string, AiReadToolHandler> = {
       const search = asStr(args.search);
       const recipeOwnerOr = async () => {
         const teamIds = await getUserTeamIds(userId);
-        return ownedOr(userId, teamIds);
+        return (await ownedOrAsync(userId));
       };
       let key = idOrSlug;
       // 032: `recipeId` bywa TYTUŁEM przepisu — rozwiąż (id/slug → nazwa), zamiast zwrócić null.

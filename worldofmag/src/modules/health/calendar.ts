@@ -1,5 +1,5 @@
 import { prisma } from "@/platform/db/prisma";
-import { getUserTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import type { CalendarContribEvent, CalendarRange } from "@/platform/calendar";
 
 /**
@@ -20,7 +20,7 @@ function isoDay(d: Date): string {
 
 async function ownScope(userId: string) {
   const teamIds = await getUserTeamIds(userId);
-  return ownedOr(userId, teamIds);
+  return (await ownedOrAsync(userId));
 }
 
 export default async function calendarEvents(userId: string, { from, to }: CalendarRange): Promise<CalendarContribEvent[]> {

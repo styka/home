@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOr } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { DEFAULT_PRESET_KEY } from "../lib/petPresets";
 import type { Pet, PetWithRelations, PetShare, PetStatus, ShareRole } from "@/types";
@@ -47,7 +47,7 @@ export async function getPets(opts?: { includeInactive?: boolean }): Promise<Pet
   const accessOr = [
     // Własność idzie wspólnym helperem (057); UDOSTĘPNIENIA (`PetShare`) to osobne pojęcie
     // i zostają tu jawnie — zadanie 12 zamieni je na `ResourceGrant`.
-    ...ownedOr(user.id, teamIds),
+    ...(await ownedOrAsync(user.id)),
     { shares: { some: { userId: user.id } } },
     ...(teamIds.length > 0 ? [{ shares: { some: { teamId: { in: teamIds } } } }] : []),
   ];

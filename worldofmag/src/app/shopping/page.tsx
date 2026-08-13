@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { prisma } from "@/platform/db/prisma";
 import { getListSummaries } from "@/modules/shopping/actions/lists";
-import { getUserTeamIds, ownedWhere } from "@/platform/auth/serverUtils";
+import { getUserTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { ShoppingHomePage } from "@/modules/shopping/ui/ShoppingHomePage";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export default async function ShoppingIndexPage() {
   const userId = session.user.id;
   const teamIds = await getUserTeamIds(userId);
   const accessFilter = {
-    ...ownedWhere(userId, teamIds),
+    ...(await ownedWhereAsync(userId)),
   };
 
   const [lists, archived, totalPending, recentItems] = await Promise.all([
