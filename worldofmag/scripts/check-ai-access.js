@@ -1,0 +1,81 @@
+#!/usr/bin/env node
+/**
+ * Bramka DOSTĘPU W NARZĘDZIACH ODCZYTU ASYSTENTA (065, zadanie 18; rozdz. 12.2.1).
+ *
+ * Dokument nazywa to **realnym zagrożeniem**: *„Read-toole asystenta muszą przechodzić przez
+ * `requireAccess`, a nie przez `where: { ownerId }`. Inaczej użytkownik z dostępem `viewer` do
+ * projektu mógłby poprosić asystenta o zmianę zadania — i asystent by ją wykonał, bo działa
+ * »w imieniu użytkownika« bez sprawdzenia roli."* I dodaje: *„Przy 160 akcjach AI nie da się tego
+ * zweryfikować ręcznie."*
+ *
+ * Asystent jest najgorszym możliwym miejscem na lukę: czyta wszystkie moduły, nie przechodzi przez
+ * UI i dostaje identyfikatory **wprost z rozmowy** — więc podanie cudzego identyfikatora nic go
+ * nie kosztuje.
+ *
+ * Reguła: KAŻDY plik `src/modules/*​/ai/readTools.ts` musi mieć widoczny mechanizm zawężenia —
+ * sprawdzanie dostępu, wspólny helper zakresu albo jawne `ownerId: userId`. Czego bramka **nie
+ * umie** rozstrzygnąć (np. zawężenie schowane w funkcji kontraktu, która bierze użytkownika
+ * z sesji), wymaga wpisu w manifeście z opisem mechanizmu — bo to jest decyzja recenzenta,
+ * nie wzorca tekstowego.
+ */
+const fs = require("fs");
+const path = require("path");
+
+const root = path.join(__dirname, "..");
+const modulesDir = path.join(root, "src/modules");
+const manifestPath = path.join(root, "src/lib/ai/read-access-coverage.json");
+
+/** Mechanizmy zawężenia, które da się rozpoznać z tekstu. */
+const MECHANIZMY = [
+  /require[A-Za-z]*(Module)?Access\s*\(/, // sprawdzanie dostępu przez platformę
+  /assert[A-Za-z]*Access\s*\(/, // guard modułu
+  /ownedWhereAsync\s*\(|ownedOrAsync\s*\(|ownedWhere\s*\(|ownedOr\s*\(/, // wspólny zakres (057/058)
+  /ownerId:\s*(userId|user\.id)/, // jawne zawężenie do właściciela
+  /[A-Za-z]*[Ss]cope\s*\(\s*userId/, // lokalny helper zakresu (np. `ownerScope(userId)`)
+  /accessible[A-Za-z]*\s*\(\s*userId/, // lokalny helper „co widzę"
+];
+
+const wyjatki = fs.existsSync(manifestPath)
+  ? JSON.parse(fs.readFileSync(manifestPath, "utf8")).wyjatki || {}
+  : {};
+
+const uzyte = new Set();
+const brakujace = [];
+let sprawdzone = 0;
+
+for (const m of fs.readdirSync(modulesDir, { withFileTypes: true })) {
+  if (!m.isDirectory()) continue;
+  const abs = path.join(modulesDir, m.name, "ai/readTools.ts");
+  if (!fs.existsSync(abs)) continue;
+  const rel = path.relative(root, abs).split(path.sep).join("/");
+  sprawdzone++;
+  const tresc = fs.readFileSync(abs, "utf8");
+  if (MECHANIZMY.some((re) => re.test(tresc))) continue;
+  if (wyjatki[rel]) {
+    uzyte.add(rel);
+    continue;
+  }
+  brakujace.push(rel);
+}
+
+const martwe = Object.keys(wyjatki).filter((rel) => !uzyte.has(rel));
+
+if (brakujace.length || martwe.length) {
+  console.error("\n✖ Narzędzia odczytu asystenta bez widocznego zawężenia dostępu:\n");
+  for (const rel of brakujace.sort()) {
+    console.error(`  ✖ ${rel} nie pokazuje, jak zawęża wynik do tego, co użytkownik może zobaczyć.`);
+    console.error("    Asystent dostaje identyfikatory wprost z rozmowy, więc niezawężone zapytanie");
+    console.error("    oddaje cudze dane każdemu, kto poda cudzy identyfikator (rozdz. 12.2.1).");
+    console.error(`    Jeśli zawężenie jest, ale schowane (np. w funkcji kontraktu biorącej użytkownika`);
+    console.error(`    z sesji) — opisz mechanizm w ${path.relative(root, manifestPath)}.\n`);
+  }
+  for (const rel of martwe) {
+    console.error(`  ✖ Martwy wyjątek w manifeście: „${rel}" pokazuje już mechanizm wprost.\n`);
+  }
+  process.exit(1);
+}
+
+console.log(
+  `✓ Dostęp w narzędziach odczytu AI: ${sprawdzone} modułów z narzędziami, każdy zawęża wynik` +
+    `${uzyte.size ? ` (${uzyte.size} świadomych wyjątków)` : ""}.`,
+);
