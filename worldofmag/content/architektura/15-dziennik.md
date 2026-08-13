@@ -1360,3 +1360,31 @@ technicznego.
 
 **Bramki:** build **exit 0**, `test:unit` **727/727**, liczniki **160 / 551 / 35 / 35** bez ruchu,
 nowa `check:versioning` (2 modele, 2 pliki zapisujące, manifest pusty).
+
+
+---
+
+### 063 — Odwołanie dostępu działa natychmiast; zadanie 17 · 2026-08-13
+
+**Test napisany PRZED optymalizacją, którą ma pilnować.** Rozdz. 12.2 nazywa go „nowym
+i nieoczywistym" i podaje powód: cache rozstrzygnięć dostępu (11.5, zadanie 29) grozi tym, że
+odebranie uprawnień zadziała dopiero po wygaśnięciu wpisu — *„dziura bezpieczeństwa wprowadzona
+przez optymalizację"*.
+
+Dziś cache jest **per żądanie** (052), więc odwołanie jest natychmiastowe **z definicji**, bez
+żadnego wysiłku. Łatwo z tego wyciągnąć wniosek, że testu nie warto pisać. Wniosek jest odwrotny:
+**test pisany po wprowadzeniu cache opisuje to, co cache robi**; ten pisany teraz zostaje
+**warunkiem, który cache będzie musiał spełnić**. Różnica między jednym a drugim to różnica między
+dokumentacją a wymaganiem.
+
+**Kontrola mocy zamiast pojedynczej asercji.** Sprawdzenie „nadanie z minioną datą nie daje nic"
+jest zielone także wtedy, gdy odmowa bierze się z czegokolwiek innego — z literówki w typie zasobu,
+z braku wpięcia deklaracji, z pomylonego identyfikatora. Dlatego zaraz po nim idzie ten sam
+scenariusz z datą **przyszłą**, który musi być zielony na „dozwolone". Dopiero para tych asercji
+mówi coś o dacie.
+
+**Czego świadomie nie ma:** części „także przy aktywnym SSE". Strumienia zdarzeń w aplikacji nie ma
+(Faza 4, zadania 21–23), a test na nieistniejący mechanizm sprawdzałby wyłącznie własną atrapę.
+Dopisanie należy do zadania 23 i jest tam odnotowane.
+
+**Bramki:** build **exit 0**, `test:unit` **733/733**.
