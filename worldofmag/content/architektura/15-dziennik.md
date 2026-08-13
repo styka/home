@@ -1467,3 +1467,41 @@ znacznie trudniejsza i bramka wystarcza.
 
 **Bramki:** build **exit 0**, `test:unit` **742/742**, nowa `check:ai-access` (16 modułów,
 1 świadomy wyjątek), liczniki **160 / 551 / 35 / 35** bez ruchu.
+
+
+---
+
+### 066 — Okno konfliktu; zadanie 16 · 2026-08-13
+
+**062 rozwiązał poprawność i nie rozwiązał użytkownika.** Zapis oparty na nieaktualnym odczycie
+przestał przechodzić — ale człowiek po drugiej stronie dostawał surowy błąd i tracił to, co
+napisał. Rozdz. 8.5.2 stawia zasadę, którą to okno dopiero realizuje: *„konflikt nigdy nie kończy
+się utratą pracy użytkownika bez jego świadomej decyzji"*.
+
+**Dlaczego to nie jest `confirm` z inną treścią.** Potwierdzenie ma dwa wyjścia i jedno z nich jest
+bezpieczne — „anuluj" nie kosztuje nic. Tu **każde** wyjście coś kosztuje: nadpisanie kasuje cudzą
+pracę, odrzucenie własną. Stąd **trzy** przyciski, każdy nazwany tym, co zrobi, i **żaden
+domyślny**. Trzecim jest „wróć do edycji" — jedyne wyjście, którego nie trzeba cofać.
+
+**Odrzucenie zapisuje wersję roboczą do kosza.** Bez tego przycisk „odrzuć moje zmiany" byłby
+utratą pracy jednym kliknięciem — czyli dokładnie tym, co zadanie 15 miało skończyć, tylko
+w ładniejszym oknie. Wersja robocza idzie do **istniejącego** kosza, nie do nowej tabeli: kosz już
+umie retencję, przywracanie i sprzątanie, a odrzucona wersja nie różni się od usuniętego rekordu
+niczym, co wymagałoby osobnego bytu. Tytuł dostaje prefiks „Wersja robocza (konflikt)", bo w koszu
+stoi obok skasowanych zasobów i bez tego wyglądałaby na jeden z nich.
+
+**Degradacja poza powłoką jest testowana i celowo bezczynna.** Kuszące byłoby zwracać „nadpisz"
+(„przecież to najczęstszy wybór") — i wtedy komponent użyty w teście, w playgroundzie albo
+w miejscu, gdzie ktoś zapomniał providera, **kasowałby cudzą pracę bez pytania**. Zwraca „wróć do
+edycji". Żeby dało się to sprawdzić bez runtime'u Reacta, wartość jest wyprowadzona z hooka do
+osobnej stałej — hook poza renderem i tak by się wywalił, więc test hooka sprawdzałby Reacta,
+nie regułę.
+
+**Czego świadomie NIE ma: widoku różnic i scalania ręcznego.** Oba wymagają porównywania **pól
+konkretnego modułu**, a okno platformy nie wie, czym jest „termin" ani „status". Udawanie, że wie,
+skończyłoby się mapą pól na typ zasobu **wewnątrz platformy** — dokładnie tym, czego zakazuje C-36.
+Zamiast tego okno przyjmuje gotowy opis zmian (`podsumowanieZmian`) od modułu, który zechce go
+podać; dopóki nikt nie poda, okno mówi prawdę: „ktoś zmienił ten element". Pełne różnice wracają
+jako osobne zadanie, gdy pierwszy moduł będzie ich naprawdę potrzebował (C-35).
+
+**Bramki:** build **exit 0**, `test:unit` **744/744**.
