@@ -40,13 +40,30 @@ export async function accessibleProjectIds(userId: string): Promise<string[]> {
   // 053: projekty zespołu MUSZĄ tu być, odkąd członek zespołu może w nich pracować. Inaczej lista
   // i sprawdzanie dostępu rozjeżdżają się w najgorszą stronę: użytkownik ma prawo działać
   // w projekcie, którego nie widzi — a asystent twierdzi, że taki projekt nie istnieje.
+  //
+  // 056: gałąź zespołowa idzie po PRZESTRZENIACH, nie po `ctx.teamIds`. Rozstrzyganie dostępu
+  // czyta od tego przebiegu `workspaceId`, więc lista licząca zespoły z `TeamMember` pomijałaby
+  // dokładnie ten przypadek, który 056 naprawia: **właściciela zespołu bez wiersza członkostwa**.
+  // Byłaby to ta sama asymetria, którą opisuje akapit wyżej, tylko dla innej osoby.
+  //
+  // Bierzemy wyłącznie przestrzenie, w których moja rola cokolwiek daje — `guest` nie dostaje
+  // dostępu w `rolaZWlasnosci`, więc nie może dostać wiersza na liście. Lista ma być tym samym
+  // zbiorem, co dostęp, a nie jego nadzbiorem.
   const ctx = await getAccessContext(userId);
+  const przestrzenie = Object.entries(ctx.workspaceRoles)
+    .filter(([, rola]) => rola !== "guest")
+    .map(([id]) => id);
   const projekty = await prisma.taskProject.findMany({
     where: {
       OR: [
         { ownerId: userId },
         { members: { some: { userId } } },
-        ...(ctx.teamIds.length > 0 ? [{ ownerTeamId: { in: ctx.teamIds } }] : []),
+        ...(przestrzenie.length > 0 ? [{ workspaceId: { in: przestrzenie } }] : []),
+        // Sieroty (rekord bez przestrzeni) nadal wychodzą przez `ownerTeamId` — gałąź awaryjna
+        // ta sama, co w `rolaZWlasnosci`. Zniknie w etapie 4 razem z kolumną.
+        ...(ctx.teamIds.length > 0
+          ? [{ workspaceId: null, ownerTeamId: { in: ctx.teamIds } }]
+          : []),
       ],
     },
     select: { id: true },

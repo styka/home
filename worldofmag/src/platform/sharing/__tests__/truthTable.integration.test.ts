@@ -217,6 +217,24 @@ test(
         assert.equal(macierz["w zespole, bez czlonkostwa"]["projekt zespolowy: odczyt/edycja"], "dozwolone");
       });
 
+      await t.test("056: właściciel zespołu bez członkostwa WIDZI projekt, do którego ma prawo", async () => {
+        // Świadoma zmiana ze speca §5 daje właścicielowi zespołu dostęp do projektu zespołowego.
+        // Gdyby lista go nie pokazywała, powstałaby dokładnie ta asymetria, którą 053 zamknęło dla
+        // członków: prawo działać w czymś, czego się nie widzi, i asystent twierdzący, że tego nie
+        // ma. Dostęp i lista mają być tym SAMYM zbiorem.
+        const { accessibleProjectIds } = await import("@/modules/tasks/lib/sharingGuard");
+        const widoczne = await accessibleProjectIds(wlasciciel.id);
+        assert.equal(macierz["wlasciciel projektu"]["projekt zespolowy: odczyt/edycja"], "dozwolone");
+        assert.ok(
+          widoczne.includes(projektZespolu.id),
+          "właściciel zespołu ma dostęp do projektu zespołowego, więc musi go też widzieć na liście",
+        );
+
+        // I w drugą stronę: obcy ani go nie widzi, ani nie może.
+        const obceWidoczne = await accessibleProjectIds(obcy.id);
+        assert.equal(obceWidoczne.includes(projektZespolu.id), false);
+      });
+
       await t.test("053: osoby spoza zespołu nadal nic nie zyskują", () => {
         for (const kto of ["czlonek MEMBER", "czlonek ADMIN", "obcy"]) {
           assert.equal(
