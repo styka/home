@@ -1429,3 +1429,41 @@ być drugą definicją przynależności.
 
 **Bramki:** build **exit 0**, `test:unit` **738/738**, `check:module-registry` **dziesięć kontroli**
 (doszła klasyfikacja), liczniki **160 / 551 / 35 / 35** bez ruchu.
+
+
+---
+
+### 065 — Asystent nie jest drogą obejścia uprawnień; zadanie 18 · 2026-08-13
+
+**Zdanie z rozdz. 12.2.1 przesądza kształt rozwiązania:** *„Przy 160 akcjach AI nie da się tego
+zweryfikować ręcznie."* Więc nie test per moduł, tylko **bramka na wszystkich szesnastu** plikach
+narzędzi odczytu — plus test **zachowania** tam, gdzie role naprawdę się różnią.
+
+**Dlaczego akurat asystent.** Czyta wszystkie moduły, nie przechodzi przez UI i dostaje
+identyfikatory **wprost z rozmowy**. Podanie cudzego identyfikatora nic nie kosztuje — nie trzeba
+niczego omijać, wystarczy poprosić.
+
+**Pierwsza wersja bramki dała fałszywy alarm na sześciu modułach** i to jest najciekawsza część
+tego przebiegu. Szukałem `requireAccess` i `ownedWhere`, a Nawyki zawężają przez lokalne
+`ownerScope(userId)`, Zakupy przez `accessibleListWhere(userId)`, Pogoda przez jawne
+`ownerId: userId`. Wszystkie **poprawne** — tylko innym mechanizmem. Bramka, która zna jeden
+sposób robienia rzeczy, nie mierzy bezpieczeństwa, tylko **zgodność ze stylem**.
+
+**Jeden przypadek został po rozszerzeniu wzorca — i jest prawdziwie inny.** `reports` woła
+`searchReports(q)` z kontraktu i **nie używa** przekazanego `userId`. Wygląda na lukę, nie jest nią:
+zawężenie siedzi poziom niżej i bierze użytkownika z **sesji** (`requireAuth`), filtrując po
+„mój / systemowy / mojego zespołu". Parametr narzędzia jest zbędny, bo asystent działa w imieniu
+zalogowanego — sesja i `userId` to ta sama osoba.
+
+To jest dokładnie ten rodzaj rozstrzygnięcia, którego **wzorzec tekstowy nie zrobi**, więc wpis
+w manifeście opisuje mechanizm i mówi, **gdzie sprawdzić**, gdyby sesja i `userId` kiedyś przestały
+oznaczać tę samą osobę.
+
+**Test zachowania dla Zwierząt**, bo bramka odpowiada na „czy widać mechanizm", a dokument pyta
+o skutek. Zwierzęta to drugi (po Zadaniach) moduł, w którym **„mam dostęp" i „wolno mi zmieniać"
+to dwie różne rzeczy** — jedyne miejsce, gdzie scenariusz z dokumentu („`viewer` prosi asystenta
+o zmianę") w ogóle da się odtworzyć. Tam, gdzie są dwa stany (moje / nie moje), pomyłka jest
+znacznie trudniejsza i bramka wystarcza.
+
+**Bramki:** build **exit 0**, `test:unit` **742/742**, nowa `check:ai-access` (16 modułów,
+1 świadomy wyjątek), liczniki **160 / 551 / 35 / 35** bez ruchu.
