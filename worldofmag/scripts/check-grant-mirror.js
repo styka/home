@@ -23,7 +23,7 @@ const srcDir = path.join(root, "src");
 const manifestPath = path.join(root, "src/platform/sharing/grant-mirror-coverage.json");
 
 const MUTACJE =
-  /\b(prisma|tx)\.(taskProjectMember|taskShare)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b/;
+  /\b(prisma|tx)\.(taskProjectMember|taskShare|petShare)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\b/;
 const UZGADNIA = /@\/platform\/sharing\/grantMirror/;
 
 const SELF = new Set(["src/platform/sharing/grantMirror.ts"]);
@@ -73,9 +73,9 @@ const martwe = Object.keys(wyjatki).filter((rel) => !uzyte.has(rel));
 if (brakujace.length || martwe.length) {
   console.error("\n✖ Lustro nadań — mutacja udostępnienia bez uzgodnienia nadania:\n");
   for (const rel of brakujace) {
-    console.error(`  ✖ ${rel} mutuje TaskProjectMember/TaskShare, a nie importuje grantMirror.`);
+    console.error(`  ✖ ${rel} mutuje TaskProjectMember/TaskShare/PetShare, a nie importuje grantMirror.`);
     console.error("    Tabela jest źródłem prawdy, nadanie jej lustrem — po zmianie zawołaj");
-    console.error("    `mirrorProjectMember`/`mirrorTaskShare` albo ich wariant `unmirror…`.");
+    console.error("    `mirrorProjectMember`/`mirrorTaskShare`/`mirrorPetShare` albo ich wariant `unmirror…`.");
     console.error(`    Jeśli mutacja lustra naprawdę nie dotyczy, dopisz powód do ${path.relative(root, manifestPath)}.\n`);
   }
   for (const rel of martwe) {

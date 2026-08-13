@@ -1279,3 +1279,35 @@ której 059 nie mogło zrobić właśnie z braku tej deklaracji.
 
 **Bramki:** build **exit 0**, `test:unit` **719/719**, liczniki **160 / 551 / 35 / 35** bez ruchu,
 `check:module-registry` widzi wpięcie w obie strony.
+
+
+---
+
+### 061 — Udostępnienia Zwierząt jako nadania; etap 1 zadania 12 domknięty · 2026-08-13
+
+**Zależność, której checklista nie pokazywała, właśnie się rozwiązała.** 059 przeniosło dwie z
+trzech tabel udostępnień; `PetShare` czekał, bo nadanie dla typu `pets.pet` nie daje nic, dopóki
+`resolveRole` tego typu nie zna. Migracja bez deklaracji zasobu nie przeniosłaby udostępniania
+zwierząt — **odebrałaby je**. Deklarację dołożyło 060 i blokada zniknęła.
+
+**Wszystkie trzy tabele z zadania 12 mają teraz etap 1.** `TaskProjectMember`, `TaskShare`
+i `PetShare` zapisują nadania obok siebie; odczyty nadal chodzą starą drogą.
+
+**Różnica, którą widać dopiero przy drugim module.** `extraGrants` Zwierząt musi **rozwijać**
+udostępnienie zespołowe na członków, bo mówi językiem „userId → rola" — N zapytań przy N
+udostępnieniach. Nadanie z `subjectType: "workspace"` załatwia to **jednym dopasowaniem** i obejmuje
+zmiany składu zespołu automatycznie. To jest konkretny, mierzalny zysk z etapu 2, a nie sama
+elegancja: dziś dodanie kogoś do zespołu nie zmienia nic w `extraGrants`, bo lista członków czytana
+jest przy każdym sprawdzeniu.
+
+**Bramka rozszerzona o `petShare` wskazała miejsce od razu** — czwarty plik mutujący udostępnienia.
+Trzeci raz z rzędu wzorzec „mutujesz źródło, uzgadniasz lustro" zadziałał bez szukania.
+
+#### Co zostaje w zadaniu 12
+
+| Etap | Zakres |
+|------|--------|
+| **2** | Przełączenie odczytów: `extraGrants` znika z deklaracji Zadań **i** Zwierząt, dostęp idzie przez nadania. Wspólny dla wszystkich trzech tabel, z tabelą prawdy (C-17). **Warunek wejścia:** policzony na produkcji rozjazd tabela ↔ nadanie |
+| **3** | Usunięcie `TaskProjectMember`, `TaskShare`, `PetShare` ze schematu; zdjęcie lustra i jego bramki |
+
+**Bramki:** build **exit 0**, `check:grant-mirror` 4 pliki / 1 wyjątek, liczniki bez ruchu.

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { mirrorPetShare, unmirrorPetShare } from "@/platform/sharing/grantMirror";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
@@ -246,6 +247,8 @@ export async function sharePetByEmail(
     } else {
       await prisma.petShare.create({ data: { petId, userId: targetUser.id, role } });
     }
+    // 061: udostępnienie jest źródłem prawdy, nadanie jego lustrem (C-16).
+    await mirrorPetShare(petId, { userId: targetUser.id }, role, user.id);
 
     void trackActivity("pets", "share_pet", { petId, role });
     revalidatePath(`/pets/${petId}`);
@@ -265,6 +268,7 @@ export async function sharePetWithTeam(petId: string, teamId: string, role: Shar
   } else {
     await prisma.petShare.create({ data: { petId, teamId, role } });
   }
+  await mirrorPetShare(petId, { teamId }, role, user.id);
   revalidatePath(`/pets/${petId}`);
 }
 
@@ -274,5 +278,6 @@ export async function removePetShare(shareId: string): Promise<void> {
   if (!share) return;
   await assertPetAccess(share.petId, user.id, true);
   await prisma.petShare.delete({ where: { id: shareId } });
+  await unmirrorPetShare(share.petId, { userId: share.userId, teamId: share.teamId });
   revalidatePath(`/pets/${share.petId}`);
 }
