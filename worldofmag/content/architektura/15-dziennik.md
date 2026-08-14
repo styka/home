@@ -48,8 +48,23 @@ istniejący zespół i każde konto ma już swoją przestrzeń. Aplikacja nadal 
 **052 dowiozło zadanie 10:** `requireAccess` istnieje w platformie, a Zadania są jego pierwszym
 konsumentem. Nadania z 051 mają wreszcie czytelnika.
 
-**Następny krok: zadanie 11** — `workspaceId` na 46 modelach. Rozdz. 8.10 nazywa je **najbardziej
-ryzykownym krokiem całej przebudowy** i wymaga czterech osobnych etapów.
+**Przebiegi 053–068 domknęły Fazę 2 tak daleko, jak da się ją domknąć bez produkcji.** Zamknięte
+w całości: **13** (deklaracje zasobów — okazało się, że decyzje per rekord podejmuje sześć modułów,
+nie dziewiętnaście), **16** (okno konfliktu), **17** (odwołanie dostępu działa natychmiast),
+**18** (asystent AI nie jest drogą obejścia uprawnień). Zaczęte i dowiezione do granicy: **11**
+(etapy 1–3 z czterech — kolumna, wyzwalacz utrzymujący ją w przód, przełączone rozstrzyganie
+i przełączone zakresy list), **12** (etap 1 z trzech — lustro nadań dla Zadań i Zwierząt),
+**14** (część odczytowa: „Udostępnione mi" / „Co udostępniłem"), **15** (mechanizm wersji
++ pilot), **20** (mechanizm paginacji + zapadka na 263 zapytaniach bez `take`).
+
+**Dwie rzeczy są ZABLOKOWANE warunkiem, którego z tej sesji nie da się spełnić** — i to jest
+świadoma granica, nie zaniechanie. **Etap 4 zadania 11** (`NOT NULL` i `DROP COLUMN` na 45 tabelach)
+wymaga wcześniejszego wygrzania etapów 3A/3B na produkcji i policzenia sierot; **etap 2 zadania 12**
+(przełączenie odczytów na nadania) wymaga produkcyjnego pomiaru rozjazdu tabela↔nadanie. Obie
+operacje są nieodwracalne, a ich warunek wejścia to dane, których w sandboksie nie ma.
+
+**Następny krok: zadanie 19** — warstwa `domain/` i testy bez bazy (rozdz. 10.1). Faza 3 zostaje
+wtedy domknięta na tyle, na ile pozwala zapadka z 068.
 
 ---
 
@@ -81,21 +96,21 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 |---|---------|--------|-------|
 | 9 | Modele `Workspace`, `WorkspaceMember`, `ResourceGrant`, `ResourceInvitation` | ✅ | **051.** Cztery modele + migracja 0226 **z backfillem** (rozdz. 8.10 kroki 1–2): przestrzeń osobista na konto, zespołowa na zespół wraz ze składem. Lustro utrzymywane w przód (`platform/workspaces`), pilnowane bramką `check:workspace-mirror` i testem z testem negatywnym. Zero przełączonych odczytów |
 | 10 | `platform/sharing` — `requireAccess`, dziedziczenie, cache | ✅ | **052.** Platforma bez importu modułu (katalog parametrem wymaganym); Zadania jako pilot; **tabela prawdy 25 komórek identyczna** przed i po; read-tool asystenta przez wspólne sprawdzanie z testem obejścia. Cache per żądanie — bez unieważniania, bo nie ma czego unieważniać |
-| 11 | Migracja `ownerId`/`ownerTeamId` → `workspaceId` na 46 modelach | ⬜ | **Najgroźniejsze zadanie całej przebudowy** |
-| 12 | Migracja `TaskProjectMember`/`TaskShare`/`PetShare` → `ResourceGrant` | ⬜ | |
-| 13 | Deklaracje `resources` w `module.ts` | ⬜ | |
-| 14 | `ShareDialog`, „Udostępnione mi", „Co udostępniłem" | ⬜ | Kontrakt widoku przyjmuje już prop `resource` — patrz wpis 045 |
-| 15 | Kolumna `version` + `updateMany` z warunkiem na wersji | ⬜ | |
-| 16 | `ConflictDialog` | ⬜ | j.w. |
-| 17 | Test odwołania dostępu | ⬜ | |
-| 18 | Test kontraktowy read-tooli AI | ⬜ | |
+| 11 | Migracja `ownerId`/`ownerTeamId` → `workspaceId` na 46 modelach | 🟡 | **Najgroźniejsze zadanie całej przebudowy.** Etapy 1–3 z czterech: 054 kolumna + backfill (0227), 055 wyzwalacz utrzymujący ją w przód (0228) — wybrany zamiast rozszerzenia klienta Prismy, bo tego nie omija ani zapis zagnieżdżony, ani surowy SQL, ani seed; 056 rozstrzyganie dostępu czyta przestrzeń (etap 3A), 057+058 zakresy list idą po przestrzeniach (3B). **Etap 4 zablokowany**: `NOT NULL`/`DROP COLUMN` na 45 tabelach wymaga wygrzania na produkcji i wyzerowanych sierot |
+| 12 | Migracja `TaskProjectMember`/`TaskShare`/`PetShare` → `ResourceGrant` | 🟡 | Etap 1 z trzech: 059 lustro nadań dla Zadań, 061 dla Zwierząt; bramka `check:grant-mirror` z manifestem wyjątków. **Etap 2 zablokowany** — przełączenie odczytów wymaga produkcyjnego pomiaru rozjazdu tabela↔nadanie |
+| 13 | Deklaracje `resources` w `module.ts` | ✅ | **064.** Pomiar przed decyzją zmienił zadanie: decyzje dostępu **per rekord** podejmuje sześć modułów, nie dziewiętnaście. Pozostałe piętnaście albo dziedziczy po zasobie nadrzędnym, albo filtruje zakresem. Zamknięte manifestem `sharing-classification.json` (21/21 z powodem) egzekwowanym przez `check:module-registry` — zamiast pozycji wiecznie otwartej |
+| 14 | `ShareDialog`, „Udostępnione mi", „Co udostępniłem" | 🟡 | **067: część odczytowa.** `/udostepnione`, dwie zakładki, jedno zapytanie do jednej tabeli — wypłata za cały jednolity model. Zostaje strona zapisu: `ShareDialog`, zaproszenia e-mail, `subjectType: "link"`, powiadomienia, kategoria `sharing` w `AuditLog`. Przycisk odbierania dostępu jedzie razem z etapem 2 zadania 12 |
+| 15 | Kolumna `version` + `updateMany` z warunkiem na wersji | 🟡 | **062: mechanizm + pilot.** `updateWithVersion` w `platform/concurrency`; `updateMany` (nie `update`), bo tylko liczba wierszy odróżnia „ktoś mnie ubiegł" od „rekord nie istnieje". Bramka `check:versioning` z manifestem. Rozszerzanie na kolejne modele — sukcesywnie |
+| 16 | `ConflictDialog` | ✅ | **066.** Trzy wyjścia (nadpisz / odrzuć / wróć do edycji), a odrzucona wersja **nie znika** — ląduje w koszu jako „Wersja robocza (konflikt)". Degradacja poza powłoką wyodrębniona do `konfliktPozaPowloka`, żeby dała się przetestować bez Reacta |
+| 17 | Test odwołania dostępu | ✅ | **063.** Test dowodzi natychmiastowości **i** że mierzy właściwą rzecz: bez unieważnienia cache'u per żądanie schodzi na czerwono |
+| 18 | Test kontraktowy read-tooli AI | ✅ | **065.** Bramka `check:ai-access` — pierwsza wersja wzorca dawała fałszywe alarmy, bo znała tylko jeden idiom (`requireAccess`/`ownedWhere`), a sześć modułów zakresuje inaczej. Bramka, która zna jeden idiom, mierzy styl, nie bezpieczeństwo |
 
 ### Faza 3 — Domena i paginacja
 
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
-| 19 | `domain/` w każdym module + testy bez bazy | ⬜ | |
-| 20 | Paginacja kursorowa we wszystkich widokach listowych | ⬜ | `DataList` ma gotowy `onEndReached` — patrz wpis 045 |
+| 19 | `domain/` w każdym module + testy bez bazy | ⬜ | Następny krok |
+| 20 | Paginacja kursorowa we wszystkich widokach listowych | 🟡 | **068: mechanizm + zapadka.** `platform/pagination.ts` (kursor, nie `OFFSET`; wiersz-zwiadowca zamiast `count`), a dług — **263** `findMany` bez `take` — zamrożony bramką `check:pagination`, która pada także przy **spadku** licznika, wymuszając obniżenie progu. Spłata modułami, nie jednym przebiegiem: każda z tych zmian zmienia to, co użytkownik widzi |
 
 ### Faza 4 — Zdarzenia i koniec odpytywania
 
