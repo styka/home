@@ -1544,3 +1544,40 @@ milczeć.
 **Bramki:** build **exit 0**, `test:unit` **744/744**, `check:ui-contract` **22/22**,
 `check:ai-coverage` **553** akcji (dwie nowe jako `pending` — asystent powinien umieć odpowiedzieć
 „co mi udostępniono?", więc to luka, nie wykluczenie).
+
+
+---
+
+### 068 — Paginacja kursorowa: mechanizm i zapadka; zadanie 20 · 2026-08-13
+
+**Pomiar przed decyzją, jak zawsze w tej fazie.** Rozdz. 11.4 wymaga paginacji „we wszystkich
+widokach listowych". W akcjach modułów i w `src/actions` jest **263** wywołań `findMany` **bez
+`take`**. Przepisanie ich jednym przebiegiem to 263 niesprawdzone zmiany w zapytaniach — i każda
+z nich **zmienia to, co użytkownik widzi** (część listy zamiast całości).
+
+Więc ten przebieg nie udaje, że spłacił dług. Robi dwie rzeczy, które da się zrobić dziś i tanio:
+**dowozi mechanizm** i **zatrzymuje wzrost**.
+
+**Kursor, nie `skip`/`offset`** — i to nie jest kwestia gustu. `OFFSET 5000` każe bazie policzyć
+i odrzucić 5000 wierszy, więc koszt rośnie z numerem strony. Gorzej: przy dopisaniu rekordu między
+jedną stroną a drugą element **przesuwa się**, więc użytkownik widzi go dwa razy albo wcale.
+Kursor wskazuje konkretny wiersz i jest odporny na zmiany powyżej.
+
+**Trzy rzeczy, które psują się cicho** — i dlatego mają osobne testy:
+- **granica strony**: „pełna strona" i „koniec danych" wyglądają identycznie, jeśli nie pobierze
+  się o jeden wiersz więcej. Bez tego użytkownik dostaje przycisk „doładuj", który nic nie dokłada
+  — a alternatywą jest drugie zapytanie z `count`, czyli dokładnie to, czego paginacja miała
+  uniknąć;
+- **`skip: 1`**: bez niego pierwszy wiersz kolejnej strony to duplikat ostatniego z poprzedniej;
+- **sufit rozmiaru**: bez niego `?limit=100000` omija całą paginację jednym parametrem w URL-u.
+
+**Zapadka zamiast bramki wszystko-albo-nic.** `check:pagination` liczy nieograniczone zapytania
+i porównuje z zapisanym progiem. Zastane 263 przechodzą; **263 + 1 wywala build**. Nowy kod nie ma
+powodu powiększać tego długu, a stary spłacimy modułami.
+
+Jedna rzecz w tej bramce jest nieoczywista i celowa: **pada także wtedy, gdy licznik SPADNIE**,
+żądając obniżenia progu. Bez tego zapadka trzymałaby na starym poziomie i po spłaceniu dziesięciu
+zapytań pozwoliłaby dołożyć dziesięć nowych — czyli przestałaby być zapadką.
+
+**Bramki:** build **exit 0**, `test:unit` **749/749**, nowa `check:pagination` (próg 263),
+liczniki **160 / 553 / 35 / 35** bez ruchu.
