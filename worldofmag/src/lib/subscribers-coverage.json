@@ -1,0 +1,45 @@
+{
+  "$opis": [
+    "071 (zadanie 22, rozdz. 9.4.4) — JAK KAŻDY SUBSKRYBENT ZAPEWNIA IDEMPOTENCJĘ.",
+    "",
+    "Rozdz. 9.4.4 stawia wymóg jednym zdaniem: „każdy subskrybent musi wytrzymać dwukrotne",
+    "wywołanie tym samym zdarzeniem\". Zdanie w dokumencie jest życzeniem — 070 pokazało to na",
+    "własnym przykładzie (zakaz emisji poza transakcją wyrażony komentarzem nie zabraniał niczego,",
+    "dopóki nie wszedł w typ i w bramkę). Ten manifest zamienia wymóg w decyzję, którą trzeba podjąć.",
+    "",
+    "DLACZEGO TO NIE JEST PRZESADA: ponowienie NIE jest sytuacją wyjątkową. Następuje zawsze, gdy",
+    "worker padnie po wykonaniu subskrybenta, a przed oznaczeniem zdarzenia jako dostarczone. Tego",
+    "okna nie da się zamknąć (subskrybent pisze własną transakcją) — można je tylko uczynić",
+    "nieszkodliwym. Subskrybent bez idempotencji zaksięguje wydatek drugi raz i NIKT tego nie",
+    "zauważy, bo obie operacje wyglądają na poprawne.",
+    "",
+    "WARTOŚCI POLA `idempotencja`:",
+    "  klucz-unikalny — zapis przez `upsert` na kluczu wyprowadzonym z `event.id` (stabilnym między",
+    "                   ponowieniami, bo powstaje przy zapisie zdarzenia, nie przy publikacji).",
+    "                   Bramka wymaga, żeby plik zawierał `upsert` LUB wołał helper, który go robi,",
+    "                   ORAZ używał `event.id`.",
+    "  naturalna      — operacja jest bezpieczna przy powtórzeniu z samej swojej natury (ustawienie",
+    "                   wartości, nie inkrementacja; skasowanie, nie odjęcie). Wymaga `powod`.",
+    "",
+    "GRANICA TEJ BRAMKI, nazwana wprost: sprawdza OBECNOŚĆ WZORCA, nie dowodzi idempotencji.",
+    "Dowodem jest test podwójnego dostarczenia, który mierzy SKUTEK. Bramka pilnuje tylko tego,",
+    "żeby nikt nie dodał subskrybenta BEZ podjęcia tej decyzji — i to jest jej cała rola."
+  ],
+
+  "subskrybenci": {
+    "shopping.powiadom-o-zakonczeniu": {
+      "plik": "src/modules/shopping/events.ts",
+      "zdarzenia": ["shopping.list.completed"],
+      "idempotencja": "klucz-unikalny",
+      "powod": "`notifyUser` robi `upsert` po `@@unique([userId, dedupeKey])`, a klucz to `zdarzenie-${event.id}` — stabilny między ponowieniami. Drugie dostarczenie trafia w ten sam wiersz i nic nie zmienia. Dowiedzione testem podwójnego dostarczenia."
+    }
+  },
+
+  "obserwacje": {
+    "$opis": "Ustalone przy 071, świadomie niezrobione (C-53).",
+    "listen-notify": "Worker chodzi obiegiem co 5 s zamiast reagować na `LISTEN/NOTIFY`. Oba warianty z rozdz. 9.4.3 wymagają surowego połączenia poza Prismą (nowa zależność), a kupują wyłącznie niższe opóźnienie — istotne dopiero przy kanale czasu rzeczywistego. Decyzja należy do zadania 23, gdzie będzie realny wymóg.",
+    "dlugosc-transakcji": "Obieg trzyma blokady wierszy przez czas wykonania subskrybentów całej partii (20 zdarzeń). Przy subskrybentach wołających zewnętrzne API mogłoby to być za długo. Dziś subskrybent jest jeden i pisze tylko do własnej bazy; materiał na zadanie 28 (wydajność).",
+    "subskrybent-poza-transakcja": "Subskrybent pisze WŁASNĄ transakcją, nie transakcją obiegu — inaczej niż producent w 070, gdzie wymusza to typ. Nie wymuszamy tego tutaj, bo reakcja bywa złożona (kilka zapisów, wywołania zewnętrzne) i związanie jej z transakcją obiegu wydłużałoby blokady. Ceną jest właśnie wymóg idempotencji.",
+    "start-workera": "Worker startuje z `src/app/layout.tsx`, a nie z `instrumentation.ts` (runtime EDGE wciąga node:crypto — Z-131) ani od producenta (moduł nie sięga po korzeń kompozycji — 049). Konsekwencja: na środowisku testowym, które usypia, dostarczanie rusza dopiero po pierwszym żądaniu."
+  }
+}
