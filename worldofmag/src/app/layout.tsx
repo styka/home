@@ -10,6 +10,7 @@ import { readActiveSkin } from "@/actions/skins";
 import { defaultMenuPrefs } from "@/lib/modules";
 import { tokensToStyle, type SkinTokens } from "@/lib/skins";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
+import { ensureEventWorker } from "@/lib/eventSubscribers";
 import { APP_TITLE, ICON_VERSION } from "@/lib/appName";
 
 export const viewport: Viewport = {
@@ -47,6 +48,15 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // 071 (zadanie 22): obieg dostarczania zdarzeń domenowych. Idempotentne — guard singletona
+  // w workerze sprawia, że kolejne renderowania nic nie robią.
+  //
+  // **Dlaczego tutaj, a nie w `instrumentation.ts`.** Ten drugi jest bundlowany także dla runtime
+  // EDGE, a łańcuch subskrybentów sięga kodu node-only — dokładnie ten problem sprawił, że worker
+  // kolejki zadań też startuje leniwie (Z-131). **I dlaczego nie u producenta zdarzenia:** moduł
+  // nie sięga po korzeń kompozycji (lekcja z 049), a `ensureEventWorker` nim jest.
+  ensureEventWorker();
+
   const session = await auth();
   const invitationCount = session?.user?.id
     ? await getPendingInvitationsCount().catch(() => 0)
