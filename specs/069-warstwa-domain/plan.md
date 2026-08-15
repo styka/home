@@ -93,7 +93,10 @@ zachowanie dla użytkownika jest identyczne, a test podaje datę jawnie:
 | `monthRange(offset)` | `const now = new Date()` w ciele | `monthRange(offset, teraz = new Date())` | `offset` cofający przez styczeń → grudzień roku poprzedniego |
 | `resolveWhen` | `new Date().toISOString()` jako wartość awaryjna | `resolveWhen(f, opts, teraz = new Date())` | pusta prognoza → data z „teraz", nie awaria |
 
-`nextDueFrom` czyta `new Date()` do porównania z `endDate` — ten sam zabieg.
+**Sprostowanie po przeczytaniu kodu (C-54):** plan zakładał, że `nextDueFrom` też czyta zegar.
+Nie czyta — `new Date(rule.endDate)` **parsuje datę końca reguły**, a nie pobiera „teraz". Funkcja
+jest już czysta wobec czasu i **nie wymaga zmiany kształtu**. Zmiany z AC-8 dotyczą więc dwóch
+reguł (`monthRange`, `resolveWhen`), nie trzech; `startOfMonth` był parametryzowany od początku.
 
 ## 4. RBAC / rejestr modułu (C-22)
 
