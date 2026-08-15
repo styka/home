@@ -8,6 +8,10 @@ import assert from "node:assert/strict";
  * raz" świadomie, więc ponowienie **nastąpi** — zawsze, gdy worker padnie po wykonaniu subskrybenta,
  * a przed oznaczeniem zdarzenia. Tego okna nie da się zamknąć; można je tylko uczynić nieszkodliwym.
  * Test, który dostarcza raz i sprawdza skutek, przepuściłby subskrybenta księgującego dwa razy.
+ *
+ * Sam **dowód idempotencji na prawdziwym subskrybencie** stoi w `src/modules/shopping/__tests__/`,
+ * a nie tutaj — bo wymaga zaimportowania modułu, a platformie tego nie wolno (C-36). Tu zostaje
+ * mechanizm: rozsyłka, izolacja błędu, brak odbiorcy, równoległość.
  */
 const HAS_DB = !!process.env.DATABASE_URL;
 const rnd = () => Math.random().toString(36).slice(2, 10);
@@ -20,10 +24,6 @@ async function zPrzestrzenia(fn: (userId: string, workspaceId: string) => Promis
   });
   await ensurePersonalWorkspace(user.id);
   const ws = await prisma.workspace.findUniqueOrThrow({ where: { personalUserId: user.id } });
-  // Obieg bierze NAJSTARSZE niedostarczone zdarzenia z całej bazy, więc pozostałości po innych
-  // (albo przerwanych) testach trafiłyby do partii i psuły asercje o liczbie wywołań. Test bazy
-  // jest jednorazowy, więc czyścimy je na wejściu — inaczej ten zestaw jest losowo czerwony.
-  await prisma.domainEvent.deleteMany({ where: { deliveredAt: null } });
   try {
     await fn(user.id, ws.id);
   } finally {
@@ -63,55 +63,13 @@ test(
 
       await obiegZdarzen();
 
-      assert.deepEqual(wywolania, [z.id], "subskrybent dostał dokładnie to zdarzenie");
+      // Asercja zawężona do WŁASNEGO zdarzenia, a nie do całej listy wywołań. Obieg bierze
+      // najstarsze niedostarczone z CAŁEJ bazy, więc równolegle działający plik testowy może mieć
+      // swoje w tej samej partii. Globalne czyszczenie na wejściu (pierwsza wersja) rozwiązywało
+      // to kosztem psucia sąsiada — czyli zamieniało jedną losową czerwień na drugą.
+      assert.ok(wywolania.includes(z.id), "subskrybent dostał to zdarzenie");
       const po = await prisma.domainEvent.findUnique({ where: { id: z.id } });
       assert.ok(po?.deliveredAt, "oznaczone jako dostarczone");
-    });
-  }
-);
-
-test(
-  "PODWÓJNE DOSTARCZENIE daje ten sam stan co pojedyncze — sedno gwarancji „co najmniej raz”",
-  { skip: !HAS_DB && "brak DATABASE_URL" },
-  async () => {
-    const { prisma } = await import("@/platform/db/prisma");
-    const { setEventSubscriberResolver, obiegZdarzen } = await import("../dispatch");
-    const wklad = (await import("@/modules/shopping/events")).default;
-
-    await zPrzestrzenia(async (userId, workspaceId) => {
-      // Drugi członek przestrzeni — to jego powiadamia subskrybent.
-      const drugi = await prisma.user.create({
-        data: { email: `drugi-${rnd()}@test.local`, name: "Druga osoba" },
-      });
-      await prisma.workspaceMember.create({
-        data: { workspaceId, userId: drugi.id, role: "member" },
-      });
-      try {
-        setEventSubscriberResolver(async () => wklad.subscribers);
-
-        const z = await zdarzenie(workspaceId, userId);
-        await obiegZdarzen();
-        const poPierwszym = await prisma.notification.findMany({ where: { userId: drugi.id } });
-        assert.equal(poPierwszym.length, 1, "pierwsze dostarczenie tworzy jedno powiadomienie");
-
-        // Symulacja ponowienia: worker padł po subskrybencie, przed oznaczeniem. Odkręcamy
-        // `deliveredAt` i puszczamy obieg jeszcze raz — dokładnie to zrobiłby prawdziwy worker.
-        await prisma.domainEvent.update({ where: { id: z.id }, data: { deliveredAt: null } });
-        await obiegZdarzen();
-
-        const poDrugim = await prisma.notification.findMany({ where: { userId: drugi.id } });
-        assert.equal(poDrugim.length, 1, "DRUGIE dostarczenie nie tworzy drugiego powiadomienia");
-        assert.equal(poDrugim[0].id, poPierwszym[0].id, "to ten sam wiersz, nie nowy");
-
-        // SPRAWCA NIE DOSTAJE POWIADOMIENIA O WŁASNYM KLIKNIĘCIU. Bez tej asercji test przechodził
-        // także po usunięciu warunku `NOT: { userId: actorId }` — wykrył to przebieg mutacyjny.
-        const uSprawcy = await prisma.notification.findMany({ where: { userId } });
-        assert.equal(uSprawcy.length, 0, "sprawca nie jest powiadamiany o tym, co sam zrobił");
-      } finally {
-        await prisma.notification.deleteMany({ where: { userId: drugi.id } });
-        await prisma.workspaceMember.deleteMany({ where: { userId: drugi.id } });
-        await prisma.user.delete({ where: { id: drugi.id } }).catch(() => {});
-      }
     });
   }
 );
@@ -175,7 +133,8 @@ test(
 
     await zPrzestrzenia(async (userId, workspaceId) => {
       const ile = 6;
-      for (let i = 0; i < ile; i++) await zdarzenie(workspaceId, userId);
+      const nasze = new Set<string>();
+      for (let i = 0; i < ile; i++) nasze.add((await zdarzenie(workspaceId, userId)).id);
 
       // Liczymy WYWOŁANIA subskrybenta, nie zdarzenia w bazie: gdyby `SKIP LOCKED` nie działało,
       // oba obiegi wzięłyby tę samą partię i licznik wyszedłby większy niż liczba zdarzeń.
@@ -193,8 +152,10 @@ test(
 
       await Promise.all([obiegZdarzen(), obiegZdarzen()]);
 
-      assert.equal(wywolania.length, ile, `oczekiwano ${ile} wywołań, było ${wywolania.length}`);
-      assert.equal(new Set(wywolania).size, ile, "żadne zdarzenie nie zostało przetworzone dwa razy");
+      // Liczymy tylko wywołania dla WŁASNYCH zdarzeń — obce z równoległego pliku nas nie dotyczą.
+      const moje = wywolania.filter((id) => nasze.has(id));
+      assert.equal(moje.length, ile, `oczekiwano ${ile} wywołań, było ${moje.length}`);
+      assert.equal(new Set(moje).size, ile, "żadne zdarzenie nie zostało przetworzone dwa razy");
     });
   }
 );
