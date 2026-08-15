@@ -4,6 +4,42 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-15 — Typ strukturalny nie zabrania niczego, dopóki nie zabroni PRZEZ NADMIAR
+**Problem:** Emisja zdarzenia domenowego miała być niemożliwa poza transakcją — miał to wymuszać
+typ: `emitDomainEvent(tx: Prisma.TransactionClient, …)`. Sonda pokazała, że
+`emitDomainEvent(prisma, …)` **kompiluje się bez ostrzeżenia**. `Prisma.TransactionClient` to
+`PrismaClient` **pomniejszony** o kilka metod, a w typowaniu strukturalnym obiekt z **nadmiarem**
+pól jest przypisywalny do typu, który ma ich mniej. Zakaz „przyjmuj tylko węższe" nie działa,
+bo szersze **spełnia** węższe.
+**Rozwiązanie:** Odwrócenie warunku — zamiast wymagać obecności czegoś, zabronić obecności:
+`Prisma.TransactionClient & { $transaction?: never }`. Pełny klient **ma** `$transaction`
+(funkcja nie jest przypisywalna do `never`), więc odpada; prawdziwy `tx` tej metody **nie ma**,
+więc przechodzi. Sprawdzone w obie strony: sonda z globalnym klientem → `TS2345`, sonda z `tx` → czysto.
+**Lekcja:** W TypeScripcie „ten typ jest węższy" **nie znaczy** „szerszy zostanie odrzucony" — jest
+dokładnie odwrotnie. Żeby odciąć nadzbiór, trzeba nazwać pole, które **ma tylko on**, i zabronić go
+przez `?: never`. I szerzej: **zanim uwierzysz, że typ czegoś pilnuje, napisz plik, który tę regułę
+łamie, i sprawdź, czy `tsc` faktycznie krzyczy.** Trzy linijki sondy, a różnica między zakazem
+a życzeniem. Osobno warte zapamiętania: gdy kryterium akceptacji okazuje się niespełnione, pierwszym
+odruchem powinno być **znalezienie rozwiązania**, a nie obniżenie kryterium do tego, co już działa.
+
+## 2026-08-15 — Test, który NAŚLADUJE kod, dowodzi tylko tego, że naśladuje
+**Problem:** Producent zdarzeń w Kuchni miał emitować **jedno** zdarzenie na spis spiżarni, a nie
+jedno na pozycję (sto pozycji = jedna czynność użytkownika). Był na to test integracyjny i był
+zielony. Test mutacyjny — przeniesienie emisji **do wnętrza pętli** w prawdziwej akcji — **nie
+zaczerwienił niczego**. Powód: test nie wołał `bulkSetPantryQuantities`, tylko **odwzorowywał
+kształt** tej pętli u siebie (bo prawdziwa akcja wymaga sesji, a repo nie ma wzorca jej podstawiania).
+Test sprawdzał więc własną kopię, która oczywiście była poprawna.
+**Rozwiązanie:** Nie dało się tego naprawić testem bez wprowadzania nowego wzorca (poza zakresem),
+więc własność przejęła **bramka**: producent deklaruje w manifeście `ladunek: "pojedynczy" |
+"zbiorczy"`, a przy `zbiorczy` bramka zabrania emisji z wnętrza pętli — i patrzy przy tym na
+**prawdziwy plik producenta**. Test został, ale z uczciwie nazwanym zakresem („sprawdza mechanizm,
+nie akcję") i komentarzem, dlaczego nie sięga dalej.
+**Lekcja:** Test, który **odtwarza** logikę zamiast ją **uruchamiać**, jest wart tyle co komentarz.
+Rozpoznaje się go po tym, że w ciele testu stoi kopia pętli, warunku albo wyliczenia z produkcji.
+Gdy prawdziwej ścieżki nie da się zawołać (sesja, sieć, framework), uczciwe są dwa ruchy naraz:
+**nazwać granicę testu wprost** i **przenieść pilnowanie własności tam, gdzie widać prawdziwy kod**
+— zwykle do bramki statycznej. Milczące zostawienie kopii to najgorsza opcja: wygląda na pokrycie.
+
 ## 2026-08-15 — Test przechodzi także wtedy, gdy reguła jest zepsuta
 **Problem:** Do 16 wyprowadzonych reguł powstały 124 testy, wszystkie zielone, z przypadkami
 brzegowymi w każdym pliku. Wyglądało to na komplet. Sprawdzenie mutacyjne — **zepsuj regułę

@@ -1,0 +1,48 @@
+{
+  "$opis": [
+    "070 (zadanie 21, rozdz. 9.4) — KTO EMITUJE ZDARZENIA DOMENOWE I DLACZEGO WŁAŚNIE ON.",
+    "",
+    "Manifest, jak `domain-coverage.json` (069) i `sharing-classification.json` (064): bramka nie",
+    "rozstrzygnie, czy dana mutacja POWINNA emitować zdarzenie — więc żąda jawnej decyzji i pilnuje",
+    "jej w obie strony (producent bez wpisu i wpis bez producenta to oba błędy).",
+    "",
+    "REGUŁA WYBORU (rozdz. 9.1): zdarzenie jest właściwym mechanizmem tam, gdzie brak odpowiedzi",
+    "tylko OPÓŹNIA operację — czyli tam, gdzie ktoś zareaguje. Emisja z mutacji bez odbiorcy to",
+    "zapis do tabeli, którego nikt nigdy nie przeczyta. Dlatego każdy wpis musi nazwać",
+    "`przyszly-odbiorca`; jeśli nie da się go nazwać, zdarzenie nie ma po co powstawać.",
+    "",
+    "POLE `ladunek`: `pojedynczy` = jedna mutacja, jedno zdarzenie. `zbiorczy` = operacja na wielu",
+    "wierszach daje JEDNO zdarzenie, nie N — i wtedy bramka pilnuje, żeby emisja nie leżała w pętli.",
+    "Bramka nie zgadnie, który producent jest który: to decyzja produktowa, nie techniczna."
+  ],
+
+  "producenci": {
+    "src/modules/shopping/actions/lists.ts": {
+      "zdarzenie": "shopping.list.completed",
+      "ladunek": "pojedynczy",
+      "powod": "Kanoniczny przykład z rozdz. 9.4.2 i 10.2 — dokument pokazuje dokładnie to zdarzenie. Jedyny z trzech, który wymagał utworzenia transakcji (wcześniej był goły `update`); zakres celowo ograniczony do aktualizacji listy i emisji.",
+      "przyszly-odbiorca": "Portfel — księgowanie wydatku, dziś wywoływane synchronicznie przez `bookAutoExpense` w tej samej ścieżce. Zadanie 25 przepnie je na subskrypcję i wtedy awaria Portfela przestanie zabierać zakupy."
+    },
+    "src/modules/magazynowanie/actions/storage.ts": {
+      "zdarzenie": "magazynowanie.stan.zmieniony",
+      "ladunek": "pojedynczy",
+      "powod": "Transakcja już istniała (zmiana stanu + wpis ruchu), w formie interaktywnej, więc emisja wchodzi bez ruszania kształtu zapisu.",
+      "przyszly-odbiorca": "Zakupy — uzupełnianie zapasów przy stanie poniżej minimum. Rozdz. 9.1 wymienia to wprost jako przykład reakcji międzymodułowej."
+    },
+    "src/modules/kitchen/actions/pantry.ts": {
+      "zdarzenie": "kuchnia.spizarnia.spisana",
+      "ladunek": "zbiorczy",
+      "powod": "Transakcja już istniała. Wybrany po to, żeby sprawdzić ŁADUNEK ZBIORCZY: spis stu pozycji daje JEDNO zdarzenie, nie sto — inaczej odbiorca dostałby lawinę powiadomień o czymś, co dla użytkownika było pojedynczą czynnością.",
+      "przyszly-odbiorca": "Zakupy i plan posiłków — brakujące składniki po spisie. Ten sam kierunek co w Magazynowaniu, ale na innym kształcie danych."
+    }
+  },
+
+  "obserwacje": {
+    "$opis": "Rzeczy ustalone przy 070, świadomie NIEZROBIONE (C-53). Materiał na zadania 22–25 i 30.",
+    "forma-tablicowa": "Dziewięć z dwudziestu trzech transakcji w repo używa formy TABLICOWEJ (`$transaction([...])`), która nie daje klienta `tx` — emisja z nich jest niemożliwa bez przepisania ich na formę interaktywną. Dotyczy m.in. `addEntry` w Portfelu, który liczy saldo. Świadomie nietknięte: przepisywanie działającej ścieżki zapisu dla samego zdarzenia to nieproporcjonalne ryzyko w przebiegu, który ma być niewidoczny.",
+    "ciche-pominiecie": "Brak przestrzeni oznacza pominięcie zdarzenia (`workspaceIdDlaZdarzenia` → `null`). Dziś bezpieczne, bo zdarzeń nikt nie czyta. Przy zadaniu 22 TRZEBA to zrewidować: gdy zdarzenia zaczną napędzać funkcje, ciche pominięcie stanie się cichą utratą funkcji.",
+    "brak-retencji": "Dziennik rośnie bez ograniczeń — `deliveredAt` oznacza dostarczenie, nie kasuje wiersza. Przy trzech producentach i jednym koncie to nie problem; przy Progu B będzie. Zadanie 30.",
+    "rejestr-w-platformie": "Unia `DomainEventType` mieszka w platformie, mimo że wymienia nazwy modułów — świadome odstępstwo od C-36, uzasadnione w `src/platform/events/types.ts`. Do rewizji przy zadaniu 25.",
+    "granica-testow": "Testy mechanizmu nie wołają prawdziwych akcji (te wymagają sesji, a repo nie ma wzorca jej podstawiania). Dlatego własność „jedno zdarzenie na spis, nie N\" pilnuje kontrola 5 tej bramki, patrząc na prawdziwy kod producenta — a nie test."
+  }
+}

@@ -7,6 +7,7 @@ import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
 import type { PantryItem, Item } from "@prisma/client";
+import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
 
 export type PantryItemWithProduct = PantryItem & {
   product: {
@@ -199,10 +200,14 @@ export async function bulkSetPantryQuantities(
 ): Promise<void> {
   const user = await requireAuth();
   await prisma.$transaction(async (tx) => {
+    let zmienione = 0;
+    // Przestrzeń zdarzenia bierzemy z ZASOBU (spis dotyczy pozycji jednej spiżarni), nie z autora
+    // — inaczej spis zespołowy trafiłby do prywatnego strumienia klikającego.
+    let przestrzenZasobu: string | null = null;
     for (const u of updates) {
       const item = await tx.pantryItem.findUnique({
         where: { id: u.id },
-        select: { ownerId: true, ownerTeamId: true },
+        select: { ownerId: true, ownerTeamId: true, workspaceId: true },
       });
       if (!item) continue;
       if (item.ownerId !== user.id) {
@@ -214,6 +219,21 @@ export async function bulkSetPantryQuantities(
       await tx.pantryItem.update({
         where: { id: u.id },
         data: { quantity: u.quantity },
+      });
+      zmienione += 1;
+      if (przestrzenZasobu === null) przestrzenZasobu = item.workspaceId;
+    }
+    const przestrzen = await workspaceIdDlaZdarzenia(przestrzenZasobu, user.id);
+    // 070 (zadanie 21): JEDNO zdarzenie na spis, nie jedno na pozycję. Spis stu pozycji to dla
+    // użytkownika JEDNA czynność; sto zdarzeń zamieniłoby się u odbiorcy (zadanie 25) w lawinę
+    // powiadomień. Pilnuje tego kontrola 5 bramki `check:events` (deklaracja `ladunek: "zbiorczy"`).
+    if (przestrzen && zmienione > 0) {
+      await emitDomainEvent(tx, {
+        workspaceId: przestrzen,
+        module: "kitchen",
+        type: "kuchnia.spizarnia.spisana",
+        actorId: user.id,
+        payload: { pozycji: zmienione },
       });
     }
   });
