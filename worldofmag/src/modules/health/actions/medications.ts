@@ -5,6 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { isoDate } from "@/lib/habitStats";
 import { buildDayAgenda } from "@/lib/medicationSchedule";
+import { normTimes, normDays, normFreq } from "../domain/harmonogramLeku";
 import type {
   DoseSlot,
   MedicationFreqType,
@@ -20,33 +21,6 @@ function safeDate(d: Date | string | null | undefined): Date | null {
   return isNaN(dt.getTime()) ? null : dt;
 }
 
-/** Normalizuje listę godzin do JSON ["HH:MM",…] (posortowane, unikalne, poprawne). */
-function normTimes(times: string[] | string | null | undefined): string | null {
-  let arr: string[];
-  if (Array.isArray(times)) arr = times;
-  else if (typeof times === "string" && times.trim()) {
-    arr = times.split(",").map((t) => t.trim());
-  } else return null;
-  const valid = Array.from(new Set(arr.filter((t) => /^\d{1,2}:\d{2}$/.test(t)).map((t) => {
-    const [h, m] = t.split(":");
-    return `${h.padStart(2, "0")}:${m}`;
-  }))).sort();
-  return valid.length ? JSON.stringify(valid) : null;
-}
-
-/** Normalizuje dni tygodnia do CSV "1,3,5" (0=nd..6=sb). */
-function normDays(days: number[] | string | null | undefined): string | null {
-  let arr: number[];
-  if (Array.isArray(days)) arr = days;
-  else if (typeof days === "string" && days.trim()) arr = days.split(",").map((d) => Number(d.trim()));
-  else return null;
-  const valid = Array.from(new Set(arr.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))).sort();
-  return valid.length ? valid.join(",") : null;
-}
-
-function normFreq(v: string | null | undefined): MedicationFreqType {
-  return v === "WEEKLY" || v === "HOURLY" ? v : "DAILY";
-}
 
 async function assertScheduleAccess(id: string, userId: string): Promise<void> {
   const teamIds = await getUserTeamIds(userId);
