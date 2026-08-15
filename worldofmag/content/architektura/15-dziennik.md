@@ -67,9 +67,14 @@ operacje są nieodwracalne, a ich warunek wejścia to dane, których w sandboksi
 spłata długu paginacyjnego (263 zapytania bez `take`, zamrożone zapadką z 068) — idzie modułami,
 bo każda taka zmiana zmienia to, co użytkownik widzi.
 
-**Następny krok: Faza 4** — zdarzenia domenowe i koniec odpytywania (zadania 21–25). Warstwa reguł
-była jej warunkiem wstępnym: wzorzec akcji z rozdz. 10.2 ma osobny krok „reguła biznesowa — domena,
-bez bazy, testowalna osobno", którego ładunek trafia potem do zdarzenia.
+**FAZA 4 OTWARTA.** 070 dowiozło zadanie 21: dziennik zdarzeń domenowych, którego zapis jest
+nierozłączny z mutacją. To **outbox bez czytelnika** i tak ma być — publikację dowozi zadanie 22,
+a odwrotna kolejność budowałaby czytelnik na źródle, które może kłamać.
+
+**Następny krok: zadanie 22** — publikacja przez worker (`LISTEN/NOTIFY`), oznaczanie `deliveredAt`
+i idempotentni subskrybenci. Potem 23 (SSE), 24 (koniec odpytywania w sygnalizatorze świeżości)
+i 25 (subskrypcje międzymodułowe — w tym przepięcie księgowania wydatku z wywołania na zdarzenie,
+czyli domknięcie problemu, dla którego cała Faza 4 powstała).
 
 ---
 
@@ -121,7 +126,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
-| 21 | `DomainEvent` + zapis w tej samej transakcji | ⬜ | |
+| 21 | `DomainEvent` + zapis w tej samej transakcji | ✅ | **070.** Model + migracja 0232 + emisja, której **nie da się użyć poza transakcją**: `Prisma.TransactionClient & { $transaction?: never }` odrzuca pełnego klienta (samo `TransactionClient` go **przepuszczało** — sprawdzone sondą w obie strony). Trzej producenci, każdy z nazwanym przyszłym odbiorcą. Bramka `check:events`, pięć kontroli, osiem sond; piąta powstała dlatego, że test mutacyjny wykazał, iż testu odwzorowującego kształt pętli nie czerwieni przeniesienie emisji do pętli w prawdziwym kodzie |
 | 22 | Publikacja przez worker | ⬜ | |
 | 23 | SSE `/api/events` | ⬜ | |
 | 24 | Usunięcie `setInterval` z `DataFreshness` | ⬜ | Interwał 45 s **nadal działa**; 045 tylko go uwidocznił |
@@ -1672,3 +1677,78 @@ decyzja byłaby tylko brakiem sprawdzenia.
 nowa `check:domain`, liczniki **160 / 553 / 35 / 35** bez ruchu, zapadka paginacji z 068 nadal 263.
 Zero zmian w `src/app/**`, `src/components/**`, `modules/*/ui/**` i w migracjach — przebieg jest
 niewidoczny dla użytkownika, co było wymogiem, nie skutkiem ubocznym.
+
+### 070 — Zdarzenia domenowe: zapis nierozłączny z mutacją; zadanie 21 · 2026-08-15
+
+**Faza 4 otwarta.** Rozdz. 9.1 stawia diagnozę, której dziś nic nie sygnalizuje: Omnia realizuje
+**trzy różne rodzaje integracji** — odczyt, reakcję i zdolność — **jednym mechanizmem**,
+bezpośrednim wywołaniem. Reguła rozstrzygająca brzmi: *brak odpowiedzi **zatrzymuje** operację →
+kontrakt; brak odpowiedzi ją tylko **opóźnia** → zdarzenie*.
+
+Konkret: zakończenie listy zakupów księguje wydatek w Portfelu **w tej samej ścieżce**, więc awaria
+Portfela zabiera zakupy. Operacja, która miała się tylko opóźnić, zatrzymuje operację nadrzędną.
+
+**Sednem był jeden warunek poprawności z rozdz. 9.4.2** — zapis zdarzenia poza transakcją to
+*„najczęstszy błąd przy wdrażaniu outboxu"*. Groźny nie dlatego, że częsty, tylko dlatego, że
+**nie daje żadnego objawu**: przy awarii pomiędzy zapisem stanu a zapisem zdarzenia jedno i drugie
+się rozjeżdża, a jedynym śladem jest reakcja, która nigdy nie nastąpiła. Nie ma wyjątku, nie ma logu,
+nie ma czerwonego testu.
+
+**Dlatego zakaz musiał być techniczny — i tu przebieg dostał najlepszą lekcję.** Pierwsze podejście
+brało `Prisma.TransactionClient` i zakładało, że to wystarczy. Sonda pokazała, że **nie**: ten typ to
+`PrismaClient` **pomniejszony** o kilka metod, a w typowaniu strukturalnym obiekt z **nadmiarem**
+pól jest przypisywalny do typu, który ma ich mniej. `emitDomainEvent(prisma, …)` kompilowało się bez
+mrugnięcia. Zakaz „przyjmuj tylko węższe" nie działa, bo **szersze spełnia węższe**.
+
+Kuszące było obniżyć kryterium akceptacji do „typ narzuca intencję, a pilnuje bramka". Zamiast tego
+okazało się, że wystarczy **jedna zmiana typu**:
+
+```ts
+export type TransactionClient = Prisma.TransactionClient & { $transaction?: never };
+```
+
+Pełny klient **ma** `$transaction`, więc przestaje pasować; prawdziwy `tx` jej **nie ma**, więc pasuje
+dalej. Sprawdzone sondą w obie strony: globalny klient → `TS2345`, `tx` → czysto. **Kryterium
+akceptacji jest po to, żeby zmusić do znalezienia rozwiązania, a nie żeby dopasować je do pierwszej
+próby.**
+
+**Test wycofania jest ważniejszy niż test powodzenia.** Obecność wiersza po udanym zapisie nie mówi
+nic — mówi dopiero jego **brak** po zapisie nieudanym.
+
+**Pomiar znów zmienił zakres.** 23 transakcje w repo rozkładają się na dwie **niekompatybilne
+formy**: 10 interaktywnych (`async (tx) => …`, mają klienta) i **9 tablicowych**
+(`$transaction([...])`, klienta nie mają w ogóle). Z tych drugich emisja jest niemożliwa bez
+przepisania działającej ścieżki zapisu — w tym `addEntry` w Portfelu, który liczy saldo. Świadomie
+nietknięte.
+
+Producentów jest **trzech**, każdy z **nazwanym przyszłym odbiorcą**, bo zdarzenie bez odbiorcy to
+zapis do tabeli, którego nikt nie przeczyta: `shopping.list.completed` (→ księgowanie w Portfelu),
+`magazynowanie.stan.zmieniony` (→ uzupełnianie zapasów do Zakupów), `kuchnia.spizarnia.spisana`
+(→ brakujące składniki).
+
+**Druga lekcja wyszła z testu mutacyjnego i dotyczy granic testu.** Testy mechanizmu **nie wołają
+prawdziwych akcji**, bo te wymagają sesji, a repo nie ma wzorca jej podstawiania. Kusiło, żeby
+„zasymulować" akcję w teście — i pierwsza wersja tak właśnie robiła, odwzorowując kształt pętli
+spisu spiżarni. Mutacja polegająca na przeniesieniu emisji **do wnętrza pętli w prawdziwym kodzie**
+takiego testu **nie czerwieni**: test sprawdza własną kopię, która jest poprawna.
+
+Rozwiązaniem nie był lepszy test, tylko **piąta kontrola bramki**: producent deklaruje w manifeście
+`ladunek` (`pojedynczy` | `zbiorczy`), a przy zbiorczym bramka zabrania emisji z wnętrza pętli — i
+patrzy przy tym na **prawdziwy plik producenta**. Zakres testu został uczciwie nazwany w nagłówku:
+sprawdza mechanizm, nie akcję.
+
+**To jest outbox bez czytelnika i tak ma być.** Publikację dowozi zadanie 22; odwrotna kolejność
+budowałaby czytelnik na źródle, które może kłamać. Kształt zdarzenia jest już pod nią przygotowany:
+`id` powstaje przy **zapisie**, nie przy publikacji, więc jest stabilny między ponowieniami i posłuży
+subskrybentowi za klucz idempotencji (rozdz. 9.4.4 — gwarancja „co najmniej raz").
+
+**Co zostaje na 22–25:** worker czytający niedostarczone i oznaczający `deliveredAt`, z publikacją
+przez `LISTEN/NOTIFY` (22), kanał SSE `/api/events` z kanałami przestrzeń/zasób/użytkownik (23),
+usunięcie 45-sekundowego `setInterval` z sygnalizatora świeżości (24) oraz **przepięcie księgowania
+wydatku z wywołania na subskrypcję** (25) — dopiero to zamknie problem, dla którego ten dziennik
+powstał. Do rewizji przy 22: dziś brak przestrzeni **cicho pomija** zdarzenie; gdy zdarzenia zaczną
+napędzać funkcje, ciche pominięcie stanie się cichą utratą funkcji.
+
+**Bramki:** build **exit 0**, `test:unit` **883/883** (było 879), nowa `check:events` (pięć kontroli,
+osiem sond negatywnych), migracja **0232**, liczniki **160 / 553 / 35 / 35** bez ruchu, zapadki 263
+i 34 bez ruchu. Zero zmian w `src/app/**`, `src/components/**` i `modules/*/ui/**`.

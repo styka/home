@@ -1,7 +1,7 @@
 # Zadania: Zdarzenia domenowe — zapis nierozłączny z mutacją
 
 - **Plan:** ./plan.md (070-zdarzenia-domenowe)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-08-15
 
 > Kolejność wymuszona zależnościami: **schemat → mechanizm → producenci → bramka → dowody**.
@@ -11,52 +11,52 @@
 `[ ]` do zrobienia · `[x]` zrobione · `[~]` w trakcie · `[P]` równolegle
 
 ## Faza 0 — Punkt odniesienia
-- [ ] **T-1** — Zapisz stan wyjściowy: **879** testów, liczniki 160/553/35/35, zapadki 263 i 34,
+- [x] **T-1** — Zapisz stan wyjściowy: **879** testów, liczniki 160/553/35/35, zapadki 263 i 34,
   ostatnia migracja `0231`. *Gotowe, gdy:* liczby zanotowane (bez nich AC-11 nie ma z czym porównać).
 
 ## Faza 1 — Fundament danych
-- [ ] **T-2** — Model `DomainEvent` + ręczna migracja `0232_domain_event` (plan §2), **bez kluczy
+- [x] **T-2** — Model `DomainEvent` + ręczna migracja `0232_domain_event` (plan §2), **bez kluczy
   obcych**. *Gotowe, gdy:* `check:migrations` i `check:schema-drift` zielone, `migrate deploy` przechodzi.
 
 ## Faza 2 — Mechanizm
-- [ ] **T-3** — `platform/events/types.ts`: unia `DomainEventType` (3 rodzaje) + `DomainEventModule`.
+- [x] **T-3** — `platform/events/types.ts`: unia `DomainEventType` (3 rodzaje) + `DomainEventModule`.
   W komentarzu **nazwane odstępstwo od C-36** i powód.
-- [ ] **T-4** — `platform/events/emit.ts`: `emitDomainEvent(tx, event)` z typem
+- [x] **T-4** — `platform/events/emit.ts`: `emitDomainEvent(tx, event)` z typem
   `Prisma.TransactionClient & { $transaction?: never }` + `workspaceIdDlaZdarzenia`. Bez `catch`.
 
 ## Faza 3 — Producenci (C-35)
-- [ ] **T-5** — **Zakupy**: `shopping.list.completed`; opakować w transakcję **tylko** aktualizację
+- [x] **T-5** — **Zakupy**: `shopping.list.completed`; opakować w transakcję **tylko** aktualizację
   listy + emisję, `bookAutoExpense` zostaje poza.
-- [ ] **T-6** `[P]` — **Magazynowanie**: `magazynowanie.stan.zmieniony` (transakcja istnieje).
-- [ ] **T-7** `[P]` — **Kuchnia**: `kuchnia.spizarnia.spisana` — **jedno** zdarzenie na spis, nie N.
+- [x] **T-6** `[P]` — **Magazynowanie**: `magazynowanie.stan.zmieniony` (transakcja istnieje).
+- [x] **T-7** `[P]` — **Kuchnia**: `kuchnia.spizarnia.spisana` — **jedno** zdarzenie na spis, nie N.
 
 ## Faza 4 — Testy
-- [ ] **T-8** — `emit.integration.test.ts`: **wycofanie** (brak stanu **i** zdarzenia), powodzenie,
+- [x] **T-8** — `emit.integration.test.ts`: **wycofanie** (brak stanu **i** zdarzenia), powodzenie,
   brak przestrzeni, ładunek zbiorczy. **Granica testu nazwana w kodzie** (nie wołają prawdziwych akcji).
 
 ## Faza 5 — Bramka i manifest
-- [ ] **T-9** — `src/lib/events-coverage.json`: producent → `zdarzenie`, `powod`,
+- [x] **T-9** — `src/lib/events-coverage.json`: producent → `zdarzenie`, `powod`,
   `przyszly-odbiorca`, `ladunek` + obserwacje (9 transakcji tablicowych, brak retencji, ciche
   pominięcie, rejestr w platformie).
-- [ ] **T-10** — `scripts/check-events.js`: pięć kontroli z planu §5. Rodzaj czytany **z wnętrza
+- [x] **T-10** — `scripts/check-events.js`: pięć kontroli z planu §5. Rodzaj czytany **z wnętrza
   wywołania**, nie z pliku. Komunikaty PL.
-- [ ] **T-11** — `package.json`: `check:events` + krok w `build`.
+- [x] **T-11** — `package.json`: `check:events` + krok w `build`.
 
 ## Faza 6 — Dowody
-- [ ] **T-12** — **Sondy bramki, każda osobno**: emisja poza transakcją · emisja globalnym klientem
+- [x] **T-12** — **Sondy bramki, każda osobno**: emisja poza transakcją · emisja globalnym klientem
   wewnątrz transakcji · zapis z pominięciem emisji · rodzaj spoza rejestru · producent bez wpisu ·
   wpis bez producenta · brak deklaracji ładunku · emisja z pętli przy `zbiorczy`.
-- [ ] **T-13** — **AC-3 sprawdzone sondą w obie strony**: `emitDomainEvent(prisma, …)` musi dać
+- [x] **T-13** — **AC-3 sprawdzone sondą w obie strony**: `emitDomainEvent(prisma, …)` musi dać
   błąd `tsc`, a prawdziwe `tx` przejść. Wynik zapisać **zgodnie ze stanem faktycznym**.
-- [ ] **T-14** — **Przebieg mutacyjny**: globalny klient · gubiony `actorId` · brak przestrzeni
+- [x] **T-14** — **Przebieg mutacyjny**: globalny klient · gubiony `actorId` · brak przestrzeni
   udający przestrzeń · zignorowana przestrzeń · **emisja przeniesiona do pętli**. *Gotowe, gdy:*
   **0 niezłapanych**; niezłapana = poprawiamy test albo bramkę, nie wynik.
 
 ## Faza 7 — Domknięcie
-- [ ] **T-15** — `npm run build` + `test:unit`. Liczniki nie spadły, testów przybyło.
-- [ ] **T-16** — AC-11: `git diff --stat` bez zmian w `src/app/**`, `src/components/**`, `*/ui/**`.
-- [ ] **T-17** — Dziennik: wpis 070, status zadania 21, **co zostaje na 22–25**; przebakowanie.
-- [ ] **T-18** — `doświadczenia.md` (C-51).
+- [x] **T-15** — `npm run build` + `test:unit`. Liczniki nie spadły, testów przybyło.
+- [x] **T-16** — AC-11: `git diff --stat` bez zmian w `src/app/**`, `src/components/**`, `*/ui/**`.
+- [x] **T-17** — Dziennik: wpis 070, status zadania 21, **co zostaje na 22–25**; przebakowanie.
+- [x] **T-18** — `doświadczenia.md` (C-51).
 
 ## Mapowanie AC
 
