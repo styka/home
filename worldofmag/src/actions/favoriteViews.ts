@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
+import { sanitizeColor, sanitizeIcon } from "@/platform/favorites/sanitize";
 import {
   DEFAULT_FAVORITE_ICON,
   FAVORITE_COLORS,
@@ -40,18 +41,6 @@ function toDTO(row: {
   return { id: row.id, label: row.label, path: row.path, icon: row.icon, color: row.color, order: row.order };
 }
 
-/** Kolor spoza palety motywu odrzucamy — do bazy nie ma prawa trafić hex (C-30). */
-function sanitizeColor(color: string | null | undefined): string | null {
-  if (!color) return null;
-  return (FAVORITE_COLORS as readonly string[]).includes(color) ? color : null;
-}
-
-/** Emoji jako ikona; ucinamy do kilku znaków, żeby nie wkleić tu całego zdania. */
-function sanitizeIcon(icon: string | null | undefined): string {
-  const value = (icon ?? "").trim();
-  if (!value) return DEFAULT_FAVORITE_ICON;
-  return Array.from(value).slice(0, 2).join("");
-}
 
 export async function getFavoriteViews(): Promise<FavoriteViewDTO[]> {
   const user = await requireAuth();
