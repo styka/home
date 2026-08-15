@@ -40,3 +40,12 @@ test("przycięcie może zostawić myślnik na końcu — zastane zachowanie", ()
   const tytul = "a".repeat(79) + " b";
   assert.equal(slugify(tytul), "a".repeat(79) + "-");
 });
+
+test("różnice wobec reguły QA — udokumentowane wartościami, nie importem", () => {
+  // `modules/qa/domain/slug.ts` robi to samo zadanie inaczej. Nie importujemy jej tutaj: to byłoby
+  // sięgnięcie po wnętrze cudzego modułu (C-36), a ścieżka względna przemknęłaby obok reguły lintu.
+  // Lustrzane przypadki stoją w teście QA — te trzy wartości trzymają obie strony w zgodzie.
+  assert.equal(slugify("test_logowania"), "test-logowania"); // QA: "test_logowania"
+  assert.equal(slugify("!!!"), "przepis"); //                    QA: ""
+  assert.equal(slugify("a".repeat(200)).length, 80); //          QA: 200
+});

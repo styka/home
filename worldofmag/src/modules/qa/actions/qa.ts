@@ -6,6 +6,7 @@ import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import qaModule from "../module";
 import type { QaEpic, QaUserStory, QaTestScenario } from "@prisma/client";
+import { normalizeSlug } from "../domain/slug";
 
 async function requireQaAccess() {
   const session = await auth();
@@ -22,15 +23,6 @@ async function requireAdmin() {
   return session!.user;
 }
 
-function normalizeSlug(input: string): string {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/[ąćęłńóśźż]/g, (ch) => ({ ą: "a", ć: "c", ę: "e", ł: "l", ń: "n", ó: "o", ś: "s", ź: "z", ż: "z" }[ch] ?? ch))
-    .replace(/[^a-z0-9-_]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
 
 // ─── Read (QA permission required) ────────────────────────────────────────
 
