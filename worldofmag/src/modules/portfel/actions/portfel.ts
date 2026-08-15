@@ -8,13 +8,10 @@ import { loadRates, toBase } from "../lib/currency";
 import { parseBankCsv, type ParsedTransaction } from "../lib/bankCsv";
 import { createHash } from "crypto";
 import type { WalletElement, WalletEntry } from "@prisma/client";
+import { signedBalance } from "../domain/majatek";
 
 export type ElementWithEntries = WalletElement & { entries: WalletEntry[] };
 
-/** Saldo elementu wpływające na majątek netto (długi liczone na minus). */
-function signedBalance(el: { kind: string; balance: number }): number {
-  return el.kind === "debt" ? -el.balance : el.balance;
-}
 
 // Z-194 (T-12): widoczność elementów portfela respektuje dostęp domownika do „portfel".
 async function ownershipFilter(userId: string) {

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
+import { normCurrency } from "../domain/waluta";
 
 export type ExchangeRateDTO = { currency: string; rate: number; source: string; updatedAt: string };
 
@@ -18,9 +19,6 @@ export async function getCurrencySettings(): Promise<{ baseCurrency: string; rat
   };
 }
 
-function normCurrency(c: string): string {
-  return c.trim().toUpperCase().slice(0, 8);
-}
 
 export async function setBaseCurrency(currency: string): Promise<void> {
   const user = await requireAuth();
