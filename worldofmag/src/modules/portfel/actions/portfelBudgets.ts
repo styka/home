@@ -5,14 +5,11 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import type { Budget, FinanceGoal } from "@prisma/client";
+import { startOfMonth } from "../domain/okres";
 
 async function scope(userId: string) {
   const teamIds = await getUserTeamIds(userId);
   return { teamIds, where: { OR: (await ownedOrAsync(userId)) } };
-}
-
-function startOfMonth(d = new Date()): Date {
-  return new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
 }
 
 // ─── Budżety ─────────────────────────────────────────────────────────────────

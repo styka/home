@@ -2,6 +2,7 @@
 
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
+import { monthRange } from "../domain/okres";
 
 export type CategorySlice = { category: string; amount: number; pct: number };
 
@@ -18,13 +19,6 @@ export type MonthlyReport = {
   entryCount: number;
   hasOlder: boolean; // czy istnieją wpisy starsze niż ten miesiąc (do nawigacji wstecz)
 };
-
-function monthRange(offset: number): { start: Date; end: Date } {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth() - offset, 1, 0, 0, 0, 0);
-  const end = new Date(now.getFullYear(), now.getMonth() - offset + 1, 1, 0, 0, 0, 0);
-  return { start, end };
-}
 
 /** Raport miesięczny „gdzie poszły pieniądze". monthOffset 0 = bieżący, 1 = poprzedni, … */
 export async function getMonthlyReport(monthOffset = 0): Promise<MonthlyReport> {
