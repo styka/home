@@ -63,8 +63,13 @@ wymaga wcześniejszego wygrzania etapów 3A/3B na produkcji i policzenia sierot;
 (przełączenie odczytów na nadania) wymaga produkcyjnego pomiaru rozjazdu tabela↔nadanie. Obie
 operacje są nieodwracalne, a ich warunek wejścia to dane, których w sandboksie nie ma.
 
-**Następny krok: zadanie 19** — warstwa `domain/` i testy bez bazy (rozdz. 10.1). Faza 3 zostaje
-wtedy domknięta na tyle, na ile pozwala zapadka z 068.
+**069 domknęło zadanie 19**, a wraz z nim **Fazę 3 w części, którą da się domknąć**. Zostaje
+spłata długu paginacyjnego (263 zapytania bez `take`, zamrożone zapadką z 068) — idzie modułami,
+bo każda taka zmiana zmienia to, co użytkownik widzi.
+
+**Następny krok: Faza 4** — zdarzenia domenowe i koniec odpytywania (zadania 21–25). Warstwa reguł
+była jej warunkiem wstępnym: wzorzec akcji z rozdz. 10.2 ma osobny krok „reguła biznesowa — domena,
+bez bazy, testowalna osobno", którego ładunek trafia potem do zdarzenia.
 
 ---
 
@@ -109,7 +114,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
-| 19 | `domain/` w każdym module + testy bez bazy | ⬜ | Następny krok |
+| 19 | `domain/` w każdym module + testy bez bazy | ✅ | **069.** Klasyfikacja 55 pomocników z plików akcji: **21 reguł** wyprowadzonych, **34 adaptery** zostają świadomie. Dowód „bez bazy" dosłowny: Postgres zatrzymany, **124 testy, 1,9 s**. Manifest rozstrzyga **21/21** modułów (domena 9 / reguły w `lib/` 7 / bez reguł 5), bramka `check:domain` pilnuje czterech niezmienników — każdy zobaczony na czerwono osobno. Znana granica zapisana, nie przemilczana: zapadka liczy pomocniki **nazwane**, więc reguła pisana wprost w ciele akcji przez nią nie przejdzie wykryta (tak znalazła się analityka Magazynowania) |
 | 20 | Paginacja kursorowa we wszystkich widokach listowych | 🟡 | **068: mechanizm + zapadka.** `platform/pagination.ts` (kursor, nie `OFFSET`; wiersz-zwiadowca zamiast `count`), a dług — **263** `findMany` bez `take` — zamrożony bramką `check:pagination`, która pada także przy **spadku** licznika, wymuszając obniżenie progu. Spłata modułami, nie jednym przebiegiem: każda z tych zmian zmienia to, co użytkownik widzi |
 
 ### Faza 4 — Zdarzenia i koniec odpytywania
@@ -1596,3 +1601,74 @@ zapytań pozwoliłaby dołożyć dziesięć nowych — czyli przestałaby być z
 
 **Bramki:** build **exit 0**, `test:unit` **749/749**, nowa `check:pagination` (próg 263),
 liczniki **160 / 553 / 35 / 35** bez ruchu.
+
+### 069 — Reguły biznesowe wychodzą z plików akcji; zadanie 19 · 2026-08-15
+
+**To nie była kwestia dyscypliny, tylko struktury — i pomiar to pokazał w jednej liczbie.**
+Rozdz. 10.1 opisuje warstwę `domain/` jako reguły, które „nie znają Prismy, Reacta ani sesji"
+i są „testowane jednostkowo, bez bazy, w milisekundach". Przed tym przebiegiem taki katalog nie
+istniał w żadnym z 21 modułów.
+
+Ale diagnoza „nikt nie pisze testów do reguł" była fałszywa. W `modules/*/lib/` stoją **33 czyste
+pliki reguł, z czego 21 ma test** — rozbiór pozycji zakupowej, powtórki SuperMemo-2, genetyka
+zwierząt, trasa po sklepie, faza księżyca. Omnia **umie** to robić i robi.
+
+Różnicę robi jedna rzecz: **czy regułę dało się wyeksportować**. Plik oznaczony `"use server"`
+**nie może wyeksportować niczego poza funkcją asynchroniczną** — a reguła biznesowa z definicji
+asynchroniczna nie jest, bo tylko liczy. Reguła, która trafiła do takiego pliku, jest więc
+**przymusowo prywatna**: nie ma jak wejść do testu. I rzeczywiście — reguł w `lib/` przetestowano
+dwie na trzy, a reguł uwięzionych w plikach akcji: **zero na 55**.
+
+**Klasyfikacja przed przenoszeniem, wzorcem z 064.** Kryterium: regułą jest funkcja odpowiadająca
+na pytanie z dziedziny użytkownika (ile / kiedy / czy wolno / jak to nazwać), której wynik dałoby
+się zakwestionować w rozmowie z właścicielem; adapterem — ta, która tłumaczy kształty, woła
+infrastrukturę albo broni się przed złym typem. Wyszło **21 reguł i 34 adaptery**, i te 34 zostają
+świadomie. Znak salda w Portfelu jest regułą; `toDTO` nie jest.
+
+Osobno odnotowane jako adaptery: **skróty pogody i teksty promptów**. Kuszące, bo wyglądają na
+logikę — ale test sprawdzałby, że napis brzmi tak, jak brzmi, i czerwieniłby się przy każdej
+korekcie stylu prompta, nie wykrywając żadnego błędu. Testy, które trzeba poprawiać przy każdej
+zmianie tekstu, uczą je wyłączać.
+
+**Pierwszy test pierwszej reguły od razu coś znalazł.** `normalizeDays("")` zwraca `"0"`, czyli
+niedzielę — bo `Number("")` to zero. Pusty wybór dni zapisuje nawyk jako „tylko w niedziele".
+Test **utrwala** to zachowanie z komentarzem, zamiast po cichu poprawiać: co ma znaczyć pusty
+wybór — „codziennie" czy „bez wskazania" — to decyzja właściciela, a nie skutek uboczny refaktoru.
+
+**Najważniejsze znalezisko przyszło jednak spoza pomiaru.** Sprawdzając kandydatów na „bez reguł"
+(spec wprost wymieniał „fałszywe poczucie domknięcia" jako ryzyko), w Magazynowaniu znalazła się
+klasyfikacja **ABC** z progami 80/95 liczonymi od udziału narastającego, martwy zapas z granicą
+N dni i trend ruchów — wszystko pisane **bez nazwy, wprost w ciele akcji**. Licznik 55 ich nie
+widział, bo liczy funkcje **nazwane**. Są przez to tak samo niesprawdzalne, a ich pomyłki **nie
+widać w żadnym wyniku**: wykres zawsze coś narysuje.
+
+To jest **znana granica zapadki** i została zapisana w manifeście oraz w specyfikacji, zamiast
+przemilczana. Zapadka pilnuje, żeby nie przybywało reguł nazwanych w plikach akcji; przed regułą
+pisaną bez nazwy nie chroni.
+
+**Czego świadomie NIE zrobiono** (C-53), każde z powodem zapisanym w manifeście:
+- **Nie przeniesiono 33 plików z `modules/*/lib/` do `domain/`.** To kilkaset zmienionych importów
+  bez zmiany jakiejkolwiek własności, którą ten przebieg obiecywał — te pliki już są eksportowalne
+  i już mają testy. Zapłacilibyśmy dużym, ryzykownym diffem za zmianę nazwy katalogu.
+- **Nie ujednolicono dwóch reguł sluga** (Kuchnia i QA różnią się podkreśleniem, wartością awaryjną
+  i przycięciem do 80 znaków). Obie wyprodukowały już adresy istniejących rekordów.
+- **Nie naprawiono `startOfToday`** w Zdrowiu, które liczy dobę z zegara **serwera**, choć Omnia ma
+  `userTime.ts` do stref użytkownika. To potencjalny błąd, nie brak testu — własny przebieg.
+
+**Dowód „bez bazy" jest dosłowny.** Postgres **zatrzymany**, 124 testy warstwy reguł, wszystkie
+zielone, **1,9 s**. Sam brak importu Prismy nie byłby dowodem — zależność potrafi wejść tranzytywnie.
+
+**Bramka `check:domain` pilnuje czterech niezmienników** (czystość warstwy, test obowiązkowy,
+manifest w obie strony, zapadka) i **każdy z nich zobaczono na czerwono osobno** — siedem sond,
+siedem właściwych komunikatów. Lekcja z 046 (`next lint` kończył się kodem 0 przy zepsutej
+konfiguracji) i z 065 (wzorzec znający jeden idiom dawał fałszywe alarmy) obowiązuje wprost:
+bramka pilnująca czterech rzeczy, sprawdzona na jednej, pilnuje jednej.
+
+Manifest rozstrzyga dla **21 z 21** modułów: **domena 9 · reguły w `lib/` 7 · bez reguł 5**.
+Przy „bez reguł" uzasadnienie musi mówić, **gdzie te reguły są**, jeśli nie w module — inaczej ta
+decyzja byłaby tylko brakiem sprawdzenia.
+
+**Bramki:** build **exit 0**, `test:unit` **873/873** (było 749; +124 testy warstwy reguł),
+nowa `check:domain`, liczniki **160 / 553 / 35 / 35** bez ruchu, zapadka paginacji z 068 nadal 263.
+Zero zmian w `src/app/**`, `src/components/**`, `modules/*/ui/**` i w migracjach — przebieg jest
+niewidoczny dla użytkownika, co było wymogiem, nie skutkiem ubocznym.
