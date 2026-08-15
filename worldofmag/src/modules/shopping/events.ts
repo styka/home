@@ -31,6 +31,10 @@ const zakupyZakonczone: EventSubscriber = {
     const czlonkowie = await prisma.workspaceMember.findMany({
       where: { workspaceId: event.workspaceId, NOT: { userId: event.actorId ?? "" } },
       select: { userId: true },
+      // Ograniczenie wymuszone zapadką paginacji z 068 — i słusznie: bez niego liczba zapisów
+      // do `Notification` rośnie z liczbą członków przestrzeni, a subskrybent trzyma w tym czasie
+      // blokady wierszy transakcji obiegu. Sto powiadomień to sensowny sufit dla jednej reakcji.
+      take: 100,
     });
     if (czlonkowie.length === 0) return;
 

@@ -71,10 +71,14 @@ bo każda taka zmiana zmienia to, co użytkownik widzi.
 nierozłączny z mutacją. To **outbox bez czytelnika** i tak ma być — publikację dowozi zadanie 22,
 a odwrotna kolejność budowałaby czytelnik na źródle, które może kłamać.
 
-**Następny krok: zadanie 22** — publikacja przez worker (`LISTEN/NOTIFY`), oznaczanie `deliveredAt`
-i idempotentni subskrybenci. Potem 23 (SSE), 24 (koniec odpytywania w sygnalizatorze świeżości)
-i 25 (subskrypcje międzymodułowe — w tym przepięcie księgowania wydatku z wywołania na zdarzenie,
-czyli domknięcie problemu, dla którego cała Faza 4 powstała).
+**071 dowiozło zadanie 22:** zdarzenia **docierają** do subskrybentów, a idempotencja jest
+wymuszona bramką. Outbox ma czytelnika.
+
+**Następny krok: zadanie 23** — kanał SSE `/api/events` z kanałami przestrzeń/zasób/użytkownik.
+Tam też zapada decyzja o `LISTEN/NOTIFY`, świadomie odłożona w 071: dopiero kanał czasu
+rzeczywistego stawia realny wymóg opóźnienia. Potem 24 (koniec odpytywania w sygnalizatorze
+świeżości) i 25 (subskrypcje międzymodułowe — w tym przepięcie księgowania wydatku z wywołania na
+zdarzenie, czyli domknięcie problemu, dla którego cała Faza 4 powstała).
 
 ---
 
@@ -127,7 +131,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
 | 21 | `DomainEvent` + zapis w tej samej transakcji | ✅ | **070.** Model + migracja 0232 + emisja, której **nie da się użyć poza transakcją**: `Prisma.TransactionClient & { $transaction?: never }` odrzuca pełnego klienta (samo `TransactionClient` go **przepuszczało** — sprawdzone sondą w obie strony). Trzej producenci, każdy z nazwanym przyszłym odbiorcą. Bramka `check:events`, pięć kontroli, osiem sond; piąta powstała dlatego, że test mutacyjny wykazał, iż testu odwzorowującego kształt pętli nie czerwieni przeniesienie emisji do pętli w prawdziwym kodzie |
-| 22 | Publikacja przez worker | ⬜ | |
+| 22 | Publikacja przez worker | ✅ | **071.** Worker czyta niedostarczone (`FOR UPDATE SKIP LOCKED`), woła subskrybentów z deklaracji, oznacza `deliveredAt` **po sukcesie** — bo lepiej dwa razy niż zero razy. Idempotencja **wymuszona bramką** (`check:subscribers`), nie akapitem: `klucz-unikalny` musi mieć `upsert` i klucz z `event.id`. Pierwszy subskrybent: zakupy zakończone → powiadomienie dla pozostałych członków przestrzeni. **Bez `LISTEN/NOTIFY`** — decyzja przy zadaniu 23, gdzie jest realny wymóg opóźnienia |
 | 23 | SSE `/api/events` | ⬜ | |
 | 24 | Usunięcie `setInterval` z `DataFreshness` | ⬜ | Interwał 45 s **nadal działa**; 045 tylko go uwidocznił |
 | 25 | Subskrypcje międzymodułowe | ⬜ | |
@@ -1752,3 +1756,67 @@ napędzać funkcje, ciche pominięcie stanie się cichą utratą funkcji.
 **Bramki:** build **exit 0**, `test:unit` **883/883** (było 879), nowa `check:events` (pięć kontroli,
 osiem sond negatywnych), migracja **0232**, liczniki **160 / 553 / 35 / 35** bez ruchu, zapadki 263
 i 34 bez ruchu. Zero zmian w `src/app/**`, `src/components/**` i `modules/*/ui/**`.
+
+### 071 — Outbox dostaje czytelnika; zadanie 22 · 2026-08-15
+
+**070 zostawiło dziennik zdarzeń, którego nikt nie czyta — i tak miało być.** Ten przebieg dokłada
+brakujący element z rozdz. 9.4.3: worker czyta niedostarczone, woła subskrybentów zadeklarowanych
+w module, oznacza `deliveredAt`.
+
+**Sednem nie była mechanika, tylko gwarancja.** Rozdz. 9.4.4 rozstrzyga świadomie: dostarczenie jest
+**„co najmniej raz"**, nigdy „dokładnie raz" („koszt nieproporcjonalny do zysku"). Konsekwencja jest
+twarda i łatwa do przeoczenia: **ponowienie nie jest sytuacją wyjątkową**. Następuje zawsze, gdy
+worker padnie po wykonaniu subskrybenta, a przed oznaczeniem zdarzenia. Tego okna **nie da się
+zamknąć** — subskrybent pisze do bazy własną transakcją — więc można je tylko uczynić nieszkodliwym.
+
+Dlatego właściwą decyzją `queue.ts` było **kiedy** oznaczać dostarczenie:
+
+| Kiedy | Awaria w oknie daje | |
+|---|---|---|
+| przy pobraniu | zdarzenie **pominięte** — reakcja nigdy nie nastąpi | ✗ gubi po cichu |
+| **po sukcesie** | zdarzenie **ponowione** — reakcja wykona się dwa razy | ✓ „co najmniej raz" |
+
+Wybór jest oczywisty dopiero wtedy, gdy się go wypisze: **lepiej dwa razy niż zero razy**, bo drugie
+da się unieszkodliwić, a zera nie da się wykryć. Rezerwacja nie potrzebowała przy tym osobnej kolumny
+„w trakcie" — `FOR UPDATE SKIP LOCKED` wewnątrz transakcji obiegu trzyma wiersze do końca, więc drugi
+worker ich nie zobaczy.
+
+**Wymóg idempotencji dostał bramkę, nie akapit.** To wniosek wprost z 070: zakaz emisji poza
+transakcją wyrażony komentarzem nie zabraniał niczego, dopóki nie wszedł w typ i w bramkę. Tutaj
+subskrybent **deklaruje**, jak zapewnia idempotencję (`klucz-unikalny` albo `naturalna`), a bramka
+sprawdza, czy `klucz-unikalny` ma pokrycie: `upsert` **i** klucz wyprowadzony z `event.id` —
+jedynej wartości **stabilnej między ponowieniami**, bo powstającej przy zapisie zdarzenia, nie przy
+publikacji.
+
+**Bramka najpierw potwierdzała dokumentację zamiast kodu.** Sonda „klucz nie z `event.id`" nie
+zaczerwieniła jej, bo `event.id` występowało w **komentarzu** wyjaśniającym, że tak właśnie ma być.
+Poprawka to jedna linijka (usuwanie komentarzy przed dopasowaniem wzorca), ale lekcja jest ogólna:
+bramka czytająca tekst pliku czyta **także to, co napisaliśmy o kodzie**, nie tylko kod.
+
+**Pierwszy subskrybent** (C-35) to `shopping.list.completed` → powiadomienie dla **pozostałych**
+członków przestrzeni. To pierwsze użycie pola `actorId`, o które chodzi w rozdz. 9.4.1 („Marek
+ukończył zadanie"). Dobrany tak, żeby **nie zabierać zakresu zadania 25**: odbiorcą jest zdolność
+platformy, nie inny moduł. Dla użytkownika pracującego sam zmiana jest zerowa — w przestrzeni
+osobistej nie ma nikogo innego.
+
+**Test mutacyjny znalazł to, czego nie widziała żadna asercja:** usunięcie warunku „nie powiadamiaj
+sprawcy" **nie czerwieniło** testu, bo test sprawdzał tylko skrzynkę drugiej osoby i nigdy nie
+zapytał, czy sprawca dostał powiadomienie o własnym kliknięciu. Dopisana jedna asercja. Po niej
+5 mutacji, 5 złapanych.
+
+**Zapadka paginacji z 068 złapała mój własny kod.** Zapytanie o członków przestrzeni weszło bez
+`take` i licznik podskoczył z 263 na 264 — build czerwony. Ograniczenie dopisane; przy okazji widać,
+że zapadka pilnuje nie tylko cudzego długu.
+
+**Czego świadomie nie zrobiono:** `LISTEN/NOTIFY` ani Redis Pub/Sub. Rozdz. 9.4.3 dopuszcza oba, ale
+oba wymagają surowego połączenia poza Prismą (nowa zależność), a kupują wyłącznie **niższe
+opóźnienie**. Opóźnienie zaczyna mieć znaczenie dopiero przy kanale czasu rzeczywistego —
+i **tam** ta decyzja ma realny wymóg. Dokładanie zależności wcześniej byłoby kupowaniem na zapas (C-53).
+
+**Co zostaje na 23–25:** kanał SSE `/api/events` z kanałami przestrzeń/zasób/użytkownik (23),
+usunięcie 45-sekundowego `setInterval` z sygnalizatora świeżości (24) oraz **przepięcie księgowania
+wydatku z wywołania na subskrypcję** (25) — dopiero to domknie problem, dla którego cała Faza 4
+powstała: *awaria Portfela nie może zabierać zakupów*.
+
+**Bramki:** build **exit 0**, `test:unit` **889/889** (było 884), nowa `check:subscribers`
+(cztery kontrole, pięć sond), zapadki 263 i 34 bez ruchu, liczniki **160 / 553 / 35 / 35** bez ruchu.

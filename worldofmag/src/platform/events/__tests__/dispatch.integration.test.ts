@@ -102,6 +102,11 @@ test(
         const poDrugim = await prisma.notification.findMany({ where: { userId: drugi.id } });
         assert.equal(poDrugim.length, 1, "DRUGIE dostarczenie nie tworzy drugiego powiadomienia");
         assert.equal(poDrugim[0].id, poPierwszym[0].id, "to ten sam wiersz, nie nowy");
+
+        // SPRAWCA NIE DOSTAJE POWIADOMIENIA O WŁASNYM KLIKNIĘCIU. Bez tej asercji test przechodził
+        // także po usunięciu warunku `NOT: { userId: actorId }` — wykrył to przebieg mutacyjny.
+        const uSprawcy = await prisma.notification.findMany({ where: { userId } });
+        assert.equal(uSprawcy.length, 0, "sprawca nie jest powiadamiany o tym, co sam zrobił");
       } finally {
         await prisma.notification.deleteMany({ where: { userId: drugi.id } });
         await prisma.workspaceMember.deleteMany({ where: { userId: drugi.id } });

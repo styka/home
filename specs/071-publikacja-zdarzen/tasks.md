@@ -1,7 +1,7 @@
 # Zadania: Publikacja zdarzeń domenowych
 
 - **Plan:** ./plan.md (071-publikacja-zdarzen)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-08-15
 
 > Kolejność: **protokół → pobranie → rozsyłka → subskrybent → worker → bramka → dowody**.
@@ -12,49 +12,49 @@
 `[ ]` do zrobienia · `[x]` zrobione · `[~]` w trakcie · `[P]` równolegle
 
 ## Faza 0 — Punkt odniesienia
-- [ ] **T-1** — Stan wyjściowy: **884** testy, liczniki 160/553/35/35, zapadki 263 i 34, 20 bramek.
+- [x] **T-1** — Stan wyjściowy: **884** testy, liczniki 160/553/35/35, zapadki 263 i 34, 20 bramek.
 
 ## Faza 1 — Protokół
-- [ ] **T-2** — `platform/events/types.ts`: `DomainEventRecord`, `EventSubscriber`
+- [x] **T-2** — `platform/events/types.ts`: `DomainEventRecord`, `EventSubscriber`
   (`id`, `on`, `handle`). Bez importu modułu.
-- [ ] **T-3** — Typ wkładu w `platform/events/subscriber.ts` + **własny korzeń kompozycji**
+- [x] **T-3** — Typ wkładu w `platform/events/subscriber.ts` + **własny korzeń kompozycji**
   `src/lib/eventSubscribers.ts` (wzorzec pulpitu z 050, **nie** pole w `ModuleServerContributions` —
   tamten obiekt jest plikiem zbiorczym: import dla jednego pola wciąga cele `import()` wszystkich).
 
 ## Faza 2 — Mechanizm
-- [ ] **T-4** — `platform/events/queue.ts`: pobranie partii `FOR UPDATE SKIP LOCKED` w transakcji,
+- [x] **T-4** — `platform/events/queue.ts`: pobranie partii `FOR UPDATE SKIP LOCKED` w transakcji,
   oznaczenie `deliveredAt` **po sukcesie** (plan §3.1 — „co najmniej raz", rozdz. 9.4.4).
-- [ ] **T-5** — `platform/events/dispatch.ts`: rezolwer **wstrzykiwany** (C-36), izolacja błędu
+- [x] **T-5** — `platform/events/dispatch.ts`: rezolwer **wstrzykiwany** (C-36), izolacja błędu
   subskrybenta, zdarzenie bez subskrybentów → dostarczone od razu (AC-9).
-- [ ] **T-6** — `platform/events/worker.ts`: obieg + guard singletona; wpięcie w `instrumentation.ts`.
+- [x] **T-6** — `platform/events/worker.ts`: obieg + guard singletona; wpięcie w `instrumentation.ts`.
 
 ## Faza 3 — Pierwszy subskrybent (C-35)
-- [ ] **T-7** — `src/modules/shopping/events.ts`: `shopping.list.completed` → powiadomienie dla
+- [x] **T-7** — `src/modules/shopping/events.ts`: `shopping.list.completed` → powiadomienie dla
   **pozostałych** członków przestrzeni; `dedupeKey` z **id zdarzenia**. Deklaracja w
   `module.server.ts`, wpięcie w `src/lib/eventSubscribers.ts`.
 
 ## Faza 4 — Testy
-- [ ] **T-8** — `dispatch.integration.test.ts`: dostarczenie · **podwójne dostarczenie daje ten sam
+- [x] **T-8** — `dispatch.integration.test.ts`: dostarczenie · **podwójne dostarczenie daje ten sam
   stan** (AC-2, sedno) · subskrybent rzuca → zdarzenie wraca, inne przechodzą · brak subskrybentów →
   dostarczone · **dwa obiegi równolegle nie biorą tego samego zdarzenia** (AC-4).
 
 ## Faza 5 — Bramka i manifest
-- [ ] **T-9** — `src/lib/subscribers-coverage.json`: `zdarzenia`, `idempotencja`
+- [x] **T-9** — `src/lib/subscribers-coverage.json`: `zdarzenia`, `idempotencja`
   (`klucz-unikalny` | `naturalna`), `powod`.
-- [ ] **T-10** — `scripts/check-subscribers.js`: cztery kontrole z planu §5. Komunikaty PL.
-- [ ] **T-11** — `package.json`: `check:subscribers` + krok w `build`.
+- [x] **T-10** — `scripts/check-subscribers.js`: cztery kontrole z planu §5. Komunikaty PL.
+- [x] **T-11** — `package.json`: `check:subscribers` + krok w `build`.
 
 ## Faza 6 — Dowody
-- [ ] **T-12** — **Sondy bramki, każda osobno**: subskrybent bez wpisu · wpis bez subskrybenta ·
+- [x] **T-12** — **Sondy bramki, każda osobno**: subskrybent bez wpisu · wpis bez subskrybenta ·
   nieznana wartość `idempotencja` · `klucz-unikalny` bez `upsert`/`event.id`.
-- [ ] **T-13** — **Przebieg mutacyjny**: `dedupeKey` bez id zdarzenia (traci idempotencję) ·
+- [x] **T-13** — **Przebieg mutacyjny**: `dedupeKey` bez id zdarzenia (traci idempotencję) ·
   `deliveredAt` ustawiany przed subskrybentem · brak izolacji błędu · powiadomienie także dla
   sprawcy · brak `SKIP LOCKED`. *Gotowe, gdy:* **0 niezłapanych**.
 
 ## Faza 7 — Domknięcie
-- [ ] **T-14** — `npm run build` + `test:unit`; liczniki nie spadły.
-- [ ] **T-15** — Dziennik: wpis 071, status zadania 22, co zostaje na 23–25; przebakowanie.
-- [ ] **T-16** — `doświadczenia.md` (C-51).
+- [x] **T-14** — `npm run build` + `test:unit`; liczniki nie spadły.
+- [x] **T-15** — Dziennik: wpis 071, status zadania 22, co zostaje na 23–25; przebakowanie.
+- [x] **T-16** — `doświadczenia.md` (C-51).
 
 ## Mapowanie AC
 
