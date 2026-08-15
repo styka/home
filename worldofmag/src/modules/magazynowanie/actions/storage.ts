@@ -6,6 +6,7 @@ import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync, own
 import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
+import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
 import {
   wartoscPozycji,
   liczbaPonizejMinimum,
@@ -213,7 +214,10 @@ export async function adjustStorageQuantity(
   if (!Number.isFinite(delta) || delta === 0) throw new Error("Nieprawidłowa zmiana ilości");
 
   const updated = await prisma.$transaction(async (tx) => {
-    const existing = await tx.storageItem.findUnique({ where: { id }, select: { quantity: true } });
+    const existing = await tx.storageItem.findUnique({
+      where: { id },
+      select: { quantity: true, workspaceId: true },
+    });
     if (!existing) throw new Error("Pozycja nie istnieje");
     const next = Math.max(0, (existing.quantity ?? 0) + delta);
     const item = await tx.storageItem.update({ where: { id }, data: { quantity: next } });
@@ -225,6 +229,18 @@ export async function adjustStorageQuantity(
         note: note?.trim() || null,
       },
     });
+    const przestrzen = await workspaceIdDlaZdarzenia(existing.workspaceId, user.id);
+    // 070 (zadanie 21): zdarzenie w TEJ SAMEJ transakcji co zmiana stanu i wpis ruchu.
+    // Przyszły odbiorca (zadanie 25): uzupełnianie zapasów do Zakupów przy stanie poniżej minimum.
+    if (przestrzen) {
+      await emitDomainEvent(tx, {
+        workspaceId: przestrzen,
+        module: "magazynowanie",
+        type: "magazynowanie.stan.zmieniony",
+        actorId: user.id,
+        payload: { itemId: id, delta, stanPo: next, powod: reason ?? null },
+      });
+    }
     return item;
   });
 

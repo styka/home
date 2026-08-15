@@ -3280,3 +3280,34 @@ model ResourceInvitation {
 
   @@index([email])
 }
+
+/// 070 (zadanie 21, rozdz. 9.4) — DZIENNIK ZDARZEŃ DOMENOWYCH (outbox).
+///
+/// Zapisywany **w tej samej transakcji co mutacja** — to warunek poprawności całego mechanizmu,
+/// nie zalecenie. Zapis poza transakcją to wg rozdz. 9.4.2 „najczęstszy błąd przy wdrażaniu
+/// outboxu": przy awarii między zapisem stanu a zapisem zdarzenia jedno i drugie się rozjeżdża
+/// i **nikt się o tym nie dowie** — nie ma błędu, nie ma logu, jest tylko reakcja, która nigdy
+/// nie nastąpiła.
+///
+/// BEZ KLUCZY OBCYCH na `workspaceId` i `actorId` — celowo, tak jak `AuditLog`. Dziennik jest
+/// zapisem historycznym: skasowanie przestrzeni albo konta nie może kaskadowo usunąć śladu, że
+/// coś się wydarzyło. Konsekwencja: sprzątanie (zadanie 30) musi być jawne.
+///
+/// `id` służy zarazem za KLUCZ IDEMPOTENCJI dla zadania 22: publikacja daje gwarancję „co najmniej
+/// raz" (rozdz. 9.4.4), więc subskrybent musi rozpoznać powtórkę — rozpozna ją po tym `id`, bo
+/// powstaje przy zapisie, nie przy publikacji, i jest stabilne między ponowieniami.
+model DomainEvent {
+  id          String    @id @default(cuid())
+  workspaceId String
+  module      String
+  /// String + unia TS (C-12) — NIGDY enum Prisma. Rejestr: src/platform/events/types.ts
+  type        String
+  payload     Json
+  /// KTO wywołał. Przy zasobie współdzielonym to pytanie padnie (rozdz. 9.4.1).
+  actorId     String?
+  createdAt   DateTime  @default(now())
+  deliveredAt DateTime?
+
+  @@index([deliveredAt, createdAt]) // worker: „daj najstarsze niedostarczone" (zadanie 22)
+  @@index([workspaceId, createdAt]) // strumień przestrzeni (zadanie 23)
+}
