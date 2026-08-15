@@ -1,7 +1,7 @@
 # Zadania: Warstwa `domain/` — reguły biznesowe dają się sprawdzić bez bazy
 
 - **Plan:** ./plan.md (069-warstwa-domain)
-- **Status:** done
+- **Status:** in-progress (nawrót z /verify)
 - **Data:** 2026-08-14
 
 > Kolejność podyktowana zależnościami: **najpierw wyprowadzenie reguł** (bo dopiero po nim znany
@@ -82,12 +82,28 @@ czysto, jeden commit.
 - [x] **T-20** — `doświadczenia.md` (C-51) — co najmniej lekcja o tym, dlaczego reguła w pliku akcji
   jest niesprawdzalna z przyczyn strukturalnych, a nie z niedbalstwa.
 
+## Faza 5 — Nawrót z `/verify`: testy, które nie łapią zepsutej reguły
+
+Weryfikacja mutacyjna (zepsuj regułę → czy test zauważy?) przeszła 11 mutacji; **8 złapanych,
+3 niezłapane**. To ryzyko nazwane w `spec.md` §9 i jedyny sposób, w jaki wychodzi.
+
+- [ ] **T-21** — **Próg A klasyfikacji ABC (80) nieprzypięty.** Fikstura 800/150/50 daje udziały
+  narastające 80/95/100, więc przesunięcie progu na 90 nie zmienia wyniku. *Gotowe, gdy:* w teście
+  jest pozycja o udziale narastającym **między 80 a 90**, a mutacja `<= 80` → `<= 90` **czerwieni test**.
+- [ ] **T-22** — **Próg B klasyfikacji ABC (95) nieprzypięty.** Jak wyżej. *Gotowe, gdy:* mutacja
+  `<= 95` → `<= 99` czerwieni test.
+- [ ] **T-23** — **Brzeg `endDate` w terminie opieki nieprzypięty.** Test „termin dokładnie w dacie
+  końca" używa `endDate` o 23:59, a termin wypada o 10:00 — nie trafia w brzeg. *Gotowe, gdy:*
+  `endDate` **równa się co do milisekundy** wyliczonemu terminowi, a mutacja `>` → `>=` czerwieni test.
+- [ ] **T-24** — Powtórzyć **pełny przebieg mutacyjny** (11 mutacji) po poprawkach; wynik dopisać do
+  `verify.md`. *Gotowe, gdy:* **0 niezłapanych**.
+
 ## Mapowanie kryteriów akceptacji
 
 | AC | Zadania |
 |----|---------|
 | AC-1 (klasyfikacja 55) | plan §3.1 + T-11 (weryfikacja liczbowa) |
-| AC-2 (reguła importowalna + test z brzegiem) | T-2…T-10 |
+| AC-2 (reguła importowalna + test z brzegiem) | T-2…T-10, **T-21…T-24** (test mutacyjny) |
 | AC-3 (testy bez bazy) | T-16 |
 | AC-4 (czystość warstwy) | T-13 kontrola 1, T-15 sonda 1 |
 | AC-5 (plik bez testu = build pada) | T-13 kontrola 2, T-15 sonda 2 |
