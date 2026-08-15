@@ -17,6 +17,7 @@ import type {
   Difficulty,
 } from "@/types/kitchen";
 import type { Recipe, RecipeIngredient, RecipeStep, RecipeImage, Item } from "@prisma/client";
+import { slugify } from "../domain/slug";
 
 // ─── Access control ───────────────────────────────────────────────────────
 
@@ -43,16 +44,6 @@ export async function assertRecipeAccess(
 
 // ─── Slug helpers ─────────────────────────────────────────────────────────
 
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/ł/g, "l")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80) || "przepis";
-}
 
 async function uniqueSlug(title: string, existingId?: string): Promise<string> {
   const base = slugify(title);

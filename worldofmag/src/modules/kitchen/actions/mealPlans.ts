@@ -9,6 +9,7 @@ import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
 import type { MealSlot, MealStatus } from "@/types/kitchen";
 import type { MealPlanEntry, Item } from "@prisma/client";
+import { dayKeyUTC } from "../domain/dzienPlanu";
 
 export type MealPlanEntryWithRecipe = MealPlanEntry & {
   recipe: {
@@ -36,16 +37,6 @@ async function assertMealPlanAccess(entryId: string, userId: string): Promise<vo
   throw new Error("Brak dostępu do tego wpisu planu");
 }
 
-// ─── Date helpers ─────────────────────────────────────────────────────────
-
-// 12:00 UTC jako stabilny midpoint dnia — odporne na drift timezone
-// przy zapisie/odczycie z DB. setUTCHours(0,…) w PL skutkowałoby przesunięciem
-// daty o dzień; noon UTC nigdy nie zmieni dnia kalendarzowego dla żadnego TZ.
-function dayKeyUTC(date: Date): Date {
-  const d = new Date(date);
-  d.setUTCHours(12, 0, 0, 0);
-  return d;
-}
 
 // ─── Listing ──────────────────────────────────────────────────────────────
 
