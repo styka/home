@@ -20,7 +20,6 @@ export type MonthlyReport = {
   hasOlder: boolean; // czy istnieją wpisy starsze niż ten miesiąc (do nawigacji wstecz)
 };
 
-
 /** Raport miesięczny „gdzie poszły pieniądze". monthOffset 0 = bieżący, 1 = poprzedni, … */
 export async function getMonthlyReport(monthOffset = 0): Promise<MonthlyReport> {
   const user = await requireAuth();

@@ -21,7 +21,6 @@ function safeDate(d: Date | string | null | undefined): Date | null {
   return isNaN(dt.getTime()) ? null : dt;
 }
 
-
 async function assertScheduleAccess(id: string, userId: string): Promise<void> {
   const teamIds = await getUserTeamIds(userId);
   const s = await prisma.medicationSchedule.findUnique({

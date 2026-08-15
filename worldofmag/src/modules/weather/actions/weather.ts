@@ -448,8 +448,6 @@ export interface IdeaContext {
   part?: DayPart;
 }
 
-
-
 /** Skrót pogody dla promptów propozycji — dzień + wybrana pora, bez lania wody. */
 function weatherBrief(f: Forecast, when: ReturnType<typeof resolveWhen>): string {
   const d = when.day;

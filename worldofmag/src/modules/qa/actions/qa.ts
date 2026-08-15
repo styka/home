@@ -23,7 +23,6 @@ async function requireAdmin() {
   return session!.user;
 }
 
-
 // ─── Read (QA permission required) ────────────────────────────────────────
 
 export interface EpicWithCounts extends QaEpic {

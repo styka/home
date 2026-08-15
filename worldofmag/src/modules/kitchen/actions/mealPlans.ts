@@ -37,7 +37,6 @@ async function assertMealPlanAccess(entryId: string, userId: string): Promise<vo
   throw new Error("Brak dostępu do tego wpisu planu");
 }
 
-
 // ─── Listing ──────────────────────────────────────────────────────────────
 
 export async function getMealPlan(

@@ -62,7 +62,6 @@ export async function getAiConversation(
   return { id: convo.id, title: convo.title, draft: convo.draft, messages };
 }
 
-
 /** Tworzy nową rozmowę (tytuł z pierwszego polecenia). */
 export async function createAiConversation(firstUserText: string): Promise<{ id: string; title: string }> {
   const user = await requireAuth();

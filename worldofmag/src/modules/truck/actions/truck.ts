@@ -21,7 +21,6 @@ export type VehicleInput = OrsRestrictions;
 
 const MAX_AVOID_POLYGONS = 20;
 
-
 export async function getVehicleProfile(): Promise<VehicleProfile | null> {
   const user = await requireAuth();
   return prisma.vehicleProfile.findUnique({ where: { userId: user.id } });
@@ -54,7 +53,6 @@ export interface PlanResult {
 export interface PlanError {
   error: string;
 }
-
 
 export async function planTruckRoute(
   origin: string,

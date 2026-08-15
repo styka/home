@@ -12,7 +12,6 @@ async function scope(userId: string) {
   return { teamIds, where: { OR: (await ownedOrAsync(userId)) } };
 }
 
-
 // ─── Budżety ─────────────────────────────────────────────────────────────────
 
 export type BudgetWithSpending = Budget & { spent: number; remaining: number; pct: number };

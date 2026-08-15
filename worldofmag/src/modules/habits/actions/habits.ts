@@ -15,7 +15,6 @@ import {
 import { createTask } from "@/modules/tasks/contract";
 import { normalizeDays, normalizeGoal, normalizeReminder } from "../domain/harmonogram";
 
-
 async function assertHabitAccess(id: string, userId: string): Promise<void> {
   const teamIds = await getUserTeamIds(userId);
   const h = await prisma.habit.findUnique({
@@ -91,7 +90,6 @@ export async function getHabits(opts?: { includeArchived?: boolean }): Promise<H
     };
   });
 }
-
 
 export async function createHabit(data: {
   name: string;

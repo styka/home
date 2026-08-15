@@ -19,7 +19,6 @@ export async function getCurrencySettings(): Promise<{ baseCurrency: string; rat
   };
 }
 
-
 export async function setBaseCurrency(currency: string): Promise<void> {
   const user = await requireAuth();
   const base = normCurrency(currency);

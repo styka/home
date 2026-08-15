@@ -5,8 +5,6 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { sanitizeColor, sanitizeIcon } from "@/platform/favorites/sanitize";
 import {
-  DEFAULT_FAVORITE_ICON,
-  FAVORITE_COLORS,
   MAX_FAVORITE_VIEWS,
   normalizeFavoriteLabel,
   normalizeFavoritePath,
@@ -40,7 +38,6 @@ function toDTO(row: {
 }): FavoriteViewDTO {
   return { id: row.id, label: row.label, path: row.path, icon: row.icon, color: row.color, order: row.order };
 }
-
 
 export async function getFavoriteViews(): Promise<FavoriteViewDTO[]> {
   const user = await requireAuth();

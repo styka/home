@@ -12,7 +12,6 @@ import { signedBalance } from "../domain/majatek";
 
 export type ElementWithEntries = WalletElement & { entries: WalletEntry[] };
 
-
 // Z-194 (T-12): widoczność elementów portfela respektuje dostęp domownika do „portfel".
 async function ownershipFilter(userId: string) {
   const teamIds = await getAccessibleTeamIds(userId, "portfel");
