@@ -4,6 +4,35 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-15 — Bramka czytająca plik czyta też KOMENTARZE o kodzie
+**Problem:** Bramka miała sprawdzać, że subskrybent buduje klucz idempotencji z `event.id` — bo tylko
+ta wartość jest stabilna między ponowieniami. Sonda negatywna (podmiana klucza na `Date.now()`)
+**nie zaczerwieniła** bramki. Powód: wzorzec `/event\.id/` trafiał w **komentarz** nad funkcją,
+który wyjaśniał, że klucz ma pochodzić z `event.id`. Bramka potwierdzała dokumentację, nie kod —
+i przepuściłaby subskrybenta, który robi dokładnie odwrotnie, niż opisuje jego własny komentarz.
+**Rozwiązanie:** Usuwanie komentarzy (`/* */` i `//`) z treści pliku **przed** dopasowaniem wzorców.
+Jedna linijka; sonda po niej działa.
+**Lekcja:** Bramka tekstowa widzi cały plik, a im lepiej opisujemy kod, tym więcej w nim zdań
+zawierających dokładnie te frazy, których bramka szuka. **Im staranniejsza dokumentacja, tym
+łatwiej bramka staje się ślepa.** Każdą bramkę szukającą wzorca w kodzie trzeba albo odpalić na
+treści bez komentarzy, albo sprawdzić sondą, że komentarz jej nie zaspokaja — a to drugie i tak
+sprowadza się do tego pierwszego.
+
+## 2026-08-15 — „Co najmniej raz" znaczy, że ponowienie NA PEWNO nastąpi
+**Problem:** Przy dostarczaniu zdarzeń trzeba wybrać, kiedy oznaczyć zdarzenie jako dostarczone:
+przed wywołaniem subskrybenta czy po. Wygląda to na szczegół implementacyjny i łatwo wybrać „przed",
+bo jest prostsze (jedno zapytanie, brak stanu pośredniego).
+**Rozwiązanie:** Wypisanie obu skutków obok siebie rozstrzyga sprawę w jednym spojrzeniu.
+Oznaczenie **przed** znaczy, że awaria w oknie **gubi zdarzenie** — reakcja nigdy nie nastąpi
+i nikt się nie dowie. Oznaczenie **po** znaczy, że awaria **ponawia** — reakcja wykona się dwa razy.
+Drugie da się unieszkodliwić (klucz idempotencji), pierwszego nie da się nawet wykryć.
+**Lekcja:** Przy każdym „wykonaj i odhacz" okna między jednym a drugim **nie da się zamknąć**,
+jeśli obie operacje piszą osobnymi transakcjami. Nie wybiera się więc między „poprawnie" a
+„niepoprawnie", tylko **po której stronie ma leżeć błąd**. Reguła: wybierz stronę, której skutek
+da się wykryć i naprawić. I potraktuj wynikający z tego wymóg (tu: idempotencja subskrybenta)
+jako część mechanizmu — pilnowaną maszynowo — a nie jako zalecenie w dokumentacji, bo ponowienie
+nie jest sytuacją wyjątkową, tylko pewną.
+
 ## 2026-08-15 — Typ strukturalny nie zabrania niczego, dopóki nie zabroni PRZEZ NADMIAR
 **Problem:** Emisja zdarzenia domenowego miała być niemożliwa poza transakcją — miał to wymuszać
 typ: `emitDomainEvent(tx: Prisma.TransactionClient, …)`. Sonda pokazała, że
