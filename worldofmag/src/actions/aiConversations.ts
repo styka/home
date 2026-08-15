@@ -5,6 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import type { Prisma } from "@prisma/client";
 import { MESSAGE_WINDOW, DRAFT_MAX_CHARS, boundMessageData } from "@/platform/ai/conversationLimits";
+import { deriveTitle } from "@/platform/ai/conversationTitle";
 
 // Pamięć rozmów asystenta AID ("magiczna ikona"). Wszystko per-user (ownerId === userId);
 // rozmowy zespołowe nie istnieją — to prywatny asystent użytkownika.
@@ -59,13 +60,6 @@ export async function getAiConversation(
   if (!convo) return null;
   const messages = (convo.messages as StoredMessage[]).slice().reverse();
   return { id: convo.id, title: convo.title, draft: convo.draft, messages };
-}
-
-function deriveTitle(firstText: string): string {
-  const clean = firstText.trim().replace(/\s+/g, " ");
-  if (!clean) return "Nowa rozmowa";
-  const words = clean.split(" ").slice(0, 7).join(" ");
-  return words.length > 60 ? words.slice(0, 60) + "…" : words;
 }
 
 /** Tworzy nową rozmowę (tytuł z pierwszego polecenia). */

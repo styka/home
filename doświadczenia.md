@@ -4,6 +4,67 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-15 — Test przechodzi także wtedy, gdy reguła jest zepsuta
+**Problem:** Do 16 wyprowadzonych reguł powstały 124 testy, wszystkie zielone, z przypadkami
+brzegowymi w każdym pliku. Wyglądało to na komplet. Sprawdzenie mutacyjne — **zepsuj regułę
+i zobacz, czy test zauważy** — wykazało, że **3 z 11 mutacji przechodzą niezauważone**: próg klasy
+A w analizie ABC (`80` → `90`), próg klasy B (`95` → `99`) i brzeg daty końca w terminie opieki
+(`>` → `>=`). Po naprawie i rozszerzeniu zestawu na 24 mutacje wyszła jeszcze jedna: usunięcie
+`Math.round` z jednego pola odcisku pogody.
+**Rozwiązanie:** We wszystkich czterech przypadkach winna była **fikstura, nie asercja**. ABC:
+wartości 800/150/50 dają udziały narastające 80/95/100, czyli **dokładnie w progach** — przesunięcie
+progu nic nie zmienia. Trzeba wartości, które wypadają **pomiędzy** starym a nowym progiem (85 %).
+Data końca: termin wypadał o 10:00, a `endDate` ustawiono na 23:59, więc `>` i `>=` dawały to samo —
+trzeba równości **co do milisekundy**. Odcisk: fikstura miała temperatury całkowite, a zaokrąglanie
+liczby całkowitej niczego nie zmienia — trzeba wartości ułamkowych.
+**Lekcja:** „Test brzegowy" to nie ten, który ma w nazwie brzeg, tylko ten, którego **fikstura leży
+na brzegu**. Przy każdym progu liczbowym dobierz dane tak, żeby przesunięcie progu **zmieniło
+wynik** — inaczej test opisuje regułę, zamiast jej pilnować. Jedyny tani sposób, żeby to sprawdzić,
+to zepsuć regułę i zobaczyć czerwień; robi się to w minutę, a przy progach (80/95, `>` vs `>=`,
+zaokrąglenia) wychodzi zaskakująco często.
+
+## 2026-08-15 — Reguła w pliku `"use server"` jest niesprawdzalna z przyczyn STRUKTURALNYCH
+**Problem:** W plikach akcji siedziało **55 funkcji pomocniczych**, z których **ani jedna** nie miała
+testu — w tym rzeczy o cichej cenie pomyłki: znak salda wg rodzaju elementu portfela, normalizacja
+godzin podania leku, granice okresu rozliczeniowego. Wyglądało to na niedbalstwo. Nie było.
+**Rozwiązanie:** Plik oznaczony `"use server"` **nie może wyeksportować niczego poza funkcją
+asynchroniczną** — a reguła biznesowa asynchroniczna nie jest, bo tylko liczy. Taka reguła jest więc
+**przymusowo prywatna**: fizycznie nie ma jak wejść do testu. Wyprowadzenie jej do zwykłego pliku
+(`modules/<x>/domain/`) rozwiązuje problem w całości; sama zmiana miejsca wystarcza.
+**Lekcja:** Kontrast dowodzi, że to struktura, nie dyscyplina: reguły, które **zdołały** trafić do
+`modules/*/lib/`, mają testy w **dwóch przypadkach na trzy**; reguły uwięzione w plikach akcji — w
+**zero na 55**. Zanim uznasz brak testów za kwestię nawyków, sprawdź, czy kod w ogóle **da się**
+zaimportować. Gdy jakiejś warstwy nikt nie testuje, pierwsze pytanie brzmi „czy się da", a nie
+„czemu nikt nie chce".
+
+## 2026-08-15 — Licznik widzi tylko to, co ma nazwę
+**Problem:** Bramka miała zamrozić dług, licząc funkcje pomocnicze w plikach akcji (wzorcem zapadki
+z 068). Licznik pokazywał 55 i po wyprowadzeniu 21 reguł zszedł dokładnie do 34 — wyglądało to na
+komplet. Przy ręcznym sprawdzaniu modułów zaklasyfikowanych jako „bez reguł" w Magazynowaniu
+znalazła się klasyfikacja **ABC** (progi 80/95 od udziału narastającego), martwy zapas i trend
+ruchów — wszystko pisane **wprost w ciele akcji, bez nazwy**. Licznik ich nie widział i nigdy nie
+zobaczy, bo wzorzec szuka `^function `.
+**Rozwiązanie:** Reguły wyprowadzone razem z resztą; granica pomiaru **zapisana w manifeście
+i w specyfikacji** („zapadka liczy pomocniki nazwane"), a nie przemilczana. Dodatkowo: kandydaci na
+„bez reguł" sprawdzeni ręcznie, bo to jedyny sposób, w jaki to wyszło.
+**Lekcja:** Licznik mierzy **swój wzorzec**, nie zjawisko. „Zeszło do zera" znaczy „mój wzorzec nic
+już nie łapie" — a to co innego niż „problemu nie ma". Przy każdej zapadce trzeba wypisać wprost,
+czego **nie** obejmuje, i sprawdzić ręcznie przynajmniej kilka przypadków sklasyfikowanych jako
+puste. Pozycja „nie ma tu nic" bez podania, **gdzie w takim razie to jest**, to nie rozstrzygnięcie,
+tylko brak sprawdzenia.
+
+## 2026-08-15 — Pierwszy test starej reguły utrwala, a nie poprawia
+**Problem:** Pierwszy test pierwszej wyprowadzonej reguły zapalił się na czerwono: `normalizeDays("")`
+zwraca `"0"`, czyli **niedzielę**, bo `Number("")` to zero. Pusty wybór dni zapisuje nawyk jako
+„tylko w niedziele". Odruch: poprawić przy okazji, skoro i tak dotykam pliku.
+**Rozwiązanie:** Test **utrwala stan zastany** z komentarzem wyjaśniającym, dlaczego jest podejrzany,
+a obserwacja trafia do manifestu i dziennika. Przebieg przenosił reguły, nie zmieniał zachowania —
+a to, czym ma być pusty wybór („codziennie" czy „bez wskazania"), jest decyzją właściciela.
+**Lekcja:** Test pisany do **istniejącej** reguły ma najpierw opisać, co ona **robi**, a nie co
+**powinna robić**. Wmieszanie poprawki w refaktor daje zmianę zachowania schowaną w commicie
+„przeniesienie kodu" — najgorszy możliwy nośnik. Utrwalony dziwny przypadek jest tani i sam się
+upomni: gdy ktoś to naprawi, test zapali się na czerwono i **o to chodzi**.
+
 ## 2026-08-12 — Zielony test, który dowodził, że nowy kod się NIE uruchomił
 **Problem:** Po przełączeniu rozstrzygania dostępu z pary `ownerId`/`ownerTeamId` na `workspaceId`
 tabela prawdy (25 komórek, punkt odniesienia z poprzedniego przebiegu) przeszła **w całości** za

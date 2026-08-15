@@ -32,6 +32,8 @@ import { recordTrash } from "@/platform/trash/trash";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { createTask, tasksModule } from "@/modules/tasks/contract";
+import { resolveWhen } from "../domain/pora";
+import { roundedBrief } from "../domain/odcisk";
 
 export interface LocationDTO {
   id: string;
@@ -446,42 +448,6 @@ export interface IdeaContext {
   part?: DayPart;
 }
 
-/** Wspólne rozstrzygnięcie „który dzień i która pora" dla listy propozycji i ich szczegółów. */
-function resolveWhen(f: Forecast, opts?: { date?: string; part?: DayPart }) {
-  const date =
-    opts?.date && f.daily.some((d) => d.date === opts.date)
-      ? opts.date
-      : f.daily[0]?.date ?? new Date().toISOString().slice(0, 10);
-  const partKey: DayPart = opts?.part ?? "morning";
-  const part = DAY_PARTS.find((p) => p.key === partKey) ?? DAY_PARTS[0];
-  let hours = f.hourly.filter((h) => {
-    if (!h.time.startsWith(date)) return false;
-    const hour = Number(h.time.slice(11, 13));
-    return hour >= part.from && hour < part.to;
-  });
-  if (hours.length === 0) hours = f.hourly.filter((h) => h.time.startsWith(date));
-  const day = f.daily.find((d) => d.date === date);
-  return { date, part, hours, day };
-}
-
-/**
- * 038: ZAOKRĄGLONY skrót pogody — wyłącznie do liczenia odcisku warunków, nigdy do promptu.
- *
- * Odcisk liczony z surowych wartości zmieniałby się przy każdej korekcie o jedną dziesiątą stopnia
- * i unieważniał zapamiętaną treść bez powodu — czyli niweczył oszczędność, dla której ta pamięć
- * powstała. Temperatura do pełnego stopnia, szansa opadów do 5 punktów procentowych.
- */
-function roundedBrief(f: Forecast, when: ReturnType<typeof resolveWhen>): string {
-  const d = when.day;
-  const head = d
-    ? `${d.code}|${Math.round(d.tMin)}|${Math.round(d.tMax)}|${Math.round(d.precipProbMax / 5) * 5}`
-    : "";
-  const hours = when.hours
-    .map((h) => `${h.code}|${Math.round(h.temp)}|${Math.round(h.precipProb / 5) * 5}`)
-    .join(";");
-  return `${head}#${hours}`;
-}
-
 /** Skrót pogody dla promptów propozycji — dzień + wybrana pora, bez lania wody. */
 function weatherBrief(f: Forecast, when: ReturnType<typeof resolveWhen>): string {
   const d = when.day;
@@ -529,7 +495,7 @@ export async function getIdeas(
   const inputHash = hashInputs(
     // Zaokrąglony skrót pogody: korekta o jedną dziesiątą stopnia nie może unieważniać treści,
     // bo zniweczyłaby całą oszczędność, dla której ta pamięć powstała.
-    roundedBrief(f, when),
+    roundedBrief(when),
     blocked.map((b) => b.fingerprint).sort().join(","),
     saved.map((b) => b.fingerprint).sort().join(","),
     // 039: wiedza o użytkowniku też jest warunkiem powstania treści. Bez tego potwierdzenie „nie

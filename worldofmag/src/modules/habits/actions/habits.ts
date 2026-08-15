@@ -13,7 +13,7 @@ import {
   weekDoneCount,
 } from "@/lib/habitStats";
 import { createTask } from "@/modules/tasks/contract";
-
+import { normalizeDays, normalizeGoal, normalizeReminder } from "../domain/harmonogram";
 
 async function assertHabitAccess(id: string, userId: string): Promise<void> {
   const teamIds = await getUserTeamIds(userId);
@@ -89,34 +89,6 @@ export async function getHabits(opts?: { includeArchived?: boolean }): Promise<H
       weekTarget,
     };
   });
-}
-
-function normalizeDays(daysOfWeek?: string | null): string | null {
-  if (daysOfWeek == null) return null;
-  const parts = daysOfWeek
-    .split(",")
-    .map((p) => Number(p.trim()))
-    .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
-  const uniq = Array.from(new Set(parts)).sort((a, b) => a - b);
-  // Pełny tydzień = codziennie → zapisujemy null (czytelniej, mniej brzegów).
-  if (uniq.length === 0 || uniq.length === 7) return null;
-  return uniq.join(",");
-}
-
-function normalizeGoal(weeklyGoal?: number | null): number | null {
-  if (weeklyGoal == null) return null;
-  const n = Math.round(Number(weeklyGoal));
-  if (!Number.isInteger(n) || n < 1) return null;
-  return Math.min(7, n);
-}
-
-function normalizeReminder(reminderTime?: string | null): string | null {
-  if (!reminderTime || !reminderTime.trim()) return null;
-  const m = /^(\d{1,2}):(\d{2})$/.exec(reminderTime.trim());
-  if (!m) return null;
-  const hh = Math.min(23, Number(m[1]));
-  const mm = Math.min(59, Number(m[2]));
-  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
 
 export async function createHabit(data: {

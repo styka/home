@@ -1,0 +1,152 @@
+{
+  "$opis": [
+    "069 (zadanie 19, rozdz. 10.1) — GDZIE W KAŻDYM MODULE MIESZKAJĄ JEGO REGUŁY BIZNESOWE.",
+    "",
+    "Manifest istnieje z tego samego powodu co `sharing-classification.json` (064) i",
+    "`content-memory-coverage.json` (038): bramka nie potrafi rozstrzygnąć, czy funkcja jest regułą",
+    "dziedzinową, czy adapterem infrastruktury — więc zamiast zgadywać, ŻĄDA JAWNEJ DECYZJI. Dzięki",
+    "temu zadanie 19 domyka się rozstrzygnięciem dla 21 modułów, a nie zostaje pozycją, o której za",
+    "pół roku nikt nie wie, czy jest zrobiona.",
+    "",
+    "Trzy decyzje:",
+    "  domena       — moduł ma katalog `domain/` z regułami wyprowadzonymi z plików akcji.",
+    "  regula-w-lib — reguły modułu są czyste i testowalne, ale mieszkają w jego `lib/`. Świadomie",
+    "                 ich nie przenosimy: to kilkaset zmienionych importów bez zmiany jakiejkolwiek",
+    "                 własności (już są eksportowalne, już mają testy). Pole `pliki` wymienia je.",
+    "  bez-regul    — moduł nie ma własnych reguł do wyprowadzenia. `powod` MUSI mówić, gdzie one są,",
+    "                 jeśli nie w module — inaczej ta decyzja byłaby tylko brakiem sprawdzenia.",
+    "",
+    "GRANICA POMIARU, nazwana wprost: liczba w `zapadka` liczy NAZWANE funkcje pomocnicze w plikach",
+    "akcji. Reguła napisana bez nazwy, wprost w ciele akcji, jest tak samo niesprawdzalna, a w tym",
+    "liczniku nie wystąpi. Tak właśnie znalazła się analityka Magazynowania — nie przez pomiar, tylko",
+    "przez ręczne sprawdzenie kandydatów na `bez-regul`."
+  ],
+
+  "zapadka": {
+    "maks": 34,
+    "opis": [
+      "Liczba synchronicznych funkcji pomocniczych pozostających w plikach akcji (`src/modules/*/",
+      "actions/*.ts` + `src/actions/*.ts`). Przed 069 było ich 55; 21 wyprowadzono jako reguły,",
+      "34 to adaptery, które zostają świadomie (tłumaczenie kształtów, obrona przed złym typem,",
+      "wywołanie infrastruktury, tekst promptu).",
+      "",
+      "Zapadka MOŻE MALEĆ, NIE MOŻE ROSNĄĆ — a spadek też czerwieni bramkę, żeby wymusić obniżenie",
+      "progu. Wzorzec z 068 (`check:pagination`).",
+      "",
+      "Niezmiennik dotyczy MIEJSCA NARODZIN reguły, nie wyboru katalogu: reguła w `domain/` i reguła",
+      "w `lib/` są obie eksportowalne i testowalne. Problemem jest wyłącznie plik `\"use server\"`,",
+      "z którego wyjścia nie ma."
+    ]
+  },
+
+  "moduly": {
+    "calendar": {
+      "decyzja": "regula-w-lib",
+      "pliki": ["lib/ical.ts", "lib/collect.ts"],
+      "powod": "Agregat agendy zbiera wkłady innych modułów; własna reguła to budowa kanału iCal (ma test). `collect.ts` nie ma jeszcze testu — patrz `obserwacje.bez-testu`. W akcji został tylko `feedUrl`, doklejający `AUTH_URL`, czyli infrastruktura."
+    },
+    "contacts": {
+      "decyzja": "bez-regul",
+      "powod": "Cienki CRUD nad jednym modelem. Dwa pomocniki w akcji to parsowanie etykiet z JSON i mapowanie rekordu na obiekt widoku — żaden nie podejmuje decyzji dziedzinowej."
+    },
+    "flota": {
+      "decyzja": "regula-w-lib",
+      "pliki": ["lib/flota.ts"],
+      "powod": "Spalanie, koszt kilometra i TCO liczy `lib/flota.ts`, pokryty dwoma zestawami testów. Plik akcji nie ma ani jednego pomocnika."
+    },
+    "habits": {
+      "decyzja": "domena",
+      "pliki": ["domain/harmonogram.ts"],
+      "powod": "069: normalizacja dni tygodnia, celu tygodniowego i godziny przypomnienia. Statystyki (serie, mapa ciepła) liczy współdzielony `src/lib/habitStats.ts` — używany także poza modułem, więc zostaje wspólny."
+    },
+    "health": {
+      "decyzja": "domena",
+      "pliki": ["domain/harmonogramLeku.ts"],
+      "powod": "069: kształt harmonogramu leku (godziny, dni, częstotliwość). Rozwijanie harmonogramu w czasie robi współdzielony `src/lib/medicationSchedule.ts`, wołany też przez Kalendarz i asystenta."
+    },
+    "home": {
+      "decyzja": "bez-regul",
+      "powod": "Pulpit nie ma własnej dziedziny — składa migawkę z wkładów innych modułów (`dashboard.ts` każdego z nich, korzeń kompozycji `src/lib/dashboardContributors.ts`, przebieg 050). Reguła pulpitu należałaby do modułu, który dostarcza dane."
+    },
+    "kitchen": {
+      "decyzja": "domena",
+      "pliki": ["domain/dzienPlanu.ts", "domain/slug.ts"],
+      "powod": "069: klucz dnia planu (południe UTC) i slug przepisu. Koszt przepisu liczy `lib/recipeCost.ts` (ma test) i tam zostaje."
+    },
+    "languages": {
+      "decyzja": "regula-w-lib",
+      "pliki": ["lib/srs.ts"],
+      "powod": "Cała dziedzina modułu to algorytm powtórek SuperMemo-2 w `lib/srs.ts`, pokryty testem. Plik akcji nie ma pomocników."
+    },
+    "magazynowanie": {
+      "decyzja": "domena",
+      "pliki": ["domain/analityka.ts"],
+      "powod": "069: klasyfikacja ABC (progi 80/95 od udziału narastającego), martwy zapas, wartość wg magazynu, trend ruchów. ZNALEZIONE POZA POMIAREM — były pisane bez nazwy, wprost w ciele `getStorageAnalytics`. Katalog wyposażenia i FEFO pozostają zapytaniami do bazy, nie regułami."
+    },
+    "news": {
+      "decyzja": "bez-regul",
+      "powod": "Reguły modułu (parsowanie RSS, wyciąganie treści artykułu, kolor źródła, formatowanie) mieszkają w `src/lib/news/*` i trzy z nich mają testy. Katalog jest współdzielony z zadaniami w tle i asystentem, więc zostaje poza modułem. W akcji zostały mapowanie DTO i tekst promptu."
+    },
+    "notes": {
+      "decyzja": "regula-w-lib",
+      "pliki": ["lib/searchRank.ts", "lib/wikilinks.ts"],
+      "powod": "Ranking wyszukiwania i parsowanie odnośników `[[Tytuł]]` — oba z testami. Plik akcji nie ma pomocników."
+    },
+    "pets": {
+      "decyzja": "domena",
+      "pliki": ["domain/terminOpieki.ts"],
+      "powod": "069: następny termin opieki z ucięciem po dacie końca. Genetyka, dobrostan, warunki w terrarium i gatunki są w `lib/` i mają testy."
+    },
+    "portfel": {
+      "decyzja": "domena",
+      "pliki": ["domain/majatek.ts", "domain/okres.ts", "domain/waluta.ts"],
+      "powod": "069: znak salda wg rodzaju elementu, granice okresu rozliczeniowego, kod waluty. Przewalutowanie, import CSV z banku i księgowanie automatyczne są w `lib/` i mają testy."
+    },
+    "qa": {
+      "decyzja": "domena",
+      "pliki": ["domain/slug.ts"],
+      "powod": "069: slug scenariusza. Świadomie NIE jest tożsamy ze slugiem Kuchni — obie reguły wyprodukowały już adresy istniejących rekordów, więc scalenie przeniosłoby część z nich pod nowe adresy. Rozbieżności udokumentowane wartościami w obu testach."
+    },
+    "reports": {
+      "decyzja": "bez-regul",
+      "powod": "Moduł przechowuje i wyświetla markdown; sam renderer to współdzielony `src/lib/markdown.ts` (używany też przez Kuchnię, Zadania, QA i asystenta). Wybór miejsca zapisu (baza vs Dysk) to infrastruktura, nie reguła. Plik akcji nie ma pomocników."
+    },
+    "services": {
+      "decyzja": "regula-w-lib",
+      "pliki": ["lib/serviceSlots.ts", "lib/serviceGeo.ts"],
+      "powod": "Wyznaczanie wolnych terminów i liczenie odległości — oba z testami. Plik akcji modułu ma 20 linii."
+    },
+    "shopping": {
+      "decyzja": "regula-w-lib",
+      "pliki": ["lib/parseQuantity.ts", "lib/categorize.ts", "lib/storeLayout.ts", "lib/storeRoute.ts"],
+      "powod": "Rozbiór pozycji na ilość/jednostkę/nazwę, kategoryzacja regułowa, układ i trasa po sklepie — cztery reguły, cztery testy. W akcji został tylko mapper rekordu na obiekt widoku."
+    },
+    "tasks": {
+      "decyzja": "bez-regul",
+      "powod": "Nawroty zadań liczy współdzielony `src/lib/recurrence.ts` (wołany też przez Zwierzęta), więc zgodnie z regułą przynależności zostaje wspólny. `lib/access.ts` to kontrola dostępu, nie dziedzina. W akcjach zostały trzy mappery i parser JSON."
+    },
+    "truck": {
+      "decyzja": "domena",
+      "pliki": ["domain/profilPojazdu.ts", "domain/korytarz.ts"],
+      "powod": "069: dopuszczalne wymiary zestawu i geometria korytarza robót drogowych. `lib/ors.ts`, `lib/overpass.ts` i `lib/googleMaps.ts` to klienci zewnętrznych API — infrastruktura."
+    },
+    "warsztaty": {
+      "decyzja": "regula-w-lib",
+      "pliki": ["lib/catalog.ts"],
+      "powod": "Katalog wyposażenia wg profilu warsztatu (poziomy podstawowy/zalecany/zaawansowany) z testem. W akcji został adapter dat."
+    },
+    "weather": {
+      "decyzja": "domena",
+      "pliki": ["domain/pora.ts", "domain/odcisk.ts"],
+      "powod": "069: wybór dnia i pory z prognozy oraz odcisk warunków rozstrzygający aktualność zapamiętanej treści AI (038). Faza księżyca i rozbiór odpowiedzi Open-Meteo są w `lib/` i mają testy."
+    }
+  },
+
+  "obserwacje": {
+    "$opis": "Rzeczy zauważone przy 069, świadomie NIEZROBIONE (C-53). Materiał na kolejne przebiegi.",
+    "startOfToday": "`health/actions/health.ts` liczy północ dnia z zegara SERWERA, mimo że Omnia ma `src/lib/userTime.ts` do granic doby w strefie użytkownika. To potencjalny błąd (zły dzień dla użytkownika w innej strefie), a nie brak testu — naprawa jest zmianą zachowania i wymaga własnego przebiegu.",
+    "puste-dni-nawyku": "`normalizeDays(\"\")` zwraca `\"0\"`, czyli niedzielę, bo `Number(\"\")` to 0. Pusty wybór dni zapisuje nawyk jako „tylko w niedziele\". Test w `habits/domain/__tests__` UTRWALA to zachowanie z komentarzem; poprawka wymaga rozstrzygnięcia, czym ma być pusty wybór.",
+    "dwa-slugi": "Kuchnia i QA mają różne reguły sluga (podkreślenie, wartość awaryjna, przycięcie do 80 znaków). Nie ujednolicamy — obie wyprodukowały już adresy istniejących rekordów.",
+    "bez-testu": "12 czystych plików w `modules/*/lib/` nie ma testu: calendar/collect, kitchen/recipeImportDraft, kitchen/sharingGuard, pets/petExport, pets/sharingGuard, shopping/offlineMutations, shopping/offlineStore, shopping/sharingGuard, tasks/access, truck/googleMaps, portfel/currency (część czysta), services/services. Bramka ich nie wymaga, bo 069 nie obiecywał ich pokrycia — ale to gotowa lista na następny przebieg."
+  }
+}

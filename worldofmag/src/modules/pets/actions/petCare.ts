@@ -5,7 +5,8 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "./pets";
-import { computeNextDue, parseRecurringRule } from "@/lib/recurrence";
+import { parseRecurringRule } from "@/lib/recurrence";
+import { nextDueFrom } from "../domain/terminOpieki";
 import { buildAgenda, buildWelfareSuggestions, buildEnvironmentSuggestions, type AgendaSource } from "../lib/petWelfare";
 import type {
   PetTreatment, PetCareTask, PetVetVisit, PetMeasurement, PetHealthRecord, PetCareLog,
@@ -20,13 +21,6 @@ function revalidatePet(petId: string) {
 }
 
 /** Compute next due date from a rule string, respecting endDate. */
-function nextDueFrom(base: Date, rule: RecurringRule | null): Date | null {
-  if (!rule) return null;
-  const next = computeNextDue(base, rule);
-  if (!next) return null;
-  if (rule.endDate && next > new Date(rule.endDate)) return null;
-  return next;
-}
 
 async function accessiblePetIds(userId: string): Promise<string[]> {
   const teamIds = await getUserTeamIds(userId);

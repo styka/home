@@ -6,6 +6,14 @@ import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync, own
 import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
+import {
+  wartoscPozycji,
+  liczbaPonizejMinimum,
+  wartoscWgMagazynu,
+  klasyfikacjaAbc,
+  martwyZapas,
+  trendRuchow,
+} from "../domain/analityka";
 import type {
   StorageItem,
   StorageMovement,
@@ -683,73 +691,29 @@ export async function getStorageAnalytics(deadDays = 90): Promise<StorageAnalyti
     include: { movements: { orderBy: { createdAt: "desc" }, take: 1 } },
   });
 
-  const itemValue = (i: { quantity: number | null; unitPrice: number | null }) =>
-    (i.quantity ?? 0) * (i.unitPrice ?? 0);
+  const doAnalizy = items.map((i) => ({
+    id: i.id,
+    name: i.name,
+    quantity: i.quantity,
+    unitPrice: i.unitPrice,
+    minQuantity: i.minQuantity,
+    warehouse: i.warehouse,
+    lastMove: i.movements[0]?.createdAt ?? null,
+  }));
 
-  const totalValue = items.reduce((a, i) => a + itemValue(i), 0);
-  const totalUnits = items.reduce((a, i) => a + (i.quantity ?? 0), 0);
-  const lowStockCount = items.filter((i) => i.minQuantity != null && (i.quantity ?? 0) < i.minQuantity).length;
+  const totalValue = doAnalizy.reduce((a, i) => a + wartoscPozycji(i), 0);
+  const totalUnits = doAnalizy.reduce((a, i) => a + (i.quantity ?? 0), 0);
+  const lowStockCount = liczbaPonizejMinimum(doAnalizy);
+  const valueByWarehouse = wartoscWgMagazynu(doAnalizy);
+  const abc = klasyfikacjaAbc(doAnalizy);
+  const deadStock = martwyZapas(doAnalizy, deadDays);
 
-  // Wartość wg magazynu
-  const whMap = new Map<string, { value: number; items: number }>();
-  for (const i of items) {
-    const key = i.warehouse?.trim() || "—";
-    const cur = whMap.get(key) ?? { value: 0, items: 0 };
-    cur.value += itemValue(i);
-    cur.items += 1;
-    whMap.set(key, cur);
-  }
-  const valueByWarehouse = Array.from(whMap.entries())
-    .map(([warehouse, v]) => ({ warehouse, ...v }))
-    .sort((a, b) => b.value - a.value);
-
-  // ABC (Pareto wg wartości)
-  const valued = items
-    .map((i) => ({ id: i.id, name: i.name, value: itemValue(i) }))
-    .filter((i) => i.value > 0)
-    .sort((a, b) => b.value - a.value);
-  const sumValued = valued.reduce((a, i) => a + i.value, 0) || 1;
-  let cum = 0;
-  const abc = valued.map((i) => {
-    cum += i.value;
-    const cumPct = (cum / sumValued) * 100;
-    const klasa: "A" | "B" | "C" = cumPct <= 80 ? "A" : cumPct <= 95 ? "B" : "C";
-    return { ...i, cumPct, klasa };
-  });
-
-  // Martwy zapas: brak ruchu od deadDays (lub nigdy), a stan > 0
-  const cutoff = Date.now() - deadDays * 86_400_000;
-  const deadStock = items
-    .filter((i) => (i.quantity ?? 0) > 0)
-    .map((i) => ({
-      id: i.id,
-      name: i.name,
-      quantity: i.quantity ?? 0,
-      lastMove: i.movements[0]?.createdAt ?? null,
-      value: itemValue(i),
-    }))
-    .filter((i) => !i.lastMove || i.lastMove.getTime() < cutoff)
-    .sort((a, b) => b.value - a.value);
-
-  // Trend ruchów: ostatnie 14 dni (przyjęcia vs wydania)
   const since = new Date(Date.now() - 14 * 86_400_000);
   const movements = await prisma.storageMovement.findMany({
     where: { item: { OR: await ownershipOr(user.id) }, createdAt: { gte: since } },
     select: { delta: true, createdAt: true },
   });
-  const trendMap = new Map<string, { in: number; out: number }>();
-  for (let d = 0; d < 14; d++) {
-    const day = new Date(Date.now() - (13 - d) * 86_400_000).toISOString().slice(0, 10);
-    trendMap.set(day, { in: 0, out: 0 });
-  }
-  for (const m of movements) {
-    const day = m.createdAt.toISOString().slice(0, 10);
-    const cur = trendMap.get(day);
-    if (!cur) continue;
-    if (m.delta >= 0) cur.in += m.delta;
-    else cur.out += -m.delta;
-  }
-  const movementTrend = Array.from(trendMap.entries()).map(([date, v]) => ({ date, ...v }));
+  const movementTrend = trendRuchow(movements, 14);
 
   return {
     currency: settings.currency,
