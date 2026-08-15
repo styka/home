@@ -57,20 +57,31 @@ export async function emitDomainEvent(tx: TransactionClient, event: DomainEventI
 }
 
 /**
- * Przestrzeń dla zdarzenia emitowanego przez danego użytkownika — albo `null`, gdy jej nie ma.
+ * Przestrzeń, do której należy zdarzenie — albo `null`, gdy nie da się jej ustalić.
  *
- * **Brak przestrzeni oznacza POMINIĘCIE zdarzenia, nigdy błąd mutacji.** Zdarzenie jest dodatkiem
- * do operacji, nie jej warunkiem: wywrócenie zakupów dlatego, że nie dało się zapisać zdarzenia,
- * którego na razie nikt nie czyta, byłoby regresją w zamian za nic.
+ * **Bierzemy przestrzeń ZASOBU, nie autora.** To nie jest szczegół: strumień zdarzeń jest
+ * strumieniem przestrzeni (rozdz. 11.1), więc zdarzenie o zasobie **zespołowym** musi trafić do
+ * przestrzeni zespołu. Gdyby brało przestrzeń osobistą tego, kto kliknął, zmiana na wspólnej liście
+ * wylądowałaby w prywatnym strumieniu autora i **współpracownicy by jej nie zobaczyli** — czyli
+ * dokładnie odwrotnie niż wymaga tego rozdz. 9.4.1 („kto to zrobił" ma sens tylko przy współdzieleniu).
  *
- * Konto bez przestrzeni osobistej jest **realne** — dokładnie ta sytuacja wywróciła tabelę prawdy
- * w przebiegu 056 (fixture tworzył użytkowników z pominięciem zdarzenia logowania).
+ * Przestrzeń osobista autora jest **zachowaniem awaryjnym** dla zasobu bez przestrzeni — sieroty
+ * po backfillu z migracji 0227. Konto bez przestrzeni osobistej jest przy tym realne (ta sytuacja
+ * wywróciła tabelę prawdy w 056), więc wynik nadal bywa `null`.
  *
- * Rozstrzygnięcie mieszka w JEDNYM miejscu, żeby dało się je później zmienić jedną zmianą
- * (wzorzec z 057). Przy zadaniu 22 trzeba je zrewidować: gdy zdarzenia zaczną napędzać funkcje,
- * ciche pominięcie stanie się cichą utratą funkcji.
+ * **`null` oznacza POMINIĘCIE zdarzenia, nigdy błąd mutacji.** Zdarzenie jest dodatkiem do operacji,
+ * nie jej warunkiem: wywrócenie zakupów dlatego, że nie dało się zapisać zdarzenia, którego na razie
+ * nikt nie czyta, byłoby regresją w zamian za nic.
+ *
+ * Rozstrzygnięcie mieszka w JEDNYM miejscu, żeby dało się je zmienić jedną zmianą (wzorzec z 057).
+ * Przy zadaniu 22 trzeba je zrewidować: gdy zdarzenia zaczną napędzać funkcje, ciche pominięcie
+ * stanie się cichą utratą funkcji.
  */
-export async function workspaceIdDlaZdarzenia(userId: string): Promise<string | null> {
+export async function workspaceIdDlaZdarzenia(
+  zasobWorkspaceId: string | null | undefined,
+  userId: string
+): Promise<string | null> {
+  if (zasobWorkspaceId) return zasobWorkspaceId;
   const { getAccessContext } = await import("@/platform/sharing/cache");
   const ctx = await getAccessContext(userId);
   return ctx.personalWorkspaceId;

@@ -20,12 +20,16 @@ const rnd = () => Math.random().toString(36).slice(2, 10);
 
 async function zUzytkownikiem(fn: (userId: string, workspaceId: string) => Promise<void>) {
   const { prisma } = await import("@/platform/db/prisma");
+  const { ensurePersonalWorkspace } = await import("@/platform/workspaces/sync");
   const user = await prisma.user.create({
     data: { email: `events-${rnd()}@test.local`, name: "Test zdarzeń" },
   });
-  const ws = await prisma.workspace.create({
-    data: { name: "Osobista", kind: "personal", personalUserId: user.id },
-  });
+  // Przestrzeń zakładamy PRAWDZIWĄ ścieżką, nie `workspace.create` wprost. Sam wiersz `Workspace`
+  // nie wystarcza: kontekst dostępu liczy przestrzenie z CZŁONKOSTWA (`WorkspaceMember`), więc
+  // fixture tworzący samą przestrzeń dawał `personalWorkspaceId === null` i test przechodził
+  // z niewłaściwego powodu. Dokładnie ten błąd wywrócił tabelę prawdy w 056.
+  await ensurePersonalWorkspace(user.id);
+  const ws = await prisma.workspace.findUniqueOrThrow({ where: { personalUserId: user.id } });
   try {
     await fn(user.id, ws.id);
   } finally {
@@ -106,6 +110,32 @@ test(
 );
 
 test(
+  "PRZESTRZEŃ BIERZE SIĘ Z ZASOBU, NIE Z AUTORA — inaczej zdarzenie zespołowe trafia w prywatny strumień",
+  { skip: !HAS_DB && "brak DATABASE_URL" },
+  async () => {
+    const { workspaceIdDlaZdarzenia } = await import("../emit");
+
+    // To jest właściwość, którą łatwo zepsuć i której nie widać: strumień zdarzeń jest strumieniem
+    // PRZESTRZENI (rozdz. 11.1), więc zdarzenie o zasobie zespołowym musi trafić do przestrzeni
+    // zespołu. Gdyby brało przestrzeń osobistą klikającego, współpracownicy nigdy by go nie
+    // zobaczyli — a nic by o tym nie powiedziało.
+    await zUzytkownikiem(async (userId, wsOsobista) => {
+      const wsZespolu = "przestrzen-zespolu-testowa";
+      assert.equal(
+        await workspaceIdDlaZdarzenia(wsZespolu, userId),
+        wsZespolu,
+        "przestrzeń zasobu wygrywa z przestrzenią autora"
+      );
+      assert.equal(
+        await workspaceIdDlaZdarzenia(null, userId),
+        wsOsobista,
+        "brak przestrzeni zasobu (sierota po 0227) spada na przestrzeń osobistą autora"
+      );
+    });
+  }
+);
+
+test(
   "BRAK PRZESTRZENI: mutacja przechodzi, zdarzenia nie ma, nic nie rzuca",
   { skip: !HAS_DB && "brak DATABASE_URL" },
   async () => {
@@ -118,7 +148,7 @@ test(
       data: { email: `events-bezws-${rnd()}@test.local`, name: "Bez przestrzeni" },
     });
     try {
-      const przestrzen = await workspaceIdDlaZdarzenia(user.id);
+      const przestrzen = await workspaceIdDlaZdarzenia(null, user.id);
       assert.equal(przestrzen, null, "brak przestrzeni rozpoznany");
 
       const lista = await prisma.shoppingList.create({

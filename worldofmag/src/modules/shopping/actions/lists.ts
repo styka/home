@@ -180,7 +180,7 @@ export async function completeShopping(id: string, opts?: { bookToPortfel?: bool
   // poza nią: wciągnięcie go zmieniłoby zachowanie przy awarii księgowania (dziś zakupy zostają
   // zakończone), a to zmiana widoczna dla użytkownika. Zadanie 25 i tak przepnie księgowanie
   // na subskrypcję tego zdarzenia i wtedy wywołanie stąd zniknie.
-  const przestrzen = await workspaceIdDlaZdarzenia(user.id);
+  const przestrzen = await workspaceIdDlaZdarzenia(list.workspaceId, user.id);
   await prisma.$transaction(async (tx) => {
     await tx.shoppingList.update({ where: { id }, data: { archived: true, archivedAt: new Date() } });
     if (przestrzen) {

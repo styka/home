@@ -213,9 +213,11 @@ export async function adjustStorageQuantity(
   await assertStorageItemAccess(id, user.id);
   if (!Number.isFinite(delta) || delta === 0) throw new Error("Nieprawidłowa zmiana ilości");
 
-  const przestrzen = await workspaceIdDlaZdarzenia(user.id);
   const updated = await prisma.$transaction(async (tx) => {
-    const existing = await tx.storageItem.findUnique({ where: { id }, select: { quantity: true } });
+    const existing = await tx.storageItem.findUnique({
+      where: { id },
+      select: { quantity: true, workspaceId: true },
+    });
     if (!existing) throw new Error("Pozycja nie istnieje");
     const next = Math.max(0, (existing.quantity ?? 0) + delta);
     const item = await tx.storageItem.update({ where: { id }, data: { quantity: next } });
@@ -227,6 +229,7 @@ export async function adjustStorageQuantity(
         note: note?.trim() || null,
       },
     });
+    const przestrzen = await workspaceIdDlaZdarzenia(existing.workspaceId, user.id);
     // 070 (zadanie 21): zdarzenie w TEJ SAMEJ transakcji co zmiana stanu i wpis ruchu.
     // Przyszły odbiorca (zadanie 25): uzupełnianie zapasów do Zakupów przy stanie poniżej minimum.
     if (przestrzen) {
