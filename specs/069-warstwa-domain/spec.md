@@ -87,6 +87,14 @@ sięga użytkownika końcowego.
   then powstaje **rozstrzygnięcie dla każdej z nich** z podanym powodem, a liczba faktycznie
   przeniesionych wynika z tego przeglądu — **nie jest z góry założona**.
 
+  *Uzupełnienie po implementacji (C-54) — OGRANICZENIE POMIARU, nazwane wprost:* liczba 55 obejmuje
+  wyłącznie reguły, które mają **nazwę**. Reguła napisana wprost w ciele akcji żadnej nazwy nie ma,
+  więc w tym liczniku nie występuje — a jest **tak samo niesprawdzalna**. Przykład znaleziony przy
+  weryfikacji klasyfikacji: klasyfikacja ABC magazynu (progi 80/95 liczone od udziału narastającego)
+  i martwy zapas, oba pisane w ciele `getStorageAnalytics`. Zostały wyprowadzone razem z resztą.
+  Zapadka z AC-6b **nie chroni** przed regułami pisanymi bez nazwy i to jest jej znana granica,
+  zapisana tutaj zamiast przemilczana.
+
 - [ ] **AC-2** — Given regułę uznaną za biznesową, when zostanie wyodrębniona z pliku akcji,
   then jest **importowalna poza tym plikiem** i ma **test sprawdzający jej zachowanie**
   (przypadek typowy **i** co najmniej jeden brzegowy) — a nie samo jej istnienie.

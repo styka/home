@@ -61,6 +61,15 @@ wolno / jak to nazwać) i jej wynik dałoby się zakwestionować w rozmowie z w�
 | 20 | `deriveTitle` | `src/actions/aiConversations.ts` | tytuł rozmowy: 7 słów, ucięcie na 60 znaków, wartość awaryjna |
 | 21 | `sanitizeColor` + `sanitizeIcon` | `src/actions/favoriteViews.ts` | egzekwowanie C-30 (do bazy nie ma prawa trafić hex) i limit 2 znaków ikony |
 
+**REGUŁA 22 — DOPISANA W TRAKCIE IMPLEMENTACJI (C-54).** Weryfikując kandydatów na `bez-regul`
+(spec §9: „fałszywe poczucie domknięcia"), znaleziono w Magazynowaniu reguły, których pomiar
+**nie mógł zobaczyć**, bo są pisane **bez nazwy, wprost w ciele akcji** `getStorageAnalytics`:
+klasyfikacja **ABC** (progi 80/95 od udziału narastającego), **martwy zapas** (granica N dni),
+wartość wg magazynu, liczba pozycji poniżej minimum i trend ruchów. Progi liczbowe bez testu,
+których pomyłki **nie widać w żadnym wyniku** — wykres zawsze coś narysuje. Wyprowadzone do
+`magazynowanie/domain/analityka.ts`. Liczba nazwanych pomocników się nie zmienia, więc **próg
+zapadki pozostaje 34**.
+
 **ADAPTERY — 34 pozycje, zostają na miejscu.** Zbiorczo, z powodem:
 
 - **Tłumaczenie kształtów (13):** `toDTO` ×3 (contacts, favoriteViews, userFacts), `toItemDTO`
