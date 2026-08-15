@@ -6,6 +6,8 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { geocode, routeHgv, OrsError, type OrsRestrictions } from "../lib/ors";
 import { fetchRoadworks } from "../lib/overpass";
+import { ograniczProfil } from "../domain/profilPojazdu";
+import { nearestVertexDist2 } from "../domain/korytarz";
 import {
   bufferBboxAroundLine,
   pointToAvoidPolygon,
@@ -19,10 +21,6 @@ export type VehicleInput = OrsRestrictions;
 
 const MAX_AVOID_POLYGONS = 20;
 
-function clamp(n: number, min: number, max: number): number {
-  if (Number.isNaN(n)) return min;
-  return Math.min(max, Math.max(min, n));
-}
 
 export async function getVehicleProfile(): Promise<VehicleProfile | null> {
   const user = await requireAuth();
@@ -31,13 +29,7 @@ export async function getVehicleProfile(): Promise<VehicleProfile | null> {
 
 export async function saveVehicleProfile(input: VehicleInput): Promise<VehicleProfile> {
   const user = await requireAuth();
-  const data = {
-    weight: clamp(input.weight, 1, 120),
-    height: clamp(input.height, 1, 6),
-    length: clamp(input.length, 1, 30),
-    width: clamp(input.width, 1, 5),
-    axleload: clamp(input.axleload, 0.5, 30),
-  };
+  const data = ograniczProfil(input);
   const profile = await prisma.vehicleProfile.upsert({
     where: { userId: user.id },
     create: { userId: user.id, ...data },
@@ -63,15 +55,6 @@ export interface PlanError {
   error: string;
 }
 
-/** Min squared distance (in deg²) from a point to any vertex of the route line. */
-function nearestVertexDist2(lat: number, lng: number, line: [number, number][]): number {
-  let best = Infinity;
-  for (const [vLng, vLat] of line) {
-    const d = (vLat - lat) ** 2 + (vLng - lng) ** 2;
-    if (d < best) best = d;
-  }
-  return best;
-}
 
 export async function planTruckRoute(
   origin: string,
