@@ -4,6 +4,25 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-15 — Test przechodzi także wtedy, gdy reguła jest zepsuta
+**Problem:** Do 16 wyprowadzonych reguł powstały 124 testy, wszystkie zielone, z przypadkami
+brzegowymi w każdym pliku. Wyglądało to na komplet. Sprawdzenie mutacyjne — **zepsuj regułę
+i zobacz, czy test zauważy** — wykazało, że **3 z 11 mutacji przechodzą niezauważone**: próg klasy
+A w analizie ABC (`80` → `90`), próg klasy B (`95` → `99`) i brzeg daty końca w terminie opieki
+(`>` → `>=`). Po naprawie i rozszerzeniu zestawu na 24 mutacje wyszła jeszcze jedna: usunięcie
+`Math.round` z jednego pola odcisku pogody.
+**Rozwiązanie:** We wszystkich czterech przypadkach winna była **fikstura, nie asercja**. ABC:
+wartości 800/150/50 dają udziały narastające 80/95/100, czyli **dokładnie w progach** — przesunięcie
+progu nic nie zmienia. Trzeba wartości, które wypadają **pomiędzy** starym a nowym progiem (85 %).
+Data końca: termin wypadał o 10:00, a `endDate` ustawiono na 23:59, więc `>` i `>=` dawały to samo —
+trzeba równości **co do milisekundy**. Odcisk: fikstura miała temperatury całkowite, a zaokrąglanie
+liczby całkowitej niczego nie zmienia — trzeba wartości ułamkowych.
+**Lekcja:** „Test brzegowy" to nie ten, który ma w nazwie brzeg, tylko ten, którego **fikstura leży
+na brzegu**. Przy każdym progu liczbowym dobierz dane tak, żeby przesunięcie progu **zmieniło
+wynik** — inaczej test opisuje regułę, zamiast jej pilnować. Jedyny tani sposób, żeby to sprawdzić,
+to zepsuć regułę i zobaczyć czerwień; robi się to w minutę, a przy progach (80/95, `>` vs `>=`,
+zaokrąglenia) wychodzi zaskakująco często.
+
 ## 2026-08-15 — Reguła w pliku `"use server"` jest niesprawdzalna z przyczyn STRUKTURALNYCH
 **Problem:** W plikach akcji siedziało **55 funkcji pomocniczych**, z których **ani jedna** nie miała
 testu — w tym rzeczy o cichej cenie pomyłki: znak salda wg rodzaju elementu portfela, normalizacja

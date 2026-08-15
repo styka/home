@@ -1,7 +1,7 @@
 # Zadania: Warstwa `domain/` — reguły biznesowe dają się sprawdzić bez bazy
 
 - **Plan:** ./plan.md (069-warstwa-domain)
-- **Status:** in-progress (nawrót z /verify)
+- **Status:** done
 - **Data:** 2026-08-14
 
 > Kolejność podyktowana zależnościami: **najpierw wyprowadzenie reguł** (bo dopiero po nim znany
@@ -87,15 +87,15 @@ czysto, jeden commit.
 Weryfikacja mutacyjna (zepsuj regułę → czy test zauważy?) przeszła 11 mutacji; **8 złapanych,
 3 niezłapane**. To ryzyko nazwane w `spec.md` §9 i jedyny sposób, w jaki wychodzi.
 
-- [ ] **T-21** — **Próg A klasyfikacji ABC (80) nieprzypięty.** Fikstura 800/150/50 daje udziały
+- [x] **T-21** — **Próg A klasyfikacji ABC (80) nieprzypięty.** Fikstura 800/150/50 daje udziały
   narastające 80/95/100, więc przesunięcie progu na 90 nie zmienia wyniku. *Gotowe, gdy:* w teście
   jest pozycja o udziale narastającym **między 80 a 90**, a mutacja `<= 80` → `<= 90` **czerwieni test**.
-- [ ] **T-22** — **Próg B klasyfikacji ABC (95) nieprzypięty.** Jak wyżej. *Gotowe, gdy:* mutacja
+- [x] **T-22** — **Próg B klasyfikacji ABC (95) nieprzypięty.** Jak wyżej. *Gotowe, gdy:* mutacja
   `<= 95` → `<= 99` czerwieni test.
-- [ ] **T-23** — **Brzeg `endDate` w terminie opieki nieprzypięty.** Test „termin dokładnie w dacie
+- [x] **T-23** — **Brzeg `endDate` w terminie opieki nieprzypięty.** Test „termin dokładnie w dacie
   końca" używa `endDate` o 23:59, a termin wypada o 10:00 — nie trafia w brzeg. *Gotowe, gdy:*
   `endDate` **równa się co do milisekundy** wyliczonemu terminowi, a mutacja `>` → `>=` czerwieni test.
-- [ ] **T-24** — Powtórzyć **pełny przebieg mutacyjny** (11 mutacji) po poprawkach; wynik dopisać do
+- [x] **T-24** — Powtórzyć **pełny przebieg mutacyjny** (11 mutacji) po poprawkach; wynik dopisać do
   `verify.md`. *Gotowe, gdy:* **0 niezłapanych**.
 
 ## Mapowanie kryteriów akceptacji

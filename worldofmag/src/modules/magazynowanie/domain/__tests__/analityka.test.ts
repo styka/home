@@ -69,6 +69,51 @@ test("ABC: progi liczone od UDZIAŁU NARASTAJĄCEGO, nie od wartości pozycji", 
   );
 });
 
+test("ABC: PRÓG KLASY A TO DOKŁADNIE 80 % — przypięty fikstura, nie na słowo", () => {
+  // Fikstura dobrana tak, żeby udział narastający wypadł MIĘDZY 80 a 90: pozycja warta 85 % magazynu
+  // jest klasą **B**, bo 85 > 80. Gdyby ktoś przesunął próg na 90, ta sama pozycja wyszłaby jako A
+  // i test to zauważy. Wcześniejsza fikstura (80/95/100) tego nie łapała — udziały trafiały dokładnie
+  // w progi, więc przesunięcie progu niczego nie zmieniało.
+  const wynik = klasyfikacjaAbc([
+    poz({ id: "osiemdziesiat-piec", quantity: 1, unitPrice: 85 }),
+    poz({ id: "reszta", quantity: 1, unitPrice: 15 }),
+  ]);
+  assert.equal(wynik[0].cumPct, 85);
+  assert.equal(wynik[0].klasa, "B", "85 % udziału narastającego to już nie klasa A");
+});
+
+test("ABC: próg klasy A jest WŁĄCZAJĄCY — dokładnie 80 % to jeszcze A", () => {
+  const wynik = klasyfikacjaAbc([
+    poz({ id: "rowno-osiemdziesiat", quantity: 1, unitPrice: 80 }),
+    poz({ id: "reszta", quantity: 1, unitPrice: 20 }),
+  ]);
+  assert.equal(wynik[0].cumPct, 80);
+  assert.equal(wynik[0].klasa, "A");
+});
+
+test("ABC: PRÓG KLASY B TO DOKŁADNIE 95 % — przypięty osobno", () => {
+  // Udział narastający drugiej pozycji wypada na 96 %, czyli MIĘDZY 95 a 99. Realna reguła daje C;
+  // przesunięcie progu B na 99 dałoby B — i test to zauważy.
+  const wynik = klasyfikacjaAbc([
+    poz({ id: "polowa", quantity: 1, unitPrice: 50 }),
+    poz({ id: "prawie-reszta", quantity: 1, unitPrice: 46 }),
+    poz({ id: "ogon", quantity: 1, unitPrice: 4 }),
+  ]);
+  assert.equal(wynik[0].klasa, "A");
+  assert.equal(wynik[1].cumPct, 96);
+  assert.equal(wynik[1].klasa, "C", "96 % udziału narastającego to już nie klasa B");
+});
+
+test("ABC: próg klasy B jest WŁĄCZAJĄCY — dokładnie 95 % to jeszcze B", () => {
+  const wynik = klasyfikacjaAbc([
+    poz({ id: "a", quantity: 1, unitPrice: 50 }),
+    poz({ id: "b", quantity: 1, unitPrice: 45 }),
+    poz({ id: "c", quantity: 1, unitPrice: 5 }),
+  ]);
+  assert.equal(wynik[1].cumPct, 95);
+  assert.equal(wynik[1].klasa, "B");
+});
+
 test("ABC: pozycje bezwartościowe wypadają, żeby nie przesuwać progów", () => {
   const wynik = klasyfikacjaAbc([
     poz({ id: "ma-wartosc", quantity: 2, unitPrice: 100 }),

@@ -46,9 +46,21 @@ test("DROBNA KOREKTA TEMPERATURY NIE ZMIENIA ODCISKU — po to jest zaokrągleni
   // Gdyby odcisk liczył się z surowych wartości, każda aktualizacja modelu o dziesiątą stopnia
   // unieważniałaby zapamiętaną treść i kazała ją wygenerować od nowa. To niweczyłoby oszczędność,
   // dla której pamięć treści (038) w ogóle powstała.
-  const a = roundedBrief(pora(dzien({ tMax: 20.0 }), [godzina(15.0)]));
-  const b = roundedBrief(pora(dzien({ tMax: 20.3 }), [godzina(15.2)]));
+  //
+  // Wszystkie trzy temperatury są UŁAMKOWE celowo: przy fiksturze z liczbami całkowitymi
+  // zaokrąglenie nic nie zmienia, więc test przechodziłby także po usunięciu `Math.round`
+  // z któregoś pola i nie pilnowałby niczego. Wykrył to test mutacyjny w `/verify`.
+  const a = roundedBrief(pora(dzien({ tMin: 9.1, tMax: 20.0 }), [godzina(15.0)]));
+  const b = roundedBrief(pora(dzien({ tMin: 9.4, tMax: 20.3 }), [godzina(15.2)]));
   assert.equal(a, b);
+  assert.equal(a, "1|9|20|0#1|15|0", "odcisk zawiera zaokrąglone liczby całkowite");
+});
+
+test("zaokrąglane jest KAŻDE pole z osobna — tMin, tMax i temperatura godzinowa", () => {
+  // Trzy osobne wywołania `Math.round`; usunięcie któregokolwiek jednego musi być widoczne.
+  assert.equal(roundedBrief(pora(dzien({ tMin: 9.6, tMax: 20 }), [godzina(15)])), "1|10|20|0#1|15|0");
+  assert.equal(roundedBrief(pora(dzien({ tMin: 10, tMax: 19.6 }), [godzina(15)])), "1|10|20|0#1|15|0");
+  assert.equal(roundedBrief(pora(dzien({ tMin: 10, tMax: 20 }), [godzina(14.6)])), "1|10|20|0#1|15|0");
 });
 
 test("REALNA ZMIANA POGODY ZMIENIA ODCISK — próg musi działać w drugą stronę", () => {

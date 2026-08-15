@@ -36,14 +36,33 @@ test("TERMIN PO DACIE KOŃCA KOŃCZY SERIĘ — to jest właściwa treść tej r
   assert.equal(next, null);
 });
 
-test("termin dokładnie w dacie końca jeszcze się liczy", () => {
-  // Brzeg włączający: `>` a nie `>=`. Ostatnie zaplanowane podanie leku ma się odbyć.
+test("BRZEG WŁĄCZAJĄCY: termin RÓWNY dacie końca co do milisekundy jeszcze się liczy", () => {
+  // Fikstura musi trafić DOKŁADNIE w brzeg, inaczej nie rozróżnia `>` od `>=`. Baza to
+  // 2026-05-10 10:00Z, nawrót dzienny co 1 dzień, więc termin wypada 2026-05-11 10:00Z —
+  // i taką samą wartość dostaje `endDate`.
+  //
+  // Wcześniejsza wersja tego testu dawała `endDate` na 23:59 i przechodziła także po zamianie
+  // `>` na `>=`, czyli nie sprawdzała tego, co miała. Wykrył to test mutacyjny w `/verify`.
+  const base = dzien("2026-05-10");
+  const next = nextDueFrom(base, {
+    type: "DAILY",
+    interval: 1,
+    endDate: "2026-05-11T10:00:00.000Z",
+  });
+  assert.equal(
+    next?.toISOString(),
+    "2026-05-11T10:00:00.000Z",
+    "ostatnie zaplanowane podanie ma się odbyć — brzeg jest włączający"
+  );
+});
+
+test("brzeg wyłączający z drugiej strony: milisekunda za datą końca kończy serię", () => {
   const next = nextDueFrom(dzien("2026-05-10"), {
     type: "DAILY",
     interval: 1,
-    endDate: "2026-05-11T23:59:59.000Z",
+    endDate: "2026-05-11T09:59:59.999Z",
   });
-  assert.equal(next?.toISOString().slice(0, 10), "2026-05-11");
+  assert.equal(next, null);
 });
 
 test("data końca w przyszłości nie przeszkadza", () => {
