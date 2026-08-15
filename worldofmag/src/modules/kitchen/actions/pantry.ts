@@ -7,6 +7,7 @@ import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
 import type { PantryItem, Item } from "@prisma/client";
+import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
 
 export type PantryItemWithProduct = PantryItem & {
   product: {
@@ -198,7 +199,9 @@ export async function bulkSetPantryQuantities(
   updates: Array<{ id: string; quantity: number | null }>
 ): Promise<void> {
   const user = await requireAuth();
+  const przestrzen = await workspaceIdDlaZdarzenia(user.id);
   await prisma.$transaction(async (tx) => {
+    let zmienione = 0;
     for (const u of updates) {
       const item = await tx.pantryItem.findUnique({
         where: { id: u.id },
@@ -214,6 +217,19 @@ export async function bulkSetPantryQuantities(
       await tx.pantryItem.update({
         where: { id: u.id },
         data: { quantity: u.quantity },
+      });
+      zmienione += 1;
+    }
+    // 070 (zadanie 21): JEDNO zdarzenie na spis, nie jedno na pozycję. Spis stu pozycji to dla
+    // użytkownika JEDNA czynność; sto zdarzeń zamieniłoby się u odbiorcy (zadanie 25) w lawinę
+    // powiadomień. Pilnuje tego kontrola 5 bramki `check:events` (deklaracja `ladunek: "zbiorczy"`).
+    if (przestrzen && zmienione > 0) {
+      await emitDomainEvent(tx, {
+        workspaceId: przestrzen,
+        module: "kitchen",
+        type: "kuchnia.spizarnia.spisana",
+        actorId: user.id,
+        payload: { pozycji: zmienione },
       });
     }
   });

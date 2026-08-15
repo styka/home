@@ -6,6 +6,7 @@ import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync, own
 import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
+import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
 import {
   wartoscPozycji,
   liczbaPonizejMinimum,
@@ -212,6 +213,7 @@ export async function adjustStorageQuantity(
   await assertStorageItemAccess(id, user.id);
   if (!Number.isFinite(delta) || delta === 0) throw new Error("Nieprawidłowa zmiana ilości");
 
+  const przestrzen = await workspaceIdDlaZdarzenia(user.id);
   const updated = await prisma.$transaction(async (tx) => {
     const existing = await tx.storageItem.findUnique({ where: { id }, select: { quantity: true } });
     if (!existing) throw new Error("Pozycja nie istnieje");
@@ -225,6 +227,17 @@ export async function adjustStorageQuantity(
         note: note?.trim() || null,
       },
     });
+    // 070 (zadanie 21): zdarzenie w TEJ SAMEJ transakcji co zmiana stanu i wpis ruchu.
+    // Przyszły odbiorca (zadanie 25): uzupełnianie zapasów do Zakupów przy stanie poniżej minimum.
+    if (przestrzen) {
+      await emitDomainEvent(tx, {
+        workspaceId: przestrzen,
+        module: "magazynowanie",
+        type: "magazynowanie.stan.zmieniony",
+        actorId: user.id,
+        payload: { itemId: id, delta, stanPo: next, powod: reason ?? null },
+      });
+    }
     return item;
   });
 

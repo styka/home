@@ -5,6 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { bookAutoExpense } from "@/modules/portfel/contract";
 import type { ShoppingList, ShoppingListWithItems } from "@/types";
+import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
 
 export interface ListSummary {
   id: string;
@@ -174,7 +175,24 @@ export async function completeShopping(id: string, opts?: { bookToPortfel?: bool
     .filter((it) => it.status === "DONE" && it.price != null)
     .reduce((s, it) => s + (it.price as number) * (it.quantity && it.quantity > 0 ? it.quantity : 1), 0);
 
-  await prisma.shoppingList.update({ where: { id }, data: { archived: true, archivedAt: new Date() } });
+  // 070 (zadanie 21): archiwizacja listy i ZDARZENIE w jednej transakcji (rozdz. 9.4.2).
+  // Zakres transakcji celowo obejmuje TYLKO te dwie operacje. `bookAutoExpense` niżej zostaje
+  // poza nią: wciągnięcie go zmieniłoby zachowanie przy awarii księgowania (dziś zakupy zostają
+  // zakończone), a to zmiana widoczna dla użytkownika. Zadanie 25 i tak przepnie księgowanie
+  // na subskrypcję tego zdarzenia i wtedy wywołanie stąd zniknie.
+  const przestrzen = await workspaceIdDlaZdarzenia(user.id);
+  await prisma.$transaction(async (tx) => {
+    await tx.shoppingList.update({ where: { id }, data: { archived: true, archivedAt: new Date() } });
+    if (przestrzen) {
+      await emitDomainEvent(tx, {
+        workspaceId: przestrzen,
+        module: "shopping",
+        type: "shopping.list.completed",
+        actorId: user.id,
+        payload: { listId: id, nazwa: list.name, suma: total, pozycji: list.items.length },
+      });
+    }
+  });
 
   let booked = false;
   if (opts?.bookToPortfel && total > 0) {
