@@ -4,6 +4,53 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-15 — `tsc -p tsconfig.test.json` NIE jest tym samym sprawdzeniem co `next build`
+**Problem:** Nowy plik platformy iterował po zbiorze (`for (const s of kanaly.get(n) ?? [])`).
+`npx tsc --noEmit -p tsconfig.test.json` przechodził czysto, testy jednostkowe zielone, wszystkie
+bramki zielone — a `next build` **padł**: *„Type 'never[] | Set<Sluchacz>' can only be iterated
+through when using the '--downlevelIteration' flag or with a '--target' of 'es2015' or higher"*.
+**Rozwiązanie:** Przyczyna jest w konfiguracji: `tsconfig.test.json` ustawia `target: ES2022` (bo
+testy chodzą w Node), a **główny `tsconfig.json` nie ustawia `target` w ogóle** — więc przy
+sprawdzaniu typów przez `next build` obowiązuje domyślny ES5 i iteracja po `Set`/`Map` jest błędem.
+Poprawka: `forEach` zamiast `for…of` po zbiorach (zgodnie z tym, co i tak robi reszta repo).
+**Lekcja:** W repo są **dwie konfiguracje TypeScriptu o różnej surowości**, a bramka
+`check:test-types` sprawdza tę **łagodniejszą pod tym względem**. Przed uznaniem zmiany w kodzie
+aplikacji za gotową trzeba odpalić `npx tsc --noEmit` **bez `-p`** (główna konfiguracja) albo pełny
+`next build` — samo `check:test-types` na zielono nic tu nie dowodzi. Dotyczy to zwłaszcza iteracji
+po `Set`/`Map`, generatorów i `for…of` po `NodeList`.
+I druga rzecz, proceduralna: **`tail -3` na logu builda potrafi ukryć porażkę** — Next wypisuje
+tabelę tras i podsumowanie także wtedy, gdy build padł wcześniej. Wynik czytaj z **kodu wyjścia**,
+nie z ostatnich linii.
+
+## 2026-08-15 — Zanim zbudujesz element z diagramu, zapytaj PO CO on tam jest
+**Problem:** Łańcuch czasu rzeczywistego z dokumentu docelowego przewidywał w środku
+`LISTEN/NOTIFY` albo Redis Pub/Sub. Odruch: skoro jest na diagramie, trzeba to zbudować — a oba
+warianty wymagają surowego połączenia poza Prismą, czyli **nowej zależności** w projekcie, który
+świadomie ich unika.
+**Rozwiązanie:** Pytanie „po co ten element tam stoi" dało jedną odpowiedź: **żeby worker
+z instancji A dosięgnął karty podłączonej do instancji B**. Omnia chodzi na jednej instancji, więc
+ten powód jeszcze nie istnieje. Zamiast zależności — szyna rozgłoszeniowa w procesie, ograniczenie
+**nazwane wprost** w kodzie i w `docs/devops/`, oraz wskazane jedno miejsce podmiany, gdy pojawi się
+druga instancja. Reszta łańcucha (worker, trasa, klient) jest wtedy nietknięta.
+**Lekcja:** Diagram architektury pokazuje **rozwiązanie**, nie **problem**. Element bywa tam
+z powodu, którego u nas jeszcze nie ma — i wtedy zbudowanie go jest kosztem bez zysku. Zanim
+dołożysz zależność „bo tak jest w projekcie docelowym", nazwij **problem**, który ona rozwiązuje,
+i sprawdź, czy ten problem u ciebie występuje. Jeśli nie: zbuduj wariant prostszy, **nazwij
+ograniczenie** (nie przemilcz!) i wskaż miejsce podmiany.
+
+## 2026-08-15 — Odpytywanie awaryjne nie jest długiem, tylko siatką
+**Problem:** Zadanie brzmiało „usuń `setInterval`". Kuszące było usunąć je całkiem — skoro jest
+strumień, odpytywanie to przecież relikt.
+**Rozwiązanie:** Zostało, ale zwolniło z 45 sekund do **5 minut** — i jest opisane jako rozwiązanie
+docelowe, nie tymczasowe. Pokrywa **trzy różne awarie naraz**: brak `EventSource` (stara
+przeglądarka, proxy), zerwany strumień, którego nie udało się wznowić, oraz **wiele instancji
+serwera**, gdzie szyna w procesie z definicji nie dosięgnie cudzej karty.
+**Lekcja:** Gdy zastępujesz mechanizm zgrubny (częste odpytywanie) precyzyjnym (wypychanie),
+zachowaj ten pierwszy **z rozrzedzoną częstotliwością** jako siatkę. Koszt spada 6-krotnie, a układ
+zyskuje własność wartą więcej niż oszczędność: **awaria nowego mechanizmu przestaje być awarią
+aplikacji**. Warto to zapisać wprost w komentarzu, bo inaczej ktoś potraktuje pozostawiony interwał
+jako niedokończoną robotę i usunie go „porządkując".
+
 ## 2026-08-15 — Bramka czytająca plik czyta też KOMENTARZE o kodzie
 **Problem:** Bramka miała sprawdzać, że subskrybent buduje klucz idempotencji z `event.id` — bo tylko
 ta wartość jest stabilna między ponowieniami. Sonda negatywna (podmiana klucza na `Date.now()`)
