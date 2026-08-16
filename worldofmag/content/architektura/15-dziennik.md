@@ -74,11 +74,12 @@ a odwrotna kolejność budowałaby czytelnik na źródle, które może kłamać.
 **071 dowiozło zadanie 22:** zdarzenia **docierają** do subskrybentów, a idempotencja jest
 wymuszona bramką. Outbox ma czytelnika.
 
-**Następny krok: zadanie 23** — kanał SSE `/api/events` z kanałami przestrzeń/zasób/użytkownik.
-Tam też zapada decyzja o `LISTEN/NOTIFY`, świadomie odłożona w 071: dopiero kanał czasu
-rzeczywistego stawia realny wymóg opóźnienia. Potem 24 (koniec odpytywania w sygnalizatorze
-świeżości) i 25 (subskrypcje międzymodułowe — w tym przepięcie księgowania wydatku z wywołania na
-zdarzenie, czyli domknięcie problemu, dla którego cała Faza 4 powstała).
+**072 dowiozło zadania 23 i 24** — łańcuch z rozdz. 11.1.1 jest kompletny od mutacji do
+przeglądarki, a odpytywanie co 45 s zniknęło.
+
+**Następny krok: zadanie 25** — subskrypcje międzymodułowe, w tym **przepięcie księgowania wydatku
+z wywołania synchronicznego na subskrypcję zdarzenia**. Dopiero to domknie problem, dla którego cała
+Faza 4 powstała: *awaria Portfela nie może zabierać zakupów*. Po nim Faza 4 jest zamknięta.
 
 ---
 
@@ -132,8 +133,8 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 |---|---------|--------|-------|
 | 21 | `DomainEvent` + zapis w tej samej transakcji | ✅ | **070.** Model + migracja 0232 + emisja, której **nie da się użyć poza transakcją**: `Prisma.TransactionClient & { $transaction?: never }` odrzuca pełnego klienta (samo `TransactionClient` go **przepuszczało** — sprawdzone sondą w obie strony). Trzej producenci, każdy z nazwanym przyszłym odbiorcą. Bramka `check:events`, pięć kontroli, osiem sond; piąta powstała dlatego, że test mutacyjny wykazał, iż testu odwzorowującego kształt pętli nie czerwieni przeniesienie emisji do pętli w prawdziwym kodzie |
 | 22 | Publikacja przez worker | ✅ | **071.** Worker czyta niedostarczone (`FOR UPDATE SKIP LOCKED`), woła subskrybentów z deklaracji, oznacza `deliveredAt` **po sukcesie** — bo lepiej dwa razy niż zero razy. Idempotencja **wymuszona bramką** (`check:subscribers`), nie akapitem: `klucz-unikalny` musi mieć `upsert` i klucz z `event.id`. Pierwszy subskrybent: zakupy zakończone → powiadomienie dla pozostałych członków przestrzeni. **Bez `LISTEN/NOTIFY`** — decyzja przy zadaniu 23, gdzie jest realny wymóg opóźnienia |
-| 23 | SSE `/api/events` | ⬜ | |
-| 24 | Usunięcie `setInterval` z `DataFreshness` | ⬜ | Interwał 45 s **nadal działa**; 045 tylko go uwidocznił |
+| 23 | SSE `/api/events` | ✅ | **072.** Jedno połączenie na kartę, kanały `user:` i `ws:` liczone **na serwerze z sesji** (przyjęcie ich z żądania byłoby podsłuchem — pilnuje bramka). Ładunek celowo ubogi: klient się odświeża, nie renderuje z sygnału. **Bez `LISTEN/NOTIFY`** — szyna w procesie, bo oba warianty z rozdz. 11.1.1 istnieją wyłącznie dla wielu instancji; ograniczenie nazwane w kodzie i w `docs/devops/` |
+| 24 | Usunięcie `setInterval` z `DataFreshness` | ✅ | **072.** 45 s → strumień; odpytywanie **awaryjne co 5 min zostaje na stałe**, bo pokrywa brak `EventSource`, zerwany strumień i wiele instancji. Awaria kanału **nie jest awarią aplikacji** — zmiany dochodzą wolniej. Bramka nie pozwala wrócić do krótkiego interwału |
 | 25 | Subskrypcje międzymodułowe | ⬜ | |
 
 ### Faza 5 — Skala i koszt
@@ -1820,3 +1821,59 @@ powstała: *awaria Portfela nie może zabierać zakupów*.
 
 **Bramki:** build **exit 0**, `test:unit` **889/889** (było 884), nowa `check:subscribers`
 (cztery kontrole, pięć sond), zapadki 263 i 34 bez ruchu, liczniki **160 / 553 / 35 / 35** bez ruchu.
+
+### 072 — Koniec odpytywania: kanał czasu rzeczywistego; zadania 23 i 24 · 2026-08-15
+
+**Dwa zadania w jednym przebiegu, bo osobno nie mają sensu.** Kanał bez konsumenta byłby tym, czego
+zabrania C-35 — ogłoszeniem rozwiązania, którego nikt nie używa. A `DataFreshness` bez kanału nie ma
+na co zamienić odpytywania. 23 dostarcza strumień, 24 go zużywa.
+
+**Koszt, który znika.** Diagnoza 5.2: każda otwarta karta wołała `router.refresh()` co 45 sekund —
+czyli **pełne przeliczenie komponentów serwerowych**, zapytania do bazy, render, transfer.
+Trzy karty to ~240 przeliczeń na godzinę, z których prawie wszystkie zwracały to samo. Wartość była
+przy tym odwrotna do częstotliwości: przy interwale 45 s użytkownik i tak czekał **średnio 22
+sekundy** na cudzą zmianę.
+
+Teraz: jedno trwałe połączenie na kartę, sygnał wtedy, gdy naprawdę coś się wydarzyło.
+
+**Najciekawsza decyzja dotyczy tego, czego NIE zbudowano.** Łańcuch z rozdz. 11.1.1 przewiduje
+w środku `LISTEN/NOTIFY` albo Redis Pub/Sub. Warto zapytać, **po co one tam są** — i odpowiedź jest
+jedna: żeby worker z instancji A dosięgnął karty podłączonej do instancji B. Omnia chodzi na
+**jednej** instancji, a oba warianty wymagają surowego połączenia poza Prismą, czyli nowej
+zależności.
+
+Wybrano więc **szynę w procesie** i **nazwano ograniczenie wprost** — w kodzie, w manifeście
+i w `docs/devops/kanal-czasu-rzeczywistego.md`. Zamiana na `LISTEN/NOTIFY` to później podmiana
+dwóch funkcji w jednym pliku; reszta łańcucha (worker, trasa, klient) zostaje nietknięta.
+
+**Odpytywanie nie zniknęło — zwolniło z 45 sekund do 5 minut i zostaje NA STAŁE.** To nie jest
+niedokończona robota, tylko siatka pokrywająca trzy rzeczy naraz: brak `EventSource`, zerwany
+strumień i **wiele instancji**. Konsekwencja jest warta zapamiętania: **awaria kanału nie jest
+awarią aplikacji** — zmiany po prostu dochodzą wolniej.
+
+**Dwa niezmienniki bezpieczeństwa dostały bramkę, bo oba są ciche.** Kanały liczy się **na serwerze
+z sesji**; gdyby trasa przyjmowała identyfikator przestrzeni od klienta, wpisanie cudzego byłoby
+podsłuchem — i nic by tego nie zdradziło. Drugi: `subskrybuj` **musi zwracać odsubskrybowanie**,
+inaczej każda zamknięta karta zostawia słuchacza i po dobie serwer rozgłasza do martwych połączeń.
+Trzecia kontrola pilnuje, żeby nikt „na chwilę" nie wrócił do 45 sekund.
+
+**Ładunek sygnału jest celowo ubogi** (`type` + `workspaceId`). Klient ma się **odświeżyć**, a nie
+renderować z tego, co przyszło — dane zawsze pobiera z serwera. To zamyka drogę do wycieku treści
+cudzego zasobu kanałem, zanim taka droga w ogóle powstanie.
+
+**Bramka:** cztery kontrole, cztery sondy. **Testy szyny:** siedem, w tym „sygnał nie trafia do
+cudzego kanału" i „odsubskrybowanie realnie usuwa słuchacza". Przebieg mutacyjny: **4 mutacje,
+4 złapane** (rozgłaszanie do wszystkich kanałów, martwe odsubskrybowanie, wielokrotny sygnał do
+jednej karty, błąd słuchacza przerywający rozgłaszanie).
+
+**Czego tu nie ma, świadomie:** kanał **per zasób** (`res:<type>:<id>` z rozdz. 11.1.2). Wymaga,
+żeby klient zgłaszał, co ma otwarte, a pierwszy konsument tego nie potrzebuje — wystarcza mu „coś
+w mojej przestrzeni się zmieniło". Dokładamy przy pierwszym konsumencie, który rozróżnia zasoby
+(obecność, wskaźniki edycji — rozdz. 8.8).
+
+**Zostaje zadanie 25** — subskrypcje międzymodułowe, w tym **przepięcie księgowania wydatku
+z wywołania na zdarzenie**. To ono domknie problem, dla którego cała Faza 4 powstała: *awaria
+Portfela nie może zabierać zakupów*.
+
+**Bramki:** build **exit 0**, `test:unit` **896/896** (było 889), nowa `check:realtime`,
+zapadki 263 i 34 bez ruchu, liczniki **160 / 553 / 35 / 35** bez ruchu.
