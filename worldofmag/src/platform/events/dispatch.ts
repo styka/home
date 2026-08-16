@@ -10,6 +10,7 @@
 import { reportServerError } from "@/lib/observability/report";
 import type { DomainEventRecord, EventSubscriber } from "./subscriber";
 import { przetworzPartie } from "./queue";
+import { rozglos } from "./bus";
 
 export type SubscriberResolver = (event: DomainEventRecord) => Promise<EventSubscriber[]>;
 
@@ -67,7 +68,16 @@ export async function obiegZdarzen(): Promise<WynikObiegu> {
         }
       }
 
-      if (bezBledu) dostarczone.push(zdarzenie.id);
+      if (bezBledu) {
+        dostarczone.push(zdarzenie.id);
+        // 072 (zadanie 23): sygnał do otwartych kart — PO sukcesie, z tego samego powodu co
+        // `deliveredAt`. Rozgłoszenie przed wykonaniem reakcji kazałoby kartom odświeżyć się na
+        // stan, którego jeszcze nie ma.
+        rozglos([`ws:${zdarzenie.workspaceId}`], {
+          type: zdarzenie.type,
+          workspaceId: zdarzenie.workspaceId,
+        });
+      }
     }
     return { dostarczone };
   });
