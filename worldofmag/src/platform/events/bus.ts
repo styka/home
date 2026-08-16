@@ -49,28 +49,34 @@ export function subskrybuj(nazwy: string[], sluchacz: Sluchacz): () => void {
   };
 }
 
-/** Rozgłasza sygnał na podane kanały. Błąd jednego słuchacza nie blokuje pozostałych. */
+/**
+ * Rozgłasza sygnał na podane kanały. Błąd jednego słuchacza nie blokuje pozostałych.
+ *
+ * **Uwaga na `forEach` zamiast `for…of` po zbiorze.** Główny `tsconfig.json` nie ustawia `target`,
+ * więc przy sprawdzaniu typów przez `next build` iteracja po `Set` wymagałaby `downlevelIteration`.
+ * `tsconfig.test.json` ma `ES2022` i tego nie wyłapie — build owszem.
+ */
 export function rozglos(nazwy: string[], sygnal: SygnalKanalu): void {
   const juz = new Set<Sluchacz>();
-  for (const n of nazwy) {
-    for (const s of kanaly.get(n) ?? []) {
+  nazwy.forEach((n) => {
+    kanaly.get(n)?.forEach((s) => {
       // Karta bywa zapisana na kilku kanałach naraz (własnym i przestrzeni) — sygnał ma do niej
       // dotrzeć RAZ, inaczej `router.refresh()` poleciałby dwa razy pod rząd.
-      if (juz.has(s)) continue;
+      if (juz.has(s)) return;
       juz.add(s);
       try {
         s(sygnal);
       } catch {
         // Zerwane połączenie rzuca przy zapisie. To normalny koniec życia karty, nie awaria.
       }
-    }
-  }
+    });
+  });
 }
 
 /** Liczba aktywnych słuchaczy — do diagnostyki i testów. */
 export function ileSluchaczy(): number {
   const wszyscy = new Set<Sluchacz>();
-  for (const zbior of kanaly.values()) for (const s of zbior) wszyscy.add(s);
+  kanaly.forEach((zbior) => zbior.forEach((s) => wszyscy.add(s)));
   return wszyscy.size;
 }
 
