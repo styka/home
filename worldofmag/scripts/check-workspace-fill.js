@@ -28,9 +28,16 @@ const migrationsDir = path.join(root, "prisma/migrations");
 const manifestPath = path.join(root, "src/platform/workspaces/fill-coverage.json");
 
 /**
- * Modele objęte etapem 1 — te, które dostały nullowalny `workspaceId`. Filtr po `String?` jest
- * istotny: `WorkspaceMember` i `ResourceGrant` też mają kolumnę o tej nazwie, ale WYMAGANĄ, bo
- * u nich przestrzeń jest częścią tożsamości rekordu, a nie wyprowadzoną własnością.
+ * Modele z LUSTRZANYM `workspaceId` — tym, który wypełnia wyzwalacz.
+ *
+ * 075: filtrem był kiedyś `String?`, bo etap 1 dokładał kolumnę nullowalną. Etap 4 zaostrzył
+ * 40 z nich do `String`, więc filtr po znaku zapytania przestał widzieć niemal cały zbiór
+ * i bramka zaczęła zgłaszać „wyzwalacz na tabeli, której nie ma wśród modeli".
+ *
+ * Rozróżnienie, o które naprawdę chodzi, nigdy nie dotyczyło nullowalności: `WorkspaceMember`,
+ * `ResourceGrant` i `DomainEvent` też mają kolumnę o tej nazwie, ale u nich przestrzeń jest
+ * CZĘŚCIĄ TOŻSAMOŚCI rekordu, a nie wyprowadzoną własnością — i dlatego nie mają wyzwalacza.
+ * Poznajemy je po tym, że nie mają `ownerId`/`ownerTeamId`: nie ma z czego lustrzać.
  */
 function objeteTabele(schemat) {
   const out = new Map(); // tabela → model
@@ -38,7 +45,8 @@ function objeteTabele(schemat) {
   let m;
   while ((m = re.exec(schemat))) {
     const [, model, cialo] = m;
-    if (!/^\s*workspaceId\s+String\?/m.test(cialo)) continue;
+    if (!/^\s*workspaceId\s+String\??/m.test(cialo)) continue;
+    if (!/^\s*owner(Id|TeamId)\s+String/m.test(cialo)) continue;
     const map = cialo.match(/@@map\("([^"]+)"\)/);
     // Nazwa TABELI, nie modelu: `ProjectGroup` jest zmapowany na `TaskView`. Na tej różnicy padł
     // backfill w 0227 i tu byłaby ona równie niewidoczna.

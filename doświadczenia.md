@@ -4,6 +4,65 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-17 — `NOT NULL` usunął siatkę bezpieczeństwa, o której istnieniu nikt nie pamiętał
+**Problem:** Zaostrzenie `workspaceId` do NOT NULL miało być domknięciem porządku. Okazało się
+zmianą zachowania w miejscu zupełnie niespodziewanym: w `rolaZWlasnosci` reguła „właściciel dostaje
+`manager`" stała **pod** gałęzią liczącą rolę z przestrzeni, więc docierał do niej wyłącznie zasób
+BEZ przestrzeni. Dopóki istniały sieroty, reguła po cichu ratowała każdy przypadek, w którym
+przestrzeni zasobu nie było w kontekście dostępu użytkownika (np. brak wiersza `WorkspaceMember`).
+Sieroty zniknęły — i razem z nimi ratunek: **właściciel przestawał być właścicielem**. Wyszło to
+w teście kosztu dostępu, nie w żadnym teście uprawnień.
+**Rozwiązanie:** Warunek własności przeniesiony NAD gałąź przestrzeni. Kontrola, że to nie
+poszerzenie dostępu: tabela prawdy (20 komórek) bez jednej zmiany.
+**Lekcja:** Kod nieosiągalny w typowym przepływie potrafi być **jedyną obroną w nietypowym**.
+Usuwając stan (tu: „rekord bez przestrzeni"), nie pytaj tylko „co przestanie działać", ale też
+**„co przestanie ratować"** — gałąź `else`, do której docierał wyłącznie usuwany stan, jest właśnie
+takim kandydatem. Objaw bywa mylący: awaria pokazała się jako test WYDAJNOŚCI, bo to on jako jedyny
+budował fixture bez pełnego lustra przestrzeni.
+
+## 2026-08-17 — Kryterium wyjątku zbudowane z przykładów, a nie z reguły, jest za wąskie
+**Problem:** Listę tabel, w których `workspaceId` zostaje nullowalne, zbudowałem z tego, co
+zobaczyłem w danych: cztery tabele SŁOWNIKOWE z rekordami systemowymi. Reguła brzmiała „tabela
+trzyma słownik". `Job` słownikiem nie jest, więc trafił do grupy zaostrzanej — i dziewięć testów
+kolejki padło na `Null constraint violation`, bo zadanie systemowe nie ma właściciela, a więc i
+przestrzeni.
+**Rozwiązanie:** Kryterium przeformułowane z przykładu na własność: **„wiersz może nie mieć
+właściciela"**. To pokrywa i słowniki, i kolejkę, i cokolwiek jeszcze przyjdzie.
+**Lekcja:** Gdy piszesz listę wyjątków, nazwij **regułę**, a nie zbiór, który akurat widzisz.
+Sprawdzian jest prosty: czy z samego kryterium potrafię rozstrzygnąć NOWĄ tabelę, nie zaglądając do
+danych? Jeśli nie — kryterium jest opisem próbki, nie regułą. Druga połowa tej samej lekcji:
+lista wyjątków ma się opierać na tym, co tabela **MOŻE** trzymać, a nie co trzyma dziś. `NoteGroup`
+i `Tag` mają zero rekordów systemowych, ale model je dopuszcza — pierwszy taki rekord założony
+przez administratora wywróciłby zapis na produkcji.
+
+## 2026-08-17 — Domknięcie luki w wyzwalaczu zamieniło łagodną nieobecność w twardy błąd
+**Problem:** Wyzwalacz wypełniający `workspaceId` tylko ODCZYTYWAŁ lustro; brak przestrzeni zostawiał
+NULL. Po `NOT NULL` znaczyło to, że konto bez przestrzeni osobistej nie może utworzyć **niczego**,
+więc nauczyłem wyzwalacz tworzyć brakującą przestrzeń. Poprawka wywróciła kolejkę zadań: `ownerId`
+nie wszędzie jest kluczem obcym (`Job` trzyma zwykły tekst), więc wyzwalacz próbował wstawić
+przestrzeń dla nieistniejącego konta i wywalał **cały zapis** na `Foreign key constraint violated`.
+Przed poprawką ten sam przypadek był nieszkodliwy.
+**Rozwiązanie:** Warunek `EXISTS (SELECT 1 FROM "User" …)` przed wstawieniem. Reguła: wyzwalacz
+**leczy brak przestrzeni realnego właściciela, nie wymyśla właścicieli**.
+**Lekcja:** Zamieniając „po cichu nic nie rób" na „napraw to", sprawdź, na ilu **różnych** ścieżkach
+ta cichość była tolerowana. Kod obsługujący brak danych bywa jednocześnie kodem obsługującym dane
+BŁĘDNE — i naprawa pierwszego zamienia drugie z drobiazgu w awarię zapisu. Szczególnie w wyzwalaczu,
+bo tam koszt pomyłki płaci każdy zapis w tabeli, a nie tylko ścieżka, którą testowałeś.
+
+## 2026-08-17 — Dwie bramki przestały widzieć swój przedmiot, bo filtrowały po `String?`
+**Problem:** `check-workspace-fill.js` i test kompletności backfillu wybierały modele wyrażeniem
+`workspaceId\s+String\?`. Etap 4 zdjął znak zapytania z 40 kolumn i obie kontrole zaczęły mierzyć
+co innego niż miały: bramka zgłosiła „wyzwalacz na tabeli, której nie ma wśród modeli", test —
+odwrotność tego samego. Rozluźnienie wzorca do `String\??` też było błędne: wpuściło trzy tabele
+PLATFORMOWE (`DomainEvent`, `ResourceGrant`, `WorkspaceMember`), które mają `workspaceId` od
+urodzenia jako prawdziwy klucz obcy.
+**Rozwiązanie:** Filtr po tym, o co naprawdę chodziło: kolumna LUSTRZANA istnieje tam, gdzie jest
+co lustrzać, czyli obok `ownerId`/`ownerTeamId`.
+**Lekcja:** Bramka filtrująca po **składni** (`String?`) zamiast po **znaczeniu** psuje się przy
+pierwszej zmianie tej składni — i psuje się cicho, bo nadal coś mierzy. Pisząc filtr, zapytaj, jaka
+WŁASNOŚCIWOŚĆ odróżnia zbiór, który chcesz objąć; jeśli odpowiedzią jest cecha zapisu, a nie cecha
+modelu, filtr jest tymczasowy, nawet jeśli nikt tego nie napisał.
+
 ## 2026-08-17 — „Zniknęła kolumna ze schematu" znaczyło: kontener się cofnął, a nie że kod jest zły
 **Problem:** Po wznowieniu sesji `grep -c workspaceId prisma/schema.prisma` zwrócił **0**, choć baza
 miała tę kolumnę w 45 tabelach, a bramka rozjazdu schematu świeciła na zielono. Wyglądało to na

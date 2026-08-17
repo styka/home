@@ -65,12 +65,21 @@ export function ownedWhere(userId: string, teamIds: string[]) {
 export async function ownedOrAsync(userId: string): Promise<Record<string, unknown>[]> {
   const { getAccessContext } = await import("@/platform/sharing/cache");
   const ctx = await getAccessContext(userId);
+  // 075 (etap 4): GAŁĘZIE PRZEJŚCIOWE ZNIKŁY, dokładnie jak zapowiadał akapit wyżej. Obie
+  // opierały się na `workspaceId: null`, a etap 4 zaostrzył tę kolumnę do NOT NULL na 41 tabelach
+  // — warunek dopasowywał więc pusty zbiór. Nie był to jednak martwy kod bez kosztu: dla kolumny
+  // NOT NULL Prisma odrzuca taki filtr w czasie DZIAŁANIA („Argument `workspaceId` is missing"),
+  // więc pozostawienie go wywracało każde zapytanie zakresowe. Typ tego nie złapał, bo gałęzie są
+  // `Record<string, unknown>` — złapały testy zakresu i tabela prawdy.
+  //
+  // Rekordy SYSTEMOWE (cztery tabele słownikowe, w których `workspaceId` jest nadal nullowalne)
+  // nigdy tędy nie chodziły: mają `ownerId IS NULL`, więc nie pasowały nawet do dawnej gałęzi 2.
+  // Ich drogą jest `ownedOrSystemWhere`, nie ta funkcja.
   const gałęzie: Record<string, unknown>[] = [];
   if (ctx.workspaceIds.length > 0) gałęzie.push({ workspaceId: { in: ctx.workspaceIds } });
-  gałęzie.push({ workspaceId: null, ownerId: userId });
-  if (ctx.teamIds.length > 0) {
-    gałęzie.push({ workspaceId: null, ownerTeamId: { in: ctx.teamIds } });
-  }
+  // Zasób bez przestrzeni jest niemożliwy, ale własny zasób POZA moimi przestrzeniami — nie.
+  // Ta gałąź zostaje jako gwarancja, że właściciel nigdy nie traci swojego rekordu.
+  gałęzie.push({ ownerId: userId });
   return gałęzie;
 }
 

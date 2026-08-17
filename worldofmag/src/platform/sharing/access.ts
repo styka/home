@@ -85,6 +85,20 @@ function rolaZWlasnosci(
   // Liczymy to jako podłogę, nie jako wynik: właściciel otwartego zasobu ma nadal `manager`.
   const otwarty = facts.publicRole ?? null;
 
+  // 075 (etap 4): WŁAŚCICIEL ZAWSZE DOSTAJE `manager`, zanim cokolwiek policzymy z przestrzeni.
+  //
+  // Do etapu 4 ta reguła stała niżej i była nieosiągalna dla zasobu z przestrzenią — bo zasób bez
+  // przestrzeni (sierota) był jedyną drogą do tamtej gałęzi. Zaostrzenie `workspaceId` do NOT NULL
+  // sierotę zlikwidowało i tym samym USUNĘŁO SIATKĘ, o której istnieniu nikt nie pamiętał: gdy
+  // przestrzeni zasobu nie ma w kontekście dostępu użytkownika (klasyczny przypadek to brak wiersza
+  // `WorkspaceMember` — pułapka rozpoznana w 056), właściciel przestawał być właścicielem.
+  //
+  // Ujawnił to test kosztu dostępu, w którym właściciel projektu nagle wyszedł bez roli. To nie
+  // jest przypadek testowy — to konto tracące dostęp do własnych danych przez rozjazd w lustrze.
+  // Warunek nie może niczego poszerzyć: `ownerId` to własność osobista, więc odpowiada dokładnie
+  // dawnej regule sprzed przejścia na przestrzenie.
+  if (facts.ownerId && facts.ownerId === userId) return "manager";
+
   if (facts.workspaceId) {
     // Mój zasób — odpowiednik dawnego `ownerId === userId`, tylko wyrażony przestrzenią.
     if (facts.workspaceId === ctx.personalWorkspaceId) return "manager";
@@ -97,9 +111,9 @@ function rolaZWlasnosci(
     return otwarty;
   }
 
-  // Zasób BEZ własnej przestrzeni — stara reguła, bez zmian. Dwa różne powody, dla których się
-  // tu trafia (własność wyprowadzona vs sierota) opisuje `ResourceFacts.workspaceId`.
-  if (facts.ownerId && facts.ownerId === userId) return "manager";
+  // Zasób BEZ własnej przestrzeni — dotyczy czterech tabel słownikowych, w których `workspaceId`
+  // pozostaje nullowalne z rozmysłem (rekord systemowy nie należy do żadnej przestrzeni — 0235).
+  // Własność osobista jest sprawdzona wyżej, więc zostaje tu gałąź zespołowa.
   if (zespolowa && facts.ownerTeamId) {
     if (ctx.adminTeamIds.includes(facts.ownerTeamId)) return najwyzsza(zespolowa.admin, otwarty);
     if (ctx.teamIds.includes(facts.ownerTeamId)) return najwyzsza(zespolowa.member, otwarty);
