@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { sanitizeColor, sanitizeIcon } from "@/platform/favorites/sanitize";
+import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
 import {
   MAX_FAVORITE_VIEWS,
   normalizeFavoriteLabel,
@@ -86,7 +87,7 @@ export async function addFavoriteView(input: {
 
   const created = await prisma.favoriteView.create({
     data: {
-      ownerId: user.id,
+      ...(await wlasnoscOsobistaDoZapisu(user.id)),
       label,
       path,
       icon: sanitizeIcon(input.icon),

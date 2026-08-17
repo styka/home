@@ -14,6 +14,7 @@ import {
 } from "@/lib/habitStats";
 import { createTask } from "@/modules/tasks/contract";
 import { normalizeDays, normalizeGoal, normalizeReminder } from "../domain/harmonogram";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 async function assertHabitAccess(id: string, userId: string): Promise<void> {
   const teamIds = await getUserTeamIds(userId);
@@ -128,8 +129,7 @@ export async function createHabit(data: {
       weeklyGoal: normalizeGoal(data.weeklyGoal),
       reminderTime: normalizeReminder(data.reminderTime),
       sortOrder: (min._min.sortOrder ?? 0) - 1,
-      ownerId: ownerTeamId ? null : user.id,
-      ownerTeamId,
+      ...(await wlasnoscDoZapisu(user.id, ownerTeamId)),
     },
   });
   revalidatePath("/habits");

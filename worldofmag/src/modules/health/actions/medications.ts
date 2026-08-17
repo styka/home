@@ -6,6 +6,7 @@ import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from 
 import { isoDate } from "@/lib/habitStats";
 import { buildDayAgenda } from "@/lib/medicationSchedule";
 import { normTimes, normDays, normFreq } from "../domain/harmonogramLeku";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import type {
   DoseSlot,
   MedicationFreqType,
@@ -117,8 +118,7 @@ export async function createMedicationSchedule(data: MedicationInput): Promise<M
       startDate: safeDate(data.startDate) ?? new Date(),
       endDate: safeDate(data.endDate),
       notes: data.notes?.trim() || null,
-      ownerId: ownerTeamId ? null : user.id,
-      ownerTeamId,
+      ...(await wlasnoscDoZapisu(user.id, ownerTeamId)),
     },
   });
   revalidateMed();

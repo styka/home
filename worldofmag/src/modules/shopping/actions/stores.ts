@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import type { StoreWithGraph } from "@/types";
+import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
 
 export async function getStores(): Promise<StoreWithGraph[]> {
   const user = await requireAuth();
@@ -17,7 +18,7 @@ export async function getStores(): Promise<StoreWithGraph[]> {
 export async function createStore(name: string): Promise<StoreWithGraph> {
   const user = await requireAuth();
   const store = await prisma.store.create({
-    data: { name: name.trim(), ownerId: user.id },
+    data: { name: name.trim(), ...(await wlasnoscOsobistaDoZapisu(user.id)) },
     include: { nodes: true, edges: true },
   });
   revalidatePath("/shopping");

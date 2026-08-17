@@ -21,6 +21,7 @@ import {
 } from "@/platform/ai/sectionMode";
 import { readDefaultSectionModes, resolveSectionModes } from "@/platform/ai/sectionModeResolver";
 import type { AiContentKind } from "@/platform/ai/contentMemory";
+import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
 
 export interface SectionModeDTO {
   kind: AiContentKind;
@@ -54,7 +55,7 @@ export async function setSectionMode(kind: AiContentKind, mode: AiSectionMode): 
 
   await prisma.aiSectionPref.upsert({
     where: { ownerId_sectionKind: { ownerId: user.id, sectionKind: kind } },
-    create: { ownerId: user.id, sectionKind: kind, mode },
+    create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), sectionKind: kind, mode },
     update: { mode },
   });
 

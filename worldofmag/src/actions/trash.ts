@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { TRASH_RETENTION_DAYS } from "@/platform/trash/trash";
+import {
+  przestrzenOsobista,
+  przestrzenZespoluBezKontroliDostepu,
+} from "@/platform/workspaces/zapis";
 
 export type TrashItemDTO = {
   id: string;
@@ -71,6 +75,54 @@ function asDate(v: unknown): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
+/**
+ * 078 (zadanie 11, etap 4 część 2) — GDZIE PRZYWRÓCIĆ REKORD Z KOSZA.
+ *
+ * **To jest jedyne miejsce w konwersji, w którym problemem nie jest kod, a DANE JUŻ ZAPISANE.**
+ * Migawka w `TrashItem.payload` to JSON utrwalony w chwili usunięcia rekordu. Migawki zrobione
+ * przed 078 zawierają wyłącznie `ownerId`/`ownerTeamId` — pola `workspaceId` w nich nie ma i nigdy
+ * nie będzie, bo nikt ich wstecz nie przepisze. Gdyby przywracanie czytało tylko nową kolumnę,
+ * to w dniu usunięcia kolumn własnościowych **każdy rekord leżący w koszu przestałby dać się
+ * przywrócić na swoje miejsce** — a kosz ma 30-dniową retencję, więc takich migawek będzie pełno.
+ * Objaw byłby przy tym miły dla oka: przywracanie „działa", rekord wraca bez przestrzeni albo
+ * z cudzą. Dlatego kolejność jest: najpierw przestrzeń z migawki, a gdy jej nie ma — wyprowadzenie
+ * z kolumn własnościowych, dokładnie tak, jak robił to wyzwalacz 0236/0238.
+ *
+ * Funkcja zwraca też kolumny własnościowe, dopóki istnieją — z tego samego powodu, co
+ * `wlasnoscDoZapisu`: żeby usunięcie kolumn było zmianą JEDNEGO ciała funkcji, a nie obchodzeniem
+ * wszystkich restoratorów po kolei.
+ */
+async function przestrzenZMigawki(
+  d: Record<string, unknown>
+): Promise<{ workspaceId: string; ownerId: string | null; ownerTeamId: string | null }> {
+  const ownerId = (d.ownerId as string | null) ?? null;
+  const ownerTeamId = (d.ownerTeamId as string | null) ?? null;
+  const zMigawki = (d.workspaceId as string | null) ?? null;
+
+  if (zMigawki) return { workspaceId: zMigawki, ownerId, ownerTeamId };
+
+  // Migawka sprzed 078: przestrzeń wyprowadzamy z tego, co migawka ma.
+  const workspaceId = ownerTeamId
+    ? await przestrzenZespoluBezKontroliDostepu(ownerTeamId)
+    : await przestrzenOsobista(ownerId ?? (await requireAuth()).id);
+  return { workspaceId, ownerId, ownerTeamId };
+}
+
+/**
+ * Wariant dla tabel, w których `ownerId` jest NOT NULL (tu: `WeatherIdea`).
+ *
+ * Migawka bez właściciela jest tam uszkodzona, nie „niczyja" — i restorator sprawdzał to już
+ * przed 078, tylko osobnym `if`-em. Zwracamy `ownerId: string`, żeby ten warunek był widoczny
+ * w typie, a nie tylko w treści funkcji wyżej w pliku.
+ */
+async function przestrzenZMigawkiOsobista(
+  d: Record<string, unknown>
+): Promise<{ workspaceId: string; ownerId: string }> {
+  const { workspaceId, ownerId } = await przestrzenZMigawki(d);
+  if (!ownerId) throw new Error("Uszkodzona migawka: brak właściciela");
+  return { workspaceId, ownerId };
+}
+
 async function restoreNote(d: Record<string, unknown>): Promise<void> {
   const id = d.id as string;
   // Nie duplikuj, jeśli notatka o tym id już istnieje.
@@ -92,8 +144,7 @@ async function restoreNote(d: Record<string, unknown>): Promise<void> {
       isMarkdown: (d.isMarkdown as boolean) ?? false,
       pinned: (d.pinned as boolean) ?? false,
       groupId,
-      ownerId: (d.ownerId as string | null) ?? null,
-      ownerTeamId: (d.ownerTeamId as string | null) ?? null,
+      ...(await przestrzenZMigawki(d)),
       createdAt: asDate(d.createdAt) ?? new Date(),
     },
   });
@@ -198,7 +249,7 @@ async function restoreWeatherIdea(d: Record<string, unknown>): Promise<void> {
   await prisma.weatherIdea.create({
     data: {
       id,
-      ownerId,
+      ...(await przestrzenZMigawkiOsobista(d)),
       fingerprint,
       title: (d.title as string) ?? "Przywrócony pomysł",
       summary: (d.summary as string) ?? "",

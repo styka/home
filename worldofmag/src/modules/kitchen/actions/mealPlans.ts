@@ -10,6 +10,7 @@ import { assertListAccess } from "@/modules/shopping/contract";
 import type { MealSlot, MealStatus } from "@/types/kitchen";
 import type { MealPlanEntry, Item } from "@prisma/client";
 import { dayKeyUTC } from "../domain/dzienPlanu";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 export type MealPlanEntryWithRecipe = MealPlanEntry & {
   recipe: {
@@ -172,8 +173,7 @@ export async function setMealPlanEntry(data: MealPlanEntryInput): Promise<MealPl
       customTitle: data.customTitle?.trim() || null,
       servings: data.servings ?? 2,
       notes: data.notes?.trim() || null,
-      ownerId: data.teamId ? null : user.id,
-      ownerTeamId: data.teamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.teamId)),
     },
   });
 

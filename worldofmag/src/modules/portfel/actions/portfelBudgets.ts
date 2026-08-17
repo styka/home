@@ -6,6 +6,7 @@ import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from 
 import { trackActivity } from "@/actions/activity";
 import type { Budget, FinanceGoal } from "@prisma/client";
 import { startOfMonth } from "../domain/okres";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 async function scope(userId: string) {
   const teamIds = await getUserTeamIds(userId);
@@ -87,8 +88,7 @@ export async function createBudget(data: {
       limitAmount,
       currency: data.currency?.trim() || "PLN",
       note: data.note?.trim() || null,
-      ownerId: ownerTeamId ? null : user.id,
-      ownerTeamId,
+      ...(await wlasnoscDoZapisu(user.id, ownerTeamId)),
     },
   });
   void trackActivity("portfel", "create_budget", { category, limitAmount });
@@ -176,8 +176,7 @@ export async function createGoal(data: {
       deadline: data.deadline ? new Date(data.deadline) : null,
       achievedAt: current >= targetAmount ? new Date() : null,
       note: data.note?.trim() || null,
-      ownerId: ownerTeamId ? null : user.id,
-      ownerTeamId,
+      ...(await wlasnoscDoZapisu(user.id, ownerTeamId)),
     },
   });
   void trackActivity("portfel", "create_goal", { name, targetAmount });

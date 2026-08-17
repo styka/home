@@ -8,6 +8,7 @@ import { assertPetAccess } from "./pets";
 import { notifyUser } from "@/lib/notify";
 import { ENV_PARAMS, classifyValue, rangeLabel, type Range } from "../lib/petEnvironment";
 import type { PetEnclosure, PetEnvironmentReading } from "@/types";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 async function assertEnclosureAccess(enclosureId: string, userId: string): Promise<void> {
   const teamIds = await getUserTeamIds(userId);
@@ -65,8 +66,7 @@ export async function createEnclosure(data: {
       equipment: data.equipment ? JSON.stringify(data.equipment) : null,
       targetRanges: data.targetRanges ? JSON.stringify(data.targetRanges) : null,
       notes: data.notes ?? null,
-      ownerId: data.ownerTeamId ? null : user.id,
-      ownerTeamId: data.ownerTeamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.ownerTeamId)),
     },
   });
 

@@ -7,6 +7,7 @@ import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "./pets";
 import type { PetBreedingData, PetBreedingPair, PetClutch, PetSale, PetStatus } from "@/types";
 import type { PetGene } from "../lib/petGenetics";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 const PET_REF = { id: true, name: true, species: true, sex: true, status: true } as const;
 
@@ -156,8 +157,7 @@ export async function createBreedingPair(data: {
       femaleId: data.femaleId ?? null,
       status: data.status ?? "PLANNED",
       notes: data.notes ?? null,
-      ownerId: data.ownerTeamId ? null : user.id,
-      ownerTeamId: data.ownerTeamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.ownerTeamId)),
     },
   });
   void trackActivity("pets", "create_breeding_pair", { name: pair.name });
@@ -253,8 +253,7 @@ export async function createOffspring(data: {
       sireId: data.sireId ?? null,
       damId: data.damId ?? null,
       presetKey: data.presetKey ?? "reptile_breeder",
-      ownerId: data.ownerTeamId ? null : user.id,
-      ownerTeamId: data.ownerTeamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.ownerTeamId)),
     },
   });
   void trackActivity("pets", "create_offspring", { name: pet.name });
@@ -280,7 +279,7 @@ export async function recordSale(petId: string, data: {
       currency: data.currency ?? "PLN",
       soldAt: data.soldAt ?? new Date(),
       notes: data.notes ?? null,
-      ownerId: user.id,
+      ...(await wlasnoscDoZapisu(user.id)),
     },
   });
 

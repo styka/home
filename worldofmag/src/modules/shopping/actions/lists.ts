@@ -5,6 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import type { ShoppingList, ShoppingListWithItems } from "@/types";
 import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 export interface ListSummary {
   id: string;
@@ -118,8 +119,7 @@ export async function createList(name: string, ownerTeamId?: string): Promise<Sh
   const list = await prisma.shoppingList.create({
     data: {
       name: name.trim(),
-      ownerId: ownerTeamId ? undefined : user.id,
-      ownerTeamId: ownerTeamId ?? undefined,
+      ...(await wlasnoscDoZapisu(user.id, ownerTeamId)),
     },
   });
   revalidatePath("/shopping");

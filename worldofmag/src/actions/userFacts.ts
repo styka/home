@@ -13,6 +13,7 @@ import { auth } from "@/platform/auth/session";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { fingerprintOf } from "@/lib/textKey";
+import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
 import {
   parseUserFactCategory,
   parseUserFactConfidence,
@@ -137,7 +138,7 @@ export async function upsertUserFact(data: {
     await prisma.userFact.upsert({
       where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
       create: {
-        ownerId: user.id,
+        ...(await wlasnoscOsobistaDoZapisu(user.id)),
         category: parseUserFactCategory(data.category),
         text,
         confidence: parseUserFactConfidence(data.confidence ?? "confirmed"),
@@ -212,7 +213,7 @@ export async function setUserFactByAdmin(data: {
     await prisma.userFact.upsert({
       where: { ownerId_fingerprint: { ownerId: data.userId, fingerprint } },
       create: {
-        ownerId: data.userId,
+        ...(await wlasnoscOsobistaDoZapisu(data.userId)),
         category: parseUserFactCategory(data.category),
         text,
         confidence: parseUserFactConfidence(data.confidence ?? "likely"),

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 function safeDate(d: Date | string | null | undefined): Date | null {
   if (!d) return null;
@@ -124,8 +125,7 @@ export async function createHealthEvent(data: {
       unit: data.unit?.trim() || null,
       referral: data.referral?.trim() || null,
       reminderAt: safeDate(data.reminderAt),
-      ownerId: ownerTeamId ? null : user.id,
-      ownerTeamId,
+      ...(await wlasnoscDoZapisu(user.id, ownerTeamId)),
     },
   });
   revalidatePath("/health");

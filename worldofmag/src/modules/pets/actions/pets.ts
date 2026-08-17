@@ -7,6 +7,7 @@ import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from 
 import { trackActivity } from "@/actions/activity";
 import { DEFAULT_PRESET_KEY } from "../lib/petPresets";
 import type { Pet, PetWithRelations, PetShare, PetStatus, ShareRole } from "@/types";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 const SHARE_INCLUDE = {
   user: { select: { id: true, name: true, email: true, image: true } },
@@ -131,8 +132,7 @@ export async function createPet(data: {
       notes: data.notes ?? null,
       presetKey: data.presetKey ?? DEFAULT_PRESET_KEY,
       featureFlags: data.featureFlags ?? null,
-      ownerId: data.ownerTeamId ? null : user.id,
-      ownerTeamId: data.ownerTeamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.ownerTeamId)),
     },
     include: { ownerTeam: { select: { id: true, name: true } } },
   });

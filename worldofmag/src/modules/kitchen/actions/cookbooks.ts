@@ -5,6 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import type { Cookbook } from "@/types/kitchen";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 export type CookbookWithCount = Cookbook & { recipeCount: number };
 
@@ -69,8 +70,7 @@ export async function createCookbook(data: {
       description: data.description ?? null,
       emoji: data.emoji?.trim() || "📚",
       color: data.color ?? null,
-      ownerId: data.ownerTeamId ? null : user.id,
-      ownerTeamId: data.ownerTeamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.ownerTeamId)),
     },
   });
 

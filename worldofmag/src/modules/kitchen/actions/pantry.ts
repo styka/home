@@ -8,6 +8,7 @@ import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
 import type { PantryItem, Item } from "@prisma/client";
 import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 export type PantryItemWithProduct = PantryItem & {
   product: {
@@ -126,8 +127,7 @@ export async function addPantryItem(data: PantryItemInput): Promise<PantryItem> 
       openedAt: data.openedAt ?? null,
       minQuantity: data.minQuantity ?? null,
       autoShop: data.autoShop ?? false,
-      ownerId: data.teamId ? null : user.id,
-      ownerTeamId: data.teamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.teamId)),
     },
   });
 
@@ -297,8 +297,7 @@ export async function moveItemToPantry(
       quantity: pantryData?.quantity ?? item.quantity,
       unit: pantryData?.unit ?? item.unit,
       location: pantryData?.location ?? null,
-      ownerId: teamId ? null : user.id,
-      ownerTeamId: teamId,
+      ...(await wlasnoscDoZapisu(user.id, teamId)),
     },
   });
   revalidatePath("/kitchen/pantry");

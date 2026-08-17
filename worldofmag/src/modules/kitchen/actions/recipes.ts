@@ -18,6 +18,7 @@ import type {
 } from "@/types/kitchen";
 import type { Recipe, RecipeIngredient, RecipeStep, RecipeImage, Item } from "@prisma/client";
 import { slugify } from "../domain/slug";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 // ─── Access control ───────────────────────────────────────────────────────
 
@@ -199,8 +200,7 @@ export async function createRecipe(data: CreateRecipeInput): Promise<Recipe> {
       protein: data.protein ?? null,
       carbs: data.carbs ?? null,
       fat: data.fat ?? null,
-      ownerId: data.ownerTeamId ? null : user.id,
-      ownerTeamId: data.ownerTeamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.ownerTeamId)),
       tags: data.tagIds?.length
         ? { create: data.tagIds.map((tagId) => ({ tagId })) }
         : undefined,
@@ -321,8 +321,7 @@ export async function duplicateRecipe(id: string): Promise<Recipe> {
       mealType: src.mealType,
       coverImageUrl: src.coverImageUrl,
       cookbookId: src.cookbookId,
-      ownerId: user.id,
-      ownerTeamId: null,
+      ...(await wlasnoscDoZapisu(user.id)),
       sourceType: "manual",
       tags: { create: src.tags.map((t) => ({ tagId: t.tagId })) },
       ingredients: {

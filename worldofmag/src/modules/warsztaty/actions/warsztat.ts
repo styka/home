@@ -6,6 +6,7 @@ import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from 
 import { trackActivity } from "@/actions/activity";
 import { getSuggestions } from "../lib/catalog";
 import type { Workshop, WorkshopItem, WorkshopProject } from "@prisma/client";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 export type WarsztatMode = "home" | "pro";
 
@@ -113,8 +114,7 @@ export async function createWorkshop(data: WorkshopInput): Promise<Workshop> {
       type: data.type?.trim() || "ogolny",
       description: data.description?.trim() || null,
       location: data.location?.trim() || null,
-      ownerId: data.teamId ? null : user.id,
-      ownerTeamId: data.teamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.teamId)),
     },
   });
   void trackActivity("warsztaty", "create_workshop", { id: created.id, name: created.name });

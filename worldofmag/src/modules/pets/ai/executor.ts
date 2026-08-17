@@ -10,6 +10,7 @@ import { updateEnclosure, deleteEnclosure, assignPetToEnclosure } from "../contr
 import { asStr } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 import type { RecurringRule, PetStatus } from "@/types";
+import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
 
 function addDays(d: Date, days: number): Date {
   const r = new Date(d);
@@ -53,7 +54,7 @@ export async function executePetAction(action: AIAction, userId: string): Promis
         species,
         breed: (params.breed as string) ?? null,
         sex: (params.sex as string) ?? null,
-        ownerId: userId,
+        ...(await wlasnoscOsobistaDoZapisu(userId)),
       },
     });
     return `Dodano zwierzę "${pet.name}"`;
@@ -67,7 +68,7 @@ export async function executePetAction(action: AIAction, userId: string): Promis
         name,
         type: (params.type as string) ?? "TERRARIUM",
         volumeL: (params.volumeL as number) ?? null,
-        ownerId: userId,
+        ...(await wlasnoscOsobistaDoZapisu(userId)),
       },
     });
     const assignTo = (params.assignTo as string | undefined)?.trim();
@@ -131,7 +132,7 @@ export async function executePetAction(action: AIAction, userId: string): Promis
         buyerName: (params.buyerName as string) ?? null,
         buyerContact: (params.buyerContact as string) ?? null,
         price: (params.price as number) ?? null,
-        ownerId: userId,
+        ...(await wlasnoscOsobistaDoZapisu(userId)),
       },
     });
     await prisma.pet.update({ where: { id: pet.id }, data: { status: "SOLD" } });
@@ -149,7 +150,7 @@ export async function executePetAction(action: AIAction, userId: string): Promis
         species: pet.species,
         maleId,
         femaleId,
-        ownerId: userId,
+        ...(await wlasnoscOsobistaDoZapisu(userId)),
       },
     });
     return `Utworzono parę hodowlaną "${pair.name}"`;

@@ -5,6 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { reviewCard, type ReviewGrade } from "../lib/srs";
 import type { LanguageDeck, Vocabulary } from "@/types";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 async function assertDeckAccess(deckId: string, userId: string): Promise<void> {
   const teamIds = await getUserTeamIds(userId);
@@ -105,8 +106,7 @@ export async function createDeck(data: {
       nativeLang: data.nativeLang.trim() || "polski",
       targetLang: data.targetLang.trim() || "angielski",
       sourceText: data.sourceText?.trim() || null,
-      ownerId: ownerTeamId ? null : user.id,
-      ownerTeamId,
+      ...(await wlasnoscDoZapisu(user.id, ownerTeamId)),
     },
   });
   revalidatePath("/languages");

@@ -34,6 +34,7 @@ import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { createTask, tasksModule } from "@/modules/tasks/contract";
 import { resolveWhen } from "../domain/pora";
 import { roundedBrief } from "../domain/odcisk";
+import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
 
 export interface LocationDTO {
   id: string;
@@ -112,7 +113,7 @@ export async function addLocation(data: {
   }
   const l = await prisma.weatherLocation.create({
     data: {
-      ownerId: user.id,
+      ...(await wlasnoscOsobistaDoZapisu(user.id)),
       label: data.label.trim() || "Moja lokalizacja",
       lat: data.lat,
       lon: data.lon,
@@ -253,7 +254,7 @@ export async function addPresetWatcher(presetKey: string): Promise<void> {
   });
   await prisma.weatherWatcher.create({
     data: {
-      ownerId: user.id,
+      ...(await wlasnoscOsobistaDoZapisu(user.id)),
       title: preset.title,
       kind: "preset",
       presetKey,
@@ -281,7 +282,7 @@ export async function addCustomWatcher(data: {
   });
   await prisma.weatherWatcher.create({
     data: {
-      ownerId: user.id,
+      ...(await wlasnoscOsobistaDoZapisu(user.id)),
       title,
       kind: "custom",
       query,
@@ -664,7 +665,7 @@ export async function saveIdeaFromList(
   const row = await prisma.weatherIdea.upsert({
     where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
     create: {
-      ownerId: user.id,
+      ...(await wlasnoscOsobistaDoZapisu(user.id)),
       fingerprint,
       title,
       summary: (idea.summary ?? "").trim(),
@@ -811,7 +812,7 @@ export async function generateIdeaDetail(
   const row = await prisma.weatherIdea.upsert({
     where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
     create: {
-      ownerId: user.id,
+      ...(await wlasnoscOsobistaDoZapisu(user.id)),
       fingerprint,
       title,
       summary: (idea.summary ?? "").trim(),
@@ -911,7 +912,7 @@ export async function blockIdea(
   await prisma.weatherIdea.upsert({
     where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
     create: {
-      ownerId: user.id,
+      ...(await wlasnoscOsobistaDoZapisu(user.id)),
       fingerprint,
       title,
       summary: (idea.summary ?? "").trim(),

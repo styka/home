@@ -8,6 +8,7 @@ import type { Note } from "@/types";
 import { trackActivity } from "@/actions/activity";
 import { recordTrash } from "@/platform/trash/trash";
 import { rankNotesBySearch } from "../lib/searchRank";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 async function assertNoteAccess(noteId: string, userId: string): Promise<void> {
   const teamIds = await getUserTeamIds(userId);
@@ -101,8 +102,7 @@ export async function createNote(data: {
       content: data.content ?? "",
       isMarkdown: data.isMarkdown ?? false,
       groupId: data.groupId ?? null,
-      ownerId: data.ownerTeamId ? null : user.id,
-      ownerTeamId: data.ownerTeamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.ownerTeamId)),
       tags: data.tagIds?.length
         ? { create: data.tagIds.map((tagId) => ({ tagId })) }
         : undefined,
@@ -179,6 +179,9 @@ export async function deleteNote(id: string): Promise<void> {
       payload: {
         id: full.id, title: full.title, content: full.content, isMarkdown: full.isMarkdown,
         pinned: full.pinned, groupId: full.groupId, ownerId: full.ownerId, ownerTeamId: full.ownerTeamId,
+        // 078: migawka zapisuje też PRZESTRZEŃ. Bez tego pola przywrócenie notatki po usunięciu
+        // kolumn własnościowych nie miałoby z czego odtworzyć, gdzie ta notatka mieszkała.
+        workspaceId: full.workspaceId,
         createdAt: full.createdAt, tagIds: full.tags.map((t) => t.tagId),
       },
     });

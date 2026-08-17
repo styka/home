@@ -9,6 +9,7 @@ import { parseBankCsv, type ParsedTransaction } from "../lib/bankCsv";
 import { createHash } from "crypto";
 import type { WalletElement, WalletEntry } from "@prisma/client";
 import { signedBalance } from "../domain/majatek";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 export type ElementWithEntries = WalletElement & { entries: WalletEntry[] };
 
@@ -143,8 +144,7 @@ export async function createElement(data: {
       currency: data.currency ?? "PLN",
       balance: initial,
       note: data.note?.trim() || null,
-      ownerId: data.ownerTeamId ? null : user.id,
-      ownerTeamId: data.ownerTeamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.ownerTeamId)),
       entries: {
         create: { balanceAfter: initial, delta: initial, kind: "adjustment", note: "Saldo początkowe" },
       },

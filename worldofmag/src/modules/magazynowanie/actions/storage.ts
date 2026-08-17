@@ -7,6 +7,7 @@ import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
 import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import {
   wartoscPozycji,
   liczbaPonizejMinimum,
@@ -150,8 +151,7 @@ export async function addStorageItem(data: StorageItemInput): Promise<StorageIte
       warrantyUntil: toDate(data.warrantyUntil) ?? null,
       supplierId: data.supplierId || null,
       notes: data.notes?.trim() || null,
-      ownerId: data.teamId ? null : user.id,
-      ownerTeamId: data.teamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.teamId)),
     },
   });
 
@@ -308,6 +308,10 @@ export async function bulkAddStorageItems(
     .filter((i) => i.name);
   if (clean.length === 0) return 0;
 
+  // Jedno ustalenie przestrzeni na cały wsad: `createMany` to jeden zapis, a `wlasnoscDoZapisu`
+  // potrafi domknąć brakującą przestrzeń — wołanie go w `map` powtarzałoby tę próbę raz na wiersz
+  // (i nie skompilowałoby się, bo `map` nie jest asynchroniczne).
+  const wlasnosc = await wlasnoscDoZapisu(user.id, target?.teamId);
   await prisma.storageItem.createMany({
     data: clean.map((i) => ({
       name: i.name,
@@ -317,8 +321,7 @@ export async function bulkAddStorageItems(
       notes: i.notes?.trim() || null,
       warehouse: target?.warehouse?.trim() || null,
       location: target?.location?.trim() || null,
-      ownerId: target?.teamId ? null : user.id,
-      ownerTeamId: target?.teamId ?? null,
+      ...wlasnosc,
     })),
   });
 
@@ -490,6 +493,9 @@ export async function transferStock(
           unit: src.unit,
           unitPrice: src.unitPrice,
           supplierId: src.supplierId,
+          // Nowa pozycja zostaje w tej samej przestrzeni co źródłowa. Kolumny własnościowe
+          // przepisujemy dopóki istnieją; `workspaceId` jest tu jedynym, który przeżyje etap 4.
+          workspaceId: src.workspaceId,
           ownerId: src.ownerId,
           ownerTeamId: src.ownerTeamId,
         },
@@ -545,8 +551,7 @@ export async function addSupplier(data: SupplierInput): Promise<StorageSupplier>
       email: data.email?.trim() || null,
       phone: data.phone?.trim() || null,
       notes: data.notes?.trim() || null,
-      ownerId: data.teamId ? null : user.id,
-      ownerTeamId: data.teamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.teamId)),
     },
   });
   revalidatePath("/magazynowanie/dostawcy");
@@ -821,8 +826,7 @@ export async function createDocument(data: DocumentInput): Promise<StorageDocume
         totalCost,
         imageUrl: data.imageUrl || null,
         notes: data.notes?.trim() || null,
-        ownerId: data.teamId ? null : user.id,
-        ownerTeamId: data.teamId ?? null,
+        ...(await wlasnoscDoZapisu(user.id, data.teamId)),
         lines: {
           create: lines.map((l) => ({
             itemId: l.itemId || null,
@@ -943,8 +947,7 @@ export async function createPurchaseOrder(data: PurchaseOrderInput): Promise<Sto
     data: {
       supplierId: data.supplierId || null,
       notes: data.notes?.trim() || null,
-      ownerId: data.teamId ? null : user.id,
-      ownerTeamId: data.teamId ?? null,
+      ...(await wlasnoscDoZapisu(user.id, data.teamId)),
       lines: {
         create: lines.map((l) => ({
           itemId: l.itemId || null,

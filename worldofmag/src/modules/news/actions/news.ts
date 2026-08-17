@@ -17,6 +17,7 @@ import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/platform/jobs/queue";
 import { ensureJobWorker } from "@/lib/jobs/registry";
 import type { DateConfidence, NewsRefreshResult } from "../jobs/newsRefresh";
 import type { NewsItem, NewsSource } from "@prisma/client";
+import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
 
 export type SummaryLength = "short" | "medium" | "long";
 export type ItemStatus = "PENDING" | "ACKNOWLEDGED" | "DISMISSED";
@@ -82,13 +83,17 @@ export async function ensureNewsSetup(): Promise<void> {
   const user = await requireAuth();
   const count = await prisma.newsSource.count({ where: { ownerId: user.id } });
   if (count === 0) {
+    // Jedno ustalenie przestrzeni na cały wsad, nie jedno na wiersz: `createMany` to jeden zapis,
+    // a `wlasnoscOsobistaDoZapisu` potrafi domknąć brakującą przestrzeń — wołanie go w `map`
+    // wykonałoby tę próbę tyle razy, ile jest domyślnych źródeł.
+    const wlasnosc = await wlasnoscOsobistaDoZapisu(user.id);
     await prisma.newsSource.createMany({
-      data: DEFAULT_SOURCES.map((s) => ({ ...s, ownerId: user.id })),
+      data: DEFAULT_SOURCES.map((s) => ({ ...s, ...wlasnosc })),
     });
   }
   await prisma.newsPref.upsert({
     where: { ownerId: user.id },
-    create: { ownerId: user.id },
+    create: { ...(await wlasnoscOsobistaDoZapisu(user.id)) },
     update: {},
   });
 }
@@ -291,7 +296,7 @@ export async function createTopic(data: {
   });
   const t = await prisma.newsTopic.create({
     data: {
-      ownerId: user.id,
+      ...(await wlasnoscOsobistaDoZapisu(user.id)),
       title,
       semanticFilter,
       sortOrder: (min._min.sortOrder ?? 0) - 1,
@@ -350,7 +355,7 @@ export async function createSource(data: {
   });
   await prisma.newsSource.create({
     data: {
-      ownerId: user.id,
+      ...(await wlasnoscOsobistaDoZapisu(user.id)),
       key,
       name,
       rssUrl: data.rssUrl.trim(),
@@ -393,7 +398,7 @@ export async function setDefaultSummaryLength(length: SummaryLength): Promise<vo
   const user = await requireAuth();
   await prisma.newsPref.upsert({
     where: { ownerId: user.id },
-    create: { ownerId: user.id, defaultSummaryLength: length },
+    create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), defaultSummaryLength: length },
     update: { defaultSummaryLength: length },
   });
   revalidatePath("/wiadomosci");
@@ -403,7 +408,7 @@ export async function setActiveSource(key: string | null): Promise<void> {
   const user = await requireAuth();
   await prisma.newsPref.upsert({
     where: { ownerId: user.id },
-    create: { ownerId: user.id, activeSourceKey: key },
+    create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), activeSourceKey: key },
     update: { activeSourceKey: key },
   });
 }
@@ -816,7 +821,7 @@ export async function hideHotTopic(title: string): Promise<void> {
   const fingerprint = fingerprintOf(clean);
   await prisma.newsHiddenTopic.upsert({
     where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
-    create: { ownerId: user.id, fingerprint, title: clean },
+    create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), fingerprint, title: clean },
     update: { title: clean },
   });
   revalidatePath("/wiadomosci");

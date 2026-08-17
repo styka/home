@@ -6,6 +6,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import type { TaskProject, ProjectStatusConfig } from "@/types";
 import { serializeStatusConfig, parseStatusConfig, SYSTEM_TASK_STATUSES } from "@/types";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { requireTaskModuleAccess } from "../lib/sharingGuard"
 
 function toProject(p: unknown): TaskProject {
@@ -42,7 +43,7 @@ export async function createTaskProject(
       color: opts?.color ?? "#6b7280",
       emoji: opts?.emoji ?? "📋",
       description: opts?.description ?? null,
-      ownerId: user.id,
+      ...(await wlasnoscDoZapisu(user.id)),
     },
     include: { _count: { select: { tasks: true } } },
   });
@@ -146,7 +147,7 @@ export async function getOrCreateInbox(): Promise<TaskProject> {
 
   if (!inbox) {
     inbox = await prisma.taskProject.create({
-      data: { name: "Skrzynka", emoji: "📥", isInbox: true, ownerId: user.id, color: "#6b7280" },
+      data: { name: "Skrzynka", emoji: "📥", isInbox: true, ...(await wlasnoscDoZapisu(user.id)), color: "#6b7280" },
       include: { _count: { select: { tasks: true } } },
     });
   }
@@ -169,7 +170,7 @@ export async function ensureOmniaProject(): Promise<TaskProject> {
 
   if (!project) {
     project = await prisma.taskProject.create({
-      data: { name: "Omnia", emoji: "🐛", color: "#a855f7", description: "Zgłoszenia błędów i sugestii do aplikacji", ownerId: user.id },
+      data: { name: "Omnia", emoji: "🐛", color: "#a855f7", description: "Zgłoszenia błędów i sugestii do aplikacji", ...(await wlasnoscDoZapisu(user.id)) },
       include: { _count: { select: { tasks: true } } },
     });
     revalidatePath("/tasks");

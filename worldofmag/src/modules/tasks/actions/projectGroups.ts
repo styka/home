@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import type { ProjectGroup } from "@/types";
+import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
 
 const TERMINAL_STATUSES = ["DONE", "CANCELLED"];
 
@@ -97,7 +98,7 @@ export async function createProjectGroup(data: {
       emoji: data.emoji?.trim() || "🗂",
       color: data.color ?? null,
       projectIds: JSON.stringify(ids),
-      ownerId: user.id,
+      ...(await wlasnoscOsobistaDoZapisu(user.id)),
       order: (maxOrder._max.order ?? 0) + 1,
     },
   });
