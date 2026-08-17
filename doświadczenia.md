@@ -4,6 +4,24 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-17 — „Zniknęła kolumna ze schematu" znaczyło: kontener się cofnął, a nie że kod jest zły
+**Problem:** Po wznowieniu sesji `grep -c workspaceId prisma/schema.prisma` zwrócił **0**, choć baza
+miała tę kolumnę w 45 tabelach, a bramka rozjazdu schematu świeciła na zielono. Wyglądało to na
+dziurę w bramce — czyli na najgorszy możliwy błąd, bo bramka miałaby wtedy potwierdzać nieprawdę.
+Prawdziwa przyczyna była zupełnie gdzie indziej: **kontener cofnął drzewo robocze** do commita
+sprzed kilkunastu przebiegów (czwarty raz w tym projekcie). Bramka działała poprawnie — porównywała
+stary schemat ze starymi migracjami i słusznie nie widziała rozjazdu.
+**Rozwiązanie:** `git log --oneline -1` jako **pierwsza** komenda diagnostyczna, potem
+`git fetch && git reset --hard origin/<gałąź>`, restart Postgresa (`pg_ctlcluster 16 main start`),
+`prisma migrate deploy` i `prisma generate`. Nic nie przepadło, bo każde zadanie było wypchnięte na
+zdalne repozytorium natychmiast po commicie.
+**Lekcja:** Zanim uznasz, że **bramka kłamie** albo że kod jest zepsuty, sprawdź, **na czym w ogóle
+pracujesz**. Objaw „plik nie zawiera tego, co na pewno tam wpisałem" ma w tym środowisku jedną
+dominującą przyczynę i jest nią revert kontenera, a nie błąd w narzędziu. Sygnały rozpoznawcze:
+zmiany zniknęły *hurtem* (nie jeden plik), baza cofnęła się do starszej migracji, a Postgres nie
+odpowiada. Stąd druga część reguły, która już raz się opłaciła i opłaciła znowu: **pushuj po każdym
+zadaniu**, nie na koniec sesji — zdalne repozytorium jest tu jedyną trwałą pamięcią.
+
 ## 2026-08-17 — Kopia zapasowa, której nie da się użyć: gdy klucz główny JEST kasowaną kolumną
 **Problem:** Migracja 0233 archiwizuje `ownerId`/`ownerTeamId` przed etapem 4 zadania 11. Pierwsza
 wersja zakładała, że każdy wiersz identyfikuje `"id"::text`. Padła na `NewsPref`

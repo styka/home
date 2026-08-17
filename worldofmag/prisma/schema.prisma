@@ -2730,7 +2730,10 @@ model NewsItem {
 }
 
 model NewsPref {
-  ownerId              String    @id
+  // 074: własny klucz główny. Wcześniej kluczem było samo `ownerId` — kolumna, którą usuwa etap 4
+  // zadania 11, co czyniło tę tabelę jedyną NIEODTWARZALNĄ z kopii własności (patrz migracja 0234).
+  id                   String    @id @default(cuid())
+  ownerId              String    @unique
   // Domyślna długość streszczeń: "short" | "medium" | "long".
   defaultSummaryLength String    @default("medium")
   // Ostatnio wybrane źródło w widoku (klucz NewsSource).
