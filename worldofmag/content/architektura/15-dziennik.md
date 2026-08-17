@@ -111,7 +111,8 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 |---|---------|--------|-------|
 | 9 | Modele `Workspace`, `WorkspaceMember`, `ResourceGrant`, `ResourceInvitation` | ✅ | **051.** Cztery modele + migracja 0226 **z backfillem** (rozdz. 8.10 kroki 1–2): przestrzeń osobista na konto, zespołowa na zespół wraz ze składem. Lustro utrzymywane w przód (`platform/workspaces`), pilnowane bramką `check:workspace-mirror` i testem z testem negatywnym. Zero przełączonych odczytów |
 | 10 | `platform/sharing` — `requireAccess`, dziedziczenie, cache | ✅ | **052.** Platforma bez importu modułu (katalog parametrem wymaganym); Zadania jako pilot; **tabela prawdy 25 komórek identyczna** przed i po; read-tool asystenta przez wspólne sprawdzanie z testem obejścia. Cache per żądanie — bez unieważniania, bo nie ma czego unieważniać |
-| 11 | Migracja `ownerId`/`ownerTeamId` → `workspaceId` na 46 modelach | 🟡 | **Najgroźniejsze zadanie całej przebudowy.** Etapy 1–3 i etap 4 część 1 zamknięte. **078 — etap 4 część 2 w toku:** faza podwójnego zapisu (`wlasnoscDoZapisu` / `wlasnoscOsobistaDoZapisu` — jeden punkt przełączenia dla `DROP COLUMN`), **wszystkie 35 miejsc zapisu w 15 modułach przepięte**, guard rekordu (`assertOwnership`) czyta przestrzeń, 52 filtry osobiste przez `filtrMoichRekordow`, unikalność `NewsPref` przeniesiona na przestrzeń (0241), wyzwalacz **pilnuje zgodności** obu nośników (0240), **wszystkie 9 unikalności przeniesionych na przestrzeń** (0241 + 0242), U-4 naprawione. Pozostało do `DROP COLUMN`: guardy modułów i `platform/sharing` (najdelikatniejsze: tam żyje siatka „właściciel = manager” z przebiegu 077), `lib/privacy/purge.ts` (RODO — osobno, z testem przed i po), odświeżenie kopii własności (U-5) i sama migracja razem z U-3. Etapy 1–3: 054 kolumna + backfill (0227), 055 wyzwalacz (0228), 056 dostęp po przestrzeni, 057+058 zakresy list. **Pięć tabel zachowuje `ownerId`** — kryterium „wiersz może nie mieć właściciela”, zapadka `check:workspace-nullable` |
+| 11 | Migracja `ownerId`/`ownerTeamId` → `workspaceId` na 46 modelach | ✅ | **ZAMKNIĘTE w 079 (etap 4 część 3).** Własność zasobu wyraża wyłącznie `workspaceId`; migracja **0244** usunęła kolumny własnościowe z **40 tabel**. **Pięć tabel zachowuje `ownerId`** — kryterium „wiersz może nie mieć właściciela”, zapadka `check:workspace-nullable`. Cztery etapy: 054 kolumna + backfill (0227), 055 wyzwalacz (0228), 056 dostęp po przestrzeni, 057+058 zakresy list, 075 `NOT NULL` (0235), 076–078 faza podwójnego zapisu, 079 `DROP COLUMN`. **Trzy rzeczy, których nie widział kompilator, a które etap 4 mógł zgubić po cichu:** kaskada usuwania danych (`workspaceId` NIE miało klucza obcego — dołożyła go migracja **0243**, odtwarzając obie dawne ścieżki i naprawiając `Contact`, który kaskady nie miał wcale), surowy SQL diagnostyki `/admin/health` (EXPLAIN na nieistniejącej kolumnie wpadał w cichy `catch`) i migawki kosza sprzed 078 (JSON o zamrożonym schemacie — `przestrzenZMigawki` czyta z nich `ownerId` do dziś). **Siatka „właściciel = manager” z 077 przeniesiona**, nie usunięta: `getAccessContext` czyta przestrzeń osobistą po `Workspace.personalUserId`, a nie po członkostwie. U-3 i U-5 domknięte razem z migracją
+
 | 12 | Migracja `TaskProjectMember`/`TaskShare`/`PetShare` → `ResourceGrant` | 🟡 | Etap 1 z trzech: 059 lustro nadań dla Zadań, 061 dla Zwierząt; bramka `check:grant-mirror` z manifestem wyjątków. **Etap 2 zablokowany** — przełączenie odczytów wymaga produkcyjnego pomiaru rozjazdu tabela↔nadanie |
 | 13 | Deklaracje `resources` w `module.ts` | ✅ | **064.** Pomiar przed decyzją zmienił zadanie: decyzje dostępu **per rekord** podejmuje sześć modułów, nie dziewiętnaście. Pozostałe piętnaście albo dziedziczy po zasobie nadrzędnym, albo filtruje zakresem. Zamknięte manifestem `sharing-classification.json` (21/21 z powodem) egzekwowanym przez `check:module-registry` — zamiast pozycji wiecznie otwartej |
 | 14 | `ShareDialog`, „Udostępnione mi", „Co udostępniłem" | 🟡 | **067: część odczytowa.** `/udostepnione`, dwie zakładki, jedno zapytanie do jednej tabeli — wypłata za cały jednolity model. Zostaje strona zapisu: `ShareDialog`, zaproszenia e-mail, `subjectType: "link"`, powiadomienia, kategoria `sharing` w `AuditLog`. Przycisk odbierania dostępu jedzie razem z etapem 2 zadania 12 |
@@ -2151,3 +2152,125 @@ kolumnami + `tsc`. W kolejności, którą narzuca ryzyko:
 5. **`DROP COLUMN` razem z U-3** (`ownedOrAsync` ma jeszcze gałąź `{ ownerId: userId }`, która
    w chwili usunięcia kolumny wywróciłaby każde zapytanie listowe) i zmianą ciała
    `wlasnoscDoZapisu` / `przestrzenZMigawki` na `{ workspaceId }`.
+
+---
+
+## 079 — Etap 4 część 3: koniec zadania 11. Własność to przestrzeń
+
+**Zadanie 11 jest zamknięte.** Migracja **0244** usunęła `ownerId`/`ownerTeamId` z **40 tabel**;
+własność zasobu wyraża odtąd wyłącznie `workspaceId`. Pięć tabel zachowuje `ownerId` — kryterium
+z 075/076 („wiersz może nie mieć właściciela”) i zapadka `check:workspace-nullable`.
+
+Miara pracy między przebiegami, liczona zawsze tak samo (schemat z usuniętymi kolumnami + `tsc`):
+**406 błędów w 86 plikach → 0**. Pięć kroków, każdy osobno wdrażalny i osobno wdrożony.
+
+### Krok 1 — siatka, która stała w zupełnie innym pliku niż jej przedmiot
+
+Deklaracje zasobów czterech modułów przestały czytać kolumny własnościowe. To wygląda na zamianę
+`select`, a nie jest: od 075 fakt `ownerId` pełnił w `rolaZWlasnosci` rolę **siatki** — gdy
+przestrzeni zasobu nie było w kontekście dostępu (brak wiersza `WorkspaceMember`, pułapka z 056),
+właściciel i tak dostawał `manager`. Usunięcie faktu usuwało siatkę.
+
+Trzy istniejące tabele prawdy nie zauważyły tego wcale. Każdy ich fixture zaczyna od
+`ensurePersonalWorkspace`, który przy okazji **naprawia brakujące członkostwo** — mierzyły więc
+stan, w którym broniony kod jest zbędny. Stąd czwarta tabela, `wlasnoscBezLustra`, która stan awarii
+**buduje celowo**: kasuje wiersze członkostwa po utworzeniu zasobów. Sonda: bez poprawki sześć
+komórek czerwienieje.
+
+Siatka **przeniosła się do miejsca, w którym problem powstaje**: `getAccessContext` czyta przestrzeń
+osobistą po `Workspace.personalUserId`, a nie po członkostwie. To nie poszerza niczyjego dostępu —
+przestrzeń osobista z definicji należy do jednej osoby — i pilnuje tego wiersz „obcy" w tej samej
+tabeli prawdy, który musi zostać samą odmową. Razem z nim zamrożony jest drugi wiersz: **właściciel
+zespołu bez członkostwa NADAL nie ma dostępu zespołowego**, bo tamtej siatki nigdy nie było.
+
+Przy okazji zniknęła gałąź „zasób bez przestrzeni, własność zespołowa" — nie jako uproszczenie,
+tylko jako kod, do którego nie da się dojść.
+
+### Krok 2 — RODO ma dwa mechanizmy, a kompilator widzi jeden
+
+Usuwanie konta stoi na dwóch niezależnych rzeczach: jedenastu jawnych `deleteMany` w
+`lib/privacy/purge.ts` **oraz** kaskadzie klucza obcego `owner → User` na 39 z 40 tabel. Etap 4
+zabierał obie naraz. Pierwszą widzi `tsc`. **Drugiej nie widzi nikt** — i to jest właściwe
+ustalenie tego przebiegu: `workspaceId` **nie miało klucza obcego w ogóle**. Po `DROP COLUMN`
+rekord przestawał mieć jakikolwiek związek z kontem, więc usunięcie użytkownika zostawiłoby
+w bazie jego portfel, flotę, magazyn i pogodę, zgłaszając sukces.
+
+Stąd migracja **0243**: `workspaceId REFERENCES Workspace(id) ON DELETE CASCADE` na 40 tabelach.
+Kaskada przez przestrzeń odtwarza obie dawne ścieżki jeden do jednego, bo lustro z zadania 9 wiąże
+przestrzeń z jej źródłem tym samym mechanizmem (konto → przestrzeń osobista, zespół → przestrzeń
+zespołu). **`Contact` zyskuje kaskadę, której nie miał nigdy** (Z-370 — kolumna właściciela bez
+klucza obcego): przy usunięciu zespołu jego kontakty zostawały osierocone. To poszerzenie
+sprzątania, nie dostępu.
+
+Dowodem jest tabela prawdy `purgeZakres`: 23 tabele × 2–3 rekordy = **65 komórek**, punkt
+odniesienia zamrożony **przed** przepięciem, po przepięciu **bez jednej różnicy**. Test ma
+asymetrię wartą zapamiętania: dopóki stara kaskada stała, wyłączenie jawnego `deleteMany` niczego
+nie zmieniało (rekord i tak znikał), a wyłączenie kasowania **kontaktów** — jedynej tabeli bez
+klucza obcego — czerwieniło natychmiast. Ta asymetria była miarą tego, ile pracy wykonuje baza,
+a nie kod.
+
+### Krok 3 — dwa różne „moje zespoły", które dają dziś ten sam wynik
+
+Guardy rekordu w dziewiętnastu modułach miały dwa kształty, na oko identyczne:
+`getUserTeamIds` (wszystkie zespoły) i `getAccessibleTeamIds` (przefiltrowane po dostępie domownika
+do modułu, Z-194). Przełożenie obu na `ctx.workspaceIds` byłoby **poszerzeniem dostępu niewidocznym
+w testach**: u konta bez ograniczeń oba zbiory są identyczne, więc pomyłka zaszkodziłaby dopiero
+pierwszemu ograniczonemu domownikowi. Powstał więc drugi helper, `getAccessibleWorkspaceIds`,
+a test równoważności ma **przypadek różnicujący** (moduł odebrany domownikowi) — sonda z szerszym
+wariantem go czerwieni.
+
+Drugie rozstrzygnięcie: `filtrMoichRekordow` wolno stosować także na tabelach ZE współwłasnością
+zespołową. Ograniczenie z 078 dotyczyło **kształtu warunku** (`ownerId = ja`), nie kształtu tabeli;
+zakazane zostaje podmienianie go na szerszy `ownedOrAsync`.
+
+DTO przestały nosić kolumny własnościowe. Znacznik „zespołowy" w UI sześciu modułów czyta teraz
+`workspace.team` — relację, którą **dał klucz obcy z 0243**. Migracja zrobiona dla kaskady okazała
+się potrzebna również tutaj i w `feedback.ts`, gdzie warunek po relacji zastąpił osobne zapytanie
+(zapadka paginacji nie drgnęła).
+
+Fixture'y testów przeszły na `wlasnoscDoZapisu` **w osobnym kroku, przed migracją** — dzięki temu
+`DROP COLUMN` nie musiał ich dotykać. Kosztowało to jedno ustalenie: asercja „po usunięciu konta"
+nie może liczyć zbioru, którego definicja żyje w tym koncie (`filtrMoichRekordow` tworzy brakującą
+przestrzeń i przewraca się na kluczu obcym). Asercje liczą teraz konkretne id.
+
+### Kroki 4 i 5 — kopia, która cicho kłamała, i jedno ciało funkcji
+
+**U-5.** `_KopiaWlasnosci` (0233) to jedyny odwrót od `DROP COLUMN`, ale jej wstawka miała
+`ON CONFLICT DO NOTHING`: rekord, który od tamtej pory zmienił właściciela, miał w kopii wartość
+**nieaktualną**, a rekord utworzony później nie miał wpisu wcale. Przywrócenie rozdałoby część
+danych nie tym kontom — awaria gorsza niż ta, przed którą kopia broni. Migracja 0244 zaczyna się
+więc od odświeżenia (`DO UPDATE` + skasowanie wpisów po wierszach, których w źródle nie ma)
+i **kontroli liczności per tabela**, przerywającej migrację przy rozjeździe.
+
+Problem z dowodzeniem: migracja wykonuje się **raz**, na bazie, która w środowisku pracy jest pusta
+— czyli w warunkach, w których każdy błąd przechodzi. Test `kopiaWlasnosci` **czyta oba bloki `DO`
+wprost z pliku migracji** i uruchamia je na fixture zawierającym dokładnie te trzy sytuacje, dla
+których odświeżenie powstało: wartość zmienioną, wiersz nowy i wiersz usunięty. Plus sonda, że
+kontrola liczności naprawdę przerywa. To nie kopia logiki — to ten sam tekst SQL.
+
+**Sam `DROP COLUMN` zmienił w kodzie trzy ciała funkcji.** `wlasnoscDoZapisu`,
+`wlasnoscOsobistaDoZapisu` i `przestrzenZMigawki` zwracają odtąd samo `{ workspaceId }`; ~250 miejsc
+zapisu nie zostało dotkniętych ani razu, bo rozpakowują wynik przez `...`. **Po to powstała faza
+podwójnego zapisu w 078** i to jest jej wypłata. U-3: `ownedOrAsync` stracił gałąź `{ ownerId }`,
+a martwe `ownedWhere`/`ownedOr` **usunięto** — funkcja budująca filtr po nieistniejącej kolumnie
+kompiluje się (`Record<string, unknown>`) i wywala dopiero w czasie działania.
+
+### Testy fazy przejściowej: przeniesione, nie skasowane
+
+`rozjazdPrzestrzeni` (wyzwalacz odrzuca niezgodność obu nośników) i `workspaceFill` (wyzwalacz
+wypełnia przestrzeń) straciły przedmiot na 40 tabelach, ale **nie na pięciu wyjątkowych** — tam
+`ownerId` żyje dalej, więc wyzwalacz nadal ma co wyprowadzać i co porównywać. Oba przeniesione na
+`NoteGroup`. Skasowany został tylko `ownershipScope.test.ts`, którego przedmiot (`ownedWhere`)
+zniknął w całości.
+
+Dwa testy straciły **drugą stronę porównania** i mówią o tym wprost, zamiast udawać dowód:
+`ownershipScopeSwitch` (nie ma już starego warunku do zestawienia) i `filtrMoichRekordow`
+(pierwszy z czterech przypadków). W obu zostały te części, które nadal mogą się zepsuć.
+
+Test izolacji najemcy — „najważniejszy test w systemie" — przeszedł na `workspaceId` i **objął 37
+modeli zamiast 15**. Zgłosił się sam: jego asercja „znalazłem za mało modeli" zaświeciła w chwili,
+gdy parser zaczął widzieć sześć zamiast czterdziestu sześciu.
+
+**Bramki:** build **exit 0**, `test:unit` **948/948** (było 922), zapadka paginacji **263** bez
+ruchu, `check:workspace-fill` **5 tabel** — dokładnie lista wyjątków, bo wyzwalacz zdjęto z 40
+razem z kolumnami.

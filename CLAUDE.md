@@ -508,7 +508,7 @@ AuditLog                                      — Audit trail for RBAC + config 
 TrashItem                                     — Soft-delete recovery (JSON entity snapshot + retention days; surfaced at /trash)
 DriveConnection, DriveFile                    — Google Drive integration (per-user OAuth drive.file tokens + uploaded-file registry; module folder map)
 Contact                                       — Contacts / personal CRM (per-user; tags = JSON)
-Workspace, WorkspaceMember                    — 051 (Faza 2, zadanie 9): PRZESTRZEŃ, w której żyje zasób (`kind` personal|team). Dziś **lustro** `Team`/`TeamMember`, nie zamiennik — odczyty nadal idą przez `ownerId`/`ownerTeamId`. `personalUserId`/`teamId` (oba nullable+unique) łączą przestrzeń ze źródłem: w PostgreSQL NULL-e w indeksie unikalnym są różne, więc jeden indeks daje niezmiennik „dokładnie jedna przestrzeń osobista na użytkownika". Kasowanie = kaskada FK
+Workspace, WorkspaceMember                    — 051/079 (Faza 2, zadanie 9 i 11): PRZESTRZEŃ, w której żyje zasób (`kind` personal|team) — **jedyny nośnik własności** od migracji 0244. `Team`/`TeamMember` pozostają ŹRÓDŁEM przestrzeni (lustro utrzymywane w przód, `check:workspace-mirror`), ale odczyty i zapisy idą już wyłącznie przez `workspaceId`. `personalUserId`/`teamId` (oba nullable+unique) łączą przestrzeń ze źródłem: w PostgreSQL NULL-e w indeksie unikalnym są różne, więc jeden indeks daje niezmiennik „dokładnie jedna przestrzeń osobista na użytkownika". Kasowanie = kaskada FK
 ResourceGrant, ResourceInvitation             — 051: nadanie dostępu do JEDNEGO zasobu + zaproszenie. **Tabele bez konsumenta do zadań 10/12** — świadomie, żeby nie robić dwóch migracji na tych samych tabelach. Nie kasować „w ramach porządków". Znane ograniczenie: `@@unique` nie łapie nadań linkowych (`subjectId: NULL`), poprawka w zadaniu 12
 ShoppingList, Item, ItemHistory               — Shopping core
 Product, Category, Unit, CategoryIconVariant  — Shopping config
@@ -565,33 +565,51 @@ TypeScript union type enforcing correctness at compile time (e.g.
 was SQLite (which has no enums); the convention persists even though both prod and
 dev are now PostgreSQL. **Never** convert these to Prisma enums.
 
-### Team Sharing Pattern
+### Ownership: a resource lives in a WORKSPACE (079 — task 11 closed)
 
-Resources can be owned by a user OR a team (mutually exclusive). Access check pattern:
+**`ownerId`/`ownerTeamId` are gone from 40 tables** (migration 0244). A resource's owner is the
+workspace it lives in: `Workspace.personalUserId` = a person's own space, `Workspace.teamId` = a
+team's space. There is no second carrier — do not add one back.
 
 ```typescript
-// Always use getUserTeamIds() to get user's team memberships
-const teamIds = await getUserTeamIds(userId);
-// Query: ownerId=user OR ownerTeamId in teamIds
-where: { OR: [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }] }
+// WRITE — never spell out ownership by hand:
+data: { ...(await wlasnoscDoZapisu(user.id, teamId)), name }   // team space or personal
+data: { ...(await wlasnoscOsobistaDoZapisu(user.id)), name }   // tables with no team ownership
+
+// READ, list scope — "everything I can see" (personal + my teams):
+where: { ...(await ownedWhereAsync(user.id)) }
+// READ, strictly mine — the exact successor of `ownerId = me`:
+where: { ...(await filtrMoichRekordow(user.id)) }
+
+// GUARD, one record:
+await assertOwnership(record, userId);                                   // any of my spaces
+(await getAccessibleWorkspaceIds(userId, "kitchen")).includes(rec.workspaceId); // + module access
+await czyMojRekord(record, userId);                                      // strictly mine
 ```
 
-Most modules follow this `ownerId` / `ownerTeamId` pattern (Shopping lists, Task
-projects, Notes, Recipes/Cookbooks/MealPlans/Pantry, Pets, Health, Habits,
-Vehicles, Wallet, Language decks). Stores are user-only. Some entities add
-**per-entity sharing** with VIEWER/EDITOR roles on top of ownership (`TaskShare`,
-`PetShare`) and per-resource membership (`TaskProjectMember`).
+Which one to pick is decided by **the condition you are replacing**, not by the table:
+`ownerId = me` → `filtrMoichRekordow`/`czyMojRekord`; `getUserTeamIds` → `assertOwnership`;
+`getAccessibleTeamIds` → `getAccessibleWorkspaceIds` (narrower — it drops teams where a household
+member has that module switched off, `TeamMember.moduleAccess`). Substituting a **wider** variant is
+forbidden: today every variant returns the same rows for an unrestricted account, so the mistake
+would surface only on the first restricted one.
 
-| Module | User ownership | Team ownership | Notes |
-|--------|---------------|----------------|-------|
-| Shopping Lists | `ownerId` | `ownerTeamId` | ✅ Full support |
-| Task Projects | `ownerId` | `ownerTeamId` | ✅ + `TaskShare`, `TaskProjectMember` |
-| Notes | `ownerId` | `ownerTeamId` | ✅ Added in 0016 migration |
-| Kitchen / Pets / Health / Habits / Flota / Portfel / Languages | `ownerId` | `ownerTeamId` | ✅ team-scoped; Pets also have `PetShare` |
-| Stores | `ownerId` | — | User-only |
+**Deleting an account or a team cascades through the workspace** — `workspaceId REFERENCES
+Workspace(id) ON DELETE CASCADE` (migration 0243). That FK is what replaced the old
+`owner → User (Cascade)`; it is also what lets a query say `workspace: { team: … }` (the "team
+resource" badge in the UI) and `workspace: { personalUserId: … }` without a second round-trip.
 
-`assertListAccess()`, `assertNoteAccess()`, etc. — each module has its equivalent
-guard for checking access including team membership.
+**Five tables keep `ownerId`** — `ItemHistory`, `NoteGroup`, `Skin`, `Tag`, `Job`
+(`src/lib/db/workspace-nullable.json`, gate `check:workspace-nullable`). Criterion: **a row may have
+no owner at all** (a system dictionary entry, a system job), and a space expresses neither its
+ownership nor its uniqueness — `UNIQUE(ownerId, name)` covers rows with `ownerId IS NULL`, and in
+PostgreSQL `NULL <> NULL`. Their scope helper is `ownedOrSystemWhere`, their guard
+`assertDictionaryAccess`. Do not "finish the migration" there.
+
+Some entities add **per-entity sharing** with VIEWER/EDITOR roles on top of ownership (`TaskShare`,
+`PetShare`) and per-resource membership (`TaskProjectMember`). Access to a single resource is
+answered by `platform/sharing` (C-17), not by the module — `assertListAccess()`,
+`assertNoteAccess()` and friends are thin wrappers that keep the old messages.
 
 ### Dictionary Ownership Levels
 
@@ -603,7 +621,7 @@ Three-tier system for categories, units, products:
 `getCategories()`, `getUnits()` — return all three levels merged, with `isBase`, `isOwn`, `teamId` fields.
 
 **034**: `NoteGroup`, `Tag` and `ItemHistory` follow the same idea via `ownerId`/`ownerTeamId`
-(`ItemHistory` is user-only). `NULL/NULL` = **system record**: readable by every signed-in user,
+(`ItemHistory` is user-only) — and this is exactly why 079 left those columns in place there. `NULL/NULL` = **system record**: readable by every signed-in user,
 editable only by an admin (`assertDictionaryAccess`, `ownedOrSystemWhere` in `src/lib/server-utils.ts`).
 Name uniqueness on `Tag`/`ItemHistory` is now **per owner** (`@@unique([ownerId, name])`) — a global
 unique name would stop a second user from creating the same label. Migration 0212 backfilled every
@@ -938,10 +956,13 @@ the table/paragraph merge).
   Conscious exceptions live in `src/platform/workspaces/fill-coverage.json` (empty today; dead entries
   fail). The nullable filter matters: `WorkspaceMember`/`ResourceGrant` also have a `workspaceId`, but
   a **required** one — there the space is part of the record's identity, not derived ownership.
-  The trigger is **transitional**: it derives the space from `ownerId`/`ownerTeamId` and disappears in
-  stage 4 together with those columns. It only fires on INSERT (moving a resource between spaces when
-  its owner changes belongs to stage 3) and leaves `NULL` when the owner has no space — a user's write
-  must never fail over a column nobody reads yet.
+  **079: the trigger is gone from the 40 tables** that lost their owner columns (migration 0244) —
+  it derived the space *from* those columns, so there is nothing left to derive from; the space is
+  supplied by `platform/workspaces/zapis.ts`. It **survives on the five exception tables**, where
+  `ownerId` lives on. That is why the gate now reports five tables and why a trigger on any other
+  table fails the build: the covered set and the exception list must be the same set.
+  It only fires on INSERT (moving a resource between spaces when its owner changes belongs to
+  stage 3) and leaves `NULL` when the owner has no space.
   **078 (stage 4 part 2) gave it a second job: it now also *rejects* divergence** (migration 0240).
   It used to return immediately whenever a write supplied `workspaceId`, taking that value on trust.
   During the **dual-write phase** the same fact is in the database twice — in `workspaceId` and in the
@@ -952,13 +973,14 @@ the table/paragraph merge).
   (rule from 0238: the trigger heals a missing space, it does not invent owners). Side effect worth
   knowing: this makes "record whose space contradicts its owner" **unreachable via INSERT**, so a
   fixture that deliberately built that state must be moved to an `UPDATE`.
-- **`platform/workspaces/zapis.ts` — where a new record goes, and what counts as "mine"** (076/078,
-  task 11 stage 4): **never write `ownerId` by hand.** `wlasnoscDoZapisu(userId, teamId?)` (and
-  `wlasnoscOsobistaDoZapisu(userId)` for tables with no `ownerTeamId` column) returns the ownership
-  fields for a new record; call sites spread the result — `data: { ...(await wlasnoscDoZapisu(user.id,
-  teamId)), name }`. On the read side, `filtrMoichRekordow(userId)` replaces `where: { ownerId: userId }`
-  on those same personal-only tables. Both exist to make `DROP COLUMN` a change to **one function body**
-  instead of 250 call sites, which is why the result is spread rather than assigned field by field.
+- **`platform/workspaces/zapis.ts` — where a new record goes, and what counts as "mine"** (076–079,
+  task 11 stage 4): **never spell out ownership by hand.** `wlasnoscDoZapisu(userId, teamId?)` (and
+  `wlasnoscOsobistaDoZapisu(userId)` for tables with no team ownership) returns the ownership fields
+  for a new record; call sites spread the result — `data: { ...(await wlasnoscDoZapisu(user.id,
+  teamId)), name }`. On the read side, `filtrMoichRekordow(userId)` / `czyMojRekord(record, userId)`
+  are the successors of `where: { ownerId: userId }` / `record.ownerId === userId`.
+  **079 collected the payout:** `DROP COLUMN` changed **three function bodies** and not one of the
+  ~250 write sites — which is why the result is spread rather than assigned field by field.
   Two things that are easy to get wrong:
   - **`filtrMoichRekordow` is deliberately NARROWER than `ownedWhereAsync`** — one space (the personal
     one), not `IN (all my spaces)`. On a table that has no team ownership the wide form would *widen*
@@ -967,6 +989,10 @@ the table/paragraph merge).
   - **`przestrzenZespoluBezKontroliDostepu` does not check permissions** and says so in its name
     (renamed in 078 from `przestrzenZespolu`). Whether the caller may write to that team is the
     module guard's decision, made where the operation's context is.
+  **A helper that becomes dead must be REMOVED, not left "just in case".** 079 deleted the synchronous
+  `ownedWhere`/`ownedOr`: a function building a filter over a column that no longer exists still
+  compiles (`Record<string, unknown>`) and blows up only at runtime, on the first query.
+
   Ownership **uniqueness** has also moved: all nine `UNIQUE(ownerId, …)` indexes on personal-only
   tables now key on `workspaceId` (migrations 0241, 0242). `Tag` and `ItemHistory` keep theirs on
   `ownerId` — their uniqueness covers **system rows** (`ownerId IS NULL`) and `workspaceId` is nullable
