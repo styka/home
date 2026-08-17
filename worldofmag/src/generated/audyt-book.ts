@@ -726,4 +726,4 @@ export const AUDYT_CHAPTERS: AudytChapter[] = [
   }
 ]
 
-export const AUDYT_GENERATED_AT = "2026-08-17T16:35:01.207Z"
+export const AUDYT_GENERATED_AT = "2026-08-17T16:44:58.272Z"

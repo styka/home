@@ -663,7 +663,7 @@ export async function saveIdeaFromList(
 
   const seed = await buildSeed(ctx);
   const row = await prisma.weatherIdea.upsert({
-    where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
+    where: { workspaceId_fingerprint: { ...(await filtrMoichRekordow(user.id)), fingerprint } },
     create: {
       ...(await wlasnoscOsobistaDoZapisu(user.id)),
       fingerprint,
@@ -710,7 +710,7 @@ async function buildSeed(ctx: IdeaContext): Promise<{ date: string; part: string
 export async function getIdeaDetail(fingerprint: string): Promise<IdeaDetailResult | null> {
   const user = await requireAuth();
   const row = await prisma.weatherIdea.findUnique({
-    where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
+    where: { workspaceId_fingerprint: { ...(await filtrMoichRekordow(user.id)), fingerprint } },
   });
   if (!row) return null;
   await prisma.weatherIdea.update({
@@ -745,7 +745,7 @@ export async function generateIdeaDetail(
   const fingerprint = fingerprintOf(title);
 
   const existing = await prisma.weatherIdea.findUnique({
-    where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
+    where: { workspaceId_fingerprint: { ...(await filtrMoichRekordow(user.id)), fingerprint } },
   });
   // Bez wymuszenia zapisany plan wygrywa z nową generacją — użytkownik ma dostać to, co już czytał.
   if (existing?.detail && !opts?.force) {
@@ -810,7 +810,7 @@ export async function generateIdeaDetail(
   const usage = usageFromChat([{ res, label: "szczegóły propozycji", op: "generation" }]);
   const now = new Date();
   const row = await prisma.weatherIdea.upsert({
-    where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
+    where: { workspaceId_fingerprint: { ...(await filtrMoichRekordow(user.id)), fingerprint } },
     create: {
       ...(await wlasnoscOsobistaDoZapisu(user.id)),
       fingerprint,
@@ -910,7 +910,7 @@ export async function blockIdea(
   if (!title) throw new Error("Propozycja bez nazwy");
   const fingerprint = fingerprintOf(title);
   await prisma.weatherIdea.upsert({
-    where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
+    where: { workspaceId_fingerprint: { ...(await filtrMoichRekordow(user.id)), fingerprint } },
     create: {
       ...(await wlasnoscOsobistaDoZapisu(user.id)),
       fingerprint,

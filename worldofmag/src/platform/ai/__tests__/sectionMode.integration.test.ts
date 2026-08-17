@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 // 041 (T-4) — kolejność rozstrzygania trybu sekcji AI na realnym Postgresie. DB-gated.
 //
@@ -157,7 +158,7 @@ test(
         });
         assert.equal(await resolveSectionMode(userId, "weather.ideas"), "always", "wybór przetrwał");
         const pref = await prisma.aiSectionPref.findUnique({
-          where: { ownerId_sectionKind: { ownerId: userId, sectionKind: "weather.ideas" } },
+          where: { workspaceId_sectionKind: { ...(await filtrMoichRekordow(userId)), sectionKind: "weather.ideas" } },
         });
         assert.equal(pref?.mode, "always", "preferencja nietknięta");
 

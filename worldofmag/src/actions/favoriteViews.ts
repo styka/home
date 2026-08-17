@@ -74,7 +74,7 @@ export async function addFavoriteView(input: {
   // Wpis na ten sam adres już istnieje → zwracamy go zamiast tworzyć duplikat (AC-9).
   // Sprawdzenie tutaj daje czytelny wynik; ostateczną gwarancją jest @@unique w bazie.
   const existing = await prisma.favoriteView.findUnique({
-    where: { ownerId_path: { ownerId: user.id, path } },
+    where: { workspaceId_path: { ...(await filtrMoichRekordow(user.id)), path } },
   });
   if (existing) return toDTO(existing);
 

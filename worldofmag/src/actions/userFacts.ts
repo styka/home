@@ -136,7 +136,7 @@ export async function upsertUserFact(data: {
   } else {
     const fingerprint = fingerprintOf(text);
     await prisma.userFact.upsert({
-      where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
+      where: { workspaceId_fingerprint: { ...(await filtrMoichRekordow(user.id)), fingerprint } },
       create: {
         ...(await wlasnoscOsobistaDoZapisu(user.id)),
         category: parseUserFactCategory(data.category),
@@ -211,7 +211,7 @@ export async function setUserFactByAdmin(data: {
     });
   } else {
     await prisma.userFact.upsert({
-      where: { ownerId_fingerprint: { ownerId: data.userId, fingerprint } },
+      where: { workspaceId_fingerprint: { ...(await filtrMoichRekordow(data.userId)), fingerprint } },
       create: {
         ...(await wlasnoscOsobistaDoZapisu(data.userId)),
         category: parseUserFactCategory(data.category),

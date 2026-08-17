@@ -7,6 +7,7 @@ import { TRASH_RETENTION_DAYS } from "@/platform/trash/trash";
 import {
   przestrzenOsobista,
   przestrzenZespoluBezKontroliDostepu,
+  filtrMoichRekordow,
 } from "@/platform/workspaces/zapis";
 
 export type TrashItemDTO = {
@@ -228,7 +229,7 @@ async function restoreWeatherIdea(d: Record<string, unknown>): Promise<void> {
   if (!ownerId || !fingerprint) throw new Error("Uszkodzona migawka propozycji");
 
   const clash = await prisma.weatherIdea.findUnique({
-    where: { ownerId_fingerprint: { ownerId, fingerprint } },
+    where: { workspaceId_fingerprint: { ...(await filtrMoichRekordow(ownerId)), fingerprint } },
     select: { id: true, detail: true },
   });
   if (clash) {

@@ -2013,7 +2013,7 @@ model FavoriteView {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
-  @@unique([ownerId, path]) // AC-9: ponowny zapis tego samego adresu nie tworzy duplikatu
+  @@unique([workspaceId, path]) // AC-9: ponowny zapis tego samego adresu nie tworzy duplikatu
   @@index([ownerId, order])
   @@index([workspaceId])
 }
@@ -2603,7 +2603,7 @@ model NewsSource {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
-  @@unique([ownerId, key])
+  @@unique([workspaceId, key])
   @@index([ownerId])
   @@index([workspaceId])
 }
@@ -2652,7 +2652,7 @@ model NewsArticle {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
-  @@unique([ownerId, sourceId, url])
+  @@unique([workspaceId, sourceId, url])
   @@index([ownerId, publishedAt])
   @@index([workspaceId])
 }
@@ -2695,7 +2695,7 @@ model NewsHiddenTopic {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
-  @@unique([ownerId, fingerprint])
+  @@unique([workspaceId, fingerprint])
   @@index([workspaceId])
 }
 
@@ -2778,7 +2778,7 @@ model UserFact {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
-  @@unique([ownerId, fingerprint])
+  @@unique([workspaceId, fingerprint])
   @@index([ownerId, status])
   @@index([workspaceId])
 }
@@ -2869,7 +2869,7 @@ model WeatherIdea {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
-  @@unique([ownerId, fingerprint])
+  @@unique([workspaceId, fingerprint])
   @@index([ownerId, state])
   @@index([workspaceId])
 }
@@ -2899,7 +2899,7 @@ model AiContent {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
-  @@unique([ownerId, kind, scopeKey])
+  @@unique([workspaceId, kind, scopeKey])
   @@index([ownerId, kind])
   @@index([workspaceId])
 }
@@ -2923,7 +2923,7 @@ model AiSectionPref {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
-  @@unique([ownerId, sectionKind])
+  @@unique([workspaceId, sectionKind])
   @@index([workspaceId])
 }
 

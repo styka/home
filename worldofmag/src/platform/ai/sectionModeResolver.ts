@@ -7,6 +7,7 @@
 
 import { prisma } from "@/platform/db/prisma";
 import type { AiContentKind } from "@/platform/ai/contentMemory";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 import {
   AI_SECTION_KINDS,
   AI_SECTION_MODES_CONFIG_KEY,
@@ -53,7 +54,7 @@ export async function resolveSectionMode(
   kind: AiContentKind
 ): Promise<AiSectionMode> {
   const pref = await prisma.aiSectionPref.findUnique({
-    where: { ownerId_sectionKind: { ownerId, sectionKind: kind } },
+    where: { workspaceId_sectionKind: { ...(await filtrMoichRekordow(ownerId)), sectionKind: kind } },
   });
   if (pref && isSectionMode(pref.mode)) return pref.mode;
 

@@ -16,6 +16,7 @@ import { parseStoredUsage, type AiUsageInfo } from "@/platform/ai/usage";
 // Import WYŁĄCZNIE typu — `sectionMode.ts` importuje stąd `AiContentKind`, więc import wartości
 // zrobiłby cykl w czasie wykonania. Typy znikają przy kompilacji, więc ten kierunek jest bezpieczny.
 import type { AiSectionMode } from "@/platform/ai/sectionMode";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 /**
  * Rodzaj zapamiętanej treści. String + union (C-12) — nigdy enum Prisma.
@@ -131,9 +132,13 @@ export async function rememberedContent<T>(
   args: RememberArgs<T>
 ): Promise<RememberedOrPending<T>> {
   const { ownerId, kind, scopeKey, inputHash, force, mode } = args;
+  // 078: klucz pamięci treści idzie po PRZESTRZENI (migracja 0242). Ustalamy ją raz — ten sam klucz
+  // czyta się tu dwa razy (odczyt i `upsert`), a `filtrMoichRekordow` może domknąć brakującą
+  // przestrzeń, więc dwa wywołania to dwie próby tego samego.
+  const przestrzen = await filtrMoichRekordow(ownerId);
 
   const existing = await prisma.aiContent.findUnique({
-    where: { ownerId_kind_scopeKey: { ownerId, kind, scopeKey } },
+    where: { workspaceId_kind_scopeKey: { ...przestrzen, kind, scopeKey } },
   });
 
   // Uszkodzony wpis traktujemy jak brak wpisu: najwyżej treść powstanie ponownie. Wysypanie strony
@@ -170,7 +175,7 @@ export async function rememberedContent<T>(
   const fresh = await args.generate();
   const now = new Date();
   const row = await prisma.aiContent.upsert({
-    where: { ownerId_kind_scopeKey: { ownerId, kind, scopeKey } },
+    where: { workspaceId_kind_scopeKey: { ...przestrzen, kind, scopeKey } },
     create: {
       ownerId,
       kind,

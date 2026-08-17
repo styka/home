@@ -820,7 +820,7 @@ export async function hideHotTopic(title: string): Promise<void> {
   if (!clean) throw new Error("Pusty tytuł tematu");
   const fingerprint = fingerprintOf(clean);
   await prisma.newsHiddenTopic.upsert({
-    where: { ownerId_fingerprint: { ownerId: user.id, fingerprint } },
+    where: { workspaceId_fingerprint: { ...(await filtrMoichRekordow(user.id)), fingerprint } },
     create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), fingerprint, title: clean },
     update: { title: clean },
   });

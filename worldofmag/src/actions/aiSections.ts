@@ -54,7 +54,7 @@ export async function setSectionMode(kind: AiContentKind, mode: AiSectionMode): 
   if (!isSectionMode(mode)) throw new Error("Nieznany tryb odświeżania");
 
   await prisma.aiSectionPref.upsert({
-    where: { ownerId_sectionKind: { ownerId: user.id, sectionKind: kind } },
+    where: { workspaceId_sectionKind: { ...(await filtrMoichRekordow(user.id)), sectionKind: kind } },
     create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), sectionKind: kind, mode },
     update: { mode },
   });
