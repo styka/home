@@ -155,3 +155,35 @@ export async function getAccessibleTeamIds(userId: string, moduleId: string): Pr
     .filter((r) => canMemberAccessModule(r, moduleId))
     .map((r) => r.teamId);
 }
+
+/**
+ * 079 (zadanie 11, etap 4) — `getAccessibleTeamIds` WYRAŻONE PRZESTRZENIAMI.
+ *
+ * Guardy pojedynczego rekordu w dziewiętnastu modułach mają dziś kształt
+ * `rec.ownerId === ja || teamIdsDostepneDlaModulu.includes(rec.ownerTeamId)`. Etap 4 zabiera obie
+ * kolumny, więc trzeba przełożyć **cały** ten warunek, a nie tylko jego pierwszą połowę.
+ *
+ * **Dlaczego nie `ownedOrAsync` / `ctx.workspaceIds`.** To byłoby POSZERZENIE i to takie, którego
+ * dziś nie widać: `ctx.workspaceIds` to wszystkie moje przestrzenie, a ten warunek jest węższy —
+ * pomija zespoły, w których „domownik" ma odebrany dostęp do tego konkretnego modułu
+ * (`TeamMember.moduleAccess`, Z-194). U kogoś bez ograniczeń oba zbiory są identyczne, więc
+ * podmiana przeszłaby bez śladu i zaszkodziła dopiero pierwszemu ograniczonemu kontu.
+ *
+ * Zwracana lista to **przestrzeń osobista + przestrzenie zespołów dostępnych dla tego modułu** —
+ * przekład jeden do jednego, oparty na lustrze z zadania 9. Równoważność sprawdza
+ * `accessibleWorkspaceIds.integration.test.ts` porównaniem ZBIORÓW na prawdziwych danych,
+ * z przypadkiem różnicującym (ograniczony moduł), a nie powtórzeniem tej samej arytmetyki.
+ */
+export async function getAccessibleWorkspaceIds(userId: string, moduleId: string): Promise<string[]> {
+  const teamIds = await getAccessibleTeamIds(userId, moduleId);
+  const przestrzenie = await prisma.workspace.findMany({
+    where: {
+      OR: [
+        { personalUserId: userId },
+        ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
+      ],
+    },
+    select: { id: true },
+  });
+  return przestrzenie.map((w) => w.id);
+}

@@ -2,13 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync, ownedOrAsync } from "@/platform/auth/serverUtils";
+import { requireAuth, getAccessibleTeamIds, getAccessibleWorkspaceIds, ownedWhereAsync, ownedOrAsync } from "@/platform/auth/serverUtils";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
 import type { PantryItem, Item } from "@prisma/client";
 import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
-import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { wlasnoscDoZapisu, przestrzenDoZapisu, przestrzenZespoluBezKontroliDostepu } from "@/platform/workspaces/zapis";
 
 export type PantryItemWithProduct = PantryItem & {
   product: {
@@ -20,15 +21,18 @@ export type PantryItemWithProduct = PantryItem & {
 };
 
 async function assertPantryItemAccess(pantryItemId: string, userId: string): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
+  // 079: dawny warunek szedł po `getUserTeamIds` (wszystkie zespoły, bez filtra modułu), więc
+  // odpowiada mu pełny zakres przestrzeni z kontekstu dostępu.
   const item = await prisma.pantryItem.findUnique({
     where: { id: pantryItemId },
-    select: { ownerId: true, ownerTeamId: true },
+    select: { workspaceId: true },
   });
   if (!item) throw new Error("Pozycja w spiżarni nie istnieje");
-  if (item.ownerId === userId) return;
-  if (item.ownerTeamId && teamIds.includes(item.ownerTeamId)) return;
-  throw new Error("Brak dostępu do tej pozycji");
+  try {
+    await assertOwnership(item, userId);
+  } catch {
+    throw new Error("Brak dostępu do tej pozycji");
+  }
 }
 
 // ─── Read ─────────────────────────────────────────────────────────────────
@@ -37,9 +41,11 @@ export async function getPantry(teamId?: string): Promise<PantryItemWithProduct[
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
+  // 079: filtr „tylko ten zespół" idzie po przestrzeni zespołu; uprawnienie sprawdza warunek
+  // wyżej, więc tłumaczenie identyfikatora funkcją bez kontroli dostępu jest tu na miejscu.
   const ownership = teamId
     ? teamIds.includes(teamId)
-      ? [{ ownerTeamId: teamId }]
+      ? [{ workspaceId: await przestrzenZespoluBezKontroliDostepu(teamId) }]
       : []
     : (await ownedOrAsync(user.id));
 
@@ -207,14 +213,11 @@ export async function bulkSetPantryQuantities(
     for (const u of updates) {
       const item = await tx.pantryItem.findUnique({
         where: { id: u.id },
-        select: { ownerId: true, ownerTeamId: true, workspaceId: true },
+        select: { workspaceId: true },
       });
       if (!item) continue;
-      if (item.ownerId !== user.id) {
-        const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
-        if (!item.ownerTeamId || !teamIds.includes(item.ownerTeamId)) {
-          throw new Error("Brak dostępu do pozycji");
-        }
+      if (!(await getAccessibleWorkspaceIds(user.id, "kitchen")).includes(item.workspaceId)) {
+        throw new Error("Brak dostępu do pozycji");
       }
       await tx.pantryItem.update({
         where: { id: u.id },
@@ -259,20 +262,25 @@ export async function moveItemToPantry(
     }))?.id ??
     null;
 
-  // If team-shared list, prefer team ownership for pantry too
+  // If team-shared list, prefer team ownership for pantry too.
+  // 079: „lista należy do zespołu" czytamy z jej PRZESTRZENI — przestrzeń zespołowa ma wypełnione
+  // `teamId` (lustro z zadania 9), więc przekład jest ścisły i nie zmienia rozgałęzienia niżej.
   const list = await prisma.shoppingList.findUnique({
     where: { id: item.listId },
-    select: { ownerTeamId: true },
+    select: { workspaceId: true },
   });
+  const przestrzenListy = list
+    ? await prisma.workspace.findUnique({ where: { id: list.workspaceId }, select: { teamId: true } })
+    : null;
 
-  const teamId = pantryData?.teamId ?? list?.ownerTeamId ?? null;
+  const teamId = pantryData?.teamId ?? przestrzenListy?.teamId ?? null;
 
   // Look for existing pantry item with same productId or name
   const existing = await prisma.pantryItem.findFirst({
     where: {
       AND: [
         productId ? { productId } : { name: { equals: item.name, mode: "insensitive" } },
-        teamId ? { ownerTeamId: teamId } : { ownerId: user.id },
+        { workspaceId: await przestrzenDoZapisu(user.id, teamId) },
       ],
     },
   });

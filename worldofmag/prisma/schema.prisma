@@ -444,6 +444,8 @@ model ShoppingList {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([workspaceId])
@@ -657,6 +659,8 @@ model Note {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   /// 062 (zadanie 15): WERSJA REKORDU — koniec cichej utraty pracy (rozdz. 8.5).
   /// Zapis z warunkiem na wersji odrzuca nadpisanie oparte na nieaktualnym odczycie.
   /// Rośnie WYŁĄCZNIE przez `updateWithVersion`; pilnuje tego `check:versioning`.
@@ -725,6 +729,8 @@ model TaskProject {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([workspaceId])
@@ -760,6 +766,8 @@ model ProjectGroup {
   owner User @relation("OwnedProjectGroups", fields: [ownerId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([workspaceId])
@@ -894,6 +902,8 @@ model Store {
   owner User? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([workspaceId])
@@ -1088,6 +1098,8 @@ model Recipe {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([cookbookId])
@@ -1185,6 +1197,8 @@ model Cookbook {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([workspaceId])
@@ -1210,6 +1224,8 @@ model MealPlanEntry {
   ownerTeam Team?   @relation("TeamMealPlans", fields: [ownerTeamId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId, date])
   @@index([ownerTeamId, date])
@@ -1237,6 +1253,8 @@ model PantryItem {
   ownerTeam Team?    @relation("TeamPantryItems", fields: [ownerTeamId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1278,6 +1296,8 @@ model StorageItem {
   batches   StorageBatch[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1334,6 +1354,8 @@ model StorageSupplier {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([workspaceId])
@@ -1377,6 +1399,8 @@ model StorageDocument {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([supplierId])
@@ -1417,6 +1441,8 @@ model StoragePurchaseOrder {
   lines     StoragePurchaseOrderLine[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1554,6 +1580,8 @@ model Pet {
   sales           PetSale[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1719,6 +1747,8 @@ model PetEnclosure {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([workspaceId])
@@ -1774,6 +1804,8 @@ model PetBreedingPair {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([maleId])
@@ -1822,6 +1854,8 @@ model PetSale {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([petId])
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1855,6 +1889,8 @@ model Vehicle {
   attachments VehicleAttachment[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -1925,6 +1961,8 @@ model WalletElement {
   entries   WalletEntry[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -2013,6 +2051,8 @@ model FavoriteView {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@unique([workspaceId, path]) // AC-9: ponowny zapis tego samego adresu nie tworzy duplikatu
   @@index([ownerId, order])
   @@index([workspaceId])
@@ -2082,6 +2122,8 @@ model Budget {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([workspaceId])
@@ -2106,6 +2148,8 @@ model FinanceGoal {
   ownerTeam Team? @relation("TeamFinanceGoals", fields: [ownerTeamId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -2204,6 +2248,8 @@ model LanguageDeck {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([workspaceId])
@@ -2264,6 +2310,8 @@ model HealthEvent {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([ownerId, scheduledAt])
   @@index([ownerTeamId, scheduledAt])
   @@index([workspaceId])
@@ -2317,6 +2365,8 @@ model MedicationSchedule {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([workspaceId])
@@ -2364,6 +2414,8 @@ model Habit {
   entries   HabitEntry[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId, archived])
   @@index([ownerTeamId, archived])
@@ -2603,6 +2655,8 @@ model NewsSource {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@unique([workspaceId, key])
   @@index([ownerId])
   @@index([workspaceId])
@@ -2625,6 +2679,8 @@ model NewsTopic {
   timeline NewsTimelineEntry[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([workspaceId])
@@ -2651,6 +2707,8 @@ model NewsArticle {
   items  NewsItem[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, sourceId, url])
   @@index([ownerId, publishedAt])
@@ -2694,6 +2752,8 @@ model NewsHiddenTopic {
   owner User @relation("OwnedNewsHiddenTopics", fields: [ownerId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, fingerprint])
   @@index([workspaceId])
@@ -2749,7 +2809,8 @@ model NewsPref {
   // „jedna preferencja na konto" i było ostatnią rzeczą, przez którą ta tabela zależy od kolumny
   // własnościowej. Przeniesienie jest tu ścisłe, bo `NewsPref` nie zna współwłasności zespołowej:
   // `ownerId` ⟺ przestrzeń OSOBISTA, więc „jedna na konto" = „jedna na przestrzeń".
-  workspaceId String @unique @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+  workspaceId String    @unique @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
 // 039: przekrojowa wiedza o użytkowniku — fakty, z których korzysta każdy moduł generujący treść
@@ -2778,6 +2839,8 @@ model UserFact {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@unique([workspaceId, fingerprint])
   @@index([ownerId, status])
   @@index([workspaceId])
@@ -2799,6 +2862,8 @@ model WeatherLocation {
   owner User @relation("OwnedWeatherLocations", fields: [ownerId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([workspaceId])
@@ -2822,6 +2887,8 @@ model WeatherWatcher {
   owner User @relation("OwnedWeatherWatchers", fields: [ownerId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([workspaceId])
@@ -2869,6 +2936,8 @@ model WeatherIdea {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@unique([workspaceId, fingerprint])
   @@index([ownerId, state])
   @@index([workspaceId])
@@ -2899,6 +2968,8 @@ model AiContent {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@unique([workspaceId, kind, scopeKey])
   @@index([ownerId, kind])
   @@index([workspaceId])
@@ -2922,6 +2993,8 @@ model AiSectionPref {
   owner User @relation("OwnedAiSectionPrefs", fields: [ownerId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, sectionKind])
   @@index([workspaceId])
@@ -2951,6 +3024,8 @@ model NewsRefreshRun {
   owner User @relation("OwnedNewsRefreshRuns", fields: [ownerId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId, finishedAt])
   @@index([workspaceId])
@@ -2988,6 +3063,8 @@ model Workshop {
   projects  WorkshopProject[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([ownerTeamId])
@@ -3191,6 +3268,8 @@ model Contact {
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([workspaceId])
@@ -3223,6 +3302,49 @@ model Workspace {
   team         Team?             @relation("TeamWorkspace", fields: [teamId], references: [id], onDelete: Cascade)
   members      WorkspaceMember[]
   grants       ResourceGrant[]
+
+  // 079 (etap 4): zasoby żyjące w tej przestrzeni. Relacja istnieje dla KASKADY — po usunięciu
+  // kolumn własnościowych to jedyne, co wiąże rekord z kontem/zespołem.
+  shoppingLists         ShoppingList[]
+  notes                 Note[]
+  taskProjects          TaskProject[]
+  projectGroups         ProjectGroup[]
+  stores                Store[]
+  recipes               Recipe[]
+  cookbooks             Cookbook[]
+  mealPlanEntrys        MealPlanEntry[]
+  pantryItems           PantryItem[]
+  storageItems          StorageItem[]
+  storageSuppliers      StorageSupplier[]
+  storageDocuments      StorageDocument[]
+  storagePurchaseOrders StoragePurchaseOrder[]
+  pets                  Pet[]
+  petEnclosures         PetEnclosure[]
+  petBreedingPairs      PetBreedingPair[]
+  petSales              PetSale[]
+  vehicles              Vehicle[]
+  walletElements        WalletElement[]
+  favoriteViews         FavoriteView[]
+  budgets               Budget[]
+  financeGoals          FinanceGoal[]
+  languageDecks         LanguageDeck[]
+  healthEvents          HealthEvent[]
+  medicationSchedules   MedicationSchedule[]
+  habits                Habit[]
+  newsSources           NewsSource[]
+  newsTopics            NewsTopic[]
+  newsArticles          NewsArticle[]
+  newsHiddenTopics      NewsHiddenTopic[]
+  newsPrefs             NewsPref[]
+  userFacts             UserFact[]
+  weatherLocations      WeatherLocation[]
+  weatherWatchers       WeatherWatcher[]
+  weatherIdeas          WeatherIdea[]
+  aiContents            AiContent[]
+  aiSectionPrefs        AiSectionPref[]
+  newsRefreshRuns       NewsRefreshRun[]
+  workshops             Workshop[]
+  contacts              Contact[]
 
   @@index([kind])
 }

@@ -4,6 +4,21 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — `--shadow-database-url` wskazujący na bazę roboczą kasuje ją bez ostrzeżenia
+**Problem:** Do wygenerowania DDL nowego klucza obcego uruchomiłem
+`prisma migrate diff --from-migrations … --shadow-database-url "$DATABASE_URL"`. DDL wyszedł
+poprawny, ale następne `prisma migrate deploy` padło na `P3005: The database schema is not empty`.
+Prisma użyła wskazanej bazy jako **cienia**: odtworzyła w niej migracje i posprzątała po sobie,
+zostawiając tabele bez `_prisma_migrations`. Dokładnie objaw z instrukcji odzysku — tylko że tym
+razem to nie kontener „cofnął bazę", tylko ja ją skasowałem własnym poleceniem.
+**Rozwiązanie:** Odtworzenie bazy od zera (`dropdb`/`createdb` + `migrate deploy`). Docelowo:
+**nie podawaj `--shadow-database-url` w ogóle** — Prisma stworzy i skasuje własną bazę cienia
+(tak robi `check:schema-drift`, dlatego on jako jedyny przeszedł bez szkód).
+**Lekcja:** Baza cienia jest **kasowana i odtwarzana** — wskazanie na nią czegokolwiek, na czym Ci
+zależy, jest równoznaczne z `dropdb`. Gdy narzędzie prosi o „bazę pomocniczą", nigdy nie podawaj
+tej, w której pracujesz, nawet lokalnie. Sygnał ostrzegawczy: baza „nagle kłamie" **zaraz po**
+poleceniu, które dostało jej URL w nietypowym parametrze — to nie kontener, to ten parametr.
+
 ## 2026-08-19 — Fixture, który „porządkuje" stan przed pomiarem, wycina z pomiaru broniony przypadek
 **Problem:** Usuwałem z deklaracji zasobów fakt `ownerId`, który od 075 pełnił rolę **siatki**:
 gdy przestrzeni zasobu nie było w kontekście dostępu użytkownika (brak wiersza `WorkspaceMember`),

@@ -2,12 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync, ownedOrAsync } from "@/platform/auth/serverUtils";
+import { requireAuth, getAccessibleTeamIds, getAccessibleWorkspaceIds, ownedWhereAsync, ownedOrAsync } from "@/platform/auth/serverUtils";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
 import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
-import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { wlasnoscDoZapisu, przestrzenZespoluBezKontroliDostepu } from "@/platform/workspaces/zapis";
 import {
   wartoscPozycji,
   liczbaPonizejMinimum,
@@ -46,15 +47,19 @@ async function ownershipOr(userId: string) {
 }
 
 async function assertStorageItemAccess(storageItemId: string, userId: string): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
+  // 079: guard szedł po `getUserTeamIds` (WSZYSTKIE zespoły, bez filtra modułu), więc jego
+  // odpowiednikiem jest pełny zakres przestrzeni z kontekstu dostępu — czyli `assertOwnership`.
+  // Użycie tu `getAccessibleWorkspaceIds` ZAWĘZIŁOBY regułę, a to też jest zmiana dostępu.
   const item = await prisma.storageItem.findUnique({
     where: { id: storageItemId },
-    select: { ownerId: true, ownerTeamId: true },
+    select: { workspaceId: true },
   });
   if (!item) throw new Error("Pozycja magazynowa nie istnieje");
-  if (item.ownerId === userId) return;
-  if (item.ownerTeamId && teamIds.includes(item.ownerTeamId)) return;
-  throw new Error("Brak dostępu do tej pozycji");
+  try {
+    await assertOwnership(item, userId);
+  } catch {
+    throw new Error("Brak dostępu do tej pozycji");
+  }
 }
 
 // ─── Read ─────────────────────────────────────────────────────────────────
@@ -63,9 +68,12 @@ export async function getStorageItems(teamId?: string): Promise<StorageItemWithM
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
 
+  // 079: filtr „pokaż tylko ten zespół" idzie po przestrzeni zespołu. Uprawnienie sprawdza
+  // warunek wyżej (`teamIds` jest już przefiltrowane po module), więc tłumaczenie identyfikatora
+  // funkcją bez kontroli dostępu jest tu na miejscu.
   const ownership = teamId
     ? teamIds.includes(teamId)
-      ? [{ ownerTeamId: teamId }]
+      ? [{ workspaceId: await przestrzenZespoluBezKontroliDostepu(teamId) }]
       : []
     : (await ownedOrAsync(user.id));
 
@@ -259,21 +267,21 @@ export async function bulkSetStorageQuantities(
   updates: Array<{ id: string; quantity: number | null }>
 ): Promise<void> {
   const user = await requireAuth();
-  const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
+  const przestrzenie = await getAccessibleWorkspaceIds(user.id, "magazynowanie");
 
   await prisma.$transaction(async (tx) => {
     // Z-073: jeden odczyt pozycji zamiast findUnique per wiersz (N+1) — przy spisie
     // całego magazynu to dziesiątki/setki zapytań mniej.
     const items = await tx.storageItem.findMany({
       where: { id: { in: updates.map((u) => u.id) } },
-      select: { id: true, ownerId: true, ownerTeamId: true, quantity: true },
+      select: { id: true, workspaceId: true, quantity: true },
     });
     const byId = new Map(items.map((it) => [it.id, it]));
 
     for (const u of updates) {
       const item = byId.get(u.id);
       if (!item) continue;
-      if (item.ownerId !== user.id && (!item.ownerTeamId || !teamIds.includes(item.ownerTeamId))) {
+      if (!przestrzenie.includes(item.workspaceId)) {
         throw new Error("Brak dostępu do pozycji");
       }
       const before = item.quantity ?? 0;
@@ -467,7 +475,11 @@ export async function transferStock(
         name: src.name,
         warehouse: wh,
         location: loc,
-        OR: [{ ownerId: src.ownerId ?? undefined }, { ownerTeamId: src.ownerTeamId ?? undefined }],
+        // 079: cel przesunięcia szukamy w TEJ SAMEJ przestrzeni. Dawny warunek był nie tylko
+        // oparty na znikających kolumnach — był też nieszczelny: `{ ownerId: undefined }` dla
+        // pozycji zespołowej nie zawężał niczego, więc `OR` dopasowywał WSZYSTKIE pozycje o tej
+        // nazwie w bazie. Przestrzeń jest jedną wartością i tej dziury nie ma.
+        workspaceId: src.workspaceId,
         NOT: { id },
       },
     });
@@ -493,11 +505,8 @@ export async function transferStock(
           unit: src.unit,
           unitPrice: src.unitPrice,
           supplierId: src.supplierId,
-          // Nowa pozycja zostaje w tej samej przestrzeni co źródłowa. Kolumny własnościowe
-          // przepisujemy dopóki istnieją; `workspaceId` jest tu jedynym, który przeżyje etap 4.
+          // Nowa pozycja zostaje w tej samej przestrzeni co źródłowa.
           workspaceId: src.workspaceId,
-          ownerId: src.ownerId,
-          ownerTeamId: src.ownerTeamId,
         },
       });
       await tx.storageMovement.create({
@@ -530,12 +539,14 @@ export async function getSuppliers(): Promise<StorageSupplier[]> {
 }
 
 async function assertSupplierAccess(id: string, userId: string): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
-  const s = await prisma.storageSupplier.findUnique({ where: { id }, select: { ownerId: true, ownerTeamId: true } });
+  // 079: jak wyżej — dawny `getUserTeamIds` to pełny zakres przestrzeni.
+  const s = await prisma.storageSupplier.findUnique({ where: { id }, select: { workspaceId: true } });
   if (!s) throw new Error("Dostawca nie istnieje");
-  if (s.ownerId === userId) return;
-  if (s.ownerTeamId && teamIds.includes(s.ownerTeamId)) return;
-  throw new Error("Brak dostępu do dostawcy");
+  try {
+    await assertOwnership(s, userId);
+  } catch {
+    throw new Error("Brak dostępu do dostawcy");
+  }
 }
 
 export async function addSupplier(data: SupplierInput): Promise<StorageSupplier> {
@@ -801,7 +812,7 @@ export async function getDocument(id: string): Promise<StorageDocumentWithLines 
     include: { lines: true, supplier: true },
   });
   if (!doc) return null;
-  if (doc.ownerId !== user.id && (!doc.ownerTeamId || !teamIds.includes(doc.ownerTeamId))) {
+  if (!(await getAccessibleWorkspaceIds(user.id, "magazynowanie")).includes(doc.workspaceId)) {
     throw new Error("Brak dostępu do dokumentu");
   }
   return doc;
@@ -842,7 +853,10 @@ export async function createDocument(data: DocumentInput): Promise<StorageDocume
     });
 
     if (data.applyToStock) {
-      const ownClause = data.teamId ? { ownerTeamId: data.teamId } : { ownerId: user.id };
+      // 079: dopasowanie istniejącej pozycji i utworzenie nowej muszą trafić w TĘ SAMĄ
+      // przestrzeń — dlatego jedno wyliczenie własności obsługuje oba użycia.
+      const wlasnoscPozycji = await wlasnoscDoZapisu(user.id, data.teamId);
+      const ownClause = { workspaceId: wlasnoscPozycji.workspaceId };
       for (const l of created.lines) {
         // Dopasuj istniejącą pozycję po itemId lub nazwie, inaczej utwórz.
         let target = l.itemId
@@ -858,7 +872,7 @@ export async function createDocument(data: DocumentInput): Promise<StorageDocume
               unit: l.unit,
               unitPrice: l.unitPrice,
               supplierId: data.supplierId || null,
-              ...ownClause,
+              ...wlasnoscPozycji,
             },
           });
         }
@@ -890,9 +904,9 @@ export async function createDocument(data: DocumentInput): Promise<StorageDocume
 export async function deleteDocument(id: string): Promise<void> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
-  const doc = await prisma.storageDocument.findUnique({ where: { id }, select: { ownerId: true, ownerTeamId: true } });
+  const doc = await prisma.storageDocument.findUnique({ where: { id }, select: { workspaceId: true } });
   if (!doc) return;
-  if (doc.ownerId !== user.id && (!doc.ownerTeamId || !teamIds.includes(doc.ownerTeamId))) {
+  if (!(await getAccessibleWorkspaceIds(user.id, "magazynowanie")).includes(doc.workspaceId)) {
     throw new Error("Brak dostępu do dokumentu");
   }
   await prisma.storageDocument.delete({ where: { id } });
@@ -931,7 +945,7 @@ export async function getPurchaseOrder(id: string): Promise<PurchaseOrderWithLin
     include: { lines: true, supplier: true },
   });
   if (!po) return null;
-  if (po.ownerId !== user.id && (!po.ownerTeamId || !teamIds.includes(po.ownerTeamId))) {
+  if (!(await getAccessibleWorkspaceIds(user.id, "magazynowanie")).includes(po.workspaceId)) {
     throw new Error("Brak dostępu do zamówienia");
   }
   return po;
@@ -968,9 +982,9 @@ export async function updatePurchaseOrder(
 ): Promise<void> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
-  const po = await prisma.storagePurchaseOrder.findUnique({ where: { id }, select: { ownerId: true, ownerTeamId: true } });
+  const po = await prisma.storagePurchaseOrder.findUnique({ where: { id }, select: { workspaceId: true } });
   if (!po) throw new Error("Zamówienie nie istnieje");
-  if (po.ownerId !== user.id && (!po.ownerTeamId || !teamIds.includes(po.ownerTeamId))) {
+  if (!(await getAccessibleWorkspaceIds(user.id, "magazynowanie")).includes(po.workspaceId)) {
     throw new Error("Brak dostępu do zamówienia");
   }
   const data: Record<string, unknown> = {};
@@ -985,9 +999,9 @@ export async function updatePurchaseOrder(
 export async function deletePurchaseOrder(id: string): Promise<void> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
-  const po = await prisma.storagePurchaseOrder.findUnique({ where: { id }, select: { ownerId: true, ownerTeamId: true } });
+  const po = await prisma.storagePurchaseOrder.findUnique({ where: { id }, select: { workspaceId: true } });
   if (!po) return;
-  if (po.ownerId !== user.id && (!po.ownerTeamId || !teamIds.includes(po.ownerTeamId))) {
+  if (!(await getAccessibleWorkspaceIds(user.id, "magazynowanie")).includes(po.workspaceId)) {
     throw new Error("Brak dostępu do zamówienia");
   }
   await prisma.storagePurchaseOrder.delete({ where: { id } });
