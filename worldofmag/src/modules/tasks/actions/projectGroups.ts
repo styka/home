@@ -21,7 +21,7 @@ function parseProjectIds(raw: string): string[] {
 /** Id projektów, do których użytkownik ma dostęp (właściciel lub członek). */
 async function accessibleProjectIds(userId: string): Promise<Set<string>> {
   const projects = await prisma.taskProject.findMany({
-    where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
+    where: { OR: [await filtrMoichRekordow(userId), { members: { some: { userId } } }] },
     select: { id: true },
   });
   return new Set(projects.map((p: { id: string }) => p.id));
@@ -65,7 +65,7 @@ export async function getProjectGroups(): Promise<ProjectGroup[]> {
 /** Pojedyncza grupa (z odfiltrowaniem niedostępnych projektów). Null, gdy nie należy do usera. */
 export async function getProjectGroup(id: string): Promise<ProjectGroup | null> {
   const user = await requireAuth();
-  const row = await prisma.projectGroup.findFirst({ where: { id, ownerId: user.id } });
+  const row = await prisma.projectGroup.findFirst({ where: { id, ...(await filtrMoichRekordow(user.id)) } });
   if (!row) return null;
   const accessible = await accessibleProjectIds(user.id);
   const ids = parseProjectIds(row.projectIds).filter((pid) => accessible.has(pid));
@@ -112,7 +112,7 @@ export async function updateProjectGroup(
   patch: { name?: string; projectIds?: string[]; emoji?: string; color?: string | null }
 ): Promise<ProjectGroup> {
   const user = await requireAuth();
-  const existing = await prisma.projectGroup.findFirst({ where: { id, ownerId: user.id } });
+  const existing = await prisma.projectGroup.findFirst({ where: { id, ...(await filtrMoichRekordow(user.id)) } });
   if (!existing) throw new Error("Grupa nie znaleziona");
 
   const data: Record<string, unknown> = {};
@@ -144,7 +144,7 @@ export async function updateProjectGroup(
 
 export async function deleteProjectGroup(id: string): Promise<void> {
   const user = await requireAuth();
-  const existing = await prisma.projectGroup.findFirst({ where: { id, ownerId: user.id } });
+  const existing = await prisma.projectGroup.findFirst({ where: { id, ...(await filtrMoichRekordow(user.id)) } });
   if (!existing) return;
   await prisma.projectGroup.delete({ where: { id } });
   revalidatePath("/tasks");

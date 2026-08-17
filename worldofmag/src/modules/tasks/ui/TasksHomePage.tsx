@@ -351,7 +351,7 @@ function ProjectCard({ project }: { project: TaskProject }) {
       <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {project.name}
       </span>
-      {project.ownerTeamId && (
+      {project.workspace?.teamId && (
         <span
           style={{
             fontSize: 11,

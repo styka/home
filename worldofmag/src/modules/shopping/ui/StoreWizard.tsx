@@ -91,7 +91,7 @@ function makeStorePreview(
     if (pos) { n.x = pos.x; n.y = pos.y; }
   });
 
-  return { id: storeId, name: storeName, ownerId: "", nodes: nodeArr, edges: edgeArr, createdAt: new Date(), updatedAt: new Date() };
+  return { id: storeId, name: storeName, workspaceId: "", nodes: nodeArr, edges: edgeArr, createdAt: new Date(), updatedAt: new Date() };
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -411,7 +411,7 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
         const pos = positions.get(n.id);
         if (pos) { n.x = pos.x; n.y = pos.y; }
       });
-      setAiPreview({ id: storeId, name: aiStoreName, ownerId: "", nodes: nodeArr, edges: edgeArr, createdAt: new Date(), updatedAt: new Date() });
+      setAiPreview({ id: storeId, name: aiStoreName, workspaceId: "", nodes: nodeArr, edges: edgeArr, createdAt: new Date(), updatedAt: new Date() });
       setPhase("ai-review");
     } catch (e) {
       setAiError(e instanceof Error ? e.message : "Nieznany błąd");

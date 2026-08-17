@@ -2,6 +2,7 @@
 // Plik NIE jest "use server" — to wewnętrzny helper wołany przez Server Actions
 // (np. flota.ts), nie eksponowany do klienta. Idempotentny po (sourceModule, sourceId).
 
+import { czyMojRekord } from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma";
 
 export type AutoExpenseInput = {
@@ -30,7 +31,7 @@ export async function bookAutoExpense(userId: string, opts: AutoExpenseInput): P
 
   const el = await prisma.walletElement.findUnique({ where: { id: settings.autoExpenseElementId } });
   // Tylko prywatne, aktywne konto użytkownika (nie księgujemy na cudze/zespołowe automatycznie).
-  if (!el || el.ownerId !== userId || el.archived) return;
+  if (!el || !(await czyMojRekord(el, userId)) || el.archived) return;
 
   const existing = await prisma.walletEntry.findFirst({
     where: { sourceModule: opts.module, sourceId: opts.sourceId },

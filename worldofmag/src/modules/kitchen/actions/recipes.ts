@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync, ownedOrAsync } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, getAccessibleWorkspaceIds, ownedWhereAsync, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { categorize } from "@/modules/shopping/contract";
 import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
@@ -117,8 +117,7 @@ export async function getRecipes(opts?: {
       cookCount: true,
       lastCookedAt: true,
       rating: true,
-      ownerId: true,
-      ownerTeamId: true,
+      workspaceId: true,
       cookbookId: true,
       isPublic: true,
       isArchived: true,
@@ -157,9 +156,10 @@ export async function getRecipe(slugOrId: string): Promise<RecipeFull | null> {
 
   if (!recipe) return null;
 
+  // 079: dostęp „mój lub mojego zespołu (z filtrem modułu) lub publiczny" — pierwsze dwa człony
+  // wyraża odtąd zakres przestrzeni dostępnych dla Kuchni, trzeci zostaje bez zmian.
   const hasAccess =
-    recipe.ownerId === user.id ||
-    (recipe.ownerTeamId && teamIds.includes(recipe.ownerTeamId)) ||
+    (await getAccessibleWorkspaceIds(user.id, "kitchen")).includes(recipe.workspaceId) ||
     recipe.isPublic;
   if (!hasAccess) return null;
 

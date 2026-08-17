@@ -4,6 +4,7 @@
 //
 // Brak `type === "..."` tutaj — to wyłącznie typy i resolvery (scripts/check-action-coverage.js
 // skanuje ten katalog, ale ten plik nie deklaruje żadnych akcji).
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import type { AIAction } from "@/platform/ai/aiAction";
@@ -145,7 +146,7 @@ export async function resolveTaskId(
       OR: [
         { createdById: userId },
         { assigneeId: userId },
-        { project: { ownerId: userId } },
+        { project: await filtrMoichRekordow(userId) },
         { project: { members: { some: { userId } } } },
       ],
       title: { contains: searchQuery ?? "", mode: "insensitive" },
@@ -163,17 +164,17 @@ export async function resolveProjectIdForCreate(
 ): Promise<string | null> {
   if (projectName) {
     const p = await prisma.taskProject.findFirst({
-      where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }], name: { contains: projectName, mode: "insensitive" } },
+      where: { OR: [await filtrMoichRekordow(userId), { members: { some: { userId } } }], name: { contains: projectName, mode: "insensitive" } },
     });
     if (p) return p.id;
   }
   if (currentProjectId) {
     const p = await prisma.taskProject.findFirst({
-      where: { id: currentProjectId, OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
+      where: { id: currentProjectId, OR: [await filtrMoichRekordow(userId), { members: { some: { userId } } }] },
     });
     if (p) return p.id;
   }
-  const inbox = await prisma.taskProject.findFirst({ where: { ownerId: userId, isInbox: true } });
+  const inbox = await prisma.taskProject.findFirst({ where: { ...(await filtrMoichRekordow(userId)), isInbox: true } });
   return inbox?.id ?? null;
 }
 

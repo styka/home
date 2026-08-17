@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
@@ -11,15 +12,18 @@ import type { PetEnclosure, PetEnvironmentReading } from "@/types";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 async function assertEnclosureAccess(enclosureId: string, userId: string): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
   const enc = await prisma.petEnclosure.findUnique({
     where: { id: enclosureId },
-    select: { ownerId: true, ownerTeamId: true },
+    select: { workspaceId: true },
   });
   if (!enc) throw new Error("Zbiornik nie istnieje");
-  if (enc.ownerId === userId) return;
-  if (enc.ownerTeamId && teamIds.includes(enc.ownerTeamId)) return;
-  throw new Error("Brak dostępu do zbiornika");
+  // 079: warunek „mój LUB któregoś z MOICH zespołów" (bez filtra modułu) = pełny zakres
+  // przestrzeni z kontekstu dostępu.
+  try {
+    await assertOwnership(enc, userId);
+  } catch {
+    throw new Error("Brak dostępu do zbiornika");
+  }
 }
 
 export async function getEnclosures(): Promise<PetEnclosure[]> {

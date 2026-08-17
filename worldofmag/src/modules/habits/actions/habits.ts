@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import type { Habit, HabitWithStats } from "@/types";
@@ -17,15 +18,18 @@ import { normalizeDays, normalizeGoal, normalizeReminder } from "../domain/harmo
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 async function assertHabitAccess(id: string, userId: string): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
   const h = await prisma.habit.findUnique({
     where: { id },
-    select: { ownerId: true, ownerTeamId: true },
+    select: { workspaceId: true },
   });
   if (!h) throw new Error("Nawyk nie istnieje");
-  if (h.ownerId === userId) return;
-  if (h.ownerTeamId && teamIds.includes(h.ownerTeamId)) return;
-  throw new Error("Brak dostępu do nawyku");
+  // 079: warunek „mój LUB któregoś z MOICH zespołów" (bez filtra modułu) = pełny zakres
+  // przestrzeni z kontekstu dostępu.
+  try {
+    await assertOwnership(h, userId);
+  } catch {
+    throw new Error("Brak dostępu do nawyku");
+  }
 }
 
 /** Lista nawyków w zasięgu użytkownika/zespołu, wzbogacona o statystyki. */
@@ -77,8 +81,7 @@ export async function getHabits(opts?: { includeArchived?: boolean }): Promise<H
       reminderTime: h.reminderTime,
       archived: h.archived,
       sortOrder: h.sortOrder,
-      ownerId: h.ownerId,
-      ownerTeamId: h.ownerTeamId,
+      workspaceId: h.workspaceId,
       createdAt: h.createdAt,
       updatedAt: h.updatedAt,
       entryDates,
@@ -114,8 +117,12 @@ export async function createHabit(data: {
   }
 
   // Nowy nawyk na początek listy.
+  // 079: sortowanie liczymy w PRZESTRZENI, do której nawyk trafi — wcześniej warunek brał
+  // przestrzeń osobistą *i* zespołową naraz, więc przy zapisie zespołowym uwzględniał także
+  // prywatne nawyki. Jedna przestrzeń jest tym, co ta agregacja miała mierzyć.
+  const wlasnosc = await wlasnoscDoZapisu(user.id, ownerTeamId);
   const min = await prisma.habit.aggregate({
-    where: { OR: [{ ownerId: user.id }, ...(ownerTeamId ? [{ ownerTeamId }] : [])] },
+    where: { workspaceId: wlasnosc.workspaceId },
     _min: { sortOrder: true },
   });
 
@@ -129,7 +136,7 @@ export async function createHabit(data: {
       weeklyGoal: normalizeGoal(data.weeklyGoal),
       reminderTime: normalizeReminder(data.reminderTime),
       sortOrder: (min._min.sortOrder ?? 0) - 1,
-      ...(await wlasnoscDoZapisu(user.id, ownerTeamId)),
+      ...wlasnosc,
     },
   });
   revalidatePath("/habits");

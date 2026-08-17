@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
@@ -126,14 +127,14 @@ export async function deleteBudget(id: string): Promise<void> {
 }
 
 async function assertBudgetAccess(id: string, userId: string): Promise<void> {
-  const b = await prisma.budget.findUnique({ where: { id }, select: { ownerId: true, ownerTeamId: true } });
+  const b = await prisma.budget.findUnique({ where: { id }, select: { workspaceId: true } });
   if (!b) throw new Error("Budżet nie istnieje");
-  if (b.ownerId === userId) return;
-  if (b.ownerTeamId) {
-    const teamIds = await getUserTeamIds(userId);
-    if (teamIds.includes(b.ownerTeamId)) return;
+  // 079: pełny zakres przestrzeni = dawne `getUserTeamIds`.
+  try {
+    await assertOwnership(b, userId);
+  } catch {
+    throw new Error("Brak dostępu do budżetu");
   }
-  throw new Error("Brak dostępu do budżetu");
 }
 
 // ─── Cele oszczędnościowe ────────────────────────────────────────────────────
@@ -234,10 +235,11 @@ export async function deleteGoal(id: string): Promise<void> {
 async function assertGoalAccess(id: string, userId: string): Promise<FinanceGoal> {
   const g = await prisma.financeGoal.findUnique({ where: { id } });
   if (!g) throw new Error("Cel nie istnieje");
-  if (g.ownerId === userId) return g;
-  if (g.ownerTeamId) {
-    const teamIds = await getUserTeamIds(userId);
-    if (teamIds.includes(g.ownerTeamId)) return g;
+  // 079: pełny zakres przestrzeni = dawne `getUserTeamIds`.
+  try {
+    await assertOwnership(g, userId);
+  } catch {
+    throw new Error("Brak dostępu do celu");
   }
-  throw new Error("Brak dostępu do celu");
+  return g;
 }

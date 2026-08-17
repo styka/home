@@ -108,7 +108,7 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
               >
                 <div className="flex items-start justify-between">
                   <span className="text-2xl" aria-hidden>{wt.emoji}</span>
-                  {w.ownerTeamId ? (
+                  {w.workspace?.teamId ? (
                     <Users size={15} style={{ color: "var(--accent-purple)" }} aria-label="Warsztat zespołowy" />
                   ) : null}
                 </div>

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
@@ -12,12 +13,14 @@ import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 const PET_REF = { id: true, name: true, species: true, sex: true, status: true } as const;
 
 async function assertPairAccess(pairId: string, userId: string): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
-  const pair = await prisma.petBreedingPair.findUnique({ where: { id: pairId }, select: { ownerId: true, ownerTeamId: true } });
+  const pair = await prisma.petBreedingPair.findUnique({ where: { id: pairId }, select: { workspaceId: true } });
   if (!pair) throw new Error("Para hodowlana nie istnieje");
-  if (pair.ownerId === userId) return;
-  if (pair.ownerTeamId && teamIds.includes(pair.ownerTeamId)) return;
-  throw new Error("Brak dostępu do pary hodowlanej");
+  // 079: pełny zakres przestrzeni = dawne `getUserTeamIds`.
+  try {
+    await assertOwnership(pair, userId);
+  } catch {
+    throw new Error("Brak dostępu do pary hodowlanej");
+  }
 }
 
 function revalidatePet(petId: string) {
@@ -293,7 +296,7 @@ export async function recordSale(petId: string, data: {
 
 export async function deleteSale(id: string): Promise<void> {
   const user = await requireAuth();
-  const sale = await prisma.petSale.findUnique({ where: { id }, select: { petId: true, ownerId: true } });
+  const sale = await prisma.petSale.findUnique({ where: { id }, select: { petId: true } });
   if (!sale) return;
   await assertPetAccess(sale.petId, user.id, true);
   await prisma.petSale.delete({ where: { id } });

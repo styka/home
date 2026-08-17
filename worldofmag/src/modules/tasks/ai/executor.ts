@@ -209,7 +209,7 @@ export async function executeTasksAction(action: AIAction, userId: string, curre
     const ids: string[] = [];
     for (const name of list) {
       const p = await prisma.taskProject.findFirst({
-        where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }], name: { contains: name, mode: "insensitive" } },
+        where: { OR: [await filtrMoichRekordow(userId), { members: { some: { userId } } }], name: { contains: name, mode: "insensitive" } },
         select: { id: true },
       });
       if (p) ids.push(p.id);
@@ -228,7 +228,7 @@ export async function executeTasksAction(action: AIAction, userId: string, curre
     const q = searchQuery ?? asStr(params.name);
     const gid = asStr(params.groupId);
     const grp = gid
-      ? await prisma.projectGroup.findFirst({ where: { id: gid, ownerId: userId }, select: { id: true } })
+      ? await prisma.projectGroup.findFirst({ where: { id: gid, ...(await filtrMoichRekordow(userId)) }, select: { id: true } })
       : await prisma.projectGroup.findFirst({ where: { ...(await filtrMoichRekordow(userId)), name: { contains: q ?? "", mode: "insensitive" } }, select: { id: true } });
     if (!grp) throw new Error(`Nie znaleziono grupy projektów: „${q ?? gid ?? ""}"`);
     const id = grp.id;

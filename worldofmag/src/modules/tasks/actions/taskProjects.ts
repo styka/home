@@ -6,7 +6,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import type { TaskProject, ProjectStatusConfig } from "@/types";
 import { serializeStatusConfig, parseStatusConfig, SYSTEM_TASK_STATUSES } from "@/types";
-import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { wlasnoscDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
 import { requireTaskModuleAccess } from "../lib/sharingGuard"
 
 function toProject(p: unknown): TaskProject {
@@ -16,15 +16,16 @@ function toProject(p: unknown): TaskProject {
 export async function getTaskProjects(): Promise<TaskProject[]> {
   const user = await requireAuth();
 
+  const mojaPrzestrzen = await filtrMoichRekordow(user.id);
   const owned = await prisma.taskProject.findMany({
-    where: { ownerId: user.id },
-    include: { _count: { select: { tasks: true } }, members: { select: { userId: true, role: true } } },
+    where: mojaPrzestrzen,
+    include: { _count: { select: { tasks: true } }, members: { select: { userId: true, role: true } }, workspace: { select: { teamId: true } } },
     orderBy: [{ isInbox: "desc" }, { createdAt: "asc" }],
   });
 
   const memberOf = await prisma.taskProject.findMany({
-    where: { members: { some: { userId: user.id } }, ownerId: { not: user.id } },
-    include: { _count: { select: { tasks: true } }, members: { select: { userId: true, role: true } } },
+    where: { members: { some: { userId: user.id } }, workspaceId: { not: mojaPrzestrzen.workspaceId } },
+    include: { _count: { select: { tasks: true } }, members: { select: { userId: true, role: true } }, workspace: { select: { teamId: true } } },
     orderBy: { createdAt: "asc" },
   });
 
@@ -141,7 +142,7 @@ export async function getOrCreateInbox(): Promise<TaskProject> {
   const user = await requireAuth();
 
   let inbox = await prisma.taskProject.findFirst({
-    where: { ownerId: user.id, isInbox: true },
+    where: { ...(await filtrMoichRekordow(user.id)), isInbox: true },
     include: { _count: { select: { tasks: true } } },
   });
 
@@ -164,7 +165,7 @@ export async function ensureOmniaProject(): Promise<TaskProject> {
   const user = await requireAuth();
 
   let project = await prisma.taskProject.findFirst({
-    where: { ownerId: user.id, name: { equals: "Omnia", mode: "insensitive" } },
+    where: { ...(await filtrMoichRekordow(user.id)), name: { equals: "Omnia", mode: "insensitive" } },
     include: { _count: { select: { tasks: true } } },
   });
 

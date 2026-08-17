@@ -41,7 +41,12 @@ export const UNITS: Array<{ value: string; label: string }> = [
 ];
 
 export type ShoppingList = PrismaShoppingList & {
-  ownerTeam?: { id: string; name: string } | null;
+  /**
+   * 079: zespół, do którego zasób należy — wyprowadzony z jego PRZESTRZENI (`Workspace.team`).
+   * Zastępuje dawne `ownerTeam`. Opcjonalne: kto pokazuje nazwę zespołu, dokłada
+   * `include: { workspace: { select: { team: … } } }`.
+   */
+  workspace?: { team: { id: string; name: string } | null } | null;
 };
 
 export type ItemStatus = "NEEDED" | "IN_CART" | "DONE" | "MISSING";
@@ -119,8 +124,13 @@ export type TaskProject = {
   color: string;
   emoji: string;
   isInbox: boolean;
-  ownerId: string | null;
-  ownerTeamId: string | null;
+  workspaceId: string;
+  /**
+   * 079: przestrzeń zasobu z informacją, czy jest ZESPOŁOWA. Zastępuje dawne `ownerTeamId`,
+   * po którym UI poznawało zasób zespołowy. Opcjonalne, bo nie każde zapytanie o projekty tego
+   * potrzebuje — kto rysuje znacznik zespołu, musi dołożyć `include: { workspace: … }`.
+   */
+  workspace?: { teamId: string | null } | null;
   statusConfig: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -448,7 +458,7 @@ export interface StoreEdgeData {
 export interface StoreWithGraph {
   id: string;
   name: string;
-  ownerId: string | null;
+  workspaceId: string;
   nodes: StoreNodeData[];
   edges: StoreEdgeData[];
   createdAt: Date;
@@ -526,7 +536,12 @@ export type PetShare = PrismaPetShare & {
 };
 
 export type Pet = PrismaPet & {
-  ownerTeam?: { id: string; name: string } | null;
+  /**
+   * 079: zespół, do którego zasób należy — wyprowadzony z jego PRZESTRZENI (`Workspace.team`).
+   * Zastępuje dawne `ownerTeam`. Opcjonalne: kto pokazuje nazwę zespołu, dokłada
+   * `include: { workspace: { select: { team: … } } }`.
+   */
+  workspace?: { team: { id: string; name: string } | null } | null;
   _count?: { treatments?: number; careTasks?: number; vetVisits?: number };
 };
 
@@ -588,8 +603,7 @@ export type LanguageDeck = {
   nativeLang: string;
   targetLang: string;
   sourceText: string | null;
-  ownerId: string | null;
-  ownerTeamId: string | null;
+  workspaceId: string;
   createdAt: Date;
   updatedAt: Date;
   _count?: { cards: number };
@@ -618,8 +632,7 @@ export type HealthEvent = {
   unit: string | null;
   referral: string | null;
   reminderAt: Date | null;
-  ownerId: string | null;
-  ownerTeamId: string | null;
+  workspaceId: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -648,8 +661,7 @@ export type MedicationSchedule = {
   endDate: Date | null;
   active: boolean;
   notes: string | null;
-  ownerId: string | null;
-  ownerTeamId: string | null;
+  workspaceId: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -692,8 +704,7 @@ export type Habit = {
   reminderTime: string | null;
   archived: boolean;
   sortOrder: number;
-  ownerId: string | null;
-  ownerTeamId: string | null;
+  workspaceId: string;
   createdAt: Date;
   updatedAt: Date;
 };

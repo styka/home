@@ -8,6 +8,7 @@
 // Wynik to HIPOTEZY, nie prawdy: zapisujemy je z pewnością „guess"/„likely", a użytkownik potwierdza
 // albo odrzuca. Odrzucone wracają do promptu jako „tego nie proponuj ponownie".
 
+import { filtrMoichRekordow, wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma";
 import { chatComplete } from "@/platform/llm/chat";
 import { parseJsonLoose } from "@/platform/llm/json";
@@ -45,27 +46,29 @@ export async function userFactsHandler(_payload: unknown, ctx: JobContext): Prom
   const ownerId = ctx.ownerId;
 
   ctx.progress?.("Zbieram zachowania…");
+  // 079: zadanie w tle nie ma sesji, więc przestrzeń wyliczamy z właściciela zadania.
+  const moje = await filtrMoichRekordow(ownerId);
   const [ideas, topics, hiddenTopics, known] = await Promise.all([
     prisma.weatherIdea.findMany({
-      where: { ownerId, state: { in: ["saved", "blocked"] } },
+      where: { ...moje, state: { in: ["saved", "blocked"] } },
       orderBy: { lastSeenAt: "desc" },
       take: 40,
       select: { title: true, state: true, category: true },
     }),
     prisma.newsTopic.findMany({
-      where: { ownerId },
+      where: moje,
       orderBy: { createdAt: "desc" },
       take: 20,
       select: { title: true, semanticFilter: true },
     }),
     prisma.newsHiddenTopic.findMany({
-      where: { ownerId },
+      where: moje,
       orderBy: { createdAt: "desc" },
       take: 20,
       select: { title: true },
     }),
     prisma.userFact.findMany({
-      where: { ownerId },
+      where: moje,
       select: { text: true, status: true },
     }),
   ]);
@@ -136,7 +139,7 @@ export async function userFactsHandler(_payload: unknown, ctx: JobContext): Prom
     try {
       await prisma.userFact.create({
         data: {
-          ownerId,
+          ...(await wlasnoscOsobistaDoZapisu(ownerId)),
           category: parseUserFactCategory(f.category),
           text,
           // Model nie ma prawa ogłosić faktu potwierdzonym — potwierdza wyłącznie użytkownik.

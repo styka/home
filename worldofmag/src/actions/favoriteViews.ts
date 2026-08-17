@@ -102,7 +102,7 @@ export async function addFavoriteView(input: {
 
 export async function removeFavoriteView(id: string): Promise<void> {
   const user = await requireAuth();
-  await prisma.favoriteView.deleteMany({ where: { id, ownerId: user.id } });
+  await prisma.favoriteView.deleteMany({ where: { id, ...(await filtrMoichRekordow(user.id)) } });
   revalidatePath(SHELL_PATH, "layout");
 }
 
@@ -130,7 +130,7 @@ export async function updateFavoriteView(
   if (patch.color !== undefined) data.color = sanitizeColor(patch.color);
   if (Object.keys(data).length === 0) return;
 
-  await prisma.favoriteView.updateMany({ where: { id, ownerId: user.id }, data });
+  await prisma.favoriteView.updateMany({ where: { id, ...(await filtrMoichRekordow(user.id)) }, data });
   revalidatePath(SHELL_PATH, "layout");
 }
 
@@ -147,9 +147,12 @@ export async function reorderFavoriteViews(ids: string[]): Promise<void> {
   const ownedIds = new Set(owned.map((r) => r.id));
   const ordered = ids.filter((id) => ownedIds.has(id));
 
+  // 079: przestrzeń wyliczamy RAZ, przed mapowaniem — `map` nie jest asynchroniczne, a i tak
+  // dla wszystkich wierszy jest to ta sama wartość.
+  const moje = await filtrMoichRekordow(user.id);
   await prisma.$transaction(
     ordered.map((id, index) =>
-      prisma.favoriteView.updateMany({ where: { id, ownerId: user.id }, data: { order: index } })
+      prisma.favoriteView.updateMany({ where: { id, ...moje }, data: { order: index } })
     )
   );
 

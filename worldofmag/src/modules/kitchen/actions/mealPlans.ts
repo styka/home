@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { categorize } from "@/modules/shopping/contract";
@@ -27,15 +28,17 @@ export type MealPlanEntryWithRecipe = MealPlanEntry & {
 // ─── Access ───────────────────────────────────────────────────────────────
 
 async function assertMealPlanAccess(entryId: string, userId: string): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
   const entry = await prisma.mealPlanEntry.findUnique({
     where: { id: entryId },
-    select: { ownerId: true, ownerTeamId: true },
+    select: { workspaceId: true },
   });
   if (!entry) throw new Error("Wpis planu nie istnieje");
-  if (entry.ownerId === userId) return;
-  if (entry.ownerTeamId && teamIds.includes(entry.ownerTeamId)) return;
-  throw new Error("Brak dostępu do tego wpisu planu");
+  // 079: pełny zakres przestrzeni = dawne `getUserTeamIds`.
+  try {
+    await assertOwnership(entry, userId);
+  } catch {
+    throw new Error("Brak dostępu do tego wpisu planu");
+  }
 }
 
 // ─── Listing ──────────────────────────────────────────────────────────────
@@ -275,8 +278,9 @@ export async function bulkSetMealPlan(input: BulkSetInput): Promise<BulkSetResul
     if (!teamIds.includes(input.teamId)) throw new Error("Nie jesteś członkiem tego teamu");
   }
 
-  const ownerId = input.teamId ? null : user.id;
-  const ownerTeamId = input.teamId ?? null;
+  // 079: własność zapisujemy jednym wyliczeniem — to samo trafia do wyszukania istniejącego
+  // slotu i do tworzenia nowego wpisu, więc oba na pewno mówią o tej samej przestrzeni.
+  const wlasnosc = await wlasnoscDoZapisu(user.id, input.teamId);
 
   // Atomowo: każda iteracja (find + create/update) widzi spójny stan slotu.
   // TODO: docelowo @@unique([date, slot, ownerId]) i @@unique([date, slot, ownerTeamId])
@@ -295,7 +299,7 @@ export async function bulkSetMealPlan(input: BulkSetInput): Promise<BulkSetResul
         where: {
           date,
           slot: e.slot,
-          ...(ownerTeamId ? { ownerTeamId } : { ownerId }),
+          workspaceId: wlasnosc.workspaceId,
         },
         select: { id: true },
       });
@@ -326,8 +330,7 @@ export async function bulkSetMealPlan(input: BulkSetInput): Promise<BulkSetResul
           recipeId: e.recipeId ?? null,
           customTitle: e.recipeId ? null : e.customTitle?.trim() || null,
           servings: e.servings ?? 2,
-          ownerId,
-          ownerTeamId,
+          ...wlasnosc,
         },
       });
       added += 1;

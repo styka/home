@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma";
 import { isAssistantLevel, type AssistantLevel } from "@/types";
 import { auth } from "@/platform/auth/session";
@@ -805,7 +806,7 @@ export async function POST(req: NextRequest) {
       const project = await prisma.taskProject.findFirst({
         where: {
           id: body.currentProjectId,
-          OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+          OR: [await filtrMoichRekordow(userId), { members: { some: { userId } } }],
         },
         select: { name: true },
       });

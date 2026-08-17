@@ -109,7 +109,7 @@ function VehicleCard({ v, focused, onFocus }: { v: VehicleWithStats; focused: bo
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{v.name}</span>
           {v.plate && <span style={{ fontSize: 11, color: "var(--text-muted)", border: "1px solid var(--border)", borderRadius: 4, padding: "0 5px" }}>{v.plate}</span>}
-          {v.ownerTeamId && <Users size={11} style={{ color: "var(--accent-purple)" }} />}
+          {v.workspace?.teamId && <Users size={11} style={{ color: "var(--accent-purple)" }} />}
         </div>
         <div style={{ display: "flex", gap: 12, marginTop: 3, fontSize: 11, color: "var(--text-muted)", flexWrap: "wrap" }}>
           {(v.make || v.model) && <span>{[v.make, v.model].filter(Boolean).join(" ")}</span>}

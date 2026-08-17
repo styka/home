@@ -5,6 +5,7 @@ import { updateWithVersion } from "@/platform/concurrency/version";
 import { mirrorTaskShare, unmirrorTaskShare } from "@/platform/sharing/grantMirror";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 import { userDayBounds } from "@/lib/userTime";
 import { assertProjectAccess } from "./taskProjects";
 import { assertTaskAccess } from "../lib/access";
@@ -66,7 +67,7 @@ export async function getTasksForProjects(projectIds: string[]): Promise<Task[]>
   const allowedRows = await prisma.taskProject.findMany({
     where: {
       id: { in: projectIds },
-      OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }],
+      OR: [await filtrMoichRekordow(user.id), { members: { some: { userId: user.id } } }],
     },
     select: { id: true },
   });
@@ -88,7 +89,7 @@ export async function getAllUserTasks(): Promise<Task[]> {
   const projects = await prisma.taskProject.findMany({
     where: {
       OR: [
-        { ownerId: user.id },
+        await filtrMoichRekordow(user.id),
         { members: { some: { userId: user.id } } },
       ],
     },
@@ -706,7 +707,7 @@ export async function getTodayTasks(): Promise<Task[]> {
   const { start, end } = userDayBounds();
 
   const projects = await prisma.taskProject.findMany({
-    where: { OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }] },
+    where: { OR: [await filtrMoichRekordow(user.id), { members: { some: { userId: user.id } } }] },
     select: { id: true },
   });
   const projectIds = projects.map((p: { id: string }) => p.id);
@@ -729,7 +730,7 @@ export async function getOverdueTasks(): Promise<Task[]> {
   const { start: now } = userDayBounds();
 
   const projects = await prisma.taskProject.findMany({
-    where: { OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }] },
+    where: { OR: [await filtrMoichRekordow(user.id), { members: { some: { userId: user.id } } }] },
     select: { id: true },
   });
   const projectIds = projects.map((p: { id: string }) => p.id);

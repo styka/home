@@ -16,7 +16,7 @@ import { parseStoredUsage, type AiUsageInfo } from "@/platform/ai/usage";
 // Import WYŁĄCZNIE typu — `sectionMode.ts` importuje stąd `AiContentKind`, więc import wartości
 // zrobiłby cykl w czasie wykonania. Typy znikają przy kompilacji, więc ten kierunek jest bezpieczny.
 import type { AiSectionMode } from "@/platform/ai/sectionMode";
-import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
+import { filtrMoichRekordow, wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * Rodzaj zapamiętanej treści. String + union (C-12) — nigdy enum Prisma.
@@ -177,7 +177,7 @@ export async function rememberedContent<T>(
   const row = await prisma.aiContent.upsert({
     where: { workspaceId_kind_scopeKey: { ...przestrzen, kind, scopeKey } },
     create: {
-      ownerId,
+      ...(await wlasnoscOsobistaDoZapisu(ownerId)),
       kind,
       scopeKey,
       inputHash,

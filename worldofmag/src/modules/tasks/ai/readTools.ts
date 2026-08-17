@@ -1,6 +1,7 @@
 import { getProjectGroups, getTaskTags } from "../contract";
 import { technicalToLabel } from "@/platform/ai/humanize";
 import { describeRecurringRule, parseRecurringRule } from "@/lib/recurrence";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma";
 import { HARD_MAX, clampLimit, asStr, resolveIdOrName, resolveProjectRef } from "@/lib/ai/readToolShared";
 // 052 (rozdz. 9.6): zakres list i sprawdzanie pojedynczego zasobu pochodzą z JEDNEGO miejsca
@@ -25,7 +26,7 @@ export const readToolsPrompt = [
 export const readTools: Record<string, AiReadToolHandler> = {
   list_projects: async (args, userId) => {
       const projects = await prisma.taskProject.findMany({
-        where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
+        where: { OR: [await filtrMoichRekordow(userId), { members: { some: { userId } } }] },
         include: { _count: { select: { tasks: true } } },
         orderBy: [{ isInbox: "desc" }, { createdAt: "asc" }],
         take: HARD_MAX,

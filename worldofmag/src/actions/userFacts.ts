@@ -13,7 +13,7 @@ import { auth } from "@/platform/auth/session";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { fingerprintOf } from "@/lib/textKey";
-import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
+import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow, czyMojRekord } from "@/platform/workspaces/zapis";
 import {
   parseUserFactCategory,
   parseUserFactConfidence,
@@ -80,7 +80,7 @@ export async function getPendingHypothesis(): Promise<UserFactDTO | null> {
 
 async function assertOwnFact(id: string, userId: string) {
   const row = await prisma.userFact.findUnique({ where: { id } });
-  if (!row || row.ownerId !== userId) throw new Error("Fakt nie istnieje");
+  if (!row || !(await czyMojRekord(row, userId))) throw new Error("Fakt nie istnieje");
   return row;
 }
 
@@ -197,7 +197,7 @@ export async function setUserFactByAdmin(data: {
 
   if (data.id) {
     const row = await prisma.userFact.findUnique({ where: { id: data.id } });
-    if (!row || row.ownerId !== data.userId) throw new Error("Fakt nie istnieje");
+    if (!row || !(await czyMojRekord(row, data.userId))) throw new Error("Fakt nie istnieje");
     await prisma.userFact.update({
       where: { id: data.id },
       data: {

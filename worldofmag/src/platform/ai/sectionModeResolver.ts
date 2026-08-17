@@ -67,7 +67,7 @@ export async function resolveSectionModes(
   ownerId: string
 ): Promise<Record<AiContentKind, AiSectionMode>> {
   const [prefs, defaults] = await Promise.all([
-    prisma.aiSectionPref.findMany({ where: { ownerId } }),
+    prisma.aiSectionPref.findMany({ where: await filtrMoichRekordow(ownerId) }),
     readDefaultSectionModes(),
   ]);
   const byKind = new Map(prefs.map((p) => [p.sectionKind, p.mode]));

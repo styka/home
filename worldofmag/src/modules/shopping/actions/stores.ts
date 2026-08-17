@@ -4,12 +4,12 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import type { StoreWithGraph } from "@/types";
-import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
+import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 export async function getStores(): Promise<StoreWithGraph[]> {
   const user = await requireAuth();
   return prisma.store.findMany({
-    where: { ownerId: user.id },
+    where: await filtrMoichRekordow(user.id),
     include: { nodes: true, edges: true },
     orderBy: { createdAt: "asc" },
   }) as unknown as Promise<StoreWithGraph[]>;
@@ -145,6 +145,10 @@ export async function saveStoreGraph(
 }
 
 async function assertStoreAccess(storeId: string, userId: string): Promise<void> {
-  const store = await prisma.store.findUnique({ where: { id: storeId }, select: { ownerId: true } });
-  if (!store || store.ownerId !== userId) throw new Error("Access denied");
+  const store = await prisma.store.findUnique({ where: { id: storeId }, select: { workspaceId: true } });
+  // 079: sklepy są wyłącznie osobiste (brak `ownerTeamId`), więc dawne `store.ownerId !== userId`
+  // to dokładnie „nie moja przestrzeń osobista" — filtr wąski, nie `assertOwnership`.
+  if (!store || store.workspaceId !== (await filtrMoichRekordow(userId)).workspaceId) {
+    throw new Error("Access denied");
+  }
 }

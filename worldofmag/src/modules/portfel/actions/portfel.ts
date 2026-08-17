@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
@@ -22,22 +23,37 @@ async function ownershipFilter(userId: string) {
 async function assertElementAccess(elementId: string, userId: string): Promise<WalletElement> {
   const el = await prisma.walletElement.findUnique({ where: { id: elementId } });
   if (!el) throw new Error("Element portfela nie istnieje");
-  if (el.ownerId === userId) return el;
-  if (el.ownerTeamId) {
-    const teamIds = await getUserTeamIds(userId);
-    if (teamIds.includes(el.ownerTeamId)) return el;
+  // 079: jak wyżej — pełny zakres przestrzeni odpowiada dawnemu `getUserTeamIds`.
+  try {
+    await assertOwnership(el, userId);
+  } catch {
+    throw new Error("Brak dostępu do elementu portfela");
   }
-  throw new Error("Brak dostępu do elementu portfela");
+  return el;
 }
 
-export async function getWalletElements(): Promise<WalletElement[]> {
+/**
+ * 079: element portfela wraz z informacją o zespole, wzięty z jego PRZESTRZENI. UI rysowało
+ * znacznik „zespołowy" z `ownerTeamId`, a strona ustawień filtrowała po `ownerId` — obie te
+ * kolumny znikają w etapie 4.
+ */
+export type WalletElementZPrzestrzenia = WalletElement & {
+  workspace?: { teamId: string | null; team: { id: string; name: string } | null } | null;
+};
+
+export async function getWalletElements(): Promise<WalletElementZPrzestrzenia[]> {
   const user = await requireAuth();
   const where = await ownershipFilter(user.id);
-  return prisma.walletElement.findMany({ where, orderBy: [{ archived: "asc" }, { createdAt: "asc" }] });
+  // 079: znacznik „element zespołowy" w UI czytał `ownerTeamId`; teraz bierze go z przestrzeni.
+  return prisma.walletElement.findMany({
+    where,
+    orderBy: [{ archived: "asc" }, { createdAt: "asc" }],
+    include: { workspace: { select: { teamId: true, team: { select: { id: true, name: true } } } } },
+  });
 }
 
 export interface WalletOverview {
-  elements: WalletElement[];
+  elements: WalletElementZPrzestrzenia[];
   totalNet: number;
   currency: string; // waluta sprawozdawcza (base)
   series: { x: number; y: number; label: string }[]; // saldo całości w czasie (w base)

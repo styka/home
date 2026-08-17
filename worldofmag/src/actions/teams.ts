@@ -1,5 +1,6 @@
 "use server"
 
+import { wlasnoscDoZapisu, przestrzenZespoluBezKontroliDostepu } from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma"
 import { revalidatePath } from "next/cache"
 import { requireAuth } from "@/platform/auth/serverUtils"
@@ -43,9 +44,13 @@ export async function createTeam(name: string, description?: string, kind: "team
   // (bez ręcznej konfiguracji): lista zakupów, projekt zadań i budżet domowy.
   // Kalendarz jest agregatem — pokazuje wpisy zespołu automatycznie (moduły team-aware).
   if (kind === "household") {
-    await prisma.shoppingList.create({ data: { name: "Zakupy domowe", ownerTeamId: team.id } })
-    await prisma.taskProject.create({ data: { name: "Zadania domowe", ownerTeamId: team.id } })
-    await prisma.walletElement.create({ data: { name: "Budżet domowy", kind: "account", ownerTeamId: team.id } })
+    // 079: lustro przestrzeni musi istnieć ZANIM powstanie zawartość startowa — inaczej nie ma
+    // do czego jej przypisać. Kolejność zmieniona świadomie (`mirrorTeamWorkspace` był niżej).
+    await mirrorTeamWorkspace(team.id)
+    const wlasnosc = await wlasnoscDoZapisu(user.id, team.id)
+    await prisma.shoppingList.create({ data: { name: "Zakupy domowe", ...wlasnosc } })
+    await prisma.taskProject.create({ data: { name: "Zadania domowe", ...wlasnosc } })
+    await prisma.walletElement.create({ data: { name: "Budżet domowy", kind: "account", ...wlasnosc } })
   }
   await mirrorTeamWorkspace(team.id)
   revalidatePath("/settings")
@@ -67,10 +72,12 @@ export async function getHouseholdOnboarding(teamId: string) {
   ])
   if (!membership && user.role !== "ADMIN") throw new Error("Access denied")
 
+  // 079: zawartość zespołu odnajdujemy po jego PRZESTRZENI. Uprawnienie sprawdza warunek wyżej.
+  const przestrzenZespolu = { workspaceId: await przestrzenZespoluBezKontroliDostepu(teamId) }
   const [list, project, wallet] = await Promise.all([
-    prisma.shoppingList.findFirst({ where: { ownerTeamId: teamId }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
-    prisma.taskProject.findFirst({ where: { ownerTeamId: teamId }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
-    prisma.walletElement.findFirst({ where: { ownerTeamId: teamId }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
+    prisma.shoppingList.findFirst({ where: przestrzenZespolu, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
+    prisma.taskProject.findFirst({ where: przestrzenZespolu, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
+    prisma.walletElement.findFirst({ where: przestrzenZespolu, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
   ])
 
   return {
@@ -135,7 +142,7 @@ export async function deleteTeam(teamId: string) {
   const user = await requireAuth()
   await requireTeamRole(teamId, user.id, "OWNER")
   const [ownedLists] = await Promise.all([
-    prisma.shoppingList.count({ where: { ownerTeamId: teamId } }),
+    prisma.shoppingList.count({ where: { workspaceId: await przestrzenZespoluBezKontroliDostepu(teamId) } }),
   ])
   if (ownedLists > 0) {
     throw new Error("Transfer or delete team resources before deleting the team")

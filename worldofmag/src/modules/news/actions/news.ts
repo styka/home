@@ -17,7 +17,7 @@ import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/platform/jobs/queue";
 import { ensureJobWorker } from "@/lib/jobs/registry";
 import type { DateConfidence, NewsRefreshResult } from "../jobs/newsRefresh";
 import type { NewsItem, NewsSource } from "@prisma/client";
-import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
+import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow, czyMojRekord } from "@/platform/workspaces/zapis";
 
 export type SummaryLength = "short" | "medium" | "long";
 export type ItemStatus = "PENDING" | "ACKNOWLEDGED" | "DISMISSED";
@@ -153,7 +153,7 @@ export async function getNewsPref(): Promise<{
 
 async function assertTopic(topicId: string, userId: string) {
   const t = await prisma.newsTopic.findUnique({ where: { id: topicId } });
-  if (!t || t.ownerId !== userId) throw new Error("Temat nie istnieje");
+  if (!t || !(await czyMojRekord(t, userId))) throw new Error("Temat nie istnieje");
   return t;
 }
 
@@ -373,7 +373,7 @@ export async function updateSource(
 ): Promise<void> {
   const user = await requireAuth();
   const s = await prisma.newsSource.findUnique({ where: { id } });
-  if (!s || s.ownerId !== user.id) throw new Error("Źródło nie istnieje");
+  if (!s || !(await czyMojRekord(s, user.id))) throw new Error("Źródło nie istnieje");
   const data: Record<string, unknown> = {};
   if (patch.name !== undefined) data.name = patch.name.trim();
   if (patch.rssUrl !== undefined) data.rssUrl = patch.rssUrl.trim();
@@ -389,7 +389,7 @@ export async function updateSource(
 export async function deleteSource(id: string): Promise<void> {
   const user = await requireAuth();
   const s = await prisma.newsSource.findUnique({ where: { id } });
-  if (!s || s.ownerId !== user.id) throw new Error("Źródło nie istnieje");
+  if (!s || !(await czyMojRekord(s, user.id))) throw new Error("Źródło nie istnieje");
   await prisma.newsSource.delete({ where: { id } });
   revalidatePath("/wiadomosci");
 }
@@ -609,7 +609,7 @@ export async function resummarizeItem(
     where: { id: itemId },
     include: { topic: true, source: true },
   });
-  if (!item || item.topic.ownerId !== user.id) throw new Error("Pozycja nie istnieje");
+  if (!item || !(await czyMojRekord(item?.topic, user.id))) throw new Error("Pozycja nie istnieje");
 
   const article = await fetchArticle(item.url);
   const body = article.text || item.summary;
@@ -642,9 +642,9 @@ export async function acknowledgeItem(itemId: string): Promise<void> {
   const user = await requireAuth();
   const item = await prisma.newsItem.findUnique({
     where: { id: itemId },
-    include: { topic: { select: { ownerId: true } } },
+    include: { topic: { select: { workspaceId: true } } },
   });
-  if (!item || item.topic.ownerId !== user.id) throw new Error("Pozycja nie istnieje");
+  if (!item || !(await czyMojRekord(item?.topic, user.id))) throw new Error("Pozycja nie istnieje");
   await prisma.newsItem.update({ where: { id: itemId }, data: { status: "ACKNOWLEDGED" } });
   revalidatePath("/wiadomosci");
 }
@@ -677,7 +677,7 @@ export async function acknowledgeTopicItems(topicId: string): Promise<{ count: n
 export async function acknowledgeAllItems(): Promise<{ count: number }> {
   const user = await requireAuth();
   const r = await prisma.newsItem.updateMany({
-    where: { status: "PENDING", topic: { ownerId: user.id } },
+    where: { status: "PENDING", topic: await filtrMoichRekordow(user.id) },
     data: { status: "ACKNOWLEDGED" },
   });
   revalidatePath("/wiadomosci");
@@ -688,9 +688,9 @@ export async function dismissItem(itemId: string): Promise<void> {
   const user = await requireAuth();
   const item = await prisma.newsItem.findUnique({
     where: { id: itemId },
-    include: { topic: { select: { ownerId: true } } },
+    include: { topic: { select: { workspaceId: true } } },
   });
-  if (!item || item.topic.ownerId !== user.id) throw new Error("Pozycja nie istnieje");
+  if (!item || !(await czyMojRekord(item?.topic, user.id))) throw new Error("Pozycja nie istnieje");
   await prisma.newsItem.update({ where: { id: itemId }, data: { status: "DISMISSED" } });
   revalidatePath("/wiadomosci");
 }
@@ -831,7 +831,7 @@ export async function hideHotTopic(title: string): Promise<void> {
 export async function unhideHotTopic(id: string): Promise<void> {
   const user = await requireAuth();
   const row = await prisma.newsHiddenTopic.findUnique({ where: { id } });
-  if (!row || row.ownerId !== user.id) throw new Error("Nie znaleziono odrzuconego tematu");
+  if (!row || !(await czyMojRekord(row, user.id))) throw new Error("Nie znaleziono odrzuconego tematu");
   await prisma.newsHiddenTopic.delete({ where: { id } });
   revalidatePath("/wiadomosci");
 }

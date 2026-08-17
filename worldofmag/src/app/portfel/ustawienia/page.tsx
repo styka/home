@@ -23,7 +23,7 @@ export default async function PortfelUstawieniaPage() {
   ]);
   // tylko prywatne, aktywne konta jako cel auto-wydatków
   const accounts = elements
-    .filter((e) => !e.archived && e.ownerId === session.user!.id)
+    .filter((e) => !e.archived && e.workspace?.team == null)
     .map((e) => ({ id: e.id, name: e.name }));
 
   return <PortfelSettingsPage accounts={accounts} settings={settings} currency={currency} />;

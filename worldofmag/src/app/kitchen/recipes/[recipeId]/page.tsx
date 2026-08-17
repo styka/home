@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { getRecipe } from "@/modules/kitchen/actions/recipes";
 import { getLists } from "@/modules/shopping/contract";
-import { getUserTeamIds } from "@/platform/auth/serverUtils";
+import { getAccessContext } from "@/platform/sharing/cache";
 import { RecipeView } from "@/modules/kitchen/ui/recipes/RecipeView";
 
 interface PageProps {
@@ -18,10 +18,10 @@ export default async function RecipeDetailPage({ params }: PageProps) {
   const recipe = await getRecipe(decodeURIComponent(params.recipeId));
   if (!recipe) notFound();
 
-  const teamIds = await getUserTeamIds(session.user.id);
-  const canEdit =
-    recipe.ownerId === session.user.id ||
-    (recipe.ownerTeamId != null && teamIds.includes(recipe.ownerTeamId));
+  // 079: „mogę edytować" = zasób leży w jednej z MOICH przestrzeni. Dawny warunek („mój lub
+  // mojego zespołu") przekłada się na to jeden do jednego przez lustro z zadania 9.
+  const mojePrzestrzenie = (await getAccessContext(session.user.id)).workspaceIds;
+  const canEdit = mojePrzestrzenie.includes(recipe.workspaceId);
 
   const lists = await getLists();
 

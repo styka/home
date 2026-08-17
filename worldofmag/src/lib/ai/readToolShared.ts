@@ -1,3 +1,4 @@
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { matchNamedRef, unresolvedRefMessage, type NamedCandidate, type RefResolution } from "@/platform/ai/refResolve";
@@ -23,7 +24,7 @@ export function asStr(v: unknown): string | undefined {
 
 export async function accessibleProjectIds(userId: string): Promise<string[]> {
   const projects = await prisma.taskProject.findMany({
-    where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
+    where: { OR: [await filtrMoichRekordow(userId), { members: { some: { userId } } }] },
     select: { id: true },
   });
   return projects.map((p) => p.id);
@@ -79,7 +80,7 @@ export async function resolveProjectRef(
   ref: string
 ): Promise<RefResolution> {
   const projects = await prisma.taskProject.findMany({
-    where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
+    where: { OR: [await filtrMoichRekordow(userId), { members: { some: { userId } } }] },
     select: { id: true, name: true },
   });
   return matchNamedRef(ref, projects);

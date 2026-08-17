@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/platform/db/prisma";
 import { auth } from "@/platform/auth/session";
-import { getUserTeamIds } from "@/platform/auth/serverUtils";
+import { ownedOrAsync } from "@/platform/auth/serverUtils";
 import { getCalendarEvents } from "@/actions/calendarAgenda";
 import { chatComplete } from "@/platform/llm/chat";
 import { checkAiBudget, recordAiUsage } from "@/platform/ai/usage";
@@ -45,7 +45,10 @@ export async function POST() {
     .sort((a, b) => a.date.localeCompare(b.date));
 
   // Zaległe zadania (termin < dziś, niezakończone) — krótka lista do „ogarnięcia".
-  const teamIds = await getUserTeamIds(userId);
+  // 079: własność projektu (moja LUB moich zespołów) wyraża wspólny helper zakresu — ten sam,
+  // którego używają listy modułów. Wcześniej stały tu dwa ręcznie pisane warunki po `ownerId`
+  // i `ownerTeamId`, przez co ten plik miał osobny wpis w `ownership-scope-coverage.json`.
+  const zakresProjektu = await ownedOrAsync(userId);
   const overdue = await prisma.task.findMany({
     where: {
       parentTaskId: null,
@@ -54,9 +57,8 @@ export async function POST() {
       OR: [
         { createdById: userId },
         { assigneeId: userId },
-        { project: { ownerId: userId } },
+        ...zakresProjektu.map((w) => ({ project: w })),
         { project: { members: { some: { userId } } } },
-        ...(teamIds.length > 0 ? [{ project: { ownerTeamId: { in: teamIds } } }] : []),
       ],
     },
     select: { id: true, title: true, dueDate: true },

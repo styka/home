@@ -9,6 +9,7 @@
 // na cykl. Teraz każde źródło pobieramy RAZ do wspólnej puli (`NewsArticle`), a przypisanie do
 // tematów jest osobnym, tanim etapem na całej puli naraz.
 
+import { filtrMoichRekordow, wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma";
 import { chatComplete } from "@/platform/llm/chat";
 import { parseJsonLoose } from "@/platform/llm/json";
@@ -102,8 +103,10 @@ interface PoolStageResult {
  * całą historię kanału przy pierwszym kliknięciu.
  */
 async function fetchPool(ownerId: string, force: boolean, ctx: JobContext): Promise<PoolStageResult> {
+  // 079: zadanie w tle nie ma sesji — przestrzeń wyliczamy z właściciela zadania.
+  const moje = await filtrMoichRekordow(ownerId);
   const sources = await prisma.newsSource.findMany({
-    where: { ownerId, enabled: true },
+    where: { ...moje, enabled: true },
     orderBy: { sortOrder: "asc" },
   });
   if (sources.length === 0) return { sources: 0, fetched: 0 };
@@ -121,7 +124,7 @@ async function fetchPool(ownerId: string, force: boolean, ctx: JobContext): Prom
    */
   const watermarks = await prisma.newsArticle.groupBy({
     by: ["sourceId"],
-    where: { ownerId },
+    where: moje,
     _max: { publishedAt: true },
   });
   const sinceBySource = new Map(
@@ -159,8 +162,8 @@ async function fetchPool(ownerId: string, force: boolean, ctx: JobContext): Prom
   // `lastFetchedAt` nie steruje już progiem (robi to znacznik per źródło powyżej) — zostaje jako
   // informacja „kiedy ostatnio pobieraliśmy", pokazywana użytkownikowi.
   await prisma.newsPref.upsert({
-    where: { ownerId },
-    create: { ownerId, lastFetchedAt: new Date() },
+    where: moje,
+    create: { ...(await wlasnoscOsobistaDoZapisu(ownerId)), lastFetchedAt: new Date() },
     update: { lastFetchedAt: new Date() },
   });
 
@@ -292,7 +295,7 @@ async function classifyPool(
 async function unassignedPool(ownerId: string): Promise<PoolArticle[]> {
   const rows = await prisma.newsArticle.findMany({
     where: {
-      ownerId,
+      ...(await filtrMoichRekordow(ownerId)),
       publishedAt: { gte: new Date(Date.now() - FIRST_RUN_WINDOW_MS) },
       items: { none: {} },
     },
@@ -528,7 +531,7 @@ export async function recordRun(
   try {
     await prisma.newsRefreshRun.create({
       data: {
-        ownerId,
+        ...(await wlasnoscOsobistaDoZapisu(ownerId)),
         startedAt,
         status,
         sources: result?.sources ?? 0,
@@ -544,7 +547,7 @@ export async function recordRun(
     // Przycinamy do ostatnich 30 przebiegów. Zgłoszenie prosi o możliwość odczytania kosztu, nie o
     // wieczyste archiwum — a bez przycinania tabela rosłaby w nieskończoność.
     const old = await prisma.newsRefreshRun.findMany({
-      where: { ownerId },
+      where: await filtrMoichRekordow(ownerId),
       orderBy: { finishedAt: "desc" },
       skip: RUN_HISTORY_LIMIT,
       select: { id: true },
@@ -586,11 +589,11 @@ async function runNewsRefresh(
   const pool = await fetchPool(ownerId, payload?.force === true, ctx);
 
   const topics = await prisma.newsTopic.findMany({
-    where: { ownerId, enabled: true },
+    where: { ...(await filtrMoichRekordow(ownerId)), enabled: true },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     select: { id: true, title: true, semanticFilter: true },
   });
-  const pref = await prisma.newsPref.findUnique({ where: { ownerId } });
+  const pref = await prisma.newsPref.findUnique({ where: await filtrMoichRekordow(ownerId) });
   const defaultLength = pref?.defaultSummaryLength ?? "medium";
 
   const base: NewsRefreshResult = {

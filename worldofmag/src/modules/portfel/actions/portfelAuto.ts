@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { czyMojRekord } from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 
@@ -30,8 +31,8 @@ export async function setFinanceSettings(patch: {
   // Weryfikacja: wskazany element musi należeć do użytkownika (prywatny).
   let elementId = patch.autoExpenseElementId;
   if (elementId) {
-    const el = await prisma.walletElement.findUnique({ where: { id: elementId }, select: { ownerId: true } });
-    if (!el || el.ownerId !== user.id) throw new Error("Wybierz własne konto portfela");
+    const el = await prisma.walletElement.findUnique({ where: { id: elementId }, select: { workspaceId: true } });
+    if (!el || !(await czyMojRekord(el, user.id))) throw new Error("Wybierz własne konto portfela");
   }
   if (elementId === undefined) elementId = undefined; // nie zmieniaj, gdy nie podano
 

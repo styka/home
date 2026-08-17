@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
@@ -37,15 +38,18 @@ export async function healthAiAllowed(userId: string): Promise<boolean> {
 }
 
 async function assertEventAccess(id: string, userId: string): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
   const ev = await prisma.healthEvent.findUnique({
     where: { id },
-    select: { ownerId: true, ownerTeamId: true },
+    select: { workspaceId: true },
   });
   if (!ev) throw new Error("Wpis nie istnieje");
-  if (ev.ownerId === userId) return;
-  if (ev.ownerTeamId && teamIds.includes(ev.ownerTeamId)) return;
-  throw new Error("Brak dostępu do wpisu");
+  // 079: warunek „mój LUB któregoś z MOICH zespołów" (bez filtra modułu) = pełny zakres
+  // przestrzeni z kontekstu dostępu.
+  try {
+    await assertOwnership(ev, userId);
+  } catch {
+    throw new Error("Brak dostępu do wpisu");
+  }
 }
 
 export async function getHealthEvents(filter?: {

@@ -36,7 +36,7 @@ export function PetForm({ pet, teams = [], onClose, onSaved }: PetFormProps) {
   const [photoUrl, setPhotoUrl] = useState(pet?.photoUrl ?? "");
   const [notes, setNotes] = useState(pet?.notes ?? "");
   const [presetKey, setPresetKey] = useState(pet?.presetKey ?? suggestedPresetForSpecies("dog"));
-  const [ownerTeamId, setOwnerTeamId] = useState(pet?.ownerTeamId ?? "");
+  const [ownerTeamId, setOwnerTeamId] = useState(pet?.workspace?.team?.id ?? "");
   const [presetTouched, setPresetTouched] = useState(false);
 
   function onSpeciesChange(value: PetSpecies) {

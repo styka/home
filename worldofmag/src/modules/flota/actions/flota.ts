@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
@@ -10,7 +11,13 @@ import type { Vehicle, FuelLog, ServiceRecord } from "@prisma/client";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 export type VehicleAttachmentDTO = { id: string; name: string; url: string; createdAt: Date };
-export type VehicleWithStats = Vehicle & { fuelLogs: FuelLog[]; services: ServiceRecord[]; attachments?: VehicleAttachmentDTO[] };
+export type VehicleWithStats = Vehicle & {
+  fuelLogs: FuelLog[];
+  services: ServiceRecord[];
+  attachments?: VehicleAttachmentDTO[];
+  /** 079: zespół pojazdu wyprowadzony z przestrzeni — zastępuje dawne `ownerTeamId` w UI. */
+  workspace?: { teamId: string | null } | null;
+};
 
 // Z-194 (T-12): widoczność listy respektuje granularny dostęp domownika do modułu „flota".
 async function ownershipFilter(userId: string) {
@@ -21,12 +28,14 @@ async function ownershipFilter(userId: string) {
 async function assertVehicleAccess(vehicleId: string, userId: string): Promise<Vehicle> {
   const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
   if (!vehicle) throw new Error("Pojazd nie istnieje");
-  if (vehicle.ownerId === userId) return vehicle;
-  if (vehicle.ownerTeamId) {
-    const teamIds = await getUserTeamIds(userId);
-    if (teamIds.includes(vehicle.ownerTeamId)) return vehicle;
+  // 079: dawny warunek to „mój LUB któregoś z MOICH zespołów" (bez filtra modułu) — czyli
+  // dokładnie pełny zakres przestrzeni z kontekstu dostępu.
+  try {
+    await assertOwnership(vehicle, userId);
+  } catch {
+    throw new Error("Brak dostępu do pojazdu");
   }
-  throw new Error("Brak dostępu do pojazdu");
+  return vehicle;
 }
 
 export async function getVehicles(): Promise<VehicleWithStats[]> {
@@ -38,6 +47,8 @@ export async function getVehicles(): Promise<VehicleWithStats[]> {
     include: {
       fuelLogs: { orderBy: { date: "asc" } },
       services: { orderBy: { date: "desc" } },
+      // 079: znacznik „pojazd zespołowy" w UI czytał `ownerTeamId`; teraz bierze go z przestrzeni.
+      workspace: { select: { teamId: true } },
     },
   });
 }

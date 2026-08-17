@@ -52,7 +52,7 @@ export function WorkshopDetail({ workshop, mode, viewParams = {} }: { workshop: 
       }
       icon={<span className="text-2xl leading-none" aria-hidden>{wt.emoji}</span>}
       title={workshop.name}
-      subtitle={[wt.label, workshop.location, workshop.ownerTeamId ? "zespół" : null].filter(Boolean).join(" · ")}
+      subtitle={[wt.label, workshop.location, workshop.workspace?.teamId ? "zespół" : null].filter(Boolean).join(" · ")}
       headerAction={<DeleteWorkshopButton id={workshop.id} onDeleted={() => router.push("/warsztaty")} />}
     >
       <div className="max-w-4xl mx-auto w-full">

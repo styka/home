@@ -143,7 +143,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
   const offlineCurrent = !online ? snapshotLists.find((l) => l.id === activeListId) : undefined;
   const effListId = online ? list.id : activeListId;
   const effName = online ? list.name : (offlineCurrent?.name ?? list.name);
-  const effOwnerTeam = online ? list.ownerTeam : (offlineCurrent?.ownerTeam ?? null);
+  const effOwnerTeam = online ? (list.workspace?.team ?? null) : (offlineCurrent?.workspace?.team ?? null);
   const switcherLists: ShoppingList[] = online ? allLists : (snapshotLists as unknown as ShoppingList[]);
 
   function handleSortChange(mode: SortMode) {
@@ -273,7 +273,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
           >
             {switcherLists.map((l) => (
               <option key={l.id} value={l.id}>
-                🛒 {l.name}{l.ownerTeam ? ` · ${l.ownerTeam.name}` : ""}
+                🛒 {l.name}{l.workspace?.team ? ` · ${l.workspace.team.name}` : ""}
               </option>
             ))}
             {online && <option value="__catalog__">+ Zarządzaj listami…</option>}

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { reviewCard, type ReviewGrade } from "../lib/srs";
@@ -8,15 +9,18 @@ import type { LanguageDeck, Vocabulary } from "@/types";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 async function assertDeckAccess(deckId: string, userId: string): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
   const deck = await prisma.languageDeck.findUnique({
     where: { id: deckId },
-    select: { ownerId: true, ownerTeamId: true },
+    select: { workspaceId: true },
   });
   if (!deck) throw new Error("Talia nie istnieje");
-  if (deck.ownerId === userId) return;
-  if (deck.ownerTeamId && teamIds.includes(deck.ownerTeamId)) return;
-  throw new Error("Brak dostępu do talii");
+  // 079: warunek „mój LUB któregoś z MOICH zespołów" (bez filtra modułu) = pełny zakres
+  // przestrzeni z kontekstu dostępu.
+  try {
+    await assertOwnership(deck, userId);
+  } catch {
+    throw new Error("Brak dostępu do talii");
+  }
 }
 
 async function assertCardAccess(cardId: string, userId: string): Promise<string> {

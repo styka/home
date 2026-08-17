@@ -167,6 +167,13 @@ export async function wlasnoscOsobistaDoZapisu(userId: string): Promise<Wlasnosc
  * `where: { ownerId: userId }` na tabelach, które kolumny `ownerTeamId` nie mają wcale
  * (Pogoda, Wiadomości, `FavoriteView`, `ProjectGroup`, `UserFact`, `AiContent`, `AiSectionPref`).
  *
+ * **079: używamy go także na tabelach, które współwłasność zespołową ZNAJĄ** — wszędzie tam, gdzie
+ * dawny warunek brzmiał dokładnie `ownerId = ja` (np. lista własnych projektów zadań, sklepy).
+ * To nie jest rozluźnienie reguły z 078, tylko rozróżnienie dwóch rzeczy, które ta reguła
+ * mieszała: przedmiotem ograniczenia jest **kształt warunku**, a nie kształt tabeli. `ownerId = ja`
+ * ⟺ „moja przestrzeń osobista" jest ścisłe zawsze; zakazane pozostaje podmienianie tego warunku na
+ * szerszy `ownedOrAsync`, bo TO poszerza zakres.
+ *
  * **Dlaczego wąsko, po przestrzeni OSOBISTEJ, a nie przez `ownedOrAsync`.** `ownedOrAsync` zwraca
  * `workspaceId IN (wszystkie moje przestrzenie)` — czyli osobistą **i zespołowe**. Na tabeli, która
  * współwłasności zespołowej nie zna, byłoby to POSZERZENIE zakresu: filtr zacząłby dopuszczać
@@ -181,4 +188,25 @@ export async function wlasnoscOsobistaDoZapisu(userId: string): Promise<Wlasnosc
  */
 export async function filtrMoichRekordow(userId: string): Promise<{ workspaceId: string }> {
   return { workspaceId: await przestrzenOsobista(userId) };
+}
+
+/**
+ * 079 — ten sam warunek co wyżej, ale zastosowany do POBRANEGO JUŻ rekordu.
+ *
+ * Odpowiednik dawnego `rekord.ownerId === userId`, który w kilkudziesięciu miejscach stoi po
+ * `findUnique` jako druga połowa warunku `if (!rekord || rekord.ownerId !== userId) throw …`.
+ * Osobna funkcja, żeby te miejsca nie rozwijały się w trzy linijki z ręcznym rozpakowaniem
+ * `(await filtrMoichRekordow(userId)).workspaceId` — a przy okazji żeby po `DROP COLUMN` istniało
+ * JEDNO miejsce, w którym „to jest moje" znaczy „leży w mojej przestrzeni osobistej".
+ *
+ * **Świadomie wąskie, jak `filtrMoichRekordow`**: nie uznaje przestrzeni zespołowych. Stosuj tam,
+ * gdzie dawny warunek brzmiał dokładnie `ownerId === ja`; gdzie brzmiał „mój lub mojego zespołu",
+ * właściwym odpowiednikiem jest `assertOwnership`.
+ */
+export async function czyMojRekord(
+  rekord: { workspaceId: string } | null | undefined,
+  userId: string
+): Promise<boolean> {
+  if (!rekord) return false;
+  return rekord.workspaceId === (await przestrzenOsobista(userId));
 }

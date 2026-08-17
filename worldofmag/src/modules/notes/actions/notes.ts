@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { updateWithVersion } from "@/platform/concurrency/version";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import type { Note } from "@/types";
@@ -11,15 +12,17 @@ import { rankNotesBySearch } from "../lib/searchRank";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 async function assertNoteAccess(noteId: string, userId: string): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
   const note = await prisma.note.findUnique({
     where: { id: noteId },
-    select: { ownerId: true, ownerTeamId: true },
+    select: { workspaceId: true },
   });
   if (!note) throw new Error("Notatka nie istnieje");
-  if (note.ownerId === userId) return;
-  if (note.ownerTeamId && teamIds.includes(note.ownerTeamId)) return;
-  throw new Error("Brak dostępu do notatki");
+  // 079: pełny zakres przestrzeni = dawne `getUserTeamIds`.
+  try {
+    await assertOwnership(note, userId);
+  } catch {
+    throw new Error("Brak dostępu do notatki");
+  }
 }
 
 export async function getNotes(filters?: {
@@ -178,7 +181,7 @@ export async function deleteNote(id: string): Promise<void> {
       title: full.title,
       payload: {
         id: full.id, title: full.title, content: full.content, isMarkdown: full.isMarkdown,
-        pinned: full.pinned, groupId: full.groupId, ownerId: full.ownerId, ownerTeamId: full.ownerTeamId,
+        pinned: full.pinned, groupId: full.groupId,
         // 078: migawka zapisuje też PRZESTRZEŃ. Bez tego pola przywrócenie notatki po usunięciu
         // kolumn własnościowych nie miałoby z czego odtworzyć, gdzie ta notatka mieszkała.
         workspaceId: full.workspaceId,

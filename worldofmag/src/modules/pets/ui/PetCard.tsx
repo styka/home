@@ -52,8 +52,8 @@ export function PetCard({ pet, focused = false, onFocus }: { pet: Pet; focused?:
       {isInactive && (
         <span style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0 }}>{STATUS_LABELS[pet.status as keyof typeof STATUS_LABELS]}</span>
       )}
-      {pet.ownerTeam && (
-        <span style={{ fontSize: 10, color: "var(--accent-purple)", flexShrink: 0 }}>{pet.ownerTeam.name}</span>
+      {pet.workspace?.team && (
+        <span style={{ fontSize: 10, color: "var(--accent-purple)", flexShrink: 0 }}>{pet.workspace.team.name}</span>
       )}
     </Link>
   );

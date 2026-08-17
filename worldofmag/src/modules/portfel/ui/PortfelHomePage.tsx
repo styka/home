@@ -149,7 +149,7 @@ export function PortfelHomePage({ overview, teams }: Props) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{el.name}</span>
-                      {el.ownerTeamId && <Users size={11} style={{ color: "var(--accent-purple)" }} />}
+                      {el.workspace?.teamId && <Users size={11} style={{ color: "var(--accent-purple)" }} />}
                     </div>
                     <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{ELEMENT_KIND_LABELS[el.kind] ?? el.kind}</span>
                   </div>

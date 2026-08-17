@@ -60,8 +60,9 @@ for (const m of objete) {
   zmieniony = zmieniony.replace(m.cialo, noweCialo);
 }
 
-// Przeciwległe pola relacji (User/Team → zasób) muszą zniknąć razem z nimi.
-for (const mod of modele(zmieniony)) {
+// Przeciwległe pola relacji (User/Team → zasób) muszą zniknąć razem z nimi. Ograniczone do tych
+// dwóch modeli: `Workspace` ma od 0243 własne relacje do tych samych zasobów i one ZOSTAJĄ.
+for (const mod of modele(zmieniony).filter((m) => m.nazwa === "User" || m.nazwa === "Team")) {
   const noweCialo = mod.cialo
     .split("\n")
     .filter((l) => {

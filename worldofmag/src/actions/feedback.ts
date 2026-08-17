@@ -44,8 +44,14 @@ async function resolveFeedbackProjectId(): Promise<string | null> {
   ).map((r) => r.userId);
   if (adminIds.length === 0) return null;
 
+  // 079: „projekt należący do któregokolwiek administratora" = projekt w JEGO przestrzeni
+  // OSOBISTEJ. Przekład jeden do jednego przez lustro; projekty zespołowe nie wchodziły i nie
+  // wchodzą. Warunek idzie RELACJĄ (klucz obcy z 0243), więc nie dokłada osobnego zapytania.
   const project = await prisma.taskProject.findFirst({
-    where: { ownerId: { in: adminIds }, name: { equals: "Omnia", mode: "insensitive" } },
+    where: {
+      workspace: { personalUserId: { in: adminIds } },
+      name: { equals: "Omnia", mode: "insensitive" },
+    },
     orderBy: { createdAt: "asc" },
     select: { id: true },
   });

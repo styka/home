@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
+import { requireAuth, getUserTeamIds, getAccessibleTeamIds, getAccessibleWorkspaceIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import type { Cookbook } from "@/types/kitchen";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
@@ -27,8 +27,10 @@ export async function getCookbook(id: string): Promise<Cookbook | null> {
 
   const cb = await prisma.cookbook.findUnique({ where: { id } });
   if (!cb) return null;
-  if (cb.ownerId === user.id) return cb;
-  if (cb.ownerTeamId && teamIds.includes(cb.ownerTeamId)) return cb;
+  // 079: warunek szedł po `getAccessibleTeamIds` (z filtrem modułu), więc odpowiada mu
+  // `getAccessibleWorkspaceIds` — NIE pełny zakres przestrzeni, bo ten pomijałby ograniczenie
+  // domownika do modułu Kuchnia.
+  if ((await getAccessibleWorkspaceIds(user.id, "kitchen")).includes(cb.workspaceId)) return cb;
   return null;
 }
 

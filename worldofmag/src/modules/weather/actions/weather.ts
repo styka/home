@@ -34,7 +34,7 @@ import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { createTask, tasksModule } from "@/modules/tasks/contract";
 import { resolveWhen } from "../domain/pora";
 import { roundedBrief } from "../domain/odcisk";
-import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
+import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow, czyMojRekord } from "@/platform/workspaces/zapis";
 
 export interface LocationDTO {
   id: string;
@@ -144,7 +144,7 @@ export async function addLocationByPoint(lat: number, lon: number): Promise<Loca
 export async function setDefaultLocation(id: string): Promise<void> {
   const user = await requireAuth();
   const l = await prisma.weatherLocation.findUnique({ where: { id } });
-  if (!l || l.ownerId !== user.id) throw new Error("Lokalizacja nie istnieje");
+  if (!l || !(await czyMojRekord(l, user.id))) throw new Error("Lokalizacja nie istnieje");
   await prisma.weatherLocation.updateMany({ where: { ...(await filtrMoichRekordow(user.id)) }, data: { isDefault: false } });
   await prisma.weatherLocation.update({ where: { id }, data: { isDefault: true } });
   revalidatePath("/pogoda");
@@ -153,7 +153,7 @@ export async function setDefaultLocation(id: string): Promise<void> {
 export async function deleteLocation(id: string): Promise<void> {
   const user = await requireAuth();
   const l = await prisma.weatherLocation.findUnique({ where: { id } });
-  if (!l || l.ownerId !== user.id) throw new Error("Lokalizacja nie istnieje");
+  if (!l || !(await czyMojRekord(l, user.id))) throw new Error("Lokalizacja nie istnieje");
   await prisma.weatherLocation.delete({ where: { id } });
   revalidatePath("/pogoda");
 }
@@ -299,7 +299,7 @@ export async function updateWatcher(
 ): Promise<void> {
   const user = await requireAuth();
   const w = await prisma.weatherWatcher.findUnique({ where: { id } });
-  if (!w || w.ownerId !== user.id) throw new Error("Obserwator nie istnieje");
+  if (!w || !(await czyMojRekord(w, user.id))) throw new Error("Obserwator nie istnieje");
   const data: Record<string, unknown> = {};
   if (patch.title !== undefined) data.title = patch.title.trim();
   if (patch.query !== undefined) data.query = patch.query.trim();
@@ -312,7 +312,7 @@ export async function updateWatcher(
 export async function deleteWatcher(id: string): Promise<void> {
   const user = await requireAuth();
   const w = await prisma.weatherWatcher.findUnique({ where: { id } });
-  if (!w || w.ownerId !== user.id) throw new Error("Obserwator nie istnieje");
+  if (!w || !(await czyMojRekord(w, user.id))) throw new Error("Obserwator nie istnieje");
   await prisma.weatherWatcher.delete({ where: { id } });
   revalidatePath("/pogoda");
 }
@@ -864,7 +864,7 @@ export async function getIdeaLibrary(filter?: {
   const user = await requireAuth();
   const rows = await prisma.weatherIdea.findMany({
     where: {
-      ownerId: user.id,
+      ...(await filtrMoichRekordow(user.id)),
       ...(filter?.state && filter.state !== "all" ? { state: filter.state } : {}),
       ...(filter?.location ? { locationLabel: filter.location } : {}),
     },
@@ -889,7 +889,7 @@ export async function getIdeaLibrary(filter?: {
 export async function setIdeaState(id: string, state: IdeaState): Promise<void> {
   const user = await requireAuth();
   const row = await prisma.weatherIdea.findUnique({ where: { id } });
-  if (!row || row.ownerId !== user.id) throw new Error("Propozycja nie istnieje");
+  if (!row || !(await czyMojRekord(row, user.id))) throw new Error("Propozycja nie istnieje");
   await prisma.weatherIdea.update({ where: { id }, data: { state, lastSeenAt: new Date() } });
   revalidatePath("/pogoda");
   revalidatePath("/pogoda/pomysly");
@@ -932,7 +932,7 @@ export async function blockIdea(
 export async function deleteIdea(id: string): Promise<void> {
   const user = await requireAuth();
   const row = await prisma.weatherIdea.findUnique({ where: { id } });
-  if (!row || row.ownerId !== user.id) throw new Error("Propozycja nie istnieje");
+  if (!row || !(await czyMojRekord(row, user.id))) throw new Error("Propozycja nie istnieje");
   await recordTrash(user.id, {
     module: "weather",
     entityId: row.id,
@@ -954,7 +954,7 @@ export async function addIdeaToTasks(id: string): Promise<void> {
   const session = await auth();
   if (!hasPermission(session, tasksModule.permission)) throw new Error("Brak dostępu do modułu Zadania");
   const row = await prisma.weatherIdea.findUnique({ where: { id } });
-  if (!row || row.ownerId !== user.id) throw new Error("Propozycja nie istnieje");
+  if (!row || !(await czyMojRekord(row, user.id))) throw new Error("Propozycja nie istnieje");
 
   const description =
     (row.summary ? `${row.summary}\n\n` : "") +

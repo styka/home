@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
@@ -12,11 +13,14 @@ export type WarsztatMode = "home" | "pro";
 
 export type WorkshopWithCounts = Workshop & {
   _count: { items: number; projects: number };
+  /** 079: znacznik „warsztat zespołowy" w UI — z przestrzeni, nie z `ownerTeamId`. */
+  workspace?: { teamId: string | null } | null;
 };
 
 export type WorkshopDetail = Workshop & {
   items: WorkshopItem[];
   projects: WorkshopProject[];
+  workspace?: { teamId: string | null } | null;
 };
 
 // ─── Dostęp ─────────────────────────────────────────────────────────────────
@@ -27,12 +31,15 @@ async function ownershipOr(userId: string) {
 
 /** Zwraca warsztat, jeśli użytkownik ma do niego dostęp (właściciel lub zespół). */
 async function assertWorkshopAccess(workshopId: string, userId: string): Promise<Workshop> {
-  const teamIds = await getUserTeamIds(userId);
   const ws = await prisma.workshop.findUnique({ where: { id: workshopId } });
   if (!ws) throw new Error("Warsztat nie istnieje");
-  if (ws.ownerId === userId) return ws;
-  if (ws.ownerTeamId && teamIds.includes(ws.ownerTeamId)) return ws;
-  throw new Error("Brak dostępu do tego warsztatu");
+  // 079: pełny zakres przestrzeni = dawne `getUserTeamIds`.
+  try {
+    await assertOwnership(ws, userId);
+  } catch {
+    throw new Error("Brak dostępu do tego warsztatu");
+  }
+  return ws;
 }
 
 /** Zwraca pozycję wyposażenia po sprawdzeniu dostępu do jej warsztatu. */
@@ -76,7 +83,10 @@ export async function getWorkshops(): Promise<WorkshopWithCounts[]> {
   const teamIds = await getAccessibleTeamIds(user.id, "warsztaty");
   return prisma.workshop.findMany({
     where: { OR: await ownershipOr(user.id) },
-    include: { _count: { select: { items: true, projects: true } } },
+    include: {
+      _count: { select: { items: true, projects: true } },
+      workspace: { select: { teamId: true } },
+    },
     orderBy: { updatedAt: "desc" },
   });
 }

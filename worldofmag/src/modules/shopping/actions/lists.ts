@@ -25,7 +25,7 @@ export async function getListSummaries(includeArchived = false): Promise<ListSum
       archived: includeArchived,
       ...(await ownedWhereAsync(user.id)),
     },
-    include: { ownerTeam: { select: { id: true, name: true } } },
+    include: { workspace: { select: { team: { select: { id: true, name: true } } } } },
     orderBy: includeArchived ? { archivedAt: "desc" } : { createdAt: "asc" },
   });
 
@@ -40,7 +40,7 @@ export async function getListSummaries(includeArchived = false): Promise<ListSum
         name: list.name,
         pendingCount,
         totalCount,
-        teamName: list.ownerTeam?.name ?? null,
+        teamName: list.workspace?.team?.name ?? null,
         archived: list.archived,
       };
     })
@@ -62,7 +62,7 @@ export async function getLists(): Promise<ShoppingList[]> {
       archived: false,
       ...(await ownedWhereAsync(user.id)),
     },
-    include: { ownerTeam: { select: { id: true, name: true } } },
+    include: { workspace: { select: { team: { select: { id: true, name: true } } } } },
     orderBy: { createdAt: "asc" },
   }) as unknown as Promise<ShoppingList[]>;
 }
@@ -82,7 +82,7 @@ export async function getActiveListsForOffline(): Promise<ShoppingListWithItems[
       ...(await ownedWhereAsync(user.id)),
     },
     include: {
-      ownerTeam: { select: { id: true, name: true } },
+      workspace: { select: { team: { select: { id: true, name: true } } } },
       items: { orderBy: [{ order: "asc" }, { priority: "desc" }, { createdAt: "asc" }] },
     },
     orderBy: { createdAt: "asc" },
@@ -100,7 +100,7 @@ export async function getArchivedLists(): Promise<ShoppingList[]> {
       archived: true,
       ...(await ownedWhereAsync(user.id)),
     },
-    include: { ownerTeam: { select: { id: true, name: true } } },
+    include: { workspace: { select: { team: { select: { id: true, name: true } } } } },
     orderBy: { archivedAt: "desc" },
   }) as unknown as Promise<ShoppingList[]>;
 }

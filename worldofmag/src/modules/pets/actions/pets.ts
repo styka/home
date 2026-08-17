@@ -59,7 +59,7 @@ export async function getPets(opts?: { includeInactive?: boolean }): Promise<Pet
       ...(opts?.includeInactive ? {} : { status: { in: ["ACTIVE", "REHOMED", "SOLD"] } }),
     },
     include: {
-      ownerTeam: { select: { id: true, name: true } },
+      workspace: { select: { team: { select: { id: true, name: true } } } },
       _count: { select: { treatments: true, careTasks: true, vetVisits: true } },
     },
     orderBy: [{ status: "asc" }, { createdAt: "asc" }],
@@ -75,7 +75,7 @@ export async function getPet(id: string): Promise<PetWithRelations | null> {
   const pet = await prisma.pet.findUnique({
     where: { id },
     include: {
-      ownerTeam: { select: { id: true, name: true } },
+      workspace: { select: { team: { select: { id: true, name: true } } } },
       shares: { include: SHARE_INCLUDE },
       measurements: { orderBy: { date: "desc" } },
       healthRecords: { orderBy: { date: "desc" } },
@@ -134,7 +134,7 @@ export async function createPet(data: {
       featureFlags: data.featureFlags ?? null,
       ...(await wlasnoscDoZapisu(user.id, data.ownerTeamId)),
     },
-    include: { ownerTeam: { select: { id: true, name: true } } },
+    include: { workspace: { select: { team: { select: { id: true, name: true } } } } },
   });
 
   void trackActivity("pets", "create_pet", { name: pet.name, species: pet.species });
@@ -171,7 +171,7 @@ export async function updatePet(
   const pet = await prisma.pet.update({
     where: { id },
     data,
-    include: { ownerTeam: { select: { id: true, name: true } } },
+    include: { workspace: { select: { team: { select: { id: true, name: true } } } } },
   });
 
   void trackActivity("pets", "update_pet", { id, patchKeys: Object.keys(patch) });
@@ -191,7 +191,7 @@ export async function updatePetFeatures(
   const pet = await prisma.pet.update({
     where: { id },
     data: { presetKey, featureFlags },
-    include: { ownerTeam: { select: { id: true, name: true } } },
+    include: { workspace: { select: { team: { select: { id: true, name: true } } } } },
   });
 
   revalidatePath("/pets");

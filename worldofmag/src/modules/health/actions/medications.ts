@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { assertOwnership } from "@/platform/auth/ownership";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { isoDate } from "@/lib/habitStats";
@@ -23,15 +24,18 @@ function safeDate(d: Date | string | null | undefined): Date | null {
 }
 
 async function assertScheduleAccess(id: string, userId: string): Promise<void> {
-  const teamIds = await getUserTeamIds(userId);
   const s = await prisma.medicationSchedule.findUnique({
     where: { id },
-    select: { ownerId: true, ownerTeamId: true },
+    select: { workspaceId: true },
   });
   if (!s) throw new Error("Harmonogram nie istnieje");
-  if (s.ownerId === userId) return;
-  if (s.ownerTeamId && teamIds.includes(s.ownerTeamId)) return;
-  throw new Error("Brak dostępu do harmonogramu");
+  // 079: warunek „mój LUB któregoś z MOICH zespołów" (bez filtra modułu) = pełny zakres
+  // przestrzeni z kontekstu dostępu.
+  try {
+    await assertOwnership(s, userId);
+  } catch {
+    throw new Error("Brak dostępu do harmonogramu");
+  }
 }
 
 // Z-194 (T-12): widoczność leków/pielęgnacji respektuje dostęp domownika do „health".

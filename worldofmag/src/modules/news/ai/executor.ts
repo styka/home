@@ -65,7 +65,7 @@ export async function executeNewsAction(action: AIAction, userId: string): Promi
     const q = searchQuery ?? asStr(params.name);
     const sid = asStr(params.sourceId);
     const src = sid
-      ? await prisma.newsSource.findFirst({ where: { id: sid, ownerId: userId }, select: { id: true } })
+      ? await prisma.newsSource.findFirst({ where: { id: sid, ...(await filtrMoichRekordow(userId)) }, select: { id: true } })
       : await prisma.newsSource.findFirst({ where: { ...(await filtrMoichRekordow(userId)), name: { contains: q ?? "", mode: "insensitive" } }, select: { id: true } });
     if (!src) throw new Error(`Nie znaleziono źródła: „${q ?? sid ?? ""}"`);
     if (type === "delete_news_source") { await deleteSource(src.id); return `Usunięto źródło wiadomości`; }
