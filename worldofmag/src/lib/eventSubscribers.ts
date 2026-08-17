@@ -20,6 +20,7 @@ import { startEventWorker } from "@/platform/events/worker";
 /** Leniwe loadery wkładów. Moduł bez reakcji po prostu tu nie występuje. */
 const WKLADY: Record<string, () => Promise<{ default: EventContribution }>> = {
   shopping: () => import("@/modules/shopping/events"),
+  portfel: () => import("@/modules/portfel/events"),
 };
 
 /** Cache wczytanych wkładów — worker chodzi w pętli, nie ma po co ładować ich za każdym razem. */

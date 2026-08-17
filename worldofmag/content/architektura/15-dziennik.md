@@ -135,7 +135,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | 22 | Publikacja przez worker | ✅ | **071.** Worker czyta niedostarczone (`FOR UPDATE SKIP LOCKED`), woła subskrybentów z deklaracji, oznacza `deliveredAt` **po sukcesie** — bo lepiej dwa razy niż zero razy. Idempotencja **wymuszona bramką** (`check:subscribers`), nie akapitem: `klucz-unikalny` musi mieć `upsert` i klucz z `event.id`. Pierwszy subskrybent: zakupy zakończone → powiadomienie dla pozostałych członków przestrzeni. **Bez `LISTEN/NOTIFY`** — decyzja przy zadaniu 23, gdzie jest realny wymóg opóźnienia |
 | 23 | SSE `/api/events` | ✅ | **072.** Jedno połączenie na kartę, kanały `user:` i `ws:` liczone **na serwerze z sesji** (przyjęcie ich z żądania byłoby podsłuchem — pilnuje bramka). Ładunek celowo ubogi: klient się odświeża, nie renderuje z sygnału. **Bez `LISTEN/NOTIFY`** — szyna w procesie, bo oba warianty z rozdz. 11.1.1 istnieją wyłącznie dla wielu instancji; ograniczenie nazwane w kodzie i w `docs/devops/` |
 | 24 | Usunięcie `setInterval` z `DataFreshness` | ✅ | **072.** 45 s → strumień; odpytywanie **awaryjne co 5 min zostaje na stałe**, bo pokrywa brak `EventSource`, zerwany strumień i wiele instancji. Awaria kanału **nie jest awarią aplikacji** — zmiany dochodzą wolniej. Bramka nie pozwala wrócić do krótkiego interwału |
-| 25 | Subskrypcje międzymodułowe | ⬜ | |
+| 25 | Subskrypcje międzymodułowe | 🟡 | **073.** Zakupy→Portfel przepięte z wywołania na zdarzenie: `completeShopping` nie importuje już nic z Portfela, a reguła „tylko listy prywatne" przeniosła się do subskrybenta i czyta **przestrzeń**, nie `ownerId`. Idempotencja `naturalna` po `(sourceModule, sourceId)`, data z `event.createdAt`. Test na realnym Postgresie + mutacja. **Magazyn→Zakupy zostaje** — wymaga nowego rodzaju zdarzenia i producenta |
 
 ### Faza 5 — Skala i koszt
 
@@ -1877,3 +1877,52 @@ Portfela nie może zabierać zakupów*.
 
 **Bramki:** build **exit 0**, `test:unit` **896/896** (było 889), nowa `check:realtime`,
 zapadki 263 i 34 bez ruchu, liczniki **160 / 553 / 35 / 35** bez ruchu.
+
+---
+
+## 073 — Zadanie 25: Portfel przestał być wołany, zaczął słuchać
+
+**Co się zmieniło w jednym zdaniu:** `completeShopping` nie importuje już niczego z Portfela.
+
+To jest cała Faza 4 w miniaturze. Do dziś zakupy kończyły się tak: zarchiwizuj listę, a potem
+**zawołaj księgowość**. Moduł kupujący musiał wiedzieć, że w systemie istnieje Portfel, znać nazwę
+jego funkcji i jej parametry. Teraz zakupy ogłaszają fakt — *lista zamknięta, użytkownik prosił
+o zaksięgowanie* — a Portfel sam decyduje, czy go to obchodzi. **Usunięcie Portfela z systemu nie
+wymaga już dotknięcia Zakupów.**
+
+**Reguła przeniosła się tam, gdzie jej miejsce.** Warunek „księgujemy tylko listy prywatne" siedział
+w `completeShopping` jako `list.ownerId === user.id` — czyli moduł zakupów pilnował zasady
+**księgowej** („nie obciążaj prywatnego konta cudzymi zakupami"). Teraz pilnuje jej Portfel, i to na
+podstawie **przestrzeni, którą zdarzenie i tak niesie**, a nie właściciela listy, o którego musiałby
+dopytać. Efekt uboczny, który liczy się osobno: zniknął kolejny odczyt `ownerId` — jeden mniej do
+przepisania w etapie 4 zadania 11.
+
+**Idempotencja bez klucza z `event.id` — i to nie jest wyjątek od reguły, tylko drugi jej wariant.**
+`bookAutoExpense` szuka wpisu po parze `(sourceModule, sourceId)` i przy trafieniu **aktualizuje**
+go, korygując saldo o różnicę. `sourceId` to id listy, więc klucz jest stabilny między ponowieniami
+dokładnie tak samo jak id zdarzenia; drugie dostarczenie ustawia tę samą kwotę i różnica wynosi
+zero. Manifest nazywa to `naturalna`. Jeden szczegół okazał się przy tym istotny: **data brana
+z `event.createdAt`, nie z `new Date()`** — inaczej ponowienie przesunęłoby wydatek na inny dzień
+i „idempotentna" aktualizacja zmieniłaby dane.
+
+**Komunikat asystenta poprawiony przy okazji, bo był nieprawdziwy już wcześniej.** Mówił
+„zaksięgowano wydatek X zł" na podstawie flagi `booked`, którą kod ustawiał na `true` **zaraz po
+wywołaniu** `bookAutoExpense` — funkcji, która po cichu nic nie robi, gdy użytkownik nie ma
+skonfigurowanego konta auto-wydatków. Flaga nigdy nie znaczyła „pieniądze zaksięgowane", tylko
+„zlecenie poszło", i tak się teraz nazywa (`zlecono`). Przejście na zdarzenie nie popsuło tu
+niczego — obnażyło obietnicę, która i tak była na wyrost.
+
+**Dowód, nie deklaracja.** Bramka `check:subscribers` sprawdza wyłącznie obecność wzorca. Skutek
+mierzy test na realnym Postgresie: pierwsze dostarczenie księguje (saldo 1000 → 880), drugie **nie
+zmienia nic** (jeden wpis, saldo 880), brak życzenia użytkownika nie księguje nic, a zakupy
+zespołowe nie ruszają prywatnego konta. Przebieg mutacyjny: usunięcie warunku o przestrzeni
+osobistej **czerwieni test** (2 porażki) — bez tego sprawdzenia asercja byłaby dekoracją.
+
+**Czego tu nie ma, świadomie:** drugiej pary z rozdz. 9.5 — **Magazyn → Zakupy**
+(`storage.item.belowMinimum`). Wymaga nowego rodzaju zdarzenia **i producenta**, czyli zmiany
+w module magazynowym, a nie samego subskrybenta. Wzorzec jest już utrwalony na dwóch reakcjach
+w dwóch modułach i to była cena wejścia; dołożenie trzeciej jest odtąd pracą liniową. Zadanie 25
+zostaje więc **🟡**, nie ✅ — kierunek Zakupy→Portfel domknięty, Magazyn→Zakupy przed nami.
+
+**Bramki:** build **exit 0**, `check:subscribers` **2 subskrybentów w 2 modułach**, zapadka
+paginacji **263 bez ruchu**, liczniki **160 / 553 / 35 / 35** bez ruchu.
