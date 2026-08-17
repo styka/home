@@ -169,9 +169,9 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
-| 39 | Eksport danych użytkownika | ⬜ | |
-| 40 | Usunięcie konta | ⬜ | |
-| 41 | Próba odtworzenia z kopii + runbook | ⬜ | |
+| 39 | Eksport danych użytkownika | ✅ | `actions/privacy.ts` `exportMyData()` — pełny zrzut danych konta. **Wiersz poprawiony przy przeglądzie 077**: praca była zrobiona, tracker jej nie odnotował |
+| 40 | Usunięcie konta | ✅ | `actions/privacy.ts` `deleteMyAccount(confirmation)` + `lib/privacy/purge.ts` (przekazuje własność zespołu następcy, zamiast osierocić zasoby); testy `purge.test.ts`, `ondelete-cascade.test.ts`. **Wiersz poprawiony przy przeglądzie 077** |
+| 41 | Próba odtworzenia z kopii + runbook | 🟡 | Runbooki są: `docs/devops/runbook-deploy-rollback.md` (PITR w Neonie) i `przywrocenie-wlasnosci.md` (074, procedura **przećwiczona** realnym `DROP COLUMN` w transakcji z `ROLLBACK` + próba mutacyjna). Brakuje **próby odtworzenia CAŁEJ bazy** z kopii — czyli tego, co runbook PITR opisuje, a czego nikt nie wykonał |
 | 42 | **Stany błędów i puste w każdym module** | ✅ | 21/21 modułów na kontrakcie widoku, bramka `check:ui-contract` wpięta w build |
 | 43 | Budżet wydajnościowy w CI | ⬜ | |
 
