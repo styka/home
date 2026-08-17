@@ -230,9 +230,14 @@ export async function adjustStorageQuantity(
       },
     });
     const przestrzen = await workspaceIdDlaZdarzenia(existing.workspaceId, user.id);
+    // 077 (U-2): patrz `shopping/actions/lists.ts` — ciche pominięcie emisji gubi reakcję
+    // międzymodułową tak, że nikt się o tym nie dowie. Niezmiennik zamiast `if`.
+    if (!przestrzen) {
+      throw new Error(`Pozycja ${id} nie ma przestrzeni — nie mogę wyemitować zdarzenia zmiany stanu`);
+    }
     // 070 (zadanie 21): zdarzenie w TEJ SAMEJ transakcji co zmiana stanu i wpis ruchu.
     // Przyszły odbiorca (zadanie 25): uzupełnianie zapasów do Zakupów przy stanie poniżej minimum.
-    if (przestrzen) {
+    {
       await emitDomainEvent(tx, {
         workspaceId: przestrzen,
         module: "magazynowanie",

@@ -24,7 +24,7 @@
  */
 
 import { prisma } from "../db/prisma";
-import { getAccessContext } from "../sharing/cache";
+import { getAccessContext, dopiszPrzestrzenDoKontekstu } from "../sharing/cache";
 import { ensurePersonalWorkspace, syncTeamWorkspace } from "./sync";
 
 /**
@@ -49,6 +49,11 @@ export async function przestrzenOsobista(userId: string): Promise<string> {
     // wyjątek tutaj niż „Argument `workspaceId` is missing" trzy warstwy niżej.
     throw new Error(`Nie udało się ustalić przestrzeni osobistej użytkownika ${userId}`);
   }
+
+  // 077 (U-1): kontekst dostępu tego żądania został policzony ZANIM ta przestrzeń powstała, więc
+  // nadal ma `personalWorkspaceId: null`. Bez tej linii sprawdzenie dostępu do rekordu utworzonego
+  // przed chwilą liczy się ze starego stanu i kończy odmową.
+  await dopiszPrzestrzenDoKontekstu(userId, utworzona.id);
   return utworzona.id;
 }
 
