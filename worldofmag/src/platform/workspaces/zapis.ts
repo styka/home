@@ -60,12 +60,18 @@ export async function przestrzenOsobista(userId: string): Promise<string> {
 /**
  * Przestrzeń zespołu — miejsce zapisu dla rekordu zespołowego.
  *
- * **Nie sprawdza uprawnień.** Kto może pisać do zespołu, rozstrzyga guard modułu przed wywołaniem;
- * ta funkcja tylko tłumaczy identyfikator zespołu na identyfikator przestrzeni. Wpisanie tu
- * dodatkowej kontroli dałoby dwa miejsca decydujące o tym samym — i to gorsze, bo bez kontekstu
- * operacji.
+ * **Nie sprawdza uprawnień** — i od 078 mówi o tym własną nazwą. Kto może pisać do zespołu,
+ * rozstrzyga guard modułu przed wywołaniem; ta funkcja tylko tłumaczy identyfikator zespołu na
+ * identyfikator przestrzeni. Wpisanie tu dodatkowej kontroli dałoby dwa miejsca decydujące o tym
+ * samym — i to gorsze, bo bez kontekstu operacji.
+ *
+ * 078 (U-5 z przeglądu 077): poprzednia nazwa brzmiała `przestrzenZespolu` i **nie ostrzegała
+ * o niczym**. Ryzyko było konkretne: nowy moduł bierze `teamId` z formularza, woła funkcję
+ * o zupełnie niewinnej nazwie i zapisuje rekord do przestrzeni cudzego zespołu — bez czerwonego
+ * builda i bez żadnego objawu poza tym, że ktoś widzi nie swoje dane. Nazwa jest teraz jedynym
+ * miejscem, w którym ta informacja dociera do autora wywołania, więc musi krzyczeć.
  */
-export async function przestrzenZespolu(teamId: string): Promise<string> {
+export async function przestrzenZespoluBezKontroliDostepu(teamId: string): Promise<string> {
   const istnieje = await prisma.workspace.findUnique({
     where: { teamId },
     select: { id: true },
@@ -85,5 +91,71 @@ export async function przestrzenZespolu(teamId: string): Promise<string> {
  * wzajemne wykluczanie się tych dwóch kolumn trzeba było pamiętać przy każdym zapisie.
  */
 export async function przestrzenDoZapisu(userId: string, teamId?: string | null): Promise<string> {
-  return teamId ? przestrzenZespolu(teamId) : przestrzenOsobista(userId);
+  return teamId ? przestrzenZespoluBezKontroliDostepu(teamId) : przestrzenOsobista(userId);
+}
+
+/**
+ * 078 (zadanie 11, etap 4 część 2) — JEDEN PUNKT PRZEŁĄCZENIA DLA `DROP COLUMN`.
+ *
+ * **Po co osobna funkcja obok `przestrzenDoZapisu`.** Pomiar przed konwersją pokazał rzecz, której
+ * plan etapu 4 nie przewidywał: na **14 z 40 tabel `ownerId` jest NOT NULL**
+ * (`ProjectGroup`, `FavoriteView`, siedem tabel Wiadomości, trzy Pogody, `UserFact`, `AiContent`,
+ * `AiSectionPref`). Na tych tabelach „przestań pisać właściciela, zacznij pisać przestrzeń" **nie
+ * jest jednym krokiem** — zapis bez `ownerId` odrzuca baza. Zamiana zapisów i `DROP COLUMN`
+ * musiałyby więc wejść jednym commitem na 92 plikach naraz, a każdy pośredni merge do `develop`
+ * jest wdrożeniem: byłby to jeden commit, po którym albo wszystko działa, albo nic.
+ *
+ * Dlatego zapisy przechodzą przez **fazę podwójnego zapisu**: kod podaje `workspaceId` **wprost**
+ * (bo wyzwalacz 0236/0238 wyprowadza go z kolumny właściciela i umrze razem z nią) i nadal podaje
+ * kolumny własnościowe (bo baza ich jeszcze wymaga). Każdy taki commit jest samodzielnie
+ * wdrażalny. Migracja usuwająca kolumny zmienia potem **to jedno ciało funkcji** na
+ * `{ workspaceId }` — i wszystkie miejsca zapisu przestają pisać własność w jednym ruchu, bez
+ * dotykania ich ponownie.
+ *
+ * **Dlaczego wynik jest rozpakowywany przez `...`, a nie przypisywany do pola.** Miejsce zapisu
+ * wygląda tak: `data: { ...(await wlasnoscDoZapisu(userId, teamId)), nazwa }`. Gdy funkcja przestanie
+ * zwracać `ownerId`, te miejsca kompilują się dalej bez zmiany — a gdyby przypisywały pola po
+ * kolei, trzeba by wrócić do wszystkich 250.
+ *
+ * **Kontrola, że faza podwójnego zapisu jest spójna:** `workspaceId` policzony tutaj musi być
+ * dokładnie tym, co wyliczyłby wyzwalacz z podanych kolumn własnościowych. Sprawdza to test
+ * `wlasnoscDoZapisu.integration.test.ts` — porównaniem z rzeczywistym wynikiem wyzwalacza, a nie
+ * powtórzeniem tej samej arytmetyki w asercji.
+ */
+export type WlasnoscZapisu = {
+  workspaceId: string;
+  /** Znika w `DROP COLUMN`. Do tego czasu baza wymaga go na 14 tabelach. */
+  ownerId: string | null;
+  /** Znika w `DROP COLUMN`. */
+  ownerTeamId: string | null;
+};
+
+export async function wlasnoscDoZapisu(
+  userId: string,
+  teamId?: string | null
+): Promise<WlasnoscZapisu> {
+  return {
+    workspaceId: await przestrzenDoZapisu(userId, teamId),
+    ownerId: teamId ? null : userId,
+    ownerTeamId: teamId ?? null,
+  };
+}
+
+/**
+ * 078 — wariant dla tabel BEZ współwłasności zespołowej (`ownerTeamId` tam nie istnieje).
+ *
+ * Trzynaście z czternastu tabel o `ownerId NOT NULL` należy właśnie tu, więc `ownerId` jest w tym
+ * wariancie typu `string`, nie `string | null`. Rozdzielenie na dwie funkcje zamiast jednej
+ * z opcjonalnym argumentem jest celowe: gdyby `wlasnoscDoZapisu(userId)` (bez zespołu) obsługiwała
+ * także te tabele, jej typ zwracany musiałby dopuszczać `ownerId: null` — czyli wartość, którą
+ * baza tam odrzuca, a kompilator by ją przepuścił.
+ */
+export type WlasnoscOsobistaZapisu = {
+  workspaceId: string;
+  /** Znika w `DROP COLUMN`. */
+  ownerId: string;
+};
+
+export async function wlasnoscOsobistaDoZapisu(userId: string): Promise<WlasnoscOsobistaZapisu> {
+  return { workspaceId: await przestrzenOsobista(userId), ownerId: userId };
 }

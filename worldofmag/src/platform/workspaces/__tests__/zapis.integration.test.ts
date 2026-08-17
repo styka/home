@@ -19,7 +19,7 @@ const rnd = () => Math.random().toString(36).slice(2, 10);
 
 test("przestrzeń zapisu: własna, domykana i zespołowa", { skip: !HAS_DB && "brak DATABASE_URL" }, async (t) => {
   const { prisma } = await import("@/platform/db/prisma");
-  const { przestrzenOsobista, przestrzenZespolu, przestrzenDoZapisu } = await import("../zapis");
+  const { przestrzenOsobista, przestrzenZespoluBezKontroliDostepu, przestrzenDoZapisu } = await import("../zapis");
   const { ensurePersonalWorkspace } = await import("../sync");
 
   const ja = await prisma.user.create({ data: { email: `zapis-ja-${rnd()}@test.local` } });
@@ -58,7 +58,7 @@ test("przestrzeń zapisu: własna, domykana i zespołowa", { skip: !HAS_DB && "b
     });
 
     await t.test("zapis zespołowy idzie do przestrzeni ZESPOŁU, nie zapisującego", async () => {
-      const zespolowa = await przestrzenZespolu(zespol.id);
+      const zespolowa = await przestrzenZespoluBezKontroliDostepu(zespol.id);
       const moja = await przestrzenOsobista(ja.id);
       assert.notEqual(zespolowa, moja, "rekord zespołu nie może wylądować w prywatnej przestrzeni");
 
