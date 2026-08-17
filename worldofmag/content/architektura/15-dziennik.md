@@ -1993,3 +1993,51 @@ z martwą gałęzią).
 
 **Zostaje do etapu 4 część 2:** samo `DROP COLUMN`, zmierzone na **612 błędów kompilacji w 124
 plikach**. Kopia własności (0233) i procedura odtworzenia są gotowe i przećwiczone.
+
+---
+
+## 076 — Etap 4 część 2: fundament zapisu i ustalenie, które zmienia zakres `DROP COLUMN`
+
+**Dowieziony fundament.** `platform/workspaces/zapis.ts` — `przestrzenOsobista`, `przestrzenZespolu`,
+`przestrzenDoZapisu`. Usunięcie kolumn własnościowych sprowadza się w kodzie do jednej zamiany
+powtórzonej ~250 razy (`data: { ownerId: user.id }` → `data: { workspaceId: … }`); ta funkcja czyni
+ją mechaniczną. **Wyzwalacz jej nie zastąpi**: wyprowadza przestrzeń Z KOLUMNY WŁAŚCICIELA, więc gdy
+kolumna zniknie, nie ma z czego wyprowadzać — baza nie zna autora zapisu. Od etapu 4 przestrzeń
+podaje kod. Test na realnym Postgresie sprawdza, że rekord trafia do przestrzeni **pytającego**, że
+konto bez przestrzeni dostaje ją razem z rolą, i że zapis zespołowy nie ląduje w prywatnej
+przestrzeni zapisującego — pomyłka tutaj nie zepsułaby ekranu, tylko cicho wypisała dane do cudzej
+przestrzeni.
+
+### Ustalenie: `DROP COLUMN` obejmie 40 tabel, nie 45 — i to nie jest cięcie zakresu
+
+Inwentaryzacja (121 plików, 256 miejsc zapisu, 173 filtry) zatrzymała się na `Tag` i `ItemHistory`:
+
+```
+Tag_ownerId_name_key          UNIQUE ("ownerId", name)
+ItemHistory_ownerId_name_key  UNIQUE ("ownerId", name)
+```
+
+Te unikalności trzymają regułę „jedna etykieta o tej nazwie na właściciela" **razem z rekordami
+systemowymi**, dla których `ownerId IS NULL`. Przeniesienie ich na `workspaceId` wygląda na zamianę
+jeden do jednego, ale nią nie jest: rekord systemowy ma `workspaceId IS NULL`, a w PostgreSQL
+**`NULL` nie równa się `NULL`** — indeks unikalny przestałby chronić dokładnie te wiersze, dla
+których powstał. Dwa systemowe tagi „praca" mogłyby współistnieć i nikt by tego nie zauważył.
+To ta sama pułapka, którą 041 opisało przy `AiSectionPref` (dlatego domyślne tryby sekcji trzymamy
+w `Config`, a nie w wierszu z `NULL`-owym właścicielem).
+
+Wniosek jest spójny z listą wyjątków z 075 i obejmuje **te same pięć tabel**: `ItemHistory`,
+`NoteGroup`, `Skin`, `Tag`, `Job`. Kryterium też jest to samo — **wiersz może nie mieć
+właściciela** — tylko konsekwencja szersza, niż wyglądała: skoro wiersz może nie należeć do nikogo,
+`workspaceId` nie wyraża jego własności ANI jego unikalności, więc `ownerId` zostaje tam jako
+nośnik obu. W `Job` dochodzi trzecie zastosowanie: limit aktywnych zadań i czyszczenie RODO.
+
+**Stan docelowy jest więc taki:** `workspaceId` jest mechanizmem własności **wszędzie tam, gdzie
+rekord musi do kogoś należeć** (40 tabel — kolumny własnościowe znikają), a pięć tabel wyjątkowych
+zachowuje `ownerId`, bo ich rekordy mogą nie należeć do nikogo i przestrzeń tego nie wyrazi.
+
+**Pozostaje do wykonania:** konwersja 121 plików (256 zapisów przez `przestrzenDoZapisu`, 173 filtry
+na zakres po przestrzeniach) i dopiero po niej `DROP COLUMN` na 40 tabelach. Osobno i ostrożnie:
+`lib/privacy/purge.ts` — czyszczenie RODO jest dziś kluczowane po `ownerId`, więc jego przepięcie
+zmienia ścieżkę usuwania danych osobowych i zasługuje na własny test przed i po.
+
+**Bramki:** build **exit 0**, `test:unit` **905/905** (było 901; +4 z testu przestrzeni zapisu).
