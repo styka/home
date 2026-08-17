@@ -187,9 +187,17 @@ export async function completeShopping(
   // Zasada „tylko prywatne listy" też się tam przeniosła — dlatego zniknął odczyt `list.ownerId`.
   const zlecono = Boolean(opts?.bookToPortfel) && total > 0;
   const przestrzen = await workspaceIdDlaZdarzenia(list.workspaceId, user.id);
+  // 077 (U-2): brak przestrzeni to BŁĄD, nie powód do pominięcia zdarzenia. Dawne `if (przestrzen)`
+  // przepuszczało mutację bez emisji, więc reakcja Portfela po prostu nie następowała — bez
+  // wyjątku, bez logu, a akcja i tak zwracała `zlecono: true`. Użytkownik dostawał potwierdzenie
+  // księgowania, którego nikt nie wykonał. Po zaostrzeniu z 0235 ta gałąź jest nieosiągalna dla
+  // list zakupów — i właśnie dlatego ma być asercją niezmiennika, a nie cichym `if`.
+  if (!przestrzen) {
+    throw new Error(`Lista ${id} nie ma przestrzeni — nie mogę wyemitować zdarzenia zakończenia zakupów`);
+  }
   await prisma.$transaction(async (tx) => {
     await tx.shoppingList.update({ where: { id }, data: { archived: true, archivedAt: new Date() } });
-    if (przestrzen) {
+    {
       await emitDomainEvent(tx, {
         workspaceId: przestrzen,
         module: "shopping",
