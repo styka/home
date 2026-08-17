@@ -1,0 +1,20 @@
+{
+  "wlasciciel bez czlonkostwa w swojej przestrzeni": {
+    "projekt wlasny": "dozwolone",
+    "projekt wlasny: zarzadzanie": "dozwolone",
+    "lista wlasna": "dozwolone",
+    "przepis wlasny": "dozwolone",
+    "ksiazka wlasna": "dozwolone",
+    "zwierze wlasne": "dozwolone",
+    "lista zespolu (wlasciciel zespolu bez czlonkostwa)": "odmowa"
+  },
+  "obcy": {
+    "projekt wlasny": "odmowa",
+    "projekt wlasny: zarzadzanie": "odmowa",
+    "lista wlasna": "odmowa",
+    "przepis wlasny": "odmowa",
+    "ksiazka wlasna": "odmowa",
+    "zwierze wlasne": "odmowa",
+    "lista zespolu (wlasciciel zespolu bez czlonkostwa)": "odmowa"
+  }
+}

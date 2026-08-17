@@ -56,7 +56,11 @@ export async function accessibleProjectIds(userId: string): Promise<string[]> {
   const projekty = await prisma.taskProject.findMany({
     where: {
       OR: [
-        { ownerId: userId },
+        // 079 (etap 4): gałąź `{ ownerId: userId }` ZNIKŁA razem z kolumną. Zastępuje ją
+        // przestrzeń osobista, która od tego przebiegu jest w kontekście ZAWSZE, gdy istnieje —
+        // `getAccessContext` czyta ją po `Workspace.personalUserId`, a nie po członkostwie.
+        // Bez tamtej poprawki to usunięcie odebrałoby właścicielowi jego projekty z listy przy
+        // rozjeździe lustra; tabela prawdy `wlasnoscBezLustra` pilnuje obu stron naraz.
         { members: { some: { userId } } },
         ...(przestrzenie.length > 0 ? [{ workspaceId: { in: przestrzenie } }] : []),
         // 075: gałąź awaryjna dla SIEROT (rekord bez przestrzeni) ZNIKŁA — zgodnie z zapowiedzią

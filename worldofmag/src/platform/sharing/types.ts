@@ -32,18 +32,29 @@ export interface ResourceFacts {
   /**
    * 056 (etap 3A) — **podstawowy fakt o własności**: przestrzeń, w której zasób żyje.
    *
-   * Opcjonalne, i to z DWÓCH różnych powodów, które warto rozróżniać:
-   * - zasób, którego własność jest **wyprowadzona**, nie ma tej kolumny i mieć nie będzie
-   *   (`Task` — własność idzie przez `createdById` albo przez projekt, więc nie było tam
-   *   `ownerId`, więc migracja 0227 go nie objęła);
-   * - **sierota** — rekord, którego właściciel nie miał przestrzeni w chwili backfillu.
-   *
-   * W obu przypadkach rozstrzyganie wraca do pary `ownerId`/`ownerTeamId`. Pierwszy powód jest
-   * trwały, drugi zniknie w etapie 4.
+   * 079 (etap 4): od usunięcia kolumn własnościowych to jest **jedyny** nośnik własności dla
+   * zasobu, który przestrzeń ma. Opcjonalne zostaje z jednego, trwałego powodu: zasób
+   * o własności **wyprowadzonej** tej kolumny nie ma i mieć nie będzie (`Task` — własność idzie
+   * przez `createdById` albo przez projekt, więc nie było tam `ownerId` i migracja 0227 go nie
+   * objęła). Drugi dawny powód — **sierota** po backfillu — zniknął razem z zaostrzeniem
+   * `workspaceId` do NOT NULL w 0235.
    */
   workspaceId?: string | null;
-  ownerId: string | null;
-  ownerTeamId: string | null;
+  /**
+   * WŁAŚCICIEL OSOBISTY zasobu, którego własność jest **wyprowadzona** — nie odczyt kolumny.
+   *
+   * 079: pole przestało być odbiciem kolumny `ownerId` (etap 4 usunął ją z 40 tabel) i jest
+   * odtąd wyłącznie tym, czym zawsze było w zamyśle: **faktem, który moduł potrafi podać, choć
+   * nie stoi on nigdzie w bazie**. Jedyny dzisiejszy użytkownik to zadanie bez projektu, gdzie
+   * właścicielem jest twórca (`Task.createdById`).
+   *
+   * **Czego to pole NIE jest już siatką.** Do 078 podawały je wszystkie deklaracje i ratowało
+   * dostęp właściciela, gdy przestrzeni zasobu nie było w jego kontekście (brak wiersza
+   * `WorkspaceMember` — 056/075). Ta ochrona przeniosła się do `getAccessContext`, które czyta
+   * przestrzeń osobistą po `Workspace.personalUserId`. Podawanie tu `ownerId` „dla pewności"
+   * obok `workspaceId` nic nie doda, a zakłamie fakty o zasobie.
+   */
+  ownerId?: string | null;
   /**
    * 064 — zasób OTWARTY: rola, którą dostaje **każda zalogowana osoba**, niezależnie od relacji.
    *
@@ -73,7 +84,8 @@ export interface ResourceDeclaration {
   /** Typy zasobów dziedziczących po tym (projekt → zadanie). Dokumentacyjne i dla przyszłego UI. */
   children?: string[];
   /**
-   * Co daje WŁASNOŚĆ ZESPOŁOWA zasobu (`ownerTeamId`). Pole jest **opcjonalne i domyślnie puste**,
+   * Co daje WŁASNOŚĆ ZESPOŁOWA zasobu — czyli to, że jego przestrzeń jest przestrzenią zespołu
+   * (do 079 czytane z kolumny `ownerTeamId`). Pole jest **opcjonalne i domyślnie puste**,
    * bo nie każdy moduł dziś ją honoruje — a milczące przyznanie dostępu na podstawie samej kolumny
    * byłoby poszerzeniem uprawnień bez decyzji (052/AC-5). Moduł, który chce ją uznawać, musi
    * powiedzieć to wprost i podać stopniowanie.

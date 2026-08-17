@@ -45,13 +45,14 @@ export const resources: ResourceCatalog = {
     resolve: async (id) => {
       const p = await prisma.taskProject.findUnique({
         where: { id },
-        select: { workspaceId: true, ownerId: true, ownerTeamId: true },
+        select: { workspaceId: true },
       });
       if (!p) return null;
-      // 056: `workspaceId` jest odtąd PODSTAWOWYM faktem o własności i to po nim rozstrzyga
-      // platforma. Para `ownerId`/`ownerTeamId` zostaje jako fakt prawdziwy i jako droga awaryjna
-      // dla rekordów bez przestrzeni (sierot); zniknie w etapie 4.
-      return { workspaceId: p.workspaceId, ownerId: p.ownerId, ownerTeamId: p.ownerTeamId };
+      // 079 (etap 4): własność wyraża WYŁĄCZNIE przestrzeń. Para `ownerId`/`ownerTeamId` znikła
+      // z tabeli, a to, czego broniła jako droga awaryjna (właściciel bez wiersza członkostwa
+      // w swojej przestrzeni), przeniosło się do `getAccessContext`: przestrzeń osobistą czyta
+      // się po `Workspace.personalUserId`, a nie po członkostwie.
+      return { workspaceId: p.workspaceId };
     },
     extraGrants: async (id) => {
       const czlonkowie = await prisma.taskProjectMember.findMany({
@@ -83,9 +84,12 @@ export const resources: ResourceCatalog = {
       // na twórcę ani przypisanego. Gdyby tu ustawić `ownerId: createdById`, twórca zachowałby
       // dostęp po wypisaniu z projektu — czyli dostałby więcej niż dziś.
       if (t.projectId) {
-        return { ownerId: null, ownerTeamId: null, parent: { type: "tasks.project", id: t.projectId } };
+        return { parent: { type: "tasks.project", id: t.projectId } };
       }
-      return { ownerId: t.createdById, ownerTeamId: null };
+      // 079: `Task` nie ma i nie będzie mieć kolumny przestrzeni — jego własność jest
+      // WYPROWADZONA. To ostatnie miejsce, w którym `facts.ownerId` niesie prawdziwą informację;
+      // wszędzie indziej własność wyraża `workspaceId`.
+      return { ownerId: t.createdById };
     },
     extraGrants: async (id) => {
       // Osoba PRZYPISANA do zadania bez projektu — dostęp, którego nie wyraża ani własność, ani

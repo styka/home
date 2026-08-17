@@ -17,12 +17,13 @@ export const resources: ResourceCatalog = {
     },
     teamOwnership: { member: "manager", admin: "manager" },
     resolve: async (id) => {
+      // 079 (etap 4): własność wyraża wyłącznie przestrzeń.
       const l = await prisma.shoppingList.findUnique({
         where: { id },
-        select: { workspaceId: true, ownerId: true, ownerTeamId: true },
+        select: { workspaceId: true },
       });
       if (!l) return null;
-      return { workspaceId: l.workspaceId, ownerId: l.ownerId, ownerTeamId: l.ownerTeamId };
+      return { workspaceId: l.workspaceId };
     },
   },
 };

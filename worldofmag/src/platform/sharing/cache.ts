@@ -51,7 +51,7 @@ function perRequest<A, R>(fn: (a: A) => Promise<R>): (a: A) => Promise<R> {
  * sprawdzenie dostępu odpytywałoby o członkostwa od nowa.
  */
 export const getAccessContext = perRequest(async (userId: string): Promise<AccessContext> => {
-  const [teamIds, workspaces, czlonkostwa] = await Promise.all([
+  const [teamIds, workspaces, czlonkostwa, osobista] = await Promise.all([
     getUserTeamIds(userId),
     // 056: to samo zapytanie co dotąd, tylko z dwoma polami więcej. Rozstrzyganie po przestrzeni
     // potrzebuje MOJEJ ROLI w niej i wskazania, która przestrzeń jest moja osobista — jedno i
@@ -66,20 +66,44 @@ export const getAccessContext = perRequest(async (userId: string): Promise<Acces
       where: { userId, role: { in: ["OWNER", "ADMIN"] } },
       select: { teamId: true },
     }),
+    /**
+     * 079 (zadanie 11, etap 4) — PRZESTRZEŃ OSOBISTA CZYTANA PO WŁAŚCICIELU, NIE PO CZŁONKOSTWIE.
+     *
+     * Do etapu 4 przestrzeń osobistą znajdowało się wśród członkostw wyżej, a gdy jej tam nie było,
+     * dostęp właściciela ratowała **siatka** w `rolaZWlasnosci`: fakt `ownerId === ja` dawał
+     * `manager` niezależnie od przestrzeni (075/077). Etap 4 zabiera zasobom kolumnę `ownerId`,
+     * więc tamtej siatki nie ma z czego zbudować — a chroniony przez nią stan (brak wiersza
+     * `WorkspaceMember`, rozjazd lustra rozpoznany w 056) nadal jest osiągalny.
+     *
+     * Zapytanie przenosi siatkę **do miejsca, w którym problem powstaje**: „moja przestrzeń
+     * osobista" jest faktem z tabeli `Workspace` (`personalUserId`), a nie z tabeli członkostw.
+     * Idzie równolegle z pozostałymi, więc sprawdzenie dostępu nie kosztuje dodatkowej rundy.
+     *
+     * **To nie jest poszerzenie dostępu**: przestrzeń osobista z definicji należy do jednej osoby,
+     * więc uznanie jej za swoją nie daje nikomu wglądu w cudze dane. Dowodzi tego wiersz „obcy"
+     * w tabeli prawdy `wlasnoscBezLustra` — musi zostać samą odmową.
+     */
+    prisma.workspace.findUnique({ where: { personalUserId: userId }, select: { id: true } }),
   ]);
   // Przestrzeń osobistą rozpoznajemy po `personalUserId === userId`, a NIE po `kind === "personal"`:
   // `kind` mówi, jakiego rodzaju jest przestrzeń, a `personalUserId` — CZYJA. Gdyby ktoś kiedyś był
   // członkiem cudzej przestrzeni osobistej, sprawdzanie `kind` przyznałoby mu w niej rolę właściciela.
-  const wlasna = workspaces.find((w) => w.workspace?.personalUserId === userId);
-  return {
+  const personalWorkspaceId = osobista?.id ?? null;
+  const ctx: AccessContext = {
     teamIds,
     adminTeamIds: czlonkostwa.map((m) => m.teamId),
     workspaceIds: workspaces.map((w) => w.workspaceId),
-    personalWorkspaceId: wlasna?.workspaceId ?? null,
+    personalWorkspaceId,
     workspaceRoles: Object.fromEntries(
       workspaces.map((w) => [w.workspaceId, w.role as WorkspaceMemberRole]),
     ),
   };
+  // Brakujący wiersz członkostwa we WŁASNEJ przestrzeni domykamy tak samo, jak 077 domyka
+  // przestrzeń utworzoną w trakcie żądania — tą samą funkcją, żeby nie powstały dwie interpretacje
+  // tego samego stanu. Bez tego zakres list (`ownedOrAsync`, `accessibleProjectIds`) nadal liczyłby
+  // się z członkostw i pokazywałby mniej, niż przepuszcza guard.
+  if (personalWorkspaceId) wpiszPrzestrzenDoKontekstu(ctx, personalWorkspaceId);
+  return ctx;
 });
 
 /**

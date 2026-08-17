@@ -4,6 +4,23 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Fixture, który „porządkuje" stan przed pomiarem, wycina z pomiaru broniony przypadek
+**Problem:** Usuwałem z deklaracji zasobów fakt `ownerId`, który od 075 pełnił rolę **siatki**:
+gdy przestrzeni zasobu nie było w kontekście dostępu użytkownika (brak wiersza `WorkspaceMember`),
+właściciel i tak dostawał `manager`. Trzy istniejące tabele prawdy (`truthTable`,
+`truthTableRemaining`, `truthTablePets`) przeszły po zmianie na zielono — mimo że siatka zniknęła
+bez zastępstwa. Powód: każdy z tych fixture'ów zaczyna od `ensurePersonalWorkspace`, który przy
+okazji **naprawia brakujące członkostwo**. Mierzyły więc stan, w którym broniony kod jest zbędny.
+**Rozwiązanie:** Osobna tabela prawdy (`wlasnoscBezLustra`), która stan awarii **buduje celowo** —
+kasuje wiersze `WorkspaceMember` po utworzeniu zasobów. Sonda potwierdziła, że mierzy, co trzeba:
+bez poprawki w `getAccessContext` sześć komórek czerwienieje. Siatka przeniosła się do kontekstu
+dostępu — przestrzeń osobista czytana po `Workspace.personalUserId`, nie po członkostwie.
+**Lekcja:** Kod istniejący na wypadek awarii wymaga testu, który **tę awarię odtwarza**. Fixture
+wołający funkcję uzgadniającą (`ensure*`, `sync*`, „przygotuj czyste dane") jest wygodny i zwykle
+poprawny — ale w teście zabezpieczenia jest wprost szkodliwy, bo usuwa przedmiot pomiaru. Sygnał
+ostrzegawczy: **usuwam zabezpieczenie i nic się nie czerwieni**. To nie znaczy, że było zbędne;
+najczęściej znaczy, że żaden test nie wchodzi w stan, dla którego powstało.
+
 ## 2026-08-18 — Lista bramek w CLAUDE.md rozjechała się o osiem pozycji, bo dopisywano ją ręcznie
 **Problem:** Chciałem dopisać do opisu potoku budowania dwie nowe bramki. Sprawdzenie w
 `package.json` pokazało, że dokument wymienia **13 bramek, a build uruchamia 21**. Osiem

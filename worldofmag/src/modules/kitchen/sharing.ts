@@ -17,15 +17,15 @@ export const resources: ResourceCatalog = {
     },
     teamOwnership: { member: "manager", admin: "manager" },
     resolve: async (id) => {
+      // 079 (etap 4): własność wyraża wyłącznie przestrzeń; `isPublic` zostaje, bo publiczność
+      // przepisu nie jest własnością i nigdy nią nie była.
       const r = await prisma.recipe.findUnique({
         where: { id },
-        select: { workspaceId: true, ownerId: true, ownerTeamId: true, isPublic: true },
+        select: { workspaceId: true, isPublic: true },
       });
       if (!r) return null;
       return {
         workspaceId: r.workspaceId,
-        ownerId: r.ownerId,
-        ownerTeamId: r.ownerTeamId,
         // `viewer`, nie `editor`: publiczny znaczy „do czytania", nie „do zmieniania".
         publicRole: r.isPublic ? ("viewer" as const) : null,
       };
@@ -42,10 +42,10 @@ export const resources: ResourceCatalog = {
     resolve: async (id) => {
       const c = await prisma.cookbook.findUnique({
         where: { id },
-        select: { workspaceId: true, ownerId: true, ownerTeamId: true },
+        select: { workspaceId: true },
       });
       if (!c) return null;
-      return { workspaceId: c.workspaceId, ownerId: c.ownerId, ownerTeamId: c.ownerTeamId };
+      return { workspaceId: c.workspaceId };
     },
   },
 };

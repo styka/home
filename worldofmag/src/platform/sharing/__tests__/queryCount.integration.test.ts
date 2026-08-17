@@ -23,9 +23,12 @@ test(
   async (t) => {
     const { prisma } = await import("@/platform/db/prisma");
     const { resolveRole } = await import("@/platform/sharing/access");
+    const { getAccessContext } = await import("@/platform/sharing/cache");
+    const { ensurePersonalWorkspace } = await import("@/platform/workspaces/sync");
     const resources = (await import("@/modules/tasks/sharing")).default;
 
     const wlasciciel = await prisma.user.create({ data: { email: `qc-${rnd()}@test.local` } });
+    await ensurePersonalWorkspace(wlasciciel.id);
     const projekt = await prisma.taskProject.create({
       data: { name: `QC-${rnd()}`, ownerId: wlasciciel.id },
     });
@@ -37,18 +40,16 @@ test(
     // `PrismaClient` z nasłuchem `$on("query")` byłby wygodniejszy, ale liczyłby zapytania, których
     // `requireAccess` nie wykonuje — czyli dawałby pomiar czegoś innego niż mierzona ścieżka.
     /**
-     * 056: kontekst budowany RĘCZNIE, bo ten test mierzy liczbę zapytań i nie może ich sam dokładać
-     * przez `getAccessContext`. Pusty `personalWorkspaceId` znaczy „ten użytkownik nie ma
-     * przestrzeni", więc rozstrzyganie idzie gałęzią awaryjną na `ownerId` — a mierzony koszt
-     * dotyczy kroków 1–3, które są w obu gałęziach te same.
+     * 079: kontekst liczony PRAWDZIWY, a nie ręcznie.
+     *
+     * Do etapu 4 stała tu atrapa z `personalWorkspaceId: null` — z uzasadnieniem, że test mierzy
+     * zapytania i nie może ich sam dokładać. Uzasadnienie było prawdziwe, ale skutek uboczny nie:
+     * przy pustej przestrzeni rozstrzyganie szło **gałęzią awaryjną na `ownerId`**, więc test
+     * mierzył koszt ścieżki, którą etap 4 właśnie usunął. Kontekst liczymy raz, PRZED założeniem
+     * szpiegów, więc jego zapytania nie wchodzą do pomiaru — a mierzona ścieżka jest ta, którą
+     * naprawdę chodzi aplikacja.
      */
-    const ctx = {
-      teamIds: [],
-      adminTeamIds: [],
-      workspaceIds: [],
-      personalWorkspaceId: null,
-      workspaceRoles: {},
-    };
+    const ctx = await getAccessContext(wlasciciel.id);
 
     try {
 
@@ -72,6 +73,12 @@ test(
 
       await t.test("obcy: nadania czytane DOKŁADNIE raz, mimo dwóch ogniw łańcucha", async () => {
         const obcy = await prisma.user.create({ data: { email: `qc-o-${rnd()}@test.local` } });
+        // 079: obcy musi mieć WŁASNY kontekst. Dopóki własność niosła kolumnę `ownerId`, podanie
+        // tu kontekstu właściciela było nieszkodliwe — rozstrzygało pole faktów, nie kontekst.
+        // Odkąd rozstrzyga przestrzeń, cudzy kontekst zrobiłby z obcego właściciela i test
+        // mierzyłby ścieżkę właściciela pod nazwą „obcy".
+        await ensurePersonalWorkspace(obcy.id);
+        const ctxObcego = await getAccessContext(obcy.id);
         const doGrantow: string[] = [];
         const oryginalne = prisma.resourceGrant.findMany;
         (prisma.resourceGrant as unknown as { findMany: unknown }).findMany = ((...args: unknown[]) => {
@@ -79,7 +86,7 @@ test(
           return (oryginalne as (...a: unknown[]) => unknown).apply(prisma.resourceGrant, args);
         }) as typeof prisma.resourceGrant.findMany;
         try {
-          const rola = await resolveRole(obcy.id, { type: "tasks.task", id: zadanie.id }, resources, ctx);
+          const rola = await resolveRole(obcy.id, { type: "tasks.task", id: zadanie.id }, resources, ctxObcego);
           assert.equal(rola, null);
           assert.equal(
             doGrantow.length,

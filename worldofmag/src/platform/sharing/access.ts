@@ -85,18 +85,19 @@ function rolaZWlasnosci(
   // Liczymy to jako podłogę, nie jako wynik: właściciel otwartego zasobu ma nadal `manager`.
   const otwarty = facts.publicRole ?? null;
 
-  // 075 (etap 4): WŁAŚCICIEL ZAWSZE DOSTAJE `manager`, zanim cokolwiek policzymy z przestrzeni.
+  // 075: WŁAŚCICIEL OSOBISTY ZAWSZE DOSTAJE `manager`, zanim cokolwiek policzymy z przestrzeni.
   //
-  // Do etapu 4 ta reguła stała niżej i była nieosiągalna dla zasobu z przestrzenią — bo zasób bez
-  // przestrzeni (sierota) był jedyną drogą do tamtej gałęzi. Zaostrzenie `workspaceId` do NOT NULL
-  // sierotę zlikwidowało i tym samym USUNĘŁO SIATKĘ, o której istnieniu nikt nie pamiętał: gdy
-  // przestrzeni zasobu nie ma w kontekście dostępu użytkownika (klasyczny przypadek to brak wiersza
-  // `WorkspaceMember` — pułapka rozpoznana w 056), właściciel przestawał być właścicielem.
+  // 079 (etap 4) ZMIENIŁO ZAKRES TEJ REGUŁY, nie jej treść. Do 078 `ownerId` podawały wszystkie
+  // deklaracje i warunek był SIATKĄ: gdy przestrzeni zasobu nie było w kontekście użytkownika
+  // (brak wiersza `WorkspaceMember` — pułapka z 056), właściciel i tak zostawał właścicielem.
+  // Etap 4 usunął kolumnę `ownerId` z 40 tabel, więc siatki nie ma tu z czego zbudować —
+  // przeniosła się do `getAccessContext`, gdzie przestrzeń osobistą czyta się po
+  // `Workspace.personalUserId`, a nie po członkostwie. Dowodzi tego tabela prawdy
+  // `wlasnoscBezLustra` (sonda: bez tamtej poprawki sześć komórek czerwienieje).
   //
-  // Ujawnił to test kosztu dostępu, w którym właściciel projektu nagle wyszedł bez roli. To nie
-  // jest przypadek testowy — to konto tracące dostęp do własnych danych przez rozjazd w lustrze.
-  // Warunek nie może niczego poszerzyć: `ownerId` to własność osobista, więc odpowiada dokładnie
-  // dawnej regule sprzed przejścia na przestrzenie.
+  // Zostaje jedyny przypadek, w którym własność osobista NIE jest przestrzenią: zasób o własności
+  // WYPROWADZONEJ, który kolumny przestrzeni nie ma i mieć nie będzie — zadanie bez projektu,
+  // gdzie właścicielem jest twórca.
   if (facts.ownerId && facts.ownerId === userId) return "manager";
 
   if (facts.workspaceId) {
@@ -111,13 +112,15 @@ function rolaZWlasnosci(
     return otwarty;
   }
 
-  // Zasób BEZ własnej przestrzeni — dotyczy czterech tabel słownikowych, w których `workspaceId`
-  // pozostaje nullowalne z rozmysłem (rekord systemowy nie należy do żadnej przestrzeni — 0235).
-  // Własność osobista jest sprawdzona wyżej, więc zostaje tu gałąź zespołowa.
-  if (zespolowa && facts.ownerTeamId) {
-    if (ctx.adminTeamIds.includes(facts.ownerTeamId)) return najwyzsza(zespolowa.admin, otwarty);
-    if (ctx.teamIds.includes(facts.ownerTeamId)) return najwyzsza(zespolowa.member, otwarty);
-  }
+  // 079: GAŁĄŹ „zasób bez przestrzeni, własność zespołowa z `ownerTeamId`" ZNIKŁA.
+  //
+  // Nie jako uproszczenie — jako usunięcie kodu, do którego nie da się dojść. Fakt `ownerTeamId`
+  // podawała dokładnie jedna deklaracja (`tasks.task`) i zawsze jako `null`; po etapie 4 nie ma
+  // go już z czego wziąć, bo kolumna nie istnieje. Pięć tabel, które `ownerTeamId` zachowuje
+  // (słowniki + `Job` — `workspace-nullable.json`), nie jest zasobami w rozumieniu udostępniania:
+  // rządzi nimi `ownedOrSystemWhere`/`assertDictionaryAccess`. Gdy któraś z nich kiedyś stanie
+  // się zasobem, gałąź wróci **razem z własną tabelą prawdy**, zamiast czekać tu nieużywana
+  // i nieprzetestowana.
   return otwarty;
 }
 

@@ -35,12 +35,14 @@ export const resources: ResourceCatalog = {
     teamOwnership: { member: "manager", admin: "manager" },
 
     resolve: async (id) => {
+      // 079 (etap 4): własność wyraża wyłącznie przestrzeń — kolumny `ownerId`/`ownerTeamId`
+      // zniknęły z tabeli.
       const p = await prisma.pet.findUnique({
         where: { id },
-        select: { workspaceId: true, ownerId: true, ownerTeamId: true },
+        select: { workspaceId: true },
       });
       if (!p) return null;
-      return { workspaceId: p.workspaceId, ownerId: p.ownerId, ownerTeamId: p.ownerTeamId };
+      return { workspaceId: p.workspaceId };
     },
 
     /**

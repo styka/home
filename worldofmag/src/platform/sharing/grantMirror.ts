@@ -38,7 +38,7 @@ async function przestrzenZadania(taskId: string): Promise<string | null> {
 async function przestrzenProjektu(projectId: string): Promise<string | null> {
   const p = await prisma.taskProject.findUnique({
     where: { id: projectId },
-    select: { workspaceId: true, ownerId: true },
+    select: { workspaceId: true },
   });
   return p?.workspaceId ?? null;
 }
