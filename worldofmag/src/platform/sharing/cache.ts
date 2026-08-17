@@ -99,7 +99,24 @@ export const getAccessContext = perRequest(async (userId: string): Promise<Acces
  * mutacja dotyczy obiektu jednorazowego i po prostu nic nie zmienia — też poprawnie.
  */
 export async function dopiszPrzestrzenDoKontekstu(userId: string, workspaceId: string): Promise<void> {
-  const ctx = await getAccessContext(userId);
+  wpiszPrzestrzenDoKontekstu(await getAccessContext(userId), workspaceId);
+}
+
+/**
+ * Czysta część powyższego: sama korekta obiektu kontekstu.
+ *
+ * **Wydzielona, bo inaczej poprawki nie da się sprawdzić.** Pierwsza wersja testu wołała
+ * `getAccessContext` dwa razy wokół `przestrzenOsobista()` i przechodziła — także wtedy, gdy
+ * poprawkę USUNIĘTO. Powód: poza runtime'em Reacta `getAccessContext` nie jest memoizowane, więc
+ * drugie wywołanie po prostu czyta bazę i widzi już utworzoną przestrzeń. Test zielenił się
+ * z przyczyny niezwiązanej z tym, co miał mierzyć.
+ *
+ * Sama korekta obiektu jest logiką, która MOŻE być błędna (trzy pola, w tym rola — bez niej
+ * przestrzeń istnieje, a dostępu nie daje; pułapka z 056) i to ją tu testujemy. Fakt, że
+ * w prawdziwym żądaniu jest to TEN SAM obiekt co u pozostałych czytelników, wynika z kontraktu
+ * `React.cache` i jest sprawdzalny tylko w prawdziwym żądaniu — klikaczem, nie testem jednostkowym.
+ */
+export function wpiszPrzestrzenDoKontekstu(ctx: AccessContext, workspaceId: string): void {
   if (ctx.personalWorkspaceId === null) ctx.personalWorkspaceId = workspaceId;
   if (!ctx.workspaceIds.includes(workspaceId)) ctx.workspaceIds.push(workspaceId);
   if (!ctx.workspaceRoles[workspaceId]) ctx.workspaceRoles[workspaceId] = "owner";
