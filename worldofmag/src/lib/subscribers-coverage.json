@@ -32,6 +32,12 @@
       "zdarzenia": ["shopping.list.completed"],
       "idempotencja": "klucz-unikalny",
       "powod": "`notifyUser` robi `upsert` po `@@unique([userId, dedupeKey])`, a klucz to `zdarzenie-${event.id}` — stabilny między ponowieniami. Drugie dostarczenie trafia w ten sam wiersz i nic nie zmienia. Dowiedzione testem podwójnego dostarczenia."
+    },
+    "portfel.ksieguj-zakupy": {
+      "plik": "src/modules/portfel/events.ts",
+      "zdarzenia": ["shopping.list.completed"],
+      "idempotencja": "naturalna",
+      "powod": "`bookAutoExpense` szuka wpisu po parze (sourceModule, sourceId) i przy trafieniu AKTUALIZUJE go, korygując saldo o różnicę — a nie dopisuje drugiego. `sourceId` to id listy, więc klucz jest stabilny między ponowieniami tak samo jak `event.id`; drugie dostarczenie ustawia tę samą kwotę i różnica wynosi zero. Data brana z `event.createdAt`, nie z `new Date()`, żeby ponowienie nie przesunęło wydatku na inny dzień. Dowiedzione testem podwójnego dostarczenia (saldo i liczba wpisów identyczne po drugim wywołaniu)."
     }
   },
 

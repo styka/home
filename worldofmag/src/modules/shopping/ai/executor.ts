@@ -132,8 +132,11 @@ export async function executeShoppingAction(action: AIAction, userId: string, ac
   if (type === "complete_shopping") {
     const id = await resolveListId(userId, params, searchQuery, activeListId);
     const res = await completeShopping(id, { bookToPortfel: params.bookToPortfel === true });
-    return res.booked
-      ? `Zakończono zakupy — zaksięgowano wydatek ${res.total} zł w Portfelu`
+    // „Zlecono", nie „zaksięgowano" — od 073 księguje subskrybent Portfela, więc w chwili tej
+    // odpowiedzi wydatek jeszcze nie istnieje. Dawny komunikat i tak obiecywał za dużo: mówił
+    // „zaksięgowano" także wtedy, gdy użytkownik nie miał konta auto-wydatków i nic nie powstawało.
+    return res.zlecono
+      ? `Zakończono zakupy — zlecono zaksięgowanie wydatku ${res.total} zł w Portfelu`
       : `Zakończono zakupy (lista zarchiwizowana)`;
   }
 

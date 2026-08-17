@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
-import { bookAutoExpense } from "@/modules/portfel/contract";
 import type { ShoppingList, ShoppingListWithItems } from "@/types";
 import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
 
@@ -161,7 +160,10 @@ export async function archiveList(id: string): Promise<void> {
  * S6: zakończenie zakupów — archiwizuje listę i opcjonalnie księguje sumę kupionych
  * pozycji (cena × ilość dla statusu DONE) jako wydatek w Portfelu (silnik W4).
  */
-export async function completeShopping(id: string, opts?: { bookToPortfel?: boolean }): Promise<{ total: number; booked: boolean }> {
+export async function completeShopping(
+  id: string,
+  opts?: { bookToPortfel?: boolean }
+): Promise<{ total: number; zlecono: boolean }> {
   const user = await requireAuth();
   await assertListAccess(id, user.id);
 
@@ -176,10 +178,14 @@ export async function completeShopping(id: string, opts?: { bookToPortfel?: bool
     .reduce((s, it) => s + (it.price as number) * (it.quantity && it.quantity > 0 ? it.quantity : 1), 0);
 
   // 070 (zadanie 21): archiwizacja listy i ZDARZENIE w jednej transakcji (rozdz. 9.4.2).
-  // Zakres transakcji celowo obejmuje TYLKO te dwie operacje. `bookAutoExpense` niżej zostaje
-  // poza nią: wciągnięcie go zmieniłoby zachowanie przy awarii księgowania (dziś zakupy zostają
-  // zakończone), a to zmiana widoczna dla użytkownika. Zadanie 25 i tak przepnie księgowanie
-  // na subskrypcję tego zdarzenia i wtedy wywołanie stąd zniknie.
+  //
+  // 073 (zadanie 25, rozdz. 9.5): księgowanie w Portfelu ZNIKŁO STĄD. Zakupy nie importują już
+  // `bookAutoExpense` ani niczego innego z Portfela — ogłaszają tylko, że lista została zamknięta,
+  // i niosą w ładunku ŻYCZENIE użytkownika (`ksiegowac`). Czy z tego życzenia wyniknie wydatek,
+  // rozstrzyga subskrybent po stronie Portfela (`modules/portfel/events.ts`), bo to jego reguła.
+  //
+  // Zasada „tylko prywatne listy" też się tam przeniosła — dlatego zniknął odczyt `list.ownerId`.
+  const zlecono = Boolean(opts?.bookToPortfel) && total > 0;
   const przestrzen = await workspaceIdDlaZdarzenia(list.workspaceId, user.id);
   await prisma.$transaction(async (tx) => {
     await tx.shoppingList.update({ where: { id }, data: { archived: true, archivedAt: new Date() } });
@@ -189,32 +195,19 @@ export async function completeShopping(id: string, opts?: { bookToPortfel?: bool
         module: "shopping",
         type: "shopping.list.completed",
         actorId: user.id,
-        payload: { listId: id, nazwa: list.name, suma: total, pozycji: list.items.length },
+        payload: { listId: id, nazwa: list.name, suma: total, pozycji: list.items.length, ksiegowac: zlecono },
       });
     }
   });
 
-  let booked = false;
-  if (opts?.bookToPortfel && total > 0) {
-    // Tylko prywatne listy księgujemy automatycznie (zespołowe pomijamy — różne konta).
-    if (list.ownerId === user.id) {
-      await bookAutoExpense(user.id, {
-        module: "shopping",
-        sourceId: id,
-        amount: total,
-        category: "zakupy",
-        note: `Zakupy: ${list.name}`,
-        date: new Date(),
-        force: true, // jawna decyzja użytkownika w modalu „Zakończ zakupy"
-      });
-      booked = true;
-    }
-  }
-
   revalidatePath("/shopping");
   revalidatePath(`/shopping/${id}`);
   revalidatePath("/portfel");
-  return { total, booked };
+  // `zlecono`, nie `booked` — i to nie jest kosmetyka nazwy. Dawne `booked` też nie znaczyło
+  // „pieniądze zaksięgowane": ustawiało się na `true` zaraz po wywołaniu `bookAutoExpense`, które
+  // po cichu nic nie robi, gdy użytkownik nie ma skonfigurowanego konta auto-wydatków. Nowa nazwa
+  // mówi to, co pole zawsze znaczyło — że zlecenie poszło.
+  return { total, zlecono };
 }
 
 export async function unarchiveList(id: string): Promise<void> {
