@@ -8,6 +8,10 @@
     {
       "pattern": "ALTER COLUMN \"updatedAt\" DROP DEFAULT",
       "reason": "`@updatedAt` w Prismie jest realizowane po stronie klienta, a migracje nadały kolumnie DEFAULT now() dla bezpieczeństwa przy zapisach surowym SQL-em. Prisma widzi tu różnicę, choć zachowanie aplikacji jest identyczne."
+    },
+    {
+      "pattern": "DROP TABLE \"_KopiaWlasnosci\"",
+      "reason": "Punkt przywrócenia własności sprzed etapu 4 zadania 11 (migracja 0233). Celowo NIE ma modelu w `schema.prisma`: to nie są dane aplikacji, tylko kopia zapasowa na poziomie bazy, która ma przetrwać usunięcie kolumn `ownerId`/`ownerTeamId`, do których się odnosi. Brak modelu = brak jej w Prisma Client = żadna akcja ani job nie jest w stanie jej nadpisać ani skasować przypadkiem. Odtworzenie idzie surowym SQL-em wg `docs/devops/przywrocenie-wlasnosci.md`."
     }
   ]
 }

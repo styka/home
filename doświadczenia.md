@@ -4,6 +4,42 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-17 — Kopia zapasowa, której nie da się użyć: gdy klucz główny JEST kasowaną kolumną
+**Problem:** Migracja 0233 archiwizuje `ownerId`/`ownerTeamId` przed etapem 4 zadania 11. Pierwsza
+wersja zakładała, że każdy wiersz identyfikuje `"id"::text`. Padła na `NewsPref`
+(`42703: column "id" does not exist`) — bo `NewsPref` nie ma `id`, jej **kluczem głównym jest samo
+`ownerId`**. Poprawka na „czytaj klucz główny z `pg_index`" naprawiła zapis, ale przy testowaniu
+procedury odtworzenia wyszło coś gorszego: dla `NewsPref` odtworzenie jest **niemożliwe z zasady**.
+Po `DROP COLUMN "ownerId"` wiersz nie ma żadnej tożsamości — kopia zna wartość, ale nie ma po czym
+dopasować ją z powrotem do wiersza.
+**Rozwiązanie:** Identyfikator wiersza czytany z katalogu systemowego (`pg_index`), nazwy kolumn
+klucza zapisywane w kopii (kolumna `klucz`), żeby kopia opisywała samą siebie. Dla `NewsPref`
+dopisany **warunek wejścia w etap 4**: najpierw własny klucz główny (`id`) albo przejście na
+`workspaceId`, dopiero potem `DROP COLUMN`. Do tego czasu jedynym odwrotem jest PITR całej bazy.
+**Lekcja:** Zanim uznasz backup za zrobiony, zadaj pytanie **odwrotne** — nie „czy zapisałem dane",
+tylko „po czym rozpoznam wiersz, gdy tych danych już nie będzie". Tabela, której klucz główny jest
+kasowaną kolumną, jest nieodtwarzalna wierszami niezależnie od tego, jak dobrą ma się kopię.
+Wychodzi to dopiero przy **przećwiczeniu odtworzenia**, nigdy przy pisaniu zapisu — więc procedurę
+przywrócenia testuj naprawdę (`BEGIN … ROLLBACK` z prawdziwym `DROP COLUMN`), a nie opisowo.
+Drobiazg dodatkowy z tej samej migracji: w `string_agg(x, ',' ORDER BY k.ord)` **nie ma przecinka
+przed `ORDER BY`** — separator i klauzula sortująca to jeden argument.
+
+## 2026-08-17 — Test odtworzenia z bazy przechodzi także wtedy, gdy nic nie odtworzył
+**Problem:** Sprawdzenie procedury przywracania własności („porównaj stan po odtworzeniu z migawką
+sprzed `DROP COLUMN`") wyszło na zielono: 0 rozbieżności. Wyglądało na dowód. Nie było nim —
+większość wierszy w tabelach słownikowych ma `ownerId IS NULL` (rekordy systemowe), a „przywrócony
+NULL" i „nigdy nie tknięty NULL" są nierozróżnialne. Zielony wynik obejmowałby też sytuację, w
+której krok odtwarzający w ogóle się nie wykonał.
+**Rozwiązanie:** Ta sama próba puszczona drugi raz z **celowo pominiętym** krokiem odtworzenia.
+Zgłosiła dokładnie 2 rozbieżności — tyle, ile było wierszy z niepustym właścicielem. Dopiero to
+dowiodło, że porównanie patrzy na dane. W runbooku dopisane ostrzeżenie: przy tabelach czysto
+systemowych kontroluj dodatkowo licznik przywróconych wierszy.
+**Lekcja:** Kolejny wariant reguły, która w tym projekcie wraca uparcie: **zielony wynik potrafi
+dowodzić, że kod się nie wykonał**. Przy porównaniach stanu bazy dochodzi specyficzna pułapka —
+`NULL` jest jednocześnie najczęstszą wartością i wartością nieodróżnialną od „nic nie zrobiono".
+Zanim uznasz porównanie za dowód, policz, **ile wierszy w próbie ma w ogóle niepustą wartość**;
+jeśli zero, próba nie sprawdza niczego.
+
 ## 2026-08-15 — `tsc -p tsconfig.test.json` NIE jest tym samym sprawdzeniem co `next build`
 **Problem:** Nowy plik platformy iterował po zbiorze (`for (const s of kanaly.get(n) ?? [])`).
 `npx tsc --noEmit -p tsconfig.test.json` przechodził czysto, testy jednostkowe zielone, wszystkie
