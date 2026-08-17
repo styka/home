@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 058 — RÓWNOŚĆ ZBIORÓW PRZED I PO PRZEŁĄCZENIU ZAKRESU NA PRZESTRZENIE.
@@ -47,11 +48,11 @@ test(
     await syncTeamWorkspace(zespol.id);
 
     // Zasoby: mój, zespołowy, cudzy — plus SIEROTA (bez przestrzeni), której właścicielem jestem ja.
-    const moj = await prisma.habit.create({ data: { name: `h-moj-${rnd()}`, ownerId: ja.id } });
+    const moj = await prisma.habit.create({ data: { name: `h-moj-${rnd()}`, ...(await wlasnoscDoZapisu(ja.id)) } });
     const zespolowy = await prisma.habit.create({
       data: { name: `h-zesp-${rnd()}`, ownerTeamId: zespol.id },
     });
-    const cudzy = await prisma.habit.create({ data: { name: `h-obc-${rnd()}`, ownerId: obcy.id } });
+    const cudzy = await prisma.habit.create({ data: { name: `h-obc-${rnd()}`, ...(await wlasnoscDoZapisu(obcy.id)) } });
     // 075: SIEROTY JUŻ NIE DA SIĘ ZROBIĆ. Etap 4 zaostrzył `Habit.workspaceId` do NOT NULL, więc
     // wcześniejsze `update({ workspaceId: null })` jest odrzucane przez bazę. Test przestał więc
     // sprawdzać gałąź awaryjną, a zaczął sprawdzać niezmiennik, który ją unieważnił — to mocniejsze

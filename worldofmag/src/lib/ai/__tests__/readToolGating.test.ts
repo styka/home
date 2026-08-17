@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { filtrMoichRekordow, wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 // Z-181 (kontrakt read-toolów agenta) + regresja Z-055/Z-270 (bramki prywatności):
 // asystent czyta dane finansowe tylko gdy nie wyłączono (opt-out), a dane zdrowotne
@@ -22,9 +23,9 @@ test("Z-181: bramki prywatności read-toolów (finanse opt-out, zdrowie opt-in) 
 
   const A = await prisma.user.create({ data: { email: `rtg-a-${rnd()}@test.local` } });
   const B = await prisma.user.create({ data: { email: `rtg-b-${rnd()}@test.local` } });
-  const walletA = await prisma.walletElement.create({ data: { name: "Konto A", kind: "account", balance: 1000, ownerId: A.id } });
-  await prisma.walletElement.create({ data: { name: "Konto B", kind: "account", balance: 9999, ownerId: B.id } });
-  await prisma.healthEvent.create({ data: { title: "Wizyta A", kind: "VISIT", scheduledAt: new Date(), ownerId: A.id } });
+  const walletA = await prisma.walletElement.create({ data: { name: "Konto A", kind: "account", balance: 1000, ...(await wlasnoscDoZapisu(A.id)) } });
+  await prisma.walletElement.create({ data: { name: "Konto B", kind: "account", balance: 9999, ...(await wlasnoscDoZapisu(B.id)) } });
+  await prisma.healthEvent.create({ data: { title: "Wizyta A", kind: "VISIT", scheduledAt: new Date(), ...(await wlasnoscDoZapisu(A.id)) } });
 
   try {
     await t.test("list_wallet: domyślnie (brak FinanceSettings) zwraca własne konta, nie cudze", async () => {
@@ -54,8 +55,12 @@ test("Z-181: bramki prywatności read-toolów (finanse opt-out, zdrowie opt-in) 
   } finally {
     await prisma.healthSettings.deleteMany({ where: { userId: { in: [A.id, B.id] } } });
     await prisma.financeSettings.deleteMany({ where: { userId: { in: [A.id, B.id] } } });
-    await prisma.healthEvent.deleteMany({ where: { ownerId: { in: [A.id, B.id] } } });
-    await prisma.walletElement.deleteMany({ where: { ownerId: { in: [A.id, B.id] } } });
+    const przestrzenie = [
+      (await filtrMoichRekordow(A.id)).workspaceId,
+      (await filtrMoichRekordow(B.id)).workspaceId,
+    ];
+    await prisma.healthEvent.deleteMany({ where: { workspaceId: { in: przestrzenie } } });
+    await prisma.walletElement.deleteMany({ where: { workspaceId: { in: przestrzenie } } });
     await prisma.user.deleteMany({ where: { id: { in: [A.id, B.id] } } });
   }
 });

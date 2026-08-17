@@ -1,10 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 /**
  * 078 (zadanie 11, etap 4 część 2) — RÓWNOŚĆ ZBIORÓW: `ownerId = ja` ⟺ „moja przestrzeń osobista".
  *
- * `filtrMoichRekordow` zastąpiło `where: { ownerId: userId }` w 52 miejscach na tabelach BEZ
+ * `filtrMoichRekordow` zastąpiło `where: { ...(await filtrMoichRekordow(userId)) }` w 52 miejscach na tabelach BEZ
  * współwłasności zespołowej. `tsc` potwierdza tylko, że nowy filtr jest poprawnym warunkiem Prismy
  * — nie, że **zwraca te same wiersze**. Pomyłka tutaj nie wywraca ekranu: pokazuje listę o jeden
  * rekord krótszą albo dłuższą, czego nikt nie zauważy bez porównania.
@@ -110,7 +111,18 @@ test(
         assert.equal(szerszy.has(id), true, "szerszy zakres ten sam wiersz WIDZI — czyli przypadek naprawdę różnicuje");
       });
     } finally {
-      await prisma.weatherLocation.deleteMany({ where: { ownerId: { in: [ja.id, obcy.id, pusty.id] } } });
+      await prisma.weatherLocation.deleteMany({
+        where: {
+          workspaceId: {
+            in: (
+              await prisma.workspace.findMany({
+                where: { personalUserId: { in: [ja.id, obcy.id, pusty.id] } },
+                select: { id: true },
+              })
+            ).map((w) => w.id),
+          },
+        },
+      });
       await prisma.workspaceMember.deleteMany({ where: { userId: { in: [ja.id, obcy.id, pusty.id] } } });
       await prisma.workspace.deleteMany({
         where: { OR: [{ personalUserId: { in: [ja.id, obcy.id, pusty.id] } }, { teamId: zespol.id }] },

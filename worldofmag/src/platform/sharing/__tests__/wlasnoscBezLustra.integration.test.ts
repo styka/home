@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 079 (zadanie 11, etap 4 część 3) — TABELA PRAWDY DLA SIATKI, KTÓRĄ USUWA `DROP COLUMN`.
@@ -71,22 +72,22 @@ test(
 
     // Zasoby powstają, DOPÓKI lustro jest sprawne — wyzwalacz wyprowadza przestrzeń z właściciela.
     const projekt = await prisma.taskProject.create({
-      data: { name: `P-${rnd()}`, ownerId: wlasciciel.id },
+      data: { name: `P-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id)) },
     });
     const lista = await prisma.shoppingList.create({
-      data: { name: `L-${rnd()}`, ownerId: wlasciciel.id },
+      data: { name: `L-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id)) },
     });
     const przepis = await prisma.recipe.create({
-      data: { title: `R-${rnd()}`, slug: `r-${rnd()}`, ownerId: wlasciciel.id },
+      data: { title: `R-${rnd()}`, slug: `r-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id)) },
     });
     const ksiazka = await prisma.cookbook.create({
-      data: { name: `K-${rnd()}`, ownerId: wlasciciel.id },
+      data: { name: `K-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id)) },
     });
     const zwierze = await prisma.pet.create({
-      data: { name: `Z-${rnd()}`, species: "gekon", ownerId: wlasciciel.id },
+      data: { name: `Z-${rnd()}`, species: "gekon", ...(await wlasnoscDoZapisu(wlasciciel.id)) },
     });
     const listaZespolu = await prisma.shoppingList.create({
-      data: { name: `LZ-${rnd()}`, ownerTeamId: zespol.id },
+      data: { name: `LZ-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id, zespol.id)) },
     });
 
     /**

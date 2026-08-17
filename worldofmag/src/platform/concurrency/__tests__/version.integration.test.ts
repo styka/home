@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 062 — DOWÓD, ŻE RÓWNOLEGŁY ZAPIS NIE GUBI PRACY.
@@ -96,7 +97,7 @@ test(
 
       await t.test("notatka: ten sam mechanizm na drugim kształcie danych", async () => {
         const notatka = await prisma.note.create({
-          data: { title: `N-${rnd()}`, content: "pierwsza treść", ownerId: autor.id },
+          data: { title: `N-${rnd()}`, content: "pierwsza treść", ...(await wlasnoscDoZapisu(autor.id)) },
         });
         try {
           const v = (await readVersion(prisma.note, notatka.id))!;

@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { filtrMoichRekordow, wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 073 (zadanie 25, rozdz. 9.5) — SUBSKRYBENT PORTFELA NA REALNYM POSTGRESIE.
@@ -44,7 +45,7 @@ test(
     const user = await prisma.user.create({ data: { email: `pf-ev-${rnd()}@test.local`, name: "Kupujący" } });
     await ensurePersonalWorkspace(user.id);
     const ws = await prisma.workspace.findUniqueOrThrow({ where: { personalUserId: user.id } });
-    const el = await prisma.walletElement.create({ data: { name: "Konto", ownerId: user.id, balance: 1000 } });
+    const el = await prisma.walletElement.create({ data: { name: "Konto", ...(await wlasnoscDoZapisu(user.id)), balance: 1000 } });
     await prisma.financeSettings.create({
       data: { userId: user.id, autoExpenseElementId: el.id, autoExpenseEnabled: true },
     });
@@ -115,7 +116,7 @@ test(
     } finally {
       await prisma.walletEntry.deleteMany({ where: { sourceModule: "shopping", sourceId: listId } });
       await prisma.financeSettings.deleteMany({ where: { userId: user.id } });
-      await prisma.walletElement.deleteMany({ where: { ownerId: user.id } });
+      await prisma.walletElement.deleteMany({ where: { ...(await filtrMoichRekordow(user.id)) } });
       await prisma.workspace.delete({ where: { id: ws.id } }).catch(() => {});
       await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
     }

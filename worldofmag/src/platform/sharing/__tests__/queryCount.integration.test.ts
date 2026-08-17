@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 052 — KOSZT SPRAWDZENIA DOSTĘPU W ZAPYTANIACH (rozdz. 8.9, wymagania 1, 2 i 4).
@@ -30,7 +31,7 @@ test(
     const wlasciciel = await prisma.user.create({ data: { email: `qc-${rnd()}@test.local` } });
     await ensurePersonalWorkspace(wlasciciel.id);
     const projekt = await prisma.taskProject.create({
-      data: { name: `QC-${rnd()}`, ownerId: wlasciciel.id },
+      data: { name: `QC-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id)) },
     });
     const zadanie = await prisma.task.create({
       data: { title: `QC-${rnd()}`, projectId: projekt.id, createdById: wlasciciel.id },

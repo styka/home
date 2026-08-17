@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 // Z-221 (T-03): kontrakt sortowania pozycji listy zakupów z realnym Prisma.
 // Manualna kolejność (`order` ASC) ma pierwszeństwo; przy braku ułożenia (order=0)
@@ -13,7 +14,7 @@ const PAGE_ORDER_BY = [{ order: "asc" as const }, { priority: "desc" as const },
 test("Z-221 sort pozycji: order ASC > priority DESC > createdAt ASC", { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false }, async (t) => {
   const { prisma } = await import("@/platform/db/prisma");
   const user = await prisma.user.create({ data: { email: `shop-${rnd()}@test.local` } });
-  const list = await prisma.shoppingList.create({ data: { name: `L-${rnd()}`, ownerId: user.id } });
+  const list = await prisma.shoppingList.create({ data: { name: `L-${rnd()}`, ...(await wlasnoscDoZapisu(user.id)) } });
 
   try {
     const base = Date.now();

@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 063 (zadanie 17) — ODWOŁANIE DOSTĘPU DZIAŁA NATYCHMIAST.
@@ -37,7 +38,7 @@ test(
     await ensurePersonalWorkspace(wspolpracownik.id);
 
     const projekt = await prisma.taskProject.create({
-      data: { name: `RV-${rnd()}`, ownerId: wlasciciel.id },
+      data: { name: `RV-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id)) },
     });
 
     const maDostep = async (userId: string): Promise<boolean> => {

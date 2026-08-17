@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 064 — TABELE PRAWDY DLA POZOSTAŁYCH GUARDÓW PER-REKORD (zadanie 13).
@@ -58,19 +59,19 @@ test(
     await syncTeamWorkspace(zespol.id);
 
     const lista = await prisma.shoppingList.create({
-      data: { name: `L-${rnd()}`, ownerId: wlasciciel.id },
+      data: { name: `L-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id)) },
     });
     const listaZespolu = await prisma.shoppingList.create({
-      data: { name: `LZ-${rnd()}`, ownerTeamId: zespol.id },
+      data: { name: `LZ-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id, zespol.id)) },
     });
     const przepis = await prisma.recipe.create({
-      data: { title: `R-${rnd()}`, slug: `r-${rnd()}`, ownerId: wlasciciel.id },
+      data: { title: `R-${rnd()}`, slug: `r-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id)) },
     });
     const przepisPubliczny = await prisma.recipe.create({
-      data: { title: `RP-${rnd()}`, slug: `rp-${rnd()}`, ownerId: wlasciciel.id, isPublic: true },
+      data: { title: `RP-${rnd()}`, slug: `rp-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id)), isPublic: true },
     });
     const ksiazka = await prisma.cookbook.create({
-      data: { name: `K-${rnd()}`, ownerTeamId: zespol.id },
+      data: { name: `K-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id, zespol.id)) },
     });
 
     const osoby: Record<string, string> = {

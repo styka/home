@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { filtrMoichRekordow, wlasnoscDoZapisu, wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 078 (zadanie 11, etap 4 część 2) — FAZA PODWÓJNEGO ZAPISU JEST SPÓJNA.
@@ -49,7 +50,7 @@ test(
         });
         // Ten zapis NIE podaje przestrzeni — wypełni ją wyzwalacz z kolumn własnościowych.
         const zWyzwalacza = await prisma.note.create({
-          data: { title: `wyzw-${rnd()}`, content: "", ownerId: ja.id },
+          data: { title: `wyzw-${rnd()}`, content: "", ...(await wlasnoscDoZapisu(ja.id)) },
         });
 
         assert.equal(
@@ -99,13 +100,13 @@ test(
           data: { label: `kod-${rnd()}`, lat: 52.2, lon: 21.0, ...wlasnosc },
         });
         const zWyzwalacza = await prisma.weatherLocation.create({
-          data: { label: `wyzw-${rnd()}`, lat: 52.2, lon: 21.0, ownerId: ja.id },
+          data: { label: `wyzw-${rnd()}`, lat: 52.2, lon: 21.0, ...(await wlasnoscOsobistaDoZapisu(ja.id)) },
         });
         assert.equal(zKodu.workspaceId, zWyzwalacza.workspaceId);
       });
     } finally {
       await prisma.note.deleteMany({ where: { OR: [{ ownerId: ja.id }, { ownerTeamId: zespol.id }] } });
-      await prisma.weatherLocation.deleteMany({ where: { ownerId: ja.id } });
+      await prisma.weatherLocation.deleteMany({ where: { ...(await filtrMoichRekordow(ja.id)) } });
       await prisma.workspaceMember.deleteMany({ where: { userId: ja.id } });
       await prisma.workspace.deleteMany({ where: { OR: [{ personalUserId: ja.id }, { teamId: zespol.id }] } });
       await prisma.team.deleteMany({ where: { id: zespol.id } });

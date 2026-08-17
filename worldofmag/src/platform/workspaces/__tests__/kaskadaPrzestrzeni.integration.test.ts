@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 079 (zadanie 11, etap 4 część 3) — KASKADA PO PRZESTRZENI (migracja 0243).
@@ -46,12 +47,12 @@ test(
     // Zasoby w obu przestrzeniach. `Contact` jest tu kluczowy: to jedyna tabela objęta etapem 4,
     // która NIE miała klucza obcego do konta (Z-370), więc dla niej 0243 jest nową zdolnością,
     // a nie odtworzeniem starej.
-    const mojaNotatka = await prisma.note.create({ data: { title: `N-${rnd()}`, ownerId: u.id } });
-    const mojKontakt = await prisma.contact.create({ data: { name: `K-${rnd()}`, ownerId: u.id } });
+    const mojaNotatka = await prisma.note.create({ data: { title: `N-${rnd()}`, ...(await wlasnoscDoZapisu(u.id)) } });
+    const mojKontakt = await prisma.contact.create({ data: { name: `K-${rnd()}`, ...(await wlasnoscDoZapisu(u.id)) } });
     const notatkaZespolu = await prisma.note.create({
-      data: { title: `NZ-${rnd()}`, ownerTeamId: zespol.id },
+      data: { title: `NZ-${rnd()}`, ...(await wlasnoscDoZapisu(inny.id, zespol.id)) },
     });
-    const cudzaNotatka = await prisma.note.create({ data: { title: `NC-${rnd()}`, ownerId: inny.id } });
+    const cudzaNotatka = await prisma.note.create({ data: { title: `NC-${rnd()}`, ...(await wlasnoscDoZapisu(inny.id)) } });
 
     try {
       await t.test("kasowanie przestrzeni osobistej zabiera jej zasoby i tylko jej", async () => {

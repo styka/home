@@ -9,6 +9,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { filtrMoichRekordow, wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 const HAS_DB = !!process.env.DATABASE_URL;
 const rnd = () => Math.random().toString(36).slice(2, 10);
@@ -27,14 +28,14 @@ test("Z-172 izolacja danych (IDOR/BOLA) — guardy odrzucają obcego właścicie
   const B = await prisma.user.create({ data: { email: `iso-b-${rnd()}@test.local`, name: "B" } });
 
   try {
-    const list = await prisma.shoppingList.create({ data: { name: "L", ownerId: A.id } });
-    const project = await prisma.taskProject.create({ data: { name: "P", ownerId: A.id } });
-    const recipe = await prisma.recipe.create({ data: { title: "R", slug: `r-${rnd()}`, ownerId: A.id } });
-    const pet = await prisma.pet.create({ data: { name: "Pet", ownerId: A.id } });
-    const cookbook = await prisma.cookbook.create({ data: { name: "CB", ownerId: A.id } });
+    const list = await prisma.shoppingList.create({ data: { name: "L", ...(await wlasnoscDoZapisu(A.id)) } });
+    const project = await prisma.taskProject.create({ data: { name: "P", ...(await wlasnoscDoZapisu(A.id)) } });
+    const recipe = await prisma.recipe.create({ data: { title: "R", slug: `r-${rnd()}`, ...(await wlasnoscDoZapisu(A.id)) } });
+    const pet = await prisma.pet.create({ data: { name: "Pet", ...(await wlasnoscDoZapisu(A.id)) } });
+    const cookbook = await prisma.cookbook.create({ data: { name: "CB", ...(await wlasnoscDoZapisu(A.id)) } });
     const taskInProject = await prisma.task.create({ data: { title: "t", projectId: project.id, createdById: A.id } });
-    await prisma.note.create({ data: { title: "noteA", ownerId: A.id } });
-    await prisma.note.create({ data: { title: "noteB", ownerId: B.id } });
+    await prisma.note.create({ data: { title: "noteA", ...(await wlasnoscDoZapisu(A.id)) } });
+    await prisma.note.create({ data: { title: "noteB", ...(await wlasnoscDoZapisu(B.id)) } });
 
     await t.test("shopping: właściciel ma dostęp, obcy odrzucony", async () => {
       await assertListAccess(list.id, A.id);
@@ -72,20 +73,22 @@ test("Z-172 izolacja danych (IDOR/BOLA) — guardy odrzucają obcego właścicie
       await assert.rejects(() => assertTaskAccess(personal, B.id), /Access denied/);
     });
     await t.test("ownedByWhere: filtr zwraca tylko rekordy właściciela", async () => {
+      const przestrzenA = (await filtrMoichRekordow(A.id)).workspaceId;
+      const przestrzenB = (await filtrMoichRekordow(B.id)).workspaceId;
       const aNotes = await prisma.note.findMany({ where: await ownedByWhere(A.id) });
-      assert.ok(aNotes.every((n) => n.ownerId === A.id), "A widzi tylko swoje notatki");
+      assert.ok(aNotes.every((n) => n.workspaceId === przestrzenA), "A widzi tylko swoje notatki");
       const bNotes = await prisma.note.findMany({ where: await ownedByWhere(B.id) });
-      assert.ok(bNotes.every((n) => n.ownerId === B.id), "B widzi tylko swoje notatki");
+      assert.ok(bNotes.every((n) => n.workspaceId === przestrzenB), "B widzi tylko swoje notatki");
     });
   } finally {
     // Sprzątanie: usuń zasoby A i userów (SET NULL nie blokuje, ale kasujemy jawnie).
-    await prisma.note.deleteMany({ where: { OR: [{ ownerId: A.id }, { ownerId: B.id }] } });
+    await prisma.note.deleteMany({ where: { OR: [await filtrMoichRekordow(A.id), await filtrMoichRekordow(B.id)] } });
     await prisma.task.deleteMany({ where: { createdById: A.id } });
-    await prisma.taskProject.deleteMany({ where: { ownerId: A.id } });
-    await prisma.shoppingList.deleteMany({ where: { ownerId: A.id } });
-    await prisma.recipe.deleteMany({ where: { ownerId: A.id } });
-    await prisma.pet.deleteMany({ where: { ownerId: A.id } });
-    await prisma.cookbook.deleteMany({ where: { ownerId: A.id } });
+    await prisma.taskProject.deleteMany({ where: { ...(await filtrMoichRekordow(A.id)) } });
+    await prisma.shoppingList.deleteMany({ where: { ...(await filtrMoichRekordow(A.id)) } });
+    await prisma.recipe.deleteMany({ where: { ...(await filtrMoichRekordow(A.id)) } });
+    await prisma.pet.deleteMany({ where: { ...(await filtrMoichRekordow(A.id)) } });
+    await prisma.cookbook.deleteMany({ where: { ...(await filtrMoichRekordow(A.id)) } });
     await prisma.user.delete({ where: { id: A.id } }).catch(() => {});
     await prisma.user.delete({ where: { id: B.id } }).catch(() => {});
   }

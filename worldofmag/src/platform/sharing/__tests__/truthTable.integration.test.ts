@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 052 — TABELA PRAWDY KONTROLI DOSTĘPU.
@@ -87,7 +88,7 @@ test(
     const projekt = await prisma.taskProject.create({
       data: {
         name: `Projekt-${rnd()}`,
-        ownerId: wlasciciel.id,
+        ...(await wlasnoscDoZapisu(wlasciciel.id)),
         members: {
           create: [
             { userId: czlonek.id, role: "MEMBER" },
@@ -98,7 +99,7 @@ test(
     });
     // Projekt należący do ZESPOŁU, bez ani jednego członkostwa — wiersz z AC-5.
     const projektZespolu = await prisma.taskProject.create({
-      data: { name: `Zespolowy-${rnd()}`, ownerTeamId: zespol.id },
+      data: { name: `Zespolowy-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id, zespol.id)) },
     });
 
     /**

@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { filtrMoichRekordow, wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 // Z-033/Z-036 — jawna polityka onDelete = Cascade dla 10 modeli własności
 // (ShoppingList, TaskProject, Note, Recipe, Cookbook, MealPlanEntry, LanguageDeck,
@@ -25,20 +26,20 @@ test(
     const V = await prisma.user.create({ data: { email: `casc-v-${rnd()}@test.local` } });
 
     const ids = {
-      shoppingList: (await prisma.shoppingList.create({ data: { name: "L", ownerId: U.id } })).id,
-      taskProject: (await prisma.taskProject.create({ data: { name: "P", ownerId: U.id } })).id,
-      note: (await prisma.note.create({ data: { title: "N", ownerId: U.id } })).id,
-      recipe: (await prisma.recipe.create({ data: { title: "R", slug: `r-${rnd()}`, ownerId: U.id } })).id,
-      cookbook: (await prisma.cookbook.create({ data: { name: "C", ownerId: U.id } })).id,
-      mealPlanEntry: (await prisma.mealPlanEntry.create({ data: { date: new Date(), slot: "DINNER", ownerId: U.id } })).id,
-      languageDeck: (await prisma.languageDeck.create({ data: { name: "D", nativeLang: "pl", targetLang: "en", ownerId: U.id } })).id,
-      healthEvent: (await prisma.healthEvent.create({ data: { title: "H", scheduledAt: new Date(), ownerId: U.id } })).id,
-      medicationSchedule: (await prisma.medicationSchedule.create({ data: { name: "M", ownerId: U.id } })).id,
-      habit: (await prisma.habit.create({ data: { name: "Hb", ownerId: U.id } })).id,
+      shoppingList: (await prisma.shoppingList.create({ data: { name: "L", ...(await wlasnoscDoZapisu(U.id)) } })).id,
+      taskProject: (await prisma.taskProject.create({ data: { name: "P", ...(await wlasnoscDoZapisu(U.id)) } })).id,
+      note: (await prisma.note.create({ data: { title: "N", ...(await wlasnoscDoZapisu(U.id)) } })).id,
+      recipe: (await prisma.recipe.create({ data: { title: "R", slug: `r-${rnd()}`, ...(await wlasnoscDoZapisu(U.id)) } })).id,
+      cookbook: (await prisma.cookbook.create({ data: { name: "C", ...(await wlasnoscDoZapisu(U.id)) } })).id,
+      mealPlanEntry: (await prisma.mealPlanEntry.create({ data: { date: new Date(), slot: "DINNER", ...(await wlasnoscDoZapisu(U.id)) } })).id,
+      languageDeck: (await prisma.languageDeck.create({ data: { name: "D", nativeLang: "pl", targetLang: "en", ...(await wlasnoscDoZapisu(U.id)) } })).id,
+      healthEvent: (await prisma.healthEvent.create({ data: { title: "H", scheduledAt: new Date(), ...(await wlasnoscDoZapisu(U.id)) } })).id,
+      medicationSchedule: (await prisma.medicationSchedule.create({ data: { name: "M", ...(await wlasnoscDoZapisu(U.id)) } })).id,
+      habit: (await prisma.habit.create({ data: { name: "Hb", ...(await wlasnoscDoZapisu(U.id)) } })).id,
     };
 
     // Kontrola izolacji — rekord należący do innego usera (V).
-    const vNote = await prisma.note.create({ data: { title: "V", ownerId: V.id } });
+    const vNote = await prisma.note.create({ data: { title: "V", ...(await wlasnoscDoZapisu(V.id)) } });
 
     try {
       // KLUCZOWE: bezpośrednie usunięcie usera wymusza kaskadę FK (nie app-level purge).
@@ -61,7 +62,7 @@ test(
         assert.equal(await prisma.note.count({ where: { id: vNote.id } }), 1);
       });
     } finally {
-      await prisma.note.deleteMany({ where: { ownerId: V.id } });
+      await prisma.note.deleteMany({ where: { ...(await filtrMoichRekordow(V.id)) } });
       await prisma.user.delete({ where: { id: V.id } }).catch(() => {});
     }
   },

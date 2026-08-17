@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 065 (zadanie 18) — ASYSTENT NIE OMIJA UPRAWNIEŃ W ZWIERZĘTACH.
@@ -31,7 +32,7 @@ test(
     for (const u of [wlasciciel, widz, obcy]) await ensurePersonalWorkspace(u.id);
 
     const zwierze = await prisma.pet.create({
-      data: { name: `AP-${rnd()}`, species: "kot", ownerId: wlasciciel.id },
+      data: { name: `AP-${rnd()}`, species: "kot", ...(await wlasnoscDoZapisu(wlasciciel.id)) },
     });
     await prisma.petShare.create({
       data: { petId: zwierze.id, userId: widz.id, role: "VIEWER" },

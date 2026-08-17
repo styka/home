@@ -4,6 +4,21 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Asercja „po usunięciu konta" nie może liczyć zbioru, którego definicja żyje w tym koncie
+**Problem:** Testy RODO sprawdzały „ile rekordów z `ownerId: A.id` zostało po `purgeUserData(A.id)`".
+Przy przejściu na przestrzenie odpowiednikiem wydawało się `filtrMoichRekordow(A.id)` — i trzy testy
+wywróciły się na `Foreign key constraint violated: Workspace_personalUserId_fkey`. Powód:
+`filtrMoichRekordow` woła `przestrzenOsobista`, a ta **tworzy brakującą przestrzeń** (świadoma
+decyzja z 076: brak przestrzeni to usterka lustra, nie stan do obsłużenia). Dla konta, które właśnie
+skasowaliśmy, nie ma dla kogo jej utworzyć.
+**Rozwiązanie:** Asercje liczą konkretne **id** rekordów zapamiętane przy tworzeniu fixture'u.
+Wyszło mocniej, niż było: mierzą TE wiersze, a nie liczność zbioru, który mógł się zmienić z zupełnie
+innego powodu.
+**Lekcja:** Funkcja, która coś **domyka** (`ensure*`, „utwórz, jeśli brak"), jest wygodna w kodzie
+aplikacji i pułapką w teście stanu końcowego — bo zmienia bazę w trakcie sprawdzania i wymaga
+istnienia bytu, którego test właśnie się pozbył. W asercjach „po usunięciu" odwołuj się do **id
+zapamiętanych wcześniej**, nigdy do predykatu wyliczanego z usuniętego bytu.
+
 ## 2026-08-19 — `--shadow-database-url` wskazujący na bazę roboczą kasuje ją bez ostrzeżenia
 **Problem:** Do wygenerowania DDL nowego klucza obcego uruchomiłem
 `prisma migrate diff --from-migrations … --shadow-database-url "$DATABASE_URL"`. DDL wyszedł

@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { filtrMoichRekordow, wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 // Z-240 (T-16) — indeksowane wyszukiwanie notatek (pg_trgm) zamiast skanującego ILIKE.
 // DB-gated: sprawdza istnienie rozszerzenia+indeksów, poprawność filtra i to, że planer
@@ -21,13 +22,13 @@ test("Z-240: filtr ILIKE zwraca poprawne notatki (bez zmiany zachowania)", { ski
   const { prisma } = await import("@/platform/db/prisma");
   const user = await prisma.user.create({ data: { email: `fts-${rnd()}@test.local` } });
   try {
-    await prisma.note.create({ data: { title: "Przepis na żurek", content: "kwas i kiełbasa", ownerId: user.id } });
-    await prisma.note.create({ data: { title: "Lista zakupów", content: "mleko, żurek w słoiku", ownerId: user.id } });
-    await prisma.note.create({ data: { title: "Coś innego", content: "bez związku", ownerId: user.id } });
+    await prisma.note.create({ data: { title: "Przepis na żurek", content: "kwas i kiełbasa", ...(await wlasnoscDoZapisu(user.id)) } });
+    await prisma.note.create({ data: { title: "Lista zakupów", content: "mleko, żurek w słoiku", ...(await wlasnoscDoZapisu(user.id)) } });
+    await prisma.note.create({ data: { title: "Coś innego", content: "bez związku", ...(await wlasnoscDoZapisu(user.id)) } });
 
     await t.test("dopasowanie po treści i tytule (substring, insensitive)", async () => {
       const rows = await prisma.note.findMany({
-        where: { ownerId: user.id, OR: [
+        where: { ...(await filtrMoichRekordow(user.id)), OR: [
           { title: { contains: "żurek", mode: "insensitive" } },
           { content: { contains: "żurek", mode: "insensitive" } },
         ] },

@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
 
 // 041 (T-5) — tabela decyzyjna `rememberedContent` na realnym Postgresie. DB-gated.
 //
@@ -240,7 +241,7 @@ test(
     await withUser(async (ownerId) => {
       const scopeKey = `broken-${rnd()}`;
       await prisma.aiContent.create({
-        data: { ownerId, kind: KIND, scopeKey, inputHash: "h1", content: "{to nie jest JSON" },
+        data: { ...(await wlasnoscOsobistaDoZapisu(ownerId)), kind: KIND, scopeKey, inputHash: "h1", content: "{to nie jest JSON" },
       });
       const g = counter("z");
       const res = await rememberedContent<string>({

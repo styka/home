@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 // Z-174: auto-księgowanie wydatków cross-module → Portfel (poprawność salda,
 // idempotencja po (module, sourceId), odwracanie). DB-gated.
@@ -11,7 +12,7 @@ test("Z-174 bookAutoExpense: księguje, jest idempotentne, koryguje i odwraca sa
   const { bookAutoExpense, removeAutoExpense } = await import("../autoExpense");
 
   const user = await prisma.user.create({ data: { email: `ae-${rnd()}@test.local` } });
-  const el = await prisma.walletElement.create({ data: { name: "Konto", ownerId: user.id, balance: 1000 } });
+  const el = await prisma.walletElement.create({ data: { name: "Konto", ...(await wlasnoscDoZapisu(user.id)), balance: 1000 } });
   await prisma.financeSettings.create({ data: { userId: user.id, autoExpenseElementId: el.id, autoExpenseEnabled: true } });
   const bal = async () => (await prisma.walletElement.findUnique({ where: { id: el.id } }))!.balance;
   const entries = (sourceId: string) => prisma.walletEntry.findMany({ where: { sourceModule: "flota", sourceId } });

@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 052/AC-9 — ASYSTENT NIE JEST DROGĄ OBEJŚCIA UPRAWNIEŃ (rozdz. 9.6).
@@ -27,7 +28,7 @@ test(
     const napastnik = await prisma.user.create({ data: { email: `ab-b-${rnd()}@test.local` } });
 
     const projekt = await prisma.taskProject.create({
-      data: { name: `Prywatny-${rnd()}`, ownerId: wlasciciel.id },
+      data: { name: `Prywatny-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id)) },
     });
     const tytul = `Tajne-${rnd()}`;
     const zadanie = await prisma.task.create({

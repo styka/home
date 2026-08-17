@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 070 (zadanie 21) — ZDARZENIE JEST NIEROZŁĄCZNE Z MUTACJĄ. Test na realnym Postgresie.
@@ -48,7 +49,7 @@ test(
 
     await zUzytkownikiem(async (userId, workspaceId) => {
       const lista = await prisma.shoppingList.create({
-        data: { name: `Lista ${rnd()}`, ownerId: userId, workspaceId },
+        data: { name: `Lista ${rnd()}`, ...(await wlasnoscDoZapisu(userId)), workspaceId },
       });
 
       await assert.rejects(
@@ -152,7 +153,7 @@ test(
       assert.equal(przestrzen, null, "brak przestrzeni rozpoznany");
 
       const lista = await prisma.shoppingList.create({
-        data: { name: `Lista ${rnd()}`, ownerId: user.id },
+        data: { name: `Lista ${rnd()}`, ...(await wlasnoscDoZapisu(user.id)) },
       });
       // Producent pomija emisję — mutacja ma się udać mimo braku przestrzeni.
       await prisma.$transaction(async (tx) => {
@@ -179,9 +180,10 @@ test(
       // Ten test sprawdza MECHANIZM (jedno wywołanie → jeden wiersz, niezależnie od liczby
       // zmienionych rekordów), a NIE kształt pętli w prawdziwym producencie — patrz nagłówek pliku.
       // Tego drugiego pilnuje kontrola 5 bramki `check:events`.
+      const wlasnosc = await wlasnoscDoZapisu(userId);
       const listy = await Promise.all(
         [1, 2, 3, 4, 5].map((i) =>
-          prisma.shoppingList.create({ data: { name: `L${i}-${rnd()}`, ownerId: userId, workspaceId } })
+          prisma.shoppingList.create({ data: { name: `L${i}-${rnd()}`, ...wlasnosc, workspaceId } })
         )
       );
 

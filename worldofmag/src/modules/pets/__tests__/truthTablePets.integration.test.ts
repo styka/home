@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 060 — TABELA PRAWDY DOSTĘPU DO ZWIERZĄT.
@@ -71,10 +72,10 @@ test(
     await syncTeamWorkspace(zespolZUdostepnieniem.id);
 
     const moje = await prisma.pet.create({
-      data: { name: `P-${rnd()}`, species: "kot", ownerId: wlasciciel.id },
+      data: { name: `P-${rnd()}`, species: "kot", ...(await wlasnoscDoZapisu(wlasciciel.id)) },
     });
     const zespolowe = await prisma.pet.create({
-      data: { name: `PZ-${rnd()}`, species: "pies", ownerTeamId: zespolWlasciciel.id },
+      data: { name: `PZ-${rnd()}`, species: "pies", ...(await wlasnoscDoZapisu(wlasciciel.id, zespolWlasciciel.id)) },
     });
     await prisma.petShare.createMany({
       data: [

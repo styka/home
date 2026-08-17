@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 // 041 (T-11) — trwała historia przebiegów odświeżania Wiadomości. DB-gated.
 //
@@ -33,7 +34,7 @@ test(
       await recordRun(ownerId, new Date(), "done", { ...RESULT, assigned: 7 });
 
       const rows = await prisma.newsRefreshRun.findMany({
-        where: { ownerId },
+        where: await filtrMoichRekordow(ownerId),
         orderBy: { finishedAt: "desc" },
       });
       assert.equal(rows.length, 2, "dwa osobne przebiegi");
@@ -50,7 +51,7 @@ test(
     const { recordRun } = await import("@/modules/news/jobs/newsRefresh");
     await withUser(async (ownerId) => {
       await recordRun(ownerId, new Date(), "failed", null, "kanał RSS nie odpowiada");
-      const row = await prisma.newsRefreshRun.findFirst({ where: { ownerId } });
+      const row = await prisma.newsRefreshRun.findFirst({ where: await filtrMoichRekordow(ownerId) });
       assert.equal(row?.status, "failed");
       assert.equal(row?.error, "kanał RSS nie odpowiada");
       assert.equal(row?.fetched, 0);
@@ -74,7 +75,7 @@ test(
       // To robi `cleanupOldJobs` po 24 godzinach — i dokładnie dlatego historia nie mogła zostać w `Job`.
       await prisma.job.delete({ where: { id: job.id } });
 
-      const rows = await prisma.newsRefreshRun.findMany({ where: { ownerId } });
+      const rows = await prisma.newsRefreshRun.findMany({ where: await filtrMoichRekordow(ownerId) });
       assert.equal(rows.length, 1, "przebieg przeżył sprzątanie kolejki");
     });
   }
@@ -95,7 +96,7 @@ test(
         });
       }
       const rows = await prisma.newsRefreshRun.findMany({
-        where: { ownerId },
+        where: await filtrMoichRekordow(ownerId),
         orderBy: { finishedAt: "desc" },
       });
       assert.equal(rows.length, RUN_HISTORY_LIMIT, "tabela nie rośnie w nieskończoność");

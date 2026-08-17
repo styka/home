@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
+import { filtrMoichRekordow, wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
 
 // 041 (T-4) — kolejność rozstrzygania trybu sekcji AI na realnym Postgresie. DB-gated.
 //
@@ -91,7 +91,7 @@ test(
     await withConfig('{"weather.ideas":"always"}', async () => {
       await withUser(async (userId) => {
         await prisma.aiSectionPref.create({
-          data: { ownerId: userId, sectionKind: "weather.ideas", mode: "onDemand" },
+          data: { ...(await wlasnoscOsobistaDoZapisu(userId)), sectionKind: "weather.ideas", mode: "onDemand" },
         });
         assert.equal(await resolveSectionMode(userId, "weather.ideas"), "onDemand");
       });
@@ -126,7 +126,7 @@ test(
 
         // Śmieć w preferencji → spadamy na konfigurację, bo preferencja jest nieczytelna.
         await prisma.aiSectionPref.create({
-          data: { ownerId: userId, sectionKind: "pets.insights", mode: "kiedykolwiek" },
+          data: { ...(await wlasnoscOsobistaDoZapisu(userId)), sectionKind: "pets.insights", mode: "kiedykolwiek" },
         });
         assert.equal(await resolveSectionMode(userId, "pets.insights"), "always");
       });
@@ -145,7 +145,7 @@ test(
       await withUser(async (userId) => {
         // Użytkownik wybiera swoje — konfiguracja systemowa ma zostać nietknięta.
         await prisma.aiSectionPref.create({
-          data: { ownerId: userId, sectionKind: "weather.ideas", mode: "always" },
+          data: { ...(await wlasnoscOsobistaDoZapisu(userId)), sectionKind: "weather.ideas", mode: "always" },
         });
         const cfg = await prisma.config.findUnique({ where: { key: AI_SECTION_MODES_CONFIG_KEY } });
         assert.equal(cfg?.value, '{"weather.ideas":"onChange"}', "Config nietknięty");
@@ -163,7 +163,7 @@ test(
         assert.equal(pref?.mode, "always", "preferencja nietknięta");
 
         // Dopiero rezygnacja z własnego wyboru przywraca dziedziczenie.
-        await prisma.aiSectionPref.deleteMany({ where: { ownerId: userId } });
+        await prisma.aiSectionPref.deleteMany({ where: { ...(await filtrMoichRekordow(userId)) } });
         assert.equal(await resolveSectionMode(userId, "weather.ideas"), "onDemand");
       });
     });
@@ -180,7 +180,7 @@ test(
     await withConfig('{"news.hotTopics":"onChange"}', async () => {
       await withUser(async (userId) => {
         await prisma.aiSectionPref.create({
-          data: { ownerId: userId, sectionKind: "kitchen.planWeek", mode: "always" },
+          data: { ...(await wlasnoscOsobistaDoZapisu(userId)), sectionKind: "kitchen.planWeek", mode: "always" },
         });
         const all = await resolveSectionModes(userId);
         assert.equal(Object.keys(all).length, AI_SECTION_KINDS.length, "komplet sekcji");

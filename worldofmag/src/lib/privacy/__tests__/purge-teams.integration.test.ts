@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 // Z-194 (T-04) — usunięcie konta WŁAŚCICIELA zespołu: auto-transfer własności na
 // następcę albo usunięcie zespołu „solo" wraz z zasobami. DB-gated.
@@ -28,7 +29,7 @@ test("Z-194 deleteMyAccount: właściciel z innymi członkami → transfer włas
     },
   });
   // Zasób zespołu (ownerTeamId) — musi przeżyć transfer.
-  const list = await prisma.shoppingList.create({ data: { name: "wspólna", ownerTeamId: team.id } });
+  const list = await prisma.shoppingList.create({ data: { name: "wspólna", ...(await wlasnoscDoZapisu(owner.id, team.id)) } });
 
   try {
     await purgeUserData(owner.id);
@@ -61,7 +62,7 @@ test("Z-194 deleteMyAccount: zespół solo (właściciel = jedyny członek) usuw
   const team = await prisma.team.create({
     data: { name: `S-${rnd()}`, ownerId: owner.id, members: { create: [{ userId: owner.id, role: "OWNER" }] } },
   });
-  const list = await prisma.shoppingList.create({ data: { name: "solo-lista", ownerTeamId: team.id } });
+  const list = await prisma.shoppingList.create({ data: { name: "solo-lista", ...(await wlasnoscDoZapisu(owner.id, team.id)) } });
 
   try {
     await purgeUserData(owner.id);

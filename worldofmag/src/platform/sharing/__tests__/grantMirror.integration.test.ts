@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
  * 059 — TEST LUSTRA NADAŃ.
@@ -49,7 +50,7 @@ test(
     });
 
     const projekt = await prisma.taskProject.create({
-      data: { name: `P-${rnd()}`, ownerId: wlasciciel.id },
+      data: { name: `P-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id)) },
     });
     const zadanie = await prisma.task.create({
       data: { title: `T-${rnd()}`, projectId: projekt.id, createdById: wlasciciel.id },
@@ -129,7 +130,7 @@ test(
         // ktoś cofnął `NOT NULL`, `mirrorProjectMember` znów mogłoby dostać zasób bez przestrzeni,
         // a `ResourceGrant.workspaceId` jest wymagane — czyli wróciłby dokładnie ten problem.
         const projekt = await prisma.taskProject.create({
-          data: { name: `S-${rnd()}`, ownerId: wlasciciel.id },
+          data: { name: `S-${rnd()}`, ...(await wlasnoscDoZapisu(wlasciciel.id)) },
         });
         // Surowym SQL-em — typ Prismy też tego zabrania, ale typ nie chroni zapisów spoza klienta.
         await assert.rejects(
@@ -141,7 +142,7 @@ test(
 
       await t.test("061: udostępnienie ZWIERZĘCIA osobie i zespołowi", async () => {
         const zwierze = await prisma.pet.create({
-          data: { name: `Z-${rnd()}`, species: "kot", ownerId: wlasciciel.id },
+          data: { name: `Z-${rnd()}`, species: "kot", ...(await wlasnoscDoZapisu(wlasciciel.id)) },
         });
         try {
           await mirrorPetShare(zwierze.id, { userId: czlonek.id }, "EDITOR", wlasciciel.id);

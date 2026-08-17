@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { keysetQuery, keysetResult } from "../pagination";
+import { filtrMoichRekordow, wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 // Z-070/Z-174: keyset end-to-end z realnym kursorem Prisma (nie tylko czysty helper).
 // Paginuje notatki usera; sprawdza brak duplikatów, kolejność i przejście hasMore.
@@ -14,11 +15,11 @@ test("Z-070 keyset + Prisma cursor: strony bez duplikatów, malejąco, hasMore p
   try {
     // 5 notatek z rosnącym createdAt (sort malejący → najnowsza pierwsza).
     for (let i = 0; i < 5; i++) {
-      await prisma.note.create({ data: { title: `n${i}`, ownerId: user.id, createdAt: new Date(Date.now() + i * 1000) } });
+      await prisma.note.create({ data: { title: `n${i}`, ...(await wlasnoscDoZapisu(user.id)), createdAt: new Date(Date.now() + i * 1000) } });
     }
     const page = async (cursor: string | null) => {
       const rows = await prisma.note.findMany({
-        where: { ownerId: user.id },
+        where: { ...(await filtrMoichRekordow(user.id)) },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         ...keysetQuery({ cursor, limit: 2 }),
       });
