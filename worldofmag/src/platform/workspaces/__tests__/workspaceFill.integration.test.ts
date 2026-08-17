@@ -120,11 +120,30 @@ test(
       await t.test("przestrzeń podana wprost NIE jest nadpisywana", async () => {
         // Etap 3 i migracje danych muszą móc ustawić przestrzeń same — wyzwalacz uzupełnia brak,
         // a nie narzuca wartość.
+        //
+        // 078: FIXTURE POPRAWIONY PUNKTOWO, TEZA ZOSTAJE. Wcześniej ten przypadek dowodził tezy
+        // notatką CELOWO sprzeczną — `ownerId` osoby, `workspaceId` zespołu — bo dopóki wyzwalacz
+        // wychodził na widok podanej przestrzeni, sprzeczność była najkrótszym sposobem pokazania,
+        // że wartości nie nadpisuje. Migracja 0240 czyni ten stan NIEOSIĄGALNYM: w fazie podwójnego
+        // zapisu przestrzeń niezgodna z kolumnami własnościowymi jest odrzucana, bo taki rekord to
+        // objaw źle przekonwertowanego miejsca zapisu, a nie prawidłowy zapis.
+        //
+        // Teza „podanej przestrzeni wyzwalacz nie rusza" nadal jest prawdziwa i nadal warta
+        // pilnowania — po prostu trzeba jej dowieść zapisem ZGODNYM. Dowodzimy nim przez zespół:
+        // gdyby wyzwalacz cokolwiek narzucał, wstawiłby tu przestrzeń osobistą właściciela zespołu
+        // (bo tak wygląda domyślna ścieżka), a nie tę podaną. Zdolności, którą 0240 naprawdę odbiera
+        // — wstawienia rekordu ze sprzecznymi danymi — nie potrzebuje ani etap 3 (przenoszenie
+        // zasobu to UPDATE, a wyzwalacz jest BEFORE INSERT), ani migracje danych (surowy UPDATE).
         const n = await zrobNotatke({
-          ownerId: uzytkownik.id,
+          ownerTeamId: zespol.id,
           workspaceId: przestrzenZespolu?.id,
         });
         assert.equal(n.workspaceId, przestrzenZespolu?.id);
+        assert.notEqual(
+          n.workspaceId,
+          przestrzenOsobista?.id,
+          "gdyby przestrzenie były tu równe, przypadek nie odróżniałby 'nie nadpisano' od 'nadpisano domyślną'"
+        );
       });
     } finally {
       await prisma.note.deleteMany({ where: { id: { in: utworzone } } });

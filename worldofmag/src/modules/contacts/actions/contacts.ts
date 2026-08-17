@@ -3,6 +3,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { revalidatePath } from "next/cache";
 import { getUserScope, ownedByWhere, assertOwnership } from "@/platform/auth/ownership";
+import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 export type ContactDTO = {
   id: string;
@@ -12,7 +13,6 @@ export type ContactDTO = {
   company: string | null;
   tags: string[];
   notes: string | null;
-  ownerTeamId: string | null;
   createdAt: string;
 };
 
@@ -29,18 +29,18 @@ function parseTags(raw: string | null): string[] {
 function toDTO(c: {
   id: string; name: string; phone: string | null; email: string | null;
   company: string | null; tags: string | null; notes: string | null;
-  ownerTeamId: string | null; createdAt: Date;
+  createdAt: Date;
 }): ContactDTO {
   return {
     id: c.id, name: c.name, phone: c.phone, email: c.email, company: c.company,
-    tags: parseTags(c.tags), notes: c.notes, ownerTeamId: c.ownerTeamId,
+    tags: parseTags(c.tags), notes: c.notes,
     createdAt: c.createdAt.toISOString(),
   };
 }
 
 /** Lista kontaktów użytkownika (prywatne + zespołowe), z opcjonalnym wyszukiwaniem. */
 export async function getContacts(search?: string): Promise<ContactDTO[]> {
-  const { userId, teamIds } = await getUserScope();
+  const { userId } = await getUserScope();
   const q = search?.trim();
   const rows = await prisma.contact.findMany({
     where: {
@@ -85,8 +85,7 @@ export async function createContact(data: {
       company: data.company?.trim() || null,
       tags: tags.length ? JSON.stringify(tags) : null,
       notes: data.notes?.trim() || null,
-      ownerId: data.ownerTeamId ? null : userId,
-      ownerTeamId: data.ownerTeamId || null,
+      ...(await wlasnoscDoZapisu(userId, data.ownerTeamId)),
     },
   });
   revalidatePath("/contacts");
@@ -103,9 +102,9 @@ export async function updateContact(
     notes?: string | null;
   }
 ): Promise<void> {
-  const { userId, teamIds } = await getUserScope();
-  const existing = await prisma.contact.findUnique({ where: { id }, select: { ownerId: true, ownerTeamId: true } });
-  assertOwnership(existing, userId, teamIds);
+  const { userId } = await getUserScope();
+  const existing = await prisma.contact.findUnique({ where: { id }, select: { workspaceId: true } });
+  await assertOwnership(existing, userId);
 
   const data: Record<string, unknown> = {};
   if (patch.name !== undefined) {
@@ -126,9 +125,9 @@ export async function updateContact(
 }
 
 export async function deleteContact(id: string): Promise<void> {
-  const { userId, teamIds } = await getUserScope();
-  const existing = await prisma.contact.findUnique({ where: { id }, select: { ownerId: true, ownerTeamId: true } });
-  assertOwnership(existing, userId, teamIds);
+  const { userId } = await getUserScope();
+  const existing = await prisma.contact.findUnique({ where: { id }, select: { workspaceId: true } });
+  await assertOwnership(existing, userId);
   await prisma.contact.delete({ where: { id } });
   revalidatePath("/contacts");
 }

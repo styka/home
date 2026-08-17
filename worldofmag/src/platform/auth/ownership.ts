@@ -32,16 +32,44 @@ export async function getUserScope(): Promise<{ userId: string; teamIds: string[
 }
 
 /**
- * Throws if the entity is neither owned by the user nor by one of their teams.
- * Entity must expose `ownerId` / `ownerTeamId` (null-able) fields.
+ * 078 (zadanie 11, etap 4 część 2) — GUARD REKORDU IDZIE PO PRZESTRZENI.
+ *
+ * Poprzednia wersja czytała `ownerId`/`ownerTeamId` z wybranego rekordu, więc umiera razem
+ * z kolumnami. Reguła jest przeniesiona **jeden do jednego**, nie przepisana: prawo do rekordu
+ * daje członkostwo w jego przestrzeni — a lustro (`Workspace`/`WorkspaceMember`, zadanie 9)
+ * gwarantuje, że `ownerId = ja` to dokładnie „przestrzeń osobista moja", a `ownerTeamId = t`
+ * to dokładnie „przestrzeń zespołu t", której jestem członkiem wtedy i tylko wtedy, gdy jestem
+ * członkiem `t`.
+ *
+ * **Dlaczego czysty rdzeń osobno.** `assertOwnership` musi teraz odczytać kontekst dostępu, czyli
+ * być asynchroniczna. Sama REGUŁA pozostaje jednak czystą funkcją dwóch argumentów i tylko taka
+ * daje się sprawdzić tabelą prawdy bez bazy — dokładnie tą samą tabelą, co przed zmianą
+ * (`lib/__tests__/ownership.test.ts`), komórka w komórkę. Gdyby reguła siedziała w środku funkcji
+ * asynchronicznej, dowód równoważności wymagałby atrapy kontekstu, czyli sprawdzałby atrapę.
  */
-export function assertOwnership(
-  entity: { ownerId?: string | null; ownerTeamId?: string | null } | null,
-  userId: string,
-  teamIds: string[]
-): void {
-  if (!entity) throw new Error("Not found")
-  const ownsDirectly = entity.ownerId === userId
-  const ownsViaTeam = entity.ownerTeamId != null && teamIds.includes(entity.ownerTeamId)
-  if (!ownsDirectly && !ownsViaTeam) throw new Error("Forbidden")
+export function maDostepDoPrzestrzeni(
+  entity: { workspaceId?: string | null } | null,
+  workspaceIds: string[]
+): "brak" | "obcy" | "ok" {
+  if (!entity) return "brak"
+  // `workspaceId` jest NOT NULL na wszystkich 40 tabelach objętych etapem 4 (migracja 0235), więc
+  // pusta wartość nie jest tu „rekordem niczyim" — jest rekordem z tabeli, która do tego guardu
+  // nie należy (słownik z `ownedOrSystemWhere`). Odmowa jest wtedy właściwą odpowiedzią.
+  if (!entity.workspaceId) return "obcy"
+  return workspaceIds.includes(entity.workspaceId) ? "ok" : "obcy"
+}
+
+/**
+ * Throws if the entity does not live in any workspace the user belongs to.
+ * Entity must expose `workspaceId`.
+ */
+export async function assertOwnership(
+  entity: { workspaceId?: string | null } | null,
+  userId: string
+): Promise<void> {
+  const { getAccessContext } = await import("@/platform/sharing/cache")
+  const { workspaceIds } = await getAccessContext(userId)
+  const wynik = maDostepDoPrzestrzeni(entity, workspaceIds)
+  if (wynik === "brak") throw new Error("Not found")
+  if (wynik === "obcy") throw new Error("Forbidden")
 }
