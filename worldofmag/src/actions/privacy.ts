@@ -32,7 +32,22 @@ export interface UserDataExport {
 
 export async function exportMyData(): Promise<UserDataExport> {
   const userId = await requireUserId();
-  const own = { ownerId: userId } as const;
+  /**
+   * 079 (zadanie 11, etap 4) — „moje rekordy" to PRZESTRZEŃ OSOBISTA, nie `ownerId`.
+   *
+   * Filtr jest ten sam, którym posługują się moduły (`filtrMoichRekordow`), i celowo **wąski**:
+   * jedna przestrzeń, nie „wszystkie moje". Eksport RODO od zawsze pomijał dane zespołowe
+   * (użytkownik dostaje je przez zespół) — przejście na przestrzenie nie jest powodem, żeby to
+   * cicho zmienić.
+   */
+  const own = await filtrMoichRekordow(userId);
+  /**
+   * Dwie tabele zostają przy `ownerId` i **nie jest to niedokończona zamiana**:
+   * `Team.ownerId` to własność zespołu, która przestrzenią nigdy nie była (przestrzeń jest jego
+   * lustrem), a `Skin` należy do pięciu tabel z `workspace-nullable.json` — skórka systemowa nie
+   * ma właściciela, więc nie ma i przestrzeni.
+   */
+  const wlasnoscPozaPrzestrzenia = { ownerId: userId } as const;
   const byUser = { userId } as const;
 
   const [
@@ -124,7 +139,7 @@ export async function exportMyData(): Promise<UserDataExport> {
       select: { id: true, name: true, email: true, image: true, avatarUrl: true, role: true, createdAt: true, updatedAt: true },
     }),
     prisma.account.findMany({ where: byUser, select: { provider: true, type: true, providerAccountId: true } }),
-    prisma.team.findMany({ where: own }),
+    prisma.team.findMany({ where: wlasnoscPozaPrzestrzenia }),
     prisma.teamMember.findMany({ where: byUser }),
     // shopping
     prisma.shoppingList.findMany({ where: own, include: { items: true } }),
@@ -206,7 +221,7 @@ export async function exportMyData(): Promise<UserDataExport> {
     prisma.dashboardPref.findUnique({ where: { userId } }),
     prisma.userMenuPref.findUnique({ where: { userId } }),
     prisma.userSkinPref.findUnique({ where: { userId } }),
-    prisma.skin.findMany({ where: own }),
+    prisma.skin.findMany({ where: wlasnoscPozaPrzestrzenia }),
     prisma.userActivity.findMany({ where: byUser, take: 1000, orderBy: { createdAt: "desc" } }),
     prisma.healthSettings.findUnique({ where: { userId } }),
     prisma.userConsent.findMany({ where: { userId } }),

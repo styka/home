@@ -66,6 +66,23 @@ async function resolveOwnedTeams(tx: PurgeTx, userId: string): Promise<string[]>
  * `AuditLog` nie ma FK do User (zrzut e-maila) — historia audytu celowo zostaje.
  */
 export async function purgeUserData(userId: string): Promise<void> {
+  /**
+   * 079 (zadanie 11, etap 4) — RODO KLUCZOWANE PO PRZESTRZENI, NIE PO `ownerId`.
+   *
+   * Przestrzeń czytamy **przed** transakcją i **nie tworzymy jej**, gdy jej nie ma. Użycie tu
+   * `przestrzenOsobista()` (który brakującą przestrzeń domyka) byłoby absurdem: zakładalibyśmy
+   * przestrzeń kontu, które właśnie kasujemy. Brak przestrzeni znaczy „nie ma czego kasować tą
+   * drogą" — i tak też jest obsłużony.
+   *
+   * **Uwaga o kolejności**: `Workspace.personalUserId` ma klucz obcy `ON DELETE CASCADE`, więc
+   * przestrzeń znika razem z `user.delete()` na końcu transakcji. Odczyt musi być wcześniej.
+   */
+  const przestrzen = await prisma.workspace.findUnique({
+    where: { personalUserId: userId },
+    select: { id: true },
+  });
+  const moje = przestrzen ? { workspaceId: przestrzen.id } : null;
+
   let przekazaneZespoly: string[] = [];
   await prisma.$transaction(async (tx) => {
     // Z-194 (T-04): najpierw rozwiąż własność zespołów (Team.ownerId = RESTRICT).
@@ -86,30 +103,38 @@ export async function purgeUserData(userId: string): Promise<void> {
     // `ResourceGrant` nie ma klucza obcego do `User` (nadanie ma przeżyć usunięcie AUTORA),
     // więc bez tego wiersza nadania usuniętego konta zostałyby w bazie jako cichy dostęp.
     await tx.resourceGrant.deleteMany({ where: { subjectType: "user", subjectId: userId } });
+    // Zadania: własne ORAZ leżące w moich projektach. Gałąź po projekcie dokładamy TYLKO wtedy,
+    // gdy przestrzeń istnieje — `{ project: { workspaceId: undefined } }` nie zawęziłoby niczego
+    // i skasowałoby zadania z całej bazy.
     await tx.task.deleteMany({
-      where: { OR: [{ createdById: userId }, { project: { ownerId: userId } }] },
+      where: { OR: [{ createdById: userId }, ...(moje ? [{ project: moje }] : [])] },
     });
-    await tx.taskProject.deleteMany({ where: { ownerId: userId } });
+    if (moje) {
+      await tx.taskProject.deleteMany({ where: moje });
 
-    await tx.mealPlanEntry.deleteMany({ where: { ownerId: userId } });
-    await tx.recipe.deleteMany({ where: { ownerId: userId } });
-    await tx.cookbook.deleteMany({ where: { ownerId: userId } });
-    await tx.shoppingList.deleteMany({ where: { ownerId: userId } });
-    await tx.note.deleteMany({ where: { ownerId: userId } });
-    await tx.habit.deleteMany({ where: { ownerId: userId } });
-    await tx.healthEvent.deleteMany({ where: { ownerId: userId } });
-    await tx.medicationSchedule.deleteMany({ where: { ownerId: userId } });
-    await tx.languageDeck.deleteMany({ where: { ownerId: userId } });
+      await tx.mealPlanEntry.deleteMany({ where: moje });
+      await tx.recipe.deleteMany({ where: moje });
+      await tx.cookbook.deleteMany({ where: moje });
+      await tx.shoppingList.deleteMany({ where: moje });
+      await tx.note.deleteMany({ where: moje });
+      await tx.habit.deleteMany({ where: moje });
+      await tx.healthEvent.deleteMany({ where: moje });
+      await tx.medicationSchedule.deleteMany({ where: moje });
+      await tx.languageDeck.deleteMany({ where: moje });
+    }
     await tx.report.deleteMany({ where: { authorId: userId } });
 
     // Z-131 (T-17): zadania w tle (Job) mają ownerId bez FK — kasujemy jawnie (payload
     // może zawierać dane usera, np. obraz do OCR). RODO.
+    //
+    // 079: `Job` zostaje przy `ownerId` — jest jedną z pięciu tabel z listy
+    // `workspace-nullable.json`, bo zadanie systemowe nie ma właściciela, a więc i przestrzeni.
     await tx.job.deleteMany({ where: { ownerId: userId } });
 
     // Z-370: modele z kolumną właściciela ALE BEZ FK do User (Contact, ServiceFavorite)
     // nie kasują się kaskadowo — bez tego zostawałyby OSIEROCONE (ownerId/userId wskazujące
     // usuniętego usera). Kontakty to dane osób trzecich → musimy je skasować dla RODO.
-    await tx.contact.deleteMany({ where: { ownerId: userId } });
+    if (moje) await tx.contact.deleteMany({ where: moje });
     await tx.serviceFavorite.deleteMany({ where: { userId } });
 
     // Reszta (CASCADE) zniknie wraz z użytkownikiem.
