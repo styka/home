@@ -34,7 +34,7 @@ import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { createTask, tasksModule } from "@/modules/tasks/contract";
 import { resolveWhen } from "../domain/pora";
 import { roundedBrief } from "../domain/odcisk";
-import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
+import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 export interface LocationDTO {
   id: string;
@@ -80,7 +80,7 @@ const WATCHER_STATUSES: WatcherStatus[] = ["met", "partial", "unmet", "unknown"]
 export async function getLocations(): Promise<LocationDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.weatherLocation.findMany({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
   return rows.map((l) => ({ id: l.id, label: l.label, lat: l.lat, lon: l.lon, isDefault: l.isDefault }));
@@ -103,11 +103,11 @@ export async function addLocation(data: {
   makeDefault?: boolean;
 }): Promise<LocationDTO> {
   const user = await requireAuth();
-  const existing = await prisma.weatherLocation.count({ where: { ownerId: user.id } });
+  const existing = await prisma.weatherLocation.count({ where: { ...(await filtrMoichRekordow(user.id)) } });
   const isDefault = data.makeDefault || existing === 0;
   if (isDefault) {
     await prisma.weatherLocation.updateMany({
-      where: { ownerId: user.id },
+      where: { ...(await filtrMoichRekordow(user.id)) },
       data: { isDefault: false },
     });
   }
@@ -145,7 +145,7 @@ export async function setDefaultLocation(id: string): Promise<void> {
   const user = await requireAuth();
   const l = await prisma.weatherLocation.findUnique({ where: { id } });
   if (!l || l.ownerId !== user.id) throw new Error("Lokalizacja nie istnieje");
-  await prisma.weatherLocation.updateMany({ where: { ownerId: user.id }, data: { isDefault: false } });
+  await prisma.weatherLocation.updateMany({ where: { ...(await filtrMoichRekordow(user.id)) }, data: { isDefault: false } });
   await prisma.weatherLocation.update({ where: { id }, data: { isDefault: true } });
   revalidatePath("/pogoda");
 }
@@ -226,7 +226,7 @@ function digestHours(hours: HourPoint[]): string {
 export async function getWatchers(): Promise<WatcherDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.weatherWatcher.findMany({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
   });
   return rows.map((w) => ({
@@ -245,11 +245,11 @@ export async function addPresetWatcher(presetKey: string): Promise<void> {
   const preset = presetByKey(presetKey);
   if (!preset) throw new Error("Nieznany preset");
   const exists = await prisma.weatherWatcher.findFirst({
-    where: { ownerId: user.id, presetKey, kind: "preset" },
+    where: { ...(await filtrMoichRekordow(user.id)), presetKey, kind: "preset" },
   });
   if (exists) return;
   const max = await prisma.weatherWatcher.aggregate({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     _max: { sortOrder: true },
   });
   await prisma.weatherWatcher.create({
@@ -277,7 +277,7 @@ export async function addCustomWatcher(data: {
   if (!title) throw new Error("Podaj nazwę obserwatora");
   if (!query) throw new Error("Opisz, co chcesz obserwować");
   const max = await prisma.weatherWatcher.aggregate({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     _max: { sortOrder: true },
   });
   await prisma.weatherWatcher.create({
@@ -330,7 +330,7 @@ export async function evaluateWatchers(
 ): Promise<WatchersResult> {
   const user = await requireAuth();
   const watchers = await prisma.weatherWatcher.findMany({
-    where: { ownerId: user.id, enabled: true },
+    where: { ...(await filtrMoichRekordow(user.id)), enabled: true },
     orderBy: { sortOrder: "asc" },
   });
   if (watchers.length === 0) return { verdicts: [] };
@@ -483,7 +483,7 @@ export async function getIdeas(
   // wymuszenie nowej generacji — jedyny moment, w którym wolno wołać model mimo zapamiętanej treści.
   const force = opts?.force ?? false;
 
-  const known = await prisma.weatherIdea.findMany({ where: { ownerId: user.id } });
+  const known = await prisma.weatherIdea.findMany({ where: { ...(await filtrMoichRekordow(user.id)) } });
   const blocked = known.filter((k) => k.state === "blocked");
   const saved = known.filter((k) => k.state === "saved");
   const byFingerprint = new Map(known.map((k) => [k.fingerprint, k]));

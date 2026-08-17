@@ -159,3 +159,26 @@ export type WlasnoscOsobistaZapisu = {
 export async function wlasnoscOsobistaDoZapisu(userId: string): Promise<WlasnoscOsobistaZapisu> {
   return { workspaceId: await przestrzenOsobista(userId), ownerId: userId };
 }
+
+/**
+ * 078 (zadanie 11, etap 4 część 2) — FILTR „MOJE REKORDY" DLA TABEL BEZ WSPÓŁWŁASNOŚCI ZESPOŁOWEJ.
+ *
+ * Odpowiednik `wlasnoscOsobistaDoZapisu` po stronie ODCZYTU: zastępuje
+ * `where: { ownerId: userId }` na tabelach, które kolumny `ownerTeamId` nie mają wcale
+ * (Pogoda, Wiadomości, `FavoriteView`, `ProjectGroup`, `UserFact`, `AiContent`, `AiSectionPref`).
+ *
+ * **Dlaczego wąsko, po przestrzeni OSOBISTEJ, a nie przez `ownedOrAsync`.** `ownedOrAsync` zwraca
+ * `workspaceId IN (wszystkie moje przestrzenie)` — czyli osobistą **i zespołowe**. Na tabeli, która
+ * współwłasności zespołowej nie zna, byłoby to POSZERZENIE zakresu: filtr zacząłby dopuszczać
+ * wiersz w przestrzeni zespołu, którego stara reguła (`ownerId = ja`) nigdy nie dopuszczała.
+ * Dziś takich wierszy nie ma, więc oba warianty dałyby ten sam wynik — i właśnie dlatego pomyłka
+ * przeszłaby niezauważona, a zaczęła szkodzić dopiero wtedy, gdy któraś z tych tabel dostanie
+ * kolumnę zespołową. Równoważność `ownerId = ja` ⟺ „moja przestrzeń osobista" jest ścisła
+ * i tylko ona jest tu prawdą.
+ *
+ * Zwraca gotowy fragment `where`, żeby miejsce użycia wyglądało jak dotąd
+ * (`where: { ...(await filtrMoichRekordow(userId)), enabled: true }`).
+ */
+export async function filtrMoichRekordow(userId: string): Promise<{ workspaceId: string }> {
+  return { workspaceId: await przestrzenOsobista(userId) };
+}

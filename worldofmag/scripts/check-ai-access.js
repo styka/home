@@ -31,9 +31,26 @@ const MECHANIZMY = [
   /assert[A-Za-z]*Access\s*\(/, // guard modułu
   /ownedWhereAsync\s*\(|ownedOrAsync\s*\(|ownedWhere\s*\(|ownedOr\s*\(/, // wspólny zakres (057/058)
   /ownerId:\s*(userId|user\.id)/, // jawne zawężenie do właściciela
+  // 078 (etap 4 część 2): zakres po PRZESTRZENI OSOBISTEJ. To następca `ownerId: userId` na tabelach
+  // bez współwłasności zespołowej i jest ZAWĘŻENIEM ŚCIŚLEJSZYM niż `ownedOrAsync` (jedna przestrzeń
+  // zamiast wszystkich moich). Bez tego wpisu konwersja etapu 4 wyglądała dla bramki jak USUNIĘCIE
+  // zawężenia — i słusznie wywróciła build, bo bramka nie zna nazw, których jej nie podano.
+  /filtrMoichRekordow\s*\(/,
   /[A-Za-z]*[Ss]cope\s*\(\s*userId/, // lokalny helper zakresu (np. `ownerScope(userId)`)
   /accessible[A-Za-z]*\s*\(\s*userId/, // lokalny helper „co widzę"
 ];
+
+/**
+ * 078 — dopasowujemy wzorce do KODU, nie do komentarzy.
+ *
+ * To lekcja już zapisana w `doświadczenia.md`: bramka czytająca tekst pliku czyta też zdania
+ * o kodzie. Plik, który w komentarzu wyjaśnia „nie używamy tu `ownerId: userId`", przechodziłby
+ * dzięki temu wyjaśnieniu — czyli bramka mierzyłaby opis zamiast rzeczy opisywanej. Przy
+ * zawężeniu dostępu w asystencie to najgorsze możliwe miejsce na taki fałszywy zielony.
+ */
+function bezKomentarzy(tresc) {
+  return tresc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+}
 
 const wyjatki = fs.existsSync(manifestPath)
   ? JSON.parse(fs.readFileSync(manifestPath, "utf8")).wyjatki || {}
@@ -49,7 +66,7 @@ for (const m of fs.readdirSync(modulesDir, { withFileTypes: true })) {
   if (!fs.existsSync(abs)) continue;
   const rel = path.relative(root, abs).split(path.sep).join("/");
   sprawdzone++;
-  const tresc = fs.readFileSync(abs, "utf8");
+  const tresc = bezKomentarzy(fs.readFileSync(abs, "utf8"));
   if (MECHANIZMY.some((re) => re.test(tresc))) continue;
   if (wyjatki[rel]) {
     uzyte.add(rel);

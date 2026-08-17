@@ -4,6 +4,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireUserId } from "@/platform/auth/ownership";
 import { purgeUserData } from "@/lib/privacy/purge";
 import { signOut } from "@/platform/auth/session";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 /**
  * Z-050 (RODO art. 15/20) — eksport danych użytkownika.
@@ -140,7 +141,7 @@ export async function exportMyData(): Promise<UserDataExport> {
     prisma.note.findMany({ where: own, include: { tags: true, attachments: true, revisions: true } }),
     // 034: grupy notatek mają własną kolumnę właściciela — eksportujemy TE użytkownika,
     // a nie te, w których akurat leży jego notatka.
-    prisma.noteGroup.findMany({ where: { ownerId: userId } }),
+    prisma.noteGroup.findMany({ where: { ...(await filtrMoichRekordow(userId)) } }),
     // kitchen
     prisma.recipe.findMany({ where: own, include: { ingredients: true, steps: true, tags: true, ratings: true } }),
     prisma.cookbook.findMany({ where: own }),
@@ -179,7 +180,7 @@ export async function exportMyData(): Promise<UserDataExport> {
     prisma.newsHiddenTopic.findMany({ where: own }),
     // 039: wiedza o użytkowniku to dane osobowe jak każde inne — musi być w eksporcie RODO.
     prisma.userFact.findMany({ where: own }),
-    prisma.newsPref.findUnique({ where: { ownerId: userId } }),
+    prisma.newsPref.findUnique({ where: { ...(await filtrMoichRekordow(userId)) } }),
     prisma.weatherLocation.findMany({ where: own }),
     prisma.weatherWatcher.findMany({ where: own }),
     // storage / warsztaty

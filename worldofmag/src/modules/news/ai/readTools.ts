@@ -2,6 +2,7 @@ import { getHotTopics, getSources, getTopicView, getTopics } from "../contract";
 import { prisma } from "@/platform/db/prisma";
 import { HARD_MAX, asStr } from "@/lib/ai/readToolShared";
 import type { AiReadToolHandler } from "@/platform/ai/contribution";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 /**
  * 049: narzędzia ODCZYTU tego modułu — wkład do asystenta, składany z deklaracji.
@@ -20,7 +21,7 @@ export const readTools: Record<string, AiReadToolHandler> = {
   list_news_topics: async (args, userId) => {
       // NewsTopic jest user-only (ownerId wymagany).
       const topics = await prisma.newsTopic.findMany({
-        where: { ownerId: userId },
+        where: { ...(await filtrMoichRekordow(userId)) },
         select: { id: true, title: true },
         orderBy: { sortOrder: "asc" },
         take: HARD_MAX,

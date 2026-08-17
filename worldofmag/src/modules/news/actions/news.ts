@@ -17,7 +17,7 @@ import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/platform/jobs/queue";
 import { ensureJobWorker } from "@/lib/jobs/registry";
 import type { DateConfidence, NewsRefreshResult } from "../jobs/newsRefresh";
 import type { NewsItem, NewsSource } from "@prisma/client";
-import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
+import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 export type SummaryLength = "short" | "medium" | "long";
 export type ItemStatus = "PENDING" | "ACKNOWLEDGED" | "DISMISSED";
@@ -81,7 +81,7 @@ export interface TimelineEntryDTO {
 /** Seeduje domyślne źródła + preferencje przy pierwszym wejściu użytkownika. */
 export async function ensureNewsSetup(): Promise<void> {
   const user = await requireAuth();
-  const count = await prisma.newsSource.count({ where: { ownerId: user.id } });
+  const count = await prisma.newsSource.count({ where: { ...(await filtrMoichRekordow(user.id)) } });
   if (count === 0) {
     // Jedno ustalenie przestrzeni na cały wsad, nie jedno na wiersz: `createMany` to jeden zapis,
     // a `wlasnoscOsobistaDoZapisu` potrafi domknąć brakującą przestrzeń — wołanie go w `map`
@@ -92,7 +92,7 @@ export async function ensureNewsSetup(): Promise<void> {
     });
   }
   await prisma.newsPref.upsert({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     create: { ...(await wlasnoscOsobistaDoZapisu(user.id)) },
     update: {},
   });
@@ -103,7 +103,7 @@ export async function ensureNewsSetup(): Promise<void> {
 export async function getSources(): Promise<SourceDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.newsSource.findMany({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
   });
   return rows.map((s) => ({
@@ -121,7 +121,7 @@ export async function getSources(): Promise<SourceDTO[]> {
 export async function getTopics(): Promise<TopicDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.newsTopic.findMany({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
       _count: {
@@ -144,7 +144,7 @@ export async function getNewsPref(): Promise<{
   activeSourceKey: string | null;
 }> {
   const user = await requireAuth();
-  const p = await prisma.newsPref.findUnique({ where: { ownerId: user.id } });
+  const p = await prisma.newsPref.findUnique({ where: { ...(await filtrMoichRekordow(user.id)) } });
   return {
     defaultSummaryLength: (p?.defaultSummaryLength as SummaryLength) ?? "medium",
     activeSourceKey: p?.activeSourceKey ?? null,
@@ -223,7 +223,7 @@ export interface StreamTopicDTO {
 export async function getStreamView(): Promise<StreamTopicDTO[]> {
   const user = await requireAuth();
   const topics = await prisma.newsTopic.findMany({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
       items: {
@@ -291,7 +291,7 @@ export async function createTopic(data: {
   if (!title) throw new Error("Tytuł tematu jest wymagany");
   if (!semanticFilter) throw new Error("Opis filtra semantycznego jest wymagany");
   const min = await prisma.newsTopic.aggregate({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     _min: { sortOrder: true },
   });
   const t = await prisma.newsTopic.create({
@@ -350,7 +350,7 @@ export async function createSource(data: {
   if (!/^https?:\/\//i.test(data.rssUrl.trim())) throw new Error("Adres RSS musi być poprawnym URL");
   const key = `custom-${Date.now().toString(36)}`;
   const max = await prisma.newsSource.aggregate({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     _max: { sortOrder: true },
   });
   await prisma.newsSource.create({
@@ -397,7 +397,7 @@ export async function deleteSource(id: string): Promise<void> {
 export async function setDefaultSummaryLength(length: SummaryLength): Promise<void> {
   const user = await requireAuth();
   await prisma.newsPref.upsert({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), defaultSummaryLength: length },
     update: { defaultSummaryLength: length },
   });
@@ -407,7 +407,7 @@ export async function setDefaultSummaryLength(length: SummaryLength): Promise<vo
 export async function setActiveSource(key: string | null): Promise<void> {
   const user = await requireAuth();
   await prisma.newsPref.upsert({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), activeSourceKey: key },
     update: { activeSourceKey: key },
   });
@@ -518,7 +518,7 @@ export async function getNewsRefreshState(): Promise<NewsRefreshState | null> {
   // (na wolnym tierze usypia po 15 min), zaległe zadanie czekałoby, aż ktoś trafi w `/api/jobs`.
   ensureJobWorker();
   const job = await prisma.job.findFirst({
-    where: { ownerId: user.id, type: "news.refresh" },
+    where: { ...(await filtrMoichRekordow(user.id)), type: "news.refresh" },
     orderBy: { createdAt: "desc" },
   });
   if (!job) return null;
@@ -571,7 +571,7 @@ export interface NewsRefreshRunDTO {
 export async function getNewsRefreshHistory(limit = 10): Promise<NewsRefreshRunDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.newsRefreshRun.findMany({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: { finishedAt: "desc" },
     take: Math.min(Math.max(1, limit), 30),
   });
@@ -740,7 +740,7 @@ export async function getHotTopics(force?: boolean): Promise<HotTopicsResult> {
   const cutoff = new Date(Date.now() - FRESHNESS_MS);
 
   const articles = await prisma.newsArticle.findMany({
-    where: { ownerId: user.id, publishedAt: { gte: cutoff } },
+    where: { ...(await filtrMoichRekordow(user.id)), publishedAt: { gte: cutoff } },
     orderBy: { publishedAt: "desc" },
     take: 60,
     include: { source: { select: { name: true } } },
@@ -754,7 +754,7 @@ export async function getHotTopics(force?: boolean): Promise<HotTopicsResult> {
   }
 
   const hidden = await prisma.newsHiddenTopic.findMany({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     select: { fingerprint: true },
   });
   const hiddenSet = new Set(hidden.map((h) => h.fingerprint));
@@ -839,7 +839,7 @@ export async function unhideHotTopic(id: string): Promise<void> {
 export async function getHiddenTopics(): Promise<HiddenTopicDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.newsHiddenTopic.findMany({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: { createdAt: "desc" },
   });
   return rows.map((r) => ({ id: r.id, title: r.title, createdAt: r.createdAt.toISOString() }));

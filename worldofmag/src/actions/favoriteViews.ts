@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { sanitizeColor, sanitizeIcon } from "@/platform/favorites/sanitize";
-import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
+import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
 import {
   MAX_FAVORITE_VIEWS,
   normalizeFavoriteLabel,
@@ -43,7 +43,7 @@ function toDTO(row: {
 export async function getFavoriteViews(): Promise<FavoriteViewDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.favoriteView.findMany({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
   });
   return rows.map(toDTO);
@@ -55,7 +55,7 @@ export async function getFavoriteViews(): Promise<FavoriteViewDTO[]> {
  */
 export async function readFavoriteViews(userId: string): Promise<FavoriteViewDTO[]> {
   const rows = await prisma.favoriteView
-    .findMany({ where: { ownerId: userId }, orderBy: [{ order: "asc" }, { createdAt: "asc" }] })
+    .findMany({ where: { ...(await filtrMoichRekordow(userId)) }, orderBy: [{ order: "asc" }, { createdAt: "asc" }] })
     .catch(() => []);
   return rows.map(toDTO);
 }
@@ -78,7 +78,7 @@ export async function addFavoriteView(input: {
   });
   if (existing) return toDTO(existing);
 
-  const count = await prisma.favoriteView.count({ where: { ownerId: user.id } });
+  const count = await prisma.favoriteView.count({ where: { ...(await filtrMoichRekordow(user.id)) } });
   if (count >= MAX_FAVORITE_VIEWS) {
     throw new Error(`Osiągnięto limit ${MAX_FAVORITE_VIEWS} ulubionych widoków — usuń któryś, żeby dodać nowy`);
   }
@@ -111,7 +111,7 @@ export async function removeFavoriteViewByPath(path: string): Promise<void> {
   const user = await requireAuth();
   const normalized = normalizeFavoritePath(path);
   if (!normalized) return;
-  await prisma.favoriteView.deleteMany({ where: { ownerId: user.id, path: normalized } });
+  await prisma.favoriteView.deleteMany({ where: { ...(await filtrMoichRekordow(user.id)), path: normalized } });
   revalidatePath(SHELL_PATH, "layout");
 }
 
@@ -141,7 +141,7 @@ export async function reorderFavoriteViews(ids: string[]): Promise<void> {
   // Przestawiamy WYŁĄCZNIE wiersze należące do użytkownika — cudze id z listy po prostu
   // nie znajdą dopasowania i zostaną pominięte, zamiast przestawiać komuś jego zakładki.
   const owned = await prisma.favoriteView.findMany({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     select: { id: true },
   });
   const ownedIds = new Set(owned.map((r) => r.id));

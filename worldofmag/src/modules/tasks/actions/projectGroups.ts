@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import type { ProjectGroup } from "@/types";
-import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
+import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 const TERMINAL_STATUSES = ["DONE", "CANCELLED"];
 
@@ -32,7 +32,7 @@ export async function getProjectGroups(): Promise<ProjectGroup[]> {
 
   const [rows, accessible] = await Promise.all([
     prisma.projectGroup.findMany({
-      where: { ownerId: user.id },
+      where: { ...(await filtrMoichRekordow(user.id)) },
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     }),
     accessibleProjectIds(user.id),
@@ -88,7 +88,7 @@ export async function createProjectGroup(data: {
   if (ids.length === 0) throw new Error("Wybierz co najmniej jeden projekt");
 
   const maxOrder = await prisma.projectGroup.aggregate({
-    where: { ownerId: user.id },
+    where: { ...(await filtrMoichRekordow(user.id)) },
     _max: { order: true },
   });
 

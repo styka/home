@@ -4,6 +4,7 @@ import { prisma } from "@/platform/db/prisma";
 import { createTopic, updateTopic, deleteTopic, startNewsRefresh, createSource, updateSource, deleteSource } from "../contract";
 import { asStr, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 export async function executeNewsAction(action: AIAction, userId: string): Promise<string | ExecOutcome> {
   const { type, params, searchQuery } = action;
@@ -21,7 +22,7 @@ export async function executeNewsAction(action: AIAction, userId: string): Promi
     let topicId = id;
     if (!topicId && searchQuery) {
       const t = await prisma.newsTopic.findFirst({
-        where: { ownerId: userId, title: { contains: searchQuery, mode: "insensitive" } },
+        where: { ...(await filtrMoichRekordow(userId)), title: { contains: searchQuery, mode: "insensitive" } },
       });
       topicId = t?.id;
     }
@@ -32,8 +33,8 @@ export async function executeNewsAction(action: AIAction, userId: string): Promi
 
   const resolveTopic = async () => {
     const id = asStr(params.topicId);
-    if (id) { const t = await prisma.newsTopic.findFirst({ where: { ownerId: userId, id } }); if (t) return t.id; }
-    const t = await prisma.newsTopic.findFirst({ where: { ownerId: userId, title: { contains: searchQuery ?? asStr(params.title) ?? "", mode: "insensitive" } } });
+    if (id) { const t = await prisma.newsTopic.findFirst({ where: { ...(await filtrMoichRekordow(userId)), id } }); if (t) return t.id; }
+    const t = await prisma.newsTopic.findFirst({ where: { ...(await filtrMoichRekordow(userId)), title: { contains: searchQuery ?? asStr(params.title) ?? "", mode: "insensitive" } } });
     if (!t) throw new Error(`Nie znaleziono tematu: "${searchQuery}"`);
     return t.id;
   };
@@ -65,7 +66,7 @@ export async function executeNewsAction(action: AIAction, userId: string): Promi
     const sid = asStr(params.sourceId);
     const src = sid
       ? await prisma.newsSource.findFirst({ where: { id: sid, ownerId: userId }, select: { id: true } })
-      : await prisma.newsSource.findFirst({ where: { ownerId: userId, name: { contains: q ?? "", mode: "insensitive" } }, select: { id: true } });
+      : await prisma.newsSource.findFirst({ where: { ...(await filtrMoichRekordow(userId)), name: { contains: q ?? "", mode: "insensitive" } }, select: { id: true } });
     if (!src) throw new Error(`Nie znaleziono źródła: „${q ?? sid ?? ""}"`);
     if (type === "delete_news_source") { await deleteSource(src.id); return `Usunięto źródło wiadomości`; }
     await updateSource(src.id, {

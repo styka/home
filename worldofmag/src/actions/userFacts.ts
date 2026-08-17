@@ -13,7 +13,7 @@ import { auth } from "@/platform/auth/session";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { fingerprintOf } from "@/lib/textKey";
-import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
+import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
 import {
   parseUserFactCategory,
   parseUserFactConfidence,
@@ -56,7 +56,7 @@ function toDTO(r: {
 export async function getUserFacts(): Promise<UserFactDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.userFact.findMany({
-    where: { ownerId: user.id, status: "active" },
+    where: { ...(await filtrMoichRekordow(user.id)), status: "active" },
     orderBy: [{ category: "asc" }, { createdAt: "desc" }],
   });
   return rows.map(toDTO);
@@ -72,7 +72,7 @@ export async function getUserFacts(): Promise<UserFactDTO[]> {
 export async function getPendingHypothesis(): Promise<UserFactDTO | null> {
   const user = await requireAuth();
   const row = await prisma.userFact.findFirst({
-    where: { ownerId: user.id, status: "active", origin: "inferred", confidence: { not: "confirmed" } },
+    where: { ...(await filtrMoichRekordow(user.id)), status: "active", origin: "inferred", confidence: { not: "confirmed" } },
     orderBy: { createdAt: "desc" },
   });
   return row ? toDTO(row) : null;
@@ -171,7 +171,7 @@ export async function deleteUserFact(id: string): Promise<void> {
 export async function getUserFactsForAdmin(userId: string): Promise<UserFactDTO[]> {
   await requireAdmin();
   const rows = await prisma.userFact.findMany({
-    where: { ownerId: userId },
+    where: { ...(await filtrMoichRekordow(userId)) },
     orderBy: [{ status: "asc" }, { category: "asc" }, { createdAt: "desc" }],
   });
   return rows.map(toDTO);

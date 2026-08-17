@@ -4,6 +4,7 @@ import { prisma } from "@/platform/db/prisma";
 import { addLocationByName, deleteLocation, setDefaultLocation, addPresetWatcher, deleteWatcher, addCustomWatcher, updateWatcher } from "../contract";
 import { asStr, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 export async function executeWeatherAction(action: AIAction, userId: string): Promise<string | ExecOutcome> {
   const { type, params, searchQuery } = action;
@@ -21,7 +22,7 @@ export async function executeWeatherAction(action: AIAction, userId: string): Pr
     let locId = id;
     if (!locId && searchQuery) {
       const l = await prisma.weatherLocation.findFirst({
-        where: { ownerId: userId, label: { contains: searchQuery, mode: "insensitive" } },
+        where: { ...(await filtrMoichRekordow(userId)), label: { contains: searchQuery, mode: "insensitive" } },
       });
       locId = l?.id;
     }
@@ -30,7 +31,7 @@ export async function executeWeatherAction(action: AIAction, userId: string): Pr
     return `Usunięto lokalizację pogodową`;
   }
   if (type === "set_default_weather_location") {
-    const id = asStr(params.locationId) ?? (await prisma.weatherLocation.findFirst({ where: { ownerId: userId, label: { contains: searchQuery ?? "", mode: "insensitive" } } }))?.id;
+    const id = asStr(params.locationId) ?? (await prisma.weatherLocation.findFirst({ where: { ...(await filtrMoichRekordow(userId)), label: { contains: searchQuery ?? "", mode: "insensitive" } } }))?.id;
     if (!id) throw new Error(`Nie znaleziono lokalizacji: "${searchQuery}"`);
     await setDefaultLocation(id);
     return `Ustawiono domyślną lokalizację pogodową`;
@@ -42,7 +43,7 @@ export async function executeWeatherAction(action: AIAction, userId: string): Pr
     return `Dodano obserwatora pogody`;
   }
   if (type === "delete_weather_watcher") {
-    const id = asStr(params.watcherId) ?? (await prisma.weatherWatcher.findFirst({ where: { ownerId: userId, title: { contains: searchQuery ?? "", mode: "insensitive" } } }))?.id;
+    const id = asStr(params.watcherId) ?? (await prisma.weatherWatcher.findFirst({ where: { ...(await filtrMoichRekordow(userId)), title: { contains: searchQuery ?? "", mode: "insensitive" } } }))?.id;
     if (!id) throw new Error(`Nie znaleziono obserwatora: "${searchQuery}"`);
     await deleteWatcher(id);
     return `Usunięto obserwatora pogody`;
@@ -56,7 +57,7 @@ export async function executeWeatherAction(action: AIAction, userId: string): Pr
     return `Dodano obserwatora pogody „${title}"`;
   }
   if (type === "update_watcher") {
-    const id = asStr(params.watcherId) ?? (await prisma.weatherWatcher.findFirst({ where: { ownerId: userId, title: { contains: searchQuery ?? "", mode: "insensitive" } } }))?.id;
+    const id = asStr(params.watcherId) ?? (await prisma.weatherWatcher.findFirst({ where: { ...(await filtrMoichRekordow(userId)), title: { contains: searchQuery ?? "", mode: "insensitive" } } }))?.id;
     if (!id) throw new Error(`Nie znaleziono obserwatora: "${searchQuery}"`);
     const horizonRaw = asStr(params.horizon);
     await updateWatcher(id, {

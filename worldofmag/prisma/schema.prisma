@@ -2745,9 +2745,11 @@ model NewsPref {
 
   owner User @relation("NewsPref", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
-
-  @@index([workspaceId])
+  // 078 (etap 4 część 2): unikalność przenosi się na przestrzeń. `ownerId @unique` trzymało regułę
+  // „jedna preferencja na konto" i było ostatnią rzeczą, przez którą ta tabela zależy od kolumny
+  // własnościowej. Przeniesienie jest tu ścisłe, bo `NewsPref` nie zna współwłasności zespołowej:
+  // `ownerId` ⟺ przestrzeń OSOBISTA, więc „jedna na konto" = „jedna na przestrzeń".
+  workspaceId String @unique @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 }
 
 // 039: przekrojowa wiedza o użytkowniku — fakty, z których korzysta każdy moduł generujący treść

@@ -4,6 +4,68 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-18 — Kolumna NOT NULL zamieniła „jedną zamianę" w dwuetapową migrację
+**Problem:** Plan etapu 4 brzmiał: zamień `data: { ownerId }` na `data: { workspaceId }` w ~250
+miejscach, potem `DROP COLUMN`. Pomiar pokazał, że na **14 z 40 tabel `ownerId` jest NOT NULL**.
+Na nich te dwa kroki nie są rozdzielne: zapis bez `ownerId` odrzuca baza, więc konwersja i migracja
+musiałyby wejść JEDNYM commitem na 92 plikach. A każdy merge do `develop` jest wdrożeniem — byłby
+to commit, po którym albo działa wszystko, albo nic.
+**Rozwiązanie:** Faza podwójnego zapisu. Jedna funkcja (`wlasnoscDoZapisu`) zwraca `workspaceId`
+policzony przez kod RAZEM z kolumnami własnościowymi, a miejsca zapisu rozpakowują wynik przez
+`...`. Migracja zmienia potem **jedno ciało funkcji**, nie 250 miejsc.
+**Lekcja:** Przed przepisaniem N miejsc sprawdź, czy stary i nowy nośnik danych mogą **współistnieć**.
+Jeśli nie mogą (NOT NULL, UNIQUE, klucz obcy), to nie jest refaktor „N razy to samo", tylko migracja
+dwuetapowa — i trzeba ją tak zaprojektować PRZED pierwszą zamianą. Rozpoznanie: policz, ile ze
+zmienianych kolumn jest wymaganych. `nullable` znaczy „mogę przestać pisać", `NOT NULL` znaczy
+„mogę przestać pisać dopiero razem z kolumną". Wskazówka projektowa: zwracaj **obiekt do rozpakowania**,
+a nie pojedynczą wartość — wtedy zwężenie typu zwracanego nie dotyka miejsc użycia.
+
+## 2026-08-18 — Cichą usterkę konwersji dało się zamienić w błąd bazy, bo istniało drugie źródło prawdy
+**Problem:** Zamiana 250 miejsc zapisu ma jeden tryb awarii i jest cichy: pomyłka w argumencie
+(`userId` kogoś innego, pominięty `teamId`) daje rekord w CUDZEJ przestrzeni. `tsc` widzi dwa
+poprawne stringi, testy przechodzą, ekran się renderuje. Objaw pojawia się wtedy, gdy ktoś zobaczy
+nie swoje dane. „Będę uważał" nie jest planem przy 92 plikach.
+**Rozwiązanie:** W fazie podwójnego zapisu ta sama informacja jest w bazie **dwa razy** —
+w `workspaceId` i w kolumnach własnościowych. Wyzwalacz (migracja 0240) zaczął je porównywać
+i odrzucać rozjazd z komunikatem mówiącym, co się nie zgadza.
+**Lekcja:** Gdy migracja tworzy przejściową **redundancję**, nie traktuj jej tylko jako kosztu —
+to gotowy, darmowy inwariant do sprawdzania. Pytanie do zadania przy każdej takiej migracji: *czy
+przez chwilę mam dwa niezależne nośniki tej samej prawdy, i czy mogę kazać bazie pilnować ich
+zgodności?* Sprawdzenie stoi w BAZIE, nie w kliencie ORM: rozszerzenie klienta omijają zapisy
+zagnieżdżone, surowy SQL, seedy i skrypty — wyzwalacza nie omija nic. Skutek uboczny, który też jest
+lekcją: takie sprawdzenie czyni pewne stany NIEOSIĄGALNYMI, więc fixture'y testów, które te stany
+celowo budowały, przestają się dać zbudować (u nas dwa) — to nie awaria testu, to sygnał, że asercję
+trzeba przenieść na stan osiągalny.
+
+## 2026-08-18 — Kosz przechowuje migawki, więc zmiana schematu sięga wstecz do zapisanych danych
+**Problem:** Konwersja własności na przestrzenie wyglądała na zmianę wyłącznie w kodzie. `TrashItem`
+trzyma jednak JSON utrwalony w chwili usunięcia rekordu, a migawki sprzed zmiany mają tylko
+`ownerId`/`ownerTeamId`. Gdyby przywracanie czytało wyłącznie nową kolumnę, w dniu `DROP COLUMN`
+każdy rekord leżący w koszu (retencja 30 dni, więc byłoby ich pełno) wróciłby z cudzą przestrzenią
+albo bez niej — a operacja zgłaszałaby sukces.
+**Rozwiązanie:** `przestrzenZMigawki`: najpierw przestrzeń z migawki, a gdy jej nie ma —
+wyprowadzenie z kolumn własnościowych, tak jak robił to wyzwalacz. Migawki od teraz zapisują
+`workspaceId`.
+**Lekcja:** Przy usuwaniu kolumny wyszukaj miejsca, w których jej wartość jest **skopiowana poza
+tabelę**: migawki kosza, kolejki zadań (payload), logi audytu, cache, eksporty, pola JSON. Tam nie
+działa ani `tsc`, ani migracja danych, bo to nie są kolumny — a schemat tych kopii jest zamrożony
+w chwili zapisu. Reguła kciuka: każde pole typu JSON/text trzymające „stan rekordu" to potencjalny
+odczyt kolumny, której już nie ma, i wymaga ścieżki zgodności ze starym kształtem.
+
+## 2026-08-18 — Bramka nie zna nazw, których jej nie podano
+**Problem:** Po przepisaniu `where: { ownerId: userId }` na nowy helper `filtrMoichRekordow(userId)`
+build padł na `check-ai-access`: dwa narzędzia odczytu asystenta „nie pokazują, jak zawężają wynik".
+Zawężenie było na miejscu, i to ŚCIŚLEJSZE niż przedtem — ale bramka rozpoznaje mechanizmy z listy
+wzorców tekstowych, a nowej nazwy na liście nie było.
+**Rozwiązanie:** Wzorzec dopisany do listy z uzasadnieniem. Przy okazji bramka dopasowuje teraz
+wzorce do KODU, nie do komentarzy (własna lekcja repo, tu jeszcze niezastosowana) — sprawdzone sondą:
+plik, którego jedynym „mechanizmem" jest zdanie w komentarzu, jest odrzucany.
+**Lekcja:** Zmieniając nazwę wspólnego mechanizmu, przeszukaj **bramki i skrypty** pod starą nazwę,
+zanim uruchomisz build — inaczej bramka zgłosi „usunięto zabezpieczenie" tam, gdzie zostało
+wzmocnione. To działa też w drugą stronę i jest groźniejsze: gdyby ta bramka miała regułę „ostrzegaj,
+nie przerywaj", zawężenie mogłoby zniknąć naprawdę i nikt by nie zauważył. Bramka rozpoznająca
+mechanizm po NAZWIE jest z definicji niepełna, więc jej lista jest częścią kontraktu refaktoru.
+
 ## 2026-08-17 — `NOT NULL` usunął siatkę bezpieczeństwa, o której istnieniu nikt nie pamiętał
 **Problem:** Zaostrzenie `workspaceId` do NOT NULL miało być domknięciem porządku. Okazało się
 zmianą zachowania w miejscu zupełnie niespodziewanym: w `rolaZWlasnosci` reguła „właściciel dostaje

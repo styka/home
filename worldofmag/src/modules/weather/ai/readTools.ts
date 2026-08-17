@@ -2,6 +2,7 @@ import { getLocations, getWatchers, getWeather } from "../contract";
 import { prisma } from "@/platform/db/prisma";
 import { HARD_MAX, asStr } from "@/lib/ai/readToolShared";
 import type { AiReadToolHandler } from "@/platform/ai/contribution";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 /**
  * 049: narzędzia ODCZYTU tego modułu — wkład do asystenta, składany z deklaracji.
@@ -19,7 +20,7 @@ export const readTools: Record<string, AiReadToolHandler> = {
   list_weather_locations: async (args, userId) => {
       // WeatherLocation jest user-only (ownerId wymagany).
       const locations = await prisma.weatherLocation.findMany({
-        where: { ownerId: userId },
+        where: { ...(await filtrMoichRekordow(userId)) },
         select: { id: true, label: true, isDefault: true },
         orderBy: { createdAt: "asc" },
         take: HARD_MAX,

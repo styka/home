@@ -111,7 +111,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 |---|---------|--------|-------|
 | 9 | Modele `Workspace`, `WorkspaceMember`, `ResourceGrant`, `ResourceInvitation` | ✅ | **051.** Cztery modele + migracja 0226 **z backfillem** (rozdz. 8.10 kroki 1–2): przestrzeń osobista na konto, zespołowa na zespół wraz ze składem. Lustro utrzymywane w przód (`platform/workspaces`), pilnowane bramką `check:workspace-mirror` i testem z testem negatywnym. Zero przełączonych odczytów |
 | 10 | `platform/sharing` — `requireAccess`, dziedziczenie, cache | ✅ | **052.** Platforma bez importu modułu (katalog parametrem wymaganym); Zadania jako pilot; **tabela prawdy 25 komórek identyczna** przed i po; read-tool asystenta przez wspólne sprawdzanie z testem obejścia. Cache per żądanie — bez unieważniania, bo nie ma czego unieważniać |
-| 11 | Migracja `ownerId`/`ownerTeamId` → `workspaceId` na 46 modelach | 🟡 | **Najgroźniejsze zadanie całej przebudowy.** Etapy 1–3 oraz **pierwsza połowa etapu 4** (075: `NOT NULL` na 40 z 45 tabel + 5 wyjątków z zapadką; wyzwalacz domyka przestrzeń; przywrócona siatka „właściciel = manager"). Zostaje samo `DROP COLUMN` — 612 błędów kompilacji w 124 plikach, kopia z 0233 gotowa i przećwiczona. Etapy 1–3: 054 kolumna + backfill (0227), 055 wyzwalacz utrzymujący ją w przód (0228) — wybrany zamiast rozszerzenia klienta Prismy, bo tego nie omija ani zapis zagnieżdżony, ani surowy SQL, ani seed; 056 rozstrzyganie dostępu czyta przestrzeń (etap 3A), 057+058 zakresy list idą po przestrzeniach (3B). **Etap 4 zablokowany**: `NOT NULL`/`DROP COLUMN` na 45 tabelach wymaga wygrzania na produkcji i wyzerowanych sierot |
+| 11 | Migracja `ownerId`/`ownerTeamId` → `workspaceId` na 46 modelach | 🟡 | **Najgroźniejsze zadanie całej przebudowy.** Etapy 1–3 i etap 4 część 1 zamknięte. **078 — etap 4 część 2 w toku:** faza podwójnego zapisu (`wlasnoscDoZapisu` / `wlasnoscOsobistaDoZapisu` — jeden punkt przełączenia dla `DROP COLUMN`), **wszystkie 35 miejsc zapisu w 15 modułach przepięte**, guard rekordu (`assertOwnership`) czyta przestrzeń, 52 filtry osobiste przez `filtrMoichRekordow`, unikalność `NewsPref` przeniesiona na przestrzeń (0241), wyzwalacz **pilnuje zgodności** obu nośników (0240), U-4 naprawione. Pozostało do `DROP COLUMN`: **479 błędów kompilacji w 92 plikach** (było 544) — guardy modułów i `platform/sharing` (najdelikatniejsze: tam żyje siatka „właściciel = manager” z przebiegu 077), 4 unikalności złożone (`ownerId_fingerprint`, `ownerId_path`, `ownerId_sectionKind`, `ownerId_kind_scopeKey`), `lib/privacy/purge.ts` (RODO — osobno, z testem przed i po), odświeżenie kopii własności (U-5) i sama migracja razem z U-3. Etapy 1–3: 054 kolumna + backfill (0227), 055 wyzwalacz (0228), 056 dostęp po przestrzeni, 057+058 zakresy list. **Pięć tabel zachowuje `ownerId`** — kryterium „wiersz może nie mieć właściciela”, zapadka `check:workspace-nullable` |
 | 12 | Migracja `TaskProjectMember`/`TaskShare`/`PetShare` → `ResourceGrant` | 🟡 | Etap 1 z trzech: 059 lustro nadań dla Zadań, 061 dla Zwierząt; bramka `check:grant-mirror` z manifestem wyjątków. **Etap 2 zablokowany** — przełączenie odczytów wymaga produkcyjnego pomiaru rozjazdu tabela↔nadanie |
 | 13 | Deklaracje `resources` w `module.ts` | ✅ | **064.** Pomiar przed decyzją zmienił zadanie: decyzje dostępu **per rekord** podejmuje sześć modułów, nie dziewiętnaście. Pozostałe piętnaście albo dziedziczy po zasobie nadrzędnym, albo filtruje zakresem. Zamknięte manifestem `sharing-classification.json` (21/21 z powodem) egzekwowanym przez `check:module-registry` — zamiast pozycji wiecznie otwartej |
 | 14 | `ShareDialog`, „Udostępnione mi", „Co udostępniłem" | 🟡 | **067: część odczytowa.** `/udostepnione`, dwie zakładki, jedno zapytanie do jednej tabeli — wypłata za cały jednolity model. Zostaje strona zapisu: `ShareDialog`, zaproszenia e-mail, `subjectType: "link"`, powiadomienia, kategoria `sharing` w `AuditLog`. Przycisk odbierania dostępu jedzie razem z etapem 2 zadania 12 |
@@ -2041,3 +2041,108 @@ na zakres po przestrzeniach) i dopiero po niej `DROP COLUMN` na 40 tabelach. Oso
 zmienia ścieżkę usuwania danych osobowych i zasługuje na własny test przed i po.
 
 **Bramki:** build **exit 0**, `test:unit` **905/905** (było 901; +4 z testu przestrzeni zapisu).
+
+---
+
+## 078 — Etap 4 część 2: konwersja zapisów, guard rekordu i siatka na cichą pomyłkę
+
+### Ustalenie, które przewróciło plan: 14 tabel ma `ownerId NOT NULL`
+
+Plan brzmiał: zamień `data: { ownerId }` na `data: { workspaceId }` w ~250 miejscach, potem
+`DROP COLUMN`. Pomiar przed pierwszą zamianą pokazał, że na **14 z 40 tabel objętych etapem 4
+kolumna `ownerId` jest NOT NULL** (`ProjectGroup`, `FavoriteView`, pięć tabel Wiadomości, trzy
+Pogody, `UserFact`, `AiContent`, `AiSectionPref`, `NewsRefreshRun`). Na nich te dwa kroki **nie są
+rozdzielne**: zapis bez `ownerId` odrzuca baza. Konwersja i migracja musiałyby więc wejść **jednym
+commitem na 92 plikach** — a każdy merge do `develop` jest wdrożeniem, czyli byłby to commit, po
+którym albo działa wszystko, albo nic.
+
+Stąd **faza podwójnego zapisu**: `wlasnoscDoZapisu(userId, teamId?)` (i wariant
+`wlasnoscOsobistaDoZapisu` dla tabel bez współwłasności zespołowej) zwraca `workspaceId` policzony
+przez KOD razem z kolumnami własnościowymi, których baza jeszcze wymaga. Miejsca zapisu rozpakowują
+wynik przez `...`, więc migracja zmieni **jedno ciało funkcji**, a nie 250 miejsc. Każdy commit tej
+fazy jest samodzielnie wdrażalny — i to był cel.
+
+### Redundancja fazy przejściowej okazała się darmowym inwariantem (0240)
+
+Konwersja 250 miejsc ma jeden tryb awarii i jest cichy: pomyłka w argumencie daje rekord w **cudzej
+przestrzeni**. `tsc` widzi dwa poprawne stringi, testy przechodzą, ekran się renderuje; objaw
+pojawia się, gdy ktoś zobaczy nie swoje dane. Przy 92 plikach „będę uważał” nie jest planem.
+
+Ale w fazie podwójnego zapisu ta sama informacja jest w bazie **dwa razy**. Wyzwalacz
+`omnia_fill_workspace` dotąd wychodził natychmiast, gdy zapis podał `workspaceId` — od 0240
+**porównuje** podaną przestrzeń z tą, którą wyprowadza z kolumn własnościowych, i odrzuca rozjazd
+komunikatem mówiącym, co się nie zgadza. Cicha usterka stała się głośnym błędem w miejscu powstania.
+W bazie, nie w kliencie Prismy: rozszerzenie klienta omijają zapisy zagnieżdżone, surowy SQL, seedy
+i skrypty — wyzwalacza nie omija nic.
+
+Skutek uboczny, który sam jest ustaleniem: sprawdzenie czyni pewne stany **nieosiągalnymi**, więc
+dwa fixture'y, które ten stan celowo budowały, przestały się dać zbudować. Poprawione **punktowo**
+(zapis zgodny zamiast sprzecznego, przeniesienie przez `UPDATE` — wyzwalacz jest `BEFORE INSERT`),
+z zachowaniem tezy, której dowodziły. To ta sama figura, co w 077: kod, który był jedyną drogą do
+danego stanu, znika razem z nim.
+
+### Guard rekordu: reguła przeniesiona, nie przepisana
+
+`assertOwnership` czytało `ownerId`/`ownerTeamId` z wybranego rekordu. Czyta przestrzeń — a reguła
+jest przeniesiona **jeden do jednego**, bo lustro z zadania 9 utrzymuje równoważności `ownerId = ja`
+⟺ „moja przestrzeń osobista" i `ownerTeamId = t` ⟺ „przestrzeń zespołu t, którego jestem
+członkiem". Te same **siedem komórek** tabeli prawdy, każda przetłumaczona, żadna ze zmienionym
+wynikiem. Reguła wydzielona jako czysta `maDostepDoPrzestrzeni`, bo guard musiał stać się
+asynchroniczny — a tabelę prawdy da się sprawdzić bez bazy tylko na funkcji czystej; inaczej dowód
+wymagałby atrapy kontekstu, czyli sprawdzałby atrapę.
+
+### Filtry osobiste: węższe z rozmysłem
+
+`filtrMoichRekordow(userId)` zastąpiło `where: { ownerId: userId }` w **52 miejscach** na tabelach
+bez kolumny `ownerTeamId`. Celowo zwraca **jedną** przestrzeń (osobistą), a nie `IN (wszystkie
+moje)` jak `ownedOrAsync`: to drugie byłoby na takiej tabeli **poszerzeniem** zakresu. Dziś oba
+warianty dałyby ten sam wynik — i właśnie dlatego pomyłka przeszłaby niezauważona, a zaszkodziła
+dopiero wtedy, gdy któraś z tych tabel dostanie kolumnę zespołową. Dowód to porównanie **zbiorów**
+na prawdziwych danych, z przypadkiem różnicującym (rekord przeniesiony do przestrzeni zespołu:
+wąski filtr go nie widzi, szeroki widzi) — sonda podmieniająca filtr na szerszy czerwieni test.
+
+### Kosz: jedyne miejsce, gdzie problemem są DANE, nie kod
+
+`TrashItem.payload` to JSON utrwalony w chwili usunięcia. Migawki sprzed 078 mają tylko kolumny
+własnościowe i nikt ich wstecz nie przepisze. Gdyby przywracanie czytało wyłącznie `workspaceId`,
+w dniu `DROP COLUMN` **każdy rekord leżący w koszu** (retencja 30 dni) wróciłby z cudzą przestrzenią
+albo bez niej — a operacja zgłaszałaby sukces. Stąd `przestrzenZMigawki`: najpierw przestrzeń
+z migawki, a gdy jej nie ma — wyprowadzenie z kolumn własnościowych, dokładnie jak wyzwalacz.
+
+### Pozostałe ustalenia
+
+* **U-4 naprawione:** `przestrzenZespolu` → `przestrzenZespoluBezKontroliDostepu`. Funkcja nie
+  sprawdza uprawnień i teraz mówi o tym nazwą; kontrola została w guardzie modułu, bo tam jest
+  kontekst operacji.
+* **Unikalność `NewsPref` przeniesiona na przestrzeń (0241).** `ownerId @unique` było ostatnią
+  rzeczą, przez którą ta tabela zależy od kolumny własnościowej: `findUnique`/`upsert` przyjmują
+  wyłącznie klucz unikalny, więc samo przepisanie filtra nawet się nie kompilowało. Migracja
+  sprawdza duplikaty **przed** zdjęciem starej ochrony i przerywa z czytelnym komunikatem.
+* **Bramka nie zna nazw, których jej nie podano.** `check-ai-access` zgłosiła „brak zawężenia
+  dostępu" w dwóch narzędziach odczytu — zawężenie było, i to ściślejsze, ale nowej nazwy nie było
+  na liście wzorców. Przy okazji bramka dopasowuje teraz wzorce do KODU, nie do komentarzy (własna
+  lekcja repo, tu jeszcze niezastosowana); sprawdzone sondą.
+
+**Bramki:** build **exit 0**, `test:unit` **922/922** (było 907; +15 z czterech nowych dowodów),
+`check:ai-access` z nową sondą, zapadki `workspace-*` / `boundaries` / `module-registry` /
+`schema-drift` bez zmian.
+
+### Co pozostało do `DROP COLUMN` — zmierzone, nie oszacowane
+
+**479 błędów kompilacji w 92 plikach** (przed 078: 544). Miara jest twarda: schemat z usuniętymi
+kolumnami + `tsc`. W kolejności, którą narzuca ryzyko:
+
+1. **`platform/sharing` i guardy modułów** (`sharing.ts` × 4, `assert*Access` × 6) — najdelikatniejsze,
+   bo tam żyje siatka „właściciel = manager” z 077. Wymaga tabeli prawdy porównanej komórka w komórkę
+   **przed** przełączeniem.
+2. **Cztery unikalności złożone** — `ownerId_fingerprint` (`WeatherIdea`, `NewsHiddenTopic`,
+   `UserFact`), `ownerId_path` (`FavoriteView`), `ownerId_sectionKind` (`AiSectionPref`),
+   `ownerId_kind_scopeKey` (`AiContent`). Każda blokuje odczyty przez `findUnique`/`upsert`,
+   więc każda potrzebuje migracji przed kodem.
+3. **`lib/privacy/purge.ts`** — osobno i bardzo ostrożnie; RODO jest kluczowane po `ownerId`,
+   wymaga testu „przed i po" na porównywalnym zbiorze.
+4. **Odświeżenie kopii własności (U-5)** + kontrola liczności per tabela przerywająca migrację
+   przy rozjeździe.
+5. **`DROP COLUMN` razem z U-3** (`ownedOrAsync` ma jeszcze gałąź `{ ownerId: userId }`, która
+   w chwili usunięcia kolumny wywróciłaby każde zapytanie listowe) i zmianą ciała
+   `wlasnoscDoZapisu` / `przestrzenZMigawki` na `{ workspaceId }`.

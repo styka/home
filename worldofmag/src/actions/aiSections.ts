@@ -21,7 +21,7 @@ import {
 } from "@/platform/ai/sectionMode";
 import { readDefaultSectionModes, resolveSectionModes } from "@/platform/ai/sectionModeResolver";
 import type { AiContentKind } from "@/platform/ai/contentMemory";
-import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
+import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 export interface SectionModeDTO {
   kind: AiContentKind;
@@ -36,7 +36,7 @@ export async function getSectionModes(): Promise<SectionModeDTO[]> {
   const user = await requireAuth();
   const [resolved, own] = await Promise.all([
     resolveSectionModes(user.id),
-    prisma.aiSectionPref.findMany({ where: { ownerId: user.id } }),
+    prisma.aiSectionPref.findMany({ where: { ...(await filtrMoichRekordow(user.id)) } }),
   ]);
   const ownKinds = new Set(own.filter((p) => isSectionMode(p.mode)).map((p) => p.sectionKind));
 
@@ -68,7 +68,7 @@ export async function setSectionMode(kind: AiContentKind, mode: AiSectionMode): 
 export async function clearSectionMode(kind: AiContentKind): Promise<void> {
   const user = await requireAuth();
   await prisma.aiSectionPref.deleteMany({
-    where: { ownerId: user.id, sectionKind: kind },
+    where: { ...(await filtrMoichRekordow(user.id)), sectionKind: kind },
   });
   revalidatePath("/", "layout");
 }

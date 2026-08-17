@@ -9,6 +9,7 @@ import { submitFeedbackTask } from "@/actions/feedback";
 import { addDays, shiftPriority, asStr, undoAction, resolveTaskId, resolveProjectIdForCreate, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 import type { TaskStatus, TaskPriority } from "@/types";
+import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 // Zamień listę NAZW etykiet na ich id (tworzy brakujące — createTaskTag jest upsertem
 // po znormalizowanej nazwie). Puste/nietekstowe wpisy pomijamy.
@@ -228,7 +229,7 @@ export async function executeTasksAction(action: AIAction, userId: string, curre
     const gid = asStr(params.groupId);
     const grp = gid
       ? await prisma.projectGroup.findFirst({ where: { id: gid, ownerId: userId }, select: { id: true } })
-      : await prisma.projectGroup.findFirst({ where: { ownerId: userId, name: { contains: q ?? "", mode: "insensitive" } }, select: { id: true } });
+      : await prisma.projectGroup.findFirst({ where: { ...(await filtrMoichRekordow(userId)), name: { contains: q ?? "", mode: "insensitive" } }, select: { id: true } });
     if (!grp) throw new Error(`Nie znaleziono grupy projektów: „${q ?? gid ?? ""}"`);
     const id = grp.id;
     if (type === "delete_project_group") { await deleteProjectGroup(id); return `Usunięto grupę projektów`; }
