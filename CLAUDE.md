@@ -472,7 +472,9 @@ Never add manual cache invalidation elsewhere. Action files:
 - **Pets**: `pets`, `petCare`, `petHusbandry`, `petBreeding`
 - **Health**: `health`, `medications`
 - **Other modules**: `habits`, `flota`, `portfel`, `portfelBudgets`, `portfelReports`, `portfelCurrency`, `portfelAuto` (Portfel: budgets/reports/multi-currency/auto-expense), `languageDecks`, `news` (incl. `startNewsRefresh`/`getNewsRefreshState` — the module-wide refresh job; `getTopicTimeline`; `hideHotTopic`/`unhideHotTopic`/`getHiddenTopics`; **`refreshTopic` is gone**), `userFacts` (knowledge about the user; `buildUserContext` lives in `lib/userContext.ts` — a helper, not an action), `weather` (incl. `addLocationByPoint`, `getIdeas`/`generateIdeaDetail`/`getIdeaLibrary`/`setIdeaState`/`blockIdea`/`deleteIdea`/`addIdeaToTasks`), `qa`, `truck`, `storage` (Magazynowanie), `warsztat` (Warsztaty), `services` (marketplace; incl. `getModerationDisputes`), `calendar`, `contacts`
-- **Collaboration / system / UX**: `teams`, `invitations`, `access` (incl. `getAuditLog`), `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `aiConversations` (chat persistence), `notifications`, `menuPrefs` (sidebar customization), `dashboardPrefs` (home dashboard personalization), `skins`, `trash` (soft-delete recovery), `systemHealth`, `drive` (Google Drive), `assistantPrefs` (per-user assistant settings incl. `autoApprove` + `getSpeechOptions`), `aiSections` (041: per-user AI-section refresh mode + admin system defaults), `feedback` (`submitFeedbackTask`/`getFeedbackInboxInfo` — the user-report inbox)
+- **Collaboration / system / UX**: `teams`, `invitations`, `access` (incl. `getAuditLog`), `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `aiConversations` (chat persistence), `notifications`, `menuPrefs` (sidebar customization), `dashboardPrefs` (home dashboard personalization), `skins`, `trash` (soft-delete recovery), `privacy` (GDPR: data export + account/data erasure;
+  the deletion logic itself lives in `lib/privacy/purge.ts`, the recovery procedure in
+  `docs/devops/przywrocenie-wlasnosci.md`), `systemHealth`, `drive` (Google Drive), `assistantPrefs` (per-user assistant settings incl. `autoApprove` + `getSpeechOptions`), `aiSections` (041: per-user AI-section refresh mode + admin system defaults), `feedback` (`submitFeedbackTask`/`getFeedbackInboxInfo` — the user-report inbox)
 
 ### Authentication & Authorization
 
@@ -837,7 +839,7 @@ survives) — do **not** move escaping into `inlineFormat` (it opened an XSS hol
 the table/paragraph merge).
 
 **Build pipeline**: `npm run build` runs
-`node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/migrate.js`.
+`node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && node scripts/check-workspace-nullable.js && node scripts/check-ownership-scope.js && node scripts/check-grant-mirror.js && node scripts/check-versioning.js && node scripts/check-ai-access.js && node scripts/check-pagination.js && node scripts/check-domain.js && node scripts/check-events.js && node scripts/check-subscribers.js && node scripts/check-realtime.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/migrate.js`.
 - `copy-docs.js` bundles `docs/` for `/admin/docs`.
 - `check-action-coverage.js` (also `npm run check:actions`) verifies **every AI
   `AIAction` has an executor** in `/api/llm/home/execute` — the build **fails**
@@ -938,8 +940,37 @@ the table/paragraph merge).
   a **required** one — there the space is part of the record's identity, not derived ownership.
   The trigger is **transitional**: it derives the space from `ownerId`/`ownerTeamId` and disappears in
   stage 4 together with those columns. It only fires on INSERT (moving a resource between spaces when
-  its owner changes belongs to stage 3), never overwrites an explicitly supplied value, and leaves
-  `NULL` when the owner has no space — a user's write must never fail over a column nobody reads yet.
+  its owner changes belongs to stage 3) and leaves `NULL` when the owner has no space — a user's write
+  must never fail over a column nobody reads yet.
+  **078 (stage 4 part 2) gave it a second job: it now also *rejects* divergence** (migration 0240).
+  It used to return immediately whenever a write supplied `workspaceId`, taking that value on trust.
+  During the **dual-write phase** the same fact is in the database twice — in `workspaceId` and in the
+  owner columns — so the trigger compares them and raises when they disagree. That turns the one
+  failure mode of converting ~250 write sites (a record silently written to *someone else's* space —
+  no red build, no visible symptom) into a loud error where it happens. It still never overwrites a
+  supplied value that *agrees*, and still says nothing when the owner columns point at no space
+  (rule from 0238: the trigger heals a missing space, it does not invent owners). Side effect worth
+  knowing: this makes "record whose space contradicts its owner" **unreachable via INSERT**, so a
+  fixture that deliberately built that state must be moved to an `UPDATE`.
+- **`platform/workspaces/zapis.ts` — where a new record goes, and what counts as "mine"** (076/078,
+  task 11 stage 4): **never write `ownerId` by hand.** `wlasnoscDoZapisu(userId, teamId?)` (and
+  `wlasnoscOsobistaDoZapisu(userId)` for tables with no `ownerTeamId` column) returns the ownership
+  fields for a new record; call sites spread the result — `data: { ...(await wlasnoscDoZapisu(user.id,
+  teamId)), name }`. On the read side, `filtrMoichRekordow(userId)` replaces `where: { ownerId: userId }`
+  on those same personal-only tables. Both exist to make `DROP COLUMN` a change to **one function body**
+  instead of 250 call sites, which is why the result is spread rather than assigned field by field.
+  Two things that are easy to get wrong:
+  - **`filtrMoichRekordow` is deliberately NARROWER than `ownedWhereAsync`** — one space (the personal
+    one), not `IN (all my spaces)`. On a table that has no team ownership the wide form would *widen*
+    access, and today both would return the same rows, so the mistake would pass unnoticed until one
+    of those tables gains a team column.
+  - **`przestrzenZespoluBezKontroliDostepu` does not check permissions** and says so in its name
+    (renamed in 078 from `przestrzenZespolu`). Whether the caller may write to that team is the
+    module guard's decision, made where the operation's context is.
+  Ownership **uniqueness** has also moved: all nine `UNIQUE(ownerId, …)` indexes on personal-only
+  tables now key on `workspaceId` (migrations 0241, 0242). `Tag` and `ItemHistory` keep theirs on
+  `ownerId` — their uniqueness covers **system rows** (`ownerId IS NULL`) and `workspaceId` is nullable
+  there, so in PostgreSQL `NULL <> NULL` would stop the index protecting exactly the rows it exists for.
 - **`platform/sharing` + `check-module-registry` (9th check)** — 052: access to a *resource* is
   answered by the platform, not by each module's own guard. `requireAccess(userId, ref, operation,
   catalog, ctx)` takes the resource catalog as a **required parameter**; a module declares

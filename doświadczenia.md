@@ -4,6 +4,20 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-18 — Lista bramek w CLAUDE.md rozjechała się o osiem pozycji, bo dopisywano ją ręcznie
+**Problem:** Chciałem dopisać do opisu potoku budowania dwie nowe bramki. Sprawdzenie w
+`package.json` pokazało, że dokument wymienia **13 bramek, a build uruchamia 21**. Osiem
+(`check-domain`, `check-events`, `check-grant-mirror`, `check-ownership-scope`, `check-pagination`,
+`check-realtime`, `check-subscribers`, `check-versioning`) dokładały kolejne przebiegi, każdy
+aktualizując kod, ale nie ten akapit. Gdybym dopisał swoje dwie, rozjazd zmalałby o dwa i został.
+**Rozwiązanie:** Cała linia zastąpiona **wartością wziętą z `package.json`**, a nie łatana o jedną
+pozycję.
+**Lekcja:** Gdy dokumentacja powtarza wartość, która żyje w pliku konfiguracyjnym, nie aktualizuj jej
+przyrostowo — **wygeneruj z prawdziwego źródła i porównaj z tym, co jest**. Różnica jest miarą długu,
+o którym nikt nie wiedział, i zwykle jest większa niż zmiana, którą właśnie wnosisz. Sygnał
+ostrzegawczy: „dopiszę tu jeszcze jedną pozycję do listy" — to moment, w którym trzeba policzyć
+całą listę, nie dodać element.
+
 ## 2026-08-18 — Kolumna NOT NULL zamieniła „jedną zamianę" w dwuetapową migrację
 **Problem:** Plan etapu 4 brzmiał: zamień `data: { ownerId }` na `data: { workspaceId }` w ~250
 miejscach, potem `DROP COLUMN`. Pomiar pokazał, że na **14 z 40 tabel `ownerId` jest NOT NULL**.
