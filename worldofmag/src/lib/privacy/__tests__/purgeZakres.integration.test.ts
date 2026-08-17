@@ -51,6 +51,7 @@ test(
     const { ensurePersonalWorkspace, syncTeamWorkspace } = await import(
       "@/platform/workspaces/sync"
     );
+    const { wlasnoscDoZapisu } = await import("@/platform/workspaces/zapis");
 
     const A = await prisma.user.create({ data: { email: `pz-a-${rnd()}@test.local` } });
     const B = await prisma.user.create({ data: { email: `pz-b-${rnd()}@test.local` } });
@@ -108,13 +109,16 @@ test(
     /** etykieta rekordu → jego id, per tabela. */
     const utworzone: Record<string, Record<string, string>> = {};
 
+    const wlasnoscA = await wlasnoscDoZapisu(A.id);
+    const wlasnoscB = await wlasnoscDoZapisu(B.id);
+    const wlasnoscZespolu = await wlasnoscDoZapisu(A.id, zespol.id);
     for (const tab of tabele) {
       const d = delegat(tab.nazwa);
       utworzone[tab.nazwa] = {};
-      utworzone[tab.nazwa]["A-osobisty"] = (await d.create({ data: { ...tab.dane(1), ownerId: A.id } })).id;
-      utworzone[tab.nazwa]["B-osobisty"] = (await d.create({ data: { ...tab.dane(2), ownerId: B.id } })).id;
+      utworzone[tab.nazwa]["A-osobisty"] = (await d.create({ data: { ...tab.dane(1), ...wlasnoscA } })).id;
+      utworzone[tab.nazwa]["B-osobisty"] = (await d.create({ data: { ...tab.dane(2), ...wlasnoscB } })).id;
       if (tab.zespol) {
-        utworzone[tab.nazwa]["zespolowy"] = (await d.create({ data: { ...tab.dane(3), ownerTeamId: zespol.id } })).id;
+        utworzone[tab.nazwa]["zespolowy"] = (await d.create({ data: { ...tab.dane(3), ...wlasnoscZespolu } })).id;
       }
     }
 

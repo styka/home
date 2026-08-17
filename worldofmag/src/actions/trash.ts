@@ -95,33 +95,35 @@ function asDate(v: unknown): Date | null {
  */
 async function przestrzenZMigawki(
   d: Record<string, unknown>
-): Promise<{ workspaceId: string; ownerId: string | null; ownerTeamId: string | null }> {
+): Promise<{ workspaceId: string }> {
+  const zMigawki = (d.workspaceId as string | null) ?? null;
+  if (zMigawki) return { workspaceId: zMigawki };
+
+  /**
+   * Migawka sprzed 078 nie zna przestrzeni — ma tylko kolumny własnościowe, których w bazie już
+   * nie ma. To jest jedyne miejsce w aplikacji, gdzie `ownerId`/`ownerTeamId` NADAL się czyta
+   * i nadal musi: kosz przechowuje JSON utrwalony w chwili usunięcia, a jego schemat jest zamrożony
+   * w tamtym momencie. Migawki z retencji sprzed etapu 4 (30 dni) muszą dać się przywrócić.
+   * 079: funkcja zwraca już samo `{ workspaceId }`, bo tyle przyjmuje zapis.
+   */
   const ownerId = (d.ownerId as string | null) ?? null;
   const ownerTeamId = (d.ownerTeamId as string | null) ?? null;
-  const zMigawki = (d.workspaceId as string | null) ?? null;
-
-  if (zMigawki) return { workspaceId: zMigawki, ownerId, ownerTeamId };
-
-  // Migawka sprzed 078: przestrzeń wyprowadzamy z tego, co migawka ma.
   const workspaceId = ownerTeamId
     ? await przestrzenZespoluBezKontroliDostepu(ownerTeamId)
     : await przestrzenOsobista(ownerId ?? (await requireAuth()).id);
-  return { workspaceId, ownerId, ownerTeamId };
+  return { workspaceId };
 }
 
 /**
- * Wariant dla tabel, w których `ownerId` jest NOT NULL (tu: `WeatherIdea`).
- *
- * Migawka bez właściciela jest tam uszkodzona, nie „niczyja" — i restorator sprawdzał to już
- * przed 078, tylko osobnym `if`-em. Zwracamy `ownerId: string`, żeby ten warunek był widoczny
- * w typie, a nie tylko w treści funkcji wyżej w pliku.
+ * 079: wariant „dla tabel o `ownerId NOT NULL`" STRACIŁ PRZEDMIOT — takich tabel nie ma, bo nie ma
+ * kolumny. Nazwa zostaje jako pojedyncze miejsce wywołania w restauratorze `WeatherIdea`; treść to
+ * już zwykłe przekazanie dalej. Skasowanie jej byłoby zmianą w kilku restauratorach naraz, bez
+ * żadnego zysku poza jedną linią mniej.
  */
 async function przestrzenZMigawkiOsobista(
   d: Record<string, unknown>
-): Promise<{ workspaceId: string; ownerId: string }> {
-  const { workspaceId, ownerId } = await przestrzenZMigawki(d);
-  if (!ownerId) throw new Error("Uszkodzona migawka: brak właściciela");
-  return { workspaceId, ownerId };
+): Promise<{ workspaceId: string }> {
+  return przestrzenZMigawki(d);
 }
 
 async function restoreNote(d: Record<string, unknown>): Promise<void> {

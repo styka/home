@@ -38,93 +38,54 @@ model User {
 
   accounts                Account[]
   sessions                Session[]
-  driveConnection         DriveConnection?       @relation("UserDriveConnection")
-  driveFiles              DriveFile[]            @relation("UserDriveFiles")
-  ownedTeams              Team[]                 @relation("TeamOwner")
+  driveConnection         DriveConnection?      @relation("UserDriveConnection")
+  driveFiles              DriveFile[]           @relation("UserDriveFiles")
+  ownedTeams              Team[]                @relation("TeamOwner")
   teamMemberships         TeamMember[]
-  sentInvitations         TeamInvitation[]       @relation("InvitedBy")
-  receivedInvitations     TeamInvitation[]       @relation("InvitedUser")
-  ownedLists              ShoppingList[]
+  sentInvitations         TeamInvitation[]      @relation("InvitedBy")
+  receivedInvitations     TeamInvitation[]      @relation("InvitedUser")
   products                Product[]
   units                   Unit[]
   categories              Category[]
-  ownedTaskProjects       TaskProject[]          @relation("OwnedTaskProjects")
-  taskProjectMemberships  TaskProjectMember[]    @relation("TaskProjectMemberships")
-  tasksCreated            Task[]                 @relation("TasksCreatedBy")
-  tasksAssigned           Task[]                 @relation("TasksAssignedTo")
-  taskComments            TaskComment[]          @relation("TaskComments")
-  taskShares              TaskShare[]            @relation("TaskShares")
+  taskProjectMemberships  TaskProjectMember[]   @relation("TaskProjectMemberships")
+  tasksCreated            Task[]                @relation("TasksCreatedBy")
+  tasksAssigned           Task[]                @relation("TasksAssignedTo")
+  taskComments            TaskComment[]         @relation("TaskComments")
+  taskShares              TaskShare[]           @relation("TaskShares")
   activities              UserActivity[]
-  stores                  Store[]
   categoryIconVariants    CategoryIconVariant[]
   userRoles               UserRole[]
-  ownedNotes              Note[]                 @relation("OwnedNotes")
-  ownedNoteGroups         NoteGroup[]            @relation("OwnedNoteGroups")
-  ownedTags               Tag[]                  @relation("OwnedTags")
-  ownedItemHistory        ItemHistory[]          @relation("OwnedItemHistory")
-  llmPrefs                UserLlmPref[]          @relation("UserLlmPrefs")
-  reports                 Report[]               @relation("AuthoredReports")
-  aiConversations         AiConversation[]       @relation("AiConversations")
-  qaScenarios             QaTestScenario[]       @relation("QaAuthored")
-  recipes                 Recipe[]               @relation("OwnedRecipes")
-  cookbooks               Cookbook[]             @relation("OwnedCookbooks")
-  mealPlans               MealPlanEntry[]        @relation("OwnedMealPlans")
-  pantryItems             PantryItem[]           @relation("OwnedPantryItems")
-  storageItems            StorageItem[]          @relation("OwnedStorageItems")
-  storageSuppliers        StorageSupplier[]      @relation("OwnedStorageSuppliers")
-  storageDocuments        StorageDocument[]      @relation("OwnedStorageDocuments")
-  storageOrders           StoragePurchaseOrder[] @relation("OwnedStorageOrders")
+  ownedNoteGroups         NoteGroup[]           @relation("OwnedNoteGroups")
+  ownedTags               Tag[]                 @relation("OwnedTags")
+  ownedItemHistory        ItemHistory[]         @relation("OwnedItemHistory")
+  llmPrefs                UserLlmPref[]         @relation("UserLlmPrefs")
+  reports                 Report[]              @relation("AuthoredReports")
+  aiConversations         AiConversation[]      @relation("AiConversations")
+  qaScenarios             QaTestScenario[]      @relation("QaAuthored")
   storageSettings         StorageSettings?
   recipeRatings           RecipeRating[]
   vehicleProfile          VehicleProfile?
-  ownedPets               Pet[]                  @relation("OwnedPets")
-  petShares               PetShare[]             @relation("PetShares")
-  ownedEnclosures         PetEnclosure[]         @relation("OwnedEnclosures")
-  ownedBreedingPairs      PetBreedingPair[]      @relation("OwnedPairs")
-  petSales                PetSale[]              @relation("OwnedPetSales")
-  vehicles                Vehicle[]              @relation("OwnedVehicles")
-  walletElements          WalletElement[]        @relation("OwnedWalletElements")
-  budgets                 Budget[]               @relation("OwnedBudgets")
-  financeGoals            FinanceGoal[]          @relation("OwnedFinanceGoals")
-  financeSettings         FinanceSettings?       @relation("UserFinanceSettings")
-  exchangeRates           ExchangeRate[]         @relation("UserExchangeRates")
-  trashItems              TrashItem[]            @relation("UserTrashItems")
-  dashboardPref           DashboardPref?         @relation("UserDashboardPref")
-  favoriteViews           FavoriteView[]         @relation("OwnedFavoriteViews")
-  assistantPref           AssistantPref?         @relation("UserAssistantPref")
-  languageDecks           LanguageDeck[]         @relation("OwnedLanguageDecks")
-  healthEvents            HealthEvent[]          @relation("OwnedHealthEvents")
-  medicationSchedules     MedicationSchedule[]   @relation("OwnedMedicationSchedules")
-  habits                  Habit[]                @relation("OwnedHabits")
-  serviceProvider         ServiceProvider?       @relation("UserServiceProvider")
-  serviceCategories       ServiceCategory[]      @relation("OwnedServiceCategories")
-  serviceRequestsAsClient ServiceRequest[]       @relation("ClientServiceRequests")
-  serviceReviews          ServiceReview[]        @relation("AuthoredServiceReviews")
+  petShares               PetShare[]            @relation("PetShares")
+  financeSettings         FinanceSettings?      @relation("UserFinanceSettings")
+  exchangeRates           ExchangeRate[]        @relation("UserExchangeRates")
+  trashItems              TrashItem[]           @relation("UserTrashItems")
+  dashboardPref           DashboardPref?        @relation("UserDashboardPref")
+  assistantPref           AssistantPref?        @relation("UserAssistantPref")
+  serviceProvider         ServiceProvider?      @relation("UserServiceProvider")
+  serviceCategories       ServiceCategory[]     @relation("OwnedServiceCategories")
+  serviceRequestsAsClient ServiceRequest[]      @relation("ClientServiceRequests")
+  serviceReviews          ServiceReview[]       @relation("AuthoredServiceReviews")
   menuPref                UserMenuPref?
-  newsSources             NewsSource[]           @relation("OwnedNewsSources")
-  newsTopics              NewsTopic[]            @relation("OwnedNewsTopics")
-  newsPref                NewsPref?              @relation("NewsPref")
-  newsArticles            NewsArticle[]          @relation("OwnedNewsArticles")
-  newsHiddenTopics        NewsHiddenTopic[]      @relation("OwnedNewsHiddenTopics")
-  userFacts               UserFact[]             @relation("OwnedUserFacts")
-  weatherLocations        WeatherLocation[]      @relation("OwnedWeatherLocations")
-  weatherWatchers         WeatherWatcher[]       @relation("OwnedWeatherWatchers")
-  weatherIdeas            WeatherIdea[]          @relation("OwnedWeatherIdeas")
-  aiContents              AiContent[]            @relation("OwnedAiContent")
-  aiSectionPrefs          AiSectionPref[]        @relation("OwnedAiSectionPrefs")
-  newsRefreshRuns         NewsRefreshRun[]       @relation("OwnedNewsRefreshRuns")
-  projectGroups           ProjectGroup[]         @relation("OwnedProjectGroups")
-  skins                   Skin[]                 @relation("SkinOwner")
+  skins                   Skin[]                @relation("SkinOwner")
   skinPref                UserSkinPref?
   warsztatSettings        WarsztatSettings?
-  ownedWorkshops          Workshop[]             @relation("OwnedWorkshops")
-  notifications           Notification[]         @relation("UserNotifications")
-  serviceMessages         ServiceMessage[]       @relation("SentServiceMessages")
-  consents                UserConsent[]          @relation("UserConsents")
-  aiUsage                 AiUsage[]              @relation("UserAiUsage")
-  healthSettings          HealthSettings?        @relation("UserHealthSettings")
-  subscription            Subscription?          @relation("UserSubscription")
-  personalWorkspace       Workspace?             @relation("PersonalWorkspace")
+  notifications           Notification[]        @relation("UserNotifications")
+  serviceMessages         ServiceMessage[]      @relation("SentServiceMessages")
+  consents                UserConsent[]         @relation("UserConsents")
+  aiUsage                 AiUsage[]             @relation("UserAiUsage")
+  healthSettings          HealthSettings?       @relation("UserHealthSettings")
+  subscription            Subscription?         @relation("UserSubscription")
+  personalWorkspace       Workspace?            @relation("PersonalWorkspace")
   workspaceMemberships    WorkspaceMember[]
 }
 
@@ -349,47 +310,23 @@ model Team {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now()) @updatedAt
 
-  owner                User                   @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Restrict)
-  parentTeam           Team?                  @relation("SubTeams", fields: [parentTeamId], references: [id], onDelete: SetNull)
-  subTeams             Team[]                 @relation("SubTeams")
+  owner                User                  @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  parentTeam           Team?                 @relation("SubTeams", fields: [parentTeamId], references: [id], onDelete: SetNull)
+  subTeams             Team[]                @relation("SubTeams")
   members              TeamMember[]
   invitations          TeamInvitation[]
-  lists                ShoppingList[]         @relation("TeamLists")
   products             Product[]
   units                Unit[]
   categories           Category[]
-  taskProjects         TaskProject[]          @relation("TeamTaskProjects")
-  taskShares           TaskShare[]            @relation("TeamTaskShares")
-  notes                Note[]                 @relation("TeamNotes")
-  noteGroups           NoteGroup[]            @relation("TeamNoteGroups")
-  tags                 Tag[]                  @relation("TeamTags")
-  categoryIconVariants CategoryIconVariant[]  @relation("TeamIconVariants")
-  reports              Report[]               @relation("TeamReports")
-  recipes              Recipe[]               @relation("TeamRecipes")
-  cookbooks            Cookbook[]             @relation("TeamCookbooks")
-  mealPlans            MealPlanEntry[]        @relation("TeamMealPlans")
-  pantryItems          PantryItem[]           @relation("TeamPantryItems")
-  storageItems         StorageItem[]          @relation("TeamStorageItems")
-  storageSuppliers     StorageSupplier[]      @relation("TeamStorageSuppliers")
-  storageDocuments     StorageDocument[]      @relation("TeamStorageDocuments")
-  storageOrders        StoragePurchaseOrder[] @relation("TeamStorageOrders")
-  pets                 Pet[]                  @relation("TeamPets")
-  petShares            PetShare[]             @relation("TeamPetShares")
-  enclosures           PetEnclosure[]         @relation("TeamEnclosures")
-  breedingPairs        PetBreedingPair[]      @relation("TeamPairs")
-  petSales             PetSale[]              @relation("TeamPetSales")
-  vehicles             Vehicle[]              @relation("TeamVehicles")
-  walletElements       WalletElement[]        @relation("TeamWalletElements")
-  budgets              Budget[]               @relation("TeamBudgets")
-  financeGoals         FinanceGoal[]          @relation("TeamFinanceGoals")
-  languageDecks        LanguageDeck[]         @relation("TeamLanguageDecks")
-  healthEvents         HealthEvent[]          @relation("TeamHealthEvents")
-  medicationSchedules  MedicationSchedule[]   @relation("TeamMedicationSchedules")
-  habits               Habit[]                @relation("TeamHabits")
-  serviceCategories    ServiceCategory[]      @relation("TeamServiceCategories")
-  skins                Skin[]                 @relation("SkinTeam")
-  workshops            Workshop[]             @relation("TeamWorkshops")
-  workspace            Workspace?             @relation("TeamWorkspace")
+  taskShares           TaskShare[]           @relation("TeamTaskShares")
+  noteGroups           NoteGroup[]           @relation("TeamNoteGroups")
+  tags                 Tag[]                 @relation("TeamTags")
+  categoryIconVariants CategoryIconVariant[] @relation("TeamIconVariants")
+  reports              Report[]              @relation("TeamReports")
+  petShares            PetShare[]            @relation("TeamPetShares")
+  serviceCategories    ServiceCategory[]     @relation("TeamServiceCategories")
+  skins                Skin[]                @relation("SkinTeam")
+  workspace            Workspace?            @relation("TeamWorkspace")
 
   @@index([ownerId])
 }
@@ -429,25 +366,19 @@ model TeamInvitation {
 // ─── Shopping ─────────────────────────────────────────────────────────────
 
 model ShoppingList {
-  id          String    @id @default(cuid())
-  name        String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  ownerId     String?
-  ownerTeamId String?
-  archived    Boolean   @default(false)
-  archivedAt  DateTime?
+  id         String    @id @default(cuid())
+  name       String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archived   Boolean   @default(false)
+  archivedAt DateTime?
 
-  owner     User?  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?  @relation("TeamLists", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  items     Item[]
+  items Item[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -646,11 +577,7 @@ model Note {
   isMarkdown  Boolean          @default(false)
   pinned      Boolean          @default(false)
   groupId     String?
-  ownerId     String?
-  ownerTeamId String?
   group       NoteGroup?       @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  owner       User?            @relation("OwnedNotes", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam   Team?            @relation("TeamNotes", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   tags        NoteTag[]
@@ -666,8 +593,6 @@ model Note {
   /// Rośnie WYŁĄCZNIE przez `updateWithVersion`; pilnuje tego `check:versioning`.
   version Int @default(0)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -715,24 +640,18 @@ model TaskProject {
   color        String   @default("#6b7280")
   emoji        String   @default("📋")
   isInbox      Boolean  @default(false)
-  ownerId      String?
-  ownerTeamId  String?
   // JSON ProjectStatusConfig ({ enabled, chain }); null = domyślne statusy systemowe.
   statusConfig String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  owner     User?               @relation("OwnedTaskProjects", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?               @relation("TeamTaskProjects", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  tasks     Task[]
-  members   TaskProjectMember[]
+  tasks   Task[]
+  members TaskProjectMember[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -758,18 +677,14 @@ model ProjectGroup {
   emoji      String   @default("🗂")
   color      String? // opcjonalny kolor (hex / token) na kropkę-znacznik przy projekcie
   projectIds String   @default("[]") // JSON: string[] id projektów w grupie
-  ownerId    String
   order      Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
-
-  owner User @relation("OwnedProjectGroups", fields: [ownerId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
   @@index([workspaceId])
   @@map("TaskView")
 }
@@ -893,19 +808,15 @@ model UserActivity {
 model Store {
   id        String      @id @default(cuid())
   name      String
-  ownerId   String?
   nodes     StoreNode[]
   edges     StoreEdge[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
-  owner User? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
   @@index([workspaceId])
 }
 
@@ -1067,8 +978,6 @@ model Recipe {
   cuisine       String?
   mealType      String?
   coverImageUrl String?
-  ownerId       String?
-  ownerTeamId   String?
   cookbookId    String?
   // K2: wartości odżywcze na 1 porcję (opcjonalne).
   kcal          Int?
@@ -1085,8 +994,6 @@ model Recipe {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  owner          User?              @relation("OwnedRecipes", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam      Team?              @relation("TeamRecipes", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   cookbook       Cookbook?          @relation(fields: [cookbookId], references: [id], onDelete: SetNull)
   ingredients    RecipeIngredient[]
   steps          RecipeStep[]
@@ -1100,8 +1007,6 @@ model Recipe {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([cookbookId])
   @@index([mealType, difficulty])
   @@index([workspaceId])
@@ -1186,21 +1091,15 @@ model Cookbook {
   description String?
   emoji       String   @default("📚")
   color       String?
-  ownerId     String?
-  ownerTeamId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner     User?    @relation("OwnedCookbooks", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?    @relation("TeamCookbooks", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  recipes   Recipe[]
+  recipes Recipe[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -1212,23 +1111,17 @@ model MealPlanEntry {
   customTitle String?
   servings    Int       @default(2)
   notes       String?
-  ownerId     String?
-  ownerTeamId String?
   status      String    @default("PLANNED")
   cookedAt    DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  recipe    Recipe? @relation(fields: [recipeId], references: [id], onDelete: SetNull)
-  owner     User?   @relation("OwnedMealPlans", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?   @relation("TeamMealPlans", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  recipe Recipe? @relation(fields: [recipeId], references: [id], onDelete: SetNull)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId, date])
-  @@index([ownerTeamId, date])
   @@index([date])
   @@index([workspaceId])
 }
@@ -1243,21 +1136,15 @@ model PantryItem {
   addedAt     DateTime  @default(now())
   expiresAt   DateTime?
   openedAt    DateTime?
-  ownerId     String?
-  ownerTeamId String?
   minQuantity Float?
   autoShop    Boolean   @default(false)
 
-  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
-  owner     User?    @relation("OwnedPantryItems", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?    @relation("TeamPantryItems", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([productId])
   @@index([expiresAt])
   @@index([workspaceId])
@@ -1284,13 +1171,9 @@ model StorageItem {
   warrantyUntil DateTime?
   supplierId    String?
   notes         String?
-  ownerId       String?
-  ownerTeamId   String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  owner     User?             @relation("OwnedStorageItems", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?             @relation("TeamStorageItems", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   supplier  StorageSupplier?  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   movements StorageMovement[]
   batches   StorageBatch[]
@@ -1299,8 +1182,6 @@ model StorageItem {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([warehouse])
   @@index([sku])
   @@index([barcode])
@@ -1335,19 +1216,15 @@ model StorageSettings {
 
 // Dostawca/kontrahent (tryb pro): faktury, zamówienia, preferowane źródło pozycji.
 model StorageSupplier {
-  id          String   @id @default(cuid())
-  name        String
-  contact     String?
-  email       String?
-  phone       String?
-  notes       String?
-  ownerId     String?
-  ownerTeamId String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  contact   String?
+  email     String?
+  phone     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  owner     User?                  @relation("OwnedStorageSuppliers", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?                  @relation("TeamStorageSuppliers", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   items     StorageItem[]
   documents StorageDocument[]
   orders    StoragePurchaseOrder[]
@@ -1356,8 +1233,6 @@ model StorageSupplier {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -1380,29 +1255,23 @@ model StorageBatch {
 
 // Dokument magazynowy: PZ (przyjęcie), WZ (wydanie), faktura. Może powstać ze skanu.
 model StorageDocument {
-  id          String   @id @default(cuid())
-  type        String // "PZ" | "WZ" | "faktura"
-  number      String?
-  supplierId  String?
-  date        DateTime @default(now())
-  totalCost   Float?
-  imageUrl    String?
-  notes       String?
-  ownerId     String?
-  ownerTeamId String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  type       String // "PZ" | "WZ" | "faktura"
+  number     String?
+  supplierId String?
+  date       DateTime @default(now())
+  totalCost  Float?
+  imageUrl   String?
+  notes      String?
+  createdAt  DateTime @default(now())
 
-  owner     User?                 @relation("OwnedStorageDocuments", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?                 @relation("TeamStorageDocuments", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  supplier  StorageSupplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  lines     StorageDocumentLine[]
+  supplier StorageSupplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  lines    StorageDocumentLine[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([supplierId])
   @@index([workspaceId])
 }
@@ -1424,28 +1293,22 @@ model StorageDocumentLine {
 
 // Zamówienie do dostawcy (tryb pro). Treść może zredagować LLM (draftText).
 model StoragePurchaseOrder {
-  id          String   @id @default(cuid())
-  supplierId  String?
-  status      String   @default("draft") // "draft" | "sent" | "received"
-  date        DateTime @default(now())
-  draftText   String?
-  notes       String?
-  ownerId     String?
-  ownerTeamId String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  supplierId String?
+  status     String   @default("draft") // "draft" | "sent" | "received"
+  date       DateTime @default(now())
+  draftText  String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  owner     User?                      @relation("OwnedStorageOrders", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?                      @relation("TeamStorageOrders", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  supplier  StorageSupplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  lines     StoragePurchaseOrderLine[]
+  supplier StorageSupplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  lines    StoragePurchaseOrderLine[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([supplierId])
   @@index([workspaceId])
 }
@@ -1556,13 +1419,9 @@ model Pet {
   sireId       String? // ojciec (rodowód)
   damId        String? // matka (rodowód)
   genetics     String? // JSON: [{ gene, mode, zygosity }] — genotyp/morphy
-  ownerId      String?
-  ownerTeamId  String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  owner           User?             @relation("OwnedPets", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam       Team?             @relation("TeamPets", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   shares          PetShare[]
   enclosure       PetEnclosure?     @relation(fields: [enclosureId], references: [id], onDelete: SetNull)
   sire            Pet?              @relation("PetSire", fields: [sireId], references: [id], onDelete: SetNull)
@@ -1583,8 +1442,6 @@ model Pet {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([enclosureId])
   @@index([sireId])
   @@index([damId])
@@ -1735,22 +1592,16 @@ model PetEnclosure {
   equipment    String? // JSON: [{ name, kind, installedAt, replaceEveryDays }]
   targetRanges String? // JSON: { paramKey: { min, max } } — nadpisania zakresów
   notes        String?
-  ownerId      String?
-  ownerTeamId  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  owner     User?                   @relation("OwnedEnclosures", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?                   @relation("TeamEnclosures", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  pets      Pet[]
-  readings  PetEnvironmentReading[]
+  pets     Pet[]
+  readings PetEnvironmentReading[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -1783,31 +1634,25 @@ model PetEnvironmentReading {
 // ─── Pets · Faza 3: Hodowla, rodowody, genetyka, sprzedaż ───────────────────
 
 model PetBreedingPair {
-  id          String    @id @default(cuid())
-  name        String
-  species     String    @default("other")
-  maleId      String?
-  femaleId    String?
-  status      String    @default("PLANNED") // PLANNED|PAIRED|COOLING|PRODUCTIVE|RETIRED
-  startedAt   DateTime?
-  notes       String?
-  ownerId     String?
-  ownerTeamId String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  name      String
+  species   String    @default("other")
+  maleId    String?
+  femaleId  String?
+  status    String    @default("PLANNED") // PLANNED|PAIRED|COOLING|PRODUCTIVE|RETIRED
+  startedAt DateTime?
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  male      Pet?        @relation("PairMale", fields: [maleId], references: [id], onDelete: SetNull)
-  female    Pet?        @relation("PairFemale", fields: [femaleId], references: [id], onDelete: SetNull)
-  owner     User?       @relation("OwnedPairs", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?       @relation("TeamPairs", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  clutches  PetClutch[]
+  male     Pet?        @relation("PairMale", fields: [maleId], references: [id], onDelete: SetNull)
+  female   Pet?        @relation("PairFemale", fields: [femaleId], references: [id], onDelete: SetNull)
+  clutches PetClutch[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([maleId])
   @@index([femaleId])
   @@index([workspaceId])
@@ -1844,21 +1689,15 @@ model PetSale {
   currency     String   @default("PLN")
   soldAt       DateTime @default(now())
   notes        String?
-  ownerId      String?
-  ownerTeamId  String?
   createdAt    DateTime @default(now())
 
-  pet       Pet   @relation(fields: [petId], references: [id], onDelete: Cascade)
-  owner     User? @relation("OwnedPetSales", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team? @relation("TeamPetSales", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  pet Pet @relation(fields: [petId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([petId])
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -1877,13 +1716,9 @@ model Vehicle {
   inspectionDue DateTime? // przegląd techniczny
   insuranceDue  DateTime? // OC/AC
   notes         String?
-  ownerId       String?
-  ownerTeamId   String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  owner       User?               @relation("OwnedVehicles", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam   Team?               @relation("TeamVehicles", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   fuelLogs    FuelLog[]
   services    ServiceRecord[]
   attachments VehicleAttachment[]
@@ -1892,8 +1727,6 @@ model Vehicle {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -1944,28 +1777,22 @@ model ServiceRecord {
 // ─── Portfel (elementy majątku + historia zmian salda) ────────────────────
 
 model WalletElement {
-  id          String   @id @default(cuid())
-  name        String
-  kind        String   @default("account") // cash|account|savings|investment|property|receivable|debt
-  currency    String   @default("PLN")
-  balance     Float    @default(0) // bieżące saldo (zdenormalizowane)
-  archived    Boolean  @default(false)
-  note        String?
-  ownerId     String?
-  ownerTeamId String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  kind      String   @default("account") // cash|account|savings|investment|property|receivable|debt
+  currency  String   @default("PLN")
+  balance   Float    @default(0) // bieżące saldo (zdenormalizowane)
+  archived  Boolean  @default(false)
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  owner     User?         @relation("OwnedWalletElements", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?         @relation("TeamWalletElements", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  entries   WalletEntry[]
+  entries WalletEntry[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -2038,7 +1865,6 @@ model DashboardPref {
 // dopuszczalnych kolorów zawęża unia TS w `lib/favorites/favoriteViews.ts` (C-12 — zero enumów).
 model FavoriteView {
   id        String   @id @default(cuid())
-  ownerId   String
   label     String
   path      String // ścieżka wewnętrzna z parametrami, np. "/tasks/abc?status=IN_PROGRESS"
   icon      String   @default("⭐")
@@ -2047,14 +1873,11 @@ model FavoriteView {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  owner User @relation("OwnedFavoriteViews", fields: [ownerId], references: [id], onDelete: Cascade)
-
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, path]) // AC-9: ponowny zapis tego samego adresu nie tworzy duplikatu
-  @@index([ownerId, order])
   @@index([workspaceId])
 }
 
@@ -2112,20 +1935,13 @@ model Budget {
   period      String   @default("monthly") // monthly (na razie tylko miesięczny)
   currency    String   @default("PLN")
   note        String?
-  ownerId     String?
-  ownerTeamId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  owner     User? @relation("OwnedBudgets", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team? @relation("TeamBudgets", fields: [ownerTeamId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -2139,20 +1955,13 @@ model FinanceGoal {
   deadline      DateTime?
   achievedAt    DateTime?
   note          String?
-  ownerId       String?
-  ownerTeamId   String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-
-  owner     User? @relation("OwnedFinanceGoals", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team? @relation("TeamFinanceGoals", fields: [ownerTeamId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -2237,21 +2046,15 @@ model LanguageDeck {
   nativeLang  String // język znany, np. "pl"
   targetLang  String // język uczony, np. "en"
   sourceText  String? // tekst, z którego wygenerowano słówka
-  ownerId     String?
-  ownerTeamId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner     User?        @relation("OwnedLanguageDecks", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?        @relation("TeamLanguageDecks", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  cards     Vocabulary[]
+  cards Vocabulary[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -2299,21 +2102,15 @@ model HealthEvent {
   unit         String?
   referral     String? // skierowanie
   reminderAt   DateTime?
-  ownerId      String?
-  ownerTeamId  String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  owner       User?              @relation("OwnedHealthEvents", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam   Team?              @relation("TeamHealthEvents", fields: [ownerTeamId], references: [id], onDelete: Cascade)
   attachments HealthAttachment[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId, scheduledAt])
-  @@index([ownerTeamId, scheduledAt])
   @@index([workspaceId])
 }
 
@@ -2354,21 +2151,15 @@ model MedicationSchedule {
   endDate      DateTime? // okno kuracji (opcjonalne)
   active       Boolean   @default(true)
   notes        String?
-  ownerId      String?
-  ownerTeamId  String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @default(now()) @updatedAt
 
-  owner     User?           @relation("OwnedMedicationSchedules", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?           @relation("TeamMedicationSchedules", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  logs      MedicationLog[]
+  logs MedicationLog[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -2404,21 +2195,15 @@ model Habit {
   reminderTime String?
   archived     Boolean  @default(false)
   sortOrder    Int      @default(0)
-  ownerId      String?
-  ownerTeamId  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  owner     User?        @relation("OwnedHabits", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?        @relation("TeamHabits", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  entries   HabitEntry[]
+  entries HabitEntry[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId, archived])
-  @@index([ownerTeamId, archived])
   @@index([workspaceId])
 }
 
@@ -2634,7 +2419,6 @@ model ServiceReview {
 
 model NewsSource {
   id          String   @id @default(cuid())
-  ownerId     String
   // Stabilny klucz źródła: "onet" | "okopress" | "niezalezna" | własny slug.
   key         String
   name        String
@@ -2648,7 +2432,6 @@ model NewsSource {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
 
-  owner    User                @relation("OwnedNewsSources", fields: [ownerId], references: [id], onDelete: Cascade)
   items    NewsItem[]
   articles NewsArticle[]
   timeline NewsTimelineEntry[]
@@ -2658,13 +2441,11 @@ model NewsSource {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, key])
-  @@index([ownerId])
   @@index([workspaceId])
 }
 
 model NewsTopic {
   id              String    @id @default(cuid())
-  ownerId         String
   title           String
   // Filtr semantyczny w naturalnym języku (np. „perypetie Z. Ziobry w sprawie zarzutów").
   semanticFilter  String
@@ -2674,7 +2455,6 @@ model NewsTopic {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  owner    User                @relation("OwnedNewsTopics", fields: [ownerId], references: [id], onDelete: Cascade)
   items    NewsItem[]
   timeline NewsTimelineEntry[]
 
@@ -2682,7 +2462,6 @@ model NewsTopic {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
   @@index([workspaceId])
 }
 
@@ -2691,7 +2470,6 @@ model NewsTopic {
 // pobierać kanały jeszcze raz.
 model NewsArticle {
   id          String   @id @default(cuid())
-  ownerId     String
   sourceId    String
   url         String
   title       String
@@ -2702,7 +2480,6 @@ model NewsArticle {
   publishedAt DateTime
   fetchedAt   DateTime @default(now())
 
-  owner  User       @relation("OwnedNewsArticles", fields: [ownerId], references: [id], onDelete: Cascade)
   source NewsSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   items  NewsItem[]
 
@@ -2711,7 +2488,6 @@ model NewsArticle {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, sourceId, url])
-  @@index([ownerId, publishedAt])
   @@index([workspaceId])
 }
 
@@ -2744,12 +2520,9 @@ model NewsTimelineEntry {
 // przebiegu i model nie powtórzy tytułu znak w znak.
 model NewsHiddenTopic {
   id          String   @id @default(cuid())
-  ownerId     String
   fingerprint String
   title       String
   createdAt   DateTime @default(now())
-
-  owner User @relation("OwnedNewsHiddenTopics", fields: [ownerId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
@@ -2793,7 +2566,6 @@ model NewsPref {
   // 074: własny klucz główny. Wcześniej kluczem było samo `ownerId` — kolumna, którą usuwa etap 4
   // zadania 11, co czyniło tę tabelę jedyną NIEODTWARZALNĄ z kopii własności (patrz migracja 0234).
   id                   String    @id @default(cuid())
-  ownerId              String    @unique
   // Domyślna długość streszczeń: "short" | "medium" | "long".
   defaultSummaryLength String    @default("medium")
   // Ostatnio wybrane źródło w widoku (klucz NewsSource).
@@ -2802,8 +2574,6 @@ model NewsPref {
   // być czynnością pojedynczego tematu. NULL = nigdy (pierwszy przebieg bierze okno 24 h).
   lastFetchedAt        DateTime?
   updatedAt            DateTime  @updatedAt
-
-  owner User @relation("NewsPref", fields: [ownerId], references: [id], onDelete: Cascade)
 
   // 078 (etap 4 część 2): unikalność przenosi się na przestrzeń. `ownerId @unique` trzymało regułę
   // „jedna preferencja na konto" i było ostatnią rzeczą, przez którą ta tabela zależy od kolumny
@@ -2818,7 +2588,6 @@ model NewsPref {
 // kolejnym wnioskowaniu.
 model UserFact {
   id          String   @id @default(cuid())
-  ownerId     String
   // "interests" | "activity" | "lifestyle" | "constraints" | "content" (String + union, C-12).
   category    String
   // Treść faktu jednym zdaniem, po polsku.
@@ -2835,14 +2604,11 @@ model UserFact {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 
-  owner User @relation("OwnedUserFacts", fields: [ownerId], references: [id], onDelete: Cascade)
-
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, fingerprint])
-  @@index([ownerId, status])
   @@index([workspaceId])
 }
 
@@ -2852,26 +2618,21 @@ model UserFact {
 
 model WeatherLocation {
   id        String   @id @default(cuid())
-  ownerId   String
   label     String
   lat       Float
   lon       Float
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  owner User @relation("OwnedWeatherLocations", fields: [ownerId], references: [id], onDelete: Cascade)
-
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
   @@index([workspaceId])
 }
 
 model WeatherWatcher {
   id        String   @id @default(cuid())
-  ownerId   String
   title     String
   // "preset" (gotowy scenariusz aktywności) | "custom" (opis w naturalnym języku).
   kind      String   @default("preset")
@@ -2884,13 +2645,10 @@ model WeatherWatcher {
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 
-  owner User @relation("OwnedWeatherWatchers", fields: [ownerId], references: [id], onDelete: Cascade)
-
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
   @@index([workspaceId])
 }
 
@@ -2900,7 +2658,6 @@ model WeatherWatcher {
 // wyłącznie decyzje użytkownika i wygenerowane szczegóły, które mają go przeżyć.
 model WeatherIdea {
   id            String    @id @default(cuid())
-  ownerId       String
   // Odcisk tytułu (małe litery, bez diakrytyków i interpunkcji) — klucz naturalny propozycji.
   // Po nim rozpoznajemy powtórkę („już rozważana") i egzekwujemy blokadę.
   fingerprint   String
@@ -2932,14 +2689,11 @@ model WeatherIdea {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
 
-  owner User @relation("OwnedWeatherIdeas", fields: [ownerId], references: [id], onDelete: Cascade)
-
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, fingerprint])
-  @@index([ownerId, state])
   @@index([workspaceId])
 }
 
@@ -2949,7 +2703,6 @@ model WeatherIdea {
 // sama (co to jest / dla jakiego zakresu / w jakich warunkach powstało / kiedy).
 model AiContent {
   id        String   @id @default(cuid())
-  ownerId   String
   // "weather.ideas" | "weather.ideaDetail" | "storage.insights" | … — String + union TS (C-12).
   kind      String
   // Co identyfikuje TĘ treść w obrębie rodzaju (np. lokalizacja|dzień|pora).
@@ -2964,14 +2717,11 @@ model AiContent {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  owner User @relation("OwnedAiContent", fields: [ownerId], references: [id], onDelete: Cascade)
-
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, kind, scopeKey])
-  @@index([ownerId, kind])
   @@index([workspaceId])
 }
 
@@ -2983,14 +2733,11 @@ model AiContent {
 // pustym właścicielem nie byłby chroniony przez indeks unikalny, bo w PostgreSQL `NULL != NULL`.
 model AiSectionPref {
   id          String   @id @default(cuid())
-  ownerId     String
   // Te same wartości co `AiContentKind` w kodzie (weather.ideas, news.hotTopics, …).
   sectionKind String
   // "onDemand" | "onChange" | "always" — String + union TS (C-12).
   mode        String   @default("onDemand")
   updatedAt   DateTime @default(now()) @updatedAt
-
-  owner User @relation("OwnedAiSectionPrefs", fields: [ownerId], references: [id], onDelete: Cascade)
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
@@ -3007,7 +2754,6 @@ model AiSectionPref {
 // bramka widoczności kosztu działa przy odczycie — ten sam podział co dla `Job.result` od 039.
 model NewsRefreshRun {
   id            String   @id @default(cuid())
-  ownerId       String
   startedAt     DateTime
   finishedAt    DateTime @default(now())
   // "done" | "failed" — String + union TS (C-12).
@@ -3021,13 +2767,10 @@ model NewsRefreshRun {
   usage         String?
   error         String?
 
-  owner User @relation("OwnedNewsRefreshRuns", fields: [ownerId], references: [id], onDelete: Cascade)
-
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId, finishedAt])
   @@index([workspaceId])
 }
 
@@ -3052,22 +2795,16 @@ model Workshop {
   type        String   @default("ogolny")
   description String?
   location    String?
-  ownerId     String?
-  ownerTeamId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 
-  owner     User?             @relation("OwnedWorkshops", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerTeam Team?             @relation("TeamWorkshops", fields: [ownerTeamId], references: [id], onDelete: Cascade)
-  items     WorkshopItem[]
-  projects  WorkshopProject[]
+  items    WorkshopItem[]
+  projects WorkshopProject[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 
@@ -3254,24 +2991,20 @@ model ServicePromoCode {
 // Lekki CRM: baza relacji (klienci/wykonawcy/znajomi). Własność 3-poziom
 // (ownerId/ownerTeamId jako pola skalarne — dostęp przez ownedByWhere). tags = JSON string[].
 model Contact {
-  id          String   @id @default(cuid())
-  name        String
-  phone       String?
-  email       String?
-  company     String?
-  tags        String? // JSON: string[]
-  notes       String?
-  ownerId     String?
-  ownerTeamId String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  company   String?
+  tags      String? // JSON: string[]
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([ownerTeamId])
   @@index([workspaceId])
 }
 

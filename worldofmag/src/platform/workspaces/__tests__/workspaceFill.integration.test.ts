@@ -13,6 +13,13 @@ import assert from "node:assert/strict";
  * sprawdzałby wyzwalacz — a pytanie brzmi „czy ścieżka zapisu aplikacji wypełnia kolumnę".
  *
  * Test operuje na WŁASNYM fixture i sprząta po sobie.
+ *
+ * **079: przeniesiony z `Note` na `NoteGroup`.** Migracja 0244 zdjęła wyzwalacz z 40 tabel razem
+ * z ich kolumnami właścicielskimi — nie ma tam z czego wyprowadzać przestrzeni i podaje ją kod
+ * (`platform/workspaces/zapis.ts`). Mechanizm żyje dalej na **pięciu** tabelach z
+ * `workspace-nullable.json`, gdzie `ownerId` zostaje, bo wiersz może nie mieć właściciela.
+ * `NoteGroup` jest jedną z nich i zna obie kolumny własności, więc wszystkie sześć przypadków
+ * przenosi się jeden do jednego.
  */
 
 const HAS_DB = !!process.env.DATABASE_URL;
@@ -45,9 +52,9 @@ test(
     });
 
     const utworzone: string[] = [];
-    const zrobNotatke = async (dane: Record<string, unknown>) => {
-      const n = await prisma.note.create({
-        data: { title: `n-${rnd()}`, content: "", ...dane },
+    const zrobGrupe = async (dane: Record<string, unknown>) => {
+      const n = await prisma.noteGroup.create({
+        data: { name: `n-${rnd()}`, ...dane },
         select: { id: true, workspaceId: true },
       });
       utworzone.push(n.id);
@@ -56,12 +63,12 @@ test(
 
     try {
       await t.test("właściciel osobisty → jego przestrzeń osobista (AC-1)", async () => {
-        const n = await zrobNotatke({ ownerId: uzytkownik.id });
+        const n = await zrobGrupe({ ownerId: uzytkownik.id });
         assert.equal(n.workspaceId, przestrzenOsobista?.id);
       });
 
       await t.test("właściciel zespołowy → przestrzeń zespołu (AC-2)", async () => {
-        const n = await zrobNotatke({ ownerTeamId: zespol.id });
+        const n = await zrobGrupe({ ownerTeamId: zespol.id });
         assert.equal(n.workspaceId, przestrzenZespolu?.id);
       });
 
@@ -69,7 +76,7 @@ test(
         // Konwencja mówi „użytkownik ALBO zespół", ale baza tego nie wymusza. Pierwszeństwo musi
         // być takie samo jak w `resolveRole` i w backfillu 0227 — inaczej te same dane dostałyby
         // trzy różne odpowiedzi na pytanie „czyj to zasób".
-        const n = await zrobNotatke({ ownerId: uzytkownik.id, ownerTeamId: zespol.id });
+        const n = await zrobGrupe({ ownerId: uzytkownik.id, ownerTeamId: zespol.id });
         assert.equal(n.workspaceId, przestrzenOsobista?.id);
       });
 
@@ -77,16 +84,16 @@ test(
         // Najważniejszy przypadek całego etapu: mechanizm siedzi na ścieżce zapisu każdego modułu,
         // więc błąd w nim nie objawia się brakującym polem, tylko ODRZUCONYM zapisem użytkownika.
         //
-        // 075 zaostrzyło `Note.workspaceId` do NOT NULL i tym samym zmieniło stawkę: dawniej brak
-        // przestrzeni dawał NULL (niewidzialna sierota), dziś dałby odmowę zapisu — konto bez
-        // przestrzeni osobistej nie mogłoby utworzyć NICZEGO. Dlatego wyzwalacz (0236) przestał
+        // 075 zaostrzyło `workspaceId` do NOT NULL na 40 tabelach i tym samym zmieniło stawkę:
+        // dawniej brak przestrzeni dawał NULL (niewidzialna sierota), dziś dałby odmowę zapisu —
+        // konto bez przestrzeni osobistej nie mogłoby utworzyć NICZEGO. Dlatego wyzwalacz (0236) przestał
         // tylko ODCZYTYWAĆ lustro, a zaczął je DOMYKAĆ. Asercja sprawdza dokładnie to domknięcie:
         // przestrzeń powstaje, jest osobista i należy do właściciela — bo sama niepustość
         // `workspaceId` przeszłaby także dla przestrzeni przypadkowej.
         const bezPrzestrzeni = await prisma.user.create({
           data: { email: `fill-x-${rnd()}@test.local` },
         });
-        const n = await zrobNotatke({ ownerId: bezPrzestrzeni.id });
+        const n = await zrobGrupe({ ownerId: bezPrzestrzeni.id });
         assert.notEqual(n.workspaceId, null, "zapis nie może zostać odrzucony ani zostawić pustki");
         const utworzona = await prisma.workspace.findUniqueOrThrow({ where: { id: n.workspaceId! } });
         assert.equal(utworzona.kind, "personal");
@@ -105,11 +112,11 @@ test(
         // `create` to nie jedyna ścieżka zapisu w repo. Wyzwalacz jest `FOR EACH ROW`, więc
         // powinien objąć każdy wiersz wsadu — ale „powinien" to przewidywanie, a nie sprawdzenie.
         const tytuly = [`m1-${rnd()}`, `m2-${rnd()}`, `m3-${rnd()}`];
-        await prisma.note.createMany({
-          data: tytuly.map((title) => ({ title, content: "", ownerId: uzytkownik.id })),
+        await prisma.noteGroup.createMany({
+          data: tytuly.map((name) => ({ name, ownerId: uzytkownik.id })),
         });
-        const wsad = await prisma.note.findMany({
-          where: { title: { in: tytuly } },
+        const wsad = await prisma.noteGroup.findMany({
+          where: { name: { in: tytuly } },
           select: { id: true, workspaceId: true },
         });
         utworzone.push(...wsad.map((n) => n.id));
@@ -134,7 +141,7 @@ test(
         // (bo tak wygląda domyślna ścieżka), a nie tę podaną. Zdolności, którą 0240 naprawdę odbiera
         // — wstawienia rekordu ze sprzecznymi danymi — nie potrzebuje ani etap 3 (przenoszenie
         // zasobu to UPDATE, a wyzwalacz jest BEFORE INSERT), ani migracje danych (surowy UPDATE).
-        const n = await zrobNotatke({
+        const n = await zrobGrupe({
           ownerTeamId: zespol.id,
           workspaceId: przestrzenZespolu?.id,
         });
@@ -146,7 +153,7 @@ test(
         );
       });
     } finally {
-      await prisma.note.deleteMany({ where: { id: { in: utworzone } } });
+      await prisma.noteGroup.deleteMany({ where: { id: { in: utworzone } } });
       await prisma.team.delete({ where: { id: zespol.id } }).catch(() => {});
       await prisma.user.delete({ where: { id: uzytkownik.id } }).catch(() => {});
     }

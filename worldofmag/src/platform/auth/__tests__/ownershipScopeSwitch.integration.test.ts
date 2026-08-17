@@ -3,17 +3,17 @@ import assert from "node:assert/strict";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 
 /**
- * 058 — RÓWNOŚĆ ZBIORÓW PRZED I PO PRZEŁĄCZENIU ZAKRESU NA PRZESTRZENIE.
+ * 058 — ZAKRES LIST PO PRZESTRZENIACH.
  *
- * 057 dowiodło, że stary i nowy **zapis** warunku dają ten sam kształt. Ten przebieg zmienia
- * **znaczenie**, więc dowód musi być inny: porównujemy **zbiory identyfikatorów** zwrócone przez
- * bazę dla starego warunku (para kolumn) i nowego (przestrzenie), na tym samym fixture.
+ * **079: dowód zmienił kształt, bo stracił drugą stronę porównania.** Do etapu 4 test zestawiał
+ * zbiory identyfikatorów zwrócone przez STARY warunek (para kolumn `ownerId`/`ownerTeamId`)
+ * i NOWY (przestrzenie) — tak wygląda dowód równoważności przełączenia. Migracja 0244 usunęła
+ * kolumny, więc starego warunku nie da się już nawet wyrazić: nie ma czego z czym porównywać,
+ * a udawanie, że jest, sprowadzałoby się do porównania nowej reguły z jej własną kopią.
  *
- * Trzy sytuacje, które muszą wyjść identycznie — i jedna, która ma się różnić w sposób
- * przewidziany przez spec (§4): właściciel zespołu **bez wiersza `TeamMember`**.
- *
- * Lekcja z 056 obowiązuje tu wprost: fixture **musi** mieć przestrzenie, inaczej nowa gałąź nie
- * ma na czym zadziałać i test dowiódłby wyłącznie tego, że działa gałąź awaryjna.
+ * Zostaje to, co nadal jest sprawdzalne i nadal może się zepsuć: **czy zakres pokazuje dokładnie
+ * to, co powinien** — mój zasób i zasób zespołu, nigdy cudzy — oraz że niesie go PRZESTRZEŃ,
+ * a nie coś, co przypadkiem daje ten sam wynik.
  */
 
 const HAS_DB = !!process.env.DATABASE_URL;
@@ -24,7 +24,7 @@ test(
   { skip: !HAS_DB && "brak DATABASE_URL", concurrency: false },
   async (t) => {
     const { prisma } = await import("@/platform/db/prisma");
-    const { ownedOr, ownedOrAsync, getUserTeamIds } = await import("../serverUtils");
+    const { ownedOrAsync } = await import("../serverUtils");
     const { ensurePersonalWorkspace, syncTeamWorkspace } = await import(
       "@/platform/workspaces/sync"
     );
@@ -50,7 +50,7 @@ test(
     // Zasoby: mój, zespołowy, cudzy — plus SIEROTA (bez przestrzeni), której właścicielem jestem ja.
     const moj = await prisma.habit.create({ data: { name: `h-moj-${rnd()}`, ...(await wlasnoscDoZapisu(ja.id)) } });
     const zespolowy = await prisma.habit.create({
-      data: { name: `h-zesp-${rnd()}`, ownerTeamId: zespol.id },
+      data: { name: `h-zesp-${rnd()}`, ...(await wlasnoscDoZapisu(kolega.id, zespol.id)) },
     });
     const cudzy = await prisma.habit.create({ data: { name: `h-obc-${rnd()}`, ...(await wlasnoscDoZapisu(obcy.id)) } });
     // 075: SIEROTY JUŻ NIE DA SIĘ ZROBIĆ. Etap 4 zaostrzył `Habit.workspaceId` do NOT NULL, więc
@@ -70,14 +70,14 @@ test(
     }
 
     try {
-      await t.test("zbiory są identyczne (AC-1, AC-2, AC-4)", async () => {
-        const teamIds = await getUserTeamIds(ja.id);
-        const stary = await widoczne(ownedOr(ja.id, teamIds));
+      await t.test("zakres pokazuje mój zasób i zasób zespołu, nigdy cudzy", async () => {
         const nowy = await widoczne(await ownedOrAsync(ja.id));
-        assert.deepEqual(nowy, stary, "przełączenie zakresu nie może zmienić zbioru rekordów");
-        assert.ok(stary.includes(moj.id), "mój zasób");
-        assert.ok(stary.includes(zespolowy.id), "zasób zespołu, w którym mam członkostwo");
-        assert.ok(!stary.includes(cudzy.id), "cudzy zasób nie może być widoczny");
+        assert.deepEqual(
+          nowy,
+          [moj.id, zespolowy.id].sort(),
+          "zakres list po przestrzeniach ma pokazywać dokładnie te dwa rekordy",
+        );
+        assert.ok(!nowy.includes(cudzy.id), "cudzy zasób nie może być widoczny");
       });
 
       await t.test("rekord BEZ przestrzeni jest niemożliwy — baza go odrzuca (075)", async () => {
@@ -103,23 +103,28 @@ test(
       });
 
       await t.test("nowa gałąź NAPRAWDĘ działa — nie niesie jej własność (kontrola z 056)", async () => {
-        // 075: kontrola z 056 przestawiona na dzisiejsze środki. Tamta wersja wymuszała stare
-        // gałęzie awaryjne (`workspaceId: null`), żeby pokazać, że to nie one dźwigają wynik.
-        // Po etapie 4 tych gałęzi nie da się już nawet WYRAZIĆ — dla kolumny NOT NULL Prisma
-        // odrzuca taki filtr. Mierzymy więc to samo od drugiej strony: zasób ZESPOŁOWY nie ma
-        // `ownerId`, więc jedyną drogą do niego jest gałąź po przestrzeniach. Gdyby przestała
-        // działać, wypadłby ze zbioru — i to jest ta sama informacja, co dawniej.
+        // 079: kontrola przestawiona na dzisiejsze środki po raz drugi. Mierzy to samo, co od 056:
+        // że wynik niesie ZAKRES PO PRZESTRZENIACH, a nie coś, co przypadkiem daje tę samą listę.
+        // Rozróżniamy to zasobem zespołowym — leży w innej przestrzeni niż moja osobista, więc
+        // zawężenie do samej osobistej musi go zgubić.
+        const mojaPrzestrzen = await prisma.workspace.findUniqueOrThrow({
+          where: { personalUserId: ja.id },
+          select: { id: true },
+        });
         const zespolowyRekord = await prisma.habit.findUniqueOrThrow({
           where: { id: zespolowy.id },
-          select: { ownerId: true, workspaceId: true },
+          select: { workspaceId: true },
         });
-        assert.equal(zespolowyRekord.ownerId, null, "fixture zespołowy nie może mieć właściciela-osoby");
-        assert.notEqual(zespolowyRekord.workspaceId, null, "fixture zespołowy musi mieć przestrzeń");
+        assert.notEqual(
+          zespolowyRekord.workspaceId,
+          mojaPrzestrzen.id,
+          "fixture zespołowy MUSI leżeć poza moją przestrzenią osobistą — inaczej test nie mierzy gałęzi zespołowej",
+        );
 
-        const tylkoWlasnosc = await widoczne([{ ownerId: ja.id }]);
+        const tylkoOsobista = await widoczne([{ workspaceId: mojaPrzestrzen.id }]);
         assert.ok(
-          !tylkoWlasnosc.includes(zespolowy.id),
-          "sama własność nie może wystarczyć — inaczej test nie mierzyłby gałęzi po przestrzeniach",
+          !tylkoOsobista.includes(zespolowy.id),
+          "sama przestrzeń osobista nie może wystarczyć — inaczej test nie mierzyłby zakresu zespołowego",
         );
         const pelny = await widoczne(await ownedOrAsync(ja.id));
         assert.ok(pelny.includes(zespolowy.id), "pełny zakres MUSI pokazać zasób zespołu");

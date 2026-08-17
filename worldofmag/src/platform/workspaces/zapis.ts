@@ -95,7 +95,12 @@ export async function przestrzenDoZapisu(userId: string, teamId?: string | null)
 }
 
 /**
- * 078 (zadanie 11, etap 4 część 2) — JEDEN PUNKT PRZEŁĄCZENIA DLA `DROP COLUMN`.
+ * 078/079 (zadanie 11, etap 4) — JEDEN PUNKT PRZEŁĄCZENIA DLA `DROP COLUMN`. **PRZEŁĄCZONY.**
+ *
+ * 079: migracja 0244 usunęła kolumny własnościowe, a te funkcje zwracają odtąd samo
+ * `{ workspaceId }`. Zmiana dotknęła TRZECH ciał funkcji; ~250 miejsc zapisu nie ruszono ani razu,
+ * bo rozpakowują wynik przez `...`. Opis fazy podwójnego zapisu zostaje niżej jako uzasadnienie
+ * kształtu tych funkcji — bez niego pierwsza osoba, która je zobaczy, uzna je za zbędne owijki.
  *
  * **Po co osobna funkcja obok `przestrzenDoZapisu`.** Pomiar przed konwersją pokazał rzecz, której
  * plan etapu 4 nie przewidywał: na **14 z 40 tabel `ownerId` jest NOT NULL**
@@ -124,21 +129,16 @@ export async function przestrzenDoZapisu(userId: string, teamId?: string | null)
  */
 export type WlasnoscZapisu = {
   workspaceId: string;
-  /** Znika w `DROP COLUMN`. Do tego czasu baza wymaga go na 14 tabelach. */
-  ownerId: string | null;
-  /** Znika w `DROP COLUMN`. */
-  ownerTeamId: string | null;
 };
 
 export async function wlasnoscDoZapisu(
   userId: string,
   teamId?: string | null
 ): Promise<WlasnoscZapisu> {
-  return {
-    workspaceId: await przestrzenDoZapisu(userId, teamId),
-    ownerId: teamId ? null : userId,
-    ownerTeamId: teamId ?? null,
-  };
+  // 079: faza podwójnego zapisu SKOŃCZONA. Migracja 0244 usunęła kolumny własnościowe z 40 tabel,
+  // więc to jedno ciało funkcji przestało je zwracać — i wszystkie ~250 miejsc zapisu przestało je
+  // pisać, bez dotykania żadnego z nich. Po to ta funkcja powstała w 078.
+  return { workspaceId: await przestrzenDoZapisu(userId, teamId) };
 }
 
 /**
@@ -152,12 +152,10 @@ export async function wlasnoscDoZapisu(
  */
 export type WlasnoscOsobistaZapisu = {
   workspaceId: string;
-  /** Znika w `DROP COLUMN`. */
-  ownerId: string;
 };
 
 export async function wlasnoscOsobistaDoZapisu(userId: string): Promise<WlasnoscOsobistaZapisu> {
-  return { workspaceId: await przestrzenOsobista(userId), ownerId: userId };
+  return { workspaceId: await przestrzenOsobista(userId) };
 }
 
 /**

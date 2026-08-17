@@ -3,7 +3,14 @@ import assert from "node:assert/strict";
 import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 /**
- * 078 (zadanie 11, etap 4 część 2) — RÓWNOŚĆ ZBIORÓW: `ownerId = ja` ⟺ „moja przestrzeń osobista".
+ * 078/079 (zadanie 11, etap 4) — „MOJE REKORDY" TO PRZESTRZEŃ OSOBISTA, I NIC WIĘCEJ.
+ *
+ * **079: pierwszy przypadek stracił drugą stronę porównania.** Do migracji 0244 test zestawiał
+ * zbiór z reguły STAREJ (`ownerId = ja`) ze zbiorem z NOWEJ (przestrzeń osobista) — tak wygląda
+ * dowód równoważności. Kolumny nie ma, więc starej reguły nie da się wyrazić; zostaje sprawdzenie
+ * LICZNOŚCI wobec fixture'u zbudowanego ręcznie, co jest słabszym, ale nadal niezależnym punktem
+ * odniesienia. Trzy pozostałe przypadki — puste konto, brak przecieku, węższy zakres niż zespołowy
+ * — nie zależały od starej kolumny i zostają bez zmian; to one niosą właściwy ciężar dowodu.
  *
  * `filtrMoichRekordow` zastąpiło `where: { ...(await filtrMoichRekordow(userId)) }` w 52 miejscach na tabelach BEZ
  * współwłasności zespołowej. `tsc` potwierdza tylko, że nowy filtr jest poprawnym warunkiem Prismy
@@ -49,11 +56,16 @@ test(
     // odczytywać helper filtra — sprawdzamy parę, nie dwie niezależne funkcje.
     const moje = await wlasnoscOsobistaDoZapisu(ja.id);
     const cudze = await wlasnoscOsobistaDoZapisu(obcy.id);
+    // Identyfikatory zapamiętane WPROST — po usunięciu `ownerId` to one są punktem odniesienia.
+    const mojeId: string[] = [];
+    const cudzeId: string[] = [];
     for (let i = 0; i < 3; i++) {
-      await prisma.weatherLocation.create({ data: { label: `moja-${i}-${rnd()}`, lat: 52, lon: 21, ...moje } });
+      const r = await prisma.weatherLocation.create({ data: { label: `moja-${i}-${rnd()}`, lat: 52, lon: 21, ...moje } });
+      mojeId.push(r.id);
     }
     for (let i = 0; i < 2; i++) {
-      await prisma.weatherLocation.create({ data: { label: `cudza-${i}-${rnd()}`, lat: 50, lon: 19, ...cudze } });
+      const r = await prisma.weatherLocation.create({ data: { label: `cudza-${i}-${rnd()}`, lat: 50, lon: 19, ...cudze } });
+      cudzeId.push(r.id);
     }
 
     const ids = async (where: object) =>
@@ -62,12 +74,13 @@ test(
         .sort();
 
     try {
-      await t.test("zbiory równe: stara reguła i nowa dają te same wiersze", async () => {
-        const staraRegula = await ids({ ownerId: ja.id });
+      await t.test("filtr zwraca dokładnie moje rekordy z fixture'u", async () => {
         const nowaRegula = await ids(await filtrMoichRekordow(ja.id));
-
-        assert.equal(staraRegula.length, 3, "fixture musi mieć rekordy, inaczej równość jest bezwartościowa");
-        assert.deepEqual(nowaRegula, staraRegula, "nowy filtr musi zwrócić DOKŁADNIE ten sam zbiór");
+        assert.deepEqual(
+          nowaRegula,
+          mojeId.sort(),
+          "filtr musi zwrócić dokładnie te trzy rekordy, które fixture zapisał jako moje",
+        );
       });
 
       await t.test("konto bez rekordów: zbiór pusty (filtr nie zwraca wszystkiego)", async () => {
@@ -76,11 +89,10 @@ test(
       });
 
       await t.test("brak przecieku: cudze rekordy nie wchodzą do mojego zbioru", async () => {
-        const mojeId = new Set(await ids(await filtrMoichRekordow(ja.id)));
-        const cudzeId = await ids({ ownerId: obcy.id });
+        const wMoim = new Set(await ids(await filtrMoichRekordow(ja.id)));
         assert.equal(cudzeId.length, 2);
         for (const id of cudzeId) {
-          assert.equal(mojeId.has(id), false, "rekord obcego konta nie może trafić do mojego zbioru");
+          assert.equal(wMoim.has(id), false, "rekord obcego konta nie może trafić do mojego zbioru");
         }
       });
 

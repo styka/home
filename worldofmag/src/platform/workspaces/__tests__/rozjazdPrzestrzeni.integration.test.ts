@@ -2,20 +2,24 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 /**
- * 078 (zadanie 11, etap 4 część 2) — WYZWALACZ ODRZUCA ROZJAZD PRZESTRZENI (migracja 0240).
+ * 078/079 — WYZWALACZ ODRZUCA ROZJAZD PRZESTRZENI (migracja 0240).
  *
- * Konwersja 250 miejsc zapisu ma jeden tryb awarii i jest on cichy: miejsce zapisu przekazuje do
- * `wlasnoscDoZapisu` innego użytkownika albo pomija `teamId`, więc rekord dostaje `workspaceId`
- * niezgodny z własnym `ownerId`/`ownerTeamId`. Kompilator tego nie widzi (dwa poprawne stringi),
- * testy jednostkowe też nie, a objaw pojawia się dopiero wtedy, gdy ktoś zobaczy nie swoje dane.
- * Migracja 0240 zamienia tę usterkę w błąd zapisu. Ten test sprawdza, że faktycznie zamienia.
+ * **Czym ten test był w 078, a czym jest teraz.** Powstał na czas fazy podwójnego zapisu, gdy ta
+ * sama informacja o własności żyła w bazie dwa razy: w `workspaceId` i w kolumnach właścicielskich.
+ * Migracja 0240 kazała bazie porównywać oba nośniki i odrzucać rozjazd — dzięki temu jedyny cichy
+ * tryb awarii konwersji 250 miejsc zapisu (rekord w CUDZEJ przestrzeni) stał się głośnym błędem.
+ *
+ * **079: przedmiot skurczył się, ale nie zniknął.** Migracja 0244 usunęła kolumny własnościowe
+ * z 40 tabel, więc dla nich nie ma już czego porównywać. Zostaje ich **pięć**
+ * (`src/lib/db/workspace-nullable.json`) — tam `ownerId`/`ownerTeamId` żyją dalej, bo wiersz może
+ * nie mieć właściciela, więc wyzwalacz nadal ma dwa nośniki i nadal musi pilnować ich zgodności.
+ * Test przeniesiony na `NoteGroup`: ta sama reguła, tabela, na której wciąż obowiązuje.
  *
  * Cztery przypadki, każdy dobrany pod inny sposób, w jaki sprawdzenie mogłoby być bezużyteczne:
  *  1. rozjazd osobisty — cudza przestrzeń przy własnym `ownerId` → **odrzucone**;
- *  2. rozjazd zespołowy — przestrzeń osobista przy `ownerTeamId` → **odrzucone**
- *     (to jest dokładnie skutek pominięcia `teamId` w wywołaniu helpera);
- *  3. zapis zgodny → **przechodzi**, bo bramka, która blokuje też poprawne zapisy, zostanie
- *     wyłączona przy pierwszym wdrożeniu i nikogo już nigdy nie obroni;
+ *  2. rozjazd zespołowy — przestrzeń osobista przy `ownerTeamId` → **odrzucone**;
+ *  3. zapis zgodny → **przechodzi**, bo bramka blokująca też poprawne zapisy zostanie wyłączona
+ *     przy pierwszym wdrożeniu i nikogo już nigdy nie obroni;
  *  4. właściciel bez przestrzeni → **przechodzi**, bo drugiego źródła prawdy nie ma i nie ma czego
  *     porównywać (reguła z 0238: wyzwalacz leczy brak, nie wymyśla właścicieli).
  */
@@ -44,8 +48,8 @@ test(
       await t.test("rozjazd osobisty: mój rekord w cudzej przestrzeni → odrzucone", async () => {
         await assert.rejects(
           () =>
-            prisma.note.create({
-              data: { title: `rozjazd-${rnd()}`, ownerId: ja.id, workspaceId: cudza.id },
+            prisma.noteGroup.create({
+              data: { name: `rozjazd-${rnd()}`, ownerId: ja.id, workspaceId: cudza.id },
             }),
           /rozjazd przestrzeni/,
           "zapis rekordu do cudzej przestrzeni musi zostać odrzucony przez bazę"
@@ -53,25 +57,23 @@ test(
       });
 
       await t.test("rozjazd zespołowy: pominięty teamId → odrzucone", async () => {
-        // Tak wygląda w praktyce pomyłka `wlasnoscDoZapisu(userId)` zamiast
-        // `wlasnoscDoZapisu(userId, teamId)`: rekord należy do zespołu, a przestrzeń jest prywatna.
         await assert.rejects(
           () =>
-            prisma.note.create({
-              data: { title: `rozjazd-${rnd()}`, ownerTeamId: zespol.id, workspaceId: moja.id },
+            prisma.noteGroup.create({
+              data: { name: `rozjazd-${rnd()}`, ownerTeamId: zespol.id, workspaceId: moja.id },
             }),
           /rozjazd przestrzeni/
         );
       });
 
       await t.test("zapis zgodny przechodzi (bramka nie blokuje poprawnych zapisów)", async () => {
-        const osobisty = await prisma.note.create({
-          data: { title: `zgodny-${rnd()}`, ownerId: ja.id, workspaceId: moja.id },
+        const osobisty = await prisma.noteGroup.create({
+          data: { name: `zgodny-${rnd()}`, ownerId: ja.id, workspaceId: moja.id },
         });
         assert.equal(osobisty.workspaceId, moja.id);
 
-        const zespolowy = await prisma.note.create({
-          data: { title: `zgodny-${rnd()}`, ownerTeamId: zespol.id, workspaceId: zespolowa.id },
+        const zespolowy = await prisma.noteGroup.create({
+          data: { name: `zgodny-${rnd()}`, ownerTeamId: zespol.id, workspaceId: zespolowa.id },
         });
         assert.equal(zespolowy.workspaceId, zespolowa.id);
       });
@@ -90,7 +92,7 @@ test(
       });
     } finally {
       await prisma.job.deleteMany({ where: { workspaceId: moja.id } });
-      await prisma.note.deleteMany({
+      await prisma.noteGroup.deleteMany({
         where: { OR: [{ ownerId: ja.id }, { ownerTeamId: zespol.id }] },
       });
       await prisma.workspaceMember.deleteMany({ where: { userId: { in: [ja.id, obcy.id] } } });

@@ -18,6 +18,10 @@
  *   npx tsx scripts/fixture-surface.ts
  */
 import { prisma } from "../src/platform/db/prisma";
+// 079: własność zapisujemy i filtrujemy tym samym helperem co aplikacja — po usunięciu kolumn
+// `ownerId` fixture musiałby inaczej znać przestrzeń, a to jest dokładnie ta wiedza, którą
+// `platform/workspaces/zapis.ts` trzyma w jednym miejscu.
+import { filtrMoichRekordow, wlasnoscDoZapisu } from "../src/platform/workspaces/zapis";
 
 /**
  * 050: fixture można zasiać na **istniejącym** użytkowniku (`--email=...`).
@@ -62,12 +66,12 @@ async function main() {
 
   // Sprzątanie przed wstawieniem — fixture ma dawać ten sam wynik przy każdym uruchomieniu.
   await prisma.task.deleteMany({ where: { createdById: USER_ID } });
-  await prisma.mealPlanEntry.deleteMany({ where: { ownerId: USER_ID } });
-  await prisma.healthEvent.deleteMany({ where: { ownerId: USER_ID } });
-  await prisma.vehicle.deleteMany({ where: { ownerId: USER_ID } });
-  await prisma.medicationSchedule.deleteMany({ where: { ownerId: USER_ID } });
-  await prisma.pet.deleteMany({ where: { ownerId: USER_ID } });
-  await prisma.languageDeck.deleteMany({ where: { ownerId: USER_ID } });
+  await prisma.mealPlanEntry.deleteMany({ where: { ...(await filtrMoichRekordow(USER_ID)) } });
+  await prisma.healthEvent.deleteMany({ where: { ...(await filtrMoichRekordow(USER_ID)) } });
+  await prisma.vehicle.deleteMany({ where: { ...(await filtrMoichRekordow(USER_ID)) } });
+  await prisma.medicationSchedule.deleteMany({ where: { ...(await filtrMoichRekordow(USER_ID)) } });
+  await prisma.pet.deleteMany({ where: { ...(await filtrMoichRekordow(USER_ID)) } });
+  await prisma.languageDeck.deleteMany({ where: { ...(await filtrMoichRekordow(USER_ID)) } });
 
   // 1. Zadanie z terminem
   await prisma.task.create({
@@ -76,19 +80,19 @@ async function main() {
 
   // 2. Posiłek w planie
   await prisma.mealPlanEntry.create({
-    data: { date: tegoMiesiaca(6), slot: "DINNER", customTitle: "Fixture: obiad", ownerId: USER_ID },
+    data: { date: tegoMiesiaca(6), slot: "DINNER", customTitle: "Fixture: obiad", ...(await wlasnoscDoZapisu(USER_ID)) },
   });
 
   // 3. Wizyta / badanie
   await prisma.healthEvent.create({
-    data: { kind: "VISIT", title: "Fixture: wizyta", scheduledAt: tegoMiesiaca(7, 10), ownerId: USER_ID },
+    data: { kind: "VISIT", title: "Fixture: wizyta", scheduledAt: tegoMiesiaca(7, 10), ...(await wlasnoscDoZapisu(USER_ID)) },
   });
 
   // 4. Pojazd z przeglądem i ubezpieczeniem
   await prisma.vehicle.create({
     data: {
       name: "Fixture: auto",
-      ownerId: USER_ID,
+      ...(await wlasnoscDoZapisu(USER_ID)),
       inspectionDue: tegoMiesiaca(8),
       insuranceDue: tegoMiesiaca(9),
     },
@@ -99,7 +103,7 @@ async function main() {
     data: {
       kind: "MEDICATION",
       name: "Fixture: lek",
-      ownerId: USER_ID,
+      ...(await wlasnoscDoZapisu(USER_ID)),
       freqType: "DAILY",
       interval: 1,
       startDate: tegoMiesiaca(1),
@@ -110,7 +114,7 @@ async function main() {
 
   // 6. Zwierzę z czynnością pielęgnacyjną
   const pet = await prisma.pet.create({
-    data: { name: "Fixture: zwierzę", species: "dog", ownerId: USER_ID },
+    data: { name: "Fixture: zwierzę", species: "dog", ...(await wlasnoscDoZapisu(USER_ID)) },
   });
   await prisma.petCareTask.create({
     data: { petId: pet.id, title: "Fixture: karmienie", category: "FEEDING", nextDueAt: tegoMiesiaca(10), active: true },
@@ -118,7 +122,7 @@ async function main() {
 
   // 7. Fiszka do powtórki (SRS)
   const deck = await prisma.languageDeck.create({
-    data: { name: "Fixture: talia", nativeLang: "pl", targetLang: "en", ownerId: USER_ID },
+    data: { name: "Fixture: talia", nativeLang: "pl", targetLang: "en", ...(await wlasnoscDoZapisu(USER_ID)) },
   });
   await prisma.vocabulary.create({
     data: { deckId: deck.id, term: "fixture", translation: "atrapa", dueAt: tegoMiesiaca(11) },
@@ -127,15 +131,15 @@ async function main() {
   console.log(`✓ Fixture 049: dane w siedmiu źródłach agendy dla użytkownika ${EMAIL}`);
 
   // ── Dane dla MIGAWKI PULPITU (050) — liczone względem DZISIAJ, nie miesiąca ──────────────
-  await prisma.shoppingList.deleteMany({ where: { ownerId: USER_ID } });
-  await prisma.note.deleteMany({ where: { ownerId: USER_ID } });
-  await prisma.pantryItem.deleteMany({ where: { ownerId: USER_ID } });
-  await prisma.walletElement.deleteMany({ where: { ownerId: USER_ID } });
-  await prisma.storageItem.deleteMany({ where: { ownerId: USER_ID } });
+  await prisma.shoppingList.deleteMany({ where: { ...(await filtrMoichRekordow(USER_ID)) } });
+  await prisma.note.deleteMany({ where: { ...(await filtrMoichRekordow(USER_ID)) } });
+  await prisma.pantryItem.deleteMany({ where: { ...(await filtrMoichRekordow(USER_ID)) } });
+  await prisma.walletElement.deleteMany({ where: { ...(await filtrMoichRekordow(USER_ID)) } });
+  await prisma.storageItem.deleteMany({ where: { ...(await filtrMoichRekordow(USER_ID)) } });
   await prisma.report.deleteMany({ where: { authorId: USER_ID } });
 
   // 8. Lista zakupów z dwiema pozycjami do kupienia (`pendingItems`)
-  const lista = await prisma.shoppingList.create({ data: { name: "Fixture: lista", ownerId: USER_ID } });
+  const lista = await prisma.shoppingList.create({ data: { name: "Fixture: lista", ...(await wlasnoscDoZapisu(USER_ID)) } });
   await prisma.item.createMany({
     data: [
       { listId: lista.id, name: "Fixture: mleko", status: "NEEDED" },
@@ -153,14 +157,14 @@ async function main() {
   });
 
   // 10. Przypięta notatka (`pinnedNotes`)
-  await prisma.note.create({ data: { title: "Fixture: notatka", ownerId: USER_ID, pinned: true } });
+  await prisma.note.create({ data: { title: "Fixture: notatka", ...(await wlasnoscDoZapisu(USER_ID)), pinned: true } });
 
   // 11. Posiłek na DZIŚ + spiżarnia z krótkim terminem (`todayMeals`, `expiringSoon`)
   await prisma.mealPlanEntry.create({
-    data: { date: odDzis(0), slot: "LUNCH", customTitle: "Fixture: lunch dziś", ownerId: USER_ID },
+    data: { date: odDzis(0), slot: "LUNCH", customTitle: "Fixture: lunch dziś", ...(await wlasnoscDoZapisu(USER_ID)) },
   });
   await prisma.pantryItem.create({
-    data: { name: "Fixture: jogurt", ownerId: USER_ID, quantity: 1, expiresAt: odDzis(2) },
+    data: { name: "Fixture: jogurt", ...(await wlasnoscDoZapisu(USER_ID)), quantity: 1, expiresAt: odDzis(2) },
   });
 
   // 12. Czynność pielęgnacyjna należna DZIŚ (`petCareDue`, `petAgenda`)
@@ -170,12 +174,12 @@ async function main() {
 
   // 13. Pojazd z przeglądem w horyzoncie 30 dni (`vehiclesCount`, `vehicleAlerts`)
   await prisma.vehicle.create({
-    data: { name: "Fixture: auto 2", ownerId: USER_ID, inspectionDue: odDzis(10) },
+    data: { name: "Fixture: auto 2", ...(await wlasnoscDoZapisu(USER_ID)), inspectionDue: odDzis(10) },
   });
 
   // 14. Element portfela (`wallet`)
   await prisma.walletElement.create({
-    data: { name: "Fixture: konto", kind: "account", balance: 1234.5, ownerId: USER_ID },
+    data: { name: "Fixture: konto", kind: "account", balance: 1234.5, ...(await wlasnoscDoZapisu(USER_ID)) },
   });
 
   // 15. Fiszka należna DZIŚ (`languagesDue`, `languageDecks`)
@@ -185,15 +189,15 @@ async function main() {
 
   // 16. Wizyta nadchodząca (`healthUpcomingCount`, `healthUpcoming`)
   await prisma.healthEvent.create({
-    data: { kind: "TEST", title: "Fixture: badanie", scheduledAt: odDzis(5, 10), ownerId: USER_ID },
+    data: { kind: "TEST", title: "Fixture: badanie", scheduledAt: odDzis(5, 10), ...(await wlasnoscDoZapisu(USER_ID)) },
   });
 
   // 17. Magazyn: brak stanu + krótki termin (`storageLowStock`, `storageExpiring`)
   await prisma.storageItem.create({
-    data: { name: "Fixture: śruby", ownerId: USER_ID, quantity: 1, minQuantity: 10 },
+    data: { name: "Fixture: śruby", ...(await wlasnoscDoZapisu(USER_ID)), quantity: 1, minQuantity: 10 },
   });
   await prisma.storageItem.create({
-    data: { name: "Fixture: klej", ownerId: USER_ID, quantity: 5, expiresAt: odDzis(20) },
+    data: { name: "Fixture: klej", ...(await wlasnoscDoZapisu(USER_ID)), quantity: 5, expiresAt: odDzis(20) },
   });
 
   // 18. Raport z ostatnich 7 dni (`recentReports`)

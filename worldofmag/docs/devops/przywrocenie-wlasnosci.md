@@ -70,10 +70,18 @@ Oczekiwane: `niezgodności: 0`. Cokolwiek innego — **nie wchodź w etap 4**, d
 skąd różnica. Kopia z jedną dziurą jest gorsza niż brak kopii, bo daje fałszywe poczucie
 zabezpieczenia.
 
-> Uwaga na moment wykonania: kopia jest migawką ze **stanu na chwilę migracji 0233**. Jeżeli między
-> 0233 a właściwym `DROP COLUMN` upłynie czas, w którym użytkownicy tworzą nowe rekordy, tamte
-> rekordy w kopii nie będą miały wpisu. Dlatego 0233 i `DROP COLUMN` mają lecieć **w jednym
-> wdrożeniu**, a jeśli nie mogą — kopię trzeba odświeżyć tuż przed (patrz „Odświeżenie kopii").
+> **079 — TO JUŻ NIE JEST PROBLEM, i warto wiedzieć dlaczego.** Powyższa uwaga opisywała realne
+> ryzyko: między 0233 a `DROP COLUMN` minęły tygodnie, więc kopia znała właścicieli sprzed tamtego
+> czasu, a rekordy utworzone później nie miały w niej wpisu wcale. Migracja
+> `0244_usuniecie_kolumn_wlasnosciowych` zaczyna się dlatego od **odświeżenia kopii**
+> (`ON CONFLICT DO UPDATE` + skasowanie wpisów po wierszach, których w źródle już nie ma)
+> i od **kontroli liczności per tabela**, która przerywa migrację przy jakimkolwiek rozjeździe.
+> Kopia opisuje więc stan z chwili usuwania kolumn, nie z chwili jej założenia.
+>
+> Oba bloki są sprawdzone na danych, a nie tylko przeczytane:
+> `src/platform/workspaces/__tests__/kopiaWlasnosci.integration.test.ts` **czyta je wprost z pliku
+> migracji** i uruchamia na fixture z wartością zmienioną, wierszem nowym i wierszem usuniętym —
+> plus sondą, że kontrola liczności naprawdę przerywa.
 
 ---
 
@@ -180,19 +188,22 @@ kontroluj dodatkowo licznik `Przywrócono % wierszy` z kroku 2.
 
 ---
 
-## Odświeżenie kopii (gdy `DROP COLUMN` leci później niż 0233)
+## Odświeżenie kopii
 
-Migracja 0233 jest idempotentna przez `ON CONFLICT DO NOTHING`, co znaczy: powtórne uruchomienie
-**dopisze nowe wiersze, ale NIE nadpisze istniejących**. To świadomy wybór — kopia ma być zdjęciem
-sprzed zmiany, a nie kroniką aktualizowaną w miejscu. Jeżeli naprawdę chcesz świeżej migawki:
+**Zrobiła to migracja 0244, tuż przed usunięciem kolumn** — blok `DO $odswiez$`. Aktualizuje wpisy
+istniejące (`ON CONFLICT DO UPDATE`), dopisuje brakujące i kasuje te, których wiersz zniknął ze
+źródła; następny blok (`DO $kontrola$`) porównuje liczność kopii z liczbą wierszy w każdej tabeli
+i **przerywa migrację** przy różnicy.
+
+Ręcznie odświeżysz kopię tylko dla **pięciu tabel, które zachowały `ownerId`**
+(`src/lib/db/workspace-nullable.json`) — dla pozostałych 40 nie ma z czego, bo kolumn nie ma:
 
 ```sql
-TRUNCATE "_KopiaWlasnosci";
--- a potem ponownie blok DO $kopia$ z migracji 0233
+-- blok DO $odswiez$ z migracji 0244 (jest idempotentny)
 ```
 
-Rób to **tylko** wtedy, gdy etap 4 jeszcze się nie wykonał. Po `DROP COLUMN` nie ma z czego zrobić
-nowej kopii, a `TRUNCATE` skasuje jedyną, którą masz.
+**Nigdy `TRUNCATE "_KopiaWlasnosci"`** po etapie 4: skasowałoby jedyny odwrót dla tych 40 tabel,
+a odtworzyć go nie ma jak.
 
 ---
 
@@ -204,13 +215,12 @@ nowej kopii, a `TRUNCATE` skasuje jedyną, którą masz.
   odwracającej, nie z danych;
 - **relacji Prismy** — 71 relacji na `User`/`Team` wskazywało na te kolumny; ich odtworzenie to
   zmiana w `schema.prisma`, czyli kod, czyli `git revert`;
-- **`NewsPref` — tej tabeli kopia NIE odtworzy i nie da się tego naprawić.** `ownerId` **jest** jej
-  kluczem głównym; nie ma `id` ani żadnej innej kolumny identyfikującej wiersz. Po `DROP COLUMN`
-  wiersz zostaje bez tożsamości: kopia zna wartość, ale nie ma po czym dopasować ją z powrotem do
-  konkretnego wiersza. To nie jest niedoróbka procedury, tylko własność tej tabeli — i **osobny
-  warunek wejścia w etap 4**: `NewsPref` musi najpierw dostać własny klucz główny (`id`) albo
-  zostać przepisany na `workspaceId` jako klucz, zanim `ownerId` z niej zniknie. Do tego czasu
-  jedynym odwrotem dla `NewsPref` jest PITR całej bazy;
-- **stanu z chwili awarii** — kopia zna stan z chwili wykonania 0233, nic późniejszego.
+- ~~**`NewsPref` — tej tabeli kopia NIE odtworzy**~~ — **warunek spełniony w 074.** `ownerId` był
+  kluczem głównym tej tabeli, więc po `DROP COLUMN` jej wiersze zostałyby bez tożsamości i kopia nie
+  miałaby po czym ich dopasować. Migracja `0074` dała `NewsPref` własne `id`, a `0241` przeniosła
+  unikalność „jedna preferencja na konto" na `workspaceId`. Tabela jest odtwarzalna jak każda inna;
+- **stanu z chwili awarii** — kopia zna stan z chwili **odświeżenia w migracji 0244**, czyli
+  z momentu tuż przed usunięciem kolumn. Nic późniejszego; wszystko, co zmieniło się po wdrożeniu
+  etapu 4, odtwarza wyłącznie PITR.
 
 Do cofnięcia *całej* bazy służy PITR w Neonie — procedura w `runbook-deploy-rollback.md`.

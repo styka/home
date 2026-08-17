@@ -72,8 +72,15 @@ export function summarizeExplainPlan(input: unknown): ExplainSummary {
 
 export interface RepresentativeQuery {
   label: string;
-  /** SQL bez `EXPLAIN`; `$1` (gdy `needsOwner`) = ownerId właściciela próbki. */
+  /** SQL bez `EXPLAIN`; `$1` (gdy `needsOwner`) = identyfikator PRZESTRZENI próbki. */
   sql: string;
+  /**
+   * 079: nazwa została, znaczenie parametru się zmieniło — z `ownerId` na `workspaceId`.
+   * Etap 4 usunął kolumny własnościowe, a te zapytania są **surowym SQL-em**: kompilator ich nie
+   * widzi, a `EXPLAIN` na nieistniejącej kolumnie wpada w `catch`, który po cichu pomija pozycję.
+   * Efektem byłaby diagnostyka, która przestaje pokazywać trzy najgorętsze listy i nikomu tego
+   * nie mówi.
+   */
   needsOwner: boolean;
 }
 
@@ -85,17 +92,17 @@ export const REPRESENTATIVE_QUERIES: RepresentativeQuery[] = [
   {
     label: "Notatki — właściciel, wg updatedAt",
     needsOwner: true,
-    sql: `SELECT "id" FROM "Note" WHERE "ownerId" = $1 ORDER BY "updatedAt" DESC LIMIT 50`,
+    sql: `SELECT "id" FROM "Note" WHERE "workspaceId" = $1 ORDER BY "updatedAt" DESC LIMIT 50`,
   },
   {
     label: "Zadania — wg projektu właściciela",
     needsOwner: true,
-    sql: `SELECT t."id" FROM "Task" t JOIN "TaskProject" p ON p."id" = t."projectId" WHERE p."ownerId" = $1 LIMIT 50`,
+    sql: `SELECT t."id" FROM "Task" t JOIN "TaskProject" p ON p."id" = t."projectId" WHERE p."workspaceId" = $1 LIMIT 50`,
   },
   {
     label: "Listy zakupów — właściciel, wg updatedAt",
     needsOwner: true,
-    sql: `SELECT "id" FROM "ShoppingList" WHERE "ownerId" = $1 ORDER BY "updatedAt" DESC LIMIT 50`,
+    sql: `SELECT "id" FROM "ShoppingList" WHERE "workspaceId" = $1 ORDER BY "updatedAt" DESC LIMIT 50`,
   },
   {
     label: "Log audytu — wg createdAt",

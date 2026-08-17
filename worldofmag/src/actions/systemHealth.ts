@@ -103,7 +103,8 @@ export async function getSystemHealth(): Promise<SystemHealth> {
 
   // Z-037: diagnostyka „wolnych zapytań" — EXPLAIN (bez ANALYZE → plan bez wykonania) na typowych listach.
   // Monitor regresów: Seq Scan na DUŻej liście = sygnał; na małej bazie Seq Scan jest normalny i OK.
-  const sampleOwner = await prisma.user
+  // 079: próbką jest PRZESTRZEŃ, nie konto — zapytania diagnostyczne filtrują po `workspaceId`.
+  const sampleOwner = await prisma.workspace
     .findFirst({ orderBy: { createdAt: "asc" }, select: { id: true } })
     .catch(() => null);
   const queryDiagnostics: SystemHealth["queryDiagnostics"] = [];

@@ -15,28 +15,15 @@ export async function isAdminSession(): Promise<boolean> {
 }
 
 /**
- * 057 (Faza 2, zadanie 11 / etap 3B krok 1) — WARUNEK „ZASOBY, KTÓRE WIDZĘ", W JEDNYM MIEJSCU.
+ * 079: `ownedWhere` / `ownedOr` (wersje SYNCHRONICZNE, po `ownerId`/`ownerTeamId`) ZOSTAŁY USUNIĘTE
+ * razem z kolumnami (migracja 0244). Nie miały już ani jednego konsumenta poza własnymi testami —
+ * zakres list liczy `ownedOrAsync` poniżej. Zostawienie ich byłoby pułapką: funkcja budująca filtr
+ * po nieistniejących kolumnach kompiluje się (zwraca `Record<string, unknown>`) i wywala się dopiero
+ * w czasie działania, przy pierwszym zapytaniu.
  *
- * Do tej pory ten sam `OR` był wpisany ręcznie w **79 miejscach w 52 plikach**. Etap 3B ma go
- * zamienić na zakres po przestrzeniach (`workspaceId: { in: … }`, rozdz. 8.2) — a to da się zrobić
- * **jedną zmianą** tylko wtedy, gdy warunek istnieje w jednym miejscu. Ten helper niczego jeszcze
- * nie zmienia: zwraca **strukturalnie ten sam** obiekt, co kod, który zastępuje.
- *
- * **Dwa kształty, jedno znaczenie.** W repo występowały dwa warianty — bezwarunkowy
- * `{ ownerTeamId: { in: teamIds } }` i ostrożniejszy `...(teamIds.length > 0 ? [...] : [])`.
- * Są **równoważne**, bo `in: []` nie pasuje do żadnego wiersza; helper zwraca wariant krótszy,
- * a test `ownershipScope.test.ts` tę równoważność sprawdza, zamiast ją zakładać.
- *
- * **To NIE jest helper dla rekordów słownikowych** — te widać także jako systemowe
- * (`ownerId = null`) i mają własny `ownedOrSystemWhere` niżej. Użycie tego helpera tam odebrałoby
- * dostęp do rekordów systemowych; użycie tamtego tutaj — dodałoby dostęp, którego nie było.
- *
- * @param userId właściciel osobisty
- * @param teamIds zespoły użytkownika (`getUserTeamIds`); pusta lista = brak gałęzi zespołowej
+ * Zakres dla tabel SŁOWNIKOWYCH (pięć wyjątków z `workspace-nullable.json`) to osobna sprawa i ma
+ * własny helper: `ownedOrSystemWhere` niżej. Tam `ownerId` żyje dalej.
  */
-export function ownedWhere(userId: string, teamIds: string[]) {
-  return { OR: ownedOr(userId, teamIds) };
-}
 
 /**
  * 058 (etap 3B krok 2) — ZAKRES IDZIE PO PRZESTRZENIACH.
@@ -45,19 +32,10 @@ export function ownedWhere(userId: string, teamIds: string[]) {
  * (`OR: [{ownerId}, {ownerTeamId: {in: teamIds}}]`). Po zmianie: `where: { workspaceId: { in:
  * mySpaces } }`."* Dzięki 057 zmiana dotyczy **tego jednego miejsca**, a nie 79.
  *
- * **Trzy gałęzie, każda z powodem:**
- * 1. `workspaceId in mojePrzestrzenie` — właściwa reguła docelowa. Obejmuje przestrzeń osobistą
- *    **i** zespołowe, bo jedno i drugie to po prostu przestrzeń, której jestem członkiem.
- * 2. `ownerId = ja` **przy pustej przestrzeni** — rekord bez przestrzeni (sierota po backfillu
- *    0227) musi pozostać widoczny dla właściciela. Bez tego zniknąłby użytkownikowi z listy, a to
- *    zmiana widoczna, której spec nie zamawia.
- * 3. `ownerTeamId in mojeZespoły` **przy pustej przestrzeni** — to samo dla sierot zespołowych.
- *
- * Gałęzie 2 i 3 są **przejściowe** i znikają w etapie 4 razem z kolumnami. Warunek
- * `workspaceId: null` jest przy nich istotny: bez niego stara reguła działałaby dalej **obok**
- * nowej i przełączenie niczego by nie dowodziło — zbiory wyszłyby równe niezależnie od tego, czy
- * gałąź pierwsza w ogóle działa (lekcja z 056: „zielony test, który dowodził, że nowy kod się nie
- * uruchomił").
+ * **079: została JEDNA gałąź** — `workspaceId in mojePrzestrzenie`. Obejmuje przestrzeń osobistą
+ * **i** zespołowe, bo jedno i drugie to po prostu przestrzeń, której jestem członkiem. Dwie gałęzie
+ * przejściowe (po `ownerId` i po `ownerTeamId`, dla rekordów bez przestrzeni) zniknęły razem
+ * z kolumnami w migracji 0244 — a wcześniej, w 075, razem z możliwością istnienia takiego rekordu.
  *
  * Zakres przestrzeni bierzemy z kontekstu dostępu, liczonego **raz na żądanie** (cache z 052) —
  * dlatego funkcja jest asynchroniczna, a liczba zapytań nie rośnie.
@@ -65,38 +43,27 @@ export function ownedWhere(userId: string, teamIds: string[]) {
 export async function ownedOrAsync(userId: string): Promise<Record<string, unknown>[]> {
   const { getAccessContext } = await import("@/platform/sharing/cache");
   const ctx = await getAccessContext(userId);
-  // 075 (etap 4): GAŁĘZIE PRZEJŚCIOWE ZNIKŁY, dokładnie jak zapowiadał akapit wyżej. Obie
-  // opierały się na `workspaceId: null`, a etap 4 zaostrzył tę kolumnę do NOT NULL na 41 tabelach
-  // — warunek dopasowywał więc pusty zbiór. Nie był to jednak martwy kod bez kosztu: dla kolumny
-  // NOT NULL Prisma odrzuca taki filtr w czasie DZIAŁANIA („Argument `workspaceId` is missing"),
-  // więc pozostawienie go wywracało każde zapytanie zakresowe. Typ tego nie złapał, bo gałęzie są
-  // `Record<string, unknown>` — złapały testy zakresu i tabela prawdy.
+  // Rekordy SYSTEMOWE (pięć tabel z `workspace-nullable.json`) nigdy tędy nie chodziły: mają
+  // `ownerId IS NULL`, więc nie pasowały nawet do dawnych gałęzi przejściowych. Ich drogą jest
+  // `ownedOrSystemWhere`, nie ta funkcja.
   //
-  // Rekordy SYSTEMOWE (cztery tabele słownikowe, w których `workspaceId` jest nadal nullowalne)
-  // nigdy tędy nie chodziły: mają `ownerId IS NULL`, więc nie pasowały nawet do dawnej gałęzi 2.
-  // Ich drogą jest `ownedOrSystemWhere`, nie ta funkcja.
+  // 079 (U-3): GAŁĄŹ `{ ownerId: userId }` ZNIKŁA razem z kolumną (migracja 0244). Była
+  // gwarancją „właściciel nigdy nie traci swojego rekordu" na wypadek zasobu poza jego
+  // przestrzeniami; po usunięciu kolumny nie ma z czego jej zbudować, a jej rolę przejęło
+  // `getAccessContext`, które przestrzeń OSOBISTĄ czyta po `Workspace.personalUserId`, a nie po
+  // członkostwie (079, krok 1). Zostawienie jej tutaj nie było opcją: dla nieistniejącej kolumny
+  // Prisma odrzuca filtr w czasie DZIAŁANIA, więc wywróciłaby każde zapytanie zakresowe.
+  //
+  // Pusty wynik jest możliwy tylko dla konta bez ANI JEDNEJ przestrzeni — czyli takiego, które nie
+  // ma też żadnych rekordów. `OR: []` w Prismie nie pasuje do niczego, i to jest tu poprawne.
   const gałęzie: Record<string, unknown>[] = [];
   if (ctx.workspaceIds.length > 0) gałęzie.push({ workspaceId: { in: ctx.workspaceIds } });
-  // Zasób bez przestrzeni jest niemożliwy, ale własny zasób POZA moimi przestrzeniami — nie.
-  // Ta gałąź zostaje jako gwarancja, że właściciel nigdy nie traci swojego rekordu.
-  gałęzie.push({ ownerId: userId });
   return gałęzie;
 }
 
 /** Jak wyżej, ale gotowy `where`. */
 export async function ownedWhereAsync(userId: string) {
   return { OR: await ownedOrAsync(userId) };
-}
-
-/**
- * Same alternatywy, bez opakowania w `OR` — dla zapytań, które wstawiają je do własnego `AND`
- * albo dokładają trzecią gałąź (np. przypisanie do zasobu). Istnieje, bo bez tego takie miejsca
- * musiałyby rozpakowywać `ownedWhere(...).OR` i bramka nie miałaby czego pilnować.
- */
-export function ownedOr(userId: string, teamIds: string[]) {
-  return teamIds.length > 0
-    ? [{ ownerId: userId }, { ownerTeamId: { in: teamIds } }]
-    : [{ ownerId: userId }];
 }
 
 /**
