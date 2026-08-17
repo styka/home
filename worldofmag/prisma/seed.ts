@@ -92,14 +92,12 @@ const COMMON_ITEMS: Array<{ name: string; unit?: string }> = [
 async function main() {
   console.log("Seeding database…");
 
-  // Create default list
-  const list = await prisma.shoppingList.upsert({
-    where: { id: "default" },
-    update: {},
-    create: { id: "default", name: "Zakupy" },
-  });
-
-  console.log(`Created list: ${list.name}`);
+  // 075: NIE tworzymy już bezpańskiej listy `default`. Powstawała bez `ownerId` i bez
+  // `ownerTeamId`, a `ownedWhereAsync` filtruje po własności — więc nie widział jej NIKT. To była
+  // zostałość po wersji sprzed modelu własności: martwe dane udające rekord systemowy. Lista
+  // zakupów zawsze do kogoś należy; słownikiem systemowym jest `ItemHistory` niżej, nie ona.
+  // Migracja 0235 usuwa ten wiersz z istniejących baz (albo przypisuje go administratorowi,
+  // jeśli ma pozycje).
 
   // Seed ItemHistory for backward compat.
   // 034: podpowiedzi mają właściciela; seedowe zostają SYSTEMOWE (ownerId = null), więc widzi je

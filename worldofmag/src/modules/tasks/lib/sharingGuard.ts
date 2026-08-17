@@ -59,11 +59,12 @@ export async function accessibleProjectIds(userId: string): Promise<string[]> {
         { ownerId: userId },
         { members: { some: { userId } } },
         ...(przestrzenie.length > 0 ? [{ workspaceId: { in: przestrzenie } }] : []),
-        // Sieroty (rekord bez przestrzeni) nadal wychodzą przez `ownerTeamId` — gałąź awaryjna
-        // ta sama, co w `rolaZWlasnosci`. Zniknie w etapie 4 razem z kolumną.
-        ...(ctx.teamIds.length > 0
-          ? [{ workspaceId: null, ownerTeamId: { in: ctx.teamIds } }]
-          : []),
+        // 075: gałąź awaryjna dla SIEROT (rekord bez przestrzeni) ZNIKŁA — zgodnie z zapowiedzią
+        // z 056. Etap 4 zaostrzył `TaskProject.workspaceId` do NOT NULL, więc warunek
+        // `workspaceId: null` dopasowywał odtąd pusty zbiór: martwy kod, który TypeScript zaczął
+        // zresztą odrzucać. Uwaga: bliźniacza gałąź w `rolaZWlasnosci` (platform/sharing/access.ts)
+        // ZOSTAJE — tam obsługuje cztery tabele słownikowe, w których `workspaceId` jest nadal
+        // nullowalne z rozmysłem (rekord systemowy nie należy do żadnej przestrzeni).
       ],
     },
     select: { id: true },

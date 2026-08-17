@@ -38,7 +38,13 @@ function objeteModele(schemat: string): Objeta[] {
   let m: RegExpExecArray | null;
   while ((m = re.exec(schemat))) {
     const [, model, cialo] = m;
-    if (!/^\s*workspaceId\s+String\?/m.test(cialo)) continue;
+    if (!/^\s*workspaceId\s+String\??/m.test(cialo)) continue;
+    // 075: `String?` przestało wystarczać jako sito — etap 4 zaostrzył 40 z tych kolumn do `String`.
+    // Rozluźnienie wzorca do `String\??` wpuściło jednak trzy tabele PLATFORMOWE (`DomainEvent`,
+    // `ResourceGrant`, `WorkspaceMember`), które mają `workspaceId` od urodzenia jako prawdziwy
+    // klucz obcy — 0227 ich nie dotyka i dotykać nie powinna. Rozróżnia je własność: kolumna
+    // LUSTRZANA istnieje wyłącznie tam, gdzie jest co lustrzać, czyli obok `ownerId`/`ownerTeamId`.
+    if (!/^\s*owner(Id|TeamId)\s+String/m.test(cialo)) continue;
     const map = cialo.match(/@@map\("([^"]+)"\)/);
     out.push({
       model,

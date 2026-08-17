@@ -110,13 +110,17 @@ test(
     const bezPrzestrzeni = await prisma.user.create({
       data: { email: `tt-sier-${rnd()}@test.local` },
     });
-    const projektSierota = await prisma.taskProject.create({
-      data: { name: `Sierota-${rnd()}`, ownerId: bezPrzestrzeni.id },
-    });
-    await prisma.taskProject.update({
-      where: { id: projektSierota.id },
-      data: { workspaceId: null },
-    });
+    // 075: KOLUMNA „projekt bez przestrzeni (sierota)" ZNIKŁA Z MACIERZY — 5×5 → 5×4.
+    // Nie dlatego, że przestała być ważna, tylko dlatego, że stanu, który opisywała, NIE DA SIĘ JUŻ
+    // ZBUDOWAĆ: etap 4 zaostrzył `TaskProject.workspaceId` do NOT NULL. Kolumna oparta na
+    // `update({ workspaceId: null })` byłaby odtąd testem fikcji, a nie zachowania.
+    //
+    // Co ZOSTAJE i dlaczego to nie jest to samo: użytkownik `bezPrzestrzeni` (konto bez własnej
+    // przestrzeni osobistej) dalej jest jednym z wierszy macierzy — TEN stan wciąż jest osiągalny
+    // i wciąż musi być pilnowany. Zniknął zasób bez przestrzeni, nie osoba bez przestrzeni.
+    //
+    // Sam niezmiennik, który tę kolumnę unieważnił, ma własną asercję w `grantMirror` i
+    // `ownershipScopeSwitch` — inaczej jego cofnięcie przeszłoby bez śladu.
 
     const zadanieWProjekcie = await prisma.task.create({
       data: { title: `Zad-${rnd()}`, projectId: projekt.id, createdById: wlasciciel.id },
@@ -150,9 +154,6 @@ test(
           { id: zadanieLuzem.id, projectId: zadanieLuzem.projectId, createdById: zadanieLuzem.createdById, assigneeId: zadanieLuzem.assigneeId },
           u,
         ),
-      // 056/AC-4 — zasób bez przestrzeni. Kolumna dochodzi do OBU macierzy, więc porównanie
-      // „stary vs nowy mechanizm" obejmuje ją tak samo jak pozostałe.
-      "projekt bez przestrzeni (sierota)": (u) => assertProjectAccess(projektSierota.id, u),
     };
 
     /**
@@ -165,7 +166,6 @@ test(
       "projekt zespolowy: odczyt/edycja": (u) => requireAccess(u, { type: "tasks.project", id: projektZespolu.id }, "task.edit"),
       "zadanie w projekcie": (u) => requireAccess(u, { type: "tasks.task", id: zadanieWProjekcie.id }, "task.edit"),
       "zadanie bez projektu": (u) => requireAccess(u, { type: "tasks.task", id: zadanieLuzem.id }, "task.edit"),
-      "projekt bez przestrzeni (sierota)": (u) => requireAccess(u, { type: "tasks.project", id: projektSierota.id }, "task.edit"),
     };
 
     async function zbudujMacierz(

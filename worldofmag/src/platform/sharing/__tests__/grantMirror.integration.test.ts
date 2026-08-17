@@ -122,16 +122,21 @@ test(
         assert.equal(await nadanie("tasks.task", zadanie.id, "workspace", przestrzenZespolu!.id), null);
       });
 
-      await t.test("zasób BEZ przestrzeni nie dostaje nadania i nie wywala zapisu", async () => {
-        // `ResourceGrant.workspaceId` jest wymagane. Zmyślenie przestrzeni byłoby gorsze niż brak
-        // wiersza, a wywrócenie się zabrałoby użytkownikowi możliwość udostępnienia.
-        const sierota = await prisma.taskProject.create({
+      await t.test("zasób BEZ przestrzeni jest niemożliwy — baza go odrzuca (075)", async () => {
+        // Dawniej: „zasób bez przestrzeni nie dostaje nadania i nie wywala zapisu" — obrona przed
+        // sierotą. Etap 4 zaostrzył `TaskProject.workspaceId` do NOT NULL, więc sieroty nie da się
+        // już utworzyć i obrona stała się bezprzedmiotowa. Sprawdzamy zatem jej przyczynę: gdyby
+        // ktoś cofnął `NOT NULL`, `mirrorProjectMember` znów mogłoby dostać zasób bez przestrzeni,
+        // a `ResourceGrant.workspaceId` jest wymagane — czyli wróciłby dokładnie ten problem.
+        const projekt = await prisma.taskProject.create({
           data: { name: `S-${rnd()}`, ownerId: wlasciciel.id },
         });
-        await prisma.taskProject.update({ where: { id: sierota.id }, data: { workspaceId: null } });
-        await mirrorProjectMember(sierota.id, czlonek.id, "MEMBER", wlasciciel.id);
-        assert.equal(await nadanie("tasks.project", sierota.id, "user", czlonek.id), null);
-        await prisma.taskProject.delete({ where: { id: sierota.id } });
+        // Surowym SQL-em — typ Prismy też tego zabrania, ale typ nie chroni zapisów spoza klienta.
+        await assert.rejects(
+          () => prisma.$executeRawUnsafe(`UPDATE "TaskProject" SET "workspaceId" = NULL WHERE "id" = $1`, projekt.id),
+          /null/i,
+        );
+        await prisma.taskProject.delete({ where: { id: projekt.id } });
       });
 
       await t.test("061: udostępnienie ZWIERZĘCIA osobie i zespołowi", async () => {
