@@ -73,14 +73,31 @@ test(
         assert.equal(n.workspaceId, przestrzenOsobista?.id);
       });
 
-      await t.test("właściciel bez przestrzeni → NULL, ale zapis PRZECHODZI (AC-4)", async () => {
+      await t.test("właściciel bez przestrzeni → wyzwalacz ją TWORZY, zapis przechodzi (AC-4, 075)", async () => {
         // Najważniejszy przypadek całego etapu: mechanizm siedzi na ścieżce zapisu każdego modułu,
         // więc błąd w nim nie objawia się brakującym polem, tylko ODRZUCONYM zapisem użytkownika.
+        //
+        // 075 zaostrzyło `Note.workspaceId` do NOT NULL i tym samym zmieniło stawkę: dawniej brak
+        // przestrzeni dawał NULL (niewidzialna sierota), dziś dałby odmowę zapisu — konto bez
+        // przestrzeni osobistej nie mogłoby utworzyć NICZEGO. Dlatego wyzwalacz (0236) przestał
+        // tylko ODCZYTYWAĆ lustro, a zaczął je DOMYKAĆ. Asercja sprawdza dokładnie to domknięcie:
+        // przestrzeń powstaje, jest osobista i należy do właściciela — bo sama niepustość
+        // `workspaceId` przeszłaby także dla przestrzeni przypadkowej.
         const bezPrzestrzeni = await prisma.user.create({
           data: { email: `fill-x-${rnd()}@test.local` },
         });
         const n = await zrobNotatke({ ownerId: bezPrzestrzeni.id });
-        assert.equal(n.workspaceId, null);
+        assert.notEqual(n.workspaceId, null, "zapis nie może zostać odrzucony ani zostawić pustki");
+        const utworzona = await prisma.workspace.findUniqueOrThrow({ where: { id: n.workspaceId! } });
+        assert.equal(utworzona.kind, "personal");
+        assert.equal(utworzona.personalUserId, bezPrzestrzeni.id);
+        // Bez wiersza członkostwa przestrzeń istnieje, ale nie daje właścicielowi żadnej roli
+        // (pułapka z 056) — czyli konto dalej byłoby odcięte, tylko subtelniej.
+        const czlonkostwo = await prisma.workspaceMember.findUnique({
+          where: { workspaceId_userId: { workspaceId: utworzona.id, userId: bezPrzestrzeni.id } },
+        });
+        assert.equal(czlonkostwo?.role, "owner", "właściciel musi mieć rolę w utworzonej przestrzeni");
+        await prisma.workspace.delete({ where: { id: utworzona.id } }).catch(() => {});
         await prisma.user.delete({ where: { id: bezPrzestrzeni.id } });
       });
 

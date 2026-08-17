@@ -1,0 +1,49 @@
+{
+  "$opis": [
+    "075 (zadanie 11, etap 4) — TABELE, W KTÓRYCH `workspaceId` ZOSTAJE NULLOWALNE.",
+    "",
+    "Etap 4 zaostrza `workspaceId` do NOT NULL na 40 z 45 tabel lustrzanych. Pięć zostaje nullowalnych",
+    "i NIE JEST TO DŁUG — jest to poprawna reguła.",
+    "",
+    "KRYTERIUM: **wiersz może nie mieć właściciela.** Nie „tabela trzyma słownik\" — to sformułowanie",
+    "było pierwszą wersją i okazało się za wąskie. `Job` nie jest słownikiem, a mimo to należy tu:",
+    "zadanie systemowe (sprzątanie, przebiegi cykliczne) nie należy do nikogo. Kosztowała ta pomyłka",
+    "dziewięć wywróconych testów kolejki i korektę 0237. Powody bywają więc różne, wniosek jeden:",
+    "skoro wiersz nie ma właściciela, nie ma też przestrzeni, a NULL jest prawdziwą wartością.",
+    "",
+    "Pomiar przed migracją 0235 znalazł 79 wierszy bez przestrzeni i wszystkie okazały się rekordami",
+    "SYSTEMOWYMI (`ownerId IS NULL`): wspólnymi dla wszystkich kont, edytowalnymi tylko przez",
+    "administratora (model trójpoziomowy z CLAUDE.md, „Dictionary Ownership Levels\").",
+    "",
+    "DLACZEGO NIE „PRZESTRZEŃ SYSTEMOWA\", która dałaby NOT NULL wszędzie: jej członkiem musiałby",
+    "być każdy użytkownik, co tworzy nowy tryb awarii — brak jednego wiersza `WorkspaceMember`",
+    "i konto po cichu przestaje widzieć wszystkie słowniki. Do tego „przestrzeń\" przestałaby",
+    "znaczyć miejsce współpracy, a zaczęła znaczyć też globalny katalog.",
+    "",
+    "LISTA OPIERA SIĘ NA SEMANTYCE, NIE NA LICZNIKACH. `NoteGroup` i `Tag` mają dziś zero rekordów",
+    "systemowych — ale 034 celowo nadało im ten model. Gdyby ich tu zabrakło, pierwszy tag systemowy",
+    "założony przez administratora wywróciłby zapis na produkcji.",
+    "",
+    "ZAPADKA: `maks` to sufit liczby wyjątków. Lista może maleć (wtedy obniż `maks` — bramka tego",
+    "pilnuje), ale nie może rosnąć. Nowa tabela z nullowalnym `workspaceId` wymaga świadomej zmiany",
+    "tego pliku, a nie przemknięcia w diffie."
+  ],
+  "maks": 5,
+  "nullowalne": {
+    "ItemHistory": {
+      "powod": "Słownik podpowiedzi produktów w Zakupach. Wiersze systemowe (`ownerId IS NULL`) są seedowane migracją i widoczne dla każdego zalogowanego konta; użytkownik dokłada własne, które przestrzeń już mają. 69 rekordów systemowych w chwili wprowadzenia reguły."
+    },
+    "NoteGroup": {
+      "powod": "Grupy notatek w modelu trójpoziomowym z 034 (`ownedOrSystemWhere`): NULL/NULL = grupa systemowa, czytelna dla wszystkich, edytowalna tylko przez administratora. Dziś zero takich wierszy, ale model je dopuszcza — pierwszy założony przez administratora złamałby NOT NULL na produkcji."
+    },
+    "Skin": {
+      "powod": "Skórki systemowe seedowane migracjami (Dark/Light/Casual/Blue/Pink + cztery flagowe: Mostek, Papier, Terminal, Zen). Z definicji nie należą do nikogo — są katalogiem wyglądów dostępnym każdemu kontu. 9 rekordów systemowych w chwili wprowadzenia reguły."
+    },
+    "Tag": {
+      "powod": "Etykiety w modelu trójpoziomowym z 034, dokładnie jak `NoteGroup`. Unikalność nazwy jest per właściciel (`@@unique([ownerId, name])`), więc tag systemowy i prywatny o tej samej nazwie współistnieją. Dziś zero rekordów systemowych, model je dopuszcza."
+    },
+    "Job": {
+      "powod": "Kolejka zadań w tle, NIE słownik — i to jest osobny powód niż pozostałe cztery wpisy. `Job.ownerId` jest nullowalne z rozmysłem: zadanie systemowe (sprzątanie, przebiegi cykliczne) nie należy do nikogo, więc nie należy też do żadnej przestrzeni. Wpis powstał po 0235, gdy zaostrzenie wywróciło dziewięć testów kolejki na `Null constraint violation`. Kryterium wyjątku brzmi zatem: WIERSZ MOŻE NIE MIEĆ WŁAŚCICIELA — a nie: tabela trzyma słownik."
+    }
+  }
+}

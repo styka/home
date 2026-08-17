@@ -52,10 +52,11 @@ test(
       data: { name: `h-zesp-${rnd()}`, ownerTeamId: zespol.id },
     });
     const cudzy = await prisma.habit.create({ data: { name: `h-obc-${rnd()}`, ownerId: obcy.id } });
-    const sierota = await prisma.habit.create({ data: { name: `h-sier-${rnd()}`, ownerId: ja.id } });
-    await prisma.habit.update({ where: { id: sierota.id }, data: { workspaceId: null } });
-
-    const wszystkie = [moj.id, zespolowy.id, cudzy.id, sierota.id];
+    // 075: SIEROTY JUŻ NIE DA SIĘ ZROBIĆ. Etap 4 zaostrzył `Habit.workspaceId` do NOT NULL, więc
+    // wcześniejsze `update({ workspaceId: null })` jest odrzucane przez bazę. Test przestał więc
+    // sprawdzać gałąź awaryjną, a zaczął sprawdzać niezmiennik, który ją unieważnił — to mocniejsze
+    // zdanie: zamiast „obchodzimy brak przestrzeni" mówimy „brak przestrzeni jest niemożliwy".
+    const wszystkie = [moj.id, zespolowy.id, cudzy.id];
 
     /** Zbiór identyfikatorów widocznych danym warunkiem — ograniczony do fixture. */
     async function widoczne(or: Record<string, unknown>[]): Promise<string[]> {
@@ -78,11 +79,20 @@ test(
         assert.ok(!stary.includes(cudzy.id), "cudzy zasób nie może być widoczny");
       });
 
-      await t.test("sierota pozostaje widoczna dla właściciela (AC-3)", async () => {
-        const nowy = await widoczne(await ownedOrAsync(ja.id));
-        assert.ok(
-          nowy.includes(sierota.id),
-          "rekord bez przestrzeni musi być widoczny dla właściciela, dopóki kolumna jest nullowalna",
+      await t.test("rekord BEZ przestrzeni jest niemożliwy — baza go odrzuca (075)", async () => {
+        // Następca dawnego testu „sierota pozostaje widoczna dla właściciela". Tamten zabezpieczał
+        // gałąź awaryjną; ta asercja zabezpiecza powód, dla którego gałąź zniknęła. Bez niej
+        // cofnięcie `NOT NULL` przeszłoby niezauważone, a wraz z nim wróciłyby rekordy poza
+        // kontrolą dostępu opartą na przestrzeniach.
+        // SUROWYM SQL-em, nie przez Prismę — i to jest cały sens tej asercji. Typy Prismy też
+        // zabraniają teraz `workspaceId: null` (błąd kompilacji), ale typ chroni wyłącznie kod
+        // przechodzący przez klienta. Wyzwalacz z 055 wybrano właśnie dlatego, że zapis potrafi
+        // przyjść z surowego SQL-a, z seeda albo z zapisu zagnieżdżonego. Tu sprawdzamy tę samą
+        // drogę: czy niezmiennika pilnuje BAZA, a nie tylko TypeScript.
+        await assert.rejects(
+          () => prisma.$executeRawUnsafe(`UPDATE "Habit" SET "workspaceId" = NULL WHERE "id" = $1`, moj.id),
+          /null/i,
+          "zaostrzenie z etapu 4 musi blokować wyzerowanie przestrzeni także spoza Prismy",
         );
       });
 
@@ -91,22 +101,27 @@ test(
         assert.deepEqual(nowy, [cudzy.id]);
       });
 
-      await t.test("nowa gałąź NAPRAWDĘ działa — nie tylko awaryjna (kontrola z 056)", async () => {
-        // Gdyby gałąź po przestrzeniach nie działała, zbiór trzymałby się wyłącznie na gałęziach
-        // awaryjnych — a te wymagają `workspaceId: null`. Zasób z wypełnioną przestrzenią wypadłby.
-        const zPrzestrzenia = await prisma.habit.findFirst({
-          where: { id: moj.id },
-          select: { workspaceId: true },
+      await t.test("nowa gałąź NAPRAWDĘ działa — nie niesie jej własność (kontrola z 056)", async () => {
+        // 075: kontrola z 056 przestawiona na dzisiejsze środki. Tamta wersja wymuszała stare
+        // gałęzie awaryjne (`workspaceId: null`), żeby pokazać, że to nie one dźwigają wynik.
+        // Po etapie 4 tych gałęzi nie da się już nawet WYRAZIĆ — dla kolumny NOT NULL Prisma
+        // odrzuca taki filtr. Mierzymy więc to samo od drugiej strony: zasób ZESPOŁOWY nie ma
+        // `ownerId`, więc jedyną drogą do niego jest gałąź po przestrzeniach. Gdyby przestała
+        // działać, wypadłby ze zbioru — i to jest ta sama informacja, co dawniej.
+        const zespolowyRekord = await prisma.habit.findUniqueOrThrow({
+          where: { id: zespolowy.id },
+          select: { ownerId: true, workspaceId: true },
         });
-        assert.notEqual(zPrzestrzenia?.workspaceId, null, "fixture musi mieć wypełnioną przestrzeń");
-        const tylkoAwaryjne = await widoczne([
-          { workspaceId: null, ownerId: ja.id },
-          { workspaceId: null, ownerTeamId: { in: await getUserTeamIds(ja.id) } },
-        ]);
+        assert.equal(zespolowyRekord.ownerId, null, "fixture zespołowy nie może mieć właściciela-osoby");
+        assert.notEqual(zespolowyRekord.workspaceId, null, "fixture zespołowy musi mieć przestrzeń");
+
+        const tylkoWlasnosc = await widoczne([{ ownerId: ja.id }]);
         assert.ok(
-          !tylkoAwaryjne.includes(moj.id),
-          "gdyby zbiory zgadzały się bez gałęzi po przestrzeniach, test nie mierzyłby zmiany",
+          !tylkoWlasnosc.includes(zespolowy.id),
+          "sama własność nie może wystarczyć — inaczej test nie mierzyłby gałęzi po przestrzeniach",
         );
+        const pelny = await widoczne(await ownedOrAsync(ja.id));
+        assert.ok(pelny.includes(zespolowy.id), "pełny zakres MUSI pokazać zasób zespołu");
       });
     } finally {
       await prisma.habit.deleteMany({ where: { id: { in: wszystkie } } });

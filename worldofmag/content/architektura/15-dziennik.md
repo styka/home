@@ -111,7 +111,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 |---|---------|--------|-------|
 | 9 | Modele `Workspace`, `WorkspaceMember`, `ResourceGrant`, `ResourceInvitation` | ✅ | **051.** Cztery modele + migracja 0226 **z backfillem** (rozdz. 8.10 kroki 1–2): przestrzeń osobista na konto, zespołowa na zespół wraz ze składem. Lustro utrzymywane w przód (`platform/workspaces`), pilnowane bramką `check:workspace-mirror` i testem z testem negatywnym. Zero przełączonych odczytów |
 | 10 | `platform/sharing` — `requireAccess`, dziedziczenie, cache | ✅ | **052.** Platforma bez importu modułu (katalog parametrem wymaganym); Zadania jako pilot; **tabela prawdy 25 komórek identyczna** przed i po; read-tool asystenta przez wspólne sprawdzanie z testem obejścia. Cache per żądanie — bez unieważniania, bo nie ma czego unieważniać |
-| 11 | Migracja `ownerId`/`ownerTeamId` → `workspaceId` na 46 modelach | 🟡 | **Najgroźniejsze zadanie całej przebudowy.** Etapy 1–3 z czterech: 054 kolumna + backfill (0227), 055 wyzwalacz utrzymujący ją w przód (0228) — wybrany zamiast rozszerzenia klienta Prismy, bo tego nie omija ani zapis zagnieżdżony, ani surowy SQL, ani seed; 056 rozstrzyganie dostępu czyta przestrzeń (etap 3A), 057+058 zakresy list idą po przestrzeniach (3B). **Etap 4 zablokowany**: `NOT NULL`/`DROP COLUMN` na 45 tabelach wymaga wygrzania na produkcji i wyzerowanych sierot |
+| 11 | Migracja `ownerId`/`ownerTeamId` → `workspaceId` na 46 modelach | 🟡 | **Najgroźniejsze zadanie całej przebudowy.** Etapy 1–3 oraz **pierwsza połowa etapu 4** (075: `NOT NULL` na 40 z 45 tabel + 5 wyjątków z zapadką; wyzwalacz domyka przestrzeń; przywrócona siatka „właściciel = manager"). Zostaje samo `DROP COLUMN` — 612 błędów kompilacji w 124 plikach, kopia z 0233 gotowa i przećwiczona. Etapy 1–3: 054 kolumna + backfill (0227), 055 wyzwalacz utrzymujący ją w przód (0228) — wybrany zamiast rozszerzenia klienta Prismy, bo tego nie omija ani zapis zagnieżdżony, ani surowy SQL, ani seed; 056 rozstrzyganie dostępu czyta przestrzeń (etap 3A), 057+058 zakresy list idą po przestrzeniach (3B). **Etap 4 zablokowany**: `NOT NULL`/`DROP COLUMN` na 45 tabelach wymaga wygrzania na produkcji i wyzerowanych sierot |
 | 12 | Migracja `TaskProjectMember`/`TaskShare`/`PetShare` → `ResourceGrant` | 🟡 | Etap 1 z trzech: 059 lustro nadań dla Zadań, 061 dla Zwierząt; bramka `check:grant-mirror` z manifestem wyjątków. **Etap 2 zablokowany** — przełączenie odczytów wymaga produkcyjnego pomiaru rozjazdu tabela↔nadanie |
 | 13 | Deklaracje `resources` w `module.ts` | ✅ | **064.** Pomiar przed decyzją zmienił zadanie: decyzje dostępu **per rekord** podejmuje sześć modułów, nie dziewiętnaście. Pozostałe piętnaście albo dziedziczy po zasobie nadrzędnym, albo filtruje zakresem. Zamknięte manifestem `sharing-classification.json` (21/21 z powodem) egzekwowanym przez `check:module-registry` — zamiast pozycji wiecznie otwartej |
 | 14 | `ShareDialog`, „Udostępnione mi", „Co udostępniłem" | 🟡 | **067: część odczytowa.** `/udostepnione`, dwie zakładki, jedno zapytanie do jednej tabeli — wypłata za cały jednolity model. Zostaje strona zapisu: `ShareDialog`, zaproszenia e-mail, `subjectType: "link"`, powiadomienia, kategoria `sharing` w `AuditLog`. Przycisk odbierania dostępu jedzie razem z etapem 2 zadania 12 |
@@ -1926,3 +1926,70 @@ zostaje więc **🟡**, nie ✅ — kierunek Zakupy→Portfel domknięty, Magazy
 
 **Bramki:** build **exit 0**, `check:subscribers` **2 subskrybentów w 2 modułach**, zapadka
 paginacji **263 bez ruchu**, liczniki **160 / 553 / 35 / 35** bez ruchu.
+
+---
+
+## 075 — Zadanie 11, etap 4 (część 1): `workspaceId NOT NULL` i cztery rzeczy, które to odsłoniło
+
+**Co zrobione:** 40 z 45 tabel lustrzanych ma `workspaceId NOT NULL`. Pięć zostaje nullowalnych —
+z manifestem, uzasadnieniem i zapadką. Kolumny własnościowe **jeszcze stoją**; ich usunięcie to
+osobny przebieg, poprzedzony kopią z 0233.
+
+**Decyzja właściciela, od której to się zaczęło.** Pomiar znalazł 79 wierszy bez przestrzeni i
+**wszystkie** okazały się rekordami systemowymi. Odrzucona alternatywa: „przestrzeń systemowa",
+której członkiem byłby każdy — bo tworzy nowy tryb awarii (brak jednego wiersza `WorkspaceMember`
+i konto po cichu traci wszystkie słowniki) i rozmywa pojęcie przestrzeni. Wybrano listę wyjątków
+z zapadką, czyli wzorzec, który w tym repo działa już pięć razy.
+
+**Trzy z tych 79 wierszy nie były tym, na co wyglądały.** `ShoppingList/default` — bezpańska lista
+z `seed.ts`, sprzed modelu własności. `ownedWhereAsync` filtruje po własności, więc **nie widział
+jej nikt**: martwe dane udające rekord systemowy. Usunięta z seeda i z bazy (migracja przypisuje ją
+administratorowi, gdyby na produkcji miała pozycje — żadna migracja nie kasuje cudzej treści).
+
+### Cztery rzeczy, które zaostrzenie odsłoniło — i to jest właściwy dorobek tego przebiegu
+
+**1. Wyzwalacz umiał czytać lustro, ale nie umiał go domknąć.** Przy kolumnie nullowalnej konto bez
+przestrzeni osobistej tworzyło niewidzialną sierotę. Po zaostrzeniu **nie mogłoby utworzyć niczego**
+— ani nawyku, ani notatki. Wyzwalacz (0236) tworzy więc brakującą przestrzeń zamiast odmawiać
+zapisu. Nie „dopilnujemy, żeby aplikacja wołała `ensurePersonalWorkspace`": dokładnie tym
+rozumowaniem 055 odrzuciło rozszerzenie klienta Prismy, bo zapis przychodzi też z surowego SQL-a,
+seeda i zapisu zagnieżdżonego.
+
+**2. …a potem umiał domknąć za dużo.** Wersja z 0236 tworzyła przestrzeń bezwarunkowo, a `ownerId`
+nie wszędzie jest kluczem obcym (`Job` trzyma zwykły tekst). Wyzwalacz próbował wstawić przestrzeń
+dla nieistniejącego konta i wywracał cały zapis. Korekta 0238: **lecz brak przestrzeni realnego
+właściciela, nie wymyślaj właścicieli**. Domknięcie luki zamieniło łagodną nieobecność w twardy
+błąd — ta sama klasa regresji, tylko z drugiej strony.
+
+**3. `NOT NULL` po cichu usunął siatkę bezpieczeństwa, o której nikt nie pamiętał.** W
+`rolaZWlasnosci` reguła „właściciel = `manager`" stała **pod** gałęzią przestrzeni, więc docierał do
+niej wyłącznie zasób bez przestrzeni. Sieroty zniknęły — i razem z nimi ochrona: gdy przestrzeni
+zasobu nie ma w kontekście dostępu (klasyczny przypadek to brak wiersza `WorkspaceMember`, pułapka
+z 056), **właściciel przestawał być właścicielem**. Ujawnił to test kosztu dostępu. Warunek
+przeniesiony na górę; tabela prawdy bez zmian, więc niczego nie poszerzył.
+
+**4. Kryterium wyjątku było za wąskie.** Listę zbudowano z tabel SŁOWNIKOWYCH. `Job` słownikiem nie
+jest, a należy tam: zadanie systemowe nie ma właściciela. Kosztowało to dziewięć wywróconych testów
+kolejki i korektę 0237. Kryterium brzmi odtąd: **wiersz może nie mieć właściciela** — a nie „tabela
+trzyma słownik".
+
+**Dwie bramki przestały widzieć własny przedmiot**, bo obie filtrowały modele po `workspaceId
+String?`, a 40 kolumn straciło znak zapytania. `check-workspace-fill` zaczęła zgłaszać „wyzwalacz na
+tabeli, której nie ma wśród modeli", a test kompletności backfillu — odwrotność tego samego.
+Rozróżnienie, o które naprawdę chodziło, nigdy nie dotyczyło nullowalności: kolumna LUSTRZANA
+istnieje tam, gdzie jest co lustrzać, czyli obok `ownerId`/`ownerTeamId`. Trzy tabele platformowe
+(`DomainEvent`, `ResourceGrant`, `WorkspaceMember`) mają przestrzeń jako część tożsamości.
+
+**Testy sierot przepisane, nie skasowane.** Trzy testy budowały sierotę przez
+`update({ workspaceId: null })`. Stan stał się nieosiągalny, więc zamiast dowodzić, że obejście
+działa, dowodzą teraz **niezmiennika, który je unieważnił** — że baza odrzuca wyzerowanie
+przestrzeni, i to sprawdzane **surowym SQL-em**, bo typ Prismy chroni tylko kod idący przez klienta.
+Z tabeli prawdy zniknęła jedna kolumna (5×5 → 5×4): opisywała stan, którego nie da się już zbudować,
+a punkt odniesienia poprawiono **punktowo**, nie regeneracją — regeneracja ukryłaby każdą inną zmianę.
+
+**Bramki:** build **exit 0**, `test:unit` **901/901**, nowa `check:workspace-nullable` (2 sondy),
+zapadka paginacji **263** bez ruchu, zakres własności **2 wyjątki** (był 3 — jeden zniknął razem
+z martwą gałęzią).
+
+**Zostaje do etapu 4 część 2:** samo `DROP COLUMN`, zmierzone na **612 błędów kompilacji w 124
+plikach**. Kopia własności (0233) i procedura odtworzenia są gotowe i przećwiczone.
