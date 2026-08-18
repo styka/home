@@ -136,7 +136,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | 22 | Publikacja przez worker | ✅ | **071.** Worker czyta niedostarczone (`FOR UPDATE SKIP LOCKED`), woła subskrybentów z deklaracji, oznacza `deliveredAt` **po sukcesie** — bo lepiej dwa razy niż zero razy. Idempotencja **wymuszona bramką** (`check:subscribers`), nie akapitem: `klucz-unikalny` musi mieć `upsert` i klucz z `event.id`. Pierwszy subskrybent: zakupy zakończone → powiadomienie dla pozostałych członków przestrzeni. **Bez `LISTEN/NOTIFY`** — decyzja przy zadaniu 23, gdzie jest realny wymóg opóźnienia |
 | 23 | SSE `/api/events` | ✅ | **072.** Jedno połączenie na kartę, kanały `user:` i `ws:` liczone **na serwerze z sesji** (przyjęcie ich z żądania byłoby podsłuchem — pilnuje bramka). Ładunek celowo ubogi: klient się odświeża, nie renderuje z sygnału. **Bez `LISTEN/NOTIFY`** — szyna w procesie, bo oba warianty z rozdz. 11.1.1 istnieją wyłącznie dla wielu instancji; ograniczenie nazwane w kodzie i w `docs/devops/` |
 | 24 | Usunięcie `setInterval` z `DataFreshness` | ✅ | **072.** 45 s → strumień; odpytywanie **awaryjne co 5 min zostaje na stałe**, bo pokrywa brak `EventSource`, zerwany strumień i wiele instancji. Awaria kanału **nie jest awarią aplikacji** — zmiany dochodzą wolniej. Bramka nie pozwala wrócić do krótkiego interwału |
-| 25 | Subskrypcje międzymodułowe | 🟡 | **073.** Zakupy→Portfel przepięte z wywołania na zdarzenie: `completeShopping` nie importuje już nic z Portfela, a reguła „tylko listy prywatne" przeniosła się do subskrybenta i czyta **przestrzeń**, nie `ownerId`. Idempotencja `naturalna` po `(sourceModule, sourceId)`, data z `event.createdAt`. Test na realnym Postgresie + mutacja. **Magazyn→Zakupy zostaje** — wymaga nowego rodzaju zdarzenia i producenta |
+| 25 | Subskrypcje międzymodułowe | ✅ | **073 + 080 — obie pary z rozdz. 9.5.** Zakupy→Portfel: `completeShopping` nie importuje już nic z Portfela, a reguła „tylko listy prywatne" przeniosła się do subskrybenta i czyta przestrzeń. Magazyn→Zakupy (080): Magazyn ogłasza zmianę stanu wraz z minimum, a **regułę „poniżej minimum" i cel stosują ZAKUPY** — flaga `autoReplenish` stoi na `ShoppingList`, nie w ustawieniach Magazynu. Decyzja właściciela: automat z jedną listą docelową na przestrzeń, bez powiadomień; przycisk ręczny zostaje. Niezmiennik „jedna lista" trzyma **częściowy indeks unikalny** (0246), nie kod akcji. Idempotencja `naturalna` po (lista, nazwa, status NEEDED) — świadomie SZERSZA niż klucz z `event.id`, bo pokrywa też trzy spadki tej samej pozycji w ciągu dnia. Ładunek zdarzenia ma **typ dzielony przez kontrakt** producenta, więc przemianowanie pola jest błędem kompilacji, a nie cichym zamilknięciem automatu |
 
 ### Faza 5 — Skala i koszt
 
@@ -2274,3 +2274,71 @@ gdy parser zaczął widzieć sześć zamiast czterdziestu sześciu.
 **Bramki:** build **exit 0**, `test:unit` **948/948** (było 922), zapadka paginacji **263** bez
 ruchu, `check:workspace-fill` **5 tabel** — dokładnie lista wyjątków, bo wyzwalacz zdjęto z 40
 razem z kolumnami.
+
+---
+
+## 080 — Zadanie 25 domknięte: Magazyn ogłasza brak, Zakupy decydują, co z nim zrobić
+
+Druga i ostatnia para reakcji międzymodułowej z rozdz. 9.5. Do dziś działało to odwrotnie niż
+powinno: Magazyn miał akcję `addLowStockToShoppingList(listId)` — czyli moduł magazynowy wiedział,
+że w systemie istnieją listy zakupów, i sam wybierał, na którą dopisać.
+
+**Decyzja właściciela** (jedno pytanie, zgodnie z C-55): automat z jedną listą docelową na
+przestrzeń, bez powiadomień; ta sama pozycja nie dubluje się przy kolejnych spadkach; bez ustawionej
+listy nic się nie dzieje; przycisk ręczny zostaje jako „dociągnij teraz".
+
+### Reguła należy do odbiorcy — i dopiero tu widać, co to znaczy
+
+W 073 przeniesienie dotyczyło *warunku* („nie księgujemy cudzych zakupów"). Tu przenosi się **cała
+decyzja produktowa**: producent nie sprawdza nawet, czy stan spadł poniżej minimum. Emituje
+`magazynowanie.stan.zmieniony` z `stanPo` **i** `minimum`, a to Zakupy stosują regułę i wybierają
+cel. Gdyby producent filtrował, drugi odbiorca — np. alarmy magazynowe, które przy innym progu
+patrzą na te same dane — dostawałby strumień okrojony cudzą regułą.
+
+Konsekwencja w schemacie: flaga `autoReplenish` stoi na **`ShoppingList`**, nie w ustawieniach
+Magazynu. „Ta lista przyjmuje automatyczne uzupełnienia" to własność listy, nie magazynu.
+
+### Niezmiennik „jedna lista na przestrzeń" pilnuje BAZA
+
+Akcja zdejmuje flagę z pozostałych list w jednej transakcji — ale to nie ona jest gwarancją.
+Gwarancją jest **częściowy indeks unikalny** `ON "ShoppingList"("workspaceId") WHERE "autoReplenish"`
+(migracja 0246). Bez niego dwa równoległe kliknięcia albo jeden zapis surowym SQL-em zostawiłyby
+przestrzeń z dwiema oznaczonymi listami, a `findFirst` w subskrybencie nie miałby po czym wybrać:
+objaw „braki lądują raz tu, raz tam", bez jednego błędu w logach. To ta sama figura, co wyzwalacz
+z 055 — akcja jest jedną drogą zapisu, nie jedyną. Prisma nie wyraża indeksu warunkowego, więc
+doszedł czwarty wpis do `schema-drift-allowed.json`.
+
+### Idempotencja szersza niż `event.id` — i to nie jest odstępstwo
+
+Manifest subskrybentów zna dwa wzorce: klucz z `event.id` i „naturalna". Tutaj naturalna, ale
+z powodu, którego wcześniej nie było: **klucz z `event.id` byłby ZA WĄSKI**. Chroniłby przed
+ponowieniem dostarczenia (rozdz. 9.4.4) i nie chroniłby przed trzema spadkami tej samej pozycji
+w ciągu dnia — a właściciel poprosił wprost o to drugie. Reakcja brzmi więc „upewnij się, że brak
+jest na liście", nie „dopisz brak", a kluczem jest trójka **(lista, nazwa, status `NEEDED`)**.
+Status w kluczu jest istotny i ma własny przypadek testowy: gdyby go zabrakło, kupione raz mleko
+zablokowałoby automat na zawsze.
+
+### Rozjazd nazw w ładunku byłby cichy — więc typ przechodzi przez granicę
+
+`DomainEvent.payload` jest z definicji `unknown`. Producent pisze `nazwa`, subskrybent czyta
+`nazwa` — i gdyby ktoś przemianował jedno, `tsc` nie powiedziałby nic, a automat po prostu
+przestałby cokolwiek dopisywać. Dlatego kształt ładunku jest **typem zdefiniowanym w module
+producenta i wystawionym przez jego kontrakt**; subskrybent importuje go przez granicę (import
+kontraktu jest legalny — C-36) i producent domyka to przez `satisfies`. Odbiorca używa
+`Partial<…>`, bo zdarzenia zapisane przed tą zmianą nowych pól nie mają i mają po prostu nic nie
+zrobić.
+
+### Czego tu nie ma, świadomie
+
+Emisję ma **`adjustStorage`** — ścieżka przyjęć i wydań, w tym skanowanie w `/magazynowanie/przeplyw`.
+Spis (`bulkSetStorageQuantities`), dokumenty PZ/WZ i przesunięcia zmieniają stan **bez zdarzenia**
+i to się nie zmieniło. Spis stu pozycji dałby sto zdarzeń i sto pozycji na liście — to jest decyzja
+produktowa osobna od tej, którą właśnie podjęto, i nie ma jej po co przemycać w tym przebiegu.
+
+**Dowód:** dziewięć przypadków na realnym Postgresie, w tym drugie dostarczenie, drugi spadek, inna
+wielkość liter, pozycja bez minimum i oznaczona lista w CUDZEJ przestrzeni. Trzy sondy: usunięcie
+klucza naturalnego czerwieni 8 z 9, usunięcie zawężenia do przestrzeni — 3, a częściowy indeks
+sprawdzony wprost `INSERT`-em (odrzuca drugą oznaczoną listę).
+
+**Bramki:** build **exit 0**, `test:unit` **956/956**, `check:subscribers` **3 subskrybentów**,
+zapadka paginacji **263** bez ruchu.

@@ -4,10 +4,10 @@ import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  ShoppingCart, Plus, Loader2, Pencil, Check, X, Trash2,
+  ShoppingCart, Plus, Loader2, Pencil, Check, X, Trash2, PackagePlus,
   LayoutList, Map, Image as ImageIcon, Users,
 } from "lucide-react";
-import { getListSummaries, createList, renameList, deleteList, type ListSummary } from "../actions/lists";
+import { getListSummaries, createList, renameList, deleteList, setAutoReplenishList, type ListSummary } from "../actions/lists";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 export function ShoppingSideNav() {
@@ -63,6 +63,17 @@ export function ShoppingSideNav() {
     startTransition(async () => {
       await renameList(id, editName.trim());
       setEditingId(null);
+      reload();
+    });
+  }
+
+  /**
+   * 080 (zadanie 25): wskazanie listy, na którą Magazyn dopisuje braki. Najwyżej jedna na
+   * przestrzeń — serwer zdejmuje flagę z pozostałych, więc po przeładowaniu znacznik przeskakuje.
+   */
+  async function handleAutoReplenish(list: ListSummary) {
+    startTransition(async () => {
+      await setAutoReplenishList(list.id, !list.autoReplenish);
       reload();
     });
   }
@@ -135,12 +146,33 @@ export function ShoppingSideNav() {
                 {list.teamName && (
                   <Users size={10} style={{ color: "var(--accent-purple)", flexShrink: 0 }} aria-label={`Zespół: ${list.teamName}`} />
                 )}
+                {/* 080: znacznik widoczny BEZ najeżdżania — inaczej użytkownik nie ma jak
+                    sprawdzić, która lista przyjmuje braki, bez obchodzenia wszystkich myszą. */}
+                {list.autoReplenish && (
+                  <PackagePlus
+                    size={10}
+                    style={{ color: "var(--accent-green)", flexShrink: 0 }}
+                    aria-label="Trafiają tu braki z Magazynu"
+                  />
+                )}
                 {list.pendingCount > 0 && hovered !== list.id && (
                   <span style={{ fontSize: 10, color: "var(--accent-blue)", flexShrink: 0 }}>{list.pendingCount}</span>
                 )}
               </Link>
               {hovered === list.id && (
                 <div className="flex items-center gap-1 mr-1.5 flex-shrink-0">
+                  <button
+                    onClick={(e) => { e.preventDefault(); void handleAutoReplenish(list); }}
+                    className="focus:outline-none hover:opacity-70"
+                    style={{ color: list.autoReplenish ? "var(--accent-green)" : "var(--text-muted)" }}
+                    title={
+                      list.autoReplenish
+                        ? "Nie dopisuj tu już braków z Magazynu"
+                        : "Dopisuj tu braki z Magazynu (stan poniżej minimum)"
+                    }
+                  >
+                    <PackagePlus size={10} />
+                  </button>
                   <button
                     onClick={(e) => { e.preventDefault(); setEditingId(list.id); setEditName(list.name); }}
                     className="focus:outline-none hover:opacity-70"

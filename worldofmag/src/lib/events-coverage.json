@@ -15,7 +15,6 @@
     "wierszach daje JEDNO zdarzenie, nie N — i wtedy bramka pilnuje, żeby emisja nie leżała w pętli.",
     "Bramka nie zgadnie, który producent jest który: to decyzja produktowa, nie techniczna."
   ],
-
   "producenci": {
     "src/modules/shopping/actions/lists.ts": {
       "zdarzenie": "shopping.list.completed",
@@ -27,7 +26,7 @@
       "zdarzenie": "magazynowanie.stan.zmieniony",
       "ladunek": "pojedynczy",
       "powod": "Transakcja już istniała (zmiana stanu + wpis ruchu), w formie interaktywnej, więc emisja wchodzi bez ruszania kształtu zapisu.",
-      "przyszly-odbiorca": "Zakupy — uzupełnianie zapasów przy stanie poniżej minimum. Rozdz. 9.1 wymienia to wprost jako przykład reakcji międzymodułowej."
+      "przyszly-odbiorca": "Zakupy — `shopping.uzupelnij-braki` (080, zadanie 25) dopisuje brak do listy oznaczonej flagą `autoReplenish`. ODBIORCA JUŻ ISTNIEJE, więc pole przestało opisywać zamiar. Producent celowo NIE filtruje po minimum: podaje `stanPo` i `minimum`, a regułę „poniżej minimum\" stosuje odbiorca — inaczej drugi odbiorca (np. alarmy magazynowe) dostawałby okrojony strumień."
     },
     "src/modules/kitchen/actions/pantry.ts": {
       "zdarzenie": "kuchnia.spizarnia.spisana",
@@ -36,7 +35,6 @@
       "przyszly-odbiorca": "Zakupy i plan posiłków — brakujące składniki po spisie. Ten sam kierunek co w Magazynowaniu, ale na innym kształcie danych."
     }
   },
-
   "obserwacje": {
     "$opis": "Rzeczy ustalone przy 070, świadomie NIEZROBIONE (C-53). Materiał na zadania 22–25 i 30.",
     "forma-tablicowa": "Dziewięć z dwudziestu trzech transakcji w repo używa formy TABLICOWEJ (`$transaction([...])`), która nie daje klienta `tx` — emisja z nich jest niemożliwa bez przepisania ich na formę interaktywną. Dotyczy m.in. `addEntry` w Portfelu, który liczy saldo. Świadomie nietknięte: przepisywanie działającej ścieżki zapisu dla samego zdarzenia to nieproporcjonalne ryzyko w przebiegu, który ma być niewidoczny.",

@@ -366,12 +366,19 @@ model TeamInvitation {
 // ─── Shopping ─────────────────────────────────────────────────────────────
 
 model ShoppingList {
-  id         String    @id @default(cuid())
-  name       String
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  archived   Boolean   @default(false)
-  archivedAt DateTime?
+  id            String    @id @default(cuid())
+  name          String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  archived      Boolean   @default(false)
+  archivedAt    DateTime?
+  // 080 (zadanie 25): lista, na którą trafiają BRAKI z Magazynu (stan poniżej minimum).
+  // Ustawienie należy do ZAKUPÓW, nie do Magazynu — tak samo jak reguła „księgujemy tylko zakupy
+  // osobiste" należy do Portfela (073). Magazyn ogłasza brak; Zakupy decydują, gdzie on ląduje.
+  // NAJWYŻEJ JEDNA TAKA LISTA NA PRZESTRZEŃ — pilnuje tego CZĘŚCIOWY indeks unikalny
+  // (`WHERE "autoReplenish"`), a nie kod akcji. Prisma nie wyraża indeksu warunkowego, więc stoi
+  // on w migracji i ma wpis w `schema-drift-allowed.json`.
+  autoReplenish Boolean   @default(false)
 
   items Item[]
 
@@ -888,7 +895,6 @@ model Job {
   dedupeKey   String? // idempotencja enqueue
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
 
   @@index([status, runAfter])
   @@index([ownerId, createdAt])

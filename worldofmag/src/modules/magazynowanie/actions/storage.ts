@@ -41,6 +41,26 @@ export type StorageItemDetail = StorageItem & {
 
 export type StorageMode = "home" | "pro";
 
+/**
+ * 080 (zadanie 25) — ŁADUNEK ZDARZENIA `magazynowanie.stan.zmieniony`.
+ *
+ * Typ mieszka w module PRODUCENTA i wychodzi przez jego kontrakt, bo producent jest jedynym,
+ * który wie, co wkłada do ładunku. Odbiorca (`shopping/events.ts`) importuje go przez granicę —
+ * to jedyny sposób, żeby przemianowanie pola po jednej stronie było BŁĘDEM KOMPILACJI.
+ * `DomainEvent.payload` jest z definicji `unknown`, więc bez tego typu rozjazd nazw byłby cichy:
+ * subskrybent po prostu przestałby cokolwiek dopisywać, nie zgłaszając niczego.
+ */
+export type StanZmienionyPayload = {
+  itemId: string;
+  delta: number;
+  stanPo: number;
+  powod: string | null;
+  nazwa: string;
+  jednostka: string | null;
+  kategoria: string | null;
+  minimum: number | null;
+};
+
 /** Buduje warunek własności (user OR teamy) dla dowolnego modelu magazynowego. */
 async function ownershipOr(userId: string) {
   return await ownedOrAsync(userId);
@@ -224,7 +244,17 @@ export async function adjustStorageQuantity(
   const updated = await prisma.$transaction(async (tx) => {
     const existing = await tx.storageItem.findUnique({
       where: { id },
-      select: { quantity: true, workspaceId: true },
+      // 080 (zadanie 25): ładunek zdarzenia niesie WSZYSTKO, czego potrzebuje odbiorca. Gdyby
+      // subskrybent Zakupów musiał sam dopytać o nazwę i minimum, czytałby tabelę Magazynu —
+      // czyli granica modułów przeciekłaby na poziomie danych, gdzie nie pilnuje jej żaden lint.
+      select: {
+        quantity: true,
+        workspaceId: true,
+        name: true,
+        unit: true,
+        category: true,
+        minQuantity: true,
+      },
     });
     if (!existing) throw new Error("Pozycja nie istnieje");
     const next = Math.max(0, (existing.quantity ?? 0) + delta);
@@ -244,14 +274,26 @@ export async function adjustStorageQuantity(
       throw new Error(`Pozycja ${id} nie ma przestrzeni — nie mogę wyemitować zdarzenia zmiany stanu`);
     }
     // 070 (zadanie 21): zdarzenie w TEJ SAMEJ transakcji co zmiana stanu i wpis ruchu.
-    // Przyszły odbiorca (zadanie 25): uzupełnianie zapasów do Zakupów przy stanie poniżej minimum.
+    // 080 (zadanie 25): odbiorca istnieje — `shopping.uzupelnij-braki` dopisuje brak do listy
+    // oznaczonej w Zakupach. Producent NIE zna tej reguły: nie sprawdza, czy stan spadł poniżej
+    // minimum, tylko podaje jedno i drugie. Gdyby filtrował, przeniósłby decyzję Zakupów do
+    // Magazynu i drugi odbiorca (np. alarmy) dostawałby okrojony strumień.
     {
       await emitDomainEvent(tx, {
         workspaceId: przestrzen,
         module: "magazynowanie",
         type: "magazynowanie.stan.zmieniony",
         actorId: user.id,
-        payload: { itemId: id, delta, stanPo: next, powod: reason ?? null },
+        payload: {
+          itemId: id,
+          delta,
+          stanPo: next,
+          powod: reason ?? null,
+          nazwa: existing.name,
+          jednostka: existing.unit,
+          kategoria: existing.category,
+          minimum: existing.minQuantity,
+        } satisfies StanZmienionyPayload,
       });
     }
     return item;

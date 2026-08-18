@@ -36,3 +36,7 @@ export {
   addBatch,
   addLowStockToShoppingList,
 } from "./actions/storage";
+
+// 080 (zadanie 25): kształt ładunku zdarzenia `magazynowanie.stan.zmieniony`. Konsumentem jest
+// subskrybent Zakupów — patrz komentarz przy definicji typu.
+export type { StanZmienionyPayload } from "./actions/storage";

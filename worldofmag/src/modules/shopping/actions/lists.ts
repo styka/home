@@ -14,6 +14,8 @@ export interface ListSummary {
   totalCount: number;
   teamName: string | null;
   archived?: boolean;
+  /** 080 (zadanie 25): czy na tę listę trafiają automatycznie braki z Magazynu. */
+  autoReplenish?: boolean;
 }
 
 export async function getListSummaries(includeArchived = false): Promise<ListSummary[]> {
@@ -42,6 +44,7 @@ export async function getListSummaries(includeArchived = false): Promise<ListSum
         totalCount,
         teamName: list.workspace?.team?.name ?? null,
         archived: list.archived,
+        autoReplenish: list.autoReplenish,
       };
     })
   );
@@ -226,6 +229,44 @@ export async function unarchiveList(id: string): Promise<void> {
     data: { archived: false, archivedAt: null },
   });
   revalidatePath("/shopping");
+}
+
+/**
+ * 080 (zadanie 25) — WSKAZANIE LISTY, NA KTÓRĄ TRAFIAJĄ BRAKI Z MAGAZYNU.
+ *
+ * Najwyżej jedna taka lista na przestrzeń. Zdejmowanie flagi z pozostałych robimy TU, w jednej
+ * transakcji z nadaniem jej nowej liście — ale niezmiennika pilnuje **częściowy indeks unikalny**
+ * z migracji 0246, nie ta kolejność wywołań. Różnica jest istotna przy dwóch równoległych
+ * kliknięciach: bez indeksu obie transakcje przeszłyby i przestrzeń miałaby dwie oznaczone listy,
+ * a subskrybent dopisywałby braki do przypadkowej.
+ *
+ * Zakres zdejmowania to PRZESTRZEŃ LISTY, nie przestrzenie użytkownika: oznaczenie listy zespołu
+ * nie może odznaczyć listy prywatnej i odwrotnie — to są dwa niezależne ustawienia.
+ */
+export async function setAutoReplenishList(listId: string, enabled: boolean): Promise<void> {
+  const user = await requireAuth();
+  await assertListAccess(listId, user.id);
+
+  const lista = await prisma.shoppingList.findUnique({
+    where: { id: listId },
+    select: { workspaceId: true },
+  });
+  if (!lista) throw new Error("List not found");
+
+  await prisma.$transaction(async (tx) => {
+    // Zdejmij z pozostałych list TEJ przestrzeni — także wtedy, gdy wyłączamy: `updateMany`
+    // obejmujący wskazaną listę jest tu prostszy i idempotentny.
+    await tx.shoppingList.updateMany({
+      where: { workspaceId: lista.workspaceId, autoReplenish: true },
+      data: { autoReplenish: false },
+    });
+    if (enabled) {
+      await tx.shoppingList.update({ where: { id: listId }, data: { autoReplenish: true } });
+    }
+  });
+
+  revalidatePath("/shopping");
+  revalidatePath(`/shopping/${listId}`);
 }
 
 /**

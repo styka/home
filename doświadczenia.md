@@ -4,6 +4,23 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Klucz idempotencji z `event.id` bywa WĘŻSZY, niż wymaga tego reguła biznesowa
+**Problem:** Pisząc subskrybenta „brak w Magazynie → pozycja na liście zakupów" sięgnąłem
+odruchowo po wzorzec z 071: klucz idempotencji wyprowadzony z `event.id`. Przeszedłby bramkę
+`check:subscribers` i test podwójnego dostarczenia. Nie spełniałby jednak tego, o co poprosił
+właściciel: „ta sama pozycja nie dubluje się przy kolejnych spadkach". Trzy spadki tej samej pozycji
+w ciągu dnia to **trzy różne zdarzenia** — każde z innym `event.id` — więc lista dostałaby trzy
+wiersze „Mleko", a wszystkie testy świeciłyby na zielono.
+**Rozwiązanie:** Kluczem jest trójka **(lista, nazwa, status `NEEDED`)**, czyli idempotencja
+„naturalna". Reakcja brzmi odtąd „upewnij się, że brak jest na liście", a nie „dopisz brak".
+Status w kluczu ma własny przypadek testowy: bez niego kupione raz mleko zablokowałoby automat na
+zawsze.
+**Lekcja:** `event.id` chroni przed **ponowieniem dostarczenia** i tylko przed nim. Zanim go
+wybierzesz, zapytaj, czy reguła nie jest szersza: „nie rób tego dwa razy dla tego ZDARZENIA" to co
+innego niż „nie rób tego dwa razy dla tego SKUTKU". Gdy istnieje klucz naturalny opisujący skutek,
+jest lepszy — pokrywa oba przypadki naraz. Sygnał ostrzegawczy: wzorzec wybrany dlatego, że
+poprzedni subskrybent go używał.
+
 ## 2026-08-19 — Asercja „po usunięciu konta" nie może liczyć zbioru, którego definicja żyje w tym koncie
 **Problem:** Testy RODO sprawdzały „ile rekordów z `ownerId: A.id` zostało po `purgeUserData(A.id)`".
 Przy przejściu na przestrzenie odpowiednikiem wydawało się `filtrMoichRekordow(A.id)` — i trzy testy

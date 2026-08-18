@@ -784,6 +784,12 @@
     "status": "ai",
     "access": "owner"
   },
+  "lists:setAutoReplenishList": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "owner",
+    "uzasadnienie": "080 (zadanie 25): wskazanie listy, na którą Magazyn dopisuje braki. To USTAWIENIE integracji, nie czynność — jedna wartość na przestrzeń, zmieniana raz i klikana w miejscu, w którym użytkownik widzi wszystkie listy naraz. Asystent, który by ją przestawiał, przenosiłby automat między listami bez pokazania, skąd i dokąd."
+  },
   "lists:unarchiveList": {
     "status": "ai",
     "action": "unarchive_list",

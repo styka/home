@@ -25,22 +25,32 @@
     "Dowodem jest test podwójnego dostarczenia, który mierzy SKUTEK. Bramka pilnuje tylko tego,",
     "żeby nikt nie dodał subskrybenta BEZ podjęcia tej decyzji — i to jest jej cała rola."
   ],
-
   "subskrybenci": {
     "shopping.powiadom-o-zakonczeniu": {
       "plik": "src/modules/shopping/events.ts",
-      "zdarzenia": ["shopping.list.completed"],
+      "zdarzenia": [
+        "shopping.list.completed"
+      ],
       "idempotencja": "klucz-unikalny",
       "powod": "`notifyUser` robi `upsert` po `@@unique([userId, dedupeKey])`, a klucz to `zdarzenie-${event.id}` — stabilny między ponowieniami. Drugie dostarczenie trafia w ten sam wiersz i nic nie zmienia. Dowiedzione testem podwójnego dostarczenia."
     },
     "portfel.ksieguj-zakupy": {
       "plik": "src/modules/portfel/events.ts",
-      "zdarzenia": ["shopping.list.completed"],
+      "zdarzenia": [
+        "shopping.list.completed"
+      ],
       "idempotencja": "naturalna",
       "powod": "`bookAutoExpense` szuka wpisu po parze (sourceModule, sourceId) i przy trafieniu AKTUALIZUJE go, korygując saldo o różnicę — a nie dopisuje drugiego. `sourceId` to id listy, więc klucz jest stabilny między ponowieniami tak samo jak `event.id`; drugie dostarczenie ustawia tę samą kwotę i różnica wynosi zero. Data brana z `event.createdAt`, nie z `new Date()`, żeby ponowienie nie przesunęło wydatku na inny dzień. Dowiedzione testem podwójnego dostarczenia (saldo i liczba wpisów identyczne po drugim wywołaniu)."
+    },
+    "shopping.uzupelnij-braki": {
+      "plik": "src/modules/shopping/events.ts",
+      "zdarzenia": [
+        "magazynowanie.stan.zmieniony"
+      ],
+      "idempotencja": "naturalna",
+      "powod": "Reakcja brzmi „upewnij się, że brak jest na liście\", nie „dopisz brak\". Kluczem naturalnym jest trójka (lista, nazwa, status NEEDED): dopóki pozycja czeka na kupienie, ani ponowne dostarczenie tego samego zdarzenia, ani kolejny spadek tej samej pozycji nie dokłada drugiego wiersza. Klucz z `event.id` byłby tu WĘŻSZY niż potrzeba — chroniłby przed ponowieniem, ale nie przed trzema spadkami tej samej pozycji w ciągu dnia, czego właściciel wprost zażyczył sobie przy decyzji o automacie. Dowiedzione testem podwójnego dostarczenia ORAZ testem dwóch osobnych spadków."
     }
   },
-
   "obserwacje": {
     "$opis": "Ustalone przy 071, świadomie niezrobione (C-53).",
     "listen-notify": "Worker chodzi obiegiem co 5 s zamiast reagować na `LISTEN/NOTIFY`. Oba warianty z rozdz. 9.4.3 wymagają surowego połączenia poza Prismą (nowa zależność), a kupują wyłącznie niższe opóźnienie — istotne dopiero przy kanale czasu rzeczywistego. Decyzja należy do zadania 23, gdzie będzie realny wymóg.",
