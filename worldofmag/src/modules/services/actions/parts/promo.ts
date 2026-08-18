@@ -7,12 +7,13 @@ import { requireAuth } from "@/platform/auth/serverUtils";
 import { requireMyProvider } from "../../lib/core/helpers";
 import { loadRequestAccess } from "../../lib/core/access";
 import type { PromoKind, ServicePromoCodeDTO } from "../../lib/services";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export async function getMyPromoCodes(): Promise<ServicePromoCodeDTO[]> {
   const user = await requireAuth();
   const provider = await prisma.serviceProvider.findUnique({ where: { userId: user.id }, select: { id: true } });
   if (!provider) return [];
-  const rows = await prisma.servicePromoCode.findMany({ where: { providerId: provider.id }, orderBy: { createdAt: "desc" } });
+  const rows = await prisma.servicePromoCode.findMany({ take: SUFIT_LISTY, where: { providerId: provider.id }, orderBy: { createdAt: "desc" } });
   return rows.map((c) => ({
     id: c.id, code: c.code, kind: c.kind as PromoKind, value: c.value,
     minAmount: c.minAmount, maxUses: c.maxUses, usedCount: c.usedCount, active: c.active,

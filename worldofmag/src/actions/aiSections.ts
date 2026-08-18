@@ -22,6 +22,7 @@ import {
 import { readDefaultSectionModes, resolveSectionModes } from "@/platform/ai/sectionModeResolver";
 import type { AiContentKind } from "@/platform/ai/contentMemory";
 import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export interface SectionModeDTO {
   kind: AiContentKind;
@@ -36,7 +37,7 @@ export async function getSectionModes(): Promise<SectionModeDTO[]> {
   const user = await requireAuth();
   const [resolved, own] = await Promise.all([
     resolveSectionModes(user.id),
-    prisma.aiSectionPref.findMany({ where: { ...(await filtrMoichRekordow(user.id)) } }),
+    prisma.aiSectionPref.findMany({ take: SUFIT_LISTY, where: { ...(await filtrMoichRekordow(user.id)) } }),
   ]);
   const ownKinds = new Set(own.filter((p) => isSectionMode(p.mode)).map((p) => p.sectionKind));
 

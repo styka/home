@@ -10,6 +10,7 @@ import { recordTrash } from "@/platform/trash/trash";
 import { rankNotesBySearch } from "../lib/searchRank";
 import { requireModuleAccess, idNotatekNadanychMi } from "../lib/sharingGuard";
 import { wlasnoscDoZapisu, przestrzenZespoluBezKontroliDostepu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
  * 095: dostęp do JEDNEJ notatki rozstrzyga platforma (`platform/sharing`), a nie moduł.
@@ -96,6 +97,7 @@ export async function getNotes(filters?: {
   }
 
   const notes = await prisma.note.findMany({
+    take: SUFIT_LISTY,
     where,
     include: { group: true, tags: { include: { tag: true } } },
     orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
@@ -169,6 +171,7 @@ export async function updateNote(
       await prisma.noteRevision.create({ data: { noteId: id, title: prev.title, content: prev.content } });
       // Zostaw maks. 20 ostatnich migawek.
       const old = await prisma.noteRevision.findMany({
+        take: SUFIT_LISTY,
         where: { noteId: id }, orderBy: { createdAt: "desc" }, skip: 20, select: { id: true },
       });
       if (old.length) await prisma.noteRevision.deleteMany({ where: { id: { in: old.map((r) => r.id) } } });
@@ -273,7 +276,7 @@ export type NoteAttachmentDTO = { id: string; name: string; url: string; created
 export async function getNoteAttachments(noteId: string): Promise<NoteAttachmentDTO[]> {
   const user = await requireAuth();
   await assertNoteAccess(noteId, user.id, "note.read");
-  const rows = await prisma.noteAttachment.findMany({ where: { noteId }, orderBy: { createdAt: "desc" } });
+  const rows = await prisma.noteAttachment.findMany({ take: SUFIT_LISTY, where: { noteId }, orderBy: { createdAt: "desc" } });
   return rows.map((a) => ({ id: a.id, name: a.name, url: a.url, createdAt: a.createdAt.toISOString() }));
 }
 
@@ -304,6 +307,7 @@ export async function getNoteRevisions(noteId: string): Promise<NoteRevisionDTO[
   const user = await requireAuth();
   await assertNoteAccess(noteId, user.id, "note.read");
   const rows = await prisma.noteRevision.findMany({
+    take: SUFIT_LISTY,
     where: { noteId },
     orderBy: { createdAt: "desc" },
   });

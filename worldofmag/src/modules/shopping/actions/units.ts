@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
 import { UNITS } from "@/types";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type UnitWithUsage = {
   id: string | null;
@@ -20,6 +21,7 @@ export async function getUnits(): Promise<UnitWithUsage[]> {
   const teamIds = await getUserTeamIds(user.id);
 
   const customUnits = await prisma.unit.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         { userId: user.id },
@@ -32,6 +34,7 @@ export async function getUnits(): Promise<UnitWithUsage[]> {
 
   // Usage counts from products
   const products = await prisma.product.findMany({
+    take: SUFIT_LISTY,
     where: {
       defaultUnit: { not: null },
       OR: [
@@ -96,6 +99,7 @@ export async function getUnitSuggestions(): Promise<string[]> {
   const teamIds = await getUserTeamIds(user.id);
 
   const custom = await prisma.unit.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         { userId: user.id },

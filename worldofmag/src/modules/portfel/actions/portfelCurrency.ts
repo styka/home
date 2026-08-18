@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { normCurrency } from "../domain/waluta";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type ExchangeRateDTO = { currency: string; rate: number; source: string; updatedAt: string };
 
@@ -11,7 +12,7 @@ export async function getCurrencySettings(): Promise<{ baseCurrency: string; rat
   const user = await requireAuth();
   const [settings, rows] = await Promise.all([
     prisma.financeSettings.findUnique({ where: { userId: user.id }, select: { baseCurrency: true } }),
-    prisma.exchangeRate.findMany({ where: { userId: user.id }, orderBy: { currency: "asc" } }),
+    prisma.exchangeRate.findMany({ take: SUFIT_LISTY, where: { userId: user.id }, orderBy: { currency: "asc" } }),
   ]);
   return {
     baseCurrency: settings?.baseCurrency ?? "PLN",

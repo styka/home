@@ -4,6 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export async function toggleFavorite(providerId: string): Promise<{ favored: boolean }> {
   const user = await requireAuth();
@@ -26,6 +27,7 @@ export async function toggleFavorite(providerId: string): Promise<{ favored: boo
 export async function getMyFavoriteProviders(): Promise<{ id: string; displayName: string; area: string | null; ratingAvg: number; ratingCount: number; verified: boolean }[]> {
   const user = await requireAuth();
   const favs = await prisma.serviceFavorite.findMany({
+    take: SUFIT_LISTY,
     where: { userId: user.id, provider: { visible: true } },
     orderBy: { createdAt: "desc" },
     select: { provider: { select: { id: true, displayName: true, area: true, ratingAvg: true, ratingCount: true, verified: true } } },

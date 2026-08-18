@@ -14,6 +14,7 @@ import { requireAuth } from "@/platform/auth/serverUtils";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { fingerprintOf } from "@/lib/textKey";
 import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow, czyMojRekord } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 import {
   parseUserFactCategory,
   parseUserFactConfidence,
@@ -56,6 +57,7 @@ function toDTO(r: {
 export async function getUserFacts(): Promise<UserFactDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.userFact.findMany({
+    take: SUFIT_LISTY,
     where: { ...(await filtrMoichRekordow(user.id)), status: "active" },
     orderBy: [{ category: "asc" }, { createdAt: "desc" }],
   });
@@ -171,6 +173,7 @@ export async function deleteUserFact(id: string): Promise<void> {
 export async function getUserFactsForAdmin(userId: string): Promise<UserFactDTO[]> {
   await requireAdmin();
   const rows = await prisma.userFact.findMany({
+    take: SUFIT_LISTY,
     where: { ...(await filtrMoichRekordow(userId)) },
     orderBy: [{ status: "asc" }, { category: "asc" }, { createdAt: "desc" }],
   });

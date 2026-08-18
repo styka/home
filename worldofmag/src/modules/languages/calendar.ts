@@ -1,6 +1,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import type { CalendarContribEvent, CalendarRange } from "@/platform/calendar";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
  * 049: wkład tego modułu do wspólnej agendy kalendarza.
@@ -22,6 +23,7 @@ async function ownScope(userId: string) {
 
 export default async function calendarEvents(userId: string, { from, to }: CalendarRange): Promise<CalendarContribEvent[]> {
   const cards = await prisma.vocabulary.findMany({
+    take: SUFIT_LISTY,
     where: { dueAt: { gte: from, lt: to }, deck: { is: { OR: await ownScope(userId) } } },
     select: { id: true, dueAt: true, deckId: true, deck: { select: { name: true } } },
   });

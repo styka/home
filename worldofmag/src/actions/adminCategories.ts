@@ -5,6 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { auth } from "@/platform/auth/session";
 import { orphanCategoryIcons } from "@/modules/shopping/contract";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 async function requireAdmin() {
   const session = await auth();
@@ -22,6 +23,7 @@ export type SystemCategory = {
 export async function getSystemCategories(): Promise<SystemCategory[]> {
   await requireAdmin();
   return prisma.category.findMany({
+    take: SUFIT_LISTY,
     where: { userId: null, teamId: null },
     orderBy: { name: "asc" },
   });

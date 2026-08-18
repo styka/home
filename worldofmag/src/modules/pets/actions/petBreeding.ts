@@ -9,6 +9,7 @@ import { assertPetAccess } from "./pets";
 import type { PetBreedingData, PetBreedingPair, PetClutch, PetSale, PetStatus } from "@/types";
 import type { PetGene } from "../lib/petGenetics";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 const PET_REF = { id: true, name: true, species: true, sex: true, status: true } as const;
 
@@ -49,12 +50,14 @@ export async function getPetBreeding(petId: string): Promise<PetBreedingData> {
 
   const [pairs, sales, candidatesRaw] = await Promise.all([
     prisma.petBreedingPair.findMany({
+      take: SUFIT_LISTY,
       where: { OR: [{ maleId: petId }, { femaleId: petId }] },
       include: { male: { select: PET_REF }, female: { select: PET_REF }, clutches: { orderBy: { createdAt: "desc" } } },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.petSale.findMany({ where: { petId }, orderBy: { soldAt: "desc" } }),
+    prisma.petSale.findMany({ take: SUFIT_LISTY, where: { petId }, orderBy: { soldAt: "desc" } }),
     prisma.pet.findMany({
+      take: SUFIT_LISTY,
       where: {
         species: pet.species,
         id: { not: petId },
@@ -78,6 +81,7 @@ export async function getPetBreeding(petId: string): Promise<PetBreedingData> {
   const revByKey = new Map<string, { revenue: number; soldCount: number }>();
   if (keyedPairs.length > 0) {
     const offspring = await prisma.pet.findMany({
+      take: SUFIT_LISTY,
       where: {
         AND: [
           { OR: keyedPairs.map((p) => ({ sireId: p.maleId, damId: p.femaleId })) },
@@ -87,7 +91,7 @@ export async function getPetBreeding(petId: string): Promise<PetBreedingData> {
       select: { id: true, sireId: true, damId: true },
     });
     const offSales = offspring.length
-      ? await prisma.petSale.findMany({ where: { petId: { in: offspring.map((o) => o.id) } }, select: { petId: true, price: true } })
+      ? await prisma.petSale.findMany({ take: SUFIT_LISTY, where: { petId: { in: offspring.map((o) => o.id) } }, select: { petId: true, price: true } })
       : [];
     const revByPet = new Map<string, { revenue: number; soldCount: number }>();
     for (const s of offSales) {

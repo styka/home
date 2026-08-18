@@ -5,6 +5,7 @@ import { updateWithVersion } from "@/platform/concurrency/version";
 import { revalidatePath } from "next/cache";
 import { getUserScope, ownedByWhere, assertOwnership } from "@/platform/auth/ownership";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type ContactDTO = {
   id: string;
@@ -44,6 +45,7 @@ export async function getContacts(search?: string): Promise<ContactDTO[]> {
   const { userId } = await getUserScope();
   const q = search?.trim();
   const rows = await prisma.contact.findMany({
+    take: SUFIT_LISTY,
     where: {
       ...(await ownedByWhere(userId)),
       ...(q

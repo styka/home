@@ -10,6 +10,7 @@ import { upsertUserProduct } from "./products";
 import { trackActivity } from "@/actions/activity";
 import type { Item, ItemStatus, ItemHistory } from "@/types";
 import type { Item as PrismaItem } from "@prisma/client";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 function toItem(p: PrismaItem): Item {
   return p as unknown as Item;
@@ -163,6 +164,7 @@ export async function reorderItems(listId: string, category: string, orderedIds:
   await assertListAccess(listId, user.id);
 
   const valid = await prisma.item.findMany({
+    take: SUFIT_LISTY,
     where: { id: { in: orderedIds }, listId, category },
     select: { id: true },
   });

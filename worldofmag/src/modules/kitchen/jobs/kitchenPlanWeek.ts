@@ -10,6 +10,7 @@ import { usageFromChat } from "@/platform/ai/usage";
 import { rememberedContent, hashInputs } from "@/platform/ai/contentMemory";
 import { resolveSectionMode } from "@/platform/ai/sectionModeResolver";
 import type { AiUsageInfo } from "@/platform/ai/usage";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 const VALID_SLOTS = new Set(["breakfast", "lunch", "dinner", "snack"]);
 type Slot = "breakfast" | "lunch" | "dinner" | "snack";
@@ -116,6 +117,7 @@ async function runPlanWeek(
 
   const pantry = payload.mustUsePantry
     ? await prisma.pantryItem.findMany({
+      take: SUFIT_LISTY,
         where: { OR: ownerOr, quantity: { gt: 0 } },
         select: { name: true, productId: true, product: { select: { name: true } } },
       })

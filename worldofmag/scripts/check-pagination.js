@@ -1,28 +1,44 @@
 #!/usr/bin/env node
 /**
- * Bramka ZAPADKI NIEOGRANICZONYCH ZAPYTAŃ (068, zadanie 20; rozdz. 11.4).
+ * Bramka ZAPYTAŃ LISTOWYCH BEZ GRANICY (068 → 095, zadanie 20; rozdz. 11.4).
  *
- * Rozdz. 11.4 wymaga „paginacji kursorowej we wszystkich widokach listowych". W chwili pisania
- * tej bramki w akcjach modułów jest **122** wywołań `findMany` bez `take` — przepisanie ich
- * jednym przebiegiem to 122 niesprawdzone zmiany w zapytaniach, czyli dokładnie ten rodzaj
- * roboty, którego ta przebudowa unika.
+ * Rozdz. 11.4 wymaga „paginacji kursorowej we wszystkich widokach listowych". Powód jest prostszy
+ * niż wydajność zapytania: **zapytanie bez `take` zwraca wszystko**, a „wszystko" rośnie razem
+ * z kontem. Lista zadań osoby, która używa Omnii od trzech lat, to nie jest ten sam obiekt, co
+ * lista z pierwszego tygodnia.
  *
- * Ta bramka nie naprawia zastanego stanu. Robi coś, co można zrobić **dziś i tanio**:
- * **nie pozwala mu urosnąć**. Liczba nieograniczonych zapytań może maleć albo stać w miejscu;
- * każde nowe wywołanie `findMany` bez `take` wywala build.
+ * **095 — to przestała być zapadka, a stała się regułą.** Do 095 bramka tylko nie pozwalała długowi
+ * rosnąć (próg 207) i to była uczciwa decyzja na tamten moment: przepisanie dwustu zapytań jednym
+ * przebiegiem to dwieście niesprawdzonych zmian. Zapadka miała jednak dwie wady, które ujawniły się
+ * dopiero przy sprawdzaniu specyfikacją:
  *
- * Dlaczego to ma sens mimo braku pełnego rozwiązania: zapytanie bez `take` zwraca **wszystko**,
- * a „wszystko" rośnie razem z kontem. Lista zadań po trzech latach używania to nie jest ten sam
- * obiekt, co lista z pierwszego tygodnia. Nowy kod nie ma powodu tego długu powiększać.
+ *   1. **Nie odróżniała długu od rzeczy z natury ograniczonych.** Zapytanie o wiersze jednego
+ *      rodzica albo o jeden miesiąc nie jest „widokiem listowym bez paginacji" — a w liczniku
+ *      wyglądało tak samo jak lista zadań konta z trzyletnią historią.
+ *   2. **Nie widziała spłaty.** Zapytanie spaginowane przez `zapytanieKursorowe(...)` wnosi `take`
+ *      spreadem, więc wzorzec `take:` go nie wykrywał i poprawnie spaginowana lista dalej liczyła
+ *      się jako dług. Trudno o gorszą zachętę.
  *
- * Wzorzec jest zgrubny (tekstowy, nie AST) i **celowo**: ma być tani i przewidywalny. Fałszywy
- * alarm rozwiązuje się dopisaniem `take`, co i tak jest właściwym ruchem.
+ * Dziś każde `findMany` musi mieć **jawną granicę** — jedną z trzech:
+ *
+ *   • `take: …` — sufit albo rozmiar strony;
+ *   • `...zapytanieKursorowe({ kursor, rozmiar })` — prawdziwa paginacja kursorowa;
+ *   • **znacznik `paginacja: kompletny — <powód>`** w komentarzu tuż nad wywołaniem — dla zapytań,
+ *     w których niepełny wynik byłby BŁĘDEM, a nie wolniejszym ekranem: sumy, statystyki, stany
+ *     magazynowe liczone z partii, wartości decydujące o dostępie.
+ *
+ * **Dlaczego znacznik w kodzie, a nie wpis w manifeście.** Manifest jest per PLIK, a pliki bywają
+ * mieszane: `portfelReports.ts` ma i listę do pokazania, i sumę do policzenia. Poza tym powód
+ * czytany przy zapytaniu jest powodem widocznym w diffie; powód w osobnym pliku to powód, którego
+ * recenzent nie zobaczy. Manifest zostaje dla dwóch plików RODO, gdzie kompletny musi być **każdy**
+ * odczyt w pliku i wyliczanie ich pojedynczo byłoby szumem.
  */
 const fs = require("fs");
 const path = require("path");
 
 const root = path.join(__dirname, "..");
-const manifestPath = path.join(root, "src/platform/pagination-baseline.json");
+const wyjatkiPath = path.join(root, "src/platform/pagination-wyjatki.json");
+const ZNACZNIK = /paginacja:\s*kompletny\s*[—-]\s*\S/;
 
 function pliki(dir, out = []) {
   for (const w of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -35,14 +51,26 @@ function pliki(dir, out = []) {
   return out;
 }
 
-/** Zgrubne wycięcie wywołania `findMany({ … })` i sprawdzenie, czy ma `take`. */
-function policzBezTake(tresc) {
-  let ile = 0;
+/**
+ * Komentarze → spacje tej samej długości. Treść znika, przesunięcia zostają, więc numery linii
+ * i granice nawiasów dalej się zgadzają. Bez tego bramka żądała granicy dla `findMany` stojącego
+ * w PRZYKŁADZIE UŻYCIA w komentarzu (`platform/auth/ownership.ts`) — czyli oskarżała dokumentację.
+ * Znacznik „kompletny" czytamy z treści ORYGINALNEJ, bo on z definicji jest komentarzem.
+ */
+function bezKomentarzy(t) {
+  return t
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+    .replace(/(^|[^:])\/\/[^\n]*/g, (m, p1) => p1 + " ".repeat(m.length - p1.length));
+}
+
+/** Wywołania `findMany({ … })` w pliku: pozycja, treść argumentu, numer linii. */
+function wywolania(tresc) {
+  const out = [];
   const re = /\.findMany\(\{/g;
   let m;
   while ((m = re.exec(tresc))) {
     const od = m.index;
-    // Domknięcie szukamy po nawiasach klamrowych, licząc zagnieżdżenia — `where` z `OR` potrafi
+    // Domknięcia szukamy po nawiasach klamrowych, licząc zagnieżdżenia — `where` z `OR` potrafi
     // mieć ich kilka poziomów, a szukanie pierwszego „});" ucięłoby wywołanie w połowie.
     let poziom = 0;
     let koniec = od;
@@ -57,99 +85,76 @@ function policzBezTake(tresc) {
         }
       }
     }
-    const frag = tresc.slice(od, koniec + 1);
-    if (!/\btake\s*:/.test(frag)) ile++;
+    out.push({ od, frag: tresc.slice(od, koniec + 1), linia: tresc.slice(0, od).split("\n").length });
   }
-  return ile;
+  return out;
 }
 
-/**
- * 093 (zadanie 20): PLIKI, KTÓRYCH ZAPYTANIA MUSZĄ BYĆ KOMPLETNE.
- *
- * Zapadka liczyła wszystko jednakowo i przez to mierzyła dwie różne rzeczy jedną liczbą. Eksport
- * danych z RODO **musi** zwrócić wszystko — to nie jest widok listowy, który da się doładować, i nie
- * jest dług do spłacenia. 55 z 261 zapytań w liczniku pochodziło stąd, więc próg mówił „mamy 261
- * list bez paginacji", co po prostu nie było prawdą; a spłata prawdziwego długu wyglądałaby na wolniejszą,
- * niż jest.
- *
- * Wyjątek jest per PLIK i wymaga powodu. Martwy wpis też wywala build — inaczej lista wyjątków
- * rosłaby jako wygodniejsza alternatywa dla paginacji.
- */
-const wyjatkiPath = path.join(root, "src/platform/pagination-wyjatki.json");
-const wyjatki = fs.existsSync(wyjatkiPath) ? JSON.parse(fs.readFileSync(wyjatkiPath, "utf8")).pliki ?? {} : {};
+/** Czy nad wywołaniem stoi znacznik „wynik musi być kompletny" (do 4 linii wyżej). */
+function maZnacznik(linie, nrLinii) {
+  for (let i = Math.max(0, nrLinii - 5); i < nrLinii; i++) {
+    if (ZNACZNIK.test(linie[i] ?? "")) return true;
+  }
+  return false;
+}
 
-const katalogi = [path.join(root, "src/modules"), path.join(root, "src/actions"), path.join(root, "src/lib")];
-let biezace = 0;
-const rozklad = {};
-const zwolnione = {};
+const wyjatki = fs.existsSync(wyjatkiPath) ? JSON.parse(fs.readFileSync(wyjatkiPath, "utf8")).pliki ?? {} : {};
+const katalogi = [path.join(root, "src/modules"), path.join(root, "src/actions"), path.join(root, "src/lib"), path.join(root, "src/platform")];
+
+const bledy = [];
 const martweWyjatki = new Set(Object.keys(wyjatki));
+let zTake = 0;
+let zKursorem = 0;
+let kompletnych = 0;
+let wPlikachRODO = 0;
+
 for (const dir of katalogi) {
   if (!fs.existsSync(dir)) continue;
   for (const abs of pliki(dir)) {
     const rel = path.relative(root, abs).split(path.sep).join("/");
-    const n = policzBezTake(fs.readFileSync(abs, "utf8"));
-    if (n === 0) continue;
+    const tresc = fs.readFileSync(abs, "utf8");
+    const linie = tresc.split("\n");
+    const lista = wywolania(bezKomentarzy(tresc));
+    if (lista.length === 0) continue;
+
     if (wyjatki[rel]) {
       martweWyjatki.delete(rel);
-      zwolnione[rel] = n;
+      wPlikachRODO += lista.length;
       continue;
     }
-    biezace += n;
-    rozklad[rel] = n;
+
+    for (const { frag, linia } of lista) {
+      if (/zapytanieKursorowe\s*\(/.test(frag)) {
+        zKursorem++;
+      } else if (/\btake\s*:/.test(frag)) {
+        zTake++;
+      } else if (maZnacznik(linie, linia - 1)) {
+        kompletnych++;
+      } else {
+        bledy.push(
+          `${rel}:${linia} — \`findMany\` bez granicy. Dodaj \`take\` (sufit \`SUFIT_LISTY\`), ` +
+            `\`...zapytanieKursorowe({ kursor, rozmiar })\` albo — jeśli niepełny wynik byłby BŁĘDEM ` +
+            `(suma, statystyka, decyzja o dostępie) — komentarz \`paginacja: kompletny — <powód>\`.`,
+        );
+      }
+    }
   }
 }
 
 if (martweWyjatki.size > 0) {
-  console.error("\n✖ Paginacja: wyjątki dla plików, które nie mają już nieograniczonych zapytań:");
-  for (const f of martweWyjatki) console.error(`  ${f}`);
-  console.error(`\n  Usuń je z ${path.relative(root, wyjatkiPath)} — martwy wyjątek to zaproszenie do dopisania nowego.\n`);
-  process.exit(1);
+  for (const f of martweWyjatki) {
+    bledy.push(`${f} — martwy wpis w ${path.relative(root, wyjatkiPath)}: plik nie ma już zapytań listowych. Usuń go.`);
+  }
 }
 
-const baseline = fs.existsSync(manifestPath)
-  ? JSON.parse(fs.readFileSync(manifestPath, "utf8"))
-  : null;
-
-if (!baseline) {
-  fs.writeFileSync(
-    manifestPath,
-    JSON.stringify(
-      {
-        _opis:
-          "068 (zadanie 20): ZAPADKA. Liczba wywołań `findMany` bez `take` w akcjach modułów. Może MALEĆ, nigdy rosnąć. Nowe zapytanie listowe ma używać `platform/pagination.ts`. Gdy licznik spadnie, ZMNIEJSZ tę liczbę — inaczej zapadka przestaje trzymać.",
-        maks: biezace,
-      },
-      null,
-      2,
-    ) + "\n",
-  );
-  console.log(`• Paginacja: zapisano punkt wyjścia zapadki (${biezace} zapytań bez \`take\`).`);
-  process.exit(0);
-}
-
-if (biezace > baseline.maks) {
-  const najwieksze = Object.entries(rozklad)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-  console.error("\n✖ Paginacja: przybyło zapytań listowych BEZ `take`.\n");
-  console.error(`  Było najwyżej ${baseline.maks}, jest ${biezace}.`);
-  console.error("  Zapytanie bez `take` zwraca WSZYSTKO, a to rośnie razem z kontem.");
-  console.error("  Nowa lista ma używać `@/platform/pagination` — kursor, `take` i doładowanie.\n");
-  console.error("  Najwięcej nieograniczonych zapytań mają dziś:");
-  for (const [f, n] of najwieksze) console.error(`    ${n}× ${f}`);
+if (bledy.length) {
+  console.error("\n✖ Paginacja: zapytania listowe bez jawnej granicy.\n");
+  for (const b of bledy) console.error(`  • ${b}`);
   console.error("");
   process.exit(1);
 }
 
-if (biezace < baseline.maks) {
-  console.error(`\n✖ Paginacja: licznik SPADŁ (${baseline.maks} → ${biezace}) — i to dobrze.`);
-  console.error(`  Zmniejsz \`maks\` w ${path.relative(root, manifestPath)} do ${biezace},`);
-  console.error("  inaczej zapadka trzyma na starym poziomie i pozwoli dołożyć z powrotem.\n");
-  process.exit(1);
-}
-
-const iloscZwolnionych = Object.values(zwolnione).reduce((a, b) => a + b, 0);
 console.log(
-  `✓ Paginacja: ${biezace} zapytań bez \`take\` — zapadka trzyma (bez wzrostu)` +
-    (iloscZwolnionych > 0 ? `; ${iloscZwolnionych} w ${Object.keys(zwolnione).length} plikach ze świadomym wyjątkiem.` : "."),
+  `✓ Paginacja: każde \`findMany\` ma granicę — ${zKursorem} kursorowych, ${zTake} z sufitem, ` +
+    `${kompletnych} świadomie kompletnych, ${wPlikachRODO} w 2 plikach RODO.`,
 );

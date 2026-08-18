@@ -226,6 +226,7 @@ export async function getAiUsageStats(days = 30): Promise<{
   perDay: { day: string; requests: number; tokens: number }[];
 }> {
   const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+  // paginacja: kompletny — statystyka zużycia jest SUMĄ; niepełny odczyt to zaniżony rachunek, a na nim stoją budżety AI (082).
   const rows = await prisma.aiUsage.findMany({ where: { day: { gte: since } }, orderBy: { day: "asc" } });
   const perDayMap = new Map<string, { requests: number; tokens: number }>();
   const users = new Set<string>();
@@ -370,9 +371,11 @@ export async function getAdminUserIds(): Promise<string[]> {
   });
   if (!perm) return [];
   const adminRoles = (
+    // paginacja: kompletny — role z uprawnieniem administratora; pominięta rola to alarm kosztowy, który nie dotrze do części adminów.
     await prisma.rolePermission.findMany({ where: { permissionId: perm.id }, select: { role: true } })
   ).map((g) => g.role);
   if (adminRoles.length === 0) return [];
+  // paginacja: kompletny — odbiorcy alarmu budżetowego; ucięcie listy = cisza tam, gdzie ma być ostrzeżenie.
   const rows = await prisma.userRole.findMany({
     where: { role: { in: adminRoles } },
     select: { userId: true },

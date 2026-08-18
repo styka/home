@@ -1,6 +1,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { getAccessContext } from "@/platform/sharing/cache";
 import { loadResourceCatalog } from "@/lib/sharingResources";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
  * 084 (zadanie 28) — RDZEŃ list nadań, bez sesji.
@@ -43,10 +44,10 @@ async function nazwyPodmiotow(
   const wsIds = nadania.filter((n) => n.subjectType === "workspace" && n.subjectId).map((n) => n.subjectId!);
   const [users, spaces] = await Promise.all([
     userIds.length
-      ? prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, email: true, name: true } })
+      ? prisma.user.findMany({ take: SUFIT_LISTY, where: { id: { in: userIds } }, select: { id: true, email: true, name: true } })
       : [],
     wsIds.length
-      ? prisma.workspace.findMany({ where: { id: { in: wsIds } }, select: { id: true, name: true } })
+      ? prisma.workspace.findMany({ take: SUFIT_LISTY, where: { id: { in: wsIds } }, select: { id: true, name: true } })
       : [],
   ]);
   const out: Record<string, string> = {};

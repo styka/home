@@ -6,6 +6,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { generateDaySlots, minutesOfDay, type BookedInterval } from "../serviceSlots";
 import type { RequestStatus, PriceModel, ListingDTO, RequestDTO } from "../services";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /** Dozwolone przejścia statusu po stronie wykonawcy/klienta. */
 export const PROVIDER_TRANSITIONS: Partial<Record<RequestStatus, RequestStatus[]>> = {
@@ -136,8 +137,9 @@ export async function computeSlots(listingId: string, dateISO: string, opts?: { 
 
   // M14: gdy wybrano pracownika — jego harmonogram i jego rezerwacje; inaczej poziom firmy (staffId null).
   const [rules, bookedRows] = await Promise.all([
-    prisma.serviceAvailability.findMany({ where: { providerId: listing.providerId, staffId, weekday }, select: { weekday: true, startMin: true, endMin: true } }),
+    prisma.serviceAvailability.findMany({ take: SUFIT_LISTY, where: { providerId: listing.providerId, staffId, weekday }, select: { weekday: true, startMin: true, endMin: true } }),
     prisma.serviceRequest.findMany({
+      take: SUFIT_LISTY,
       where: {
         providerId: listing.providerId,
         staffId,

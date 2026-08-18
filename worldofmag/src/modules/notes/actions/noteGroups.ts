@@ -9,6 +9,7 @@ import {
   assertDictionaryAccess,
 } from "@/platform/auth/serverUtils";
 import type { NoteGroup } from "@/types";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
  * 034: grupy notatek mają właściciela (C-21). Widzimy swoje, zespołowe i systemowe (bez
@@ -27,6 +28,7 @@ export async function getNoteGroups(): Promise<NoteGroup[]> {
   const user = await requireAuth();
   const teamIds = await getUserTeamIds(user.id);
   return prisma.noteGroup.findMany({
+    take: SUFIT_LISTY,
     where: ownedOrSystemWhere(user.id, teamIds),
     orderBy: { createdAt: "asc" },
   });

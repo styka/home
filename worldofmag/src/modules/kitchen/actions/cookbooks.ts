@@ -6,6 +6,7 @@ import { requireAuth, getUserTeamIds, getAccessibleTeamIds, getAccessibleWorkspa
 import { trackActivity } from "@/actions/activity";
 import type { Cookbook } from "@/types/kitchen";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type CookbookWithCount = Cookbook & { recipeCount: number };
 
@@ -39,6 +40,7 @@ export async function getCookbooks(): Promise<CookbookWithCount[]> {
   const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
   const cookbooks = await prisma.cookbook.findMany({
+    take: SUFIT_LISTY,
     where: {
       ...(await ownedWhereAsync(user.id)),
     },

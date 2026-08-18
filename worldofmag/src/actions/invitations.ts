@@ -1,3 +1,4 @@
+
 "use server"
 
 import { prisma } from "@/platform/db/prisma"
@@ -5,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { requireAuth } from "@/platform/auth/serverUtils"
 import { mirrorTeamWorkspace } from "@/platform/workspaces/sync"
 import { sprawdzLimit } from "@/platform/rateLimit"
+import { SUFIT_LISTY } from "@/platform/pagination"
 
 export async function inviteUser(teamId: string, targetEmail: string) {
   const user = await requireAuth()
@@ -49,6 +51,7 @@ export async function inviteUser(teamId: string, targetEmail: string) {
 export async function getPendingInvitations() {
   const user = await requireAuth()
   return prisma.teamInvitation.findMany({
+    take: SUFIT_LISTY,
     where: { invitedUserId: user.id, status: "PENDING" },
     include: {
       team: { select: { id: true, name: true, avatarUrl: true } },

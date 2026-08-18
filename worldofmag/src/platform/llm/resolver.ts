@@ -65,6 +65,7 @@ export interface ResolveOptions {
  */
 async function resolveAssignment(op: OperationType, level: AssistantWorkLevel | undefined) {
   const configLevel = configLevelFor(level);
+  // paginacja: kompletny — dwa przypisania modelu (poziom własny i bazowy); brak jednego z nich to inny model, nie krótsza lista.
   const rows = await prisma.llmAssignment.findMany({
     where: { operationType: op, level: { in: [configLevel, BASE_CONFIG_LEVEL] } },
     include: { provider: true },

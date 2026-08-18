@@ -9,6 +9,7 @@ import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { requeueJob, cancelJob, cleanupOldJobs, type JobStatus } from "@/platform/jobs/queue";
 import { revalidatePath } from "next/cache";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 async function assertAdmin() {
   const session = await auth();
@@ -56,6 +57,7 @@ export async function getJobsOverview(statusFilter?: JobStatus | "ALL"): Promise
 
   // Aktywne (QUEUED/RUNNING) pogrupowane po typie i po właścicielu.
   const active = await prisma.job.findMany({
+    take: SUFIT_LISTY,
     where: { status: { in: ["QUEUED", "RUNNING"] } },
     select: { type: true, ownerId: true },
   });
@@ -72,7 +74,7 @@ export async function getJobsOverview(statusFilter?: JobStatus | "ALL"): Promise
   for (const j of recentRaw) if (j.ownerId) ownerIds.add(j.ownerId);
   ownerMap.forEach((_, id) => ownerIds.add(id));
   const users = ownerIds.size
-    ? await prisma.user.findMany({ where: { id: { in: Array.from(ownerIds) } }, select: { id: true, email: true } })
+    ? await prisma.user.findMany({ take: SUFIT_LISTY, where: { id: { in: Array.from(ownerIds) } }, select: { id: true, email: true } })
     : [];
   const emailById = new Map(users.map((u) => [u.id, u.email]));
 

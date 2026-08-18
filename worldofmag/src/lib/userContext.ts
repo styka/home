@@ -7,6 +7,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { USER_FACT_CATEGORY_LABELS, USER_FACT_CONFIDENCE_LABELS, parseUserFactCategory, parseUserFactConfidence } from "@/lib/userFacts";
 import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /** Ile faktów maksymalnie doklejamy — prompt ma być kontekstem, nie życiorysem. */
 const MAX_FACTS = 20;
@@ -79,6 +80,7 @@ export async function buildUserContext(userId: string): Promise<string> {
  */
 export async function userContextStamp(userId: string): Promise<string> {
   try {
+    // paginacja: kompletny — odcisk wiedzy o użytkowniku musi objąć wszystkie fakty, inaczej zmiana pominiętego faktu nie unieważni zapamiętanej treści AI (038).
     const rows = await prisma.userFact.findMany({
       where: { ...(await filtrMoichRekordow(userId)) },
       orderBy: { id: "asc" },

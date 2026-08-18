@@ -13,6 +13,7 @@ import {
   streamFile,
 } from "@/lib/drive/client";
 import type { Report } from "@prisma/client";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 async function requireAdmin() {
   const session = await auth();
@@ -51,6 +52,7 @@ export type ReportMeta = Omit<Report, "content"> & { authorName?: string | null 
 export async function getReportsMeta(): Promise<ReportMeta[]> {
   await requireAdmin();
   const rows = await prisma.report.findMany({
+    take: SUFIT_LISTY,
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -78,6 +80,7 @@ export async function getUserReportsMeta(): Promise<ReportMeta[]> {
   const user = await requireAuth();
   const teamIds = await getUserTeamIds(user.id);
   const rows = await prisma.report.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         { authorId: user.id },
@@ -114,6 +117,7 @@ export async function searchReports(query: string): Promise<ReportMeta[]> {
   const q = query.trim();
   if (!q) return getUserReportsMeta();
   const rows = await prisma.report.findMany({
+    take: SUFIT_LISTY,
     where: {
       AND: [
         {

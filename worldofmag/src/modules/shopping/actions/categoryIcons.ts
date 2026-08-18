@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/platform/auth/session";
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type CategoryIconVariantData = {
   id: string;
@@ -100,6 +101,7 @@ export async function getCategoryIconVariants(
   if (!session?.user?.id) return [];
 
   return prisma.categoryIconVariant.findMany({
+    take: SUFIT_LISTY,
     where: { userId: session.user.id, categoryName },
     orderBy: { createdAt: "desc" },
   });
@@ -113,6 +115,7 @@ export async function getActiveCategoryIconMap(): Promise<Record<string, string>
   const teamIds = await getUserTeamIds(session.user.id);
 
   const active = await prisma.categoryIconVariant.findMany({
+    take: SUFIT_LISTY,
     where: {
       isActive: true,
       OR: [
@@ -142,6 +145,7 @@ export async function getAllUserIconVariants(): Promise<Record<string, CategoryI
   const teamIds = await getUserTeamIds(session.user.id);
 
   const all = await prisma.categoryIconVariant.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         { userId: session.user.id },
@@ -167,6 +171,7 @@ export async function getAllUserIconVariantsFlat(): Promise<CategoryIconVariantD
   const teamIds = await getUserTeamIds(session.user.id);
 
   return prisma.categoryIconVariant.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         { userId: session.user.id },

@@ -1,6 +1,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import type { CalendarContribEvent, CalendarRange } from "@/platform/calendar";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
  * 049: wkład tego modułu do wspólnej agendy kalendarza.
@@ -24,10 +25,12 @@ export default async function calendarEvents(userId: string, { from, to }: Calen
   const petScope = { pet: { is: { OR: await ownScope(userId) } } };
   const [care, treatments] = await Promise.all([
     prisma.petCareTask.findMany({
+      take: SUFIT_LISTY,
       where: { active: true, nextDueAt: { gte: from, lt: to }, ...petScope },
       select: { id: true, title: true, nextDueAt: true, petId: true, pet: { select: { name: true } } },
     }),
     prisma.petTreatment.findMany({
+      take: SUFIT_LISTY,
       where: { active: true, nextDueAt: { gte: from, lt: to }, ...petScope },
       select: { id: true, name: true, nextDueAt: true, petId: true, pet: { select: { name: true } } },
     }),

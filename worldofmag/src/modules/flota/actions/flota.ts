@@ -9,6 +9,7 @@ import { bookAutoExpense, removeAutoExpense } from "@/modules/portfel/contract";
 import { SERVICE_LABELS } from "../lib/flota";
 import type { Vehicle, FuelLog, ServiceRecord } from "@prisma/client";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type VehicleAttachmentDTO = { id: string; name: string; url: string; createdAt: Date };
 export type VehicleWithStats = Vehicle & {
@@ -42,6 +43,7 @@ export async function getVehicles(): Promise<VehicleWithStats[]> {
   const user = await requireAuth();
   const where = await ownershipFilter(user.id);
   return prisma.vehicle.findMany({
+    take: SUFIT_LISTY,
     where,
     orderBy: { createdAt: "asc" },
     include: {

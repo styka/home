@@ -9,12 +9,14 @@ import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { notifyUser } from "@/lib/notify";
 import { uniqueProviderSlug, requireOwnProvider } from "../../lib/core/helpers";
 import type { ServiceCategoryDTO } from "../../lib/services";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /** Kategorie usług widoczne dla użytkownika: systemowe + własne + zespołowe. */
 export async function getServiceCategories(): Promise<ServiceCategoryDTO[]> {
   const user = await requireAuth();
   const teamIds = await getUserTeamIds(user.id);
   const cats = await prisma.serviceCategory.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         { userId: null, teamId: null },

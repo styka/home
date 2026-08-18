@@ -4,6 +4,41 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-20 — Zapadka, która nie widzi spłaty, zniechęca do spłacania
+**Problem:** `check:pagination` liczyła zapytania bez `take` wzorcem tekstowym. Jedyne miejsce
+w aplikacji z prawdziwą paginacją kursorową (log audytu) wnosi `take` **spreadem**
+(`...keysetQuery(...)`), więc wzorzec go nie widział i poprawnie spaginowane zapytanie liczyło się
+jako dług. Ktoś, kto spłacał dług właściwym narzędziem, nie widział poprawy licznika.
+**Rozwiązanie:** Bramka rozpoznaje spread helpera. Przy okazji przestała być zapadką: dziś każde
+`findMany` musi mieć jawną granicę — `take`, kursor albo komentarz „paginacja: kompletny — powód".
+**Lekcja:** Pisząc zapadkę, sprawdź najpierw, czy rozpoznaje **właściwe rozwiązanie**, a nie tylko
+zły stan. Miernik, który nie nagradza poprawnego ruchu, uczy omijania siebie.
+
+## 2026-08-20 — Sufit dopisany mechanicznie do zapytania, które liczy sumę, to nie ochrona, tylko cichy błąd
+**Problem:** Domknięcie zadania 20 zaczęło się od mechanicznego dopisania `take` do 204 zapytań.
+Wśród nich były zapytania, z których liczy się LICZBY: raport miesięczny portfela, wydatki budżetu,
+stan magazynowy sumowany z partii, trend badania, licznik posiadaczy dostępu administratora (na nim
+stoi blokada samowykluczenia). Sufit w takim miejscu nie chroni — po cichu zmienia wynik.
+**Rozwiązanie:** 36 miejsc przejrzanych po jednym i oznaczonych komentarzem
+`// paginacja: kompletny — <powód>` tuż nad zapytaniem. Znacznik jest w kodzie, nie w manifeście:
+pliki bywają mieszane (jeden ma i listę do pokazania, i sumę do policzenia), a powód w osobnym
+pliku to powód, którego recenzent w diffie nie zobaczy.
+**Lekcja:** Zmiana mechaniczna jest bezpieczna tylko wtedy, gdy jest **semantycznie obojętna**. Zanim
+puścisz codemod na zapytania, podziel je na te, które coś POKAZUJĄ, i te, z których coś się LICZY —
+drugie wymagają decyzji, nie transformacji.
+
+## 2026-08-20 — Paginacji nie da się doszyć do widoku, który filtruje i liczy po stronie klienta
+**Problem:** Rozdz. 11.4 wymaga kursora „we wszystkich widokach listowych". Próba wykonania tego
+dosłownie pokazała, że przeszkodą nie jest pracochłonność: notatki pokazują `filtrowane / wszystkie`
+i budują z pełnego zbioru linki `[[Tytuł]]` oraz odnośniki zwrotne, zadania grupują po projekcie
+z licznikami na zakładkach, zakupy grupują po kategorii. Strona nie spowolniłaby tych ekranów —
+**pokazałaby nieprawdziwe liczby**.
+**Rozwiązanie:** Granica wszędzie (sufit `SUFIT_LISTY`), kursor tam, gdzie widok jest czystym
+dziennikiem bez agregatów po stronie klienta. Warunek dla reszty — przeniesienie filtrowania
+i grupowania na serwer — zapisany jako następny krok, nie odhaczony.
+**Lekcja:** Zanim obiecasz paginację w widoku, sprawdź, czy ten widok czegoś nie **liczy** z pełnego
+zbioru. Paginacja to zmiana kontraktu danych, nie optymalizacja zapytania.
+
 ## 2026-08-19 — Bramki pilnowały kształtu migracji, nie tego, czy kod jeszcze o to pyta
 **Problem:** Migracja 0244 usunęła `ownerId`/`ownerTeamId` z 40 tabel. W czterech miejscach kod dalej
 budował po nich warunek zapytania — w tym w planie posiłków zawężonym do zespołu i w rozstrzyganiu

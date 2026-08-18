@@ -48,6 +48,7 @@ export async function brakujaceWzgledemNadan(
   if (zTabeli.length === 0) return [];
 
   const teraz = new Date();
+  // paginacja: kompletny — porównanie lustra z nadaniami; niepełny odczyt zgłosiłby rozjazd, którego nie ma.
   const nadania = await prisma.resourceGrant.findMany({
     where: {
       resourceType,

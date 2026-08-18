@@ -1,3 +1,4 @@
+
 "use server"
 
 import { wlasnoscDoZapisu, przestrzenZespoluBezKontroliDostepu } from "@/platform/workspaces/zapis"
@@ -9,6 +10,7 @@ import { serializeModuleAccess } from "@/lib/teams/memberAccess"
 // nazwy albo właściciela musi uzgodnić przestrzeń — pilnuje tego `check:workspace-mirror`.
 // `deleteTeam` świadomie bez wywołania: przestrzeń znika kaskadą klucza obcego.
 import { mirrorTeamWorkspace } from "@/platform/workspaces/sync"
+import { SUFIT_LISTY } from "@/platform/pagination"
 
 async function requireTeamRole(
   teamId: string,
@@ -93,6 +95,7 @@ export async function getHouseholdOnboarding(teamId: string) {
 export async function getMyTeams() {
   const user = await requireAuth()
   return prisma.team.findMany({
+    take: SUFIT_LISTY,
     where: { members: { some: { userId: user.id } } },
     include: {
       members: {

@@ -2,6 +2,7 @@ import { filtrMoichRekordow } from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { matchNamedRef, unresolvedRefMessage, type NamedCandidate, type RefResolution } from "@/platform/ai/refResolve";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
  * 049: helpery narzędzi ODCZYTU, wspólne dla wszystkich modułów.
@@ -24,6 +25,7 @@ export function asStr(v: unknown): string | undefined {
 
 export async function accessibleProjectIds(userId: string): Promise<string[]> {
   const projects = await prisma.taskProject.findMany({
+    take: SUFIT_LISTY,
     where: { OR: [await filtrMoichRekordow(userId), { members: { some: { userId } } }] },
     select: { id: true },
   });
@@ -80,6 +82,7 @@ export async function resolveProjectRef(
   ref: string
 ): Promise<RefResolution> {
   const projects = await prisma.taskProject.findMany({
+    take: SUFIT_LISTY,
     where: { OR: [await filtrMoichRekordow(userId), { members: { some: { userId } } }] },
     select: { id: true, name: true },
   });

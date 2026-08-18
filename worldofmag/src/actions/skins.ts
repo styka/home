@@ -5,6 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { auth } from "@/platform/auth/session";
 import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
+import { SUFIT_LISTY } from "@/platform/pagination";
 import {
   parseTokens,
   validateTokens,
@@ -85,6 +86,7 @@ export async function listAvailableSkins(): Promise<SkinView[]> {
   const teamIds = await getUserTeamIds(userId);
 
   const skins = await prisma.skin.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         { isSystem: true },

@@ -3115,3 +3115,64 @@ miejsc jest pilnowane przez bramkę w obie strony, więc żadnego nie da się po
 
 **Bramki:** build **exit 0**, nowa `check:owner-columns` (25 bramek), `check:i18n` **1416** (bez
 wzrostu — nowe napisy poszły przez `t()`), `check:pagination` **207**, tabela prawdy notatek 9/9.
+
+---
+
+## 096 — Zadanie 20 domknięte inaczej, niż brzmiało: granica wszędzie, kursor tam, gdzie ma sens
+
+Zapadka paginacji stała na **207**. Sprawdzenie, co się w tej liczbie kryje, dało trzy rzeczy naraz.
+
+### Helper bez konsumenta i drugi helper obok
+
+`platform/pagination.ts` powstał w 068, żeby domknąć zadanie 20, i **nikt go nigdy nie zawołał** —
+zero importów w całym repozytorium. Obok, od Z-070, żył `lib/pagination.ts` (`keysetQuery`/
+`keysetResult`) z jednym konsumentem: logiem audytu. Dwa nośniki jednej idei, jeden z nich pusty:
+to jest ten sam plik bez konsumenta z C-35, tylko w warstwie, która ma być wzorcem.
+
+Został jeden — platformowy, z **API przeniesionym z tego, który miał konsumenta**, bo API sprawdzone
+w użyciu jest lepszym punktem wyjścia niż API sprawdzone w zamyśle. Dwa zestawy testów scaliły się
+w jeden; liczba testów spadła o pięć, bo dwa zielone zestawy dowodziły, że **dwie różne
+implementacje** działają, a nie że aplikacja paginuje jednakowo. Scalenie ujawniło też jedną cichą
+różnicę: `clampLimit(-5)` dawało stronę **jednoelementową**, `rozmiarStrony(-5)` daje domyślną. Wybór
+jest zapisany w teście, bo scalenie dwóch API bez wskazania, które zachowanie wygrało, byłoby zmianą
+po cichu.
+
+### Zapadka nie widziała spłaty
+
+Zapytanie spaginowane przez `keysetQuery` wnosi `take` **spreadem**, więc wzorzec `take:` go nie
+wykrywał. Log audytu — jedyne miejsce w aplikacji z prawdziwą paginacją kursorową — liczył się
+w zapadce jako **dług**. Trudno o gorszą zachętę: spłata długu obniżała ocenę.
+
+### Co zostało zrobione
+
+Zapadka przestała być zapadką. Dziś każde `findMany` musi mieć **jawną granicę**, jedną z trzech:
+
+| Rodzaj | Ile | Kiedy |
+|---|---:|---|
+| `...zapytanieKursorowe({ kursor, rozmiar })` | 1 | prawdziwa paginacja z „doładuj" |
+| `take: SUFIT_LISTY` (1000) | 254 | sufit: granica, powyżej której lista przestaje być listą |
+| `paginacja: kompletny — <powód>` | 36 | niepełny wynik byłby **błędem**, nie wolniejszym ekranem |
+| plik RODO (manifest) | 57 | eksport i usuwanie danych |
+
+Trzeci wiersz jest tym, dla którego ta praca w ogóle miała sens. Sufit dopisany mechanicznie do
+zapytania, które liczy **sumę**, to nie ochrona, tylko cichy błąd w liczbach: raport miesięczny bez
+części wpisów, stan magazynowy liczony z części partii, trend badania bez początku serii, licznik
+posiadaczy dostępu admina, na którym stoi blokada samowykluczenia. Te 36 miejsc zostały przejrzane
+po jednym i mają powód **przy zapytaniu**, nie w osobnym pliku — powód w manifeście to powód,
+którego recenzent w diffie nie zobaczy.
+
+### Dlaczego kursor NIE trafił do wszystkich widoków listowych
+
+Rozdz. 11.4 mówi „paginacja kursorowa we wszystkich widokach listowych". Próba wykonania tego
+dosłownie natrafia na przeszkodę, która nie jest kwestią pracochłonności: **widoki Omnii filtrują,
+grupują i liczą po stronie klienta, na pełnym zbiorze**. Notatki pokazują `filtrowane / wszystkie`
+i budują z całego zbioru linki `[[Tytuł]]` oraz odnośniki zwrotne. Zadania grupują po projekcie
+i priorytecie, z licznikami na zakładkach. Zakupy grupują po kategorii. Doklejenie do nich strony
+nie spowolniłoby ekranu — **pokazałoby nieprawdziwe liczby** i zepsuło filtrowanie w miejscu.
+
+Warunkiem kursora w tych widokach jest przeniesienie filtrowania i grupowania na serwer. To osobna
+zmiana, o innym ryzyku, i jest tu zapisana jako następny krok, a nie odhaczona. Kursor ma dziś ten
+widok, który jest czystym dziennikiem bez agregatów po stronie klienta — log audytu.
+
+**Stan:** zero zapytań bez granicy (było 207 + 55 nieodróżnionych od nich), bramka `check:pagination`
+jest regułą bezwzględną z czterema próbami mutacyjnymi, build **exit 0**, `test:unit` 1049/1049.

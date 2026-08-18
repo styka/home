@@ -5,10 +5,12 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import type { StoreWithGraph } from "@/types";
 import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export async function getStores(): Promise<StoreWithGraph[]> {
   const user = await requireAuth();
   return prisma.store.findMany({
+    take: SUFIT_LISTY,
     where: await filtrMoichRekordow(user.id),
     include: { nodes: true, edges: true },
     orderBy: { createdAt: "asc" },

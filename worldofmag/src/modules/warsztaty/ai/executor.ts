@@ -8,6 +8,7 @@ import {
 } from "../contract";
 import { asStr, resolveByName, ownerOrArr } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export async function executeWarsztatAction(action: AIAction, userId: string): Promise<string> {
   const { type, params, searchQuery } = action;
@@ -26,7 +27,7 @@ export async function executeWarsztatAction(action: AIAction, userId: string): P
   ) => {
     if (idVal) { const r = await directFinder(idVal); if (r) return r.id; }
     const teamOr = await ownerOrArr(userId);
-    const workshops = await prisma.workshop.findMany({ where: { OR: teamOr }, select: { id: true } });
+    const workshops = await prisma.workshop.findMany({ take: SUFIT_LISTY, where: { OR: teamOr }, select: { id: true } });
     const ids = workshops.map((w) => w.id);
     const r = q ? await finder(ids, q) : null;
     if (!r) throw new Error(`Nie znaleziono: ${label} „${q ?? idVal ?? ""}"`);

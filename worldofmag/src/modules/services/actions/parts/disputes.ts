@@ -9,6 +9,7 @@ import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { notifyUser } from "@/lib/notify";
 import { loadRequestAccess } from "../../lib/core/access";
 import type { ServiceDisputeDTO, DisputeStatus, ModerationDisputeDTO } from "../../lib/services";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /** Strona zlecenia (klient/wykonawca) zgłasza problem. Jeden OPEN na zlecenie. */
 export async function openDispute(requestId: string, reason: string, description?: string | null): Promise<void> {
@@ -41,7 +42,7 @@ export async function openDispute(requestId: string, reason: string, description
 export async function getRequestDisputes(requestId: string): Promise<ServiceDisputeDTO[]> {
   const user = await requireAuth();
   await loadRequestAccess(requestId, user.id);
-  const rows = await prisma.serviceDispute.findMany({ where: { requestId }, orderBy: { createdAt: "desc" } });
+  const rows = await prisma.serviceDispute.findMany({ take: SUFIT_LISTY, where: { requestId }, orderBy: { createdAt: "desc" } });
   return rows.map((d) => ({
     id: d.id, reason: d.reason, description: d.description, status: d.status as DisputeStatus,
     resolution: d.resolution, mine: d.openedById === user.id,

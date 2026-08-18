@@ -8,6 +8,7 @@ import { isoDate } from "@/lib/habitStats";
 import { buildDayAgenda } from "@/lib/medicationSchedule";
 import { normTimes, normDays, normFreq } from "../domain/harmonogramLeku";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 import type {
   DoseSlot,
   MedicationFreqType,
@@ -47,6 +48,7 @@ async function scopeWhere(userId: string) {
 export async function getMedicationSchedules(): Promise<MedicationSchedule[]> {
   const user = await requireAuth();
   const schedules = await prisma.medicationSchedule.findMany({
+    take: SUFIT_LISTY,
     where: await scopeWhere(user.id),
     orderBy: [{ active: "desc" }, { name: "asc" }],
   });
@@ -59,12 +61,13 @@ export async function getMedicationDay(date?: string): Promise<{ date: string; s
   const day = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : isoDate(new Date());
 
   const schedules = (await prisma.medicationSchedule.findMany({
+    take: SUFIT_LISTY,
     where: { active: true, ...(await scopeWhere(user.id)) },
   })) as MedicationSchedule[];
 
   const ids = schedules.map((s) => s.id);
   const logs = ids.length
-    ? ((await prisma.medicationLog.findMany({ where: { scheduleId: { in: ids }, date: day } })) as MedicationLog[])
+    ? ((await prisma.medicationLog.findMany({ take: SUFIT_LISTY, where: { scheduleId: { in: ids }, date: day } })) as MedicationLog[])
     : [];
 
   // Klucz dnia → Date lokalna (południe) do rozwinięcia slotów.

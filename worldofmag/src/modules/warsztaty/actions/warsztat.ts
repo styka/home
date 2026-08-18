@@ -8,6 +8,7 @@ import { trackActivity } from "@/actions/activity";
 import { getSuggestions } from "../lib/catalog";
 import type { Workshop, WorkshopItem, WorkshopProject } from "@prisma/client";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type WarsztatMode = "home" | "pro";
 
@@ -82,6 +83,7 @@ export async function getWorkshops(): Promise<WorkshopWithCounts[]> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "warsztaty");
   return prisma.workshop.findMany({
+    take: SUFIT_LISTY,
     where: { OR: await ownershipOr(user.id) },
     include: {
       _count: { select: { items: true, projects: true } },
@@ -273,6 +275,7 @@ export async function addSuggestedItems(workshopId: string, keys: string[]): Pro
   if (wanted.length === 0) return 0;
 
   const existing = await prisma.workshopItem.findMany({
+    take: SUFIT_LISTY,
     where: { workshopId, suggestionKey: { in: wanted.map((s) => s.key) } },
     select: { suggestionKey: true },
   });
@@ -307,6 +310,7 @@ export async function getMaintenanceOverview(): Promise<MaintenanceOverview> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "warsztaty");
   const workshops = await prisma.workshop.findMany({
+    take: SUFIT_LISTY,
     where: { OR: await ownershipOr(user.id) },
     select: { id: true, name: true },
   });
@@ -320,10 +324,12 @@ export async function getMaintenanceOverview(): Promise<MaintenanceOverview> {
 
   const [dueItems, lowItems] = await Promise.all([
     prisma.workshopItem.findMany({
+      take: SUFIT_LISTY,
       where: { workshopId: { in: ids }, nextServiceAt: { not: null, lte: horizon } },
       orderBy: { nextServiceAt: "asc" },
     }),
     prisma.workshopItem.findMany({
+      take: SUFIT_LISTY,
       where: { workshopId: { in: ids }, minQuantity: { not: null } },
       orderBy: { name: "asc" },
     }),

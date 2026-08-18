@@ -96,12 +96,14 @@ export const getAccessContext = perRequest(async (userId: string): Promise<Acces
     // 056: to samo zapytanie co dotąd, tylko z dwoma polami więcej. Rozstrzyganie po przestrzeni
     // potrzebuje MOJEJ ROLI w niej i wskazania, która przestrzeń jest moja osobista — jedno i
     // drugie idzie złączeniem, żeby sprawdzenie dostępu nie kosztowało dodatkowej rundy do bazy.
+    // paginacja: kompletny — członkostwa wyznaczają kontekst dostępu; ucięcie = cicha odmowa.
     prisma.workspaceMember.findMany({
       where: { userId },
       select: { workspaceId: true, role: true, workspace: { select: { personalUserId: true } } },
     }),
     // 053: role w zespołach — właściciel/admin dostaje wyższą rolę na zasobach zespołu niż zwykły
     // członek. Czytamy je RAZEM z resztą kontekstu, żeby nie dokładać zapytania na sprawdzenie.
+    // paginacja: kompletny — role w zespołach, ta sama decyzja o dostępie co wyżej.
     prisma.teamMember.findMany({
       where: { userId, role: { in: ["OWNER", "ADMIN"] } },
       select: { teamId: true },

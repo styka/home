@@ -5,6 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import type { ProjectGroup } from "@/types";
 import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 const TERMINAL_STATUSES = ["DONE", "CANCELLED"];
 
@@ -21,6 +22,7 @@ function parseProjectIds(raw: string): string[] {
 /** Id projektów, do których użytkownik ma dostęp (właściciel lub członek). */
 async function accessibleProjectIds(userId: string): Promise<Set<string>> {
   const projects = await prisma.taskProject.findMany({
+    take: SUFIT_LISTY,
     where: { OR: [await filtrMoichRekordow(userId), { members: { some: { userId } } }] },
     select: { id: true },
   });
@@ -32,6 +34,7 @@ export async function getProjectGroups(): Promise<ProjectGroup[]> {
 
   const [rows, accessible] = await Promise.all([
     prisma.projectGroup.findMany({
+      take: SUFIT_LISTY,
       where: { ...(await filtrMoichRekordow(user.id)) },
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     }),

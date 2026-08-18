@@ -161,6 +161,7 @@ export async function resolveRole(
     ...ctx.workspaceIds.map((id) => ({ subjectType: "workspace", subjectId: id })),
   ];
   const teraz = new Date();
+  // paginacja: kompletny — nadania dla całego łańcucha zasobu; pominięte nadanie to odmowa dostępu komuś, kto dostęp ma.
   const nadania = await prisma.resourceGrant.findMany({
     where: {
       // Dwie niezależne alternatywy (zasób z łańcucha ORAZ podmiot) muszą iść przez AND —

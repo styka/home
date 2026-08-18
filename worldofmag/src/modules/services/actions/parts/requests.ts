@@ -8,6 +8,7 @@ import { notifyUser } from "@/lib/notify";
 import { REQUEST_STATUS_LABELS } from "../../lib/services";
 import { PROVIDER_TRANSITIONS, mapRequest, computeSlots } from "../../lib/core/helpers";
 import type { RequestStatus, RequestDTO } from "../../lib/services";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export async function createServiceRequest(data: {
   providerId: string;
@@ -108,6 +109,7 @@ export async function getMyRequests(): Promise<{ asClient: RequestDTO[]; asProvi
 
   const [asClient, providerRecord] = await Promise.all([
     prisma.serviceRequest.findMany({
+      take: SUFIT_LISTY,
       where: { clientId: user.id },
       orderBy: { createdAt: "desc" },
       include,
@@ -117,6 +119,7 @@ export async function getMyRequests(): Promise<{ asClient: RequestDTO[]; asProvi
 
   const asProvider = providerRecord
     ? await prisma.serviceRequest.findMany({
+      take: SUFIT_LISTY,
         where: { providerId: providerRecord.id },
         orderBy: { createdAt: "desc" },
         include,

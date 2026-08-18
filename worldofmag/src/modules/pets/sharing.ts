@@ -2,6 +2,7 @@ import { prisma } from "@/platform/db/prisma";
 import { brakujaceWzgledemNadan } from "@/platform/sharing/lustroOdczyt";
 import { resourceRoleFromLegacy } from "@/platform/workspaces/types";
 import type { ResourceCatalog } from "@/platform/sharing/types";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
  * 060 (Faza 2, zadanie 13 — moduł 2 z 19) — DEKLARACJA ZASOBÓW MODUŁU ZWIERZĘTA (rozdz. 8.4).
@@ -57,6 +58,7 @@ export const resources: ResourceCatalog = {
      */
     extraGrants: async (id) => {
       const shares = await prisma.petShare.findMany({
+        take: SUFIT_LISTY,
         where: { petId: id },
         select: { userId: true, teamId: true, role: true },
       });
@@ -68,6 +70,7 @@ export const resources: ResourceCatalog = {
           wynik.push({ userId: s.userId, role: rola });
         } else if (s.teamId) {
           const czlonkowie = await prisma.teamMember.findMany({
+            take: SUFIT_LISTY,
             where: { teamId: s.teamId },
             select: { userId: true },
           });

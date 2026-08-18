@@ -67,6 +67,7 @@ export async function resolveSectionModes(
   ownerId: string
 ): Promise<Record<AiContentKind, AiSectionMode>> {
   const [prefs, defaults] = await Promise.all([
+    // paginacja: kompletny — tryby odświeżania wszystkich sekcji AI użytkownika; ucięcie cofnęłoby część sekcji do wartości domyślnej bez śladu.
     prisma.aiSectionPref.findMany({ where: await filtrMoichRekordow(ownerId) }),
     readDefaultSectionModes(),
   ]);

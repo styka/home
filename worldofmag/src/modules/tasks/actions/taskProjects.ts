@@ -8,6 +8,7 @@ import { requireAuth } from "@/platform/auth/serverUtils";
 import type { TaskProject, ProjectStatusConfig } from "@/types";
 import { serializeStatusConfig, parseStatusConfig, SYSTEM_TASK_STATUSES } from "@/types";
 import { wlasnoscDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 import { requireTaskModuleAccess } from "../lib/sharingGuard"
 
 function toProject(p: unknown): TaskProject {
@@ -19,12 +20,14 @@ export async function getTaskProjects(): Promise<TaskProject[]> {
 
   const mojaPrzestrzen = await filtrMoichRekordow(user.id);
   const owned = await prisma.taskProject.findMany({
+    take: SUFIT_LISTY,
     where: mojaPrzestrzen,
     include: { _count: { select: { tasks: true } }, members: { select: { userId: true, role: true } }, workspace: { select: { teamId: true } } },
     orderBy: [{ isInbox: "desc" }, { createdAt: "asc" }],
   });
 
   const memberOf = await prisma.taskProject.findMany({
+    take: SUFIT_LISTY,
     where: { members: { some: { userId: user.id } }, workspaceId: { not: mojaPrzestrzen.workspaceId } },
     include: { _count: { select: { tasks: true } }, members: { select: { userId: true, role: true } }, workspace: { select: { teamId: true } } },
     orderBy: { createdAt: "asc" },

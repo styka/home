@@ -5,6 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { sanitizeColor, sanitizeIcon } from "@/platform/favorites/sanitize";
 import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 import {
   MAX_FAVORITE_VIEWS,
   normalizeFavoriteLabel,
@@ -43,6 +44,7 @@ function toDTO(row: {
 export async function getFavoriteViews(): Promise<FavoriteViewDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.favoriteView.findMany({
+    take: SUFIT_LISTY,
     where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
   });
@@ -55,7 +57,7 @@ export async function getFavoriteViews(): Promise<FavoriteViewDTO[]> {
  */
 export async function readFavoriteViews(userId: string): Promise<FavoriteViewDTO[]> {
   const rows = await prisma.favoriteView
-    .findMany({ where: { ...(await filtrMoichRekordow(userId)) }, orderBy: [{ order: "asc" }, { createdAt: "asc" }] })
+    .findMany({ take: SUFIT_LISTY, where: { ...(await filtrMoichRekordow(userId)) }, orderBy: [{ order: "asc" }, { createdAt: "asc" }] })
     .catch(() => []);
   return rows.map(toDTO);
 }
@@ -141,6 +143,7 @@ export async function reorderFavoriteViews(ids: string[]): Promise<void> {
   // Przestawiamy WYŁĄCZNIE wiersze należące do użytkownika — cudze id z listy po prostu
   // nie znajdą dopasowania i zostaną pominięte, zamiast przestawiać komuś jego zakładki.
   const owned = await prisma.favoriteView.findMany({
+    take: SUFIT_LISTY,
     where: { ...(await filtrMoichRekordow(user.id)) },
     select: { id: true },
   });

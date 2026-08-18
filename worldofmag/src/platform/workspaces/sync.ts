@@ -113,6 +113,7 @@ export async function syncTeamWorkspace(teamId: string): Promise<WynikUzgodnieni
   for (const m of team.members) docelowe.set(m.userId, workspaceRoleFromTeamRole(m.role));
   docelowe.set(team.ownerId, "owner");
 
+  // paginacja: kompletny — uzgodnienie członkostw usuwa nadmiarowe wpisy; ucięcie zostawiłoby cudze członkostwo w przestrzeni.
   const obecne = await prisma.workspaceMember.findMany({
     where: { workspaceId: workspace.id },
     select: { userId: true, role: true },
@@ -152,8 +153,10 @@ export async function reconcileWorkspaces(zakres?: {
   teamIds?: string[];
 }): Promise<WynikUzgodnienia> {
   const userIds =
+    // paginacja: kompletny — uzgodnienie przestrzeni dla WSZYSTKICH kont; pominięte konto zostaje bez przestrzeni osobistej.
     zakres?.userIds ?? (await prisma.user.findMany({ select: { id: true } })).map((u) => u.id);
   const teamIds =
+    // paginacja: kompletny — jak wyżej, dla zespołów.
     zakres?.teamIds ?? (await prisma.team.findMany({ select: { id: true } })).map((t) => t.id);
 
   const wyniki: WynikUzgodnienia[] = [];

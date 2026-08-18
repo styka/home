@@ -7,6 +7,7 @@ import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from 
 import { reviewCard, type ReviewGrade } from "../lib/srs";
 import type { LanguageDeck, Vocabulary } from "@/types";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 async function assertDeckAccess(deckId: string, userId: string): Promise<void> {
   const deck = await prisma.languageDeck.findUnique({
@@ -36,6 +37,7 @@ export async function getDecks(): Promise<LanguageDeck[]> {
   const now = new Date();
 
   const decks = await prisma.languageDeck.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: (await ownedOrAsync(user.id)),
     },
@@ -262,6 +264,7 @@ export async function getStudyStreak(): Promise<{ streak: number; reviewedToday:
   const ownScope = (await ownedOrAsync(user.id));
 
   const rows = await prisma.vocabulary.findMany({
+    take: SUFIT_LISTY,
     where: { lastReviewedAt: { not: null }, deck: { is: { OR: ownScope } } },
     select: { lastReviewedAt: true },
   });

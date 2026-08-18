@@ -6,6 +6,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 function safeDate(d: Date | string | null | undefined): Date | null {
   if (!d) return null;
@@ -73,6 +74,7 @@ export async function getHealthEvents(filter?: {
   }
 
   const events = await prisma.healthEvent.findMany({
+    take: SUFIT_LISTY,
     where,
     orderBy: { scheduledAt: filter?.scope === "past" ? "desc" : "asc" },
   });
@@ -205,6 +207,7 @@ export type TestTrend = {
 export async function getTestTrends(): Promise<TestTrend[]> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "health");
+  // paginacja: kompletny — trend badania to SERIA punktów; ucięcie urwałoby jej początek i zmieniło wykres.
   const rows = await prisma.healthEvent.findMany({
     where: {
       kind: "TEST",
@@ -234,7 +237,7 @@ export type HealthAttachmentDTO = { id: string; name: string; url: string; creat
 export async function getHealthAttachments(eventId: string): Promise<HealthAttachmentDTO[]> {
   const user = await requireAuth();
   await assertEventAccess(eventId, user.id);
-  const rows = await prisma.healthAttachment.findMany({ where: { eventId }, orderBy: { createdAt: "desc" } });
+  const rows = await prisma.healthAttachment.findMany({ take: SUFIT_LISTY, where: { eventId }, orderBy: { createdAt: "desc" } });
   return rows.map((a) => ({ id: a.id, name: a.name, url: a.url, createdAt: a.createdAt.toISOString() }));
 }
 

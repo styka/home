@@ -6,6 +6,7 @@ import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
 import { auth } from "@/platform/auth/session";
 import { BASE_CATEGORIES } from "@/lib/categories";
 import { getActiveCategoryIconMap, orphanCategoryIcons } from "./categoryIcons";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type CategoryWithUsage = {
   id: string | null;
@@ -21,6 +22,7 @@ export type CategoryWithUsage = {
 async function getSystemCategories() {
   try {
     return await prisma.category.findMany({
+      take: SUFIT_LISTY,
       where: { userId: null, teamId: null },
       orderBy: { name: "asc" },
     });
@@ -36,6 +38,7 @@ export async function getCategories(): Promise<CategoryWithUsage[]> {
   const [systemCats, custom] = await Promise.all([
     getSystemCategories(),
     prisma.category.findMany({
+      take: SUFIT_LISTY,
       where: {
         OR: [
           { userId: user.id },
@@ -48,6 +51,7 @@ export async function getCategories(): Promise<CategoryWithUsage[]> {
   ]);
 
   const products = await prisma.product.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         { userId: user.id },
@@ -115,6 +119,7 @@ export async function getCategoryEmojiMap(): Promise<Record<string, string>> {
   const teamIds = await getUserTeamIds(session.user.id);
 
   const custom = await prisma.category.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         { userId: session.user.id },
@@ -143,6 +148,7 @@ export async function getCategoryNames(): Promise<string[]> {
 
   const teamIds = await getUserTeamIds(session.user.id);
   const custom = await prisma.category.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         { userId: session.user.id },

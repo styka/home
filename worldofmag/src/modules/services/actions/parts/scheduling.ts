@@ -8,6 +8,7 @@ import { requireAuth } from "@/platform/auth/serverUtils";
 import { notifyUser } from "@/lib/notify";
 import { requireOwnProvider, computeSlots } from "../../lib/core/helpers";
 import type { AvailabilityRule } from "../../lib/serviceSlots";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /** Reguły dostępności bieżącego wykonawcy. */
 export async function getMyAvailability(staffId?: string | null): Promise<AvailabilityRule[]> {
@@ -15,6 +16,7 @@ export async function getMyAvailability(staffId?: string | null): Promise<Availa
   const provider = await prisma.serviceProvider.findUnique({ where: { userId: user.id }, select: { id: true } });
   if (!provider) return [];
   const rows = await prisma.serviceAvailability.findMany({
+    take: SUFIT_LISTY,
     where: { providerId: provider.id, staffId: staffId ?? null },
     orderBy: [{ weekday: "asc" }, { startMin: "asc" }],
     select: { weekday: true, startMin: true, endMin: true },
@@ -46,7 +48,7 @@ export async function getMyStaff(): Promise<{ id: string; name: string; role: st
   const user = await requireAuth();
   const provider = await prisma.serviceProvider.findUnique({ where: { userId: user.id }, select: { id: true } });
   if (!provider) return [];
-  const rows = await prisma.serviceStaff.findMany({ where: { providerId: provider.id }, orderBy: { createdAt: "asc" } });
+  const rows = await prisma.serviceStaff.findMany({ take: SUFIT_LISTY, where: { providerId: provider.id }, orderBy: { createdAt: "asc" } });
   return rows.map((s) => ({ id: s.id, name: s.name, role: s.role, active: s.active }));
 }
 
@@ -91,7 +93,7 @@ export async function getListingStaff(listingId: string): Promise<{ id: string; 
   await requireAuth();
   const listing = await prisma.serviceListing.findUnique({ where: { id: listingId }, select: { providerId: true } });
   if (!listing) return [];
-  const rows = await prisma.serviceStaff.findMany({ where: { providerId: listing.providerId, active: true }, orderBy: { createdAt: "asc" } });
+  const rows = await prisma.serviceStaff.findMany({ take: SUFIT_LISTY, where: { providerId: listing.providerId, active: true }, orderBy: { createdAt: "asc" } });
   return rows.map((s) => ({ id: s.id, name: s.name, role: s.role }));
 }
 

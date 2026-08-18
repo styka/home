@@ -1,6 +1,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import type { CalendarContribEvent, CalendarRange } from "@/platform/calendar";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
  * 049: wkład tego modułu do wspólnej agendy kalendarza.
@@ -18,6 +19,7 @@ function isoDay(d: Date): string {
 
 export default async function calendarEvents(userId: string, { from, to }: CalendarRange): Promise<CalendarContribEvent[]> {
   const rows = await prisma.task.findMany({
+    take: SUFIT_LISTY,
     where: {
       dueDate: { gte: from, lt: to },
       status: { notIn: ["DONE", "CANCELLED"] },

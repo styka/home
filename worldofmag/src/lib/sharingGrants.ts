@@ -8,6 +8,7 @@ import { logAudit } from "@/platform/audit/audit";
 import { notifyUser } from "@/lib/notify";
 import { sprawdzLimit } from "@/platform/rateLimit";
 import type { ResourceRole } from "@/platform/workspaces/types";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
  * 090 (zadanie 14, część zapisowa) — NADAWANIE I ODBIERANIE DOSTĘPU.
@@ -90,8 +91,8 @@ export async function nadaniaZasobu(
   const userIds = wiersze.filter((w) => w.subjectType === "user" && w.subjectId).map((w) => w.subjectId!);
   const wsIds = wiersze.filter((w) => w.subjectType === "workspace" && w.subjectId).map((w) => w.subjectId!);
   const [users, spaces] = await Promise.all([
-    userIds.length ? prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, email: true, name: true } }) : [],
-    wsIds.length ? prisma.workspace.findMany({ where: { id: { in: wsIds } }, select: { id: true, name: true } }) : [],
+    userIds.length ? prisma.user.findMany({ take: SUFIT_LISTY, where: { id: { in: userIds } }, select: { id: true, email: true, name: true } }) : [],
+    wsIds.length ? prisma.workspace.findMany({ take: SUFIT_LISTY, where: { id: { in: wsIds } }, select: { id: true, name: true } }) : [],
   ]);
   const etykiety: Record<string, string> = {};
   for (const u of users) etykiety[u.id] = u.email ?? u.name ?? "(bez nazwy)";

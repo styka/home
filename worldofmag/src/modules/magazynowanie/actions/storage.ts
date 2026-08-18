@@ -10,6 +10,7 @@ import { trackActivity } from "@/actions/activity";
 import { assertListAccess } from "@/modules/shopping/contract";
 import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
 import { wlasnoscDoZapisu, przestrzenZespoluBezKontroliDostepu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 import {
   wartoscPozycji,
   liczbaPonizejMinimum,
@@ -321,6 +322,7 @@ export async function bulkSetStorageQuantities(
     // Z-073: jeden odczyt pozycji zamiast findUnique per wiersz (N+1) — przy spisie
     // całego magazynu to dziesiątki/setki zapytań mniej.
     const items = await tx.storageItem.findMany({
+      take: SUFIT_LISTY,
       where: { id: { in: updates.map((u) => u.id) } },
       select: { id: true, workspaceId: true, quantity: true },
     });
@@ -581,6 +583,7 @@ export async function getSuppliers(): Promise<StorageSupplier[]> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   return prisma.storageSupplier.findMany({
+    take: SUFIT_LISTY,
     where: { OR: await ownershipOr(user.id) },
     orderBy: { name: "asc" },
   });
@@ -649,6 +652,7 @@ export interface BatchInput {
 
 /** Synchronizuje quantity pozycji z sumą partii (gdy partie istnieją). */
 async function syncQuantityFromBatches(tx: typeof prisma, itemId: string): Promise<void> {
+  // paginacja: kompletny — stan pozycji jest SUMĄ partii; niepełna suma zapisuje do bazy zły stan magazynowy.
   const batches = await tx.storageBatch.findMany({ where: { itemId }, select: { quantity: true } });
   if (batches.length === 0) return;
   const sum = batches.reduce((a, b) => a + (b.quantity ?? 0), 0);
@@ -696,6 +700,7 @@ export async function issueByFEFO(itemId: string, qty: number, note?: string): P
   if (!Number.isFinite(qty) || qty <= 0) throw new Error("Nieprawidłowa ilość");
   await prisma.$transaction(async (tx) => {
     const batches = await tx.storageBatch.findMany({
+      take: SUFIT_LISTY,
       where: { itemId, quantity: { gt: 0 } },
       orderBy: [{ expiresAt: "asc" }, { receivedAt: "asc" }],
     });
@@ -731,6 +736,7 @@ export async function getExpiringStorage(withinDays = 30): Promise<ExpiringEntry
   const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   const now = new Date();
   const items = await prisma.storageItem.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: await ownershipOr(user.id),
       AND: { OR: [{ expiresAt: { not: null } }, { warrantyUntil: { not: null } }] },
@@ -794,6 +800,7 @@ export async function getStorageAnalytics(deadDays = 90): Promise<StorageAnalyti
   const deadStock = martwyZapas(doAnalizy, deadDays);
 
   const since = new Date(Date.now() - 14 * 86_400_000);
+  // paginacja: kompletny — trend ruchów liczy się z wszystkich ruchów okna; ucięcie zafałszowałoby analitykę.
   const movements = await prisma.storageMovement.findMany({
     where: { item: { OR: await ownershipOr(user.id) }, createdAt: { gte: since } },
     select: { delta: true, createdAt: true },
@@ -846,6 +853,7 @@ export async function getDocuments(): Promise<StorageDocumentWithLines[]> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   return prisma.storageDocument.findMany({
+    take: SUFIT_LISTY,
     where: { OR: await ownershipOr(user.id) },
     include: { lines: true, supplier: true },
     orderBy: { date: "desc" },
@@ -979,6 +987,7 @@ export async function getPurchaseOrders(): Promise<PurchaseOrderWithLines[]> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "magazynowanie");
   return prisma.storagePurchaseOrder.findMany({
+    take: SUFIT_LISTY,
     where: { OR: await ownershipOr(user.id) },
     include: { lines: true, supplier: true },
     orderBy: { date: "desc" },

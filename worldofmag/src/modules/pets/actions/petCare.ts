@@ -8,6 +8,7 @@ import { assertPetAccess } from "./pets";
 import { parseRecurringRule } from "@/lib/recurrence";
 import { nextDueFrom } from "../domain/terminOpieki";
 import { buildAgenda, buildWelfareSuggestions, buildEnvironmentSuggestions, type AgendaSource } from "../lib/petWelfare";
+import { SUFIT_LISTY } from "@/platform/pagination";
 import type {
   PetTreatment, PetCareTask, PetVetVisit, PetMeasurement, PetHealthRecord, PetCareLog,
   PetTreatmentKind, PetCareCategory, PetHealthType, RecurringRule,
@@ -25,6 +26,7 @@ function revalidatePet(petId: string) {
 async function accessiblePetIds(userId: string): Promise<string[]> {
   const teamIds = await getUserTeamIds(userId);
   const pets = await prisma.pet.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         ...(await ownedOrAsync(userId)),
@@ -371,10 +373,10 @@ export async function getCareAgenda(): Promise<CareAgendaItem[]> {
   if (petIds.length === 0) return [];
 
   const [pets, treatments, careTasks, vetVisits] = await Promise.all([
-    prisma.pet.findMany({ where: { id: { in: petIds } }, select: { id: true, name: true, species: true } }),
-    prisma.petTreatment.findMany({ where: { petId: { in: petIds }, active: true, nextDueAt: { not: null } } }),
-    prisma.petCareTask.findMany({ where: { petId: { in: petIds }, active: true, nextDueAt: { not: null } } }),
-    prisma.petVetVisit.findMany({ where: { petId: { in: petIds }, nextVisitAt: { not: null } } }),
+    prisma.pet.findMany({ take: SUFIT_LISTY, where: { id: { in: petIds } }, select: { id: true, name: true, species: true } }),
+    prisma.petTreatment.findMany({ take: SUFIT_LISTY, where: { petId: { in: petIds }, active: true, nextDueAt: { not: null } } }),
+    prisma.petCareTask.findMany({ take: SUFIT_LISTY, where: { petId: { in: petIds }, active: true, nextDueAt: { not: null } } }),
+    prisma.petVetVisit.findMany({ take: SUFIT_LISTY, where: { petId: { in: petIds }, nextVisitAt: { not: null } } }),
   ]);
 
   const source: AgendaSource = { pets, treatments, careTasks, vetVisits };
@@ -389,11 +391,11 @@ export async function getPetWelfare(): Promise<{ agenda: CareAgendaItem[]; sugge
 
   const now = new Date();
   const [pets, treatments, careTasks, vetVisits, measurements] = await Promise.all([
-    prisma.pet.findMany({ where: { id: { in: petIds } }, select: { id: true, name: true, species: true, presetKey: true, featureFlags: true, enclosureId: true } }),
-    prisma.petTreatment.findMany({ where: { petId: { in: petIds }, active: true, nextDueAt: { not: null } } }),
-    prisma.petCareTask.findMany({ where: { petId: { in: petIds }, active: true, nextDueAt: { not: null } } }),
-    prisma.petVetVisit.findMany({ where: { petId: { in: petIds }, nextVisitAt: { not: null } } }),
-    prisma.petMeasurement.findMany({ where: { petId: { in: petIds } }, orderBy: { date: "desc" } }),
+    prisma.pet.findMany({ take: SUFIT_LISTY, where: { id: { in: petIds } }, select: { id: true, name: true, species: true, presetKey: true, featureFlags: true, enclosureId: true } }),
+    prisma.petTreatment.findMany({ take: SUFIT_LISTY, where: { petId: { in: petIds }, active: true, nextDueAt: { not: null } } }),
+    prisma.petCareTask.findMany({ take: SUFIT_LISTY, where: { petId: { in: petIds }, active: true, nextDueAt: { not: null } } }),
+    prisma.petVetVisit.findMany({ take: SUFIT_LISTY, where: { petId: { in: petIds }, nextVisitAt: { not: null } } }),
+    prisma.petMeasurement.findMany({ take: SUFIT_LISTY, where: { petId: { in: petIds } }, orderBy: { date: "desc" } }),
   ]);
 
   const source: AgendaSource = { pets, treatments, careTasks, vetVisits };

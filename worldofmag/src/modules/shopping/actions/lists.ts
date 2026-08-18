@@ -7,6 +7,7 @@ import { requireAuth, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/a
 import type { ShoppingList, ShoppingListWithItems } from "@/types";
 import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export interface ListSummary {
   id: string;
@@ -24,6 +25,7 @@ export async function getListSummaries(includeArchived = false): Promise<ListSum
   const teamIds = await getAccessibleTeamIds(user.id, "shopping");
 
   const lists = await prisma.shoppingList.findMany({
+    take: SUFIT_LISTY,
     where: {
       archived: includeArchived,
       ...(await ownedWhereAsync(user.id)),
@@ -62,6 +64,7 @@ export async function getLists(): Promise<ShoppingList[]> {
   const teamIds = await getAccessibleTeamIds(user.id, "shopping");
 
   return prisma.shoppingList.findMany({
+    take: SUFIT_LISTY,
     where: {
       archived: false,
       ...(await ownedWhereAsync(user.id)),
@@ -81,6 +84,7 @@ export async function getActiveListsForOffline(): Promise<ShoppingListWithItems[
   const teamIds = await getAccessibleTeamIds(user.id, "shopping");
 
   const lists = await prisma.shoppingList.findMany({
+    take: SUFIT_LISTY,
     where: {
       archived: false,
       ...(await ownedWhereAsync(user.id)),
@@ -100,6 +104,7 @@ export async function getArchivedLists(): Promise<ShoppingList[]> {
   const teamIds = await getAccessibleTeamIds(user.id, "shopping");
 
   return prisma.shoppingList.findMany({
+    take: SUFIT_LISTY,
     where: {
       archived: true,
       ...(await ownedWhereAsync(user.id)),

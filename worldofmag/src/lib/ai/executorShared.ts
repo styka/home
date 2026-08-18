@@ -9,6 +9,7 @@ import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import type { AIAction } from "@/platform/ai/aiAction";
 import type { TaskPriority } from "@/types";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export function addDays(d: Date, days: number): Date {
   const x = new Date(d);
@@ -92,6 +93,7 @@ export function undoAction(module: AIAction["module"], type: string, params: Rec
 async function accessibleListIds(userId: string): Promise<string[]> {
   const teamIds = await getUserTeamIds(userId);
   const lists = await prisma.shoppingList.findMany({
+    take: SUFIT_LISTY,
     where: { OR: (await ownedOrAsync(userId)) },
     select: { id: true },
   });

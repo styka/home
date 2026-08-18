@@ -1,6 +1,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { brakujaceWzgledemNadan } from "@/platform/sharing/lustroOdczyt";
 import type { ResourceCatalog } from "@/platform/sharing/types";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
  * 052 (Faza 2, zadanie 10) — DEKLARACJA ZASOBÓW MODUŁU ZADANIA (rozdz. 8.4).
@@ -57,6 +58,7 @@ export const resources: ResourceCatalog = {
     },
     extraGrants: async (id) => {
       const czlonkowie = await prisma.taskProjectMember.findMany({
+        take: SUFIT_LISTY,
         where: { projectId: id },
         select: { userId: true, role: true },
       });

@@ -5,7 +5,7 @@ import { auth } from "@/platform/auth/session"
 import { prisma } from "@/platform/db/prisma"
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions"
 import { logAudit } from "@/platform/audit/audit"
-import { keysetQuery, keysetResult, type KeysetPage } from "@/lib/pagination"
+import { zapytanieKursorowe, stronaZWierszy, SUFIT_LISTY, type Strona } from "@/platform/pagination"
 import { countDistinctAdminHolders } from "@/lib/access/adminLockout"
 
 async function requireAdmin() {
@@ -34,10 +34,12 @@ async function countAdminAccessHolders(opts?: {
   if (!perm) return 0
 
   const adminRoles = (
+    // paginacja: kompletny — role z uprawnieniem administratora; na tej liczbie stoi blokada samowykluczenia (0 adminów).
     await prisma.rolePermission.findMany({ where: { permissionId: perm.id }, select: { role: true } })
   ).map((g) => g.role)
   if (adminRoles.length === 0) return 0
 
+  // paginacja: kompletny — liczba posiadaczy dostępu admina; niepełny odczyt mógłby przepuścić zmianę zostawiającą system bez administratora.
   const userRoles = await prisma.userRole.findMany({
     where: { role: { in: adminRoles } },
     select: { userId: true, role: true },
@@ -58,7 +60,7 @@ export type PermissionData = {
 
 export async function getPermissions(): Promise<PermissionData[]> {
   await requireAdmin()
-  return prisma.permission.findMany({ orderBy: { slug: "asc" } })
+  return prisma.permission.findMany({ take: SUFIT_LISTY, orderBy: { slug: "asc" } })
 }
 
 export async function createPermission(slug: string, name: string, description?: string): Promise<void> {
@@ -98,10 +100,11 @@ export type RoleWithPermissions = {
 export async function getRolePermissions(): Promise<RoleWithPermissions[]> {
   await requireAdmin()
   // Get all distinct roles from UserRole
-  const userRoles = await prisma.userRole.findMany({ select: { role: true }, distinct: ["role"] })
+  const userRoles = await prisma.userRole.findMany({ take: SUFIT_LISTY, select: { role: true }, distinct: ["role"] })
   const roles = userRoles.map((r) => r.role)
 
   const rolePerms = await prisma.rolePermission.findMany({
+    take: SUFIT_LISTY,
     where: { role: { in: roles } },
     select: { role: true, permission: { select: { slug: true } } },
   })
@@ -154,6 +157,7 @@ export type UserData = {
 export async function getUsers(): Promise<UserData[]> {
   await requireAdmin()
   const users = await prisma.user.findMany({
+    take: SUFIT_LISTY,
     select: { id: true, name: true, email: true, createdAt: true, userRoles: { select: { role: true } } },
     orderBy: { createdAt: "desc" },
   })
@@ -189,7 +193,7 @@ export async function removeUserRole(userId: string, role: string): Promise<void
 
 export async function getAvailableRoles(): Promise<string[]> {
   await requireAdmin()
-  const roles = await prisma.userRole.findMany({ select: { role: true }, distinct: ["role"] })
+  const roles = await prisma.userRole.findMany({ take: SUFIT_LISTY, select: { role: true }, distinct: ["role"] })
   const dbRoles = roles.map((r) => r.role)
   // Ensure built-in roles always appear in dropdowns even if nobody has them yet
   const builtin = ["ADMIN", "USER", "BETA_TESTER", "TESTER"]
@@ -210,13 +214,13 @@ export type AuditEntry = {
 
 export async function getAuditLog(
   opts?: { category?: "rbac" | "config"; cursor?: string | null; limit?: number },
-): Promise<KeysetPage<AuditEntry>> {
+): Promise<Strona<AuditEntry>> {
   await requireAdmin()
   // Z-070: paginacja keyset zamiast stałego `take: 200` — log audytu rośnie bez końca.
   const rows = await prisma.auditLog.findMany({
     where: opts?.category ? { category: opts.category } : undefined,
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    ...keysetQuery({ cursor: opts?.cursor, limit: opts?.limit }),
+    ...zapytanieKursorowe({ kursor: opts?.cursor, rozmiar: opts?.limit }),
   })
   const mapped: AuditEntry[] = rows.map((r) => ({
     id: r.id,
@@ -227,5 +231,5 @@ export async function getAuditLog(
     detail: r.detail,
     createdAt: r.createdAt.toISOString(),
   }))
-  return keysetResult(mapped, opts?.limit)
+  return stronaZWierszy(mapped, opts?.limit)
 }

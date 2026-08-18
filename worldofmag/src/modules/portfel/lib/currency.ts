@@ -2,12 +2,14 @@
 // rates[c] = ile jednostek baseCurrency kosztuje 1 jednostka waluty c (kurs „1 c = rate × base").
 
 import { prisma } from "@/platform/db/prisma";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type RateInfo = { base: string; rates: Record<string, number> };
 
 export async function loadRates(userId: string): Promise<RateInfo> {
   const settings = await prisma.financeSettings.findUnique({ where: { userId }, select: { baseCurrency: true } });
   const base = (settings?.baseCurrency ?? "PLN").toUpperCase();
+  // paginacja: kompletny — brakujący kurs to nieprzeliczona kwota, a nie krótsza lista.
   const rows = await prisma.exchangeRate.findMany({ where: { userId }, select: { currency: true, rate: true } });
   const rates: Record<string, number> = {};
   for (const r of rows) rates[r.currency.toUpperCase()] = r.rate;

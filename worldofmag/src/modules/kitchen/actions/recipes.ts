@@ -20,6 +20,7 @@ import type {
 import type { Recipe, RecipeIngredient, RecipeStep, RecipeImage, Item } from "@prisma/client";
 import { slugify } from "../domain/slug";
 import { wlasnoscDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 // ─── Access control ───────────────────────────────────────────────────────
 
@@ -105,6 +106,7 @@ export async function getRecipes(opts?: {
   }
 
   const recipes = await prisma.recipe.findMany({
+    take: SUFIT_LISTY,
     where,
     select: {
       id: true,
@@ -611,6 +613,7 @@ export async function shopForRecipe(input: ShopForRecipeInput): Promise<ShopForR
   const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
   const pantry = input.skipPantry
     ? await prisma.pantryItem.findMany({
+      take: SUFIT_LISTY,
         where: {
           ...(await ownedWhereAsync(user.id)),
         },

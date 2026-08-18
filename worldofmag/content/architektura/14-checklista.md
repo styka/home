@@ -131,4 +131,4 @@ Po ukończeniu wszystkich faz odpowiedz na te pytania **kodem, nie deklaracją**
 | Czy `viewer` może zmienić zadanie przez asystenta AI? | nie | ✅ nie | `check:ai-access` + próby obejścia asystentem |
 | Czy odebranie dostępu działa natychmiast przy otwartej karcie? | tak | ✅ tak — rozstrzygnięcia dostępu świadomie **nie są** cache'owane między żądaniami | test odwołania dostępu przy aktywnym SSE |
 | Ile trwa dodanie języka angielskiego? | praca tłumacza | ⚠️ **nadal praca programisty** dla **1416** literałów w 231 plikach | `check:i18n` — zapadka, która nie może rosnąć i wymusza zapisanie każdego spadku |
-| *(dopisane 095)* Czy paginacja kursorowa objęła wszystkie widoki listowe? | tak | ⚠️ **nie — 207 zapytań bez `take`** | `check:pagination` — jak wyżej |
+| *(dopisane 095)* Czy paginacja kursorowa objęła wszystkie widoki listowe? | tak | ⚠️ **kursor: 1 widok; granica: wszystkie** (096) — zero zapytań zwracających wszystko, ale kursor tylko tam, gdzie widok nie liczy nic po stronie klienta | `check:pagination` — reguła bezwzględna: `take`, kursor albo znacznik „wynik musi być kompletny” |

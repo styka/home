@@ -18,6 +18,7 @@ import {
   isOperationType,
 } from "@/platform/llm/operationTypes";
 import { isSpeechOnlyKind, type ProviderKind } from "@/platform/llm/resolver";
+import { SUFIT_LISTY } from "@/platform/pagination";
 import {
   LLM_EFFORT_LEVELS,
   effortSupported,
@@ -209,8 +210,8 @@ function choiceKey(providerId: string, model: string): string {
 export async function getAssistantLevelConfig(): Promise<AssistantLevelConfigDTO> {
   const user = await requireAuth();
   const [assignments, prefs] = await Promise.all([
-    prisma.llmAssignment.findMany({ include: { provider: true } }),
-    prisma.userLlmPref.findMany({ where: { userId: user.id } }),
+    prisma.llmAssignment.findMany({ take: SUFIT_LISTY, include: { provider: true } }),
+    prisma.userLlmPref.findMany({ take: SUFIT_LISTY, where: { userId: user.id } }),
   ]);
 
   const usable = assignments.filter(

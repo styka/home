@@ -7,6 +7,7 @@ import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import qaModule from "../module";
 import type { QaEpic, QaUserStory, QaTestScenario } from "@prisma/client";
 import { normalizeSlug } from "../domain/slug";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 async function requireQaAccess() {
   const session = await auth();
@@ -40,6 +41,7 @@ export interface ModuleStats {
 export async function getModuleStats(): Promise<ModuleStats[]> {
   await requireQaAccess();
   const epics = await prisma.qaEpic.findMany({
+    take: SUFIT_LISTY,
     select: {
       module: true,
       userStories: {
@@ -67,6 +69,7 @@ export interface ModuleTree extends QaEpic {
 export async function getModuleTree(module: string): Promise<ModuleTree[]> {
   await requireQaAccess();
   return prisma.qaEpic.findMany({
+    take: SUFIT_LISTY,
     where: { module },
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     include: {
@@ -95,6 +98,7 @@ export async function getScenarioWithContext(slug: string): Promise<ScenarioWith
   });
   if (!scenario) return null;
   const siblings = await prisma.qaTestScenario.findMany({
+    take: SUFIT_LISTY,
     where: { storyId: scenario.storyId },
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     select: { slug: true, title: true, order: true },
@@ -107,6 +111,7 @@ export async function getScenarioWithContext(slug: string): Promise<ScenarioWith
 export async function getAllEpics(): Promise<EpicWithCounts[]> {
   await requireAdmin();
   const rows = await prisma.qaEpic.findMany({
+    take: SUFIT_LISTY,
     orderBy: [{ module: "asc" }, { order: "asc" }],
     include: {
       _count: { select: { userStories: true } },
@@ -169,6 +174,7 @@ export type AdminEpicTreeNode = {
 export async function getEpicTreeForAdmin(): Promise<AdminEpicTreeNode[]> {
   await requireAdmin();
   const rows = await prisma.qaEpic.findMany({
+    take: SUFIT_LISTY,
     orderBy: [{ module: "asc" }, { order: "asc" }],
     include: {
       userStories: {

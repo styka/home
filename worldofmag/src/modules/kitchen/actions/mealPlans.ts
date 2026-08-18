@@ -12,6 +12,7 @@ import type { MealSlot, MealStatus } from "@/types/kitchen";
 import type { MealPlanEntry, Item } from "@prisma/client";
 import { dayKeyUTC } from "../domain/dzienPlanu";
 import { wlasnoscDoZapisu, przestrzenZespoluBezKontroliDostepu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type MealPlanEntryWithRecipe = MealPlanEntry & {
   recipe: {
@@ -62,6 +63,7 @@ export async function getMealPlan(
   if (ownershipFilter.length === 0) return [];
 
   const entries = await prisma.mealPlanEntry.findMany({
+    take: SUFIT_LISTY,
     where: {
       AND: [
         { OR: ownershipFilter },
@@ -109,6 +111,7 @@ export async function getMealPlanCost(range: { from: Date; to: Date }, teamId?: 
     : (await ownedOrAsync(user.id));
   if (ownershipFilter.length === 0) return { total: 0, pricedEntries: 0, totalEntries: 0 };
 
+  // paginacja: kompletny — koszt planu to SUMA po wpisach zakresu.
   const entries = await prisma.mealPlanEntry.findMany({
     where: {
       AND: [
@@ -423,6 +426,7 @@ export async function previewShoppingListFromPlan(
 
   const ownership = (await ownedOrAsync(user.id));
 
+  // paginacja: kompletny — podgląd listy zakupów musi objąć cały zakres planu.
   const entries = await prisma.mealPlanEntry.findMany({
     where: {
       AND: [
@@ -440,6 +444,7 @@ export async function previewShoppingListFromPlan(
   });
 
   const pantry = input.skipPantry
+    // paginacja: kompletny — zapasy odejmowane od podglądu listy zakupów, jak wyżej.
     ? await prisma.pantryItem.findMany({ where: { OR: ownership } })
     : [];
 
@@ -527,6 +532,7 @@ export async function generateShoppingListFromPlan(
 
   const ownership = (await ownedOrAsync(user.id));
 
+  // paginacja: kompletny — wszystkie wpisy planu z zakresu trafiają na listę zakupów; ucięcie to brakujące składniki.
   const entries = await prisma.mealPlanEntry.findMany({
     where: {
       AND: [
@@ -544,8 +550,9 @@ export async function generateShoppingListFromPlan(
   });
 
   const pantry = input.skipPantry
+    // paginacja: kompletny — zapasy w spiżarni odejmowane od listy zakupów; pominięty zapas = kupione po raz drugi.
     ? await prisma.pantryItem.findMany({
-        where: { OR: ownership },
+      where: { OR: ownership },
       })
     : [];
 

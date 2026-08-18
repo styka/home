@@ -9,6 +9,7 @@ import { summarizeExplainPlan, REPRESENTATIVE_QUERIES, type ScanType } from "@/l
 import { ileSluchaczy } from "@/platform/events/bus";
 import { metrykiPerModul, type PodsumowanieModulu } from "@/platform/observability/metryki";
 import { getDailyCostUsd } from "@/platform/ai/usage";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 async function requireAdmin() {
   const session = await auth();
@@ -89,10 +90,11 @@ export async function getSystemHealth(): Promise<SystemHealth> {
   }
 
   // LLM: dostawcy + przypisania per typ operacji.
-  const providers = await prisma.llmProvider.findMany({ select: { id: true, enabled: true, apiKey: true } });
+  const providers = await prisma.llmProvider.findMany({ take: SUFIT_LISTY, select: { id: true, enabled: true, apiKey: true } });
   const enabledProviders = providers.filter((p) => p.enabled && p.apiKey).length;
   // 034: diagnostyka patrzy na poziom STANDARDOWY — pozostałe z niego dziedziczą.
   const assignmentsRaw = await prisma.llmAssignment.findMany({
+    take: SUFIT_LISTY,
     where: { level: BASE_CONFIG_LEVEL },
     include: { provider: { select: { enabled: true, apiKey: true } } },
   });

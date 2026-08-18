@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { assertProjectAccess } from "@/modules/tasks/contract";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 // 031: „wyrzutnik" na zgłoszenia od użytkowników.
 //
@@ -40,7 +41,7 @@ async function resolveFeedbackProjectId(): Promise<string | null> {
   }
 
   const adminIds = (
-    await prisma.userRole.findMany({ where: { role: "ADMIN" }, select: { userId: true } })
+    await prisma.userRole.findMany({ take: SUFIT_LISTY, where: { role: "ADMIN" }, select: { userId: true } })
   ).map((r) => r.userId);
   if (adminIds.length === 0) return null;
 

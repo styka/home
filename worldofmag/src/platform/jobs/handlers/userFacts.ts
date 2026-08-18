@@ -67,6 +67,7 @@ export async function userFactsHandler(_payload: unknown, ctx: JobContext): Prom
       take: 20,
       select: { title: true },
     }),
+    // paginacja: kompletny — dotychczasowe fakty muszą być znane w całości, inaczej wnioskowanie zaproponuje ponownie fakt już odrzucony (039).
     prisma.userFact.findMany({
       where: moje,
       select: { text: true, status: true },

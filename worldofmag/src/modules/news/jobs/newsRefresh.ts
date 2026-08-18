@@ -17,6 +17,7 @@ import { fetchRss } from "@/lib/news/rss";
 import { fingerprintOf } from "@/lib/textKey";
 import { usageFromChat, type AiUsageInfo } from "@/platform/ai/usage";
 import { JobError, type JobContext } from "@/platform/jobs/types";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /** Okno pierwszego przebiegu, gdy nigdy jeszcze nie pobieraliśmy puli. */
 const FIRST_RUN_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -106,6 +107,7 @@ async function fetchPool(ownerId: string, force: boolean, ctx: JobContext): Prom
   // 079: zadanie w tle nie ma sesji — przestrzeń wyliczamy z właściciela zadania.
   const moje = await filtrMoichRekordow(ownerId);
   const sources = await prisma.newsSource.findMany({
+    take: SUFIT_LISTY,
     where: { ...moje, enabled: true },
     orderBy: { sortOrder: "asc" },
   });
@@ -345,6 +347,7 @@ async function summarizeItems(
   if (itemIds.length === 0) return 0;
 
   const items = await prisma.newsItem.findMany({
+    take: SUFIT_LISTY,
     where: { id: { in: itemIds } },
     select: { id: true, title: true, summary: true },
   });
@@ -432,6 +435,7 @@ async function buildTimeline(
   if (itemIds.length === 0) return 0;
 
   const items = await prisma.newsItem.findMany({
+    take: SUFIT_LISTY,
     where: { id: { in: itemIds }, topicId: topic.id },
     orderBy: { publishedAt: "asc" },
     select: {
@@ -547,6 +551,7 @@ export async function recordRun(
     // Przycinamy do ostatnich 30 przebiegów. Zgłoszenie prosi o możliwość odczytania kosztu, nie o
     // wieczyste archiwum — a bez przycinania tabela rosłaby w nieskończoność.
     const old = await prisma.newsRefreshRun.findMany({
+      take: SUFIT_LISTY,
       where: await filtrMoichRekordow(ownerId),
       orderBy: { finishedAt: "desc" },
       skip: RUN_HISTORY_LIMIT,
@@ -589,6 +594,7 @@ async function runNewsRefresh(
   const pool = await fetchPool(ownerId, payload?.force === true, ctx);
 
   const topics = await prisma.newsTopic.findMany({
+    take: SUFIT_LISTY,
     where: { ...(await filtrMoichRekordow(ownerId)), enabled: true },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     select: { id: true, title: true, semanticFilter: true },
@@ -621,6 +627,7 @@ async function runNewsRefresh(
       for (let i = 0; i < topics.length; i++) {
         ctx.progress?.(`Buduję linię czasu (${i + 1}/${topics.length})…`);
         const topicItems = await prisma.newsItem.findMany({
+          take: SUFIT_LISTY,
           where: { topicId: topics[i].id, id: { in: Array.from(newIds) } },
           select: { id: true },
         });

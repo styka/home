@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import type { TaskTagDef } from "@/types";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export async function getTaskTags(): Promise<TaskTagDef[]> {
   await requireAuth();
-  return prisma.taskTagDef.findMany({ orderBy: { name: "asc" } });
+  return prisma.taskTagDef.findMany({ take: SUFIT_LISTY, orderBy: { name: "asc" } });
 }
 
 export async function createTaskTag(name: string, color = "#6b7280"): Promise<TaskTagDef> {

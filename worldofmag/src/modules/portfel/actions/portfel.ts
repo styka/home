@@ -11,6 +11,7 @@ import { createHash } from "crypto";
 import type { WalletElement, WalletEntry } from "@prisma/client";
 import { signedBalance } from "../domain/majatek";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type ElementWithEntries = WalletElement & { entries: WalletEntry[] };
 
@@ -46,6 +47,7 @@ export async function getWalletElements(): Promise<WalletElementZPrzestrzenia[]>
   const where = await ownershipFilter(user.id);
   // 079: znacznik „element zespołowy" w UI czytał `ownerTeamId`; teraz bierze go z przestrzeni.
   return prisma.walletElement.findMany({
+    take: SUFIT_LISTY,
     where,
     orderBy: [{ archived: "asc" }, { createdAt: "asc" }],
     include: { workspace: { select: { teamId: true, team: { select: { id: true, name: true } } } } },
@@ -66,6 +68,7 @@ export async function getWalletOverview(): Promise<WalletOverview> {
   const user = await requireAuth();
   const where = await ownershipFilter(user.id);
   const elements = await prisma.walletElement.findMany({
+    take: SUFIT_LISTY,
     where,
     orderBy: [{ archived: "asc" }, { createdAt: "asc" }],
     include: { entries: { orderBy: { date: "asc" } } },
@@ -231,6 +234,7 @@ export async function importBankCsv(elementId: string, csvText: string): Promise
   const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
   const sourceIds = sorted.map(csvTxnSourceId);
   const existing = await prisma.walletEntry.findMany({
+    take: SUFIT_LISTY,
     where: { elementId, sourceModule: "import", sourceId: { in: sourceIds } },
     select: { sourceId: true },
   });

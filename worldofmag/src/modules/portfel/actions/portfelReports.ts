@@ -3,6 +3,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { monthRange } from "../domain/okres";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type CategorySlice = { category: string; amount: number; pct: number };
 
@@ -25,6 +26,7 @@ export async function getMonthlyReport(monthOffset = 0): Promise<MonthlyReport> 
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "portfel");
 
+  // paginacja: kompletny — pominięty element portfela to wpisy nieuwzględnione w raporcie, czyli zaniżona kwota.
   const elements = await prisma.walletElement.findMany({
     where: { OR: (await ownedOrAsync(user.id)) },
     select: { id: true, currency: true },
@@ -39,6 +41,7 @@ export async function getMonthlyReport(monthOffset = 0): Promise<MonthlyReport> 
     return { monthOffset, label, income: 0, expense: 0, net: 0, currency, byCategory: [], prevExpense: null, expenseDeltaPct: null, entryCount: 0, hasOlder: false };
   }
 
+  // paginacja: kompletny — wpisy miesiąca to SUMY przychodu, wydatku i podziału na kategorie.
   const entries = await prisma.walletEntry.findMany({
     where: { elementId: { in: elementIds }, kind: { in: ["income", "expense"] }, date: { gte: start, lt: end } },
     select: { kind: true, delta: true, category: true },
@@ -64,6 +67,7 @@ export async function getMonthlyReport(monthOffset = 0): Promise<MonthlyReport> 
 
   // Poprzedni miesiąc — tylko suma wydatków do porównania.
   const prev = monthRange(monthOffset + 1);
+  // paginacja: kompletny — wpisy miesiąca poprzedniego do porównania; ucięcie zmieniłoby procent zmiany.
   const prevExpenseEntries = await prisma.walletEntry.findMany({
     where: { elementId: { in: elementIds }, kind: "expense", date: { gte: prev.start, lt: prev.end } },
     select: { delta: true },

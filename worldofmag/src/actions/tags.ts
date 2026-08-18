@@ -9,6 +9,7 @@ import {
   assertDictionaryAccess,
 } from "@/platform/auth/serverUtils";
 import type { Tag } from "@/types";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
  * 034: etykiety mają właściciela (C-21) — użytkownik widzi swoje, zespołowe i systemowe (bez
@@ -26,7 +27,7 @@ async function assertTagAccess(id: string, userId: string): Promise<void> {
 export async function getTags(): Promise<Tag[]> {
   const user = await requireAuth();
   const teamIds = await getUserTeamIds(user.id);
-  return prisma.tag.findMany({ where: ownedOrSystemWhere(user.id, teamIds), orderBy: { name: "asc" } });
+  return prisma.tag.findMany({ take: SUFIT_LISTY, where: ownedOrSystemWhere(user.id, teamIds), orderBy: { name: "asc" } });
 }
 
 export async function createTag(data: { name: string; color?: string }): Promise<Tag> {

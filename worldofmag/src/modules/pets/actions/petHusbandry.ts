@@ -10,6 +10,7 @@ import { notifyUser } from "@/lib/notify";
 import { ENV_PARAMS, classifyValue, rangeLabel, type Range } from "../lib/petEnvironment";
 import type { PetEnclosure, PetEnvironmentReading } from "@/types";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 async function assertEnclosureAccess(enclosureId: string, userId: string): Promise<void> {
   const enc = await prisma.petEnclosure.findUnique({
@@ -30,6 +31,7 @@ export async function getEnclosures(): Promise<PetEnclosure[]> {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "pets");
   const list = await prisma.petEnclosure.findMany({
+    take: SUFIT_LISTY,
     where: {
       ...(await ownedWhereAsync(user.id)),
     },

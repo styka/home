@@ -16,6 +16,7 @@ import {
 import { createTask } from "@/modules/tasks/contract";
 import { normalizeDays, normalizeGoal, normalizeReminder } from "../domain/harmonogram";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 async function assertHabitAccess(id: string, userId: string): Promise<void> {
   const h = await prisma.habit.findUnique({
@@ -43,6 +44,7 @@ export async function getHabits(opts?: { includeArchived?: boolean }): Promise<H
   const sinceISO = isoDate(yearAgo);
 
   const habits = await prisma.habit.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: (await ownedOrAsync(user.id)),
       ...(opts?.includeArchived ? {} : { archived: false }),

@@ -4,11 +4,12 @@ import { prisma } from "@/platform/db/prisma";
 import { requireUserId } from "@/platform/auth/ownership";
 import { revalidatePath } from "next/cache";
 import { CONSENT_DOCUMENTS, getLegalDoc } from "@/lib/legal/documents";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /** Z-053: aktualne zgody użytkownika (klucz → zaakceptowana wersja + data). */
 export async function getMyConsents(): Promise<Record<string, { version: string; acceptedAt: string }>> {
   const userId = await requireUserId();
-  const rows = await prisma.userConsent.findMany({ where: { userId } });
+  const rows = await prisma.userConsent.findMany({ take: SUFIT_LISTY, where: { userId } });
   const out: Record<string, { version: string; acceptedAt: string }> = {};
   for (const r of rows) out[r.documentKey] = { version: r.version, acceptedAt: r.acceptedAt.toISOString() };
   return out;

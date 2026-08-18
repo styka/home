@@ -99,6 +99,7 @@ export async function assertDictionaryAccess(
 }
 
 export async function getUserTeamIds(userId: string): Promise<string[]> {
+  // paginacja: kompletny — zespoły użytkownika wyznaczają ZAKRES WIDOCZNOŚCI; ucięcie ukryłoby jego własne dane.
   const rows = await prisma.teamMember.findMany({
     where: { userId },
     select: { teamId: true },
@@ -114,6 +115,7 @@ export async function getUserTeamIds(userId: string): Promise<string[]> {
  * Seam do stopniowego wpięcia w odczyty modułów team-aware (rollout po deployu).
  */
 export async function getAccessibleTeamIds(userId: string, moduleId: string): Promise<string[]> {
+  // paginacja: kompletny — jak wyżej, z filtrem dostępu do modułu: niepełny wynik to cicha odmowa.
   const rows = await prisma.teamMember.findMany({
     where: { userId },
     select: { teamId: true, role: true, moduleAccess: true },
@@ -143,6 +145,7 @@ export async function getAccessibleTeamIds(userId: string, moduleId: string): Pr
  */
 export async function getAccessibleWorkspaceIds(userId: string, moduleId: string): Promise<string[]> {
   const teamIds = await getAccessibleTeamIds(userId, moduleId);
+  // paginacja: kompletny — lista przestrzeni, do których użytkownik ma dostęp; to jest decyzja o dostępie, nie widok.
   const przestrzenie = await prisma.workspace.findMany({
     where: {
       OR: [

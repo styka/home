@@ -11,6 +11,7 @@ import { asStr } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 import type { RecurringRule, PetStatus } from "@/types";
 import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 function addDays(d: Date, days: number): Date {
   const r = new Date(d);
@@ -201,6 +202,7 @@ export async function executePetAction(action: AIAction, userId: string): Promis
   if (type === "log_treatment_done") {
     const teamIds = await getUserTeamIds(userId);
     const petIds = (await prisma.pet.findMany({
+      take: SUFIT_LISTY,
       where: {
         OR: [
           ...(await ownedOrAsync(userId)),

@@ -8,6 +8,7 @@ import { trackActivity } from "@/actions/activity";
 import { DEFAULT_PRESET_KEY } from "../lib/petPresets";
 import type { Pet, PetWithRelations, PetShare, PetStatus, ShareRole } from "@/types";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 const SHARE_INCLUDE = {
   user: { select: { id: true, name: true, email: true, image: true } },
@@ -54,6 +55,7 @@ export async function getPets(opts?: { includeInactive?: boolean }): Promise<Pet
   ];
 
   const pets = await prisma.pet.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: accessOr,
       ...(opts?.includeInactive ? {} : { status: { in: ["ACTIVE", "REHOMED", "SOLD"] } }),
@@ -220,6 +222,7 @@ export async function getPetSharing(petId: string): Promise<PetShare[]> {
   const user = await requireAuth();
   await assertPetAccess(petId, user.id);
   const shares = await prisma.petShare.findMany({
+    take: SUFIT_LISTY,
     where: { petId },
     include: SHARE_INCLUDE,
   });

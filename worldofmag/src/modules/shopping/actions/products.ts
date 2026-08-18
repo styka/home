@@ -6,6 +6,7 @@ import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
 import { auth } from "@/platform/auth/session";
 import { categorize } from "../lib/categorize";
 import type { Product } from "@/types";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export async function getProductSuggestions(prefix: string): Promise<Product[]> {
   if (!prefix || prefix.length < 1) return [];
@@ -32,6 +33,7 @@ export async function getProducts(): Promise<Product[]> {
   const teamIds = await getUserTeamIds(user.id);
 
   return prisma.product.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         { userId: user.id },

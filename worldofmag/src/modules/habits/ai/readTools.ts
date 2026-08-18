@@ -1,6 +1,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { HARD_MAX, ownerScope } from "@/lib/ai/readToolShared";
 import type { AiReadToolHandler } from "@/platform/ai/contribution";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
  * 049: narzędzia ODCZYTU tego modułu — wkład do asystenta, składany z deklaracji.
@@ -24,6 +25,7 @@ export const readTools: Record<string, AiReadToolHandler> = {
       const ids = habits.map((h) => h.id);
       const doneEntries = ids.length
         ? await prisma.habitEntry.findMany({
+          take: SUFIT_LISTY,
             where: { habitId: { in: ids }, date: today },
             select: { habitId: true },
           })

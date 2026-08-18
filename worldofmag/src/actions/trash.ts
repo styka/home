@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { TRASH_RETENTION_DAYS } from "@/platform/trash/trash";
+import { SUFIT_LISTY } from "@/platform/pagination";
 import {
   przestrzenOsobista,
   przestrzenZespoluBezKontroliDostepu,
@@ -25,6 +26,7 @@ export async function getTrash(): Promise<{ items: TrashItemDTO[]; retentionDays
   await prisma.trashItem.deleteMany({ where: { userId: user.id, deletedAt: { lt: cutoff } } });
 
   const rows = await prisma.trashItem.findMany({
+    take: SUFIT_LISTY,
     where: { userId: user.id },
     orderBy: { deletedAt: "desc" },
   });
@@ -155,7 +157,7 @@ async function restoreNote(d: Record<string, unknown>): Promise<void> {
   // Re-link tagów, które wciąż istnieją.
   const tagIds = (d.tagIds as string[] | undefined) ?? [];
   if (tagIds.length) {
-    const existing = await prisma.tag.findMany({ where: { id: { in: tagIds } }, select: { id: true } });
+    const existing = await prisma.tag.findMany({ take: SUFIT_LISTY, where: { id: { in: tagIds } }, select: { id: true } });
     if (existing.length) {
       await prisma.noteTag.createMany({
         data: existing.map((t) => ({ noteId: id, tagId: t.id })),
@@ -206,7 +208,7 @@ async function restoreTask(d: Record<string, unknown>): Promise<void> {
 
   const tagIds = (d.tagIds as string[] | undefined) ?? [];
   if (tagIds.length) {
-    const existing = await prisma.taskTagDef.findMany({ where: { id: { in: tagIds } }, select: { id: true } });
+    const existing = await prisma.taskTagDef.findMany({ take: SUFIT_LISTY, where: { id: { in: tagIds } }, select: { id: true } });
     if (existing.length) {
       await prisma.taskTaskTag.createMany({
         data: existing.map((t) => ({ taskId: id, tagId: t.id })),

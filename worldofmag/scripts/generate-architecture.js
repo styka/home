@@ -72,7 +72,6 @@ function prog(rel, pole) {
   }
 }
 const zapadki = [
-  { nazwa: "Zapytania listowe bez `take`", wartosc: prog("src/platform/pagination-baseline.json", "maks"), bramka: "check:pagination" },
   { nazwa: "Teksty zaszyte w komponentach", wartosc: prog("src/lib/ui/i18n-baseline.json", "maks"), bramka: "check:i18n" },
   { nazwa: "Najcięższa trasa (bajty JS)", wartosc: prog("src/lib/ui/perf-baseline.json", "najciezszaTrasaB"), bramka: "check:perf" },
 ].filter((z) => z.wartosc !== null);

@@ -18,6 +18,7 @@ import { ensureJobWorker } from "@/lib/jobs/registry";
 import type { DateConfidence, NewsRefreshResult } from "../jobs/newsRefresh";
 import type { NewsItem, NewsSource } from "@prisma/client";
 import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow, czyMojRekord } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type SummaryLength = "short" | "medium" | "long";
 export type ItemStatus = "PENDING" | "ACKNOWLEDGED" | "DISMISSED";
@@ -103,6 +104,7 @@ export async function ensureNewsSetup(): Promise<void> {
 export async function getSources(): Promise<SourceDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.newsSource.findMany({
+    take: SUFIT_LISTY,
     where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
   });
@@ -121,6 +123,7 @@ export async function getSources(): Promise<SourceDTO[]> {
 export async function getTopics(): Promise<TopicDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.newsTopic.findMany({
+    take: SUFIT_LISTY,
     where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
@@ -166,6 +169,7 @@ export async function getTopicView(topicId: string): Promise<{
   await assertTopic(topicId, user.id);
 
   const items = await prisma.newsItem.findMany({
+    take: SUFIT_LISTY,
     where: { topicId, status: "PENDING" },
     orderBy: { publishedAt: "desc" },
     include: { source: true },
@@ -223,6 +227,7 @@ export interface StreamTopicDTO {
 export async function getStreamView(): Promise<StreamTopicDTO[]> {
   const user = await requireAuth();
   const topics = await prisma.newsTopic.findMany({
+    take: SUFIT_LISTY,
     where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
@@ -252,6 +257,7 @@ export async function getTopicTimeline(topicId: string): Promise<TimelineEntryDT
   const user = await requireAuth();
   await assertTopic(topicId, user.id);
   const rows = await prisma.newsTimelineEntry.findMany({
+    take: SUFIT_LISTY,
     where: { topicId },
     orderBy: [{ eventDate: "desc" }, { createdAt: "desc" }],
     include: { source: true },
@@ -261,6 +267,7 @@ export async function getTopicTimeline(topicId: string): Promise<TimelineEntryDT
   const articleIds = rows.map((r) => r.articleId).filter((id): id is string => !!id);
   const articles = articleIds.length
     ? await prisma.newsArticle.findMany({
+      take: SUFIT_LISTY,
         where: { id: { in: articleIds } },
         select: { id: true, url: true },
       })
@@ -754,6 +761,7 @@ export async function getHotTopics(force?: boolean): Promise<HotTopicsResult> {
   }
 
   const hidden = await prisma.newsHiddenTopic.findMany({
+    take: SUFIT_LISTY,
     where: { ...(await filtrMoichRekordow(user.id)) },
     select: { fingerprint: true },
   });
@@ -839,6 +847,7 @@ export async function unhideHotTopic(id: string): Promise<void> {
 export async function getHiddenTopics(): Promise<HiddenTopicDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.newsHiddenTopic.findMany({
+    take: SUFIT_LISTY,
     where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: { createdAt: "desc" },
   });

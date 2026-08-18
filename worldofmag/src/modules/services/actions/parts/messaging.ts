@@ -7,6 +7,7 @@ import { requireAuth } from "@/platform/auth/serverUtils";
 import { notifyUser } from "@/lib/notify";
 import { loadRequestAccess } from "../../lib/core/access";
 import type { RequestStatus, RequestThreadDTO, QuoteStatus, PaymentMethod, PaymentStatus } from "../../lib/services";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export async function addReview(requestId: string, rating: number, comment?: string): Promise<void> {
   const user = await requireAuth();
@@ -47,11 +48,13 @@ export async function getRequestThread(requestId: string): Promise<RequestThread
 
   const [messages, quotes, payment] = await Promise.all([
     prisma.serviceMessage.findMany({
+      take: SUFIT_LISTY,
       where: { requestId },
       orderBy: { createdAt: "asc" },
       select: { id: true, body: true, senderId: true, createdAt: true, sender: { select: { name: true } } },
     }),
     prisma.serviceQuote.findMany({
+      take: SUFIT_LISTY,
       where: { requestId },
       orderBy: { createdAt: "desc" },
       select: { id: true, amount: true, currency: true, message: true, status: true, validUntil: true, createdAt: true },

@@ -11,6 +11,7 @@ import type { CalendarContribEvent, CalendarRange } from "@/platform/calendar";
  */
 import { slotsForDate } from "@/lib/medicationSchedule";
 import type { MedicationSchedule } from "@/types";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /** „YYYY-MM-DD" w czasie lokalnym — ten sam format klucza dnia co w siatce kalendarza. */
 function isoDay(d: Date): string {
@@ -26,10 +27,11 @@ export default async function calendarEvents(userId: string, { from, to }: Calen
   const scope = await ownScope(userId);
   const [wizyty, leki] = await Promise.all([
     prisma.healthEvent.findMany({
+      take: SUFIT_LISTY,
       where: { scheduledAt: { gte: from, lt: to }, status: { not: "CANCELLED" }, OR: scope },
       select: { id: true, title: true, scheduledAt: true, kind: true },
     }),
-    prisma.medicationSchedule.findMany({ where: { active: true, OR: scope } }),
+    prisma.medicationSchedule.findMany({ take: SUFIT_LISTY, where: { active: true, OR: scope } }),
   ]);
 
   const events: CalendarContribEvent[] = wizyty.map((h) => ({

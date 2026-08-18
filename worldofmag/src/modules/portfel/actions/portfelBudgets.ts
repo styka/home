@@ -8,6 +8,7 @@ import { trackActivity } from "@/actions/activity";
 import type { Budget, FinanceGoal } from "@prisma/client";
 import { startOfMonth } from "../domain/okres";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 async function scope(userId: string) {
   const teamIds = await getUserTeamIds(userId);
@@ -23,12 +24,14 @@ export async function getBudgetsWithSpending(): Promise<{ budgets: BudgetWithSpe
   const user = await requireAuth();
   const { teamIds, where } = await scope(user.id);
 
+  // paginacja: kompletny — każdy budżet dostaje wyliczone wykonanie; ucięcie listy chowa przekroczony budżet.
   const budgets = await prisma.budget.findMany({ where, orderBy: { createdAt: "asc" } });
   if (budgets.length === 0) {
     return { budgets: [], periodLabel: monthLabel() };
   }
 
   // Wydatki tego miesiąca z elementów portfela użytkownika/zespołów, pogrupowane po kategorii.
+  // paginacja: kompletny — jak w raporcie miesięcznym: pominięty element to zaniżone wydatki.
   const elements = await prisma.walletElement.findMany({
     where: { OR: (await ownedOrAsync(user.id)) },
     select: { id: true },
@@ -36,8 +39,9 @@ export async function getBudgetsWithSpending(): Promise<{ budgets: BudgetWithSpe
   const elementIds = elements.map((e) => e.id);
 
   const entries = elementIds.length
+    // paginacja: kompletny — wydatki miesiąca liczone per kategoria; niepełna suma to budżet pokazany jako niewykorzystany.
     ? await prisma.walletEntry.findMany({
-        where: { elementId: { in: elementIds }, kind: "expense", date: { gte: startOfMonth() } },
+      where: { elementId: { in: elementIds }, kind: "expense", date: { gte: startOfMonth() } },
         select: { category: true, delta: true },
       })
     : [];
@@ -142,7 +146,7 @@ async function assertBudgetAccess(id: string, userId: string): Promise<void> {
 export async function getFinanceGoals(): Promise<FinanceGoal[]> {
   const user = await requireAuth();
   const { where } = await scope(user.id);
-  return prisma.financeGoal.findMany({ where, orderBy: [{ achievedAt: "asc" }, { createdAt: "asc" }] });
+  return prisma.financeGoal.findMany({ take: SUFIT_LISTY, where, orderBy: [{ achievedAt: "asc" }, { createdAt: "asc" }] });
 }
 
 export async function createGoal(data: {

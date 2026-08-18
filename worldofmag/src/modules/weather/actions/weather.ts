@@ -35,6 +35,7 @@ import { createTask, tasksModule } from "@/modules/tasks/contract";
 import { resolveWhen } from "../domain/pora";
 import { roundedBrief } from "../domain/odcisk";
 import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow, czyMojRekord } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export interface LocationDTO {
   id: string;
@@ -80,6 +81,7 @@ const WATCHER_STATUSES: WatcherStatus[] = ["met", "partial", "unmet", "unknown"]
 export async function getLocations(): Promise<LocationDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.weatherLocation.findMany({
+    take: SUFIT_LISTY,
     where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
@@ -226,6 +228,7 @@ function digestHours(hours: HourPoint[]): string {
 export async function getWatchers(): Promise<WatcherDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.weatherWatcher.findMany({
+    take: SUFIT_LISTY,
     where: { ...(await filtrMoichRekordow(user.id)) },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
   });
@@ -330,6 +333,7 @@ export async function evaluateWatchers(
 ): Promise<WatchersResult> {
   const user = await requireAuth();
   const watchers = await prisma.weatherWatcher.findMany({
+    take: SUFIT_LISTY,
     where: { ...(await filtrMoichRekordow(user.id)), enabled: true },
     orderBy: { sortOrder: "asc" },
   });
@@ -483,7 +487,7 @@ export async function getIdeas(
   // wymuszenie nowej generacji — jedyny moment, w którym wolno wołać model mimo zapamiętanej treści.
   const force = opts?.force ?? false;
 
-  const known = await prisma.weatherIdea.findMany({ where: { ...(await filtrMoichRekordow(user.id)) } });
+  const known = await prisma.weatherIdea.findMany({ take: SUFIT_LISTY, where: { ...(await filtrMoichRekordow(user.id)) } });
   const blocked = known.filter((k) => k.state === "blocked");
   const saved = known.filter((k) => k.state === "saved");
   const byFingerprint = new Map(known.map((k) => [k.fingerprint, k]));
@@ -863,6 +867,7 @@ export async function getIdeaLibrary(filter?: {
 }): Promise<IdeaDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.weatherIdea.findMany({
+    take: SUFIT_LISTY,
     where: {
       ...(await filtrMoichRekordow(user.id)),
       ...(filter?.state && filter.state !== "all" ? { state: filter.state } : {}),

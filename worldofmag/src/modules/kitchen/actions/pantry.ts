@@ -10,6 +10,7 @@ import { assertListAccess } from "@/modules/shopping/contract";
 import type { PantryItem, Item } from "@prisma/client";
 import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
 import { wlasnoscDoZapisu, przestrzenDoZapisu, przestrzenZespoluBezKontroliDostepu } from "@/platform/workspaces/zapis";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type PantryItemWithProduct = PantryItem & {
   product: {
@@ -52,6 +53,7 @@ export async function getPantry(teamId?: string): Promise<PantryItemWithProduct[
   if (ownership.length === 0) return [];
 
   return prisma.pantryItem.findMany({
+    take: SUFIT_LISTY,
     where: { OR: ownership },
     include: {
       product: {
@@ -70,6 +72,7 @@ export async function getExpiringSoon(days: number): Promise<PantryItemWithProdu
   threshold.setDate(threshold.getDate() + days);
 
   return prisma.pantryItem.findMany({
+    take: SUFIT_LISTY,
     where: {
       ...(await ownedWhereAsync(user.id)),
       expiresAt: { not: null, lte: threshold },
@@ -86,6 +89,7 @@ export async function getAutoReplenishCandidates(): Promise<PantryItemWithProduc
   const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
   const items = await prisma.pantryItem.findMany({
+    take: SUFIT_LISTY,
     where: {
       ...(await ownedWhereAsync(user.id)),
       autoShop: true,

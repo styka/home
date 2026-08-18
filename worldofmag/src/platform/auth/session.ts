@@ -55,12 +55,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string
         session.user.role = (token.role as string) ?? "USER"
         // Fetch fresh roles and permissions on every session access
+        // paginacja: kompletny — role w sesji; brakująca rola to utrata uprawnień bez żadnego komunikatu.
         const userRoles = await prisma.userRole.findMany({
           where: { userId: token.id as string },
           select: { role: true },
         })
         const roles = userRoles.map((r) => r.role)
         session.user.roles = roles
+        // paginacja: kompletny — uprawnienia ról w sesji; jak wyżej.
         const rolePerms = await prisma.rolePermission.findMany({
           where: { role: { in: roles } },
           select: { permission: { select: { slug: true } } },

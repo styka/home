@@ -14,6 +14,7 @@ import { recordTrash } from "@/platform/trash/trash";
 import { computeNextDue, parseRecurringRule, computeRecurringSuccessor } from "@/lib/recurrence";
 import type { Task, TaskPriority, TaskWithRelations, RecurringRule } from "@/types";
 import { parseStatusConfig, DEFAULT_STATUS_CONFIG, SYSTEM_TASK_STATUSES } from "@/types";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 const TASK_INCLUDE = {
   tags: { include: { tag: true } },
@@ -45,6 +46,7 @@ export async function getTasks(projectId: string): Promise<Task[]> {
   await assertProjectAccess(projectId, user.id);
 
   const tasks = await prisma.task.findMany({
+    take: SUFIT_LISTY,
     where: { projectId, parentTaskId: null },
     include: TASK_INCLUDE,
     orderBy: [{ order: "asc" }, { createdAt: "desc" }],
@@ -65,6 +67,7 @@ export async function getTasksForProjects(projectIds: string[]): Promise<Task[]>
   // zapytanie filtrujące po tej samej regule dostępu co guard (właściciel LUB
   // członek). Wynik = dostępne ID; brak dostępu/nieistniejące po prostu odpadają.
   const allowedRows = await prisma.taskProject.findMany({
+    take: SUFIT_LISTY,
     where: {
       id: { in: projectIds },
       OR: [await filtrMoichRekordow(user.id), { members: { some: { userId: user.id } } }],
@@ -75,6 +78,7 @@ export async function getTasksForProjects(projectIds: string[]): Promise<Task[]>
   if (allowed.length === 0) return [];
 
   const tasks = await prisma.task.findMany({
+    take: SUFIT_LISTY,
     where: { projectId: { in: allowed }, parentTaskId: null },
     include: TASK_INCLUDE,
     orderBy: [{ order: "asc" }, { createdAt: "desc" }],
@@ -87,6 +91,7 @@ export async function getAllUserTasks(): Promise<Task[]> {
   const user = await requireAuth();
 
   const projects = await prisma.taskProject.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         await filtrMoichRekordow(user.id),
@@ -99,6 +104,7 @@ export async function getAllUserTasks(): Promise<Task[]> {
   const projectIds = projects.map((p: { id: string }) => p.id);
 
   const tasks = await prisma.task.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         { projectId: { in: projectIds } },
@@ -214,7 +220,7 @@ async function spawnRecurringSuccessor(
   );
   if (!dates) return null;
 
-  const tags = await prisma.taskTaskTag.findMany({ where: { taskId: existing.id }, select: { tagId: true } });
+  const tags = await prisma.taskTaskTag.findMany({ take: SUFIT_LISTY, where: { taskId: existing.id }, select: { tagId: true } });
 
   const nextTask = await prisma.task.create({
     data: {
@@ -707,12 +713,14 @@ export async function getTodayTasks(): Promise<Task[]> {
   const { start, end } = userDayBounds();
 
   const projects = await prisma.taskProject.findMany({
+    take: SUFIT_LISTY,
     where: { OR: [await filtrMoichRekordow(user.id), { members: { some: { userId: user.id } } }] },
     select: { id: true },
   });
   const projectIds = projects.map((p: { id: string }) => p.id);
 
   const tasks = await prisma.task.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [{ projectId: { in: projectIds } }, { assigneeId: user.id }],
       dueDate: { gte: start, lte: end },
@@ -730,12 +738,14 @@ export async function getOverdueTasks(): Promise<Task[]> {
   const { start: now } = userDayBounds();
 
   const projects = await prisma.taskProject.findMany({
+    take: SUFIT_LISTY,
     where: { OR: [await filtrMoichRekordow(user.id), { members: { some: { userId: user.id } } }] },
     select: { id: true },
   });
   const projectIds = projects.map((p: { id: string }) => p.id);
 
   const tasks = await prisma.task.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [{ projectId: { in: projectIds } }, { assigneeId: user.id }],
       dueDate: { lt: now },

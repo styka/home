@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronLeft, Shield, KeyRound, Loader2 } from "lucide-react";
 import { getAuditLog, type AuditEntry } from "@/actions/access";
-import type { KeysetPage } from "@/lib/pagination";
+import type { Strona } from "@/platform/pagination";
 
 const CAT_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   rbac: { label: "RBAC", icon: <Shield size={13} />, color: "var(--accent-purple)" },
@@ -13,10 +13,10 @@ const CAT_META: Record<string, { label: string; icon: React.ReactNode; color: st
 
 type Tab = "all" | "rbac" | "config";
 
-export function AuditLogPage({ page: initial }: { page: KeysetPage<AuditEntry> }) {
-  const [entries, setEntries] = useState(initial.items);
-  const [cursor, setCursor] = useState(initial.nextCursor);
-  const [hasMore, setHasMore] = useState(initial.hasMore);
+export function AuditLogPage({ page: initial }: { page: Strona<AuditEntry> }) {
+  const [entries, setEntries] = useState(initial.pozycje);
+  const [cursor, setCursor] = useState(initial.nastepnyKursor);
+  const [hasMore, setHasMore] = useState(initial.jestWiecej);
   const [tab, setTab] = useState<Tab>("all");
   const [pending, startTransition] = useTransition();
 
@@ -24,18 +24,18 @@ export function AuditLogPage({ page: initial }: { page: KeysetPage<AuditEntry> }
     setTab(next);
     startTransition(async () => {
       const p = await getAuditLog(next === "all" ? undefined : { category: next });
-      setEntries(p.items);
-      setCursor(p.nextCursor);
-      setHasMore(p.hasMore);
+      setEntries(p.pozycje);
+      setCursor(p.nastepnyKursor);
+      setHasMore(p.jestWiecej);
     });
   }
 
   function loadMore() {
     startTransition(async () => {
       const p = await getAuditLog({ category: tab === "all" ? undefined : tab, cursor });
-      setEntries((prev) => [...prev, ...p.items]);
-      setCursor(p.nextCursor);
-      setHasMore(p.hasMore);
+      setEntries((prev) => [...prev, ...p.pozycje]);
+      setCursor(p.nastepnyKursor);
+      setHasMore(p.jestWiecej);
     });
   }
 

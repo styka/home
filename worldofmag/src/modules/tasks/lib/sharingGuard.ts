@@ -3,6 +3,7 @@ import { getAccessContext } from "@/platform/sharing/cache";
 import type { ResourceRef } from "@/platform/sharing/types";
 import { prisma } from "@/platform/db/prisma";
 import resources from "../sharing";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
  * 052 — wejście modułu Zadania do wspólnego sprawdzania dostępu.
@@ -54,6 +55,7 @@ export async function accessibleProjectIds(userId: string): Promise<string[]> {
     .filter(([, rola]) => rola !== "guest")
     .map(([id]) => id);
   const projekty = await prisma.taskProject.findMany({
+    take: SUFIT_LISTY,
     where: {
       OR: [
         // 079 (etap 4): gałąź `{ ownerId: userId }` ZNIKŁA razem z kolumną. Zastępuje ją

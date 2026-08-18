@@ -32,6 +32,7 @@ import {
   readMonthlyBudgetHard,
 } from "@/platform/ai/budzet";
 import { USD_PLN_CONFIG_KEY, DEFAULT_USD_PLN_RATE, parseUsdPlnRate } from "@/lib/usdPln";
+import { SUFIT_LISTY } from "@/platform/pagination";
 
 async function requireAdmin() {
   const session = await auth();
@@ -71,7 +72,7 @@ export interface AssignmentDTO {
 
 export async function getLlmProviders(): Promise<ProviderDTO[]> {
   await requireAdmin();
-  const rows = await prisma.llmProvider.findMany({ orderBy: { createdAt: "asc" } });
+  const rows = await prisma.llmProvider.findMany({ take: SUFIT_LISTY, orderBy: { createdAt: "asc" } });
   return rows.map((p) => ({
     id: p.id,
     label: p.label,
@@ -149,6 +150,7 @@ export async function getAssignments(level: string = BASE_CONFIG_LEVEL): Promise
   await requireAdmin();
   if (!isConfigLevel(level)) throw new Error("Nieznany poziom pracy asystenta");
   const rows = await prisma.llmAssignment.findMany({
+    take: SUFIT_LISTY,
     where: { level: { in: [level, BASE_CONFIG_LEVEL] } },
   });
   const own = new Map(rows.filter((r) => r.level === level).map((r) => [r.operationType, r]));
@@ -305,7 +307,7 @@ export interface SpeechConfigDTO {
 
 export async function getSpeechConfig(): Promise<SpeechConfigDTO> {
   await requireAdmin();
-  const providers = await prisma.llmProvider.findMany({ select: { kind: true, baseUrl: true, apiKey: true } });
+  const providers = await prisma.llmProvider.findMany({ take: SUFIT_LISTY, select: { kind: true, baseUrl: true, apiKey: true } });
   const assignment = await prisma.llmAssignment.findUnique({
     where: { operationType_level: { operationType: "speech", level: BASE_CONFIG_LEVEL } },
     include: { provider: { select: { kind: true, baseUrl: true } } },
@@ -372,6 +374,7 @@ export async function applySpeechProvider(data: {
   // wyłączał czat. `providerMatchesSpec` dopuszcza rozjazd adresu tylko dla rodzajów jednoznacznych
   // (np. inny region Azure), więc tam nadal aktualizujemy w miejscu zamiast mnożyć wiersze.
   const candidates = await prisma.llmProvider.findMany({
+    take: SUFIT_LISTY,
     where: { kind: spec.kind },
     orderBy: { createdAt: "asc" },
   });
@@ -725,7 +728,7 @@ export interface ModelPriceDTO {
 
 export async function getModelPrices(): Promise<ModelPriceDTO[]> {
   await requireAdmin();
-  const rows = await prisma.llmModelPrice.findMany({ orderBy: { modelPrefix: "asc" } });
+  const rows = await prisma.llmModelPrice.findMany({ take: SUFIT_LISTY, orderBy: { modelPrefix: "asc" } });
   return rows.map((r) => ({
     id: r.id,
     modelPrefix: r.modelPrefix,

@@ -950,6 +950,15 @@ the table/paragraph merge).
 
 **Build pipeline**: `npm run build` runs
 `node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && node scripts/check-workspace-nullable.js && node scripts/check-owner-columns.js && node scripts/check-ownership-scope.js && node scripts/check-grant-mirror.js && node scripts/check-versioning.js && node scripts/check-ai-access.js && node scripts/check-pagination.js && node scripts/check-domain.js && node scripts/check-events.js && node scripts/check-subscribers.js && node scripts/check-realtime.js && node scripts/check-logs.js && node scripts/check-i18n.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/check-perf-budget.js && node scripts/migrate.js`.
+- **`check-pagination.js`** (also `npm run check:pagination`) — 068 → **096: no longer a ratchet, an
+  absolute rule.** Every `findMany` must carry an explicit bound: `take` (ceiling `SUFIT_LISTY`), a
+  spread of `...zapytanieKursorowe({ kursor, rozmiar })`, or a `paginacja: kompletny — <reason>`
+  comment right above it for queries where a partial result would be a **bug**, not a slower screen
+  (sums, stock computed from batches, the admin-holder count the self-lockout guard stands on). The
+  reason lives at the call site, not in a manifest: files are mixed (`portfelReports.ts` has both a
+  list and a sum), and a reason in another file is a reason the reviewer never sees. The old ratchet
+  counted `keysetQuery`-paginated queries as debt — paying it down lowered the score.
+
 - **`check-owner-columns.js`** (also `npm run check:owner-columns`) — 095: **no query may ask for an
   `ownerId`/`ownerTeamId` that migration 0244 dropped.** Those columns survive on six models only; a
   dynamic `where` built as `Record<string, unknown>` (this repo's pattern) makes a stale field name
@@ -1234,11 +1243,15 @@ The flow is **`feature → develop → master`**:
   runs on a paid Render tier (does not sleep). Test env (`develop` →
   `worldofmag.onrender.com`) stays on the free tier.
 - [ ] (optional) Chip away the ~64 cosmetic ESLint warnings (Polish JSX quotes + exhaustive-deps)
-- [ ] **Pay down the three ratchets** — they are the whole remaining backlog of the rebuild, and each
-  one is designed to be paid module by module: texts hard-coded in components (`check:i18n`), list
-  queries without `take` (`check:pagination`), JS bytes per route (`check:perf`). Lower the threshold
-  in the manifest with every module you finish; the gate fails on a drop precisely so the progress
-  gets recorded.
+- [ ] **Pay down the two remaining ratchets** — texts hard-coded in components (`check:i18n`) and
+  JS bytes per route (`check:perf`). Lower the threshold in the manifest with every module you
+  finish; the gate fails on a drop precisely so the progress gets recorded. *(The pagination ratchet
+  is gone — 096 turned it into an absolute rule: every `findMany` carries an explicit bound.)*
+- [ ] **Move list filtering/grouping to the server**, then give those views cursor pagination. Today
+  every module list filters, groups and counts **client-side over the full set** (Notes shows
+  `filtered / all` and builds `[[wikilink]]` backlinks from it; Tasks counts per tab), so a page
+  would show wrong numbers, not just a shorter list. That is why 096 stopped at an explicit ceiling
+  (`SUFIT_LISTY`) for those views and gave the cursor only to the audit log.
 - [ ] **Remove the mirror-read transition layer** (`platform/sharing/lustroOdczyt.ts`) once the
   `sharing / lustro.rozjazd` metric holds at zero in production for a full month — the exit condition
   is named in that file. Then `extraGrants` for `TaskProjectMember`/`PetShare` goes away, and stage 3
