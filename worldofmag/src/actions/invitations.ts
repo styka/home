@@ -4,6 +4,7 @@ import { prisma } from "@/platform/db/prisma"
 import { revalidatePath } from "next/cache"
 import { requireAuth } from "@/platform/auth/serverUtils"
 import { mirrorTeamWorkspace } from "@/platform/workspaces/sync"
+import { sprawdzLimit } from "@/platform/rateLimit"
 
 export async function inviteUser(teamId: string, targetEmail: string) {
   const user = await requireAuth()
@@ -14,6 +15,13 @@ export async function inviteUser(teamId: string, targetEmail: string) {
   if (!member || member.role === "MEMBER") {
     throw new Error("Admin role required to invite")
   }
+
+  // 081 (zadanie 26): limit PO sprawdzeniu roli, nie przed. Odwrotna kolejność liczyłaby próby
+  // kogoś, kto i tak nie ma prawa zapraszać, i pozwalała mu wyczerpać cudzy limit — tu podmiotem
+  // limitu jest zapraszający, więc byłby to samostrzał, ale w powierzchni publicznej byłby to
+  // sposób na blokowanie innych.
+  const limit = await sprawdzLimit("zaproszenia", user.id)
+  if (!limit.ok) throw new Error(limit.message)
 
   const target = await prisma.user.findUnique({ where: { email: targetEmail } })
   if (!target) {

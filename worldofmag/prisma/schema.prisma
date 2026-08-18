@@ -132,6 +132,35 @@ model UserConsent {
 // Z-130/Z-511 (kontrola kosztów AI): trwałe, dzienne zużycie AI per użytkownik —
 // liczba zapytań i przybliżone tokeny. Działa między instancjami (wspólna baza),
 // w przeciwieństwie do liczników in-memory. Budżet zależny od planu (lib/ai/usage).
+// 081 (zadanie 26): WSPÓŁDZIELONY RATE-LIMIT — liczniki w bazie, nie w pamięci procesu.
+// Bez klucza obcego do `User`: kluczem jest dowolny podmiot ("user:<id>", w przyszłości też adres IP
+// albo przestrzeń), a wiersz i tak znika po wygaśnięciu okna. FK zmusiłby limiter do rozróżniania
+// podmiotów i wywracał zapis dla podmiotu spoza tabeli `User`.
+model RateLimitBucket {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
+}
+
+// Dzierżawa SLOTU współbieżności. Klucz główny to (klucz, numer slotu) — dzięki temu zajęcie slotu
+// jest jednym `INSERT … ON CONFLICT DO UPDATE … WHERE wygasł`, czyli operacją atomową na wierszu.
+// Wariant „policz aktywne, wstaw jeśli mniej niż N" wymagałby blokady doradczej: dwie równoległe
+// próby widzą ten sam stan i obie przechodzą.
+//
+// TERMIN WAŻNOŚCI, nie licznik: proces, który padnie w połowie operacji, nie zwolni slotu
+// w `finally`, a bez terminu zablokowałby użytkownika na zawsze.
+model RateLimitLease {
+  key       String
+  slot      Int
+  holder    String
+  expiresAt DateTime
+
+  @@id([key, slot])
+  @@index([expiresAt])
+}
+
 model AiUsage {
   id        String   @id @default(cuid())
   userId    String

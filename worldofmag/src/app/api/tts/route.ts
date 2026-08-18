@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
-import { checkRateLimit } from "@/platform/ai/rateLimit";
+import { sprawdzLimit } from "@/platform/rateLimit";
 import { SPEECH_MAX_CHARS, synthesizeSpeech } from "@/lib/tts/serverTts";
 
 // 031: endpoint serwerowej syntezy mowy (lektor asystenta). Wymaga sesji i podlega temu samemu
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rl = checkRateLimit(session.user.id);
+  const rl = await sprawdzLimit("ai.mowa", session.user.id);
   if (!rl.ok) {
     return NextResponse.json({ error: rl.message }, { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } });
   }

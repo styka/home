@@ -142,7 +142,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 | # | Zadanie | Status |
 |---|---------|--------|
-| 26 | Współdzielony rate-limit | ⬜ |
+| 26 | Współdzielony rate-limit | ✅ | **081.** Liczniki w bazie (`RateLimitBucket`) i **sloty z terminem ważności** zamiast licznika współbieżności (`RateLimitLease`, klucz `(key, slot)`, `holder`) — bo licznik nikt nie zmniejszy po awarii procesu. Zajęcie slotu jest jednym `INSERT … ON CONFLICT … WHERE wygasł`, więc serializuje go indeks, a nie blokada doradcza. Interfejs zachowany poza jednym ustępstwem: funkcje są **asynchroniczne** (sygnatura synchroniczna wymagałaby cache'u, czyli drugiego nośnika stanu). Zakres poza AI: zaproszenia wpięte, nadania z polityką gotową na zadanie 14; rejestracji i poczty w tym wdrożeniu **nie ma** i jest to zapisane, a nie przemilczane. Dowód **z dwoma procesami** + trzy sondy |
 | 27 | Budżety AI | ⬜ |
 | 28 | Pula połączeń, audyt N+1, indeksy | ⬜ |
 | 29 | Cache agregatów i rozstrzygnięć dostępu | ⬜ |
@@ -2341,4 +2341,72 @@ klucza naturalnego czerwieni 8 z 9, usunięcie zawężenia do przestrzeni — 3,
 sprawdzony wprost `INSERT`-em (odrzuca drugą oznaczoną listę).
 
 **Bramki:** build **exit 0**, `test:unit` **956/956**, `check:subscribers` **3 subskrybentów**,
+zapadka paginacji **263** bez ruchu.
+
+---
+
+## 081 — Zadanie 26: rate-limit przestał być prywatną sprawą jednego procesu
+
+Faza 5 zaczyna się od jedynej pozycji, którą da się zepsuć bez pisania ani jednej linii kodu:
+**wystarczy uruchomić drugą instancję**. Limiter (`platform/ai/rateLimit.ts`) trzymał liczniki
+w `Map` w pamięci procesu, więc przy dwóch instancjach każdy użytkownik miał dwa razy większy limit,
+przy czterech — cztery razy. Diagnoza 5.3 nazywa to wprost, a rozdz. 11.2 wskazuje rozwiązanie:
+Redis albo tabela z atomowym `INSERT … ON CONFLICT DO UPDATE`.
+
+**Wybrana jest tabela.** Redisa w tym wdrożeniu nie ma i dołożenie go dla dwóch liczników oznaczałoby
+nową usługę do utrzymania **oraz nowy tryb awarii**: limiter, który przestaje działać, gdy padnie
+cache. Baza i tak stoi na drodze każdego żądania objętego limitem.
+
+### Jeden interfejs, jedno ustępstwo
+
+Rozdz. 11.2 prosi: „zachowaj ten sam interfejs — zmienia się implementacja, nie miejsca wywołań".
+Kształt wyniku (`RateCheck`) został. Ustępstwo jest jedno i nie dało się go uniknąć: funkcje są
+**asynchroniczne**. Utrzymanie sygnatury synchronicznej wymagałoby lokalnego cache'u przed
+zapytaniem, czyli **drugiego nośnika tego samego stanu** — dokładnie tego, co ta zmiana likwiduje.
+Z tego samego powodu nie został „szybki bezpiecznik w pamięci na wszelki wypadek": dwa liczniki
+rozjeżdżają się z definicji i nikt potem nie umie odpowiedzieć, ile użytkownikowi zostało.
+
+### Slot współbieżności to nie licznik — to dzierżawa z terminem
+
+Stary strażnik trzymał `Map<userId, number>` i dekrementował w `finally`. Przeniesienie tego wprost
+do bazy dałoby **licznik, którego nikt nie zmniejszy po awarii procesu** — użytkownik zostawałby
+zablokowany na zawsze, a jedynym lekarstwem byłby `DELETE` w `psql`. Dlatego w bazie nie ma licznika,
+tylko **sloty z terminem ważności**: `PRIMARY KEY (key, slot)`, `holder`, `expiresAt`.
+
+Ten kształt klucza jest całą sztuczką. Zajęcie slotu to **jeden** `INSERT … ON CONFLICT (key, slot)
+DO UPDATE … WHERE expiresAt <= now()`, czyli operacja atomowa na poziomie wiersza; serializację robi
+indeks unikalny. Wariant naturalniejszy — „policz aktywne dzierżawy, wstaw jeśli mniej niż N" —
+**nie działa**: dwie równoległe próby widzą ten sam stan i obie przechodzą. Naprawa wymagałaby
+blokady doradczej albo `SERIALIZABLE`, czyli więcej mechaniki niż pętla po dwóch numerach slotów.
+
+`holder` jest po to, żeby spóźnione `finally` nie zwolniło **cudzej** dzierżawy. Sytuacja jest realna:
+nasza dzierżawa wygasa, slot przejmuje inna instancja, a nasz proces dopiero teraz dochodzi do
+`finally`. Bez warunku `holder = <nasz>` skasowałby nie swoje i wpuścił operację ponad limit.
+
+### Zakres: dwie z czterech powierzchni z rozdziału nie istnieją
+
+Rozdz. 11.2 każe objąć limitem rejestrację, zaproszenia, nadania dostępu i wysyłkę e-maili.
+**Rejestracji nie ma** — jedynym logowaniem jest Google OAuth, konta zakłada dostawca tożsamości.
+**Wysyłki e-maili nie ma** — w repozytorium nie ma ani jednego klienta pocztowego, zaproszenia są
+wewnątrzaplikacyjne. Wpisanie ich do polityk byłoby atrapą udającą pokrycie, więc zamiast tego są
+wymienione z powodem w komentarzu przy politykach. Zostają zaproszenia (wpięte) i nadania dostępu:
+polityka `nadania` **istnieje, zanim powstanie strona zapisu** (zadanie 14) — świadomie, żeby wpięcie
+limitu było wtedy jedną linią, a nie osobną decyzją podejmowaną przy okazji nowej funkcji.
+
+Drobiazg z wpięcia zaproszeń, który łatwo zrobić odwrotnie: limit sprawdzamy **po** kontroli roli.
+Odwrotna kolejność liczyłaby próby kogoś, kto i tak nie ma prawa zapraszać.
+
+### Dowód: dwa procesy, bo jeden nie dowodzi niczego
+
+Rozdz. 11.2 domaga się testu z dwoma procesami i to nie jest przesada — **to jedyny rodzaj testu,
+który odróżnia nową implementację od starej**. Test uruchamia prawdziwy drugi proces node
+(`dzieckoLimitu.ts`), każe mu zużyć 3 z 5 żądań, po czym próbuje zużyć 5 w procesie macierzystym
+i sprawdza **sumę**: musi wynieść 5. Ze starym licznikiem byłoby 3 + 5 = 8.
+
+Trzy sondy mutacyjne, każda czerwieni inny podtest: podmiana zapisu w bazie na `Map` w pamięci
+(czerwieni test dwóch procesów), usunięcie warunku `holder` przy zwalnianiu (czerwieni test cudzej
+dzierżawy), usunięcie warunku `expiresAt <= now()` przy przejmowaniu slotu (czerwieni test slotów —
+przejmowałby dzierżawy jeszcze żywe).
+
+**Bramki:** build **exit 0**, `test:unit` **962/962** (+6), `check:schema-drift` czysto,
 zapadka paginacji **263** bez ruchu.

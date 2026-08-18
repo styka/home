@@ -4,6 +4,24 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Limit współbieżności w bazie musi być DZIERŻAWĄ, nie licznikiem
+**Problem:** Przenosząc strażnika współbieżności z pamięci procesu do bazy odruchowo przepisałem to,
+co było: licznik `inFlight` inkrementowany na starcie i dekrementowany w `finally`. W pamięci to
+działa, bo licznik ginie razem z procesem. W bazie **przeżywa go** — proces ubity w połowie
+odpowiedzi (deploy, OOM, restart kontenera) zostawia licznik podniesiony na zawsze, a użytkownik
+dostaje „asystent przetwarza już Twoje polecenie" do końca świata. Objaw pojawia się u jednego konta,
+nie ma go w logach i nie da się go odtworzyć — bo warunkiem jest awaria, a nie ruch.
+**Rozwiązanie:** Nie licznik, tylko **sloty z terminem ważności**: `PRIMARY KEY (key, slot)`,
+`holder`, `expiresAt`. Zajęcie to jeden `INSERT … ON CONFLICT (key, slot) DO UPDATE … WHERE
+"expiresAt" <= now()` — atomowy na poziomie wiersza, więc serializuje go indeks unikalny, a nie
+blokada doradcza (wariant „policz aktywne, wstaw jeśli mniej niż N" przepuszcza dwie równoległe
+próby: obie widzą ten sam stan). Zwolnienie ma warunek `holder = <nasz>`, żeby spóźnione `finally`
+nie skasowało dzierżawy, którą po wygaśnięciu przejął ktoś inny.
+**Lekcja:** Przenosząc stan z pamięci procesu do współdzielonego magazynu zapytaj, **co ten stan
+czyściło do tej pory**. Jeśli odpowiedź brzmi „śmierć procesu", to nowy nośnik musi mieć własny
+mechanizm wygasania — inaczej przenosisz stan razem z wyciekiem. Ta sama uwaga dotyczy blokad,
+sesji, znaczników „w trakcie" i flag „zablokowane do".
+
 ## 2026-08-19 — Klucz idempotencji z `event.id` bywa WĘŻSZY, niż wymaga tego reguła biznesowa
 **Problem:** Pisząc subskrybenta „brak w Magazynie → pozycja na liście zakupów" sięgnąłem
 odruchowo po wzorzec z 071: klucz idempotencji wyprowadzony z `event.id`. Przeszedłby bramkę

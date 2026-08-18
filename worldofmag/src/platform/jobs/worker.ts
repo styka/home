@@ -4,6 +4,7 @@
 // pobierania (`claimNext`, SKIP LOCKED) jest wieloworkerowo-bezpieczna.
 
 import { claimNext, completeJob, failJob, failJobPermanent, cleanupOldJobs, setJobProgress, type JobRecord } from "@/platform/jobs/queue";
+import { posprzatajLimity } from "@/platform/rateLimit";
 import { reportServerError } from "@/lib/observability/report";
 import type { JobHandler } from "@/platform/jobs/types";
 
@@ -92,5 +93,9 @@ export function startJobWorker(): void {
   g.__omniaJobWorker.timer = setInterval(loop, TICK_MS);
   g.__omniaJobWorker.cleanup = setInterval(() => {
     cleanupOldJobs().catch((e) => reportServerError(e, { kind: "jobCleanup" }));
+    // 081: wygasłe okna i dzierżawy limitera. Sprzątanie nie jest warunkiem POPRAWNOŚCI (wygasłe
+    // okno zeruje się przy pierwszym trafieniu, wygasły slot da się przejąć) — pilnuje tylko, żeby
+    // tabela nie rosła liniowo z liczbą kont, które kiedykolwiek dotknęły asystenta.
+    posprzatajLimity().catch((e) => reportServerError(e, { kind: "rateLimitCleanup" }));
   }, CLEANUP_EVERY_MS);
 }

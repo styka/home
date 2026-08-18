@@ -12,7 +12,7 @@ import { readFollowupsEnabled } from "@/platform/ai/followups";
 import { partialRunFallbackMessage } from "@/platform/ai/agentPartialRun";
 import { webSearch } from "@/lib/news/webSearch";
 import { chatComplete, classifyRateLimitKind, rateLimitUserMessage } from "@/platform/llm/chat";
-import { checkRateLimit, acquireSlot } from "@/platform/ai/rateLimit";
+import { sprawdzLimit, zajmijSlot, POLITYKI } from "@/platform/rateLimit";
 import { checkAiBudget, recordAiUsage, newUsageMeter, accrueUsage, type UsageMeter } from "@/platform/ai/usage";
 import { classifyIntent, READ_INTENT_RE, SMALL_TALK_RE } from "@/lib/ai/fastPath";
 import { extractJsonLoose, salvageAnswerText } from "@/platform/ai/agentProtocol";
@@ -641,7 +641,7 @@ export async function POST(req: NextRequest) {
   const assistantLevel: AssistantLevel = isAssistantLevel(assistantPref?.level ?? "") ? (assistantPref!.level as AssistantLevel) : "standard";
 
   // H4: rate-limit per użytkownik (ochrona przed pętlą klienta i kosztami LLM).
-  const rl = checkRateLimit(userId);
+  const rl = await sprawdzLimit("ai.agent", userId);
   if (!rl.ok) {
     return NextResponse.json({ error: rl.message }, { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } });
   }
@@ -892,9 +892,9 @@ export async function POST(req: NextRequest) {
   }
 
   // H4: strażnik współbieżności — nie pozwól odpalić zbyt wielu ciężkich operacji naraz.
-  const release = acquireSlot(userId);
+  const release = await zajmijSlot("ai.agent", userId);
   if (!release) {
-    return NextResponse.json({ error: "Asystent przetwarza już Twoje poprzednie polecenie. Poczekaj na wynik." }, { status: 429 });
+    return NextResponse.json({ error: POLITYKI["ai.agent"].komunikatSlot }, { status: 429 });
   }
 
   // Tryb strumieniowy (SSE): emitujemy myśli agenta NA ŻYWO, a na końcu pełny wynik.
@@ -916,7 +916,7 @@ export async function POST(req: NextRequest) {
           console.error("[agent/stream] nieoczekiwany błąd:", e);
           send({ type: "final", status: 502, body: { error: "Asystent napotkał nieoczekiwany błąd. Spróbuj ponownie za chwilę." } });
         } finally {
-          release();
+          void release().catch(() => {});
           void recordAiUsage(userId, meta.tokens).catch(() => {});
           controller.close();
         }
@@ -934,7 +934,7 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json(result.body, result.status ? { status: result.status } : undefined);
   } finally {
-    release();
+    void release().catch(() => {});
     void recordAiUsage(userId, meta.tokens).catch(() => {});
   }
 }
