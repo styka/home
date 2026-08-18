@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getLlmProviders, getAssignments, getAiCostBreakdown, getCostAlertThreshold, getUsdPlnRate, getSpeechConfig, getModelPrices, getFollowupsEnabled, getCostBadgeEnabled } from "@/actions/llmConfig";
+import { getLlmProviders, getAssignments, getAiCostBreakdown, getCostAlertThreshold, getUsdPlnRate, getSpeechConfig, getModelPrices, getFollowupsEnabled, getCostBadgeEnabled, getAiBudgetState } from "@/actions/llmConfig";
 import { getDefaultSectionModes } from "@/actions/aiSections";
 import { CONFIG_LEVELS, type ConfigLevel } from "@/platform/llm/operationTypes";
 import { LlmConfigPanel } from "@/components/admin/LlmConfigPanel";
@@ -16,7 +16,7 @@ export default async function AdminLlmPage() {
 
   // 034: pobieramy komplet trzech poziomów naraz — przełącznik w panelu jest wtedy natychmiastowy
   // i nie potrzebuje dociągania po stronie klienta.
-  const [providers, levelSets, cost, costThreshold, usdPlnRate, speech, prices, followupsEnabled, costBadgeEnabled, sectionModes] = await Promise.all([
+  const [providers, levelSets, cost, costThreshold, usdPlnRate, speech, prices, followupsEnabled, costBadgeEnabled, sectionModes, budzet] = await Promise.all([
     getLlmProviders(),
     Promise.all(CONFIG_LEVELS.map((lvl) => getAssignments(lvl))),
     getAiCostBreakdown(30),
@@ -27,6 +27,7 @@ export default async function AdminLlmPage() {
     getFollowupsEnabled(),
     getCostBadgeEnabled(),
     getDefaultSectionModes(),
+    getAiBudgetState(),
   ]);
   const assignmentsByLevel = Object.fromEntries(
     CONFIG_LEVELS.map((lvl, i) => [lvl, levelSets[i]])
@@ -65,6 +66,7 @@ export default async function AdminLlmPage() {
           followupsEnabled={followupsEnabled}
           costBadgeEnabled={costBadgeEnabled}
           sectionModes={sectionModes}
+          budzet={budzet}
         />
       </div>
     </div>

@@ -4,6 +4,7 @@ import type { AssistantWorkLevel, OperationType } from "./operationTypes";
 import { applyEffort, isEffortRejection, parseEffort, type LlmEffort } from "./effort";
 import { cacheKeyFor, getCached, setCached } from "@/platform/ai/cache";
 import { checkAiBudget, recordAiUsage, recordAiCall } from "@/platform/ai/usage";
+import { powodWstrzymaniaAI } from "@/platform/ai/budzet";
 import { reserveTpm, estimateTokens, modelTpmLimit } from "./tpmLimiter";
 import { ensurePricesLoaded } from "./pricing";
 
@@ -276,7 +277,15 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
     const hit = getCached(cacheKey);
     if (hit) return { ok: true, content: hit.value, model: hit.model }; // free — bez budżetu
   }
-  // Z-130: egzekwuj dzienny budżet AI (po cache-hit, przed realnym wywołaniem LLM).
+  // 082 (zadanie 27): globalne wstrzymanie AI — wyłącznik awaryjny administratora albo wyczerpany
+  // twardy budżet miesięczny instalacji. Sprawdzenie jest BEZWARUNKOWE, w odróżnieniu od budżetu
+  // per użytkownik niżej: bez `userId` chodzą zadania w tle (odświeżanie wiadomości, OCR,
+  // generowanie skórek), czyli najdroższe operacje w systemie. Wyłącznik, który ich nie wyłącza,
+  // byłby ozdobą.
+  const wstrzymanie = await powodWstrzymaniaAI();
+  if (wstrzymanie) return { ok: false, status: 503, message: wstrzymanie };
+
+  // Z-130: egzekwuj budżet AI użytkownika (po cache-hit, przed realnym wywołaniem LLM).
   if (opts.userId) {
     const budget = await checkAiBudget(opts.userId);
     if (!budget.ok) return { ok: false, status: 429, message: budget.message };
@@ -576,6 +585,10 @@ export async function chatStream(opts: ChatOptions): Promise<Response> {
   // Z-133: ten sam łańcuch fallbacku co w chatComplete — przy błędzie przejściowym
   // (429/5xx/sieć) próbujemy kolejnego modelu, ZANIM strumień ruszy do klienta.
   await ensurePricesLoaded();
+  // 082: ten sam punkt dławiący co w `chatComplete`. Strumień jest drugim wejściem do dostawcy
+  // i pominięcie go zostawiłoby wyłącznik z dziurą w najczęściej używanej ścieżce asystenta.
+  const wstrzymanie = await powodWstrzymaniaAI();
+  if (wstrzymanie) return new Response(wstrzymanie, { status: 503 });
   const chain = await resolveLlmChain(opts.op, { level: opts.level, userId: opts.userId });
   if (chain.length === 0) return new Response(UNCONFIGURED.message, { status: 503 });
 

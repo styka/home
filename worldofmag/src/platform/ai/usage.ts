@@ -151,9 +151,10 @@ export function parseStoredUsage(raw: string | null | undefined): AiUsageInfo | 
 /**
  * Z-130/Z-511: trwały budżet AI per użytkownik/plan (kontrola kosztów).
  *
- * Dzienne liczniki w tabeli `AiUsage` (wspólna baza → działa między instancjami,
- * w przeciwieństwie do liczników in-memory z `rateLimit.ts`, które zostają jako
- * szybki bezpiecznik anty-burst). Limity planów są w `lib/plans.ts` (Z-471).
+ * Dzienne liczniki w tabeli `AiUsage` (wspólna baza → działa między instancjami). Limity planów są
+ * w `lib/plans.ts` (Z-471). **081**: limiter zapytań (`platform/rateLimit`) też jest już wspólny —
+ * dawna uwaga o „licznikach in-memory jako szybkim bezpieczniku" opisywała stan sprzed tej zmiany.
+ * **082**: obok dziennego działa też pułap MIESIĘCZNY i globalne wstrzymanie (`platform/ai/budzet.ts`).
  */
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
@@ -161,17 +162,33 @@ function todayUtc(): string {
 
 export type BudgetCheck = { ok: true } | { ok: false; message: string; retryAfterSec: number };
 
+/** Sekundy do początku kolejnego miesiąca UTC — okno odnowienia limitu miesięcznego. */
+function secsToNextMonthUtc(): number {
+  const now = new Date();
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  return Math.max(1, Math.ceil((next.getTime() - now.getTime()) / 1000));
+}
+
 function secsToMidnightUtc(): number {
   const now = new Date();
   const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
   return Math.max(1, Math.ceil((next.getTime() - now.getTime()) / 1000));
 }
 
-/** Sprawdza dzienny budżet (zapytania + tokeny) wg planu. */
+/** Sprawdza budżet użytkownika: dzienne zapytania i tokeny oraz miesięczny pułap tokenów. */
 export async function checkAiBudget(userId: string): Promise<BudgetCheck> {
-  const [plan, usage] = await Promise.all([
+  const miesiac = todayUtc().slice(0, 7);
+  const [plan, usage, wMiesiacu] = await Promise.all([
     getActivePlan(userId),
     prisma.aiUsage.findUnique({ where: { userId_day: { userId, day: todayUtc() } } }),
+    // 082 (zadanie 27): limit MIESIĘCZNY z rozdz. 11.3. Sam limit dzienny nie wyraża reguły
+    // „możesz mieć ciężki dzień, ale nie trzydzieści z rzędu" — a to jest ta reguła, która pilnuje
+    // rachunku. Sumujemy najwyżej 31 wierszy po indeksie `userId`, w tym samym `Promise.all`,
+    // więc nie dokłada opóźnienia.
+    prisma.aiUsage.aggregate({
+      where: { userId, day: { gte: `${miesiac}-01`, lte: `${miesiac}-31` } },
+      _sum: { tokens: true },
+    }),
   ]);
   const suffix = plan.key === "free" ? " (plan darmowy — limit dzienny)" : "";
   if (usage && usage.requests >= plan.aiDailyRequests) {
@@ -179,6 +196,13 @@ export async function checkAiBudget(userId: string): Promise<BudgetCheck> {
   }
   if (usage && usage.tokens >= plan.aiDailyTokens) {
     return { ok: false, retryAfterSec: secsToMidnightUtc(), message: `Wykorzystano dzienny budżet AI.${suffix} Spróbuj jutro.` };
+  }
+  if ((wMiesiacu._sum.tokens ?? 0) >= plan.aiMonthlyTokens) {
+    return {
+      ok: false,
+      retryAfterSec: secsToNextMonthUtc(),
+      message: "Wykorzystano miesięczny budżet AI. Odnowi się pierwszego dnia kolejnego miesiąca.",
+    };
   }
   return { ok: true };
 }
@@ -286,6 +310,10 @@ export async function recordAiCall(entry: AiCallEntry): Promise<void> {
   });
   // Alert kosztowy — tylko gdy próg skonfigurowany (>0). Idempotentny per dzień.
   await maybeFireCostAlert().catch(() => {});
+  // 082: alarm miesięcznego budżetu (progi 50/80/100 %). Osobny od dziennego, bo odpowiada na inne
+  // pytanie: dzienny mówi „dziś było drogo", miesięczny — „kończą się pieniądze".
+  const { maybeFireMonthlyBudgetAlert } = await import("@/platform/ai/budzet");
+  await maybeFireMonthlyBudgetAlert().catch(() => {});
 }
 
 /** Suma szacowanego kosztu (USD) z `AiCall` za dany dzień UTC (domyślnie dziś). */
@@ -333,7 +361,9 @@ async function maybeFireCostAlert(): Promise<void> {
 }
 
 // Użytkownicy z dostępem do panelu admina (rola przyznająca `module.admin`).
-async function getAdminUserIds(): Promise<string[]> {
+// 082: eksportowane, bo alarm miesięcznego budżetu (`platform/ai/budzet.ts`) potrzebuje tej samej
+// listy. Druga kopia tego zapytania rozjechałaby się przy pierwszej zmianie modelu ról.
+export async function getAdminUserIds(): Promise<string[]> {
   const perm = await prisma.permission.findUnique({
     where: { slug: PERMISSIONS.ADMIN },
     select: { id: true },

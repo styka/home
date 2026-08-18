@@ -23,6 +23,14 @@ import { logAudit } from "@/platform/audit/audit";
 import { LLM_EFFORT_LABELS, LLM_EFFORT_LEVELS, parseEffort, type LlmEffort } from "@/platform/llm/effort";
 import { COST_ALERT_CONFIG_KEY, getDailyCostUsd, AI_COST_BADGE_CONFIG_KEY } from "@/platform/ai/usage";
 import { readCostBadgeEnabled } from "@/platform/ai/costVisibility";
+import {
+  AI_KILL_SWITCH_CONFIG_KEY,
+  AI_MONTHLY_BUDGET_CONFIG_KEY,
+  AI_MONTHLY_BUDGET_HARD_KEY,
+  getMonthlyCostUsd,
+  readAiKillSwitch,
+  readMonthlyBudgetHard,
+} from "@/platform/ai/budzet";
 import { USD_PLN_CONFIG_KEY, DEFAULT_USD_PLN_RATE, parseUsdPlnRate } from "@/lib/usdPln";
 
 async function requireAdmin() {
@@ -485,6 +493,78 @@ export async function setCostAlertThreshold(usd: number): Promise<void> {
     create: { key: COST_ALERT_CONFIG_KEY, value },
   });
   await logAudit("config", "ai_cost_alert.set", COST_ALERT_CONFIG_KEY, `Ustawiono dzienny próg kosztów AI na $${value}`);
+  revalidatePath("/admin/llm");
+}
+
+
+// ─── 082 (zadanie 27): budżety AI — wyłącznik awaryjny i miesięczny budżet instalacji ────────
+//
+// Rozdz. 11.3 mówi o „limicie globalnym" jako o **wyłączniku awaryjnym w `Config`, widocznym
+// w /admin/llm". Te trzy ustawienia realizują to razem i celowo są ROZDZIELONE:
+//   * `ai_globally_disabled` — decyzja człowieka „stop, teraz";
+//   * `ai_monthly_budget_usd` — kwota, od której liczą się progi alarmowe 50/80/100 %;
+//   * `ai_monthly_budget_hard` — czy przekroczenie kwoty ma ZATRZYMAĆ, czy tylko powiadomić.
+// Bez trzeciego budżet byłby wyłącznie alarmem, a alarm nie jest budżetem. Domyślnie wyłączone,
+// bo automat gaszący asystenta bez uprzedzenia byłby gorszy od rachunku.
+
+export type StanBudzetuDTO = {
+  wylaczone: boolean;
+  budzetUsd: number;
+  twardy: boolean;
+  wydanoUsd: number;
+  miesiac: string;
+};
+
+export async function getAiBudgetState(): Promise<StanBudzetuDTO> {
+  await requireAdmin();
+  const miesiac = new Date().toISOString().slice(0, 7);
+  const [wylaczone, twardy, wydanoUsd, row] = await Promise.all([
+    readAiKillSwitch(),
+    readMonthlyBudgetHard(),
+    getMonthlyCostUsd(miesiac),
+    prisma.config.findUnique({ where: { key: AI_MONTHLY_BUDGET_CONFIG_KEY } }),
+  ]);
+  const n = row?.value ? Number(row.value) : 0;
+  return { wylaczone, twardy, wydanoUsd, miesiac, budzetUsd: Number.isFinite(n) && n > 0 ? n : 0 };
+}
+
+export async function setAiKillSwitch(disabled: boolean): Promise<void> {
+  await requireAdmin();
+  const value = disabled ? "1" : "0";
+  await prisma.config.upsert({
+    where: { key: AI_KILL_SWITCH_CONFIG_KEY },
+    update: { value },
+    create: { key: AI_KILL_SWITCH_CONFIG_KEY, value },
+  });
+  await logAudit(
+    "config",
+    "ai_kill_switch.set",
+    AI_KILL_SWITCH_CONFIG_KEY,
+    `${disabled ? "Wyłączono" : "Włączono"} asystenta AI w całym systemie`
+  );
+  revalidatePath("/admin/llm");
+}
+
+export async function setAiMonthlyBudget(usd: number, hard: boolean): Promise<void> {
+  await requireAdmin();
+  const value = Number.isFinite(usd) && usd > 0 ? String(usd) : "0";
+  await prisma.config.upsert({
+    where: { key: AI_MONTHLY_BUDGET_CONFIG_KEY },
+    update: { value },
+    create: { key: AI_MONTHLY_BUDGET_CONFIG_KEY, value },
+  });
+  const hardValue = hard ? "1" : "0";
+  await prisma.config.upsert({
+    where: { key: AI_MONTHLY_BUDGET_HARD_KEY },
+    update: { value: hardValue },
+    create: { key: AI_MONTHLY_BUDGET_HARD_KEY, value: hardValue },
+  });
+  await logAudit(
+    "config",
+    "ai_monthly_budget.set",
+    AI_MONTHLY_BUDGET_CONFIG_KEY,
+    `Ustawiono miesięczny budżet AI na $${value} (${hard ? "twardy — zatrzymuje wywołania" : "miękki — tylko alarm"})`
+  );
   revalidatePath("/admin/llm");
 }
 

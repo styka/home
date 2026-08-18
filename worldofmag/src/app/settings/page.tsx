@@ -17,6 +17,8 @@ import { getDriveStatus } from "@/actions/drive"
 import { PrivacySettings } from "@/components/settings/PrivacySettings"
 import { UserFactsSection } from "@/components/settings/UserFactsSection"
 import { getActivePlan } from "@/lib/plans"
+import { getMyAiUsage } from "@/platform/ai/budzet"
+import { AiUsageMeters } from "@/components/settings/AiUsageMeters"
 
 export default async function SettingsPage({
   searchParams,
@@ -34,6 +36,10 @@ export default async function SettingsPage({
   const activeSkinId = await getActiveSkinId()
   const teamOpts = teams.map((t) => ({ id: t.id, name: t.name }))
   const plan = session?.user?.id ? await getActivePlan(session.user.id) : null
+  // 082 (zadanie 27): „wykorzystano X z Y” — rozdz. 11.3 wymienia widoczność dla użytkownika jako
+  // jeden z czterech mechanizmów budżetu. Sam limit, którego nie widać, użytkownik poznaje dopiero
+  // w chwili odmowy.
+  const zuzycieAi = session?.user?.id ? await getMyAiUsage(session.user.id) : null
   const activityForUI = recentActivity.map((a) => ({
     module: a.module,
     action: a.action,
@@ -222,9 +228,8 @@ export default async function SettingsPage({
               <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{plan.name}</span>
               <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 999, background: "var(--bg-elevated)", color: "var(--text-muted)" }}>{plan.key}</span>
             </div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, lineHeight: 1.6 }}>
-              Dzienny limit asystenta AI: <strong>{plan.aiDailyRequests}</strong> zapytań / <strong>{plan.aiDailyTokens.toLocaleString("pl-PL")}</strong> tokenów.
-              <br />
+            {zuzycieAi && <AiUsageMeters zuzycie={zuzycieAi} />}
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 10, lineHeight: 1.6 }}>
               Zmiana planu będzie dostępna po uruchomieniu płatności.
             </div>
           </div>

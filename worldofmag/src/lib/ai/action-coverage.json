@@ -820,6 +820,12 @@
     "reason": "admin",
     "access": "admin"
   },
+  "llmConfig:getAiBudgetState": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
   "llmConfig:getAiCostBreakdown": {
     "kind": "read",
     "status": "excluded",
@@ -875,6 +881,16 @@
   },
   "llmConfig:getUsdPlnRate": {
     "kind": "read",
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "llmConfig:setAiKillSwitch": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "llmConfig:setAiMonthlyBudget": {
     "status": "excluded",
     "reason": "admin",
     "access": "admin"

@@ -13,6 +13,9 @@ import {
   setModelPrice,
   deleteModelPrice,
   setFollowupsEnabled,
+  setAiKillSwitch,
+  setAiMonthlyBudget,
+  type StanBudzetuDTO,
   setCostBadgeEnabled,
   type ProviderDTO,
   type AssignmentDTO,
@@ -488,6 +491,158 @@ function fmtUsd(n: number, rate: number): string {
 const tdStyle: React.CSSProperties = { padding: "8px 10px", fontSize: 12, color: "var(--text-secondary)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" };
 const thStyle: React.CSSProperties = { padding: "8px 10px", fontSize: 11, color: "var(--text-muted)", textAlign: "left", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" };
 
+
+/**
+ * 082 (zadanie 27): BUDŻETY AI. Trzy ustawienia w jednym miejscu, bo odpowiadają na jedno pytanie
+ * („ile wolno wydać"), ale robią trzy różne rzeczy — i pomylenie ich kosztuje albo pieniądze, albo
+ * działającego asystenta:
+ *   * wyłącznik awaryjny — natychmiast, ręcznie, bez warunków;
+ *   * kwota budżetu — podstawa alarmów 50/80/100 %;
+ *   * „twardy" — czy przekroczenie kwoty ma ZATRZYMAĆ wywołania, czy tylko powiadomić.
+ */
+function AiBudgetSection({ stan, rate }: { stan: StanBudzetuDTO; rate: number }) {
+  const [isPending, startTransition] = useTransition();
+  const [wylaczone, setWylaczone] = useState(stan.wylaczone);
+  const [budzet, setBudzet] = useState(stan.budzetUsd > 0 ? String(stan.budzetUsd) : "");
+  const [twardy, setTwardy] = useState(stan.twardy);
+  const [error, setError] = useState<string | null>(null);
+  const [zapisano, setZapisano] = useState(false);
+
+  const kwotaBudzetu = Number(budzet) || 0;
+  const udzial = kwotaBudzetu > 0 ? Math.min(1, stan.wydanoUsd / kwotaBudzetu) : 0;
+
+  function przelaczWylacznik(next: boolean) {
+    setWylaczone(next);
+    setError(null);
+    startTransition(async () => {
+      try {
+        await setAiKillSwitch(next);
+      } catch (e) {
+        setWylaczone(!next);
+        setError(e instanceof Error ? e.message : "Nie udało się zapisać ustawienia.");
+      }
+    });
+  }
+
+  function zapiszBudzet() {
+    setError(null);
+    setZapisano(false);
+    startTransition(async () => {
+      try {
+        await setAiMonthlyBudget(kwotaBudzetu, twardy);
+        setZapisano(true);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Nie udało się zapisać budżetu.");
+      }
+    });
+  }
+
+  return (
+    <section style={{ marginBottom: 32 }}>
+      <SectionTitle>Budżet AI i wyłącznik awaryjny</SectionTitle>
+
+      <label
+        className="py-3"
+        style={{
+          display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer",
+          padding: "12px", border: `1px solid ${wylaczone ? "var(--accent-red)" : "var(--border)"}`,
+          borderRadius: 8, background: "var(--bg-surface)", marginBottom: 12,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={wylaczone}
+          disabled={isPending}
+          onChange={(e) => przelaczWylacznik(e.target.checked)}
+          style={{ width: 20, height: 20, flexShrink: 0, accentColor: "var(--accent-red)", cursor: "pointer" }}
+        />
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 13, color: "var(--text-primary)" }}>
+            Wyłącz AI w całym systemie
+          </span>
+          <span style={{ display: "block", fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.5, marginTop: 2 }}>
+            Hamulec bezpieczeństwa. Zatrzymuje <strong>wszystkie</strong> wywołania modelu — także
+            zadania w tle (wiadomości, OCR, generowanie skórek), które nie mają zalogowanego
+            użytkownika. Działa natychmiast; użytkownicy dostają uprzejmy komunikat, nie błąd.
+          </span>
+        </span>
+      </label>
+
+      <div style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-surface)" }}>
+        <div style={{ fontSize: 13, color: "var(--text-primary)", marginBottom: 8 }}>
+          Miesięczny budżet instalacji
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>$</span>
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={budzet}
+            onChange={(e) => { setBudzet(e.target.value); setZapisano(false); }}
+            placeholder="0 = bez budżetu"
+            style={{
+              width: 130, padding: "6px 8px", fontSize: 13, borderRadius: 6,
+              border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)",
+            }}
+          />
+          <button
+            type="button"
+            onClick={zapiszBudzet}
+            disabled={isPending}
+            style={{
+              padding: "6px 12px", fontSize: 12, borderRadius: 6, cursor: "pointer",
+              border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)",
+            }}
+          >
+            Zapisz
+          </button>
+          {zapisano && <span style={{ fontSize: 11.5, color: "var(--accent-green)" }}>Zapisano</span>}
+        </div>
+
+        <label className="py-3" style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", marginBottom: 10 }}>
+          <input
+            type="checkbox"
+            checked={twardy}
+            disabled={isPending}
+            onChange={(e) => { setTwardy(e.target.checked); setZapisano(false); }}
+            style={{ width: 20, height: 20, flexShrink: 0, accentColor: "var(--accent-amber)", cursor: "pointer" }}
+          />
+          <span style={{ minWidth: 0 }}>
+            <span style={{ display: "block", fontSize: 12.5, color: "var(--text-primary)" }}>
+              Po wyczerpaniu budżetu <strong>zatrzymaj</strong> wywołania
+            </span>
+            <span style={{ display: "block", fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.5, marginTop: 2 }}>
+              Wyłączone = budżet jest tylko alarmem (powiadomienia przy 50 %, 80 % i 100 %), a wydatki
+              rosną dalej. Włączone = po przekroczeniu kwoty AI zachowuje się jak przy wyłączniku,
+              do końca miesiąca albo do podniesienia budżetu.
+            </span>
+          </span>
+        </label>
+
+        {kwotaBudzetu > 0 && (
+          <div>
+            <div style={{ height: 6, borderRadius: 3, background: "var(--bg-elevated)", overflow: "hidden" }}>
+              <div
+                style={{
+                  height: "100%",
+                  width: `${Math.round(udzial * 100)}%`,
+                  background: udzial >= 1 ? "var(--accent-red)" : udzial >= 0.8 ? "var(--accent-amber)" : "var(--accent-green)",
+                }}
+              />
+            </div>
+            <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 6 }}>
+              Wykorzystano {fmtUsd(stan.wydanoUsd, rate)} z {fmtUsd(kwotaBudzetu, rate)} w miesiącu {stan.miesiac}.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {error && <div style={{ fontSize: 11.5, color: "var(--accent-red)", marginTop: 8 }}>{error}</div>}
+    </section>
+  );
+}
+
 /**
  * 036: propozycje kolejnych pytań pod odpowiedzią asystenta. Model dopisuje je do KAŻDEJ odpowiedzi,
  * więc kosztują tokeny przy każdej wiadomości — stąd przełącznik obok cennika, czyli tam, gdzie
@@ -948,6 +1103,7 @@ export function LlmConfigPanel({
   followupsEnabled,
   costBadgeEnabled,
   sectionModes,
+  budzet,
 }: {
   providers: ProviderDTO[];
   assignmentsByLevel: Record<ConfigLevel, AssignmentDTO[]>;
@@ -959,6 +1115,7 @@ export function LlmConfigPanel({
   followupsEnabled: boolean;
   costBadgeEnabled: boolean;
   sectionModes: Record<string, AiSectionMode>;
+  budzet: StanBudzetuDTO;
 }) {
   // 034: poziom pracy asystenta wybierany zakładką nad siatką typów operacji. Wcześniej admin
   // konfigurował wyłącznie poziom standardowy, a dwa pozostałe były regułami zaszytymi w kodzie.
@@ -1013,6 +1170,8 @@ export function LlmConfigPanel({
           )}
         </div>
       </section>
+
+      <AiBudgetSection stan={budzet} rate={usdPlnRate} />
 
       <FollowupsSection enabled={followupsEnabled} />
 

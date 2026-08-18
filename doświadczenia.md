@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Bramka czytająca „każdy plik wołający X” prędzej czy później czyta testy
+**Problem:** Nowy test integracyjny wołał `chatComplete`, żeby udowodnić, że wyłącznik awaryjny AI
+działa. Dwie bramki (`check:cost-badge`, `check:content-memory`) skanują **każdy plik** z tym
+wywołaniem i obie od razu zgłosiły brak pokrycia. Odruch podpowiadał dopisać ścieżkę testu do
+manifestu wyjątków z powodem „to test".
+**Rozwiązanie:** Manifest wyjątków ma opisywać REGUŁĘ, a nie kolekcjonować przykłady. Obie bramki
+pilnują tego samego zdania: „treść pokazywana użytkownikowi ma licznik kosztu / jest pamiętana".
+Test nie ma użytkownika, któremu cokolwiek pokazuje, więc nie jest konsumentem tej reguły — poprawką
+jest zawężenie ZAKRESU bramki (katalogi `__tests__` i pliki `*.test.ts` poza skanem), nie wpis
+wyjątku. Sprawdziłem przy okazji, że liczba objętych plików się nie zmieniła: gdyby spadła, znaczyłoby
+to, że zawężenie zdjęło z bramki także prawdziwy kod.
+**Lekcja:** Gdy bramka zgłasza plik, który spełnia jej WZORZEC, ale nie podlega jej REGULE, to jest
+błąd zakresu bramki, nie brakujący wyjątek. Wyjątek zapisany „bo to test" działa raz, a przy piątym
+takim wpisie nikt już nie pamięta, czego bramka właściwie pilnuje. Po zawężeniu zakresu porównaj
+licznik przed i po — spadek oznacza, że zdjęło się za dużo.
+
 ## 2026-08-19 — Limit współbieżności w bazie musi być DZIERŻAWĄ, nie licznikiem
 **Problem:** Przenosząc strażnika współbieżności z pamięci procesu do bazy odruchowo przepisałem to,
 co było: licznik `inFlight` inkrementowany na starcie i dekrementowany w `finally`. W pamięci to

@@ -42,8 +42,13 @@ function walk(dir, out = []) {
       // `src/generated` to pliki budowane ze źródeł treści (książki audytu) — bywa, że zawierają
       // przykłady kodu w tekście rozdziału. To nie jest kod wykonawczy.
       if (entry.name === "generated" || entry.name === "node_modules") continue;
+      // 082: TESTY nie są konsumentem licznika. Bramka pilnuje reguły „treść wygenerowana przez
+      // model pokazuje się użytkownikowi razem z kosztem" — a test nie ma użytkownika, któremu
+      // mógłby cokolwiek pokazać. Wpisywanie każdego testu wołającego `chatComplete` do manifestu
+      // wyjątków opisywałoby PRZYKŁADY zamiast reguły i z czasem rozmyłoby jej sens.
+      if (entry.name === "__tests__") continue;
       walk(full, out);
-    } else if (/\.(ts|tsx)$/.test(entry.name)) {
+    } else if (/\.(ts|tsx)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
       out.push(full);
     }
   }

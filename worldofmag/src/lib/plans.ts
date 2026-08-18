@@ -13,13 +13,19 @@ export interface PlanDef {
   name: string;
   aiDailyRequests: number;
   aiDailyTokens: number;
+  /**
+   * 082 (zadanie 27): pułap MIESIĘCZNY. Nie jest to `aiDailyTokens × 30` — celowo dziesięciokrotność
+   * dnia, bo reguła brzmi „możesz mieć kilka ciężkich dni, ale nie trzydzieści z rzędu". Limit
+   * dzienny chroni przed pętlą klienta, miesięczny przed rachunkiem.
+   */
+  aiMonthlyTokens: number;
   /** Klucze funkcji premium, których plan udostępnia (bramkowanie przez hasFeature). */
   features: string[];
 }
 
 export const PLANS: Record<PlanKey, PlanDef> = {
-  free: { key: "free", name: "Darmowy", aiDailyRequests: 100, aiDailyTokens: 200_000, features: [] },
-  premium: { key: "premium", name: "Premium", aiDailyRequests: 1000, aiDailyTokens: 2_000_000, features: ["pro_modules", "priority_ai", "ai_cache"] },
+  free: { key: "free", name: "Darmowy", aiDailyRequests: 100, aiDailyTokens: 200_000, aiMonthlyTokens: 2_000_000, features: [] },
+  premium: { key: "premium", name: "Premium", aiDailyRequests: 1000, aiDailyTokens: 2_000_000, aiMonthlyTokens: 20_000_000, features: ["pro_modules", "priority_ai", "ai_cache"] },
 };
 
 export function planDef(key: string | null | undefined): PlanDef {

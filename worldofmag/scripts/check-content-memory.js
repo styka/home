@@ -43,8 +43,13 @@ function walk(dir, out = []) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       if (entry.name === "generated" || entry.name === "node_modules") continue;
+      // 082: TESTY nie są konsumentem pamięci treści — tak samo jak w `check-cost-badge.js`.
+      // Manifest ma rozstrzygać, czy TREŚĆ POKAZYWANA UŻYTKOWNIKOWI jest zapamiętywana; test
+      // wołający model niczego nie pokazuje. Wpis „on-demand, bo to test" opisywałby przykład,
+      // nie regułę.
+      if (entry.name === "__tests__") continue;
       walk(full, out);
-    } else if (/\.(ts|tsx)$/.test(entry.name)) {
+    } else if (/\.(ts|tsx)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
       out.push(full);
     }
   }

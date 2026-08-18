@@ -143,7 +143,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | # | Zadanie | Status |
 |---|---------|--------|
 | 26 | Współdzielony rate-limit | ✅ | **081.** Liczniki w bazie (`RateLimitBucket`) i **sloty z terminem ważności** zamiast licznika współbieżności (`RateLimitLease`, klucz `(key, slot)`, `holder`) — bo licznik nikt nie zmniejszy po awarii procesu. Zajęcie slotu jest jednym `INSERT … ON CONFLICT … WHERE wygasł`, więc serializuje go indeks, a nie blokada doradcza. Interfejs zachowany poza jednym ustępstwem: funkcje są **asynchroniczne** (sygnatura synchroniczna wymagałaby cache'u, czyli drugiego nośnika stanu). Zakres poza AI: zaproszenia wpięte, nadania z polityką gotową na zadanie 14; rejestracji i poczty w tym wdrożeniu **nie ma** i jest to zapisane, a nie przemilczane. Dowód **z dwoma procesami** + trzy sondy |
-| 27 | Budżety AI | ⬜ |
+| 27 | Budżety AI | ✅ | **082.** Trzy dziury zamknięte: (1) kontrola kosztów pomijała wywołania **bez `userId`**, czyli zadania w tle — najdroższe operacje w systemie; nowy punkt dławiący w `chatComplete` **i** `chatStream` jest bezwarunkowy. (2) Doszedł pułap **miesięczny** per plan — limit dzienny nie wyraża reguły „nie trzydzieści ciężkich dni z rzędu”. (3) Budżet globalny rozdzielony na **trzy** ustawienia: wyłącznik awaryjny, kwota i „twardy” (czy przekroczenie ZATRZYMUJE, czy tylko alarmuje) — bo budżet, który tylko powiadamia, nie jest budżetem. Progi 50/80/**100** %, deduplikacja per (miesiąc, próg). Widoczność „wykorzystano X z Y” w `/settings` |
 | 28 | Pula połączeń, audyt N+1, indeksy | ⬜ |
 | 29 | Cache agregatów i rozstrzygnięć dostępu | ⬜ |
 | 30 | Retencja danych | ⬜ |
@@ -2410,3 +2410,66 @@ przejmowałby dzierżawy jeszcze żywe).
 
 **Bramki:** build **exit 0**, `test:unit` **962/962** (+6), `check:schema-drift` czysto,
 zapadka paginacji **263** bez ruchu.
+
+---
+
+## 082 — Zadanie 27: budżet, który zatrzymuje, a nie tylko powiadamia
+
+Rozdz. 11.3 nazywa koszty AI „jedynym zagrożeniem, które kosztuje realne pieniądze, zanim zdąży
+zepsuć aplikację". Stan zastany był dobry w połowie: dzienny limit per plan działał (`AiUsage`),
+alarm kosztowy też — ale **nic nie ograniczało wydatku**, a to, co ograniczało, dawało się obejść.
+
+### Trzy dziury, każda innego rodzaju
+
+**1. Wyłącznik nie obejmował najdroższych operacji.** `checkAiBudget` chodził tylko wtedy, gdy
+wywołanie miało `opts.userId`. Zadania w tle — odświeżanie wiadomości, OCR dokumentów, generowanie
+skórek — `userId` nie mają. Kontrola kosztów pomijała więc dokładnie te operacje, które kosztują
+najwięcej. Nowe sprawdzenie w `chatComplete` **i** `chatStream` jest bezwarunkowe.
+
+**2. Limit dzienny nie wyraża reguły, która pilnuje rachunku.** „Możesz mieć ciężki dzień, ale nie
+trzydzieści z rzędu" to zdanie o miesiącu, nie o dniu. Doszedł `plan.aiMonthlyTokens` — świadomie
+**nie** `dzienny × 30`, tylko dziesięciokrotność dnia. Sumowanie idzie po najwyżej 31 wierszach
+w tym samym `Promise.all`, więc nie dokłada opóźnienia.
+
+**3. Budżet, który tylko powiadamia, nie jest budżetem.** Tu potrzebne było rozstrzygnięcie, bo
+rozdział mówi dwie rzeczy naraz: „limit globalny = wyłącznik awaryjny w `Config`" (czyli decyzja
+człowieka) i „alarm progowy 50 % / 80 %" (czyli powiadomienie). Rozdzieliliśmy to na **trzy**
+ustawienia zamiast sklejać w jedno: `ai_globally_disabled` (stop, teraz), `ai_monthly_budget_usd`
+(kwota, od której liczą się progi) i `ai_monthly_budget_hard` (czy przekroczenie kwoty ma
+ZATRZYMAĆ, czy tylko powiadomić). Trzecie jest **domyślnie wyłączone**: automat gaszący asystenta
+bez uprzedzenia byłby gorszy od rachunku, ale jego brak oznaczałby budżet bez zębów.
+
+Do progów z rozdziału dołożone jest **100 %** — bez niego moment faktycznego wyczerpania budżetu
+byłby jedyną chwilą, o której administrator NIE dostaje powiadomienia. Deduplikacja jest per
+(miesiąc, próg): sam miesiąc byłby za wąski (80 % nie miałoby jak się przebić), sam próg za szeroki
+(w kolejnym miesiącu alarm już by nie zadziałał).
+
+### „Fail-open" w wyłączniku bezpieczeństwa — świadomie
+
+`readAiKillSwitch` przy błędzie odczytu zwraca „AI działa". Wygląda to na błąd, dopóki nie przeczyta
+się powodu: przy niedostępnej bazie i tak nie ma czym obsłużyć żądania, a odwrotna decyzja
+oznaczałaby, że chwilowy problem z bazą gasi asystenta wszystkim. Odczyt jest **bez cache'u** — to
+hamulec bezpieczeństwa, musi działać natychmiast, a jedno wyszukanie po kluczu głównym jest
+niemierzalne przy operacji idącej przez sieć do dostawcy modelu.
+
+### Widoczność dla użytkownika to czwarty mechanizm, nie ozdoba
+
+„Wykorzystano X z Y" w `/settings` (dzień: zapytania i tokeny; miesiąc: tokeny). Limit, którego nie
+widać, użytkownik poznaje dopiero w chwili odmowy — i wtedy wygląda ona na awarię.
+
+### Dwie bramki przestały czytać testy
+
+`check:cost-badge` i `check:content-memory` skanują każdy plik wołający `chatComplete`, więc nowy
+test integracyjny zgłosiły jako brak pokrycia. Wpis „to test" w manifeście wyjątków opisywałby
+PRZYKŁAD zamiast reguły — a obie bramki pilnują tego samego zdania: „treść pokazywana użytkownikowi
+ma licznik kosztu / jest pamiętana". Test nie ma użytkownika, któremu cokolwiek pokazuje, więc nie
+jest konsumentem żadnej z tych reguł. Katalogi `__tests__` i pliki `*.test.ts` są teraz poza
+zakresem obu bramek; liczba plików objętych (35) nie zmieniła się, bo do tej pory żaden test modelu
+nie wołał.
+
+**Dowód:** sześć przypadków na realnym Postgresie, w tym `chatComplete` z dostawcą wskazującym na
+adres, którego nie ma — gdyby wyłącznik nie zadziałał, wynikiem byłoby 502 po nieudanej próbie
+sieci, a nie 503 z komunikatem. Trzy sondy: usunięcie sprawdzenia w `chatComplete`, usunięcie limitu
+miesięcznego i zignorowanie flagi „twardy" czerwienią po jednym, właściwym podteście.
+
+**Bramki:** build **exit 0**, `test:unit` **969/969** (+7), zapadka paginacji **263** bez ruchu.
