@@ -2034,6 +2034,13 @@
     "reason": "admin",
     "access": "admin"
   },
+  "sharing:getResourceGrants": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "shared",
+    "guardedVia": "nadaniaZasobu"
+  },
   "sharing:getSharedByMe": {
     "status": "pending",
     "access": "self"
@@ -2041,6 +2048,23 @@
   "sharing:getSharedWithMe": {
     "status": "pending",
     "access": "self"
+  },
+  "sharing:grantResourceAccess": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "shared",
+    "guardedVia": "nadajDostep"
+  },
+  "sharing:redeemResourceInvitations": {
+    "status": "excluded",
+    "reason": "account",
+    "access": "self"
+  },
+  "sharing:revokeResourceAccess": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "shared",
+    "guardedVia": "odbierzDostep"
   },
   "shoppingSync:syncShoppingMutations": {
     "status": "excluded",

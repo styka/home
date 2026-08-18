@@ -1,11 +1,20 @@
 "use server";
 
 import { auth } from "@/platform/auth/session";
+import { revalidatePath } from "next/cache";
 import {
   zbierzUdostepnioneMnie,
   zbierzUdostepnionePrzezeMnie,
   type SharedGrantRow,
 } from "@/lib/sharingLists";
+import {
+  nadaniaZasobu,
+  nadajDostep,
+  odbierzDostep,
+  odbierzZaproszeniaZasobow,
+  type PodmiotNadania,
+} from "@/lib/sharingGrants";
+import type { ResourceRole } from "@/platform/workspaces/types";
 
 /**
  * 067 (zadanie 14, część odczytowa) — „UDOSTĘPNIONE MI” I „CO UDOSTĘPNIŁEM”.
@@ -52,4 +61,53 @@ export async function getSharedByMe(): Promise<SharedGrantRow[]> {
   const session = await auth();
   if (!session?.user?.id) return [];
   return zbierzUdostepnionePrzezeMnie(session.user.id);
+}
+
+// ─── 090 (zadanie 14): STRONA ZAPISU ─────────────────────────────────────────
+//
+// Cienkie otoczki sesyjne nad `@/lib/sharingGrants` — rdzeń jest bez sesji z tego samego powodu co
+// przy listach: pomiar i testy nie mają jak wywołać Server Action, a mierzenie „czegoś podobnego"
+// napisanego w teście nie mierzy niczego.
+
+export async function getResourceGrants(resourceType: string, resourceId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  return nadaniaZasobu(session.user.id, resourceType, resourceId);
+}
+
+export async function grantResourceAccess(
+  resourceType: string,
+  resourceId: string,
+  podmiot: PodmiotNadania,
+  role: ResourceRole,
+  expiresAtIso?: string | null,
+) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const wynik = await nadajDostep(
+    session.user.id,
+    resourceType,
+    resourceId,
+    podmiot,
+    role,
+    expiresAtIso ? new Date(expiresAtIso) : null,
+  );
+  revalidatePath("/udostepnione");
+  return wynik;
+}
+
+export async function revokeResourceAccess(grantId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  await odbierzDostep(session.user.id, grantId);
+  revalidatePath("/udostepnione");
+}
+
+/** Odbiera zaproszenia czekające na e-mail tej osoby. Wołane z `/invitations`. */
+export async function redeemResourceInvitations(): Promise<number> {
+  const session = await auth();
+  if (!session?.user?.id) return 0;
+  const n = await odbierzZaproszeniaZasobow(session.user.id, session.user.email);
+  if (n > 0) revalidatePath("/udostepnione");
+  return n;
 }

@@ -33,6 +33,12 @@
       "ladunek": "zbiorczy",
       "powod": "Transakcja już istniała. Wybrany po to, żeby sprawdzić ŁADUNEK ZBIORCZY: spis stu pozycji daje JEDNO zdarzenie, nie sto — inaczej odbiorca dostałby lawinę powiadomień o czymś, co dla użytkownika było pojedynczą czynnością.",
       "przyszly-odbiorca": "Zakupy i plan posiłków — brakujące składniki po spisie. Ten sam kierunek co w Magazynowaniu, ale na innym kształcie danych."
+    },
+    "src/lib/sharingGrants.ts": {
+      "zdarzenie": "sharing.grant.granted / sharing.grant.revoked",
+      "ladunek": "pojedynczy",
+      "powod": "Nadanie i odebranie dostępu to jedyne zmiany, po których czyjeś rozstrzygnięcie dostępu przestaje być prawdziwe. Emisja idzie w TEJ SAMEJ transakcji, co zapis nadania — inaczej istniałaby chwila, w której dostęp już jest (albo już go nie ma), a nikt o tym nie wie.",
+      "przyszly-odbiorca": "Cache rozstrzygnięć dostępu z rozdz. 11.5. W 085 świadomie go NIE założyliśmy, bo bez tych zdarzeń nie miałby czym się unieważniać, a cache dostępu bez natychmiastowego unieważnienia to dziura z rozdz. 11.1.3 (odebranie uprawnień działałoby dopiero po wygaśnięciu wpisu). Ten producent jest brakującym warunkiem tamtej decyzji. Drugi odbiorca: unieważnienie strumienia SSE na kanale `user:` przy odebraniu dostępu (rozdz. 11.1.3)."
     }
   },
   "obserwacje": {

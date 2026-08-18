@@ -26,7 +26,18 @@ export type DomainEventType =
   /** Zmiana stanu pozycji magazynowej. Przyszły odbiorca: uzupełnianie zapasów do Zakupów (rozdz. 9.1). */
   | "magazynowanie.stan.zmieniony"
   /** Spis spiżarni domknięty — jedno zdarzenie na spis, nie na pozycję. */
-  | "kuchnia.spizarnia.spisana";
+  | "kuchnia.spizarnia.spisana"
+  /**
+   * 090 (zadanie 14): nadanie i odebranie dostępu do zasobu.
+   *
+   * Te dwa typy są jednocześnie **brakującym producentem** dla cache'u rozstrzygnięć dostępu
+   * (rozdz. 11.5). W 085 świadomie nie założyliśmy tego cache'u, bo bez nich nie miałby czym się
+   * unieważniać, a cache dostępu bez natychmiastowego unieważnienia to dziura z rozdz. 11.1.3.
+   * `sharing` nie jest modułem w `src/modules/` — udostępnianie jest zdolnością platformy
+   * (rozdz. 8.1), i pole `module` mówi tu właśnie to.
+   */
+  | "sharing.grant.granted"
+  | "sharing.grant.revoked";
 
 /** Moduł źródłowy — pozwala filtrować strumień bez parsowania `type`. */
-export type DomainEventModule = "shopping" | "magazynowanie" | "kitchen";
+export type DomainEventModule = "shopping" | "magazynowanie" | "kitchen" | "sharing";

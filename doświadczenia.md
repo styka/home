@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Sonda, która nie czerwieni się po usunięciu reguły, mierzy inną regułę
+**Problem:** Test miał dowodzić, że udostępnianie zasobu wymaga roli `manager`. Sprawdzał, że OBCY
+użytkownik nie może udostępnić cudzego projektu — i po usunięciu z kodu całego warunku
+`resourceRoleAtLeast(rola, "manager")` **nadal przechodził**. Powód: obcego odrzuca wcześniej
+`resolveRole === null`, czyli brak jakiejkolwiek relacji do zasobu. Test mierzył „czy nieznajomy jest
+odrzucany", a nie „czy wymagamy roli zarządzającej".
+**Rozwiązanie:** Właściwym przypadkiem jest ktoś, kto MA dostęp, ale za niski — użytkownik z rolą
+`viewer` próbujący udostępnić dalej. Bez sprawdzenia roli każdy z podglądem rozdawałby dostęp
+dalej: eskalacja uprawnień przez udostępnianie. Po dodaniu tego przypadku sonda czerwieni się
+prawidłowo.
+**Lekcja:** Przy regułach stopniowanych (role, poziomy, progi) przypadek „ktoś całkiem z zewnątrz"
+prawie nigdy nie testuje reguły — testuje warunek wejściowy, który stoi przed nią. Dobierz podmiot
+leżący **dokładnie po niewłaściwej stronie granicy**: o jeden poziom za nisko, o złotówkę poniżej
+progu, o dzień po terminie. I zawsze potwierdź sondą: reguła usunięta z kodu musi zaświecić test na
+czerwono, inaczej test opisuje coś innego, niż sądzisz.
+
 ## 2026-08-19 — Wielojęzyczność: `toLocaleString("pl-PL")` jest gorszy od tekstu po polsku
 **Problem:** Przy wyciąganiu tekstów naturalnym odruchem jest szukanie polskich napisów w JSX.
 Tymczasem drugą połowę długu stanowi formatowanie: `toLocaleString("pl-PL")` **wygląda poprawnie**

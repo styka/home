@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useCallback, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { ListTodo, Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { ListTodo, Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
@@ -12,6 +12,8 @@ import { TaskStatusConfigEditor } from "./TaskStatusConfigEditor";
 import { QuickAddTask, type QuickAddTaskHandle } from "./QuickAddTask";
 import { ProjectActionsMenu } from "./ProjectActionsMenu";
 import { TaskListClipboardButton } from "./TaskListClipboardButton";
+import { useTranslations } from "next-intl";
+import { ShareDialog } from "@/components/sharing/ShareDialog";
 import { BulkActionBar, type BulkPatch } from "./BulkActionBar";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useViewState } from "@/hooks/useViewState";
@@ -129,6 +131,11 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
 
   // For virtual views, create tasks in inbox instead
   const isVirtualView = ["today", "upcoming", "overdue", "all", "multi"].includes(projectId);
+  // 090 (zadanie 14): okno udostępniania. Dostaje tylko `resourceType` (tekst z deklaracji) i `id`,
+  // więc nie wiąże Zadań z warstwą udostępniania — moduł nie ma tu ani jednej własnej linii logiki
+  // dostępu. Widoki wirtualne (dziś/zaległe/wszystkie) nie są zasobem, więc nie mają czego udostępnić.
+  const [udostepnianieOtwarte, setUdostepnianieOtwarte] = useState(false);
+  const tShare = useTranslations("tasks");
   const addProjectId = isVirtualView ? inboxId : projectId;
 
   // Świeża wersja z listy; jeśli zadania tam (jeszcze/już) nie ma — użyj świeżo utworzonego.
@@ -658,6 +665,19 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             <ArchiveRestore size={15} />
           </Link>
 
+          {!isVirtualView && (
+            <button
+              type="button"
+              onClick={() => setUdostepnianieOtwarte(true)}
+              className="flex items-center justify-center p-1.5 rounded"
+              style={{ color: "var(--text-muted)" }}
+              title={tShare("shareProject")}
+              aria-label={tShare("shareProject")}
+            >
+              <Share2 size={15} />
+            </button>
+          )}
+
           {/* Admin: skopiuj prompt dla Claude Code z zadaniami widocznymi w tej zakładce */}
           {isAdmin && <TaskListClipboardButton tasks={visibleTasks} />}
           </div>
@@ -910,6 +930,9 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         </div>
       )}
 
+      {udostepnianieOtwarte && (
+        <ShareDialog resourceType="tasks.project" resourceId={projectId} onClose={() => setUdostepnianieOtwarte(false)} />
+      )}
     </ModuleView>
   );
 }

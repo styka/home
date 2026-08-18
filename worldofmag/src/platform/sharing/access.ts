@@ -205,3 +205,25 @@ export async function requireAccess(
 ): Promise<void> {
   if (!(await canAccess(userId, ref, operation, katalog, ctx))) throw new Error(ACCESS_DENIED);
 }
+
+/**
+ * 090 (zadanie 14) — KTO MOŻE UDOSTĘPNIAĆ.
+ *
+ * Reguła jest **platformowa, nie modułowa**, i wynika wprost z rozdz. 8.1: *udostępnianie jest
+ * zdolnością platformy, nie funkcją modułu*. Gdyby prawo do dzielenia się zasobem wyrażała operacja
+ * deklarowana przez moduł (`"project.share"`), to każdy moduł musiałby o niej pamiętać, a moduł,
+ * który zapomni, dostałby jedno z dwóch: albo nikt nie może udostępniać jego zasobów, albo — gdyby
+ * brak operacji traktować jako „wolno" — **każdy**. Obie odpowiedzi są złe i obie są ciche.
+ *
+ * Wymagamy roli `manager`: to ta sama rola, która pozwala skasować zasób. Nie da się sensownie
+ * bronić stanu, w którym ktoś może oddać komuś zasób, ale nie może go usunąć.
+ */
+export async function requireShareAccess(
+  userId: string,
+  ref: ResourceRef,
+  katalog: ResourceCatalog,
+  ctx: AccessContext,
+): Promise<void> {
+  const rola = await resolveRole(userId, ref, katalog, ctx);
+  if (rola === null || !resourceRoleAtLeast(rola, "manager")) throw new Error(ACCESS_DENIED);
+}

@@ -231,7 +231,17 @@ src/platform/     # capabilities that know NOTHING about any module
   ai/             # 049: agent protocol, content memory, cost, rate limits, action contract,
                   #      catalog.ts (buildAiCatalog — takes contributions as a PARAMETER)
   llm/            # 049: chat, model resolver, pricing, effort, TPM limiter
-  jobs/           # 049: queue, worker (handler resolver is INJECTED), cross-cutting handlers
+  jobs/           # 049: queue, worker (handler resolver + retention policies are INJECTED)
+  sharing/        # 052/090: requireAccess/requireShareAccess, per-request + per-operation cache
+  workspaces/     # 051–079: zapis.ts (where a new record goes), sync.ts (Team → Workspace mirror)
+  concurrency/    # 062: updateWithVersion (updateMany + version guard)
+  events/         # 070–073: DomainEvent outbox, worker, dispatch, in-process SSE bus
+  rateLimit/      # 081: SHARED limiter — windows in `RateLimitBucket`, concurrency LEASES
+  retention/      # 083: executor + hourly scheduler; policies come as a PARAMETER
+  observability/  # 086/087: structured log (context via AsyncLocalStorage, PII scrub) + metrics
+  cache/          # 085: stempel.ts — workspace stamp used as the aggregate cache KEY
+  runtime/        # 088: rola.ts — OMNIA_ROLE (web | worker | cron | all)
+  i18n/           # 089: language list, request context, Intl formatting, prompt language sentence
   calendar.ts     # 049: CalendarContributor type
   registry.ts     # ModuleDeclaration + defineModule + pure merge helpers
   ui/index.ts     # RE-EXPORT of components/ui (deliberately not a move)
@@ -244,6 +254,9 @@ src/modules/<x>/  # a module
   calendar.ts     # 049: this module's contribution to the shared agenda
   dashboard.ts    # 050: this module's contribution to the home snapshot (wired in
                   #      lib/dashboardContributors.ts, NOT in module.server.ts — see below)
+  sharing.ts      # 052: resource declaration (label, operations → roles, parent); wired in
+                  #      lib/sharingResources.ts
+  retention.ts    # 083: this module's retention policies (wired in lib/retention/polityki.ts)
 ```
 
 **049 — the declaration now carries the module's whole contribution to the app.** Four lazy fields
@@ -758,6 +771,72 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 - **Home dashboard personalization** (`DashboardPref`, `actions/dashboardPrefs.ts`):
   per-user section order/visibility on the Home dashboard.
 
+- **Shared rate limit** (`platform/rateLimit`, `RateLimitBucket` + `RateLimitLease`, migration 0247) —
+  081. Counters live in the DB, not in a process `Map`: with two instances every user used to get
+  twice the limit. Windows are one atomic `INSERT … ON CONFLICT DO UPDATE` that also **moves the
+  window inside the DB** — if the code decided "has the window expired", two instances would reset the
+  same row twice. Concurrency is **not a counter but LEASES**: `PRIMARY KEY (key, slot)` makes taking
+  a slot a single atomic row-level upsert guarded by `WHERE expiresAt <= now()`, and `holder` stops a
+  late `finally` from releasing someone else's lease. A counter would never be decremented after a
+  process crash, locking the user out forever. Policies (`ai.agent`, `ai.mowa`, `zaproszenia`,
+  `nadania`) are pure data in `polityki.ts`; the functions are **async** — that is the one part of the
+  old interface that could not be kept, because a synchronous signature would need a local cache, i.e.
+  a second carrier of the same state.
+
+- **AI budgets** (`platform/ai/budzet.ts`, `Config` keys `ai_globally_disabled`,
+  `ai_monthly_budget_usd`, `ai_monthly_budget_hard`) — 082. The emergency switch is checked
+  **unconditionally** in `chatComplete`/`chatStream`: the old per-user budget only ran when
+  `opts.userId` was set, so background jobs — the most expensive operations in the system — bypassed
+  cost control entirely. `plan.aiMonthlyTokens` adds the monthly ceiling (a daily limit cannot express
+  "not thirty heavy days in a row"). Alarm thresholds 50/80/**100 %**, deduplicated per (month,
+  threshold). "Used X of Y" is shown to the user in `/settings` — a limit nobody can see is first met
+  as a refusal, and then it looks like a failure.
+
+- **Data retention** (`platform/retention`, policies in `src/lib/retention/polityki.ts` and per-module
+  `retention.ts`, config in `/admin/config`) — 083. Each policy carries its own delete query, so the
+  platform executor knows no table and a module declares retention for its own data. `DomainEvent` is
+  pruned **only when delivered** (an undelivered event is work, not garbage), `AiUsage` is exempt (the
+  budgets stand on it), `ItemHistory` counts **last use**, not creation date. The audit-log floor is
+  enforced **on read**, not in the form — a `Config` row can be changed from `psql`. The daily run
+  **claims the right atomically** with a conditional `UPDATE`; the read-compare-write variant let 5 of
+  5 parallel instances through (measured).
+
+- **Aggregate cache** (`platform/cache/stempel.ts`, `src/lib/cacheAgregatow.ts`) — 085. The dashboard
+  snapshot and the calendar agenda are cached with the **workspace stamp in the key** rather than
+  invalidated by `revalidateTag`: a tag only invalidates the cache of ONE instance. The stamp carries a
+  timestamp **and a count** — `createdAt` has millisecond precision, so two events written together
+  would produce the same stamp and the second would be invisible. The dashboard key also carries a
+  **permission fingerprint**; without it, revoking module access would leave that module's data in the
+  cache. Access decisions and the workspace list are deliberately **not** cached across requests
+  (ch. 11.1.3) — the per-request (052) and per-operation (084) scopes vanish with the work, so there
+  is nothing to invalidate.
+
+- **Structured logs and metrics** (`platform/observability/{log,metryki}.ts`, `OperationMetric`,
+  migration 0248) — 086/087. Log context is injected once at the entry point and merges when nested;
+  values pass through `oczysc` (PII). Metrics are an **hourly aggregate with a histogram**, counted in
+  memory and flushed in bulk by the worker: a row per operation would double the writes, and p95 cannot
+  be reconstructed from a sum. **Edit conflicts per module** are counted separately from errors — a
+  conflict is not a failure, and a module with a rising conflict count is the signal for co-editing
+  (ch. 8.6). Known gap, recorded rather than hidden: Server Action latency per module is **not**
+  covered — Next 14 offers no hook around actions.
+
+- **Process roles** (`platform/runtime/rola.ts`, `OMNIA_ROLE`) — 088. One image, three roles
+  (`web`/`worker`/`cron`, default **`all`**). The default matters: with `web` as the default, deploying
+  that change alone would have stopped the queue and retention — no error, no log, just silence. An
+  unrecognised value also falls back to `all` **and is reported**. The worker wakes up on
+  **`/api/health`**, the only request the host sends by itself, so the `worker` service must have its
+  health check enabled (`docs/devops/rozdzielenie-procesow.md`).
+
+- **Sharing, write side** (`src/lib/sharingGrants.ts`, `components/sharing/ShareDialog.tsx`,
+  `ResourceGrant.token`, migration 0250) — 090. The right to share is **platform-level**
+  (`requireShareAccess`, role `manager`), not a module-declared operation: a module that forgot such an
+  operation would give sharing rights either to nobody or to everybody, both silently. Three outcomes
+  are shown separately because they mean three different things to the user (immediate grant / pending
+  invitation for an address without an account / link that must be copied). Grants emit
+  `sharing.grant.granted|revoked` **in the same transaction** — the missing producer the access cache
+  was waiting for. Mirror-derived grants (059/061) cannot be revoked here: deleting the reflection
+  would come back on the next sync, and the user would see access that "returned by itself".
+
 ### Admin Panel (`/admin`, gated by `module.admin`)
 
 - **`/admin`** — console: build info (`NEXT_PUBLIC_BUILD_*`), active session, links to tools. (The Omnia→Claude Code clipboard export is an **admin-only per-list button** in the Tasks header — `TaskListClipboardButton`, prompt+copy logic in `src/lib/omniaClipboard.ts` — copying a prompt + JSON of *that list's* active tasks. The prompt now **kicks off the spec-driven pipeline**: pasted into Claude Code it instructs it to run `/specify` with those task titles/descriptions as the feature scope, then the pipeline auto-advances plan→tasks→implement→verify→review.)
@@ -857,7 +936,26 @@ survives) — do **not** move escaping into `inlineFormat` (it opened an XSS hol
 the table/paragraph merge).
 
 **Build pipeline**: `npm run build` runs
-`node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && node scripts/check-workspace-nullable.js && node scripts/check-ownership-scope.js && node scripts/check-grant-mirror.js && node scripts/check-versioning.js && node scripts/check-ai-access.js && node scripts/check-pagination.js && node scripts/check-domain.js && node scripts/check-events.js && node scripts/check-subscribers.js && node scripts/check-realtime.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/migrate.js`.
+`node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && node scripts/check-workspace-nullable.js && node scripts/check-ownership-scope.js && node scripts/check-grant-mirror.js && node scripts/check-versioning.js && node scripts/check-ai-access.js && node scripts/check-pagination.js && node scripts/check-domain.js && node scripts/check-events.js && node scripts/check-subscribers.js && node scripts/check-realtime.js && node scripts/check-logs.js && node scripts/check-i18n.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/check-perf-budget.js && node scripts/migrate.js`.
+- **`check-logs.js`** (also `npm run check:logs`) — 086: **no raw `console.*` in server code.** One
+  `console.warn` breaks more than it looks: half the stream stops being parseable and the aggregator
+  can no longer answer „how many errors in module X", because those entries carry no module. Use
+  `logEvent` from `@/platform/observability/log` — the record then gets a timestamp, the request
+  context (`requestId`/`userId`/`workspaceId`/`module`, injected via `AsyncLocalStorage`) and **PII
+  scrubbing** (e-mails → `[e-mail]`, objects flattened to their size). Client components and tests
+  are out of scope on purpose; the pattern requires a parenthesis after the method name, so
+  `console.groq.com` inside an admin hint is not a call.
+- **`check-i18n.js`** (also `npm run check:i18n`) — 089: **ratchet on texts hard-coded in
+  components.** Counts user-visible literals (JSX text + `placeholder`/`title`/`aria-label`/`alt`/
+  `label`) recognised by Polish diacritics; fails on growth **and on a drop** (record the progress in
+  `src/lib/ui/i18n-baseline.json`, otherwise the slack hides the next regression). A one-off
+  extraction pass would solve half the problem and lose the other half — the cost grows because new
+  code puts literals back.
+- **`check-perf-budget.js`** (also `npm run check:perf`) — 091: **performance budget**, run AFTER
+  `next build` (there is nothing to measure before). Measures the JS bytes a route makes the browser
+  download, per route and in total, from `.next/app-build-manifest.json`. Unlike the other ratchets it
+  uses a **±5 % band**, not equality: bundle size also moves on dependency updates, and a byte-exact
+  threshold would be switched off after the first `npm update`. A drop below the band fails too.
 - `copy-docs.js` bundles `docs/` for `/admin/docs`.
 - `check-action-coverage.js` (also `npm run check:actions`) verifies **every AI
   `AIAction` has an executor** in `/api/llm/home/execute` — the build **fails**

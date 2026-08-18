@@ -115,7 +115,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 | 12 | Migracja `TaskProjectMember`/`TaskShare`/`PetShare` → `ResourceGrant` | 🟡 | Etap 1 z trzech: 059 lustro nadań dla Zadań, 061 dla Zwierząt; bramka `check:grant-mirror` z manifestem wyjątków. **Etap 2 zablokowany** — przełączenie odczytów wymaga produkcyjnego pomiaru rozjazdu tabela↔nadanie |
 | 13 | Deklaracje `resources` w `module.ts` | ✅ | **064.** Pomiar przed decyzją zmienił zadanie: decyzje dostępu **per rekord** podejmuje sześć modułów, nie dziewiętnaście. Pozostałe piętnaście albo dziedziczy po zasobie nadrzędnym, albo filtruje zakresem. Zamknięte manifestem `sharing-classification.json` (21/21 z powodem) egzekwowanym przez `check:module-registry` — zamiast pozycji wiecznie otwartej |
-| 14 | `ShareDialog`, „Udostępnione mi", „Co udostępniłem" | 🟡 | **067: część odczytowa.** `/udostepnione`, dwie zakładki, jedno zapytanie do jednej tabeli — wypłata za cały jednolity model. Zostaje strona zapisu: `ShareDialog`, zaproszenia e-mail, `subjectType: "link"`, powiadomienia, kategoria `sharing` w `AuditLog`. Przycisk odbierania dostępu jedzie razem z etapem 2 zadania 12 |
+| 14 | `ShareDialog`, „Udostępnione mi", „Co udostępniłem" | ✅ | **067 + 090.** 067: część odczytowa (`/udostepnione`, jedno zapytanie do jednej tabeli — wypłata za cały jednolity model). 090: **strona zapisu** — `ShareDialog` (jedno okno dla WSZYSTKICH typów zasobów, dostaje tylko `resourceType` jako tekst), nadania osobowe/przestrzenne/**linkowe**, zaproszenia na adres bez konta (realizowane przy wejściu na `/invitations` — klienta pocztowego nie ma), powiadomienia, kategoria `sharing` w `AuditLog`, limit tempa z 081 i **zdarzenia `sharing.grant.*`** (brakujący producent dla cache'u z 085). Prawo do udostępniania jest **platformowe** (rola `manager`), nie operacją modułu: moduł, który by o niej zapomniał, dawałby albo nikomu, albo każdemu. Luka z 051 (nadania linkowe poza `@@unique`) zamknięta **tożsamością** (token + `CHECK`), a nie zakazem dwóch linków |
 | 15 | Kolumna `version` + `updateMany` z warunkiem na wersji | 🟡 | **062: mechanizm + pilot.** `updateWithVersion` w `platform/concurrency`; `updateMany` (nie `update`), bo tylko liczba wierszy odróżnia „ktoś mnie ubiegł" od „rekord nie istnieje". Bramka `check:versioning` z manifestem. Rozszerzanie na kolejne modele — sukcesywnie |
 | 16 | `ConflictDialog` | ✅ | **066.** Trzy wyjścia (nadpisz / odrzuć / wróć do edycji), a odrzucona wersja **nie znika** — ląduje w koszu jako „Wersja robocza (konflikt)". Degradacja poza powłoką wyodrębniona do `konfliktPozaPowloka`, żeby dała się przetestować bez Reacta |
 | 17 | Test odwołania dostępu | ✅ | **063.** Test dowodzi natychmiastowości **i** że mierzy właściwą rzecz: bez unieważnienia cache'u per żądanie schodzi na czerwono |
@@ -172,9 +172,9 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 |---|---------|--------|-------|
 | 39 | Eksport danych użytkownika | ✅ | `actions/privacy.ts` `exportMyData()` — pełny zrzut danych konta. **Wiersz poprawiony przy przeglądzie 077**: praca była zrobiona, tracker jej nie odnotował |
 | 40 | Usunięcie konta | ✅ | `actions/privacy.ts` `deleteMyAccount(confirmation)` + `lib/privacy/purge.ts` (przekazuje własność zespołu następcy, zamiast osierocić zasoby); testy `purge.test.ts`, `ondelete-cascade.test.ts`. **Wiersz poprawiony przy przeglądzie 077** |
-| 41 | Próba odtworzenia z kopii + runbook | 🟡 | Runbooki są: `docs/devops/runbook-deploy-rollback.md` (PITR w Neonie) i `przywrocenie-wlasnosci.md` (074, procedura **przećwiczona** realnym `DROP COLUMN` w transakcji z `ROLLBACK` + próba mutacyjna). Brakuje **próby odtworzenia CAŁEJ bazy** z kopii — czyli tego, co runbook PITR opisuje, a czego nikt nie wykonał |
+| 41 | Próba odtworzenia z kopii + runbook | ✅ | **091.** `scripts/proba-odtworzenia.sh` przechodzi całą drogę: liczności 14 tabel → zrzut → **pusta** baza → odtworzenie → porównanie liczności **i historii migracji** → czasy. Przećwiczone: 263 migracje, 14/14 tabel zgodnych. Sonda odkryła rzecz, której nie szukałem: **`pg_restore` domyślnie pomija błędy i kończy się kodem 0** — zrzut bez danych jednej tabeli „odtworzył się pomyślnie", łamiąc cztery klucze obce; skrypt czyta więc log wprost. Runbook `proba-odtworzenia-z-kopii.md` zapisuje też, czego próba NIE dowodzi (PITR-u w Neonie ani czasu na produkcyjnym wolumenie) |
 | 42 | **Stany błędów i puste w każdym module** | ✅ | 21/21 modułów na kontrakcie widoku, bramka `check:ui-contract` wpięta w build |
-| 43 | Budżet wydajnościowy w CI | ⬜ | |
+| 43 | Budżet wydajnościowy w CI | ✅ | **091.** W repozytorium nie ma GitHub Actions — „CI" to `npm run build`, więc budżet jest bramką, tylko uruchamianą **po** `next build` (wcześniej nie ma czego mierzyć). Mierzy bajty JS na trasę: deterministyczne i będące PRZYCZYNĄ, a nie czas renderu, który zależy od maszyny i dawałby fałszywe alarmy. Jedyna zapadka z **pasmem ±5 %** zamiast równości, bo rozmiar paczki zmienia się też przy `npm update`; spadek poniżej pasma nadal czerwieni. Start: **1163 kB** najcięższa trasa, **61 856 kB** suma |
 
 ### Faza 9 — Domknięcie
 
@@ -2787,3 +2787,136 @@ przez `t()`, polski jako język źródłowy, żadnych literałów w komponentach
 `platform/i18n/format` zamiast `toLocaleString` oraz język przestrzeni w promptach.
 
 **Bramki:** build **exit 0**, `test:unit` **1019/1019**, nowa bramka `check:i18n` w buildzie.
+
+---
+
+## 090 — Zadanie 14 domknięte: model jednolity przestał być tylko modelem
+
+067 zrobiło stronę **odczytową** („Udostępnione mi" / „Co udostępniłem"). Brakowało drugiej połowy
+i była to luka poważniejsza, niż wyglądała: do dziś jedynymi nadaniami w `ResourceGrant` były
+odbicia z **lustra** (059/061) — `TaskProjectMember`, `TaskShare`, `PetShare`. Jednolity model
+istniał, a nikt nie mógł z niego skorzystać.
+
+### Prawo do udostępniania jest PLATFORMOWE
+
+`requireShareAccess` wymaga roli `manager`. Kuszące było wyrażenie tego operacją deklarowaną przez
+moduł (`"project.share"` istnieje w Zadaniach) — i byłoby to złe: moduł, który o niej zapomni,
+dostaje jedno z dwóch, oba ciche. Albo nikt nie może udostępniać jego zasobów, albo — gdyby brak
+operacji czytać jako „wolno" — **każdy**. Rozdz. 8.1 mówi wprost, że udostępnianie jest zdolnością
+platformy; wymagamy więc tej samej roli, która pozwala zasób skasować. Nie da się obronić stanu,
+w którym ktoś może oddać komuś zasób, ale nie może go usunąć.
+
+**Sonda, która nic nie pokazała, i co z niej wyszło.** Pierwsza wersja testu sprawdzała, że OBCY nie
+może udostępniać — i po usunięciu warunku `manager` nadal przechodziła, bo obcego odrzuca już samo
+`resolveRole === null`. Właściwą granicą jest **ktoś z podglądem**: bez sprawdzenia roli każdy
+z dostępem `viewer` rozdawałby go dalej. Eskalacja uprawnień przez udostępnianie, najcichszy możliwy
+wariant. Ten przypadek doszedł i sonda go czerwieni.
+
+### Trzy wyniki nadania, bo dla użytkownika znaczą trzy różne rzeczy
+
+Osoba z kontem ma dostęp od razu. Osoba **bez konta** dostaje `ResourceInvitation` i jeszcze nic nie
+widzi — nie ma klienta pocztowego (ustalone przy 081), więc zaproszenie czeka i realizuje się przy
+pierwszym wejściu na `/invitations`, tak jak zaproszenia do zespołu. Link trzeba **skopiować**,
+inaczej nie dotrze do nikogo. Wspólny komunikat „udostępniono" byłby w dwóch z trzech przypadków
+nieprawdą.
+
+### Znana luka z 051 zamknięta TOŻSAMOŚCIĄ, nie zakazem
+
+051 zapisało wprost: `@@unique` nie łapie nadań linkowych, bo mają `subjectId = NULL`, a w PostgreSQL
+NULL-e w indeksie unikalnym są różne. Odruchową poprawką byłby indeks częściowy zabraniający dwóch
+linków — i byłaby błędna: **dwa linki do tego samego zasobu są uzasadnione** (inna rola, inny termin,
+jeden do odwołania). Poprawka polega na daniu nadaniu linkowemu własnej tożsamości: `token`, indeks
+unikalny częściowy i `CHECK` „link musi mieć token". Bez tokenu link byłby dostępem, którego nie da
+się użyć ani odwołać po niczym poza identyfikatorem wiersza.
+
+### Nadania z lustra nie da się odebrać tym oknem
+
+Ich źródłem jest członkostwo w projekcie albo `PetShare`. Skasowanie samego odbicia zniknęłoby przy
+najbliższej synchronizacji, a użytkownik zobaczyłby dostęp, który **wrócił sam** — objaw bez śladu
+w logach. Okno pokazuje je z adnotacją „z członkostwa" i bez przycisku.
+
+### Brakujący producent zdarzeń z 085
+
+`sharing.grant.granted` i `sharing.grant.revoked` są emitowane **w tej samej transakcji**, co zapis
+nadania. To jest dokładnie ten producent, którego brak był powodem, dla którego 085 świadomie NIE
+założyło cache'u rozstrzygnięć dostępu: bez zdarzeń nie miałby czym się unieważniać, a cache dostępu
+bez natychmiastowego unieważnienia to dziura z rozdz. 11.1.3. Warunek jest spełniony; sam cache
+zostaje osobną decyzją, bo dziś zakres żądania i zakres operacji wystarczają.
+
+Doszła też kategoria `sharing` w `AuditLog` — rozdz. 12.3 wymienia nadania i odwołania dostępu
+w dzienniku jako **obowiązek zgodności**, nie funkcję. I limit tempa (`sprawdzLimit("nadania")`):
+polityka czekała gotowa od 081 właśnie na to wpięcie.
+
+### Poprawka w audycie, którą odsłonił test
+
+`logAudit` czytał sesję **w tym samym bloku `try`**, co zapis wiersza, więc brak kontekstu żądania
+(zadanie w tle, skrypt, test) kończył się pominięciem **całego** wpisu — nie brakiem samego autora.
+Operacja systemowa też musi zostawiać ślad: „nie wiadomo kto" jest informacją, „nie wiadomo czy się
+stało" nie jest.
+
+### Zapadka i18n zadziałała od razu
+
+Nowe okno wniosło 11 literałów i `check:i18n` zapaliła się na pierwszym buildzie — dokładnie po to
+istnieje. Wszystkie poszły do `messages/pl.json`. Przy okazji **poprawka w samym detektorze**:
+wzorzec z granicą słowa liczył każdy `aria-label` **dwa razy** (łącznik jest granicą słowa), więc
+pierwszy pomiar 1528 był zawyżony. Po poprawce stan sprzed wyciągania to 1449, a próg — 1429.
+
+**Dowód:** 11 przypadków na realnym Postgresie, w tym eskalacja przez `viewer`, dwa linki, nadanie
+z lustra i pełna droga zaproszenia dla adresu bez konta. Dwie sondy: zdjęcie wymogu `manager`
+czerwieni przypadek eskalacji, a przepuszczenie nadań z lustra — przypadek „wrócił sam".
+
+**Bramki:** build **exit 0**, `test:unit` **1032/1032**, `check:events` 4 producentów, `check:i18n`
+**1429**.
+
+---
+
+## 091 — Zadania 41 i 43: próba odtworzenia i budżet wydajnościowy
+
+### 41 — runbook był, próby nie było
+
+Runbooki opisujące odtwarzanie istniały od dawna (`runbook-deploy-rollback.md` z PITR-em,
+`przywrocenie-wlasnosci.md` z 074). Brakowało jednej rzeczy i to ona była treścią zadania:
+**nikt nigdy nie odtworzył całej bazy**. Procedura nieprzećwiczona jest hipotezą, a moment, w którym
+się ją weryfikuje, to zawsze najgorszy możliwy moment.
+
+`scripts/proba-odtworzenia.sh` przechodzi całą drogę: liczności 14 tabel z danymi nieodwracalnymi →
+zrzut → **pusta** baza → odtworzenie → porównanie liczności **i historii migracji** → czasy. Trzy
+decyzje z powodem: baza docelowa musi być pusta (odtworzenie do niepustej przechodzi także przy
+niepełnym zrzucie), historia migracji porównywana osobno (baza bez `_prisma_migrations` wygląda
+poprawnie, dopóki pierwsze wdrożenie nie spróbuje zastosować migracji, których skutki już są
+w danych), odmowa przy zdalnym `DATABASE_URL` jest twarda, nie pytaniem „czy na pewno" — na to
+drugie zawsze ktoś odpowie „tak".
+
+**Sonda odkryła coś, czego nie szukałem: `pg_restore` DOMYŚLNIE POMIJA BŁĘDY.** Zrzut bez danych
+jednej tabeli odtworzył się z kodem wyjścia **0**, łamiąc cztery klucze obce i wypisując w środku
+logu „errors ignored on restore: 4". Gdyby próba opierała się na kodzie wyjścia `pg_restore`,
+uznałaby taki wynik za sukces — czyli dokładnie w sytuacji, w której ma ostrzegać, powiedziałaby
+„wszystko dobrze". Skrypt czyta więc log wprost. Sonda (celowo okrojony zrzut) czerwieni próbę
+w dwóch miejscach naraz: na błędach `pg_restore` i na różnicy liczności.
+
+Zapisane jest też, czego ta próba **nie** dowodzi: poprawności PITR-u w Neonie (tego nie da się
+przećwiczyć poza Neonem) ani czasu odtworzenia produkcyjnego wolumenu. Lokalna próba sprawdza *nasz*
+format danych i *naszą* procedurę; istnienie kopii produkcyjnej jest ustawieniem Neona, nie kodu.
+
+### 43 — budżet w „CI", którego nie ma
+
+W repozytorium nie ma GitHub Actions: **„CI" to `npm run build`**, uruchamiany lokalnie i przez
+Render przy każdym wdrożeniu. Osobny workflow oznaczałby drugie miejsce, w którym trzeba pamiętać
+o nowej bramce, i pierwszą okazję, żeby oba się rozjechały. Budżet jedzie tam, gdzie wszystkie
+pozostałe bramki — z jednym wyjątkiem w kolejności: **po** `next build`, bo wcześniej nie ma czego
+mierzyć.
+
+Mierzymy **bajty JS, które przeglądarka musi pobrać dla trasy**, nie czas renderu ani Lighthouse'a:
+jedno i drugie wymaga przeglądarki i zwraca liczbę zależną od maszyny, więc jako próg w buildzie
+dawałoby fałszywe alarmy. Rozmiar paczki jest deterministyczny i jest **przyczyną**, a nie objawem.
+
+Jedyna zapadka w tym repozytorium z **pasmem tolerancji (±5 %)**, a nie z równością — i to jest
+świadome odstępstwo od reguły „spadek też czerwieni". Paginacja, N+1 i i18n liczą rzeczy zależne
+wyłącznie od naszych decyzji; rozmiar paczki zmienia się też przy `npm update` i przy zmianie wersji
+Next-a, więc próg co do bajta zostałby wyłączony po pierwszej aktualizacji. Spadek poniżej pasma
+czerwieni się nadal.
+
+Stan startowy: najcięższa trasa **1163 kB** (`/shopping/[listId]`), suma **61 856 kB**.
+
+**Bramki:** build **exit 0**, nowa bramka `check:perf` po `next build`, próba odtworzenia przećwiczona
+(263 migracje, 14/14 tabel zgodnych).

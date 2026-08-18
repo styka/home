@@ -62,7 +62,10 @@ function policzWPliku(text) {
 
   // Atrybuty widoczne dla użytkownika.
   for (const atrybut of ATRYBUTY) {
-    const re = new RegExp(`\\b${atrybut}\\s*=\\s*"([^"]{2,})"`, "g");
+    // `(?<![-\w])` zamiast `\b`: w `aria-label` przed „label" stoi łącznik, który JEST granicą słowa,
+    // więc wzorzec z `\b` liczył każdy `aria-label` dwa razy — raz jako `aria-label`, raz jako `label`.
+    // Zapadka na zawyżonym liczniku pokazywałaby postęp tam, gdzie go nie ma.
+    const re = new RegExp(`(?<![-\\w])${atrybut}\\s*=\\s*"([^"]{2,})"`, "g");
     for (const m of czysty.matchAll(re)) {
       if (POLSKIE.test(m[1])) n++;
     }

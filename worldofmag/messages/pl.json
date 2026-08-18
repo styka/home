@@ -42,5 +42,42 @@
     },
     "loading": "Ładowanie…",
     "sectionHome": "Strona główna działu"
+  },
+  "sharing": {
+    "title": "Udostępnij",
+    "titleWith": "Udostępnij: {typ}",
+    "close": "Zamknij",
+    "emailPlaceholder": "adres e-mail",
+    "share": "Udostępnij",
+    "createLink": "Utwórz link z rolą „{rola}”",
+    "granted": "Dostęp nadany.",
+    "invited": "{email} nie ma jeszcze konta — zaproszenie poczeka i zadziała po pierwszym zalogowaniu.",
+    "linkCopied": "Link utworzony i skopiowany do schowka.",
+    "loading": "Wczytywanie…",
+    "nobody": "Nikt jeszcze nie ma dostępu.",
+    "link": "Link",
+    "workspaceSuffix": "(przestrzeń)",
+    "fromMembership": "z członkostwa",
+    "fromMembershipHint": "Wynika z członkostwa w zasobie",
+    "invitationPending": "zaproszenie czeka",
+    "revoke": "Odbierz dostęp",
+    "loadFailed": "Nie udało się wczytać listy dostępu.",
+    "grantFailed": "Nie udało się nadać dostępu.",
+    "revokeFailed": "Nie udało się odebrać dostępu.",
+    "redeemedOne": "Odebrano dostęp do {n} udostępnionego zasobu — znajdziesz go na stronie „Udostępnione mi”.",
+    "redeemedMany": "Odebrano dostęp do {n} udostępnionych zasobów — znajdziesz je na stronie „Udostępnione mi”.",
+    "roles": {
+      "viewer": "Podgląd",
+      "viewerHint": "tylko czyta",
+      "commenter": "Komentowanie",
+      "commenterHint": "czyta i komentuje",
+      "editor": "Edycja",
+      "editorHint": "zmienia treść",
+      "manager": "Zarządzanie",
+      "managerHint": "zmienia i udostępnia dalej"
+    }
+  },
+  "tasks": {
+    "shareProject": "Udostępnij ten projekt"
   }
 }

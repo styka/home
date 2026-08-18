@@ -1,0 +1,7 @@
+{
+  "_opis": "091 (zadanie 43, Faza 8; rozdz. 13.F8) — budżet wydajnościowy. Bajty JS, które przeglądarka musi pobrać: dla najcięższej trasy i suma po wszystkich trasach. Liczone z .next/app-build-manifest.json PO `next build`.",
+  "_pasmo": "±5 %. Inaczej niż pozostałe zapadki (paginacja, N+1, i18n), które liczą rzeczy zależne WYŁĄCZNIE od naszych decyzji, rozmiar paczki zmienia się też przy aktualizacji zależności i wersji Next-a — próg co do bajta zostałby wyłączony po pierwszym `npm update`. Spadek poniżej pasma czerwieni tak samo jak wzrost: poprawa ma zostać zapisana.",
+  "_jak_czytac": "Wzrost najcięższej trasy = coś nowego weszło do jej grafu (najczęściej import przez plik zbiorczy — patrz lekcje 049/050/084). Wzrost sumy przy stałej najcięższej = nowy wspólny kod na wszystkich trasach.",
+  "najciezszaTrasaB": 1191000,
+  "sumaB": 63340000
+}

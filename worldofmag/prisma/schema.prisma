@@ -3177,6 +3177,10 @@ model ResourceGrant {
   resourceId   String
   subjectType  String // "user" | "workspace" | "link"
   subjectId    String? // userId | workspaceId | NULL dla linku
+  // 090: TOŻSAMOŚĆ nadania linkowego. Bez niej dwa linki do tego samego zasobu byłyby nierozróżnialne
+  // (`subjectId IS NULL`, a w PostgreSQL NULL-e w indeksie unikalnym są różne — znana luka z 051).
+  // Indeks unikalny CZĘŚCIOWY + `CHECK` „link musi mieć token" stoją w migracji 0250.
+  token        String?
   role         String // "viewer" | "commenter" | "editor" | "manager"
   inherited    Boolean   @default(false) // nadanie wyliczone z rodzica (projekt → zadanie)
   expiresAt    DateTime?
