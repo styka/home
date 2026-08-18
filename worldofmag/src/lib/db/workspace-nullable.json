@@ -26,9 +26,16 @@
     "",
     "ZAPADKA: `maks` to sufit liczby wyjątków. Lista może maleć (wtedy obniż `maks` — bramka tego",
     "pilnuje), ale nie może rosnąć. Nowa tabela z nullowalnym `workspaceId` wymaga świadomej zmiany",
-    "tego pliku, a nie przemknięcia w diffie."
+    "tego pliku, a nie przemknięcia w diffie.",
+    "",
+    "079 (U-7): `Job` ZNIKNĄŁ Z TEJ LISTY — nie dlatego, że przestał spełniać kryterium (nadal je",
+    "spełnia: zadanie systemowe nie ma właściciela), tylko dlatego, że migracja 0245 usunęła z niego",
+    "kolumnę `workspaceId` w całości. Kolejka jest własnością KONTA, nie przestrzeni, więc druga",
+    "kolumna była tam trzecim nośnikiem tej samej informacji, bez ani jednego czytelnika. Lekcja",
+    "o kryterium zostaje w mocy i to ona jest tu najważniejsza: kosztowała dziewięć wywróconych",
+    "testów kolejki i korektę 0237."
   ],
-  "maks": 5,
+  "maks": 4,
   "nullowalne": {
     "ItemHistory": {
       "powod": "Słownik podpowiedzi produktów w Zakupach. Wiersze systemowe (`ownerId IS NULL`) są seedowane migracją i widoczne dla każdego zalogowanego konta; użytkownik dokłada własne, które przestrzeń już mają. 69 rekordów systemowych w chwili wprowadzenia reguły."
@@ -41,9 +48,6 @@
     },
     "Tag": {
       "powod": "Etykiety w modelu trójpoziomowym z 034, dokładnie jak `NoteGroup`. Unikalność nazwy jest per właściciel (`@@unique([ownerId, name])`), więc tag systemowy i prywatny o tej samej nazwie współistnieją. Dziś zero rekordów systemowych, model je dopuszcza."
-    },
-    "Job": {
-      "powod": "Kolejka zadań w tle, NIE słownik — i to jest osobny powód niż pozostałe cztery wpisy. `Job.ownerId` jest nullowalne z rozmysłem: zadanie systemowe (sprzątanie, przebiegi cykliczne) nie należy do nikogo, więc nie należy też do żadnej przestrzeni. Wpis powstał po 0235, gdy zaostrzenie wywróciło dziewięć testów kolejki na `Null constraint violation`. Kryterium wyjątku brzmi zatem: WIERSZ MOŻE NIE MIEĆ WŁAŚCICIELA — a nie: tabela trzyma słownik."
     }
   }
 }

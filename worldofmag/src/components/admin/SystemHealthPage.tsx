@@ -5,7 +5,7 @@ import { ChevronLeft, Activity, CheckCircle2, XCircle, Database, Cpu, Plug, Gaug
 import type { SystemHealth, HealthCheck } from "@/actions/systemHealth";
 
 export function SystemHealthPage({ health }: { health: SystemHealth }) {
-  const { build, db, llm, integrations, counts, audit, queryDiagnostics } = health;
+  const { build, db, llm, integrations, counts, audit, queryDiagnostics, realtime } = health;
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)", padding: "32px 24px" }}>
@@ -59,6 +59,12 @@ export function SystemHealthPage({ health }: { health: SystemHealth }) {
             ))}
           </div>
           <Row label="Wpisy audytu" value={`${audit.total}${audit.last ? ` · ostatni ${new Date(audit.last).toLocaleString("pl-PL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}`} />
+          {/* 079 (U-6): jedyny licznik kanału czasu rzeczywistego w całym systemie. Zero przy
+              otwartych kartach znaczy „strumień nie działa", a nie „nikt nie patrzy". */}
+          <Row
+            label="Kanał czasu rzeczywistego"
+            value={`${realtime.listeners} ${realtime.listeners === 1 ? "słuchacz" : "słuchaczy"} · ta instancja`}
+          />
         </Card>
 
         {/* Diagnostyka zapytań (Z-037) — EXPLAIN typowych list, monitor regresów wydajności bazy. */}

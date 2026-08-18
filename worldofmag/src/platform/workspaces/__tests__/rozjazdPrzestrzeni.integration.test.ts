@@ -78,20 +78,19 @@ test(
         assert.equal(zespolowy.workspaceId, zespolowa.id);
       });
 
-      await t.test("właściciel bez przestrzeni: brak drugiego źródła → przechodzi", async () => {
-        // `Job.ownerId` to zwykły tekst bez klucza obcego (jedna z pięciu tabel
-        // z `workspace-nullable.json`), więc da się tu wpisać właściciela, który nie ma przestrzeni.
-        const zadanie = await prisma.job.create({
-          data: { type: "news.refresh", ownerId: `nieistniejacy-${rnd()}`, workspaceId: moja.id },
-        });
-        assert.equal(
-          zadanie.workspaceId,
-          moja.id,
-          "gdy kolumny własnościowe na nic nie wskazują, podana przestrzeń zostaje bez pytania"
-        );
-      });
+      /**
+       * 079 (U-7): PRZYPADEK „WŁAŚCICIEL BEZ PRZESTRZENI" ZNIKŁ, bo zniknął jedyny sposób jego
+       * zbudowania. Dowodził reguły z 0238 („wyzwalacz leczy brak przestrzeni, nie wymyśla
+       * właścicieli") wpisem do `Job` — jedynej objętej tabeli, której `ownerId` jest zwykłym
+       * tekstem bez klucza obcego, więc dało się tam wskazać konto, którego nie ma.
+       *
+       * Migracja 0245 usunęła `Job.workspaceId` (trzeci nośnik tej samej informacji, bez ani
+       * jednego czytelnika), więc wyzwalacz na tej tabeli nie chodzi. Na czterech pozostałych
+       * `ownerId` ma klucz obcy — właściciel z definicji istnieje i przestrzeń zawsze da się
+       * domknąć. Sama gałąź w wyzwalaczu ZOSTAJE: w bazie obrona przed nieoczekiwanymi danymi
+       * kosztuje jedno `IF`, a jej brak kosztowałby odrzucony zapis użytkownika (regresja z 075).
+       */
     } finally {
-      await prisma.job.deleteMany({ where: { workspaceId: moja.id } });
       await prisma.noteGroup.deleteMany({
         where: { OR: [{ ownerId: ja.id }, { ownerTeamId: zespol.id }] },
       });

@@ -889,12 +889,10 @@ model Job {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  workspaceId String? // 054/etap 1 — patrz nagłówek pliku
 
   @@index([status, runAfter])
   @@index([ownerId, createdAt])
   @@index([dedupeKey])
-  @@index([workspaceId])
 }
 
 // Log pojedynczego wywołania LLM — obserwowalność jednostkowa (koszt/tokeny/czas

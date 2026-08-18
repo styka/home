@@ -78,16 +78,37 @@ test("backfill 054: migracja 0227 jest kompletna dla każdej objętej tabeli", (
   );
 });
 
+/**
+ * Tabele, które kolumnę dostały w 0227, a potem ŚWIADOMIE ją oddały. Lista jest tu po to, żeby
+ * usunięcie przypadkowe nadal czerwieniło test — wpis wymaga zdania uzasadnienia, nie samej nazwy.
+ */
+const ODDALY_KOLUMNE: Record<string, string> = {
+  Job: "079 (U-7, migracja 0245): kolejka jest własnością KONTA, nie przestrzeni. `Job.ownerId` zostaje na stałe (zadanie systemowe nie ma właściciela), więc `workspaceId` był tam trzecim nośnikiem tej samej informacji, bez ani jednego czytelnika w kodzie aplikacji.",
+};
+
 test("backfill 054: każda objęta tabela nadal istnieje i nadal ma `workspaceId`", () => {
   const wSchemacie = tabeleZeSchematu();
-  const znikniete = objete.filter((t) => !wSchemacie.has(t));
+  const znikniete = objete.filter((t) => !wSchemacie.has(t) && !ODDALY_KOLUMNE[t]);
   assert.deepEqual(
     znikniete,
     [],
     `0227 dokłada kolumnę tabeli, której nie ma już w schemacie: ${znikniete.join(", ")}`,
   );
 
-  const bezKolumny = objete.filter((t) => !/^\s*workspaceId\s+String\??/m.test(wSchemacie.get(t)!));
+  const bezKolumny = objete
+    .filter((t) => !ODDALY_KOLUMNE[t])
+    .filter((t) => !/^\s*workspaceId\s+String\??/m.test(wSchemacie.get(t)!));
+
+  // Wpis MARTWY też jest błędem — wyjątek, który przestał dotyczyć czegokolwiek, z czasem staje się
+  // furtką (wzorzec z `mirror-coverage.json`).
+  const martweWyjatki = Object.keys(ODDALY_KOLUMNE).filter(
+    (t) => wSchemacie.has(t) && /^\s*workspaceId\s+String\??/m.test(wSchemacie.get(t)!),
+  );
+  assert.deepEqual(
+    martweWyjatki,
+    [],
+    `Tabela wymieniona jako „oddała kolumnę", a nadal ją ma: ${martweWyjatki.join(", ")}`,
+  );
   assert.deepEqual(
     bezKolumny,
     [],

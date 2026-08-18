@@ -6,6 +6,7 @@ import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { BASE_CONFIG_LEVEL, OPERATION_TYPES, OPERATION_TYPE_META } from "@/platform/llm/operationTypes";
 import { isSecretConfigured } from "@/lib/crypto/secrets";
 import { summarizeExplainPlan, REPRESENTATIVE_QUERIES, type ScanType } from "@/lib/health/queryDiag";
+import { ileSluchaczy } from "@/platform/events/bus";
 
 async function requireAdmin() {
   const session = await auth();
@@ -22,6 +23,20 @@ export type SystemHealth = {
   counts: { label: string; value: number }[];
   audit: { total: number; last: string | null };
   queryDiagnostics: { label: string; scanType: ScanType; estCost: number; planRows: number; indexes: string[] }[];
+  /**
+   * 079 (U-6) — KANAŁ CZASU RZECZYWISTEGO: ilu słuchaczy trzyma TEN proces.
+   *
+   * Szyna z 072 żyje w jednym procesie i nikt jej dotąd nie mierzył. Liczba jest tu z dwóch
+   * powodów: pokazuje, czy strumień w ogóle działa (zero przy otwartych kartach = zerwany kanał
+   * albo martwa trasa), i pokazuje, ile połączeń trzyma instancja — bo każdy słuchacz to otwarte
+   * połączenie HTTP, a nie wiersz w bazie.
+   *
+   * **Wartość dotyczy WYŁĄCZNIE tej instancji.** Przy skalowaniu poziomym karta podłączona do
+   * innej instancji nie zostanie tu policzona i nie dostanie sygnału z tej — szyna musiałaby wtedy
+   * przejść na `LISTEN/NOTIFY` albo Redis Pub/Sub (rozdz. 11.1.1). Siatką pozostaje 5-minutowe
+   * odpytywanie awaryjne w `DataFreshness`.
+   */
+  realtime: { listeners: number };
 };
 
 export async function getSystemHealth(): Promise<SystemHealth> {
@@ -134,5 +149,6 @@ export async function getSystemHealth(): Promise<SystemHealth> {
     counts,
     audit: { total: auditTotal, last: auditLast?.createdAt.toISOString() ?? null },
     queryDiagnostics,
+    realtime: { listeners: ileSluchaczy() },
   };
 }

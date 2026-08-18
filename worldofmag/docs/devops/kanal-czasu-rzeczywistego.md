@@ -44,6 +44,20 @@ natychmiast.
 `platform/events/bus.ts` zamienia się w publikację przez `LISTEN/NOTIFY`, a `subskrybuj` w nasłuch —
 reszta łańcucha (worker, trasa, klient) zostaje bez zmian. To jest **jedno miejsce**, celowo.
 
+**079 (U-6): ta liczba jest wreszcie widoczna.** `/admin/health` pokazuje `ileSluchaczy()` — ilu
+słuchaczy trzyma **ta** instancja. Do 079 kanał nie miał żadnego licznika, więc „strumień nie
+działa" i „nikt akurat nie patrzy" wyglądały identycznie. Czytaj to tak:
+
+| Co widzisz | Co to znaczy |
+|---|---|
+| 0 przy otwartych kartach | kanał zerwany albo trasa martwa — patrz „Diagnostyka" niżej |
+| liczba ≈ liczbie otwartych kart | normalny stan |
+| liczba rośnie i nie spada | przeciek słuchaczy: `subskrybuj` zwraca funkcję odsubskrybowania, ktoś jej nie woła |
+
+**Wartość jest per instancja i taka zostanie.** Po przejściu na skalowanie poziome nie da się jej
+zsumować bez wspólnego magazynu — i to jest kolejny (poza samą propagacją) powód, dla którego druga
+instancja wymaga `LISTEN/NOTIFY`, a nie tylko go „ładnie by mieć".
+
 ## Siatka bezpieczeństwa — dlaczego odpytywanie nie zniknęło całkiem
 
 `DataFreshness` odpytuje **awaryjnie co 5 minut** (było: co 45 sekund) i to zostaje **na stałe**.
