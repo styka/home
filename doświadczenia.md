@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Wielojęzyczność: `toLocaleString("pl-PL")` jest gorszy od tekstu po polsku
+**Problem:** Przy wyciąganiu tekstów naturalnym odruchem jest szukanie polskich napisów w JSX.
+Tymczasem drugą połowę długu stanowi formatowanie: `toLocaleString("pl-PL")` **wygląda poprawnie**
+i jest tak samo twardo zaszyty, a dodatkowo ignoruje strefę czasową przestrzeni (formatuje w strefie
+systemu) i kusi, żeby wyprowadzić walutę z języka. Trzeci wariant tego samego błędu to granice doby
+liczone przez `new Date(y, m, d)` — to strefa SERWERA, na Renderze UTC, więc między północą a drugą
+w nocy polskie „dzisiaj" jest serwerowym „wczoraj".
+**Rozwiązanie:** Osobna warstwa `platform/i18n/format.ts` przyjmująca `{locale, timezone}`
+**parametrem** (helper sięgający po sesję nie działa w zadaniu w tle ani przy treści cudzej
+przestrzeni), waluta jako osobny parametr, granice doby liczone przez `Intl` z odczytanym
+przesunięciem strefy. Każdy z trzech błędów ma własny przypadek testowy z dwiema strefami.
+**Lekcja:** Tekst zaszyty w komponencie widać; **format zaszyty w komponencie wygląda dobrze**.
+Przy przeglądzie i18n szukaj `toLocaleString`, `toLocaleDateString`, `Intl.NumberFormat` bez
+`timeZone` i arytmetyki na `Date` przy granicach dnia — tam siedzi ta część długu, której nie widać
+na zrzucie ekranu, bo objawia się dopiero u kogoś w innej strefie.
+
 ## 2026-08-19 — „Przechodzi sam, czerwieni się w zestawie” to zwykle wina PRZYRZĄDU, nie kodu
 **Problem:** Test liczący zapytania (zapadka N+1) zaczął padać wyłącznie w pełnym przebiegu
 `test:unit`, nigdy uruchomiony osobno. Pierwszy odruch: „ostatnia zmiana coś zepsuła, tylko widać to

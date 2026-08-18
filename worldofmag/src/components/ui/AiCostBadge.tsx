@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { DEFAULT_USD_PLN_RATE, withPln } from "@/lib/usdPln";
 
@@ -83,6 +84,7 @@ export function AiCostBadge({
    */
   align?: "left" | "right";
 }) {
+  const t = useTranslations("ui.cost");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -154,7 +156,7 @@ export function AiCostBadge({
     <div ref={wrapRef} style={{ marginLeft: align === "right" ? "auto" : undefined, position: "relative" }}>
       <button
         onClick={() => setOpen((v) => !v)}
-        title="Szczegóły kosztu i modelu (kliknij, by rozwinąć)"
+        title={t("details")}
         aria-expanded={open}
         style={{
           display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10.5,
@@ -225,8 +227,7 @@ export function AiCostBadge({
           </div>
           {usage.costKnown === false && (
             <p style={{ margin: "6px 0 0", fontSize: 10.5, color: "var(--text-muted)", whiteSpace: "normal" }}>
-              Któryś z użytych modeli nie ma stawek w cenniku — kwota jest niepełna. Cennik uzupełnia
-              administrator w panelu LLM.
+              {t("incomplete")}
             </p>
           )}
         </div>

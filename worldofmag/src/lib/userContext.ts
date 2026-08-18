@@ -41,7 +41,15 @@ export async function buildUserContext(userId: string): Promise<string> {
 
   const active = rows.filter((r) => r.status === "active").slice(0, MAX_FACTS);
   const rejected = rows.filter((r) => r.status === "rejected").slice(0, MAX_REJECTED);
-  if (active.length === 0 && rejected.length === 0) return "";
+
+  // 089 (zadanie 38): język przestrzeni wchodzi TĄ drogą, bo `buildUserContext` jest wołane przez
+  // każdy moduł generujący treść dla użytkownika — jedno wpięcie zamiast kilkunastu. Dla polskiego
+  // zwraca pusty tekst, więc dziś nie kosztuje ani jednego tokenu.
+  const { ustalJezykZadania } = await import("@/platform/i18n/kontekst");
+  const { zdanieOJezyku } = await import("@/platform/i18n/prompt");
+  const jezyk = zdanieOJezyku((await ustalJezykZadania().catch(() => null))?.locale);
+
+  if (active.length === 0 && rejected.length === 0) return jezyk;
 
   const parts: string[] = [];
   if (active.length > 0) {
@@ -59,7 +67,7 @@ export async function buildUserContext(userId: string): Promise<string> {
         .join("\n")}`
     );
   }
-  return `\n\n${parts.join("\n\n")}`;
+  return `${jezyk}\n\n${parts.join("\n\n")}`;
 }
 
 /**

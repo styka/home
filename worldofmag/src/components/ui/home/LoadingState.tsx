@@ -1,10 +1,12 @@
 import { pageContainerStyle, pageInnerStyle } from "./styles";
+import { useTranslations } from "next-intl";
 
 /**
  * Spójny stan ładowania całej strony (route-level `loading.tsx`).
  * Delikatne „szkielety" + pulsowanie — zamiast pustego ekranu przy nawigacji.
  */
-export function LoadingState({ label = "Ładowanie…", rows = 4 }: { label?: string; rows?: number }) {
+export function LoadingState({ label, rows = 4 }: { label?: string; rows?: number }) {
+  const t = useTranslations("ui");
   return (
     <div style={pageContainerStyle}>
       <div style={pageInnerStyle}>
@@ -15,7 +17,7 @@ export function LoadingState({ label = "Ładowanie…", rows = 4 }: { label?: st
             <div key={i} className="omnia-skeleton" style={{ height: 56, borderRadius: 10 }} />
           ))}
         </div>
-        <span style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 4 }}>{label}</span>
+        <span style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 4 }}>{label ?? t("loading")}</span>
       </div>
     </div>
   );

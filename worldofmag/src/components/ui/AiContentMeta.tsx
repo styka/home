@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { RefreshCw, Loader2, Settings2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
@@ -50,6 +51,7 @@ export function AiContentMeta({
   mode?: AiSectionMode;
   onModeChange?: (mode: AiSectionMode) => void;
 }) {
+  const t = useTranslations("ui.aiContent");
   const [showModes, setShowModes] = useState(false);
   const [saving, startSaving] = useTransition();
   const canPickMode = !!sectionKind && !!mode;
@@ -102,7 +104,7 @@ export function AiContentMeta({
             onClick={onRefresh}
             disabled={busy}
             className="inline-flex items-center gap-1 rounded px-2 py-3 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-50"
-            title="Wygeneruj treść na nowo"
+            title={t("regenerate")}
           >
             {busy ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
             {refreshLabel}
@@ -113,7 +115,7 @@ export function AiContentMeta({
             onClick={() => setShowModes((v) => !v)}
             aria-expanded={showModes}
             className="inline-flex items-center gap-1 rounded px-2 py-3 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-            title="Kiedy ta sekcja ma się odświeżać"
+            title={t("refreshMode")}
           >
             <Settings2 size={11} />
             {AI_SECTION_MODE_LABELS[mode!].label}
@@ -160,7 +162,7 @@ export function AiContentMeta({
  * kolorze akcentu zamiast bursztynowej ramki, którą zarezerwowaliśmy dla błędów.
  */
 export function AiContentPending({
-  title = "Treść powstanie po kliknięciu",
+  title,
   hint = "Ta sekcja jest ustawiona na „na żądanie”, więc nic nie generuje się samo.",
   actionLabel = "Generuj",
   busy,
@@ -178,12 +180,13 @@ export function AiContentPending({
   mode?: AiSectionMode;
   onModeChange?: (mode: AiSectionMode) => void;
 }) {
+  const t = useTranslations("ui.aiContent");
   return (
     <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-surface)] p-4">
       <p className="flex items-start gap-1.5 text-sm text-[var(--text-primary)]">
         <Sparkles size={15} className="mt-0.5 shrink-0 text-[var(--accent-blue)]" />
         <span>
-          <span className="font-medium">{title}</span>{" "}
+          <span className="font-medium">{title ?? t("pending")}</span>{" "}
           <span className="text-[var(--text-secondary)]">{hint}</span>
         </span>
       </p>

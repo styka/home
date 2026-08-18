@@ -160,11 +160,11 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 | # | Zadanie | Status |
 |---|---------|--------|
-| 34 | `next-intl` | ⬜ |
-| 35 | Wyciągnięcie tekstów do `messages/pl.json` | ⬜ |
-| 36 | Zmiana `C-32` w konstytucji | ⬜ |
-| 37 | Formatowanie `Intl` + język przestrzeni | ⬜ |
-| 38 | Język przestrzeni w promptach AI | ⬜ |
+| 34 | `next-intl` | ✅ | **089.** Konfiguracja **bez routingu językowego** — język należy do przestrzeni, nie do adresu; prefiks w URL-u związałby go z sesją przeglądarki i unieważnił wszystkie zakładki. Przy okazji `<html lang>` przestało być zaszyte na `en` w polskiej aplikacji (błąd dostępności: czytnik ekranu czytał polski angielską wymową) |
+| 35 | Wyciągnięcie tekstów do `messages/pl.json` | ✅ | **089.** Zmierzone **1528** literałów widocznych dla użytkownika. Wyciągnięty pierwszy moduł (`components/ui` — prymitywy renderowane przez wszystkie pozostałe), reszta zamrożona **zapadką `check:i18n`**, która pada też przy spadku. Jednorazowy przebieg rozwiązałby połowę problemu i przegrał drugą: koszt rośnie, bo nowy kod wprowadza literały z powrotem |
+| 36 | Zmiana `C-32` w konstytucji | ✅ | **089.** Warunek trwałości całej fazy (rozdz. 12.1.2): bez tego kolejne sesje przywracałyby stary wzorzec, bo tak każe im konstytucja. `C-32` mówi teraz „teksty UI przez `t()`, polski jako język źródłowy, żadnych literałów w komponentach” i wskazuje zapadkę, `platform/i18n/format` zamiast `toLocaleString` oraz język przestrzeni w promptach |
+| 37 | Formatowanie `Intl` + język przestrzeni | ✅ | **089.** `Workspace.locale`/`timezone` (migracja 0249) + `platform/i18n/format` z ustawieniami **parametrem**, nie z kontekstu (helper sięgający po sesję nie działa w zadaniu w tle ani przy cudzej przestrzeni). Trzy rzeczy, które `toLocaleString("pl-PL")` robi źle WYGLĄDAJĄC POPRAWNIE, mają własne testy: ignoruje strefę przestrzeni, wyprowadzałby walutę z języka, liczy dobę w strefie serwera (na Renderze UTC) |
+| 38 | Język przestrzeni w promptach AI | ✅ | **089.** Zdanie o języku w części **zmiennej** promptu, nie stałej (stała jest oznaczana `cache_control` i musi być identyczna między wywołaniami). Dla polskiego **pusty tekst** — dopisywanie „odpowiadaj po polsku” do polskiego promptu to koszt bez treści. Wpięte w prompt agenta i w `buildUserContext`, który woła każdy moduł generujący treść |
 
 ### Faza 8 — Gotowość produkcyjna
 
@@ -2719,3 +2719,71 @@ pięciominutowe odpytywanie awaryjne.
 **Dowód:** 5 przypadków (bez bazy — rola jest czystą funkcją środowiska). Sondy: domyślna rola `web`
 zamiast `all` czerwieni pierwszy przypadek, a wykonywanie pracy okresowej także w roli `worker` —
 drugi. Runbook: `docs/devops/rozdzielenie-procesow.md`.
+
+---
+
+## 089 — Faza 7 (zadania 34–38): wielojęzyczność jako możliwość, nie jako tłumaczenie
+
+Rozdz. 12.1 stawia sprawę precyzyjnie: **tłumaczenia na inne języki NIE wchodzą w zakres**. Wchodzi
+możliwość ich dodania bez programisty. Sygnał kontrolny brzmi: „dodanie języka to praca tłumacza".
+
+### 34 — `next-intl` bez routingu językowego
+
+Aplikacja nie ma i nie będzie miała ścieżek `/pl/...`. Język należy do **przestrzeni** (rozdz. 8.2),
+nie do adresu: ten sam zasób ma wyglądać tak samo dla każdego, kto go widzi. Prefiks w URL-u
+związałby język z sesją przeglądarki, rozjechał się z tym, co zapisano w przestrzeni, i unieważnił
+wszystkie istniejące zakładki.
+
+Przy okazji poprawka, która sama w sobie była błędem dostępności: `<html lang>` było zaszyte na
+`"en"` w polskojęzycznej aplikacji — czytnik ekranu czytał polskie teksty angielską wymową.
+
+### 37 — język i strefa NA PRZESTRZENI, nie na koncie
+
+Migracja 0249 dokłada `Workspace.locale` i `Workspace.timezone` z wartościami odwzorowującymi stan
+faktyczny, więc niczego nie zmienia w zachowaniu. Konsekwencja tej decyzji jest praktyczna: gdyby
+język siedział na koncie, ten sam wpis w kalendarzu zespołu wyglądałby inaczej u każdego członka,
+a treść wygenerowana przez model i zapisana w przestrzeni miałaby język tej osoby, która akurat
+kliknęła.
+
+`platform/i18n/format.ts` przyjmuje ustawienia **parametrem**, a nie czyta ich z kontekstu — helper
+sięgający po sesję nie da się użyć ani w zadaniu w tle, ani przy treści cudzej przestrzeni, ani
+w teście. Trzy rzeczy, które `toLocaleString("pl-PL")` robi źle, **wyglądając poprawnie**, mają
+własne przypadki testowe: ignoruje strefę przestrzeni (ten sam wpis pokazuje inną godzinę osobie za
+granicą), wyprowadzałby walutę z języka (Portfel jest wielowalutowy — zła kwota przy poprawnym
+formacie) i liczy granicę doby arytmetyką na `Date`, czyli w strefie SERWERA, która na Renderze jest
+UTC (między północą a drugą w nocy polskie „dzisiaj" to serwerowe „wczoraj").
+
+### 38 — język w prompcie, ale za darmo
+
+Zdanie o języku wchodzi do części **zmiennej** promptu, nie stałej: część stała jest oznaczana
+`cache_control` u dostawcy (036) i musi być identyczna między wywołaniami. Dla polskiego
+`zdanieOJezyku` zwraca **pusty tekst** — dopisywanie „odpowiadaj po polsku" do polskiego promptu to
+czysty koszt bez treści. Wpięte w dwóch miejscach: prompt agenta i `buildUserContext`, który woła
+każdy moduł generujący treść (jedno wpięcie zamiast kilkunastu).
+
+### 35 — 1528 tekstów i zapadka zamiast jednorazowego przebiegu
+
+Rozdz. 12.1 mówi o tej pracy dwie rzeczy naraz: że jest mechaniczna i że jej koszt rośnie z każdym
+tygodniem rozwoju, bo **nowy kod wprowadza literały z powrotem**. Jednorazowy przebieg rozwiązuje
+pierwszą połowę i przegrywa drugą.
+
+Zmierzone: **1528** tekstów widocznych dla użytkownika, zaszytych w komponentach. Wyciągnięty
+pierwszy moduł — `components/ui`, czyli prymitywy renderowane przez wszystkie pozostałe — i próg
+zamrożony na **1501**. Bramka `check:i18n` pada przy wzroście **i przy spadku**: poprawę trzeba
+zapisać w progu, inaczej zapas ukryje następny regres.
+
+Detektor rozpoznaje teksty po **polskich znakach diakrytycznych**. Kryterium jest niedoskonałe
+(„Zapisz", „Anuluj" ich nie mają) i wybrane świadomie: jest stabilne i nie daje fałszywych alarmów,
+a to cecha ważniejsza od kompletności — zapadka, która co drugi build oskarża niewinny plik, zostanie
+wyłączona. Komunikaty z `throw new Error(...)` są poza licznikiem: część z nich użytkownik widzi
+w dymku błędu i docelowo też pójdą przez `t()`, ale wciągnięcie ich do tej samej liczby zamazałoby
+postęp w warstwie widoku.
+
+### 36 — konstytucja, czyli warunek trwałości całej fazy
+
+Rozdz. 12.1.2 nazywa to krokiem obowiązkowym i podaje powód: **bez zmiany `C-32` kolejne sesje
+Claude Code będą przywracać stary wzorzec, bo tak każe im konstytucja.** `C-32` mówi teraz „teksty UI
+przez `t()`, polski jako język źródłowy, żadnych literałów w komponentach" i wskazuje zapadkę,
+`platform/i18n/format` zamiast `toLocaleString` oraz język przestrzeni w promptach.
+
+**Bramki:** build **exit 0**, `test:unit` **1019/1019**, nowa bramka `check:i18n` w buildzie.

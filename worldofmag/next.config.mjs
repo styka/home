@@ -1,4 +1,5 @@
 import { execSync } from "child_process"
+import createNextIntlPlugin from "next-intl/plugin"
 
 function getGitInfo() {
   try {
@@ -66,4 +67,11 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * 089 (zadanie 34): `next-intl` BEZ routingu językowego — aplikacja nie ma i nie będzie miała
+ * ścieżek `/pl/...`. Język należy do przestrzeni (rozdz. 8.2), nie do adresu; prefiks w URL-u
+ * związałby go z sesją przeglądarki i unieważnił wszystkie istniejące zakładki.
+ */
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withNextIntl(nextConfig);

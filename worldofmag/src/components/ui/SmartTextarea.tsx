@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Mic, MicOff, Wand2, Loader2 } from "lucide-react";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 
@@ -47,6 +48,7 @@ export function SmartTextarea({
   onSubmit,
   disabled = false,
 }: SmartTextareaProps) {
+  const t = useTranslations("ui.smartTextarea");
   const [state, setState] = useState<TextareaState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
@@ -249,13 +251,13 @@ export function SmartTextarea({
                   background: "var(--accent-amber)",
                 }}
               />
-              Opisz modyfikację…
+              {t("describeChange")}
             </span>
           )}
           {state === "processing_modify" && (
             <span style={{ fontSize: 11, color: "var(--accent-blue)", display: "flex", alignItems: "center", gap: 4 }}>
               <Loader2 size={11} className="animate-spin" />
-              Modyfikuję…
+              {t("modifying")}
             </span>
           )}
         </div>
@@ -345,13 +347,13 @@ export function SmartTextarea({
         }}
       >
         {state === "idle" && (
-          <span style={{ color: "var(--text-muted)" }}>Ctrl+Enter aby wysłać</span>
+          <span style={{ color: "var(--text-muted)" }}>{t("sendHint")}</span>
         )}
         {state === "recording" && (
-          <span style={{ color: "var(--accent-red)" }}>Kliknij 🎙 aby zatrzymać</span>
+          <span style={{ color: "var(--accent-red)" }}>{t("stopHint")}</span>
         )}
         {state === "voice_modify" && (
-          <span style={{ color: "var(--accent-amber)" }}>Kliknij 🪄 aby zastosować</span>
+          <span style={{ color: "var(--accent-amber)" }}>{t("applyHint")}</span>
         )}
       </div>
 

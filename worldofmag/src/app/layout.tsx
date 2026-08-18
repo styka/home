@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 import "./globals.css";
 import { AppShell } from "@/components/shell/AppShell";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
@@ -91,9 +93,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // od pierwszej klatki albo wcale.
   const chromeFrame = (skin.tokens as SkinTokens)["--chrome-frame"] ?? "none";
 
+  // 089 (zadanie 34): język i strefa czasowa PRZESTRZENI. `lang` na <html> było zaszyte na "en",
+  // co jest błędem dostępności w polskojęzycznej aplikacji: czytnik ekranu czytał polskie teksty
+  // angielską wymową. Teraz wynika z ustawień, tak jak reszta warstwy językowej.
+  const locale = await getLocale();
+
   return (
     <html
-      lang="en"
+      lang={locale}
       className="dark"
       data-skin-scheme={skin.colorScheme}
       data-chrome-frame={chromeFrame}
@@ -110,7 +117,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-icon" href={`/apple-touch-icon/${ICON_VERSION}`} />
       </head>
       <body>
-        <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} usdPlnRate={usdPlnRate} favoriteViews={favoriteViews}>{children}</AppShell>
+        {/* Komunikaty na klienta idą w całości: aplikacja ma jeden słownik i kilkadziesiąt
+            kilobajtów tekstu, więc dzielenie go per trasa kosztowałoby więcej uwagi, niż oszczędza
+            transferu. Gdy słownik urośnie, dzieli się go przez `messages={pick(...)}` w układzie. */}
+        <NextIntlClientProvider>
+          <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} usdPlnRate={usdPlnRate} favoriteViews={favoriteViews}>{children}</AppShell>
+        </NextIntlClientProvider>
         <ServiceWorkerRegistration />
       </body>
     </html>

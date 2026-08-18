@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { Modal } from "./Modal";
 
 /**
@@ -42,6 +43,7 @@ type ConflictFn = (options?: ConflictOptions) => Promise<ConflictDecision>;
 const ConflictContext = createContext<ConflictFn | null>(null);
 
 export function ConflictProvider({ children }: { children: ReactNode }) {
+  const t = useTranslations("ui.conflict");
   const [options, setOptions] = useState<ConflictOptions | null>(null);
   const resolveRef = useRef<((v: ConflictDecision) => void) | null>(null);
 
@@ -67,7 +69,7 @@ export function ConflictProvider({ children }: { children: ReactNode }) {
     <ConflictContext.Provider value={askConflict}>
       {children}
       {options && (
-        <Modal open onClose={() => settle("wroc")} title="Ktoś zmienił to w międzyczasie">
+        <Modal open onClose={() => settle("wroc")} title={t("title")}>
           <div className="flex flex-col gap-4">
             <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
               {options.podsumowanieZmian ?? (
@@ -84,9 +86,9 @@ export function ConflictProvider({ children }: { children: ReactNode }) {
                 className="w-full text-sm px-3 py-3 rounded text-left"
                 style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-primary)" }}
               >
-                <span className="font-medium">Wróć do edycji</span>
+                <span className="font-medium">{t("backToEdit")}</span>
                 <span className="block text-xs" style={{ color: "var(--text-muted)" }}>
-                  Nic się nie zapisze. Zobaczysz, co się zmieniło, i zdecydujesz później.
+                  {t("backToEditHint")}
                 </span>
               </button>
 
@@ -95,9 +97,9 @@ export function ConflictProvider({ children }: { children: ReactNode }) {
                 className="w-full text-sm px-3 py-3 rounded text-left"
                 style={{ backgroundColor: "var(--accent-amber)", color: "var(--on-accent)" }}
               >
-                <span className="font-medium">Nadpisz moją wersją</span>
+                <span className="font-medium">{t("overwrite")}</span>
                 <span className="block text-xs" style={{ opacity: 0.85 }}>
-                  Cudze zmiany zostaną zastąpione twoimi.
+                  {t("overwriteHint")}
                 </span>
               </button>
 
@@ -106,9 +108,9 @@ export function ConflictProvider({ children }: { children: ReactNode }) {
                 className="w-full text-sm px-3 py-3 rounded text-left"
                 style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-secondary)" }}
               >
-                <span className="font-medium">Odrzuć moje zmiany</span>
+                <span className="font-medium">{t("discard")}</span>
                 <span className="block text-xs" style={{ color: "var(--text-muted)" }}>
-                  Trafią do kosza — będzie można do nich wrócić.
+                  {t("discardHint")}
                 </span>
               </button>
             </div>

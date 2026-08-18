@@ -7,6 +7,7 @@
 // Bramka `scripts/check-action-coverage.js` czyta katalog akcji z TEGO pliku.
 
 import { buildReadToolsPrompt } from "@/platform/ai/tools";
+import { zdanieOJezyku } from "@/platform/i18n/prompt";
 import type { AiCatalog } from "@/platform/ai/contribution";
 
 /**
@@ -60,6 +61,13 @@ KIEDY "navigate" vs "answer":
 export interface SystemPromptOptions {
   includeActions?: boolean;
   followups?: boolean;
+  /**
+   * 089 (zadanie 38): język przestrzeni. Doklejany do części ZMIENNEJ promptu, nie stałej —
+   * część stała jest oznaczana `cache_control` u dostawcy (036) i musi być identyczna między
+   * wywołaniami; język zależy od przestrzeni, więc w części stałej psułby trafienia w cache.
+   * Dla polskiego `zdanieOJezyku` zwraca pusty tekst, więc dziś nie kosztuje ani jednego tokenu.
+   */
+  locale?: string | null;
 }
 
 // Wstęp + protokół — JEDYNY fragment promptu niezależny od wybranych modułów. Dlatego to on jest
@@ -123,6 +131,7 @@ export function buildSystemPromptParts(
     ? modules.map((m) => catalog.promptExamplesByModule[m]).filter(Boolean)
     : [];
   const stable = buildIntroAndProtocol(opts.followups !== false);
+  const jezyk = zdanieOJezyku(opts.locale);
 
   // Wstrzykujemy katalog akcji tylko dla wybranych modułów (router). Sekcję
   // „głównych" akcji ZWIERZĄT (PET_ACTIONS_PROMPT) i jej przykłady dodajemy tylko,
@@ -131,7 +140,7 @@ export function buildSystemPromptParts(
     ? `\n\n${buildActionCatalog(modules, catalog.actionCatalogByModule)}\n\n${NAVIGATION_CATALOG}\n`
     : "\n";
 
-  const variable = `
+  const variable = `${jezyk}
 
 ${buildReadToolsPrompt(modules, catalog)}${catalogs}
 ZASADY:

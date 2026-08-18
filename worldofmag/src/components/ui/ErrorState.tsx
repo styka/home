@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, RotateCw } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 /**
  * Z-111: spójny stan błędu (ikona + komunikat + „spróbuj ponownie"). Używany przez
@@ -8,10 +9,10 @@ import { AlertTriangle, RotateCw } from "lucide-react";
  * łapią błędy lokalnie. Dark-theme przez tokeny CSS.
  */
 export function ErrorState({
-  title = "Coś poszło nie tak",
-  message = "Wystąpił nieoczekiwany błąd. Spróbuj ponownie — jeśli problem się powtarza, odśwież stronę.",
+  title,
+  message,
   onRetry,
-  retryLabel = "Spróbuj ponownie",
+  retryLabel,
   digest,
 }: {
   title?: string;
@@ -20,6 +21,7 @@ export function ErrorState({
   retryLabel?: string;
   digest?: string;
 }) {
+  const t = useTranslations("ui.error");
   return (
     <div
       role="alert"
@@ -39,8 +41,8 @@ export function ErrorState({
       >
         <AlertTriangle size={24} />
       </div>
-      <div style={{ fontSize: 17, fontWeight: 600 }}>{title}</div>
-      <div style={{ fontSize: 14, color: "var(--text-secondary)", maxWidth: 420, lineHeight: 1.5 }}>{message}</div>
+      <div style={{ fontSize: 17, fontWeight: 600 }}>{title ?? t("title")}</div>
+      <div style={{ fontSize: 14, color: "var(--text-secondary)", maxWidth: 420, lineHeight: 1.5 }}>{message ?? t("message")}</div>
       {onRetry ? (
         <button
           type="button"
@@ -51,7 +53,7 @@ export function ErrorState({
             color: "var(--on-accent)", fontSize: 14, cursor: "pointer",
           }}
         >
-          <RotateCw size={15} /> {retryLabel}
+          <RotateCw size={15} /> {retryLabel ?? t("retry")}
         </button>
       ) : null}
       {digest ? <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Kod błędu: {digest}</div> : null}

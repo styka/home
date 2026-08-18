@@ -14,6 +14,7 @@ import { partialRunFallbackMessage } from "@/platform/ai/agentPartialRun";
 import { webSearch } from "@/lib/news/webSearch";
 import { chatComplete, classifyRateLimitKind, rateLimitUserMessage } from "@/platform/llm/chat";
 import { sprawdzLimit, zajmijSlot, POLITYKI } from "@/platform/rateLimit";
+import { ustalJezykZadania } from "@/platform/i18n/kontekst";
 import { checkAiBudget, recordAiUsage, newUsageMeter, accrueUsage, type UsageMeter } from "@/platform/ai/usage";
 import { classifyIntent, READ_INTENT_RE, SMALL_TALK_RE } from "@/lib/ai/fastPath";
 import { extractJsonLoose, salvageAnswerText } from "@/platform/ai/agentProtocol";
@@ -840,7 +841,11 @@ export async function POST(req: NextRequest) {
   // zmienny ogon (katalogi) już nie. Follow-upy zamawiamy tylko, gdy administrator je włączył.
   const followupsEnabled = await readFollowupsEnabled();
   const aiCatalog = await getAiCatalog();
-  const promptParts = buildSystemPromptParts(selectedModules, aiCatalog, { includeActions, followups: followupsEnabled });
+  // 089 (zadanie 38): język przestrzeni do promptu. Dla polskiego `zdanieOJezyku` zwraca pustkę,
+  // więc dziś nie kosztuje tokenów — a przy pierwszej niepolskiej przestrzeni model dostaje
+  // informację, której brak objawiałby się myloną kategoryzacją, a nie błędem.
+  const jezykPrzestrzeniUzytkownika = (await ustalJezykZadania().catch(() => null))?.locale ?? null;
+  const promptParts = buildSystemPromptParts(selectedModules, aiCatalog, { includeActions, followups: followupsEnabled, locale: jezykPrzestrzeniUzytkownika });
   messages.unshift({ role: "system", content: promptParts.stable + promptParts.variable });
 
   // Rezerwacja tokenów odpowiedzi: duża TYLKO gdy użytkownik prosi o raport/obszerne
@@ -886,7 +891,7 @@ export async function POST(req: NextRequest) {
   // AC-15: ponowienie z pełnym katalogiem akcji, gdy tura bez katalogu skończyła się krokiem „plan".
   async function withActionCatalogRetry(result: LoopResult, onThought?: (t: string) => void): Promise<LoopResult> {
     if (!noCatalogBaseline || (result.body as { step?: string }).step !== "plan") return result;
-    const fullParts = buildSystemPromptParts(activeModules, await getAiCatalog(), { followups: followupsEnabled });
+    const fullParts = buildSystemPromptParts(activeModules, await getAiCatalog(), { followups: followupsEnabled, locale: jezykPrzestrzeniUzytkownika });
     const retryMessages = noCatalogBaseline.map((m) => ({ ...m }));
     retryMessages[0] = { role: "system", content: fullParts.stable + fullParts.variable };
     return runAgentLoop(retryMessages, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning", true, assistantLevel, fullParts);

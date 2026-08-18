@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Brain, Check, X } from "lucide-react";
 import { getPendingHypothesis, confirmUserFact, rejectUserFact } from "@/actions/userFacts";
 import type { UserFactDTO } from "@/lib/userFacts";
@@ -13,6 +14,7 @@ import type { UserFactDTO } from "@/lib/userFacts";
  * modala, bez blokowania czegokolwiek, i znika po jednej odpowiedzi. Brak hipotezy = brak karty.
  */
 export function UserFactHypothesisCard() {
+  const t = useTranslations("ui.userFact");
   const [fact, setFact] = useState<UserFactDTO | null>(null);
   const [done, setDone] = useState(false);
   const [busy, startBusy] = useTransition();
@@ -52,7 +54,7 @@ export function UserFactHypothesisCard() {
           disabled={busy}
           className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
         >
-          <Check size={13} /> Zgadza się
+          <Check size={13} /> {t("confirm")}
         </button>
         <button
           onClick={() => answer(false)}

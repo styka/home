@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 interface PageHeaderProps {
@@ -12,6 +13,7 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ icon, iconColor, title, subtitle, action, href }: PageHeaderProps) {
+  const t = useTranslations("ui");
   const titleInner = (
     <>
       <span style={{ color: iconColor, display: "flex", flexShrink: 0 }}>{icon}</span>
@@ -42,7 +44,7 @@ export function PageHeader({ icon, iconColor, title, subtitle, action, href }: P
           }}
         >
           {href ? (
-            <Link href={href} title="Strona główna działu" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, color: "inherit", textDecoration: "none" }}>
+            <Link href={href} title={t("sectionHome")} style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, color: "inherit", textDecoration: "none" }}>
               {titleInner}
             </Link>
           ) : (

@@ -3089,6 +3089,13 @@ model Workspace {
   personalUserId String? @unique
   teamId         String? @unique
 
+  // 089 (zadania 34/37): język i strefa czasowa PRZESTRZENI, nie konta. Zasób należy do przestrzeni,
+  // więc jego daty i liczby mają wyglądać tak samo dla wszystkich, którzy go widzą — a treść
+  // wygenerowana przez model i zapisana w przestrzeni ma mieć jeden język, nie język tego, kto
+  // akurat kliknął. String + unia TS (C-12), bo lista języków to nie jest sprawa schematu bazy.
+  locale   String @default("pl")
+  timezone String @default("Europe/Warsaw")
+
   createdAt DateTime @default(now())
 
   personalUser User?             @relation("PersonalWorkspace", fields: [personalUserId], references: [id], onDelete: Cascade)

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { AlertTriangle, Inbox, Lock, RotateCw } from "lucide-react";
 
 /**
@@ -155,13 +156,14 @@ export function ViewEmpty({
  * `<style>` tylko na serwerze, a rozjazd hydratacji kładzie CAŁĄ aplikację
  * (doświadczenia.md, 2026-08-02).
  */
-export function ViewLoading({ rows = 4, label = "Ładowanie…" }: { rows?: number; label?: string }) {
+export function ViewLoading({ rows = 4, label }: { rows?: number; label?: string }) {
+  const t = useTranslations("ui");
   return (
     <div role="status" aria-live="polite" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="omnia-skeleton" style={{ height: 56, borderRadius: "var(--radius-lg)" }} />
       ))}
-      <span style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 4 }}>{label}</span>
+      <span style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 4 }}>{label ?? t("loading")}</span>
     </div>
   );
 }
@@ -169,23 +171,24 @@ export function ViewLoading({ rows = 4, label = "Ładowanie…" }: { rows?: numb
 // ─── Stan błędu ──────────────────────────────────────────────────────────────
 
 export function ViewError({
-  title = "Nie udało się wczytać",
+  title,
   description = "Spróbuj ponownie. Jeśli problem się powtarza, odśwież stronę.",
   onRetry,
-  retryLabel = "Spróbuj ponownie",
+  retryLabel,
 }: {
   title?: string;
   description?: string;
   onRetry?: () => void;
   retryLabel?: string;
 }) {
+  const t = useTranslations("ui.error");
   return (
     <StateFrame
       icon={<AlertTriangle size={20} />}
       tone="var(--accent-red)"
-      title={title}
+      title={title ?? t("loadFailed")}
       description={description}
-      action={onRetry ? { label: retryLabel, onClick: onRetry } : undefined}
+      action={onRetry ? { label: retryLabel ?? t("retry"), onClick: onRetry } : undefined}
       role="alert"
     />
   );
@@ -194,7 +197,7 @@ export function ViewError({
 // ─── Brak dostępu ────────────────────────────────────────────────────────────
 
 export function ViewNoAccess({
-  title = "Brak dostępu",
+  title,
   description = "Nie masz uprawnień do tego widoku. Poproś właściciela o dostęp.",
   action,
 }: {
@@ -202,11 +205,12 @@ export function ViewNoAccess({
   description?: string;
   action?: StateAction;
 }) {
+  const t = useTranslations("ui.error");
   return (
     <StateFrame
       icon={<Lock size={20} />}
       tone="var(--accent-amber)"
-      title={title}
+      title={title ?? t("noAccess")}
       description={description}
       action={action}
       role="status"

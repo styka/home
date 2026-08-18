@@ -18,6 +18,8 @@ import { PrivacySettings } from "@/components/settings/PrivacySettings"
 import { UserFactsSection } from "@/components/settings/UserFactsSection"
 import { getActivePlan } from "@/lib/plans"
 import { getMyAiUsage } from "@/platform/ai/budzet"
+import { getWorkspaceLocaleSettings } from "@/actions/workspaceSettings"
+import { WorkspaceLocaleSection } from "@/components/settings/WorkspaceLocaleSection"
 import { AiUsageMeters } from "@/components/settings/AiUsageMeters"
 
 export default async function SettingsPage({
@@ -40,6 +42,9 @@ export default async function SettingsPage({
   // jeden z czterech mechanizmów budżetu. Sam limit, którego nie widać, użytkownik poznaje dopiero
   // w chwili odmowy.
   const zuzycieAi = session?.user?.id ? await getMyAiUsage(session.user.id) : null
+  // 089 (zadanie 37): język i strefa należą do PRZESTRZENI (rozdz. 8.2), więc ustawia się je per
+  // przestrzeń — przy jednej osobistej wygląda to jak zwykłe ustawienie konta.
+  const ustawieniaJezykowe = await getWorkspaceLocaleSettings().catch(() => null)
   const activityForUI = recentActivity.map((a) => ({
     module: a.module,
     action: a.action,
@@ -218,6 +223,15 @@ export default async function SettingsPage({
       </section>
 
       {/* Twój plan (Z-471) */}
+      {ustawieniaJezykowe && ustawieniaJezykowe.przestrzenie.length > 0 && (
+        <section>
+          <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+            Język i strefa czasowa
+          </h2>
+          <WorkspaceLocaleSection przestrzenie={ustawieniaJezykowe.przestrzenie} jezyki={ustawieniaJezykowe.jezyki} />
+        </section>
+      )}
+
       {plan && (
         <section>
           <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>

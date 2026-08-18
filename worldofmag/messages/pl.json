@@ -1,0 +1,46 @@
+{
+  "ui": {
+    "aiContent": {
+      "regenerate": "Wygeneruj treść na nowo",
+      "refreshMode": "Kiedy ta sekcja ma się odświeżać",
+      "pending": "Treść powstanie po kliknięciu"
+    },
+    "cost": {
+      "incomplete": "Któryś z użytych modeli nie ma stawek w cenniku — kwota jest niepełna. Cennik uzupełnia administrator w panelu LLM.",
+      "details": "Szczegóły kosztu i modelu (kliknij, by rozwinąć)"
+    },
+    "conflict": {
+      "title": "Ktoś zmienił to w międzyczasie",
+      "backToEdit": "Wróć do edycji",
+      "backToEditHint": "Nic się nie zapisze. Zobaczysz, co się zmieniło, i zdecydujesz później.",
+      "overwrite": "Nadpisz moją wersją",
+      "overwriteHint": "Cudze zmiany zostaną zastąpione twoimi.",
+      "discard": "Odrzuć moje zmiany",
+      "discardHint": "Trafią do kosza — będzie można do nich wrócić."
+    },
+    "error": {
+      "title": "Coś poszło nie tak",
+      "loadFailed": "Nie udało się wczytać",
+      "noAccess": "Brak dostępu",
+      "message": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie — jeśli problem się powtarza, odśwież stronę.",
+      "retry": "Spróbuj ponownie"
+    },
+    "image": {
+      "remove": "Usuń",
+      "removePhoto": "Usuń zdjęcie",
+      "connectDrive": "połącz Dysk Google"
+    },
+    "smartTextarea": {
+      "describeChange": "Opisz modyfikację…",
+      "modifying": "Modyfikuję…",
+      "sendHint": "Ctrl+Enter aby wysłać",
+      "stopHint": "Kliknij 🎙 aby zatrzymać",
+      "applyHint": "Kliknij 🪄 aby zastosować"
+    },
+    "userFact": {
+      "confirm": "Zgadza się"
+    },
+    "loading": "Ładowanie…",
+    "sectionHome": "Strona główna działu"
+  }
+}

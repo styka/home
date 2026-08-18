@@ -2838,5 +2838,16 @@
     "status": "ai",
     "action": "update_watcher",
     "access": "owner"
+  },
+  "workspaceSettings:getWorkspaceLocaleSettings": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings",
+    "access": "owner"
+  },
+  "workspaceSettings:setWorkspaceLocale": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "owner"
   }
 }

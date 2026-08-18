@@ -150,8 +150,17 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   swoje. Gdy migracja istniejących wywołań jest droga — zrób **cienką nakładkę na stare API**
   (wzorzec `ui/home/EmptyState` → `ViewEmpty`), zamiast przepisywać dwadzieścia plików.
 
-- **C-32 — Teksty UI po polsku** (to prywatny system Szymona). Nazwy kategorii w promptach LLM
-  traktujemy jako **polskie słowa**, nie angielskie.
+- **C-32 — Teksty UI przez `t()`, polski jako język źródłowy.** Nowy tekst widoczny dla użytkownika
+  idzie do `messages/pl.json` i jest czytany przez `useTranslations` (`next-intl`, konfiguracja
+  bez routingu językowego — zadanie 34/089). **Żadnych literałów w komponentach.** Pilnuje tego
+  zapadka `npm run check:i18n`: liczba tekstów zaszytych w JSX nie może rosnąć, a przy każdym
+  wyciągniętym module należy obniżyć próg w `src/lib/ui/i18n-baseline.json`.
+  Polski pozostaje **językiem źródłowym** — piszemy po polsku, nie po angielsku.
+  Język i strefa czasowa należą do **przestrzeni** (`Workspace.locale`/`timezone`), nie do konta,
+  bo zasób należy do przestrzeni; formatuj daty, liczby i kwoty przez `@/platform/i18n/format`,
+  nie przez `toLocaleString("pl-PL")` (to drugie ignoruje strefę przestrzeni).
+  Nazwy kategorii w promptach LLM traktujemy jako słowa **języka przestrzeni** — do promptu wchodzi
+  `zdanieOJezyku()` (zadanie 38), które dla polskiego jest puste, więc nic dziś nie kosztuje.
 
 ## E. AI / LLM
 

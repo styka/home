@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type CSSProperties } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ImagePlus, Loader2, X } from "lucide-react";
 
@@ -26,6 +27,7 @@ export function ImageUrlInput({
   inputStyle,
   inputClassName,
 }: Props) {
+  const t = useTranslations("ui.image");
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -111,10 +113,10 @@ export function ImageUrlInput({
           <button
             type="button"
             onClick={() => onChange("")}
-            title="Usuń zdjęcie"
+            title={t("removePhoto")}
             style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }}
           >
-            <X size={13} /> Usuń
+            <X size={13} /> {t("remove")}
           </button>
         </div>
       ) : null}
@@ -123,7 +125,7 @@ export function ImageUrlInput({
         <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
           Aby wgrywać pliki, najpierw{" "}
           <Link href="/settings" style={{ color: "var(--accent-blue)" }}>
-            połącz Dysk Google
+            {t("connectDrive")}
           </Link>{" "}
           w Ustawieniach.
         </p>
